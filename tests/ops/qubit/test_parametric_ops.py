@@ -2550,9 +2550,6 @@ class TestGrad:
     def test_globalphase_autograd_grad(self, tol, dev_name, diff_method):
         """Test the gradient with Autograd for a controlled GlobalPhase."""
 
-        if diff_method in {"adjoint"}:
-            pytest.skip("GlobalPhase does not support adjoint diff")
-
         dev = qml.device(dev_name, wires=2)
 
         @qml.qnode(dev, diff_method=diff_method)
@@ -2896,8 +2893,6 @@ class TestGrad:
     def test_globalphase_tf_grad(self, tol, dev_name, diff_method):
         """Test the gradient with Tensorflow for a controlled GlobalPhase."""
 
-        if diff_method in {"adjoint"}:
-            pytest.skip("GlobalPhase does not support adjoint diff")
         import tensorflow as tf
 
         dev = qml.device(dev_name, wires=2)
@@ -2916,7 +2911,7 @@ class TestGrad:
         with tf.GradientTape() as tape:
             result = circuit(phi)
         res = tape.gradient(result, phi)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(np.real(res), expected, atol=tol, rtol=0)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("par", np.linspace(0, 2 * np.pi, 3))
@@ -3051,9 +3046,6 @@ class TestGrad:
     def test_globalphase_jax_grad(self, tol, dev_name, diff_method):
         """Test the gradient with JAX for a controlled GlobalPhase."""
 
-        if diff_method in {"adjoint"}:
-            pytest.skip("GlobalPhase does not support adjoint diff")
-
         import jax
         import jax.numpy as jnp
 
@@ -3080,10 +3072,6 @@ class TestGrad:
     def test_globalphase_torch_grad(self, tol, dev_name, diff_method):
         """Test the gradient with Torch for a controlled GlobalPhase."""
 
-        if diff_method in {"adjoint"}:
-            # GlobalPhase does not have a generator defined
-            pytest.skip("GlobalPhase does not support adjoint")
-
         import torch
 
         dev = qml.device(dev_name, wires=2)
@@ -3095,7 +3083,7 @@ class TestGrad:
             qml.Hadamard(1)
             return qml.expval(qml.PauliZ(1))
 
-        phi = torch.tensor(2.1, requires_grad=True)
+        phi = torch.tensor(2.1, requires_grad=True, dtype=torch.float64)
 
         expected = [-0.8632093]
 

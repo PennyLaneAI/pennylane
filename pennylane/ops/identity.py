@@ -239,7 +239,7 @@ class GlobalPhase(Operation):
 
 
     """
-
+    grad_method = "A"
     num_params = 1
     num_wires = AllWires
     """int: Number of wires that the operator acts on."""
@@ -289,7 +289,12 @@ class GlobalPhase(Operation):
         array([[0.70710678-0.70710678j, 0.        +0.j        ],
                [0.        +0.j        , 0.70710678-0.70710678j]])
         """
-        return qml.math.exp(-1j * qml.math.cast(phi, complex)) * qml.math.eye(int(2**n_wires))
+        interface = qml.math.get_interface(phi)
+        if interface == "tensorflow":
+            return qml.math.exp(-1j * qml.math.cast(phi, complex)) * qml.math.eye(int(2**n_wires))
+        return qml.math.exp(-1j * qml.math.cast(phi, complex)) * qml.math.eye(
+            int(2**n_wires), like=interface
+        )
 
     @staticmethod
     def compute_sparse_matrix(phi, n_wires=1):  # pylint: disable=arguments-differ
@@ -332,3 +337,6 @@ class GlobalPhase(Operation):
 
     def pow(self, z):
         return [GlobalPhase(z * self.data[0], self.wires)]
+
+    def generator(self):
+        return -1 * qml.Identity(wires=[0])
