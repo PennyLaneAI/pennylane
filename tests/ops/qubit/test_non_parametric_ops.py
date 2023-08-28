@@ -1099,7 +1099,7 @@ class TestMultiControlledX:
 
         @qml.qnode(dev)
         def f():
-            qml.QubitStateVector(rnd_state, wires=range(n_all_wires))
+            qml.StatePrep(rnd_state, wires=range(n_all_wires))
             qml.MultiControlledX(wires=control_target_wires)
             for op in tape.operations:
                 op.queue()

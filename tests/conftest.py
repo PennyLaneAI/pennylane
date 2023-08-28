@@ -172,7 +172,7 @@ def mock_device(monkeypatch):
         m.setattr(dev, "short_name", "mock_device")
         m.setattr(dev, "capabilities", lambda cls: {"model": "qubit"})
         m.setattr(dev, "operations", {"RX", "RY", "RZ", "CNOT", "SWAP"})
-        yield qml.Device(wires=2)
+        yield qml.Device(wires=2)  # pylint:disable=abstract-class-instantiated
 
 
 # pylint: disable=protected-access
@@ -222,9 +222,6 @@ def pytest_collection_modifyitems(items, config):
         if "qchem" in rel_path.parts:
             mark = getattr(pytest.mark, "qchem")
             item.add_marker(mark)
-        if "legacy" in rel_path.parts:
-            mark = getattr(pytest.mark, "legacy")
-            item.add_marker(mark)
         if "finite_diff" in rel_path.parts:
             mark = getattr(pytest.mark, "finite-diff")
             item.add_marker(mark)
@@ -250,7 +247,6 @@ def pytest_collection_modifyitems(items, config):
                     "qchem",
                     "qcut",
                     "all_interfaces",
-                    "legacy",
                     "finite-diff",
                     "param-shift",
                 ]

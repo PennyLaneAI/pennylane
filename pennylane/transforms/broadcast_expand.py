@@ -121,17 +121,16 @@ def broadcast_expand(tape):
     if num_tapes is None:
         raise ValueError("The provided tape is not broadcasted.")
 
-    new_preps = _split_operations(tape._prep, num_tapes)
-    new_ops = _split_operations(tape._ops, num_tapes)
+    new_ops = _split_operations(tape.operations, num_tapes)
 
     output_tapes = []
-    for prep, ops in zip(new_preps, new_ops):
-        new_tape = qml.tape.QuantumScript(ops, tape.measurements, prep, shots=tape.shots)
+    for ops in new_ops:
+        new_tape = qml.tape.QuantumScript(ops, tape.measurements, shots=tape.shots)
         new_tape.trainable_params = tape.trainable_params
         output_tapes.append(new_tape)
 
     def processing_fn(results: qml.typing.ResultBatch) -> qml.typing.Result:
-        if len(tape.measurements) > 1 and qml.active_return():
+        if len(tape.measurements) > 1:
             processed_results = [
                 qml.math.squeeze(qml.math.stack([results[b][i] for b in range(tape.batch_size)]))
                 for i in range(len(tape.measurements))

@@ -108,6 +108,7 @@ BROADCASTED_OPERATIONS = [
 
 
 NON_PARAMETRIZED_OPERATIONS = [
+    qml.Identity(0),
     qml.S(wires=0),
     qml.SX(wires=0),
     qml.T(wires=0),
@@ -130,8 +131,13 @@ NON_PARAMETRIZED_OPERATIONS = [
 
 ALL_OPERATIONS = NON_PARAMETRIZED_OPERATIONS + PARAMETRIZED_OPERATIONS
 
-dot_broadcasted = lambda a, b: np.einsum("...ij,...jk->...ik", a, b)
-multi_dot_broadcasted = lambda matrices: reduce(dot_broadcasted, matrices)
+
+def dot_broadcasted(a, b):
+    return np.einsum("...ij,...jk->...ik", a, b)
+
+
+def multi_dot_broadcasted(matrices):
+    return reduce(dot_broadcasted, matrices)
 
 
 class TestOperations:
@@ -150,6 +156,23 @@ class TestOperations:
 
         new_op = type(op)._unflatten(*op._flatten())
         assert qml.equal(op, new_op)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("op", ALL_OPERATIONS + BROADCASTED_OPERATIONS)
+    def test_jax_pytrees(self, op):
+        import jax
+
+        leaves = jax.tree_util.tree_leaves(op)
+        for d1, d2 in zip(leaves, op.data):
+            assert d1 is d2
+
+        leaves, tree_def = jax.tree_util.tree_flatten(op)
+        op_unflattened = jax.tree_util.tree_unflatten(tree_def, leaves)
+        assert qml.equal(op_unflattened, op)
+
+        new_op = jax.tree_util.tree_map(lambda x: x + 1.0, op)
+        for d1, d2 in zip(new_op.data, op.data):
+            assert qml.math.allclose(d1, d2 + 1.0)
 
     @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
     def test_adjoint_unitaries(self, op, tol):
@@ -2237,7 +2260,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.PSWAP(phi, wires=[0, 1])
             return qml.expval(qml.PauliY(0))
 
@@ -2270,7 +2293,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.PSWAP(phi, wires=[0, 1])
             return qml.expval(qml.PauliY(0))
 
@@ -2308,7 +2331,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.PSWAP(phi, wires=[0, 1])
             return qml.expval(qml.PauliY(0))
 
@@ -2343,7 +2366,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.PSWAP(phi, wires=[0, 1])
             return qml.expval(qml.PauliY(0))
 
@@ -2378,7 +2401,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.IsingXX(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
@@ -2414,7 +2437,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.IsingYY(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
@@ -2450,7 +2473,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.IsingZZ(phi, wires=[0, 1])
             return qml.expval(qml.PauliX(0))
 
@@ -2478,7 +2501,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.IsingXY(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
@@ -2516,7 +2539,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.IsingXY(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
@@ -2554,7 +2577,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.IsingXX(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
@@ -2602,7 +2625,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.IsingYY(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
@@ -2650,7 +2673,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.IsingZZ(phi, wires=[0, 1])
             return qml.expval(qml.PauliX(0))
 
@@ -2680,7 +2703,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.IsingXY(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
@@ -2712,12 +2735,13 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.IsingXX(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
         phi = tf.Variable(phi, dtype=tf.complex128)
 
+        # pylint:disable=invalid-unary-operand-type
         expected = (
             0.5
             * (1 / norm**2)
@@ -2754,12 +2778,13 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.IsingYY(phi, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
         phi = tf.Variable(phi, dtype=tf.complex128)
 
+        # pylint:disable=invalid-unary-operand-type
         expected = (
             0.5
             * (1 / norm**2)
@@ -2796,7 +2821,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
-            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.StatePrep(init_state, wires=[0, 1])
             qml.IsingZZ(phi, wires=[0, 1])
             return qml.expval(qml.PauliX(0))
 
@@ -3742,12 +3767,13 @@ class TestSimplify:
         import tensorflow as tf
 
         op = qml.U2
+        wires = list(range(op.num_wires))
 
         dev = qml.device("default.qubit", wires=2)
 
         @tf.function
         @qml.qnode(dev)
-        def circuit(simplify, wires, *params, **hyperparams):
+        def circuit(simplify, *params, **hyperparams):
             if simplify:
                 qml.simplify(op(*params, wires=wires, **hyperparams))
             else:
@@ -3756,19 +3782,19 @@ class TestSimplify:
             return qml.expval(qml.PauliZ(0))
 
         unsimplified_op = self.get_unsimplified_op(op)
-        params, wires = self._get_params_wires(unsimplified_op)
+        params, _ = self._get_params_wires(unsimplified_op)
         hyperparams = {"dim": 2} if unsimplified_op.name == "PCPhase" else {}
 
         for i in range(params[0].shape[0]):
             parameters = [tf.Variable(p[i]) for p in params]
 
             with tf.GradientTape() as unsimplified_tape:
-                unsimplified_res = circuit(False, wires, *parameters, **hyperparams)
+                unsimplified_res = circuit(False, *parameters, **hyperparams)
 
             unsimplified_grad = unsimplified_tape.gradient(unsimplified_res, parameters)
 
             with tf.GradientTape() as simplified_tape:
-                simplified_res = circuit(True, wires, *parameters, **hyperparams)
+                simplified_res = circuit(True, *parameters, **hyperparams)
 
             simplified_grad = simplified_tape.gradient(simplified_res, parameters)
 

@@ -47,18 +47,107 @@ class TestQNode:
         assert isinstance(res1, type(res2))
         assert res1.shape == res2.shape
 
-        assert len(qnode1.qtape.operations) == len(qnode2.qtape.operations)
+        assert len(qnode2.qtape.operations) == 0
         assert len(qnode1.qtape.measurements) == len(qnode2.qtape.measurements)
-
-        # Check the operations
-        for op1, op2 in zip(qnode1.qtape.operations, qnode2.qtape.operations):
-            assert isinstance(op1, type(op2))
-            assert op1.data == op2.data
 
         # Check the measurements
         for op1, op2 in zip(qnode1.qtape.measurements, qnode2.qtape.measurements):
             assert isinstance(op1, type(op2))
             assert op1.data == op2.data
+
+    def test_reuse_wire_after_measurement(self):
+        """Test that wires can be reused after measurement."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        @qml.defer_measurements
+        def qnode():
+            qml.Hadamard(0)
+            qml.measure(0)
+            qml.PauliZ(0)
+            return qml.expval(qml.PauliX(0))
+
+        _ = qnode()
+
+    def test_no_new_wires_without_reuse(self, mocker):
+        """Test that new wires are not added if a measured wire is not reused."""
+        dev = qml.device("default.qubit", wires=3)
+
+        # Quantum teleportation
+        @qml.qnode(dev)
+        def qnode1(phi):
+            qml.RX(phi, 0)
+            qml.Hadamard(1)
+            qml.CNOT([1, 2])
+            qml.CNOT([0, 1])
+            qml.Hadamard(0)
+
+            m0 = qml.measure(0)
+            qml.cond(m0, qml.PauliZ)(2)
+            m1 = qml.measure(1)
+            qml.cond(m1, qml.PauliX)(2)
+            return qml.expval(qml.PauliZ(2))
+
+        # Prepare wire 0 in arbitrary state
+        @qml.qnode(dev)
+        def qnode2(phi):
+            qml.RX(phi, 0)
+            return qml.expval(qml.PauliZ(0))
+
+        spy = mocker.spy(qml, "defer_measurements")
+
+        # Outputs should match
+        assert np.isclose(qnode1(np.pi / 4), qnode2(np.pi / 4))
+        spy.assert_called_once()
+
+        deferred_tape = qml.defer_measurements(qnode1.qtape)
+        assert isinstance(deferred_tape.operations[5], qml.ops.Controlled)
+        assert qml.equal(deferred_tape.operations[5].base, qml.PauliZ(2))
+        assert deferred_tape.operations[5].hyperparameters["control_wires"] == qml.wires.Wires(0)
+
+        assert qml.equal(deferred_tape.operations[6], qml.CNOT([1, 2]))
+
+    def test_new_wires_after_reuse(self, mocker):
+        """Test that a new wire is added for every measurement after which
+        the wire is reused."""
+        dev = qml.device("default.qubit", wires=4)
+        spy = mocker.spy(qml, "defer_measurements")
+
+        @qml.qnode(dev)
+        def qnode1(phi, theta):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0, reset=True)  # Reused measurement, one new wire added
+            qml.cond(m0, qml.Hadamard)(1)
+            m1 = qml.measure(1)  # No reuse
+            qml.RY(theta, 2)
+            qml.cond(m1, qml.RY)(-theta, 2)
+            return qml.expval(qml.PauliZ(2))
+
+        res1 = qnode1(np.pi / 4, 3 * np.pi / 4)
+
+        @qml.qnode(dev)
+        def qnode2(phi, theta):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)  # No reuse
+            qml.cond(m0, qml.Hadamard)(1)
+            m1 = qml.measure(1)  # No reuse
+            qml.RY(theta, 2)
+            qml.cond(m1, qml.RY)(-theta, 2)
+            return qml.expval(qml.PauliZ(2))
+
+        res2 = qnode2(np.pi / 4, 3 * np.pi / 4)
+
+        assert spy.call_count == 2
+
+        deferred_tape1 = qml.defer_measurements(qnode1.qtape)
+        assert len(deferred_tape1.wires) == 4
+        assert len(deferred_tape1.operations) == 6
+
+        assert np.allclose(res1, res2)
+
+        deferred_tape2 = qml.defer_measurements(qnode2.qtape)
+        assert len(deferred_tape2.wires) == 3
+        assert len(deferred_tape2.operations) == 4
 
     def test_measure_between_ops(self):
         """Test that a quantum function that contains one operation before and
@@ -87,7 +176,7 @@ class TestQNode:
         assert isinstance(res1, type(res2))
         assert res1.shape == res2.shape
 
-        assert len(qnode1.qtape.operations) == len(qnode2.qtape.operations)
+        assert len(qnode2.qtape.operations) == len(qnode1.qtape.operations)
         assert len(qnode1.qtape.measurements) == len(qnode2.qtape.measurements)
 
         # Check the operations
@@ -100,13 +189,12 @@ class TestQNode:
             assert isinstance(op1, type(op2))
             assert op1.data == op2.data
 
-    @pytest.mark.parametrize(
-        "mid_measure_wire, tp_wires", [(0, [1, 2, 3]), (0, [3, 1, 2]), ("a", ["b", "c", "d"])]
-    )
+    @pytest.mark.parametrize("mid_measure_wire, tp_wires", [(0, [1, 2, 3]), (0, [3, 1, 2])])
     def test_measure_with_tensor_obs(self, mid_measure_wire, tp_wires):
         """Test that the defer_measurements transform works well even with
         tensor observables in the tape."""
         # pylint: disable=protected-access
+
         with qml.queuing.AnnotatedQueue() as q:
             qml.measure(mid_measure_wire)
             qml.expval(qml.operation.Tensor(*[qml.PauliZ(w) for w in tp_wires]))
@@ -115,7 +203,6 @@ class TestQNode:
         tape = qml.defer_measurements(tape)
 
         # Check the operations and measurements in the tape
-        assert tape._ops == []
         assert len(tape.measurements) == 1
 
         measurement = tape.measurements[0]
@@ -127,37 +214,6 @@ class TestQNode:
         for idx, ob in enumerate(tensor.obs):
             assert isinstance(ob, qml.PauliZ)
             assert ob.wires == qml.wires.Wires(tp_wires[idx])
-
-    def test_already_measured_error_operation(self):
-        """Test that attempting to apply an operation on a wires that has been
-        measured raises an error."""
-        dev = qml.device("default.qubit", wires=3)
-
-        def qfunc():
-            qml.measure(1)
-            qml.PauliX(1)
-            return qml.expval(qml.PauliZ(0))
-
-        tape_deferred_func = qml.defer_measurements(qfunc)
-        qnode = qml.QNode(tape_deferred_func, dev)
-
-        with pytest.raises(ValueError, match="wires have been measured already: {1}"):
-            qnode()
-
-    def test_already_measured_error_terminal_measurement(self):
-        """Test that attempting to measure a wire at the end of the circuit
-        that has been measured in the middle of the circuit raises an error."""
-        dev = qml.device("default.qubit", wires=3)
-
-        def qfunc():
-            qml.measure(1)
-            return qml.expval(qml.PauliZ(1))
-
-        tape_deferred_func = qml.defer_measurements(qfunc)
-        qnode = qml.QNode(tape_deferred_func, dev)
-
-        with pytest.raises(ValueError, match="Cannot apply operations"):
-            qnode()
 
     def test_cv_op_error(self):
         """Test that CV operations are not supported."""
@@ -206,7 +262,7 @@ class TestConditionalOperations:
         sec_par = 0.3
 
         with qml.queuing.AnnotatedQueue() as q:
-            m_0 = qml.measure(4)
+            m_0 = qml.measure(4, reset=True)
             qml.cond(m_0, qml.RY)(first_par, wires=1)
 
             m_1 = qml.measure(3)
@@ -216,15 +272,15 @@ class TestConditionalOperations:
         tape = qml.tape.QuantumScript.from_queue(q)
         tape = qml.defer_measurements(tape)
 
-        assert len(tape.operations) == 2
+        assert len(tape.operations) == 4
         assert len(tape.measurements) == 1
 
         # Check the two underlying Controlled instances
-        first_ctrl_op = tape.operations[0]
+        first_ctrl_op = tape.operations[2]
         assert isinstance(first_ctrl_op, qml.ops.op_math.Controlled)
         assert qml.equal(first_ctrl_op.base, qml.RY(first_par, 1))
 
-        sec_ctrl_op = tape.operations[1]
+        sec_ctrl_op = tape.operations[3]
         assert isinstance(sec_ctrl_op, qml.ops.op_math.Controlled)
         assert qml.equal(sec_ctrl_op.base, qml.RZ(sec_par, 1))
 
@@ -301,7 +357,7 @@ class TestConditionalOperations:
 
             # Alice measures her qubits, obtaining one of four results, and sends this information to Bob.
             m_0 = qml.measure(0)
-            m_1 = qml.measure(1)
+            m_1 = qml.measure(1, reset=True)
 
             # Given Alice's measurements, Bob performs one of four operations on his half of the EPR pair and
             # recovers the original quantum state.
@@ -312,7 +368,9 @@ class TestConditionalOperations:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         tape = qml.defer_measurements(tape)
-        assert len(tape.operations) == 5 + 2  # 5 regular ops + 2 conditional ops
+        assert (
+            len(tape.operations) == 5 + 1 + 1 + 2
+        )  # 5 regular ops + 1 measurement op + 1 reset op + 2 conditional ops
         assert len(tape.measurements) == 1
 
         # Check the each operation
@@ -337,12 +395,22 @@ class TestConditionalOperations:
         assert isinstance(op5, qml.Hadamard)
         assert op5.wires == qml.wires.Wires([0])
 
-        # Check the two underlying  Controlled instances
-        ctrl_op1 = tape.operations[5]
+        # Check the two underlying CNOTs for storing measurement state
+        meas_op1 = tape.operations[5]
+        assert isinstance(meas_op1, qml.CNOT)
+        assert meas_op1.wires == qml.wires.Wires([1, 3])
+
+        meas_op2 = tape.operations[6]
+        assert isinstance(meas_op2, qml.CNOT)
+        assert meas_op2.wires == qml.wires.Wires([3, 1])
+
+        # Check the two underlying Controlled instances
+        ctrl_op1 = tape.operations[7]
         assert isinstance(ctrl_op1, qml.ops.op_math.Controlled)
         assert qml.equal(ctrl_op1.base, qml.RX(math.pi, 2))
+        assert ctrl_op1.wires == qml.wires.Wires([3, 2])
 
-        ctrl_op2 = tape.operations[6]
+        ctrl_op2 = tape.operations[8]
         assert isinstance(ctrl_op2, qml.ops.op_math.Controlled)
         assert qml.equal(ctrl_op2.base, qml.RZ(math.pi, 2))
         assert ctrl_op2.wires == qml.wires.Wires([0, 2])
@@ -388,18 +456,28 @@ class TestConditionalOperations:
         measurement = qml.expval(qml.Hermitian(mat, wires=[3, 1, 2]))
 
         with qml.queuing.AnnotatedQueue() as q:
-            m_0 = qml.measure(0)
+            m_0 = qml.measure(0, reset=True)
             qml.cond(m_0, qml.RY)(rads, wires=4)
             qml.apply(measurement)
 
         tape = qml.tape.QuantumScript.from_queue(q)
         tape = qml.defer_measurements(tape)
 
-        assert len(tape.operations) == 1
+        assert len(tape.operations) == 3
         assert len(tape.measurements) == 1
 
+        # Check the underlying CNOT for storing measurement state
+        meas_op1 = tape.operations[0]
+        assert isinstance(meas_op1, qml.CNOT)
+        assert meas_op1.wires == qml.wires.Wires([0, 5])
+
+        # Check the underlying CNOT for reseting measured wire
+        meas_op1 = tape.operations[1]
+        assert isinstance(meas_op1, qml.CNOT)
+        assert meas_op1.wires == qml.wires.Wires([5, 0])
+
         # Check the underlying Controlled instances
-        first_ctrl_op = tape.operations[0]
+        first_ctrl_op = tape.operations[2]
         assert isinstance(first_ctrl_op, qml.ops.op_math.Controlled)
         assert qml.equal(first_ctrl_op.base, qml.RY(rads, 4))
 
@@ -435,7 +513,7 @@ class TestConditionalOperations:
         assert qml.equal(first_ctrl_op.base, qml.RY(rads, 4))
         assert len(tape.measurements) == 1
         assert isinstance(tape.measurements[0], qml.measurements.MeasurementProcess)
-        assert tape.measurements[0].obs == H
+        assert qml.equal(tape.measurements[0].obs, H)
 
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     @pytest.mark.parametrize("ops", [(qml.RX, qml.CRX), (qml.RY, qml.CRY), (qml.RZ, qml.CRZ)])
@@ -470,7 +548,7 @@ class TestConditionalOperations:
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     def test_conditional_rotations_with_else(self, device):
         """Test that an else operation can also defined using qml.cond."""
-        dev = qml.device(device, wires=2)
+        dev = qml.device(device, wires=3)
         r = 2.345
 
         op1, controlled_op1 = qml.RY, qml.CRY
@@ -504,7 +582,7 @@ class TestConditionalOperations:
         keyword syntax works."""
         op = qml.RY
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
         def qnode1(par):
@@ -528,7 +606,7 @@ class TestConditionalOperations:
     def test_condition_using_measurement_outcome(self, control_val, expected):
         """Apply a conditional bitflip by selecting the measurement
         outcome."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
         def qnode():
@@ -541,7 +619,7 @@ class TestConditionalOperations:
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     def test_cond_qfunc(self, device):
         """Test that a qfunc can also used with qml.cond."""
-        dev = qml.device(device, wires=2)
+        dev = qml.device(device, wires=3)
 
         r = 2.324
 
@@ -576,7 +654,7 @@ class TestConditionalOperations:
     def test_cond_qfunc_with_else(self, device):
         """Test that a qfunc can also used with qml.cond even when an else
         qfunc is provided."""
-        dev = qml.device(device, wires=2)
+        dev = qml.device(device, wires=3)
 
         x = 0.3
         y = 3.123
@@ -610,7 +688,25 @@ class TestConditionalOperations:
             return qml.probs(wires=[0])
 
         assert np.allclose(normal_circuit(x, y), cond_qnode(x, y))
-        assert np.allclose(qml.matrix(normal_circuit)(x, y), qml.matrix(cond_qnode)(x, y))
+
+    def test_cond_on_measured_wire(self):
+        """Test that applying a conditional operation on the same wire
+        that is measured works as expected."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        @qml.defer_measurements
+        def qnode():
+            qml.Hadamard(0)
+            m = qml.measure(0)
+            qml.cond(m, qml.PauliX)(0)
+            return qml.density_matrix(0)
+
+        # Above circuit will cause wire 0 to go back to the |0> computational
+        # basis state. We can inspect the reduced density matrix to confirm this
+        # without inspecting the extra wires
+        expected_dmat = np.array([[1, 0], [0, 0]])
+        assert np.allclose(qnode(), expected_dmat)
 
 
 class TestExpressionConditionals:
@@ -621,7 +717,7 @@ class TestExpressionConditionals:
     def test_conditional_rotations(self, r, op):
         """Test that the quantum conditional operations match the output of
         controlled rotations. And additionally that summing measurements works as expected."""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit", wires=5)
 
         @qml.qnode(dev)
         def normal_circuit(rads):
@@ -648,7 +744,7 @@ class TestExpressionConditionals:
     @pytest.mark.parametrize("r", np.linspace(0.1, 2 * np.pi - 0.1, 4))
     def test_triple_measurement_condition_expression(self, r):
         """Test that combining the results of three mid-circuit measurements works as expected."""
-        dev = qml.device("default.qubit", wires=4)
+        dev = qml.device("default.qubit", wires=7)
 
         @qml.qnode(dev)
         @qml.defer_measurements
@@ -690,7 +786,7 @@ class TestExpressionConditionals:
         """Test that when multiple "branches" of the mid-circuit measurements all satisfy the criteria then
         this translates to multiple control gates.
         """
-        dev = qml.device("default.qubit", wires=4)
+        dev = qml.device("default.qubit", wires=7)
 
         @qml.qnode(dev)
         @qml.defer_measurements
@@ -733,7 +829,7 @@ class TestExpressionConditionals:
 
     def test_composed_conditions(self):
         """Test that a complex nested expression gets resolved correctly to the corresponding correct control gates."""
-        dev = qml.device("default.qubit", wires=4)
+        dev = qml.device("default.qubit", wires=7)
 
         @qml.qnode(dev)
         @qml.defer_measurements
@@ -788,7 +884,7 @@ class TestTemplates:
 
         basis_state = [0, 1, 1, 0]
 
-        dev = qml.device("default.qubit", wires=5)
+        dev = qml.device("default.qubit", wires=6)
 
         @qml.qnode(dev)
         def qnode1():
@@ -804,11 +900,9 @@ class TestTemplates:
             qml.cond(m_0, template)(basis_state, wires=range(1, 5))
             return qml.expval(qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliZ(3) @ qml.PauliZ(4))
 
-        dev = qml.device("default.qubit", wires=2)
-
         assert np.allclose(qnode1(), qnode2())
 
-        assert len(qnode1.qtape.operations) == len(qnode2.qtape.operations)
+        assert len(qnode2.qtape.operations) == len(qnode1.qtape.operations)
         assert len(qnode1.qtape.measurements) == len(qnode2.qtape.measurements)
 
         # Check the operations
@@ -827,7 +921,7 @@ class TestTemplates:
         template = qml.AngleEmbedding
         feature_vector = [1, 2, 3]
 
-        dev = qml.device("default.qubit", wires=5)
+        dev = qml.device("default.qubit", wires=6)
 
         @qml.qnode(dev)
         def qnode1():
@@ -843,13 +937,12 @@ class TestTemplates:
             qml.cond(m_0, template)(features=feature_vector, wires=range(1, 5), rotation="Z")
             return qml.expval(qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliZ(3) @ qml.PauliZ(4))
 
-        dev = qml.device("default.qubit", wires=2)
         res1 = qnode1()
         res2 = qnode2()
 
         assert np.allclose(res1, res2)
 
-        assert len(qnode1.qtape.operations) == len(qnode2.qtape.operations)
+        assert len(qnode2.qtape.operations) == len(qnode1.qtape.operations)
         assert len(qnode1.qtape.measurements) == len(qnode2.qtape.measurements)
 
         # Check the operations
@@ -865,7 +958,7 @@ class TestTemplates:
     @pytest.mark.parametrize("template", [qml.StronglyEntanglingLayers, qml.BasicEntanglerLayers])
     def test_layers(self, template):
         """Test layers conditioned on mid-circuit measurement outcomes."""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit", wires=4)
 
         num_wires = 2
 
@@ -888,7 +981,7 @@ class TestTemplates:
 
         assert np.allclose(qnode1(weights), qnode2(weights))
 
-        assert len(qnode1.qtape.operations) == len(qnode2.qtape.operations)
+        assert len(qnode2.qtape.operations) == len(qnode1.qtape.operations)
         assert len(qnode1.qtape.measurements) == len(qnode2.qtape.measurements)
 
         # Check the operations
@@ -902,13 +995,123 @@ class TestTemplates:
             assert np.allclose(op1.data, op2.data)
 
 
+class TestQubitReset:
+    """Tests for the qubit reset functionality of `qml.measure`."""
+
+    def test_correct_cnot_for_reset(self):
+        """Test that a CNOT is applied from the wire that stores the measurement
+        to the measured wire after the measurement."""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def qnode1(x):
+            qml.Hadamard(0)
+            qml.CRX(x, [0, 1])
+            return qml.expval(qml.PauliZ(1))
+
+        @qml.qnode(dev)
+        @qml.defer_measurements
+        def qnode2(x):
+            qml.Hadamard(0)
+            m0 = qml.measure(0, reset=True)
+            qml.cond(m0, qml.RX)(x, 1)
+            return qml.expval(qml.PauliZ(1))
+
+        assert np.allclose(qnode1(0.123), qnode2(0.123))
+
+        expected_circuit = [
+            qml.Hadamard(0),
+            qml.CNOT([0, 2]),
+            qml.CNOT([2, 0]),
+            qml.ops.Controlled(qml.RX(0.123, 1), 2),
+            qml.expval(qml.PauliZ(1)),
+        ]
+
+        assert len(qnode2.qtape.circuit) == len(expected_circuit)
+        assert all(
+            qml.equal(actual, expected)
+            for actual, expected in zip(qnode2.qtape.circuit, expected_circuit)
+        )
+
+    def test_wire_is_reset(self):
+        """Test that a wire is reset to the |0> state without any local phases
+        after measurement if reset is requested."""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        @qml.defer_measurements
+        def qnode(x):
+            qml.Hadamard(0)
+            qml.PhaseShift(np.pi / 4, 0)
+            m = qml.measure(0, reset=True)
+            qml.cond(m, qml.RX)(x, 1)
+            return qml.density_matrix(wires=[0])
+
+        # Expected reduced density matrix on wire 0
+        expected_mat = np.array([[1, 0], [0, 0]])
+        assert np.allclose(qnode(0.123), expected_mat)
+
+    def test_multiple_measurements_mixed_reset(self, mocker):
+        """Test that a QNode with multiple mid-circuit measurements with
+        different resets is transformed correctly."""
+        dev = qml.device("default.qubit", wires=6)
+
+        @qml.qnode(dev)
+        def qnode(p, x, y):
+            qml.Hadamard(0)
+            qml.PhaseShift(p, 0)
+            # Set measurement_ids so that the order of wires in combined
+            # measurement values is consistent
+
+            mp0 = qml.measurements.MidMeasureMP(0, reset=True, id=0)
+            m0 = qml.measurements.MeasurementValue([mp0], lambda v: v)
+            qml.cond(~m0, qml.RX)(x, 1)
+            mp1 = qml.measurements.MidMeasureMP(1, reset=True, id=1)
+            m1 = qml.measurements.MeasurementValue([mp1], lambda v: v)
+            qml.cond(m0 & m1, qml.Hadamard)(0)
+            mp2 = qml.measurements.MidMeasureMP(0, id=2)
+            m2 = qml.measurements.MeasurementValue([mp2], lambda v: v)
+            qml.cond(m1 | m2, qml.RY)(y, 2)
+            return qml.expval(qml.PauliZ(2))
+
+        spy = mocker.spy(qml, "defer_measurements")
+        _ = qnode(0.123, 0.456, 0.789)
+        spy.assert_called_once()
+
+        expected_circuit = [
+            qml.Hadamard(0),
+            qml.PhaseShift(0.123, 0),
+            qml.CNOT([0, 3]),
+            qml.CNOT([3, 0]),
+            qml.ops.Controlled(qml.RX(0.456, 1), 3, [False]),
+            qml.CNOT([1, 4]),
+            qml.CNOT([4, 1]),
+            qml.ops.Controlled(qml.Hadamard(0), [3, 4]),
+            qml.CNOT([0, 5]),
+            qml.ops.Controlled(qml.RY(0.789, 2), [4, 5], [False, True]),
+            qml.ops.Controlled(qml.RY(0.789, 2), [4, 5], [True, False]),
+            qml.ops.Controlled(qml.RY(0.789, 2), [4, 5], [True, True]),
+            qml.expval(qml.PauliZ(2)),
+        ]
+
+        deferred_tape = qml.defer_measurements(qnode.qtape)
+        assert len(deferred_tape.circuit) == len(expected_circuit)
+        assert all(
+            qml.equal(actual, expected)
+            for actual, expected in zip(deferred_tape.circuit, expected_circuit)
+        )
+
+
 class TestDrawing:
     """Tests drawing circuits with mid-circuit measurements and conditional
     operations that have been transformed"""
 
-    def test_drawing(self):
+    def test_drawing_no_reuse(self):
         """Test that drawing a func with mid-circuit measurements works and
-        that controlled operations are drawn for conditional operations."""
+        that controlled operations are drawn for conditional operations when
+        the measured wires are not reused."""
+
+        # TODO: Update after drawing for mid-circuit measurements is updated.
 
         def qfunc():
             m_0 = qml.measure(0)
@@ -929,3 +1132,60 @@ class TestDrawing:
             "2: ───────────╰●────────┤     "
         )
         assert qml.draw(transformed_qnode)() == expected
+
+    def test_drawing_with_reuse(self):
+        """Test that drawing a func with mid-circuit measurements works and
+        that controlled operations are drawn for conditional operations when
+        the measured wires are reused."""
+
+        # TODO: Update after drawing for mid-circuit measurements is updated.
+
+        def qfunc():
+            m_0 = qml.measure(0, reset=True)
+            qml.cond(m_0, qml.RY)(0.312, wires=1)
+
+            m_2 = qml.measure(2)
+            qml.cond(m_2, qml.RY)(0.312, wires=1)
+            return qml.expval(qml.PauliZ(1))
+
+        dev = qml.device("default.qubit", wires=4)
+
+        transformed_qfunc = qml.transforms.defer_measurements(qfunc)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+
+        expected = (
+            "0: ─╭●─╭X─────────────────────┤     \n"
+            "1: ─│──│──╭RY(0.31)─╭RY(0.31)─┤  <Z>\n"
+            "2: ─│──│──│─────────╰●────────┤     \n"
+            "3: ─╰X─╰●─╰●──────────────────┤     "
+        )
+        assert qml.draw(transformed_qnode)() == expected
+
+
+def test_custom_wire_labels_allowed_without_reset():
+    """Test that custom wire labels work if no qubits are re-used."""
+    with qml.queuing.AnnotatedQueue() as q:
+        qml.Hadamard("a")
+        ma = qml.measure("a", reset=False)
+        qml.cond(ma, qml.PauliX)("b")
+        qml.state()
+
+    tape = qml.tape.QuantumScript.from_queue(q)
+    tape = qml.defer_measurements(tape)
+    assert len(tape) == 3
+    assert qml.equal(tape[0], qml.Hadamard("a"))
+    assert qml.equal(tape[1], qml.CNOT(["a", "b"]))
+    assert qml.equal(tape[2], qml.state())
+
+
+def test_custom_wire_labels_fails_with_reset():
+    """Test that custom wire labels do not work if any qubits are re-used."""
+    with qml.queuing.AnnotatedQueue() as q:
+        qml.Hadamard("a")
+        ma = qml.measure("a", reset=True)
+        qml.cond(ma, qml.PauliX)("b")
+        qml.state()
+
+    tape = qml.tape.QuantumScript.from_queue(q)
+    with pytest.raises(TypeError, match="can only concatenate str"):
+        qml.defer_measurements(tape)

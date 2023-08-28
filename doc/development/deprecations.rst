@@ -12,18 +12,6 @@ Pending deprecations
   - Deprecated in v0.32
   - Removed in v0.33
 
-* ``qml.enable_return`` and ``qml.disable_return`` are deprecated. Please avoid calling
-  ``disable_return``, as the old return system is deprecated along with these switch functions.
-
-  - Deprecated in v0.32
-  - Will be removed in v0.33
-
-* The ``mode`` keyword argument in ``QNode`` is deprecated, as it was only used in the old return
-  system (which is also deprecated). Please use ``grad_on_execution`` instead.
-
-  - Deprecated in v0.32
-  - Will be removed in v0.33
-
 * The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
   instead. Using a list of observables in ``QubitDevice.statistics`` is deprecated. Please use a
   ``QuantumTape`` instead.
@@ -132,9 +120,31 @@ Pending deprecations
   - Deprecated in v0.32
   - Will be removed in v0.33
 
+* The ``sampler_seed`` argument of ``qml.gradients.spsa_grad`` has been deprecated, along with a bug
+  fix of the seed-setting behaviour.
+  Instead, the ``sampler_rng`` argument should be set, either to an integer value, which will be used
+  to create a PRNG internally, or to a NumPy pseudo-random number generator (PRNG) created via
+  ``np.random.default_rng(seed)``.
+  The advantage of passing a PRNG is that one can reuse that PRNG when calling ``spsa_grad``
+  multiple times, for instance during an optimization procedure.
+
+  - Deprecated in v0.32
+  - Will be removed in v0.33
+
 
 Completed deprecation cycles
 ----------------------------
+
+* ``qml.enable_return`` and ``qml.disable_return`` have been removed. The old return types are no longer available.
+
+  - Deprecated in v0.32
+  - Removed in v0.33
+
+* The ``mode`` keyword argument in ``QNode`` has been removed, as it was only used in the old return
+  system (which has also been removed). Please use ``grad_on_execution`` instead.
+
+  - Deprecated in v0.32
+  - Removed in v0.33
 
 * ``qml.math.purity``, ``qml.math.vn_entropy``, ``qml.math.mutual_info``, ``qml.math.fidelity``,
   ``qml.math.relative_entropy``, and ``qml.math.max_entropy`` no longer support state vectors as

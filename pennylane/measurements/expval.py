@@ -19,7 +19,7 @@ from typing import Sequence, Tuple
 
 import pennylane as qml
 from pennylane.operation import Operator
-from pennylane.ops import Projector
+from pennylane.ops.qubit.observables import BasisStateProjector
 from pennylane.wires import Wires
 
 from .measurements import Expectation, SampleMeasurement, StateMeasurement
@@ -83,15 +83,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
     def numeric_type(self):
         return float
 
-    def _shape_legacy(self, device, shots):  # pylint: disable=unused-argument
-        if not shots.has_partitioned_shots:
-            return (1,)
-        num_shot_elements = sum(s.copies for s in shots.shot_vector)
-        return (num_shot_elements,)
-
     def shape(self, device, shots):
-        if not qml.active_return():
-            return self._shape_legacy(device, shots)
         if not shots.has_partitioned_shots:
             return ()
         num_shot_elements = sum(s.copies for s in shots.shot_vector)
@@ -104,8 +96,8 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         shot_range: Tuple[int] = None,
         bin_size: int = None,
     ):
-        if isinstance(self.obs, Projector):
-            # branch specifically to handle the projector observable
+        if isinstance(self.obs, BasisStateProjector):
+            # branch specifically to handle the basis state projector observable
             idx = int("".join(str(i) for i in self.obs.parameters[0]), 2)
             probs = qml.probs(wires=self.wires).process_samples(
                 samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
@@ -122,8 +114,8 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         return qml.math.squeeze(qml.math.mean(samples, axis=axis))
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
-        if isinstance(self.obs, Projector):
-            # branch specifically to handle the projector observable
+        if isinstance(self.obs, BasisStateProjector):
+            # branch specifically to handle the basis state projector observable
             idx = int("".join(str(i) for i in self.obs.parameters[0]), 2)
             probs = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
             return probs[idx]

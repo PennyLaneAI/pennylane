@@ -152,7 +152,7 @@ class TestProbs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(state, wires=list(range(4)))
+            qml.StatePrep(state, wires=list(range(4)))
             return qml.probs(wires=range(4))
 
         res = circuit()
@@ -170,7 +170,7 @@ class TestProbs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(state, wires=list(range(4)))
+            qml.StatePrep(state, wires=list(range(4)))
             return qml.probs(wires=[1, 3])
 
         res = circuit()
@@ -189,7 +189,7 @@ class TestProbs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(state, wires=list(range(4)))
+            qml.StatePrep(state, wires=list(range(4)))
             return qml.probs(wires=[1, 0, 3])
 
         res = circuit()
@@ -469,7 +469,7 @@ class TestProbs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(state, wires=list(range(4)))
+            qml.StatePrep(state, wires=list(range(4)))
             qml.PauliX(wires=0)
             qml.PauliX(wires=1)
             qml.PauliX(wires=2)
@@ -513,7 +513,7 @@ class TestProbs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(state, wires=list(range(4)))
+            qml.StatePrep(state, wires=list(range(4)))
             qml.PauliX(wires=0)
             qml.PauliZ(wires=1)
             qml.PauliY(wires=2)
@@ -555,7 +555,7 @@ class TestProbs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(state, wires=list(range(4)))
+            qml.StatePrep(state, wires=list(range(4)))
             qml.PauliX(wires=0)
             qml.PauliZ(wires=1)
             qml.PauliY(wires=2)
@@ -592,7 +592,7 @@ class TestProbs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(state, wires=list(range(4)))
+            qml.StatePrep(state, wires=list(range(4)))
             qml.PauliX(wires=0)
             qml.PauliZ(wires=1)
             qml.PauliY(wires=2)

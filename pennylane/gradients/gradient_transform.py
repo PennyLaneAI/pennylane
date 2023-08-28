@@ -16,7 +16,6 @@ including a decorator for specifying gradient expansions."""
 # pylint: disable=too-few-public-methods
 from functools import partial
 import warnings
-import numpy as np
 
 import pennylane as qml
 from pennylane.transforms.tape_expand import expand_invalid_trainable
@@ -48,6 +47,7 @@ SUPPORTED_GRADIENT_KWARGS = [
     "order",
     "reduction",
     "sampler",
+    "sampler_rng",
     "sampler_seed",
     "shifts",
     "shots",
@@ -55,19 +55,6 @@ SUPPORTED_GRADIENT_KWARGS = [
     "use_broadcasting",
     "validate_params",
 ]
-
-
-def assert_active_return(transform_name):
-    """Check that the new return type system is active. Raise an error if this is not the case.
-
-    Args:
-        transform_name (str): Name of the gradient transform that queries the return system
-    """
-    if not qml.active_return():
-        raise NotImplementedError(
-            f"The {transform_name} gradient transform only supports the new "
-            "return type system. Use qml.enable_return() to activate it."
-        )
 
 
 def assert_multimeasure_not_broadcasted(measurements, broadcast):
@@ -110,6 +97,20 @@ def assert_no_variance(measurements, transform_name):
         raise ValueError(
             f"Computing the gradient of variances with the {transform_name} "
             "gradient transform is not supported."
+        )
+
+
+def assert_no_tape_batching(tape, transform_name):
+    """Check whether a tape is broadcasted and raise an error if this is the case.
+
+    Args:
+        tape (`~.QuantumScript`): measurements to analyze
+        transform_name (str): Name of the gradient transform that queries the tape
+    """
+    if tape.batch_size is not None:
+        raise NotImplementedError(
+            f"Computing the gradient of broadcasted tapes with the {transform_name} "
+            "gradient transform is currently not supported. See #4462 for details."
         )
 
 
@@ -300,13 +301,6 @@ def _no_trainable_grad(tape):
     return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(len(tape.measurements)))
 
 
-def _no_trainable_grad_legacy(tape):
-    """Auxiliary function that returns correctly formatted gradients when there
-    are no trainable parameters. This version is for the old return type system."""
-    warnings.warn(_no_trainable_grad_warning)
-    return [], lambda _: np.zeros((tape.output_dim, 0))
-
-
 def _swap_first_two_axes(grads, first_axis_size, second_axis_size):
     """Transpose the first two axes of an iterable of iterables, returning
     a tuple of tuples."""
@@ -459,28 +453,6 @@ def _contract_qjac_with_cjac(qjac, cjac, num_measurements, has_partitioned_shots
     return tuple(tuple(tdot(qml.math.stack(q), c) for c in cjac if c is not None) for q in qjac)
 
 
-def _contract_qjac_with_cjac_legacy(qjac, cjac):
-    """Contract a quantum Jacobian with a classical preprocessing Jacobian.
-    Essentially, this function computes the generalized version of
-    ``tensordot(qjac, cjac)`` over the tape parameter axis, adapted to the old
-    return type system.
-    """
-    tdot = partial(qml.math.tensordot, axes=[[-1], [0]])
-    if isinstance(cjac, tuple):
-        # Classical processing of multiple arguments is present. Return qjac @ cjac.
-        jacs = tuple(tdot(qjac, c) for c in cjac if c is not None)
-        return jacs[0] if len(jacs) == 1 else jacs
-
-    is_square = cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1]
-
-    if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
-        # Classical Jacobian is the identity. No classical processing
-        # is present inside the QNode.
-        return qjac
-
-    return tdot(qjac, cjac)
-
-
 class gradient_transform(qml.batch_transform):
     """Decorator for defining quantum gradient transforms.
 
@@ -626,11 +598,8 @@ class gradient_transform(qml.batch_transform):
                 qnode, argnum=argnum_cjac, expand_fn=self.expand_fn
             )(*args, **kwargs)
 
-            if qml.active_return():
-                num_measurements = len(qnode.tape.measurements)
-                has_partitioned_shots = qnode.tape.shots.has_partitioned_shots
-                return _contract_qjac_with_cjac(qjac, cjac, num_measurements, has_partitioned_shots)
-
-            return _contract_qjac_with_cjac_legacy(qjac, cjac)
+            num_measurements = len(qnode.tape.measurements)
+            has_partitioned_shots = qnode.tape.shots.has_partitioned_shots
+            return _contract_qjac_with_cjac(qjac, cjac, num_measurements, has_partitioned_shots)
 
         return jacobian_wrapper

@@ -20,7 +20,7 @@ from typing import Sequence, Tuple
 
 import pennylane as qml
 from pennylane.operation import Operator
-from pennylane.ops import Projector
+from pennylane.ops.qubit.observables import BasisStateProjector
 from pennylane.wires import Wires
 
 from .measurements import SampleMeasurement, StateMeasurement, Variance
@@ -83,15 +83,7 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
     def numeric_type(self):
         return float
 
-    def _shape_legacy(self, device, shots):  # pylint: disable=unused-argument
-        if not shots.has_partitioned_shots:
-            return (1,)
-        num_shot_elements = sum(s.copies for s in shots.shot_vector)
-        return (num_shot_elements,)
-
     def shape(self, device, shots):
-        if not qml.active_return():
-            return self._shape_legacy(device, shots)
         if not shots.has_partitioned_shots:
             return ()
         num_shot_elements = sum(s.copies for s in shots.shot_vector)
@@ -104,8 +96,8 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         shot_range: Tuple[int] = None,
         bin_size: int = None,
     ):
-        if isinstance(self.obs, Projector):
-            # branch specifically to handle the projector observable
+        if isinstance(self.obs, BasisStateProjector):
+            # branch specifically to handle the basis state projector observable
             idx = int("".join(str(i) for i in self.obs.parameters[0]), 2)
             # we use ``self.wires`` instead of ``self.obs`` because the observable was
             # already applied before the sampling
@@ -125,8 +117,8 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         return qml.math.squeeze(qml.math.var(samples, axis=axis))
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
-        if isinstance(self.obs, Projector):
-            # branch specifically to handle the projector observable
+        if isinstance(self.obs, BasisStateProjector):
+            # branch specifically to handle the basis state projector observable
             idx = int("".join(str(i) for i in self.obs.parameters[0]), 2)
             # we use ``self.wires`` instead of ``self.obs`` because the observable was
             # already applied to the state

@@ -76,7 +76,7 @@ def adjoint_jacobian(tape: QuantumTape, state=None):
 
     param_number = len(tape.get_parameters(trainable_only=False, operations_only=True)) - 1
     trainable_param_number = len(tape.trainable_params) - 1
-    for op in reversed(tape._ops):
+    for op in reversed(tape.operations[tape.num_preps :]):
         adj_op = qml.adjoint(op)
         ket = apply_operation(adj_op, ket)
 
@@ -152,7 +152,7 @@ def adjoint_jvp(tape: QuantumTape, tangents: Tuple[Number], state=None):
 
     tangents_out = np.zeros(n_obs)
 
-    for op in reversed(tape._ops):
+    for op in reversed(tape.operations[tape.num_preps :]):
         adj_op = qml.adjoint(op)
         ket = apply_operation(adj_op, ket)
 
@@ -224,7 +224,7 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
 
     cotangents_in = np.empty(len(tape.trainable_params))
 
-    for op in reversed(tape._ops):
+    for op in reversed(tape.operations[tape.num_preps :]):
         adj_op = qml.adjoint(op)
         ket = apply_operation(adj_op, ket)
 

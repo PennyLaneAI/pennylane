@@ -30,9 +30,9 @@ requirements = [
     "semantic-version>=2.7",
     "autoray>=0.3.1",
     "cachetools",
-    "pennylane-lightning>=0.31",
+    "pennylane-lightning>=0.32",
     "requests",
-    "typing_extensions"
+    "typing_extensions",
 ]
 
 info = {
@@ -65,7 +65,7 @@ info = {
     "provides": ["pennylane"],
     "install_requires": requirements,
     "extras_require": {"kernels": ["cvxpy", "cvxopt"]},
-    "package_data": {"pennylane": ["devices/tests/pytest.ini"]},
+    "package_data": {"pennylane": ["devices/tests/pytest.ini", "drawer/plot.mplstyle"]},
     "include_package_data": True,
 }
 

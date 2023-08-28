@@ -121,11 +121,11 @@ Operator Types
     ~CVOperation
     ~Channel
     ~Tensor
-    ~StatePrep
+    ~StatePrepBase
 
 .. currentmodule:: pennylane.operation
 
-.. inheritance-diagram:: Operator Operation Observable Channel CV CVObservable CVOperation Tensor StatePrep
+.. inheritance-diagram:: Operator Operation Observable Channel CV CVObservable CVOperation Tensor StatePrepBase
     :parts: 1
 
 Errors
@@ -250,6 +250,7 @@ from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .utils import pauli_eigs
+from .pytrees import register_pytree
 
 # =============================================================================
 # Errors
@@ -673,6 +674,9 @@ class Operator(abc.ABC):
         or by calling ``Operator.__init__``.
     """
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
+
+    def __init_subclass__(cls, **_):
+        register_pytree(cls, cls._flatten, cls._unflatten)
 
     def __copy__(self):
         cls = self.__class__
@@ -1403,7 +1407,6 @@ class Operator(abc.ABC):
         used outside of ``QuantumTape._process_queue``.
 
         Options are:
-            * `"_prep"`
             * `"_ops"`
             * `"_measurements"`
             * `None`
@@ -1857,7 +1860,6 @@ class Observable(Operator):
         used outside of ``QuantumTape._process_queue``.
 
         Options are:
-            * `"_prep"`
             * `"_ops"`
             * `"_measurements"`
             * None
@@ -2442,6 +2444,7 @@ class Tensor(Observable):
 
         If we define a custom wire ordering, the matrix representation changes
         accordingly:
+
         >>> print(t.sparse_matrix(wire_order=[1, 0]))
         (0, 1)	1
         (1, 0)	1
@@ -2823,11 +2826,10 @@ class CVObservable(CV, Observable):
         return self.heisenberg_expand(U, wire_order)
 
 
-class StatePrep(Operation):
+class StatePrepBase(Operation):
     """An interface for state-prep operations."""
 
     grad_method = None
-    _queue_category = "_prep"
 
     # pylint:disable=too-few-public-methods
     @abc.abstractmethod
@@ -3007,3 +3009,10 @@ def active_new_opmath():
     True
     """
     return __use_new_opmath
+
+
+def __getattr__(name):
+    """To facilitate StatePrep rename"""
+    if name == "StatePrep":
+        return StatePrepBase
+    raise AttributeError(f"module 'pennylane.operation' has no attribute '{name}'")

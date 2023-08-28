@@ -38,12 +38,9 @@ where:
 The :func:`~.molecular_hamiltonian` function can also be used to construct the molecular Hamiltonian
 with an external backend that uses the
 `OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-PySCF>`_ plugin interfaced with the
-electronic structure package `PySCF <https://github.com/sunqm/pyscf>`_, which requires separate
+electronic structure package `PySCF <https://github.com/pyscf/pyscf>`_, which requires separate
 installation. This backend is non-differentiable and can be selected by setting
-``method='pyscf'`` in :func:`~.molecular_hamiltonian`. Additionally, if the electronic Hamiltonian
-is built independently using `OpenFermion <https://github.com/quantumlib/OpenFermion>`_ tools, it
-can be readily converted to a PennyLane observable using the
-:func:`~.pennylane.import_operator` function.
+``method='pyscf'`` in :func:`~.molecular_hamiltonian`. 
 
 Furthermore, the net charge,
 the `spin multiplicity <https://en.wikipedia.org/wiki/Multiplicity_(chemistry)>`_, the
@@ -62,6 +59,18 @@ specified for each backend.
         active_electrons=2,
         active_orbitals=2
     )
+
+Importing the Hamiltonian and ansatz state
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If the electronic Hamiltonian is built independently using 
+`OpenFermion <https://github.com/quantumlib/OpenFermion>`_ tools, it can be readily converted 
+to a PennyLane observable using the :func:`~.pennylane.import_operator` function. There is also 
+capability to import wavefunctions (states) that have been pre-computed by traditional quantum chemistry methods
+from `PySCF <https://github.com/pyscf/pyscf>`_, which could be used to for example to provide a better
+starting point to a quantum algorithm. State import can be accomplished using the :func:`~pennylane.qchem.import_state` 
+utility function.
+
 
 Importing molecular structure data
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -255,6 +264,7 @@ Utility functions
     ~pennylane.qchem.givens_decomposition
     ~pennylane.qchem.hf_state
     ~pennylane.import_operator
+    ~pennylane.qchem.import_state
     ~pennylane.qchem.mol_data
     ~pennylane.qchem.read_structure
 

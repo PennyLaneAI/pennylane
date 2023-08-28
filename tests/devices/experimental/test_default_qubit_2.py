@@ -1382,6 +1382,20 @@ class TestPreprocessingIntegration:
         expected_expval = np.cos(y)
         assert qml.math.allclose(expected_expval, processed_results[1])
 
+    def test_preprocess_defer_measurements(self, mocker):
+        """Test that a QNode with mid-circuit measurements is transformed
+        using defer_measurements."""
+        dev = DefaultQubit2()
+
+        tape = qml.tape.QuantumScript(
+            [qml.PauliX(0), qml.measurements.MidMeasureMP(qml.wires.Wires(0))],
+            [qml.expval(qml.PauliZ(0))],
+        )
+        spy = mocker.spy(qml, "defer_measurements")
+
+        _, _, _ = dev.preprocess(tape)
+        spy.assert_called_once()
+
 
 class TestRandomSeed:
     """Test that the device behaves correctly when provided with a random seed"""
@@ -1785,6 +1799,26 @@ class TestClassicalShadows:
 
             # test that the recipes are either 0, 1, or 2 (X, Y, or Z)
             assert np.all(np.logical_or(np.logical_or(r[1] == 0, r[1] == 1), r[1] == 2))
+
+
+class TestDynamicType:
+    """Tests the compatibility with dynamic type classes such as `qml.Projector`."""
+
+    @pytest.mark.parametrize("n_wires", [1, 2, 3])
+    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    def test_projector(self, max_workers, n_wires):
+        """Test that qml.Projector yields the expected results for both of its subclasses."""
+        wires = list(range(n_wires))
+        dev = DefaultQubit2(max_workers=max_workers)
+        ops = [qml.adjoint(qml.Hadamard(q)) for q in wires]
+        basis_state = np.zeros((n_wires,))
+        state_vector = np.zeros((2**n_wires,))
+        state_vector[0] = 1
+
+        for state in [basis_state, state_vector]:
+            qs = qml.tape.QuantumScript(ops, [qml.expval(qml.Projector(state, wires))])
+            res = dev.execute(qs)
+            assert np.isclose(res, 1 / 2**n_wires)
 
 
 @pytest.mark.parametrize("max_workers", [None, 1, 2])
