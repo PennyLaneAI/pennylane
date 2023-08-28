@@ -15,6 +15,8 @@
   [(#4437)](https://github.com/PennyLaneAI/pennylane/pull/4437)
   [(#4444)](https://github.com/PennyLaneAI/pennylane/pull/4444)
   [(#4450)](https://github.com/PennyLaneAI/pennylane/pull/4450)
+  [(#4506)](https://github.com/PennyLaneAI/pennylane/pull/4506)
+  [(#4526)](https://github.com/PennyLaneAI/pennylane/pull/4526)
 
   Consider an operator `A` composed of a linear combination of Pauli terms:
 
@@ -37,9 +39,9 @@
 
   ```pycon
   >>> print(qml.draw(block_encode, show_matrices=False)(A, control_wires=[0, 1]))
-  0: ─╭|Ψ⟩─╭Select(M0)─╭|Ψ⟩†─┤  
-  1: ─╰|Ψ⟩─├Select(M0)─╰|Ψ⟩†─┤  
-  2: ──────╰Select(M0)───────┤ 
+  0: ─╭|Ψ⟩─╭Select─╭|Ψ⟩†─┤
+  1: ─╰|Ψ⟩─├Select─╰|Ψ⟩†─┤
+  2: ──────╰Select───────┤
   ```
 
   This circuit can be used as a building block within a larger QNode to perform algorithms such as
@@ -422,6 +424,10 @@
 
 * `Device.default_expand_fn()` has been updated to decompose `qml.StatePrep` operations present in the middle of a provided circuit.
   [(#4437)](https://github.com/PennyLaneAI/pennylane/pull/4437)
+
+* `QNode.construct` has been updated to only apply the `qml.defer_measurements` transform if the device
+  does not natively support mid-circuit measurements.
+  [(#4516)](https://github.com/PennyLaneAI/pennylane/pull/4516)
 
 * The application of the `qml.defer_measurements` transform has been moved from 
   `QNode.construct` to `qml.Device.batch_transform` to allow more fine-grain 

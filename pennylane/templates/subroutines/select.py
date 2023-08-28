@@ -96,7 +96,21 @@ class Select(Operation):
         self.hyperparameters["target_wires"] = target_wires
 
         all_wires = target_wires + control
-        super().__init__(ops, wires=all_wires, id=id)
+        super().__init__(*self.data, wires=all_wires, id=id)
+
+    @property
+    def data(self):
+        """Create data property"""
+        return tuple(d for op in self.ops for d in op.data)
+
+    @data.setter
+    def data(self, new_data):
+        """Set the data property"""
+        for op in self.ops:
+            op_num_params = op.num_params
+            if op_num_params > 0:
+                op.data = new_data[:op_num_params]
+                new_data = new_data[op_num_params:]
 
     def decomposition(self):
         r"""Representation of the operator as a product of other operators.
