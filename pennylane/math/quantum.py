@@ -720,139 +720,6 @@ def _compute_mutual_info(
     return vn_entropy_1 + vn_entropy_2 - vn_entropy_12
 
 
-def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
-    r"""Compute the fidelity for two states (given as density matrices) acting on quantum
-    systems with the same size.
-
-    The fidelity for two mixed states given by density matrices :math:`\rho` and :math:`\sigma`
-    is defined as
-
-    .. math::
-        F( \rho , \sigma ) = \text{Tr}( \sqrt{\sqrt{\rho} \sigma \sqrt{\rho}})^2
-
-    .. note::
-        It supports all interfaces (Numpy, Autograd, Torch, Tensorflow and Jax). The second state is coerced
-        to the type and dtype of the first state. The fidelity is returned in the type of the interface of the
-        first state.
-
-    Args:
-        state0 (tensor_like): ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)`` density matrix.
-        state1 (tensor_like): ``(2**N, 2**N)`` or ``(batch_dim, 2**N, 2**N)`` density matrix.
-        check_state (bool): If True, the function will check the validity of both states; that is,
-            (shape, trace, positive-definitiveness) for density matrices.
-        c_dtype (str): Complex floating point precision type.
-
-    Returns:
-        float: Fidelity between the two quantum states.
-
-    **Example**
-
-    To find the fidelity between two state vectors, call :func:`~.math.dm_from_state_vector` on the
-    inputs first, e.g.:
-
-    >>> state0 = qml.math.dm_from_state_vector([0.98753537-0.14925137j, 0.00746879-0.04941796j])
-    >>> state1 = qml.math.dm_from_state_vector([0.99500417+0.j, 0.09983342+0.j])
-    >>> qml.math.fidelity(state0, state1)
-    0.9905158135644924
-
-    To find the fidelity between two density matrices, they can be passed directly:
-
-    >>> state0 = [[1, 0], [0, 0]]
-    >>> state1 = [[0, 0], [0, 1]]
-    >>> qml.math.fidelity(state0, state1)
-    0.0
-
-    .. seealso:: :func:`pennylane.math.fidelity_statevector` and :func:`pennylane.qinfo.transforms.fidelity`
-
-    """
-    # Cast as a c_dtype array
-    state0 = cast(state0, dtype=c_dtype)
-
-    # Cannot be cast_like if jit
-    if not is_abstract(state0):
-        state1 = cast_like(state1, state0)
-
-    if check_state:
-        _check_density_matrix(state0)
-        _check_density_matrix(state1)
-
-    if qml.math.shape(state0)[-1] != qml.math.shape(state1)[-1]:
-        raise qml.QuantumFunctionError("The two states must have the same number of wires.")
-
-    # Two mixed states
-    fid = _compute_fidelity(state0, state1)
-    return fid
-
-
-def fidelity_statevector(state0, state1, check_state=False, c_dtype="complex128"):
-    r"""Compute the fidelity for two states (given as state vectors) acting on quantum
-    systems with the same size.
-
-    The fidelity for two pure states given by state vectors :math:`\ket{\psi}` and :math:`\ket{\phi}`
-    is defined as
-
-    .. math::
-        F( \ket{\psi} , \ket{\phi}) = \left|\braket{\psi, \phi}\right|^2
-
-    This is faster than calling :func:`pennylane.math.fidelity` on the density matrix
-    representation of pure states.
-
-    .. note::
-        It supports all interfaces (Numpy, Autograd, Torch, Tensorflow and Jax). The second state is coerced
-        to the type and dtype of the first state. The fidelity is returned in the type of the interface of the
-        first state.
-
-    Args:
-        state0 (tensor_like): ``(2**N)`` or ``(batch_dim, 2**N)`` state vector.
-        state1 (tensor_like): ``(2**N)`` or ``(batch_dim, 2**N)`` state vector.
-        check_state (bool): If True, the function will check the validity of both states; that is,
-            the shape and the norm
-        c_dtype (str): Complex floating point precision type.
-
-    Returns:
-        float: Fidelity between the two quantum states.
-
-    **Example**
-
-    Two state vectors can be used as arguments and the fidelity (overlap) is returned, e.g.:
-
-    >>> state0 = [0.98753537-0.14925137j, 0.00746879-0.04941796j]
-    >>> state1 = [0.99500417+0.j, 0.09983342+0.j]
-    >>> qml.math.fidelity(state0, state1)
-    0.9905158135644924
-
-    .. seealso:: :func:`pennylane.math.fidelity` and :func:`pennylane.qinfo.transforms.fidelity`
-
-    """
-    # Cast as a c_dtype array
-    state0 = cast(state0, dtype=c_dtype)
-
-    # Cannot be cast_like if jit
-    if not is_abstract(state0):
-        state1 = cast_like(state1, state0)
-
-    if check_state:
-        _check_state_vector(state0)
-        _check_state_vector(state1)
-
-    if qml.math.shape(state0)[-1] != qml.math.shape(state1)[-1]:
-        raise qml.QuantumFunctionError("The two states must have the same number of wires.")
-
-    batched0 = len(qml.math.shape(state0)) > 1
-    batched1 = len(qml.math.shape(state1)) > 1
-
-    # Two pure states, squared overlap
-    indices0 = "ab" if batched0 else "b"
-    indices1 = "ab" if batched1 else "b"
-    target = "a" if batched0 or batched1 else ""
-    overlap = qml.math.einsum(
-        f"{indices0},{indices1}->{target}", state0, np.conj(state1), optimize="greedy"
-    )
-
-    overlap = np.abs(overlap) ** 2
-    return overlap
-
-
 def sqrt_matrix(density_matrix):
     r"""Compute the square root matrix of a density matrix where :math:`\rho = \sqrt{\rho} \times \sqrt{\rho}`
 
@@ -863,7 +730,7 @@ def sqrt_matrix(density_matrix):
         (tensor_like): Square root of the density matrix.
     """
     evs, vecs = qml.math.linalg.eigh(density_matrix)
-    evs = np.real(evs)
+    evs = qml.math.real(evs)
     evs = qml.math.where(evs > 0.0, evs, 0.0)
     if not is_abstract(evs):
         evs = qml.math.cast_like(evs, vecs)
@@ -871,32 +738,11 @@ def sqrt_matrix(density_matrix):
     shape = qml.math.shape(density_matrix)
     if len(shape) > 2:
         # broadcasting case
-        sqrt_evs = qml.math.expand_dims(qml.math.sqrt(evs), 1) * qml.math.eye(shape[-1])
+        i = qml.math.cast_like(qml.math.convert_like(qml.math.eye(shape[-1]), evs), evs)
+        sqrt_evs = qml.math.expand_dims(qml.math.sqrt(evs), 1) * i
         return vecs @ sqrt_evs @ qml.math.conj(qml.math.transpose(vecs, (0, 2, 1)))
 
-    return vecs @ qml.math.diag(np.sqrt(evs)) @ np.conj(np.transpose(vecs))
-
-
-def _compute_fidelity(density_matrix0, density_matrix1):
-    r"""Compute the fidelity for two density matrices with the same number of wires.
-
-    .. math::
-            F( \rho , \sigma ) = -\text{Tr}( \sqrt{\sqrt{\rho} \sigma \sqrt{\rho}})^2
-    """
-    # Implementation in single dispatches (sqrt(rho))
-    sqrt_mat = qml.math.sqrt_matrix(density_matrix0)
-
-    # sqrt(rho) * sigma * sqrt(rho)
-    sqrt_mat_sqrt = sqrt_mat @ density_matrix1 @ sqrt_mat
-
-    # extract eigenvalues
-    evs = qml.math.eigvalsh(sqrt_mat_sqrt)
-    evs = np.real(evs)
-    evs = qml.math.where(evs > 0.0, evs, 0.0)
-
-    trace = (qml.math.sum(qml.math.sqrt(evs), -1)) ** 2
-
-    return trace
+    return vecs @ qml.math.diag(qml.math.sqrt(evs)) @ qml.math.conj(qml.math.transpose(vecs))
 
 
 def _compute_relative_entropy(rho, sigma, base=None):
