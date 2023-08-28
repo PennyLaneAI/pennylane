@@ -74,4 +74,4 @@ jobs:
           pr_body: "Automatic sync from the release candidate to master during a feature freeze."
           pr_allow_empty: false
           pr_draft: false
-          pr_reviewer: "timmysilv,albi3ro"
+          pr_reviewer: "mudit2812,albi3ro"

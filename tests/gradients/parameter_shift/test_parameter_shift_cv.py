@@ -380,7 +380,7 @@ class TestParameterShiftLogic:
         res = post_processing(qml.execute(g_tapes, dev, None))
 
         assert g_tapes == []
-        assert res.shape == (1, 0)
+        assert res.shape == (0,)
 
     def test_all_zero_diff_methods(self):
         """Test that the transform works correctly when the diff method for every parameter is

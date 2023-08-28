@@ -139,18 +139,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
     def numeric_type(self):
         return float
 
-    def _shape_legacy(self, device, shots):
-        num_shot_elements = (
-            sum(s.copies for s in shots.shot_vector) if shots.has_partitioned_shots else 1
-        )
-        len_wires = len(self.wires)
-        dim = self._get_num_basis_states(len_wires, device)
-
-        return (num_shot_elements, dim)
-
     def shape(self, device, shots):
-        if not qml.active_return():
-            return self._shape_legacy(device, shots)
         num_shot_elements = (
             sum(s.copies for s in shots.shot_vector) if shots.has_partitioned_shots else 1
         )
