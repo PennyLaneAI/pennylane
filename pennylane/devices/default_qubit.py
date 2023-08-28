@@ -103,8 +103,8 @@ class DefaultQubit(QubitDevice):
             returns analytical results.
     """
 
-    name = "Default qubit PennyLane plugin (Legacy)"
-    short_name = "default.qubit.legacy"
+    name = "Default qubit PennyLane plugin"
+    short_name = "default.qubit"
     pennylane_requires = __version__
     version = __version__
     author = "Xanadu Inc."
