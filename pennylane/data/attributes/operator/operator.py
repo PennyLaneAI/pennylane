@@ -170,8 +170,6 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 qml.CatState,
                 qml.NumberOperator,
                 qml.TensorN,
-                qml.X,
-                qml.P,
                 qml.QuadOperator,
                 qml.PolyXP,
                 qml.FockStateProjector,
