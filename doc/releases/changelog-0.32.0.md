@@ -419,7 +419,7 @@
 * All tests in CI and pre-commit hooks now enable linting.
   [(#4335)](https://github.com/PennyLaneAI/pennylane/pull/4335)
 
-* The default label for a `qml.StatePrep` operator is now `|Ψ⟩`.
+* The default label for a `StatePrepBase` operator is now `|Ψ⟩`.
   [(#4340)](https://github.com/PennyLaneAI/pennylane/pull/4340)
 
 * `Device.default_expand_fn()` has been updated to decompose `qml.StatePrep` operations present in the middle of a provided circuit.
@@ -450,7 +450,7 @@
   [(#4415)](https://github.com/PennyLaneAI/pennylane/pull/4415)
 
 * The `do_queue` keyword argument in `qml.operation.Operator` has been removed. Instead of
-  setting `do_queue=False`, use the `qml.QueuingManager.stop_recording()` context instead.
+  setting `do_queue=False`, use the `qml.QueuingManager.stop_recording()` context.
   [(#4317)](https://github.com/PennyLaneAI/pennylane/pull/4317)
 
 * `Operator.expand` now uses the output of `Operator.decomposition` instead of what it queues.
