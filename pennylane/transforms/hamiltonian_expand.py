@@ -325,15 +325,28 @@ def sum_expand(tape: QuantumTape, group=True):
     idxs_coeffs = list(idxs_coeffs_dict.values())
 
     # Create the tapes, group observables if group==True
+    # pylint: disable=too-many-nested-blocks
     if group:
         m_groups = _group_measurements(measurements)
         # Update ``idxs_coeffs`` list such that it tracks the new ``m_groups`` list of lists
         tmp_idxs = []
         for m_group in m_groups:
             if len(m_group) == 1:
-                tmp_idxs.append(idxs_coeffs[measurements.index(m_group[0])])
+                # pylint: disable=undefined-loop-variable
+                for i, m in enumerate(measurements):
+                    if m is m_group[0]:
+                        break
+                tmp_idxs.append(idxs_coeffs[i])
             else:
-                tmp_idxs.append([idxs_coeffs[measurements.index(m)] for m in m_group])
+                inds = []
+                for mp in m_group:
+                    # pylint: disable=undefined-loop-variable
+                    for i, m in enumerate(measurements):
+                        if m is mp:
+                            break
+                    inds.append(idxs_coeffs[i])
+                tmp_idxs.append(inds)
+
         idxs_coeffs = tmp_idxs
         qscripts = [
             QuantumScript(ops=tape.operations, measurements=m_group, shots=tape.shots)

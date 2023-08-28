@@ -464,6 +464,30 @@ class TestFidelityQnode:
         fid_grad = tape.gradient(entropy, param)
         assert qml.math.allclose(fid_grad, expected_fid)
 
+    @pytest.mark.tf
+    @pytest.mark.parametrize("param", parameters)
+    @pytest.mark.parametrize("wire", wires)
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_fidelity_qnodes_rx_tworx_tf_grad(self, param, wire, interface):
+        """Test the gradient of the fidelity between two trainable circuits with Tensorflow."""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=wire)
+
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.state()
+
+        expected = expected_grad_fidelity_rx_pauliz(param)
+        expected_fid = [-expected, expected]
+        params = (tf.Variable(param), tf.Variable(2 * param))
+        with tf.GradientTape() as tape:
+            fid = qml.qinfo.fidelity(circuit, circuit, wires0=[0], wires1=[0])(*params)
+
+        fid_grad = tape.gradient(fid, params)
+        assert qml.math.allclose(fid_grad, expected_fid)
+
     interfaces = ["jax"]
 
     @pytest.mark.jax

@@ -44,7 +44,6 @@ from pennylane.qchem import (
     paulix_ops,
     taper_operation,
     import_operator,
-    import_state,
 )
 from pennylane._device import Device, DeviceError
 from pennylane._grad import grad, jacobian

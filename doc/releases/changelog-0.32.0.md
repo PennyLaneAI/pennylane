@@ -54,7 +54,7 @@ array([False, False])
   >>> ops = [qml.PauliX(wires=2),qml.PauliX(wires=3),qml.PauliY(wires=2),qml.SWAP([2,3])]
   >>> @qml.qnode(dev)
   >>> def circuit():
-  >>>     qml.Select(ops,control_wires=[0,1])
+  >>>     qml.Select(ops, control=[0,1])
   >>>     return qml.state()
   ...
   >>> print(qml.draw(circuit,expansion_strategy='device')())
@@ -90,10 +90,9 @@ array([False, False])
 
 <h3>Improvements 🛠</h3>
 
-* Moved the application of the `qml.defer_measurements` transform from `QNode.construct` to
-  `qml.Device.batch_transform` to allow more fine-grain control over when `defer_measurements`
-  should be used.
-  [(#4432)](https://github.com/PennyLaneAI/pennylane/pull/4432)
+* Updated `QNode.construct` to only apply the `qml.defer_measurements` transform if the device
+  does not natively support mid-circuit measurements.
+  [(#4516)](https://github.com/PennyLaneAI/pennylane/pull/4516)
 
 * Any class inheriting from `Operator` is now automatically registered as a pytree with jax.
   This unlocks the ability to jit functions of `Operator`.
@@ -240,10 +239,16 @@ array([False, False])
   [(#4465)](https://github.com/PennyLaneAI/pennylane/pull/4465/)
   [(#4478)](https://github.com/PennyLaneAI/pennylane/pull/4478/)
 
+* The label for `ParametrizedEvolution` can display parameters with the requested format as set by the 
+  kwarg `decimals`. Array-like parameters are displayed in the same format as matrices and stored in the 
+  cache.
+  [(#4151)](https://github.com/PennyLaneAI/pennylane/pull/4151)
+
 * CI now runs tests with Tensorflow 2.13.0
   [(#4472)](https://github.com/PennyLaneAI/pennylane/pull/4472)
 
 * `draw_mpl` accepts `style='pennylane'` to draw PennyLane-style circuit diagrams, and `style.use` in `matplotlib.pyplot` accepts `pennylane.drawer.plot` to create PennyLane-style plots. If the font Quicksand Bold isn't available, an available default font is used instead. [(#3950)](https://github.com/PennyLaneAI/pennylane/pull/3950)
+
 
 <h3>Breaking changes 💔</h3>
 
@@ -345,6 +350,7 @@ array([False, False])
   [(#4144)](https://github.com/PennyLaneAI/pennylane/pull/4144)
   [(#4454)](https://github.com/PennyLaneAI/pennylane/pull/4454)
   [(#4489)](https://github.com/PennyLaneAI/pennylane/pull/4489)
+  [(#4498)](https://github.com/PennyLaneAI/pennylane/pull/4498)
 
 * The `sampler_seed` argument of `qml.gradients.spsa_grad` has been deprecated, along with a bug
   fix of the seed-setting behaviour.
@@ -365,11 +371,12 @@ array([False, False])
   some aspects of its use.
   [(#4391)](https://github.com/PennyLaneAI/pennylane/pull/4391)
 
-* `qml.import_state` is now accounted for in `doc/introduction/chemistry.rst`, adding the documentation for the function.
+* The `qml.qchem.import_state` function is now accounted for in `doc/introduction/chemistry.rst`, 
+  and input types and sources for external wavefunctions and operators for `qml.qchem.import_state` and 
+  `qml.import_operator` are specified.
   [(#4461)](https://github.com/PennyLaneAI/pennylane/pull/4461)
-
-* Input types and sources for external wavefunctions and operators for `qml.import_state` 
-  and `qml.import_operator` are clarified. [(#4476)](https://github.com/PennyLaneAI/pennylane/pull/4476)
+  [(#4476)](https://github.com/PennyLaneAI/pennylane/pull/4476)
+  [(#4505)](https://github.com/PennyLaneAI/pennylane/pull/4505)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -446,6 +453,9 @@ array([False, False])
   which allows reproducibly calling `spsa_grad` without getting the same results every time.
   [(4165)](https://github.com/PennyLaneAI/pennylane/pull/4165)
   [(4482)](https://github.com/PennyLaneAI/pennylane/pull/4482)
+
+* The backprop gradient of `qml.math.fidelity` is now correct.
+  [(#4380)](https://github.com/PennyLaneAI/pennylane/pull/4380)
 
 
 <h3>Contributors ✍️</h3>
