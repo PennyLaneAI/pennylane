@@ -471,9 +471,6 @@ def cut_circuit_mc(
                 classical_processing_fn=classical_processing_fn,
             )
 
-            if isinstance(results, list) and len(results) == 1:
-                return results[0]
-
             return results
 
     else:
@@ -483,10 +480,7 @@ def cut_circuit_mc(
                 results, communication_graph=communication_graph, shots=shots
             )
 
-            if isinstance(results, list) and len(results) == 1:
-                return results[0]
-
-            return results
+            return results[0]
 
     return tapes, processing_fn
 

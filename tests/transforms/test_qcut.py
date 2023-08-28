@@ -2647,7 +2647,7 @@ class TestCutCircuitMCTransform:
 
             @partial(qml.cut_circuit_mc, shots=456)
             @qml.qnode(dev)
-            def cut_circuit(x):
+            def cut_circuit(x):  # pylint: disable=unused-variable,unused-argument
                 qml.RX(x, wires=0)
                 qml.RY(0.5, wires=1)
                 qml.RX(1.3, wires=2)
