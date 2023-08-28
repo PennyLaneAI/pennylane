@@ -54,7 +54,7 @@ array([False, False])
   >>> ops = [qml.PauliX(wires=2),qml.PauliX(wires=3),qml.PauliY(wires=2),qml.SWAP([2,3])]
   >>> @qml.qnode(dev)
   >>> def circuit():
-  >>>     qml.Select(ops,control_wires=[0,1])
+  >>>     qml.Select(ops, control=[0,1])
   >>>     return qml.state()
   ...
   >>> print(qml.draw(circuit,expansion_strategy='device')())
@@ -90,10 +90,9 @@ array([False, False])
 
 <h3>Improvements 🛠</h3>
 
-* Moved the application of the `qml.defer_measurements` transform from `QNode.construct` to
-  `qml.Device.batch_transform` to allow more fine-grain control over when `defer_measurements`
-  should be used.
-  [(#4432)](https://github.com/PennyLaneAI/pennylane/pull/4432)
+* Updated `QNode.construct` to only apply the `qml.defer_measurements` transform if the device
+  does not natively support mid-circuit measurements.
+  [(#4516)](https://github.com/PennyLaneAI/pennylane/pull/4516)
 
 * Any class inheriting from `Operator` is now automatically registered as a pytree with jax.
   This unlocks the ability to jit functions of `Operator`.
