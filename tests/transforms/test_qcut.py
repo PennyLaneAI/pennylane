@@ -23,6 +23,7 @@ import sys
 from itertools import product
 from os import environ
 from pathlib import Path
+from functools import partial
 
 import pytest
 from flaky import flaky
@@ -2487,7 +2488,7 @@ class TestCutCircuitMCTransform:
 
         dev = qml.device("default.qubit", wires=2, shots=10000)
 
-        @qml.cut_circuit_mc(fn)
+        @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
         @qml.qnode(dev)
         def circuit(v):
             qml.RX(v, wires=0)
@@ -2640,27 +2641,25 @@ class TestCutCircuitMCTransform:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.cut_circuit_mc(shots=456)
-        @qml.qnode(dev)
-        def cut_circuit(x):
-            qml.RX(x, wires=0)
-            qml.RY(0.5, wires=1)
-            qml.RX(1.3, wires=2)
-
-            qml.CNOT(wires=[0, 1])
-            qml.WireCut(wires=1)
-            qml.CNOT(wires=[1, 2])
-
-            qml.RX(x, wires=0)
-            qml.RY(0.7, wires=1)
-            qml.RX(2.3, wires=2)
-            return qml.sample(wires=[0, 2])
-
-        v = 0.319
         with pytest.raises(
             ValueError, match="Cannot provide a 'shots' value directly to the cut_circuit_mc "
         ):
-            cut_circuit(v)
+
+            @partial(qml.cut_circuit_mc, shots=456)
+            @qml.qnode(dev)
+            def cut_circuit(x):
+                qml.RX(x, wires=0)
+                qml.RY(0.5, wires=1)
+                qml.RX(1.3, wires=2)
+
+                qml.CNOT(wires=[0, 1])
+                qml.WireCut(wires=1)
+                qml.CNOT(wires=[1, 2])
+
+                qml.RX(x, wires=0)
+                qml.RY(0.7, wires=1)
+                qml.RX(2.3, wires=2)
+                return qml.sample(wires=[0, 2])
 
     def test_multiple_meas_error(self):
         """
@@ -2918,7 +2917,7 @@ class TestCutCircuitMCTransform:
         shots = 10
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
-        @qml.cut_circuit_mc(fn)
+        @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
         @qml.qnode(dev)
         def cut_circuit(x):
             qml.RX(x, wires=0)
@@ -2951,7 +2950,7 @@ class TestCutCircuitMCTransform:
         shots = 10
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
-        @qml.cut_circuit_mc(fn)
+        @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
         @qml.qnode(dev)
         def cut_circuit(x):
             qml.RX(x, wires=0)
@@ -2984,7 +2983,7 @@ class TestCutCircuitMCTransform:
         shots = 10
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
-        @qml.cut_circuit_mc(fn)
+        @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
         @qml.qnode(dev)
         def cut_circuit(x):
             qml.RX(x, wires=0)
@@ -3017,7 +3016,7 @@ class TestCutCircuitMCTransform:
         shots = 10
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
-        @qml.cut_circuit_mc(fn)
+        @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
         @qml.qnode(dev)
         def cut_circuit(x):
             qml.RX(x, wires=0)
@@ -3048,7 +3047,7 @@ class TestCutCircuitMCTransform:
         shots = 10
         dev = qml.device("default.qubit", wires=3, shots=shots)
 
-        @qml.cut_circuit_mc(fn)
+        @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -3074,7 +3073,7 @@ class TestCutCircuitMCTransform:
         shots = 10
         dev = qml.device("default.qubit", wires=3, shots=shots)
 
-        @qml.cut_circuit_mc(fn)
+        @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -3094,7 +3093,7 @@ class TestCutCircuitMCTransform:
         shots = 10
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
-        @qml.cut_circuit_mc(fn)
+        @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -3132,7 +3131,7 @@ class TestCutCircuitMCTransform:
             qml.Hadamard(wires=[wires[0]])
             qml.CRY(param, wires=[wires[0], wires[1]])
 
-        @qml.cut_circuit_mc(fn)
+        @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
         @qml.qnode(dev)
         def circuit(params):
             qml.BasisState(np.array([1]), wires=[0])
@@ -4195,6 +4194,7 @@ class TestCutCircuitTransform:
         spy.assert_called_once()
         assert np.isclose(res, res_expected)
 
+        jax.grad(cut_circuit_jit)(x)
         grad = jax.grad(cut_circuit_jit)(x)
         grad_expected = jax.grad(circuit)(x)
 
@@ -4211,6 +4211,7 @@ class TestCutCircuitTransform:
 
             assert np.isclose(res, res_expected)
 
+            jax.grad(cut_circuit_jit)(x)
             grad = jax.grad(cut_circuit_jit)(x)
             grad_expected = jax.grad(circuit)(x)
 
@@ -4262,7 +4263,7 @@ class TestCutCircuitTransform:
 
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.transforms.cut_circuit(use_opt_einsum=use_opt_einsum)
+        @partial(qml.transforms.cut_circuit, use_opt_einsum=use_opt_einsum)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -4284,7 +4285,7 @@ class TestCutCircuitTransform:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.transforms.cut_circuit(use_opt_einsum=use_opt_einsum)
+        @partial(qml.transforms.cut_circuit, use_opt_einsum=use_opt_einsum)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -4477,12 +4478,14 @@ class TestCutCircuitTransformValidation:
     def test_no_cuts_raises(self):
         """Tests if a ValueError is raised when circuit cutting is to be applied to a circuit
         without cuts"""
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.expval(qml.PauliZ(0))
+        dev = qml.device("default.qubit", wires=3)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(qml.PauliZ(0))
+
         with pytest.raises(ValueError, match="No WireCut operations found in the circuit."):
-            qcut.cut_circuit(tape)
+            qcut.cut_circuit(circuit)()
 
 
 class TestCutCircuitExpansion:
@@ -4497,18 +4500,20 @@ class TestCutCircuitExpansion:
     def test_no_expansion(self, mocker, cut_transform, measurement):
         """Test if no/trivial expansion occurs if WireCut operations are already present in the
         tape"""
-        with qml.queuing.AnnotatedQueue() as q:
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit():
             qml.RX(0.3, wires=0)
             qml.WireCut(wires=0)
             qml.RY(0.4, wires=0)
-            qml.apply(measurement)
+            return qml.apply(measurement)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
         spy = mocker.spy(qcut.cutcircuit, "_qcut_expand_fn")
         spy_mc = mocker.spy(qcut.montecarlo, "_qcut_expand_fn")
 
         kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
-        cut_transform(tape, device_wires=[0], **kwargs)
+        cut_transform(circuit, device_wires=[0])(**kwargs)
 
         assert spy.call_count == 1 or spy_mc.call_count == 1
 
@@ -4537,20 +4542,17 @@ class TestCutCircuitExpansion:
     @pytest.mark.parametrize("cut_transform, measurement", transform_measurement_pairs)
     def test_expansion_error(self, cut_transform, measurement):
         """Test if a ValueError is raised if expansion continues beyond the maximum depth"""
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(0.3, wires=0)
-            with qml.queuing.AnnotatedQueue() as q__:
-                with qml.queuing.AnnotatedQueue() as q___:
-                    qml.WireCut(wires=0)
-                __ = qml.tape.QuantumScript.from_queue(q___)
-            _ = qml.tape.QuantumScript.from_queue(q__)
-            qml.RY(0.4, wires=0)
-            qml.apply(measurement)
+        dev = qml.device("default.qubit", wires=3)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(0.3, wires=0)
+            qml.RY(0.4, wires=0)
+            return qml.apply(measurement)
+
         with pytest.raises(ValueError, match="No WireCut operations found in the circuit."):
             kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
-            cut_transform(tape, device_wires=[0], **kwargs)
+            cut_transform(circuit, device_wires=[0])(**kwargs)
 
     def test_expansion_ttn(self, mocker):
         """Test if wire cutting is compatible with the tree tensor network operation"""
@@ -5276,7 +5278,7 @@ class TestAutoCutCircuit:
 
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.transforms.cut_circuit(auto_cutter=True)
+        @partial(qml.transforms.cut_circuit, auto_cutter=True)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -5296,7 +5298,7 @@ class TestAutoCutCircuit:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.transforms.cut_circuit(auto_cutter=True)
+        @partial(qml.transforms.cut_circuit, auto_cutter=True)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)

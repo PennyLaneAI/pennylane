@@ -134,7 +134,7 @@ class TransformDispatcher:
         qnode = copy.deepcopy(qnode)
 
         if self.expand_transform:
-            qnode.add_transform(TransformContainer(self._expand_transform))
+            qnode.add_transform(TransformContainer(self._expand_transform, targs, tkwargs))
         qnode.add_transform(
             TransformContainer(
                 self._transform, targs, tkwargs, self._classical_cotransform, self._is_informative
