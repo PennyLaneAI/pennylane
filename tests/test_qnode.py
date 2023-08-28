@@ -647,6 +647,19 @@ class TestValidation:
 
         assert len(record) == 0
 
+    def test_wires(self):
+        """Test the wires property behaves as expected with the new device API"""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(0)
+            return qml.expval(qml.PauliZ(0))
+
+        assert circuit.wires is dev.wires
+        with pytest.raises(AttributeError):
+            circuit.wires = [0, 1]
+
 
 class TestTapeConstruction:
     """Tests for the tape construction"""
@@ -1837,6 +1850,19 @@ class TestNewDeviceIntegration:
 
         results = circuit(shots=20)  # pylint: disable=unexpected-keyword-arg
         assert qml.math.allclose(results, np.zeros((20, 2)))
+
+    def test_wires_property(self):
+        """Test the wires property behaves as expected with the new device API"""
+        dev = experimental.DefaultQubit2(wires=3)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(0)
+            return qml.expval(qml.PauliZ(0))
+
+        assert circuit.wires is None  # with no tape, don't return any wires
+        circuit()  # construct a tape
+        assert circuit.wires is circuit.tape.wires
 
 
 class TestTapeExpansion:

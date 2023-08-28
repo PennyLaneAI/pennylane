@@ -829,6 +829,13 @@ class QNode:
         """The quantum tape"""
         return self._tape
 
+    @property
+    def wires(self) -> qml.wires.Wires:
+        """The wires used by the QNode."""
+        if isinstance(self.device, qml.Device):
+            return self.device.wires
+        return self.tape.wires if self.tape else None
+
     qtape = tape  # for backwards compatibility
 
     def construct(self, args, kwargs):  # pylint: disable=too-many-branches
