@@ -737,5 +737,4 @@ def execute(
         tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
     )
 
-    results = batch_fn(results)
-    return program_post_processing(results)
+    return program_post_processing(program_pre_processing(results))
