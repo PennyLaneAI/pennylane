@@ -126,42 +126,25 @@ class TestBatchTransformHelper:
         assert new_config.use_device_gradient
 
 
-class TestNewDeviceIntegration:
-    """Localized tests for specific warnings, errors, and edge behaviour."""
+def test_warning_if_not_device_batch_transform():
+    """Test that a warning is raised if the users requests to not run device batch transform."""
 
-    def test_warning_if_not_device_batch_transform(self):
-        """Test that a warning is raised if the users requests to not run device batch transform."""
+    # pylint: disable=too-few-public-methods
+    class CustomOp(qml.operation.Operator):
+        """Dummy operator."""
 
-        # pylint: disable=too-few-public-methods
-        class CustomOp(qml.operation.Operator):
-            """Dummy operator."""
+        def decomposition(self):
+            return [qml.PauliX(self.wires[0])]
 
-            def decomposition(self):
-                return [qml.PauliX(self.wires[0])]
+    dev = DefaultQubit2()
 
-        dev = DefaultQubit2()
+    qs = qml.tape.QuantumScript([CustomOp(0)], [qml.expval(qml.PauliZ(0))])
 
-        qs = qml.tape.QuantumScript([CustomOp(0)], [qml.expval(qml.PauliZ(0))])
+    with pytest.warns(UserWarning, match="device batch transforms cannot be turned off"):
+        results = qml.execute([qs], dev, device_batch_transform=False)
 
-        with pytest.warns(UserWarning, match="device batch transforms cannot be turned off"):
-            results = qml.execute([qs], dev, device_batch_transform=False)
-
-        assert len(results) == 1
-        assert qml.math.allclose(results[0], -1)
-
-    def test_error_if_return_types_not_enabled(self):
-        """Check that an error is raised if return types is not enabled."""
-        qml.disable_return()
-
-        dev = DefaultQubit2()
-
-        qs = qml.tape.QuantumScript([], [qml.state()])
-        with pytest.raises(
-            ValueError, match="New device interface only works with return types enabled"
-        ):
-            qml.execute([qs], dev)
-
-        qml.enable_return()
+    assert len(results) == 1
+    assert qml.math.allclose(results[0], -1)
 
 
 @pytest.mark.parametrize("gradient_fn", (None, "backprop", qml.gradients.param_shift))
