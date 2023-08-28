@@ -84,12 +84,6 @@ Pending deprecations
   `Fermionic Operator <https://pennylane.ai/qml/demos/tutorial_fermionic_operators>`_
   tutorial for more details.
 
-* The CV observables ``qml.X`` and ``qml.P`` have been deprecated, and usage will now
-  raise a warning. Please use ``qml.QuadX`` and ``qml.QuadP`` instead.
-
-  - Deprecated in v0.32
-  - Will be removed in v0.33
-
 * The method ``tape.unwrap()`` and corresponding ``UnwrapTape`` and ``Unwrap`` classes are
   deprecated, and usage will now raise a warning.
 
@@ -134,6 +128,11 @@ Pending deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+* The CV observables ``qml.X`` and ``qml.P`` have been removed. Use ``qml.QuadX`` and ``qml.QuadP`` instead.
+
+  - Deprecated in v0.32
+  - Removed in v0.33
 
 * ``qml.enable_return`` and ``qml.disable_return`` have been removed. The old return types are no longer available.
 
