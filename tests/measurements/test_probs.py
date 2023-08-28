@@ -310,13 +310,14 @@ class TestProbs:
         """Test that process_state passes when decorated with tf.function."""
         import tensorflow as tf
 
+        wires = qml.wires.Wires([0])
+
         @tf.function
-        def probs_from_state(state, wires):
+        def probs_from_state(state):
             return qml.probs(wires=wires).process_state(state, wires)
 
-        wires = qml.wires.Wires([0])
         state = qml.devices.qubit.create_initial_state(wires, prep_operation=prep_op)
-        assert np.allclose(probs_from_state(state, wires), expected)
+        assert np.allclose(probs_from_state(state), expected)
 
     @pytest.mark.autograd
     def test_numerical_analytic_diff_agree(self, tol, mocker):
