@@ -22,12 +22,12 @@ from pennylane.operation import Operation, AnyWires
 
 
 def compute_indices_MPS(wires, n_block_wires, offset=0):
-    """Generate a list containing the wires for each block.
+    r"""Generate a list containing the wires for each block.
 
     Args:
         wires (Iterable): wires that the template acts on
         n_block_wires (int): number of wires per block_gen
-        offset (wires): offset for positioning the subsequent blocks from the default `n_block_wires / 2`, :math:`|offset| < \text{n_block_wires} / 2`
+        offset (wires): offset for positioning the subsequent blocks away from the default ``n_block_wires / 2``, where :math:`|\text{offset}| < \text{n_block_wires} / 2`
     Returns:
         layers (Tuple[Tuple]]): array of wire indices or wire labels for each block
     """
@@ -75,7 +75,7 @@ class MPS(Operation):
     r"""The MPS template broadcasts an input circuit across many wires following the architecture of a Matrix Product State tensor network.
     The result is similar to the architecture in `arXiv:1803.11537 <https://arxiv.org/abs/1803.11537>`_.
 
-    The argument ``block`` is a user-defined quantum circuit.``block`` should have two arguments: ``weights`` and ``wires``.
+    The argument ``block`` is a user-defined quantum circuit. ``block`` should have two arguments: ``weights`` and ``wires``.
     For clarity, it is recommended to use a one-dimensional list or array for the block weights.
 
     Args:
@@ -84,7 +84,7 @@ class MPS(Operation):
         block (Callable): quantum circuit that defines a block
         n_params_block (int): the number of parameters in a block; equal to the length of the ``weights`` argument in ``block``
         template_weights (Sequence): list containing the weights for all blocks
-        offset (int): offset for positioning the subsequent blocks from the default `n_block_wires / 2`, :math:`|offset| < \text{n_block_wires} / 2`
+        offset (int): offset for positioning the subsequent blocks away from the default ``n_block_wires / 2``, where :math:`|\text{offset}| < \text{n_block_wires} / 2`
 
     .. note::
 
@@ -203,7 +203,7 @@ class MPS(Operation):
         Args:
             wires (Sequence): number of wires the template acts on
             n_block_wires (int): number of wires per block
-            offset (int): offset for positioning the subsequent blocks from the default `n_block_wires / 2`, :math:`|offset| < \text{n_block_wires} / 2`
+            offset (int): offset for positioning the subsequent blocks away from the default ``n_block_wires / 2``, where :math:`|\text{offset}| < \text{n_block_wires} / 2`
         Returns:
             n_blocks (int): number of blocks; expected length of the template_weights argument
         """
