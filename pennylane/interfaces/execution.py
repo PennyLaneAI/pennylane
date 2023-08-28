@@ -254,6 +254,7 @@ def _make_inner_execute(
             tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
         return cached_device_execution(tapes)
 
+    # TODO: set as pure_callback if interface is jax-jit
     return inner_execute
 
 

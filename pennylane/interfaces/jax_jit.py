@@ -29,11 +29,17 @@ dtype = jnp.float64
 Zero = jax.custom_derivatives.SymbolicZero
 
 
-def _numeric_type_to_dtype(numeric_type):
+def _numeric_type_to_dtype(numeric_type, device):
     """Auxiliary function for converting from Python numeric types to JAX
     dtypes based on the precision defined for the interface."""
 
     single_precision = dtype is jnp.float32
+    if numeric_type is bool:
+        if isinstance(device, qml.Device):
+            numeric_type = int
+        else:
+            return jnp.bool_
+
     if numeric_type is int:
         return jnp.int32 if single_precision else jnp.int64
 
@@ -61,10 +67,10 @@ def _create_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.Devi
 
     shape = tape.shape(device)
     if len(tape.measurements) == 1:
-        tape_dtype = _numeric_type_to_dtype(tape.numeric_type)
+        tape_dtype = _numeric_type_to_dtype(tape.numeric_type, device)
         return jax.ShapeDtypeStruct(tuple(shape), tape_dtype)
 
-    tape_dtype = tuple(_numeric_type_to_dtype(elem) for elem in tape.numeric_type)
+    tape_dtype = tuple(_numeric_type_to_dtype(elem, device) for elem in tape.numeric_type)
     return tuple(jax.ShapeDtypeStruct(tuple(s), d) for s, d in zip(shape, tape_dtype))
 
 

@@ -144,7 +144,7 @@ class SampleMP(SampleMeasurement):
         # built-in observable with integer eigenvalues or a tensor product thereof
         if self.obs is None:
             # Computational basis samples
-            return int
+            return bool
         int_eigval_obs = {qml.PauliX, qml.PauliY, qml.PauliZ, qml.Hadamard, qml.Identity}
         tensor_terms = self.obs.obs if hasattr(self.obs, "obs") else [self.obs]
         every_term_standard = all(o.__class__ in int_eigval_obs for o in tensor_terms)
@@ -206,9 +206,7 @@ class SampleMP(SampleMeasurement):
 
         if str(name) in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}
-            samples = 1 - 2 * qml.math.squeeze(samples)
-            if samples.shape == ():
-                samples = samples.reshape((1,))
+            samples = 1 - 2 * qml.math.squeeze(samples, axis=-1)
         else:
             # Replace the basis state in the computational basis with the correct eigenvalue.
             # Extract only the columns of the basis samples required based on ``wires``.

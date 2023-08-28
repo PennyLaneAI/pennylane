@@ -878,10 +878,9 @@ class QNode:
             )
 
         for obj in self.tape.operations + self.tape.observables:
-            if (
-                getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires
-                and len(obj.wires) != self.device.num_wires
-            ):
+            if getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires and len(
+                obj.wires
+            ) != getattr(self.device, "num_wires", len(obj.wires)):
                 # check here only if enough wires
                 raise qml.QuantumFunctionError(f"Operator {obj.name} must act on all wires")
 
@@ -901,7 +900,9 @@ class QNode:
         if expand_mid_measure:
             self._tape = qml.defer_measurements(self._tape)
 
-        if self.expansion_strategy == "device":
+        if self.expansion_strategy == "device" and not isinstance(
+            self.device, qml.devices.experimental.Device
+        ):
             self._tape = self.device.expand_fn(self.tape, max_expansion=self.max_expansion)
 
         # If the gradient function is a transform, expand the tape so that
