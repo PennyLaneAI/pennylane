@@ -38,6 +38,21 @@ def test_shots():
         DefaultQubit2().shots = 10
 
 
+def test_repr():
+    """Test the repr method of the device."""
+    dev = DefaultQubit2()
+    assert repr(dev) == "<DefaultQubit(default_shots=Shots(total=None), max_workers=None>"
+
+    dev = DefaultQubit2(shots=(10, 10))
+    assert (
+        repr(dev)
+        == "<DefaultQubit(default_shots=Shots(total=20, vector=[10 shots x 2]), max_workers=None>"
+    )
+
+    dev = DefaultQubit2(max_workers=5)
+    assert repr(dev) == "<DefaultQubit(default_shots=Shots(total=None), max_workers=5>"
+
+
 def test_debugger_attribute():
     """Test that DefaultQubit2 has a debugger attribute and that it is `None`"""
     # pylint: disable=protected-access

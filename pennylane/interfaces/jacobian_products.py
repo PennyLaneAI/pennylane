@@ -253,30 +253,67 @@ class DeviceJacobians(JacobianProductCalculator):
     """Calculate jacobian products via an experimental device.
 
     Args:
-        device (pennylane.devices.experimental.Device):
-        execution_config (pennylane.devices.experimental.ExecutionConfig):
+        device (Union[pennylane.Device, pennylane.devices.experimental.Device]): the device for execution and derivatives.
+            Must support supports first order gradients with the requested configuration.
+        gradient_kwargs (dict): a dictionary of keyword options for the gradients. Only used with a :class:`~.pennylane.Device`
+            old device interface.
+        execution_config (pennylane.devices.experimental.ExecutionConfig): a datastructure containing the parameters needed to fully
+           describe the execution. Only used with :class:`pennylane.devices.experimental.ExecutionConfig` new device interface.
 
-    **Technical comments on caching:**
+    **Examples:**
+
+    >>> device = qml.devices.experimental.DefaultQubit2()
+    >>> config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
+    >>> jpc = DeviceJacobians(device, {}, config)
+
+    This same class can also be used with the old device interface.
+
+    >>> device = qml.device('lightning.qubit', wires=5)
+    >>> gradient_kwargs = {"method": "adjoint_jacobian"}
+    >>> jpc_lightning = DeviceJacobians(device, gradient_kwargs)
+
+    **Technical comments on caching and ``grad_on_execution=True``:**
 
     In order to store results and jacobian for the backward pass during the forward pass,
     the ``_jacs_cache`` and ``_results_cache`` properties are ``LRUCache`` objects with a maximum size of 10.
 
     Note that the the results and jacobains are cached based on the ``id`` of the tapes. This is done to separate the key
-    from potentially expensive (in the future) ``QuantumScript.hash``. This means that the batch of tapes must be the
+    from potentially expensive ``QuantumScript.hash``. This means that the batch of tapes must be the
     same instance, not just something that looks the same but has a different location in memory.
+
+    When a forward pass with :meth:`~.execute` is called, both the results and the jacobian for the object are stored.
+
+    >>> tape = qml.tape.QuantumScript([qml.RX(1.0, wires=0)], [qml.expval(qml.PauliZ(0))])
+    >>> batch = (tape, )
+    >>> with device.tracker:
+    ...     results = jpc.execute(batch )
+    >>> results
+    (0.5403023058681398,)
+    >>> device.tracker.totals
+    {'execute_and_derivative_batches': 1, 'executions': 1, 'derivatives': 1}
+    >>> jpc._jacs_cache
+    LRUCache({5660934048: (array(-0.84147098),)}, maxsize=10, currsize=1)
+
+    Then when the vjp, jvp, or jacobian is requested, that cached value is used instead of requesting from
+    the device again.
+
+    >>> with device.tracker:
+    ...     vjp = jpc.compute_vjp(batch , (0.5, ) )
+    >>> vjp
+    (array([-0.42073549]),)
+    >>> device.tracker.totals
+    {}
 
     """
 
     def __repr__(self):
-        return (
-            f"<DeviceJacobians: {self._device}, {self._execution_config}, {self._gradient_kwargs}>"
-        )
+        return f"<DeviceJacobians: {self._device.name}, {self._gradient_kwargs}, {self._execution_config}>"
 
     def __init__(
         self,
         device: Union[qml.devices.experimental.Device, qml.Device],
-        execution_config,
         gradient_kwargs: dict,
+        execution_config: Optional["qml.devices.experimental.ExecutionConfig"] = None,
     ):
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
@@ -297,24 +334,51 @@ class DeviceJacobians(JacobianProductCalculator):
         self._jacs_cache = LRUCache(maxsize=10)
 
     def _dev_execute_and_compute_derivatives(self, tapes: Batch):
+        """
+        Converts tapes to numpy before computing the the results and derivatives on the device.
+
+        Dispatches between the two different device interfaces.
+        """
         numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
         if self._is_new_device:
             return self._device.execute_and_compute_derivatives(numpy_tapes, self._execution_config)
         return self._device.execute_and_gradients(numpy_tapes, **self._gradient_kwargs)
 
     def _dev_execute(self, tapes: Batch):
+        """
+        Converts tapes to numpy before computing just the results on the device.
+
+        Dispatches between the two different device interfaces.
+        """
         numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
         if self._is_new_device:
             return self._device.execute(numpy_tapes, self._execution_config)
         return self._device.batch_execute(numpy_tapes)
 
     def _dev_compute_derivatives(self, tapes: Batch):
+        """
+        Converts tapes to numpy before computing the derivatives on the device.
+
+        Dispatches between the two different device interfaces.
+        """
         numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
         if self._is_new_device:
             return self._device.compute_derivatives(numpy_tapes, self._execution_config)
         return self._device.gradients(numpy_tapes, **self._gradient_kwargs)
 
-    def __call__(self, tapes: Batch):
+    def execute(self, tapes: Batch):
+        """Forward pass used to cache the results and jacobians.
+
+        Args:
+            tapes (tuple[`~.QuantumScript`]): the batch of tapes to execute and take derivatives of
+
+        Returns:
+            ResultBatch: the results of the execution.
+
+        Side Effects:
+            Caches both the results and jacobian into ``_results_cache`` and ``jacs_cache``.
+
+        """
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug("Forward pass called with %s", tapes)
         results, jac = self._dev_execute_and_compute_derivatives(tapes)

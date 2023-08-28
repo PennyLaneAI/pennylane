@@ -16,6 +16,7 @@ Tests for the jacobian product calculator classes.
 """
 # pylint: disable=protected-access
 import pytest
+from cachetools import LRUCache
 
 import numpy as np
 
@@ -23,7 +24,7 @@ import pennylane as qml
 from pennylane.interfaces.jacobian_products import (
     JacobianProductCalculator,
     TransformJacobianProducts,
-    DeviceJacobians
+    DeviceJacobians,
 )
 
 dev = qml.devices.experimental.DefaultQubit2()
@@ -39,12 +40,14 @@ param_shift_jpc = TransformJacobianProducts(inner_execute_numpy, qml.gradients.p
 hadamard_grad_jpc = TransformJacobianProducts(
     inner_execute_numpy, qml.gradients.hadamard_grad, {"aux_wire": "aux"}
 )
-device_jacs = ExperimentalDeviceDerivatives(dev, adjoint_config)
-legacy_jacs = LegacyDeviceDerivatives(dev_old, {"method": "adjoint_jacobian"})
-device_jps = DeviceJacobianProducts(dev, execution_config=adjoint_config)
+device_jacs = DeviceJacobians(dev, {}, adjoint_config)
+legacy_device_jacs = DeviceJacobians(
+    dev_old, {"method": "adjoint_jacobian", "use_device_state": True}
+)
 
 transform_jpc_matrix = [param_shift_jpc, hadamard_grad_jpc]
-jpc_matrix = [param_shift_jpc, hadamard_grad_jpc, device_jacs, legacy_jacs, device_jps]
+dev_jpc_matrix = [device_jacs, legacy_device_jacs]
+jpc_matrix = [param_shift_jpc, hadamard_grad_jpc, device_jacs, legacy_device_jacs]
 
 
 # pylint: disable=too-few-public-methods
@@ -68,6 +71,56 @@ class TestBasics:
             "gradient_kwargs={'aux_wire': 'aux'})"
         )
         assert repr(jpc) == expected_repr
+
+    def test_device_jacobians_initialization_new_dev(self):
+        """Tests the private attributes are set during initialization of a DeviceJacobians class."""
+
+        device = qml.devices.experimental.DefaultQubit2()
+        config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
+
+        jpc = DeviceJacobians(device, {}, config)
+
+        assert jpc._device is device
+        assert jpc._execution_config is config
+        assert jpc._gradient_kwargs == {}
+        assert jpc._is_new_device
+        assert isinstance(jpc._results_cache, LRUCache)
+        assert len(jpc._results_cache) == 0
+        assert isinstance(jpc._jacs_cache, LRUCache)
+        assert len(jpc._jacs_cache) == 0
+
+    def test_device_jacobians_initialization_old_dev(self):
+        """Test the private attributes are set during initialization of a DeviceJacobians class with the
+        old device interface."""
+
+        device = qml.devices.DefaultQubit(wires=5)
+        gradient_kwargs = {"method": "adjoint_jacobian"}
+
+        jpc = DeviceJacobians(device, gradient_kwargs)
+
+        assert jpc._device is device
+        assert jpc._gradient_kwargs == gradient_kwargs
+        assert not jpc._is_new_device
+        assert isinstance(jpc._results_cache, LRUCache)
+        assert len(jpc._results_cache) == 0
+        assert isinstance(jpc._jacs_cache, LRUCache)
+        assert len(jpc._jacs_cache) == 0
+
+    def test_device_jacobians_repr(self):
+        """Test the repr method for device jacobians."""
+        device = qml.devices.experimental.DefaultQubit2()
+        config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
+
+        jpc = DeviceJacobians(device, {}, config)
+
+        expected = (
+            r"<DeviceJacobians: default.qubit.2, {},"
+            r" ExecutionConfig(grad_on_execution=None, use_device_gradient=None,"
+            r" gradient_method='adjoint', gradient_keyword_arguments={},"
+            r" device_options={}, interface='autograd', derivative_order=1)>"
+        )
+
+        assert repr(jpc) == expected
 
 
 @pytest.mark.parametrize("jpc", jpc_matrix)
@@ -99,8 +152,62 @@ class TestJacobianProductResults:
         assert qml.math.allclose(jac, -np.sin(x))
 
 
+@pytest.mark.parametrize("jpc", dev_jpc_matrix)
+class TestCaching:
+    def test_execution_caching(self, jpc):
+        """Test that results and jacobians are cached on calls to execute."""
+        tape1 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
+        batch = (tape1,)
+
+        with jpc._device.tracker:
+            results = jpc.execute(batch)
+
+        assert qml.math.allclose(results[0], np.cos(0.1))
+        assert jpc._device.tracker.totals["execute_and_derivative_batches"] == 1
+        assert jpc._device.tracker.totals["derivatives"] == 1
+        assert jpc._device.tracker.totals["executions"] == 1
+
+        # Test reuse with jacobian
+        with jpc._device.tracker:
+            jac = jpc.compute_jacobian(batch)
+
+        assert qml.math.allclose(jac, -np.sin(0.1))
+        assert jpc._device.tracker.totals.get("derivatives", 0) == 0
+        assert jpc._device.tracker.totals.get("execute", 0) == 0
+
+        # Test reuse with execute_and_compute_jvp
+        with jpc._device.tracker:
+            res2, jvp = jpc.execute_and_compute_jvp(batch, ((0.5,),))
+
+        assert qml.math.allclose(res2, results)
+        assert qml.math.allclose(jvp, 0.5 * -np.sin(0.1))
+        assert jpc._device.tracker.totals.get("derivatives", 0) == 0
+        assert jpc._device.tracker.totals.get("execute", 0) == 0
+
+        # Test resue with comput_vjp
+        with jpc._device.tracker:
+            vjp = jpc.compute_vjp(batch, ((1.5,),))
+
+        assert qml.math.allclose(vjp, -1.5 * np.sin(0.1))
+        assert jpc._device.tracker.totals.get("derivatives", 0) == 0
+        assert jpc._device.tracker.totals.get("execute", 0) == 0
+
+        # Test device called again if batch a new instance, even if identical
+        tape2 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
+        batch2 = (tape2,)
+
+        with jpc._device.tracker:
+            jac2 = jpc.compute_jacobian(batch2)
+
+        assert qml.math.allclose(jac, jac2)
+        assert jpc._device.tracker.totals["derivatives"] == 1
+        assert jpc._device.tracker.totals.get("execute", 0) == 0
+
+
 @pytest.mark.parametrize("jpc", transform_jpc_matrix)
 class TestProbsOut:
+    """Testing results when probabilities are returned. This only works with gradient transforms."""
+
     def test_execute_jvp_multi_params_multi_out(self, jpc):
         """Test execute_and_compute_jvp with multiple parameters and multiple outputs"""
         x = 0.62
@@ -215,8 +322,9 @@ class TestTransformsDifferentiability:
     Note that testing is only done for the required method for each ml framework.
     """
 
+    @pytest.mark.parametize("use_jit", (True, False))
     @pytest.mark.jax
-    def test_execute_jvp_jax(self):
+    def test_execute_jvp_jax(self, use_jit):
         """Test that execute_and_compute_jvp is jittable and differentiable with jax."""
         import jax
 
@@ -224,10 +332,13 @@ class TestTransformsDifferentiability:
 
         def f(x, tangents):
             tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-            return jpc.execute_and_compute_jvp((tape,), tangents)[1]
+            return jpc.execute_and_compute_jvp((tape,), tangents)[1][0]
 
         x = jax.numpy.array(0.1)
         tangents = ((jax.numpy.array(0.5),),)
+
+        if use_jit:
+            f = jax.jit(f)
 
         res = f(x, tangents=tangents)
         assert qml.math.allclose(res, -tangents[0][0] * np.sin(x))
@@ -240,6 +351,7 @@ class TestTransformsDifferentiability:
 
         tangent_grad = jax.grad(f, argnums=1)(x, tangents)
         assert qml.math.allclose(tangent_grad[0][0], -np.sin(x))
+        jax.clear_caches()
 
     @pytest.mark.autograd
     def test_vjp_autograd(self):
