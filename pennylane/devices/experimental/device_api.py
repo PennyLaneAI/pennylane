@@ -17,14 +17,12 @@ This module contains the Abstract Base Class for the next generation of devices.
 # pylint: disable=comparison-with-callable
 import abc
 
-from collections.abc import Iterable
 from numbers import Number
 from typing import Callable, Union, Sequence, Tuple, Optional
 
 from pennylane.measurements import Shots
 from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.typing import Result, ResultBatch
-from pennylane.wires import Wires
 from pennylane import Tracker
 
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
@@ -155,18 +153,10 @@ class Device(abc.ABC):
             self.tracker.record()
     """
 
-    def __init__(self, wires=None, shots=None) -> None:
+    def __init__(self, shots=None) -> None:
         # each instance should have its own Tracker.
         self.tracker = Tracker()
         self._shots = Shots(shots)
-
-        if wires is not None:
-            if not isinstance(wires, Iterable):
-                # interpret wires as the number of consecutive wires
-                wires = range(wires)
-            wires = Wires(wires)
-
-        self._wires = wires
 
     @property
     def shots(self) -> Shots:
@@ -177,11 +167,6 @@ class Device(abc.ABC):
 
         """
         return self._shots
-
-    @property
-    def wires(self) -> Wires:
-        """The device wires. None means any wires can be used."""
-        return self._wires
 
     def preprocess(
         self,
