@@ -15,4 +15,4 @@ qml.measurements
     :no-heading:
     :include-all-objects:
     :inheritance-diagram:
-    :skip: MeasurementShapeError, MeasurementValueError, ObservableReturnTypes
+    :skip: MeasurementShapeError, ObservableReturnTypes
