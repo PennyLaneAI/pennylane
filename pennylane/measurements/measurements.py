@@ -256,31 +256,11 @@ class MeasurementProcess(ABC):
         except qml.operation.DecompositionUndefinedError:
             return []
 
-    # pylint: disable=useless-super-delegation
     def __eq__(self, other):
-        warnings.warn(
-            "The behaviour of measurement process equality will be updated soon. Currently, "
-            "mp1 == mp2 is True if mp1 and mp2 are the same object. Soon, mp1 == mp2 will be "
-            "equivalent to qml.equal(mp1, mp2). To continue using measurement process equality "
-            "in its current state, use 'mp1 is mp2'.",
-            UserWarning,
-        )
+        return qml.equal(self, other)
 
-        return super().__eq__(other)
-
-    # pylint: disable=useless-super-delegation
     def __hash__(self):
-        warnings.warn(
-            "The behaviour of measurement process hashing will be updated soon. Currently, each "
-            "measurement process instance has a unique hash. Soon, a measurement process's hash "
-            "will be determined by the combined hash of the name, wires, observable and/or "
-            "eigenvalues of the measurement process. To continue using measurement process hashing "
-            "in its current state, wrap the measurement process inside a qml.queuing.WrappedObj "
-            "instance.",
-            UserWarning,
-        )
-
-        return super().__hash__()
+        return self.hash
 
     def __repr__(self):
         """Representation of this class."""

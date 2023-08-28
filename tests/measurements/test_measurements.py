@@ -125,8 +125,8 @@ def test_none_return_type():
 
 
 def test_eq_correctness():
-    """Test that using `==` on two equivalent operators is True when both measurement
-    processes are the same object and False otherwise."""
+    """Test that using `==` on measurement processes behaves the same as
+    `qml.equal`."""
 
     class DummyMP(MeasurementProcess):
         """Dummy measurement process with no return type."""
@@ -134,14 +134,12 @@ def test_eq_correctness():
     mp1 = DummyMP(0)
     mp2 = DummyMP(0)
 
-    with pytest.warns(UserWarning, match="The behaviour of measurement process equality"):
-        assert mp1 == mp1  # pylint: disable=comparison-with-itself
-        assert mp1 != mp2
+    assert mp1 == mp1  # pylint: disable=comparison-with-itself
+    assert mp1 == mp2
 
 
 def test_hash_correctness():
-    """Test that the hash of two equivalent measurement processes is the same when
-    both are the same object and different otherwise."""
+    """Test that the hash of two equivalent measurement processes is the same."""
 
     class DummyMP(MeasurementProcess):
         """Dummy measurement process with no return type."""
@@ -149,9 +147,10 @@ def test_hash_correctness():
     mp1 = DummyMP(0)
     mp2 = DummyMP(0)
 
-    with pytest.warns(UserWarning, match="The behaviour of measurement process hashing"):
-        assert len({mp1, mp1}) == 1
-        assert len({mp1, mp2}) == 2
+    assert len({mp1, mp2}) == 1
+    assert hash(mp1) == mp1.hash
+    assert hash(mp2) == mp2.hash
+    assert hash(mp1) == hash(mp2)
 
 
 @pytest.mark.parametrize(
