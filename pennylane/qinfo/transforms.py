@@ -343,11 +343,8 @@ def _make_probs(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], 
     qscript = qml.tape.QuantumScript(tape.operations, [qml.probs(tape.wires)], shots=tape.shots)
 
     def post_processing_fn(res):
-        if qml.active_return():
-            # only a single probs measurement, so no stacking needed
-            return res[0]
-
-        return qml.math.squeeze(qml.math.stack(res))
+        # only a single probs measurement, so no stacking needed
+        return res[0]
 
     return [qscript], post_processing_fn
 

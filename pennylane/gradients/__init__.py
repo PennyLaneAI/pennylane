@@ -72,7 +72,6 @@ Utility functions
     generate_shift_rule
     generate_multi_shift_rule
     eigvals_to_frequencies
-    compute_vjp
     compute_vjp_single
     compute_vjp_multi
     batch_vjp
@@ -336,7 +335,7 @@ from .finite_difference import finite_diff, finite_diff_coeffs
 from .parameter_shift import param_shift
 from .parameter_shift_cv import param_shift_cv
 from .parameter_shift_hessian import param_shift_hessian
-from .vjp import compute_vjp, batch_vjp, vjp, compute_vjp_multi, compute_vjp_single
+from .vjp import batch_vjp, vjp, compute_vjp_multi, compute_vjp_single
 from .jvp import batch_jvp, jvp, compute_jvp_multi, compute_jvp_single
 from .spsa_gradient import spsa_grad
 from .hadamard_gradient import hadamard_grad

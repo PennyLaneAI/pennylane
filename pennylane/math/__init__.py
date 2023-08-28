@@ -67,8 +67,6 @@ from .multi_dispatch import (
 from .quantum import (
     cov_matrix,
     dm_from_state_vector,
-    fidelity,
-    fidelity_statevector,
     marginal_prob,
     mutual_info,
     purity,
@@ -80,6 +78,7 @@ from .quantum import (
     max_entropy,
     trace_distance,
 )
+from .fidelity import fidelity, fidelity_statevector
 from .utils import (
     allclose,
     allequal,

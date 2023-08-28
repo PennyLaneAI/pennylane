@@ -116,9 +116,9 @@ def transform(
         # Check the signature of expand_transform to force the fn style tape - > (Sequence(tape), fn)
         _transform_signature_check(signature_expand_transform)
 
-        if len(signature_expand_transform) > 2:
+        if signature_expand_transform != signature_transform:
             raise TransformError(
-                "The expand transform does not support arg and kwargs other than tape."
+                "The expand transform must have the same signature as the transform"
             )
 
     # 3: CHeck the classical co-transform

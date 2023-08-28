@@ -68,7 +68,7 @@ If the electronic Hamiltonian is built independently using
 to a PennyLane observable using the :func:`~.pennylane.import_operator` function. There is also 
 capability to import wavefunctions (states) that have been pre-computed by traditional quantum chemistry methods
 from `PySCF <https://github.com/sunqm/pyscf>`_, which could be used to for example to provide a better 
-starting point to a quantum algorithm. State import can be accomplished using the :func:`~pennylane.import_state` 
+starting point to a quantum algorithm. State import can be accomplished using the :func:`~pennylane.qchem.import_state` 
 utility function.
 
 
@@ -264,7 +264,7 @@ Utility functions
     ~pennylane.qchem.givens_decomposition
     ~pennylane.qchem.hf_state
     ~pennylane.import_operator
-    ~pennylane.import_state
+    ~pennylane.qchem.import_state
     ~pennylane.qchem.mol_data
     ~pennylane.qchem.read_structure
 
