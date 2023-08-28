@@ -150,7 +150,7 @@ class TestMinimalDevice:
     def test_wires_are_read_only(self):
         """Test that device wires cannot be set after device initialization."""
         with pytest.raises(AttributeError):
-            self.dev.wires = [0, 1]
+            self.dev.wires = [0, 1]  # pylint:disable=attribute-defined-outside-init
 
 
 class TestProvidingDerivatives:
