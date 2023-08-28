@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices.experimental import Device, ExecutionConfig, DefaultExecutionConfig
+from pennylane.wires import Wires
 
 
 def test_execute_method_abstract():
@@ -129,6 +130,27 @@ class TestMinimalDevice:
 
         with pytest.raises(NotImplementedError):
             self.dev.execute_and_compute_vjp(qml.tape.QuantumScript(), (0.1,))
+
+    @pytest.mark.parametrize(
+        "wires, expected",
+        [
+            (None, None),
+            (0, Wires([])),
+            (Wires([0]), Wires([0])),
+            (1, Wires([0])),
+            ([1], Wires([1])),
+            (2, Wires([0, 1])),
+            ([1, 3], Wires([1, 3])),
+        ],
+    )
+    def test_wires_can_be_provided(self, wires, expected):
+        """Test that a device can be created with wires."""
+        assert self.MinimalDevice(wires=wires).wires == expected
+
+    def test_wires_are_read_only(self):
+        """Test that device wires cannot be set after device initialization."""
+        with pytest.raises(AttributeError):
+            self.dev.wires = [0, 1]
 
 
 class TestProvidingDerivatives:
