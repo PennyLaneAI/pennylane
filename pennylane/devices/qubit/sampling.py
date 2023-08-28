@@ -329,7 +329,7 @@ def sample_state(
             If no value is provided, a default RNG will be used
 
     Returns:
-        ndarray[bool]: Sample values of the shape (shots, num_wires)
+        ndarray[int]: Sample values of the shape (shots, num_wires)
     """
     rng = np.random.default_rng(rng)
 

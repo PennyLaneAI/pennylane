@@ -6,13 +6,16 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.sample()` in the new device API now returns a `np.int8` array instead of `np.bool8`.
+  [(#4539)](https://github.com/PennyLaneAI/pennylane/pull/4539)
+
 <h3>Breaking changes 💔</h3>
 
 * The old return type and associated functions ``qml.enable_return`` and ``qml.disable_return`` are removed.
- [#4503](https://github.com/PennyLaneAI/pennylane/pull/4503)
+  [(#4503)](https://github.com/PennyLaneAI/pennylane/pull/4503)
 
 * The ``mode`` keyword argument in ``QNode`` is removed. Please use ``grad_on_execution`` instead.
- [#4503](https://github.com/PennyLaneAI/pennylane/pull/4503)
+  [(#4503)](https://github.com/PennyLaneAI/pennylane/pull/4503)
 
 <h3>Deprecations 👋</h3>
 
@@ -24,4 +27,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Romain Moyard
+Romain Moyard,
+Matthew Silverman
