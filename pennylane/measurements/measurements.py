@@ -22,7 +22,6 @@ import functools
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Sequence, Tuple, Optional
-import warnings
 
 import pennylane as qml
 from pennylane.operation import Operator
