@@ -27,11 +27,9 @@ _grad_log_map = {
 }
 
 
-@pytest.mark.logging
-class TestLogging:
-    """Tests for logging integration"""
-
+def enable_and_configure_logging():
     pl_logging.enable_logging()
+
     pl_logger = logging.root.manager.loggerDict["pennylane"]
     plqn_logger = logging.root.manager.loggerDict["pennylane.qnode"]
 
@@ -39,8 +37,15 @@ class TestLogging:
     pl_logger.propagate = True
     plqn_logger.propagate = True
 
+
+@pytest.mark.logging
+class TestLogging:
+    """Tests for logging integration"""
+
     def test_qd_qnode_creation(self, caplog):
         "Test logging of QNode creation"
+
+        enable_and_configure_logging()
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -57,6 +62,8 @@ class TestLogging:
 
     def test_dq_qnode_execution(self, caplog):
         "Test logging of QNode forward pass"
+
+        enable_and_configure_logging()
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -97,6 +104,9 @@ class TestLogging:
     )
     def test_dq_qnode_execution_grad(self, caplog, diff_method):
         "Test logging of QNode with parameterised gradients"
+
+        enable_and_configure_logging()
+
         dev = qml.device("default.qubit", wires=2)
         params = qml.numpy.array(0.1234)
 

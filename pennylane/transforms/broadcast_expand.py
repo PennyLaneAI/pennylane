@@ -130,7 +130,7 @@ def broadcast_expand(tape):
         output_tapes.append(new_tape)
 
     def processing_fn(results: qml.typing.ResultBatch) -> qml.typing.Result:
-        if len(tape.measurements) > 1 and qml.active_return():
+        if len(tape.measurements) > 1:
             processed_results = [
                 qml.math.squeeze(qml.math.stack([results[b][i] for b in range(tape.batch_size)]))
                 for i in range(len(tape.measurements))

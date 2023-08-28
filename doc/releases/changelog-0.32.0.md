@@ -439,6 +439,7 @@
   cache.
   [(#4151)](https://github.com/PennyLaneAI/pennylane/pull/4151)
 
+
 <h3>Breaking changes 💔</h3>
 
 * Applying gradient transforms to broadcasted/batched tapes has been deactivated until it is consistently
