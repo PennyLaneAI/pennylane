@@ -90,7 +90,7 @@
   Executing `my_code.py` with logging enabled will detail every step in PennyLane's
   pipeline that gets used to run your code.
 
-  ```commandline
+  ```
   $ python my_code.py
   [1967-02-13 15:18:38,591][DEBUG][<PID 8881:MainProcess>] - pennylane.qnode.__init__()::"Creating QNode(func=<function f at 0x7faf2a6fbaf0>, device=<DefaultQubit device (wires=2, shots=None) at 0x7faf2a689b50>, interface=auto, diff_method=best, expansion_strategy=gradient, max_expansion=10, grad_on_execution=best, mode=None, cache=True, cachesize=10000, max_diff=1, gradient_kwargs={}"
   ...
