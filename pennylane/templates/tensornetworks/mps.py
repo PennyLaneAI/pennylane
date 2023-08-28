@@ -21,12 +21,13 @@ import pennylane.numpy as np
 from pennylane.operation import Operation, AnyWires
 
 
-def compute_indices_MPS(wires, n_block_wires):
+def compute_indices_MPS(wires, n_block_wires, offset=0):
     """Generate a list containing the wires for each block.
 
     Args:
         wires (Iterable): wires that the template acts on
-        n_block_wires (int): number of wires per block
+        n_block_wires (int): number of wires per block_gen
+        offset (wires): offset for positioning the subsequent blocks from the default `n_block_wires / 2`, :math:`|offset| < \text{n_block_wires} / 2`
     Returns:
         layers (Tuple[Tuple]]): array of wire indices or wire labels for each block
     """
@@ -46,23 +47,32 @@ def compute_indices_MPS(wires, n_block_wires):
             f"n_block_wires must be smaller than or equal to the number of wires; got n_block_wires = {n_block_wires} and number of wires = {n_wires}"
         )
 
-    if n_wires % (n_block_wires / 2) > 0:
+    if not abs(offset) < n_block_wires / 2:
+        raise ValueError(
+            f"Absolute value of offest must be smaller than half of the n_block_wires; got offset = {offset} and n_block_wires = {n_block_wires}"
+        )
+
+    if not abs(offset) and n_wires % (n_block_wires / 2) > 0:
         warnings.warn(
             f"The number of wires should be a multiple of {int(n_block_wires/2)}; got {n_wires}"
         )
+
+    n_step = n_block_wires // 2 + offset
+    n_layers = len(wires) - int(len(wires) % (n_block_wires // 2)) - n_step
 
     return tuple(
         tuple(wires[idx] for idx in range(j, j + n_block_wires))
         for j in range(
             0,
-            len(wires) - int(len(wires) % (n_block_wires // 2)) - n_block_wires // 2,
-            n_block_wires // 2,
+            n_layers,
+            n_step,
         )
+        if not j + n_block_wires > len(wires)
     )
 
 
 class MPS(Operation):
-    """The MPS template broadcasts an input circuit across many wires following the architecture of a Matrix Product State tensor network.
+    r"""The MPS template broadcasts an input circuit across many wires following the architecture of a Matrix Product State tensor network.
     The result is similar to the architecture in `arXiv:1803.11537 <https://arxiv.org/abs/1803.11537>`_.
 
     The argument ``block`` is a user-defined quantum circuit.``block`` should have two arguments: ``weights`` and ``wires``.
@@ -74,6 +84,7 @@ class MPS(Operation):
         block (Callable): quantum circuit that defines a block
         n_params_block (int): the number of parameters in a block; equal to the length of the ``weights`` argument in ``block``
         template_weights (Sequence): list containing the weights for all blocks
+        offset (int): offset for positioning the subsequent blocks from the default `n_block_wires / 2`, :math:`|offset| < \text{n_block_wires} / 2`
 
     .. note::
 
@@ -135,9 +146,10 @@ class MPS(Operation):
         block,
         n_params_block,
         template_weights=None,
+        offset=0,
         id=None,
     ):
-        ind_gates = compute_indices_MPS(wires, n_block_wires)
+        ind_gates = compute_indices_MPS(wires, n_block_wires, offset)
         n_wires = len(wires)
         n_blocks = int(n_wires / (n_block_wires / 2) - 1)
 
@@ -186,11 +198,12 @@ class MPS(Operation):
         return [qml.apply(op) for op in decomp] if qml.QueuingManager.recording() else decomp
 
     @staticmethod
-    def get_n_blocks(wires, n_block_wires):
-        """Returns the expected number of blocks for a set of wires and number of wires per block.
+    def get_n_blocks(wires, n_block_wires, offset=0):
+        r"""Returns the expected number of blocks for a set of wires and number of wires per block.
         Args:
             wires (Sequence): number of wires the template acts on
             n_block_wires (int): number of wires per block
+            offset (int): offset for positioning the subsequent blocks from the default `n_block_wires / 2`, :math:`|offset| < \text{n_block_wires} / 2`
         Returns:
             n_blocks (int): number of blocks; expected length of the template_weights argument
         """
@@ -205,5 +218,15 @@ class MPS(Operation):
                 f"n_block_wires must be smaller than or equal to the number of wires; got n_block_wires = {n_block_wires} and number of wires = {n_wires}"
             )
 
-        n_blocks = int(n_wires / (n_block_wires / 2) - 1)
-        return n_blocks
+        if not abs(offset) < n_block_wires / 2:
+            raise ValueError(
+                f"Absolute value of offest must be smaller than half of the n_block_wires; got offset = {offset} and n_block_wires = {n_block_wires}"
+            )
+
+        if not abs(offset):
+            return int(n_wires / (n_block_wires / 2) - 1)
+
+        n_step = n_block_wires // 2 + offset
+        n_layers = n_wires - int(n_wires % (n_block_wires // 2)) - n_step
+
+        return len([idx for idx in range(0, n_layers, n_step) if not idx + n_block_wires > n_wires])

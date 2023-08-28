@@ -106,6 +106,24 @@ class TestIndicesMPS:
             compute_indices_MPS(range(n_wires), n_block_wires)
 
     @pytest.mark.parametrize(
+        ("n_wires", "n_block_wires", "offset"),
+        [
+            (18, 6, 3),
+            (12, 4, -2),
+            (10, 4, 2),
+        ],
+    )
+    def test_exception_offset(self, n_wires, n_block_wires, offset):
+        """Verifies that an exception is raised when abs(offset) is more than n_block_wires / 2."""
+
+        with pytest.raises(
+            ValueError,
+            match=f"Absolute value of offest must be smaller than half of the n_block_wires; "
+            f"got offset = {offset} and n_block_wires = {n_block_wires}",
+        ):
+            compute_indices_MPS(range(n_wires), n_block_wires, offset)
+
+    @pytest.mark.parametrize(
         ("n_wires", "n_block_wires"),
         [
             (5, 4),
@@ -124,15 +142,28 @@ class TestIndicesMPS:
             compute_indices_MPS(range(n_wires), n_block_wires)
 
     @pytest.mark.parametrize(
-        ("wires", "n_block_wires", "expected_indices"),
+        ("wires", "n_block_wires", "offset", "expected_indices"),
         [
-            ([1, 2, 3, 4], 2, ((1, 2), (2, 3), (3, 4))),
-            (["a", "b", "c", "d"], 2, (("a", "b"), ("b", "c"), ("c", "d"))),
+            ([1, 2, 3, 4], 2, 0, ((1, 2), (2, 3), (3, 4))),
+            (["a", "b", "c", "d"], 2, 0, (("a", "b"), ("b", "c"), ("c", "d"))),
+            ([1, 2, 3, 4, 5, 6, 7, 8], 4, 1, ((1, 2, 3, 4), (4, 5, 6, 7))),
+            (
+                ["a", "b", "c", "d", "e", "f", "g", "h"],
+                4,
+                -1,
+                (
+                    ("a", "b", "c", "d"),
+                    ("b", "c", "d", "e"),
+                    ("c", "d", "e", "f"),
+                    ("d", "e", "f", "g"),
+                    ("e", "f", "g", "h"),
+                ),
+            ),
         ],
     )
-    def test_indices_output(self, wires, n_block_wires, expected_indices):
+    def test_indices_output(self, wires, n_block_wires, offset, expected_indices):
         """Verifies the indices are correct for both integer and string wire labels."""
-        indices = compute_indices_MPS(wires, n_block_wires)
+        indices = compute_indices_MPS(wires, n_block_wires, offset)
         assert indices == expected_indices
 
 
@@ -140,14 +171,15 @@ class TestTemplateInputs:
     """Test template inputs and pre-processing (ensure the correct exceptions are thrown for the inputs)"""
 
     @pytest.mark.parametrize(
-        ("block", "n_params_block", "wires", "n_block_wires", "msg_match"),
+        ("block", "n_params_block", "wires", "n_block_wires", "offset", "msg_match"),
         [
-            (None, None, [1, 2, 3, 4], 7, "n_block_wires must be an even integer; got 7"),
+            (None, None, [1, 2, 3, 4], 7, 0, "n_block_wires must be an even integer; got 7"),
             (
                 None,
                 None,
                 [1, 2, 3, 4],
                 6,
+                0,
                 "n_block_wires must be smaller than or equal to the number of wires; "
                 "got n_block_wires = 6 and number of wires = 4",
             ),
@@ -156,15 +188,27 @@ class TestTemplateInputs:
                 None,
                 [1, 2, 3, 4],
                 0,
+                0,
                 "number of wires in each block must be larger than or equal to 2; "
                 "got n_block_wires = 0",
             ),
+            (
+                None,
+                None,
+                [1, 2, 3, 4, 5, 6, 7, 8],
+                4,
+                2,
+                "Absolute value of offest must be smaller than half of the n_block_wires; "
+                "got offset = 2 and n_block_wires = 4",
+            ),
         ],
     )
-    def test_exception_wrong_input(self, block, n_params_block, wires, n_block_wires, msg_match):
+    def test_exception_wrong_input(
+        self, block, n_params_block, wires, n_block_wires, offset, msg_match
+    ):
         """Verifies that an exception is raised if the number of wires or n_block_wires is incorrect."""
         with pytest.raises(ValueError, match=msg_match):
-            MPS(wires, n_block_wires, block, n_params_block)
+            MPS(wires, n_block_wires, block, n_params_block, offset=offset)
 
     def test_warning_many_wires(self):
         """Verifies that a warning is raised if n_wires doesn't correspond to n_block_wires."""
@@ -255,6 +299,36 @@ class TestAttributes:
             f"got n_block_wires = {n_block_wires} and number of wires = {len(wires)}",
         ):
             qml.MPS.get_n_blocks(wires, n_block_wires)
+
+    @pytest.mark.filterwarnings("ignore")
+    @pytest.mark.parametrize(
+        ("wires", "n_block_wires", "offset", "expected_n_blocks"),
+        [
+            (range(14), 4, -1, 11),
+            (range(15), 4, 1, 4),
+            (range(18), 6, -2, 13),
+            (range(20), 6, 2, 3),
+        ],
+    )
+    def test_get_n_blocks_with_offset(self, wires, n_block_wires, offset, expected_n_blocks):
+        """Test that the number of blocks attribute returns the correct number of blocks with offset."""
+
+        assert qml.MPS.get_n_blocks(wires, n_block_wires, offset) == expected_n_blocks
+
+    @pytest.mark.filterwarnings("ignore")
+    @pytest.mark.parametrize(
+        ("wires", "n_block_wires", "offset"),
+        [(range(12), 6, 3), (range(9), 4, -2)],
+    )
+    def test_get_n_blocks_error_with_offset(self, wires, offset, n_block_wires):
+        """Test that the number of blocks attribute raises an error when offset is out of bounds."""
+
+        with pytest.raises(
+            ValueError,
+            match=f"Absolute value of offest must be smaller than half of the n_block_wires; "
+            f"got offset = {offset} and n_block_wires = {n_block_wires}",
+        ):
+            qml.MPS.get_n_blocks(wires, n_block_wires, offset)
 
 
 class TestTemplateOutputs:

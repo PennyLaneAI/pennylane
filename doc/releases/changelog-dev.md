@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Tensor-network template `qml.MPS` now supports changing `offset` between subsequent blocks for more flexibility.
+ [#4531](https://github.com/PennyLaneAI/pennylane/pull/4531)
+
 <h3>Breaking changes 💔</h3>
 
 * The old return type and associated functions ``qml.enable_return`` and ``qml.disable_return`` are removed.
@@ -24,4 +27,5 @@
 
 This release contains contributions from (in alphabetical order):
 
+Utkarsh Azad
 Romain Moyard
