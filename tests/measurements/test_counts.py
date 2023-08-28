@@ -123,7 +123,7 @@ class TestProcessSamples:
     def test_counts_shape_single_wires(self):
         """Test that the counts output is correct for single wires"""
         shots = 1000
-        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.bool8)
+        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int8)
 
         result = qml.counts(wires=0).process_samples(samples, wire_order=[0])
 
@@ -136,7 +136,7 @@ class TestProcessSamples:
         """Test that the counts function outputs counts of the right size
         for multiple wires"""
         shots = 1000
-        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.bool8)
+        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int8)
 
         result = qml.counts(wires=[0, 1]).process_samples(samples, wire_order=[0, 1])
 
@@ -158,7 +158,7 @@ class TestProcessSamples:
     def test_counts_obs(self):
         """Test that the counts function outputs counts of the right size for observables"""
         shots = 1000
-        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.bool8)
+        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int8)
 
         result = qml.counts(qml.PauliZ(0)).process_samples(samples, wire_order=[0])
 
@@ -170,7 +170,7 @@ class TestProcessSamples:
     def test_counts_all_outcomes_wires(self):
         """Test that the counts output is correct when all_outcomes is passed"""
         shots = 1000
-        samples = np.zeros((shots, 2)).astype(np.bool8)
+        samples = np.zeros((shots, 2)).astype(np.int8)
 
         result1 = qml.counts(wires=0, all_outcomes=False).process_samples(samples, wire_order=[0])
 
@@ -188,7 +188,7 @@ class TestProcessSamples:
     def test_counts_all_outcomes_obs(self):
         """Test that the counts output is correct when all_outcomes is passed"""
         shots = 1000
-        samples = np.zeros((shots, 2)).astype(np.bool8)
+        samples = np.zeros((shots, 2)).astype(np.int8)
 
         result1 = qml.counts(qml.PauliZ(0), all_outcomes=False).process_samples(
             samples, wire_order=[0]
