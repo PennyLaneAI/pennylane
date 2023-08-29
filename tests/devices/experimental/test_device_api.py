@@ -75,8 +75,8 @@ class TestMinimalDevice:
         assert batch[0] is circuit1
         assert callable(fn)
 
-        a = (1, 2)
-        assert fn(a) is a
+        a = (1,)
+        assert fn(a) == 1
         assert config is qml.devices.experimental.DefaultExecutionConfig
 
     def test_preprocess_batch_circuits(self):

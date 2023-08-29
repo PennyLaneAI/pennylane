@@ -268,7 +268,7 @@ class Device(abc.ABC):
         **Interface parameters:**
 
         The provided ``circuits`` may contain interface specific data-types like ``torch.Tensor`` or ``jax.Array`` when
-        :attr:`~.ExecutionConfig.gradient_method` of ``"backprop"``is requested. If the gradient method is not backpropagation,
+        :attr:`~.ExecutionConfig.gradient_method` of ``"backprop"`` is requested. If the gradient method is not backpropagation,
         then only vanilla numpy parameters or builtins will be present in the circuits.
 
         .. details::
