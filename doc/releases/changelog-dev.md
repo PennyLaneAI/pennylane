@@ -9,9 +9,6 @@
 * Wires can be provided to the new device API.
   [(#4538)](https://github.com/PennyLaneAI/pennylane/pull/4538)
 
-* A `wires` property has been added to `QNode`.
-  [(#4538)](https://github.com/PennyLaneAI/pennylane/pull/4538)
-
 <h3>Breaking changes 💔</h3>
 
 * The old return type and associated functions ``qml.enable_return`` and ``qml.disable_return`` are removed.
