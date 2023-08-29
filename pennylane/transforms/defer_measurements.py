@@ -13,7 +13,7 @@
 # limitations under the License.
 """Code for the tape transform implementing the deferred measurement principle."""
 import pennylane as qml
-from pennylane.measurements import MidMeasureMP
+from pennylane.measurements import MidMeasureMP, MeasurementValue
 from pennylane.ops.op_math import ctrl
 from pennylane.queuing import apply
 from pennylane.tape import QuantumTape
@@ -119,6 +119,7 @@ def defer_measurements(tape: QuantumTape):
     >>> func(*pars)
     tensor([0.76960924, 0.13204407, 0.08394415, 0.01440254], requires_grad=True)
     """
+    # pylint: disable=protected-access
 
     cv_types = (qml.operation.CVOperation, qml.operation.CVObservable)
     ops_cv = any(isinstance(op, cv_types) for op in tape.operations)
@@ -127,18 +128,18 @@ def defer_measurements(tape: QuantumTape):
         raise ValueError("Continuous variable operations and observables are not supported.")
 
     # Find wires that are reused after measurement
-    measured_wires = set()
+    measured_wires = []
     reused_measurement_wires = set()
 
     for op in tape.operations:
         if isinstance(op, MidMeasureMP):
-            if op.wires[0] in measured_wires or op.reset is True:
+            if op.reset is True:
                 reused_measurement_wires.add(op.wires[0])
-            measured_wires.add(op.wires[0])
+            measured_wires.append(op.wires[0])
 
         else:
             reused_measurement_wires = reused_measurement_wires.union(
-                measured_wires.intersection(op.wires.toset())
+                set(measured_wires).intersection(op.wires.toset())
             )
 
     # Apply controlled operations to store measurement outcomes and replace
@@ -146,10 +147,12 @@ def defer_measurements(tape: QuantumTape):
     control_wires = {}
     cur_wire = max(tape.wires) + 1 if reused_measurement_wires else None
 
-    for op in tape:
+    for op in tape.operations:
         if isinstance(op, MidMeasureMP):
-            # Only store measurement outcome in new wire if wire gets reused
-            if op.wires[0] in reused_measurement_wires:
+            _ = measured_wires.pop(0)
+
+            # Store measurement outcome in new wire if wire gets reused
+            if op.wires[0] in reused_measurement_wires or op.wires[0] in measured_wires:
                 control_wires[op.id] = cur_wire
 
                 qml.CNOT([op.wires[0], cur_wire])
@@ -164,6 +167,11 @@ def defer_measurements(tape: QuantumTape):
             _add_control_gate(op, control_wires)
         else:
             apply(op)
+
+    for mp in tape.measurements:
+        if isinstance(mp.obs, MeasurementValue):
+            mp._wires = [control_wires[mp.obs.measurements[0].id]]
+        apply(mp)
 
     return tape._qfunc_output  # pylint: disable=protected-access
 
