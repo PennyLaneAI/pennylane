@@ -15,6 +15,7 @@
 This module contains the functions needed for computing the dipole moment.
 """
 import pennylane as qml
+from pennylane.fermi import FermiSentence, FermiWord
 
 from .basis_data import atomic_numbers
 from .hartree_fock import scf
@@ -211,12 +212,12 @@ def fermionic_dipole(mol, cutoff=1.0e-18, core=None, active=None):
             nd[1] = nd[1] + atomic_numbers[s] * mol.coordinates[i][1]
             nd[2] = nd[2] + atomic_numbers[s] * mol.coordinates[i][2]
 
-        f = []
+        d_ferm = []
         for i in range(3):
-            coeffs, ops = fermionic_observable(constants[i], integrals[i], cutoff=cutoff)
-            f.append((qml.math.concatenate((nd[i], coeffs * (-1))), [[]] + ops))
+            f = fermionic_observable(constants[i], integrals[i], cutoff=cutoff, fs=True)
+            d_ferm.append(FermiSentence({FermiWord({}): nd[i][0]}) - f)
 
-        return f
+        return d_ferm
 
     return _fermionic_dipole
 
