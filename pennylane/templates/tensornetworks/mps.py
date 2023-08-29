@@ -27,7 +27,7 @@ def compute_indices_MPS(wires, n_block_wires, offset=0):
     Args:
         wires (Iterable): wires that the template acts on
         n_block_wires (int): number of wires per block_gen
-        offset (wires): offset for positioning the subsequent blocks away from the default ``n_block_wires / 2``, where :math:`|\text{offset}| < \text{n_block_wires} / 2`
+        offset (wires): offset for positioning the subsequent blocks relative to the default ``n_block_wires/2``, where :math:`|\text{offset}| < \text{n_block_wires} / 2`
     Returns:
         layers (Tuple[Tuple]]): array of wire indices or wire labels for each block
     """
@@ -75,8 +75,7 @@ class MPS(Operation):
     r"""The MPS template broadcasts an input circuit across many wires following the architecture of a Matrix Product State tensor network.
     The result is similar to the architecture in `arXiv:1803.11537 <https://arxiv.org/abs/1803.11537>`_.
 
-    The argument ``block`` is a user-defined quantum circuit. ``block`` should have two arguments: ``weights`` and ``wires``.
-    For clarity, it is recommended to use a one-dimensional list or array for the block weights.
+    The argument ``block`` is a user-defined quantum circuit that should accept two keyword arguments: ``weights`` and ``wires``.
 
     Args:
         wires (Iterable): wires that the template acts on
@@ -84,11 +83,11 @@ class MPS(Operation):
         block (Callable): quantum circuit that defines a block
         n_params_block (int): the number of parameters in a block; equal to the length of the ``weights`` argument in ``block``
         template_weights (Sequence): list containing the weights for all blocks
-        offset (int): offset for positioning the subsequent blocks away from the default ``n_block_wires / 2``, where :math:`|\text{offset}| < \text{n_block_wires} / 2`
+        offset (int): offset for positioning the subsequent blocks relative to the default ``n_block_wires/2``, where :math:`|\text{offset}| < \text{n_block_wires} / 2`
 
     .. note::
 
-        The expected number of blocks can be obtained from ``qml.MPS.get_n_blocks(wires, n_block_wires)``.
+        The expected number of blocks can be obtained from ``qml.MPS.get_n_blocks(wires, n_block_wires, offset=0)``.
         The length of ``template_weights`` argument should match the number of blocks.
 
     .. details::
@@ -110,7 +109,7 @@ class MPS(Operation):
             n_block_wires = 2
             n_params_block = 2
             n_blocks = qml.MPS.get_n_blocks(range(n_wires),n_block_wires)
-            template_weights = [[0.1,-0.3]]*n_blocks
+            template_weights = [[0.1, -0.3]] * n_blocks
 
             dev= qml.device('default.qubit',wires=range(n_wires))
             @qml.qnode(dev)
@@ -123,6 +122,36 @@ class MPS(Operation):
         1: ─╰X──RY(-0.30)─╭●──RY(0.10)────────────────┤
         2: ───────────────╰X──RY(-0.30)─╭●──RY(0.10)──┤
         3: ─────────────────────────────╰X──RY(-0.30)─┤  <Z>
+
+        MPS can also be used with an ``offset`` argument that shifts the positioning the subsequent blocks relative to the default ``n_block_wires/2``.
+
+        .. code-block:: python
+
+            import pennylane as qml
+            import numpy as np
+
+            def block(weights, wires):
+                qml.MultiControlledX(wires=[wires[i] for i in range(len(wires))])
+
+            n_wires = 8
+            n_block_wires = 4
+            n_params_block = 2
+
+            dev= qml.device('default.qubit',wires=n_wires)
+            @qml.qnode(dev)
+            def circuit():
+                qml.MPS(range(n_wires),n_block_wires, block, n_params_block, offset = -1)
+                return qml.state()
+
+        >>> print(qml.draw(circuit, expansion_strategy='device')())
+        0: ─╭●─────────────┤  State
+        1: ─├●─╭●──────────┤  State
+        2: ─├●─├●─╭●───────┤  State
+        3: ─╰X─├●─├●─╭●────┤  State
+        4: ────╰X─├●─├●─╭●─┤  State
+        5: ───────╰X─├●─├●─┤  State
+        6: ──────────╰X─├●─┤  State
+        7: ─────────────╰X─┤  State
 
     """
 
@@ -150,14 +179,13 @@ class MPS(Operation):
         id=None,
     ):
         ind_gates = compute_indices_MPS(wires, n_block_wires, offset)
-        n_wires = len(wires)
-        n_blocks = int(n_wires / (n_block_wires / 2) - 1)
+        n_blocks = self.get_n_blocks(wires, n_block_wires, offset)
 
         if template_weights is None:
-            template_weights = np.random.rand(n_params_block, int(n_blocks))
+            template_weights = np.random.rand(n_blocks, n_params_block)
 
         else:
-            shape = qml.math.shape(template_weights)[-4:]  # (n_params_block, n_blocks)
+            shape = qml.math.shape(template_weights)[-4:]  # (n_blocks, n_params_block)
             if shape[0] != n_blocks:
                 raise ValueError(
                     f"Weights tensor must have first dimension of length {n_blocks}; got {shape[0]}"
@@ -177,8 +205,6 @@ class MPS(Operation):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
-
-
 
         .. seealso:: :meth:`~.MPS.decomposition`.
 
@@ -200,10 +226,12 @@ class MPS(Operation):
     @staticmethod
     def get_n_blocks(wires, n_block_wires, offset=0):
         r"""Returns the expected number of blocks for a set of wires and number of wires per block.
+
         Args:
             wires (Sequence): number of wires the template acts on
             n_block_wires (int): number of wires per block
-            offset (int): offset for positioning the subsequent blocks away from the default ``n_block_wires / 2``, where :math:`|\text{offset}| < \text{n_block_wires} / 2`
+            offset (int): offset for positioning the subsequent blocks relative to the default ``n_block_wires/2``, where :math:`|\text{offset}| < \text{n_block_wires} / 2`
+
         Returns:
             n_blocks (int): number of blocks; expected length of the template_weights argument
         """
