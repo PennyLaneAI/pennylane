@@ -180,7 +180,15 @@ class Device(abc.ABC):
 
     @property
     def wires(self) -> Wires:
-        """The device wires. None means any wires can be used."""
+        """The device wires.
+
+        Note that wires are optional, and the default value of None means any wires can be used.
+        If a device has wires defined, they will only be used for certain features. This includes:
+
+        * Validation of tapes being executed on the device
+        * Defining the wires used when evaluating a :func:`~pennylane.state` measurement
+
+        """
         return self._wires
 
     def preprocess(
