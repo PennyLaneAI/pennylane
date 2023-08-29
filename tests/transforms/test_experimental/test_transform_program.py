@@ -144,6 +144,7 @@ class TestTransformProgramDunders:
 
         assert isinstance(transform_program[1], TransformContainer)
         assert transform_program[1].transform is first_valid_transform
+
     def test_repr_program(self):
         """Test the string representation of a program."""
         transform_program = TransformProgram()
