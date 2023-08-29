@@ -28,6 +28,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed issue where `__copy__` method of the `qml.Select()` operator attempted to access un-initialized data.
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
