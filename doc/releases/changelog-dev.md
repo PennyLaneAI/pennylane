@@ -20,6 +20,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `convert_to_numpy_parameters` now uses `qml.ops.functions.bind_new_parameters`. This reinitializes the operation and
+  makes sure everything references the new numpy parameters.
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
