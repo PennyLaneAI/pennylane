@@ -56,7 +56,7 @@ from .matrices import (
     core_matrix,
 )
 from .molecule import Molecule
-from .observable_hf import fermionic_observable, qubit_observable, jordan_wigner
+from .observable_hf import fermionic_observable, qubit_observable
 from .number import particle_number
 from .spin import spin2, spinz
 from .structure import (
