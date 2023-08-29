@@ -122,19 +122,22 @@ class TestDecomposition:
         ([1 / 2, 0, 1j / 2, 1j / np.sqrt(2)], [0, 1], [1 / 2, 0, 0, 0, 1j / 2, 0, 1j / np.sqrt(2), 0]),
     ])
     # fmt: on
-    def test_state_preparation_fidelity(
-        self, tol, qubit_device_3_wires, state_vector, wires, target_state
-    ):
+    def test_state_preparation_fidelity(self, tol, state_vector, wires, target_state):
         """Tests that the template produces correct states with high fidelity."""
 
-        @qml.qnode(qubit_device_3_wires)
+        @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.MottonenStatePreparation(state_vector, wires)
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2))
+            return (
+                qml.expval(qml.PauliZ(0)),
+                qml.expval(qml.PauliZ(1)),
+                qml.expval(qml.PauliZ(2)),
+                qml.state(),
+            )
 
-        circuit()
+        results = circuit()
 
-        state = circuit.device.state.ravel()
+        state = results[-1].ravel()
         fidelity = abs(np.vdot(state, target_state)) ** 2
 
         # We test for fidelity here, because the vector themselves will hardly match
@@ -207,18 +210,23 @@ class TestDecomposition:
     ])
     # fmt: on
     def test_state_preparation_probability_distribution(
-        self, tol, qubit_device_3_wires, state_vector, wires, target_state
+        self, tol, state_vector, wires, target_state
     ):
         """Tests that the template produces states with correct probability distribution."""
 
-        @qml.qnode(qubit_device_3_wires)
+        @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.MottonenStatePreparation(state_vector, wires)
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2))
+            return (
+                qml.expval(qml.PauliZ(0)),
+                qml.expval(qml.PauliZ(1)),
+                qml.expval(qml.PauliZ(2)),
+                qml.state(),
+            )
 
-        circuit()
+        results = circuit()
 
-        state = circuit.device.state.ravel()
+        state = results[-1].ravel()
 
         probabilities = np.abs(state) ** 2
         target_probabilities = np.abs(target_state) ** 2

@@ -62,10 +62,10 @@ class TestDecomposition:
         ([1, 0, 1], [0, 1, 2], [1, 0, 1]),
     ])
     # fmt: on
-    def test_state_preparation(self, tol, qubit_device_3_wires, basis_state, wires, target_state):
+    def test_state_preparation(self, tol, basis_state, wires, target_state):
         """Tests that the template produces the correct expectation values."""
 
-        @qml.qnode(qubit_device_3_wires)
+        @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.BasisStatePreparation(basis_state, wires)
 
@@ -86,13 +86,11 @@ class TestDecomposition:
             ([1, 0, 1], [2, 0, 1], [0, 1, 1]),
         ],
     )
-    def test_state_preparation_jax_jit(
-        self, tol, qubit_device_3_wires, basis_state, wires, target_state
-    ):
+    def test_state_preparation_jax_jit(self, tol, basis_state, wires, target_state):
         """Tests that the template produces the correct expectation values."""
         import jax
 
-        @qml.qnode(qubit_device_3_wires, interface="jax")
+        @qml.qnode(qml.device("default.qubit"), interface="jax")
         def circuit(state):
             qml.BasisStatePreparation(state, wires)
 
@@ -115,14 +113,12 @@ class TestDecomposition:
             ([1, 0, 1], [2, 0, 1], [0, 1, 1]),
         ],
     )
-    def test_state_preparation_tf_autograph(
-        self, tol, qubit_device_3_wires, basis_state, wires, target_state
-    ):
+    def test_state_preparation_tf_autograph(self, tol, basis_state, wires, target_state):
         """Tests that the template produces the correct expectation values."""
         import tensorflow as tf
 
         @tf.function
-        @qml.qnode(qubit_device_3_wires, interface="tf")
+        @qml.qnode(qml.device("default.qubit"), interface="tf")
         def circuit(state):
             qml.BasisStatePreparation(state, wires)
 
