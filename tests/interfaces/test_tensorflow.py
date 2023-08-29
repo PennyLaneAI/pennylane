@@ -179,8 +179,8 @@ class TestCaching:
         cache = spy.call_args[0][1]
         assert cache is custom_cache
 
-        with qml.tape.Unwrap(tape):
-            h = tape.hash
+        unwrapped_tape = qml.transforms.convert_to_numpy_parameters(tape)
+        h = unwrapped_tape.hash
 
         assert h in cache
         assert np.allclose(cache[h], res)

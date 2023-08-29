@@ -603,23 +603,6 @@ def test_adjoint():
         assert op.data == expected.data
 
 
-@pytest.mark.torch
-def test_unwrap():
-    """Tests the unwrap method."""
-
-    import torch
-
-    x = torch.tensor(1.2)
-    qs = QuantumScript([qml.RX(x, 0)])
-
-    unwrapper = qs.unwrap()
-    assert isinstance(unwrapper, qml.tape.UnwrapTape)
-
-    with unwrapper:
-        assert qml.math.get_interface(qs.data[0]) == "numpy"
-    assert qml.math.get_interface(qs.data[0]) == "torch"
-
-
 class TestHashing:
     """Test for script hashing"""
 
