@@ -111,3 +111,13 @@ def test_unwraps_tensor_observables():
 
     unwrapped_m = _convert_measurement_to_numpy_data(m)
     assert qml.math.get_interface(*unwrapped_m.obs.data) == "numpy"
+
+
+@pytest.mark.autograd
+def test_unwraps_mp_eigvals():
+    """Test that a measurememnt process with autograd eigvals unwraps them to numpy."""
+    eigvals = qml.numpy.array([0.5, 0.5])
+    m = qml.measurements.ExpectationMP(eigvals=eigvals, wires=qml.wires.Wires(0))
+
+    unwrapped_m = _convert_measurement_to_numpy_data(m)
+    assert qml.math.get_interface(unwrapped_m.eigvals) == "numpy"
