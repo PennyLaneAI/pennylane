@@ -12,13 +12,6 @@ Pending deprecations
   - Deprecated in v0.32
   - Removed in v0.33
 
-* The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
-  instead. Using a list of observables in ``QubitDevice.statistics`` is deprecated. Please use a
-  ``QuantumTape`` instead.
-
-  - Still accessible in v0.28, v0.29, v0.30
-  - Will be removed in v0.31
-
 * ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
   
   - Deprecated in v0.24
@@ -84,12 +77,6 @@ Pending deprecations
   `Fermionic Operator <https://pennylane.ai/qml/demos/tutorial_fermionic_operators>`_
   tutorial for more details.
 
-* The CV observables ``qml.X`` and ``qml.P`` have been deprecated, and usage will now
-  raise a warning. Please use ``qml.QuadX`` and ``qml.QuadP`` instead.
-
-  - Deprecated in v0.32
-  - Will be removed in v0.33
-
 * The ``QuantumScript.set_parameters`` method and the ``QuantumScript.data`` setter has
   been deprecated. Please use ``QuantumScript.bind_new_parameters`` instead.
 
@@ -119,9 +106,22 @@ Pending deprecations
 Completed deprecation cycles
 ----------------------------
 
+* The ``observables`` argument in ``QubitDevice.statistics`` is removed. Please use ``circuit``
+  instead. Using a list of observables in ``QubitDevice.statistics`` is removed. Please use a
+  ``QuantumTape`` instead.
+
+  - Still accessible in v0.28-v0.31
+  - Removed in v0.32
+
+* The CV observables ``qml.X`` and ``qml.P`` have been removed. Use ``qml.QuadX`` and ``qml.QuadP`` instead.
+
+  - Deprecated in v0.32
+  - Removed in v0.33
+
+
 * The method ``tape.unwrap()`` and corresponding ``UnwrapTape`` and ``Unwrap`` classes are
   removed.
-
+ 
   - Deprecated in v0.32
   - Removed in v0.33
 
@@ -137,7 +137,6 @@ Completed deprecation cycles
 
     torch_params = qscript.get_parameters()
     numpy_params = unwrapped_qscript.get_parameters()
-
 
 * ``qml.enable_return`` and ``qml.disable_return`` have been removed. The old return types are no longer available.
 
