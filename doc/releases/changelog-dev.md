@@ -18,6 +18,10 @@
   Instead of ``tape.unwrap()``, use :func:`~.transforms.convert_to_numpy_parameters`.
   [#4535](https://github.com/PennyLaneAI/pennylane/pull/4535)
 
+* The ``QuantumScript.set_parameters`` method and the ``QuantumScript.data`` setter have
+  been removed. Please use ``QuantumScript.bind_new_parameters`` instead.
+  [#4548](https://github.com/PennyLaneAI/pennylane/pull/4548)
+
   
 <h3>Deprecations 👋</h3>
 
@@ -29,4 +33,5 @@
 
 This release contains contributions from (in alphabetical order):
 
+Lillian M. A. Frederiksen
 Romain Moyard
