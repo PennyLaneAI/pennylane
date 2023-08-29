@@ -21,7 +21,12 @@
   Instead of ``tape.unwrap()``, use :func:`~.transforms.convert_to_numpy_parameters`.
   [#4535](https://github.com/PennyLaneAI/pennylane/pull/4535)
 
-  
+* The ``sampler_seed`` argument of ``qml.gradients.spsa_grad`` has been removed.
+  Instead, the ``sampler_rng`` argument should be set, either to an integer value, which will be used
+  to create a PRNG internally, or to a NumPy pseudo-random number generator (PRNG) created via
+  ``np.random.default_rng(seed)``.
+  [#4550](https://github.com/PennyLaneAI/pennylane/pull/4550)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>

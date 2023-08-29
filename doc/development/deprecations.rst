@@ -98,8 +98,11 @@ Pending deprecations
   - Deprecated in v0.32
   - Will be removed in v0.33
 
-* The ``sampler_seed`` argument of ``qml.gradients.spsa_grad`` has been deprecated, along with a bug
-  fix of the seed-setting behaviour.
+
+Completed deprecation cycles
+----------------------------
+
+* The ``sampler_seed`` argument of ``qml.gradients.spsa_grad`` has been removed.
   Instead, the ``sampler_rng`` argument should be set, either to an integer value, which will be used
   to create a PRNG internally, or to a NumPy pseudo-random number generator (PRNG) created via
   ``np.random.default_rng(seed)``.
@@ -107,11 +110,7 @@ Pending deprecations
   multiple times, for instance during an optimization procedure.
 
   - Deprecated in v0.32
-  - Will be removed in v0.33
-
-
-Completed deprecation cycles
-----------------------------
+  - Removed in v0.33
 
 * The CV observables ``qml.X`` and ``qml.P`` have been removed. Use ``qml.QuadX`` and ``qml.QuadP`` instead.
 
