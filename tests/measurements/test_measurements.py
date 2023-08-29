@@ -131,8 +131,8 @@ def test_eq_correctness():
     class DummyMP(MeasurementProcess):
         """Dummy measurement process with no return type."""
 
-    mp1 = DummyMP(wires=0)
-    mp2 = DummyMP(wires=0)
+    mp1 = DummyMP(wires=qml.wires.Wires(0))
+    mp2 = DummyMP(wires=qml.wires.Wires(0))
 
     assert mp1 == mp1  # pylint: disable=comparison-with-itself
     assert mp1 == mp2
@@ -144,8 +144,8 @@ def test_hash_correctness():
     class DummyMP(MeasurementProcess):
         """Dummy measurement process with no return type."""
 
-    mp1 = DummyMP(wires=0)
-    mp2 = DummyMP(wires=0)
+    mp1 = DummyMP(wires=qml.wires.Wires(0))
+    mp2 = DummyMP(wires=qml.wires.Wires(0))
 
     assert len({mp1, mp2}) == 1
     assert hash(mp1) == mp1.hash
