@@ -3,7 +3,6 @@
 # be loaded. Extensions are loading into the active Python interpreter and may
 # run arbitrary code
 extension-pkg-whitelist=numpy,scipy,autograd,toml,appdir,autograd.numpy,autograd.numpy.linalg,autograd.numpy.builtins,semantic_version,torch,tensorflow,tensorflow.contrib,tensorflow.contrib.eager,LazyLoader,networkx,networkx.dag
-ignore-patterns=test_legacy*
 
 [TYPECHECK]
 

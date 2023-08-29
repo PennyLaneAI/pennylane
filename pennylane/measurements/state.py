@@ -148,23 +148,7 @@ class StateMP(StateMeasurement):
     def numeric_type(self):
         return complex
 
-    def _shape_legacy(self, device, shots):
-        num_shot_elements = (
-            sum(s.copies for s in shots.shot_vector) if shots.has_partitioned_shots else 1
-        )
-
-        if self.wires:
-            # qml.density_matrix()
-            dim = 2 ** len(self.wires)
-            return (num_shot_elements, dim, dim)
-
-        # qml.state()
-        dim = 2 ** len(device.wires)
-        return (num_shot_elements, dim)
-
     def shape(self, device, shots):
-        if not qml.active_return():
-            return self._shape_legacy(device, shots)
         num_shot_elements = (
             sum(s.copies for s in shots.shot_vector) if shots.has_partitioned_shots else 1
         )

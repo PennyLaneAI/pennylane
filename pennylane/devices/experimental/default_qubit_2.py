@@ -49,12 +49,12 @@ class DefaultQubit2(Device):
     Args:
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots to use in executions involving
             this device.
-        seed="global" (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
+        seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng`` or
             a request to seed from numpy's global random number generator.
             The default, ``seed="global"`` pulls a seed from NumPy's global generator. ``seed=None``
             will pull a seed from the OS entropy.
-        max_workers=None (int): A ``ProcessPoolExecutor`` executes tapes asynchronously
+        max_workers (int): A ``ProcessPoolExecutor`` executes tapes asynchronously
             using a pool of at most ``max_workers`` processes. If ``max_workers`` is ``None``,
             only the current process executes tapes. If you experience any
             issue, say using JAX, TensorFlow, Torch, try setting ``max_workers`` to ``None``.

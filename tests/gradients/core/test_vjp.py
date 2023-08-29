@@ -74,7 +74,7 @@ class TestComputeVJP:
         assert isinstance(vjp, np.ndarray)
         assert np.allclose(vjp, [0.75])
 
-    def test_compute_multiple_measurement_multi_dim_single_params(self):
+    def test_compute_multiple_measurement_multi_params(self):
         """Test that the correct VJP is returned"""
         dy = tuple([np.array([1.0]), np.array([1.0, 0.5])])
         jac = tuple(
@@ -88,16 +88,6 @@ class TestComputeVJP:
 
         assert isinstance(vjp, np.ndarray)
         assert np.allclose(vjp, [0.75, 1.1])
-
-    def test_compute_multiple_measurement_multi_dim_multiple_params(self):
-        """Test that the correct VJP is returned"""
-        dy = np.array([[1.0, 2.0], [3.0, 4.0]])
-        jac = np.array([[[1.0, 0.1, 0.2], [0.2, 0.6, 0.1]], [[0.4, -0.7, 1.2], [-0.5, -0.6, 0.7]]])
-
-        vjp = qml.gradients.compute_vjp(dy, jac)
-
-        assert vjp.shape == (3,)
-        assert np.all(vjp == np.tensordot(dy, jac, axes=[[0, 1], [0, 1]]))
 
     def test_jacobian_is_none_single(self):
         """A None Jacobian returns a None VJP"""

@@ -115,11 +115,20 @@ select the option below that describes your situation.
           x = np.array(0.5, requires_grad=True)
           qml.jacobian(circuit)(x)
 
-      Follow the instructions :ref:`here <return-autograd-tf-gotcha>` to fix this issue, which
-      arises because NumPy and TensorFlow do not support differentiating tuples.
-      Alternatively, consider porting your code to use the :ref:`JAX <jax_interf>` or
+
+      Use stacking to fix this issue (see below), which arises because NumPy and TensorFlow do not support
+      differentiating tuples. Alternatively, consider porting your code to use the :ref:`JAX <jax_interf>` or
       :ref:`Torch <torch_interf>` interface, which could unlock additional features and performance
       benefits!
+
+    .. code-block:: python
+
+            with tf.GradientTape() as tape:
+                res = circuit(a, b)
+                res = tf.stack(res)
+
+            x = np.array(0.5, requires_grad=True)
+            qml.jacobian(circuit)(x)
 
     * You are returning differently-shaped quantities together, such as
       :func:`expval() <pennylane.expval>` and :func:`probs() <pennylane.probs>`. For example, the
@@ -183,7 +192,3 @@ select the option below that describes your situation.
     - If you suspect that your issue is due to a bug in PennyLane itself, please open a
       `bug report <https://github.com/PennyLaneAI/pennylane/issues/new?labels=bug+%3Abug%3A&template=bug_report.yml&title=[BUG]>`_
       on the PennyLane GitHub page.
-
-    - As a *last resort*, you can place :func:`qml.disable_return() <.disable_return>` at the top of
-      your code. This will revert PennyLane's behaviour to the QNode return type in version 0.29.
-      However, be aware that this capability will be removed in a future version of PennyLane!

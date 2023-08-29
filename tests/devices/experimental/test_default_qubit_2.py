@@ -1382,20 +1382,18 @@ class TestPreprocessingIntegration:
         expected_expval = np.cos(y)
         assert qml.math.allclose(expected_expval, processed_results[1])
 
-    def test_preprocess_defer_measurements_integration(self, mocker):
+    def test_preprocess_defer_measurements(self, mocker):
         """Test that a QNode with mid-circuit measurements is transformed
         using defer_measurements."""
         dev = DefaultQubit2()
 
-        @qml.qnode(dev)
-        def circuit():
-            qml.PauliX(0)
-            qml.measure(0)
-            return qml.expval(qml.PauliZ(0))
-
+        tape = qml.tape.QuantumScript(
+            [qml.PauliX(0), qml.measurements.MidMeasureMP(qml.wires.Wires(0))],
+            [qml.expval(qml.PauliZ(0))],
+        )
         spy = mocker.spy(qml, "defer_measurements")
-        _ = circuit()
 
+        _, _, _ = dev.preprocess(tape)
         spy.assert_called_once()
 
 
