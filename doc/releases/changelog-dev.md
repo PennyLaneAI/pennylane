@@ -20,6 +20,7 @@
 
 * Minor documentation improvements to the new device API. The documentation now correctly states that interface-specific
   parameters are only passed to the device for backpropagation derivatives. 
+  [(#4542)](https://github.com/PennyLaneAI/pennylane/pull/4542)
 
 <h3>Bug fixes 🐛</h3>
 
