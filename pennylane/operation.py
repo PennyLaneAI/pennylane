@@ -2870,7 +2870,7 @@ def operation_derivative(operation) -> np.ndarray:
             trainable parameter
     """
     generator = qml.matrix(
-        qml.generator(operation, format="observable"), wire_order=operation.wires
+        qml.generator(operation, format="observable"), wire_order=operation.wires or Wires([0])
     )
     return 1j * generator @ operation.matrix()
 
