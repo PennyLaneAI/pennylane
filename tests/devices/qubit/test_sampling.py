@@ -59,7 +59,7 @@ class TestSampleState:
         state = qml.math.array(two_qubit_state, like=interface)
         samples = sample_state(state, 10)
         assert samples.shape == (10, 2)
-        assert samples.dtype == np.int8
+        assert samples.dtype == np.int64
         assert all(qml.math.allequal(s, [0, 1]) or qml.math.allequal(s, [1, 0]) for s in samples)
 
     @pytest.mark.parametrize("wire_order", [[2], [2, 0], [0, 2, 1]])
@@ -138,7 +138,7 @@ class TestMeasureSamples:
         result = measure_with_samples([mp], state, shots=shots)[0]
 
         assert result.shape == (shots.total_shots, 2)
-        assert result.dtype == np.int8
+        assert result.dtype == np.int64
         assert all(qml.math.allequal(s, [0, 1]) or qml.math.allequal(s, [1, 0]) for s in result)
 
     def test_sample_measure_single_wire(self):
@@ -153,11 +153,11 @@ class TestMeasureSamples:
         result1 = measure_with_samples([mp1], state, shots=shots)[0]
 
         assert result0.shape == (shots.total_shots,)
-        assert result0.dtype == np.int8
+        assert result0.dtype == np.int64
         assert np.all(result0 == 0)
 
         assert result1.shape == (shots.total_shots,)
-        assert result1.dtype == np.int8
+        assert result1.dtype == np.int64
         assert len(np.unique(result1)) == 2
 
     def test_prob_measure(self):
@@ -324,7 +324,7 @@ class TestMeasureSamples:
             res = res[0]
 
             assert res.shape == (sh, 2)
-            assert res.dtype == np.int8
+            assert res.dtype == np.int64
             assert all(qml.math.allequal(s, [0, 1]) or qml.math.allequal(s, [1, 0]) for s in res)
 
     @pytest.mark.parametrize(
@@ -465,7 +465,7 @@ class TestBroadcasting:
         res = measure_with_samples([measurement], state, shots, is_state_batched=True, rng=rng)[0]
 
         assert res.shape == (3, shots.total_shots, 2)
-        assert res.dtype == np.int8
+        assert res.dtype == np.int64
 
         # first batch of samples is always |11>
         assert np.all(res[0] == 1)
@@ -536,7 +536,7 @@ class TestBroadcasting:
             r = r[0]
 
             assert r.shape == (3, s, 2)
-            assert r.dtype == np.int8
+            assert r.dtype == np.int64
 
             # first batch of samples is always |11>
             assert np.all(r[0] == 1)

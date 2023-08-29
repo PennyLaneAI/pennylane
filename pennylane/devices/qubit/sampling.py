@@ -350,4 +350,4 @@ def sample_state(
 
     powers_of_two = 1 << np.arange(num_wires, dtype=np.int64)[::-1]
     states_sampled_base_ten = samples[..., None] & powers_of_two
-    return (states_sampled_base_ten > 0).astype(np.int8)
+    return (states_sampled_base_ten > 0).astype(np.int64)

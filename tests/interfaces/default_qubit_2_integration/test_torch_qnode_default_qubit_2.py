@@ -1411,7 +1411,7 @@ class TestSample:
         assert isinstance(result[1], torch.Tensor)
         assert result[2].shape == ()
         assert isinstance(result[2], torch.Tensor)
-        assert result[0].dtype is torch.int8
+        assert result[0].dtype is torch.int64
 
     def test_single_wire_sample(self):
         """Test the return type and shape of sampling a single wire"""
@@ -1441,9 +1441,9 @@ class TestSample:
         assert tuple(result[0].shape) == (10,)
         assert tuple(result[1].shape) == (10,)
         assert tuple(result[2].shape) == (10,)
-        assert result[0].dtype == torch.int8
-        assert result[1].dtype == torch.int8
-        assert result[2].dtype == torch.int8
+        assert result[0].dtype == torch.int64
+        assert result[1].dtype == torch.int64
+        assert result[2].dtype == torch.int64
 
 
 qubit_device_and_diff_method_and_grad_on_execution = [

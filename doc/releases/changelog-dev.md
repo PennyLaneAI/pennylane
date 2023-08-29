@@ -6,7 +6,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* `qml.sample()` in the new device API now returns a `np.int8` array instead of `np.bool8`.
+* `qml.sample()` in the new device API now returns a `np.int64` array instead of `np.bool8`.
   [(#4539)](https://github.com/PennyLaneAI/pennylane/pull/4539)
 
 <h3>Breaking changes 💔</h3>
