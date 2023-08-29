@@ -389,7 +389,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     [array([0.77750694])]
 
     A new tape can be created by passing new parameters along with the indices
-    to be updated to :method:`~pennylane.tape.QuantumScript.bind_new_parameters`:
+    to be updated to :meth:`~pennylane.tape.QuantumScript.bind_new_parameters`:
 
     >>> new_tape = tape.bind_new_parameters(params=[0.56], indices=[0])
     >>> tape.get_parameters()
