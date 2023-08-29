@@ -21,6 +21,10 @@
   Instead of ``tape.unwrap()``, use :func:`~.transforms.convert_to_numpy_parameters`.
   [#4535](https://github.com/PennyLaneAI/pennylane/pull/4535)
 
+* The ``RandomLayers.compute_decomposition`` keyword argument ``ratio_imprivitive`` has been changed to
+  ``ratio_imprim`` to match the call signature of the operation.
+  [#4552](https://github.com/PennyLaneAI/pennylane/pull/4552)
+
   
 <h3>Deprecations 👋</h3>
 

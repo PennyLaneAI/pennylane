@@ -6,12 +6,6 @@ Deprecations
 Pending deprecations
 --------------------
 
-* The `RandomLayers.compute_decomposition` keyword argument `ratio_imprivitive` will be changed to `ratio_imprim` to
-  match the call signature of the operation. 
-
-  - Deprecated in v0.32
-  - Removed in v0.33
-
 * The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
   instead. Using a list of observables in ``QubitDevice.statistics`` is deprecated. Please use a
   ``QuantumTape`` instead.
@@ -112,6 +106,12 @@ Pending deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+* The ``RandomLayers.compute_decomposition`` keyword argument ``ratio_imprivitive`` has been changed to
+  ``ratio_imprim`` to match the call signature of the operation.
+
+  - Deprecated in v0.32
+  - Removed in v0.33
 
 * The CV observables ``qml.X`` and ``qml.P`` have been removed. Use ``qml.QuadX`` and ``qml.QuadP`` instead.
 
