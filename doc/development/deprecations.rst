@@ -84,28 +84,6 @@ Pending deprecations
   `Fermionic Operator <https://pennylane.ai/qml/demos/tutorial_fermionic_operators>`_
   tutorial for more details.
 
-* The CV observables ``qml.X`` and ``qml.P`` have been deprecated, and usage will now
-  raise a warning. Please use ``qml.QuadX`` and ``qml.QuadP`` instead.
-
-  - Deprecated in v0.32
-  - Will be removed in v0.33
-
-* The method ``tape.unwrap()`` and corresponding ``UnwrapTape`` and ``Unwrap`` classes are
-  deprecated, and usage will now raise a warning.
-
-  Instead of ``tape.unwrap()``, use :func:`~.transforms.convert_to_numpy_parameters`:
-
-  .. code-block:: python
-
-    from pennylane.transforms import convert_to_numpy_parameters
-
-    qscript = qml.tape.QuantumTape([qml.RX(torch.tensor(0.1234), 0)],
-                                     [qml.expval(qml.Hermitian(torch.eye(2), 0))] )
-    unwrapped_qscript = convert_to_numpy_parameters(qscript)
-
-    torch_params = qscript.get_parameters()
-    numpy_params = unwrapped_qscript.get_parameters()
-    
 * The ``QuantumScript.set_parameters`` method and the ``QuantumScript.data`` setter has
   been deprecated. Please use ``QuantumScript.bind_new_parameters`` instead.
 
@@ -134,6 +112,30 @@ Pending deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+* The CV observables ``qml.X`` and ``qml.P`` have been removed. Use ``qml.QuadX`` and ``qml.QuadP`` instead.
+
+  - Deprecated in v0.32
+  - Removed in v0.33
+
+* The method ``tape.unwrap()`` and corresponding ``UnwrapTape`` and ``Unwrap`` classes are
+  removed.
+ 
+  - Deprecated in v0.32
+  - Removed in v0.33
+
+  Instead of ``tape.unwrap()``, use :func:`~.transforms.convert_to_numpy_parameters`:
+
+  .. code-block:: python
+
+    from pennylane.transforms import convert_to_numpy_parameters
+
+    qscript = qml.tape.QuantumTape([qml.RX(torch.tensor(0.1234), 0)],
+                                     [qml.expval(qml.Hermitian(torch.eye(2), 0))] )
+    unwrapped_qscript = convert_to_numpy_parameters(qscript)
+
+    torch_params = qscript.get_parameters()
+    numpy_params = unwrapped_qscript.get_parameters()
 
 * ``qml.enable_return`` and ``qml.disable_return`` have been removed. The old return types are no longer available.
 
