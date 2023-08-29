@@ -580,4 +580,4 @@ def process_queue(queue: AnnotatedQueue):
                 )
             lists[obj._queue_category].append(obj)
 
-    return lists["_ops"], lists["_measurements"], []
+    return lists["_ops"], lists["_measurements"]
