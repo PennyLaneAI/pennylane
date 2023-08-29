@@ -214,7 +214,7 @@ class TestTransformsDifferentiability:
 
         def f(x, tangents):
             tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-            return jpc.execute_and_compute_jvp((tape,), tangents)[1]
+            return jpc.execute_and_compute_jvp((tape,), tangents)[1][0]
 
         x = jax.numpy.array(0.1)
         tangents = ((jax.numpy.array(0.5),),)

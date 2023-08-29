@@ -42,10 +42,10 @@ class JacobianProductCalculator(abc.ABC):
         This method is required to compute JVPs in the JAX interface.
 
         Args:
-            tapes (tuple[`~.QuantumScript`]): The batch of tapes to take the derivatives of
+            tapes (tuple[.QuantumScript]): The batch of tapes to take the derivatives of
             tangents (Sequence[Sequence[TensorLike]]): the tangents for the parameters of the tape.
-                The ``i``th tangent corresponds to the ``i``th tape, and the ``j``th entry into a
-                tangent entry corresponds to the ``j``th trainable parameter of the tape.
+                The ``i`` th tangent corresponds to the ``i`` th tape, and the ``j`` th entry into a
+                tangent entry corresponds to the ``j`` th trainable parameter of the tape.
 
         Returns:
             ResultBatch, TensorLike: the results of the execution and the jacobian vector product
@@ -82,10 +82,10 @@ class JacobianProductCalculator(abc.ABC):
         This method is used by autograd, torch, and tensorflow to compute VJPs.
 
         Args:
-            tapes (tuple[`~.QuantumScript`]): the batch of tapes to take the derivatives of
+            tapes (tuple[.QuantumScript]): the batch of tapes to take the derivatives of
             dy (tuple[tuple[TensorLike]]): the derivatives of the results of an execution.
-                The ``i``th entry (cotangent) corresponds to the ``i``th tape, and the ``j``th entry of the ``i``th
-                cotangent corresponds to the ``j``th return value of the ``i``th tape.
+                The ``i``th entry (cotangent) corresponds to the ``i`` th tape, and the ``j`` th entry of the ``i`` th
+                cotangent corresponds to the ``j`` th return value of the ``i`` th tape.
 
         Returns:
             TensorLike: the vector jacobian product.
@@ -122,7 +122,7 @@ class JacobianProductCalculator(abc.ABC):
         This method is required to compute Jacobians in the ``jax-jit`` interface
 
         Args:
-            tapes: the batch of tapes to take the Jacobian of
+            tapes (tuple[.QuantumScript]): the batch of tapes to take the derivatives of
 
         **Examples:**
 
@@ -168,9 +168,9 @@ class TransformJacobianProducts(JacobianProductCalculator):
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
                 "TransformJacobianProduct being created with (%s, %s, %s)",
-                inner_execute
-                if not (logger.isEnabledFor(qml.logging.TRACE) and callable(inner_execute))
-                else "\n" + inspect.getsource(inner_execute),
+                inspect.getsource(inner_execute)
+                if logger.isEnabledFor(qml.logging.TRACE)
+                else inner_execute,
                 gradient_transform,
                 gradient_kwargs,
             )
