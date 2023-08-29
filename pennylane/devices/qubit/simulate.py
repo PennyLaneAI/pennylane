@@ -116,18 +116,18 @@ def simulate(circuit: qml.tape.QuantumScript, rng=None, debugger=None) -> Result
     This is an internal function that will be called by the successor to ``default.qubit``.
 
     Args:
-        circuit (.QuantumScript): The single circuit to simulate
+        circuit (QuantumTape): The single circuit to simulate
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
-        debugger (._Debugger): The debugger to use
+        debugger (_Debugger): The debugger to use
 
     Returns:
         tuple(TensorLike): The results of the simulation
 
     Note that this function can return measurements for non-commuting observables simultaneously.
 
-    It does currently not support sampling or observables without diagonalizing gates.
+    It currently does not support observables without diagonalizing gates.
 
     This function assumes that all operations provide matrices.
 
