@@ -485,8 +485,7 @@ class TestDecomposition:
         elif op_class is qml.GlobalPhase:
             # exp(qml.GlobalPhase.generator(), phi) decomposes to PauliRot
             # cannot compare GlobalPhase and PauliRot with qml.equal
-            assert np.allclose(op.matrix(), dec[0].matrix())
-            assert op.wires == dec[0].wires
+            assert np.allclose(op.matrix(wire_order=op.wires), dec[0].matrix(wire_order=op.wires))
         else:
             assert qml.equal(op, dec[0])
 
