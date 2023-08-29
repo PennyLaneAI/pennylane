@@ -189,9 +189,16 @@ def fermionic_dipole(mol, cutoff=1.0e-18, core=None, active=None):
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
     >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
-    >>> coeffs, ops = fermionic_dipole(mol)(*args)[2]
-    >>> ops
-    [[], [0, 0], [0, 2], [1, 1], [1, 3], [2, 0], [2, 2], [3, 1], [3, 3]]
+    >>> fermionic_dipole(mol)(*args)[2]
+    -0.4999999988651487 * a⁺(0) a(0)
+    + 0.82709948984052 * a⁺(0) a(2)
+    + -0.4999999988651487 * a⁺(1) a(1)
+    + 0.82709948984052 * a⁺(1) a(3)
+    + 0.82709948984052 * a⁺(2) a(0)
+    + -0.4999999899792451 * a⁺(2) a(2)
+    + 0.82709948984052 * a⁺(3) a(1)
+    + -0.4999999899792451 * a⁺(3) a(3)
+    + 1.0 * I
     """
 
     def _fermionic_dipole(*args):
@@ -284,7 +291,8 @@ def dipole_moment(mol, cutoff=1.0e-18, core=None, active=None):
     >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> dipole_moment(mol)(*args)[2].ops
-    [PauliZ(wires=[0]),
+    [Identity(wires=[0]),
+     PauliZ(wires=[0]),
      PauliY(wires=[0]) @ PauliZ(wires=[1]) @ PauliY(wires=[2]),
      PauliX(wires=[0]) @ PauliZ(wires=[1]) @ PauliX(wires=[2]),
      PauliZ(wires=[1]),
