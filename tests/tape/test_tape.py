@@ -2430,7 +2430,7 @@ class TestNumericType:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, int)
-        assert circuit.qtape.numeric_type is int
+        assert circuit.qtape.numeric_type is bool
 
     # TODO: add cases for each interface once qml.Hermitian supports other
     # interfaces
@@ -2486,7 +2486,7 @@ class TestNumericType:
         assert result[0].dtype == float
         assert result[1].dtype == int
 
-        assert circuit.qtape.numeric_type == (float, int)
+        assert circuit.qtape.numeric_type == (float, bool)
 
     def test_multi_type_measurements_numeric_type_error(self):
         """Test that querying the numeric type of a tape with several types of

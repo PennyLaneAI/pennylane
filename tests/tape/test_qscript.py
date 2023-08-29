@@ -1413,7 +1413,7 @@ class TestNumericType:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, np.int64)
-        assert qs.numeric_type is int
+        assert qs.numeric_type is bool
 
     # TODO: add cases for each interface once qml.Hermitian supports other
     # interfaces
@@ -1463,4 +1463,4 @@ class TestNumericType:
         # Double-check the domain of the QNode output
         assert np.issubdtype(result[0].dtype, float)
         assert np.issubdtype(result[1].dtype, np.int64)
-        assert qs.numeric_type == (float, int)
+        assert qs.numeric_type == (float, bool)
