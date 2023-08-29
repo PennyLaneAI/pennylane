@@ -762,6 +762,30 @@ class QuantumScript:
 
         Returns:
             .tape.QuantumScript: New tape with updated parameters
+
+        **Example**
+
+        >>> ops = [qml.RX(0.432, 0), qml.RY(0.543, 0),
+        ...        qml.CNOT((0,"a")), qml.RX(0.133, "a")]
+        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+
+        A new tape can be created by passing new parameters along with the indices
+        to be updated. To modify all parameters in the above qscript:
+
+        >>> new_qscript = qscript.bind_new_parameters([0.1, 0.2, 0.3], [0, 1, 2])
+        >>> new_qscript.get_parameters()
+        [0.1, 0.2, 0.3]
+
+        The original ``qscript`` remains unchanged:
+
+        >>> qscript.get_parameters()
+        [0.432, 0.543, 0.133]
+
+        A subset of parameters can be modified as well, defined by the parameter indices:
+
+        >>> newer_qscript = new_qscript.bind_new_parameters([-0.1, 0.5], [0, 2])
+        >>> newer_qscript.get_parameters()
+        [-0.1, 0.2, 0.5]
         """
         # pylint: disable=no-member
 
@@ -1010,37 +1034,6 @@ class QuantumScript:
         with qml.QueuingManager.stop_recording():
             ops_adj = [qml.adjoint(op, lazy=False) for op in reversed(ops)]
         return self.__class__(ops=prep + ops_adj, measurements=self.measurements, shots=self.shots)
-
-    def unwrap(self):
-        """A context manager that unwraps a quantum script with tensor-like parameters
-        to NumPy arrays.
-
-        Returns:
-            ~.QuantumScript: the unwrapped quantum script
-
-        **Example**
-
-        >>> with tf.GradientTape():
-        ...     qscript = QuantumScript([qml.RX(tf.Variable(0.1), 0),
-        ...                             qml.RY(tf.constant(0.2), 0),
-        ...                             qml.RZ(tf.Variable(0.3), 0)])
-        ...     with qscript.unwrap():
-        ...         print("Trainable params:", qscript.trainable_params)
-        ...         print("Unwrapped params:", qscript.get_parameters())
-        Trainable params: [0, 2]
-        Unwrapped params: [0.1, 0.3]
-        >>> qscript.get_parameters()
-        [<tf.Variable 'Variable:0' shape=() dtype=float32, numpy=0.1>,
-        <tf.Tensor: shape=(), dtype=float32, numpy=0.2>,
-        <tf.Variable 'Variable:0' shape=() dtype=float32, numpy=0.3>]
-        """
-
-        warnings.warn(
-            "The method tape.unwrap is deprecated and will be removed in PennyLane v0.33. "
-            "Please use qml.transforms.convert_to_numpy_parameters instead."
-        )
-
-        return qml.tape.UnwrapTape(self)
 
     # ========================================================
     # Transforms: QuantumScript to Information
