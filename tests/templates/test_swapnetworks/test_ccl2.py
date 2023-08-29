@@ -20,6 +20,38 @@ from pennylane import numpy as np
 import pennylane as qml
 
 
+# pylint: disable=protected-access
+def test_flatten_unflatten():
+    """Test the flatten and unflatten methods."""
+
+    def acquaintances(index, *_, use_CNOT=True, **__):
+        return qml.CNOT(index) if use_CNOT else qml.CZ(index)
+
+    weights = np.array([0.5, 0.6, 0.7])
+    wires = qml.wires.Wires((0, 1, 2))
+
+    op = qml.templates.TwoLocalSwapNetwork(
+        wires, acquaintances, weights, fermionic=True, shift=False, use_CNOT=False
+    )
+    data, metadata = op._flatten()
+    assert qml.math.allclose(data[0], weights)
+    assert metadata[0] == wires
+    assert metadata[1] == (
+        ("acquaintances", acquaintances),
+        ("fermionic", True),
+        ("shift", False),
+        ("use_CNOT", False),
+    )
+
+    # make sure metadata is hashable
+    assert hash(metadata)
+
+    new_op = type(op)._unflatten(*op._flatten())
+    assert qml.equal(new_op, op)
+    assert new_op is not op
+
+
+# pylint: disable=too-many-arguments
 class TestDecomposition:
     """Test that the template defines the correct decomposition."""
 
@@ -73,8 +105,10 @@ class TestDecomposition:
     def test_custom_wire_labels(self, tol=1e-8):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
 
-        acquaintances = lambda index, wires, param=None: qml.CNOT(index)
-        weights = np.random.random(size=(10))
+        def acquaintances(index, *_, **___):
+            return qml.CNOT(index)
+
+        weights = np.random.random(size=10)
 
         dev = qml.device("default.qubit", wires=5)
         dev2 = qml.device("default.qubit", wires=["z", "a", "k", "e", "y"])
@@ -224,11 +258,9 @@ class TestInputs:
         @qml.qnode(dev)
         def circuit():
             qml.templates.TwoLocalSwapNetwork(
-                dev.wires, acquaintances, weights, fermionic=True, shift=False
+                dev.wires, acquaintances, weights, fermionic=fermionic, shift=shift
             )
             return qml.expval(qml.PauliZ(0))
-
-        qnode = qml.QNode(circuit, dev)
 
         with pytest.raises(ValueError, match=msg_match):
             circuit()
@@ -352,7 +384,7 @@ class TestInterfaces:
         import jax
         import jax.numpy as jnp
 
-        weights = jnp.array(np.random.random(size=(6)))
+        weights = jnp.array(np.random.random(size=6))
 
         dev = qml.device("default.qubit", wires=4)
 
@@ -377,7 +409,7 @@ class TestInterfaces:
 
         import tensorflow as tf
 
-        weights = tf.Variable(np.random.random(size=(6)))
+        weights = tf.Variable(np.random.random(size=6))
 
         dev = qml.device("default.qubit", wires=4)
 
@@ -404,7 +436,7 @@ class TestInterfaces:
 
         import torch
 
-        weights = torch.tensor(np.random.random(size=(6)), requires_grad=True)
+        weights = torch.tensor(np.random.random(size=6), requires_grad=True)
 
         dev = qml.device("default.qubit", wires=4)
 
@@ -426,6 +458,7 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
 
+# pylint: disable=too-few-public-methods
 class TestGradient:
     """Test that the parameter-shift rule for this template matches that of backprop."""
 

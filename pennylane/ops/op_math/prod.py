@@ -42,7 +42,7 @@ MAX_NUM_WIRES_KRON_PRODUCT = 9
 computing the sparse matrix representation."""
 
 
-def prod(*ops, do_queue=True, id=None, lazy=True):
+def prod(*ops, id=None, lazy=True):
     """Construct an operator which represents the generalized product of the
     operators provided.
 
@@ -51,11 +51,10 @@ def prod(*ops, do_queue=True, id=None, lazy=True):
     that the given operators act on.
 
     Args:
-        ops (Union[tuple[~.operation.Operator], Callable]): The operators we would like to multiply.
+        *ops (Union[tuple[~.operation.Operator], Callable]): The operators we would like to multiply.
             Alternatively, a single qfunc that queues operators can be passed to this function.
 
     Keyword Args:
-        do_queue (bool): determines if the product operator will be queued. Default is True.
         id (str or None): id for the product operator. Default is None.
         lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any of the operators is already a product operator, its operands will be used instead.
 
@@ -107,22 +106,20 @@ def prod(*ops, do_queue=True, id=None, lazy=True):
         @wraps(fn)
         def wrapper(*args, **kwargs):
             qs = qml.tape.make_qscript(fn)(*args, **kwargs)
-            return prod(*qs.operations[::-1], do_queue=do_queue, id=id, lazy=lazy)
+            return prod(*qs.operations[::-1], id=id, lazy=lazy)
 
         return wrapper
 
     if lazy:
-        return Prod(*ops, do_queue=do_queue, id=id)
+        return Prod(*ops, id=id)
 
     ops_simp = Prod(
         *itertools.chain.from_iterable([op if isinstance(op, Prod) else [op] for op in ops]),
-        do_queue=do_queue,
         id=id,
     )
 
-    if do_queue:
-        for op in ops:
-            QueuingManager.remove(op)
+    for op in ops:
+        QueuingManager.remove(op)
 
     return ops_simp
 
@@ -131,11 +128,10 @@ class Prod(CompositeOp):
     r"""Symbolic operator representing the product of operators.
 
     Args:
-        factors (tuple[~.operation.Operator]): a tuple of operators which will be multiplied
-        together.
+        *factors (tuple[~.operation.Operator]): a tuple of operators which will be multiplied
+            together.
 
     Keyword Args:
-        do_queue (bool): determines if the product operator will be queued. Default is True.
         id (str or None): id for the product operator. Default is None.
 
     .. seealso:: :func:`~.ops.op_math.prod`
@@ -312,6 +308,9 @@ class Prod(CompositeOp):
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
 
     def sparse_matrix(self, wire_order=None):
+        if self._pauli_rep:  # Get the sparse matrix from the PauliSentence representation
+            return self._pauli_rep.to_mat(wire_order=wire_order or self.wires, format="csr")
+
         if self.has_overlapping_wires or self.num_wires > MAX_NUM_WIRES_KRON_PRODUCT:
             gen = ((op.sparse_matrix(), op.wires) for op in self)
 
@@ -332,7 +331,6 @@ class Prod(CompositeOp):
         used outside of ``QuantumTape._process_queue``.
 
         Options are:
-        * `"_prep"`
         * `"_ops"`
         * `"_measurements"`
         * `None`

@@ -198,13 +198,15 @@ def cut_circuit_mc(
 
             np.random.seed(42)
 
-            with qml.tape.QuantumTape() as tape:
-                qml.Hadamard(wires=0)
-                qml.CNOT(wires=[0, 1])
-                qml.PauliX(wires=1)
-                qml.WireCut(wires=1)
-                qml.CNOT(wires=[1, 2])
-                qml.sample(wires=[0, 1, 2])
+            ops = [
+                qml.Hadamard(wires=0),
+                qml.CNOT(wires=[0, 1]),
+                qml.PauliX(wires=1),
+                qml.WireCut(wires=1),
+                qml.CNOT(wires=[1, 2]),
+            ]
+            measurements = [qml.sample(wires=[0, 1, 2])]
+            tape = qml.tape.QuantumTape(ops, measurements)
 
         >>> print(tape.draw())
         0: ──H─╭●───────────┤ ╭Sample
@@ -223,12 +225,14 @@ def cut_circuit_mc(
 
         .. code-block:: python
 
-            with qml.tape.QuantumTape() as uncut_tape:
-                qml.Hadamard(wires=0)
-                qml.CNOT(wires=[0, 1])
-                qml.PauliX(wires=1)
-                qml.CNOT(wires=[1, 2])
-                qml.sample(wires=[0, 1, 2])
+            ops = [
+                qml.Hadamard(wires=0),
+                qml.CNOT(wires=[0, 1]),
+                qml.PauliX(wires=1),
+                qml.CNOT(wires=[1, 2]),
+            ]
+            measurements = [qml.sample(wires=[0, 1, 2])]
+            uncut_tape = qml.tape.QuantumTape(ops, measurements)
 
         >>> cut_graph = qml.transforms.qcut.find_and_place_cuts(
         ...     graph=qml.transforms.qcut.tape_to_graph(uncut_tape),
@@ -517,17 +521,6 @@ def qnode_execution_wrapper_mc(self, qnode, targs, tkwargs):
 
         execute_kwargs["cache"] = False
 
-        if "mode" in execute_kwargs:
-            mode = execute_kwargs.pop("mode")
-            if not qml.active_return():
-                if mode == "forward":  # pragma: no cover
-                    grad_on_execution = True
-                elif mode == "backward":  # pragma: no cover
-                    grad_on_execution = False
-                else:
-                    grad_on_execution = "best"
-                execute_kwargs["grad_on_execution"] = grad_on_execution
-
         res = qml.execute(
             tapes,
             device=qnode.device,
@@ -623,12 +616,14 @@ def expand_fragment_tapes_mc(
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as tape:
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.WireCut(wires=1)
-            qml.CNOT(wires=[1, 2])
-            qml.sample(wires=[0, 1, 2])
+        ops = [
+            qml.Hadamard(wires=0),
+            qml.CNOT(wires=[0, 1]),
+            qml.WireCut(wires=1),
+            qml.CNOT(wires=[1, 2]),
+        ]
+        measurements = [qml.sample(wires=[0, 1, 2])]
+        tape = qml.tape.QuantumTape(ops, measurements)
 
     We can generate the fragment tapes using the following workflow:
 
@@ -678,8 +673,8 @@ def expand_fragment_tapes_mc(
     pairs = [e[-1] for e in communication_graph.edges.data("pair")]
     settings = np.random.choice(range(8), size=(len(pairs), shots), replace=True)
 
-    meas_settings = {pair[0].id: setting for pair, setting in zip(pairs, settings)}
-    prep_settings = {pair[1].id: setting for pair, setting in zip(pairs, settings)}
+    meas_settings = {pair[0].obj.id: setting for pair, setting in zip(pairs, settings)}
+    prep_settings = {pair[1].obj.id: setting for pair, setting in zip(pairs, settings)}
 
     all_configs = []
     for tape in tapes:

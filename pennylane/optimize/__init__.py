@@ -21,9 +21,9 @@ from .adagrad import AdagradOptimizer
 from .adam import AdamOptimizer
 from .adaptive import AdaptiveOptimizer
 from .gradient_descent import GradientDescentOptimizer
-from .lie_algebra import LieAlgebraOptimizer
 from .momentum import MomentumOptimizer
 from .nesterov_momentum import NesterovMomentumOptimizer
+from .riemannian_gradient import RiemannianGradientOptimizer
 from .rms_prop import RMSPropOptimizer
 from .qng import QNGOptimizer
 from .rotosolve import RotosolveOptimizer
@@ -38,11 +38,11 @@ __all__ = [
     "AdamOptimizer",
     "AdaptiveOptimizer",
     "GradientDescentOptimizer",
-    "LieAlgebraOptimizer",
     "MomentumOptimizer",
     "NesterovMomentumOptimizer",
     "RMSPropOptimizer",
     "QNGOptimizer",
+    "RiemannianGradientOptimizer",
     "RotosolveOptimizer",
     "RotoselectOptimizer",
     "ShotAdaptiveOptimizer",

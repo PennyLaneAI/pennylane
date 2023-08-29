@@ -15,17 +15,45 @@
 Unit tests for the :mod:`pennylane.plugin.DefaultQubit` device when using broadcasting.
 """
 from itertools import product
-import cmath
 
-# pylint: disable=protected-access,cell-var-from-loop
+# pylint: disable=protected-access,cell-var-from-loop,too-many-arguments
 import math
 
 import pytest
+from gate_data import (
+    X,
+    Y,
+    Z,
+    S,
+    T,
+    H,
+    CNOT,
+    SWAP,
+    CZ,
+    ISWAP,
+    SISWAP,
+    CSWAP,
+    Rphi,
+    Rotx,
+    Roty,
+    Rotz,
+    MultiRZ1,
+    Rot3,
+    CRotx,
+    CRoty,
+    CRotz,
+    MultiRZ2,
+    IsingXX,
+    IsingYY,
+    IsingZZ,
+    CRot3,
+    I,
+    Toffoli,
+)
+
 import pennylane as qml
 from pennylane import numpy as np, DeviceError
-from pennylane.devices.default_qubit import _get_slice, DefaultQubit
-from pennylane.wires import Wires, WireError
-from gate_data import *
+from pennylane.devices.default_qubit import DefaultQubit
 
 THETA = np.linspace(0.11, 1, 3)
 PHI = np.linspace(0.32, 1, 3)
@@ -160,7 +188,7 @@ class TestApplyBroadcasted:
     # TODO[dwierichs]: add tests with qml.BaisState once `_apply_basis_state` supports broadcasting
     @pytest.mark.parametrize(
         "operation,expected_output,par",
-        [(qml.QubitStateVector, s, s) for s in [single_state, triple_state]],
+        [(qml.StatePrep, s, s) for s in [single_state, triple_state]],
     )
     def test_apply_operation_state_preparation_broadcasted(
         self, qubit_device_2_wires, tol, operation, expected_output, par
@@ -414,30 +442,26 @@ class TestApplyBroadcasted:
     def test_apply_errors_qubit_state_vector_broadcasted(self, qubit_device_2_wires):
         """Test that apply fails for incorrect state preparation, and > 2 qubit gates"""
         with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
-            qubit_device_2_wires.apply(
-                [qml.QubitStateVector(np.array([[1, -1], [0, 2]]), wires=[0])]
-            )
+            qubit_device_2_wires.apply([qml.StatePrep(np.array([[1, -1], [0, 2]]), wires=[0])])
 
         # Also test that the sum-check is *not* performed along the broadcasting dimension
-        qubit_device_2_wires.apply(
-            [qml.QubitStateVector(np.array([[0.6, 0.8], [0.6, 0.8]]), wires=[0])]
-        )
+        qubit_device_2_wires.apply([qml.StatePrep(np.array([[0.6, 0.8], [0.6, 0.8]]), wires=[0])])
 
         with pytest.raises(ValueError, match=r"State vector must have shape \(2\*\*wires,\)."):
             # Second dimension does not match 2**num_wires
             p = np.array([[1, 0, 1, 1, 0], [0, 1, 1, 0, 1]]) / np.sqrt(3)
-            qubit_device_2_wires.apply([qml.QubitStateVector(p, wires=[0, 1])])
+            qubit_device_2_wires.apply([qml.StatePrep(p, wires=[0, 1])])
 
         with pytest.raises(ValueError, match=r"State vector must have shape \(2\*\*wires,\)."):
             # Broadcasting dimension is not first dimension
             p = np.array([[1, 1, 0], [0, 1, 1], [1, 0, 1], [0, 1, 1]]) / np.sqrt(2)
-            qubit_device_2_wires.apply([qml.QubitStateVector(p, wires=[0, 1])])
+            qubit_device_2_wires.apply([qml.StatePrep(p, wires=[0, 1])])
 
         qubit_device_2_wires.reset()
-        vec = qml.QubitStateVector(np.array([[0, 1, 0, 0], [0, 0, 1, 0]]), wires=[0, 1])
+        vec = qml.StatePrep(np.array([[0, 1, 0, 0], [0, 0, 1, 0]]), wires=[0, 1])
         with pytest.raises(
             DeviceError,
-            match="Operation QubitStateVector cannot be used after other Operations have already been applied "
+            match="Operation StatePrep cannot be used after other Operations have already been applied "
             "on a default.qubit device.",
         ):
             qubit_device_2_wires.apply([qml.RZ(0.5, wires=[0]), vec])
@@ -503,7 +527,7 @@ class TestExpvalBroadcasted:
 
         qubit_device_1_wire.reset()
         qubit_device_1_wire.apply(
-            [qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates()
+            [qml.StatePrep(np.array(input), wires=[0])], obs.diagonalizing_gates()
         )
         res = qubit_device_1_wire.expval(obs)
 
@@ -522,7 +546,7 @@ class TestExpvalBroadcasted:
 
         qubit_device_1_wire.reset()
         qubit_device_1_wire.apply(
-            [qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates()
+            [qml.StatePrep(np.array(input), wires=[0])], obs.diagonalizing_gates()
         )
         res = qubit_device_1_wire.expval(obs)
 
@@ -558,7 +582,7 @@ class TestExpvalBroadcasted:
 
         qubit_device_2_wires.reset()
         qubit_device_2_wires.apply(
-            [qml.QubitStateVector(np.array(input), wires=[0, 1])], obs.diagonalizing_gates()
+            [qml.StatePrep(np.array(input), wires=[0, 1])], obs.diagonalizing_gates()
         )
         res = qubit_device_2_wires.expval(obs)
 
@@ -603,7 +627,7 @@ class TestVarBroadcasted:
 
         qubit_device_1_wire.reset()
         qubit_device_1_wire.apply(
-            [qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates()
+            [qml.StatePrep(np.array(input), wires=[0])], obs.diagonalizing_gates()
         )
         res = qubit_device_1_wire.var(obs)
 
@@ -622,7 +646,7 @@ class TestVarBroadcasted:
 
         qubit_device_1_wire.reset()
         qubit_device_1_wire.apply(
-            [qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates()
+            [qml.StatePrep(np.array(input), wires=[0])], obs.diagonalizing_gates()
         )
         res = qubit_device_1_wire.var(obs)
 
@@ -658,7 +682,7 @@ class TestVarBroadcasted:
 
         qubit_device_2_wires.reset()
         qubit_device_2_wires.apply(
-            [qml.QubitStateVector(np.array(input), wires=[0, 1])], obs.diagonalizing_gates()
+            [qml.StatePrep(np.array(input), wires=[0, 1])], obs.diagonalizing_gates()
         )
         res = qubit_device_2_wires.var(obs)
 
@@ -720,7 +744,7 @@ class TestSampleBroadcasted:
         s3 = dev.sample(qml.PauliX(0) @ qml.PauliZ(1))
         assert s3.shape == (5, 17)
 
-    def test_sample_values_broadcasted(self, qubit_device_2_wires, tol):
+    def test_sample_values_broadcasted(self, tol):
         """Tests if the samples returned by sample have
         the correct values
         """
@@ -818,7 +842,7 @@ class TestDefaultQubitIntegrationBroadcasted:
 
         @qml.qnode(qubit_device_1_wire)
         def circuit():
-            qml.QubitStateVector(np.array(state), wires=[0])
+            qml.StatePrep(np.array(state), wires=[0])
             return qml.expval(obs(wires=[0]))
 
         assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)
@@ -841,7 +865,7 @@ class TestDefaultQubitIntegrationBroadcasted:
 
         @qml.qnode(qubit_device_1_wire)
         def circuit():
-            qml.QubitStateVector(np.array(state), wires=[0])
+            qml.StatePrep(np.array(state), wires=[0])
             return qml.expval(obs(*par, wires=[0]))
 
         assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)
@@ -878,7 +902,7 @@ class TestDefaultQubitIntegrationBroadcasted:
 
         @qml.qnode(qubit_device_2_wires)
         def circuit():
-            qml.QubitStateVector(np.array(state), wires=[0, 1])
+            qml.StatePrep(np.array(state), wires=[0, 1])
             return qml.expval(obs(*par, wires=[0, 1]))
 
         assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)
@@ -923,6 +947,7 @@ class TestDefaultQubitIntegrationBroadcasted:
         assert np.array_equal(outcomes[0], outcomes[1])
 
 
+# pylint: disable=unused-argument
 @pytest.mark.parametrize(
     "theta,phi,varphi", [(THETA, PHI, VARPHI), (THETA, PHI[0], VARPHI), (THETA[0], PHI, VARPHI[1])]
 )
@@ -1119,8 +1144,8 @@ class TestTensorExpvalBroadcasted:
             [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
         )
         Identity = np.array([[1, 0], [0, 1]])
-        H = np.kron(np.kron(Identity, Identity), A)
-        obs = qml.Hermitian(H, wires=[2, 1, 0])
+        Ham = np.kron(np.kron(Identity, Identity), A)
+        obs = qml.Hermitian(Ham, wires=[2, 1, 0])
 
         dev.apply(
             [qml.RY(theta, wires=[0]), qml.RY(phi, wires=[1]), qml.CNOT(wires=[0, 1])],
@@ -1382,8 +1407,8 @@ class TestTensorSampleBroadcasted:
 
         # s1 should only contain the eigenvalues of
         # the hermitian matrix tensor product Z
-        Z = np.diag([1, -1])
-        eigvals = np.linalg.eigvalsh(np.kron(Z, A))
+        z = np.diag([1, -1])
+        eigvals = np.linalg.eigvalsh(np.kron(z, A))
         assert set(np.round(s1, 8).tolist()).issubset(set(np.round(eigvals, 8).tolist()))
 
         mean = p @ s1
@@ -1447,21 +1472,19 @@ class TestDtypePreservedBroadcasted:
     @pytest.mark.parametrize(
         "op",
         [
-            # TODO[dwierichs]: Include the following test cases once the operations support
-            # broadcasting.
-            # qml.SingleExcitation,
-            # qml.SingleExcitationPlus,
-            # qml.SingleExcitationMinus,
-            # qml.DoubleExcitation,
-            # qml.DoubleExcitationPlus,
-            # qml.DoubleExcitationMinus,
-            # qml.OrbitalRotation,
-            # qml.FermionicSWAP,
+            qml.SingleExcitation,
+            qml.SingleExcitationPlus,
+            qml.SingleExcitationMinus,
+            qml.DoubleExcitation,
+            qml.DoubleExcitationPlus,
+            qml.DoubleExcitationMinus,
+            qml.OrbitalRotation,
+            qml.FermionicSWAP,
             qml.QubitSum,
             qml.QubitCarry,
         ],
     )
-    def test_state_dtype_after_op_broadcasted(self, r_dtype, c_dtype, op, tol):
+    def test_state_dtype_after_op_broadcasted(self, r_dtype, c_dtype, op):
         """Test that the default qubit plugin preserves data types of states when an operation is
         applied. As TestApply class check most of operators, we here only check some subtle
         examples.
@@ -1495,7 +1518,7 @@ class TestDtypePreservedBroadcasted:
             qml.probs(wires=[2, 0]),
         ],
     )
-    def test_measurement_real_dtype_broadcasted(self, r_dtype, c_dtype, measurement, tol):
+    def test_measurement_real_dtype_broadcasted(self, r_dtype, c_dtype, measurement):
         """Test that the default qubit plugin provides correct result for a simple circuit"""
         p = np.array([0.543, 0.622, 1.3])
 
@@ -1509,7 +1532,7 @@ class TestDtypePreservedBroadcasted:
         res = circuit(p)
         assert res.dtype == r_dtype
 
-    def test_measurement_complex_dtype_broadcasted(self, r_dtype, c_dtype, tol):
+    def test_measurement_complex_dtype_broadcasted(self, r_dtype, c_dtype):
         """Test that the default qubit plugin provides correct result for a simple circuit"""
         p = np.array([0.543, 0.622, 1.3])
         m = qml.state()
@@ -1528,6 +1551,7 @@ class TestDtypePreservedBroadcasted:
 class TestProbabilityIntegrationBroadcasted:
     """Test probability method for when analytic is True/False"""
 
+    # pylint: disable=no-member, unused-argument
     def mock_analytic_counter(self, wires=None):
         self.analytic_counter += 1
         return np.array([1, 0, 0, 0], dtype=float)
@@ -1738,7 +1762,7 @@ class TestApplyOperationBroadcasted:
             res = dev._apply_operation(test_state, op)
             assert np.allclose(res, expected_test_output)
 
-    def test_diagonal_operation_case_broadcasted(self, mocker, monkeypatch):
+    def test_diagonal_operation_case_broadcasted(self, monkeypatch):
         """Tests the case when the operation to be applied is
         diagonal in the computational basis and the _apply_diagonal_unitary method is used."""
         dev = qml.device("default.qubit", wires=1)
@@ -1764,7 +1788,7 @@ class TestApplyOperationBroadcasted:
             assert np.allclose(res_mat, np.diag(op.matrix()))
             assert np.allclose(res_wires, wires)
 
-    def test_apply_einsum_case_broadcasted(self, mocker, monkeypatch):
+    def test_apply_einsum_case_broadcasted(self, monkeypatch):
         """Tests the case when np.einsum is used to apply an operation in
         default.qubit."""
         dev = qml.device("default.qubit", wires=1)
@@ -1774,9 +1798,11 @@ class TestApplyOperationBroadcasted:
 
         # Redefine the S gate so that it is an example for a one-qubit gate
         # that is not registered in the diagonal_in_z_basis attribute
+        # pylint: disable=too-few-public-methods
         class TestSGate(qml.operation.Operation):
             num_wires = 1
 
+            # pylint: disable=unused-argument
             @staticmethod
             def compute_matrix(*params, **hyperparams):
                 return np.array([[1, 0], [0, 1j]])
@@ -1801,7 +1827,7 @@ class TestApplyOperationBroadcasted:
             assert np.allclose(res_mat, op.matrix())
             assert np.allclose(res_wires, wires)
 
-    def test_apply_tensordot_case_broadcasted(self, mocker, monkeypatch):
+    def test_apply_tensordot_case_broadcasted(self, monkeypatch):
         """Tests the case when np.tensordot is used to apply an operation in
         default.qubit."""
         dev = qml.device("default.qubit", wires=3)
@@ -1811,9 +1837,11 @@ class TestApplyOperationBroadcasted:
 
         # Redefine the Toffoli gate so that it is an example for a gate with
         # more than two wires
+        # pylint: disable=too-few-public-methods
         class TestToffoli(qml.operation.Operation):
             num_wires = 3
 
+            # pylint: disable=unused-argument
             @staticmethod
             def compute_matrix(*params, **hyperparams):
                 return Toffoli
@@ -1864,12 +1892,12 @@ class TestHamiltonianSupportBroadcasted:
     def test_do_not_split_analytic_broadcasted(self, mocker):
         """Tests that the Hamiltonian is not split for shots=None."""
         dev = qml.device("default.qubit", wires=2)
-        H = qml.Hamiltonian(np.array([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
+        Ham = qml.Hamiltonian(np.array([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
 
         @qml.qnode(dev, diff_method="parameter-shift", interface=None)
         def circuit():
             qml.RX(np.zeros(5), 0)  # Broadcast the state by applying a broadcasted identity
-            return qml.expval(H)
+            return qml.expval(Ham)
 
         spy = mocker.spy(dev, "expval")
 
@@ -1882,12 +1910,12 @@ class TestHamiltonianSupportBroadcasted:
         dev = qml.device("default.qubit", wires=2, shots=10)
         spy = mocker.spy(dev, "expval")
 
-        H = qml.Hamiltonian(np.array([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
+        ham = qml.Hamiltonian(np.array([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
 
         @qml.qnode(dev)
         def circuit():
             qml.RX(np.zeros(5), 0)  # Broadcast the state by applying a broadcasted identity
-            return qml.expval(H)
+            return qml.expval(ham)
 
         circuit()
 
@@ -1898,11 +1926,12 @@ class TestHamiltonianSupportBroadcasted:
 original_capabilities = qml.devices.DefaultQubit.capabilities()
 
 
-@pytest.fixture(scope="function")
-def mock_default_qubit(monkeypatch):
+@pytest.fixture(scope="function", name="mock_default_qubit")
+def mock_default_qubit_fixture(monkeypatch):
     """A function to create a mock device that mocks the broadcasting support flag
     to be False, so that default support via broadcast_expand transform can be tested"""
 
+    # pylint: disable=unused-argument
     def overwrite_support(*cls):
         capabilities = original_capabilities.copy()
         capabilities.update(supports_broadcasting=False)
@@ -1973,14 +2002,14 @@ class TestBroadcastingSupportViaExpansion:
         single parametrized operation works."""
         dev = mock_default_qubit(wires=2, shots=shots)
 
-        H = qml.Hamiltonian([0.3, 0.9], [qml.PauliZ(0), qml.PauliY(1)])
-        H.compute_grouping()
+        Ham = qml.Hamiltonian([0.3, 0.9], [qml.PauliZ(0), qml.PauliY(1)])
+        Ham.compute_grouping()
 
         @qml.qnode(dev)
         def circuit(x, y):
             qml.RX(x, wires=0)
             qml.RX(y, wires=1)
-            return qml.expval(H)
+            return qml.expval(Ham)
 
         out = circuit(x, y)
         expected = 0.3 * qml.math.cos(x) * qml.math.ones_like(y) - 0.9 * qml.math.sin(y)

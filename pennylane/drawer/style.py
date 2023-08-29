@@ -17,7 +17,8 @@ This module contains styles for using matplotlib graphics.
 To add a new style:
 * create a private function that modifies ``plt.rcParams``.
 * add an entry to the private dictionary ``_style_map``.
-* Add an entry to ``doc/code/qml.drawer.rst``
+* update the docstrings for ``use_style`` and ``draw_mpl``.
+* Add an entry to ``doc/code/qml_drawer.rst``
 * Add a test in ``tests/drawer/test_style.py``
 
 Use the decorator ``_needs_mpl`` on style functions to raise appropriate
@@ -28,6 +29,7 @@ errors if ``matplotlib`` is not installed.
 _has_mpl = True  # pragma: no cover
 try:  # pragma: no cover
     import matplotlib.pyplot as plt
+    import matplotlib.font_manager as fm
 except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
     _has_mpl = False
 
@@ -60,6 +62,8 @@ def _black_white():
     plt.rcParams["lines.color"] = "black"
     plt.rcParams["text.color"] = "black"
     plt.rcParams["path.sketch"] = None
+    plt.rcParams["font.weight"] = "normal"
+    plt.rcParams["lines.linewidth"] = 1.5
 
 
 @_needs_mpl
@@ -130,6 +134,27 @@ def _sketch():
 
 
 @_needs_mpl
+def _pennylane():
+    """Apply the PennyLane style to matplotlib's configuration. This function
+    modifies ``plt.rcParams``.
+    """
+    almost_black = "#151515"
+    plt.rcParams["figure.facecolor"] = "white"
+    plt.rcParams["savefig.facecolor"] = "white"
+    plt.rcParams["axes.facecolor"] = "#FFB5F1"
+    plt.rcParams["patch.facecolor"] = "#D5F0FD"
+    plt.rcParams["patch.edgecolor"] = almost_black
+    plt.rcParams["patch.linewidth"] = 2.0
+    plt.rcParams["patch.force_edgecolor"] = True
+    plt.rcParams["lines.color"] = "black"
+    plt.rcParams["text.color"] = "black"
+    if "Quicksand" in {font.name for font in fm.FontManager().ttflist}:  # pragma: no cover
+        plt.rcParams["font.family"] = "Quicksand"
+    plt.rcParams["font.weight"] = "bold"
+    plt.rcParams["path.sketch"] = (1, 250, 1)
+
+
+@_needs_mpl
 def _sketch_dark():
     """Apply the sketch dark style to matplotlib's configuration. This function
     modifies ``plt.rcParams``.
@@ -152,11 +177,14 @@ _styles_map = {
     "black_white": _black_white,
     "black_white_dark": _black_white_dark,
     "sketch": _sketch,
+    "pennylane": _pennylane,
     "sketch_dark": _sketch_dark,
     "solarized_light": _solarized_light,
     "solarized_dark": _solarized_dark,
     "default": _needs_mpl(lambda: plt.style.use("default")),
 }
+
+__current_style_fn = _black_white
 
 
 def available_styles():
@@ -169,7 +197,7 @@ def available_styles():
 
 
 def use_style(style: str):
-    """Set a style setting. Reset to default style using ``plt.style.use('default')``
+    """Set a style setting. Reset to default style using ``use_style('black_white')``
 
     Args:
         style (str): A style specification.
@@ -180,6 +208,7 @@ def use_style(style: str):
     * ``'black_white'``
     * ``'black_white_dark'``
     * ``'sketch'``
+    * ``'pennylane'``
     * ``'sketch_dark'``
     * ``'solarized_light'``
     * ``'solarized_dark'``
@@ -209,10 +238,30 @@ def use_style(style: str):
             :target: javascript:void(0);
 
     """
+    global __current_style_fn  # pylint:disable=global-statement
     if style in _styles_map:
+        __current_style_fn = _styles_map[style]
+    else:
+        raise TypeError(
+            f"style '{style}' provided to ``qml.drawer.use_style`` "
+            f"does not exist.  Available options are {available_styles()}"
+        )
+
+
+def _set_style(style: str = None):
+    """
+    Execute a style function to change the current rcParams.
+
+    Args:
+        style (Optional[str]): A style specification. If no style is provided,
+            the latest style set with ``use_style`` is used instead.
+    """
+    if not style:
+        __current_style_fn()
+    elif style in _styles_map:
         _styles_map[style]()
     else:
         raise TypeError(
-            f"style '{style}' provided to ``qml.drawer.use_style``"
-            f" does not exist.  Available options are {available_styles()}"
+            f"style '{style}' provided to ``_set_style`` "
+            f"does not exist.  Available options are {available_styles()}"
         )

@@ -99,11 +99,13 @@ def map_wires(
         return input.map_wires(wire_map=wire_map)
 
     if isinstance(input, QuantumScript):
-        ops = [qml.map_wires(op, wire_map) for op in input._ops]  # pylint: disable=protected-access
+        ops = [qml.map_wires(op, wire_map) for op in input.operations]
         measurements = [qml.map_wires(m, wire_map) for m in input.measurements]
-        prep = [qml.map_wires(p, wire_map) for p in input._prep]  # pylint: disable=protected-access
 
-        return input.__class__(ops=ops, measurements=measurements, prep=prep, shots=input.shots)
+        out = input.__class__(ops=ops, measurements=measurements, shots=input.shots)
+        out.trainable_params = input.trainable_params
+        out._qfunc_output = input._qfunc_output  # pylint: disable=protected-access
+        return out
 
     if callable(input):
         func = input.func if isinstance(input, QNode) else input

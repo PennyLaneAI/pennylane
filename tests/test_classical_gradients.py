@@ -19,7 +19,6 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-import numpy as onp
 
 
 np.random.seed(42)
@@ -247,6 +246,7 @@ class TestGrad:
         with pytest.raises(TypeError, match="only applies to real scalar-output functions"):
             grad_fn(arr1)
 
+    # pylint: disable=no-value-for-parameter
     def test_agrees_with_autograd(self, tol):
         """Test that the grad function agrees with autograd"""
 
@@ -271,7 +271,7 @@ class TestGrad:
 
         assert grad_fn.forward is None
 
-        grad = grad_fn(params)
+        grad_fn(params)
 
         res = grad_fn.forward
         expected = cost(params)
@@ -279,7 +279,7 @@ class TestGrad:
 
         # change the parameters
         params2 = np.array([1.4, 1.0, 2.0], requires_grad=True)
-        grad = grad_fn(params2)
+        grad_fn(params2)
 
         res = grad_fn.forward
         expected = cost(params2)

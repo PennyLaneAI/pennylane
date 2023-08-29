@@ -15,7 +15,6 @@
 This submodule defines the symbolic operation that indicates the adjoint of an operator.
 """
 from functools import wraps
-import warnings
 
 import pennylane as qml
 from pennylane.math import conj, moveaxis, transpose
@@ -175,85 +174,68 @@ class Adjoint(SymbolicOp):
     >>> qml.generator(Adjoint(qml.RX(1.0, wires=0)))
     (PauliX(wires=[0]), 0.5)
     >>> Adjoint(qml.RX(1.234, wires=0)).data
-    [1.234]
+    (1.234,)
 
     .. details::
         :title: Developer Details
 
-    This class mixes in parent classes based on the inheritance tree of the provided ``Operator``.
-    For example, when provided an ``Operation``, the instance will inherit from ``Operation`` and
-    the ``AdjointOperation`` mixin.
+        This class mixes in parent classes based on the inheritance tree of the provided ``Operator``.
+        For example, when provided an ``Operation``, the instance will inherit from ``Operation`` and
+        the ``AdjointOperation`` mixin.
 
-    >>> op = Adjoint(qml.RX(1.234, wires=0))
-    >>> isinstance(op, qml.operation.Operation)
-    True
-    >>> isinstance(op, AdjointOperation)
-    True
-    >>> op.grad_method
-    'A'
+        >>> op = Adjoint(qml.RX(1.234, wires=0))
+        >>> isinstance(op, qml.operation.Operation)
+        True
+        >>> isinstance(op, AdjointOperation)
+        True
+        >>> op.grad_method
+        'A'
 
-    If the base class is an ``Observable`` instead, the ``Adjoint`` will be an ``Observable`` as
-    well.
+        If the base class is an ``Observable`` instead, the ``Adjoint`` will be an ``Observable`` as
+        well.
 
-    >>> op = Adjoint(1.0 * qml.PauliX(0))
-    >>> isinstance(op, qml.operation.Observable)
-    True
-    >>> isinstance(op, qml.operation.Operation)
-    False
-    >>> Adjoint(qml.PauliX(0)) @ qml.PauliY(1)
-    Adjoint(PauliX)(wires=[0]) @ PauliY(wires=[1])
+        >>> op = Adjoint(1.0 * qml.PauliX(0))
+        >>> isinstance(op, qml.operation.Observable)
+        True
+        >>> isinstance(op, qml.operation.Operation)
+        False
+        >>> Adjoint(qml.PauliX(0)) @ qml.PauliY(1)
+        Adjoint(PauliX)(wires=[0]) @ PauliY(wires=[1])
 
     """
 
-    _operation_type = None  # type if base inherits from operation and not observable
-    _operation_observable_type = None  # type if base inherits from both operation and observable
-    _observable_type = None  # type if base inherits from observable and not operation
+    def _flatten(self):
+        return (self.base,), tuple()
+
+    @classmethod
+    def _unflatten(cls, data, _):
+        return cls(data[0])
 
     # pylint: disable=unused-argument
-    def __new__(cls, base=None, do_queue=True, id=None):
-        """Mixes in parents based on inheritance structure of base.
+    def __new__(cls, base=None, id=None):
+        """Returns an uninitialized type with the necessary mixins.
 
-        Though all the types will be named "Adjoint", their *identity* and location in memory will
-        be different based on ``base``'s inheritance.  We cache the different types in private class
-        variables so that:
-
-        >>> Adjoint(op).__class__ is Adjoint(op).__class__
-        True
-        >>> type(Adjoint(op)) == type(Adjoint(op))
-        True
-        >>> Adjoint(qml.RX(1.2, wires=0)).__class__ is Adjoint._operation_type
-        True
-        >>> Adjoint(qml.PauliX(0)).__class__ is Adjoint._operation_observable_type
-        True
+        If the ``base`` is an ``Operation``, this will return an instance of ``AdjointOperation``.
+        If ``Observable`` but not ``Operation``, it will be ``AdjointObs``.
+        And if both, it will be an instance of ``AdjointOpObs``.
 
         """
 
         if isinstance(base, Operation):
             if isinstance(base, Observable):
-                if cls._operation_observable_type is None:
-                    class_bases = (AdjointOperation, Adjoint, SymbolicOp, Observable, Operation)
-                    cls._operation_observable_type = type(
-                        "Adjoint", class_bases, dict(cls.__dict__)
-                    )
-                return object.__new__(cls._operation_observable_type)
+                return object.__new__(AdjointOpObs)
 
             # not an observable
-            if cls._operation_type is None:
-                class_bases = (AdjointOperation, Adjoint, SymbolicOp, Operation)
-                cls._operation_type = type("Adjoint", class_bases, dict(cls.__dict__))
-            return object.__new__(cls._operation_type)
+            return object.__new__(AdjointOperation)
 
         if isinstance(base, Observable):
-            if cls._observable_type is None:
-                class_bases = (Adjoint, SymbolicOp, Observable)
-                cls._observable_type = type("Adjoint", class_bases, dict(cls.__dict__))
-            return object.__new__(cls._observable_type)
+            return object.__new__(AdjointObs)
 
         return object.__new__(Adjoint)
 
-    def __init__(self, base=None, do_queue=True, id=None):
+    def __init__(self, base=None, id=None):
         self._name = f"Adjoint({base.name})"
-        super().__init__(base, do_queue=do_queue, id=id)
+        super().__init__(base, id=id)
 
     def __repr__(self):
         return f"Adjoint({self.base})"
@@ -322,7 +304,7 @@ class Adjoint(SymbolicOp):
 
 
 # pylint: disable=no-member
-class AdjointOperation(Operation):
+class AdjointOperation(Adjoint, Operation):
     """This mixin class is dynamically added to an ``Adjoint`` instance if the provided base class
     is an ``Operation``.
 
@@ -336,13 +318,8 @@ class AdjointOperation(Operation):
     class can be removed.
     """
 
-    @property
-    def base_name(self):
-        warnings.warn(
-            "Operation.base_name is deprecated. Please use type(obj).__name__ or obj.name instead.",
-            UserWarning,
-        )
-        return self._name
+    def __new__(cls, *_, **__):
+        return object.__new__(cls)
 
     @property
     def name(self):
@@ -381,3 +358,18 @@ class AdjointOperation(Operation):
 
     def generator(self):
         return -1.0 * self.base.generator()
+
+
+class AdjointObs(Adjoint, Observable):
+    """A child of :class:`~.Adjoint` that also inherits from :class:`~.Observable`."""
+
+    def __new__(cls, *_, **__):
+        return object.__new__(cls)
+
+
+# pylint: disable=too-many-ancestors
+class AdjointOpObs(AdjointOperation, Observable):
+    """A child of :class:`~.AdjointOperation` that also inherits from :class:`~.Observable."""
+
+    def __new__(cls, *_, **__):
+        return object.__new__(cls)

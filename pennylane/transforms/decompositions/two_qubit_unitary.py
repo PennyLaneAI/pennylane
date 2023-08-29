@@ -19,7 +19,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import math
 
-from .single_qubit_unitary import zyz_decomposition
+from .single_qubit_unitary import one_qubit_decomposition
 
 
 ###################################################################################
@@ -274,8 +274,8 @@ def _decomposition_0_cnots(U, wires):
      -╰U- = -B-
     """
     A, B = _su2su2_to_tensor_products(U)
-    A_ops = zyz_decomposition(A, wires[0])
-    B_ops = zyz_decomposition(B, wires[1])
+    A_ops = one_qubit_decomposition(A, wires[0])
+    B_ops = one_qubit_decomposition(B, wires[1])
     return A_ops + B_ops
 
 
@@ -331,10 +331,10 @@ def _decomposition_1_cnot(U, wires):
 
     # Recover the operators in the decomposition; note that because of the
     # initial SWAP, we exchange the order of A and B
-    A_ops = zyz_decomposition(A, wires[1])
-    B_ops = zyz_decomposition(B, wires[0])
-    C_ops = zyz_decomposition(C, wires[0])
-    D_ops = zyz_decomposition(D, wires[1])
+    A_ops = one_qubit_decomposition(A, wires[1])
+    B_ops = one_qubit_decomposition(B, wires[0])
+    C_ops = one_qubit_decomposition(C, wires[0])
+    D_ops = one_qubit_decomposition(D, wires[1])
 
     return C_ops + D_ops + [qml.CNOT(wires=wires)] + A_ops + B_ops
 
@@ -411,10 +411,10 @@ def _decomposition_2_cnots(U, wires):
     # Now we find the A, B, C, D in SU(2), and return the decomposition
     A, B, C, D = _extract_su2su2_prefactors(U, V)
 
-    A_ops = zyz_decomposition(A, wires[0])
-    B_ops = zyz_decomposition(B, wires[1])
-    C_ops = zyz_decomposition(C, wires[0])
-    D_ops = zyz_decomposition(D, wires[1])
+    A_ops = one_qubit_decomposition(A, wires[0])
+    B_ops = one_qubit_decomposition(B, wires[1])
+    C_ops = one_qubit_decomposition(C, wires[0])
+    D_ops = one_qubit_decomposition(D, wires[1])
 
     return C_ops + D_ops + interior_decomp + A_ops + B_ops
 
@@ -505,10 +505,10 @@ def _decomposition_3_cnots(U, wires):
     # -╭U- = --C--╭X-RZ(d)-╭C-------╭X--B--
     # -╰U- = --D--╰C-RZ(b)-╰X-RY(a)-╰C--A--
 
-    A_ops = zyz_decomposition(A, wires[1])
-    B_ops = zyz_decomposition(B, wires[0])
-    C_ops = zyz_decomposition(C, wires[0])
-    D_ops = zyz_decomposition(D, wires[1])
+    A_ops = one_qubit_decomposition(A, wires[1])
+    B_ops = one_qubit_decomposition(B, wires[0])
+    C_ops = one_qubit_decomposition(C, wires[0])
+    D_ops = one_qubit_decomposition(D, wires[1])
 
     # Return the full decomposition
     return C_ops + D_ops + interior_decomp + A_ops + B_ops

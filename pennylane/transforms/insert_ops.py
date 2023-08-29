@@ -163,13 +163,15 @@ def insert(
 
         .. code-block:: python3
 
-            with qml.tape.QuantumTape() as tape:
-                qml.RX(0.9, wires=0)
-                qml.RY(0.4, wires=1)
-                qml.CNOT(wires=[0, 1])
-                qml.RY(0.5, wires=0)
+            ops = [
+                qml.RX(0.9, wires=0),
+                qml.RY(0.4, wires=1),
+                qml.CNOT((0,1)),
+                qml.RY(0.5, wires=0),
                 qml.RX(0.6, wires=1)
-                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            ]
+            measurements = [qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))]
+            tape = qml.tape.QuantumTape(ops, measurements)
 
         We can add the :class:`~.AmplitudeDamping` channel to the end of the circuit using:
 
@@ -234,16 +236,14 @@ def insert(
     if not isinstance(op_args, Sequence):
         op_args = [op_args]
 
-    num_preps = len(circuit._prep)  # pylint: disable=protected-access
-
-    for i in range(num_preps):
-        apply(circuit.operations[i])
+    for prep_op in circuit.operations[: circuit.num_preps]:
+        apply(prep_op)
 
     if position == "start":
         for w in circuit.wires:
             op(*op_args, wires=w)
 
-    for circuit_op in circuit.operations[num_preps:]:
+    for circuit_op in circuit.operations[circuit.num_preps :]:
         if not before:
             apply(circuit_op)
 

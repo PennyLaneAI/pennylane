@@ -27,15 +27,23 @@ from pennylane.wires import Wires
 
 
 PARAMETRIZED_OPERATIONS = [
-    qml.TRX(0.123, wires=0, subspace=[1, 2]),
-    qml.TRY(0.123, wires=0, subspace=[0, 2]),
+    qml.TRX(0.123, wires=0, subspace=(0, 1)),
+    qml.TRX(0.123, wires=0, subspace=(0, 2)),
+    qml.TRX(0.123, wires=0, subspace=(1, 2)),
+    qml.TRY(0.123, wires=0, subspace=(0, 1)),
+    qml.TRY(0.123, wires=0, subspace=(0, 2)),
+    qml.TRY(0.123, wires=0, subspace=(1, 2)),
+    qml.TRZ(0.123, wires=0, subspace=(0, 1)),
+    qml.TRZ(0.123, wires=0, subspace=(0, 2)),
+    qml.TRZ(0.123, wires=0, subspace=(1, 2)),
     qml.QutritUnitary(TSHIFT, wires=0),
     qml.ControlledQutritUnitary(TCLOCK, wires=[0], control_wires=[2]),
 ]
 
 BROADCASTED_OPERATIONS = [
-    qml.TRX(np.array([0.142, -0.61, 2.3]), wires=0, subspace=[1, 2]),
-    qml.TRY(np.array([0.142, -0.61, 2.3]), wires=0, subspace=[0, 2]),
+    qml.TRX(np.array([0.142, -0.61, 2.3]), wires=0, subspace=(1, 2)),
+    qml.TRY(np.array([0.142, -0.61, 2.3]), wires=0, subspace=(0, 2)),
+    qml.TRZ(np.array([0.142, -0.61, 2.3]), wires=0, subspace=(0, 1)),
     qml.QutritUnitary(np.array([TSHIFT, TCLOCK]), wires=0),
     qml.ControlledQutritUnitary(np.array([TSHIFT, TCLOCK]), wires=[0], control_wires=[2]),
 ]
@@ -108,58 +116,82 @@ class TestParameterFrequencies:
 
 
 matrix_data = [
-    (qml.TRX, 0, [0, 1], np.eye(3)),
-    (qml.TRX, 0, [1, 2], np.eye(3)),
-    (qml.TRX, 0, [0, 2], np.eye(3)),
-    (qml.TRY, 0, [0, 1], np.eye(3)),
-    (qml.TRY, 0, [1, 2], np.eye(3)),
-    (qml.TRY, 0, [0, 2], np.eye(3)),
+    (qml.TRX, 0, (0, 1), np.eye(3)),
+    (qml.TRX, 0, (1, 2), np.eye(3)),
+    (qml.TRX, 0, (0, 2), np.eye(3)),
+    (qml.TRY, 0, (0, 1), np.eye(3)),
+    (qml.TRY, 0, (1, 2), np.eye(3)),
+    (qml.TRY, 0, (0, 2), np.eye(3)),
+    (qml.TRZ, 0, (0, 1), np.eye(3)),
+    (qml.TRZ, 0, (1, 2), np.eye(3)),
+    (qml.TRZ, 0, (0, 2), np.eye(3)),
     (
         qml.TRX,
         np.pi / 2,
-        [0, 1],
+        (0, 1),
         np.array([[1, -1j, 0], [-1j, 1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2),
     ),
     (
         qml.TRX,
         np.pi / 2,
-        [1, 2],
+        (1, 2),
         np.array([[np.sqrt(2), 0, 0], [0, 1, -1j], [0, -1j, 1]]) / np.sqrt(2),
     ),
     (
         qml.TRX,
         np.pi / 2,
-        [0, 2],
+        (0, 2),
         np.array([[1, 0, -1j], [0, np.sqrt(2), 0], [-1j, 0, 1]]) / np.sqrt(2),
     ),
     (
         qml.TRY,
         np.pi / 2,
-        [0, 1],
+        (0, 1),
         np.array([[1, -1, 0], [1, 1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2),
     ),
     (
         qml.TRY,
         np.pi / 2,
-        [1, 2],
+        (1, 2),
         np.array([[np.sqrt(2), 0, 0], [0, 1, -1], [0, 1, 1]]) / np.sqrt(2),
     ),
     (
         qml.TRY,
         np.pi / 2,
-        [0, 2],
+        (0, 2),
         np.array([[1, 0, -1], [0, np.sqrt(2), 0], [1, 0, 1]]) / np.sqrt(2),
     ),
-    (qml.TRX, np.pi, [0, 1], -1j * np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1j]])),
-    (qml.TRX, np.pi, [1, 2], -1j * np.array([[1j, 0, 0], [0, 0, 1], [0, 1, 0]])),
-    (qml.TRX, np.pi, [0, 2], -1j * np.array([[0, 0, 1], [0, 1j, 0], [1, 0, 0]])),
-    (qml.TRY, np.pi, [0, 1], np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])),
-    (qml.TRY, np.pi, [1, 2], np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]])),
-    (qml.TRY, np.pi, [0, 2], np.array([[0, 0, -1], [0, 1, 0], [1, 0, 0]])),
+    (
+        qml.TRZ,
+        np.pi / 2,
+        (0, 1),
+        np.diag(np.exp([-1j * np.pi / 4, 1j * np.pi / 4, 0])),
+    ),
+    (
+        qml.TRZ,
+        np.pi / 2,
+        (1, 2),
+        np.diag(np.exp([0, -1j * np.pi / 4, 1j * np.pi / 4])),
+    ),
+    (
+        qml.TRZ,
+        np.pi / 2,
+        (0, 2),
+        np.diag(np.exp([-1j * np.pi / 4, 0, 1j * np.pi / 4])),
+    ),
+    (qml.TRX, np.pi, (0, 1), -1j * np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1j]])),
+    (qml.TRX, np.pi, (1, 2), -1j * np.array([[1j, 0, 0], [0, 0, 1], [0, 1, 0]])),
+    (qml.TRX, np.pi, (0, 2), -1j * np.array([[0, 0, 1], [0, 1j, 0], [1, 0, 0]])),
+    (qml.TRY, np.pi, (0, 1), np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])),
+    (qml.TRY, np.pi, (1, 2), np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]])),
+    (qml.TRY, np.pi, (0, 2), np.array([[0, 0, -1], [0, 1, 0], [1, 0, 0]])),
+    (qml.TRZ, np.pi, (0, 1), -1j * np.diag([1, -1, 1j])),
+    (qml.TRZ, np.pi, (1, 2), -1j * np.diag([1j, 1, -1])),
+    (qml.TRZ, np.pi, (0, 2), -1j * np.diag([1, 1j, -1])),
     (
         qml.TRX,
         np.array([np.pi / 2] * 2),
-        [0, 1],
+        (0, 1),
         np.tensordot(
             [1, 1], np.array([[1, -1j, 0], [-1j, 1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2), axes=0
         ),
@@ -167,7 +199,7 @@ matrix_data = [
     (
         qml.TRX,
         np.array([np.pi / 2] * 2),
-        [1, 2],
+        (1, 2),
         np.tensordot(
             [1, 1], np.array([[np.sqrt(2), 0, 0], [0, 1, -1j], [0, -1j, 1]]) / np.sqrt(2), axes=0
         ),
@@ -175,7 +207,7 @@ matrix_data = [
     (
         qml.TRX,
         np.array([np.pi / 2] * 2),
-        [0, 2],
+        (0, 2),
         np.tensordot(
             [1, 1], np.array([[1, 0, -1j], [0, np.sqrt(2), 0], [-1j, 0, 1]]) / np.sqrt(2), axes=0
         ),
@@ -183,7 +215,7 @@ matrix_data = [
     (
         qml.TRY,
         np.array([np.pi / 2] * 2),
-        [0, 1],
+        (0, 1),
         np.tensordot(
             [1, 1], np.array([[1, -1, 0], [1, 1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2), axes=0
         ),
@@ -191,7 +223,7 @@ matrix_data = [
     (
         qml.TRY,
         np.array([np.pi / 2] * 2),
-        [1, 2],
+        (1, 2),
         np.tensordot(
             [1, 1], np.array([[np.sqrt(2), 0, 0], [0, 1, -1], [0, 1, 1]]) / np.sqrt(2), axes=0
         ),
@@ -199,10 +231,28 @@ matrix_data = [
     (
         qml.TRY,
         np.array([np.pi / 2] * 2),
-        [0, 2],
+        (0, 2),
         np.tensordot(
             [1, 1], np.array([[1, 0, -1], [0, np.sqrt(2), 0], [1, 0, 1]]) / np.sqrt(2), axes=0
         ),
+    ),
+    (
+        qml.TRZ,
+        np.array([np.pi / 2] * 2),
+        (0, 1),
+        np.tensordot([1, 1], np.diag(np.exp([-1j * np.pi / 4, 1j * np.pi / 4, 0])), axes=0),
+    ),
+    (
+        qml.TRZ,
+        np.array([np.pi / 2] * 2),
+        (1, 2),
+        np.tensordot([1, 1], np.diag(np.exp([0, -1j * np.pi / 4, 1j * np.pi / 4])), axes=0),
+    ),
+    (
+        qml.TRZ,
+        np.array([np.pi / 2] * 2),
+        (0, 2),
+        np.tensordot([1, 1], np.diag(np.exp([-1j * np.pi / 4, 0, 1j * np.pi / 4])), axes=0),
     ),
 ]
 
@@ -236,11 +286,13 @@ class TestMatrix:
 label_data = [
     (qml.TRX(1.23456, wires=0), "TRX", "TRX\n(1.23)", "TRX\n(1)", "TRX\n(1)†"),
     (qml.TRY(1.23456, wires=0), "TRY", "TRY\n(1.23)", "TRY\n(1)", "TRY\n(1)†"),
+    (qml.TRZ(1.23456, wires=0), "TRZ", "TRZ\n(1.23)", "TRZ\n(1)", "TRZ\n(1)†"),
 ]
 
 label_data_broadcasted = [
     (qml.TRX(np.array([1.23, 4.56]), wires=0), "TRX", "TRX", "TRX", "TRX†"),
     (qml.TRY(np.array([1.23, 4.56]), wires=0), "TRY", "TRY", "TRY", "TRY†"),
+    (qml.TRZ(np.array([1.23, 4.56]), wires=0), "TRZ", "TRZ", "TRZ", "TRZ†"),
 ]
 
 
@@ -312,6 +364,7 @@ class TestLabel:
 pow_parametric_ops = (
     qml.TRX(1.234, wires=0),
     qml.TRY(1.234, wires=0),
+    qml.TRZ(1.234, wires=0),
 )
 
 
@@ -345,6 +398,7 @@ class TestParametricPow:
 control_data = [
     (qml.TRX(1.234, wires=0), Wires([])),
     (qml.TRY(1.234, wires=0), Wires([])),
+    (qml.TRZ(1.234, wires=0), Wires([])),
 ]
 
 
@@ -359,6 +413,7 @@ def test_control_wires(op, control_wires):
     [
         (qml.TRX, qml.GellMann(0, 3), lambda phi: -np.sin(phi)),
         (qml.TRY, qml.GellMann(0, 1), np.cos),
+        (qml.TRZ, qml.GellMann(0, 1), lambda phi: -np.sin(phi)),
     ],
 )
 class TestGrad:
@@ -376,6 +431,9 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
+            if op is qml.TRZ:
+                # Without Hadamard the derivative is always 0
+                qml.THadamard(wires=0, subspace=(0, 1))
             op(phi, wires=0)
             return qml.expval(obs)
 
@@ -393,6 +451,9 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
+            if op is qml.TRZ:
+                # Without Hadamard the derivative is always 0
+                qml.THadamard(wires=0, subspace=(0, 1))
             op(phi, wires=0)
             return qml.expval(obs)
 
@@ -412,6 +473,9 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
+            if op is qml.TRZ:
+                # Without Hadamard the derivative is always 0
+                qml.THadamard(wires=0, subspace=(0, 1))
             op(phi, wires=0)
             return qml.expval(obs)
 
@@ -431,6 +495,9 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
+            if op is qml.TRZ:
+                # Without Hadamard the derivative is always 0
+                qml.THadamard(wires=0, subspace=(0, 1))
             op(phi, wires=0)
             return qml.expval(obs)
 
@@ -450,10 +517,13 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
+            if op is qml.TRZ:
+                # Without Hadamard the derivative is always 0
+                qml.THadamard(wires=0, subspace=(0, 1))
             op(phi, wires=0)
             return qml.expval(obs)
 
-        phi_torch = torch.tensor(phi, requires_grad=True)
+        phi_torch = torch.tensor(phi, requires_grad=True, dtype=torch.float64)
         grad = torch.autograd.grad(circuit(phi_torch), phi_torch)
 
         assert qml.math.isclose(grad, grad_fn(phi), atol=tol, rtol=0)
@@ -468,10 +538,13 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
+            if op is qml.TRZ:
+                # Without Hadamard the derivative is always 0
+                qml.THadamard(wires=0, subspace=(0, 1))
             op(phi, wires=0)
             return qml.expval(obs)
 
-        phi_torch = torch.linspace(0, 2 * np.pi, 7, requires_grad=True)
+        phi_torch = torch.linspace(0, 2 * np.pi, 7, requires_grad=True, dtype=torch.float64)
         jac = torch.autograd.functional.jacobian(circuit, phi_torch)
         phi = phi_torch.detach().numpy()
 
@@ -488,6 +561,9 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
+            if op is qml.TRZ:
+                # Without Hadamard the derivative is always 0
+                qml.THadamard(wires=0, subspace=(0, 1))
             op(phi, wires=0)
             return qml.expval(obs)
 
@@ -509,6 +585,9 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
+            if op is qml.TRZ:
+                # Without Hadamard the derivative is always 0
+                qml.THadamard(wires=0, subspace=(0, 1))
             op(phi, wires=0)
             return qml.expval(obs)
 

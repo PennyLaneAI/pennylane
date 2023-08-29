@@ -92,7 +92,7 @@ class TestIntegration:
 
         @qml.qnode(dev, interface=interface)
         def circuit():
-            qml.QubitStateVector(state, wires=[0, 1])
+            qml.StatePrep(state, wires=[0, 1])
             return qml.mutual_info(wires0=[0, 2], wires1=[1, 3])
 
         res = circuit()
@@ -176,6 +176,28 @@ class TestIntegration:
 
         # compare measurement results with transform results
         expected = qml.qinfo.mutual_info(circuit_state, wires0=[0], wires1=[1])(params)
+
+        assert np.allclose(actual, expected)
+
+    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
+    def test_mutual_info_wire_labels(self, device):
+        """Test that mutual_info is correct with custom wire labels"""
+        param = np.array([0.678, 1.234])
+        wires = ["a", 8]
+        dev = qml.device(device, wires=wires)
+
+        @qml.qnode(dev)
+        def circuit(param):
+            qml.RY(param, wires=wires[0])
+            qml.CNOT(wires=wires)
+            return qml.state()
+
+        actual = qml.qinfo.mutual_info(circuit, wires0=[wires[0]], wires1=[wires[1]])(param)
+
+        # compare transform results with analytic values
+        expected = -2 * np.cos(param / 2) ** 2 * np.log(np.cos(param / 2) ** 2) - 2 * np.sin(
+            param / 2
+        ) ** 2 * np.log(np.sin(param / 2) ** 2)
 
         assert np.allclose(actual, expected)
 

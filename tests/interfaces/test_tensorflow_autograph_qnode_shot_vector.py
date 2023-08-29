@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the TF interface with shot vectors and with a QNode"""
-
+# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 
 import pennylane as qml
@@ -26,10 +26,11 @@ tf = pytest.importorskip("tensorflow")
 shots_and_num_copies = [((1, (5, 2), 10), 4)]
 shots_and_num_copies_hess = [((10, (5, 1)), 2)]
 
+spsa_kwargs = {"h": 10e-2, "num_directions": 30, "sampler_rng": np.random.default_rng(42)}
 qubit_device_and_diff_method = [
     ["default.qubit", "finite-diff", {"h": 10e-2}],
     ["default.qubit", "parameter-shift", {}],
-    ["default.qubit", "spsa", {"h": 10e-2, "num_directions": 20}],
+    ["default.qubit", "spsa", spsa_kwargs],
 ]
 
 TOLS = {

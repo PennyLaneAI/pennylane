@@ -19,7 +19,6 @@ import pennylane as qml
 import pennylane.numpy as pnp
 
 from pennylane.transforms import split_non_commuting
-from pennylane.qinfo.transforms import _make_probs, _compute_cfim
 
 ### example tape with 3 commuting groups [[0,3],[1,4],[2,5]]
 with qml.queuing.AnnotatedQueue() as q3:
@@ -128,6 +127,36 @@ class TestUnittestSplitNonCommuting:
             for meas in new_tape.measurements:
                 assert meas.return_type == the_return_type
 
+    def test_mixed_measurement_types(self):
+        """Test that mixing expval and var works correctly."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.Hadamard(0)
+            qml.Hadamard(1)
+            qml.expval(qml.PauliX(0))
+            qml.expval(qml.PauliZ(1))
+            qml.var(qml.PauliZ(0))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        split, _ = split_non_commuting(tape)
+
+        assert len(split) == 2
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.Hadamard(0)
+            qml.Hadamard(1)
+            qml.expval(qml.PauliX(0))
+            qml.var(qml.PauliZ(0))
+            qml.expval(qml.PauliZ(1))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        split, _ = split_non_commuting(tape)
+
+        assert len(split) == 2
+        assert qml.equal(split[0].measurements[0], qml.expval(qml.PauliX(0)))
+        assert qml.equal(split[0].measurements[1], qml.expval(qml.PauliZ(1)))
+        assert qml.equal(split[1].measurements[0], qml.var(qml.PauliZ(0)))
+
     def test_raise_not_supported(self):
         """Test that NotImplementedError is raised when probabilities or samples are called"""
         with qml.queuing.AnnotatedQueue() as q:
@@ -203,6 +232,7 @@ class TestIntegration:
         assert len(res) == 4
         assert all(isinstance(shot_res, tuple) for shot_res in res)
         assert all(len(shot_res) == 7 for shot_res in res)
+        # pylint:disable=not-an-iterable
         assert all(
             all(list(isinstance(r, np.ndarray) and r.shape == () for r in shot_res))
             for shot_res in res

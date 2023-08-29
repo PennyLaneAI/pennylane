@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the TensorFlow interface"""
-import functools
-
+# pylint: disable=protected-access,too-few-public-methods
 import numpy as np
 import pytest
 
@@ -29,7 +28,7 @@ tf = pytest.importorskip("tensorflow", minversion="2.1")
 class TestTensorFlowExecuteUnitTests:
     """Unit tests for TensorFlow execution"""
 
-    def test_jacobian_options(self, mocker, tol):
+    def test_jacobian_options(self, mocker):
         """Test setting jacobian options"""
         spy = mocker.spy(qml.gradients, "param_shift")
 
@@ -64,7 +63,7 @@ class TestTensorFlowExecuteUnitTests:
 
         dev = qml.device("default.qubit", wires=1)
 
-        with tf.GradientTape() as t:
+        with tf.GradientTape():
             with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
@@ -74,9 +73,7 @@ class TestTensorFlowExecuteUnitTests:
         with pytest.raises(
             ValueError, match="Gradient transforms cannot be used with grad_on_execution=True"
         ):
-            res = execute(
-                [tape], dev, gradient_fn=param_shift, grad_on_execution=True, interface="tf"
-            )[0]
+            execute([tape], dev, gradient_fn=param_shift, grad_on_execution=True, interface="tf")
 
     def test_grad_on_execution(self, mocker):
         """Test that grad on execution uses the `device.execute_and_gradients` pathway"""
@@ -84,20 +81,20 @@ class TestTensorFlowExecuteUnitTests:
         a = tf.Variable([0.1, 0.2])
         spy = mocker.spy(dev, "execute_and_gradients")
 
-        with tf.GradientTape() as t:
+        with tf.GradientTape():
             with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            res = execute(
+            execute(
                 [tape],
                 dev,
                 gradient_fn="device",
                 gradient_kwargs={"method": "adjoint_jacobian", "use_device_state": True},
                 interface="tf",
-            )[0]
+            )
 
         # adjoint method only performs a single device execution, but gets both result and gradient
         assert dev.num_executions == 1
@@ -130,7 +127,7 @@ class TestTensorFlowExecuteUnitTests:
         spy_execute.assert_called()
         spy_gradients.assert_not_called()
 
-        j = t.jacobian(res, a)
+        t.jacobian(res, a)
         spy_gradients.assert_called()
 
 
@@ -182,13 +179,13 @@ class TestCaching:
         cache = spy.call_args[0][1]
         assert cache is custom_cache
 
-        with qml.tape.Unwrap(tape):
-            h = tape.hash
+        unwrapped_tape = qml.transforms.convert_to_numpy_parameters(tape)
+        h = unwrapped_tape.hash
 
         assert h in cache
         assert np.allclose(cache[h], res)
 
-    def test_caching_param_shift(self, tol):
+    def test_caching_param_shift(self):
         """Test that, when using parameter-shift transform,
         caching reduces the number of evaluations to their optimum."""
         dev = qml.device("default.qubit", wires=1)
@@ -290,7 +287,7 @@ class TestCaching:
         assert expected_runs_ideal < nonideal_runs
 
 
-execute_kwargs = [
+execute_kwargs_integration = [
     {"gradient_fn": param_shift, "interface": "tf"},
     {"gradient_fn": param_shift, "interface": "auto"},
     {
@@ -320,7 +317,7 @@ execute_kwargs = [
 ]
 
 
-@pytest.mark.parametrize("execute_kwargs", execute_kwargs)
+@pytest.mark.parametrize("execute_kwargs", execute_kwargs_integration)
 class TestTensorFlowExecuteIntegration:
     """Test the TensorFlow interface execute function
     integrates well for both forward and backward execution"""
@@ -331,7 +328,7 @@ class TestTensorFlowExecuteIntegration:
         a = tf.Variable(0.1)
         b = tf.Variable(0.2)
 
-        with tf.GradientTape() as t:
+        with tf.GradientTape():
             with qml.queuing.AnnotatedQueue() as q1:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=0)
@@ -461,7 +458,7 @@ class TestTensorFlowExecuteIntegration:
             res = execute([tape], dev, **execute_kwargs)[0]
             res = tf.stack(res)
 
-        jac = t.jacobian(res, [a, b])
+        t.jacobian(res, [a, b])
 
         a = tf.Variable(0.54, dtype=tf.float64)
         b = tf.Variable(0.8, dtype=tf.float64)
@@ -469,7 +466,7 @@ class TestTensorFlowExecuteIntegration:
         # check that the cost function continues to depend on the
         # values of the parameters for subsequent calls
         with tf.GradientTape() as t:
-            tape.set_parameters([2 * a, b])
+            tape = tape.bind_new_parameters([2 * a, b], [0, 1])
             res2 = execute([tape], dev, **execute_kwargs)[0]
             res2 = tf.stack(res2)
 
@@ -500,18 +497,18 @@ class TestTensorFlowExecuteIntegration:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         with tf.GradientTape() as t:
-            tape.set_parameters([a, b])
+            tape = tape.bind_new_parameters([a, b], [0, 1])
             assert tape.trainable_params == [0, 1]
             res = execute([tape], dev, **execute_kwargs)[0]
             res = qml.math.stack(res)
 
-        jac = t.jacobian(res, [a, b])
+        t.jacobian(res, [a, b])
 
         a = tf.Variable(0.54, dtype=tf.float64)
         b = tf.Variable(0.8, dtype=tf.float64)
 
         with tf.GradientTape() as t:
-            tape.set_parameters([2 * a, b])
+            tape = tape.bind_new_parameters([2 * a, b], [0, 1])
             res2 = execute([tape], dev, **execute_kwargs)[0]
             res2 = qml.math.stack(res2)
 
@@ -525,7 +522,7 @@ class TestTensorFlowExecuteIntegration:
         ]
         assert np.allclose(jac2, expected, atol=tol, rtol=0)
 
-    def test_classical_processing(self, execute_kwargs, tol):
+    def test_classical_processing(self, execute_kwargs):
         """Test classical processing within the quantum tape"""
         a = tf.Variable(0.1, dtype=tf.float64)
         b = tf.constant(0.2, dtype=tf.float64)
@@ -550,7 +547,7 @@ class TestTensorFlowExecuteIntegration:
         assert res[1] is None
         assert isinstance(res[2], tf.Tensor)
 
-    def test_no_trainable_parameters(self, execute_kwargs, tol):
+    def test_no_trainable_parameters(self, execute_kwargs):
         """Test evaluation and Jacobian if there are no trainable parameters"""
         b = tf.constant(0.2, dtype=tf.float64)
         dev = qml.device("default.qubit", wires=2)
@@ -601,15 +598,13 @@ class TestTensorFlowExecuteIntegration:
         is differentiable"""
 
         class U3(qml.U3):
-            def expand(self):
+            def decomposition(self):
                 theta, phi, lam = self.data
                 wires = self.wires
-                return qml.tape.QuantumScript(
-                    [
-                        qml.Rot(lam, theta, -lam, wires=wires),
-                        qml.PhaseShift(phi + lam, wires=wires),
-                    ]
-                )
+                return [
+                    qml.Rot(lam, theta, -lam, wires=wires),
+                    qml.PhaseShift(phi + lam, wires=wires),
+                ]
 
         dev = qml.device("default.qubit", wires=1)
         a = np.array(0.1)
@@ -734,7 +729,7 @@ class TestTensorFlowExecuteIntegration:
 
         dev = qml.device("default.qubit", wires=2, shots=10)
 
-        with tf.GradientTape() as t:
+        with tf.GradientTape():
             with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(tf.Variable(0.1), wires=0)
                 qml.Hadamard(wires=[0])
@@ -857,7 +852,7 @@ class TestHigherOrderDerivatives:
 
         np.testing.assert_allclose(hess, expected_hess, atol=tol, rtol=0, verbose=True)
 
-    def test_adjoint_hessian(self, tol, interface):
+    def test_adjoint_hessian(self, interface):
         """Since the adjoint hessian is not a differentiable transform,
         higher-order derivatives are not supported."""
         dev = qml.device("default.qubit", wires=2)
@@ -930,7 +925,7 @@ class TestHigherOrderDerivatives:
         assert hess is None
 
 
-execute_kwargs = [
+execute_kwargs_hamiltonian = [
     {"gradient_fn": param_shift, "interface": "tensorflow"},
     {"gradient_fn": finite_diff, "interface": "tensorflow"},
     {"gradient_fn": param_shift, "interface": "auto"},
@@ -938,7 +933,7 @@ execute_kwargs = [
 ]
 
 
-@pytest.mark.parametrize("execute_kwargs", execute_kwargs)
+@pytest.mark.parametrize("execute_kwargs", execute_kwargs_hamiltonian)
 class TestHamiltonianWorkflows:
     """Test that tapes ending with expectations
     of Hamiltonians provide correct results and gradients"""
@@ -995,6 +990,7 @@ class TestHamiltonianWorkflows:
         )
 
     def test_multiple_hamiltonians_not_trainable(self, cost_fn, execute_kwargs, tol):
+        # pylint: disable=unused-argument
         weights = tf.Variable([0.4, 0.5], dtype=tf.float64)
         coeffs1 = tf.constant([0.1, 0.2, 0.3], dtype=tf.float64)
         coeffs2 = tf.constant([0.7], dtype=tf.float64)
@@ -1013,6 +1009,7 @@ class TestHamiltonianWorkflows:
         assert res[2] is None
 
     def test_multiple_hamiltonians_trainable(self, cost_fn, execute_kwargs, tol):
+        # pylint: disable=unused-argument
         weights = tf.Variable([0.4, 0.5], dtype=tf.float64)
         coeffs1 = tf.Variable([0.1, 0.2, 0.3], dtype=tf.float64)
         coeffs2 = tf.Variable([0.7], dtype=tf.float64)

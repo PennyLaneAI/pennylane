@@ -36,11 +36,6 @@ def _add_grouping_symbols(op, layer_str, wire_map):
     return layer_str
 
 
-def _bool_control_value(val):
-    """Converts a control value to a boolean."""
-    return (val == "1") if isinstance(val, str) else val
-
-
 def _add_op(op, layer_str, wire_map, decimals, cache):
     """Updates ``layer_str`` with ``op`` operation."""
     layer_str = _add_grouping_symbols(op, layer_str, wire_map)
@@ -49,7 +44,7 @@ def _add_op(op, layer_str, wire_map, decimals, cache):
 
     if control_values:
         for w, val in zip(control_wires, control_values):
-            layer_str[wire_map[w]] += "●" if _bool_control_value(val) else "○"
+            layer_str[wire_map[w]] += "●" if val else "○"
     else:
         for w in control_wires:
             layer_str[wire_map[w]] += "●"
@@ -127,16 +122,19 @@ def tape_text(
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as tape:
-            qml.QFT(wires=(0, 1, 2))
-            qml.RX(1.234, wires=0)
-            qml.RY(1.234, wires=1)
-            qml.RZ(1.234, wires=2)
+        ops = [
+            qml.QFT(wires=(0, 1, 2)),
+            qml.RX(1.234, wires=0),
+            qml.RY(1.234, wires=1),
+            qml.RZ(1.234, wires=2),
             qml.Toffoli(wires=(0, 1, "aux"))
-
-            qml.expval(qml.PauliZ("aux"))
-            qml.var(qml.PauliZ(0) @ qml.PauliZ(1))
+        ]
+        measurements = [
+            qml.expval(qml.PauliZ("aux")),
+            qml.var(qml.PauliZ(0) @ qml.PauliZ(1)),
             qml.probs(wires=(0, 1, 2, "aux"))
+        ]
+        tape = qml.tape.QuantumTape(ops, measurements)
 
     >>> print(qml.drawer.tape_text(tape))
       0: ─╭QFT──RX─╭●─┤ ╭Var[Z@Z] ╭Probs
@@ -208,10 +206,12 @@ def tape_text(
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as tape:
-            qml.QubitUnitary(np.eye(2), wires=0)
+        ops = [
+            qml.QubitUnitary(np.eye(2), wires=0),
             qml.QubitUnitary(np.eye(2), wires=1)
-            qml.expval(qml.Hermitian(np.eye(4), wires=(0,1)))
+        ]
+        measurements = [qml.expval(qml.Hermitian(np.eye(4), wires=(0,1)))]
+        tape = qml.tape.QuantumTape(ops, measurements)
 
     >>> print(qml.drawer.tape_text(tape))
     0: ──U(M0)─┤ ╭<𝓗(M1)>

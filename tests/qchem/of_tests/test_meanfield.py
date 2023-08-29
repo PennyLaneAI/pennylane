@@ -1,19 +1,31 @@
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Unit tests for the ``meanfield`` function.
+"""
 import os
-import sys
 
 import numpy as np
 import pytest
 
 from pennylane import qchem
 
-# TODO: Bring pytest skip to relevant tests.
-openfermion = pytest.importorskip("openfermion")
-openfermionpyscf = pytest.importorskip("openfermionpyscf")
-
 name = "h2"
 symbols, coordinates = (["H", "H"], np.array([0.0, 0.0, -0.66140414, 0.0, 0.0, 0.66140414]))
 
 
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 @pytest.mark.parametrize(("package", "basis"), [("PySCF", "sto-3g"), ("PySCF", "6-31g")])
 def test_path_to_file(package, basis, tmpdir):
     r"""Test the correctness of the full path to the file containing the meanfield
@@ -28,9 +40,12 @@ def test_path_to_file(package, basis, tmpdir):
     assert res_path == exp_path
 
 
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 @pytest.mark.parametrize("package", ["PySCF"])
 def test_hf_calculations(package, tmpdir, tol):
     r"""Test the correctness of the HF calculation"""
+    import openfermion
+
     n_atoms = 2
     n_electrons = 2
     n_orbitals = 2
@@ -69,6 +84,7 @@ def test_hf_calculations(package, tmpdir, tol):
     assert np.allclose(molecule.two_body_integrals, two_body_integrals, **tol)
 
 
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_not_available_qc_package(tmpdir):
     r"""Test that an error is raised if the input quantum chemistry package
     is not PySCF"""
@@ -79,6 +95,7 @@ def test_not_available_qc_package(tmpdir):
         )
 
 
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_dimension_consistency(tmpdir):
     r"""Test that an error is raised if the size of the 'coordinates' array is
     not equal to ``3*len(symbols)``"""

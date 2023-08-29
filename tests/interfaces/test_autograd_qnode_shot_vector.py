@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the Autograd interface with shot vectors and with a QNode"""
+# pylint: disable=too-many-arguments
 
 import pytest
 
@@ -24,10 +25,13 @@ pytestmark = pytest.mark.autograd
 shots_and_num_copies = [(((5, 2), 1, 10), 4), ((1, 10, (5, 2)), 4)]
 shots_and_num_copies_hess = [(((5, 1), 10), 2), ((10, (5, 1)), 2)]
 
+SEED_FOR_SPSA = 42
+spsa_kwargs = {"h": 0.05, "num_directions": 20, "sampler_rng": np.random.default_rng(SEED_FOR_SPSA)}
+
 qubit_device_and_diff_method = [
     ["default.qubit", "finite-diff", {"h": 0.05}],
     ["default.qubit", "parameter-shift", {}],
-    ["default.qubit", "spsa", {"h": 0.05, "num_directions": 20}],
+    ["default.qubit", "spsa", spsa_kwargs],
 ]
 
 TOLS = {

@@ -15,18 +15,19 @@
 Unit tests for the :mod:`pennylane` :class:`Device` class.
 """
 import importlib
+from collections import OrderedDict
 import pkg_resources
 
 import pytest
 import numpy as np
 import pennylane as qml
-from pennylane import Device, DeviceError, QuantumFunctionError
+from pennylane import Device, DeviceError
 from pennylane.wires import Wires
-from collections import OrderedDict
 
 mock_device_paulis = ["PauliX", "PauliY", "PauliZ"]
+mock_device_paulis_and_hamiltonian = ["Hamiltonian", "PauliX", "PauliY", "PauliZ"]
 
-# pylint: disable=abstract-class-instantiated, no-self-use, redefined-outer-name, invalid-name
+# pylint: disable=abstract-class-instantiated, no-self-use, redefined-outer-name, invalid-name, missing-function-docstring
 
 
 @pytest.fixture(scope="function")
@@ -148,6 +149,26 @@ def mock_device_with_paulis_and_methods(monkeypatch):
 
 
 @pytest.fixture(scope="function")
+def mock_device_with_paulis_hamiltonian_and_methods(monkeypatch):
+    """A function to create a mock device with non-empty observables"""
+    with monkeypatch.context() as m:
+        m.setattr(Device, "__abstractmethods__", frozenset())
+        m.setattr(Device, "_capabilities", mock_device_capabilities)
+        m.setattr(Device, "operations", mock_device_paulis)
+        m.setattr(Device, "observables", mock_device_paulis_and_hamiltonian)
+        m.setattr(Device, "short_name", "MockDevice")
+        m.setattr(Device, "expval", lambda self, x, y, z: 0)
+        m.setattr(Device, "var", lambda self, x, y, z: 0)
+        m.setattr(Device, "sample", lambda self, x, y, z: 0)
+        m.setattr(Device, "apply", lambda self, x, y, z: None)
+
+        def get_device(wires=1):
+            return Device(wires=wires)
+
+        yield get_device
+
+
+@pytest.fixture(scope="function")
 def mock_device(monkeypatch):
     with monkeypatch.context() as m:
         m.setattr(Device, "__abstractmethods__", frozenset())
@@ -167,7 +188,7 @@ def mock_device(monkeypatch):
 
 
 @pytest.fixture(scope="function")
-def mock_device_arbitrary_wires(monkeypatch, wires):
+def mock_device_arbitrary_wires(monkeypatch):
     with monkeypatch.context() as m:
         m.setattr(Device, "__abstractmethods__", frozenset())
         m.setattr(Device, "_capabilities", mock_device_capabilities)
@@ -183,43 +204,6 @@ def mock_device_arbitrary_wires(monkeypatch, wires):
             return Device(wires=wires)
 
         yield get_device
-
-
-class TestShotVectors:
-    """Tests passing shot vectors, their validation, and processing."""
-
-    def test_shot_vector_property(self):
-        dev = qml.device("default.qubit", wires=1, shots=[1, 3, 3, 4, 4, 4, 3])
-        shot_vector = dev.shot_vector
-        assert len(shot_vector) == 4
-        assert shot_vector[0].shots == 1
-        assert shot_vector[0].copies == 1
-        assert shot_vector[1].shots == 3
-        assert shot_vector[1].copies == 2
-        assert shot_vector[2].shots == 4
-        assert shot_vector[2].copies == 3
-        assert shot_vector[3].shots == 3
-        assert shot_vector[3].copies == 1
-
-        assert dev.shots == 22
-
-    def test_process_shot_sequence(self):
-        """Tests that the helper `_process_shot_sequence` works as expected."""
-        shot_list = [1, 1, 3]
-        total_shots, shot_vector = qml._device._process_shot_sequence(shot_list)
-
-        assert total_shots == 5
-        assert isinstance(total_shots, int)
-
-        assert len(shot_vector) == 2
-
-        for tup in shot_vector:
-            assert isinstance(tup, qml._device.ShotTuple)
-
-        assert shot_vector[0].shots == 1
-        assert shot_vector[0].copies == 2
-        assert shot_vector[1].shots == 3
-        assert shot_vector[1].copies == 1
 
 
 class TestDeviceSupportedLogic:
@@ -290,16 +274,16 @@ class TestDeviceSupportedLogic:
 class TestInternalFunctions:
     """Test the internal functions of the abstract Device class"""
 
+    # pylint: disable=unnecessary-dunder-call
     def test_repr(self, mock_device_with_operations):
         """Tests the __repr__ function"""
         dev = mock_device_with_operations()
-        repr_string = dev.__repr__()
-        assert "<Device device (wires=1, shots=1000) at " in repr_string
+        assert "<Device device (wires=1, shots=1000) at " in dev.__repr__()
 
     def test_str(self, mock_device_with_operations):
         """Tests the __str__ function"""
         dev = mock_device_with_operations()
-        string = dev.__str__()
+        string = str(dev)
         assert "Short name: MockDevice" in string
         assert "Package: pennylane" in string
         assert "Plugin version: None" in string
@@ -436,19 +420,48 @@ class TestInternalFunctions:
         node_gauss = qml.QNode(circuit_gauss, dev_gauss)
         num_evals_gauss = 12
 
-        for i in range(num_evals_gauss):
+        for _ in range(num_evals_gauss):
             node_gauss(0.015, 0.02, 0.005)
         assert dev_gauss.num_executions == num_evals_gauss
 
+    @pytest.mark.parametrize(
+        "depth, expanded_ops",
+        [
+            (0, [qml.PauliX(0), qml.BasisEmbedding([1, 0], wires=[1, 2])]),
+            (1, [qml.PauliX(wires=0), qml.PauliX(wires=1)]),
+        ],
+    )
+    def test_device_default_expand_ops(
+        self, depth, expanded_ops, mock_device_with_paulis_hamiltonian_and_methods
+    ):
+        """Test that the default expand method can selectively expand operations
+        without expanding measurements."""
+
+        ops = [qml.PauliX(0), qml.BasisEmbedding([1, 0], wires=[1, 2])]
+        measurements = [qml.expval(qml.PauliZ(0)), qml.expval(2 * qml.PauliX(0) @ qml.PauliY(1))]
+        circuit = qml.tape.QuantumScript(ops=ops, measurements=measurements)
+
+        dev = mock_device_with_paulis_hamiltonian_and_methods(wires=3)
+        expanded_tape = dev.default_expand_fn(circuit, max_expansion=depth)
+
+        for op, expected_op in zip(
+            expanded_tape.operations[expanded_tape.num_preps :],
+            expanded_ops,
+        ):
+            assert qml.equal(op, expected_op)
+
+        for mp, expected_mp in zip(expanded_tape.measurements, measurements):
+            assert qml.equal(mp, expected_mp)
+
     wires_to_try = [
-        (1, Wires([0]), Wires([0])),
-        (4, Wires([1, 3]), Wires([1, 3])),
-        (["a", 2], Wires([2]), Wires([1])),
-        (["a", 2], Wires([2, "a"]), Wires([1, 0])),
+        (1, Wires([0])),
+        (4, Wires([1, 3])),
+        (["a", 2], Wires([2])),
+        (["a", 2], Wires([2, "a"])),
     ]
 
-    @pytest.mark.parametrize("dev_wires, wires_to_map, res", wires_to_try)
-    def test_map_wires_caches(self, dev_wires, wires_to_map, res, mock_device):
+    @pytest.mark.parametrize("dev_wires, wires_to_map", wires_to_try)
+    def test_map_wires_caches(self, dev_wires, wires_to_map, mock_device):
         """Test that multiple calls to map_wires will use caching."""
         dev = mock_device(dev_wires)
         original_hits = dev.map_wires.cache_info().hits
@@ -466,7 +479,7 @@ class TestInternalFunctions:
         # The number of hits increased
         assert dev.map_wires.cache_info().hits > original_hits
 
-    def test_mcm_unsupported_error(self, monkeypatch, mock_device_with_paulis_and_methods):
+    def test_mcm_unsupported_error(self, mock_device_with_paulis_and_methods):
         """Test that an error is raised if mid-circuit measurements are not
         supported natively"""
         dev = mock_device_with_paulis_and_methods(wires=2)
@@ -481,9 +494,7 @@ class TestInternalFunctions:
         with pytest.raises(DeviceError, match="Mid-circuit measurements are not natively"):
             dev.check_validity(tape.operations, tape.observables)
 
-    def test_conditional_ops_unsupported_error(
-        self, monkeypatch, mock_device_with_paulis_and_methods
-    ):
+    def test_conditional_ops_unsupported_error(self, mock_device_with_paulis_and_methods):
         """Test that an error is raised for conditional operations if
         mid-circuit measurements are not supported natively"""
         dev = mock_device_with_paulis_and_methods(wires=2)
@@ -526,7 +537,57 @@ class TestInternalFunctions:
         with pytest.raises(ValueError, match="Could not find some or all subset wires"):
             _ = dev.order_wires(subset_wires=subset)
 
+    @pytest.mark.parametrize(
+        "op, decomp",
+        zip(
+            [
+                qml.BasisState([0, 0], wires=[0, 1]),
+                qml.StatePrep([0, 1, 0, 0], wires=[0, 1]),
+            ],
+            [
+                [],
+                [
+                    qml.RY(1.57079633, wires=[1]),
+                    qml.CNOT(wires=[0, 1]),
+                    qml.RY(1.57079633, wires=[1]),
+                    qml.CNOT(wires=[0, 1]),
+                ],
+            ],
+        ),
+    )
+    def test_default_expand_with_initial_state(self, op, decomp):
+        """Test the default expand function with StatePrepBase operations
+        integrates well."""
+        prep = [op]
+        ops = [qml.AngleEmbedding(features=[0.1], wires=[0], rotation="Z"), op, qml.PauliZ(wires=2)]
 
+        dev = qml.device("default.qubit", wires=3)
+        tape = qml.tape.QuantumTape(ops=ops, measurements=[], prep=prep, shots=100)
+        new_tape = dev.default_expand_fn(tape)
+
+        true_decomposition = []
+        # prep op is not decomposed at start of circuit:
+        true_decomposition.append(op)
+        # AngleEmbedding decomp:
+        true_decomposition.append(qml.RZ(0.1, wires=[0]))
+        # prep op decomposed if its mid-circuit:
+        true_decomposition.extend(decomp)
+        # Z:
+        true_decomposition.append(qml.PauliZ(wires=2))
+
+        assert len(new_tape.operations) == len(true_decomposition)
+        for tape_op, true_op in zip(new_tape.operations, true_decomposition):
+            assert qml.equal(tape_op, true_op)
+
+        assert new_tape.shots is tape.shots
+        assert new_tape.wires == tape.wires
+        assert new_tape.is_sampled == tape.is_sampled
+        assert new_tape.all_sampled == tape.all_sampled
+        assert new_tape.batch_size == tape.batch_size
+        assert new_tape.output_dim == tape.output_dim
+
+
+# pylint: disable=too-few-public-methods
 class TestClassmethods:
     """Test the classmethods of Device"""
 
@@ -540,6 +601,7 @@ class TestClassmethods:
 class TestOperations:
     """Tests the logic related to operations"""
 
+    # pylint: disable=protected-access
     def test_shots_setter(self, mock_device):
         """Tests that the property setter of shots changes the number of shots."""
         dev = mock_device()
@@ -561,6 +623,7 @@ class TestOperations:
         ):
             dev.shots = shots
 
+    # pylint: disable=pointless-statement
     def test_op_queue_accessed_outside_execution_context(self, mock_device):
         """Tests that a call to op_queue outside the execution context raises the correct error"""
         dev = mock_device()
@@ -689,8 +752,7 @@ class TestOperations:
 class TestObservables:
     """Tests the logic related to observables"""
 
-    # pylint: disable=no-self-use, redefined-outer-name
-
+    # pylint: disable=no-self-use, redefined-outer-name, pointless-statement
     def test_obs_queue_accessed_outside_execution_context(self, mock_device):
         """Tests that a call to op_queue outside the execution context raises the correct error"""
         dev = mock_device()
@@ -798,6 +860,7 @@ class TestObservables:
 class TestParameters:
     """Test for checking device parameter mappings"""
 
+    # pylint: disable=pointless-statement
     def test_parameters_accessed_outside_execution_context(self, mock_device):
         """Tests that a call to parameters outside the execution context raises the correct error"""
         dev = mock_device()
@@ -846,7 +909,7 @@ class TestDeviceInit:
     def test_no_device(self):
         """Test that an exception is raised for a device that doesn't exist"""
 
-        with pytest.raises(DeviceError, match="Device does not exist"):
+        with pytest.raises(DeviceError, match="Device None does not exist"):
             qml.device("None", wires=0)
 
     def test_outdated_API(self, monkeypatch):
@@ -910,13 +973,30 @@ class TestDeviceInit:
         # restore the plugin_device dictionary
         importlib.reload(qml)
 
+    def test_shot_vector_property(self):
+        """Tests shot vector initialization."""
+        dev = qml.device("default.qubit", wires=1, shots=[1, 3, 3, 4, 4, 4, 3])
+        shot_vector = dev.shot_vector
+        assert len(shot_vector) == 4
+        assert shot_vector[0].shots == 1
+        assert shot_vector[0].copies == 1
+        assert shot_vector[1].shots == 3
+        assert shot_vector[1].copies == 2
+        assert shot_vector[2].shots == 4
+        assert shot_vector[2].copies == 3
+        assert shot_vector[3].shots == 3
+        assert shot_vector[3].copies == 1
+
+        assert dev.shots == 22
+
 
 class TestBatchExecution:
     """Tests for the batch_execute method."""
 
     with qml.queuing.AnnotatedQueue() as q1:
         qml.PauliX(wires=0)
-        qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
+        qml.expval(qml.PauliZ(wires=0))
+        qml.expval(qml.PauliZ(wires=1))
 
     tape1 = qml.tape.QuantumScript.from_queue(q1)
     with qml.queuing.AnnotatedQueue() as q2:
@@ -949,8 +1029,7 @@ class TestBatchExecution:
 
         assert spy.call_count == n_tapes
 
-    @pytest.mark.parametrize("n_tapes", [1, 2, 3])
-    def test_result(self, n_tapes, mock_device_with_paulis_and_methods, tol):
+    def test_result(self, mock_device_with_paulis_and_methods, tol):
         """Tests that the result has the correct shape and entry types."""
 
         dev = mock_device_with_paulis_and_methods(wires=2)
@@ -983,6 +1062,7 @@ class TestBatchExecution:
 class TestGrouping:
     """Tests for the use_grouping option for devices."""
 
+    # pylint: disable=too-few-public-methods, unused-argument, missing-function-docstring, missing-class-docstring
     class SomeDevice(qml.Device):
         name = ""
         short_name = ""
@@ -991,11 +1071,20 @@ class TestGrouping:
         author = ""
         operations = ""
         observables = ""
-        apply = lambda *args, **kwargs: 0
-        expval = lambda *args, **kwargs: 0
-        reset = lambda *args, **kwargs: 0
-        supports_observable = lambda *args, **kwargs: True
 
+        def apply(self, *args, **kwargs):
+            return 0
+
+        def expval(self, *args, **kwargs):
+            return 0
+
+        def reset(self, *args, **kwargs):
+            return 0
+
+        def supports_observable(self, *args, **kwargs):
+            return True
+
+    # pylint: disable=attribute-defined-outside-init
     @pytest.mark.parametrize("use_grouping", (True, False))
     def test_batch_transform_checks_use_grouping_property(self, use_grouping, mocker):
         """If the device specifies `use_grouping=False`, the batch transform
@@ -1007,8 +1096,7 @@ class TestGrouping:
         qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
         spy = mocker.spy(qml.transforms, "hamiltonian_expand")
 
-        dev = self.SomeDevice()
-        dev.shots = None
+        dev = self.SomeDevice(shots=None)
         dev.use_grouping = use_grouping
         new_qscripts, _ = dev.batch_transform(qs)
 

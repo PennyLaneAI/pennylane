@@ -33,7 +33,8 @@ def append_gate(tape, params, gates):
 
     for i, g in enumerate(gates):
         g = copy.copy(g)
-        g.data[0] = params[i]
+        new_params = (params[i], *g.data[1:])
+        g.data = new_params
         qml.apply(g)
 
     for m in tape.measurements:
@@ -187,14 +188,14 @@ class AdaptiveOptimizer:
         qnode = copy.copy(circuit)
 
         if drain_pool:
-            repeated_gates = [
+            operator_pool = [
                 gate
                 for gate in operator_pool
-                for operation in circuit.tape.operations
-                if (gate.name == operation.name and gate.wires == operation.wires)
+                if all(
+                    gate.name != operation.name or gate.wires != operation.wires
+                    for operation in circuit.tape.operations
+                )
             ]
-            for gate in repeated_gates:
-                operator_pool.remove(gate)
 
         params = np.array([gate.parameters[0] for gate in operator_pool], requires_grad=True)
         qnode.func = self._circuit

@@ -202,8 +202,8 @@ class PauliX(Observable, Operation):
 
     _queue_category = "_ops"
 
-    def __init__(self, *params, wires=None, do_queue=True, id=None):
-        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, *params, wires=None, id=None):
+        super().__init__(*params, wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "X"}): 1.0})
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -357,8 +357,8 @@ class PauliY(Observable, Operation):
 
     _queue_category = "_ops"
 
-    def __init__(self, *params, wires=None, do_queue=True, id=None):
-        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, *params, wires=None, id=None):
+        super().__init__(*params, wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Y"}): 1.0})
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -480,7 +480,7 @@ class PauliY(Observable, Operation):
         return super().pow(z % 2)
 
     def _controlled(self, wire):
-        return CY(wires=Wires(wire) + self.wires)
+        return qml.CY(wires=Wires(wire) + self.wires)
 
     def single_qubit_rot_angles(self):
         # Y = RZ(0) RY(\pi) RZ(0)
@@ -509,8 +509,8 @@ class PauliZ(Observable, Operation):
 
     _queue_category = "_ops"
 
-    def __init__(self, *params, wires=None, do_queue=True, id=None):
-        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, *params, wires=None, id=None):
+        super().__init__(*params, wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Z"}): 1.0})
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -1043,106 +1043,6 @@ class CNOT(Operation):
         return True
 
 
-class CY(Operation):
-    r"""CY(wires)
-    The controlled-Y operator
-
-    .. math:: CY = \begin{bmatrix}
-            1 & 0 & 0 & 0 \\
-            0 & 1 & 0 & 0\\
-            0 & 0 & 0 & -i\\
-            0 & 0 & i & 0
-        \end{bmatrix}.
-
-    .. note:: The first wire provided corresponds to the **control qubit**.
-
-    **Details:**
-
-    * Number of wires: 2
-    * Number of parameters: 0
-
-    Args:
-        wires (Sequence[int]): the wires the operation acts on
-    """
-    num_wires = 2
-    num_params = 0
-    """int: Number of trainable parameters that the operator depends on."""
-
-    basis = "Y"
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        return base_label or "Y"
-
-    @staticmethod
-    @lru_cache()
-    def compute_matrix():  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
-
-        The canonical matrix is the textbook matrix representation that does not consider wires.
-        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
-
-        .. seealso:: :meth:`~.CY.matrix`
-
-
-        Returns:
-            ndarray: matrix
-
-        **Example**
-
-        >>> print(qml.CY.compute_matrix())
-        [[ 1.+0.j  0.+0.j  0.+0.j  0.+0.j]
-         [ 0.+0.j  1.+0.j  0.+0.j  0.+0.j]
-         [ 0.+0.j  0.+0.j  0.+0.j -0.-1.j]
-         [ 0.+0.j  0.+0.j  0.+1.j  0.+0.j]]
-        """
-        return np.array(
-            [
-                [1, 0, 0, 0],
-                [0, 1, 0, 0],
-                [0, 0, 0, -1j],
-                [0, 0, 1j, 0],
-            ]
-        )
-
-    @staticmethod
-    def compute_decomposition(wires):
-        r"""Representation of the operator as a product of other operators (static method).
-
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.CY.decomposition`.
-
-        Args:
-            wires (Iterable, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> print(qml.CY.compute_decomposition(0))
-        [CRY(3.141592653589793, wires=[0, 1]), S(wires=[0])]
-
-        """
-        return [qml.CRY(np.pi, wires=wires), S(wires=wires[0])]
-
-    def adjoint(self):
-        return CY(wires=self.wires)
-
-    def pow(self, z):
-        return super().pow(z % 2)
-
-    @property
-    def control_wires(self):
-        return Wires(self.wires[0])
-
-    @property
-    def is_hermitian(self):
-        return True
-
-
 class CH(Operation):
     r"""CH(wires)
     The controlled-Hadamard operator
@@ -1354,8 +1254,6 @@ class ECR(Operation):
 
     Args:
         wires (int): the subsystem the gate acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
 
@@ -2165,15 +2063,20 @@ class MultiControlledX(Operation):
 
     grad_method = None
 
+    def _flatten(self):
+        hyperparameters = (
+            ("wires", self.wires),
+            ("control_values", self.hyperparameters["control_values"]),
+            ("work_wires", self.hyperparameters["work_wires"]),
+        )
+        return tuple(), hyperparameters
+
+    @classmethod
+    def _unflatten(cls, _, metadata):
+        return cls(**dict(metadata))
+
     # pylint: disable=too-many-arguments
-    def __init__(
-        self,
-        control_wires=None,
-        wires=None,
-        control_values=None,
-        work_wires=None,
-        do_queue=True,
-    ):
+    def __init__(self, control_wires=None, wires=None, control_values=None, work_wires=None):
         if wires is None:
             raise ValueError("Must specify the wires where the operation acts on")
         if control_wires is None:
@@ -2213,7 +2116,7 @@ class MultiControlledX(Operation):
         self.hyperparameters["control_values"] = control_values
         self.total_wires = total_wires
 
-        super().__init__(wires=self.total_wires, do_queue=do_queue)
+        super().__init__(wires=self.total_wires)
 
     def __repr__(self):
         return f'MultiControlledX(wires={list(self.total_wires._labels)}, control_values="{self.hyperparameters["control_values"]}")'
@@ -2452,10 +2355,10 @@ class Barrier(Operation):
     num_wires = AnyWires
     par_domain = None
 
-    def __init__(self, wires=Wires([]), only_visual=False, do_queue=True, id=None):
+    def __init__(self, wires=Wires([]), only_visual=False, id=None):
         self.only_visual = only_visual
         self.hyperparameters["only_visual"] = only_visual
-        super().__init__(wires=wires, do_queue=do_queue, id=id)
+        super().__init__(wires=wires, id=id)
 
     @staticmethod
     def compute_decomposition(wires, only_visual=False):  # pylint: disable=unused-argument
@@ -2524,13 +2427,13 @@ class WireCut(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, *params, wires=None, do_queue=True, id=None):
+    def __init__(self, *params, wires=None, id=None):
         if wires == []:
             raise ValueError(
                 f"{self.__class__.__name__}: wrong number of wires. "
                 f"At least one wire has to be given."
             )
-        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(*params, wires=wires, id=id)
 
     @staticmethod
     def compute_decomposition(wires):  # pylint: disable=unused-argument

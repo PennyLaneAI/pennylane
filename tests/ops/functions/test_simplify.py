@@ -14,6 +14,7 @@
 """
 Unit tests for the qml.simplify function
 """
+# pylint: disable=too-few-public-methods
 import pytest
 
 import pennylane as qml
@@ -51,7 +52,7 @@ class TestSimplifyOperators:
         op = build_op()
 
         s_op = qml.simplify(op)
-        assert isinstance(s_op, qml.ops.Prod)
+        assert isinstance(s_op, qml.ops.Prod)  # pylint: disable=no-member
         assert s_op.data == simplified_op.data
         assert s_op.wires == simplified_op.wires
         assert s_op.arithmetic_depth == simplified_op.arithmetic_depth
@@ -70,6 +71,17 @@ class TestSimplifyOperators:
         with pytest.raises(ValueError, match="Cannot simplify the object"):
             qml.simplify("unsupported type")
 
+    @pytest.mark.jax
+    def test_jit_simplification(self):
+        """Test that simplification can be jitted."""
+
+        import jax
+
+        sum_op = qml.sum(qml.PauliX(0), qml.PauliX(0))
+        simp_op = jax.jit(qml.simplify)(sum_op)
+
+        assert qml.equal(simp_op, qml.s_prod(2.0, qml.PauliX(0)))
+
 
 class TestSimplifyTapes:
     """Tests for the qml.simplify method used with tapes."""
@@ -84,7 +96,7 @@ class TestSimplifyTapes:
         s_tape = qml.simplify(tape)
         assert len(s_tape) == 1
         s_op = s_tape[0]
-        assert isinstance(s_op, qml.ops.Prod)
+        assert isinstance(s_op, qml.ops.Prod)  # pylint: disable=no-member
         assert s_op.data == simplified_op.data
         assert s_op.wires == simplified_op.wires
         assert s_op.arithmetic_depth == simplified_op.arithmetic_depth
@@ -176,7 +188,7 @@ class TestSimplifyCallables:
         @qml.simplify
         def circuit(x):
             qml.adjoint(qml.RX(x, wires=0))
-            qml.PauliX(0) ** 2
+            _ = qml.PauliX(0) ** 2
             return qml.expval(qml.PauliY(0))
 
         x = jax.numpy.array(4 * jax.numpy.pi + 0.1)

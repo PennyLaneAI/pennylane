@@ -31,7 +31,7 @@ from .gradient_transform import (
     choose_grad_methods,
     _grad_method_validation,
     gradient_transform,
-    _no_trainable_grad_legacy,
+    _no_trainable_grad,
 )
 from .parameter_shift import _get_operation_recipe, expval_param_shift
 
@@ -172,7 +172,7 @@ def _transform_observable(obs, Z, device_wires):
         A = A + A.T
 
     # TODO: if the A matrix corresponds to a known observable in PennyLane,
-    # for example qml.X, qml.P, qml.NumberOperator, we should return that
+    # for example qml.QuadX, qml.QuadP, qml.NumberOperator, we should return that
     # instead. This will allow for greater device compatibility.
     return qml.PolyXP(A, wires=device_wires)
 
@@ -223,7 +223,7 @@ def var_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient_recipes=
 
     # Convert all variance measurements on the tape into expectation values
     for i in var_idx:
-        obs = expval_tape._measurements[i].obs
+        obs = expval_tape.measurements[i].obs
         expval_tape._measurements[i] = qml.expval(op=obs)
 
     gradient_tapes = [expval_tape]
@@ -240,7 +240,7 @@ def var_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient_recipes=
     for i in var_idx:
         # We need to calculate d<A^2>/dp; to do so, we replace the
         # observables A in the queue with A^2.
-        obs = expval_sq_tape._measurements[i].obs
+        obs = expval_sq_tape.measurements[i].obs
 
         # CV first-order observable
         # get the heisenberg representation
@@ -396,8 +396,11 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
 
         for obs in observable_descendents:
             # get the index of the descendent observable
-            idx = tape.observables.index(obs)
-            transformed_obs_idx.append(idx)
+            # pylint:disable=undefined-loop-variable
+            for obs_idx, tape_obs in enumerate(tape.observables):
+                if obs is tape_obs:
+                    break
+            transformed_obs_idx.append(obs_idx)
 
             transformed_obs = _transform_observable(obs, Z, dev_wires)
 
@@ -414,7 +417,7 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
 
             constants.append(constant)
 
-            g_tape._measurements[idx] = qml.expval(op=_transform_observable(obs, Z, dev_wires))
+            g_tape._measurements[obs_idx] = qml.expval(op=_transform_observable(obs, Z, dev_wires))
         g_tape._update_par_info()
 
         if not any(i is None for i in constants):
@@ -498,7 +501,6 @@ def param_shift_cv(
     fallback_fn=finite_diff,
     f0=None,
     force_order2=False,
-    shots=None,
 ):
     r"""Transform a continuous-variable QNode to compute the parameter-shift gradient of all gate
     parameters with respect to its inputs.
@@ -643,10 +645,8 @@ def param_shift_cv(
         function, which together define the gradient are directly returned:
 
         >>> r0, phi0, r1, phi1 = [0.4, -0.3, -0.7, 0.2]
-        >>> with qml.tape.QuantumTape() as tape:
-        ...     qml.Squeezing(r0, phi0, wires=[0])
-        ...     qml.Squeezing(r1, phi1, wires=[0])
-        ...     qml.expval(qml.NumberOperator(0))  # second-order
+        >>> ops = [qml.Squeezing(r0, phi0, wires=0), qml.Squeezing(r1, phi2, wires=0)]
+        >>> tape = qml.tape.QuantumTape(ops, [qml.expval(qml.NumberOperator(0))])
         >>> gradient_tapes, fn = qml.gradients.param_shift_cv(tape, dev)
         >>> gradient_tapes
         [<QuantumTape: wires=[0], params=4>,
@@ -664,7 +664,7 @@ def param_shift_cv(
         >>> fn(qml.execute(gradient_tapes, dev, None))
         array([[-0.32487113, -0.4054074 , -0.87049853,  0.4054074 ]])
     """
-    if qml.active_return() and len(tape.measurements) > 1:
+    if len(tape.measurements) > 1:
         raise ValueError(
             "Computing the gradient of CV circuits that return more than one measurement is not possible."
         )
@@ -679,7 +679,7 @@ def param_shift_cv(
     diff_methods = _gradient_analysis_and_validation_cv(tape, method)
 
     if argnum is None and not tape.trainable_params:
-        return _no_trainable_grad_legacy(tape)
+        return _no_trainable_grad(tape)
 
     gradient_tapes = []
     shapes = []
@@ -769,18 +769,16 @@ def param_shift_cv(
             start += s
 
         # For expval param shift with multiple params
-        if qml.active_return():
-            if isinstance(grads[0], tuple):
-                grads = [qml.math.stack(g) for g in grads]
+        if isinstance(grads[0], tuple):
+            grads = [qml.math.stack(g) for g in grads]
 
         jacobian = sum(grads)
 
-        if qml.active_return():
-            if jacobian.shape != ():
-                if jacobian.shape[0] == 1:
-                    jacobian = jacobian[0]
-                if len(argnum) > 1:
-                    jacobian = tuple(j for j in jacobian)
+        if jacobian.shape != ():
+            if jacobian.shape[0] == 1:
+                jacobian = jacobian[0]
+            if len(argnum) > 1:
+                jacobian = tuple(j for j in jacobian)
         return jacobian
 
     return gradient_tapes, processing_fn

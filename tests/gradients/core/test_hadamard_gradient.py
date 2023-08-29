@@ -67,6 +67,13 @@ def cost6(x):
 class TestHadamardGrad:
     """Unit tests for the hadamard_grad function"""
 
+    def test_batched_tape_raises(self):
+        """Test that an error is raised for a broadcasted/batched tape."""
+        tape = qml.tape.QuantumScript([qml.RX([0.4, 0.2], 0)], [qml.expval(qml.PauliZ(0))])
+        _match = "Computing the gradient of broadcasted tapes with the Hadamard test gradient"
+        with pytest.raises(NotImplementedError, match=_match):
+            qml.gradients.hadamard_grad(tape)
+
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ, qml.PhaseShift, qml.U1])
     def test_pauli_rotation_gradient(self, G, theta, tol):
@@ -74,7 +81,7 @@ class TestHadamardGrad:
         dev = qml.device("default.qubit", wires=2)
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.QubitStateVector(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
+            qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
             G(theta, wires=[0])
             qml.expval(qml.PauliZ(0))
 
@@ -99,7 +106,7 @@ class TestHadamardGrad:
         params = np.array([theta, theta**3, np.sqrt(2) * theta])
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.QubitStateVector(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
+            qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
             qml.Rot(*params, wires=[0])
             qml.expval(qml.PauliZ(0))
 
@@ -124,7 +131,7 @@ class TestHadamardGrad:
         dev = qml.device("default.qubit", wires=3)
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.QubitStateVector(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
+            qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
             G(theta, wires=[0, 1])
             qml.expval(qml.PauliX(0))
 
@@ -166,7 +173,7 @@ class TestHadamardGrad:
         dev = qml.device("default.qubit", wires=3)
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.QubitStateVector(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
+            qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
             G(theta, wires=[0, 1])
             qml.expval(qml.PauliX(0))
             qml.probs(wires=[1])
@@ -188,7 +195,7 @@ class TestHadamardGrad:
         dev = qml.device("default.qubit", wires=3)
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.QubitStateVector(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
+            qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
             G(theta, wires=[0, 1])
             qml.expval(qml.PauliZ(1))
 
@@ -209,7 +216,7 @@ class TestHadamardGrad:
         a, b, c = np.array([theta, theta**3, np.sqrt(2) * theta])
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.QubitStateVector(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
+            qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
             qml.CRot(a, b, c, wires=[0, 1])
             qml.expval(qml.PauliX(0))
 
@@ -544,7 +551,7 @@ class TestHadamardGradEdgeCases:
     device_wires = [qml.wires.Wires([0, 1, "aux"])]
     device_wires_no_aux = [qml.wires.Wires([0, 1, 2])]
 
-    working_wires = [None, qml.wires.Wires("aux")]
+    working_wires = [None, qml.wires.Wires("aux"), "aux"]
     already_used_wires = [qml.wires.Wires(0), qml.wires.Wires(1)]
 
     @pytest.mark.parametrize("aux_wire", working_wires)
@@ -566,6 +573,8 @@ class TestHadamardGradEdgeCases:
 
         tapes, _ = qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires)
         assert len(tapes) == 2
+        tapes, _ = qml.gradients.hadamard_grad(tape, aux_wire=aux_wire)
+        assert len(tapes) == 2
 
     @pytest.mark.parametrize("aux_wire", already_used_wires)
     @pytest.mark.parametrize("device_wires", device_wires)
@@ -583,7 +592,8 @@ class TestHadamardGradEdgeCases:
 
         tape = qml.tape.QuantumScript.from_queue(q)
 
-        with pytest.raises(qml.QuantumFunctionError, match="The auxiliary wire is already."):
+        _match = "The requested auxiliary wire is already in use by the circuit"
+        with pytest.raises(qml.wires.WireError, match=_match):
             qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires)
 
     @pytest.mark.parametrize("device_wires", device_wires_no_aux)
@@ -601,30 +611,36 @@ class TestHadamardGradEdgeCases:
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="The requested auxiliary wire does not exist on the used device.",
-        ):
+        _match = "The requested auxiliary wire does not exist on the used device"
+        with pytest.raises(qml.wires.WireError, match=_match):
             qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires)
 
-    @pytest.mark.parametrize("aux_wire", working_wires + already_used_wires)
+    @pytest.mark.parametrize("aux_wire", [None] + already_used_wires)
     def test_device_not_enough_wires(self, aux_wire):
-        """Test that an error is raised when the device cannot accept an auxiliary wire because it is full."""
+        """Test that an error is raised when the device cannot accept an auxiliary wire
+        because it is full."""
         dev = qml.device("default.qubit", wires=2)
-        x = 0.543
-        y = -0.654
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+        m = qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+        tape = qml.tape.QuantumScript([qml.RX(0.543, wires=[0]), qml.RY(-0.654, wires=[1])], [m])
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        if aux_wire is None:
+            _match = "The device has no free wire for the auxiliary wire."
+        else:
+            _match = "The requested auxiliary wire is already in use by the circuit."
+        with pytest.raises(qml.wires.WireError, match=_match):
+            qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires)
 
-        with pytest.raises(
-            qml.QuantumFunctionError, match="The device has no free wire for the auxiliary wire."
-        ):
+    def test_device_wire_does_not_exist(self):
+        """Test that an error is raised when the device cannot accept an auxiliary wire
+        because it does not exist on the device."""
+        aux_wire = qml.wires.Wires("aux")
+        dev = qml.device("default.qubit", wires=2)
+        m = qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+        tape = qml.tape.QuantumScript([qml.RX(0.543, wires=[0]), qml.RY(-0.654, wires=[1])], [m])
+
+        _match = "The requested auxiliary wire does not exist on the used device."
+        with pytest.raises(qml.wires.WireError, match=_match):
             qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires)
 
     def test_empty_circuit(self):

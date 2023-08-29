@@ -18,6 +18,8 @@ Unit tests for the pennylane.drawer.drawable_layers` module.
 import pytest
 
 import pennylane as qml
+from pennylane.measurements import MidMeasureMP
+from pennylane.queuing import AnnotatedQueue
 from pennylane.drawer.drawable_layers import (
     _recursive_find_layer,
     drawable_layers,
@@ -66,7 +68,7 @@ class TestDrawableLayers:
 
         layers = drawable_layers(ops)
 
-        assert layers == [set(ops)]
+        assert layers == [ops]
 
     def test_single_wires_blocking(self):
         """Test single wire gates blocking each other"""
@@ -75,7 +77,7 @@ class TestDrawableLayers:
 
         layers = drawable_layers(ops)
 
-        assert layers == [{ops[0]}, {ops[1]}, {ops[2]}]
+        assert layers == [[ops[0]], [ops[1]], [ops[2]]]
 
     def test_barrier_only_visual(self):
         """Test the barrier is always drawn"""
@@ -87,21 +89,21 @@ class TestDrawableLayers:
             qml.PauliX(0),
         ]
         layers = drawable_layers(ops)
-        assert layers == [{ops[0]}, {ops[1]}, {ops[2]}, {ops[3]}]
+        assert layers == [[ops[0]], [ops[1]], [ops[2]], [ops[3]]]
 
     def test_barrier_block(self):
         """Test the barrier blocking operators"""
 
         ops = [qml.PauliX(0), qml.Barrier(wires=[0, 1]), qml.PauliX(1)]
         layers = drawable_layers(ops)
-        assert layers == [{ops[0]}, {ops[1]}, {ops[2]}]
+        assert layers == [[ops[0]], [ops[1]], [ops[2]]]
 
     def test_wirecut_block(self):
         """Test the wirecut blocking operators"""
 
         ops = [qml.PauliX(0), qml.WireCut(wires=[0, 1]), qml.PauliX(1)]
         layers = drawable_layers(ops)
-        assert layers == [{ops[0]}, {ops[1]}, {ops[2]}]
+        assert layers == [[ops[0]], [ops[1]], [ops[2]]]
 
     @pytest.mark.parametrize(
         "multiwire_gate",
@@ -124,7 +126,7 @@ class TestDrawableLayers:
 
         layers = drawable_layers(ops, wire_map=wire_map)
 
-        assert layers == [{ops[0]}, {ops[1]}, {ops[2]}]
+        assert layers == [[ops[0]], [ops[1]], [ops[2]]]
 
     @pytest.mark.parametrize("measurement", (qml.state(), qml.sample()))
     def test_all_wires_measurement(self, measurement):
@@ -134,4 +136,44 @@ class TestDrawableLayers:
 
         layers = drawable_layers(ops)
 
-        assert layers == [{ops[0]}, {ops[1]}, {ops[2]}]
+        assert layers == [[ops[0]], [ops[1]], [ops[2]]]
+
+
+class TestMidMeasure:
+    """Tests the various changes from mid-circuit measurements."""
+
+    def test_basic_mid_measure(self):
+        """Tests a simple case with mid-circuit measurement."""
+        with AnnotatedQueue() as q:
+            m0 = qml.measure(0)
+            qml.cond(m0, qml.PauliX)(1)
+
+        assert drawable_layers(q.queue) == [[q.queue[0]], [q.queue[1]]]
+
+    def test_mid_measure_promoted_if_needed(self):
+        """Tests promotion of MidMeasureMPs if used for the same conditional."""
+        with AnnotatedQueue() as q:
+            m0 = qml.measure(0)
+            qml.Hadamard(1)
+            m1 = qml.measure(1)
+            qml.cond(m0 + m1, qml.PauliZ)(2)
+
+        ops = q.queue
+        assert drawable_layers(ops) == [[ops[1]], [ops[2], ops[0]], [ops[3]]]
+
+    def test_empty_layers_are_pruned(self):
+        """Tests that no empty layers are returned after MidMeasure promotion."""
+        with AnnotatedQueue() as q:
+            m0 = qml.measure(1)
+            qml.CNOT([0, 2])
+            m1 = qml.measure(0)
+            qml.cond(m0 + m1, qml.PauliZ)(2)
+
+        ops = q.queue
+        layers = drawable_layers(ops, wire_map={i: i for i in range(3)})
+        assert layers == [[ops[1]], [ops[2], ops[0]], [ops[3]]]
+
+    def test_cannot_draw_multi_wire_MidMeasureMP(self):
+        """Tests that MidMeasureMP is only supported with one wire."""
+        with pytest.raises(ValueError, match="mid-circuit measurements with more than one wire."):
+            drawable_layers([MidMeasureMP([0, 1])])

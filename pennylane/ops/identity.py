@@ -32,7 +32,12 @@ class Identity(CVObservable, Operation):
     .. math::
         E[\I] = \text{Tr}(\I \rho)
 
-    corresponds to the trace of the quantum state, which in exact
+    Args:
+        wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified.
+
+    Corresponds to the trace of the quantum state, which in exact
     simulators should always be equal to 1.
     """
     num_params = 0
@@ -46,8 +51,11 @@ class Identity(CVObservable, Operation):
 
     ev_order = 1
 
-    def __init__(self, *params, wires=None, do_queue=True, id=None):
-        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+    def _flatten(self):
+        return tuple(), (self.wires, tuple())
+
+    def __init__(self, *params, wires=None, id=None):
+        super().__init__(*params, wires=wires, id=id)
         self._hyperparameters = {"n_wires": len(self.wires)}
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({}): 1.0})
 

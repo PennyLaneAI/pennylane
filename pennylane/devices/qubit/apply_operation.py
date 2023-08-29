@@ -139,13 +139,16 @@ def apply_operation_tensordot(op: qml.operation.Operator, state, is_state_batche
 
 
 @singledispatch
-def apply_operation(op: qml.operation.Operator, state, is_state_batched: bool = False):
+def apply_operation(
+    op: qml.operation.Operator, state, is_state_batched: bool = False, debugger=None
+):
     """Apply and operator to a given state.
 
     Args:
         op (Operator): The operation to apply to ``state``
         state (tensor_like): The starting state.
         is_state_batched (bool): Boolean representing whether the state is batched or not
+        debugger (._Debugger): The debugger to use
 
     Returns:
         ndarray: output state
@@ -192,14 +195,14 @@ def apply_operation(op: qml.operation.Operator, state, is_state_batched: bool = 
 
 
 @apply_operation.register
-def apply_paulix(op: qml.PauliX, state, is_state_batched: bool = False):
+def apply_paulix(op: qml.PauliX, state, is_state_batched: bool = False, debugger=None):
     """Apply :class:`pennylane.PauliX` operator to the quantum state"""
     axis = op.wires[0] + is_state_batched
     return math.roll(state, 1, axis)
 
 
 @apply_operation.register
-def apply_pauliz(op: qml.PauliZ, state, is_state_batched: bool = False):
+def apply_pauliz(op: qml.PauliZ, state, is_state_batched: bool = False, debugger=None):
     """Apply pauliz to state."""
 
     axis = op.wires[0] + is_state_batched
@@ -217,7 +220,7 @@ def apply_pauliz(op: qml.PauliZ, state, is_state_batched: bool = False):
 
 
 @apply_operation.register
-def apply_cnot(op: qml.CNOT, state, is_state_batched: bool = False):
+def apply_cnot(op: qml.CNOT, state, is_state_batched: bool = False, debugger=None):
     """Apply cnot gate to state."""
     target_axes = (op.wires[1] - 1 if op.wires[1] > op.wires[0] else op.wires[1]) + is_state_batched
     control_axes = op.wires[0] + is_state_batched
@@ -231,3 +234,15 @@ def apply_cnot(op: qml.CNOT, state, is_state_batched: bool = False):
 
     state_x = math.roll(state[sl_1], 1, target_axes)
     return math.stack([state[sl_0], state_x], axis=control_axes)
+
+
+@apply_operation.register
+def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None):
+    """Take a snapshot of the state"""
+    if debugger is not None and debugger.active:
+        flat_state = math.flatten(state)
+        if op.tag:
+            debugger.snapshots[op.tag] = flat_state
+        else:
+            debugger.snapshots[len(debugger.snapshots)] = flat_state
+    return state

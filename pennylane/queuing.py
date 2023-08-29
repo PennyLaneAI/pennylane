@@ -130,32 +130,31 @@ Only the operators that will end up in the circuit will remain.
 [PauliX(wires=[0])]
 [PauliX(wires=[0])**1.5]
 
-Once the queue is constructed, the :func:`~.process_queue` function converts it into the operations,
-measurements, and state prep present in the final circuit. This step eliminates any object that has an owner.
+Once the queue is constructed, the :func:`~.process_queue` function converts it into the operations
+and measurements in the final circuit. This step eliminates any object that has an owner.
 
 >>> with qml.queuing.AnnotatedQueue() as q:
-...     qml.QubitStateVector(np.array([1.0, 0]), wires=0)
+...     qml.StatePrep(np.array([1.0, 0]), wires=0)
 ...     base = qml.PauliX(0)
 ...     pow_op = base ** 1.5
 ...     qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 >>> ops, measurements, prep = qml.queuing.process_queue(q)
 >>> ops
-[PauliX(wires=[0])**1.5]
+[StatePrep(tensor([1., 0.], requires_grad=True), wires=[0]), PauliX(wires=[0])**1.5]
 >>> measurements
 [expval(PauliZ(wires=[0]) @ PauliX(wires=[1]))]
 >>> prep
-[QubitStateVector(tensor([1., 0.], requires_grad=True), wires=[0])]
+[]
 
-These three lists can be used to construct a :class:`~.QuantumScript`:
+These lists can be used to construct a :class:`~.QuantumScript`:
 
 >>> qml.tape.QuantumScript(ops, measurements, prep)
 <QuantumScript: wires=[0, 1], params=1>
 
-In order to construct new operators within a recording, but without queuing them, either
-use the :meth:`~.QueuingManager.stop_recording` context or specify `do_queue=False` upon construction:
+In order to construct new operators within a recording, but without queuing them
+use the :meth:`~.queuing.QueuingManager.stop_recording` context upon construction:
 
 >>> with qml.queuing.AnnotatedQueue() as q:
-...     qml.PauliX(0, do_queue=False)
 ...     with qml.QueuingManager.stop_recording():
 ...         qml.PauliY(1)
 >>> q.queue
@@ -167,6 +166,7 @@ import copy
 from collections import OrderedDict
 from contextlib import contextmanager
 from threading import RLock
+from typing import Optional
 
 
 class QueuingError(Exception):
@@ -235,7 +235,7 @@ class QueuingManager:
         return bool(cls._active_contexts)
 
     @classmethod
-    def active_context(cls):
+    def active_context(cls) -> Optional["AnnotatedQueue"]:
         """Returns the currently active queuing context."""
         return cls._active_contexts[-1] if cls.recording() else None
 
@@ -412,6 +412,10 @@ class AnnotatedQueue(OrderedDict):
         key = key if isinstance(key, WrappedObj) else WrappedObj(key)
         return super().__getitem__(key)
 
+    def __contains__(self, key):
+        key = key if isinstance(key, WrappedObj) else WrappedObj(key)
+        return super().__contains__(key)
+
 
 def apply(op, context=QueuingManager):
     """Apply an instantiated operator or measurement to a queuing context.
@@ -459,6 +463,22 @@ def apply(op, context=QueuingManager):
 
     >>> print(qml.draw(circuit)(0.6))
     0: ──RX(0.4)──RY(0.6)──RX(0.4)──┤ ⟨Z⟩
+
+    .. warning::
+
+        If you use ``apply`` on an operator that has already been queued, it will
+        be queued for a second time. For example:
+
+        .. code-block:: python
+
+            @qml.qnode(dev)
+            def circuit():
+                op = qml.Hadamard(0)
+                qml.apply(op)
+                return qml.expval(qml.PauliZ(0))
+
+        >>> print(qml.draw(circuit)())
+        0: ──H──H─┤  <Z>
 
     .. details::
         :title: Usage Details
@@ -517,7 +537,8 @@ def apply(op, context=QueuingManager):
     if not QueuingManager.recording():
         raise RuntimeError("No queuing context available to append operation to.")
 
-    if op in getattr(context, "queue", QueuingManager.active_context().queue):
+    # pylint: disable=unsupported-membership-test
+    if op in getattr(context, "queue", QueuingManager.active_context()):
         # Queuing contexts can only contain unique objects.
         # If the object to be queued already exists, copy it.
         op = copy.copy(op)
@@ -541,12 +562,12 @@ def process_queue(queue: AnnotatedQueue):
         queue (.AnnotatedQueue): The queue to be processed into individual lists
 
     Returns:
-        tuple[list(.Operation), list(.MeasurementProcess)], list(.Operation):
-        The list of main tape operations, the list of tape measurements, and the list of preparation operations
+        tuple[list(.Operation), list(.MeasurementProcess), list(.Operation)]:
+        The list of tape operations, the list of tape measurements, and the list of preparation operations
     """
-    lists = {"_prep": [], "_ops": [], "_measurements": []}
-    list_order = {"_prep": 0, "_ops": 1, "_measurements": 2}
-    current_list = "_prep"
+    lists = {"_ops": [], "_measurements": []}
+    list_order = {"_ops": 1, "_measurements": 2}
+    current_list = "_ops"
 
     for obj, info in queue.items():
         if "owner" not in info and getattr(obj, "_queue_category", None) is not None:
@@ -559,4 +580,4 @@ def process_queue(queue: AnnotatedQueue):
                 )
             lists[obj._queue_category].append(obj)
 
-    return lists["_ops"], lists["_measurements"], lists["_prep"]
+    return lists["_ops"], lists["_measurements"], []

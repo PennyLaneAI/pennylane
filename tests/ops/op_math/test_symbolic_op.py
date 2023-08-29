@@ -24,6 +24,20 @@ from pennylane.wires import Wires
 
 
 class TempScalar(ScalarSymbolicOp):  # pylint:disable=too-few-public-methods
+    """Temporary scalar symbolic op class."""
+
+    _name = "TempScalar"
+
+    @staticmethod
+    def _matrix(scalar, mat):
+        pass
+
+
+class TempScalarCopy(ScalarSymbolicOp):  # pylint:disable=too-few-public-methods
+    """Copy of temporary scalar symbolic op class."""
+
+    _name = "TempScalarCopy"
+
     @staticmethod
     def _matrix(scalar, mat):
         pass
@@ -52,10 +66,10 @@ def test_copy():
     copied_op = copy(op)
 
     assert copied_op.__class__ is op.__class__
-    assert copied_op.data == [param1]
+    assert copied_op.data == (param1,)
 
-    copied_op.data = [6.54]
-    assert op.data == [param1]
+    copied_op.data = (6.54,)
+    assert op.data == (param1,)
 
 
 def test_map_wires():
@@ -87,18 +101,18 @@ class TestProperties:
         base = Operator(x, "a")
         op = SymbolicOp(base)
 
-        assert op.data == [x]
+        assert op.data == (x,)
 
         # update parameters through op
         x_new = np.array(2.345)
-        op.data = [x_new]
-        assert base.data == [x_new]
-        assert op.data == [x_new]
+        op.data = (x_new,)
+        assert base.data == (x_new,)
+        assert op.data == (x_new,)
 
         # update base data updates symbolic data
         x_new2 = np.array(3.45)
-        base.data = [x_new2]
-        assert op.data == [x_new2]
+        base.data = (x_new2,)
+        assert op.data == (x_new2,)
 
     def test_parameters(self):
         """Test parameter property is a list of the base's trainable parameters."""
@@ -136,7 +150,7 @@ class TestProperties:
         op = SymbolicOp(base)
         assert op.is_hermitian == is_herm
 
-    @pytest.mark.parametrize("queue_cat", ("_ops", "_prep", None))
+    @pytest.mark.parametrize("queue_cat", ("_ops", None))
     def test_queuecateory(self, queue_cat):
         """Test that a symbolic operator inherits the queue_category from its base."""
 
@@ -194,15 +208,6 @@ class TestQueuing:
         assert len(q) == 1
         assert q.queue[0] is op
 
-    def test_do_queue_false(self):
-        """Test that queuing can be avoided if `do_queue=False`."""
-
-        base = Operator("c")
-        with qml.queuing.AnnotatedQueue() as q:
-            SymbolicOp(base, do_queue=False)
-
-        assert len(q) == 0
-
 
 class TestScalarSymbolicOp:
     """Tests for the ScalarSymbolicOp class."""
@@ -213,7 +218,7 @@ class TestScalarSymbolicOp:
         op = TempScalar(base, scalar)
         assert isinstance(op.scalar, float)
         assert op.scalar == 2.2
-        assert op.data == [2.2, 1.1]
+        assert op.data == (2.2, 1.1)
 
         base = Operator(1.1, wires=[0])
         scalar = [2.2, 3.3]
@@ -227,16 +232,27 @@ class TestScalarSymbolicOp:
         """Tests the data property."""
         op = TempScalar(Operator(1.1, wires=[0]), 2.2)
         assert op.scalar == 2.2
-        assert op.data == [2.2, 1.1]
+        assert op.data == (2.2, 1.1)
 
         # check setting through ScalarSymbolicOp
-        op.data = [3.3, 4.4]  # pylint:disable=attribute-defined-outside-init
-        assert op.data == [3.3, 4.4]
+        op.data = (3.3, 4.4)  # pylint:disable=attribute-defined-outside-init
+        assert op.data == (3.3, 4.4)
         assert op.scalar == 3.3
-        assert op.base.data == [4.4]
+        assert op.base.data == (4.4,)
 
         # check setting through base
-        op.base.data = [5.5]
-        assert op.data == [3.3, 5.5]
+        op.base.data = (5.5,)
+        assert op.data == (3.3, 5.5)
         assert op.scalar == 3.3
-        assert op.base.data == [5.5]
+        assert op.base.data == (5.5,)
+
+    def test_hash(self):
+        """Test that a hash correctly identifies ScalarSymbolicOps."""
+        op0 = TempScalar(Operator(1.1, wires=[0]), 0.3)
+        op1 = TempScalar(Operator(1.1, wires=[0]), 0.3)
+        op2 = TempScalar(Operator(1.1, wires=[0]), 0.6)
+        op3 = TempScalar(Operator(1.2, wires=[0]), 0.3)
+        op4 = TempScalarCopy(Operator(1.1, wires=[0]), 0.3)
+        assert op0.hash == op1.hash
+        for second_op in [op2, op3, op4]:
+            assert op0.hash != second_op.hash

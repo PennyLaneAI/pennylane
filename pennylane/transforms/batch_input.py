@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.tape import QuantumTape
 from pennylane.transforms.batch_transform import batch_transform
-from pennylane.transforms.batch_params import _nested_stack
+from pennylane.transforms.batch_params import _nested_stack, _split_operations
 
 
 @batch_transform
@@ -73,6 +73,7 @@ def batch_input(
     array([0.46230079, 0.73971315, 0.95666004, 0.5355225 , 0.66180948,
             0.44519553, 0.93874261, 0.9483197 , 0.78737918, 0.90866411])>
     """
+    # pylint: disable=protected-access
     argnum = tuple(argnum) if isinstance(argnum, (list, tuple)) else (int(argnum),)
 
     all_parameters = tape.get_parameters(trainable_only=False)
@@ -95,26 +96,13 @@ def batch_input(
 
     batch_size = batch_dims[0]
 
-    outputs = []
-    for i in range(batch_size):
-        batch = []
-        for idx, param in enumerate(all_parameters):
-            if idx in argnum:
-                param = param[i]
-            batch.append(param)
-        outputs.append(batch)
-
-    # Construct new output tape with unstacked inputs
     output_tapes = []
-    for params in outputs:
-        new_tape = tape.copy(copy_operations=True)
-        new_tape.set_parameters(params, trainable_only=False)
+    for ops in _split_operations(tape.operations, all_parameters, argnum, batch_size):
+        new_tape = qml.tape.QuantumScript(ops, tape.measurements, shots=tape.shots)
+        new_tape.trainable_params = tape.trainable_params
         output_tapes.append(new_tape)
 
     def processing_fn(res):
-        if qml.active_return():
-            return _nested_stack(res)
-
-        return qml.math.squeeze(qml.math.stack(res))
+        return _nested_stack(res)
 
     return output_tapes, processing_fn

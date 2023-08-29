@@ -14,13 +14,10 @@
 """
 Tests for the insert transform.
 """
-from copy import deepcopy
-
 import numpy as np
 import pytest
 
 import pennylane as qml
-import pennylane.transforms.insert_ops
 from pennylane.measurements import Expectation
 from pennylane.tape import QuantumScript
 from pennylane.transforms.insert_ops import insert
@@ -39,7 +36,7 @@ class TestInsert:
 
     tape = QuantumScript.from_queue(q_tape)
     with qml.queuing.AnnotatedQueue() as q_tape_with_prep:
-        qml.QubitStateVector([1, 0], wires=0)
+        qml.StatePrep([1, 0], wires=0)
         qml.RX(0.9, wires=0)
         qml.RY(0.4, wires=1)
         qml.CNOT(wires=[0, 1])
@@ -254,7 +251,7 @@ class TestInsert:
         tape = insert(qml.AmplitudeDamping, 0.4, position="start")(self.tape_with_prep)
 
         with qml.queuing.AnnotatedQueue() as q_tape_exp:
-            qml.QubitStateVector([1, 0], wires=0)
+            qml.StatePrep([1, 0], wires=0)
             qml.AmplitudeDamping(0.4, wires=0)
             qml.AmplitudeDamping(0.4, wires=1)
             qml.RX(0.9, wires=0)
@@ -282,7 +279,7 @@ class TestInsert:
         tape = insert(qml.PhaseDamping, 0.4, position="all")(self.tape_with_prep)
 
         with qml.queuing.AnnotatedQueue() as q_tape_exp:
-            qml.QubitStateVector([1, 0], wires=0)
+            qml.StatePrep([1, 0], wires=0)
             qml.RX(0.9, wires=0)
             qml.PhaseDamping(0.4, wires=0)
             qml.RY(0.4, wires=1)
@@ -316,7 +313,7 @@ class TestInsert:
         )
 
         with qml.queuing.AnnotatedQueue() as q_tape_exp:
-            qml.QubitStateVector([1, 0], wires=0)
+            qml.StatePrep([1, 0], wires=0)
             qml.RX(0.9, wires=0)
             qml.RY(0.4, wires=1)
             qml.CNOT(wires=[0, 1])
@@ -402,7 +399,7 @@ def test_insert_qnode():
     assert not np.isclose(f_noisy(*args), f(*args))
 
 
-def test_insert_dev(mocker, monkeypatch):
+def test_insert_dev(mocker):
     """Test if a device transformed by the insert function does successfully add noise to
     subsequent circuit executions"""
     with qml.queuing.AnnotatedQueue() as q_in_tape:
@@ -490,6 +487,7 @@ def test_insert_template():
 
 def test_insert_decorator_causes_custom_insert_error_non_qwc_obs():
     """Test that the insert transform catches and reports errors from the enclosed function."""
+    # pylint: disable=unused-argument
 
     def noise(noise_param, wires):
         qml.CRX(noise_param, wires=[0, 1])

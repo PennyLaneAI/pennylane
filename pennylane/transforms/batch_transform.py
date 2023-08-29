@@ -82,24 +82,23 @@ class batch_transform:
             '''Generates two tapes, one with all RX replaced with RY,
             and the other with all RX replaced with RZ.'''
 
-            tape1 = qml.tape.QuantumTape()
-            tape2 = qml.tape.QuantumTape()
+            ops1 = []
+            ops2 = []
 
             # loop through all operations on the input tape
-            for op in tape:
+            for op in tape.operations:
                 if op.name == "RX":
                     wires = op.wires
                     param = op.parameters[0]
 
-                    with tape1:
-                        qml.RY(a * qml.math.abs(param), wires=wires)
-
-                    with tape2:
-                        qml.RZ(b * qml.math.abs(param), wires=wires)
+                    ops1.append(qml.RY(a * qml.math.abs(param), wires=wires))
+                    ops2.append(qml.RZ(b * qml.math.abs(param), wires=wires))
                 else:
-                    for t in [tape1, tape2]:
-                        with t:
-                            qml.apply(op)
+                    ops1.append(op)
+                    ops2.append(op)
+
+            tape1 = qml.tape.QuantumTape(ops1, tape.measurements)
+            tape2 = qml.tape.QuantumTape(ops2, tape.measurements)
 
             def processing_fn(results):
                 return qml.math.sum(qml.math.stack(results))
@@ -108,10 +107,8 @@ class batch_transform:
 
     We can apply this transform to a quantum tape:
 
-    >>> with qml.tape.QuantumTape() as tape:
-    ...     qml.Hadamard(wires=0)
-    ...     qml.RX(-0.5, wires=0)
-    ...     qml.expval(qml.PauliX(0))
+    >>> ops = [qml.Hadamard(wires=0), qml.RX(-0.5, wires=0)]
+    >>> tape = qml.tape.QuantumTape(ops, [qml.expval(qml.PauliX(0))])
     >>> tapes, fn = my_transform(tape, 0.65, 2.5)
     >>> print(qml.drawer.tape_text(tapes[0], decimals=2))
     0: ──H──RY(0.33)─┤  <X>
@@ -319,17 +316,6 @@ class batch_transform:
             if old_interface == "auto":
                 qnode.interface = "auto"
 
-            if "mode" in execute_kwargs:
-                mode = execute_kwargs.pop("mode")
-                if not qml.active_return():
-                    if mode == "forward":  # pragma: no cover
-                        grad_on_execution = True
-                    elif mode == "backward":  # pragma: no cover
-                        grad_on_execution = False
-                    else:
-                        grad_on_execution = "best"
-                    execute_kwargs["grad_on_execution"] = grad_on_execution
-
             res = qml.execute(
                 tapes,
                 device=qnode.device,
@@ -475,17 +461,19 @@ def map_batch_transform(
 
         H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
 
-        with qml.tape.QuantumTape() as tape1:
-            qml.RX(0.5, wires=0)
-            qml.RY(0.1, wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(H)
 
-        with qml.tape.QuantumTape() as tape2:
-            qml.Hadamard(wires=0)
-            qml.CRX(0.5, wires=[0, 1])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(H + 0.5 * qml.PauliY(0))
+        ops1 = [
+            qml.RX(0.5, wires=0),
+            qml.RY(0.1, wires=1),
+            qml.CNOT(wires=(0,1))
+        ]
+        measurements1 = [qml.expval(H)]
+        tape1 = qml.tape.QuantumTape(ops1, measurements1)
+
+        ops2 = [qml.Hadamard(0), qml.CRX(0.5, wires=(0,1)), qml.CNOT((0,1))]
+        measurements2 = [qml.expval(H + 0.5 * qml.PauliY(0))]
+        tape2 = qml.tape.QuantumTape(ops2, measurements2)
+
 
     We can use ``map_batch_transform`` to map a single
     batch transform across both of the these tapes in such a way

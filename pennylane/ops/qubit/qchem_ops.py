@@ -134,8 +134,6 @@ class SingleExcitation(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
 
     **Example**
@@ -175,8 +173,8 @@ class SingleExcitation(Operation):
         w1, w2 = self.wires
         return 0.25 * (qml.PauliX(w1) @ qml.PauliY(w2) - qml.PauliY(w1) @ qml.PauliX(w2))
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
-        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, phi, wires, id=None):
+        super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
@@ -297,8 +295,6 @@ class SingleExcitationMinus(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wires the operation acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
 
     """
@@ -326,8 +322,8 @@ class SingleExcitationMinus(Operation):
             - qml.PauliZ(w1) @ qml.PauliZ(w2)
         )
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
-        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, phi, wires, id=None):
+        super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
@@ -428,8 +424,6 @@ class SingleExcitationPlus(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wires the operation acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
 
     """
@@ -457,8 +451,8 @@ class SingleExcitationPlus(Operation):
             + qml.PauliZ(w1) @ qml.PauliZ(w2)
         )
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
-        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, phi, wires, id=None):
+        super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
@@ -566,8 +560,6 @@ class DoubleExcitation(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
 
     **Example**
@@ -621,8 +613,8 @@ class DoubleExcitation(Operation):
     def pow(self, z):
         return [DoubleExcitation(self.data[0] * z, wires=self.wires)]
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
-        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, phi, wires, id=None):
+        super().__init__(phi, wires=wires, id=id)
 
     mask_s = np.zeros((16, 16))
     mask_s[3, 12] = -1
@@ -767,8 +759,6 @@ class DoubleExcitationPlus(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
     num_wires = 4
@@ -794,8 +784,8 @@ class DoubleExcitationPlus(Operation):
         H = csr_matrix(-0.5 * G)
         return qml.SparseHamiltonian(H, wires=self.wires)
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
-        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, phi, wires, id=None):
+        super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
@@ -850,8 +840,6 @@ class DoubleExcitationMinus(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
     num_wires = 4
@@ -940,8 +928,6 @@ class OrbitalRotation(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
 
     **Example**
@@ -981,13 +967,13 @@ class OrbitalRotation(Operation):
         w0, w1, w2, w3 = self.wires
         return 0.25 * (
             qml.PauliX(w0) @ qml.PauliZ(w1) @ qml.PauliY(w2)
-            - qml.PauliY(w0) @ qml.PauliZ(w1) @ qml.PauliX(w2)
-            + qml.PauliX(w1) @ qml.PauliZ(w2) @ qml.PauliY(w3)
-            - qml.PauliY(w1) @ qml.PauliZ(w2) @ qml.PauliX(w3)
+            - (qml.PauliY(w0) @ qml.PauliZ(w1) @ qml.PauliX(w2))
+            + (qml.PauliX(w1) @ qml.PauliZ(w2) @ qml.PauliY(w3))
+            - (qml.PauliY(w1) @ qml.PauliZ(w2) @ qml.PauliX(w3))
         )
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
-        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, phi, wires, id=None):
+        super().__init__(phi, wires=wires, id=id)
 
     mask_s = np.zeros((16, 16))
     mask_s[1, 4] = mask_s[2, 8] = mask_s[13, 7] = mask_s[14, 11] = -1
@@ -1131,8 +1117,6 @@ class FermionicSWAP(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
 
     **Example**
@@ -1176,8 +1160,8 @@ class FermionicSWAP(Operation):
             + qml.PauliY(w1) @ qml.PauliY(w2)
         )
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
-        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, phi, wires, id=None):
+        super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ

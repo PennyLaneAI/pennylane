@@ -16,9 +16,10 @@ This module contains the :class:`Device` abstract base class.
 """
 # pylint: disable=too-many-format-args, use-maxsplit-arg, protected-access
 import abc
+import copy
 import types
 import warnings
-from collections import OrderedDict, namedtuple
+from collections import OrderedDict
 from collections.abc import Iterable, Sequence
 from functools import lru_cache
 
@@ -38,73 +39,72 @@ from pennylane.measurements import (
     State,
     Variance,
 )
-from pennylane.operation import Observable, Operation, Tensor
+
+from pennylane.operation import Observable, Operation, Tensor, Operator, StatePrepBase
 from pennylane.ops import Hamiltonian, Sum
-from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.tape import QuantumScript, QuantumTape, expand_tape_state_prep
 from pennylane.wires import WireError, Wires
-
-ShotTuple = namedtuple("ShotTuple", ["shots", "copies"])
-"""tuple[int, int]: Represents copies of a shot number."""
+from pennylane.queuing import QueuingManager
 
 
-def _process_shot_sequence(shot_list):
-    """Process the shot sequence, to determine the total
-    number of shots and the shot vector.
+def _local_tape_expand(tape, depth, stop_at):
+    """Expand all objects in a tape to a specific depth excluding measurements.
+    see `pennylane.tape.tape.expand_tape` for examples.
 
     Args:
-        shot_list (Sequence[int, tuple[int]]): sequence of non-negative shot integers
+        tape (QuantumTape): The tape to expand
+        depth (int): the depth the tape should be expanded
+        stop_at (Callable): A function which accepts a queue object,
+            and returns ``True`` if this object should *not* be expanded.
+            If not provided, all objects that support expansion will be expanded.
 
     Returns:
-        tuple[int, list[.ShotTuple[int]]]: A tuple containing the total number
-        of shots, as well as a list of shot tuples.
-
-    **Example**
-
-    >>> shot_list = [3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10]
-    >>> _process_shot_sequence(shot_list)
-    (57,
-     [ShotTuple(shots=3, copies=1),
-      ShotTuple(shots=1, copies=1),
-      ShotTuple(shots=2, copies=4),
-      ShotTuple(shots=6, copies=1),
-      ShotTuple(shots=1, copies=2),
-      ShotTuple(shots=5, copies=1),
-      ShotTuple(shots=12, copies=1),
-      ShotTuple(shots=10, copies=2)])
-
-    The total number of shots (57), and a sparse representation of the shot
-    sequence is returned, where tuples indicate the number of times a shot
-    integer is repeated.
+        QuantumTape: The expanded version of ``tape``.
     """
-    if all(isinstance(s, int) for s in shot_list):
-        if len(set(shot_list)) == 1:
-            # All shots are identical, only require a single shot tuple
-            shot_vector = [ShotTuple(shots=shot_list[0], copies=len(shot_list))]
-        else:
-            # Iterate through the shots, and group consecutive identical shots
-            split_at_repeated = np.split(shot_list, np.diff(shot_list).nonzero()[0] + 1)
-            shot_vector = [ShotTuple(shots=int(i[0]), copies=len(i)) for i in split_at_repeated]
+    # This function mimics `pennylane.tape.tape.expand_tape()`, but does not expand measurements and
+    # does not perform validation checks for non-commuting measurements on the same wires.
+    if depth == 0:
+        return tape
 
-    elif all(isinstance(s, (int, tuple)) for s in shot_list):
-        # shot list contains tuples; assume it is already in a sparse representation
-        shot_vector = [
-            ShotTuple(*i) if isinstance(i, tuple) else ShotTuple(i, 1) for i in shot_list
-        ]
+    new_ops = []
+    new_measurements = []
 
-    else:
-        raise ValueError(f"Unknown shot sequence format {shot_list}")
+    for queue, new_queue in [
+        (tape.operations, new_ops),
+        (tape.measurements, new_measurements),
+    ]:
+        for obj in queue:
+            if stop_at(obj) or isinstance(obj, qml.measurements.MeasurementProcess):
+                new_queue.append(obj)
+                continue
 
-    total_shots = int(np.sum(np.prod(shot_vector, axis=1)))
-    return total_shots, shot_vector
+            if isinstance(obj, Operator):
+                if obj.has_decomposition:
+                    with QueuingManager.stop_recording():
+                        obj = QuantumScript(obj.decomposition(), _update=False)
+                else:
+                    new_queue.append(obj)
+                    continue
 
+            # recursively expand out the newly created tape
+            expanded_tape = _local_tape_expand(obj, stop_at=stop_at, depth=depth - 1)
 
-def _get_num_copies(shot_vector):
-    """Helper function to determine the number of copies from a shot vector Sequence(int) or Sequence(ShotTuple)."""
-    if any(isinstance(shot_comp, ShotTuple) for shot_comp in shot_vector):
-        len_shot_vec = sum(shot_v.copies for shot_v in shot_vector)
-    else:
-        len_shot_vec = len(shot_vector)
-    return len_shot_vec
+            new_ops.extend(expanded_tape.operations)
+            new_measurements.extend(expanded_tape.measurements)
+
+    # preserves inheritance structure
+    # if tape is a QuantumTape, returned object will be a quantum tape
+    new_tape = tape.__class__(new_ops, new_measurements, shots=tape.shots, _update=False)
+
+    # Update circuit info
+    new_tape.wires = copy.copy(tape.wires)
+    new_tape.num_wires = tape.num_wires
+    new_tape.is_sampled = tape.is_sampled
+    new_tape.all_sampled = tape.all_sampled
+    new_tape._batch_size = tape.batch_size
+    new_tape._output_dim = tape.output_dim
+    new_tape._qfunc_output = tape._qfunc_output
+    return new_tape
 
 
 class DeviceError(Exception):
@@ -136,8 +136,10 @@ class Device(abc.ABC):
         self.shots = shots
 
         if analytic is not None:
-            msg = "The analytic argument has been replaced by shots=None. "
-            msg += "Please use shots=None instead of analytic=True."
+            msg = (
+                "The analytic argument has been replaced by shots=None. "
+                "Please use shots=None instead of analytic=True."
+            )
             raise DeviceError(msg)
 
         if not isinstance(wires, Iterable):
@@ -275,7 +277,8 @@ class Device(abc.ABC):
 
         elif isinstance(shots, Sequence) and not isinstance(shots, str):
             # device is in batched sampling mode
-            self._shots, self._shot_vector = _process_shot_sequence(shots)
+            shot_obj = qml.measurements.Shots(shots)
+            self._shots, self._shot_vector = shot_obj.total_shots, list(shot_obj.shot_vector)
             self._raw_shot_sequence = shots
 
         else:
@@ -285,7 +288,7 @@ class Device(abc.ABC):
 
     @property
     def shot_vector(self):
-        """list[.ShotTuple[int, int]]: Returns the shot vector, a sparse
+        """list[~pennylane.measurements.ShotCopies]: Returns the shot vector, a sparse
         representation of the shot sequence used by the device
         when evaluating QNodes.
 
@@ -295,14 +298,14 @@ class Device(abc.ABC):
         >>> dev.shots
         57
         >>> dev.shot_vector
-        [ShotTuple(shots=3, copies=1),
-         ShotTuple(shots=1, copies=1),
-         ShotTuple(shots=2, copies=4),
-         ShotTuple(shots=6, copies=1),
-         ShotTuple(shots=1, copies=2),
-         ShotTuple(shots=5, copies=1),
-         ShotTuple(shots=12, copies=1),
-         ShotTuple(shots=10, copies=2)]
+        [ShotCopies(3 shots x 1),
+         ShotCopies(1 shots x 1),
+         ShotCopies(2 shots x 4),
+         ShotCopies(6 shots x 1),
+         ShotCopies(1 shots x 2),
+         ShotCopies(5 shots x 1),
+         ShotCopies(12 shots x 1),
+         ShotCopies(10 shots x 2)]
 
         The sparse representation of the shot
         sequence is returned, where tuples indicate the number of times a shot
@@ -638,6 +641,7 @@ class Device(abc.ABC):
 
         By default, this method expands the tape if:
 
+        - state preparation operations are called mid-circuit,
         - nested tapes are present,
         - any operations are not supported on the device, or
         - multiple observables are measured on the same wire.
@@ -655,6 +659,13 @@ class Device(abc.ABC):
             will natively support all operations.
         """
         # pylint: disable=protected-access
+        if max_expansion == 0:
+            return circuit
+
+        expand_state_prep = any(isinstance(op, StatePrepBase) for op in circuit.operations[1:])
+
+        if expand_state_prep:  # expand mid-circuit StatePrepBase operations
+            circuit = expand_tape_state_prep(circuit)
 
         comp_basis_sampled_multi_measure = (
             len(circuit.measurements) > 1 and circuit.samples_computational_basis
@@ -666,8 +677,14 @@ class Device(abc.ABC):
 
         ops_not_supported = not all(self.stopping_condition(op) for op in circuit.operations)
 
-        if ops_not_supported or obs_on_same_wire:
+        if obs_on_same_wire:
             circuit = circuit.expand(depth=max_expansion, stop_at=self.stopping_condition)
+
+        elif ops_not_supported:
+            circuit = _local_tape_expand(
+                circuit, depth=max_expansion, stop_at=self.stopping_condition
+            )
+            circuit._update()
 
         return circuit
 

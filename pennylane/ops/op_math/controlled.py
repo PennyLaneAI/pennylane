@@ -73,10 +73,8 @@ def ctrl(op, control, control_values=None, work_wires=None):
     :func:`~.ctrl` works on both callables like ``qml.RX`` or a quantum function
     and individual :class:`~.operation.Operator`'s.
 
-    >>> qml.ctrl(qml.PauliX(0), (1,2))
-    Controlled(PauliX(wires=[0]), control_wires=[1, 2])
-    >>> qml.ctrl(qml.PauliX(0), (1,2)).decomposition()
-    [Toffoli(wires=[1, 2, 0])]
+    >>> qml.ctrl(qml.Hadamard(0), (1,2))
+    Controlled(Hadamard(wires=[0]), control_wires=[1, 2])
 
     Controlled operations work with all other forms of operator math and simplification:
 
@@ -86,18 +84,26 @@ def ctrl(op, control, control_values=None, work_wires=None):
 
     """
     custom_controlled_ops = {
-        qml.PauliZ: qml.CZ,
+        (qml.PauliZ, 1): qml.CZ,
+        (qml.PauliY, 1): qml.CY,
+        (qml.PauliX, 1): qml.CNOT,
+        (qml.PauliX, 2): qml.Toffoli,
     }
     control_values = [control_values] if isinstance(control_values, (int, bool)) else control_values
     control = qml.wires.Wires(control)
+    custom_key = (type(op), len(control))
 
-    if (
-        isinstance(op, tuple(custom_controlled_ops))
-        and len(control) == 1
-        and (control_values is None or control_values[0])
-    ):
+    if custom_key in custom_controlled_ops and (control_values is None or all(control_values)):
         qml.QueuingManager.remove(op)
-        return custom_controlled_ops[type(op)](control + op.wires)
+        return custom_controlled_ops[custom_key](control + op.wires)
+    if isinstance(op, qml.PauliX):
+        qml.QueuingManager.remove(op)
+        control_string = (
+            None if control_values is None else "".join([str(int(v)) for v in control_values])
+        )
+        return qml.MultiControlledX(
+            wires=control + op.wires, control_values=control_string, work_wires=work_wires
+        )
     if isinstance(op, Operator):
         return Controlled(
             op, control_wires=control, control_values=control_values, work_wires=work_wires
@@ -120,9 +126,7 @@ def ctrl(op, control, control_values=None, work_wires=None):
             _ = [qml.PauliX(w) for w, val in zip(control, control_values) if not val]
 
         _ = [
-            Controlled(
-                op, control_wires=control, control_values=op_control_values, work_wires=work_wires
-            )
+            ctrl(op, control=control, control_values=op_control_values, work_wires=work_wires)
             for op in qscript.operations
         ]
 
@@ -150,8 +154,6 @@ class Controlled(SymbolicOp):
             length as ``control_wires``. Defaults to ``True`` for all control wires.
             Provided values are converted to `Bool` internally.
         work_wires (Any): Any auxiliary wires that can be used in the decomposition
-        do_queue(bool):  indicates whether the operator should be
-            recorded when created in a tape context
 
     .. note::
         This class, ``Controlled``, denotes a controlled version of any individual operation.
@@ -175,7 +177,7 @@ class Controlled(SymbolicOp):
     >>> op.base
     RX(1.234, wires=[1])
     >>> op.data
-    [1.234]
+    (1.234,)
     >>> op.wires
     <Wires = [0, 1]>
     >>> op.control_wires
@@ -224,6 +226,15 @@ class Controlled(SymbolicOp):
 
     """
 
+    def _flatten(self):
+        return (self.base,), (self.control_wires, tuple(self.control_values), self.work_wires)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(
+            data[0], control_wires=metadata[0], control_values=metadata[1], work_wires=metadata[2]
+        )
+
     # pylint: disable=no-self-argument
     @operation.classproperty
     def __signature__(cls):  # pragma: no cover
@@ -246,9 +257,7 @@ class Controlled(SymbolicOp):
         return object.__new__(Controlled)
 
     # pylint: disable=too-many-function-args
-    def __init__(
-        self, base, control_wires, control_values=None, work_wires=None, do_queue=True, id=None
-    ):
+    def __init__(self, base, control_wires, control_values=None, work_wires=None, id=None):
         control_wires = Wires(control_wires)
         work_wires = Wires([]) if work_wires is None else Wires(work_wires)
 
@@ -286,7 +295,7 @@ class Controlled(SymbolicOp):
 
         self._name = f"C({base.name})"
 
-        super().__init__(base, do_queue, id)
+        super().__init__(base, id)
 
     @property
     def hash(self):
@@ -612,22 +621,12 @@ class ControlledOp(Controlled, operation.Operation):
         return object.__new__(cls)
 
     # pylint: disable=too-many-function-args
-    def __init__(
-        self, base, control_wires, control_values=None, work_wires=None, do_queue=True, id=None
-    ):
-        super().__init__(base, control_wires, control_values, work_wires, do_queue, id)
+    def __init__(self, base, control_wires, control_values=None, work_wires=None, id=None):
+        super().__init__(base, control_wires, control_values, work_wires, id)
         # check the grad_recipe validity
         if self.grad_recipe is None:
             # Make sure grad_recipe is an iterable of correct length instead of None
             self.grad_recipe = [None] * self.num_params
-
-    @property
-    def base_name(self):
-        warnings.warn(
-            "Operation.base_name is deprecated. Please use type(obj).__name__ or obj.name instead.",
-            UserWarning,
-        )
-        return f"C({self.base.base_name})"
 
     @property
     def name(self):

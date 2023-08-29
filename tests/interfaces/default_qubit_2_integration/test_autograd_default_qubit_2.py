@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Autograd specific tests for execute and default qubit 2."""
-# pylint: disable=invalid-sequence-index
 import autograd
 import pytest
 from pennylane import numpy as np
@@ -98,6 +97,28 @@ class TestCaching:
         assert tracker2.totals["executions"] == expected_runs_ideal
         assert expected_runs_ideal < expected_runs
 
+    def test_single_backward_pass_batch(self):
+        """Tests that the backward pass is one single batch, not a bunch of batches, when parameter shift
+        is requested for multiple tapes."""
+
+        dev = DefaultQubit2()
+
+        def f(x):
+            tape1 = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.probs(wires=0)])
+            tape2 = qml.tape.QuantumScript([qml.RY(x, 0)], [qml.probs(wires=0)])
+
+            results = qml.execute([tape1, tape2], dev, gradient_fn=qml.gradients.param_shift)
+            return results[0] + results[1]
+
+        x = qml.numpy.array(0.1)
+        with dev.tracker:
+            out = qml.jacobian(f)(x)
+
+        assert dev.tracker.totals["batches"] == 2
+        assert dev.tracker.history["executions"] == [2, 4]
+        expected = [-2 * np.cos(x / 2) * np.sin(x / 2), 2 * np.sin(x / 2) * np.cos(x / 2)]
+        assert qml.math.allclose(out, expected)
+
 
 # add tests for lightning 2 when possible
 # set rng for device when possible
@@ -105,7 +126,8 @@ test_matrix = [
     ({"gradient_fn": param_shift}, 100000, DefaultQubit2(seed=42)),
     ({"gradient_fn": param_shift}, None, DefaultQubit2()),
     ({"gradient_fn": "backprop"}, None, DefaultQubit2()),
-    # no device gradient yet
+    ({"gradient_fn": "adjoint", "grad_on_execution": True}, None, DefaultQubit2()),
+    ({"gradient_fn": "adjoint", "grad_on_execution": False}, None, DefaultQubit2()),
 ]
 
 
@@ -136,7 +158,10 @@ class TestAutogradExecuteIntegration:
         with device.tracker:
             res = cost(a, b)
 
-        assert device.tracker.totals["batches"] == 1
+        if execute_kwargs.get("grad_on_execution", False):
+            assert device.tracker.totals["execute_and_derivative_batches"] == 1
+        else:
+            assert device.tracker.totals["batches"] == 1
         assert device.tracker.totals["executions"] == 2  # different wires so different hashes
 
         assert len(res) == 2
@@ -196,7 +221,7 @@ class TestAutogradExecuteIntegration:
         """Test that a tape with no parameters is correctly
         ignored during the gradient computation"""
 
-        if execute_kwargs["gradient_fn"] == "device":
+        if execute_kwargs["gradient_fn"] == "adjoint":
             pytest.skip("Adjoint differentiation does not yet support probabilities")
 
         def cost(params):
@@ -303,8 +328,8 @@ class TestAutogradExecuteIntegration:
         assert tape.trainable_params == [0, 1]
 
         def cost(a, b):
-            tape.set_parameters([a, b])
-            return autograd.numpy.hstack(execute([tape], device, **execute_kwargs)[0])
+            new_tape = tape.bind_new_parameters([a, b], [0, 1])
+            return autograd.numpy.hstack(execute([new_tape], device, **execute_kwargs)[0])
 
         jac_fn = qml.jacobian(cost)
         jac = jac_fn(a, b)
@@ -405,15 +430,13 @@ class TestAutogradExecuteIntegration:
         class U3(qml.U3):
             """Dummy operator."""
 
-            def expand(self):
+            def decomposition(self):
                 theta, phi, lam = self.data
                 wires = self.wires
-                return qml.tape.QuantumScript(
-                    [
-                        qml.Rot(lam, theta, -lam, wires=wires),
-                        qml.PhaseShift(phi + lam, wires=wires),
-                    ]
-                )
+                return [
+                    qml.Rot(lam, theta, -lam, wires=wires),
+                    qml.PhaseShift(phi + lam, wires=wires),
+                ]
 
         def cost_fn(a, p):
             tape = qml.tape.QuantumScript(
@@ -447,6 +470,9 @@ class TestAutogradExecuteIntegration:
     def test_probability_differentiation(self, execute_kwargs, device, shots):
         """Tests correct output shape and evaluation for a tape
         with prob outputs"""
+
+        if execute_kwargs["gradient_fn"] == "adjoint":
+            pytest.skip("adjoint differentiation does not suppport probabilities.")
 
         def cost(x, y):
             ops = [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))]
@@ -500,7 +526,7 @@ class TestAutogradExecuteIntegration:
     def test_ragged_differentiation(self, execute_kwargs, device, shots):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        if execute_kwargs["gradient_fn"] == "device":
+        if execute_kwargs["gradient_fn"] == "adjoint":
             pytest.skip("Adjoint differentiation does not yet support probabilities")
 
         def cost(x, y):
@@ -612,20 +638,25 @@ class TestHigherOrderDerivatives:
 
 
 @pytest.mark.parametrize("execute_kwargs, shots, device", test_matrix)
+@pytest.mark.parametrize("use_new_op_math", (True, False))
 class TestHamiltonianWorkflows:
     """Test that tapes ending with expectations
     of Hamiltonians provide correct results and gradients"""
 
     @pytest.fixture
-    def cost_fn(self, execute_kwargs, shots, device):
+    def cost_fn(self, execute_kwargs, shots, device, use_new_op_math):
         """Cost function for gradient tests"""
 
         def _cost_fn(weights, coeffs1, coeffs2):
             obs1 = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
             H1 = qml.Hamiltonian(coeffs1, obs1)
+            if use_new_op_math:
+                H1 = qml.pauli.pauli_sentence(H1).operation()
 
             obs2 = [qml.PauliZ(0)]
             H2 = qml.Hamiltonian(coeffs2, obs2)
+            if use_new_op_math:
+                H2 = qml.pauli.pauli_sentence(H2).operation()
 
             with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(weights[0], wires=0)
@@ -667,8 +698,13 @@ class TestHamiltonianWorkflows:
             ]
         )
 
-    def test_multiple_hamiltonians_not_trainable(self, cost_fn, shots):
+    def test_multiple_hamiltonians_not_trainable(
+        self, execute_kwargs, cost_fn, shots, use_new_op_math
+    ):
         """Test hamiltonian with no trainable parameters."""
+
+        if execute_kwargs["gradient_fn"] == "adjoint" and not use_new_op_math:
+            pytest.skip("adjoint differentiation does not suppport hamiltonians.")
 
         coeffs1 = np.array([0.1, 0.2, 0.3], requires_grad=False)
         coeffs2 = np.array([0.7], requires_grad=False)
@@ -682,8 +718,13 @@ class TestHamiltonianWorkflows:
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)[:, :2]
         assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
-    def test_multiple_hamiltonians_trainable(self, cost_fn, shots):
+    def test_multiple_hamiltonians_trainable(self, execute_kwargs, cost_fn, shots, use_new_op_math):
         """Test hamiltonian with trainable parameters."""
+        if execute_kwargs["gradient_fn"] == "adjoint":
+            pytest.skip("trainable hamiltonians not supported with adjoint")
+        if use_new_op_math:
+            pytest.skip("parameter shift derivatives do not yet support sums.")
+
         coeffs1 = np.array([0.1, 0.2, 0.3], requires_grad=True)
         coeffs2 = np.array([0.7], requires_grad=True)
         weights = np.array([0.4, 0.5], requires_grad=True)

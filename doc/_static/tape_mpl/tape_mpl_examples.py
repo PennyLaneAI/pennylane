@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 import pennylane as qml
 
 
-from pennylane.drawer import tape_mpl
+from pennylane.drawer import tape_mpl, use_style as use_drawer_style
 
 folder = pathlib.Path(__file__).parent
 
@@ -76,11 +76,11 @@ def rcparams(tape):
     plt.rcParams["lines.linewidth"] = 5
     plt.rcParams["figure.facecolor"] = "ghostwhite"
 
-    fig, ax = tape_mpl(tape, style=None)
+    fig, ax = tape_mpl(tape, style="rcParams")
 
     plt.savefig(folder / "rcparams.png")
     plt.close()
-    plt.style.use("default")
+    use_drawer_style("black_white")
 
 
 def use_style(tape):
@@ -89,7 +89,7 @@ def use_style(tape):
 
     plt.savefig(folder / "sketch_style.png")
     plt.close()
-    plt.style.use("default")
+    use_drawer_style("black_white")
 
 
 def wires_and_labels(tape):
@@ -125,6 +125,18 @@ def postprocessing(tape):
     plt.close()
 
 
+def mid_measure():
+    with qml.queuing.AnnotatedQueue() as q:
+        m0 = qml.measure(0)
+        qml.Hadamard(1)
+        qml.cond(m0, qml.PauliZ)(1)
+
+    circuit = qml.tape.QuantumScript.from_queue(q)
+    _ = tape_mpl(circuit)
+    plt.savefig(folder / "mid_measure.png")
+    plt.close()
+
+
 if __name__ == "__main__":
 
     with qml.tape.QuantumTape() as tape:
@@ -144,3 +156,4 @@ if __name__ == "__main__":
     rcparams(tape)
     wires_and_labels(tape)
     postprocessing(tape)
+    mid_measure()

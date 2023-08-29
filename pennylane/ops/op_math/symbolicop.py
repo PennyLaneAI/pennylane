@@ -29,8 +29,6 @@ class SymbolicOp(Operator):
 
     Args:
         base (~.operation.Operator): the base operation that is modified symbolicly
-        do_queue (bool): indicates whether the operator should be
-            recorded when created in a tape context
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
 
@@ -66,14 +64,12 @@ class SymbolicOp(Operator):
         return copied_op
 
     # pylint: disable=super-init-not-called
-    def __init__(self, base, do_queue=True, id=None):
+    def __init__(self, base, id=None):
         self.hyperparameters["base"] = base
         self._id = id
         self.queue_idx = None
         self._pauli_rep = None
-
-        if do_queue:
-            self.queue()
+        self.queue()
 
     @property
     def batch_size(self):
@@ -153,8 +149,6 @@ class ScalarSymbolicOp(SymbolicOp):
     Args:
         base (~.operation.Operator): the base operation that is modified symbolicly
         scalar (float): the scalar coefficient
-        do_queue (bool): indicates whether the operator should be recorded when created in a tape
-            context
         id (str): custom label given to an operator instance, can be useful for some applications
             where the instance has to be identified
 
@@ -164,9 +158,9 @@ class ScalarSymbolicOp(SymbolicOp):
 
     _name = "ScalarSymbolicOp"
 
-    def __init__(self, base, scalar: float, do_queue=True, id=None):
+    def __init__(self, base, scalar: float, id=None):
         self.scalar = np.array(scalar) if isinstance(scalar, list) else scalar
-        super().__init__(base, do_queue=do_queue, id=id)
+        super().__init__(base, id=id)
         self._batch_size = self._check_and_compute_batch_size(scalar)
 
     @property
@@ -175,7 +169,7 @@ class ScalarSymbolicOp(SymbolicOp):
 
     @property
     def data(self):
-        return [self.scalar, *self.base.data]
+        return (self.scalar, *self.base.data)
 
     @data.setter
     def data(self, new_data):
@@ -195,6 +189,16 @@ class ScalarSymbolicOp(SymbolicOp):
                 f"do not match: {scalar_size}, {self.base.batch_size}."
             )
         return scalar_size
+
+    @property
+    def hash(self):
+        return hash(
+            (
+                str(self.name),
+                str(self.scalar),
+                self.base.hash,
+            )
+        )
 
     @staticmethod
     @abstractmethod
@@ -237,27 +241,30 @@ class ScalarSymbolicOp(SymbolicOp):
             base_matrix = self.base.matrix()
 
         scalar_interface = qml.math.get_interface(self.scalar)
+        scalar = self.scalar
         if scalar_interface == "torch":
             # otherwise get `RuntimeError: Can't call numpy() on Tensor that requires grad.`
             base_matrix = qml.math.convert_like(base_matrix, self.scalar)
-        elif scalar_interface == "tensorflow" and not qml.math.iscomplex(self.scalar):
-            # cast scalar to complex to avoid an error
-            self.scalar = qml.math.cast_like(self.scalar, base_matrix)
+        elif scalar_interface == "tensorflow":
+            # just cast everything to complex128. Otherwise we may have casting problems
+            # where things get truncated like in SProd(tf.Variable(0.1), qml.PauliX(0))
+            scalar = qml.math.cast(scalar, "complex128")
+            base_matrix = qml.math.cast(base_matrix, "complex128")
 
         # compute scalar operation on base matrix taking batching into account
-        scalar_size = qml.math.size(self.scalar)
+        scalar_size = qml.math.size(scalar)
         if scalar_size != 1:
             if scalar_size == self.base.batch_size:
                 # both base and scalar are broadcasted
-                mat = qml.math.stack([self._matrix(s, m) for s, m in zip(self.scalar, base_matrix)])
+                mat = qml.math.stack([self._matrix(s, m) for s, m in zip(scalar, base_matrix)])
             else:
                 # only scalar is broadcasted
-                mat = qml.math.stack([self._matrix(s, base_matrix) for s in self.scalar])
+                mat = qml.math.stack([self._matrix(s, base_matrix) for s in scalar])
         elif self.base.batch_size is not None:
             # only base is broadcasted
-            mat = qml.math.stack([self._matrix(self.scalar, ar2) for ar2 in base_matrix])
+            mat = qml.math.stack([self._matrix(scalar, ar2) for ar2 in base_matrix])
         else:
             # none are broadcasted
-            mat = self._matrix(self.scalar, base_matrix)
+            mat = self._matrix(scalar, base_matrix)
 
         return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)

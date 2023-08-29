@@ -56,6 +56,11 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
     :math:`p(\lambda_i) = |\langle \xi_i | \psi \rangle|^2`, where :math:`| \xi_i \rangle`
     is the corresponding basis state from the observable's eigenbasis.
 
+    .. note::
+
+        Differentiation of QNodes that return ``counts`` is currently not supported. Please refer to
+        :func:`~.pennylane.sample` if differentiability is required.
+
     **Example**
 
     .. code-block:: python3
@@ -116,7 +121,7 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
     .. code-block:: python3
 
         @qml.qnode(dev)
-        def circuit(x):
+        def circuit():
             qml.PauliX(wires=0)
             return qml.counts(all_outcomes=True)
 
@@ -125,13 +130,6 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
     >>> circuit()
     {'00': 0, '01': 0, '10': 4, '11': 0}
 
-    .. note::
-
-        QNodes that return samples cannot, in general, be differentiated, since the derivative
-        with respect to a sample --- a stochastic process --- is ill-defined. The one exception
-        is if the QNode uses the parameter-shift method (``diff_method="parameter-shift"``), in
-        which case ``qml.sample(obs)`` is interpreted as a single-shot expectation value of the
-        observable ``obs``.
     """
     if op is not None and not op.is_hermitian:  # None type is also allowed for op
         warnings.warn(f"{op.name} might not be hermitian.")
@@ -281,6 +279,7 @@ class CountsMP(SampleMeasurement):
 
         if self.obs is None:
             # convert samples and outcomes (if using) from arrays to str for dict keys
+            samples = qml.math.cast_like(samples, qml.math.int8(0))
             samples = qml.math.apply_along_axis(_sample_to_str, -1, samples)
             batched_ndims = 3  # no observable was provided, batched samples will have shape (batch_size, shots, len(wires))
             if self.all_outcomes:
@@ -299,9 +298,10 @@ class CountsMP(SampleMeasurement):
         base_dict = {k: qml.math.int64(0) for k in outcomes}
         outcome_dicts = [base_dict.copy() for _ in range(shape[0])]
         results = [qml.math.unique(batch, return_counts=True) for batch in samples]
+
         for result, outcome_dict in zip(results, outcome_dicts):
             states, _counts = result
-            for state, count in zip(states, _counts):
+            for state, count in zip(qml.math.unwrap(states), _counts):
                 outcome_dict[state] = count
 
         return outcome_dicts if batched else outcome_dicts[0]

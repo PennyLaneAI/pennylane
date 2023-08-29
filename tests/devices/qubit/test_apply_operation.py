@@ -168,7 +168,7 @@ class TestTwoQubitStateSpecialCases:
         initial_state = qml.math.asarray(initial_state, like=ml_framework)
 
         phase = qml.math.asarray(-2.3, like=ml_framework)
-        shift = np.exp(qml.math.multiply(1j, phase))
+        shift = qml.math.exp(1j * qml.math.cast(phase, np.complex128))
 
         new_state = method(qml.PhaseShift(phase, wire), initial_state)
 
@@ -204,6 +204,73 @@ class TestTwoQubitStateSpecialCases:
         new1 = qml.math.take(new_state, 1, axis=control)
         assert qml.math.allclose(initial1[1], new1[0])
         assert qml.math.allclose(initial1[0], new1[1])
+
+
+@pytest.mark.parametrize("ml_framework", ml_frameworks_list)
+class TestSnapshot:
+    """Test that apply_operation works for Snapshot ops"""
+
+    class Debugger:  # pylint: disable=too-few-public-methods
+        """A dummy debugger class"""
+
+        def __init__(self):
+            self.active = True
+            self.snapshots = {}
+
+    def test_no_debugger(self, ml_framework):
+        """Test nothing happens when there is no debugger"""
+        initial_state = np.array(
+            [
+                [0.04624539 + 0.3895457j, 0.22399401 + 0.53870339j],
+                [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
+            ]
+        )
+        initial_state = qml.math.asarray(initial_state, like=ml_framework)
+        new_state = apply_operation(qml.Snapshot(), initial_state)
+
+        assert new_state.shape == initial_state.shape
+        assert qml.math.allclose(new_state, initial_state)
+
+    def test_empty_tag(self, ml_framework):
+        """Test a snapshot is recorded properly when there is no tag"""
+        initial_state = np.array(
+            [
+                [0.04624539 + 0.3895457j, 0.22399401 + 0.53870339j],
+                [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
+            ]
+        )
+        initial_state = qml.math.asarray(initial_state, like=ml_framework)
+
+        debugger = self.Debugger()
+        new_state = apply_operation(qml.Snapshot(), initial_state, debugger=debugger)
+
+        assert new_state.shape == initial_state.shape
+        assert qml.math.allclose(new_state, initial_state)
+
+        assert list(debugger.snapshots.keys()) == [0]
+        assert debugger.snapshots[0].shape == (4,)
+        assert qml.math.allclose(debugger.snapshots[0], qml.math.flatten(initial_state))
+
+    def test_provided_tag(self, ml_framework):
+        """Test a snapshot is recorded property when provided a tag"""
+        initial_state = np.array(
+            [
+                [0.04624539 + 0.3895457j, 0.22399401 + 0.53870339j],
+                [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
+            ]
+        )
+        initial_state = qml.math.asarray(initial_state, like=ml_framework)
+
+        debugger = self.Debugger()
+        tag = "abcd"
+        new_state = apply_operation(qml.Snapshot(tag), initial_state, debugger=debugger)
+
+        assert new_state.shape == initial_state.shape
+        assert qml.math.allclose(new_state, initial_state)
+
+        assert list(debugger.snapshots.keys()) == [tag]
+        assert debugger.snapshots[tag].shape == (4,)
+        assert qml.math.allclose(debugger.snapshots[tag], qml.math.flatten(initial_state))
 
 
 @pytest.mark.parametrize("method", methods)

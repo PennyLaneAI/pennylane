@@ -27,9 +27,11 @@ SUPPORTED_GRADIENT_METHODS = [
     "finite-diff",
     "device",
     "adjoint",
+    "gradient-transform",
 ]
 
 
+# pylint: disable=too-many-instance-attributes
 @dataclass
 class ExecutionConfig:
     """

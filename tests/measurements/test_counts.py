@@ -117,8 +117,99 @@ class TestCounts:
         assert repr(m3) == "CountsMP(eigvals=[-1  1], wires=[], all_outcomes=False)"
 
 
+class TestProcessSamples:
+    """Unit tests for the counts.process_samples method"""
+
+    def test_counts_shape_single_wires(self):
+        """Test that the counts output is correct for single wires"""
+        shots = 1000
+        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.bool8)
+
+        result = qml.counts(wires=0).process_samples(samples, wire_order=[0])
+
+        assert len(result) == 2
+        assert set(result.keys()) == {"0", "1"}
+        assert result["0"] == np.count_nonzero(samples[:, 0] == 0)
+        assert result["1"] == np.count_nonzero(samples[:, 0] == 1)
+
+    def test_counts_shape_multi_wires(self):
+        """Test that the counts function outputs counts of the right size
+        for multiple wires"""
+        shots = 1000
+        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.bool8)
+
+        result = qml.counts(wires=[0, 1]).process_samples(samples, wire_order=[0, 1])
+
+        assert len(result) == 4
+        assert set(result.keys()) == {"00", "01", "10", "11"}
+        assert result["00"] == np.count_nonzero(
+            np.logical_and(samples[:, 0] == 0, samples[:, 1] == 0)
+        )
+        assert result["01"] == np.count_nonzero(
+            np.logical_and(samples[:, 0] == 0, samples[:, 1] == 1)
+        )
+        assert result["10"] == np.count_nonzero(
+            np.logical_and(samples[:, 0] == 1, samples[:, 1] == 0)
+        )
+        assert result["11"] == np.count_nonzero(
+            np.logical_and(samples[:, 0] == 1, samples[:, 1] == 1)
+        )
+
+    def test_counts_obs(self):
+        """Test that the counts function outputs counts of the right size for observables"""
+        shots = 1000
+        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.bool8)
+
+        result = qml.counts(qml.PauliZ(0)).process_samples(samples, wire_order=[0])
+
+        assert len(result) == 2
+        assert set(result.keys()) == {1, -1}
+        assert result[1] == np.count_nonzero(samples[:, 0] == 0)
+        assert result[-1] == np.count_nonzero(samples[:, 0] == 1)
+
+    def test_counts_all_outcomes_wires(self):
+        """Test that the counts output is correct when all_outcomes is passed"""
+        shots = 1000
+        samples = np.zeros((shots, 2)).astype(np.bool8)
+
+        result1 = qml.counts(wires=0, all_outcomes=False).process_samples(samples, wire_order=[0])
+
+        assert len(result1) == 1
+        assert set(result1.keys()) == {"0"}
+        assert result1["0"] == shots
+
+        result2 = qml.counts(wires=0, all_outcomes=True).process_samples(samples, wire_order=[0])
+
+        assert len(result2) == 2
+        assert set(result2.keys()) == {"0", "1"}
+        assert result2["0"] == shots
+        assert result2["1"] == 0
+
+    def test_counts_all_outcomes_obs(self):
+        """Test that the counts output is correct when all_outcomes is passed"""
+        shots = 1000
+        samples = np.zeros((shots, 2)).astype(np.bool8)
+
+        result1 = qml.counts(qml.PauliZ(0), all_outcomes=False).process_samples(
+            samples, wire_order=[0]
+        )
+
+        assert len(result1) == 1
+        assert set(result1.keys()) == {1}
+        assert result1[1] == shots
+
+        result2 = qml.counts(qml.PauliZ(0), all_outcomes=True).process_samples(
+            samples, wire_order=[0]
+        )
+
+        assert len(result2) == 2
+        assert set(result2.keys()) == {1, -1}
+        assert result2[1] == shots
+        assert result2[-1] == 0
+
+
 class TestCountsIntegration:
-    # pylint:disable=too-many-public-methods
+    # pylint:disable=too-many-public-methods,not-an-iterable
 
     def test_counts_dimension(self, mocker):
         """Test that the counts function outputs counts of the right size"""
@@ -310,6 +401,7 @@ class TestCountsIntegration:
 
         res = circuit()
         assert res == {basis_state: n_shots}
+        assert qml.math.get_interface(res[basis_state]) == interface
 
         custom_measurement_process(dev, spy)
 
@@ -624,6 +716,7 @@ def test_counts_no_op_finite_shots(interface, wires, basis_state, mocker):
 
     res = circuit()
     assert res == {basis_state: n_shots}
+    assert qml.math.get_interface(res[basis_state]) == interface
 
     custom_measurement_process(dev, spy)
 

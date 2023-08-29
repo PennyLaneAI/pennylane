@@ -20,6 +20,30 @@ from pennylane import numpy as pnp
 import pennylane as qml
 
 
+def test_repr():
+    """Test the custom repr for angle embedding."""
+    op = qml.AngleEmbedding(features=[1, 2, 3], wires=range(3), rotation="Z")
+    expected = "AngleEmbedding([1 2 3], wires=[0, 1, 2], rotation=Z)"
+    assert repr(op) == expected
+
+
+# pylint: disable=protected-access
+def test_flatten_unflatten():
+    """Test the _flatten and _unflatten methods."""
+    wires = qml.wires.Wires((0, 1, 2))
+    op = qml.AngleEmbedding(features=[1, 2, 3], wires=wires, rotation="Z")
+
+    data, metadata = op._flatten()
+    assert data == op.data
+    assert len(metadata) == 2
+    assert metadata[0] == wires
+    assert metadata[1] == (("rotation", "Z"),)
+
+    new_op = type(op)._unflatten(*op._flatten())
+    assert qml.equal(op, new_op)
+    assert op is not new_op
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 

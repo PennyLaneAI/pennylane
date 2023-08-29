@@ -1,14 +1,26 @@
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Unit tests for the ``decompose`` function.
+"""
+# pylint: disable=too-many-arguments
 import os
-import sys
 
 import numpy as np
 import pytest
 
 from pennylane import qchem
-
-# TODO: Bring pytest skip to relevant tests.
-openfermion = pytest.importorskip("openfermion")
-openfermionpyscf = pytest.importorskip("openfermionpyscf")
 
 ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
 
@@ -513,6 +525,7 @@ ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_fi
         ),
     ],
 )
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_transformation(name, core, active, mapping, coeffs_ref, pauli_strings_ref, tol):
     r"""Test the correctness of the decomposed Hamiltonian for the (:math: `H_2, H_2O, LiH`)
     molecules using Jordan-Wigner and Bravyi-Kitaev transformations."""
@@ -528,6 +541,7 @@ def test_transformation(name, core, active, mapping, coeffs_ref, pauli_strings_r
     assert pauli_strings == pauli_strings_ref
 
 
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_not_available_transformation():
     r"""Test that an error is raised if the chosen fermionic-to-qubit transformation
     is neither 'jordan_wigner' nor 'bravyi_kitaev'."""

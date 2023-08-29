@@ -265,6 +265,7 @@ single_op_tests_data = [
         "0: ─╭○─┤  \n1: ─├●─┤  \n2: ─├○─┤  \n3: ─╰X─┤  ",
     ),
     (
+        # pylint:disable=no-member
         qml.ops.op_math.Controlled(qml.PauliY(3), (0, 1, 2), [0, 1, 0]),
         "0: ─╭○─┤  \n1: ─├●─┤  \n2: ─├○─┤  \n3: ─╰Y─┤  ",
     ),
@@ -280,8 +281,8 @@ single_op_tests_data = [
     (qml.QubitSum(wires=(0, 1, 2)), "0: ─╭Σ─┤  \n1: ─├Σ─┤  \n2: ─╰Σ─┤  "),
     (qml.AmplitudeDamping(0.98, wires=0), "0: ──AmplitudeDamping(0.98)─┤  "),
     (
-        qml.QubitStateVector([0, 1, 0, 0], wires=(0, 1)),
-        "0: ─╭QubitStateVector(M0)─┤  \n1: ─╰QubitStateVector(M0)─┤  ",
+        qml.StatePrep([0, 1, 0, 0], wires=(0, 1)),
+        "0: ─╭|Ψ⟩─┤  \n1: ─╰|Ψ⟩─┤  ",
     ),
     (qml.Kerr(1.234, wires=0), "0: ──Kerr(1.23)─┤  "),
     (
@@ -382,7 +383,7 @@ class TestLayering:
 
 
 tape_matrices = qml.tape.QuantumScript(
-    prep=[qml.QubitStateVector([1.0, 0.0, 0.0, 0.0], wires=(0, 1))],
+    prep=[qml.StatePrep([1.0, 0.0, 0.0, 0.0], wires=(0, 1))],
     ops=[qml.QubitUnitary(np.eye(2), wires=0)],
     measurements=[qml.expval(qml.Hermitian(np.eye(2), wires=0))],
 )
@@ -395,10 +396,9 @@ class TestShowMatrices:
         """Test matrices numbered but not included by default."""
 
         expected = (
-            "0: ─╭QubitStateVector(M0)──U(M1)─┤  <𝓗(M1)>\n"
-            "1: ─╰QubitStateVector(M0)────────┤         \n"
-            "M0 = \n[1. 0. 0. 0.]\n"
-            "M1 = \n[[1. 0.]\n [0. 1.]]"
+            "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n"
+            "1: ─╰|Ψ⟩────────┤         \n"
+            "M0 = \n[[1. 0.]\n [0. 1.]]"
         )
 
         assert tape_text(tape_matrices) == expected
@@ -406,10 +406,7 @@ class TestShowMatrices:
     def test_do_not_show_matrices(self):
         """Test matrices included when requested."""
 
-        expected = (
-            "0: ─╭QubitStateVector(M0)──U(M1)─┤  <𝓗(M1)>\n"
-            "1: ─╰QubitStateVector(M0)────────┤         "
-        )
+        expected = "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n1: ─╰|Ψ⟩────────┤         "
 
         assert tape_text(tape_matrices, show_matrices=False) == expected
 
@@ -420,15 +417,13 @@ class TestShowMatrices:
         cache = {"matrices": [np.eye(2), -np.eye(3)]}
 
         expected = (
-            "0: ─╭QubitStateVector(M2)──U(M0)─┤  <𝓗(M0)>\n"
-            "1: ─╰QubitStateVector(M2)────────┤         \n"
+            "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n"
+            "1: ─╰|Ψ⟩────────┤         \n"
             "M0 = \n[[1. 0.]\n [0. 1.]]\n"
-            "M1 = \n[[-1. -0. -0.]\n [-0. -1. -0.]\n [-0. -0. -1.]]\n"
-            "M2 = \n[1. 0. 0. 0.]"
+            "M1 = \n[[-1. -0. -0.]\n [-0. -1. -0.]\n [-0. -0. -1.]]"
         )
 
         assert tape_text(tape_matrices, show_matrices=True, cache=cache) == expected
-        assert qml.math.allequal(cache["matrices"][2], [1.0, 0.0, 0.0, 0.0])
 
 
 # @pytest.mark.skip("Nested tapes are being deprecated")

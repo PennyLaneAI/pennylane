@@ -21,6 +21,7 @@ qubit-based quantum circuits.
 
 import functools
 import itertools
+from collections import defaultdict
 from string import ascii_letters as ABC
 
 import pennylane as qml
@@ -30,11 +31,11 @@ from pennylane import (
     DeviceError,
     QubitDensityMatrix,
     QubitDevice,
-    QubitStateVector,
+    StatePrep,
     Snapshot,
 )
 from pennylane import numpy as np
-from pennylane.measurements import CountsMP, MutualInfoMP, SampleMP, StateMP, VnEntropyMP
+from pennylane.measurements import CountsMP, MutualInfoMP, SampleMP, StateMP, VnEntropyMP, PurityMP
 from pennylane.operation import Channel
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import Wires
@@ -47,6 +48,20 @@ tolerance = 1e-10
 
 class DefaultMixed(QubitDevice):
     """Default qubit device for performing mixed-state computations in PennyLane.
+
+    .. warning::
+
+        The API of ``DefaultMixed`` will be updated soon to follow a new device interface described
+        in :class:`pennylane.devices.experimental.Device`.
+
+        This change will not alter device behaviour for most workflows, but may have implications for
+        plugin developers and users who directly interact with device methods. Please consult
+        :class:`pennylane.devices.experimental.Device` and the implementation in
+        :class:`pennylane.devices.experimental.DefaultQubit2` for more information on what the new
+        interface will look like and be prepared to make updates in a coming release. If you have any
+        feedback on these changes, please create an
+        `issue <https://github.com/PennyLaneAI/pennylane/issues>`_ or post in our
+        `discussion forum <https://discuss.pennylane.ai/>`_.
 
     Args:
         wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
@@ -71,6 +86,7 @@ class DefaultMixed(QubitDevice):
         "Snapshot",
         "BasisState",
         "QubitStateVector",
+        "StatePrep",
         "QubitDensityMatrix",
         "QubitUnitary",
         "ControlledQubitUnitary",
@@ -143,6 +159,9 @@ class DefaultMixed(QubitDevice):
     _gather = staticmethod(lambda *args, axis=0, **kwargs: qnp.gather(*args, **kwargs))
     _dot = staticmethod(qnp.dot)
 
+    measurement_map = defaultdict(lambda: "")
+    measurement_map[PurityMP] = "purity"
+
     @staticmethod
     def _reduce_sum(array, axes):
         return qnp.sum(array, tuple(axes))
@@ -153,21 +172,7 @@ class DefaultMixed(QubitDevice):
         if not hasattr(array, "__len__"):
             return np.asarray(array, dtype=dtype)
 
-        if not qml.active_return():
-            # check if the array is ragged
-            first_shape = qnp.shape(array[0])
-            is_ragged = any(qnp.shape(array[i]) != first_shape for i in range(len(array)))
-
-            if not is_ragged:
-                res = qnp.stack(array)
-                if dtype is not None:
-                    res = qnp.cast(res, dtype=dtype)
-
-            if is_ragged or res.dtype is np.dtype("O"):
-                return qnp.cast(qnp.flatten(qnp.hstack(array)), dtype=dtype)
-        else:
-            res = qnp.cast(array, dtype=dtype)
-
+        res = qnp.cast(array, dtype=dtype)
         return res
 
     def __init__(
@@ -240,6 +245,26 @@ class DefaultMixed(QubitDevice):
         dim = 2**self.num_wires
         # User obtains state as a matrix
         return qnp.reshape(self._pre_rotated_state, (dim, dim))
+
+    def density_matrix(self, wires):
+        """Returns the reduced density matrix over the given wires.
+
+        Args:
+            wires (Wires): wires of the reduced system
+
+        Returns:
+            array[complex]: complex array of shape ``(2 ** len(wires), 2 ** len(wires))``
+            representing the reduced density matrix of the state prior to measurement.
+        """
+        state = getattr(self, "state", None)
+        wires = self.map_wires(wires)
+        return qml.math.reduce_dm(state, indices=wires, c_dtype=self.C_DTYPE)
+
+    def purity(self, mp, **kwargs):  # pylint: disable=unused-argument
+        """Returns the purity of the final state"""
+        state = getattr(self, "state", None)
+        wires = self.map_wires(mp.wires)
+        return qml.math.purity(state, indices=wires, c_dtype=self.C_DTYPE)
 
     def reset(self):
         """Resets the device"""
@@ -566,7 +591,7 @@ class DefaultMixed(QubitDevice):
         if operation.name == "Identity":
             return
 
-        if isinstance(operation, QubitStateVector):
+        if isinstance(operation, StatePrep):
             self._apply_state_vector(operation.parameters[0], wires)
             return
 
@@ -658,66 +683,12 @@ class DefaultMixed(QubitDevice):
             self.measured_wires = qml.wires.Wires.all_wires(wires_list)
         return super().execute(circuit, **kwargs)
 
-    def _execute_legacy(self, circuit, **kwargs):
-        """Execute a queue of quantum operations on the device and then
-        measure the given observables.
-
-        Applies a readout error to the measurement outcomes of any observable if
-        readout_prob is non-zero. This is done by finding the list of measured wires on which
-        BitFlip channels are applied in the :meth:`apply`.
-
-        For plugin developers: instead of overwriting this, consider
-        implementing a suitable subset of
-
-        * :meth:`apply`
-
-        * :meth:`~.generate_samples`
-
-        * :meth:`~.probability`
-
-        Additional keyword arguments may be passed to this method
-        that can be utilised by :meth:`apply`. An example would be passing
-        the ``QNode`` hash that can be used later for parametric compilation.
-
-        Args:
-            circuit (~.CircuitGraph): circuit to execute on the device
-
-        Raises:
-            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
-
-        Returns:
-            array[float]: measured value(s)
-        """
-        if self.readout_err:
-            wires_list = []
-            for m in circuit.measurements:
-                if isinstance(m, StateMP):
-                    # State: This returns pre-rotated state, so no readout error.
-                    # Assumed to only be allowed if it's the only measurement.
-                    self.measured_wires = []
-                    return super()._execute_legacy(circuit, **kwargs)
-                if isinstance(m, (SampleMP, CountsMP)) and m.wires in (
-                    qml.wires.Wires([]),
-                    self.wires,
-                ):
-                    # Sample, Counts: Readout error applied to all device wires when wires
-                    # not specified or all wires specified.
-                    self.measured_wires = self.wires
-                    return super()._execute_legacy(circuit, **kwargs)
-                if isinstance(m, (VnEntropyMP, MutualInfoMP)):
-                    # VnEntropy, MutualInfo: Computed for the state prior to measurement. So, readout
-                    # error need not be applied on the corresponding device wires.
-                    continue
-                wires_list.append(m.wires)
-            self.measured_wires = qml.wires.Wires.all_wires(wires_list)
-        return super()._execute_legacy(circuit, **kwargs)
-
     def apply(self, operations, rotations=None, **kwargs):
         rotations = rotations or []
 
         # apply the circuit operations
         for i, operation in enumerate(operations):
-            if i > 0 and isinstance(operation, (QubitStateVector, BasisState)):
+            if i > 0 and isinstance(operation, (StatePrep, BasisState)):
                 raise DeviceError(
                     f"Operation {operation.name} cannot be used after other Operations have already been applied "
                     f"on a {self.short_name} device."

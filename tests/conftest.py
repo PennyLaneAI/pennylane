@@ -14,6 +14,7 @@
 """
 Pytest configuration file for PennyLane test suite.
 """
+# pylint: disable=unused-import
 import os
 import pathlib
 
@@ -29,6 +30,7 @@ TF_TOL = 2e-2
 TOL_STOCHASTIC = 0.05
 
 
+# pylint: disable=too-few-public-methods
 class DummyDevice(DefaultGaussian):
     """Dummy device to allow Kerr operations"""
 
@@ -60,8 +62,8 @@ def n_layers(request):
     return request.param
 
 
-@pytest.fixture(scope="session", params=[2, 3])
-def n_subsystems(request):
+@pytest.fixture(scope="session", params=[2, 3], name="n_subsystems")
+def n_subsystems_fixture(request):
     """Number of qubits or qumodes."""
     return request.param
 
@@ -86,8 +88,8 @@ def qubit_device_3_wires(request):
     return qml.device("default.qubit", wires=3, r_dtype=request.param[0], c_dtype=request.param[1])
 
 
-"""The following 3 fixtures are for default.qutrit devices to be used for testing with various
-real and complex dtypes."""
+# The following 3 fixtures are for default.qutrit devices to be used
+# for testing with various real and complex dtypes.
 
 
 @pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
@@ -132,14 +134,14 @@ def gaussian_device_4modes():
 ############### Package Support ##########################
 
 
-@pytest.fixture(scope="session")
-def dask_support():
+@pytest.fixture(scope="session", name="dask_support")
+def dask_support_fixture():
     """Boolean fixture for dask support"""
     try:
         import dask
 
         dask_support = True
-    except ImportError as e:
+    except ImportError:
         dask_support = False
 
     return dask_support
@@ -170,15 +172,17 @@ def mock_device(monkeypatch):
         m.setattr(dev, "short_name", "mock_device")
         m.setattr(dev, "capabilities", lambda cls: {"model": "qubit"})
         m.setattr(dev, "operations", {"RX", "RY", "RZ", "CNOT", "SWAP"})
-        yield qml.Device(wires=2)
+        yield qml.Device(wires=2)  # pylint:disable=abstract-class-instantiated
 
 
+# pylint: disable=protected-access
 @pytest.fixture
 def tear_down_hermitian():
     yield None
     qml.Hermitian._eigs = {}
 
 
+# pylint: disable=protected-access
 @pytest.fixture
 def tear_down_thermitian():
     yield None
@@ -218,14 +222,14 @@ def pytest_collection_modifyitems(items, config):
         if "qchem" in rel_path.parts:
             mark = getattr(pytest.mark, "qchem")
             item.add_marker(mark)
-        if "legacy" in rel_path.parts:
-            mark = getattr(pytest.mark, "legacy")
-            item.add_marker(mark)
         if "finite_diff" in rel_path.parts:
             mark = getattr(pytest.mark, "finite-diff")
             item.add_marker(mark)
         if "parameter_shift" in rel_path.parts:
             mark = getattr(pytest.mark, "param-shift")
+            item.add_marker(mark)
+        if "data" in rel_path.parts:
+            mark = getattr(pytest.mark, "data")
             item.add_marker(mark)
 
     # Tests that do not have a specific suite marker are marked `core`
@@ -236,13 +240,13 @@ def pytest_collection_modifyitems(items, config):
                 elem
                 in [
                     "autograd",
+                    "data",
                     "torch",
                     "tf",
                     "jax",
                     "qchem",
                     "qcut",
                     "all_interfaces",
-                    "legacy",
                     "finite-diff",
                     "param-shift",
                 ]

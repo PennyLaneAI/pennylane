@@ -152,7 +152,7 @@ class TestProbs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(state, wires=list(range(4)))
+            qml.StatePrep(state, wires=list(range(4)))
             return qml.probs(wires=range(4))
 
         res = circuit()
@@ -170,7 +170,7 @@ class TestProbs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(state, wires=list(range(4)))
+            qml.StatePrep(state, wires=list(range(4)))
             return qml.probs(wires=[1, 3])
 
         res = circuit()
@@ -189,7 +189,7 @@ class TestProbs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(state, wires=list(range(4)))
+            qml.StatePrep(state, wires=list(range(4)))
             return qml.probs(wires=[1, 0, 3])
 
         res = circuit()
@@ -297,6 +297,27 @@ class TestProbs:
         assert np.allclose(res, expected, atol=0.1, rtol=0.1)
 
         custom_measurement_process(dev, spy)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize(
+        "prep_op, expected",
+        [
+            (None, [1, 0]),
+            (qml.QubitStateVector([[0, 1], [1, 0]], 0), [[0, 1], [1, 0]]),
+        ],
+    )
+    def test_process_state_tf_autograph(self, prep_op, expected):
+        """Test that process_state passes when decorated with tf.function."""
+        import tensorflow as tf
+
+        wires = qml.wires.Wires([0])
+
+        @tf.function
+        def probs_from_state(state):
+            return qml.probs(wires=wires).process_state(state, wires)
+
+        state = qml.devices.qubit.create_initial_state(wires, prep_operation=prep_op)
+        assert np.allclose(probs_from_state(state), expected)
 
     @pytest.mark.autograd
     def test_numerical_analytic_diff_agree(self, tol, mocker):
@@ -449,7 +470,7 @@ class TestProbs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(state, wires=list(range(4)))
+            qml.StatePrep(state, wires=list(range(4)))
             qml.PauliX(wires=0)
             qml.PauliX(wires=1)
             qml.PauliX(wires=2)
@@ -493,7 +514,7 @@ class TestProbs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(state, wires=list(range(4)))
+            qml.StatePrep(state, wires=list(range(4)))
             qml.PauliX(wires=0)
             qml.PauliZ(wires=1)
             qml.PauliY(wires=2)
@@ -535,7 +556,7 @@ class TestProbs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(state, wires=list(range(4)))
+            qml.StatePrep(state, wires=list(range(4)))
             qml.PauliX(wires=0)
             qml.PauliZ(wires=1)
             qml.PauliY(wires=2)
@@ -572,7 +593,7 @@ class TestProbs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QubitStateVector(state, wires=list(range(4)))
+            qml.StatePrep(state, wires=list(range(4)))
             qml.PauliX(wires=0)
             qml.PauliZ(wires=1)
             qml.PauliY(wires=2)

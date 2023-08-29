@@ -49,6 +49,7 @@ Gradient transforms
     spsa_grad
     hadamard_grad
     stoch_pulse_grad
+    pulse_generator
 
 Custom gradients
 ^^^^^^^^^^^^^^^^
@@ -71,7 +72,6 @@ Utility functions
     generate_shift_rule
     generate_multi_shift_rule
     eigvals_to_frequencies
-    compute_vjp
     compute_vjp_single
     compute_vjp_multi
     batch_vjp
@@ -261,12 +261,13 @@ a datastructure representing variational quantum algorithms:
 
     weights = np.array([0.1, 0.2, 0.3], requires_grad=True)
 
-    with qml.tape.QuantumTape() as tape:
-        qml.RX(weights[0], wires=0)
-        qml.RY(weights[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.RX(weights[2], wires=1)
-        qml.expval(qml.PauliZ(1))
+    ops = [
+        qml.RX(weights[0], wires=0),
+        qml.RY(weights[1], wires=1),
+        qml.CNOT(wires=[0, 1]),
+        qml.RX(weights[2], wires=1)]
+    measurements = [qml.expval(qml.PauliZ(1))]
+    tape = qml.tape.QuantumTape(ops, measurements)
 
 Unlike when transforming a QNode, transforming a tape directly
 will perform no implicit quantum device evaluation. Instead, it returns
@@ -326,6 +327,7 @@ from . import finite_difference
 from . import spsa_gradient
 from . import hadamard_gradient
 from . import pulse_gradient
+from . import pulse_generator_gradient
 
 from .gradient_transform import gradient_transform, SUPPORTED_GRADIENT_KWARGS
 from .hessian_transform import hessian_transform
@@ -333,11 +335,12 @@ from .finite_difference import finite_diff, finite_diff_coeffs
 from .parameter_shift import param_shift
 from .parameter_shift_cv import param_shift_cv
 from .parameter_shift_hessian import param_shift_hessian
-from .vjp import compute_vjp, batch_vjp, vjp, compute_vjp_multi, compute_vjp_single
+from .vjp import batch_vjp, vjp, compute_vjp_multi, compute_vjp_single
 from .jvp import batch_jvp, jvp, compute_jvp_multi, compute_jvp_single
 from .spsa_gradient import spsa_grad
 from .hadamard_gradient import hadamard_grad
 from .pulse_gradient import stoch_pulse_grad
+from .pulse_generator_gradient import pulse_generator
 
 from .hamiltonian_grad import hamiltonian_grad
 from .general_shift_rules import (

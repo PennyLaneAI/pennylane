@@ -66,7 +66,14 @@ class FlipSign(Operation):
 
     num_wires = AnyWires
 
-    def __init__(self, n, wires, do_queue=True, id=None):
+    def _flatten(self):
+        hyperparameters = (("n", tuple(self.hyperparameters["arr_bin"])),)
+        return tuple(), (self.wires, hyperparameters)
+
+    def __repr__(self):
+        return f"FlipSign({self.hyperparameters['arr_bin']}, wires={self.wires.tolist()})"
+
+    def __init__(self, n, wires, id=None):
         if not isinstance(wires, int) and len(wires) == 0:
             raise ValueError("expected at least one wire representing the qubit ")
 
@@ -88,7 +95,7 @@ class FlipSign(Operation):
             )
 
         self._hyperparameters = {"arr_bin": n}
-        super().__init__(wires=wires, do_queue=do_queue, id=id)
+        super().__init__(wires=wires, id=id)
 
     @staticmethod
     def to_list(n, n_wires):

@@ -27,21 +27,11 @@ from pennylane.tape import QuantumScript
 class TestInitialization:
     """Test the non-update components of intialization."""
 
-    def test_name(self):
-        """Test the name property."""
-        name = "hello"
-        with pytest.warns(UserWarning, match="The ``name`` property and keyword argument of"):
-            qs = QuantumScript(name=name)
-            assert qs.name == name
-
     def test_no_update_empty_initialization(self):
         """Test initialization if nothing is provided and update does not occur."""
 
         qs = QuantumScript(_update=False)
-        with pytest.warns(UserWarning, match="The ``name`` property and keyword argument of"):
-            assert qs.name is None
         assert len(qs._ops) == 0
-        assert len(qs._prep) == 0
         assert len(qs._measurements) == 0
         assert len(qs._par_info) == 0
         assert len(qs._trainable_params) == 0
@@ -69,9 +59,9 @@ class TestInitialization:
     def test_provide_ops(self, ops):
         """Test provided ops are converted to lists."""
         qs = QuantumScript(ops)
-        assert len(qs._ops) == 1
-        assert isinstance(qs._ops, list)
-        assert qml.equal(qs._ops[0], qml.S(0))
+        assert len(qs.operations) == 1
+        assert isinstance(qs.operations, list)
+        assert qml.equal(qs.operations[0], qml.S(0))
 
     @pytest.mark.parametrize(
         "m",
@@ -89,19 +79,29 @@ class TestInitialization:
         assert qs._measurements[0].return_type is qml.measurements.State
 
     @pytest.mark.parametrize(
-        "prep",
-        (
-            [qml.BasisState([1, 1], wires=(0, 1))],
-            (qml.BasisState([1, 1], wires=(0, 1)),),
-            (qml.BasisState([1, 1], wires=(0, 1)) for _ in range(1)),
-        ),
+        "ops,num_preps",
+        [
+            ((qml.BasisState([1], 0),), 1),
+            ((qml.BasisState([1], 0), qml.PauliX(0)), 1),
+            ((qml.BasisState([1], 0), qml.PauliX(0), qml.BasisState([1], 1)), 1),
+            ((qml.BasisState([1], 0), qml.BasisState([1], 1), qml.PauliX(0)), 2),
+            ((qml.PauliX(0),), 0),
+            ((qml.PauliX(0), qml.BasisState([1], 0)), 0),
+        ],
     )
-    def test_provided_state_prep(self, prep):
-        """Test state prep are converted to lists"""
-        qs = QuantumScript(prep=prep)
-        assert len(qs._prep) == 1
-        assert isinstance(qs._prep, list)
-        assert qml.equal(qs._prep[0], qml.BasisState([1, 1], wires=(0, 1)))
+    def test_num_preps(self, ops, num_preps):
+        """Test the num_preps property."""
+        assert QuantumScript(ops).num_preps == num_preps
+
+    def test_prep_deprecation(self):
+        """Test that the prep keyword ~is deprecated and~ behaves as expected."""
+        prep = [qml.BasisState([1, 1], wires=(0, 1))]
+        ops = [qml.PauliX(0)]
+        # with pytest.warns(UserWarning, match="`prep` keyword argument is being removed"):
+        qs = QuantumScript(ops=ops, prep=prep)
+        assert len(qs.operations) == len(qs._ops) == 2
+        assert qml.equal(qs.operations[0], prep[0])
+        assert qml.equal(qs.operations[1], ops[0])
 
 
 sample_measurements = [
@@ -192,7 +192,7 @@ class TestUpdate:
         assert p_i[4] == {"op": ops[2], "op_idx": 2, "p_idx": 0}
         assert p_i[5] == {"op": ops[3], "op_idx": 3, "p_idx": 0}
         assert p_i[6] == {"op": ops[3], "op_idx": 3, "p_idx": 1}
-        assert p_i[7] == {"op": m[0].obs, "op_idx": 0, "p_idx": 0}
+        assert p_i[7] == {"op": m[0].obs, "op_idx": 4, "p_idx": 0}
 
         assert qs._trainable_params == list(range(8))
 
@@ -210,28 +210,28 @@ class TestUpdate:
         qs = QuantumScript(ops, m)
 
         op_0, op_id_0, p_id_0 = qs.get_operation(0)
-        assert op_0 == ops[0] and op_id_0 == 0 and p_id_0 == 0
+        assert qml.equal(op_0, ops[0]) and op_id_0 == 0 and p_id_0 == 0
 
         op_1, op_id_1, p_id_1 = qs.get_operation(1)
-        assert op_1 == ops[1] and op_id_1 == 1 and p_id_1 == 0
+        assert qml.equal(op_1, ops[1]) and op_id_1 == 1 and p_id_1 == 0
 
         op_2, op_id_2, p_id_2 = qs.get_operation(2)
-        assert op_2 == ops[1] and op_id_2 == 1 and p_id_2 == 1
+        assert qml.equal(op_2, ops[1]) and op_id_2 == 1 and p_id_2 == 1
 
         op_3, op_id_3, p_id_3 = qs.get_operation(3)
-        assert op_3 == ops[1] and op_id_3 == 1 and p_id_3 == 2
+        assert qml.equal(op_3, ops[1]) and op_id_3 == 1 and p_id_3 == 2
 
         op_4, op_id_4, p_id_4 = qs.get_operation(4)
-        assert op_4 == ops[3] and op_id_4 == 3 and p_id_4 == 0
+        assert qml.equal(op_4, ops[3]) and op_id_4 == 3 and p_id_4 == 0
 
         op_5, op_id_5, p_id_5 = qs.get_operation(5)
-        assert op_5 == ops[4] and op_id_5 == 4 and p_id_5 == 0
+        assert qml.equal(op_5, ops[4]) and op_id_5 == 4 and p_id_5 == 0
 
         op_6, op_id_6, p_id_6 = qs.get_operation(6)
-        assert op_6 == ops[4] and op_id_6 == 4 and p_id_6 == 1
+        assert qml.equal(op_6, ops[4]) and op_id_6 == 4 and p_id_6 == 1
 
         _, obs_id_0, p_id_0 = qs.get_operation(7)
-        assert obs_id_0 == 0 and p_id_0 == 0
+        assert obs_id_0 == 5 and p_id_0 == 0
 
     def test_update_observables(self):
         """This method needs to be more thoroughly tested, and probably even reconsidered in
@@ -258,7 +258,7 @@ class TestUpdate:
     )
     def test_update_batch_size(self, x, rot, exp_batch_size):
         """Test that the batch size is correctly inferred from all operation's
-        batch_size, when creating and when using `set_parameters`."""
+        batch_size when creating a QuantumScript."""
 
         obs = [qml.RX(x, wires=0), qml.Rot(*rot, wires=1)]
         m = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))]
@@ -428,17 +428,12 @@ class TestInfomationProperties:
         assert qs._specs is None
 
         assert qs.specs["resources"] == qml.resource.Resources()
-        assert qs.specs["gate_sizes"] == defaultdict(int)
-        assert qs.specs["gate_types"] == defaultdict(int)
 
-        assert qs.specs["num_operations"] == 0
         assert qs.specs["num_observables"] == 0
         assert qs.specs["num_diagonalizing_gates"] == 0
-        assert qs.specs["num_used_wires"] == 0
         assert qs.specs["num_trainable_params"] == 0
-        assert qs.specs["depth"] == 0
 
-        assert len(qs.specs) == 9
+        assert len(qs.specs) == 4
 
         assert qs._specs is qs.specs
 
@@ -450,7 +445,7 @@ class TestInfomationProperties:
         specs = qs.specs
         assert qs._specs is specs
 
-        assert len(specs) == 9
+        assert len(specs) == 4
 
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
         gate_sizes = defaultdict(int, {1: 3, 2: 1})
@@ -458,15 +453,9 @@ class TestInfomationProperties:
             num_wires=3, num_gates=4, gate_types=gate_types, gate_sizes=gate_sizes, depth=3
         )
         assert specs["resources"] == expected_resources
-
-        assert specs["gate_sizes"] == defaultdict(int, {1: 3, 2: 1})
-        assert specs["gate_types"] == defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
-        assert specs["num_operations"] == 4
         assert specs["num_observables"] == 2
         assert specs["num_diagonalizing_gates"] == 1
-        assert specs["num_used_wires"] == 3
         assert specs["num_trainable_params"] == 5
-        assert specs["depth"] == 3
 
     @pytest.mark.parametrize(
         "shots, total_shots, shot_vector",
@@ -483,18 +472,6 @@ class TestInfomationProperties:
         assert isinstance(qs.shots, Shots)
         assert qs.shots.total_shots == total_shots
         assert qs.shots.shot_vector == shot_vector
-
-    def test_specs_warning(self, make_script):
-        """Test that a deprecation warning is displayed when trying to access deprecated
-        fields of the specs dictionary."""
-        deprecated_keys = ("gate_types", "gate_sizes", "num_operations", "num_used_wires", "depth")
-
-        qs = make_script
-        specs = qs.specs
-
-        for old_key in deprecated_keys:
-            with pytest.warns(UserWarning, match=f"The {old_key} key is deprecated"):
-                _ = specs[f"{old_key}"]
 
 
 class TestScriptCopying:
@@ -514,10 +491,9 @@ class TestScriptCopying:
         assert copied_qs is not qs
 
         # the operations are simply references
-        assert copied_qs.operations == qs.operations
-        assert copied_qs.observables == qs.observables
-        assert copied_qs.measurements == qs.measurements
-        assert copied_qs.operations[0] is qs.operations[0]
+        assert all(o1 is o2 for o1, o2 in zip(copied_qs.operations, qs.operations))
+        assert all(o1 is o2 for o1, o2 in zip(copied_qs.observables, qs.observables))
+        assert all(m1 is m2 for m1, m2 in zip(copied_qs.measurements, qs.measurements))
 
         # operation data is also a reference
         assert copied_qs.operations[0].wires is qs.operations[0].wires
@@ -533,18 +509,6 @@ class TestScriptCopying:
 
         # check that the output dim is identical
         assert qs.output_dim == copied_qs.output_dim
-
-        # since the copy is shallow, mutating the parameters
-        # on one tape will affect the parameters on another tape
-        new_params = [np.array([0, 0]), 0.2]
-        qs.set_parameters(new_params)
-
-        # check that they are the same objects in memory
-        for i, j in zip(qs.get_parameters(), new_params):
-            assert i is j
-
-        for i, j in zip(copied_qs.get_parameters(), new_params):
-            assert i is j
 
     # pylint: disable=unnecessary-lambda
     @pytest.mark.parametrize(
@@ -564,15 +528,13 @@ class TestScriptCopying:
         assert copied_qs is not qs
 
         # the operations are not references; they are unique objects
-        assert copied_qs.operations != qs.operations
-        assert copied_qs.observables != qs.observables
-        assert copied_qs.measurements != qs.measurements
-        assert copied_qs.operations[0] is not qs.operations[0]
+        assert all(o1 is not o2 for o1, o2 in zip(copied_qs.operations, qs.operations))
+        assert all(o1 is not o2 for o1, o2 in zip(copied_qs.observables, qs.observables))
+        assert all(m1 is not m2 for m1, m2 in zip(copied_qs.measurements, qs.measurements))
 
         # however, the underlying operation data *is still shared*
         assert copied_qs.operations[0].wires is qs.operations[0].wires
         # the data list is copied, but the elements of the list remain th same
-        assert copied_qs.operations[0].data is not qs.operations[0].data
         assert copied_qs.operations[0].data[0] is qs.operations[0].data[0]
 
         assert qs.get_parameters() == copied_qs.get_parameters()
@@ -582,18 +544,6 @@ class TestScriptCopying:
 
         # check that the output dim is identical
         assert qs.output_dim == copied_qs.output_dim
-
-        # Since they have unique operations, mutating the parameters
-        # on one script will *not* affect the parameters on another script
-        new_params = [np.array([0, 0]), 0.2]
-        qs.set_parameters(new_params)
-
-        for i, j in zip(qs.get_parameters(), new_params):
-            assert i is j
-
-        for i, j in zip(copied_qs.get_parameters(), new_params):
-            assert not np.all(i == j)
-            assert i is not j
 
     def test_deep_copy(self):
         """Test that deep copying a tape works, and copies all constituent data except parameters"""
@@ -607,10 +557,9 @@ class TestScriptCopying:
         assert copied_qs is not qs
 
         # the operations are not references
-        assert copied_qs.operations != qs.operations
-        assert copied_qs.observables != qs.observables
-        assert copied_qs.measurements != qs.measurements
-        assert copied_qs.operations[0] is not qs.operations[0]
+        assert all(o1 is not o2 for o1, o2 in zip(copied_qs.operations, qs.operations))
+        assert all(o1 is not o2 for o1, o2 in zip(copied_qs.observables, qs.observables))
+        assert all(m1 is not m2 for m1, m2 in zip(copied_qs.measurements, qs.measurements))
         assert copied_qs.shots is qs.shots
 
         # check that the output dim is identical
@@ -626,44 +575,32 @@ class TestScriptCopying:
 
 def test_adjoint():
     """Tests taking the adjoint of a quantum script."""
-    ops = [qml.RX(1.2, wires=0), qml.S(0), qml.CNOT((0, 1)), qml.T(1)]
-    prep = [qml.BasisState([1, 1], wires=0)]
+    ops = [
+        qml.BasisState([1, 1], wires=0),
+        qml.RX(1.2, wires=0),
+        qml.S(0),
+        qml.CNOT((0, 1)),
+        qml.T(1),
+    ]
     m = [qml.expval(qml.PauliZ(0))]
-    qs = QuantumScript(ops, m, prep)
+    qs = QuantumScript(ops, m)
 
     with qml.queuing.AnnotatedQueue() as q:
         adj_qs = qs.adjoint()
 
     assert len(q.queue) == 0  # not queued
 
-    assert adj_qs._prep == qs._prep
-    assert adj_qs._measurements == qs._measurements
+    assert qml.equal(adj_qs.operations[0], qs.operations[0])
+    assert adj_qs.measurements == qs.measurements
     assert adj_qs.shots is qs.shots
 
     # assumes lazy=False
     expected_ops = [qml.adjoint(qml.T(1)), qml.CNOT((0, 1)), qml.adjoint(qml.S(0)), qml.RX(-1.2, 0)]
-    for op, expected in zip(adj_qs._ops, expected_ops):
+    for op, expected in zip(adj_qs.operations[1:], expected_ops):
         # update this one qml.equal works with adjoint
         assert isinstance(op, type(expected))
         assert op.wires == expected.wires
         assert op.data == expected.data
-
-
-@pytest.mark.torch
-def test_unwrap():
-    """Tests the unwrap method."""
-
-    import torch
-
-    x = torch.tensor(1.2)
-    qs = QuantumScript([qml.RX(x, 0)])
-
-    unwrapper = qs.unwrap()
-    assert isinstance(unwrapper, qml.tape.UnwrapTape)
-
-    with unwrapper:
-        assert qml.math.get_interface(qs.data[0]) == "numpy"
-    assert qml.math.get_interface(qs.data[0]) == "torch"
 
 
 class TestHashing:
@@ -773,6 +710,13 @@ class TestHashing:
 
         assert qs.hash == qs_add_4pi.hash
         assert qs.hash != qs_add_2pi.hash
+
+    def test_hash_shots(self):
+        """Test tha circuits with different shots have different hashes."""
+        qs1 = QuantumScript([qml.S(0)], [qml.sample(wires=0)], shots=10)
+        qs2 = QuantumScript([qml.T(0)], [qml.sample(wires=0)], shots=20)
+
+        assert qs1.hash != qs2.hash
 
 
 class TestQScriptDraw:

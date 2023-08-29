@@ -16,7 +16,6 @@ including a decorator for specifying gradient expansions."""
 # pylint: disable=too-few-public-methods
 from functools import partial
 import warnings
-import numpy as np
 
 import pennylane as qml
 from pennylane.transforms.tape_expand import expand_invalid_trainable
@@ -26,7 +25,6 @@ from pennylane.measurements import (
     VarianceMP,
     VnEntropyMP,
     ProbabilityMP,
-    Shots,
 )
 
 SUPPORTED_GRADIENT_KWARGS = [
@@ -49,6 +47,7 @@ SUPPORTED_GRADIENT_KWARGS = [
     "order",
     "reduction",
     "sampler",
+    "sampler_rng",
     "sampler_seed",
     "shifts",
     "shots",
@@ -56,19 +55,6 @@ SUPPORTED_GRADIENT_KWARGS = [
     "use_broadcasting",
     "validate_params",
 ]
-
-
-def assert_active_return(transform_name):
-    """Check that the new return type system is active. Raise an error if this is not the case.
-
-    Args:
-        transform_name (str): Name of the gradient transform that queries the return system
-    """
-    if not qml.active_return():
-        raise NotImplementedError(
-            f"The {transform_name} gradient transform only supports the new "
-            "return type system. Use qml.enable_return() to activate it."
-        )
 
 
 def assert_multimeasure_not_broadcasted(measurements, broadcast):
@@ -111,6 +97,20 @@ def assert_no_variance(measurements, transform_name):
         raise ValueError(
             f"Computing the gradient of variances with the {transform_name} "
             "gradient transform is not supported."
+        )
+
+
+def assert_no_tape_batching(tape, transform_name):
+    """Check whether a tape is broadcasted and raise an error if this is the case.
+
+    Args:
+        tape (`~.QuantumScript`): measurements to analyze
+        transform_name (str): Name of the gradient transform that queries the tape
+    """
+    if tape.batch_size is not None:
+        raise NotImplementedError(
+            f"Computing the gradient of broadcasted tapes with the {transform_name} "
+            "gradient transform is currently not supported. See #4462 for details."
         )
 
 
@@ -251,7 +251,7 @@ def choose_grad_methods(diff_methods, argnum):
     return {idx: diff_methods[idx] for idx in argnum}
 
 
-def _all_zero_grad(tape, shots=Shots(None)):
+def _all_zero_grad(tape):
     """Auxiliary function to return zeros for the all-zero gradient case."""
     list_zeros = []
 
@@ -266,10 +266,10 @@ def _all_zero_grad(tape, shots=Shots(None)):
 
         list_zeros.append(sub_list_zeros)
 
-    if shots.has_partitioned_shots:
+    if tape.shots.has_partitioned_shots:
         if len(tape.measurements) == 1:
-            return [], lambda _: tuple(list_zeros[0] for _ in range(shots.num_copies))
-        return [], lambda _: tuple(tuple(list_zeros) for _ in range(shots.num_copies))
+            return [], lambda _: tuple(list_zeros[0] for _ in range(tape.shots.num_copies))
+        return [], lambda _: tuple(tuple(list_zeros) for _ in range(tape.shots.num_copies))
 
     if len(tape.measurements) == 1:
         return [], lambda _: list_zeros[0]
@@ -284,28 +284,21 @@ _no_trainable_grad_warning = (
 )
 
 
-def _no_trainable_grad(tape, shots=Shots(None)):
+def _no_trainable_grad(tape):
     """Auxiliary function that returns correctly formatted gradients when there
     are no trainable parameters."""
     warnings.warn(_no_trainable_grad_warning)
-    if shots.has_partitioned_shots:
+    if tape.shots.has_partitioned_shots:
         if len(tape.measurements) == 1:
-            return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(shots.num_copies))
+            return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(tape.shots.num_copies))
         return [], lambda _: tuple(
             tuple(qml.math.zeros([0]) for _ in range(len(tape.measurements)))
-            for _ in range(shots.num_copies)
+            for _ in range(tape.shots.num_copies)
         )
 
     if len(tape.measurements) == 1:
         return [], lambda _: qml.math.zeros([0])
     return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(len(tape.measurements)))
-
-
-def _no_trainable_grad_legacy(tape):
-    """Auxiliary function that returns correctly formatted gradients when there
-    are no trainable parameters. This version is for the old return type system."""
-    warnings.warn(_no_trainable_grad_warning)
-    return [], lambda _: np.zeros((tape.output_dim, 0))
 
 
 def _swap_first_two_axes(grads, first_axis_size, second_axis_size):
@@ -338,8 +331,7 @@ def reorder_grads(grads, tape_specs):
         grads (list[tensorlike] or list[tuple[tensorlike]] or list[tuple[tuple[tensorlike]]]:
             Gradient entries with leading parameter axis to be reordered.
         tape_specs (tuple): Information about the differentiated original tape in the order
-            ``(bool: single_measure, int: num_params, int: num_measurements, bool: shot_vector,
-            mixed: shots)``.
+            ``(bool: single_measure, int: num_params, int: num_measurements, Shots: shots)``.
 
     Returns:
         tensor_like or tuple[tensor_like] or tuple[tuple[tensor_like]]: The reordered gradient
@@ -355,7 +347,7 @@ def reorder_grads(grads, tape_specs):
         2. Shot vector (if ``shots`` is a ``list`` or ``list[tuple]``. Skipped otherwise)
         3. Measurements (if there are multiple measurements. Skipped otherwise)
         4. Measurement shape
-        5. Broadcasting dimension (for broadcasted tapes, skipped otherwise) TODO: TBC
+        5. Broadcasting dimension (for broadcasted tapes, skipped otherwise)
 
     The final order of axes of gradient results should be:
 
@@ -459,28 +451,6 @@ def _contract_qjac_with_cjac(qjac, cjac, num_measurements, has_partitioned_shots
     if not cjac_is_tuple:
         return tuple(tdot(qml.math.stack(q), qml.math.stack(cjac)) for q in qjac)
     return tuple(tuple(tdot(qml.math.stack(q), c) for c in cjac if c is not None) for q in qjac)
-
-
-def _contract_qjac_with_cjac_legacy(qjac, cjac):
-    """Contract a quantum Jacobian with a classical preprocessing Jacobian.
-    Essentially, this function computes the generalized version of
-    ``tensordot(qjac, cjac)`` over the tape parameter axis, adapted to the old
-    return type system.
-    """
-    tdot = partial(qml.math.tensordot, axes=[[-1], [0]])
-    if isinstance(cjac, tuple):
-        # Classical processing of multiple arguments is present. Return qjac @ cjac.
-        jacs = tuple(tdot(qjac, c) for c in cjac if c is not None)
-        return jacs[0] if len(jacs) == 1 else jacs
-
-    is_square = cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1]
-
-    if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
-        # Classical Jacobian is the identity. No classical processing
-        # is present inside the QNode.
-        return qjac
-
-    return tdot(qjac, cjac)
 
 
 class gradient_transform(qml.batch_transform):
@@ -628,11 +598,8 @@ class gradient_transform(qml.batch_transform):
                 qnode, argnum=argnum_cjac, expand_fn=self.expand_fn
             )(*args, **kwargs)
 
-            if qml.active_return():
-                num_measurements = len(qnode.tape.measurements)
-                has_partitioned_shots = Shots(tkwargs.get("shots", None)).has_partitioned_shots
-                return _contract_qjac_with_cjac(qjac, cjac, num_measurements, has_partitioned_shots)
-
-            return _contract_qjac_with_cjac_legacy(qjac, cjac)
+            num_measurements = len(qnode.tape.measurements)
+            has_partitioned_shots = qnode.tape.shots.has_partitioned_shots
+            return _contract_qjac_with_cjac(qjac, cjac, num_measurements, has_partitioned_shots)
 
         return jacobian_wrapper

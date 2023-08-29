@@ -14,11 +14,13 @@
 """
 Unit tests for the :mod:`pennylane.plugin.DefaultQubit` device.
 """
+# pylint: disable=too-many-arguments,too-few-public-methods
+# pylint: disable=protected-access,cell-var-from-loop
 import cmath
 
-# pylint: disable=protected-access,cell-var-from-loop
 import math
 
+from functools import partial
 import pytest
 
 import pennylane as qml
@@ -270,16 +272,16 @@ class TestApply:
             (qml.BasisState, [0, 0, 1, 0], [1, 0]),
             (qml.BasisState, [0, 0, 1, 0], [1, 0]),
             (qml.BasisState, [0, 0, 0, 1], [1, 1]),
-            (qml.QubitStateVector, [0, 0, 1, 0], [0, 0, 1, 0]),
-            (qml.QubitStateVector, [0, 0, 1, 0], [0, 0, 1, 0]),
-            (qml.QubitStateVector, [0, 0, 0, 1], [0, 0, 0, 1]),
+            (qml.StatePrep, [0, 0, 1, 0], [0, 0, 1, 0]),
+            (qml.StatePrep, [0, 0, 1, 0], [0, 0, 1, 0]),
+            (qml.StatePrep, [0, 0, 0, 1], [0, 0, 0, 1]),
             (
-                qml.QubitStateVector,
+                qml.StatePrep,
                 [1 / math.sqrt(3), 0, 1 / math.sqrt(3), 1 / math.sqrt(3)],
                 [1 / math.sqrt(3), 0, 1 / math.sqrt(3), 1 / math.sqrt(3)],
             ),
             (
-                qml.QubitStateVector,
+                qml.StatePrep,
                 [1 / math.sqrt(3), 0, -1 / math.sqrt(3), 1 / math.sqrt(3)],
                 [1 / math.sqrt(3), 0, -1 / math.sqrt(3), 1 / math.sqrt(3)],
             ),
@@ -615,20 +617,20 @@ class TestApply:
     def test_apply_errors_qubit_state_vector(self, qubit_device_2_wires):
         """Test that apply fails for incorrect state preparation, and > 2 qubit gates"""
         with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
-            qubit_device_2_wires.apply([qml.QubitStateVector(np.array([1, -1]), wires=[0])])
+            qubit_device_2_wires.apply([qml.StatePrep(np.array([1, -1]), wires=[0])])
 
         with pytest.raises(ValueError, match=r"State vector must have shape \(2\*\*wires,\)."):
             p = np.array([1, 0, 1, 1, 0]) / np.sqrt(3)
-            qubit_device_2_wires.apply([qml.QubitStateVector(p, wires=[0, 1])])
+            qubit_device_2_wires.apply([qml.StatePrep(p, wires=[0, 1])])
 
         with pytest.raises(
             DeviceError,
-            match="Operation QubitStateVector cannot be used after other Operations have already been applied "
+            match="Operation StatePrep cannot be used after other Operations have already been applied "
             "on a default.qubit device.",
         ):
             qubit_device_2_wires.reset()
             qubit_device_2_wires.apply(
-                [qml.RZ(0.5, wires=[0]), qml.QubitStateVector(np.array([0, 1, 0, 0]), wires=[0, 1])]
+                [qml.RZ(0.5, wires=[0]), qml.StatePrep(np.array([0, 1, 0, 0]), wires=[0, 1])]
             )
 
     def test_apply_errors_basis_state(self, qubit_device_2_wires):
@@ -685,7 +687,7 @@ class TestExpval:
 
         qubit_device_1_wire.reset()
         qubit_device_1_wire.apply(
-            [qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates()
+            [qml.StatePrep(np.array(input), wires=[0])], obs.diagonalizing_gates()
         )
         res = qubit_device_1_wire.expval(obs)
 
@@ -708,7 +710,7 @@ class TestExpval:
 
         qubit_device_1_wire.reset()
         qubit_device_1_wire.apply(
-            [qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates()
+            [qml.StatePrep(np.array(input), wires=[0])], obs.diagonalizing_gates()
         )
         res = qubit_device_1_wire.expval(obs)
 
@@ -764,7 +766,7 @@ class TestExpval:
 
         qubit_device_2_wires.reset()
         qubit_device_2_wires.apply(
-            [qml.QubitStateVector(np.array(input), wires=[0, 1])], obs.diagonalizing_gates()
+            [qml.StatePrep(np.array(input), wires=[0, 1])], obs.diagonalizing_gates()
         )
         res = qubit_device_2_wires.expval(obs)
 
@@ -818,7 +820,7 @@ class TestVar:
 
         qubit_device_1_wire.reset()
         qubit_device_1_wire.apply(
-            [qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates()
+            [qml.StatePrep(np.array(input), wires=[0])], obs.diagonalizing_gates()
         )
         res = qubit_device_1_wire.var(obs)
 
@@ -841,7 +843,7 @@ class TestVar:
 
         qubit_device_1_wire.reset()
         qubit_device_1_wire.apply(
-            [qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates()
+            [qml.StatePrep(np.array(input), wires=[0])], obs.diagonalizing_gates()
         )
         res = qubit_device_1_wire.var(obs)
 
@@ -891,7 +893,7 @@ class TestVar:
 
         qubit_device_2_wires.reset()
         qubit_device_2_wires.apply(
-            [qml.QubitStateVector(np.array(input), wires=[0, 1])], obs.diagonalizing_gates()
+            [qml.StatePrep(np.array(input), wires=[0, 1])], obs.diagonalizing_gates()
         )
         res = qubit_device_2_wires.var(obs)
 
@@ -1077,7 +1079,7 @@ class TestDefaultQubitIntegration:
 
         @qml.qnode(qubit_device_1_wire)
         def circuit():
-            qml.QubitStateVector(np.array(state), wires=[0])
+            qml.StatePrep(np.array(state), wires=[0])
             return qml.expval(obs(wires=[0]))
 
         assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
@@ -1109,7 +1111,7 @@ class TestDefaultQubitIntegration:
 
         @qml.qnode(qubit_device_1_wire)
         def circuit():
-            qml.QubitStateVector(np.array(state), wires=[0])
+            qml.StatePrep(np.array(state), wires=[0])
             return qml.expval(obs(*par, wires=[0]))
 
         assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
@@ -1166,7 +1168,7 @@ class TestDefaultQubitIntegration:
 
         @qml.qnode(qubit_device_2_wires)
         def circuit():
-            qml.QubitStateVector(np.array(state), wires=[0, 1])
+            qml.StatePrep(np.array(state), wires=[0, 1])
             return qml.expval(obs(*par, wires=[0, 1]))
 
         assert np.isclose(circuit(), expected_output, atol=tol, rtol=0)
@@ -1209,6 +1211,7 @@ class TestDefaultQubitIntegration:
         assert np.array_equal(outcomes[0], outcomes[1])
 
 
+# pylint: disable=unused-argument
 @pytest.mark.parametrize("theta,phi,varphi", list(zip(THETA, PHI, VARPHI)))
 class TestTensorExpval:
     """Test tensor expectation values"""
@@ -1739,7 +1742,7 @@ class TestDtypePreserved:
             qml.QubitCarry,
         ],
     )
-    def test_state_dtype_after_op(self, r_dtype, c_dtype, op, tol):
+    def test_state_dtype_after_op(self, r_dtype, c_dtype, op):
         """Test that the default qubit plugin preserves data types of states when an operation is
         applied. As TestApply class check most of operators, we here only check some subtle
         examples.
@@ -1772,7 +1775,7 @@ class TestDtypePreserved:
             qml.probs(wires=[2, 0]),
         ],
     )
-    def test_measurement_real_dtype(self, r_dtype, c_dtype, measurement, tol):
+    def test_measurement_real_dtype(self, r_dtype, c_dtype, measurement):
         """Test that the default qubit plugin provides correct result for a simple circuit"""
         p = 0.543
 
@@ -1790,7 +1793,7 @@ class TestDtypePreserved:
         "measurement",
         [qml.state(), qml.density_matrix(wires=[1]), qml.density_matrix(wires=[2, 0])],
     )
-    def test_measurement_complex_dtype(self, r_dtype, c_dtype, measurement, tol):
+    def test_measurement_complex_dtype(self, r_dtype, c_dtype, measurement):
         """Test that the default qubit plugin provides correct result for a simple circuit"""
         p = 0.543
 
@@ -1808,6 +1811,7 @@ class TestDtypePreserved:
 class TestProbabilityIntegration:
     """Test probability method for when analytic is True/False"""
 
+    # pylint: disable=unused-argument
     def mock_analytic_counter(self, wires=None):
         self.analytic_counter += 1
         return np.array([1, 0, 0, 0], dtype=float)
@@ -1831,6 +1835,7 @@ class TestProbabilityIntegration:
         assert np.allclose(prob_analytic(x), prob(x), atol=0.1, rtol=0)
         assert not np.array_equal(prob_analytic(x), prob(x))
 
+    # pylint: disable=attribute-defined-outside-init
     def test_call_generate_samples(self, monkeypatch):
         """Test analytic_probability call when generating samples"""
         self.analytic_counter = False
@@ -1900,14 +1905,14 @@ class TestWiresIntegration:
             dev.execute(tape)
 
     wires_to_try = [
-        (1, Wires([0]), Wires([0])),
-        (4, Wires([1, 3]), Wires([1, 3])),
-        (["a", 2], Wires([2]), Wires([1])),
-        (["a", 2], Wires([2, "a"]), Wires([1, 0])),
+        (1, Wires([0])),
+        (4, Wires([1, 3])),
+        (["a", 2], Wires([2])),
+        (["a", 2], Wires([2, "a"])),
     ]
 
-    @pytest.mark.parametrize("dev_wires, wires_to_map, res", wires_to_try)
-    def test_map_wires_caches(self, dev_wires, wires_to_map, res, mock_device):
+    @pytest.mark.parametrize("dev_wires, wires_to_map", wires_to_try)
+    def test_map_wires_caches(self, dev_wires, wires_to_map):
         """Test that multiple calls to map_wires will use caching."""
         dev = qml.device("default.qubit", wires=dev_wires)
 
@@ -2148,7 +2153,7 @@ class TestApplyOperationUnit:
             res = dev._apply_operation(test_state, op)
             assert np.allclose(res, expected_test_output)
 
-    def test_diagonal_operation_case(self, mocker, monkeypatch):
+    def test_diagonal_operation_case(self, monkeypatch):
         """Tests the case when the operation to be applied is
         diagonal in the computational basis and the _apply_diagonal_unitary method is used."""
         dev = qml.device("default.qubit", wires=1)
@@ -2174,7 +2179,7 @@ class TestApplyOperationUnit:
             assert np.allclose(res_mat, np.diag(op.matrix()))
             assert np.allclose(res_wires, wires)
 
-    def test_apply_einsum_case(self, mocker, monkeypatch):
+    def test_apply_einsum_case(self, monkeypatch):
         """Tests the case when np.einsum is used to apply an operation in
         default.qubit."""
         dev = qml.device("default.qubit", wires=1)
@@ -2187,6 +2192,7 @@ class TestApplyOperationUnit:
         class TestSGate(qml.operation.Operation):
             num_wires = 1
 
+            # pylint: disable=unused-argument
             @staticmethod
             def compute_matrix(*params, **hyperparams):
                 return np.array([[1, 0], [0, 1j]])
@@ -2211,7 +2217,7 @@ class TestApplyOperationUnit:
             assert np.allclose(res_mat, op.matrix())
             assert np.allclose(res_wires, wires)
 
-    def test_apply_tensordot_case(self, mocker, monkeypatch):
+    def test_apply_tensordot_case(self, monkeypatch):
         """Tests the case when np.tensordot is used to apply an operation in
         default.qubit."""
         dev = qml.device("default.qubit", wires=3)
@@ -2224,6 +2230,7 @@ class TestApplyOperationUnit:
         class TestToffoli(qml.operation.Operation):
             num_wires = 3
 
+            # pylint: disable=unused-argument
             @staticmethod
             def compute_matrix(*params, **hyperparams):
                 return U_toffoli
@@ -2259,6 +2266,7 @@ class TestApplyOperationUnit:
             batch_size = 3
             num_params = 0
 
+            # pylint: disable=unused-argument
             @staticmethod
             def compute_matrix(*params, **hyperparams):
                 return np.array([U_toffoli] * 3)
@@ -2359,6 +2367,83 @@ class TestHamiltonianSupport:
         assert len(call_args.operations) == 0
         assert len(call_args.measurements) == 1
         assert qml.equal(call_args.measurements[0], qml.expval(qml.PauliX(0)))
+
+
+@pytest.mark.parametrize("is_state_batched", [False, True])
+class TestSumSupport:
+    """Tests for custom Sum support in DefaultQubit."""
+
+    @staticmethod
+    def expected_grad(is_state_batched):
+        if is_state_batched:
+            return [[-np.sin(1.3), -np.sin(0.4)], [np.cos(1.3), np.cos(0.4)]]
+        return [-np.sin(1.3), np.cos(1.3)]
+
+    @staticmethod
+    def circuit(y, z, is_state_batched):
+        rx_param = [1.3, 0.4] if is_state_batched else 1.3
+        qml.RX(rx_param, 0)
+        return qml.expval(
+            qml.sum(
+                qml.s_prod(y, qml.PauliY(0)),
+                qml.s_prod(z, qml.PauliZ(0)),
+            )
+        )
+
+    def test_super_expval_not_called(self, is_state_batched, mocker):
+        """Tests basic expval result, and ensures QubitDevice.expval is not called."""
+        dev = qml.device("default.qubit", wires=1)
+        spy = mocker.spy(qml.QubitDevice, "expval")
+        obs = qml.sum(qml.s_prod(0.1, qml.PauliX(0)), qml.s_prod(0.2, qml.PauliZ(0)))
+        assert np.isclose(dev.expval(obs), 0.2)
+        spy.assert_not_called()
+
+    @pytest.mark.autograd
+    def test_trainable_autograd(self, is_state_batched):
+        """Tests that coeffs passed to a sum are trainable with autograd."""
+        if is_state_batched:
+            pytest.skip(msg="Broadcasting, qml.jacobian and new return types do not work together")
+        dev = qml.device("default.qubit", wires=1)
+        qnode = qml.QNode(self.circuit, dev, interface="autograd")
+        y, z = np.array([1.1, 2.2])
+        actual = qml.grad(qnode, argnum=[0, 1])(y, z, is_state_batched)
+        assert np.allclose(actual, self.expected_grad(is_state_batched))
+
+    @pytest.mark.torch
+    def test_trainable_torch(self, is_state_batched):
+        """Tests that coeffs passed to a sum are trainable with torch."""
+        import torch
+
+        dev = qml.device("default.qubit", wires=1)
+        qnode = qml.QNode(self.circuit, dev, interface="torch")
+        y, z = torch.tensor(1.1, requires_grad=True), torch.tensor(2.2, requires_grad=True)
+        _qnode = partial(qnode, is_state_batched=is_state_batched)
+        actual = torch.stack(torch.autograd.functional.jacobian(_qnode, (y, z)))
+        assert np.allclose(actual, self.expected_grad(is_state_batched))
+
+    @pytest.mark.tf
+    def test_trainable_tf(self, is_state_batched):
+        """Tests that coeffs passed to a sum are trainable with tf."""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=1)
+        qnode = qml.QNode(self.circuit, dev, interface="tensorflow")
+        y, z = tf.Variable(1.1, dtype=tf.float64), tf.Variable(2.2, dtype=tf.float64)
+        with tf.GradientTape() as tape:
+            res = qnode(y, z, is_state_batched)
+        actual = tape.jacobian(res, [y, z])
+        assert np.allclose(actual, self.expected_grad(is_state_batched))
+
+    @pytest.mark.jax
+    def test_trainable_jax(self, is_state_batched):
+        """Tests that coeffs passed to a sum are trainable with jax."""
+        import jax
+
+        dev = qml.device("default.qubit", wires=1)
+        qnode = qml.QNode(self.circuit, dev, interface="jax")
+        y, z = jax.numpy.array([1.1, 2.2])
+        actual = jax.jacobian(qnode, argnums=[0, 1])(y, z, is_state_batched)
+        assert np.allclose(actual, self.expected_grad(is_state_batched))
 
 
 class TestGetBatchSize:

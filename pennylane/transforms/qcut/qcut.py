@@ -28,10 +28,10 @@ class MeasureNode(Operation):
     num_wires = 1
     grad_method = None
 
-    def __init__(self, *params, wires=None, do_queue=True, id=None):
+    def __init__(self, *params, wires=None, id=None):
         id = id or str(uuid.uuid4())
 
-        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(*params, wires=wires, id=id)
 
 
 class PrepareNode(Operation):
@@ -40,10 +40,10 @@ class PrepareNode(Operation):
     num_wires = 1
     grad_method = None
 
-    def __init__(self, *params, wires=None, do_queue=True, id=None):
+    def __init__(self, *params, wires=None, id=None):
         id = id or str(uuid.uuid4())
 
-        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(*params, wires=wires, id=id)
 
 
 def _prep_zero_state(wire):

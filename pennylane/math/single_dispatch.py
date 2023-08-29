@@ -79,7 +79,7 @@ def _scatter_element_add_numpy(tensor, index, value):
 ar.register_function("numpy", "scatter", _scatter_numpy)
 ar.register_function("numpy", "scatter_element_add", _scatter_element_add_numpy)
 ar.register_function("numpy", "eigvalsh", np.linalg.eigvalsh)
-ar.register_function("numpy", "entr", lambda x: -np.sum(x * np.log(x)))
+ar.register_function("numpy", "entr", lambda x: -np.sum(x * np.log(x), axis=-1))
 
 
 def _cond(pred, true_fn, false_fn, args):
@@ -114,6 +114,15 @@ ar.register_function("autograd", "flatten", lambda x: x.flatten())
 ar.register_function("autograd", "coerce", lambda x: x)
 ar.register_function("autograd", "gather", lambda x, indices: x[np.array(indices)])
 ar.register_function("autograd", "unstack", list)
+
+
+def autograd_get_dtype_name(x):
+    """A autograd version of get_dtype_name that can handle array boxes."""
+    # this function seems to only get called with x is an arraybox.
+    return ar.get_dtype_name(x._value)
+
+
+ar.register_function("autograd", "get_dtype_name", autograd_get_dtype_name)
 
 
 def _block_diag_autograd(tensors):
@@ -191,7 +200,9 @@ def _take_autograd(tensor, indices, axis=None):
 ar.register_function("autograd", "take", _take_autograd)
 ar.register_function("autograd", "eigvalsh", lambda x: _i("autograd").numpy.linalg.eigh(x)[0])
 ar.register_function(
-    "autograd", "entr", lambda x: -_i("autograd").numpy.sum(x * _i("autograd").numpy.log(x))
+    "autograd",
+    "entr",
+    lambda x: -_i("autograd").numpy.sum(x * _i("autograd").numpy.log(x), axis=-1),
 )
 
 ar.register_function("autograd", "diagonal", lambda x, *args: _i("qml").numpy.diag(x))
@@ -293,7 +304,10 @@ ar.register_function("tensorflow", "round", _round_tf)
 
 def _ndim_tf(tensor):
     try:
-        return _i("tf").experimental.numpy.ndim(tensor)
+        ndim = _i("tf").experimental.numpy.ndim(tensor)
+        if ndim is None:
+            return len(tensor.shape)
+        return ndim
     except AttributeError:
         return len(tensor.shape)
 
@@ -403,7 +417,7 @@ def _eigvalsh_tf(density_matrix):
 
 ar.register_function("tensorflow", "eigvalsh", _eigvalsh_tf)
 ar.register_function(
-    "tensorflow", "entr", lambda x: -_i("tf").math.reduce_sum(x * _i("tf").math.log(x))
+    "tensorflow", "entr", lambda x: -_i("tf").math.reduce_sum(x * _i("tf").math.log(x), axis=-1)
 )
 
 
@@ -661,7 +675,9 @@ ar.register_function("torch", "size", _size_torch)
 
 
 ar.register_function("torch", "eigvalsh", lambda x: _i("torch").linalg.eigvalsh(x))
-ar.register_function("torch", "entr", lambda x: _i("torch").sum(_i("torch").special.entr(x)))
+ar.register_function(
+    "torch", "entr", lambda x: _i("torch").sum(_i("torch").special.entr(x), dim=-1)
+)
 
 
 def _sum_torch(tensor, axis=None, keepdims=False, dtype=None):
@@ -734,7 +750,9 @@ ar.register_function(
 ar.register_function("jax", "unstack", list)
 # pylint: disable=unnecessary-lambda
 ar.register_function("jax", "eigvalsh", lambda x: _i("jax").numpy.linalg.eigvalsh(x))
-ar.register_function("jax", "entr", lambda x: _i("jax").numpy.sum(_i("jax").scipy.special.entr(x)))
+ar.register_function(
+    "jax", "entr", lambda x: _i("jax").numpy.sum(_i("jax").scipy.special.entr(x), axis=-1)
+)
 
 ar.register_function(
     "jax",

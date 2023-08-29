@@ -11,14 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""
+Unit tests for the optimization transform ``undo_swaps``.
+"""
 import pytest
-from pennylane import numpy as np
+from utils import compare_operation_lists
 
 import pennylane as qml
+from pennylane import numpy as np
 from pennylane.wires import Wires
 from pennylane.transforms.optimization import undo_swaps
-from utils import compare_operation_lists
 
 
 class TestUndoSwaps:
@@ -110,9 +112,7 @@ class TestUndoSwaps:
         assert np.allclose(res1, res2)
 
     def test_decorator(self):
-        dev = qml.device("default.qubit", wires=3)
-
-        @qml.qnode(dev)
+        @qml.qnode(qml.device("default.qubit", wires=3))
         @undo_swaps
         def qfunc():
             qml.Hadamard(wires=0)
@@ -131,7 +131,7 @@ dev = qml.device("default.qubit", wires=3)
 
 
 # Test each of single-qubit, two-qubit, and Rot gates
-def qfunc(theta):
+def qfunc_all_ops(theta):
     qml.Hadamard(wires=0)
     qml.RX(theta[0], wires=1)
     qml.SWAP(wires=[0, 1])
@@ -140,7 +140,7 @@ def qfunc(theta):
     return qml.expval(qml.PauliZ(0))
 
 
-transformed_qfunc = undo_swaps(qfunc)
+transformed_qfunc_all_ops = undo_swaps(qfunc_all_ops)
 
 expected_op_list = ["Hadamard", "RX", "RY"]
 expected_wires_list = [
@@ -157,8 +157,8 @@ class TestUndoSwapsInterfaces:
     def test_undo_swaps_autograd(self):
         """Test QNode and gradient in autograd interface."""
 
-        original_qnode = qml.QNode(qfunc, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        original_qnode = qml.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
         input = np.array([0.1, 0.2], requires_grad=True)
 
@@ -179,8 +179,8 @@ class TestUndoSwapsInterfaces:
         """Test QNode and gradient in torch interface."""
         import torch
 
-        original_qnode = qml.QNode(qfunc, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        original_qnode = qml.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
         original_input = torch.tensor([0.1, 0.2], requires_grad=True)
         transformed_input = torch.tensor([0.1, 0.2], requires_grad=True)
@@ -206,8 +206,8 @@ class TestUndoSwapsInterfaces:
         """Test QNode and gradient in tensorflow interface."""
         import tensorflow as tf
 
-        original_qnode = qml.QNode(qfunc, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        original_qnode = qml.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
         original_input = tf.Variable([0.1, 0.2])
         transformed_input = tf.Variable([0.1, 0.2])
@@ -241,11 +241,10 @@ class TestUndoSwapsInterfaces:
 
         from jax.config import config
 
-        remember = config.read("jax_enable_x64")
         config.update("jax_enable_x64", True)
 
-        original_qnode = qml.QNode(qfunc, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        original_qnode = qml.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
         input = jnp.array([0.1, 0.2], dtype=jnp.float64)
 

@@ -14,7 +14,7 @@
 """
 Tests for the k-UpCCGSD template.
 """
-from os import killpg
+# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 import numpy as np
 import pennylane as qml
@@ -344,6 +344,40 @@ class TestDecomposition:
         assert gen_doubles_wires == generalized_pair_doubles_wires
 
 
+# pylint: disable=protected-access
+def test_flatten_unflatten():
+    """Tests the flatten and unflatten methods."""
+    weights = qml.math.array([[0.55, 0.72, 0.6, 0.54, 0.42, 0.65]])
+    wires = qml.wires.Wires((0, 1, 2, 3))
+    init_state = qml.math.array([1, 1, 0, 0])
+    op = qml.kUpCCGSD(
+        weights,
+        wires=wires,
+        k=1,
+        delta_sz=0,
+        init_state=init_state,
+    )
+    data, metadata = op._flatten()
+    assert data == (weights,)
+    assert len(metadata) == 2
+    assert metadata[0] == wires
+    assert metadata[1] == (("k", 1), ("delta_sz", 0), ("init_state", tuple(init_state)))
+
+    # make sure metadata hashable
+    assert hash(metadata)
+
+    new_op = type(op)._unflatten(*op._flatten())
+    assert op.data == new_op.data
+    assert type(new_op) is type(op)
+    assert op.hyperparameters["s_wires"] == new_op.hyperparameters["s_wires"]
+    assert op.hyperparameters["d_wires"] == new_op.hyperparameters["d_wires"]
+    assert op.hyperparameters["k"] == new_op.hyperparameters["k"]
+    assert op.hyperparameters["delta_sz"] == new_op.hyperparameters["delta_sz"]
+    assert qml.math.allclose(op.hyperparameters["init_state"], new_op.hyperparameters["init_state"])
+
+    assert op is not new_op
+
+
 class TestInputs:
     """Test inputs and pre-processing."""
 
@@ -424,8 +458,6 @@ class TestInputs:
                 init_state=init_state,
             )
             return qml.expval(qml.PauliZ(0))
-
-        qnode = qml.QNode(circuit, dev)
 
         with pytest.raises(ValueError, match=msg_match):
             circuit()

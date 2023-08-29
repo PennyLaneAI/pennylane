@@ -11,14 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+Unit tests for the optimization transform ``merge_rotations``.
+"""
+# pylint: disable=too-many-arguments
 
 import pytest
-from pennylane import numpy as np
 
+from utils import compare_operation_lists
 import pennylane as qml
+from pennylane import numpy as np
 from pennylane.wires import Wires
 from pennylane.transforms.optimization import merge_rotations
-from utils import compare_operation_lists
 
 
 class TestMergeRotations:
@@ -263,7 +267,7 @@ dev = qml.device("default.qubit", wires=3)
 
 
 # Test each of single-qubit, two-qubit, and Rot gates
-def qfunc(theta):
+def qfunc_all_ops(theta):
     qml.Hadamard(wires=0)
     qml.RZ(theta[0], wires=0)
     qml.PauliY(wires=1)
@@ -278,7 +282,7 @@ def qfunc(theta):
     return qml.expval(qml.PauliX(0) @ qml.PauliX(2))
 
 
-transformed_qfunc = merge_rotations()(qfunc)
+transformed_qfunc_all_ops = merge_rotations()(qfunc_all_ops)
 
 expected_op_list = ["Hadamard", "RZ", "PauliY", "CNOT", "CRY", "PauliZ", "Rot"]
 expected_wires_list = [
@@ -299,8 +303,8 @@ class TestMergeRotationsInterfaces:
     def test_merge_rotations_autograd(self):
         """Test QNode and gradient in autograd interface."""
 
-        original_qnode = qml.QNode(qfunc, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        original_qnode = qml.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
         input = np.array([0.1, 0.2, 0.3, 0.4], requires_grad=True)
 
@@ -321,8 +325,8 @@ class TestMergeRotationsInterfaces:
         """Test QNode and gradient in torch interface."""
         import torch
 
-        original_qnode = qml.QNode(qfunc, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        original_qnode = qml.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
         original_input = torch.tensor([0.1, 0.2, 0.3, 0.4], requires_grad=True)
         transformed_input = torch.tensor([0.1, 0.2, 0.3, 0.4], requires_grad=True)
@@ -348,8 +352,8 @@ class TestMergeRotationsInterfaces:
         """Test QNode and gradient in tensorflow interface."""
         import tensorflow as tf
 
-        original_qnode = qml.QNode(qfunc, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        original_qnode = qml.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
         original_input = tf.Variable([0.1, 0.2, 0.3, 0.4])
         transformed_input = tf.Variable([0.1, 0.2, 0.3, 0.4])
@@ -382,11 +386,10 @@ class TestMergeRotationsInterfaces:
         from jax import numpy as jnp
         from jax.config import config
 
-        remember = config.read("jax_enable_x64")
         config.update("jax_enable_x64", True)
 
-        original_qnode = qml.QNode(qfunc, dev)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        original_qnode = qml.QNode(qfunc_all_ops, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
 
         input = jnp.array([0.1, 0.2, 0.3, 0.4], dtype=jnp.float64)
 
@@ -412,13 +415,10 @@ class TestMergeRotationsInterfaces:
         # Enable float64 support
         from jax.config import config
 
-        remember = config.read("jax_enable_x64")
         config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit", wires=["w1", "w2"])
-
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(qml.device("default.qubit", wires=["w1", "w2"]), interface="jax")
         @merge_rotations()
         def qfunc():
             qml.Rot(jax.numpy.array(0.1), jax.numpy.array(0.2), jax.numpy.array(0.3), wires=["w1"])

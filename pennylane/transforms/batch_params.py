@@ -37,6 +37,47 @@ def _nested_stack(res):
     return tuple(stacked_results)
 
 
+def _split_operations(ops, params, split_indices, num_tapes):
+    """
+    Given a list of operators, return a list (with length ``num_tapes``) containing lists
+    of new operators with the parameters at the given indices unbatched.
+
+    Args:
+        ops (Sequence[.Operator]): list of operators to split
+        params (Sequence[TensorLike]): list of parameters which may have a batch dimension.
+            The size of this list must be the total number of parameters in the ``ops`` list.
+        split_indices (Sequence[int]): the parameter indices that need to be unbatched. The
+            index of a parameter, say ``p``, is defined to be its index in the list
+            ``[p for op in ops for p in op.data]``. If any parameter of an operator has an index
+            contained in ``split_indices``, then a new operator is created using the corresponding
+            entry of ``params``. Otherwise, the original operator is used.
+        num_tapes (int): the number of new tapes to create, which is also equal to the batch size.
+    """
+    # for some reason pylint thinks "qml.ops" is a set
+    # pylint: disable=no-member
+    new_ops = [[] for _ in range(num_tapes)]
+    idx = 0
+
+    for op in ops:
+        # determine if any parameters of the operator are batched
+        if any(i in split_indices for i in range(idx, idx + len(op.data))):
+            for b in range(num_tapes):
+                new_params = tuple(
+                    params[i][b] if i in split_indices else params[i]
+                    for i in range(idx, idx + len(op.data))
+                )
+                new_op = qml.ops.functions.bind_new_parameters(op, new_params)
+                new_ops[b].append(new_op)
+        else:
+            # no batching in the operator; don't copy
+            for b in range(num_tapes):
+                new_ops[b].append(op)
+
+        idx += len(op.data)
+
+    return new_ops
+
+
 @batch_transform
 def batch_params(tape, all_operations=False):
     """Transform a QNode to support an initial batch dimension
@@ -125,40 +166,36 @@ def batch_params(tape, all_operations=False):
     >>> qml.grad(cost_fn)(x, weights)[0]
     -0.30262974103192636
     """
-    params = tape.get_parameters(trainable_only=not all_operations)
-    if not params:
+    # pylint: disable=protected-access
+    params = tape.get_parameters(trainable_only=False)
+    indices = list(range(len(params))) if all_operations else list(tape.trainable_params)
+
+    if not indices:
         raise ValueError(
             "There are no operations to transform. Either add trainable parameters, "
             "or specify `all_operations=True`."
         )
-    output_tapes = []
 
     try:
-        batch_dim = qml.math.shape(params[0])[0]
+        batch_dim = qml.math.shape(params[indices[0]])[0]
     except IndexError:
         raise ValueError(f"Parameter {params[0]} does not contain a batch dimension.") from None
 
-    unbatched_params = [[] for i in range(batch_dim)]
+    for i in indices:
+        shape = qml.math.shape(params[i])
+        if len(shape) == 0 or shape[0] != batch_dim:
+            raise ValueError(
+                f"Parameter {params[i]} has incorrect batch dimension. Expecting "
+                f"first dimension of length {batch_dim}."
+            )
 
-    for p in params:
-        for i in range(batch_dim):
-            try:
-                unbatched_params[i].append(p[i])
-            except IndexError:
-                raise ValueError(
-                    f"Parameter {p} has incorrect batch dimension. Expecting "
-                    f"first dimension of length {batch_dim}."
-                ) from None
-
-    for p in unbatched_params:
-        new_tape = tape.copy(copy_operations=True)
-        new_tape.set_parameters(p, trainable_only=not all_operations)
+    output_tapes = []
+    for ops in _split_operations(tape.operations, params, indices, batch_dim):
+        new_tape = qml.tape.QuantumScript(ops, tape.measurements, shots=tape.shots)
+        new_tape.trainable_params = tape.trainable_params
         output_tapes.append(new_tape)
 
     def processing_fn(res):
-        if qml.active_return():
-            return _nested_stack(res)
-
-        return qml.math.squeeze(qml.math.stack(res))
+        return _nested_stack(res)
 
     return output_tapes, processing_fn

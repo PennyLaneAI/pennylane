@@ -15,11 +15,13 @@
 This module contains the qml.equal function.
 """
 # pylint: disable=too-many-arguments,too-many-return-statements
+from collections.abc import Iterable
 from functools import singledispatch
 from typing import Union
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
+from pennylane.measurements.mid_measure import MidMeasureMP
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
@@ -94,11 +96,11 @@ def equal(
     >>> qml.equal(H1, H2), qml.equal(H1, H3)
     (True, False)
 
-    >>> qml.equal(qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(0)) )
+    >>> qml.equal(qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(0)))
     True
-    >>> qml.equal(qml.probs(wires=(0,1)), qml.probs(wires=(1,2)) )
+    >>> qml.equal(qml.probs(wires=(0,1)), qml.probs(wires=(1,2)))
     False
-    >>> qml.equal(qml.classical_shadow(wires=[0,1]), qml.classical_shadow(wires=[0,1]) )
+    >>> qml.equal(qml.classical_shadow(wires=[0,1]), qml.classical_shadow(wires=[0,1]))
     True
 
     .. details::
@@ -160,7 +162,7 @@ def _equal(
     check_trainability=True,
     rtol=1e-5,
     atol=1e-9,
-):
+):  # pylint: disable=unused-argument
     raise NotImplementedError(f"Comparison of {type(op1)} and {type(op2)} not implemented")
 
 
@@ -183,9 +185,10 @@ def _equal_operators(
         return False
 
     if op1.arithmetic_depth > 0:
-        raise NotImplementedError(
-            "Comparison of operators with an arithmetic depth larger than 0 is not yet implemented."
-        )
+        # Other dispatches cover cases of operations with arithmetic depth > 0.
+        # If any new operations are added with arithmetic depth > 0, a new dispatch
+        # should be created for them.
+        return False
     if not all(
         qml.math.allclose(d1, d2, rtol=rtol, atol=atol) for d1, d2 in zip(op1.data, op2.data)
     ):
@@ -235,12 +238,8 @@ def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
         op2.arithmetic_depth,
     ]:
         return False
-    try:
-        return qml.equal(op1.base, op2.base, **kwargs)
-    except NotImplementedError as e:
-        raise NotImplementedError(
-            f"Unable to compare base operators {op1.base} and {op2.base}."
-        ) from e
+
+    return qml.equal(op1.base, op2.base, **kwargs)
 
 
 @_equal.register
@@ -291,7 +290,7 @@ def _equal_tensor(op1: Tensor, op2: Observable, **kwargs):
     if isinstance(op2, Tensor):
         return op1._obs_data() == op2._obs_data()  # pylint: disable=protected-access
 
-    raise NotImplementedError(f"Comparison of {type(op1)} and {type(op2)} not implemented")
+    return False
 
 
 @_equal.register
@@ -359,6 +358,19 @@ def _equal_measurements(
 
 @_equal.register
 # pylint: disable=unused-argument
+def _equal_mid_measure(
+    op1: MidMeasureMP,
+    op2: MidMeasureMP,
+    check_interface=True,
+    check_trainability=True,
+    rtol=1e-5,
+    atol=1e-9,
+):
+    return op1.wires == op2.wires and op1.id == op2.id and op1.reset == op2.reset
+
+
+@_equal.register
+# pylint: disable=unused-argument
 def _(op1: VnEntropyMP, op2: VnEntropyMP, **kwargs):
     """Determine whether two MeasurementProcess objects are equal"""
     eq_m = _equal_measurements(op1, op2, **kwargs)
@@ -381,7 +393,14 @@ def _equal_shadow_measurements(op1: ShadowExpvalMP, op2: ShadowExpvalMP, **kwarg
     """Determine whether two ShadowExpvalMP objects are equal"""
 
     wires_match = op1.wires == op2.wires
-    H_match = op1.H == op2.H
+
+    if isinstance(op1.H, Operator) and isinstance(op2.H, Operator):
+        H_match = equal(op1.H, op2.H)
+    elif isinstance(op1.H, Iterable) and isinstance(op2.H, Iterable):
+        H_match = all(equal(o1, o2) for o1, o2 in zip(op1.H, op2.H))
+    else:
+        return False
+
     k_match = op1.k == op2.k
 
     return wires_match and H_match and k_match

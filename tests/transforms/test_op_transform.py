@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the @op_transform framework"""
+# pylint: disable=too-few-public-methods
 import pytest
 
 import pennylane as qml
@@ -26,20 +27,20 @@ class TestValidation:
         """Test that op transforms are not created during Sphinx builds"""
 
         @qml.op_transform
-        def my_transform(op):
+        def my_transform0(op):
             return op.name
 
-        assert isinstance(my_transform, qml.op_transform)
+        assert isinstance(my_transform0, qml.op_transform)
 
         monkeypatch.setenv("SPHINX_BUILD", "1")
 
         with pytest.warns(UserWarning, match="Operator transformations have been disabled"):
 
             @qml.op_transform
-            def my_transform(op):
+            def my_transform1(op):
                 return op.name
 
-        assert not isinstance(my_transform, qml.batch_transform)
+        assert not isinstance(my_transform1, qml.batch_transform)
 
     def test_error_invalid_callable(self):
         """Test that an error is raised if the transform
@@ -106,6 +107,7 @@ class TestUI:
         def my_transform(op):
             return op.name
 
+        # pylint:disable=assignment-from-no-return
         res = my_transform(qml.CRX)(0.5, wires=[0, "a"])
         assert res == "CRX"
 
@@ -288,7 +290,7 @@ def simplify_rotation(op):
         wires = op.wires
 
         if qml.math.allclose(params, 0):
-            return
+            return None
 
         if qml.math.allclose(params[1:2], 0):
             return qml.RZ(params[0], wires)
@@ -337,6 +339,7 @@ class TestQFuncTransformIntegration:
     def test_qfunc_inside(self):
         """Test a qfunc and operator transform
         applied to a qfunc inside a qfunc"""
+        # pylint: disable=not-callable
         dev = qml.device("default.qubit", wires=2)
 
         def ansatz(weights):
@@ -444,11 +447,11 @@ class TestQFuncTransformIntegration:
 class TestExpansion:
     """Test for operator and tape expansion"""
 
-    def test_auto_expansion(self, mocker):
+    def test_auto_expansion(self):
         """Test that an operator is automatically expanded as needed"""
 
         @qml.op_transform
-        def matrix(op):
+        def get_matrix(op):
             return op.matrix()
 
         weights = np.ones([2, 3, 3])
@@ -462,24 +465,24 @@ class TestExpansion:
         # attempting to call our operator transform will fail
 
         with pytest.raises(qml.operation.MatrixUndefinedError):
-            matrix(op)
+            get_matrix(op)
 
         # if we define how the transform acts on a tape,
         # then pennylane will automatically expand the object
         # and apply the tape transform
 
-        @matrix.tape_transform
-        def matrix_tape(tape):
+        @get_matrix.tape_transform
+        def _(tape):
             n_wires = len(tape.wires)
             unitary_matrix = np.eye(2**n_wires)
 
             for op in tape.operations:
-                mat = qml.math.expand_matrix(matrix(op), op.wires, tape.wires)
+                mat = qml.math.expand_matrix(get_matrix(op), op.wires, tape.wires)
                 unitary_matrix = mat @ unitary_matrix
 
             return unitary_matrix
 
-        res = matrix(op)
+        res = get_matrix(op)
         assert isinstance(res, np.ndarray)
         assert res.shape == (2**3, 2**3)
 
@@ -533,7 +536,7 @@ class TestWireOrder:
         res_qs = matrix(qs, wire_order=["a", 0])
         assert np.allclose(res_qs, expected)
 
-    def test_inconsistent_wires_tape(self, mocker):
+    def test_inconsistent_wires_tape(self):
         """Test that an exception is raised if the wire order and tape wires are inconsistent"""
         with qml.queuing.AnnotatedQueue() as q:
             qml.PauliZ(wires=0)

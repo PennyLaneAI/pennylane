@@ -14,11 +14,33 @@
 """
 Tests for the CommutingEvolution template.
 """
+# pylint: disable=too-few-public-methods
 import pytest
-from pennylane import numpy as np
-import pennylane as qml
-
 from scipy.linalg import expm
+import pennylane as qml
+from pennylane import numpy as np
+
+
+# pylint: disable=protected-access
+def test_flatten_unflatten():
+    """Unit tests for the flatten and unflatten methods."""
+    H = 2.0 * qml.PauliX(0) @ qml.PauliY(1) + 3.0 * qml.PauliY(0) @ qml.PauliZ(1)
+    time = 0.5
+    frequencies = (2, 4)
+    shifts = (1, 0.5)
+    op = qml.CommutingEvolution(H, time, frequencies=frequencies, shifts=shifts)
+    data, metadata = op._flatten()
+
+    assert hash(metadata)
+
+    assert len(data) == 2
+    assert data[0] is H
+    assert data[1] == time
+    assert metadata == (frequencies, shifts)
+
+    new_op = type(op)._unflatten(*op._flatten())
+    assert qml.equal(op, new_op)
+    assert op is not new_op
 
 
 def test_adjoint():
@@ -138,11 +160,13 @@ class TestGradients:
 
         x_vals = np.linspace(-np.pi, np.pi, num=10)
 
+        # pylint: disable=not-callable
         grads_finite_diff = [qml.gradients.finite_diff(circuit)(x) for x in x_vals]
         grads_param_shift = [qml.gradients.param_shift(circuit)(x) for x in x_vals]
 
         assert all(np.isclose(grads_finite_diff, grads_param_shift, atol=1e-4))
 
+    # pylint: disable=not-callable
     def test_four_term_case(self):
         """Tests the parameter shift rules for `CommutingEvolution` equal the
         finite difference result for a four term shift rule case."""
@@ -168,6 +192,7 @@ class TestGradients:
 
         assert all(np.isclose(grads_finite_diff, grads_param_shift, atol=1e-4))
 
+    # pylint: disable=not-callable
     def test_differentiable_hamiltonian(self):
         """Tests correct gradients are produced when the Hamiltonian is differentiable."""
 

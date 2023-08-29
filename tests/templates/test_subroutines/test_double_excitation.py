@@ -20,6 +20,27 @@ from pennylane import numpy as pnp
 import pennylane as qml
 
 
+# pylint: disable=protected-access
+def test_flatten_unflatten():
+    """Test the _flatten and _unflatten methods."""
+    weight = 0.5
+    wires1 = qml.wires.Wires((0, 1))
+    wires2 = qml.wires.Wires((2, 3, 4))
+    op = qml.FermionicDoubleExcitation(weight, wires1=wires1, wires2=wires2)
+
+    data, metadata = op._flatten()
+    assert data == (0.5,)
+    assert metadata[0] == wires1
+    assert metadata[1] == wires2
+
+    # test that its hashable
+    assert hash(metadata)
+
+    new_op = type(op)._unflatten(*op._flatten())
+    assert qml.equal(op, new_op)
+    assert op is not new_op
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
@@ -348,4 +369,4 @@ class TestInterfaces:
         res = circuit(weight)
         res.backward()
         # check that the gradient is computed without error
-        [weight.grad]
+        weight.grad  # pylint: disable=pointless-statement

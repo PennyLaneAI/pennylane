@@ -17,6 +17,32 @@ import pennylane as qml
 from .batch_transform import batch_transform
 
 
+def _split_operations(ops, num_tapes):
+    """
+    Given a list of operators, return a list containing lists
+    of new operators with length num_tapes, with the parameters split.
+    """
+    # for some reason pylint thinks "qml.ops" is a set
+    # pylint: disable=no-member
+    new_ops = [[] for _ in range(num_tapes)]
+    for op in ops:
+        # determine if any parameters of the operator are batched
+        if op.batch_size:
+            for b in range(num_tapes):
+                new_params = tuple(
+                    p if qml.math.ndim(p) == op.ndim_params[j] else p[b]
+                    for j, p in enumerate(op.data)
+                )
+                new_op = qml.ops.functions.bind_new_parameters(op, new_params)
+                new_ops[b].append(new_op)
+        else:
+            # no batching in the operator; don't copy
+            for b in range(num_tapes):
+                new_ops[b].append(op)
+
+    return new_ops
+
+
 @batch_transform
 def broadcast_expand(tape):
     r"""Expand a broadcasted tape into multiple tapes
@@ -81,37 +107,30 @@ def broadcast_expand(tape):
 
     We also can call the transform manually on a tape:
 
-    >>> with qml.tape.QuantumTape() as tape:
-    >>>     qml.RX(pnp.array([0.2, 0.6, 1.0], requires_grad=True), wires=0)
-    >>>     qml.expval(qml.PauliZ(0))
+    >>> ops = [qml.RX(pnp.array([0.2, 0.6, 1.0], requires_grad=True), wires=0)]
+    >>> measurements = [qml.expval(qml.PauliZ(0))]
+    >>> tape = qml.tape.QuantumTape(ops, measurements)
     >>> tapes, fn = qml.transforms.broadcast_expand(tape)
     >>> tapes
     [<QuantumTape: wires=[0], params=1>, <QuantumTape: wires=[0], params=1>, <QuantumTape: wires=[0], params=1>]
     >>> fn(qml.execute(tapes, qml.device("default.qubit", wires=1), None))
     array([0.98006658, 0.82533561, 0.54030231])
     """
-
+    # pylint: disable=protected-access
     num_tapes = tape.batch_size
     if num_tapes is None:
         raise ValueError("The provided tape is not broadcasted.")
 
-    # Note that these unbatched_params will have shape (#params, num_tapes)
-    unbatched_params = []
-    for op in tape.operations + tape.observables:
-        for j, p in enumerate(op.data):
-            if op.batch_size and qml.math.ndim(p) != op.ndim_params[j]:
-                unbatched_params.append(qml.math.unstack(p))
-            else:
-                unbatched_params.append([p] * num_tapes)
+    new_ops = _split_operations(tape.operations, num_tapes)
 
     output_tapes = []
-    for p in zip(*unbatched_params):
-        new_tape = tape.copy(copy_operations=True)
-        new_tape.set_parameters(p, trainable_only=False)
+    for ops in new_ops:
+        new_tape = qml.tape.QuantumScript(ops, tape.measurements, shots=tape.shots)
+        new_tape.trainable_params = tape.trainable_params
         output_tapes.append(new_tape)
 
     def processing_fn(results: qml.typing.ResultBatch) -> qml.typing.Result:
-        if len(tape.measurements) > 1 and qml.active_return():
+        if len(tape.measurements) > 1:
             processed_results = [
                 qml.math.squeeze(qml.math.stack([results[b][i] for b in range(tape.batch_size)]))
                 for i in range(len(tape.measurements))

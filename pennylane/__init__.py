@@ -37,7 +37,14 @@ import pennylane.pauli
 from pennylane.pauli import pauli_decompose
 import pennylane.resource
 import pennylane.qchem
-from pennylane.qchem import taper, symmetry_generators, paulix_ops, taper_operation, import_operator
+from pennylane.fermi import FermiC, FermiA, jordan_wigner
+from pennylane.qchem import (
+    taper,
+    symmetry_generators,
+    paulix_ops,
+    taper_operation,
+    import_operator,
+)
 from pennylane._device import Device, DeviceError
 from pennylane._grad import grad, jacobian
 from pennylane._qubit_device import QubitDevice
@@ -75,7 +82,6 @@ from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane import qaoa
 from pennylane.qnode import QNode, qnode
-from pennylane.return_types import enable_return, disable_return, active_return
 from pennylane.transforms import (
     adjoint_metric_tensor,
     batch_params,
@@ -115,12 +121,14 @@ from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost
 from pennylane.debugging import snapshots
 from pennylane.shadows import ClassicalShadow
-import pennylane.data
 import pennylane.pulse
 
 import pennylane.gradients  # pylint:disable=wrong-import-order
 import pennylane.qinfo  # pylint:disable=wrong-import-order
 from pennylane.interfaces import execute  # pylint:disable=wrong-import-order
+import pennylane.logging  # pylint:disable=wrong-import-order
+
+import pennylane.data
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
@@ -345,7 +353,7 @@ def device(name, *args, **kwargs):
 
         return dev
 
-    raise DeviceError("Device does not exist. Make sure the required plugin is installed.")
+    raise DeviceError(f"Device {name} does not exist. Make sure the required plugin is installed.")
 
 
 def version():

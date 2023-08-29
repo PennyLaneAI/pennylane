@@ -246,7 +246,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
             jacs = []
             for i in argnums:
-                if qml.active_return() and s > 1:
+                if s > 1:
 
                     def cost(*args, **kwargs):
                         # pylint: disable=cell-var-from-loop
@@ -349,13 +349,8 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         try:
             device.shots = [(1, int(self.max_shots))]
 
-            if qml.active_return():
-
-                def cost(*args, **kwargs):
-                    return qml.math.stack(qnode(*args, **kwargs))
-
-            else:
-                cost = qnode
+            def cost(*args, **kwargs):
+                return qml.math.stack(qnode(*args, **kwargs))
 
             grads = [qml.jacobian(cost, argnum=i)(*args, **kwargs) for i in self.trainable_args]
         finally:
@@ -422,7 +417,6 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             list[array]: The new variable values :math:`x^{(t+1)}`.
             If single arg is provided, list[array] is replaced by array.
         """
-
         self.trainable_args = set()
 
         for index, arg in enumerate(args):
@@ -479,7 +473,8 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
             argmax_gamma = np.unravel_index(np.argmax(gamma), gamma.shape)
             smax = max(s[argmax_gamma], 2)
-            self.s[idx] = np.squeeze(np.int64(np.clip(s, min(2, self.min_shots), smax)))
+
+            self.s[idx] = np.int64(np.clip(s, max(2, self.min_shots), smax))
 
         self.k += 1
 

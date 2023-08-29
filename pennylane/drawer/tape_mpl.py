@@ -18,19 +18,22 @@ Developer note: when making changes to this file, you can run
 `pennylane/doc/_static/tape_mpl/tape_mpl_examples.py` to generate docstring
 images.  If you change the docstring examples, please update this file.
 """
-# cant `import pennylane as qml` because of circular imports with circuit graph
 from pennylane import ops
+from pennylane.measurements import MidMeasureMP
 from pennylane.wires import Wires
 from .mpldrawer import MPLDrawer
 from .drawable_layers import drawable_layers
 from .utils import convert_wire_order, unwrap_controls
-from .style import use_style
+from .style import _set_style
 
 has_mpl = True
 try:
     import matplotlib as mpl
 except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
     has_mpl = False
+
+
+_measured_layers = {}
 
 ############################ Special Gate Methods #########################
 # If an operation is drawn differently than the standard box/ ctrl+box style
@@ -81,6 +84,14 @@ def _add_wirecut(drawer, layer, mapped_wires, op):
     drawer.ax.vlines(layer, ymin=ymin, ymax=ymax, linestyle="--")
 
 
+def _add_mid_circuit_measurement(drawer, layer, mapped_wires, op):
+    _measured_layers[op.id] = layer
+    drawer.measure(layer, mapped_wires[0])  # assume one wire
+    line = drawer._wire_lines[mapped_wires[0]]  # pylint:disable=protected-access
+    start_x = line.get_xdata()[0]
+    line.set_xdata((start_x, layer))
+
+
 special_cases = {
     ops.SWAP: _add_swap,
     ops.CSWAP: _add_cswap,
@@ -91,6 +102,7 @@ special_cases = {
     ops.CCZ: _add_cz,
     ops.Barrier: _add_barrier,
     ops.WireCut: _add_wirecut,
+    MidMeasureMP: _add_mid_circuit_measurement,
 }
 """Dictionary mapping special case classes to functions for drawing them."""
 
@@ -122,13 +134,29 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
 
     for layer, layer_ops in enumerate(layers):
         for op in layer_ops:
-            specialfunc = special_cases.get(op.__class__, None)
+            specialfunc = special_cases.get(op.__class__)
             if specialfunc is not None:
                 mapped_wires = (
                     [wire_map[w] for w in op.wires] if len(op.wires) != 0 else wire_map.values()
                 )
                 # It is assumed that if `len(op.wires) == 0`, `op` acts on all wires
                 specialfunc(drawer, layer, mapped_wires, op)
+
+            elif type(op).__name__ == "Conditional":
+                m_ids = [m.id for m in op.meas_val.measurements]
+                measured_layer = {_measured_layers[m_id] for m_id in m_ids}.pop()
+                control_wires = [
+                    wire_map[o.wires[0]] for o in layers[measured_layer] if o.id in m_ids
+                ]
+                target_wires = [wire_map[w] for w in op.wires]
+                drawer.cond(layer, measured_layer, control_wires, target_wires)
+                drawer.box_gate(
+                    layer,
+                    target_wires,
+                    op.then_op.label(decimals=decimals),
+                    box_options={"zorder": 4, "linestyle": "dashed"},
+                    text_options={"zorder": 5},
+                )
 
             else:
                 op_control_wires, control_values = unwrap_controls(op)
@@ -142,10 +170,8 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
 
                 if control_values is None:
                     control_values = [True for _ in control_wires]
-                elif isinstance(control_values[0], str):
-                    control_values = [(i == "1") for i in control_values]
 
-                if len(control_wires) != 0:
+                if control_wires:
                     drawer.ctrl(
                         layer,
                         control_wires,
@@ -183,9 +209,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
     return drawer.fig, drawer.ax
 
 
-def tape_mpl(
-    tape, wire_order=None, show_all_wires=False, decimals=None, style="black_white", **kwargs
-):
+def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, style=None, **kwargs):
     """Produces a matplotlib graphic from a tape.
 
     Args:
@@ -198,8 +222,9 @@ def tape_mpl(
             Default ``None`` will omit parameters from operation labels.
         style (str): visual style of plot. Valid strings are ``{'black_white', 'black_white_dark', 'sketch',
             'sketch_dark', 'solarized_light', 'solarized_dark', 'default'}``. If no style is specified, the
-            'black_white' style will be used. Setting style does not modify matplotlib global plotting settings.
-            If ``None``, the current matplotlib settings will be used.
+            global style set with :func:`~.use_style` will be used, and the initial default is 'black_white'.
+            If you would like to use your environment's current rcParams, set `style` to "rcParams".
+            Setting style does not modify matplotlib global plotting settings.
         fontsize (float or str): fontsize for text. Valid strings are
             ``{'xx-small', 'x-small', 'small', 'medium', large', 'x-large', 'xx-large'}``.
             Default is ``14``.
@@ -215,14 +240,16 @@ def tape_mpl(
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as tape:
-            qml.QFT(wires=(0,1,2,3))
-            qml.IsingXX(1.234, wires=(0,2))
-            qml.Toffoli(wires=(0,1,2))
-            qml.CSWAP(wires=(0,2,3))
-            qml.RX(1.2345, wires=0)
+        ops = [
+            qml.QFT(wires=(0,1,2,3)),
+            qml.IsingXX(1.234, wires=(0,2)),
+            qml.Toffoli(wires=(0,1,2)),
+            qml.CSWAP(wires=(0,2,3)),
+            qml.RX(1.2345, wires=0),
             qml.CRZ(1.2345, wires=(3,0))
-            qml.expval(qml.PauliZ(0))
+        ]
+        measurements = [qml.expval(qml.PauliZ(0))]
+        tape = qml.tape.QuantumTape(ops, measurements)
 
         fig, ax = tape_mpl(tape)
         fig.show()
@@ -242,10 +269,9 @@ def tape_mpl(
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as tape2:
-            qml.RX(1.23456, wires=0)
-            qml.Rot(1.2345,2.3456, 3.456, wires=0)
-            qml.expval(qml.PauliZ(0))
+        ops = [qml.RX(1.23456, wires=0), qml.Rot(1.2345,2.3456, 3.456, wires=0)]
+        measurements = [qml.expval(qml.PauliZ(0))]
+        tape2 = qml.tape.QuantumTape(ops, measurements)
 
         fig, ax = tape_mpl(tape2, decimals=2)
 
@@ -358,15 +384,15 @@ def tape_mpl(
     """
 
     restore_params = {}
-    if style and has_mpl:
+    if update_style := (has_mpl and style != "rcParams"):
         restore_params = mpl.rcParams.copy()
-        use_style(style)
+        _set_style(style)
     try:
         return _tape_mpl(
             tape, wire_order=wire_order, show_all_wires=show_all_wires, decimals=decimals, **kwargs
         )
     finally:
-        if style and has_mpl:
+        if update_style:
             # we don't want to mess with how it modifies whether the interface is interactive
             # but we want to restore everything else
             restore_params["interactive"] = mpl.rcParams["interactive"]

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Setup file for package installation."""
+
 from setuptools import setup, find_packages
 
 with open("pennylane/_version.py") as f:
@@ -22,14 +24,15 @@ requirements = [
     "scipy",
     "networkx",
     "rustworkx",
-    "autograd",
+    "autograd<=1.5",
     "toml",
     "appdirs",
     "semantic-version>=2.7",
     "autoray>=0.3.1",
     "cachetools",
-    "pennylane-lightning>=0.30",
+    "pennylane-lightning>=0.32",
     "requests",
+    "typing_extensions",
 ]
 
 info = {
@@ -37,7 +40,7 @@ info = {
     "version": version,
     "maintainer": "Xanadu Inc.",
     "maintainer_email": "software@xanadu.ai",
-    "url": "https://github.com/XanaduAI/pennylane",
+    "url": "https://github.com/PennyLaneAI/pennylane",
     "license": "Apache License 2.0",
     "packages": find_packages(where="."),
     "entry_points": {
@@ -62,7 +65,7 @@ info = {
     "provides": ["pennylane"],
     "install_requires": requirements,
     "extras_require": {"kernels": ["cvxpy", "cvxopt"]},
-    "package_data": {"pennylane": ["devices/tests/pytest.ini"]},
+    "package_data": {"pennylane": ["devices/tests/pytest.ini", "drawer/plot.mplstyle"]},
     "include_package_data": True,
 }
 
@@ -78,7 +81,6 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",

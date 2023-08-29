@@ -112,7 +112,7 @@ def generator(op, format="prefactor"):
             ``'observable'``, or ``'hamiltonian'``. See below for more details.
 
     Returns:
-        .Observable or tuple[.Observable, float]: The returned generator, with format/type
+        .Operator or tuple[.Observable, float]: The returned generator, with format/type
         dependent on the ``format`` argument.
 
         * ``"prefactor"``: Return the generator as ``(obs, prefactor)`` (representing
@@ -131,6 +131,11 @@ def generator(op, format="prefactor"):
         * ``"hamiltonian"``: Similar to ``"observable"``, however the returned observable
           will always be converted into :class:`~.Hamiltonian` regardless of how ``op``
           encodes the generator.
+
+        * ``"arithmetic"``: Similar to ``"hamiltonian"``, however the returned observable
+          will always be converted into an arithmetic operator. The returned generator may be
+          any type, including:
+          :class:`~.ops.op_math.SProd`, :class:`~.ops.op_math.Prod`, :class:`~.ops.op_math.Sum`, or the operator itself.
 
     **Example**
 
@@ -159,7 +164,8 @@ def generator(op, format="prefactor"):
     <Hamiltonian: terms=1, wires=[0]>
     >>> qml.generator(qml.PhaseShift(0.1, wires=0), format="observable")  # ouput will be a simplified obs where possible
     Projector([1], wires=[0])
-
+    >>> qml.generator(op, format="arithmetic")  # output is an instance of `SProd`
+    -0.5*(PauliX(wires=[0]))
     """
     if op.num_params != 1:
         raise ValueError(f"Operation {op.name} is not written in terms of a single parameter")
@@ -182,7 +188,13 @@ def generator(op, format="prefactor"):
     if format == "hamiltonian":
         return _generator_hamiltonian(gen, op)
 
+    if format == "arithmetic":
+        h = _generator_hamiltonian(gen, op)
+        return qml.dot(h.coeffs, h.ops)
+
     if format == "observable":
         return gen
 
-    raise ValueError("format must be one of ('prefactor', 'hamiltonian', 'observable')")
+    raise ValueError(
+        "format must be one of ('prefactor', 'hamiltonian', 'observable', 'arithmetic')"
+    )

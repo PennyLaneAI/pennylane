@@ -55,8 +55,6 @@ class MultiRZ(Operation):
     Args:
         theta (tensor_like or float): rotation angle :math:`\theta`
         wires (Sequence[int] or int): the wires the operation acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
     num_wires = AnyWires
@@ -69,10 +67,13 @@ class MultiRZ(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
-    def __init__(self, theta, wires=None, do_queue=True, id=None):
+    def _flatten(self):
+        return self.data, (self.wires, tuple())
+
+    def __init__(self, theta, wires=None, id=None):
         wires = Wires(wires)
         self.hyperparameters["num_wires"] = len(wires)
-        super().__init__(theta, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(theta, wires=wires, id=id)
 
     @staticmethod
     def compute_matrix(theta, num_wires):  # pylint: disable=arguments-differ
@@ -226,8 +227,6 @@ class PauliRot(Operation):
         theta (float): rotation angle :math:`\theta`
         pauli_word (string): the Pauli word defining the rotation
         wires (Sequence[int] or int): the wire the operation acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
 
     **Example**
@@ -259,8 +258,8 @@ class PauliRot(Operation):
         "Z": np.array([[1, 0], [0, 1]]),
     }
 
-    def __init__(self, theta, pauli_word, wires=None, do_queue=True, id=None):
-        super().__init__(theta, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, theta, pauli_word, wires=None, id=None):
+        super().__init__(theta, wires=wires, id=id)
         self.hyperparameters["pauli_word"] = pauli_word
 
         if not PauliRot._check_pauli_word(pauli_word):
@@ -534,8 +533,6 @@ class PCPhase(Operation):
         phi (float): rotation angle :math:`\phi`
         dim (int): the dimension of the subspace
         wires (Iterable[int, str], Wires): the wires the operation acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
 
     **Example:**
@@ -582,7 +579,11 @@ class PCPhase(Operation):
         mat = np.diag([1 if index < dim else -1 for index in range(shape)])
         return qml.Hermitian(mat, wires=self.wires)
 
-    def __init__(self, phi, dim, wires, do_queue=True, id=None):
+    def _flatten(self):
+        hyperparameter = (("dim", self.hyperparameters["dimension"][0]),)
+        return tuple(self.data), (self.wires, hyperparameter)
+
+    def __init__(self, phi, dim, wires, id=None):
         wires = wires if isinstance(wires, Wires) else Wires(wires)
 
         if not (isinstance(dim, int) and (dim <= 2 ** len(wires))):
@@ -591,7 +592,7 @@ class PCPhase(Operation):
                 f"the max size of the matrix {2 ** len(wires)}. Try adding more wires."
             )
 
-        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(phi, wires=wires, id=id)
         self.hyperparameters["dimension"] = (dim, 2 ** len(wires))
 
     @staticmethod
@@ -658,9 +659,9 @@ class PCPhase(Operation):
         .. seealso:: :meth:`~.Operator.decomposition`.
 
         Args:
-            params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
+            *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
             wires (Iterable[Any], Wires): wires that the operator acts on
-            hyperparams (dict): non-trainable hyper-parameters of the operator, as stored in the ``hyperparameters`` attribute
+            **hyperparams (dict): non-trainable hyper-parameters of the operator, as stored in the ``hyperparameters`` attribute
 
         Returns:
             list[Operator]: decomposition of the operator
@@ -756,8 +757,6 @@ class IsingXX(Operation):
     Args:
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
     num_wires = 2
@@ -773,8 +772,8 @@ class IsingXX(Operation):
     def generator(self):
         return -0.5 * PauliX(wires=self.wires[0]) @ PauliX(wires=self.wires[1])
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
-        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, phi, wires, id=None):
+        super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
@@ -893,8 +892,6 @@ class IsingYY(Operation):
     Args:
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
     num_wires = 2
@@ -910,8 +907,8 @@ class IsingYY(Operation):
     def generator(self):
         return -0.5 * PauliY(wires=self.wires[0]) @ PauliY(wires=self.wires[1])
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
-        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, phi, wires, id=None):
+        super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -1037,8 +1034,6 @@ class IsingZZ(Operation):
     Args:
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
     num_wires = 2
@@ -1054,8 +1049,8 @@ class IsingZZ(Operation):
     def generator(self):
         return -0.5 * PauliZ(wires=self.wires[0]) @ PauliZ(wires=self.wires[1])
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
-        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, phi, wires, id=None):
+        super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -1221,8 +1216,6 @@ class IsingXY(Operation):
     Args:
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
     num_wires = 2
@@ -1241,8 +1234,8 @@ class IsingXY(Operation):
             + PauliY(wires=self.wires[0]) @ PauliY(wires=self.wires[1])
         )
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
-        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, phi, wires, id=None):
+        super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -1401,8 +1394,6 @@ class PSWAP(Operation):
     Args:
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
     num_wires = 2
@@ -1412,8 +1403,8 @@ class PSWAP(Operation):
     grad_method = "A"
     grad_recipe = ([[0.5, 1, np.pi / 2], [-0.5, 1, -np.pi / 2]],)
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
-        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, phi, wires, id=None):
+        super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
     def compute_decomposition(phi, wires):

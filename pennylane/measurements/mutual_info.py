@@ -131,21 +131,14 @@ class MutualInfoMP(StateMeasurement):
     def numeric_type(self):
         return float
 
-    def _shape_legacy(self, device, shots):  # pylint: disable=unused-argument
-        if not shots.has_partitioned_shots:
-            return (1,)
-        num_shot_elements = sum(s.copies for s in shots.shot_vector)
-        return (num_shot_elements,)
-
     def shape(self, device, shots):
-        if not qml.active_return():
-            return self._shape_legacy(device, shots)
         if not shots.has_partitioned_shots:
             return ()
         num_shot_elements = sum(s.copies for s in shots.shot_vector)
         return tuple(() for _ in range(num_shot_elements))
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
+        state = qml.math.dm_from_state_vector(state)
         return qml.math.mutual_info(
             state,
             indices0=list(self._wires[0]),

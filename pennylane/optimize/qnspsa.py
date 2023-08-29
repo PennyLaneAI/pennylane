@@ -408,7 +408,7 @@ class QNSPSAOptimizer:
         op_forward = self._get_operations(cost, args1, kwargs)
         op_inv = self._get_operations(cost, args2, kwargs)
 
-        new_ops = op_forward + [op.adjoint() for op in reversed(op_inv)]
+        new_ops = op_forward + [qml.adjoint(op) for op in reversed(op_inv)]
         return qml.tape.QuantumScript(new_ops, [qml.probs(wires=cost.tape.wires.labels)])
 
     @staticmethod
@@ -427,9 +427,6 @@ class QNSPSAOptimizer:
         tape_loss_next = cost.tape.copy(copy_operations=True)
 
         loss_curr, loss_next = qml.execute([tape_loss_curr, tape_loss_next], cost.device, None)
-
-        if not qml.active_return():
-            loss_curr, loss_next = qml.math.squeeze(loss_curr), qml.math.squeeze(loss_next)
 
         # self.k has been updated earlier
         ind = (self.k - 2) % self.last_n_steps.size

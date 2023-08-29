@@ -27,10 +27,13 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
-from pennylane import BasisState, DeviceError, QubitDevice, QubitStateVector, Snapshot
+from pennylane import BasisState, DeviceError, QubitDevice, StatePrep, Snapshot
+from pennylane.devices.qubit import measure
 from pennylane.operation import Operation
+from pennylane.ops import Sum
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.pulse import ParametrizedEvolution
+from pennylane.measurements import ExpectationMP
 from pennylane.typing import TensorLike
 from pennylane.wires import WireError
 
@@ -77,6 +80,20 @@ def _get_slice(index, axis, num_axes):
 class DefaultQubit(QubitDevice):
     """Default qubit device for PennyLane.
 
+    .. warning::
+
+        The API of ``DefaultQubit`` will be updated soon to follow a new device interface described
+        in :class:`pennylane.devices.experimental.Device`.
+
+        This change will not alter device behaviour for most workflows, but may have implications for
+        plugin developers and users who directly interact with device methods. Please consult
+        :class:`pennylane.devices.experimental.Device` and the implementation in
+        :class:`pennylane.devices.experimental.DefaultQubit2` for more information on what the new
+        interface will look like and be prepared to make updates in a coming release. If you have any
+        feedback on these changes, please create an
+        `issue <https://github.com/PennyLaneAI/pennylane/issues>`_ or post in our
+        `discussion forum <https://discuss.pennylane.ai/>`_.
+
     Args:
         wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
@@ -96,6 +113,7 @@ class DefaultQubit(QubitDevice):
         "Identity",
         "Snapshot",
         "BasisState",
+        "StatePrep",
         "QubitStateVector",
         "QubitUnitary",
         "ControlledQubitUnitary",
@@ -253,13 +271,13 @@ class DefaultQubit(QubitDevice):
 
         # apply the circuit operations
         for i, operation in enumerate(operations):
-            if i > 0 and isinstance(operation, (QubitStateVector, BasisState)):
+            if i > 0 and isinstance(operation, (StatePrep, BasisState)):
                 raise DeviceError(
                     f"Operation {operation.name} cannot be used after other Operations have already been applied "
                     f"on a {self.short_name} device."
                 )
 
-            if isinstance(operation, QubitStateVector):
+            if isinstance(operation, StatePrep):
                 self._apply_state_vector(operation.parameters[0], operation.wires)
             elif isinstance(operation, BasisState):
                 self._apply_basis_state(operation.parameters[0], operation.wires)
@@ -553,6 +571,15 @@ class DefaultQubit(QubitDevice):
             Hamiltonian is not NumPy or Autograd
 
         """
+        is_state_batched = self._ndim(self.state) == 2
+        # intercept Sums
+        if isinstance(observable, Sum) and not self.shots:
+            return measure(
+                ExpectationMP(observable.map_wires(self.wire_map)),
+                self._pre_rotated_state,
+                is_state_batched,
+            )
+
         # intercept other Hamiltonians
         # TODO: Ideally, this logic should not live in the Device, but be moved
         # to a component that can be re-used by devices as needed.
@@ -569,7 +596,7 @@ class DefaultQubit(QubitDevice):
 
         if backprop_mode:
             # TODO[dwierichs]: This branch is not adapted to broadcasting yet
-            if self._ndim(self.state) == 2:
+            if is_state_batched:
                 raise NotImplementedError(
                     "Expectation values of Hamiltonians for interface!=None are "
                     "not supported together with parameter broadcasting yet"
@@ -588,7 +615,7 @@ class DefaultQubit(QubitDevice):
             # that the user provided.
             for op, coeff in zip(observable.ops, observable.data):
                 # extract a scipy.sparse.coo_matrix representation of this Pauli word
-                coo = qml.operation.Tensor(op).sparse_matrix(wires=self.wires, format="coo")
+                coo = qml.operation.Tensor(op).sparse_matrix(wire_order=self.wires, format="coo")
                 Hmat = qml.math.cast(qml.math.convert_like(coo.data, self.state), self.C_DTYPE)
 
                 product = (
@@ -609,7 +636,7 @@ class DefaultQubit(QubitDevice):
             Hmat = observable.sparse_matrix(wire_order=self.wires)
 
             state = qml.math.toarray(self.state)
-            if self._ndim(state) == 2:
+            if is_state_batched:
                 res = qml.math.array(
                     [
                         csr_matrix.dot(

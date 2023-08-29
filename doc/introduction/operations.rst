@@ -291,7 +291,7 @@ State preparation
     :nosignatures:
 
     ~pennylane.BasisState
-    ~pennylane.QubitStateVector
+    ~pennylane.StatePrep
     ~pennylane.QubitDensityMatrix
 
 :html:`</div>`
@@ -415,10 +415,10 @@ CV observables
     ~pennylane.Identity
     ~pennylane.NumberOperator
     ~pennylane.TensorN
-    ~pennylane.P
+    ~pennylane.QuadP
     ~pennylane.PolyXP
     ~pennylane.QuadOperator
-    ~pennylane.X
+    ~pennylane.QuadX
 
 :html:`</div>`
 
@@ -474,6 +474,23 @@ Qutrit parametrized gates
     :nosignatures:
 
     ~pennylane.TRX
+    ~pennylane.TRY
+    ~pennylane.TRZ
+
+:html:`</div>`
+
+.. _intro_ref_ops_qutrit_stateprep:
+
+Qutrit State preparation
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.QutritBasisState
 
 :html:`</div>`
 

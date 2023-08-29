@@ -248,7 +248,7 @@ def _draw_qnode(
         finally:
             qnode.expansion_strategy = original_expansion_strategy
 
-        _wire_order = wire_order or qnode.device.wires
+        _wire_order = wire_order or getattr(qnode.device, "wires", None)
 
         if tapes is not None:
             cache = {"tape_offset": 0, "matrices": []}
@@ -291,7 +291,7 @@ def draw_mpl(
     show_all_wires=False,
     decimals=None,
     expansion_strategy=None,
-    style="black_white",
+    style=None,
     **kwargs,
 ):
     """Draw a qnode with matplotlib
@@ -304,10 +304,11 @@ def draw_mpl(
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
         decimals (int): How many decimal points to include when formatting operation parameters.
             Default ``None`` will omit parameters from operation labels.
-        style (str): visual style of plot. Valid strings are ``{'black_white', 'black_white_dark', 'sketch',
+        style (str): visual style of plot. Valid strings are ``{'black_white', 'black_white_dark', 'sketch', 'pennylane',
             'sketch_dark', 'solarized_light', 'solarized_dark', 'default'}``. If no style is specified, the
-            ``'black_white'`` style will be used. Setting style does not modify matplotlib global plotting settings.
-            If ``None``, the current matplotlib settings will be used.
+            global style set with :func:`~.use_style` will be used, and the initial default is 'black_white'.
+            If you would like to use your environment's current rcParams, set `style` to "rcParams".
+            Setting style does not modify matplotlib global plotting settings.
         fontsize (float or str): fontsize for text. Valid strings are
             ``{'xx-small', 'x-small', 'small', 'medium', large', 'x-large', 'xx-large'}``.
             Default is ``14``.
@@ -542,7 +543,7 @@ def _draw_mpl_qnode(
         finally:
             qnode.expansion_strategy = original_expansion_strategy
 
-        _wire_order = wire_order or qnode.device.wires
+        _wire_order = wire_order or getattr(qnode.device, "wires", None)
 
         return tape_mpl(
             qnode.qtape,
