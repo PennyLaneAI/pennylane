@@ -16,16 +16,19 @@ This module contains the qml.sample measurement.
 """
 import functools
 import warnings
-from typing import Sequence, Tuple, Optional
+from typing import Sequence, Tuple, Optional, Union
 
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 from .measurements import MeasurementShapeError, Sample, SampleMeasurement
+from .mid_measure import MeasurementValue
 
 
-def sample(op: Optional[Operator] = None, wires=None) -> "SampleMP":
+def sample(
+    op: Optional[Union[Operator, Sequence[MeasurementValue]]] = None, wires=None
+) -> "SampleMP":
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device,
     returning raw samples. If no observable is provided then basis state samples are returned
@@ -35,7 +38,8 @@ def sample(op: Optional[Operator] = None, wires=None) -> "SampleMP":
     specified on the device.
 
     Args:
-        op (Observable or None): a quantum observable object
+        op (Observable or MeasurementValue): a quantum observable object. To get samples
+            for mid-circuit measurements, ``op`` should be a``MeasurementValue``.
         wires (Sequence[int] or int or None): the wires we wish to sample from; ONLY set wires if
             op is ``None``
 
@@ -101,6 +105,9 @@ def sample(op: Optional[Operator] = None, wires=None) -> "SampleMP":
            [0, 0]])
 
     """
+    if isinstance(op, MeasurementValue):
+        return SampleMP(obs=op)
+
     if op is not None and not op.is_hermitian:  # None type is also allowed for op
         warnings.warn(f"{op.name} might not be hermitian.")
 
@@ -122,9 +129,9 @@ class SampleMP(SampleMeasurement):
     Please refer to :func:`sample` for detailed documentation.
 
     Args:
-        obs (.Operator): The observable that is to be measured as part of the
-            measurement process. Not all measurement processes require observables (for
-            example ``Probability``); this argument is optional.
+        obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
+            as part of the measurement process. Not all measurement processes require observables
+            (for example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
@@ -183,10 +190,26 @@ class SampleMP(SampleMeasurement):
         wire_order: Wires,
         shot_range: Tuple[int] = None,
         bin_size: int = None,
-    ):
+        decimal: bool = False,
+    ):  # pylint: disable=too-many-arguments, arguments-differ
+        """Process the given samples.
+        Args:
+            samples (Sequence[complex]): computational basis samples generated for all wires
+            wire_order (Wires): wires determining the subspace that ``samples`` acts on
+            shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+                to use. If not specified, all samples are used.
+            bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+                returns the measurement statistic separately over each bin. If not
+                provided, the entire shot range is treated as a single bin.
+            decimal (bool): Whether to return samples as base-10 integers or boolean lists.
+        """
         wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]
-        name = self.obs.name if self.obs is not None else None
+        name = (
+            self.obs.name
+            if self.obs is not None and not isinstance(self.obs, MeasurementValue)
+            else None
+        )
         # Select the samples from samples that correspond to ``shot_range`` if provided
         if shot_range is not None:
             # Indexing corresponds to: (potential broadcasting, shots, wires). Note that the last
@@ -200,7 +223,7 @@ class SampleMP(SampleMeasurement):
 
         num_wires = samples.shape[-1]  # wires is the last dimension
 
-        if self.obs is None:
+        if (self.obs is None or isinstance(self.obs, MeasurementValue)) and not decimal:
             # if no observable was provided then return the raw samples
             return samples if bin_size is None else samples.T.reshape(num_wires, bin_size, -1)
 
@@ -215,12 +238,15 @@ class SampleMP(SampleMeasurement):
             powers_of_two = 2 ** qml.math.arange(num_wires)[::-1]
             indices = samples @ powers_of_two
             indices = qml.math.array(indices)  # Add np.array here for Jax support.
-            try:
-                samples = self.obs.eigvals()[indices]
-            except qml.operation.EigvalsUndefinedError as e:
-                # if observable has no info on eigenvalues, we cannot return this measurement
-                raise qml.operation.EigvalsUndefinedError(
-                    f"Cannot compute samples of {self.obs.name}."
-                ) from e
+            if decimal:
+                samples = indices
+            else:
+                try:
+                    samples = self.obs.eigvals()[indices]
+                except qml.operation.EigvalsUndefinedError as e:
+                    # if observable has no info on eigenvalues, we cannot return this measurement
+                    raise qml.operation.EigvalsUndefinedError(
+                        f"Cannot compute samples of {self.obs.name}."
+                    ) from e
 
         return samples if bin_size is None else samples.reshape((bin_size, -1))

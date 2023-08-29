@@ -116,7 +116,7 @@ class MeasurementProcess(ABC):
     quantum variational circuit.
 
     Args:
-        obs (.Operator): The observable that is to be measured as part of the
+        obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured as part of the
             measurement process. Not all measurement processes require observables (for
             example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
@@ -146,7 +146,11 @@ class MeasurementProcess(ABC):
 
         # _wires = None indicates broadcasting across all available wires.
         # It translates to the public property wires = Wires([])
-        self._wires = wires
+        self._wires = (
+            self.obs.measurements[0].wires
+            if self.obs is not None and self.obs.__class__.__name__ == "MeasurementValue"
+            else wires
+        )
         self._eigvals = None
 
         if eigvals is not None:
@@ -313,7 +317,7 @@ class MeasurementProcess(ABC):
 
         This is the union of all the Wires objects of the measurement.
         """
-        if self.obs is not None:
+        if self.obs is not None and self.obs.__class__.__name__ != "MeasurementValue":
             return self.obs.wires
 
         return (
@@ -352,6 +356,9 @@ class MeasurementProcess(ABC):
         Returns:
             array: eigvals representation
         """
+        if self.obs.__class__.__name__ == "MeasurementValue":
+            return qml.math.arange(0, 2 ** len(self.wires), 1)
+
         if self.obs is not None:
             with contextlib.suppress(qml.operation.EigvalsUndefinedError):
                 return self.obs.eigvals()
@@ -365,12 +372,16 @@ class MeasurementProcess(ABC):
         # If self.obs is not None, `expand` queues the diagonalizing gates of self.obs,
         # which we have to check to be defined. The subsequent creation of the new
         # `MeasurementProcess` within `expand` should never fail with the given parameters.
-        return False if self.obs is None else self.obs.has_diagonalizing_gates
+        return (
+            self.obs.has_diagonalizing_gates
+            if self.obs is not None and self.obs.__class__.__name__ != "MeasurementValue"
+            else False
+        )
 
     @property
     def samples_computational_basis(self):
         r"""Bool: Whether or not the MeasurementProcess measures in the computational basis."""
-        return self.obs is None
+        return self.obs is None or self.obs.__class__.__name__ == "MeasurementValue"
 
     def expand(self):
         """Expand the measurement of an observable to a unitary
@@ -405,7 +416,7 @@ class MeasurementProcess(ABC):
         >>> print(tape.measurements[0].obs)
         None
         """
-        if self.obs is None:
+        if self.obs is None or self.obs.__class__.__name__ == "MeasurementValue":
             raise qml.operation.DecompositionUndefinedError
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -416,7 +427,7 @@ class MeasurementProcess(ABC):
 
     def queue(self, context=qml.QueuingManager):
         """Append the measurement process to an annotated queue."""
-        if self.obs is not None:
+        if self.obs is not None and self.obs.__class__.__name__ != "MeasurementValue":
             context.remove(self.obs)
         context.append(self)
 
@@ -450,7 +461,11 @@ class MeasurementProcess(ABC):
         Returns:
             .MeasurementProcess: A measurement process with a simplified observable.
         """
-        return self if self.obs is None else self.__class__(obs=self.obs.simplify())
+        return (
+            self
+            if self.obs is None or self.obs.__class__.__name__ == "MeasurementValue"
+            else self.__class__(obs=self.obs.simplify())
+        )
 
     # pylint: disable=protected-access
     def map_wires(self, wire_map: dict):
@@ -464,7 +479,7 @@ class MeasurementProcess(ABC):
             .MeasurementProcess: new measurement process
         """
         new_measurement = copy.copy(self)
-        if self.obs is not None:
+        if self.obs is not None and self.obs.__class__.__name__ != "MeasurementValue":
             new_measurement.obs = self.obs.map_wires(wire_map=wire_map)
         else:
             new_measurement._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])

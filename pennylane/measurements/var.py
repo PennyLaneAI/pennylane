@@ -16,7 +16,7 @@
 This module contains the qml.var measurement.
 """
 import warnings
-from typing import Sequence, Tuple
+from typing import Sequence, Tuple, Union
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -24,13 +24,16 @@ from pennylane.ops.qubit.observables import BasisStateProjector
 from pennylane.wires import Wires
 
 from .measurements import SampleMeasurement, StateMeasurement, Variance
+from .mid_measure import MeasurementValue
 
 
-def var(op: Operator) -> "VarianceMP":
+def var(op: Union[Operator, MeasurementValue]) -> "VarianceMP":
     r"""Variance of the supplied observable.
 
     Args:
-        op (Operator): a quantum observable object
+        op (Union[Operator, MeasurementValue]): a quantum observable object.
+            To get variances for mid-circuit measurements, ``op`` should be a
+            ``MeasurementValue``.
 
     Returns:
         VarianceMP: Measurement process instance
@@ -53,6 +56,9 @@ def var(op: Operator) -> "VarianceMP":
     >>> circuit(0.5)
     0.7701511529340698
     """
+    if isinstance(op, MeasurementValue):
+        return VarianceMP(obs=op)
+
     if not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
     return VarianceMP(obs=op)
@@ -64,9 +70,9 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
     Please refer to :func:`var` for detailed documentation.
 
     Args:
-        obs (.Operator): The observable that is to be measured as part of the
-            measurement process. Not all measurement processes require observables (for
-            example ``Probability``); this argument is optional.
+        obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
+            as part of the measurement process. Not all measurement processes require observables
+            (for example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
@@ -107,9 +113,17 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
             return probs[idx] - probs[idx] ** 2
 
         # estimate the variance
+        # Get samples as decimal integer values if computing ev for a MeasurementValue,
+        # otherwise the returned samples would be boolean lists
+        decimal = isinstance(self.obs, MeasurementValue)
         samples = qml.sample(op=self.obs).process_samples(
-            samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
+            samples=samples,
+            wire_order=wire_order,
+            shot_range=shot_range,
+            bin_size=bin_size,
+            decimal=decimal,
         )
+
         # With broadcasting, we want to take the variance over axis 1, which is the -1st/-2nd with/
         # without bin_size. Without broadcasting, axis 0 is the -1st/-2nd with/without bin_size
         axis = -1 if bin_size is None else -2
@@ -125,7 +139,11 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
             probs = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
             return probs[idx] - probs[idx] ** 2
 
-        eigvals = qml.math.asarray(self.obs.eigvals(), dtype=float)
+        eigvals = (
+            qml.math.asarray(self.obs.eigvals(), dtype="float64")
+            if not isinstance(self.obs, MeasurementValue)
+            else qml.math.asarray(qml.math.arange(0, 2 ** len(self.wires)), dtype="float64")
+        )
 
         # we use ``wires`` instead of ``op`` because the observable was
         # already applied to the state

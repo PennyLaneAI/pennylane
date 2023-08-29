@@ -22,6 +22,7 @@ from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 from .measurements import AllCounts, Counts, SampleMeasurement
+from .mid_measure import MeasurementValue
 
 
 def _sample_to_str(sample):
@@ -39,7 +40,8 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
     specified on the device.
 
     Args:
-        op (Observable or None): a quantum observable object
+        op (Observable or MeasurementValue or None): a quantum observable object. To get counts
+            for mid-circuit measurements, ``op`` should be a ``MeasurementValue``.
         wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if
             op is None
         all_outcomes(bool): determines whether the returned dict will contain only the observed
@@ -131,6 +133,9 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
     {'00': 0, '01': 0, '10': 4, '11': 0}
 
     """
+    if isinstance(op, MeasurementValue):
+        return CountsMP(obs=op, all_outcomes=all_outcomes)
+
     if op is not None and not op.is_hermitian:  # None type is also allowed for op
         warnings.warn(f"{op.name} might not be hermitian.")
 
@@ -152,9 +157,9 @@ class CountsMP(SampleMeasurement):
     Please refer to :func:`counts` for detailed documentation.
 
     Args:
-        obs (.Operator): The observable that is to be measured as part of the
-            measurement process. Not all measurement processes require observables (for
-            example ``Probability``); this argument is optional.
+        obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
+            as part of the measurement process. Not all measurement processes require observables
+            (for example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
@@ -219,7 +224,7 @@ class CountsMP(SampleMeasurement):
         num_wires = len(self.wires) if self.wires else len(wire_order)
         samples = (
             samples.reshape((num_wires, -1)).T.reshape(-1, bin_size, num_wires)
-            if self.obs is None
+            if self.obs is None or isinstance(self.obs, MeasurementValue)
             else samples.reshape((-1, bin_size))
         )
 
@@ -277,7 +282,7 @@ class CountsMP(SampleMeasurement):
         batched_ndims = 2
         shape = qml.math.shape(samples)
 
-        if self.obs is None:
+        if self.obs is None or isinstance(self.obs, MeasurementValue):
             # convert samples and outcomes (if using) from arrays to str for dict keys
             samples = qml.math.cast_like(samples, qml.math.int8(0))
             samples = qml.math.apply_along_axis(_sample_to_str, -1, samples)

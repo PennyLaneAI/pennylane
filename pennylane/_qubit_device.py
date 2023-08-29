@@ -41,6 +41,7 @@ from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
     MeasurementTransform,
+    MeasurementValue,
     MutualInfoMP,
     ProbabilityMP,
     SampleMeasurement,
@@ -612,7 +613,7 @@ class QubitDevice(Device):
 
         for m in measurements:
             # TODO: Remove this when all overriden measurements support the `MeasurementProcess` class
-            if m.obs is not None:
+            if m.obs is not None and not isinstance(m.obs, MeasurementValue):
                 obs = m.obs
                 obs.return_type = m.return_type
             else:
@@ -1316,7 +1317,12 @@ class QubitDevice(Device):
         # exact expectation value
         if self.shots is None:
             try:
-                eigvals = self._asarray(observable.eigvals(), dtype=self.R_DTYPE)
+                eigvals = self._asarray(
+                    observable.eigvals()
+                    if not isinstance(observable, MeasurementProcess)
+                    else np.arange(2 ** len(observable.wires)),
+                    dtype=self.R_DTYPE,
+                )
             except qml.operation.EigvalsUndefinedError as e:
                 raise qml.operation.EigvalsUndefinedError(
                     f"Cannot compute analytic expectations of {observable.name}."
@@ -1327,7 +1333,10 @@ class QubitDevice(Device):
             return self._dot(prob, eigvals)
 
         # estimate the ev
-        samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
+        # Get samples as decimal integer values if computing ev for a MeasurementValue,
+        # otherwise the returned samples would be boolean lists
+        decimal = isinstance(observable, MeasurementProcess)
+        samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size, decimal=decimal)
         # With broadcasting, we want to take the mean over axis 1, which is the -1st/-2nd with/
         # without bin_size. Without broadcasting, axis 0 is the -1st/-2nd with/without bin_size
         axis = -1 if bin_size is None else -2
@@ -1346,7 +1355,12 @@ class QubitDevice(Device):
         # exact variance value
         if self.shots is None:
             try:
-                eigvals = self._asarray(observable.eigvals(), dtype=self.R_DTYPE)
+                eigvals = self._asarray(
+                    observable.eigvals()
+                    if not isinstance(observable, MeasurementProcess)
+                    else np.arange(2 ** len(observable.wires)),
+                    dtype=self.R_DTYPE,
+                )
             except qml.operation.EigvalsUndefinedError as e:
                 # if observable has no info on eigenvalues, we cannot return this measurement
                 raise qml.operation.EigvalsUndefinedError(
@@ -1358,7 +1372,11 @@ class QubitDevice(Device):
             return self._dot(prob, (eigvals**2)) - self._dot(prob, eigvals) ** 2
 
         # estimate the variance
-        samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
+        # Get samples as decimal integer values if computing ev for a MeasurementValue,
+        # otherwise the returned samples would be boolean lists
+        decimal = isinstance(observable, MeasurementProcess)
+        samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size, decimal=decimal)
+
         # With broadcasting, we want to take the variance over axis 1, which is the -1st/-2nd with/
         # without bin_size. Without broadcasting, axis 0 is the -1st/-2nd with/without bin_size
         axis = -1 if bin_size is None else -2
@@ -1445,7 +1463,9 @@ class QubitDevice(Device):
 
         return outcome_dicts if batched else outcome_dicts[0]
 
-    def sample(self, observable, shot_range=None, bin_size=None, counts=False):
+    def sample(
+        self, observable, shot_range=None, bin_size=None, counts=False, decimal=False
+    ):  # pylint: disable=too-many-arguments
         """Return samples of an observable.
 
         Args:
@@ -1457,6 +1477,8 @@ class QubitDevice(Device):
                 provided, the entire shot range is treated as a single bin.
             counts (bool): whether counts (``True``) or raw samples (``False``)
                 should be returned
+            decimal (bool): Whether to return samples as base-10 integers or boolean lists.
+                Setting ``decimal`` does not do anything if ``counts`` is ``True``.
 
         Raises:
             EigvalsUndefinedError: if no information is available about the
@@ -1485,7 +1507,7 @@ class QubitDevice(Device):
             # Process samples for observables with eigenvalues {1, -1}
             samples = 1 - 2 * sub_samples[..., device_wires[0]]
 
-        elif no_observable_provided:
+        elif no_observable_provided and (not decimal or counts):
             # if no observable was provided then return the raw samples
             if len(observable.wires) != 0:
                 # if wires are provided, then we only return samples from those wires
@@ -1500,13 +1522,16 @@ class QubitDevice(Device):
             powers_of_two = 2 ** np.arange(samples.shape[-1])[::-1]
             indices = samples @ powers_of_two
             indices = np.array(indices)  # Add np.array here for Jax support.
-            try:
-                samples = observable.eigvals()[indices]
-            except qml.operation.EigvalsUndefinedError as e:
-                # if observable has no info on eigenvalues, we cannot return this measurement
-                raise qml.operation.EigvalsUndefinedError(
-                    f"Cannot compute samples of {observable.name}."
-                ) from e
+            if decimal:
+                samples = indices
+            else:
+                try:
+                    samples = observable.eigvals()[indices]
+                except qml.operation.EigvalsUndefinedError as e:
+                    # if observable has no info on eigenvalues, we cannot return this measurement
+                    raise qml.operation.EigvalsUndefinedError(
+                        f"Cannot compute samples of {observable.name}."
+                    ) from e
 
         num_wires = len(device_wires) if len(device_wires) > 0 else self.num_wires
         if bin_size is None:
@@ -1523,7 +1548,7 @@ class QubitDevice(Device):
 
         return (
             samples.T.reshape((num_wires, bin_size, -1))
-            if no_observable_provided
+            if no_observable_provided and not decimal
             else samples.reshape((bin_size, -1))
         )
 
