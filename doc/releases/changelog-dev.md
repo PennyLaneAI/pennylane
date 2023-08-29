@@ -18,6 +18,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Minor documentation improvements to the new device API. The documentation now correctly states that interface-specific
+  parameters are only passed to the device for backpropagation derivatives. 
+
 <h3>Bug fixes 🐛</h3>
 
 <h3>Contributors ✍️</h3>
