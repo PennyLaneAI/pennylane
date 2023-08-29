@@ -160,7 +160,7 @@ class TestCVGradient:
         assert autograd_val == pytest.approx(manualgrad_val, abs=tol)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("O", [qml.ops.X, qml.ops.NumberOperator])
+    @pytest.mark.parametrize("O", [qml.ops.QuadX, qml.ops.NumberOperator])
     @pytest.mark.parametrize(
         "make_gate",
         [lambda x: qml.Rotation(x, wires=0), lambda x: qml.ControlledPhase(x, wires=[0, 1])],
