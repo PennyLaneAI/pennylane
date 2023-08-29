@@ -144,7 +144,7 @@ def electron_integrals(mol, core=None, active=None):
     return _electron_integrals
 
 
-def fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None, fs=False):
+def fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     r"""Return a function that computes the fermionic Hamiltonian.
 
     Args:
@@ -152,7 +152,6 @@ def fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None, fs=False)
         cutoff (float): cutoff value for discarding the negligible electronic integrals
         core (list[int]): indices of the core orbitals
         active (list[int]): indices of the active orbitals
-        fs (bool): if True, a fermi sentence will be returned
 
     Returns:
         function: function that computes the fermionic hamiltonian
@@ -180,19 +179,12 @@ def fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None, fs=False)
 
         core_constant, one, two = electron_integrals(mol, core, active)(*args)
 
-        if not fs:
-            warnings.warn(
-                "This function will return a fermionic operator by default in the next release. For "
-                "details, see the Fermionic Operators tutorial: "
-                "https://pennylane.ai/qml/demos/tutorial_fermionic_operators. "
-                "Currently, a fermionic operator can be returned by setting the `fs` kwarg to `True`."
-            )
-        return fermionic_observable(core_constant, one, two, cutoff, fs)
+        return fermionic_observable(core_constant, one, two, cutoff)
 
     return _fermionic_hamiltonian
 
 
-def diff_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None, fs=True):
+def diff_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     r"""Return a function that computes the qubit Hamiltonian.
 
     Args:
@@ -200,7 +192,6 @@ def diff_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None, fs=True):
         cutoff (float): cutoff value for discarding the negligible electronic integrals
         core (list[int]): indices of the core orbitals
         active (list[int]): indices of the active orbitals
-        fs (bool): if True, a fermi sentence is constructed and used internally
 
     Returns:
         function: function that computes the qubit hamiltonian
@@ -232,7 +223,7 @@ def diff_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None, fs=True):
             Hamiltonian: the qubit Hamiltonian
         """
 
-        h_ferm = fermionic_hamiltonian(mol, cutoff, core, active, fs=fs)(*args)
+        h_ferm = fermionic_hamiltonian(mol, cutoff, core, active)(*args)
 
         return qubit_observable(h_ferm)
 
