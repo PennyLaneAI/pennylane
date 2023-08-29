@@ -33,6 +33,9 @@ def _numeric_type_to_dtype(numeric_type):
     """Auxiliary function for converting from Python numeric types to JAX
     dtypes based on the precision defined for the interface."""
 
+    if numeric_type is bool:
+        return jnp.int8
+
     single_precision = dtype is jnp.float32
     if numeric_type is int:
         return jnp.int32 if single_precision else jnp.int64

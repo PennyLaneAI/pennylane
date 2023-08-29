@@ -140,15 +140,15 @@ class SampleMP(SampleMeasurement):
     @property
     @functools.lru_cache()
     def numeric_type(self):
-        # Note: we only assume an integer numeric type if the observable is a
+        # Note: we only assume a boolean (0-1) numeric type if the observable is a
         # built-in observable with integer eigenvalues or a tensor product thereof
         if self.obs is None:
             # Computational basis samples
-            return int
+            return bool
         int_eigval_obs = {qml.PauliX, qml.PauliY, qml.PauliZ, qml.Hadamard, qml.Identity}
         tensor_terms = self.obs.obs if hasattr(self.obs, "obs") else [self.obs]
         every_term_standard = all(o.__class__ in int_eigval_obs for o in tensor_terms)
-        return int if every_term_standard else float
+        return bool if every_term_standard else float
 
     def shape(self, device, shots):
         if not shots:

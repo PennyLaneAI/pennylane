@@ -104,7 +104,7 @@ def execute(
         o_types = []
         for m in tape.measurements:
             if isinstance(m, SampleMP):
-                o_types.append(tf.int64)
+                o_types.append(tf.int8)
             elif isinstance(m, StateMP):
                 o_types.append(tf.complex128)
             else:

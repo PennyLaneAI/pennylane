@@ -1259,9 +1259,9 @@ class TestSample:
         assert isinstance(result[0], tf.Tensor)
         assert isinstance(result[1], tf.Tensor)
         assert isinstance(result[2], tf.Tensor)
-        assert result[0].dtype is tf.int64  # pylint:disable=no-member
-        assert result[1].dtype is tf.float64  # pylint:disable=no-member
-        assert result[2].dtype is tf.float64  # pylint:disable=no-member
+        assert result[0].dtype is tf.int8
+        assert result[1].dtype is tf.float64
+        assert result[2].dtype is tf.float64
 
     def test_single_wire_sample(self):
         """Test the return type and shape of sampling a single wire"""
@@ -1291,7 +1291,7 @@ class TestSample:
         # If all the dimensions are equal the result will end up to be a proper rectangular array
         assert isinstance(result, tf.Tensor)
         assert np.array_equal(result.shape, (3, 10))
-        assert result.dtype == tf.int64
+        assert result.dtype == tf.int8
 
     def test_counts(self):
         """Test counts works as expected for TF"""
