@@ -15,6 +15,7 @@
 This module contains the functions needed for computing the particle number observable.
 """
 from pennylane import numpy as np
+from pennylane.fermi import FermiSentence, FermiWord
 
 from .observable_hf import qubit_observable
 
@@ -60,11 +61,20 @@ def particle_number(orbitals):
     r = np.arange(orbitals)
     table = np.vstack([r, r, np.ones([orbitals])]).T
 
-    coeffs = np.array([])
-    ops = []
+    sentence = FermiSentence({})
 
     for i in table:
-        coeffs = np.concatenate((coeffs, np.array([i[2]])))
-        ops.append([int(i[0]), int(i[1])])
+        sentence.update(
+            {
+                FermiWord(
+                    {
+                        (0, int(i[0])): "+",
+                        (1, int(i[1])): "-",
+                    }
+                ): i[2]
+            }
+        )
 
-    return qubit_observable((coeffs, ops))
+    sentence.simplify()
+
+    return qubit_observable(sentence)
