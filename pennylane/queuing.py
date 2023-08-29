@@ -138,17 +138,15 @@ and measurements in the final circuit. This step eliminates any object that has 
 ...     base = qml.PauliX(0)
 ...     pow_op = base ** 1.5
 ...     qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
->>> ops, measurements, prep = qml.queuing.process_queue(q)
+>>> ops, measurements = qml.queuing.process_queue(q)
 >>> ops
 [StatePrep(tensor([1., 0.], requires_grad=True), wires=[0]), PauliX(wires=[0])**1.5]
 >>> measurements
 [expval(PauliZ(wires=[0]) @ PauliX(wires=[1]))]
->>> prep
-[]
 
 These lists can be used to construct a :class:`~.QuantumScript`:
 
->>> qml.tape.QuantumScript(ops, measurements, prep)
+>>> qml.tape.QuantumScript(ops, measurements)
 <QuantumScript: wires=[0, 1], params=1>
 
 In order to construct new operators within a recording, but without queuing them
