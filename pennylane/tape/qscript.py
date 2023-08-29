@@ -19,7 +19,6 @@ executed by a device.
 
 import contextlib
 import copy
-import warnings
 from collections import Counter
 from typing import List, Union, Optional, Sequence
 
@@ -542,15 +541,6 @@ class QuantumScript:
         for backwards compatibilities with operations."""
         return self.get_parameters(trainable_only=False)
 
-    @data.setter
-    def data(self, params):
-        warnings.warn(
-            "The tape.data setter is deprecated and will be removed in v0.33. "
-            "Please use tape.bind_new_parameters instead.",
-            UserWarning,
-        )
-        self.set_parameters(params, trainable_only=False)
-
     @property
     def trainable_params(self):
         """Store or return a list containing the indices of parameters that support
@@ -676,76 +666,6 @@ class QuantumScript:
             if m.obs is not None:
                 params.extend(m.obs.data)
         return params
-
-    def set_parameters(self, params, trainable_only=True):
-        """Set the parameters incident on the quantum script operations.
-
-        Args:
-            params (list[float]): A list of real numbers representing the
-                parameters of the quantum operations. The parameters should be
-                provided in order of appearance in the quantum script.
-            trainable_only (bool): if True, set only trainable parameters
-
-        **Example**
-
-        >>> ops = [qml.RX(0.432, 0), qml.RY(0.543, 0),
-        ...        qml.CNOT((0,"a")), qml.RX(0.133, "a")]
-        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
-
-        By default, all parameters are trainable and can be modified:
-
-        >>> qscript.set_parameters([0.1, 0.2, 0.3])
-        >>> qscript.get_parameters()
-        [0.1, 0.2, 0.3]
-
-        Setting the trainable parameter indices will result in only the specified
-        parameters being modifiable. Note that this only modifies the number of
-        parameters that must be passed.
-
-        >>> qscript.trainable_params = [0, 2] # set the first and third parameter as trainable
-        >>> qscript.set_parameters([-0.1, 0.5])
-        >>> qscript.get_parameters(trainable_only=False)
-        [-0.1, 0.2, 0.5]
-
-        The ``trainable_only`` argument can be set to ``False`` to instead set
-        all parameters:
-
-        >>> qscript.set_parameters([4, 1, 6], trainable_only=False)
-        >>> qscript.get_parameters(trainable_only=False)
-        [4, 1, 6]
-        """
-        warnings.warn(
-            "The method tape.set_parameters is deprecated and will be removed in v0.33. "
-            "Please use tape.bind_new_parameters instead.",
-            UserWarning,
-        )
-
-        if trainable_only:
-            iterator = zip(self.trainable_params, params)
-            required_length = self.num_params
-        else:
-            iterator = enumerate(params)
-            required_length = len(self._par_info)
-
-        if len(params) != required_length:
-            raise ValueError("Number of provided parameters does not match.")
-
-        op_data = []
-        for pinfo in self._par_info:
-            if pinfo["p_idx"] == 0:
-                op_data.append((pinfo["op"], list(pinfo["op"].data)))
-            else:
-                op_data.append(op_data[-1])
-
-        for idx, p in iterator:
-            op_data[idx][1][self._par_info[idx]["p_idx"]] = p
-
-        for op, d in op_data:
-            op.data = tuple(d)
-            op._check_batching(op.data)
-
-        self._update_batch_size()
-        self._update_output_dim()
 
     def bind_new_parameters(self, params: Sequence[TensorLike], indices: Sequence[int]):
         """Create a new tape with updated parameters.
