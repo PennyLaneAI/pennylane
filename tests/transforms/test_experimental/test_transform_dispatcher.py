@@ -17,7 +17,7 @@ from functools import partial
 
 import pytest
 import pennylane as qml
-from pennylane.transforms.core import transform, TransformError
+from pennylane.transforms.core import transform, TransformError, TransformProgram
 
 # TODO: Replace with default qubit 2
 dev = qml.device("default.qubit", wires=2)
@@ -174,6 +174,23 @@ class TestTransformDispatcher:
         assert not dispatched_transform.is_informative
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
+    def test_integration_dispatcher_with_valid_transform_and_transform_program(
+        self, valid_transform
+    ):
+        """Test that no error is raised with the transform function and that the transform dispatcher returns
+        the right object."""
+
+        dispatched_transform = transform(valid_transform)
+
+        program = TransformProgram()
+        program_transformed = dispatched_transform(program, 0)
+
+        assert isinstance(program_transformed, TransformProgram)
+        assert len(program_transformed) == 1
+        assert isinstance(program_transformed[0], qml.transforms.core.TransformContainer)
+        assert program_transformed[0].transform is valid_transform
+
+    @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_integration_dispatcher_with_valid_transform_decorator(self, valid_transform):
         """Test that no error is raised with the transform function and that the transform dispatcher returns
         the right object."""
@@ -258,6 +275,30 @@ class TestTransformDispatcher:
         assert not expand_transform_container.is_informative
 
         transform_container = qnode_transformed.transform_program.pop_front()
+
+        assert isinstance(transform_container, qml.transforms.core.TransformContainer)
+        assert transform_container.args == [0]
+        assert transform_container.kwargs == {}
+        assert transform_container.classical_cotransform is None
+        assert not expand_transform_container.is_informative
+
+    def test_transform_program_with_expand_transform(self):
+        """Test transform with expand transform on a transform program."""
+
+        dispatched_transform = transform(first_valid_transform, expand_transform=expand_transform)
+
+        program = TransformProgram()
+        program_transformed = dispatched_transform(program, 0)
+
+        assert isinstance(program_transformed, qml.transforms.core.TransformProgram)
+        expand_transform_container = program_transformed.pop_front()
+        assert isinstance(expand_transform_container, qml.transforms.core.TransformContainer)
+        assert expand_transform_container.args == []
+        assert expand_transform_container.kwargs == {}
+        assert expand_transform_container.classical_cotransform is None
+        assert not expand_transform_container.is_informative
+
+        transform_container = program_transformed.pop_front()
 
         assert isinstance(transform_container, qml.transforms.core.TransformContainer)
         assert transform_container.args == [0]

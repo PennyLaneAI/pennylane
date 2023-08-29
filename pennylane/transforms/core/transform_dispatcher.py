@@ -29,7 +29,7 @@ class TransformDispatcher:
     :func:`~.pennylane.transforms.core.transform`.
 
     Convert a transform that has the signature (tape -> Sequence(tape), fn) to a transform dispatcher that can act
-    on tape, qfunc and qnode.
+    on tape, qfunc, QNode and TransformProgram.
 
     .. warning::
 
@@ -69,6 +69,14 @@ class TransformDispatcher:
                 targs,
                 tkwargs,
             )
+        if isinstance(obj, qml.transforms.core.TransformProgram):
+            if self.expand_transform:
+                obj.push_back(TransformContainer(self._expand_transform))
+            container = TransformContainer(
+                self._transform, targs, tkwargs, self._classical_cotransform, self._is_informative
+            )
+            obj.push_back(container)
+            return obj
         if callable(obj):
             return self._qfunc_transform(obj, targs, tkwargs)
 
