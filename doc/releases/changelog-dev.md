@@ -5,6 +5,9 @@
 <h3>New features since last release</h3>
 
 <h3>Improvements 🛠</h3>
+* The qchem ``fermionic_dipole`` and ``particle_number`` functions are updated to use fermi 
+  sentence.
+  [#4546](https://github.com/PennyLaneAI/pennylane/pull/4546)
 
 <h3>Breaking changes 💔</h3>
 
@@ -24,4 +27,5 @@
 
 This release contains contributions from (in alphabetical order):
 
+Soran Jahangiri
 Romain Moyard
