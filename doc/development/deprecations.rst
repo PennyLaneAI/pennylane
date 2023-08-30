@@ -90,6 +90,12 @@ Pending deprecations
 
   - Deprecated in v0.32
   - Will be removed in v0.33
+  
+* The ``prep`` keyword argument in ``QuantumScript`` is deprecated and will be removed from `QuantumScript`.
+  ``StatePrepBase`` operations should be placed at the beginning of the `ops` list instead.
+
+  - Deprecated in v0.33
+  - Will be removed in v0.34
 
 
 Completed deprecation cycles

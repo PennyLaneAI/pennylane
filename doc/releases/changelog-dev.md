@@ -35,6 +35,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* The ``prep`` keyword argument in ``QuantumScript`` is deprecated and will be removed from `QuantumScript`.
+  ``StatePrepBase`` operations should be placed at the beginning of the `ops` list instead.
+  [(#4554)](https://github.com/PennyLaneAI/pennylane/pull/4554)
+
 <h3>Documentation 📝</h3>
 
 * Add functions for qubit-simulation to the `qml.devices` sub-page of the "Internal" section.
