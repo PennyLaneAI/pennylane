@@ -6,6 +6,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.sample()` in the new device API now returns a `np.int64` array instead of `np.bool8`.
+  [(#4539)](https://github.com/PennyLaneAI/pennylane/pull/4539)
+
+* Wires can be provided to the new device API.
+  [(#4538)](https://github.com/PennyLaneAI/pennylane/pull/4538)
+
 <h3>Breaking changes 💔</h3>
 
 * The old return type and associated functions ``qml.enable_return`` and ``qml.disable_return`` are removed.
@@ -25,8 +31,17 @@
   ``ratio_imprim`` to match the call signature of the operation.
   [(#4552)](https://github.com/PennyLaneAI/pennylane/pull/4552)
 
-  
+* The ``sampler_seed`` argument of ``qml.gradients.spsa_grad`` has been removed.
+  Instead, the ``sampler_rng`` argument should be set, either to an integer value, which will be used
+  to create a PRNG internally, or to a NumPy pseudo-random number generator (PRNG) created via
+  ``np.random.default_rng(seed)``.
+  [(#4550)](https://github.com/PennyLaneAI/pennylane/pull/4550)
+
 <h3>Deprecations 👋</h3>
+
+* The ``prep`` keyword argument in ``QuantumScript`` is deprecated and will be removed from `QuantumScript`.
+  ``StatePrepBase`` operations should be placed at the beginning of the `ops` list instead.
+  [(#4554)](https://github.com/PennyLaneAI/pennylane/pull/4554)
 
 <h3>Documentation 📝</h3>
 
