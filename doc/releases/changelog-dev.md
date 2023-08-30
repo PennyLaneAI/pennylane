@@ -31,9 +31,13 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `tf.function` no longer breaks `ProbabilityMP.process_state` which is needed by new devices.
+  [(#4470)](https://github.com/PennyLaneAI/pennylane/pull/4470)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad
 Romain Moyard
+Matthew Silverman
