@@ -9,6 +9,9 @@
 * `qml.sample()` in the new device API now returns a `np.int64` array instead of `np.bool8`.
   [(#4539)](https://github.com/PennyLaneAI/pennylane/pull/4539)
 
+* Wires can be provided to the new device API.
+  [(#4538)](https://github.com/PennyLaneAI/pennylane/pull/4538)
+
 <h3>Breaking changes 💔</h3>
 
 * The old return type and associated functions ``qml.enable_return`` and ``qml.disable_return`` are removed.
