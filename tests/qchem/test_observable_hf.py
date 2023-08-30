@@ -120,7 +120,7 @@ from pennylane.fermi import from_string
 )
 def test_fermionic_observable(core_constant, integral_one, integral_two, f_ref):
     r"""Test that fermionic_observable returns the correct fermionic observable."""
-    f = qchem.fermionic_observable(core_constant, integral_one, integral_two, fs=True)
+    f = qchem.fermionic_observable(core_constant, integral_one, integral_two)
 
     assert np.allclose(list(f.values()), list(f_ref.values()))
     assert f.keys() == f_ref.keys()
