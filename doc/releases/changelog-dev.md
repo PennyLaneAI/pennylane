@@ -4,6 +4,29 @@
 
 <h3>New features since last release</h3>
 
+* Measurement statistics can now be collected for mid-circuit measurements. Currently,
+  `qml.expval`, `qml.var`, `qml.probs`, `qml.sample`, and `qml.counts` are supported on
+  `default.qubit`, `default.mixed`, and the new `DefaultQubit2` devices.
+  [(#4544)](https://github.com/PennyLaneAI/pennylane/pull/4544)
+
+  ```python
+  dev = qml.device("default.qubit", wires=3)
+
+  @qml.qnode(dev)
+  def circ(x, y):
+      qml.RX(x, wires=0)
+      qml.RY(y, wires=1)
+      m0 = qml.measure(1)
+      return qml.expval(qml.PauliZ(0)), qml.sample(m0)
+  ```
+
+  QNodes can be executed as usual when collecting mid-circuit measurement statistics:
+
+  ```pycon
+  >>> circ(1.0, 2.0, shots=5)
+  (array(0.6), array([1, 1, 1, 0, 1]))
+  ```
+
 <h3>Improvements 🛠</h3>
 
 * `qml.sample()` in the new device API now returns a `np.int64` array instead of `np.bool8`.
