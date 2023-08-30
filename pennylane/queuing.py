@@ -560,8 +560,8 @@ def process_queue(queue: AnnotatedQueue):
         queue (.AnnotatedQueue): The queue to be processed into individual lists
 
     Returns:
-        tuple[list(.Operation), list(.MeasurementProcess), list(.Operation)]:
-        The list of tape operations, the list of tape measurements, and the list of preparation operations
+        tuple[list(.Operation), list(.MeasurementProcess)]:
+        The list of tape operations, the list of tape measurements
     """
     lists = {"_ops": [], "_measurements": []}
     list_order = {"_ops": 1, "_measurements": 2}
