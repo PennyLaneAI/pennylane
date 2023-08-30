@@ -32,7 +32,7 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
         cutoff (float): cutoff value for discarding the negligible integrals
 
     Returns:
-        Union[FermiSentence, tuple(array[float], list[list[int]])]: fermionic Hamiltonian
+        FermiSentence: fermionic observable
 
     **Example**
 
@@ -105,7 +105,7 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
         cutoff (float): cutoff value for discarding the negligible terms
 
     Returns:
-        (Operator): Simplified PennyLane Hamiltonian
+        Operator: Simplified PennyLane Hamiltonian
 
     **Example**
 
@@ -125,11 +125,14 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
     If the new op-math is active, an arithmetic operator is returned.
 
     >>> qml.operation.enable_new_opmath()
-    >>> coeffs = np.array([1.0, 1.0])
-    >>> ops = [[0, 0], [0, 0]]
-    >>> f = (coeffs, ops)
-    >>> print(qubit_observable(f))
-    Identity(wires=[0]) + ((-1+0j)*(PauliZ(wires=[0])))
+    >>> w1 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w2 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> s = qml.fermi.FermiSentence({w1 : 1.2, w2: 3.1})
+    >>> print(qubit_observable(s))
+    (-0.775j*(PauliY(wires=[0]) @ PauliX(wires=[1])))
+    + ((0.775+0j)*(PauliY(wires=[0]) @ PauliY(wires=[1])))
+    + ((0.775+0j)*(PauliX(wires=[0]) @ PauliX(wires=[1])))
+    + (0.775j*(PauliX(wires=[0]) @ PauliY(wires=[1])))
     """
     h = qml.jordan_wigner(o_ferm, ps=True)
     h.simplify(tol=cutoff)

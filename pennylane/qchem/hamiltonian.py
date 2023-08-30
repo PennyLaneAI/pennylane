@@ -171,7 +171,7 @@ def fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
             *args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
-            Union[FermiSentence, tuple(array[float], list[list[int]])]: fermionic Hamiltonian
+            FermiSentence: fermionic Hamiltonian
         """
 
         core_constant, one, two = electron_integrals(mol, core, active)(*args)
