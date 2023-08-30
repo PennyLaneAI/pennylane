@@ -7,7 +7,7 @@
 <h3>Improvements 🛠</h3>
 
 * Dunder ``__add__`` method is added to the ``TransformProgram`` class, therefore two programs can be added using ``+`` .
- [#4549](https://github.com/PennyLaneAI/pennylane/pull/4549)
+  [(#4549)](https://github.com/PennyLaneAI/pennylane/pull/4549)
 
 <h3>Breaking changes 💔</h3>
 
@@ -31,8 +31,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `tf.function` no longer breaks `ProbabilityMP.process_state` which is needed by new devices.
+  [(#4470)](https://github.com/PennyLaneAI/pennylane/pull/4470)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Romain Moyard
+Romain Moyard,
+Matthew Silverman
