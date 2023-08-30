@@ -13,15 +13,10 @@
 # limitations under the License.
 """Functions to convert a fermionic operator to the qubit basis."""
 
-import warnings
 from functools import singledispatch
 from typing import Union
-import numpy as np
-
-import pennylane as qml
-from pennylane.operation import Operator, Tensor
+from pennylane.operation import Operator
 from pennylane.pauli import PauliWord, PauliSentence
-from pennylane.pauli.utils import _get_pauli_map, _pauli_mult
 from .fermionic import FermiWord, FermiSentence
 
 
