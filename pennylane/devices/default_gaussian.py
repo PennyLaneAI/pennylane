@@ -675,9 +675,7 @@ class DefaultGaussian(Device):
 
     _observable_map = {
         "NumberOperator": photon_number,
-        "X": homodyne(0),
         "QuadX": homodyne(0),
-        "P": homodyne(np.pi / 2),
         "QuadP": homodyne(np.pi / 2),
         "QuadOperator": homodyne(None),
         "PolyXP": poly_quad_expectations,
@@ -835,9 +833,9 @@ class DefaultGaussian(Device):
         if len(wires) != 1:
             raise ValueError("Only one mode can be measured in homodyne.")
 
-        if observable in {"X", "QuadX"}:
+        if observable == "QuadX":
             phi = 0.0
-        elif observable in {"P", "QuadP"}:
+        elif observable == "QuadP":
             phi = np.pi / 2
         elif observable == "QuadOperator":
             phi = par[0]
