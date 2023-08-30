@@ -76,6 +76,26 @@ class TransformDispatcher:
             "The object on which the transform is applied is not valid. It can only be a tape, a QNode or a qfunc."
         )
 
+    def add_to_program(self, transform_program, *targs, **tkwargs):
+        """Method to add the transform to an existing program.
+
+        Args:
+            transform_program(TransformProgram): The transform program where the transform is added.
+            **targs: Any additional arguments that are passed to the transform.
+
+        Kwargs:
+            **tkwargs: Any additional keyword arguments that are passed to the transform.
+
+        """
+        if self.expand_transform:
+            transform_program.push_back(TransformContainer(self._expand_transform))
+        transform_program.push_back(
+            TransformContainer(
+                self._transform, targs, tkwargs, self._classical_cotransform, self._is_informative
+            )
+        )
+        return transform_program
+
     @property
     def transform(self):
         """Return the quantum transform."""
