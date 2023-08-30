@@ -20,6 +20,7 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as np
+from pennylane.devices.experimental import DefaultQubit2
 
 
 class TestQNode:
@@ -148,6 +149,61 @@ class TestQNode:
         deferred_tape2 = qml.defer_measurements(qnode2.qtape)
         assert len(deferred_tape2.wires) == 3
         assert len(deferred_tape2.operations) == 4
+
+    @pytest.mark.parametrize("shots", [None, 1000, [1000, 1000]])
+    def test_measurement_statistics_single_wire(self, shots):
+        """Test that users can collect measurement statistics on
+        a single mid-circuit measurement."""
+        dev = DefaultQubit2(seed=10)
+
+        @qml.qnode(dev)
+        def circ1(x):
+            qml.RX(x, 0)
+            m0 = qml.measure(0)
+            return qml.probs(op=m0)
+
+        dev = DefaultQubit2(seed=10)
+
+        @qml.qnode(dev)
+        def circ2(x):
+            qml.RX(x, 0)
+            return qml.probs(wires=[0])
+
+        param = 1.5
+        assert np.allclose(circ1(param, shots=shots), circ2(param, shots=shots))
+
+    @pytest.mark.parametrize("shots", [None, 1000, [1000, 1000]])
+    def test_terminal_measurements(self, shots):
+        """Test that mid-circuit measurement statistics and terminal measurements
+        can be made together."""
+        # Using DefaultQubit2 to allow non-commuting measurements
+        dev = DefaultQubit2(seed=10)
+
+        @qml.qnode(dev)
+        def circ1(x, y):
+            qml.RX(x, 0)
+            m0 = qml.measure(0)
+            qml.RY(y, 1)
+            return qml.expval(qml.PauliX(1)), qml.probs(op=m0)
+
+        dev = DefaultQubit2(seed=10)
+
+        @qml.qnode(dev)
+        def circ2(x, y):
+            qml.RX(x, 0)
+            qml.RY(y, 1)
+            return qml.expval(qml.PauliX(1)), qml.probs(wires=[0])
+
+        params = [1.5, 2.5]
+        if isinstance(shots, list):
+            for out1, out2 in zip(circ1(*params, shots=shots), circ2(*params, shots=shots)):
+                for o1, o2 in zip(out1, out2):
+                    assert np.allclose(o1, o2)
+        else:
+            assert all(
+                np.allclose(out1, out2)
+                for out1, out2 in zip(circ1(*params, shots=shots), circ2(*params, shots=shots))
+            )
 
     def test_measure_between_ops(self):
         """Test that a quantum function that contains one operation before and
@@ -995,8 +1051,33 @@ class TestTemplates:
             assert np.allclose(op1.data, op2.data)
 
 
-class TestQubitReset:
-    """Tests for the qubit reset functionality of `qml.measure`."""
+class TestQubitReuseAndReset:
+    """Tests for the qubit reuse/reset functionality of `qml.measure`."""
+
+    def test_new_wire_for_multiple_measurements(self):
+        """Test that a new wire is added if there are multiple mid-circuit measurements
+        on the same wire."""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circ(x, y):
+            qml.RX(x, 0)
+            qml.measure(0)
+            qml.RY(y, 1)
+            qml.measure(0)
+            return qml.expval(qml.PauliZ(1))
+
+        _ = circ(1.0, 2.0)
+
+        expected = [
+            qml.RX(1.0, 0),
+            qml.CNOT([0, 2]),
+            qml.RY(2.0, 1),
+        ]
+
+        assert len(circ.qtape.operations) == 3
+        for op, exp in zip(circ.qtape.operations, expected):
+            assert qml.equal(op, exp)
 
     def test_correct_cnot_for_reset(self):
         """Test that a CNOT is applied from the wire that stores the measurement
