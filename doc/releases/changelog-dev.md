@@ -70,4 +70,5 @@
 This release contains contributions from (in alphabetical order):
 
 Romain Moyard,
-Matthew Silverman
+Mudit Pandey,
+Matthew Silverman,
