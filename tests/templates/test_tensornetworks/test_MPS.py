@@ -425,13 +425,20 @@ class TestTemplateOutputs:
                 [1, 2, 3, 4, 5, 6, 7, 8],
                 4,
                 None,
-                {'k':2},
+                {"k": 2},
                 "circuit3_MPS",
             ),
         ],
     )
     def test_output(
-        self, block, n_params_block, wires, n_block_wires, template_weights, kwargs, expected_circuit
+        self,
+        block,
+        n_params_block,
+        wires,
+        n_block_wires,
+        template_weights,
+        kwargs,
+        expected_circuit,
     ):
         """Verifies that the output of the circuits is correct."""
         dev = qml.device("default.qubit", wires=wires)

@@ -164,7 +164,7 @@ class MPS(Operation):
     def _unflatten(cls, data, metadata):
         new_op = cls.__new__(cls)
         new_op._hyperparameters = dict(metadata[1])  # pylint: disable=protected-access
-        new_op._weights = data[0] if len(data) else None # pylint: disable=protected-access
+        new_op._weights = data[0] if len(data) else None  # pylint: disable=protected-access
         Operation.__init__(new_op, *data, wires=metadata[0])
         return new_op
 
