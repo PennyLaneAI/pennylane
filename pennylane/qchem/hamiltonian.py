@@ -15,9 +15,6 @@
 This module contains the functions needed for computing the molecular Hamiltonian.
 """
 # pylint: disable= too-many-branches, too-many-arguments, too-many-locals, too-many-nested-blocks
-
-import warnings
-
 import pennylane as qml
 
 from .hartree_fock import nuclear_energy, scf

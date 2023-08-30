@@ -221,7 +221,7 @@ def fermionic_dipole(mol, cutoff=1.0e-18, core=None, active=None):
 
         d_ferm = []
         for i in range(3):
-            f = fermionic_observable(constants[i], integrals[i], cutoff=cutoff, fs=True)
+            f = fermionic_observable(constants[i], integrals[i], cutoff=cutoff)
             d_ferm.append(FermiSentence({FermiWord({}): nd[i][0]}) - f)
 
         return d_ferm
