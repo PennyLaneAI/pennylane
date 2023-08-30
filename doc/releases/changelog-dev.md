@@ -26,6 +26,10 @@
 
 <h3>Documentation 📝</h3>
 
+* Add functions for qubit-simulation to the `qml.devices` sub-page of the "Internal" section.
+  Note that these functions are unstable while device upgrades are underway.
+  [(#4555)](https://github.com/PennyLaneAI/pennylane/pull/4555)
+
 <h3>Bug fixes 🐛</h3>
 
 * `tf.function` no longer breaks `ProbabilityMP.process_state` which is needed by new devices.
