@@ -164,6 +164,81 @@ class TestJacobianProductResults:
         jac = jpc.compute_jacobian((tape,))
         assert qml.math.allclose(jac, -np.sin(x))
 
+    def test_batch_execute_jvp(self, jpc):
+        """Test execute_and_compute_jvp on a batch with ragged observables and parameters.."""
+        x = -0.92
+        y = 0.84
+        phi = 1.62
+
+        tape1 = qml.tape.QuantumScript(
+            [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))],
+            [qml.expval(qml.PauliX(1)), qml.expval(qml.PauliY(0))],
+        )
+        tape2 = qml.tape.QuantumScript(
+            [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))], [qml.expval(qml.PauliZ(1))]
+        )
+
+        tangents = ((2.0, 3.0), (0.5,))
+
+        res, jvps = jpc.execute_and_compute_jvp((tape1, tape2), tangents)
+
+        assert qml.math.allclose(res[0][0], np.sin(y))
+        assert qml.math.allclose(res[0][1], -np.sin(x) * np.sin(y))
+        assert qml.math.allclose(res[1], np.cos(phi))
+
+        assert qml.math.allclose(jvps[0][0], 3.0 * np.cos(y))
+        assert qml.math.allclose(
+            jvps[0][1], -2.0 * np.cos(x) * np.sin(y) - 3.0 * np.sin(x) * np.cos(y)
+        )
+        assert qml.math.allclose(jvps[1], -0.5 * np.sin(phi))
+
+    def test_batch_vjp(self, jpc):
+        """Test compute_vjp on a batch with ragged observables and parameters."""
+
+        x = 0.385
+        y = 1.92
+        phi = -1.05
+
+        tape1 = qml.tape.QuantumScript(
+            [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))],
+            [qml.expval(qml.PauliX(1)), qml.expval(qml.PauliY(0))],
+        )
+        tape2 = qml.tape.QuantumScript(
+            [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))], [qml.expval(qml.PauliZ(1))]
+        )
+
+        dy = ((0.5, 0.6), (0.9))
+
+        vjps = jpc.compute_vjp((tape1, tape2), dy)
+
+        assert qml.math.allclose(vjps[0][0], -0.6 * np.cos(x) * np.sin(y))  # dx
+        assert qml.math.allclose(vjps[0][1], 0.5 * np.cos(y) - 0.6 * np.sin(x) * np.cos(y))  # dy
+        assert qml.math.allclose(vjps[1], -0.9 * np.sin(phi))
+
+    def test_batch_jacobian(self, jpc):
+        """Test compute_jacobian on a batch with ragged observables and parameters."""
+
+        x = np.array(0.28)
+        y = np.array(1.62)
+        phi = np.array(0.6293)
+
+        tape1 = qml.tape.QuantumScript(
+            [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))],
+            [qml.expval(qml.PauliX(1)), qml.expval(qml.PauliY(0))],
+        )
+        tape2 = qml.tape.QuantumScript(
+            [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))], [qml.expval(qml.PauliZ(1))]
+        )
+
+        # note reversed order of tapes in this test
+        jacs = jpc.compute_jacobian((tape2, tape1))
+
+        assert qml.math.allclose(jacs[0], -np.sin(phi))
+        assert qml.math.allclose(jacs[1][0][0], 0)
+        assert qml.math.allclose(jacs[1][0][1], np.cos(y))
+        assert qml.math.allclose(jacs[1][1][0], -np.cos(x) * np.sin(y))
+        assert qml.math.allclose(jacs[1][1][1], -np.sin(x) * np.cos(y))
+
 
 @pytest.mark.parametrize("jpc", dev_jpc_matrix)
 class TestCaching:
@@ -222,7 +297,9 @@ class TestCaching:
 
         assert qml.math.allclose(jac, jac2)
         assert jpc._device.tracker.totals["derivatives"] == 1
-        assert jpc._device.tracker.totals.get("executions", 0) == 0
+        assert jpc._device.tracker.totals.get("executions", 0) == (
+            1 if isinstance(jpc._device, qml.Device) else 0
+        )
 
     def test_cached_on_execute_and_compute_jvps(self, jpc):
         """Test that execute and compute jvp will cache results and jacobians is they are not precalculated."""
@@ -232,7 +309,10 @@ class TestCaching:
         batch = (tape1,)
         tangents = ((0.5,),)
 
-        res, jvps = jpc.execute_and_compute_jvp(batch, tangents)
+        with jpc._device.tracker:
+            res, jvps = jpc.execute_and_compute_jvp(batch, tangents)
+
+        assert jpc._device.tracker.totals["execute_and_derivative_batches"] == 1
 
         assert qml.math.allclose(res, np.cos(0.8))
         assert qml.math.allclose(jvps, -0.5 * np.sin(0.8))
@@ -245,6 +325,29 @@ class TestCaching:
 
         assert jpc._device.tracker.totals.get("derivatives", 0) == 0
         assert jpc._device.tracker.totals.get("executions", 0) == 0
+
+    def test_cached_on_vjps(self, jpc):
+        """test that only jacs are cached on calls to compute_vjp."""
+
+        tape1 = qml.tape.QuantumScript([qml.RZ(0.5, wires=0)], [qml.expval(qml.PauliX(0))])
+        batch = (tape1,)
+        dy = ((0.5,),)
+
+        with jpc._device.tracker:
+            jpc.compute_vjp(batch, dy)
+
+        assert jpc._device.tracker.totals.get("executions", 0) == (
+            1 if isinstance(jpc._device, qml.Device) else 0
+        )
+
+        assert id(batch) not in jpc._results_cache
+        assert qml.math.allclose(jpc._jacs_cache[id(batch)], 0)
+
+        with jpc._device.tracker:
+            jpc.execute_and_compute_jvp(batch, ((0.5,),))
+
+        assert jpc._device.tracker.totals["executions"] == 1
+        assert jpc._device.tracker.totals.get("derivatives", 0) == 0
 
 
 @pytest.mark.parametrize("jpc", transform_jpc_matrix)

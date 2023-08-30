@@ -32,27 +32,16 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-def _compute_vjps(jacs, dy, multi_measurements):
+def _compute_vjps(jacs, dys, multi_measurements):
     """Compute the vjps of multiple tapes, directly for a Jacobian and co-tangents dys."""
-    vjps = []
-
-    for i, multi in enumerate(multi_measurements):
-        compute_func = (
-            qml.gradients.compute_vjp_multi if multi else qml.gradients.compute_vjp_single
-        )
-        vjps.extend(compute_func(dy[i], jacs[i]))
-    return vjps
+    f = {True: qml.gradients.compute_vjp_multi, False: qml.gradients.compute_vjp_single}
+    return tuple(f[multi](dy, jac) for jac, dy, multi in zip(jacs, dys, multi_measurements))
 
 
 def _compute_jvps(jacs, tangents, multi_measurements):
     """Compute the jvps of multiple tapes, directly for a Jacobian and tangents."""
-    jvps = []
-    for i, multi in enumerate(multi_measurements):
-        compute_func = (
-            qml.gradients.compute_jvp_multi if multi else qml.gradients.compute_jvp_single
-        )
-        jvps.append(compute_func(tangents[i], jacs[i]))
-    return tuple(jvps)
+    f = {True: qml.gradients.compute_jvp_multi, False: qml.gradients.compute_jvp_single}
+    return tuple(f[multi](dx, jac) for jac, dx, multi in zip(jacs, tangents, multi_measurements))
 
 
 class JacobianProductCalculator(abc.ABC):
