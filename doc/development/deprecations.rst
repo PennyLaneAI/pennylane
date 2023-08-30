@@ -12,13 +12,6 @@ Pending deprecations
   - Deprecated in v0.32
   - Removed in v0.33
 
-* The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
-  instead. Using a list of observables in ``QubitDevice.statistics`` is deprecated. Please use a
-  ``QuantumTape`` instead.
-
-  - Still accessible in v0.28, v0.29, v0.30
-  - Will be removed in v0.31
-
 * ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
   
   - Deprecated in v0.24
@@ -84,28 +77,6 @@ Pending deprecations
   `Fermionic Operator <https://pennylane.ai/qml/demos/tutorial_fermionic_operators>`_
   tutorial for more details.
 
-* The CV observables ``qml.X`` and ``qml.P`` have been deprecated, and usage will now
-  raise a warning. Please use ``qml.QuadX`` and ``qml.QuadP`` instead.
-
-  - Deprecated in v0.32
-  - Will be removed in v0.33
-
-* The method ``tape.unwrap()`` and corresponding ``UnwrapTape`` and ``Unwrap`` classes are
-  deprecated, and usage will now raise a warning.
-
-  Instead of ``tape.unwrap()``, use :func:`~.transforms.convert_to_numpy_parameters`:
-
-  .. code-block:: python
-
-    from pennylane.transforms import convert_to_numpy_parameters
-
-    qscript = qml.tape.QuantumTape([qml.RX(torch.tensor(0.1234), 0)],
-                                     [qml.expval(qml.Hermitian(torch.eye(2), 0))] )
-    unwrapped_qscript = convert_to_numpy_parameters(qscript)
-
-    torch_params = qscript.get_parameters()
-    numpy_params = unwrapped_qscript.get_parameters()
-    
 * The ``QuantumScript.set_parameters`` method and the ``QuantumScript.data`` setter has
   been deprecated. Please use ``QuantumScript.bind_new_parameters`` instead.
 
@@ -120,8 +91,11 @@ Pending deprecations
   - Deprecated in v0.32
   - Will be removed in v0.33
 
-* The ``sampler_seed`` argument of ``qml.gradients.spsa_grad`` has been deprecated, along with a bug
-  fix of the seed-setting behaviour.
+
+Completed deprecation cycles
+----------------------------
+
+* The ``sampler_seed`` argument of ``qml.gradients.spsa_grad`` has been removed.
   Instead, the ``sampler_rng`` argument should be set, either to an integer value, which will be used
   to create a PRNG internally, or to a NumPy pseudo-random number generator (PRNG) created via
   ``np.random.default_rng(seed)``.
@@ -129,11 +103,39 @@ Pending deprecations
   multiple times, for instance during an optimization procedure.
 
   - Deprecated in v0.32
-  - Will be removed in v0.33
+  - Removed in v0.33
+
+* The ``observables`` argument in ``QubitDevice.statistics`` is removed. Please use ``circuit``
+  instead. Using a list of observables in ``QubitDevice.statistics`` is removed. Please use a
+  ``QuantumTape`` instead.
+
+  - Still accessible in v0.28-v0.31
+  - Removed in v0.32
+
+* The CV observables ``qml.X`` and ``qml.P`` have been removed. Use ``qml.QuadX`` and ``qml.QuadP`` instead.
+
+  - Deprecated in v0.32
+  - Removed in v0.33
 
 
-Completed deprecation cycles
-----------------------------
+* The method ``tape.unwrap()`` and corresponding ``UnwrapTape`` and ``Unwrap`` classes are
+  removed.
+ 
+  - Deprecated in v0.32
+  - Removed in v0.33
+
+  Instead of ``tape.unwrap()``, use :func:`~.transforms.convert_to_numpy_parameters`:
+
+  .. code-block:: python
+
+    from pennylane.transforms import convert_to_numpy_parameters
+
+    qscript = qml.tape.QuantumTape([qml.RX(torch.tensor(0.1234), 0)],
+                                     [qml.expval(qml.Hermitian(torch.eye(2), 0))] )
+    unwrapped_qscript = convert_to_numpy_parameters(qscript)
+
+    torch_params = qscript.get_parameters()
+    numpy_params = unwrapped_qscript.get_parameters()
 
 * ``qml.enable_return`` and ``qml.disable_return`` have been removed. The old return types are no longer available.
 
