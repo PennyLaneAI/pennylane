@@ -24,11 +24,15 @@
   [(#4503)](https://github.com/PennyLaneAI/pennylane/pull/4503)
 
 * The CV observables ``qml.X`` and ``qml.P`` are removed. Please use ``qml.QuadX`` and ``qml.QuadP`` instead.
-  [#4533](https://github.com/PennyLaneAI/pennylane/pull/4533)
+  [(#4533)](https://github.com/PennyLaneAI/pennylane/pull/4533)
 
 * The method ``tape.unwrap()`` and corresponding ``UnwrapTape`` and ``Unwrap`` classes are removed.
   Instead of ``tape.unwrap()``, use :func:`~.transforms.convert_to_numpy_parameters`.
-  [#4535](https://github.com/PennyLaneAI/pennylane/pull/4535)
+  [(#4535)](https://github.com/PennyLaneAI/pennylane/pull/4535)
+
+* The ``RandomLayers.compute_decomposition`` keyword argument ``ratio_imprivitive`` has been changed to
+  ``ratio_imprim`` to match the call signature of the operation.
+  [(#4552)](https://github.com/PennyLaneAI/pennylane/pull/4552)
 
 * The ``sampler_seed`` argument of ``qml.gradients.spsa_grad`` has been removed.
   Instead, the ``sampler_rng`` argument should be set, either to an integer value, which will be used
