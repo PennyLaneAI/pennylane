@@ -14,6 +14,50 @@
   the same hash.
   [(#4536)](https://github.com/PennyLaneAI/pennylane/pull/4536)
 
+  In the following scenario, the second and third code blocks show the previous and current behaviour
+  of operator and measurement process equality, determined by the `__eq__` dunder method:
+
+  ```python
+  op1 = qml.PauliX(0)
+  op2 = qml.PauliX(0)
+  op3 = op1
+  ```
+  Old behaviour:
+  ```pycon
+  >>> op1 == op2
+  False
+  >>> op1 == op3
+  True
+  ```
+  New behaviour:
+  ```pycon
+  >>> op1 == op2
+  True
+  >>> op1 == op3
+  True
+  ```
+
+  The `__hash__` dunder method defines the hash of an object, which is important for data
+  structures like sets and dictionaries to work correctly. The default hash of an object
+  is determined by the objects memory address. However, the hash for different objects should
+  be the same if they have the same properties. Consider the scenario below. The second and third
+  code blocks show the previous and current behaviour.
+
+  ```python
+  op1 = qml.PauliX(0)
+  op2 = qml.PauliX(0)
+  ```
+  Old behaviour:
+  ```pycon
+  >>> print({op1, op2})
+  {PauliX(wires=[0]), PauliX(wires=[0])}
+  ```
+  New behaviour:
+  ```pycon
+  >>> print({op1, op2})
+  {PauliX(wires=[0])}
+  ```
+
 * The old return type and associated functions ``qml.enable_return`` and ``qml.disable_return`` are removed.
  [(#4503)](https://github.com/PennyLaneAI/pennylane/pull/4503)
 
@@ -38,4 +82,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Romain Moyard
+Romain Moyard,
+Mudit Pandey
