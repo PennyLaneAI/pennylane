@@ -32,23 +32,16 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-def _compute_vjps(jacs, dy, multi_measurements, has_partitioned_shots):
+def _compute_vjps(jacs, dy, multi_measurements):
     """Compute the vjps of multiple tapes, directly for a Jacobian and co-tangents dys."""
     vjps = []
+
     for i, multi in enumerate(multi_measurements):
-        dy_ = dy[i] if has_partitioned_shots else (dy[i],)
-        jac_ = jacs[i] if has_partitioned_shots else (jacs[i],)
-
-        shot_vjps = []
-        for d, j in zip(dy_, jac_):
-            if multi:
-                shot_vjps.append(qml.gradients.compute_vjp_multi(d, j))
-            else:
-                shot_vjps.append(qml.gradients.compute_vjp_single(d, j))
-
-        vjps.append(qml.math.sum(qml.math.stack(shot_vjps), axis=0))
-
-    return tuple(vjps)
+        compute_func = (
+            qml.gradients.compute_vjp_multi if multi else qml.gradients.compute_vjp_single
+        )
+        vjps.extend(compute_func(dy[i], jacs[i]))
+    return vjps
 
 
 def _compute_jvps(jacs, tangents, multi_measurements):
@@ -304,6 +297,11 @@ class DeviceJacobians(JacobianProductCalculator):
     >>> device.tracker.totals
     {}
 
+    **Lack of shot vector suppoprt:**
+
+    Given we currently do not have any examples of device derivatives with shots vectors (or even finite shots),
+    we are bypassing support for partitioned shots.
+
     """
 
     def __repr__(self):
@@ -387,6 +385,49 @@ class DeviceJacobians(JacobianProductCalculator):
         return results
 
     def execute_and_compute_jvp(self, tapes: Batch, tangents):
+        """Calculate both the results for a batch of tapes and the jvp.
+
+        This method is required to compute JVPs in the JAX interface.
+
+        Args:
+            tapes (tuple[`~.QuantumScript`]): The batch of tapes to take the derivatives of
+            tangents (Sequence[Sequence[TensorLike]]): the tangents for the parameters of the tape.
+                The ``i``th tangent corresponds to the ``i``th tape, and the ``j``th entry into a
+                tangent entry corresponds to the ``j``th trainable parameter of the tape.
+
+        Returns:
+            ResultBatch, TensorLike: the results of the execution and the jacobian vector product
+
+        Side Effects:
+            caches newly computed results or jacobians if they were not already cached.
+
+        **Examples:**
+
+        For an instance of :class:`~.JacobianProductCalculator` ``jpc``, we have:
+
+        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
+        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0))])
+        >>> batch = (tape0, tape1)
+        >>> tangents0 = (1.5, )
+        >>> tangents1 = (2.0, )
+        >>> tangents = (tangents0, tangents1)
+        >>> results, jvps = jpc.execute_and_compute_jvp(batch, tangents)
+        >>> expected_results = (np.cos(0.1), np.cos(0.2))
+        >>> qml.math.allclose(results, expected_results)
+        True
+        >>> jvps
+        (array(-0.14975012), array(-0.39733866))
+        >>> expected_jvps = 1.5 * -np.sin(0.1), 2.0 * -np.sin(0.2)
+        >>> qml.math.allclose(jvps, expected_jvps)
+        True
+
+        While this method could support non-scalar parameters in theory, no implementation currently supports
+        jacobians with non-scalar parameters.
+
+        """
+        if any(t.shots.has_partitioned_shots for t in tapes):
+            # we currently do not have any examples for testing
+            raise NotImplementedError("device derivatives with shot vectors not supported.")
         if id(tapes) not in self._results_cache and id(tapes) not in self._jacs_cache:
             results, jacs = self._dev_execute_and_compute_derivatives(tapes)
             self._results_cache[id(tapes)] = results
@@ -413,6 +454,49 @@ class DeviceJacobians(JacobianProductCalculator):
         return results, jvps
 
     def compute_vjp(self, tapes, dy):
+        """Compute the vjp for a given batch of tapes.
+
+        This method is used by autograd, torch, and tensorflow to compute VJPs.
+
+        Args:
+            tapes (tuple[`~.QuantumScript`]): the batch of tapes to take the derivatives of
+            dy (tuple[tuple[TensorLike]]): the derivatives of the results of an execution.
+                The ``i``th entry (cotangent) corresponds to the ``i``th tape, and the ``j``th entry of the ``i``th
+                cotangent corresponds to the ``j``th return value of the ``i``th tape.
+
+        Returns:
+            TensorLike: the vector jacobian product.
+
+        Side Effects:
+            caches the newly computed jacobian if it wasn't already present in the cache.
+
+        **Examples:**
+
+        For an instance of :class:`~.JacobianProductCalculator` ``jpc``, we have:
+
+        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
+        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))])
+        >>> batch = (tape0, tape1)
+        >>> dy0 = (0.5, )
+        >>> dy1 = (2.0, 3.0)
+        >>> dys = (dy0, dy1)
+        >>> vjps = jpc.compute_vjp(batch, dys)
+        >>> vjps
+        (array([-0.04991671]), array([2.54286107]))
+        >>> expected_vjp0 = 0.5 * -np.sin(0.1)
+        >>> qml.math.allclose(vjps[0], expected_vjp0)
+        True
+        >>> expected_jvp1 = 2.0 * -np.sin(0.2) + 3.0 * np.cos(0.2)
+        >>> qml.math.allclose(vjps[1], expected_vjp1)
+        True
+
+        While this method could support non-scalar parameters in theory, no implementation currently supports
+        jacobians with non-scalar parameters.
+
+        """
+        if any(t.shots.has_partitioned_shots for t in tapes):
+            # we currently do not have any examples for testing
+            raise NotImplementedError("device derivatives with shot vectors not supported.")
         if id(tapes) in self._jacs_cache:
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug("Retrieving jacobian from cache.")
@@ -422,12 +506,39 @@ class DeviceJacobians(JacobianProductCalculator):
             self._jacs_cache[id(tapes)] = jacs
 
         multi_measurements = (len(t.measurements) > 1 for t in tapes)
-        has_partitioned_shots = tapes[0].shots.has_partitioned_shots
-        return _compute_vjps(
-            jacs, dy, multi_measurements, has_partitioned_shots=has_partitioned_shots
-        )
+        return _compute_vjps(jacs, dy, multi_measurements)
 
     def compute_jacobian(self, tapes):
+        """Compute the full Jacobian for a batch of tapes.
+
+        This method is required to compute Jacobians in the ``jax-jit`` interface
+
+        Args:
+            tapes: the batch of tapes to take the Jacobian of
+
+        Returns:
+            TensorLike: the full jacobian
+
+        Side Effects:
+            caches the newly computed jacobian if it wasn't already present in the cache.
+
+        **Examples:**
+
+        For an instance of :class:`~.JacobianProductCalculator` ``jpc``, we have:
+
+        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
+        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))])
+        >>> batch = (tape0, tape1)
+        >>> jpc.compute_jacobian(batch)
+        (array(-0.09983342), (array(-0.19866933), array(0.98006658)))
+
+        While this method could support non-scalar parameters in theory, no implementation currently supports
+        jacobians with non-scalar parameters.
+
+        """
+        if any(t.shots.has_partitioned_shots for t in tapes):
+            # we currently do not have any examples for testing
+            raise NotImplementedError("device derivatives with shot vectors not supported.")
         if id(tapes) in self._jacs_cache:
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug("Retrieving jacobian from cache.")

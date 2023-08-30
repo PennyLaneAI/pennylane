@@ -598,7 +598,7 @@ class Device(abc.ABC):
             shape ``(output_shape, num_params)``.
         """
         if self.tracker.active:
-            self.tracker.update(derivatives=1)
+            self.tracker.update(derivatives=len(circuits))
             self.tracker.record()
         gradient_method = getattr(self, method)
         return [gradient_method(circuit, **kwargs) for circuit in circuits]

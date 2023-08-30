@@ -41,9 +41,7 @@ hadamard_grad_jpc = TransformJacobianProducts(
     inner_execute_numpy, qml.gradients.hadamard_grad, {"aux_wire": "aux"}
 )
 device_jacs = DeviceJacobians(dev, {}, adjoint_config)
-legacy_device_jacs = DeviceJacobians(
-    dev_old, {"method": "adjoint_jacobian", "use_device_state": True}
-)
+legacy_device_jacs = DeviceJacobians(dev_old, {"method": "adjoint_jacobian"})
 
 transform_jpc_matrix = [param_shift_jpc, hadamard_grad_jpc]
 dev_jpc_matrix = [device_jacs, legacy_device_jacs]
@@ -122,6 +120,20 @@ class TestBasics:
 
         assert repr(jpc) == expected
 
+    @pytest.mark.parametrize("jpc", dev_jpc_matrix)
+    def test_no_shot_vector_with_dev_jacs(self, jpc):
+        """Test that device derivatives with shot vectors raise a not implemented error."""
+
+        tape = qml.tape.QuantumScript(shots=(10, 10))
+        with pytest.raises(NotImplementedError):
+            jpc.execute_and_compute_jvp((tape,), ((0.5,),))
+
+        with pytest.raises(NotImplementedError):
+            jpc.compute_vjp((tape,), ((1.0,),))
+
+        with pytest.raises(NotImplementedError):
+            jpc.compute_jacobian((tape,))
+
 
 @pytest.mark.parametrize("jpc", jpc_matrix)
 class TestJacobianProductResults:
@@ -140,6 +152,7 @@ class TestJacobianProductResults:
         """Test compute_vjp for a simple single input single output."""
         x = -0.294
         tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+
         dy = ((1.8,),)
         vjp = jpc.compute_vjp((tape,), dy)
         assert qml.math.allclose(vjp[0], -1.8 * np.sin(x))
@@ -154,6 +167,8 @@ class TestJacobianProductResults:
 
 @pytest.mark.parametrize("jpc", dev_jpc_matrix)
 class TestCaching:
+    """Test caching for device jacobians."""
+
     def test_execution_caching(self, jpc):
         """Test that results and jacobians are cached on calls to execute."""
         tape1 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
@@ -165,7 +180,13 @@ class TestCaching:
         assert qml.math.allclose(results[0], np.cos(0.1))
         assert jpc._device.tracker.totals["execute_and_derivative_batches"] == 1
         assert jpc._device.tracker.totals["derivatives"] == 1
-        assert jpc._device.tracker.totals["executions"] == 1
+
+        # extra execution since needs to do the forward pass again.
+        assert (
+            jpc._device.tracker.totals["executions"] == 2
+            if isinstance(jpc._device, qml.Device)
+            else 1
+        )
 
         # Test reuse with jacobian
         with jpc._device.tracker:
@@ -173,7 +194,7 @@ class TestCaching:
 
         assert qml.math.allclose(jac, -np.sin(0.1))
         assert jpc._device.tracker.totals.get("derivatives", 0) == 0
-        assert jpc._device.tracker.totals.get("execute", 0) == 0
+        assert jpc._device.tracker.totals.get("executions", 0) == 0
 
         # Test reuse with execute_and_compute_jvp
         with jpc._device.tracker:
@@ -182,15 +203,15 @@ class TestCaching:
         assert qml.math.allclose(res2, results)
         assert qml.math.allclose(jvp, 0.5 * -np.sin(0.1))
         assert jpc._device.tracker.totals.get("derivatives", 0) == 0
-        assert jpc._device.tracker.totals.get("execute", 0) == 0
+        assert jpc._device.tracker.totals.get("executions", 0) == 0
 
-        # Test resue with comput_vjp
+        # Test reuse with compute_vjp
         with jpc._device.tracker:
             vjp = jpc.compute_vjp(batch, ((1.5,),))
 
         assert qml.math.allclose(vjp, -1.5 * np.sin(0.1))
         assert jpc._device.tracker.totals.get("derivatives", 0) == 0
-        assert jpc._device.tracker.totals.get("execute", 0) == 0
+        assert jpc._device.tracker.totals.get("executions", 0) == 0
 
         # Test device called again if batch a new instance, even if identical
         tape2 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
@@ -201,7 +222,29 @@ class TestCaching:
 
         assert qml.math.allclose(jac, jac2)
         assert jpc._device.tracker.totals["derivatives"] == 1
-        assert jpc._device.tracker.totals.get("execute", 0) == 0
+        assert jpc._device.tracker.totals.get("executions", 0) == 0
+
+    def test_cached_on_execute_and_compute_jvps(self, jpc):
+        """Test that execute and compute jvp will cache results and jacobians is they are not precalculated."""
+        tape1 = qml.tape.QuantumScript(
+            [qml.Hadamard(0), qml.IsingXX(0.8, wires=(0, 1))], [qml.expval(qml.PauliZ(1))]
+        )
+        batch = (tape1,)
+        tangents = ((0.5,),)
+
+        res, jvps = jpc.execute_and_compute_jvp(batch, tangents)
+
+        assert qml.math.allclose(res, np.cos(0.8))
+        assert qml.math.allclose(jvps, -0.5 * np.sin(0.8))
+
+        assert jpc._results_cache[id(batch)] is res
+        assert qml.math.allclose(jpc._jacs_cache[id(batch)], (-np.sin(0.8)))
+
+        with jpc._device.tracker:
+            jpc.execute_and_compute_jvp(batch, tangents)
+
+        assert jpc._device.tracker.totals.get("derivatives", 0) == 0
+        assert jpc._device.tracker.totals.get("executions", 0) == 0
 
 
 @pytest.mark.parametrize("jpc", transform_jpc_matrix)
@@ -322,7 +365,7 @@ class TestTransformsDifferentiability:
     Note that testing is only done for the required method for each ml framework.
     """
 
-    @pytest.mark.parametize("use_jit", (True, False))
+    @pytest.mark.parametrize("use_jit", (True, False))
     @pytest.mark.jax
     def test_execute_jvp_jax(self, use_jit):
         """Test that execute_and_compute_jvp is jittable and differentiable with jax."""
