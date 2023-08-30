@@ -127,8 +127,6 @@ def simulate(circuit: qml.tape.QuantumScript, rng=None, debugger=None) -> Result
 
     Note that this function can return measurements for non-commuting observables simultaneously.
 
-    It currently does not support observables without diagonalizing gates.
-
     This function assumes that all operations provide matrices.
 
     >>> qs = qml.tape.QuantumScript([qml.RX(1.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.probs(wires=(0,1))])
