@@ -33,8 +33,10 @@ def custom_measurement_process(device, spy):
             call_args.kwargs["shot_range"],
             call_args.kwargs["bin_size"],
         )
+        old_res = device.var(obs, shot_range=shot_range, bin_size=bin_size)
+        if isinstance(obs, qml.measurements.MeasurementProcess):
+            obs = obs.obs
         meas = qml.var(op=obs)
-        old_res = device.var(obs, shot_range, bin_size)
         if samples is not None:
             new_res = meas.process_samples(
                 samples=samples, wire_order=device.wires, shot_range=shot_range, bin_size=bin_size
@@ -106,6 +108,31 @@ class TestVar:
         circuit()
 
         custom_measurement_process(dev, spy)
+
+    @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
+    @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
+    def test_observable_is_measurement_value(
+        self, shots, phi, mocker, tol, tol_stochastic
+    ):  # pylint: disable=too-many-arguments
+        """Test that variances for mid-circuit measurement values
+        are correct for a single measurement value."""
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            return qml.var(m0)
+
+        new_dev = circuit.device
+        spy = mocker.spy(qml.QubitDevice, "var")
+
+        res = circuit(phi)
+
+        atol = tol if shots is None else tol_stochastic
+        expected = np.sin(phi / 2) ** 2 - np.sin(phi / 2) ** 4
+        assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
+        custom_measurement_process(new_dev, spy)
 
     @pytest.mark.parametrize(
         "obs",

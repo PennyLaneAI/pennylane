@@ -279,6 +279,15 @@ class TestProperties:
         obs.data = [np.diag([5, 6, 7, 8])]
         assert np.all(m.eigvals() == np.array([5, 6, 7, 8]))
 
+    def test_measurement_value_eigvals(self):
+        """Test that eigenvalues of the measurement process
+        are correct if the internal observable is a
+        MeasurementValue."""
+        m0 = qml.measure(0)
+
+        m = qml.expval(m0)
+        assert np.all(m.eigvals() == [0, 1])
+
     def test_error_obs_and_eigvals(self):
         """Test that providing both eigenvalues and an observable
         results in an error"""

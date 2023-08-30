@@ -37,6 +37,9 @@ def custom_measurement_process(device, spy):
         # no need to use op, because the observable has already been applied to ``self.dev._state``
         meas = qml.expval(op=obs)
         old_res = device.expval(obs, shot_range=shot_range, bin_size=bin_size)
+        if isinstance(obs, qml.measurements.MeasurementProcess):
+            obs = obs.obs
+        meas = qml.expval(op=obs)
         if device.shots is None:
             new_res = meas.process_state(state=state, wire_order=device.wires)
         else:
@@ -114,6 +117,30 @@ class TestExpval:
 
         circuit()
 
+        custom_measurement_process(new_dev, spy)
+
+    @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
+    @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
+    def test_observable_is_measurement_value(
+        self, shots, phi, mocker, tol, tol_stochastic
+    ):  # pylint: disable=too-many-arguments
+        """Test that expectation values for mid-circuit measurement values
+        are correct for a single measurement value."""
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            return qml.expval(m0)
+
+        new_dev = circuit.device
+        spy = mocker.spy(qml.QubitDevice, "expval")
+
+        res = circuit(phi)
+
+        atol = tol if shots is None else tol_stochastic
+        assert np.allclose(np.array(res), np.sin(phi / 2) ** 2, atol=atol, rtol=0)
         custom_measurement_process(new_dev, spy)
 
     @pytest.mark.parametrize(
