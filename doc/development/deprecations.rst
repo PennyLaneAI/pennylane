@@ -12,13 +12,6 @@ Pending deprecations
   - Deprecated in v0.32
   - Removed in v0.33
 
-* The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
-  instead. Using a list of observables in ``QubitDevice.statistics`` is deprecated. Please use a
-  ``QuantumTape`` instead.
-
-  - Still accessible in v0.28, v0.29, v0.30
-  - Will be removed in v0.31
-
 * ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
   
   - Deprecated in v0.24
@@ -97,18 +90,7 @@ Pending deprecations
 
   - Deprecated in v0.32
   - Will be removed in v0.33
-
-* The ``sampler_seed`` argument of ``qml.gradients.spsa_grad`` has been deprecated, along with a bug
-  fix of the seed-setting behaviour.
-  Instead, the ``sampler_rng`` argument should be set, either to an integer value, which will be used
-  to create a PRNG internally, or to a NumPy pseudo-random number generator (PRNG) created via
-  ``np.random.default_rng(seed)``.
-  The advantage of passing a PRNG is that one can reuse that PRNG when calling ``spsa_grad``
-  multiple times, for instance during an optimization procedure.
-
-  - Deprecated in v0.32
-  - Will be removed in v0.33
-
+  
 * The ``prep`` keyword argument in ``QuantumScript`` is deprecated and will be removed from `QuantumScript`.
   ``StatePrepBase`` operations should be placed at the beginning of the `ops` list instead.
 
@@ -119,10 +101,28 @@ Pending deprecations
 Completed deprecation cycles
 ----------------------------
 
+* The ``sampler_seed`` argument of ``qml.gradients.spsa_grad`` has been removed.
+  Instead, the ``sampler_rng`` argument should be set, either to an integer value, which will be used
+  to create a PRNG internally, or to a NumPy pseudo-random number generator (PRNG) created via
+  ``np.random.default_rng(seed)``.
+  The advantage of passing a PRNG is that one can reuse that PRNG when calling ``spsa_grad``
+  multiple times, for instance during an optimization procedure.
+
+  - Deprecated in v0.32
+  - Removed in v0.33
+
+* The ``observables`` argument in ``QubitDevice.statistics`` is removed. Please use ``circuit``
+  instead. Using a list of observables in ``QubitDevice.statistics`` is removed. Please use a
+  ``QuantumTape`` instead.
+
+  - Still accessible in v0.28-v0.31
+  - Removed in v0.32
+
 * The CV observables ``qml.X`` and ``qml.P`` have been removed. Use ``qml.QuadX`` and ``qml.QuadP`` instead.
 
   - Deprecated in v0.32
   - Removed in v0.33
+
 
 * The method ``tape.unwrap()`` and corresponding ``UnwrapTape`` and ``Unwrap`` classes are
   removed.
