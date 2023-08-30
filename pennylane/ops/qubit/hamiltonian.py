@@ -188,7 +188,7 @@ class Hamiltonian(Observable):
         method="rlf",
         id=None,
     ):
-        if qml.math.shape(coeffs)[0] != len(observables):
+        if len(coeffs) != len(observables):
             raise ValueError(
                 "Could not create valid Hamiltonian; "
                 "number of coefficients and operators does not match."
@@ -223,7 +223,7 @@ class Hamiltonian(Observable):
                     self.ops, grouping_type=grouping_type, method=method
                 )
 
-        coeffs_flat = [self._coeffs[i] for i in range(qml.math.shape(self._coeffs)[0])]
+        coeffs_flat = [self._coeffs[i] for i in range(len(self._coeffs))]
 
         # create the operator using each coefficient as a separate parameter;
         # this causes H.data to be a list of tensor scalars,
