@@ -25,7 +25,7 @@
   Instead, the ``sampler_rng`` argument should be set, either to an integer value, which will be used
   to create a PRNG internally, or to a NumPy pseudo-random number generator (PRNG) created via
   ``np.random.default_rng(seed)``.
-  [#4550](https://github.com/PennyLaneAI/pennylane/pull/4550)
+  [(#4550)](https://github.com/PennyLaneAI/pennylane/pull/4550)
 
 <h3>Deprecations 👋</h3>
 
