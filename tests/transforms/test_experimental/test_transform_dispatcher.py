@@ -265,8 +265,8 @@ class TestTransformDispatcher:
         assert transform_container.classical_cotransform is None
         assert not expand_transform_container.is_informative
 
-    def test_transform_program_with_expand_transform(self):
-        """Test transform with expand transform on a transform program."""
+    def test_transform_add_to_program(self):
+        """Test to add a transform with expand transform to a program."""
 
         dispatched_transform = transform(first_valid_transform, expand_transform=expand_transform)
 
