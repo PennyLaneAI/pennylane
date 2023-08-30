@@ -115,7 +115,7 @@ class TestTransformProgramDunders:
             assert isinstance(elem, TransformContainer)
             assert elem.transform is first_valid_transform
 
-    def test_add_programs(self):
+    def test_add_single_programs(self):
         """Test adding two transform programs"""
         transform_program1 = TransformProgram()
         transform1 = TransformContainer(transform=first_valid_transform)
@@ -144,6 +144,39 @@ class TestTransformProgramDunders:
 
         assert isinstance(transform_program[1], TransformContainer)
         assert transform_program[1].transform is first_valid_transform
+
+    def test_add_two_programs(self):
+        """Test adding two transform programs"""
+        transform1 = TransformContainer(transform=first_valid_transform)
+        transform2 = TransformContainer(transform=second_valid_transform)
+
+        transform_program1 = TransformProgram()
+        transform_program1.push_back(transform1)
+        transform_program1.push_back(transform1)
+        transform_program1.push_back(transform1)
+
+        transform_program2 = TransformProgram()
+        transform_program1.push_back(transform2)
+        transform_program1.push_back(transform2)
+
+        transform_program = transform_program1 + transform_program2
+
+        assert len(transform_program) == 5
+
+        assert isinstance(transform_program[0], TransformContainer)
+        assert transform_program[0].transform is first_valid_transform
+
+        assert isinstance(transform_program[1], TransformContainer)
+        assert transform_program[1].transform is first_valid_transform
+
+        assert isinstance(transform_program[2], TransformContainer)
+        assert transform_program[2].transform is first_valid_transform
+
+        assert isinstance(transform_program[3], TransformContainer)
+        assert transform_program[3].transform is second_valid_transform
+
+        assert isinstance(transform_program[4], TransformContainer)
+        assert transform_program[4].transform is second_valid_transform
 
     def test_repr_program(self):
         """Test the string representation of a program."""
