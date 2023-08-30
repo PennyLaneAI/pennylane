@@ -52,7 +52,7 @@ def adjoint_jacobian(tape: QuantumTape, state=None):
         * Observable being measured must have a matrix.
 
     Args:
-        tape (.QuantumTape): circuit that the function takes the gradient of
+        tape (QuantumTape): circuit that the function takes the gradient of
         state (TensorLike): the final state of the circuit; if not provided,
             the final state will be computed by executing the tape
 
@@ -127,7 +127,7 @@ def adjoint_jvp(tape: QuantumTape, tangents: Tuple[Number], state=None):
         * Observable being measured must have a matrix.
 
     Args:
-        tape (.QuantumTape): circuit that the function takes the gradient of
+        tape (QuantumTape): circuit that the function takes the gradient of
         tangents (Tuple[Number]): gradient vector for input parameters.
         state (TensorLike): the final state of the circuit; if not provided,
             the final state will be computed by executing the tape
@@ -201,7 +201,7 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
         * Observable being measured must have a matrix.
 
     Args:
-        tape (.QuantumTape): circuit that the function takes the gradient of
+        tape (QuantumTape): circuit that the function takes the gradient of
         cotangents (Tuple[Number]): gradient vector for output parameters
         state (TensorLike): the final state of the circuit; if not provided,
             the final state will be computed by executing the tape

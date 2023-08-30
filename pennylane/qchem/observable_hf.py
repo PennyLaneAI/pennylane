@@ -110,10 +110,10 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12, fs=False)
         return sentence
 
     warnings.warn(
-        "This function will return a fermionic operator by default in the next release. For details,"
-        " see the Fermionic Operators tutorial:"
-        " https://pennylane.ai/qml/demos/tutorial_fermionic_operators."
-        " Currently, a fermionic operator can be returned by setting the `fs` kwarg to `True`."
+        "This function will return a fermionic operator by default in the next release. For details, "
+        "see the Fermionic Operators tutorial: "
+        "https://pennylane.ai/qml/demos/tutorial_fermionic_operators. "
+        "Currently, a fermionic operator can be returned by setting the `fs` kwarg to `True`."
     )
 
     return coeffs[indices_sort], sorted(operators)
@@ -190,9 +190,9 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
         )
 
     warnings.warn(
-        "Tuple input for the qubit_observable function is deprecated; please use the fermionic"
-        " operators format. For details, see the Fermionic Operators tutorial:"
-        " https://pennylane.ai/qml/demos/tutorial_fermionic_operators"
+        "Tuple input for the qubit_observable function is deprecated; please use the fermionic "
+        "operators format. For details, see the Fermionic Operators tutorial: "
+        "https://pennylane.ai/qml/demos/tutorial_fermionic_operators"
     )
 
     ops = []

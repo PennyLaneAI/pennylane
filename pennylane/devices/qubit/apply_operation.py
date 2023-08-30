@@ -146,9 +146,9 @@ def apply_operation(
 
     Args:
         op (Operator): The operation to apply to ``state``
-        state (tensor_like): The starting state.
+        state (TensorLike): The starting state.
         is_state_batched (bool): Boolean representing whether the state is batched or not
-        debugger (._Debugger): The debugger to use
+        debugger (_Debugger): The debugger to use
 
     Returns:
         ndarray: output state

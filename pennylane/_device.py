@@ -755,13 +755,6 @@ class Device(abc.ABC):
         # device property present in braket plugin
         use_grouping = getattr(self, "use_grouping", True)
 
-        if any(isinstance(m, MidMeasureMP) for m in circuit.operations):
-            circuit = (
-                qml.defer_measurements(circuit)
-                if not self.capabilities().get("supports_mid_measure", False)
-                else circuit
-            )
-
         hamiltonian_in_obs = any(isinstance(obs, Hamiltonian) for obs in circuit.observables)
         expval_sum_in_obs = any(
             isinstance(m.obs, Sum) and isinstance(m, ExpectationMP) for m in circuit.measurements
