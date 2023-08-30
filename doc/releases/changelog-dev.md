@@ -37,11 +37,10 @@
   True
   ```
 
-  The `__hash__` dunder method defines the hash of an object, which is important for data
-  structures like sets and dictionaries to work correctly. The default hash of an object
-  is determined by the objects memory address. However, the hash for different objects should
-  be the same if they have the same properties. Consider the scenario below. The second and third
-  code blocks show the previous and current behaviour.
+  The `__hash__` dunder method defines the hash of an object. The default hash of an object
+  is determined by the objects memory address. However, the new hash is determined by the
+  properties and attributes of operators and measurement processes. Consider the scenario below.
+  The second and third code blocks show the previous and current behaviour.
 
   ```python
   op1 = qml.PauliX(0)
