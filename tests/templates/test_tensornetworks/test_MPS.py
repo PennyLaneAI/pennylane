@@ -383,7 +383,7 @@ class TestTemplateOutputs:
         assert k == 2
 
     @staticmethod
-    def circuit3_MPS(wires, **kwargs):
+    def circuit3_MPS(wires, **kwargs): # pylint: disable=unused-argument
         qml.MultiControlledX(wires=[wires[0], wires[1], wires[2], wires[3]])
         qml.MultiControlledX(wires=[wires[1], wires[2], wires[3], wires[4]])
         qml.MultiControlledX(wires=[wires[2], wires[3], wires[4], wires[5]])
