@@ -6,12 +6,6 @@ Deprecations
 Pending deprecations
 --------------------
 
-* The `RandomLayers.compute_decomposition` keyword argument `ratio_imprivitive` will be changed to `ratio_imprim` to
-  match the call signature of the operation. 
-
-  - Deprecated in v0.32
-  - Removed in v0.33
-
 * ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
   
   - Deprecated in v0.24
@@ -107,6 +101,12 @@ Completed deprecation cycles
   ``np.random.default_rng(seed)``.
   The advantage of passing a PRNG is that one can reuse that PRNG when calling ``spsa_grad``
   multiple times, for instance during an optimization procedure.
+
+  - Deprecated in v0.32
+  - Removed in v0.33
+
+* The ``RandomLayers.compute_decomposition`` keyword argument ``ratio_imprivitive`` has been changed to
+  ``ratio_imprim`` to match the call signature of the operation.
 
   - Deprecated in v0.32
   - Removed in v0.33
