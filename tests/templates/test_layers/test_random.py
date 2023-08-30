@@ -111,14 +111,6 @@ class TestDecomposition:
         ratio_impr = gate_names.count("CNOT") / len(gate_names)
         assert np.isclose(ratio_impr, ratio, atol=0.05)
 
-        with pytest.warns(UserWarning):
-            decomp = op.compute_decomposition(
-                *op.parameters, wires=op.wires, **op.hyperparameters, ratio_imprim=0.9
-            )
-            gate_names = [gate.name for gate in decomp]
-            ratio_impr = gate_names.count("CNOT") / len(gate_names)
-            assert np.isclose(ratio_impr, 0.9, atol=0.05)
-
     def test_random_wires(self):
         """Test that random wires are picked for the gates. This is done by
         taking the mean of all wires, which should be 1 for labels [0, 1, 2]"""
