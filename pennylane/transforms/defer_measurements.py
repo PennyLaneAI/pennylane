@@ -130,11 +130,15 @@ def defer_measurements(tape: QuantumTape):
     # Find wires that are reused after measurement
     measured_wires = []
     reused_measurement_wires = set()
+    repeated_measurement_wire = False
 
     for op in tape.operations:
         if isinstance(op, MidMeasureMP):
             if op.reset is True:
                 reused_measurement_wires.add(op.wires[0])
+
+            if op.wires[0] in measured_wires:
+                repeated_measurement_wire = True
             measured_wires.append(op.wires[0])
 
         else:
@@ -145,7 +149,9 @@ def defer_measurements(tape: QuantumTape):
     # Apply controlled operations to store measurement outcomes and replace
     # classically controlled operations
     control_wires = {}
-    cur_wire = max(tape.wires) + 1 if reused_measurement_wires else None
+    cur_wire = (
+        max(tape.wires) + 1 if reused_measurement_wires or repeated_measurement_wire else None
+    )
 
     for op in tape.operations:
         if isinstance(op, MidMeasureMP):

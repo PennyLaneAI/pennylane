@@ -472,7 +472,7 @@ class TestConditionalOperations:
         assert ctrl_op2.wires == qml.wires.Wires([0, 2])
 
         # Check the measurement
-        assert tape.measurements[0] == terminal_measurement
+        assert qml.equal(tape.measurements[0], terminal_measurement)
 
     @pytest.mark.parametrize("r", np.linspace(0.1, 2 * np.pi - 0.1, 4))
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
@@ -538,7 +538,7 @@ class TestConditionalOperations:
         assert qml.equal(first_ctrl_op.base, qml.RY(rads, 4))
 
         assert len(tape.measurements) == 1
-        assert tape.measurements[0] == measurement
+        assert qml.equal(tape.measurements[0], measurement)
 
     def test_hamiltonian_queued(self):
         """Test that the defer_measurements transform works with
