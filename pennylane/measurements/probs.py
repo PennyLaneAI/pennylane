@@ -190,17 +190,19 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         expected_shape = [2] * num_wires
         expected_size = dim
         size = qml.math.size(state)
-        batch_size = (
-            size // expected_size
-            if qml.math.ndim(state) > len(expected_shape) or size > expected_size
-            else None
-        )
-        flat_state = qml.math.reshape(
-            state, (batch_size, dim) if batch_size is not None else (dim,)
-        )
+
+        # code split in this way to remain tf.function jit-friendly
+        if qml.math.ndim(state) > len(expected_shape) or size > expected_size:
+            batch_size = size // expected_size
+            flat_state = qml.math.reshape(state, (batch_size, dim))
+            real_state = qml.math.real(flat_state)
+            imag_state = qml.math.imag(flat_state)
+            return self.marginal_prob(real_state**2 + imag_state**2, wire_order, batch_size)
+
+        flat_state = qml.math.reshape(state, (dim,))
         real_state = qml.math.real(flat_state)
         imag_state = qml.math.imag(flat_state)
-        return self.marginal_prob(real_state**2 + imag_state**2, wire_order, batch_size)
+        return self.marginal_prob(real_state**2 + imag_state**2, wire_order, None)
 
     @staticmethod
     def _count_samples(indices, batch_size, dim):

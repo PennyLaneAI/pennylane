@@ -344,7 +344,9 @@ class TestJax:
                 qml.PauliX(0)
                 qml.PauliX(1)
                 qml.DoubleExcitation(0.22350048111151138, wires=[0, 1, 2, 3])
-                h_qubit = qchem.diff_hamiltonian(mol)(*args)
+                enable_new_opmath()
+                h_qubit = qchem.diff_hamiltonian(mol, fs=True)(*args)
+                disable_new_opmath()
                 return qml.expval(h_qubit)
 
             return circuit
@@ -352,16 +354,16 @@ class TestJax:
         grad_jax = jax.grad(energy(mol), argnums=0)(*args)
 
         alpha_1 = np.array(
-            [[3.42515091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-        )  # alpha[0][0] -= 0.0001
+            [[3.42425091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+        )  # alpha[0][0] -= 0.001
 
         alpha_2 = np.array(
-            [[3.42535091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-        )  # alpha[0][0] += 0.0001
+            [[3.42625091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+        )  # alpha[0][0] += 0.001
 
         e_1 = energy(mol)(*[alpha_1])
         e_2 = energy(mol)(*[alpha_2])
 
-        grad_finitediff = (e_2 - e_1) / 0.0002
+        grad_finitediff = (e_2 - e_1) / 0.002
 
         assert np.allclose(grad_jax[0][0], grad_finitediff, rtol=1e-02)
