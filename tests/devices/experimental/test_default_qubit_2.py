@@ -38,19 +38,14 @@ def test_shots():
         DefaultQubit2().shots = 10
 
 
-def test_repr():
-    """Test the repr method of the device."""
-    dev = DefaultQubit2()
-    assert repr(dev) == "<DefaultQubit(default_shots=Shots(total=None), max_workers=None>"
+def test_wires():
+    """Test that a device can be created with wires."""
+    assert DefaultQubit2().wires is None
+    assert DefaultQubit2(wires=2).wires == qml.wires.Wires([0, 1])
+    assert DefaultQubit2(wires=[0, 2]).wires == qml.wires.Wires([0, 2])
 
-    dev = DefaultQubit2(shots=(10, 10))
-    assert (
-        repr(dev)
-        == "<DefaultQubit(default_shots=Shots(total=20, vector=[10 shots x 2]), max_workers=None>"
-    )
-
-    dev = DefaultQubit2(max_workers=5)
-    assert repr(dev) == "<DefaultQubit(default_shots=Shots(total=None), max_workers=5>"
+    with pytest.raises(AttributeError):
+        DefaultQubit2().wires = [0, 1]
 
 
 def test_debugger_attribute():
@@ -1397,20 +1392,18 @@ class TestPreprocessingIntegration:
         expected_expval = np.cos(y)
         assert qml.math.allclose(expected_expval, processed_results[1])
 
-    def test_preprocess_defer_measurements_integration(self, mocker):
+    def test_preprocess_defer_measurements(self, mocker):
         """Test that a QNode with mid-circuit measurements is transformed
         using defer_measurements."""
         dev = DefaultQubit2()
 
-        @qml.qnode(dev)
-        def circuit():
-            qml.PauliX(0)
-            qml.measure(0)
-            return qml.expval(qml.PauliZ(0))
-
+        tape = qml.tape.QuantumScript(
+            [qml.PauliX(0), qml.measurements.MidMeasureMP(qml.wires.Wires(0))],
+            [qml.expval(qml.PauliZ(0))],
+        )
         spy = mocker.spy(qml, "defer_measurements")
-        _ = circuit()
 
+        _, _, _ = dev.preprocess(tape)
         spy.assert_called_once()
 
 

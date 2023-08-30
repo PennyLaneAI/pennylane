@@ -56,10 +56,10 @@ class JacobianProductCalculator(abc.ABC):
         This method is required to compute JVPs in the JAX interface.
 
         Args:
-            tapes (tuple[`~.QuantumScript`]): The batch of tapes to take the derivatives of
+            tapes (tuple[.QuantumScript]): The batch of tapes to take the derivatives of
             tangents (Sequence[Sequence[TensorLike]]): the tangents for the parameters of the tape.
-                The ``i``th tangent corresponds to the ``i``th tape, and the ``j``th entry into a
-                tangent entry corresponds to the ``j``th trainable parameter of the tape.
+                The ``i`` th tangent corresponds to the ``i`` th tape, and the ``j`` th entry into a
+                tangent entry corresponds to the ``j`` th trainable parameter of the tape.
 
         Returns:
             ResultBatch, TensorLike: the results of the execution and the jacobian vector product
@@ -96,10 +96,10 @@ class JacobianProductCalculator(abc.ABC):
         This method is used by autograd, torch, and tensorflow to compute VJPs.
 
         Args:
-            tapes (tuple[`~.QuantumScript`]): the batch of tapes to take the derivatives of
+            tapes (tuple[.QuantumScript]): the batch of tapes to take the derivatives of
             dy (tuple[tuple[TensorLike]]): the derivatives of the results of an execution.
-                The ``i``th entry (cotangent) corresponds to the ``i``th tape, and the ``j``th entry of the ``i``th
-                cotangent corresponds to the ``j``th return value of the ``i``th tape.
+                The ``i``th entry (cotangent) corresponds to the ``i`` th tape, and the ``j`` th entry of the ``i`` th
+                cotangent corresponds to the ``j`` th return value of the ``i`` th tape.
 
         Returns:
             TensorLike: the vector jacobian product.
@@ -136,7 +136,7 @@ class JacobianProductCalculator(abc.ABC):
         This method is required to compute Jacobians in the ``jax-jit`` interface
 
         Args:
-            tapes: the batch of tapes to take the Jacobian of
+            tapes (tuple[.QuantumScript]): the batch of tapes to take the derivatives of
 
         **Examples:**
 
@@ -179,12 +179,12 @@ class TransformJacobianProducts(JacobianProductCalculator):
         gradient_transform: "qml.gradients.gradient_transform",
         gradient_kwargs: Optional[dict] = None,
     ):
-        if logger.isEnabledFor(logging.DEBUG):
+        if logger.isEnabledFor(logging.DEBUG):  # pragma: no-cover
             logger.debug(
                 "TransformJacobianProduct being created with (%s, %s, %s)",
-                inner_execute
-                if not (logger.isEnabledFor(qml.logging.TRACE) and callable(inner_execute))
-                else "\n" + inspect.getsource(inner_execute),
+                inspect.getsource(inner_execute)
+                if logger.isEnabledFor(qml.logging.TRACE)
+                else inner_execute,
                 gradient_transform,
                 gradient_kwargs,
             )
@@ -193,7 +193,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
         self._gradient_kwargs = gradient_kwargs or {}
 
     def execute_and_compute_jvp(self, tapes: Batch, tangents: Tuple[Tuple[TensorLike]]):
-        if logger.isEnabledFor(logging.DEBUG):
+        if logger.isEnabledFor(logging.DEBUG):  # pragma: no-cover
             logger.debug("execute_and_compute_jvp called with (%s, %s)", tapes, tangents)
         num_result_tapes = len(tapes)
 
@@ -211,7 +211,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
         return tuple(results), tuple(jvps)
 
     def compute_vjp(self, tapes: Batch, dy: Tuple[Tuple[TensorLike]]):
-        if logger.isEnabledFor(logging.DEBUG):
+        if logger.isEnabledFor(logging.DEBUG):  # pragma: no-cover
             logger.debug("compute_vjp called with (%s, %s)", tapes, dy)
         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
             tapes, dy, self._gradient_transform, gradient_kwargs=self._gradient_kwargs
@@ -221,7 +221,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
         return tuple(processing_fn(vjp_results))
 
     def compute_jacobian(self, tapes: Batch):
-        if logger.isEnabledFor(logging.DEBUG):
+        if logger.isEnabledFor(logging.DEBUG):  # pragma: no-cover
             logger.debug("compute_jacobian called with %s", tapes)
         partial_gradient_fn = partial(self._gradient_transform, **self._gradient_kwargs)
         jac_tapes, batch_post_processing = qml.transforms.map_batch_transform(

@@ -213,48 +213,6 @@ def compute_vjp_multi(dy, jac, num=None):
     return res
 
 
-def compute_vjp(dy, jac, num=None):
-    """Convenience function to compute the vector-Jacobian product for a given
-    vector of gradient outputs and a Jacobian.
-
-    Args:
-        dy (tensor_like): vector of gradient outputs
-        jac (tensor_like): Jacobian matrix. For an n-dimensional ``dy``
-            vector, the first n-dimensions of ``jac`` should match
-            the shape of ``dy``.
-        num (int): The length of the flattened ``dy`` argument. This is an
-            optional argument, but can be useful to provide if ``dy`` potentially
-            has no shape (for example, due to tracing or just-in-time compilation).
-
-    Returns:
-        tensor_like: the vector-Jacobian product
-    """
-    if jac is None:
-        return None
-
-    dy_row = qml.math.reshape(dy, [-1])
-
-    if num is None:
-        num = qml.math.shape(dy_row)[0]
-
-    if not isinstance(dy_row, np.ndarray):
-        jac = qml.math.convert_like(jac, dy_row)
-        jac = qml.math.cast_like(jac, dy_row)
-
-    jac = qml.math.reshape(jac, [num, -1])
-
-    try:
-        if _all_close_to_zero(dy):
-            # If the dy vector is zero, then the
-            # corresponding element of the VJP will be zero.
-            num_params = jac.shape[1]
-            res = qml.math.convert_like(np.zeros([num_params]), dy)
-            return qml.math.cast_like(res, dy)
-    except (AttributeError, TypeError):
-        pass
-    return qml.math.tensordot(jac, dy_row, [[0], [0]])
-
-
 def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
     r"""Generate the gradient tapes and processing function required to compute
     the vector-Jacobian products of a tape.
@@ -366,13 +324,11 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
 
             def func(_, num=None):  # pylint: disable=unused-argument
                 res = qml.math.convert_like(np.zeros([num_params]), dy)
-                if qml.active_return():
-                    multi = len(tape.measurements) > 1
-                    if multi:
-                        multi_dy = dy[0]
-                        res = qml.math.convert_like(res, multi_dy)
-                        print(res, multi_dy)
-                        return qml.math.cast_like(res, multi_dy)
+                multi = len(tape.measurements) > 1
+                if multi:
+                    multi_dy = dy[0]
+                    res = qml.math.convert_like(res, multi_dy)
+                    return qml.math.cast_like(res, multi_dy)
                 return qml.math.cast_like(res, dy)
 
             return [], func
@@ -385,17 +341,14 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
         # postprocess results to compute the Jacobian
         jac = fn(results)
 
-        if qml.active_return():
-            multi = len(tape.measurements) > 1
-            comp_vjp_fn = compute_vjp_multi if multi else compute_vjp_single
+        multi = len(tape.measurements) > 1
+        comp_vjp_fn = compute_vjp_multi if multi else compute_vjp_single
 
-            if not tape.shots.has_partitioned_shots:
-                return comp_vjp_fn(dy, jac, num=num)
+        if not tape.shots.has_partitioned_shots:
+            return comp_vjp_fn(dy, jac, num=num)
 
-            vjp_ = [comp_vjp_fn(dy_, jac_, num=num) for dy_, jac_ in zip(dy, jac)]
-            return qml.math.sum(qml.math.stack(vjp_), 0)
-
-        return compute_vjp(dy, jac, num=num)
+        vjp_ = [comp_vjp_fn(dy_, jac_, num=num) for dy_, jac_ in zip(dy, jac)]
+        return qml.math.sum(qml.math.stack(vjp_), 0)
 
     return gradient_tapes, processing_fn
 

@@ -128,7 +128,7 @@ def _get_ml_boundary_execute(interface: str, grad_on_execution: bool) -> Callabl
             from .torch import execute as ml_boundary
 
         elif interface == "jax-jit":
-            from .jax_jit_tuple import execute as ml_boundary
+            from .jax_jit import execute as ml_boundary
         else:  #  interface in {"jax", "jax-python", "JAX"}:
             from .jax import execute as ml_boundary
 

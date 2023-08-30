@@ -17,8 +17,6 @@ import inspect
 from collections.abc import Iterable
 from typing import Optional, Text
 
-import pennylane as qml
-
 try:
     import tensorflow as tf
     from tensorflow.keras.layers import Layer
@@ -381,19 +379,8 @@ class KerasLayer(Layer):
             batch_dims = tf.shape(inputs)[:-1]
             inputs = tf.reshape(inputs, (-1, inputs.shape[-1]))
 
-        if not qml.active_return() and has_batch_dim:
-            # If the input has a batch dimension and we want to execute each data point separately,
-            # unstack the input along its first dimension, execute the QNode on each of the yielded
-            # tensors, and then stack the outputs back into the correct shape
-            batch_results = []
-
-            for x in tf.unstack(inputs):
-                batch_results.append(self._evaluate_qnode(x))
-
-            results = tf.stack(batch_results)
-        else:
-            # calculate the forward pass as usual
-            results = self._evaluate_qnode(inputs)
+        # calculate the forward pass as usual
+        results = self._evaluate_qnode(inputs)
 
         # reshape to the correct number of batch dims
         if has_batch_dim:

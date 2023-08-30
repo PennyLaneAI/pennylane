@@ -561,6 +561,9 @@ class Device(abc.ABC):
             tuple[list[array[float]], list[array[float]]]: Tuple containing list of measured value(s)
             and list of Jacobians. Returned Jacobians should be of shape ``(output_shape, num_params)``.
         """
+        if self.tracker.active:
+            self.tracker.update(execute_and_derivative_batches=1, derivatives=len(circuits))
+            self.tracker.record()
         gradient_method = getattr(self, method)
 
         res = []
@@ -594,6 +597,9 @@ class Device(abc.ABC):
             list[array[float]]: List of Jacobians. Returned Jacobians should be of
             shape ``(output_shape, num_params)``.
         """
+        if self.tracker.active:
+            self.tracker.update(derivatives=len(circuits))
+            self.tracker.record()
         gradient_method = getattr(self, method)
         return [gradient_method(circuit, **kwargs) for circuit in circuits]
 
@@ -748,13 +754,6 @@ class Device(abc.ABC):
         )
         # device property present in braket plugin
         use_grouping = getattr(self, "use_grouping", True)
-
-        if any(isinstance(m, MidMeasureMP) for m in circuit.operations):
-            circuit = (
-                qml.defer_measurements(circuit)
-                if not self.capabilities().get("supports_mid_measure", False)
-                else circuit
-            )
 
         hamiltonian_in_obs = any(isinstance(obs, Hamiltonian) for obs in circuit.observables)
         expval_sum_in_obs = any(
