@@ -23,7 +23,7 @@ def transform(
     quantum_transform, expand_transform=None, classical_cotransform=None, is_informative=None
 ):
     """The transform function is to be used to validate and dispatch a quantum transform on PennyLane objects (tape,
-    qfunc, Qnode and TransformProgram). It can be used directly as a decorator on qfunc and qnodes.
+    qfunc, QNode or TransformProgram). It can be used directly as a decorator on qfunc and qnodes.
 
     Args:
         quantum_transform(callable): A quantum transform is defined as a function that has the following requirements:
@@ -94,7 +94,7 @@ def transform(
     >>> transformed_qnode = dispatched_transform(qfunc_circuit)
     <QNode: wires=2, device='default.qubit', interface='auto', diff_method='best'>
 
-    One subtlety here, this transform would not work for a qfunc because our transform return more than one tape. If
+    One subtlety here, this transform would not work for a qfunc because our transform returns more than one tape. If
     it was not the case you would be able to dispatch on quantum functions.
     """
     # 1: Checks for the transform
