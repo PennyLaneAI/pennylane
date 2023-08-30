@@ -25,8 +25,9 @@ from pennylane.templates.tensornetworks.mps import compute_indices_MPS, MPS
 def test_flatten_unflatten():
     """Test the flatten and unflatten methods."""
 
-    def block(weights, wires):
-        qml.CNOT(wires=[wires[0], wires[1]])
+    def block(weights, wires, use_CNOT=True):
+        if use_CNOT:
+            qml.CNOT(wires=[wires[0], wires[1]])
         qml.RY(weights[0], wires=wires[0])
         qml.RY(weights[1], wires=wires[1])
 
@@ -38,7 +39,7 @@ def test_flatten_unflatten():
 
     wires = qml.wires.Wires((0, 1, 2, 3))
 
-    op = qml.MPS(wires, n_block_wires, block, n_params_block, template_weights)
+    op = qml.MPS(wires, n_block_wires, block, n_params_block, template_weights, use_CNOT=True)
 
     data, metadata = op._flatten()
     assert len(data) == 1
@@ -376,6 +377,19 @@ class TestTemplateOutputs:
         qml.StronglyEntanglingLayers(SELWeights1, wires=wires[0:2])
         qml.StronglyEntanglingLayers(SELWeights2, wires=wires[1:3])
 
+    @staticmethod
+    def circuit3_block(wires, k=None):
+        qml.MultiControlledX(wires=[wires[i] for i in range(len(wires))])
+        assert k == 2
+
+    @staticmethod
+    def circuit3_MPS(wires, **kwargs):
+        qml.MultiControlledX(wires=[wires[0], wires[1], wires[2], wires[3]])
+        qml.MultiControlledX(wires=[wires[1], wires[2], wires[3], wires[4]])
+        qml.MultiControlledX(wires=[wires[2], wires[3], wires[4], wires[5]])
+        qml.MultiControlledX(wires=[wires[3], wires[4], wires[5], wires[6]])
+        qml.MultiControlledX(wires=[wires[4], wires[5], wires[6], wires[7]])
+
     @pytest.mark.parametrize(
         (
             "block",
@@ -383,6 +397,7 @@ class TestTemplateOutputs:
             "wires",
             "n_block_wires",
             "template_weights",
+            "kwargs",
             "expected_circuit",
         ),
         [
@@ -392,6 +407,7 @@ class TestTemplateOutputs:
                 [1, 2, 3, 4],
                 2,
                 [[0.1, 0.2], [-0.2, 0.3], [0.3, 0.4]],
+                {},
                 "circuit1_MPS",
             ),
             (
@@ -400,12 +416,22 @@ class TestTemplateOutputs:
                 [1, 2, 3],
                 2,
                 [[0.1, 0.2, 0.3], [0.2, 0.3, -0.4]],
+                {},
                 "circuit2_MPS",
+            ),
+            (
+                "circuit3_block",
+                0,
+                [1, 2, 3, 4, 5, 6, 7, 8],
+                4,
+                None,
+                {'k':2},
+                "circuit3_MPS",
             ),
         ],
     )
     def test_output(
-        self, block, n_params_block, wires, n_block_wires, template_weights, expected_circuit
+        self, block, n_params_block, wires, n_block_wires, template_weights, kwargs, expected_circuit
     ):
         """Verifies that the output of the circuits is correct."""
         dev = qml.device("default.qubit", wires=wires)
@@ -414,14 +440,14 @@ class TestTemplateOutputs:
 
         @qml.qnode(dev)
         def circuit_template():
-            qml.MPS(wires, n_block_wires, block, n_params_block, template_weights)
+            qml.MPS(wires, n_block_wires, block, n_params_block, template_weights, **kwargs)
             return qml.expval(qml.PauliZ(wires=wires[-1]))
 
         template_result = circuit_template()
 
         @qml.qnode(dev)
         def circuit_manual():
-            expected_circuit(template_weights, wires)
+            expected_circuit(weights=template_weights, wires=wires)
             return qml.expval(qml.PauliZ(wires=wires[-1]))
 
         manual_result = circuit_manual()

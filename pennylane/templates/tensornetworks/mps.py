@@ -17,7 +17,6 @@ Contains the MPS template.
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import warnings
 import pennylane as qml
-import pennylane.numpy as np
 from pennylane.operation import Operation, AnyWires
 
 
@@ -75,7 +74,9 @@ class MPS(Operation):
     r"""The MPS template broadcasts an input circuit across many wires following the architecture of a Matrix Product State tensor network.
     The result is similar to the architecture in `arXiv:1803.11537 <https://arxiv.org/abs/1803.11537>`_.
 
-    The argument ``block`` is a user-defined quantum circuit that should accept two keyword arguments: ``weights`` and ``wires``.
+    The keyword argument ``block`` is a user-defined quantum circuit that should accept two arguments: ``wires`` and ``weights``.
+    The latter argument is optional in case the implementation of ``block`` doesn't require any weights. Any additional arguments
+    should be provided using the ``kwargs``.
 
     Args:
         wires (Iterable): wires that the template acts on
@@ -84,6 +85,7 @@ class MPS(Operation):
         n_params_block (int): the number of parameters in a block; equal to the length of the ``weights`` argument in ``block``
         template_weights (Sequence): list containing the weights for all blocks
         offset (int): offset for positioning the subsequent blocks relative to the default ``n_block_wires/2``, where :math:`|\text{offset}| < \text{n_block_wires} / 2`
+        **kwargs: additional keyword arguments for implementing the ``block``
 
     .. note::
 
@@ -155,17 +157,15 @@ class MPS(Operation):
 
     """
 
-    num_params = 1
-    """int: Number of trainable parameters that the operator depends on."""
-
     num_wires = AnyWires
     par_domain = "A"
 
     @classmethod
     def _unflatten(cls, data, metadata):
         new_op = cls.__new__(cls)
-        new_op._hyperparameters = dict(metadata[1])
-        Operation.__init__(new_op, data, wires=metadata[0])
+        new_op._hyperparameters = dict(metadata[1])  # pylint: disable=protected-access
+        new_op._weights = data[0] if len(data) else None # pylint: disable=protected-access
+        Operation.__init__(new_op, *data, wires=metadata[0])
         return new_op
 
     def __init__(
@@ -173,18 +173,16 @@ class MPS(Operation):
         wires,
         n_block_wires,
         block,
-        n_params_block,
+        n_params_block=0,
         template_weights=None,
         offset=0,
         id=None,
+        **kwargs,
     ):
         ind_gates = compute_indices_MPS(wires, n_block_wires, offset)
         n_blocks = self.get_n_blocks(wires, n_block_wires, offset)
 
-        if template_weights is None:
-            template_weights = np.random.rand(n_blocks, n_params_block)
-
-        else:
+        if template_weights is not None:
             shape = qml.math.shape(template_weights)[-4:]  # (n_blocks, n_params_block)
             if shape[0] != n_blocks:
                 raise ValueError(
@@ -195,12 +193,22 @@ class MPS(Operation):
                     f"Weights tensor must have last dimension of length {n_params_block}; got {shape[-1]}"
                 )
 
-        self._hyperparameters = {"ind_gates": ind_gates, "block": block}
-        super().__init__(template_weights, wires=wires, id=id)
+        self._weights = template_weights
+        self._hyperparameters = {"ind_gates": ind_gates, "block": block, **kwargs}
+
+        if self._weights is None:
+            super().__init__(wires=wires, id=id)
+        else:
+            super().__init__(self._weights, wires=wires, id=id)
+
+    @property
+    def num_params(self):
+        """int: Number of trainable parameters that the operator depends on."""
+        return 0 if self._weights is None else 1
 
     @staticmethod
     def compute_decomposition(
-        weights, wires, ind_gates, block
+        weights=None, wires=None, ind_gates=None, block=None, **kwargs
     ):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a product of other operators.
 
@@ -213,14 +221,21 @@ class MPS(Operation):
             wires (Iterable): wires that the template acts on
             block (Callable): quantum circuit that defines a block
             ind_gates (array): array of wire indices
+            **kwargs: additional keyword arguments for implementing the ``block``
 
         Returns:
             list[.Operator]: decomposition of the operator
         """
         decomp = []
+        itrweights = iter([]) if weights is None else iter(weights)
         block_gen = qml.tape.make_qscript(block)
-        for idx, w in enumerate(ind_gates):
-            decomp += block_gen(weights=weights[idx][:], wires=w)
+        for w in ind_gates:
+            weight = next(itrweights, None)
+            decomp += (
+                block_gen(wires=w, **kwargs)
+                if weight is None
+                else block_gen(weights=weight, wires=w, **kwargs)
+            )
         return [qml.apply(op) for op in decomp] if qml.QueuingManager.recording() else decomp
 
     @staticmethod
