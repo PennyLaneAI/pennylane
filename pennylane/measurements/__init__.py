@@ -104,16 +104,16 @@ ability to collect statistics on single measurement values.
 
 .. code-block:: python
 
-import pennylane as qml
+    import pennylane as qml
 
-dev = qml.device("default.qubit", wires=3)
+    dev = qml.device("default.qubit", wires=3)
 
-@qml.qnode(dev)
-def circ(x, y):
-    qml.RX(x, wires=0)
-    qml.RY(y, wires=1)
-    m0 = qml.measure(1)
-    return qml.expval(qml.PauliZ(0)), qml.sample(m0)
+    @qml.qnode(dev)
+    def circ(x, y):
+        qml.RX(x, wires=0)
+        qml.RY(y, wires=1)
+        m0 = qml.measure(1)
+        return qml.expval(qml.PauliZ(0)), qml.sample(m0)
 
 QNodes can be executed as usual when collecting mid-circuit measurement statistics:
 

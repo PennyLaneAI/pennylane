@@ -193,7 +193,9 @@ class SampleMP(SampleMeasurement):
         decimal: bool = False,
     ):  # pylint: disable=too-many-arguments, arguments-differ
         """Process the given samples.
+
         Args:
+
             samples (Sequence[complex]): computational basis samples generated for all wires
             wire_order (Wires): wires determining the subspace that ``samples`` acts on
             shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
