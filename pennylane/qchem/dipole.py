@@ -208,8 +208,7 @@ def fermionic_dipole(mol, cutoff=1.0e-18, core=None, active=None):
             *args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
-            tuple(array[float], list[list[int]]): the dipole moment coefficients and the indices of
-            the spin orbitals the creation and annihilation operators act on
+            FermiSentence: fermionic dipole moment
         """
         constants, integrals = dipole_integrals(mol, core, active)(*args)
 
