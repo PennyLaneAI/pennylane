@@ -9,13 +9,19 @@
 * Dunder ``__add__`` method is added to the ``TransformProgram`` class, therefore two programs can be added using ``+`` .
   [(#4549)](https://github.com/PennyLaneAI/pennylane/pull/4549)
 
+* `qml.sample()` in the new device API now returns a `np.int64` array instead of `np.bool8`.
+  [(#4539)](https://github.com/PennyLaneAI/pennylane/pull/4539)
+
+* Wires can be provided to the new device API.
+  [(#4538)](https://github.com/PennyLaneAI/pennylane/pull/4538)
+
 <h3>Breaking changes 💔</h3>
 
 * The old return type and associated functions ``qml.enable_return`` and ``qml.disable_return`` are removed.
-  [#4503](https://github.com/PennyLaneAI/pennylane/pull/4503)
+  [(#4503)](https://github.com/PennyLaneAI/pennylane/pull/4503)
 
 * The ``mode`` keyword argument in ``QNode`` is removed. Please use ``grad_on_execution`` instead.
-  [#4503](https://github.com/PennyLaneAI/pennylane/pull/4503)
+  [(#4503)](https://github.com/PennyLaneAI/pennylane/pull/4503)
 
 * The CV observables ``qml.X`` and ``qml.P`` are removed. Please use ``qml.QuadX`` and ``qml.QuadP`` instead.
   [#4533](https://github.com/PennyLaneAI/pennylane/pull/4533)
@@ -32,7 +38,15 @@
 
 <h3>Deprecations 👋</h3>
 
+* The ``prep`` keyword argument in ``QuantumScript`` is deprecated and will be removed from `QuantumScript`.
+  ``StatePrepBase`` operations should be placed at the beginning of the `ops` list instead.
+  [(#4554)](https://github.com/PennyLaneAI/pennylane/pull/4554)
+
 <h3>Documentation 📝</h3>
+
+* Add functions for qubit-simulation to the `qml.devices` sub-page of the "Internal" section.
+  Note that these functions are unstable while device upgrades are underway.
+  [(#4555)](https://github.com/PennyLaneAI/pennylane/pull/4555)
 
 <h3>Bug fixes 🐛</h3>
 
