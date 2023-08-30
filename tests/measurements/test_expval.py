@@ -35,11 +35,10 @@ def custom_measurement_process(device, spy):
             call_args.kwargs["bin_size"],
         )
         # no need to use op, because the observable has already been applied to ``self.dev._state``
-        meas = qml.expval(op=obs)
-        old_res = device.expval(obs, shot_range=shot_range, bin_size=bin_size)
         if isinstance(obs, qml.measurements.MeasurementProcess):
             obs = obs.obs
         meas = qml.expval(op=obs)
+        old_res = device.expval(obs, shot_range=shot_range, bin_size=bin_size)
         if device.shots is None:
             new_res = meas.process_state(state=state, wire_order=device.wires)
         else:
