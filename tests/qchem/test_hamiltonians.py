@@ -345,7 +345,7 @@ class TestJax:
                 qml.PauliX(1)
                 qml.DoubleExcitation(0.22350048111151138, wires=[0, 1, 2, 3])
                 enable_new_opmath()
-                h_qubit = qchem.diff_hamiltonian(mol, fs=True)(*args)
+                h_qubit = qchem.diff_hamiltonian(mol)(*args)
                 disable_new_opmath()
                 return qml.expval(h_qubit)
 
