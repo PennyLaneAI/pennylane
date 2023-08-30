@@ -223,8 +223,8 @@ class RandomLayers(Operation):
 
         >>> weights = torch.tensor([[0.1, -2.1, 1.4]])
         >>> rotations=[qml.RY, qml.RX]
-        >>> qml.RandomLayers.compute_decomposition(weights, wires=["a", "b"], ratio_imprimitive=0.3,
-        ..                                         imprimitive=qml.CNOT, rotations=rotations, seed=42)
+        >>> qml.RandomLayers.compute_decomposition(weights, wires=["a", "b"], ratio_imprim=0.3,
+        ...                                         imprimitive=qml.CNOT, rotations=rotations, seed=42)
         [RY(tensor(0.1000), wires=['b']),
          RY(tensor(-2.1000), wires=['b']),
          CNOT(wires=['b', 'a']),
