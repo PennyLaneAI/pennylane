@@ -613,7 +613,7 @@ class QubitDevice(Device):
 
         for m in measurements:
             # TODO: Remove this when all overriden measurements support the `MeasurementProcess` class
-            if m.obs is not None and not isinstance(m.obs, MeasurementValue):
+            if m.obs is not None:
                 obs = m.obs
                 obs.return_type = m.return_type
             else:
@@ -1319,7 +1319,7 @@ class QubitDevice(Device):
             try:
                 eigvals = self._asarray(
                     observable.eigvals()
-                    if not isinstance(observable, MeasurementProcess)
+                    if not isinstance(observable, MeasurementValue)
                     else np.arange(2 ** len(observable.wires)),
                     dtype=self.R_DTYPE,
                 )
@@ -1335,7 +1335,7 @@ class QubitDevice(Device):
         # estimate the ev
         # Get samples as decimal integer values if computing ev for a MeasurementValue,
         # otherwise the returned samples would be boolean lists
-        decimal = isinstance(observable, MeasurementProcess)
+        decimal = isinstance(observable, MeasurementValue)
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size, decimal=decimal)
         # With broadcasting, we want to take the mean over axis 1, which is the -1st/-2nd with/
         # without bin_size. Without broadcasting, axis 0 is the -1st/-2nd with/without bin_size
@@ -1357,7 +1357,7 @@ class QubitDevice(Device):
             try:
                 eigvals = self._asarray(
                     observable.eigvals()
-                    if not isinstance(observable, MeasurementProcess)
+                    if not isinstance(observable, MeasurementValue)
                     else np.arange(2 ** len(observable.wires)),
                     dtype=self.R_DTYPE,
                 )
@@ -1374,7 +1374,7 @@ class QubitDevice(Device):
         # estimate the variance
         # Get samples as decimal integer values if computing ev for a MeasurementValue,
         # otherwise the returned samples would be boolean lists
-        decimal = isinstance(observable, MeasurementProcess)
+        decimal = isinstance(observable, MeasurementValue)
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size, decimal=decimal)
 
         # With broadcasting, we want to take the variance over axis 1, which is the -1st/-2nd with/
@@ -1491,7 +1491,7 @@ class QubitDevice(Device):
 
         # translate to wire labels used by device
         device_wires = self.map_wires(observable.wires)
-        name = observable.name
+        name = observable.name if not isinstance(observable, MeasurementValue) else None
         # Select the samples from self._samples that correspond to ``shot_range`` if provided
         if shot_range is None:
             sub_samples = self._samples
@@ -1501,7 +1501,7 @@ class QubitDevice(Device):
             # Ellipsis (...) otherwise would take up broadcasting and shots axes.
             sub_samples = self._samples[..., slice(*shot_range), :]
 
-        no_observable_provided = isinstance(observable, MeasurementProcess)
+        no_observable_provided = isinstance(observable, (MeasurementProcess, MeasurementValue))
 
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}

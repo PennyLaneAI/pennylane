@@ -33,10 +33,8 @@ def custom_measurement_process(device, spy):
             call_args.kwargs["shot_range"],
             call_args.kwargs["bin_size"],
         )
-        old_res = device.var(obs, shot_range=shot_range, bin_size=bin_size)
-        if isinstance(obs, qml.measurements.MeasurementProcess):
-            obs = obs.obs
         meas = qml.var(op=obs)
+        old_res = device.var(obs, shot_range=shot_range, bin_size=bin_size)
         if samples is not None:
             new_res = meas.process_samples(
                 samples=samples, wire_order=device.wires, shot_range=shot_range, bin_size=bin_size

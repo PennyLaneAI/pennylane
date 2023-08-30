@@ -33,7 +33,7 @@ from pennylane.operation import Operation
 from pennylane.ops import Sum
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.pulse import ParametrizedEvolution
-from pennylane.measurements import ExpectationMP
+from pennylane.measurements import ExpectationMP, MeasurementValue
 from pennylane.typing import TensorLike
 from pennylane.wires import WireError
 
@@ -583,7 +583,10 @@ class DefaultQubit(QubitDevice):
         # intercept other Hamiltonians
         # TODO: Ideally, this logic should not live in the Device, but be moved
         # to a component that can be re-used by devices as needed.
-        if observable.name not in ("Hamiltonian", "SparseHamiltonian"):
+        if isinstance(observable, MeasurementValue) or observable.name not in (
+            "Hamiltonian",
+            "SparseHamiltonian",
+        ):
             return super().expval(observable, shot_range=shot_range, bin_size=bin_size)
 
         assert self.shots is None, f"{observable.name} must be used with shots=None"

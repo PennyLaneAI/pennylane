@@ -146,11 +146,7 @@ class MeasurementProcess(ABC):
 
         # _wires = None indicates broadcasting across all available wires.
         # It translates to the public property wires = Wires([])
-        self._wires = (
-            self.obs.measurements[0].wires
-            if self.obs is not None and self.obs.__class__.__name__ == "MeasurementValue"
-            else wires
-        )
+        self._wires = wires
         self._eigvals = None
 
         if eigvals is not None:
@@ -317,7 +313,7 @@ class MeasurementProcess(ABC):
 
         This is the union of all the Wires objects of the measurement.
         """
-        if self.obs is not None and self.obs.__class__.__name__ != "MeasurementValue":
+        if self.obs is not None:
             return self.obs.wires
 
         return (
