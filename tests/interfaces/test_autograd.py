@@ -284,11 +284,9 @@ class TestCaching:
         # Without caching, 9 evaluations would be required to compute
         # the Jacobian: 1 (forward pass) + 2 (backward pass) * (2 shifts * 2 params)
         #
-        # However, the jacobian is being cached in the interface by default,
-        # hence we do 5 evaluations
         params = np.array([0.1, 0.2])
         qml.jacobian(cost)(params, cache=None)
-        assert dev.num_executions == 5
+        assert dev.num_executions == 9
 
         # With caching, 5 evaluations are required to compute
         # the Jacobian: 1 (forward pass) + (2 shifts * 2 params)
@@ -349,18 +347,9 @@ class TestCaching:
             assert np.allclose(expected, hess1, atol=tol, rtol=0)
 
         expected_runs = 1  # forward pass
-
-        # Jacobian of an involutory observable:
-        # ------------------------------------
-        #
-        # 2 * N execs: evaluate the analytic derivative of <A>
-        # 1 execs: Get <A>, the expectation value of the tape with unshifted parameters.
-        num_shifted_evals = 2 * N
-        runs_for_jacobian = num_shifted_evals + 1
-        expected_runs += runs_for_jacobian
-
-        # Each tape used to compute the Jacobian is then shifted again
-        expected_runs += runs_for_jacobian * num_shifted_evals
+        expected_runs += 2 * N  # Jacobian
+        expected_runs += 4 * N + 1  # Hessian diagonal
+        expected_runs += 4 * N**2  # Hessian off-diagonal
         assert dev.num_executions == expected_runs
 
         # Use caching: number of executions is ideal
@@ -401,11 +390,9 @@ class TestCaching:
                 )[0]
             )
 
-        # Without caching, 3 evaluations are required.
-        # 1 for the forward pass, and one per output dimension
-        # on the backward pass.
+        # no cache_execute caching, but jac for each batch still stored.
         qml.jacobian(cost)(params, cache=None)
-        assert dev.num_executions == 3
+        assert dev.num_executions == 2
 
         # With caching, only 2 evaluations are required. One
         # for the forward pass, and one for the backward pass.

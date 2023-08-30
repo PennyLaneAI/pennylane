@@ -43,6 +43,8 @@ logger.addHandler(logging.NullHandler())
 
 device_type = Union[qml.Device, "qml.devices.experimental.Device"]
 
+jpc_interfaces = {"autograd"}
+
 INTERFACE_MAP = {
     None: "Numpy",
     "auto": "auto",
@@ -109,7 +111,7 @@ def _get_ml_boundary_execute(interface: str, grad_on_execution: bool) -> Callabl
     mapped_interface = INTERFACE_MAP[interface]
     try:
         if mapped_interface == "autograd":
-            from .autograd import execute as ml_boundary
+            from .autograd import autograd_execute as ml_boundary
 
         elif mapped_interface == "tf":
             import tensorflow as tf
@@ -548,6 +550,7 @@ def execute(
         for tape in tapes:
             params.extend(tape.get_parameters(trainable_only=False))
         interface = qml.math.get_interface(*params)
+    interface = "autograd" if interface == "numpy" else interface
     if interface == "jax":
         try:  # pragma: no-cover
             from .jax import get_jax_interface_name
@@ -601,7 +604,7 @@ def execute(
     def inner_execute_with_empty_jac(tapes, **_):
         return (inner_execute(tapes), [])
 
-    if interface in {"autograd"}:
+    if interface in jpc_interfaces:
         execute_fn = inner_execute
     else:
         execute_fn = inner_execute_with_empty_jac
@@ -622,17 +625,15 @@ def execute(
 
     if config.use_device_gradient:
 
-        jpc = DeviceJacobians(device, config, {})
+        jpc = DeviceJacobians(device, {}, config)
 
         # must be new device if this is specified as true
         _grad_on_execution = config.grad_on_execution
 
-        if interface in {"autograd"}:
-            execute_fn = jpc if config.grad_on_execution else inner_execute
+        if interface in jpc_interfaces:
+            execute_fn = jpc.execute if config.grad_on_execution else inner_execute
 
         elif config.grad_on_execution:
-
-            execute_fn = jpc
 
             def execute_fn(internal_tapes):
                 """A partial function that wraps the execute_and_compute_derivatives method of the device.
@@ -683,13 +684,13 @@ def execute(
         # autodiff frameworks.
         tapes = [expand_fn(t) for t in tapes]
 
-        jpc = DeviceJacobians(device, config, gradient_kwargs=gradient_kwargs)
+        jpc = DeviceJacobians(device, gradient_kwargs, config)
 
         if gradient_kwargs.get("method", "") == "adjoint_jacobian":
             tapes = _adjoint_jacobian_expansion(tapes, grad_on_execution, interface, max_expansion)
 
-        if interface in {"autograd"}:
-            execute_fn = jpc if grad_on_execution else inner_execute
+        if interface in jpc_interfaces:
+            execute_fn = jpc.execute if grad_on_execution else inner_execute
 
         else:
 
@@ -705,7 +706,7 @@ def execute(
                         numpy_tapes, **gradient_kwargs
                     )
 
-                if interface not in {"autograd"}:
+                if interface not in jpc_interfaces:
                     execute_fn = device_execute_and_gradients
                 gradient_fn = None
                 _grad_on_execution = True
@@ -758,7 +759,7 @@ def execute(
 
     ml_boundary_execute = _get_ml_boundary_execute(interface, _grad_on_execution)
 
-    if interface in {"autograd"}:
+    if interface in jpc_interfaces:
         results = ml_boundary_execute(tapes, execute_fn, jpc)
     else:
         results = ml_boundary_execute(

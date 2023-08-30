@@ -17,33 +17,38 @@ to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments
 import logging
+from typing import Tuple, Callable
 
 import autograd
 from autograd.numpy.numpy_boxes import ArrayBox
 
 import pennylane as qml
 
+Batch = Tuple[qml.tape.QuantumTape]
+ExecuteFn = Callable[[Batch], qml.typing.ResultBatch]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-def execute(tapes, execute_fn, jpc):
+def autograd_execute(
+    tapes: Batch,
+    execute_fn: ExecuteFn,
+    jpc: qml.interfaces.jacobian_products.JacobianProductCalculator,
+):
     """Execute a batch of tapes with Autograd parameters on a device.
 
     Args:
-        parameters (list[list[Any]]): Nested list of the quantum tape parameters.
-            This argument should be generated from the provided list of tapes.
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        execute_fn (Callable[[Batch], ResultBatch])
-        jpc (JacobianProductCalculator)
+        execute_fn (Callable[[Sequence[.QuantumTape]], ResultBatch]): a function that turns a batch of circuits into results
+        jpc (JacobianProductCalculator): a class that can compute the vector jacobian product for the input tapes.
 
     Returns:
         TensorLike: A nested tuple of tape results. Each element in
         the returned tuple corresponds in order to the provided tapes.
     """
     if logger.isEnabledFor(logging.DEBUG):
-        logger.debug("autograd boundary entry.")
+        logger.debug("Entry with (tapes=%s, execute_fn=%s, jpc=%s)", tapes, execute_fn, jpc)
     # pylint: disable=unused-argument
     for tape in tapes:
         # set the trainable parameters
@@ -61,9 +66,9 @@ def execute(tapes, execute_fn, jpc):
 @autograd.extend.primitive
 def _execute(
     parameters,
-    tapes=None,
-    execute_fn=None,
-    jpc=None,
+    tapes,
+    execute_fn,
+    jpc,
 ):  # pylint: disable=dangerous-default-value,unused-argument
     """Autodifferentiable wrapper around ``Device.batch_execute``.
 
@@ -71,20 +76,20 @@ def _execute(
         parameters (list[list[Any]]): Nested list of the quantum tape parameters.
             This argument should be generated from the provided list of tapes.
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        execute_fn (Callable[[Batch], ResultBatch])
-        jpc (JacobianProductCalculator)
+        execute_fn (Callable[[Sequence[.QuantumTape]], ResultBatch]): a function that turns a batch of circuits into results
+        jpc (JacobianProductCalculator): a class that can compute the vector jacobian product for the input tapes.
     """
-
     return execute_fn(tapes)
 
 
+# pylint: disable=dangerous-default-value,unused-argument
 def vjp(
     ans,
     parameters,
-    tapes=None,
-    execute_fn=None,
-    jpc=None,
-):  # pylint: disable=dangerous-default-value,unused-argument
+    tapes,
+    execute_fn,
+    jpc,
+):
     """Returns the vector-Jacobian product operator for a batch of quantum tapes.
 
     Args:
@@ -92,8 +97,8 @@ def vjp(
         parameters (list[list[Any]]): Nested list of the quantum tape parameters.
             This argument should be generated from the provided list of tapes.
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        execute_fn (Callable[[Batch], ResultBatch])
-        jpc (JacobianProductCalculator)
+        execute_fn (Callable[[Sequence[.QuantumTape]], ResultBatch]): a function that turns a batch of circuits into results
+        jpc (JacobianProductCalculator): a class that can compute the vector jacobian product for the input tapes.
 
     Returns:
         function: this function accepts the backpropagation
