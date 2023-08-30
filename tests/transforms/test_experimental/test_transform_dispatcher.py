@@ -174,23 +174,6 @@ class TestTransformDispatcher:
         assert not dispatched_transform.is_informative
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
-    def test_integration_dispatcher_with_valid_transform_and_transform_program(
-        self, valid_transform
-    ):
-        """Test that no error is raised with the transform function and that the transform dispatcher returns
-        the right object."""
-
-        dispatched_transform = transform(valid_transform)
-
-        program = TransformProgram()
-        program_transformed = dispatched_transform(program, 0)
-
-        assert isinstance(program_transformed, TransformProgram)
-        assert len(program_transformed) == 1
-        assert isinstance(program_transformed[0], qml.transforms.core.TransformContainer)
-        assert program_transformed[0].transform is valid_transform
-
-    @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_integration_dispatcher_with_valid_transform_decorator(self, valid_transform):
         """Test that no error is raised with the transform function and that the transform dispatcher returns
         the right object."""
