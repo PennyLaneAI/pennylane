@@ -6,8 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 * The qchem ``fermionic_dipole`` and ``particle_number`` functions are updated to use fermi 
-  sentence.
-  [#4546](https://github.com/PennyLaneAI/pennylane/pull/4546)
+  sentence. The deprecated features for using tuples to represent fermionic operations are removed.
+  [(#4546)](https://github.com/PennyLaneAI/pennylane/pull/4546)
+  [(#4556)](https://github.com/PennyLaneAI/pennylane/pull/4556)
 
 * `qml.sample()` in the new device API now returns a `np.int64` array instead of `np.bool8`.
   [(#4539)](https://github.com/PennyLaneAI/pennylane/pull/4539)
