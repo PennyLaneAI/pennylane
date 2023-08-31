@@ -66,6 +66,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fix `skip_first` option in `expand_tape_state_prep` and add `force_decompose` which forces the decomposition of `BasisStatePreparation` and `MottonenStatePreparation` operations into gates.
+  [(#4564)](https://github.com/PennyLaneAI/pennylane/pull/4564)
+
 * `tf.function` no longer breaks `ProbabilityMP.process_state` which is needed by new devices.
   [(#4470)](https://github.com/PennyLaneAI/pennylane/pull/4470)
 
@@ -74,6 +77,7 @@
 This release contains contributions from (in alphabetical order):
 
 Lillian M. A. Frederiksen,
+Vincent Michaud-Rioux,
 Romain Moyard,
 Matthew Silverman
 
