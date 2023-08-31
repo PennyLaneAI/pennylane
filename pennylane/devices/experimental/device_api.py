@@ -246,7 +246,7 @@ class Device(abc.ABC):
 
         .. code-block:: python
 
-                def preprocess():
+                def preprocess(config):
                     program = TransformProgram()
                     program.add_transform(my_preprocessing_transform)
                     return program, config
