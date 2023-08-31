@@ -119,10 +119,10 @@ def measure_with_samples(
     have already been mapped to integer wires used in the device.
 
     Args:
-        mp (List[Union[~.measurements.SampleMeasurement, ~.measurements.ClassicalShadowMP, ~.measurements.ShadowExpvalMP]]):
+        mp (List[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]]):
             The sample measurements to perform
         state (np.ndarray[complex]): The state vector to sample from
-        shots (~.measurements.Shots): The number of samples to take
+        shots (Shots): The number of samples to take
         is_state_batched (bool): whether the state is batched or not
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.

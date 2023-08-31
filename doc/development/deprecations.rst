@@ -6,14 +6,8 @@ Deprecations
 Pending deprecations
 --------------------
 
-* The `RandomLayers.compute_decomposition` keyword argument `ratio_imprivitive` will be changed to `ratio_imprim` to
-  match the call signature of the operation. 
-
-  - Deprecated in v0.32
-  - Removed in v0.33
-
 * ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
-  
+
   - Deprecated in v0.24
   - Will be removed in v0.32
 
@@ -57,7 +51,7 @@ Pending deprecations
   will be abstracted away from the device class itself and provided by composition, rather than inheritance.
   Therefore, some public and private methods from ``DefaultQubit`` will no longer exist, though its behaviour
   in a workflow will remain the same.
-  
+
   If you directly interact with device methods, please consult
   :class:`pennylane.devices.experimental.Device` and
   :class:`pennylane.devices.experimental.DefaultQubit2`
@@ -74,6 +68,13 @@ Pending deprecations
 
   - Deprecated in v0.32
   - Will be removed in v0.33
+
+* The ``prep`` keyword argument in ``QuantumScript`` is deprecated and will be removed from `QuantumScript`.
+  ``StatePrepBase`` operations should be placed at the beginning of the `ops` list instead.
+
+  - Deprecated in v0.33
+  - Will be removed in v0.34
+
 
 Completed deprecation cycles
 ----------------------------
@@ -107,6 +108,12 @@ Completed deprecation cycles
   - Deprecated in v0.32
   - Removed in v0.33
 
+* The ``RandomLayers.compute_decomposition`` keyword argument ``ratio_imprivitive`` has been changed to
+  ``ratio_imprim`` to match the call signature of the operation.
+
+  - Deprecated in v0.32
+  - Removed in v0.33
+
 * The ``observables`` argument in ``QubitDevice.statistics`` is removed. Please use ``circuit``
   instead. Using a list of observables in ``QubitDevice.statistics`` is removed. Please use a
   ``QuantumTape`` instead.
@@ -122,7 +129,7 @@ Completed deprecation cycles
 
 * The method ``tape.unwrap()`` and corresponding ``UnwrapTape`` and ``Unwrap`` classes are
   removed.
- 
+
   - Deprecated in v0.32
   - Removed in v0.33
 
@@ -274,7 +281,7 @@ Completed deprecation cycles
    - Removed in 0.29
 
 * In-place inversion — ``op.inv()`` and ``op.inverse=value`` — is deprecated. Please
-  use ``qml.adjoint`` or ``qml.pow`` instead. 
+  use ``qml.adjoint`` or ``qml.pow`` instead.
 
   - Still accessible in v0.27 and v0.28
   - Removed in v0.29
@@ -323,7 +330,7 @@ Completed deprecation cycles
   - Deprecated in v0.27
   - Removed in v0.28
 
-* ``QueuingContext`` is renamed ``QueuingManager``. 
+* ``QueuingContext`` is renamed ``QueuingManager``.
 
   - Deprecated name ``QueuingContext`` in v0.27
   - Removed in v0.28
@@ -352,7 +359,7 @@ Completed deprecation cycles
   - Removed in v0.28
 
 * ``qml.transforms.measurement_grouping`` has been removed. Please use ``qml.transforms.hamiltonian_expand``
-  instead. 
+  instead.
 
   - Deprecated in v0.28
   - Removed in v0.29
