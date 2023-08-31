@@ -69,6 +69,15 @@ Pending deprecations
 
   - Deprecated in v0.31
 
+* The ``QuantumScript.set_parameters`` method and the ``QuantumScript.data`` setter has
+  been deprecated. Please use ``QuantumScript.bind_new_parameters`` instead.
+
+  - Deprecated in v0.32
+  - Will be removed in v0.33
+
+Completed deprecation cycles
+----------------------------
+
 * ``qml.qchem.jordan_wigner`` is deprecated, and usage will now raise a warning.
   Use ``qml.jordan_wigner`` instead. List input to define the fermionic operator
   is also deprecated; the fermionic operators ``qml.FermiA``, ``qml.FermiC``,
@@ -77,11 +86,8 @@ Pending deprecations
   `Fermionic Operator <https://pennylane.ai/qml/demos/tutorial_fermionic_operators>`_
   tutorial for more details.
 
-* The ``QuantumScript.set_parameters`` method and the ``QuantumScript.data`` setter has
-  been deprecated. Please use ``QuantumScript.bind_new_parameters`` instead.
-
   - Deprecated in v0.32
-  - Will be removed in v0.33
+  - Removed in v0.33
 
 * The ``tuple`` input type in ``qubit_observable`` has been deprecated. Please use a fermionic
   operator object. The ``tuple`` return type in ``fermionic_hamiltonian`` and
@@ -89,11 +95,7 @@ Pending deprecations
   by default.
 
   - Deprecated in v0.32
-  - Will be removed in v0.33
-
-
-Completed deprecation cycles
-----------------------------
+  - Removed in v0.33
 
 * The ``sampler_seed`` argument of ``qml.gradients.spsa_grad`` has been removed.
   Instead, the ``sampler_rng`` argument should be set, either to an integer value, which will be used
