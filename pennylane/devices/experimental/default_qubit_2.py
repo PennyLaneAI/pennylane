@@ -216,7 +216,7 @@ class DefaultQubit2(Device):
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         self._validate_multiprocessing(max_workers, circuits)
 
-        transform_program, config = preprocess(circuits, execution_config=execution_config)
+        transform_program, config = preprocess(execution_config=execution_config)
 
         return transform_program, config
 

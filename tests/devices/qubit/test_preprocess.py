@@ -589,7 +589,7 @@ class TestPreprocess:
         """Test that preprocessing chooses backprop as the best gradient method."""
         tape = QuantumScript(ops=[], measurements=[])
         config = qml.devices.ExecutionConfig(gradient_method="best")
-        _, config = preprocess([tape], config)
+        _, config = preprocess(config)
         assert config.gradient_method == "backprop"
         assert config.use_device_gradient
         assert not config.grad_on_execution
@@ -601,7 +601,7 @@ class TestPreprocess:
         config = qml.devices.ExecutionConfig(
             gradient_method="adjoint", use_device_gradient=None, grad_on_execution=None
         )
-        _, new_config = preprocess([tape], config)
+        _, new_config = preprocess(config)
 
         assert new_config.use_device_gradient
         assert new_config.grad_on_execution
@@ -617,7 +617,7 @@ class TestPreprocess:
             QuantumScript(ops=ops, measurements=[measurements[1]]),
         ]
 
-        program, _ = preprocess(tapes)
+        program, _ = preprocess()
         res_tapes, batch_fn = program(tapes)
 
         assert len(res_tapes) == 2
@@ -647,7 +647,7 @@ class TestPreprocess:
         execution_config = ExecutionConfig()
         execution_config.gradient_method = "adjoint"
 
-        program, _ = preprocess(tapes, execution_config=execution_config)
+        program, _ = preprocess(execution_config=execution_config)
         res_tapes, batch_fn = program(tapes)
 
         expected_ops = [
@@ -677,7 +677,7 @@ class TestPreprocess:
             QuantumScript(ops=ops, measurements=measurements[1]),
         ]
 
-        program, _ = preprocess(tapes)
+        program, _ = preprocess()
         res_tapes, batch_fn = program(tapes)
 
         expected = [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RZ(0.123, wires=1)]
@@ -701,7 +701,7 @@ class TestPreprocess:
             QuantumScript(ops=ops, measurements=[measurements[1]]),
         ]
 
-        program, _ = preprocess(tapes)
+        program, _ = preprocess()
         res_tapes, batch_fn = program(tapes)
         expected_ops = [
             qml.Hadamard(0),
@@ -737,7 +737,7 @@ class TestPreprocess:
         execution_config = ExecutionConfig()
         execution_config.gradient_method = "adjoint"
 
-        program, _ = preprocess(tapes, execution_config=execution_config)
+        program, _ = preprocess(execution_config=execution_config)
         res_tapes, batch_fn = program(tapes)
 
         expected_ops = [
@@ -769,7 +769,7 @@ class TestPreprocess:
         ]
 
         with pytest.raises(qml.DeviceError, match="Operator NoMatNoDecompOp"):
-            program, _ = preprocess(tapes)
+            program, _ = preprocess()
             program(tapes)
 
     @pytest.mark.parametrize(
@@ -795,7 +795,7 @@ class TestPreprocess:
         execution_config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
 
         with pytest.raises(DeviceError, match=message):
-            program, _ = preprocess([qs], execution_config)
+            program, _ = preprocess(execution_config)
             program([qs])
 
     def test_preprocess_tape_for_adjoint(self):
@@ -806,7 +806,7 @@ class TestPreprocess:
         )
         execution_config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
 
-        program, _ = preprocess([qs], execution_config)
+        program, _ = preprocess(execution_config)
         expanded_tapes, _ = program([qs])
 
         assert len(expanded_tapes) == 1

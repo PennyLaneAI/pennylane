@@ -33,7 +33,7 @@ from pennylane.measurements import (
 )
 from pennylane.typing import ResultBatch, Result
 from pennylane import DeviceError
-from pennylane.transforms.core import transform, TransformContainer, TransformProgram
+from pennylane.transforms.core import transform, TransformProgram
 
 from ..experimental import ExecutionConfig, DefaultExecutionConfig
 
@@ -380,7 +380,6 @@ def _update_config(config: ExecutionConfig) -> ExecutionConfig:
 
 
 def preprocess(
-    circuits: Tuple[qml.tape.QuantumScript],
     execution_config: ExecutionConfig = DefaultExecutionConfig,
 ) -> Tuple[Tuple[qml.tape.QuantumScript], PostprocessingFn, ExecutionConfig]:
     """Preprocess a batch of :class:`~.QuantumTape` objects to make them ready for execution.
@@ -394,32 +393,21 @@ def preprocess(
             options for the execution.
 
     Returns:
-        TransformProgram, ExecutionConfig: A transform program and a configuration with originally unset specifications filled in.
+        TransformProgram, ExecutionConfig: A transform program and a configuration with originally unset specifications
+        filled in.
     """
     transform_program = TransformProgram()
 
     # Validate measurement
-    valid_meas_transform = TransformContainer(
-        transform=validate_measurements.transform, args=[execution_config]
-    )
-    transform_program.push_back(valid_meas_transform)
+    transform_program.add_transform(validate_measurements, execution_config)
 
     # Circuit expand
-    expand_transform = TransformContainer(transform=expand_fn.transform)
-    transform_program.push_back(expand_transform)
+    transform_program.add_transform(expand_fn)
 
-    # Adjoint expand
     if execution_config.gradient_method == "adjoint":
-        expand_adjoint_transform = TransformContainer(
-            transform=validate_and_expand_adjoint.transform
-        )
-        transform_program.push_back(expand_adjoint_transform)
-
-    ### Broadcast expand
-    if circuits[0].batch_size is not None and execution_config.gradient_method == "adjoint":
-        broadcast_expand_transform = TransformContainer(
-            transform=qml.transforms.broadcast_expand.transform
-        )
-        transform_program.push_back(broadcast_expand_transform)
+        # Adjoint expand
+        transform_program.add_transform(validate_and_expand_adjoint)
+        ### Broadcast expand
+        transform_program.add_transform(qml.transforms.broadcast_expand)
 
     return transform_program, _update_config(execution_config)

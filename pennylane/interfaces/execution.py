@@ -126,7 +126,7 @@ def _get_ml_boundary_execute(interface: str, grad_on_execution: bool) -> Callabl
 
         elif interface == "jax-jit":
             from .jax_jit import execute as ml_boundary
-        else:  #  interface in {"jax", "jax-python", "JAX"}:
+        else:  # interface in {"jax", "jax-python", "JAX"}:
             from .jax import execute as ml_boundary
 
     except ImportError as e:  # pragma: no-cover
@@ -161,15 +161,7 @@ def _batch_transform(
         Sequence[QuantumTape], Callable: The new batch of quantum scripts and the post processing
 
     """
-    if isinstance(device, qml.devices.experimental.Device):
-        if not device_batch_transform:
-            warnings.warn(
-                "device batch transforms cannot be turned off with the new device interface.",
-                UserWarning,
-            )
-        device_transform_program, config = device.preprocess(tapes, config)
-        tapes, batch_fn = device_transform_program(tapes)
-        return tapes, batch_fn, config
+    # TODO: Remove once old device are removed
     if device_batch_transform:
         dev_batch_transform = set_shots(device, override_shots)(device.batch_transform)
         return *qml.transforms.map_batch_transform(dev_batch_transform, tapes), config
@@ -606,15 +598,29 @@ def execute(
 
     #### Executing the configured setup #####
 
-    tapes, program_post_processing = transform_program(tapes)
-    tapes, program_pre_processing, config = _batch_transform(
-        tapes, device, config, override_shots, device_batch_transform
-    )
+    if isinstance(device, qml.devices.experimental.Device):
+        if not device_batch_transform:
+            warnings.warn(
+                "device batch transforms cannot be turned off with the new device interface.",
+                UserWarning,
+            )
+        device_transform_program, config = device.preprocess(tapes, config)
+        full_transform_program = transform_program + device_transform_program
+        tapes, post_processing = full_transform_program(tapes)
+    else:
+        # TODO: Remove once old device are removed
+        tapes, program_post_processing = transform_program(tapes)
+        tapes, program_pre_processing, config = _batch_transform(
+            tapes, device, config, override_shots, device_batch_transform
+        )
+
+        def post_processing(results):
+            return program_post_processing(program_pre_processing(results))
 
     # Exiting early if we do not need to deal with an interface boundary
     if no_interface_boundary_required:
         results = inner_execute(tapes)
-        return program_post_processing(program_pre_processing(results))
+        return post_processing(results)
 
     _grad_on_execution = False
 
@@ -737,4 +743,4 @@ def execute(
         tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
     )
 
-    return program_post_processing(program_pre_processing(results))
+    return post_processing(results)
