@@ -19,6 +19,7 @@ executed by a device.
 
 import contextlib
 import copy
+import warnings
 from collections import Counter
 from typing import List, Union, Optional, Sequence
 
