@@ -22,7 +22,7 @@ from .fermionic import FermiWord, FermiSentence
 
 # pylint: disable=unexpected-keyword-arg
 def jordan_wigner(
-    fermi_operator: (Union[FermiWord, FermiSentence]), **kwargs
+    fermi_operator: (Union[FermiWord, FermiSentence]), ps: bool = False, wire_map: dict = None
 ) -> Union[Operator, PauliSentence]:
     r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
 
@@ -72,11 +72,11 @@ def jordan_wigner(
     + (0.25+0j) * X(2) @ X(3)
     + 0.25j * X(2) @ Y(3)
     """
-    return _jordan_wigner_dispatch(fermi_operator, **kwargs)
+    return _jordan_wigner_dispatch(fermi_operator, ps, wire_map)
 
 
 @singledispatch
-def _jordan_wigner_dispatch(fermi_operator, **kwargs):
+def _jordan_wigner_dispatch(fermi_operator, ps, wire_map):
     """Dispatches to appropriate function if fermi_operator is a FermiWord,
     FermiSentence or list"""
     raise ValueError(f"fermi_operator must be a FermiWord or FermiSentence, got: {fermi_operator}")
