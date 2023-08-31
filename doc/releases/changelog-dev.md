@@ -14,7 +14,10 @@
 
 * Wires can be provided to the new device API.
   [(#4538)](https://github.com/PennyLaneAI/pennylane/pull/4538)
-  [(#)]()
+  [(#4562)](https://github.com/PennyLaneAI/pennylane/pull/4562)
+
+* The new device API now has a `repr()`
+  [(#4562)](https://github.com/PennyLaneAI/pennylane/pull/4562)
 
 <h3>Breaking changes 💔</h3>
 
