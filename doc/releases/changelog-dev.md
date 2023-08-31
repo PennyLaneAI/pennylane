@@ -14,6 +14,7 @@
 
 * Wires can be provided to the new device API.
   [(#4538)](https://github.com/PennyLaneAI/pennylane/pull/4538)
+  [(#)]()
 
 <h3>Breaking changes 💔</h3>
 
