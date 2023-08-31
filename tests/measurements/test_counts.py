@@ -171,7 +171,7 @@ class TestProcessSamples:
         """Test that the counts output is correct for single mid-circuit measurement
         values."""
         shots = 1000
-        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.bool8)
+        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int64)
         mv = qml.measure(0)
 
         result = qml.counts(mv).process_samples(samples, wire_order=[0])
@@ -225,7 +225,7 @@ class TestProcessSamples:
         """Test that the counts output is correct when all_outcomes is passed
         for mid-circuit measurement values."""
         shots = 1000
-        samples = np.zeros((shots, 2)).astype(np.bool8)
+        samples = np.zeros((shots, 2)).astype(np.int64)
         mv = qml.measure(0)
 
         result1 = qml.counts(mv, all_outcomes=False).process_samples(samples, wire_order=[0])

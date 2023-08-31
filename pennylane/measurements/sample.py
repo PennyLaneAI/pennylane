@@ -203,7 +203,8 @@ class SampleMP(SampleMeasurement):
             bin_size (int): Divides the shot range into bins of size ``bin_size``, and
                 returns the measurement statistic separately over each bin. If not
                 provided, the entire shot range is treated as a single bin.
-            decimal (bool): Whether to return samples as base-10 integers or boolean lists.
+            decimal (bool): Whether to return samples as base-10 integers or boolean
+                integer lists.
         """
         wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]

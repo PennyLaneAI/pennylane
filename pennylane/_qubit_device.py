@@ -1334,7 +1334,7 @@ class QubitDevice(Device):
 
         # estimate the ev
         # Get samples as decimal integer values if computing ev for a MeasurementValue,
-        # otherwise the returned samples would be boolean lists
+        # otherwise the returned samples would be boolean integer lists
         decimal = isinstance(observable, MeasurementValue)
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size, decimal=decimal)
         # With broadcasting, we want to take the mean over axis 1, which is the -1st/-2nd with/
@@ -1373,7 +1373,7 @@ class QubitDevice(Device):
 
         # estimate the variance
         # Get samples as decimal integer values if computing ev for a MeasurementValue,
-        # otherwise the returned samples would be boolean lists
+        # otherwise the returned samples would be boolean integer lists
         decimal = isinstance(observable, MeasurementValue)
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size, decimal=decimal)
 
@@ -1477,8 +1477,9 @@ class QubitDevice(Device):
                 provided, the entire shot range is treated as a single bin.
             counts (bool): whether counts (``True``) or raw samples (``False``)
                 should be returned
-            decimal (bool): Whether to return samples as base-10 integers or boolean lists.
-                Setting ``decimal`` does not do anything if ``counts`` is ``True``.
+            decimal (bool): Whether to return samples as base-10 integers or boolean
+                integer lists. Setting ``decimal`` does not do anything if ``counts``
+                is ``True``.
 
         Raises:
             EigvalsUndefinedError: if no information is available about the
