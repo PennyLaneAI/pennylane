@@ -6,6 +6,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* Add the method ``add_transform`` and ``insert_front_transform`` transform in the ``TransformProgram``.
+  [(#4559)](https://github.com/PennyLaneAI/pennylane/pull/4559)
+
+* Dunder ``__add__`` method is added to the ``TransformProgram`` class, therefore two programs can be added using ``+`` .
+  [(#4549)](https://github.com/PennyLaneAI/pennylane/pull/4549)
+
 * `qml.sample()` in the new device API now returns a `np.int64` array instead of `np.bool8`.
   [(#4539)](https://github.com/PennyLaneAI/pennylane/pull/4539)
 
@@ -21,11 +27,15 @@
   [(#4503)](https://github.com/PennyLaneAI/pennylane/pull/4503)
 
 * The CV observables ``qml.X`` and ``qml.P`` are removed. Please use ``qml.QuadX`` and ``qml.QuadP`` instead.
-  [#4533](https://github.com/PennyLaneAI/pennylane/pull/4533)
+  [(#4533)](https://github.com/PennyLaneAI/pennylane/pull/4533)
 
 * The method ``tape.unwrap()`` and corresponding ``UnwrapTape`` and ``Unwrap`` classes are removed.
   Instead of ``tape.unwrap()``, use :func:`~.transforms.convert_to_numpy_parameters`.
-  [#4535](https://github.com/PennyLaneAI/pennylane/pull/4535)
+  [(#4535)](https://github.com/PennyLaneAI/pennylane/pull/4535)
+
+* The ``RandomLayers.compute_decomposition`` keyword argument ``ratio_imprivitive`` has been changed to
+  ``ratio_imprim`` to match the call signature of the operation.
+  [(#4552)](https://github.com/PennyLaneAI/pennylane/pull/4552)
 
 * The ``sampler_seed`` argument of ``qml.gradients.spsa_grad`` has been removed.
   Instead, the ``sampler_rng`` argument should be set, either to an integer value, which will be used
@@ -33,6 +43,11 @@
   ``np.random.default_rng(seed)``.
   [(#4550)](https://github.com/PennyLaneAI/pennylane/pull/4550)
 
+* The ``QuantumScript.set_parameters`` method and the ``QuantumScript.data`` setter have
+  been removed. Please use ``QuantumScript.bind_new_parameters`` instead.
+  [(#4548)](https://github.com/PennyLaneAI/pennylane/pull/4548)
+
+  
 <h3>Deprecations 👋</h3>
 
 * The ``prep`` keyword argument in ``QuantumScript`` is deprecated and will be removed from `QuantumScript`.
@@ -40,6 +55,10 @@
   [(#4554)](https://github.com/PennyLaneAI/pennylane/pull/4554)
 
 <h3>Documentation 📝</h3>
+
+* Minor documentation improvements to the new device API. The documentation now correctly states that interface-specific
+  parameters are only passed to the device for backpropagation derivatives. 
+  [(#4542)](https://github.com/PennyLaneAI/pennylane/pull/4542)
 
 * Add functions for qubit-simulation to the `qml.devices` sub-page of the "Internal" section.
   Note that these functions are unstable while device upgrades are underway.
@@ -54,5 +73,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Lillian M. A. Frederiksen,
 Romain Moyard,
 Matthew Silverman
+
