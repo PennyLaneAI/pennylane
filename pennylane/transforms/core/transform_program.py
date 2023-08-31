@@ -182,14 +182,14 @@ class TransformProgram:
             raise TransformError("Only transform dispatcher can be added to the transform program.")
 
         if transform.expand_transform:
-            self.push_back(TransformContainer(transform._expand_transform))
+            self.push_back(TransformContainer(transform.expand_transform))
         self.push_back(
             TransformContainer(
-                transform._transform,
+                transform.transform,
                 targs,
                 tkwargs,
-                transform._classical_cotransform,
-                transform._is_informative,
+                transform.classical_cotransform,
+                transform.is_informative,
             )
         )
 
@@ -209,17 +209,18 @@ class TransformProgram:
                 "Informative transforms can only be added at the end of the program."
             )
 
-        if transform.expand_transform:
-            self.insert_front(TransformContainer(transform._expand_transform))
         self.insert_front(
             TransformContainer(
-                transform._transform,
+                transform.transform,
                 targs,
                 tkwargs,
-                transform._classical_cotransform,
-                transform._is_informative,
+                transform.classical_cotransform,
+                transform.is_informative,
             )
         )
+
+        if transform.expand_transform:
+            self.insert_front(TransformContainer(transform.expand_transform))
 
     def pop_front(self):
         """Pop the transform container at the beginning of the program.

@@ -40,6 +40,11 @@ def first_valid_transform(
     return [tape], lambda x: x
 
 
+def expand_transform(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
+    """A valid expand transform."""
+    return [tape], lambda x: x
+
+
 def second_valid_transform(
     tape: qml.tape.QuantumTape, index: int
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
@@ -283,6 +288,21 @@ class TestTransformProgram:
         ):
             transform_program.add_transform(10.0)
 
+    def test_add_transform_with_expand(self):
+        """Test to add a transform with expand into a program."""
+        transform_program = TransformProgram()
+
+        transform1 = transform(first_valid_transform, expand_transform=expand_transform)
+        transform_program.add_transform(transform1)
+
+        assert not transform_program.is_empty()
+        assert len(transform_program) == 2
+        assert isinstance(transform_program[0], TransformContainer)
+        assert transform_program[0].transform is expand_transform
+
+        assert isinstance(transform_program[1], TransformContainer)
+        assert transform_program[1].transform is first_valid_transform
+
     def test_pop_front(self):
         """Test the pop front method of the transform program."""
         transform_program = TransformProgram()
@@ -359,6 +379,21 @@ class TestTransformProgram:
             match="Informative transforms can only be added at the end of the program.",
         ):
             transform_program.insert_front_transform(transform3)
+
+    def test_insert_transform_with_expand(self):
+        """Test to insert front a transform with expand into a program."""
+        transform_program = TransformProgram()
+
+        transform1 = transform(first_valid_transform, expand_transform=expand_transform)
+        transform_program.insert_front_transform(transform1)
+
+        assert not transform_program.is_empty()
+        assert len(transform_program) == 2
+        assert isinstance(transform_program[0], TransformContainer)
+        assert transform_program[0].transform is expand_transform
+
+        assert isinstance(transform_program[1], TransformContainer)
+        assert transform_program[1].transform is first_valid_transform
 
     def test_valid_transforms(self):
         """Test that that it is only possible to create valid transforms."""
