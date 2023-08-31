@@ -101,7 +101,7 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
     r"""Convert a fermionic observable to a PennyLane qubit observable.
 
     Args:
-        o_ferm Union[FermiWord, FermiSentence]: fermionic operator
+        o_ferm (Union[FermiWord, FermiSentence]): fermionic operator
         cutoff (float): cutoff value for discarding the negligible terms
 
     Returns:
