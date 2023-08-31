@@ -170,6 +170,9 @@ class TransformProgram:
     def add_transform(self, transform: TransformDispatcher, *targs, **tkwargs):
         """Add a transform (dispatcher) to the end of the program.
 
+        Note that this should be a function decorated with/called by
+        `qml.transforms.transform`, and not a `TransformContainer`.
+
         Args:
             transform (TransformDispatcher): The transform to add to the transform program.
             *targs: Any additional arguments that are passed to the transform.
