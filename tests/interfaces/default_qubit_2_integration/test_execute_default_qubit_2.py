@@ -66,13 +66,7 @@ class TestBatchTransformHelper:
         config = qml.devices.experimental.ExecutionConfig()
 
         with pytest.warns(UserWarning, match="device batch transforms cannot be turned off"):
-            new_batch, post_procesing_fn, _ = _batch_transform(
-                (qs, qs), dev, config, device_batch_transform=False
-            )
-
-        assert len(new_batch) == 2
-
-        assert post_procesing_fn((1, 1)) == (1, 1)
+            qml.execute((qs, qs), device=dev, device_batch_transform=False)
 
     def test_split_and_expand_performed(self):
         """Test that preprocess returns the correct tapes when splitting and expanding
@@ -103,7 +97,8 @@ class TestBatchTransformHelper:
         dev = DefaultQubit2()
         config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
 
-        res_tapes, batch_fn, new_config = _batch_transform(tapes, dev, config)
+        program, new_config = dev.preprocess(tapes, config)
+        res_tapes, batch_fn = program(tapes)
         expected_ops = [
             [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RX(np.pi, wires=1)],
             [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RX(np.pi / 2, wires=1)],
