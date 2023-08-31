@@ -204,22 +204,31 @@ class Device(abc.ABC):
 
         **Example**
 
+        All the transforms that are part of the preprocessing need to respect the transform contract defined here
+        :func:`pennylane.transforms.core.transform`: , here is an example of a valid transform.
 
         .. code-block:: python
 
                 @transform
-                def my_preprocessing_transform():
-                    def processing_fn():
+                def my_preprocessing_transform(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], callable):
+                    # e.g. valid the measurements, expand the tape for the hardware execution, ...
+
+                    def blank_processing_fn(results):
+                        return results[0]
 
                     return [tape], processing_fn
 
+        Then we can define the preprocess method on the custom device. The program can accept an arbitrary number of
+        transforms.
+
+        .. code-block:: python
+
                 def preprocess():
                     program = TransformProgram()
-                    program.push_back()
-
+                    program.add_transform(my_preprocessing_transform)
                     return program, config
 
-        .. seealso:: :func:`~.pennylane.transform.core.transform`
+        .. seealso:: :func:`~.pennylane.transform.core.transform` and :class:`~.pennylane.transform.core.TransformProgram`
 
         .. details::
             :title: Post processing function and derivatives
@@ -235,7 +244,7 @@ class Device(abc.ABC):
                 def f(x):
                     circuit = qml.tape.QuantumScript([qml.Rot(*x, wires=0)], [qml.expval(qml.PauliZ(0))])
                     config = ExecutionConfig(gradient_method="adjoint")
-                    program, _ = dev.preprocess(config)
+                    program, config = dev.preprocess(config)
                     circuit_batch, postprocessing = program((circuit, ))
 
                     def execute_fn(tapes):
