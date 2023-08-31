@@ -69,7 +69,7 @@ Pending deprecations
   - Deprecated in v0.32
   - Will be removed in v0.33
 
-* The ``prep`` keyword argument in ``QuantumScript`` is deprecated and will be removed from `QuantumScript`.
+* The ``prep`` keyword argument in ``QuantumScript`` is deprecated and will be removed from ``QuantumScript``.
   ``StatePrepBase`` operations should be placed at the beginning of the `ops` list instead.
 
   - Deprecated in v0.33
@@ -79,9 +79,9 @@ Pending deprecations
 Completed deprecation cycles
 ----------------------------
 
-* ``qml.qchem.jordan_wigner`` is deprecated, and usage will now raise a warning.
+* ``qml.qchem.jordan_wigner`` had been removed.
   Use ``qml.jordan_wigner`` instead. List input to define the fermionic operator
-  is also deprecated; the fermionic operators ``qml.FermiA``, ``qml.FermiC``,
+ is no longer accepted; the fermionic operators ``qml.FermiA``, ``qml.FermiC``,
   ``qml.FermiWord`` and ``qml.FermiSentence`` should be used instead. See the
   :mod:`pennylane.fermi` module documentation and the
   `Fermionic Operator <https://pennylane.ai/qml/demos/tutorial_fermionic_operators>`_
