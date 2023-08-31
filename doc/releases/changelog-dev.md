@@ -15,6 +15,10 @@
 * Wires can be provided to the new device API.
   [(#4538)](https://github.com/PennyLaneAI/pennylane/pull/4538)
 
+* The density matrix aspects of `StateMP` have been split into their own measurement
+  process, `DensityMatrixMP`.
+  [(#4558)](https://github.com/PennyLaneAI/pennylane/pull/4558)
+
 <h3>Breaking changes 💔</h3>
 
 * The old return type and associated functions ``qml.enable_return`` and ``qml.disable_return`` are removed.
@@ -44,7 +48,6 @@
   been removed. Please use ``QuantumScript.bind_new_parameters`` instead.
   [(#4548)](https://github.com/PennyLaneAI/pennylane/pull/4548)
 
-  
 <h3>Deprecations 👋</h3>
 
 * The ``prep`` keyword argument in ``QuantumScript`` is deprecated and will be removed from `QuantumScript`.
