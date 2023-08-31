@@ -117,6 +117,17 @@ def adjoint(fn, lazy=True):
         Adjoint(S)(wires=[0])
 
     """
+    try:
+        import catalyst
+
+        if catalyst.utils.tracing.TracingContext.is_tracing():
+            return catalyst.adjoint(fn)
+    except ImportError:
+        # If this's not callled during tracing, there's no need to
+        # patch this to `catalyst.adjoint` and it can be treated as
+        # a regular `qml.adjoint` call.
+        pass
+
     if isinstance(fn, Operator):
         return Adjoint(fn) if lazy else _single_op_eager(fn, update_queue=True)
     if not callable(fn):

@@ -79,18 +79,6 @@ class Grad:
         self._fun = fun
         self._argnum = argnum
 
-        self._qjit_ctx_tracing = False
-        try:
-            from catalyst import utils, grad
-
-            if utils.tracing.TracingContext.is_tracing():
-                self._qjit_ctx_tracing = True
-        except ImportError:
-            # If this's not callled during tracing, there's no need to
-            # patch this to `catalyst.grad` and it can be treated as
-            # a regular `qml.grad` call.
-            pass
-
         if self._argnum is not None:
             # If the differentiable argnum is provided, we can construct
             # the gradient function at once during initialization.
@@ -175,7 +163,7 @@ class Grad:
         return grad_value, ans
 
 
-def jacobian(func, argnum=None):
+def jacobian(func, argnum=None, method=None, h=None):
     """Returns the Jacobian as a callable function of vector-valued
     (functions of) QNodes.
 
@@ -320,6 +308,17 @@ def jacobian(func, argnum=None):
     QNode with respect to ``y``.
     """
     # pylint: disable=no-value-for-parameter
+
+    try:
+        import catalyst
+
+        if catalyst.utils.tracing.TracingContext.is_tracing():
+            return catalyst.jacobian(func, method=method, h=h, argnum=argnum)
+    except ImportError:
+        # If this's not callled during tracing, there's no need to
+        # patch this to `catalyst.grad` and it can be treated as
+        # a regular `qml.grad` call.
+        pass
 
     def _get_argnum(args):
         """Inspect the arguments for differentiability and return the
