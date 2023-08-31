@@ -130,6 +130,12 @@ class TransformProgram:
     def __bool__(self):
         return bool(self._transform_program)
 
+    def __add__(self, other):
+        program = TransformProgram(self._transform_program)
+        for container in other:
+            program.push_back(container)
+        return program
+
     def __repr__(self):
         """The string representation of the transform program class."""
         contents = ", ".join(f"{transform_c.transform.__name__}" for transform_c in self)

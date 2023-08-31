@@ -97,11 +97,11 @@ class TestInitialization:
         """Test that the prep keyword ~is deprecated and~ behaves as expected."""
         prep = [qml.BasisState([1, 1], wires=(0, 1))]
         ops = [qml.PauliX(0)]
-        # with pytest.warns(UserWarning, match="`prep` keyword argument is being removed"):
-        qs = QuantumScript(ops=ops, prep=prep)
-        assert len(qs.operations) == len(qs._ops) == 2
-        assert qml.equal(qs.operations[0], prep[0])
-        assert qml.equal(qs.operations[1], ops[0])
+        with pytest.warns(UserWarning, match="`prep` keyword argument is being removed"):
+            qs = QuantumScript(ops=ops, prep=prep)
+            assert len(qs.operations) == len(qs._ops) == 2
+            assert qml.equal(qs.operations[0], prep[0])
+            assert qml.equal(qs.operations[1], ops[0])
 
 
 sample_measurements = [
@@ -601,23 +601,6 @@ def test_adjoint():
         assert isinstance(op, type(expected))
         assert op.wires == expected.wires
         assert op.data == expected.data
-
-
-@pytest.mark.torch
-def test_unwrap():
-    """Tests the unwrap method."""
-
-    import torch
-
-    x = torch.tensor(1.2)
-    qs = QuantumScript([qml.RX(x, 0)])
-
-    unwrapper = qs.unwrap()
-    assert isinstance(unwrapper, qml.tape.UnwrapTape)
-
-    with unwrapper:
-        assert qml.math.get_interface(qs.data[0]) == "numpy"
-    assert qml.math.get_interface(qs.data[0]) == "torch"
 
 
 class TestHashing:
