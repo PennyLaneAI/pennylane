@@ -38,6 +38,16 @@ def test_shots():
         DefaultQubit2().shots = 10
 
 
+def test_wires():
+    """Test that a device can be created with wires."""
+    assert DefaultQubit2().wires is None
+    assert DefaultQubit2(wires=2).wires == qml.wires.Wires([0, 1])
+    assert DefaultQubit2(wires=[0, 2]).wires == qml.wires.Wires([0, 2])
+
+    with pytest.raises(AttributeError):
+        DefaultQubit2().wires = [0, 1]
+
+
 def test_debugger_attribute():
     """Test that DefaultQubit2 has a debugger attribute and that it is `None`"""
     # pylint: disable=protected-access

@@ -181,12 +181,12 @@ class QuantumScript:
     ):  # pylint: disable=too-many-arguments
         self._ops = [] if ops is None else list(ops)
         if prep is not None:
-            # warnings.warn(
-            #     "The `prep` keyword argument is being removed from `QuantumScript`, and "
-            #     "`StatePrepBase` operations should be placed at the beginning of the `ops` list "
-            #     "instead.",
-            #     UserWarning,
-            # )
+            warnings.warn(
+                "The `prep` keyword argument is being removed from `QuantumScript`, and "
+                "`StatePrepBase` operations should be placed at the beginning of the `ops` list "
+                "instead.",
+                UserWarning,
+            )
             self._ops = list(prep) + self._ops
         self._measurements = [] if measurements is None else list(measurements)
         self._shots = Shots(shots)
