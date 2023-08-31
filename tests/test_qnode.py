@@ -1057,7 +1057,7 @@ class TestIntegration:
     def test_no_defer_measurements_if_supported(self, mocker):
         """Test that the defer_measurements transform is not used during
         QNode construction if the device supports mid-circuit measurements."""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
         mocker.patch.object(qml.Device, "_capabilities", {"supports_mid_measure": True})
         spy = mocker.spy(qml, "defer_measurements")
 
@@ -1111,7 +1111,7 @@ class TestIntegration:
     def test_drawing_has_deferred_measurements(self):
         """Test that `qml.draw` with qnodes uses defer_measurements
         to draw circuits with mid-circuit measurements."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev)
         def circuit(x):
