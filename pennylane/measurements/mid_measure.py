@@ -16,7 +16,6 @@ This module contains the qml.measure measurement.
 """
 import uuid
 from typing import Generic, TypeVar, Optional
-import warnings
 
 import pennylane as qml
 import pennylane.numpy as np
@@ -258,33 +257,14 @@ class MeasurementValue(Generic[T]):
     def _merge(self, other: "MeasurementValue"):
         """Merge two measurement values"""
 
-        with warnings.catch_warnings():
-            # Using a filter because the new behaviour of MP hash will be valid here
-            warnings.filterwarnings(
-                "ignore",
-                message="The behaviour of measurement process hashing",
-                category=UserWarning,
-            )
-            # create a new merged list with no duplicates and in lexical ordering
-            merged_measurements = list(set(self.measurements).union(set(other.measurements)))
-
+        # create a new merged list with no duplicates and in lexical ordering
+        merged_measurements = list(set(self.measurements).union(set(other.measurements)))
         merged_measurements.sort(key=lambda m: m.id)
 
         # create a new function that selects the correct indices for each sub function
         def merged_fn(*x):
-            with warnings.catch_warnings():
-                # Using a filter because the new behaviour of MP equality will be valid here
-                warnings.filterwarnings(
-                    "ignore",
-                    message="The behaviour of measurement process equality",
-                    category=UserWarning,
-                )
-                sub_args_1 = (
-                    x[i] for i in [merged_measurements.index(m) for m in self.measurements]
-                )
-                sub_args_2 = (
-                    x[i] for i in [merged_measurements.index(m) for m in other.measurements]
-                )
+            sub_args_1 = (x[i] for i in [merged_measurements.index(m) for m in self.measurements])
+            sub_args_2 = (x[i] for i in [merged_measurements.index(m) for m in other.measurements])
 
             out_1 = self.processing_fn(*sub_args_1)
             out_2 = other.processing_fn(*sub_args_2)
