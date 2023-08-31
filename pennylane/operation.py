@@ -1055,7 +1055,7 @@ class Operator(abc.ABC):
         # check that the number of wires given corresponds to required number
         if self.num_wires in {AllWires, AnyWires}:
             if (
-                not isinstance(self, (qml.Barrier, qml.Snapshot, qml.Hamiltonian))
+                not isinstance(self, (qml.Barrier, qml.Snapshot, qml.Hamiltonian, qml.GlobalPhase))
                 and len(qml.wires.Wires(wires)) == 0
             ):
                 raise ValueError(
