@@ -70,14 +70,15 @@ class TestMinimalDevice:
         """Test that preprocessing wraps a circuit into a batch."""
 
         circuit1 = qml.tape.QuantumScript()
-        batch, fn, config = self.dev.preprocess(circuit1)
+        program, config = self.dev.preprocess()
+        batch, fn = program((circuit1,))
         assert isinstance(batch, tuple)
         assert len(batch) == 1
         assert batch[0] is circuit1
         assert callable(fn)
 
         a = (1,)
-        assert fn(a) == 1
+        assert fn(a) == (1,)
         assert config is qml.devices.experimental.DefaultExecutionConfig
 
     def test_preprocess_batch_circuits(self):
@@ -86,7 +87,8 @@ class TestMinimalDevice:
         circuit = qml.tape.QuantumScript()
         in_config = ExecutionConfig()
         in_batch = (circuit, circuit)
-        batch, fn, config = self.dev.preprocess(in_batch, in_config)
+        program, config = self.dev.preprocess(in_config)
+        batch, fn = program(in_batch)
         assert batch is in_batch
         assert config is in_config
         a = (1, 2)

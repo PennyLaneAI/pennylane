@@ -22,7 +22,7 @@ from numbers import Number
 from typing import Callable, Union, Sequence, Tuple, Optional
 
 from pennylane.measurements import Shots
-from pennylane.tape import QuantumTape, QuantumScript
+from pennylane.tape import QuantumTape
 from pennylane.typing import Result, ResultBatch
 from pennylane.wires import Wires
 from pennylane import Tracker
@@ -285,7 +285,6 @@ class Device(abc.ABC):
 
         """
         return TransformProgram(), execution_config
-
 
     @abc.abstractmethod
     def execute(
