@@ -83,7 +83,7 @@ class TransformDispatcher:
             transform_program(TransformProgram): The transform program where the transform is added.
             *targs: Any additional arguments that are passed to the transform.
 
-        Kwargs:
+        Keyword Args:
             **tkwargs: Any additional keyword arguments that are passed to the transform.
 
         """
