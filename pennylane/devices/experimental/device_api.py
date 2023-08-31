@@ -210,8 +210,8 @@ class Device(abc.ABC):
             execution_config (ExecutionConfig): A datastructure describing the parameters needed to fully describe
                 the execution.
 
-            TransformProgram, ExecutionConfig: QuantumTapes that the device can natively execute,
-            a postprocessing function to be called after execution, and a configuration with unset specifications filled in.
+        Returns: TransformProgram, ExecutionConfig: A transform program that is called before execution,
+            and a configuration with unset specifications filled in.
 
         Raises:
             Exception: An exception can be raised if the input cannot be converted into a form supported by the device.
