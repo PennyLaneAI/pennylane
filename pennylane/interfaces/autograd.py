@@ -14,6 +14,45 @@
 """
 This module contains functions for adding the Autograd interface
 to a PennyLane Device class.
+
+**How to bind a custom derivative with autograd.**
+
+Suppose I have a function ``f`` that I want to change how autograd takes the derivative of.
+
+I need to:
+
+1) Mark it as an autograd primitive with ``@autograd.extend.primitive``
+2) Register its VJP with ``autograd.extend.defvjp``
+
+.. code-block:: python
+
+    @autograd.extend.primitive
+    def f(x, exponent=2):
+        return x**exponent
+
+    def vjp(ans, x, exponent=2):
+        def grad_fn(dy):
+            print(f"Calculating the gradient with {x}, {dy}")
+            return dy * exponent * x**(exponent-1)
+        return grad_fn
+
+    autograd.extend.defvjp(f, vjp, argnums=[0])
+
+
+>>> autograd.grad(f)(autograd.numpy.array(2.0))
+Calculating the gradient with 2.0, 1.0
+4.0
+
+The above code told autograd how to differentiate the first argument of ``f``.
+
+We have an additional problem that autograd does not understand that a :class:`~.QuantumTape`
+contains parameters we want to differentiate. So in order to match the ``vjp`` function with
+the correct parameters, we need to extract them from the batch of tapes, and pass them as is
+as the first argument to the primitive. Even though the primitive function (``f``/ ``_execute``)
+does not use the parameters, that is how we communicate to autograd what parameters the derivatves
+belong to.
+
+
 """
 # pylint: disable=too-many-arguments
 import logging

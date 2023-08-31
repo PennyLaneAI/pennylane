@@ -689,68 +689,65 @@ def execute(
         if gradient_kwargs.get("method", "") == "adjoint_jacobian":
             tapes = _adjoint_jacobian_expansion(tapes, grad_on_execution, interface, max_expansion)
 
+        _grad_on_execution = grad_on_execution
+
         if interface in jpc_interfaces:
             execute_fn = jpc.execute if grad_on_execution else inner_execute
 
-        else:
-
-            # grad on execution or best was chosen
-            if grad_on_execution is True or grad_on_execution == "best":
-                # replace the forward execution function to return
-                # both results and gradients
-                def device_execute_and_gradients(internal_tapes, **gradient_kwargs):
-                    numpy_tapes = tuple(
-                        qml.transforms.convert_to_numpy_parameters(t) for t in internal_tapes
-                    )
-                    return set_shots(device, override_shots)(device.execute_and_gradients)(
-                        numpy_tapes, **gradient_kwargs
-                    )
-
-                if interface not in jpc_interfaces:
-                    execute_fn = device_execute_and_gradients
-                gradient_fn = None
-                _grad_on_execution = True
-
-            else:
-                # need to override to have no cache
-                inner_execute = _make_inner_execute(device, override_shots, cache=None)
-
-                def inner_execute_with_empty_jac(tapes, **_):
-                    return (inner_execute(tapes), [])
-
-                execute_fn = inner_execute_with_empty_jac
-
-                # replace the backward gradient computation
-                # use qml.interfaces so that mocker can spy on it during testing
-                gradient_fn_with_shots = set_shots(device, override_shots)(device.gradients)
-                cached_gradient_fn = qml.interfaces.cache_execute(
-                    gradient_fn_with_shots,
-                    cache,
-                    pass_kwargs=True,
-                    return_tuple=False,
+        elif grad_on_execution is True or grad_on_execution == "best":
+            # replace the forward execution function to return
+            # both results and gradients
+            def device_execute_and_gradients(internal_tapes, **gradient_kwargs):
+                numpy_tapes = tuple(
+                    qml.transforms.convert_to_numpy_parameters(t) for t in internal_tapes
+                )
+                return set_shots(device, override_shots)(device.execute_and_gradients)(
+                    numpy_tapes, **gradient_kwargs
                 )
 
-                def device_gradient_fn(inner_tapes, **gradient_kwargs):
-                    numpy_tapes = tuple(
-                        qml.transforms.convert_to_numpy_parameters(t) for t in inner_tapes
-                    )
-                    return cached_gradient_fn(numpy_tapes, **gradient_kwargs)
+            execute_fn = device_execute_and_gradients
+            gradient_fn = None
 
-                gradient_fn = device_gradient_fn
+        else:
+            # need to override to have no cache
+            inner_execute = _make_inner_execute(device, override_shots, cache=None)
 
-                # Adjoint Jacobian with backward pass and jitting needs the original circuit output state which
-                # can not be reused from the device if `grad_on_execution is False`.
-                if interface == "jax-jit":
-                    use_device_state = gradient_kwargs.get("use_device_state", None)
-                    if use_device_state:
-                        gradient_kwargs["use_device_state"] = False
+            def inner_execute_with_empty_jac(tapes, **_):
+                return (inner_execute(tapes), [])
+
+            execute_fn = inner_execute_with_empty_jac
+
+            # replace the backward gradient computation
+            # use qml.interfaces so that mocker can spy on it during testing
+            gradient_fn_with_shots = set_shots(device, override_shots)(device.gradients)
+            cached_gradient_fn = qml.interfaces.cache_execute(
+                gradient_fn_with_shots,
+                cache,
+                pass_kwargs=True,
+                return_tuple=False,
+            )
+
+            def device_gradient_fn(inner_tapes, **gradient_kwargs):
+                numpy_tapes = tuple(
+                    qml.transforms.convert_to_numpy_parameters(t) for t in inner_tapes
+                )
+                return cached_gradient_fn(numpy_tapes, **gradient_kwargs)
+
+            gradient_fn = device_gradient_fn
+
+            # Adjoint Jacobian with backward pass and jitting needs the original circuit output state which
+            # can not be reused from the device if `grad_on_execution is False`.
+            if interface == "jax-jit":
+                use_device_state = gradient_kwargs.get("use_device_state", None)
+                if use_device_state:
+                    gradient_kwargs["use_device_state"] = False
 
     elif grad_on_execution is True:
         # In "forward" mode, gradients are automatically handled
         # within execute_and_gradients, so providing a gradient_fn
         # in this case would have ambiguous behaviour.
         raise ValueError("Gradient transforms cannot be used with grad_on_execution=True")
-    else:
+    elif interface in jpc_interfaces:
         jpc = TransformJacobianProducts(execute_fn, gradient_fn, gradient_kwargs)
         for _ in range(1, max_diff):
             ml_boundary_execute = _get_ml_boundary_execute(interface, _grad_on_execution)
