@@ -229,7 +229,7 @@ class Device(abc.ABC):
         **Example**
 
         All the transforms that are part of the preprocessing need to respect the transform contract defined here
-        :func:`pennylane.transforms.core.transform`: , here is an example of a valid transform.
+        :func:`pennylane.transforms.core.transform`: , you can find an example of a valid transform.
 
         .. code-block:: python
 
