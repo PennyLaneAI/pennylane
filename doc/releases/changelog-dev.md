@@ -56,6 +56,10 @@
 
 <h3>Documentation 📝</h3>
 
+* Minor documentation improvements to the new device API. The documentation now correctly states that interface-specific
+  parameters are only passed to the device for backpropagation derivatives. 
+  [(#4542)](https://github.com/PennyLaneAI/pennylane/pull/4542)
+
 * Add functions for qubit-simulation to the `qml.devices` sub-page of the "Internal" section.
   Note that these functions are unstable while device upgrades are underway.
   [(#4555)](https://github.com/PennyLaneAI/pennylane/pull/4555)
