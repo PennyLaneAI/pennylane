@@ -2444,6 +2444,7 @@ class Tensor(Observable):
 
         If we define a custom wire ordering, the matrix representation changes
         accordingly:
+
         >>> print(t.sparse_matrix(wire_order=[1, 0]))
         (0, 1)	1
         (1, 0)	1

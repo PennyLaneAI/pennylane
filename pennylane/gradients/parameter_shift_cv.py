@@ -172,7 +172,7 @@ def _transform_observable(obs, Z, device_wires):
         A = A + A.T
 
     # TODO: if the A matrix corresponds to a known observable in PennyLane,
-    # for example qml.X, qml.P, qml.NumberOperator, we should return that
+    # for example qml.QuadX, qml.QuadP, qml.NumberOperator, we should return that
     # instead. This will allow for greater device compatibility.
     return qml.PolyXP(A, wires=device_wires)
 

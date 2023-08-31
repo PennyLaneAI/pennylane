@@ -182,12 +182,12 @@ class QuantumScript:
     ):  # pylint: disable=too-many-arguments
         self._ops = [] if ops is None else list(ops)
         if prep is not None:
-            # warnings.warn(
-            #     "The `prep` keyword argument is being removed from `QuantumScript`, and "
-            #     "`StatePrepBase` operations should be placed at the beginning of the `ops` list "
-            #     "instead.",
-            #     UserWarning,
-            # )
+            warnings.warn(
+                "The `prep` keyword argument is being removed from `QuantumScript`, and "
+                "`StatePrepBase` operations should be placed at the beginning of the `ops` list "
+                "instead.",
+                UserWarning,
+            )
             self._ops = list(prep) + self._ops
         self._measurements = [] if measurements is None else list(measurements)
         self._shots = Shots(shots)
@@ -542,15 +542,6 @@ class QuantumScript:
         for backwards compatibilities with operations."""
         return self.get_parameters(trainable_only=False)
 
-    @data.setter
-    def data(self, params):
-        warnings.warn(
-            "The tape.data setter is deprecated and will be removed in v0.33. "
-            "Please use tape.bind_new_parameters instead.",
-            UserWarning,
-        )
-        self.set_parameters(params, trainable_only=False)
-
     @property
     def trainable_params(self):
         """Store or return a list containing the indices of parameters that support
@@ -677,76 +668,6 @@ class QuantumScript:
                 params.extend(m.obs.data)
         return params
 
-    def set_parameters(self, params, trainable_only=True):
-        """Set the parameters incident on the quantum script operations.
-
-        Args:
-            params (list[float]): A list of real numbers representing the
-                parameters of the quantum operations. The parameters should be
-                provided in order of appearance in the quantum script.
-            trainable_only (bool): if True, set only trainable parameters
-
-        **Example**
-
-        >>> ops = [qml.RX(0.432, 0), qml.RY(0.543, 0),
-        ...        qml.CNOT((0,"a")), qml.RX(0.133, "a")]
-        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
-
-        By default, all parameters are trainable and can be modified:
-
-        >>> qscript.set_parameters([0.1, 0.2, 0.3])
-        >>> qscript.get_parameters()
-        [0.1, 0.2, 0.3]
-
-        Setting the trainable parameter indices will result in only the specified
-        parameters being modifiable. Note that this only modifies the number of
-        parameters that must be passed.
-
-        >>> qscript.trainable_params = [0, 2] # set the first and third parameter as trainable
-        >>> qscript.set_parameters([-0.1, 0.5])
-        >>> qscript.get_parameters(trainable_only=False)
-        [-0.1, 0.2, 0.5]
-
-        The ``trainable_only`` argument can be set to ``False`` to instead set
-        all parameters:
-
-        >>> qscript.set_parameters([4, 1, 6], trainable_only=False)
-        >>> qscript.get_parameters(trainable_only=False)
-        [4, 1, 6]
-        """
-        warnings.warn(
-            "The method tape.set_parameters is deprecated and will be removed in v0.33. "
-            "Please use tape.bind_new_parameters instead.",
-            UserWarning,
-        )
-
-        if trainable_only:
-            iterator = zip(self.trainable_params, params)
-            required_length = self.num_params
-        else:
-            iterator = enumerate(params)
-            required_length = len(self._par_info)
-
-        if len(params) != required_length:
-            raise ValueError("Number of provided parameters does not match.")
-
-        op_data = []
-        for pinfo in self._par_info:
-            if pinfo["p_idx"] == 0:
-                op_data.append((pinfo["op"], list(pinfo["op"].data)))
-            else:
-                op_data.append(op_data[-1])
-
-        for idx, p in iterator:
-            op_data[idx][1][self._par_info[idx]["p_idx"]] = p
-
-        for op, d in op_data:
-            op.data = tuple(d)
-            op._check_batching(op.data)
-
-        self._update_batch_size()
-        self._update_output_dim()
-
     def bind_new_parameters(self, params: Sequence[TensorLike], indices: Sequence[int]):
         """Create a new tape with updated parameters.
 
@@ -762,6 +683,30 @@ class QuantumScript:
 
         Returns:
             .tape.QuantumScript: New tape with updated parameters
+
+        **Example**
+
+        >>> ops = [qml.RX(0.432, 0), qml.RY(0.543, 0),
+        ...        qml.CNOT((0,"a")), qml.RX(0.133, "a")]
+        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+
+        A new tape can be created by passing new parameters along with the indices
+        to be updated. To modify all parameters in the above qscript:
+
+        >>> new_qscript = qscript.bind_new_parameters([0.1, 0.2, 0.3], [0, 1, 2])
+        >>> new_qscript.get_parameters()
+        [0.1, 0.2, 0.3]
+
+        The original ``qscript`` remains unchanged:
+
+        >>> qscript.get_parameters()
+        [0.432, 0.543, 0.133]
+
+        A subset of parameters can be modified as well, defined by the parameter indices:
+
+        >>> newer_qscript = new_qscript.bind_new_parameters([-0.1, 0.5], [0, 2])
+        >>> newer_qscript.get_parameters()
+        [-0.1, 0.2, 0.5]
         """
         # pylint: disable=no-member
 
@@ -1010,37 +955,6 @@ class QuantumScript:
         with qml.QueuingManager.stop_recording():
             ops_adj = [qml.adjoint(op, lazy=False) for op in reversed(ops)]
         return self.__class__(ops=prep + ops_adj, measurements=self.measurements, shots=self.shots)
-
-    def unwrap(self):
-        """A context manager that unwraps a quantum script with tensor-like parameters
-        to NumPy arrays.
-
-        Returns:
-            ~.QuantumScript: the unwrapped quantum script
-
-        **Example**
-
-        >>> with tf.GradientTape():
-        ...     qscript = QuantumScript([qml.RX(tf.Variable(0.1), 0),
-        ...                             qml.RY(tf.constant(0.2), 0),
-        ...                             qml.RZ(tf.Variable(0.3), 0)])
-        ...     with qscript.unwrap():
-        ...         print("Trainable params:", qscript.trainable_params)
-        ...         print("Unwrapped params:", qscript.get_parameters())
-        Trainable params: [0, 2]
-        Unwrapped params: [0.1, 0.3]
-        >>> qscript.get_parameters()
-        [<tf.Variable 'Variable:0' shape=() dtype=float32, numpy=0.1>,
-        <tf.Tensor: shape=(), dtype=float32, numpy=0.2>,
-        <tf.Variable 'Variable:0' shape=() dtype=float32, numpy=0.3>]
-        """
-
-        warnings.warn(
-            "The method tape.unwrap is deprecated and will be removed in PennyLane v0.33. "
-            "Please use qml.transforms.convert_to_numpy_parameters instead."
-        )
-
-        return qml.tape.UnwrapTape(self)
 
     # ========================================================
     # Transforms: QuantumScript to Information

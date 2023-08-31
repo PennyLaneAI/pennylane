@@ -390,7 +390,7 @@ def preprocess(
 
     Args:
         circuits (Sequence[QuantumTape]): Batch of tapes to be processed.
-        execution_config (.ExecutionConfig): execution configuration with configurable
+        execution_config (ExecutionConfig): execution configuration with configurable
             options for the execution.
 
     Returns:
