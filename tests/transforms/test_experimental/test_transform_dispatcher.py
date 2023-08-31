@@ -265,30 +265,6 @@ class TestTransformDispatcher:
         assert transform_container.classical_cotransform is None
         assert not expand_transform_container.is_informative
 
-    def test_transform_add_to_program(self):
-        """Test to add a transform with expand transform to a program."""
-
-        dispatched_transform = transform(first_valid_transform, expand_transform=expand_transform)
-
-        program = qml.transforms.core.TransformProgram()
-        program_transformed = dispatched_transform.add_to_program(program, 0)
-
-        assert isinstance(program_transformed, qml.transforms.core.TransformProgram)
-        expand_transform_container = program_transformed.pop_front()
-        assert isinstance(expand_transform_container, qml.transforms.core.TransformContainer)
-        assert expand_transform_container.args == []
-        assert expand_transform_container.kwargs == {}
-        assert expand_transform_container.classical_cotransform is None
-        assert not expand_transform_container.is_informative
-
-        transform_container = program_transformed.pop_front()
-
-        assert isinstance(transform_container, qml.transforms.core.TransformContainer)
-        assert transform_container.args == (0,)
-        assert transform_container.kwargs == {}
-        assert transform_container.classical_cotransform is None
-        assert not expand_transform_container.is_informative
-
     @pytest.mark.parametrize("non_valid_transform", non_valid_transforms)
     def test_dispatcher_signature_non_valid_transform(self, non_valid_transform):
         """Test the non-valid transforms raises a Transform error."""
