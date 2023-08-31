@@ -33,9 +33,9 @@ def _convert_measurement_to_numpy_data(
     m: qml.measurements.MeasurementProcess,
 ) -> qml.measurements.MeasurementProcess:
     if m.obs is None:
-        if m.eigvals is None or math.get_interface(m.eigvals) == "numpy":
+        if m.eigvals() is None or math.get_interface(m.eigvals()) == "numpy":
             return m
-        return type(m)(wires=m.wires, eigvals=math.unwrap(m.eigvals))
+        return type(m)(wires=m.wires, eigvals=math.unwrap(m.eigvals()))
 
     if math.get_interface(*m.obs.data) == "numpy":
         return m
