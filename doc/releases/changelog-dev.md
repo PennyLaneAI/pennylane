@@ -40,6 +40,11 @@
   ``np.random.default_rng(seed)``.
   [(#4550)](https://github.com/PennyLaneAI/pennylane/pull/4550)
 
+* The ``QuantumScript.set_parameters`` method and the ``QuantumScript.data`` setter have
+  been removed. Please use ``QuantumScript.bind_new_parameters`` instead.
+  [(#4548)](https://github.com/PennyLaneAI/pennylane/pull/4548)
+
+  
 <h3>Deprecations 👋</h3>
 
 * The ``prep`` keyword argument in ``QuantumScript`` is deprecated and will be removed from `QuantumScript`.
@@ -65,5 +70,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Lillian M. A. Frederiksen,
 Romain Moyard,
 Matthew Silverman
+
