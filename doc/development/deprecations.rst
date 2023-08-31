@@ -71,9 +71,6 @@ Pending deprecations
   `Fermionic Operator <https://pennylane.ai/qml/demos/tutorial_fermionic_operators>`_
   tutorial for more details.
 
-* The ``QuantumScript.set_parameters`` method and the ``QuantumScript.data`` setter has
-  been deprecated. Please use ``QuantumScript.bind_new_parameters`` instead.
-
   - Deprecated in v0.32
   - Will be removed in v0.33
 
@@ -111,12 +108,16 @@ Completed deprecation cycles
   - Deprecated in v0.32
   - Removed in v0.33
 
+* The ``QuantumScript.set_parameters`` method and the ``QuantumScript.data`` setter have
+  been removed. Please use ``QuantumScript.bind_new_parameters`` instead.
+
 * The ``observables`` argument in ``QubitDevice.statistics`` is removed. Please use ``circuit``
   instead. Using a list of observables in ``QubitDevice.statistics`` is removed. Please use a
   ``QuantumTape`` instead.
 
   - Still accessible in v0.28-v0.31
   - Removed in v0.32
+
 
 * The CV observables ``qml.X`` and ``qml.P`` have been removed. Use ``qml.QuadX`` and ``qml.QuadP`` instead.
 
