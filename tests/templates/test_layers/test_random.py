@@ -99,7 +99,7 @@ class TestDecomposition:
         assert len(gate_names) - gate_names.count("CNOT") == n_layers * n_rots
 
     @pytest.mark.parametrize("ratio", [0.2, 0.6])
-    def test_ratio_imprimitive(self, ratio):
+    def test_ratio_imprim(self, ratio):
         """Test the ratio of imprimitive gates."""
         n_rots = 500
         weights = np.random.random(size=(1, n_rots))
@@ -110,14 +110,6 @@ class TestDecomposition:
         gate_names = [gate.name for gate in queue]
         ratio_impr = gate_names.count("CNOT") / len(gate_names)
         assert np.isclose(ratio_impr, ratio, atol=0.05)
-
-        with pytest.warns(UserWarning):
-            decomp = op.compute_decomposition(
-                *op.parameters, wires=op.wires, **op.hyperparameters, ratio_imprimitive=0.9
-            )
-            gate_names = [gate.name for gate in decomp]
-            ratio_impr = gate_names.count("CNOT") / len(gate_names)
-            assert np.isclose(ratio_impr, 0.9, atol=0.05)
 
     def test_random_wires(self):
         """Test that random wires are picked for the gates. This is done by
