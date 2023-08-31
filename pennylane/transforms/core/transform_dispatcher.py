@@ -77,7 +77,7 @@ class TransformDispatcher:
         )
 
     def add_to_program(self, transform_program, *targs, **tkwargs):
-        """Method to add the transform to an existing program.
+        """Method to add the transform to an existing transform program.
 
         Args:
             transform_program(TransformProgram): The transform program where the transform is added.
