@@ -11,7 +11,7 @@ axes.edgecolor: BCBABA
 axes.linewidth: 1
 axes.grid: True
 axes.titlesize: x-large
-axes.labelcolor: BCBABA
+axes.labelcolor: black
 
 xtick.color: black
 xtick.direction: out
