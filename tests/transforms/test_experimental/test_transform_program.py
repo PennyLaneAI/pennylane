@@ -40,6 +40,11 @@ def first_valid_transform(
     return [tape], lambda x: x
 
 
+def expand_transform(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
+    """A valid expand transform."""
+    return [tape], lambda x: x
+
+
 def second_valid_transform(
     tape: qml.tape.QuantumTape, index: int
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
@@ -215,7 +220,7 @@ class TestTransformProgram:
         ):
             program.get_last()
 
-    def test_basic_program(self):
+    def test_push_back(self):
         """Test to push back multiple transforms into a program and also the different methods of a program."""
         transform_program = TransformProgram()
 
@@ -249,6 +254,55 @@ class TestTransformProgram:
         ):
             transform_program.push_back(10.0)
 
+    def test_add_transform(self):
+        """Test to add multiple transforms into a program and also the different methods of a program."""
+        transform_program = TransformProgram()
+
+        transform1 = transform(first_valid_transform)
+        transform_program.add_transform(transform1)
+
+        assert not transform_program.is_empty()
+        assert len(transform_program) == 1
+        assert isinstance(transform_program[0], TransformContainer)
+        assert transform_program[0].transform is first_valid_transform
+
+        transform2 = transform(second_valid_transform)
+        transform_program.add_transform(transform2)
+
+        assert not transform_program.is_empty()
+        assert len(transform_program) == 2
+        assert isinstance(transform_program[1], TransformContainer)
+        assert transform_program[1].transform is second_valid_transform
+
+        transform_program.add_transform(transform1)
+        transform_program.add_transform(transform2)
+
+        sub_program_transforms = transform_program[2:]
+        assert len(sub_program_transforms) == 2
+        assert sub_program_transforms[0].transform is first_valid_transform
+        assert sub_program_transforms[1].transform is second_valid_transform
+
+        with pytest.raises(
+            TransformError,
+            match="Only transform dispatcher can be added to the transform program.",
+        ):
+            transform_program.add_transform(10.0)
+
+    def test_add_transform_with_expand(self):
+        """Test to add a transform with expand into a program."""
+        transform_program = TransformProgram()
+
+        transform1 = transform(first_valid_transform, expand_transform=expand_transform)
+        transform_program.add_transform(transform1)
+
+        assert not transform_program.is_empty()
+        assert len(transform_program) == 2
+        assert isinstance(transform_program[0], TransformContainer)
+        assert transform_program[0].transform is expand_transform
+
+        assert isinstance(transform_program[1], TransformContainer)
+        assert transform_program[1].transform is first_valid_transform
+
     def test_pop_front(self):
         """Test the pop front method of the transform program."""
         transform_program = TransformProgram()
@@ -267,7 +321,7 @@ class TestTransformProgram:
         assert transform_container is transform1
 
     def test_insert_front(self):
-        """Test to insert a transform at the beginning of a transform program."""
+        """Test to insert a transform (container) at the beginning of a transform program."""
         transform_program = TransformProgram()
 
         transform1 = TransformContainer(transform=first_valid_transform)
@@ -295,6 +349,51 @@ class TestTransformProgram:
             match="Informative transforms can only be added at the end of the program.",
         ):
             transform_program.insert_front(transform3)
+
+    def test_insert_transform(self):
+        """Test to insert a transform (dispatcher) at the beginning of a transform program."""
+        transform_program = TransformProgram()
+
+        transform1 = transform(first_valid_transform)
+        transform_program.insert_front_transform(transform1)
+
+        assert not transform_program.is_empty()
+        assert len(transform_program) == 1
+        assert isinstance(transform_program[0], TransformContainer)
+        assert transform_program[0].transform is first_valid_transform
+
+        transform2 = transform(second_valid_transform)
+        transform_program.insert_front_transform(transform2)
+
+        assert not transform_program.is_empty()
+        assert len(transform_program) == 2
+        assert isinstance(transform_program[0], TransformContainer)
+        assert transform_program[0].transform is second_valid_transform
+        assert isinstance(transform_program[1], TransformContainer)
+        assert transform_program[1].transform is first_valid_transform
+
+        transform3 = transform(second_valid_transform, is_informative=True)
+
+        with pytest.raises(
+            TransformError,
+            match="Informative transforms can only be added at the end of the program.",
+        ):
+            transform_program.insert_front_transform(transform3)
+
+    def test_insert_transform_with_expand(self):
+        """Test to insert front a transform with expand into a program."""
+        transform_program = TransformProgram()
+
+        transform1 = transform(first_valid_transform, expand_transform=expand_transform)
+        transform_program.insert_front_transform(transform1)
+
+        assert not transform_program.is_empty()
+        assert len(transform_program) == 2
+        assert isinstance(transform_program[0], TransformContainer)
+        assert transform_program[0].transform is expand_transform
+
+        assert isinstance(transform_program[1], TransformContainer)
+        assert transform_program[1].transform is first_valid_transform
 
     def test_valid_transforms(self):
         """Test that that it is only possible to create valid transforms."""
