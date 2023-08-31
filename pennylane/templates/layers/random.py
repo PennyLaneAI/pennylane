@@ -15,7 +15,6 @@ r"""
 Contains the RandomLayers template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-import warnings
 
 import numpy as np
 import pennylane as qml
@@ -199,7 +198,7 @@ class RandomLayers(Operation):
 
     @staticmethod
     def compute_decomposition(
-        weights, wires, ratio_imprim, imprimitive, rotations, seed, ratio_imprimitive=None
+        weights, wires, ratio_imprim, imprimitive, rotations, seed
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
@@ -224,21 +223,14 @@ class RandomLayers(Operation):
 
         >>> weights = torch.tensor([[0.1, -2.1, 1.4]])
         >>> rotations=[qml.RY, qml.RX]
-        >>> qml.RandomLayers.compute_decomposition(weights, wires=["a", "b"], ratio_imprimitive=0.3,
-        ..                                         imprimitive=qml.CNOT, rotations=rotations, seed=42)
+        >>> qml.RandomLayers.compute_decomposition(weights, wires=["a", "b"], ratio_imprim=0.3,
+        ...                                         imprimitive=qml.CNOT, rotations=rotations, seed=42)
         [RY(tensor(0.1000), wires=['b']),
          RY(tensor(-2.1000), wires=['b']),
          CNOT(wires=['b', 'a']),
          CNOT(wires=['b', 'a']),
          RX(tensor(1.4000), wires=['a'])]
         """
-        if ratio_imprimitive:
-            warnings.warn(
-                "In RandomLayers.compute_decomposition, ratio_imprim should be changed to `ratio_imprimitive` to match the "
-                "call signature of the operation.",
-                UserWarning,
-            )
-            ratio_imprim = ratio_imprimitive
         wires = qml.wires.Wires(wires)
         rng = np.random.default_rng(seed)
 

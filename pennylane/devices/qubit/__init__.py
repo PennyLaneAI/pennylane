@@ -24,9 +24,13 @@ at your own discretion.
     create_initial_state
     apply_operation
     measure
+    measure_with_samples
     sample_state
     preprocess
     simulate
+    adjoint_jacobian
+    adjoint_jvp
+    adjoint_vjp
 """
 
 from .apply_operation import apply_operation
