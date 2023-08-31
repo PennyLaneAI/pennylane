@@ -1007,6 +1007,7 @@ class TestExpand:
         new_tape = tape.expand(depth=3)
         assert len(new_tape.operations) == 11
 
+    @pytest.mark.parametrize("force_decompose", (True, False))
     @pytest.mark.parametrize("skip_first", (True, False))
     @pytest.mark.parametrize(
         "op, decomp",
@@ -1021,7 +1022,7 @@ class TestExpand:
             ],
         ),
     )
-    def test_expansion_state_prep(self, skip_first, op, decomp):
+    def test_expansion_state_prep(self, force_decompose, skip_first, op, decomp):
         """Test that StatePrepBase operations are expanded correctly without
         expanding other operations in the tape.
         """
@@ -1032,19 +1033,34 @@ class TestExpand:
             qml.StatePrep([0, 1], wires=0),
         ]
         tape = QuantumTape(ops=ops, measurements=[], prep=[op])
-        new_tape = expand_tape_state_prep(tape, skip_first=skip_first)
+        new_tape = expand_tape_state_prep(
+            tape, skip_first=skip_first, force_decompose=force_decompose
+        )
 
         true_decomposition = []
         if skip_first:
             true_decomposition.append(op)
         else:
-            true_decomposition.append(decomp)
+            if force_decompose:
+                true_decomposition.extend(decomp.decomposition())
+            else:
+                true_decomposition.append(decomp)
         true_decomposition += [
             qml.PauliZ(wires=0),
             qml.Rot(0.1, 0.2, 0.3, wires=0),
-            qml.BasisStatePreparation([0], wires=[1]),
-            qml.MottonenStatePreparation([0, 1], wires=[0]),
         ]
+        if force_decompose:
+            true_decomposition.extend(qml.BasisStatePreparation([0], wires=[1]).decomposition())
+            true_decomposition.extend(
+                qml.MottonenStatePreparation([0, 1], wires=[0]).decomposition()
+            )
+        else:
+            true_decomposition.extend(
+                [
+                    qml.BasisStatePreparation([0], wires=[1]),
+                    qml.MottonenStatePreparation([0, 1], wires=[0]),
+                ]
+            )
 
         assert len(new_tape.operations) == len(true_decomposition)
         for tape_op, true_op in zip(new_tape.operations, true_decomposition):

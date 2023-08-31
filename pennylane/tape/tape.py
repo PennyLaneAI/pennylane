@@ -268,7 +268,9 @@ def expand_tape_state_prep(tape, skip_first=True, force_decompose=False):
             return operation
         new_ops = []
         for op in operation.decomposition():
-            if force_decompose and isinstance(op, qml.MottonenStatePreparation):
+            if force_decompose and isinstance(
+                op, (qml.BasisStatePreparation, qml.MottonenStatePreparation)
+            ):
                 new_ops.extend(op.decomposition())
             else:
                 new_ops.append(op)
