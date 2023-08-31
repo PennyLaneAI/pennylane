@@ -171,7 +171,7 @@ class TransformProgram:
         """Add a transform (dispatcher) to the end of the program.
 
         Args:
-            transform(TransformDispatcher): The transform program where the transform is added.
+            transform (TransformDispatcher): The transform to add to the transform program.
             *targs: Any additional arguments that are passed to the transform.
 
         Keyword Args:
