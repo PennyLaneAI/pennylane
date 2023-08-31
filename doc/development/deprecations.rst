@@ -81,7 +81,7 @@ Completed deprecation cycles
 
 * ``qml.qchem.jordan_wigner`` had been removed.
   Use ``qml.jordan_wigner`` instead. List input to define the fermionic operator
- is no longer accepted; the fermionic operators ``qml.FermiA``, ``qml.FermiC``,
+  is no longer accepted; the fermionic operators ``qml.FermiA``, ``qml.FermiC``,
   ``qml.FermiWord`` and ``qml.FermiSentence`` should be used instead. See the
   :mod:`pennylane.fermi` module documentation and the
   `Fermionic Operator <https://pennylane.ai/qml/demos/tutorial_fermionic_operators>`_
