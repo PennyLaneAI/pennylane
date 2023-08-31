@@ -17,12 +17,14 @@ This module contains the Abstract Base Class for the next generation of devices.
 # pylint: disable=comparison-with-callable
 import abc
 
+from collections.abc import Iterable
 from numbers import Number
 from typing import Callable, Union, Sequence, Tuple, Optional
 
 from pennylane.measurements import Shots
 from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.typing import Result, ResultBatch
+from pennylane.wires import Wires
 from pennylane import Tracker
 
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
@@ -153,10 +155,18 @@ class Device(abc.ABC):
             self.tracker.record()
     """
 
-    def __init__(self, shots=None) -> None:
+    def __init__(self, wires=None, shots=None) -> None:
         # each instance should have its own Tracker.
         self.tracker = Tracker()
         self._shots = Shots(shots)
+
+        if wires is not None:
+            if not isinstance(wires, Iterable):
+                # interpret wires as the number of consecutive wires
+                wires = range(wires)
+            wires = Wires(wires)
+
+        self._wires = wires
 
     @property
     def shots(self) -> Shots:
@@ -167,6 +177,19 @@ class Device(abc.ABC):
 
         """
         return self._shots
+
+    @property
+    def wires(self) -> Wires:
+        """The device wires.
+
+        Note that wires are optional, and the default value of None means any wires can be used.
+        If a device has wires defined, they will only be used for certain features. This includes:
+
+        * Validation of tapes being executed on the device
+        * Defining the wires used when evaluating a :func:`~pennylane.state` measurement
+
+        """
+        return self._wires
 
     def preprocess(
         self,
@@ -245,7 +268,7 @@ class Device(abc.ABC):
                 tensor-like: The function input.
 
             """
-            return res
+            return res[0] if isinstance(circuits, QuantumScript) else res
 
         circuit_batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
         return circuit_batch, blank_postprocessing_fn, execution_config
@@ -267,11 +290,9 @@ class Device(abc.ABC):
 
         **Interface parameters:**
 
-        Note that the parameters contained within the quantum script may contain interface-specific data types, such as
-        ``torch.Tensor`` or ``jax.Array``. If the device does not wish to handle interface-specific parameters, they
-        can implement an optional "internal preprocessing" step that converts all parameters to vanilla numpy. A convenience
-        transform implementing this will be provided. This step allows device to be transparent to things like jitting if they
-        so choose.
+        The provided ``circuits`` may contain interface specific data-types like ``torch.Tensor`` or ``jax.Array`` when
+        :attr:`~.ExecutionConfig.gradient_method` of ``"backprop"`` is requested. If the gradient method is not backpropagation,
+        then only vanilla numpy parameters or builtins will be present in the circuits.
 
         .. details::
             :title: Return Shape
@@ -360,13 +381,17 @@ class Device(abc.ABC):
         For example, the Python device will support device differentiation via the adjoint differentiation algorithm
         if the order is ``1`` and the execution occurs with no shots (``shots=None``).
 
-        >>> config = ExecutionConfig(derivative_order=1, shots=None, gradient_method="adjoint")
+        >>> config = ExecutionConfig(derivative_order=1, gradient_method="adjoint")
         >>> dev.supports_derivatives(config)
         True
-        >>> config = ExecutionConfig(derivative_order=1, shots=10, gradient_method="adjoint")
-        >>> dev.supports_derivatives(config)
+        >>> circuit_analytic = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))], shots=None)
+        >>> dev.supports_derivatives(config, circuit=circuit_analytic)
+        True
+        >>> circuit_finite_shots = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))], shots=10)
+        >>> dev.supports_derivatives(config, circuit = circuit_fintite_shots)
         False
-        >>> config = ExecutionConfig(derivative_order=2, shots=None, gradient_method="adjoint")
+
+        >>> config = ExecutionConfig(derivative_order=2, gradient_method="adjoint")
         >>> dev.supports_derivatives(config)
         False
 
@@ -395,7 +420,7 @@ class Device(abc.ABC):
         This method is also used be to validate support for backpropagation derivatives. Backpropagation
         is only supported if the device is transparent to the machine learning framework from start to finish.
 
-        >>> config = ExecutionConfig(gradient_method="backprop", framework="torch")
+        >>> config = ExecutionConfig(gradient_method="backprop")
         >>> python_device.supports_derivatives(config)
         True
         >>> cpp_device.supports_derivatives(config)
