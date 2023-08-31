@@ -20,7 +20,7 @@ from typing import Callable, List, Tuple, Optional, Sequence
 from pennylane.typing import Result, ResultBatch
 from pennylane.tape import QuantumTape
 
-from .transform_dispatcher import TransformContainer, TransformError
+from .transform_dispatcher import TransformContainer, TransformError, TransformDispatcher
 
 PostProcessingFn = Callable[[ResultBatch], Result]
 BatchPostProcessingFn = Callable[[ResultBatch], ResultBatch]
@@ -166,6 +166,60 @@ class TransformProgram:
                 "Informative transforms can only be added at the end of the program."
             )
         self._transform_program.insert(0, transform_container)
+
+    def add_transform(self, transform: TransformDispatcher, *targs, **tkwargs):
+        """Add a transform (dispatcher) to the end of the program.
+
+        Args:
+            transform(TransformDispatcher): The transform program where the transform is added.
+            *targs: Any additional arguments that are passed to the transform.
+
+        Keyword Args:
+            **tkwargs: Any additional keyword arguments that are passed to the transform.
+
+        """
+        if not isinstance(transform, TransformDispatcher):
+            raise TransformError("Only transform dispatcher can be added to the transform program.")
+
+        if transform.expand_transform:
+            self.push_back(TransformContainer(transform._expand_transform))
+        self.push_back(
+            TransformContainer(
+                transform._transform,
+                targs,
+                tkwargs,
+                transform._classical_cotransform,
+                transform._is_informative,
+            )
+        )
+
+    def insert_front_transform(self, transform: TransformDispatcher, *targs, **tkwargs):
+        """Add a transform (dispatcher) to the beginning of the program.
+
+        Args:
+            transform(TransformDispatcher): The transform program where the transform is added.
+            *targs: Any additional arguments that are passed to the transform.
+
+        Keyword Args:
+            **tkwargs: Any additional keyword arguments that are passed to the transform.
+
+        """
+        if transform.is_informative and not self.is_empty():
+            raise TransformError(
+                "Informative transforms can only be added at the end of the program."
+            )
+
+        if transform.expand_transform:
+            self.insert_front(TransformContainer(transform._expand_transform))
+        self.insert_front(
+            TransformContainer(
+                transform._transform,
+                targs,
+                tkwargs,
+                transform._classical_cotransform,
+                transform._is_informative,
+            )
+        )
 
     def pop_front(self):
         """Pop the transform container at the beginning of the program.
