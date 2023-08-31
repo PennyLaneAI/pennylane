@@ -594,7 +594,6 @@ class TestReturnShotVectorIntegration:
         for res, exp in zip(all_res, expected):
             assert isinstance(res, np.ndarray)
             assert res.shape == (num_copies,)
-            print(res, exp)
             assert np.allclose(res, exp, atol=tol, rtol=0)
 
     def test_prob_expectation_values(
