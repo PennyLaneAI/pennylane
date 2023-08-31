@@ -94,12 +94,22 @@ def measure(wires: Wires, reset: Optional[bool] = False):
     Raises:
         QuantumFunctionError: if multiple wires were specified
     """
-
     wire = Wires(wires)
     if len(wire) > 1:
         raise qml.QuantumFunctionError(
             "Only a single qubit can be measured in the middle of the circuit"
         )
+
+    try:
+        from catalyst import utils, measure
+
+        if utils.tracing.TracingContext.is_tracing():
+            return measure(wire[0])
+    except ImportError:
+        # If this's not callled during tracing, there's no need to
+        # patch this to `catalyst.measure` and it can be treated as
+        # a regular `qml.measure` call.
+        pass
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())[:8]

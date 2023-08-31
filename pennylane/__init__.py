@@ -20,7 +20,6 @@ import types
 import warnings
 import pkg_resources
 
-
 import numpy as _np
 from semantic_version import SimpleSpec, Version
 
@@ -129,6 +128,8 @@ from pennylane.interfaces import execute  # pylint:disable=wrong-import-order
 import pennylane.logging  # pylint:disable=wrong-import-order
 
 import pennylane.data
+
+from pennylane.qjit_compile import *
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")

@@ -25,7 +25,22 @@ from autograd.wrap_util import unary_to_nary
 make_vjp = unary_to_nary(_make_vjp)
 
 
-class grad:
+def grad(fn, argnum=None, method=None, h=None):
+    try:
+        import catalyst
+
+        if catalyst.utils.tracing.TracingContext.is_tracing():
+            return catalyst.grad(fn, method=method, h=h, argnum=argnum)
+    except ImportError:
+        # If this's not callled during tracing, there's no need to
+        # patch this to `catalyst.grad` and it can be treated as
+        # a regular `qml.grad` call.
+        pass
+
+    return Grad(fn, argnum)
+
+
+class Grad:
     """Returns the gradient as a callable function of (functions of) QNodes.
 
     By default, gradients are computed for arguments which contain the property
@@ -63,6 +78,18 @@ class grad:
 
         self._fun = fun
         self._argnum = argnum
+
+        self._qjit_ctx_tracing = False
+        try:
+            from catalyst import utils, grad
+
+            if utils.tracing.TracingContext.is_tracing():
+                self._qjit_ctx_tracing = True
+        except ImportError:
+            # If this's not callled during tracing, there's no need to
+            # patch this to `catalyst.grad` and it can be treated as
+            # a regular `qml.grad` call.
+            pass
 
         if self._argnum is not None:
             # If the differentiable argnum is provided, we can construct
@@ -104,6 +131,9 @@ class grad:
     def __call__(self, *args, **kwargs):
         """Evaluates the gradient function, and saves the function value
         calculated during the forward pass in :attr:`.forward`."""
+        if self._qjit_ctx_tracing:
+            return grad(self._fun, argnum=self._argnum)
+
         grad_fn, argnum = self._get_grad_fn(args)
 
         if not isinstance(argnum, int) and not argnum:
