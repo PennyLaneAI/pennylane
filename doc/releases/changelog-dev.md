@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Add the method ``add_transform`` and ``insert_front_transform`` transform in the ``TransformProgram``.
+  [(#4559)](https://github.com/PennyLaneAI/pennylane/pull/4559)
+
 * Dunder ``__add__`` method is added to the ``TransformProgram`` class, therefore two programs can be added using ``+`` .
   [(#4549)](https://github.com/PennyLaneAI/pennylane/pull/4549)
 
@@ -52,6 +55,10 @@
   [(#4554)](https://github.com/PennyLaneAI/pennylane/pull/4554)
 
 <h3>Documentation 📝</h3>
+
+* Minor documentation improvements to the new device API. The documentation now correctly states that interface-specific
+  parameters are only passed to the device for backpropagation derivatives. 
+  [(#4542)](https://github.com/PennyLaneAI/pennylane/pull/4542)
 
 * Add functions for qubit-simulation to the `qml.devices` sub-page of the "Internal" section.
   Note that these functions are unstable while device upgrades are underway.
