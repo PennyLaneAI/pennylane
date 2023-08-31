@@ -221,53 +221,6 @@ class TestSample:  # pylint: disable=too-many-public-methods
             assert res.shape == (shots,)
         custom_measurement_process(new_dev, spy)
 
-    @pytest.mark.parametrize("shots", [8, [4, 4]])
-    def test_decimal_true(self, shots):
-        """Test that if `decimal==True`, then samples are returned as base-10 integers."""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
-
-        samples = np.array(
-            [
-                [0, 0, 0],
-                [0, 0, 1],
-                [0, 1, 0],
-                [0, 1, 1],
-                [1, 0, 0],
-                [1, 0, 1],
-                [1, 1, 0],
-                [1, 1, 1],
-            ]
-        )
-        samples_decimal = np.arange(0, 8, 1)
-
-        dev._samples = samples
-        meas = qml.sample(wires=dev.wires)
-        shot_range = None if isinstance(shots, int) else (0, sum(shots))
-        bin_size = None if isinstance(shots, int) else shots[0]
-
-        # Using `meas` as the observable because `QubitDevice.sample` expects a
-        # measurement process for that argument when no observable is provided
-        old_samples = dev.sample(meas, shot_range=shot_range, bin_size=bin_size, decimal=True)
-        new_samples = meas.process_samples(
-            samples, wire_order=dev.wires, shot_range=shot_range, bin_size=bin_size, decimal=True
-        )
-
-        assert np.allclose(old_samples, new_samples)
-
-        if isinstance(shots, int):
-            assert new_samples.shape == old_samples.shape == samples_decimal.shape
-            # Enough to check that new samples are correct as we already know old and
-            # new samples are the same
-            assert np.allclose(new_samples, samples_decimal)
-
-        else:
-            # Samples are reshaped to dimension (bin_size, -1) for decimal values
-            expected_shape = (bin_size, len(shots))
-            assert old_samples.shape == new_samples.shape == expected_shape
-            # Enough to check that new samples are correct as we already know old and
-            # new samples are the same
-            np.allclose(new_samples, samples_decimal.reshape(expected_shape))
-
     def test_providing_observable_and_wires(self):
         """Test that a ValueError is raised if both an observable is provided and wires are specified"""
         dev = qml.device("default.qubit", wires=2)

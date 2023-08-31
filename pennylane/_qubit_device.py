@@ -1333,10 +1333,7 @@ class QubitDevice(Device):
             return self._dot(prob, eigvals)
 
         # estimate the ev
-        # Get samples as decimal integer values if computing ev for a MeasurementValue,
-        # otherwise the returned samples would be boolean integer lists
-        decimal = isinstance(observable, MeasurementValue)
-        samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size, decimal=decimal)
+        samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
         # With broadcasting, we want to take the mean over axis 1, which is the -1st/-2nd with/
         # without bin_size. Without broadcasting, axis 0 is the -1st/-2nd with/without bin_size
         axis = -1 if bin_size is None else -2
@@ -1372,11 +1369,7 @@ class QubitDevice(Device):
             return self._dot(prob, (eigvals**2)) - self._dot(prob, eigvals) ** 2
 
         # estimate the variance
-        # Get samples as decimal integer values if computing ev for a MeasurementValue,
-        # otherwise the returned samples would be boolean integer lists
-        decimal = isinstance(observable, MeasurementValue)
-        samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size, decimal=decimal)
-
+        samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
         # With broadcasting, we want to take the variance over axis 1, which is the -1st/-2nd with/
         # without bin_size. Without broadcasting, axis 0 is the -1st/-2nd with/without bin_size
         axis = -1 if bin_size is None else -2
@@ -1463,9 +1456,7 @@ class QubitDevice(Device):
 
         return outcome_dicts if batched else outcome_dicts[0]
 
-    def sample(
-        self, observable, shot_range=None, bin_size=None, counts=False, decimal=False
-    ):  # pylint: disable=too-many-arguments
+    def sample(self, observable, shot_range=None, bin_size=None, counts=False):
         """Return samples of an observable.
 
         Args:
@@ -1477,9 +1468,6 @@ class QubitDevice(Device):
                 provided, the entire shot range is treated as a single bin.
             counts (bool): whether counts (``True``) or raw samples (``False``)
                 should be returned
-            decimal (bool): Whether to return samples as base-10 integers or boolean
-                integer lists. Setting ``decimal`` does not do anything if ``counts``
-                is ``True``.
 
         Raises:
             EigvalsUndefinedError: if no information is available about the
@@ -1502,13 +1490,13 @@ class QubitDevice(Device):
             # Ellipsis (...) otherwise would take up broadcasting and shots axes.
             sub_samples = self._samples[..., slice(*shot_range), :]
 
-        no_observable_provided = isinstance(observable, (MeasurementProcess, MeasurementValue))
+        no_observable_provided = isinstance(observable, MeasurementProcess)
 
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}
             samples = 1 - 2 * sub_samples[..., device_wires[0]]
 
-        elif no_observable_provided and (not decimal or counts):
+        elif no_observable_provided:
             # if no observable was provided then return the raw samples
             if len(observable.wires) != 0:
                 # if wires are provided, then we only return samples from those wires
@@ -1523,8 +1511,8 @@ class QubitDevice(Device):
             powers_of_two = 2 ** np.arange(samples.shape[-1])[::-1]
             indices = samples @ powers_of_two
             indices = np.array(indices)  # Add np.array here for Jax support.
-            if decimal:
-                samples = indices
+            if isinstance(observable, MeasurementValue):
+                samples = np.arange(0, 2 ** len(observable.wires), 1)[indices]
             else:
                 try:
                     samples = observable.eigvals()[indices]
@@ -1549,7 +1537,7 @@ class QubitDevice(Device):
 
         return (
             samples.T.reshape((num_wires, bin_size, -1))
-            if no_observable_provided and not decimal
+            if no_observable_provided
             else samples.reshape((bin_size, -1))
         )
 

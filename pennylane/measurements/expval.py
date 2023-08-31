@@ -111,15 +111,11 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
             return probs[idx]
 
         # estimate the ev
-        # Get samples as decimal integer values if computing ev for a MeasurementValue,
-        # otherwise the returned samples would be boolean integer lists
-        decimal = isinstance(self.obs, MeasurementValue)
         samples = qml.sample(op=self.obs).process_samples(
             samples=samples,
             wire_order=wire_order,
             shot_range=shot_range,
             bin_size=bin_size,
-            decimal=decimal,
         )
 
         # With broadcasting, we want to take the mean over axis 1, which is the -1st/-2nd with/

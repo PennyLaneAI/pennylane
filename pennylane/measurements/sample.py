@@ -190,22 +190,7 @@ class SampleMP(SampleMeasurement):
         wire_order: Wires,
         shot_range: Tuple[int] = None,
         bin_size: int = None,
-        decimal: bool = False,
-    ):  # pylint: disable=too-many-arguments, arguments-differ
-        """Process the given samples.
-
-        Args:
-
-            samples (Sequence[complex]): computational basis samples generated for all wires
-            wire_order (Wires): wires determining the subspace that ``samples`` acts on
-            shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
-                to use. If not specified, all samples are used.
-            bin_size (int): Divides the shot range into bins of size ``bin_size``, and
-                returns the measurement statistic separately over each bin. If not
-                provided, the entire shot range is treated as a single bin.
-            decimal (bool): Whether to return samples as base-10 integers or boolean
-                integer lists.
-        """
+    ):
         wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]
         name = (
@@ -226,7 +211,7 @@ class SampleMP(SampleMeasurement):
 
         num_wires = samples.shape[-1]  # wires is the last dimension
 
-        if (self.obs is None or isinstance(self.obs, MeasurementValue)) and not decimal:
+        if self.obs is None:
             # if no observable was provided then return the raw samples
             return samples if bin_size is None else samples.T.reshape(num_wires, bin_size, -1)
 
@@ -241,8 +226,8 @@ class SampleMP(SampleMeasurement):
             powers_of_two = 2 ** qml.math.arange(num_wires)[::-1]
             indices = samples @ powers_of_two
             indices = qml.math.array(indices)  # Add np.array here for Jax support.
-            if decimal:
-                samples = indices
+            if isinstance(self.obs, MeasurementValue):
+                samples = qml.math.arange(0, 2 ** len(self.obs.wires), 1)[indices]
             else:
                 try:
                     samples = self.obs.eigvals()[indices]
