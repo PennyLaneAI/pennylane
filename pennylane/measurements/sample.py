@@ -144,7 +144,7 @@ class SampleMP(SampleMeasurement):
         # built-in observable with integer eigenvalues or a tensor product thereof
         if self.obs is None:
             # Computational basis samples
-            return bool
+            return int
         int_eigval_obs = {qml.PauliX, qml.PauliY, qml.PauliZ, qml.Hadamard, qml.Identity}
         tensor_terms = self.obs.obs if hasattr(self.obs, "obs") else [self.obs]
         every_term_standard = all(o.__class__ in int_eigval_obs for o in tensor_terms)
