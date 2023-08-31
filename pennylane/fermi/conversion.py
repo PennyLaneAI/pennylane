@@ -77,8 +77,7 @@ def jordan_wigner(
 
 @singledispatch
 def _jordan_wigner_dispatch(fermi_operator, ps, wire_map):
-    """Dispatches to appropriate function if fermi_operator is a FermiWord,
-    FermiSentence or list"""
+    """Dispatches to appropriate function if fermi_operator is a FermiWord or FermiSentence."""
     raise ValueError(f"fermi_operator must be a FermiWord or FermiSentence, got: {fermi_operator}")
 
 
