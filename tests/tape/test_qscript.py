@@ -1368,10 +1368,8 @@ class TestNumericType:
         assert np.issubdtype(result.dtype, complex)
         assert qs.numeric_type is complex
 
-    @pytest.mark.parametrize(
-        "ret, dtype", [(qml.sample(), np.bool8), (qml.sample(qml.PauliZ(wires=0)), np.int64)]
-    )
-    def test_sample_int_eigvals(self, ret, dtype):
+    @pytest.mark.parametrize("ret", [qml.sample(), qml.sample(qml.PauliZ(wires=0))])
+    def test_sample_int_eigvals(self, ret):
         """Test that the tape can correctly determine the output domain for a
         sampling measurement with a Hermitian observable with integer
         eigenvalues."""
@@ -1381,8 +1379,8 @@ class TestNumericType:
         result = qml.execute([qs], dev, gradient_fn=None)[0]
 
         # Double-check the domain of the QNode output
-        assert np.issubdtype(result.dtype, dtype)
-        assert np.issubdtype(dtype, qs.numeric_type)
+        assert np.issubdtype(result.dtype, np.int64)
+        assert qs.numeric_type is int
 
     # TODO: add cases for each interface once qml.Hermitian supports other
     # interfaces
