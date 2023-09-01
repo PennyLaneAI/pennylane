@@ -131,13 +131,12 @@ class StateMP(StateMeasurement):
     Please refer to :func:`state` for detailed documentation.
 
     Args:
-        wires (.Wires): The wires the measurement process applies to.
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
     """
 
-    def __init__(self, wires: Optional[Wires] = None, id: Optional[str] = None):
-        super().__init__(wires=wires, id=id)
+    def __init__(self, *, id: Optional[str] = None):
+        super().__init__(wires=None, id=id)
 
     @property
     def return_type(self):
@@ -171,7 +170,8 @@ class DensityMatrixMP(StateMP):
     """
 
     def __init__(self, wires: Wires, id: Optional[str] = None):
-        super().__init__(wires=wires, id=id)
+        # pylint:disable=non-parent-init-called,super-init-not-called
+        StateMeasurement.__init__(self, wires=wires, id=id)
 
     def shape(self, device, shots):
         num_shot_elements = (
