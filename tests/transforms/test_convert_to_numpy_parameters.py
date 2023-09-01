@@ -44,11 +44,16 @@ def test_convert_arrays_to_numpy(framework, shots):
 
     numpy_data = np.array(0.62)
 
-    ops = [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1)), qml.RZ(numpy_data, 0)]
+    ops = [
+        qml.StatePrep(state, 0),
+        qml.RX(x, 0),
+        qml.RY(y, 1),
+        qml.CNOT((0, 1)),
+        qml.RZ(numpy_data, 0),
+    ]
     m = [qml.state(), qml.expval(qml.Hermitian(M, 0))]
-    prep = [qml.StatePrep(state, 0)]
 
-    qs = qml.tape.QuantumScript(ops, m, prep, shots=shots)
+    qs = qml.tape.QuantumScript(ops, m, shots=shots)
     new_qs = convert_to_numpy_parameters(qs)
 
     # check ops that should be unaltered
@@ -111,3 +116,24 @@ def test_unwraps_tensor_observables():
 
     unwrapped_m = _convert_measurement_to_numpy_data(m)
     assert qml.math.get_interface(*unwrapped_m.obs.data) == "numpy"
+
+
+@pytest.mark.torch
+def test_unwraps_mp_eigvals():
+    """Test that a measurememnt process with autograd eigvals unwraps them to numpy."""
+    import torch
+
+    eigvals = torch.tensor([0.5, 0.5])
+    m = qml.measurements.ExpectationMP(eigvals=eigvals, wires=qml.wires.Wires(0))
+
+    unwrapped_m = _convert_measurement_to_numpy_data(m)
+    assert qml.math.get_interface(unwrapped_m.eigvals) == "numpy"
+
+
+def test_mp_numpy_eigvals():
+    """Test that a measurement process with numpy eigvals is returned unchanged."""
+    eigvals = np.array([0.5, 0.5])
+    m = qml.measurements.ExpectationMP(eigvals=eigvals, wires=qml.wires.Wires(0))
+
+    unwrapped_m = _convert_measurement_to_numpy_data(m)
+    assert m is unwrapped_m
