@@ -1037,20 +1037,23 @@ def _shci_state(shci_solver, tol=1e-15):
         having binary represention corresponding to the Fock occupation vector in alpha and beta
         spin sectors, respectively, and coeff being the CI coefficients of those configurations
     **Example**
-    >>> from pyscf import gto, scf
-    >>> from pyblock2 import DMRGDriver
+    >>> from pyscf import gto, scf, mcscf
+    >>> from pyscf.shciscf import shci
+    >>> import numpy as np
     >>> mol = gto.M(atom=[['Li', (0, 0, 0)], ['Li', (0,0,0.71)]], basis='sto6g', symmetry="d2h")
     >>> myhf = scf.RHF(mol).run()
-    >>> myshci = mcscf.CASCI(mf, ncas, nelecas)
-    >>> initialStates = getinitialStateSHCI(mf, (nelecas_a, nelecas_b))
-    >>> myshci.fcisolver = shci.SHCI(mf.mol)
+    >>> ncas, nelecas_a, nelecas_b = mol.nao, mol.nelectron // 2, mol.nelectron // 2
+    >>> myshci = mcscf.CASCI(myhf, ncas, (nelecas_a, nelecas_b))
+    >>> initialStates = getinitialStateSHCI(myhf, (nelecas_a, nelecas_b))
+    >>> output_file = f"shci_output.out"
+    >>> myshci.fcisolver = shci.SHCI(myhf.mol)
     >>> myshci.internal_rotation = False
     >>> myshci.fcisolver.initialStates = initialStates
     >>> myshci.fcisolver.outputFile = output_file
     >>> e_shci = np.atleast_1d(myshci.kernel(verbose=5))
     >>> wf_shci = _shci_state(myshci, tol=1e-1)
     >>> print(wf_shci)
-    (shci wavefunction printed here)
+    {(7, 7): 0.8874167069, (11, 11): -0.3075774156, (19, 19): -0.3075774156, (35, 35): -0.1450474361}
     """
 
     coefs, dets = get_dets_coefs_output(shci_solver.fcisolver.outputFile)
@@ -1128,3 +1131,21 @@ def convert_bin_ab(list_string):
             bin_b += "0"
 
     return bin_a[::-1], bin_b[::-1]
+
+def getinitialStateSHCI(mf, nelecas):
+    
+    '''Get initial state for SHCI - specially for spin sectior different from zero'''
+    
+    norb, nelec_a, nelec_b = get_mol_attrs(mf.mol)
+    n_total = nelec_a + nelec_b
+    n_frozen_s = int((n_total-np.sum(np.array(nelecas)))/2)
+    nelec_a -= n_frozen_s
+    nelec_b -= n_frozen_s
+
+    initialState = []
+    for i in range(int(nelec_a)):
+        initialState.append((2 * i))
+    for i in range(int(nelec_b)):
+        initialState.append((2 * i + 1))
+        
+    return np.array([initialState])
