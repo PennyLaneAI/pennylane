@@ -22,6 +22,10 @@
 * The new device API now has a `repr()`
   [(#4562)](https://github.com/PennyLaneAI/pennylane/pull/4562)
 
+* The density matrix aspects of `StateMP` have been split into their own measurement
+  process, `DensityMatrixMP`.
+  [(#4558)](https://github.com/PennyLaneAI/pennylane/pull/4558)
+
 <h3>Breaking changes 💔</h3>
 
 * The `__eq__` and `__hash__` methods of `Operator` and `MeasurementProcess` no longer rely on the
@@ -100,7 +104,6 @@
   been removed. Please use ``QuantumScript.bind_new_parameters`` instead.
   [(#4548)](https://github.com/PennyLaneAI/pennylane/pull/4548)
 
-  
 <h3>Deprecations 👋</h3>
 
 * The ``prep`` keyword argument in ``QuantumScript`` is deprecated and will be removed from `QuantumScript`.
