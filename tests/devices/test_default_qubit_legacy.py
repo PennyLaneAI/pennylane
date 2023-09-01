@@ -643,7 +643,7 @@ class TestApply:
         with pytest.raises(
             DeviceError,
             match="Operation StatePrep cannot be used after other Operations have already been applied "
-            "on a default.qubit.legacy device.",
+            "on a default.qubit device.",
         ):
             qubit_device_2_wires.reset()
             qubit_device_2_wires.apply(
@@ -664,7 +664,7 @@ class TestApply:
         with pytest.raises(
             DeviceError,
             match="Operation BasisState cannot be used after other Operations have already been applied "
-            "on a default.qubit.legacy device.",
+            "on a default.qubit device.",
         ):
             qubit_device_2_wires.reset()
             qubit_device_2_wires.apply(

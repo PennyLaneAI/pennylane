@@ -462,7 +462,7 @@ class TestApplyBroadcasted:
         with pytest.raises(
             DeviceError,
             match="Operation StatePrep cannot be used after other Operations have already been applied "
-            "on a default.qubit.legacy device.",
+            "on a default.qubit device.",
         ):
             qubit_device_2_wires.apply([qml.RZ(0.5, wires=[0]), vec])
 
@@ -491,7 +491,7 @@ class TestApplyBroadcasted:
         with pytest.raises(
             DeviceError,
             match="Operation BasisState cannot be used after other Operations have already been applied "
-            "on a default.qubit.legacy device.",
+            "on a default.qubit device.",
         ):
             qubit_device_2_wires.apply([vec])
 
