@@ -168,6 +168,16 @@ class Device(abc.ABC):
 
         self._wires = wires
 
+    def __repr__(self):
+        """String representation."""
+        details = []
+        if self.wires:
+            details.append(f"wires={len(self.wires)}")
+        if self.shots:
+            details.append(f"shots={self.shots.total_shots}")
+        details = f"({', '.join(details)}) " if details else ""
+        return f"<{self.name} device {details}at {hex(id(self))}>"
+
     @property
     def shots(self) -> Shots:
         """Default shots for execution workflows containing this device.
