@@ -110,6 +110,7 @@ class DefaultQubit(QubitDevice):
     author = "Xanadu Inc."
 
     operations = {
+        "GlobalPhase",
         "Identity",
         "Snapshot",
         "BasisState",
@@ -324,6 +325,8 @@ class DefaultQubit(QubitDevice):
         """
         if operation.__class__.__name__ == "Identity":
             return state
+        if operation.name == "GlobalPhase":
+            return self._apply_global_phase(state, operation)
         wires = operation.wires
 
         if str(operation.name) in self._apply_ops:  # cast to string because of Tensor
@@ -340,6 +343,10 @@ class DefaultQubit(QubitDevice):
             return self._apply_unitary_einsum(state, matrix, wires)
 
         return self._apply_unitary(state, matrix, wires)
+
+    def _apply_global_phase(self, state, operation: qml.GlobalPhase):  # pylint: disable=no-self-use
+        """Applies a :class:`~.GlobalPhase` operation to the state."""
+        return qml.math.exp(-1j * operation.data[0]) * state
 
     def _apply_x(self, state, axes, **kwargs):
         """Applies a PauliX gate by rolling 1 unit along the axis specified in ``axes``.

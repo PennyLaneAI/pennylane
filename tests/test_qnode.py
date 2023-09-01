@@ -815,6 +815,28 @@ class TestTapeConstruction:
         qn = QNode(circuit, dev)
         assert np.allclose(qn(0.5), np.cos(0.5), atol=tol, rtol=0)
 
+    def test_all_wires_new_device(self):
+        """Test that an operator must act on all tape wires with the new device API."""
+
+        def circuit1(x):
+            qml.GlobalPhase(x, wires=0)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        dev = qml.devices.experimental.DefaultQubit2()  # TODO: add wires, change comment below
+        qn = QNode(circuit1, dev)
+
+        # fails when GlobalPhase is a strict subset of all tape wires
+        with pytest.raises(qml.QuantumFunctionError, match="GlobalPhase must act on all wires"):
+            qn(0.5)
+
+        @qml.qnode(dev)
+        def circuit2(x):
+            qml.GlobalPhase(x, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        # passes here, does not care for device.wires because it has none
+        assert circuit2(0.5) == 1
+
     @pytest.mark.jax
     def test_jit_counts_raises_error(self):
         """Test that returning counts in a quantum function with trainable parameters while
