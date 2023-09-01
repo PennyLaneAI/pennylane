@@ -57,6 +57,7 @@ def reduced_dm(tape: QuantumTape, wires: Sequence[int]) -> (Sequence[QuantumTape
 
     .. seealso:: :func:`pennylane.density_matrix` and :func:`pennylane.math.reduce_dm`
     """
+    tape = tape.copy()
     wire_map = {w: i for i, w in enumerate(tape.wires)}
     indices = [wire_map[w] for w in wires]
 
@@ -65,17 +66,21 @@ def reduced_dm(tape: QuantumTape, wires: Sequence[int]) -> (Sequence[QuantumTape
         raise ValueError("The qfunc measurement needs to be State.")
 
     def processing_fn(res):
-        # determine if the measurement is a state vector or a density matrix
-        dm_measurement = measurements[0].wires or isinstance(measurements[0], DensityMatrixMP)
-        dm_func = qml.math.reduce_statevector if not dm_measurement else qml.math.reduce_dm
-
+        # determine the density matrix
+        dm_func = (
+            qml.math.reduce_statevector
+            if not isinstance(measurements[0], DensityMatrixMP)
+            else qml.math.reduce_dm
+        )
         density_matrix = dm_func(res[0], indices=indices)
+
         return density_matrix
 
     return [tape], processing_fn
 
 
-def purity(qnode, wires):
+@transform
+def purity(tape: QuantumTape, wires: Sequence[int]) -> (Sequence[QuantumTape], Callable):
     r"""Compute the purity of a :class:`~.QNode` returning :func:`~pennylane.state`.
 
     .. math::
@@ -124,34 +129,32 @@ def purity(qnode, wires):
 
     .. seealso:: :func:`pennylane.math.purity`
     """
-    wire_map = {w: i for i, w in enumerate(qnode.device.wires)}
+    tape = tape.copy()
+    wire_map = {w: i for i, w in enumerate(tape.wires)}
     indices = [wire_map[w] for w in wires]
 
-    def wrapper(*args, **kwargs):
-        # Construct tape
-        qnode.construct(args, kwargs)
+    # Check measurement
+    measurements = tape.measurements
+    if len(measurements) != 1 or not isinstance(measurements[0], StateMP):
+        raise ValueError("The qfunc return type needs to be a state.")
 
-        # Check measurement
-        measurements = qnode.tape.measurements
-        if len(measurements) != 1 or not isinstance(measurements[0], StateMP):
-            raise ValueError("The qfunc return type needs to be a state.")
+    def processing_fn(res):
+        # determine the density matrix
+        density_matrix = (
+            res[0]
+            if isinstance(measurements[0], DensityMatrixMP)
+            else qml.math.dm_from_state_vector(res[0])
+        )
 
-        # determine if the measurement is a state vector or a density matrix
-        # TODO: once we separate StateMP and DensityMatrixMP, we can replace this
-        # line with isinstance checks
-        dm_measurement = measurements[0].wires or "mixed" in qnode.device.name
+        return qml.math.purity(density_matrix, indices)
 
-        state_built = qnode(*args, **kwargs)
-
-        if not dm_measurement:
-            state_built = qml.math.dm_from_state_vector(state_built)
-
-        return qml.math.purity(state_built, indices, c_dtype=qnode.device.C_DTYPE)
-
-    return wrapper
+    return [tape], processing_fn
 
 
-def vn_entropy(qnode, wires, base=None):
+@transform
+def vn_entropy(
+    tape: QuantumTape, wires: Sequence[int], base: float = None
+) -> (Sequence[QuantumTape], Callable):
     r"""Compute the Von Neumann entropy from a :class:`.QNode` returning a :func:`~pennylane.state`.
 
     .. math::
@@ -189,42 +192,38 @@ def vn_entropy(qnode, wires, base=None):
 
     .. seealso:: :func:`pennylane.math.vn_entropy` and :func:`pennylane.vn_entropy`
     """
-    wire_map = {w: i for i, w in enumerate(qnode.device.wires)}
+    wire_map = {w: i for i, w in enumerate(tape.wires)}
     indices = [wire_map[w] for w in wires]
 
-    density_matrix_qnode = qml.qinfo.reduced_dm(qnode, qnode.device.wires)
+    tapes, dm_fn = qml.qinfo.reduced_dm(tape, tape.wires)
 
-    def wrapper(*args, **kwargs):
+    def processing_fn(res):
         # If pure state directly return 0.
-        if len(wires) == len(qnode.device.wires):
-            qnode.construct(args, kwargs)
-            measurements = qnode.tape.measurements
+        if len(wires) == len(tape.wires):
+            measurements = tape.measurements
             if len(measurements) != 1 or not isinstance(measurements[0], StateMP):
                 raise ValueError("The qfunc return type needs to be a state.")
 
             # determine if the measurement is a state vector or a density matrix
-            # TODO: once we separate StateMP and DensityMatrixMP, we can replace this
-            # line with isinstance checks
-            dm_measurement = measurements[0].wires or "mixed" in qnode.device.name
-
-            if not dm_measurement:
+            if not isinstance(measurements[0], DensityMatrixMP):
                 # if state vector, the entropy is 0
                 return 0.0
 
-            density_matrix = qnode(*args, **kwargs)
-            entropy = qml.math.vn_entropy(
-                density_matrix, indices, base, c_dtype=qnode.device.C_DTYPE
-            )
+            density_matrix = dm_fn(res)
+            entropy = qml.math.vn_entropy(density_matrix, indices, base)
             return entropy
 
-        density_matrix = density_matrix_qnode(*args, **kwargs)
-        entropy = qml.math.vn_entropy(density_matrix, indices, base, c_dtype=qnode.device.C_DTYPE)
+        density_matrix = dm_fn(res)
+        entropy = qml.math.vn_entropy(density_matrix, indices, base)
         return entropy
 
-    return wrapper
+    return tapes, processing_fn
 
 
-def mutual_info(qnode, wires0, wires1, base=None):
+@transform
+def mutual_info(
+    tape: QuantumTape, wires0: Sequence[int], wires1: Sequence[int], base: float = None
+) -> (Sequence[QuantumTape], Callable):
     r"""Compute the mutual information from a :class:`.QNode` returning a :func:`~pennylane.state`:
 
     .. math::
@@ -272,18 +271,18 @@ def mutual_info(qnode, wires0, wires1, base=None):
 
     .. seealso:: :func:`~.qinfo.vn_entropy`, :func:`pennylane.math.mutual_info` and :func:`pennylane.mutual_info`
     """
-    wire_map = {w: i for i, w in enumerate(qnode.device.wires)}
+    wire_map = {w: i for i, w in enumerate(tape.wires)}
     indices0 = [wire_map[w] for w in wires0]
     indices1 = [wire_map[w] for w in wires1]
 
-    density_matrix_qnode = qml.qinfo.reduced_dm(qnode, qnode.device.wires)
+    tapes, dm_fn = qml.qinfo.reduced_dm(tape, tape.wires)
 
-    def wrapper(*args, **kwargs):
-        density_matrix = density_matrix_qnode(*args, **kwargs)
+    def processing_fn(res):
+        density_matrix = dm_fn(res)
         entropy = qml.math.mutual_info(density_matrix, indices0, indices1, base=base)
         return entropy
 
-    return wrapper
+    return tapes, processing_fn
 
 
 # TODO: create qml.math.jacobian and replace it here
