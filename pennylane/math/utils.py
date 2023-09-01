@@ -108,7 +108,7 @@ def cast(tensor, dtype):
     >>> cast(x, "complex128")
     <tf.Tensor: shape=(2,), dtype=complex128, numpy=array([1.+0.j, 2.+0.j])>
     """
-    if isinstance(tensor, (list, tuple)):
+    if isinstance(tensor, (list, tuple, int, float, complex)):
         tensor = np.asarray(tensor)
 
     if not isinstance(dtype, str):

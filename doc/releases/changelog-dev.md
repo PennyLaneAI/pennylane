@@ -115,6 +115,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `convert_to_numpy_parameters` now uses `qml.ops.functions.bind_new_parameters`. This reinitializes the operation and
+  makes sure everything references the new numpy parameters.
+
 * `tf.function` no longer breaks `ProbabilityMP.process_state` which is needed by new devices.
   [(#4470)](https://github.com/PennyLaneAI/pennylane/pull/4470)
 
