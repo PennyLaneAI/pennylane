@@ -87,7 +87,7 @@ class TestQNode:
 
         def mock_apply(*args, **kwargs):
             for op in args[0]:
-                param_data.extend(op.data.copy())
+                param_data.extend(op.data)
 
         mocker.patch.object(dev, "apply", side_effect=mock_apply)
         circuit(x, y)

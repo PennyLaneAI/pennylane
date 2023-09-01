@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Add the method ``add_transform`` and ``insert_front_transform`` transform in the ``TransformProgram``.
+  [(#4559)](https://github.com/PennyLaneAI/pennylane/pull/4559)
+
 * Dunder ``__add__`` method is added to the ``TransformProgram`` class, therefore two programs can be added using ``+`` .
   [(#4549)](https://github.com/PennyLaneAI/pennylane/pull/4549)
 
@@ -56,11 +59,18 @@
 
 <h3>Documentation 📝</h3>
 
+* Minor documentation improvements to the new device API. The documentation now correctly states that interface-specific
+  parameters are only passed to the device for backpropagation derivatives. 
+  [(#4542)](https://github.com/PennyLaneAI/pennylane/pull/4542)
+
 * Add functions for qubit-simulation to the `qml.devices` sub-page of the "Internal" section.
   Note that these functions are unstable while device upgrades are underway.
   [(#4555)](https://github.com/PennyLaneAI/pennylane/pull/4555)
 
 <h3>Bug fixes 🐛</h3>
+
+* `convert_to_numpy_parameters` now uses `qml.ops.functions.bind_new_parameters`. This reinitializes the operation and
+  makes sure everything references the new numpy parameters.
 
 * `tf.function` no longer breaks `ProbabilityMP.process_state` which is needed by new devices.
   [(#4470)](https://github.com/PennyLaneAI/pennylane/pull/4470)
