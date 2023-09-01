@@ -31,7 +31,7 @@ from pennylane.math.quantum import reduce_statevector, reduce_dm
 from pennylane.math.matrix_manipulation import _permute_dense_matrix
 
 
-class TestStateMP:
+class TestStateMP:  # pylint:disable=too-few-public-methods
     """Tests for the State measurement process."""
 
     @pytest.mark.parametrize(
@@ -45,17 +45,12 @@ class TestStateMP:
     def test_process_state_vector(self, vec):
         """Test the processing of a state vector."""
 
-        mp = StateMP()
+        mp = StateMP(wires=None)
         assert mp.return_type == State
         assert mp.numeric_type is complex
 
         processed = mp.process_state(vec, None)
         assert qml.math.allclose(processed, vec)
-
-    def test_state_does_not_accept_wires(self):
-        """Test that StateMP does not accept wires."""
-        with pytest.raises(TypeError, match="unexpected keyword argument 'wires'"):
-            StateMP(wires=[0])
 
 
 class TestDensityMatrixMP:
