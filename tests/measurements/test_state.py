@@ -18,11 +18,17 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices import DefaultQubit
-from pennylane.measurements import State, StateMP, Shots, density_matrix, expval, state
+from pennylane.measurements import (
+    State,
+    StateMP,
+    DensityMatrixMP,
+    Shots,
+    density_matrix,
+    expval,
+    state,
+)
 from pennylane.math.quantum import reduce_statevector, reduce_dm
 from pennylane.math.matrix_manipulation import _permute_dense_matrix
-
-# pylint: disable=no-member, comparison-with-callable, import-outside-toplevel
 
 
 class TestStateMP:
@@ -39,12 +45,21 @@ class TestStateMP:
     def test_process_state_vector(self, vec):
         """Test the processing of a state vector."""
 
-        mp = StateMP(wires=None)
+        mp = StateMP()
         assert mp.return_type == State
         assert mp.numeric_type is complex
 
         processed = mp.process_state(vec, None)
         assert qml.math.allclose(processed, vec)
+
+    def test_state_does_not_accept_wires(self):
+        """Test that StateMP does not accept wires."""
+        with pytest.raises(TypeError, match="unexpected keyword argument 'wires'"):
+            StateMP(wires=[0])
+
+
+class TestDensityMatrixMP:
+    """Tests for the DensityMatrix measurement process"""
 
     @pytest.mark.parametrize(
         "vec, wires",
@@ -58,7 +73,7 @@ class TestStateMP:
     def test_process_state_matrix_from_vec(self, vec, wires):
         """Test the processing of a state vector into a matrix."""
 
-        mp = StateMP(wires=wires)
+        mp = DensityMatrixMP(wires=wires)
         assert mp.return_type == State
         assert mp.numeric_type is complex
 
@@ -71,7 +86,9 @@ class TestStateMP:
             exp = reduce_statevector(vec, wires)
         assert qml.math.allclose(processed, exp)
 
-    @pytest.mark.xfail(reason="StateMP.process_state no longer supports density matrix parameters")
+    @pytest.mark.xfail(
+        reason="DensityMatrixMP.process_state no longer supports density matrix parameters"
+    )
     @pytest.mark.parametrize(
         "mat, wires",
         [
@@ -86,7 +103,7 @@ class TestStateMP:
     def test_process_state_matrix_from_matrix(self, mat, wires):
         """Test the processing of a density matrix into a matrix."""
 
-        mp = StateMP(wires=wires)
+        mp = DensityMatrixMP(wires=wires)
         assert mp.return_type == State
         assert mp.numeric_type is complex
 
