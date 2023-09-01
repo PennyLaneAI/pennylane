@@ -50,6 +50,19 @@ class TestMinimalDevice:
         """Test the default name is the name of the class"""
         assert self.dev.name == "MinimalDevice"
 
+    @pytest.mark.parametrize(
+        "wires,shots,expected",
+        [
+            (None, None, "<MinimalDevice device at 0x"),
+            ([1, 3], None, "<MinimalDevice device (wires=2) at 0x"),
+            (None, [10, 20], "<MinimalDevice device (shots=30) at 0x"),
+            ([1, 3], [10, 20], "<MinimalDevice device (wires=2, shots=30) at 0x"),
+        ],
+    )
+    def test_repr(self, wires, shots, expected):
+        """Tests the repr of the device API"""
+        assert repr(self.MinimalDevice(wires=wires, shots=shots)).startswith(expected)
+
     def test_shots(self):
         """Test default behavior for shots."""
 
