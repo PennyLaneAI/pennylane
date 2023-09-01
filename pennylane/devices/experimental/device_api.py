@@ -176,7 +176,7 @@ class Device(abc.ABC):
         if self.shots:
             details.append(f"shots={self.shots.total_shots}")
         details = f"({', '.join(details)}) " if details else ""
-        return f"<{self.__class__.__name__} device {details}at {hex(id(self))}>"
+        return f"<{self.name} device {details}at {hex(id(self))}>"
 
     @property
     def shots(self) -> Shots:
