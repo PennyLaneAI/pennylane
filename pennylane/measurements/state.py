@@ -17,7 +17,7 @@ This module contains the qml.state measurement.
 from typing import Sequence, Optional
 
 import pennylane as qml
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WireError
 
 from .measurements import State, StateMeasurement
 
@@ -156,7 +156,29 @@ class StateMP(StateMeasurement):
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         # pylint:disable=redefined-outer-name
-        return state
+        wires = self.wires
+        if not wires or wire_order == wires:
+            return state
+
+        if set(wire_order) == set(wires):
+            state = qml.math.reshape(state, (2,) * len(wire_order))
+            desired_axes = [wires.index(w) for w in wire_order]
+            return qml.math.flatten(qml.math.transpose(state, desired_axes))
+
+        if not wires.contains_wires(wire_order):
+            raise WireError(
+                f"Unexpected wires {set(wire_order) - set(wires)} found in wire order. Expected wire order to be a subset of {wires}"
+            )
+
+        # pad with zeros, put existing wires last
+        state = qml.math.pad(state, (0, 2 ** len(wires) - 2 ** len(wire_order)))
+        state = qml.math.reshape(state, (2,) * len(wires))
+
+        # re-order
+        new_wire_order = Wires.unique_wires([wires, wire_order]) + wire_order
+        desired_axes = [new_wire_order.index(w) for w in wires]
+        state = qml.math.transpose(state, desired_axes)
+        return qml.math.flatten(state)
 
 
 class DensityMatrixMP(StateMP):

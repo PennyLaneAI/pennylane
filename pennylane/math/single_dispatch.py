@@ -456,6 +456,15 @@ ar.register_function(
 )
 
 
+def _pad_tf(tensor, paddings, mode="CONSTANT", constant_values=0, name=None):
+    if ar.ndim(paddings) == 1:
+        paddings = (paddings,)
+    return _i("tf").pad(tensor, paddings, mode=mode, constant_values=constant_values, name=name)
+
+
+ar.register_function("tensorflow", "pad", _pad_tf)
+
+
 # -------------------------------- Torch --------------------------------- #
 
 ar.autoray._FUNC_ALIASES["torch", "unstack"] = "unbind"
@@ -694,6 +703,7 @@ def _sum_torch(tensor, axis=None, keepdims=False, dtype=None):
 
 ar.register_function("torch", "sum", _sum_torch)
 ar.register_function("torch", "cond", _cond)
+ar.register_function("torch", "pad", _i("torch").nn.functional.pad)
 
 
 # -------------------------------- JAX --------------------------------- #
