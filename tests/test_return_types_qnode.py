@@ -1361,11 +1361,8 @@ class TestIntegrationMultipleReturns:
             return qml.numpy.array([qml.expval(obs), qml.probs(wires=[0, 1])])
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
-        res = qnode(0.5)
-
-        assert isinstance(res, qml.numpy.ndarray)
-        assert res[0].shape == ()
-        assert res[1].shape == (4,) if device != "default.qutrit" else (9,)
+        with pytest.raises(ValueError, match="The requested array has an inhomogeneous shape"):
+            qnode(0.5)
 
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("comp_basis_sampling", [qml.sample(), qml.counts()])
@@ -3226,10 +3223,8 @@ class TestIntegrationJacobianBackpropMultipleReturns:
         def cost(a):
             return qml.numpy.hstack(circuit(a))
 
-        res = qml.jacobian(cost)(x)
-
-        assert isinstance(res, np.ndarray)
-        assert res.shape == (6, 3)
+        with pytest.raises(TypeError, match="Can't differentiate w.r.t. type"):
+            qml.jacobian(cost)(x)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("device", devices)

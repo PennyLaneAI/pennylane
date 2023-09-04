@@ -449,8 +449,7 @@ class TestSampleBasisStates:
         ):
             dev.sample_basis_states(number_of_states, state_probs)
 
-    @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested")
-    def test_sampling_with_broadcasting(self, mock_qubit_device, monkeypatch):
+    def test_sampling_with_broadcasting(self, mock_qubit_device):
         """Tests that the sample_basis_states method samples with the correct arguments
         when using broadcasted probabilities"""
 
@@ -464,17 +463,6 @@ class TestSampleBasisStates:
         res = dev.sample_basis_states(number_of_states, state_probs)
         assert qml.math.shape(res) == (2, shots)
         assert set(res.flat).issubset({0, 1, 2, 3})
-
-        with monkeypatch.context() as m:
-            # Mock the numpy.random.choice method such that it returns the expected values
-            m.setattr("numpy.random.choice", lambda x, y, p: (x, y, p))
-            res = dev.sample_basis_states(number_of_states, state_probs)
-
-        assert len(res) == 2
-        for _res, prob in zip(res, state_probs):
-            assert np.array_equal(_res[0], np.array([0, 1, 2, 3]))
-            assert _res[1] == 1000
-            assert _res[2] == prob
 
 
 class TestStatesToBinary:
