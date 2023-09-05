@@ -166,7 +166,9 @@ class StateMP(StateMeasurement):
             )
 
         # pad with zeros, put existing wires last
-        state = qml.math.pad(state, (0, 2 ** len(wires) - 2 ** len(wire_order)))
+        pad_width = 2 ** len(wires) - 2 ** len(wire_order)
+        pad = ((pad_width, 0),) if qml.math.get_interface(state) == "torch" else (0, pad_width)
+        state = qml.math.pad(state, pad)
         state = qml.math.reshape(state, (2,) * len(wires))
 
         # re-order
