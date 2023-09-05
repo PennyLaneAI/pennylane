@@ -238,6 +238,24 @@ class TestPreprocessing:
 
         assert new_config.device_options["max_workers"] == max_workers
 
+    def test_circuit_wire_validation(self):
+        """Test that preprocessing validates wires on the circuits being executed."""
+        dev = DefaultQubit2(wires=3)
+        circuit_valid_0 = qml.tape.QuantumScript([qml.PauliX(0)])
+        circuits, _, _ = dev.preprocess(circuit_valid_0)
+        assert circuits == [circuit_valid_0]
+
+        circuit_valid_1 = qml.tape.QuantumScript([qml.PauliX(1)])
+        circuits, _, _ = dev.preprocess([circuit_valid_0, circuit_valid_1])
+        assert circuits == [circuit_valid_0, circuit_valid_1]
+
+        invalid_circuit = qml.tape.QuantumScript([qml.PauliX(4)])
+        with pytest.raises(qml.wires.WireError, match=r"Cannot run circuit\(s\) on"):
+            dev.preprocess(invalid_circuit)
+
+        with pytest.raises(qml.wires.WireError, match=r"Cannot run circuit\(s\) on"):
+            dev.preprocess([circuit_valid_0, invalid_circuit])
+
 
 class TestSupportsDerivatives:
     """Test that DefaultQubit2 states what kind of derivatives it supports."""

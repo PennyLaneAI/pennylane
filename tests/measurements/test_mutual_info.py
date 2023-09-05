@@ -39,7 +39,7 @@ class TestMutualInfoUnitTests:
     @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ()), ([1, 10], ((), ()))])
     def test_shape(self, shots, shape):
         """Test that the shape is correct."""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=shots)
         res = qml.mutual_info(wires0=[0], wires1=[1])
         assert res.shape(dev, Shots(shots)) == shape
 
@@ -88,7 +88,7 @@ class TestIntegration:
     )
     def test_mutual_info_output(self, interface, state, expected):
         """Test the output of qml.mutual_info"""
-        dev = qml.device("default.qubit", wires=4)
+        dev = qml.device("default.qubit.legacy", wires=4)
 
         @qml.qnode(dev, interface=interface)
         def circuit():
@@ -106,7 +106,7 @@ class TestIntegration:
 
     def test_shot_vec_error(self):
         """Test an error is raised when using shot vectors with mutual_info."""
-        dev = qml.device("default.qubit", wires=2, shots=[1, 10, 10, 1000])
+        dev = qml.device("default.qubit.legacy", wires=2, shots=[1, 10, 10, 1000])
 
         @qml.qnode(device=dev)
         def circuit(x):
@@ -122,7 +122,7 @@ class TestIntegration:
     diff_methods = ["backprop", "finite-diff"]
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
+    @pytest.mark.parametrize("device", ["default.qubit.legacy", "default.mixed", "lightning.qubit"])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     @pytest.mark.parametrize("params", np.linspace(0, 2 * np.pi, 8))
     def test_qnode_state(self, device, interface, params):
@@ -148,7 +148,7 @@ class TestIntegration:
         assert np.allclose(actual, expected)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
+    @pytest.mark.parametrize("device", ["default.qubit.legacy", "default.mixed", "lightning.qubit"])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     @pytest.mark.parametrize("params", zip(np.linspace(0, np.pi, 8), np.linspace(0, 2 * np.pi, 8)))
     def test_qnode_mutual_info(self, device, interface, params):
@@ -179,7 +179,7 @@ class TestIntegration:
 
         assert np.allclose(actual, expected)
 
-    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
+    @pytest.mark.parametrize("device", ["default.qubit.legacy", "default.mixed", "lightning.qubit"])
     def test_mutual_info_wire_labels(self, device):
         """Test that mutual_info is correct with custom wire labels"""
         param = np.array([0.678, 1.234])
@@ -209,7 +209,7 @@ class TestIntegration:
         import jax
         import jax.numpy as jnp
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         params = jnp.array(params)
 
@@ -237,7 +237,7 @@ class TestIntegration:
         import jax
         import jax.numpy as jnp
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         params = jnp.array(params)
 
@@ -269,7 +269,7 @@ class TestIntegration:
     def test_qnode_grad(self, param, diff_method, interface):
         """Test that the gradient of mutual information works for QNodes
         with the autograd interface"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev, interface=interface, diff_method=diff_method)
         def circuit(param):
@@ -301,7 +301,7 @@ class TestIntegration:
         import jax
         import jax.numpy as jnp
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         param = jnp.array(param)
 
@@ -335,7 +335,7 @@ class TestIntegration:
         import jax
         import jax.numpy as jnp
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         param = jnp.array(param)
 
@@ -368,7 +368,7 @@ class TestIntegration:
         with the tensorflow interface"""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         param = tf.Variable(param)
 
@@ -404,7 +404,7 @@ class TestIntegration:
         with the torch interface"""
         import torch
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev, interface=interface, diff_method=diff_method)
         def circuit(param):
@@ -431,7 +431,7 @@ class TestIntegration:
         assert np.allclose(actual, expected, atol=tol)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
+    @pytest.mark.parametrize("device", ["default.qubit.legacy", "default.mixed", "lightning.qubit"])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     @pytest.mark.parametrize(
         "params", [np.array([0.0, 0.0]), np.array([0.3, 0.4]), np.array([0.6, 0.8])]
@@ -455,7 +455,7 @@ class TestIntegration:
             circuit(params)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
+    @pytest.mark.parametrize("device", ["default.qubit.legacy", "default.mixed", "lightning.qubit"])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     @pytest.mark.parametrize(
         "params", [np.array([0.0, 0.0]), np.array([0.3, 0.4]), np.array([0.6, 0.8])]

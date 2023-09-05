@@ -51,7 +51,7 @@ class TestSample:
     def test_sample_dimension(self, mocker, n_sample):
         """Test that the sample function outputs samples of the right size"""
 
-        dev = qml.device("default.qubit", wires=2, shots=n_sample)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=n_sample)
         spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev)
@@ -76,7 +76,7 @@ class TestSample:
         """Test the output of combining expval, var and sample"""
         n_sample = 10
 
-        dev = qml.device("default.qubit", wires=3, shots=n_sample)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=n_sample)
         spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev, diff_method="parameter-shift")
@@ -99,7 +99,7 @@ class TestSample:
         """Test the return type and shape of sampling a single wire"""
         n_sample = 10
 
-        dev = qml.device("default.qubit", wires=1, shots=n_sample)
+        dev = qml.device("default.qubit.legacy", wires=1, shots=n_sample)
         spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev)
@@ -120,7 +120,7 @@ class TestSample:
         where a rectangular array is expected"""
         n_sample = 10
 
-        dev = qml.device("default.qubit", wires=3, shots=n_sample)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=n_sample)
         spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev)
@@ -146,7 +146,7 @@ class TestSample:
         in combination with expvals and vars"""
         n_sample = 10
 
-        dev = qml.device("default.qubit", wires=3, shots=n_sample)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=n_sample)
         spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev, diff_method="parameter-shift")
@@ -167,7 +167,7 @@ class TestSample:
     def test_not_an_observable(self, mocker):
         """Test that a UserWarning is raised if the provided
         argument might not be hermitian."""
-        dev = qml.device("default.qubit", wires=2, shots=10)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=10)
         spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev)
@@ -183,7 +183,7 @@ class TestSample:
     def test_observable_return_type_is_sample(self, mocker):
         """Test that the return type of the observable is :attr:`ObservableReturnTypes.Sample`"""
         n_shots = 10
-        dev = qml.device("default.qubit", wires=1, shots=n_shots)
+        dev = qml.device("default.qubit.legacy", wires=1, shots=n_shots)
         spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev)
@@ -198,7 +198,7 @@ class TestSample:
 
     def test_providing_observable_and_wires(self):
         """Test that a ValueError is raised if both an observable is provided and wires are specified"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev)
         def circuit():
@@ -214,7 +214,7 @@ class TestSample:
 
     def test_providing_no_observable_and_no_wires(self, mocker):
         """Test that we can provide no observable and no wires to sample function"""
-        dev = qml.device("default.qubit", wires=2, shots=1000)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=1000)
         spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev)
@@ -237,7 +237,7 @@ class TestSample:
         shots1 = 1
         shots2 = 10
         shots3 = 1000
-        dev = qml.device("default.qubit", wires=num_wires, shots=[shots1, shots2, shots3])
+        dev = qml.device("default.qubit.legacy", wires=num_wires, shots=[shots1, shots2, shots3])
         spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev)
@@ -266,7 +266,7 @@ class TestSample:
         """Test that we can provide no observable but specify wires to the sample function"""
         wires = [0, 2]
         wires_obj = qml.wires.Wires(wires)
-        dev = qml.device("default.qubit", wires=3, shots=1000)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=1000)
         spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev)
@@ -318,7 +318,7 @@ class TestSample:
 
     def test_shape_no_shots_error(self):
         """Test that the appropriate error is raised with no shots are specified"""
-        dev = qml.device("default.qubit", wires=2, shots=None)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=None)
         shots = Shots(None)
         mp = qml.sample()
 
@@ -339,7 +339,7 @@ class TestSample:
     def test_shape(self, obs):
         """Test that the shape is correct."""
         shots = 10
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=shots)
         res = qml.sample(obs) if obs is not None else qml.sample()
         expected = (shots,) if obs is not None else (shots, 3)
         assert res.shape(dev, Shots(shots)) == expected
@@ -347,7 +347,7 @@ class TestSample:
     @pytest.mark.parametrize("n_samples", (1, 10))
     def test_shape_wires(self, n_samples):
         """Test that the shape is correct when wires are provided."""
-        dev = qml.device("default.qubit", wires=3, shots=n_samples)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=n_samples)
         mp = qml.sample(wires=(0, 1))
         assert mp.shape(dev, Shots(n_samples)) == (n_samples, 2) if n_samples != 1 else (2,)
 
@@ -363,7 +363,7 @@ class TestSample:
     def test_shape_shot_vector(self, obs):
         """Test that the shape is correct with the shot vector too."""
         shot_vector = (1, 2, 3)
-        dev = qml.device("default.qubit", wires=3, shots=shot_vector)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=shot_vector)
         res = qml.sample(obs) if obs is not None else qml.sample()
         expected = ((), (2,), (3,)) if obs is not None else ((3,), (2, 3), (3, 3))
         assert res.shape(dev, Shots(shot_vector)) == expected
@@ -371,7 +371,7 @@ class TestSample:
     def test_shape_shot_vector_obs(self):
         """Test that the shape is correct with the shot vector and a observable too."""
         shot_vec = (2, 2)
-        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=shot_vec)
 
         @qml.qnode(dev)
         def circuit():
@@ -394,7 +394,7 @@ class TestSample:
     @pytest.mark.parametrize("shots", [2, 100])
     def test_sample_no_arguments(self, shots):
         """Test that using ``qml.sample`` with no arguments returns the samples of all wires."""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=shots)
 
         @qml.qnode(dev)
         def circuit():
@@ -425,7 +425,7 @@ def test_jitting_with_sampling_on_subset_of_wires(samples):
 
     jax.config.update("jax_enable_x64", True)
 
-    dev = qml.device("default.qubit", wires=3, shots=samples)
+    dev = qml.device("default.qubit.legacy", wires=3, shots=samples)
 
     @qml.qnode(dev, interface="jax")
     def circuit(x):
