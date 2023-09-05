@@ -29,7 +29,7 @@
 * The `StateMP` measurement now accepts a wire order (eg. a device wire order). The `process_state`
   method will re-order the given state to go from the inputted wire-order to the process's wire-order.
   If the process's wire-order contains extra wires, it will assume those are in the zero-state.
-  [(#)]()
+  [(#4570)](https://github.com/PennyLaneAI/pennylane/pull/4570)
 
 <h3>Breaking changes 💔</h3>
 
