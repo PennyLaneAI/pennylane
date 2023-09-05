@@ -70,22 +70,28 @@ def n_subsystems_fixture(request):
 
 @pytest.fixture(scope="session")
 def qubit_device(n_subsystems):
-    return qml.device("default.qubit", wires=n_subsystems)
+    return qml.device("default.qubit.legacy", wires=n_subsystems)
 
 
 @pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
 def qubit_device_1_wire(request):
-    return qml.device("default.qubit", wires=1, r_dtype=request.param[0], c_dtype=request.param[1])
+    return qml.device(
+        "default.qubit.legacy", wires=1, r_dtype=request.param[0], c_dtype=request.param[1]
+    )
 
 
 @pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
 def qubit_device_2_wires(request):
-    return qml.device("default.qubit", wires=2, r_dtype=request.param[0], c_dtype=request.param[1])
+    return qml.device(
+        "default.qubit.legacy", wires=2, r_dtype=request.param[0], c_dtype=request.param[1]
+    )
 
 
 @pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
 def qubit_device_3_wires(request):
-    return qml.device("default.qubit", wires=3, r_dtype=request.param[0], c_dtype=request.param[1])
+    return qml.device(
+        "default.qubit.legacy", wires=3, r_dtype=request.param[0], c_dtype=request.param[1]
+    )
 
 
 # The following 3 fixtures are for default.qutrit devices to be used
@@ -172,7 +178,7 @@ def mock_device(monkeypatch):
         m.setattr(dev, "short_name", "mock_device")
         m.setattr(dev, "capabilities", lambda cls: {"model": "qubit"})
         m.setattr(dev, "operations", {"RX", "RY", "RZ", "CNOT", "SWAP"})
-        yield qml.Device(wires=2)
+        yield qml.Device(wires=2)  # pylint:disable=abstract-class-instantiated
 
 
 # pylint: disable=protected-access
@@ -222,9 +228,6 @@ def pytest_collection_modifyitems(items, config):
         if "qchem" in rel_path.parts:
             mark = getattr(pytest.mark, "qchem")
             item.add_marker(mark)
-        if "legacy" in rel_path.parts:
-            mark = getattr(pytest.mark, "legacy")
-            item.add_marker(mark)
         if "finite_diff" in rel_path.parts:
             mark = getattr(pytest.mark, "finite-diff")
             item.add_marker(mark)
@@ -250,7 +253,6 @@ def pytest_collection_modifyitems(items, config):
                     "qchem",
                     "qcut",
                     "all_interfaces",
-                    "legacy",
                     "finite-diff",
                     "param-shift",
                 ]

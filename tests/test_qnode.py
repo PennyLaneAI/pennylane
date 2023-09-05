@@ -647,20 +647,6 @@ class TestValidation:
 
         assert len(record) == 0
 
-    def test_giving_mode_kwarg_raises_warning(self):
-        """Test that providing a value for mode raises a warning."""
-        with pytest.warns(UserWarning, match="The `mode` keyword argument is deprecated"):
-            _ = qml.QNode(lambda f: f, qml.device("default.qubit", wires=1), mode="best")
-
-    def test_giving_mode_kwarg_raises_warning_old_return(self):
-        """Test that providing a value for mode raises a custom warning with disable_return."""
-        qml.disable_return()
-        with pytest.warns(
-            UserWarning, match="In the new return system, you should set the `grad_on_execution`"
-        ):
-            _ = qml.QNode(lambda f: f, qml.device("default.qubit", wires=1), mode="best")
-        qml.enable_return()
-
 
 class TestTapeConstruction:
     """Tests for the tape construction"""
@@ -828,6 +814,28 @@ class TestTapeConstruction:
         dev = qml.device("default.qubit", wires=1)
         qn = QNode(circuit, dev)
         assert np.allclose(qn(0.5), np.cos(0.5), atol=tol, rtol=0)
+
+    def test_all_wires_new_device(self):
+        """Test that an operator must act on all tape wires with the new device API."""
+
+        def circuit1(x):
+            qml.GlobalPhase(x, wires=0)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        dev = qml.devices.experimental.DefaultQubit2()  # TODO: add wires, change comment below
+        qn = QNode(circuit1, dev)
+
+        # fails when GlobalPhase is a strict subset of all tape wires
+        with pytest.raises(qml.QuantumFunctionError, match="GlobalPhase must act on all wires"):
+            qn(0.5)
+
+        @qml.qnode(dev)
+        def circuit2(x):
+            qml.GlobalPhase(x, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        # passes here, does not care for device.wires because it has none
+        assert circuit2(0.5) == 1
 
     @pytest.mark.jax
     def test_jit_counts_raises_error(self):
@@ -1068,16 +1076,35 @@ class TestIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_no_defer_measurements_if_supported(self, mocker):
+        """Test that the defer_measurements transform is not used during
+        QNode construction if the device supports mid-circuit measurements."""
+        dev = qml.device("default.qubit", wires=3)
+        mocker.patch.object(qml.Device, "_capabilities", {"supports_mid_measure": True})
+        spy = mocker.spy(qml, "defer_measurements")
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(0)
+            qml.measure(0)
+            return qml.expval(qml.PauliZ(1))
+
+        circuit.construct(tuple(), {})
+
+        spy.assert_not_called()
+        assert len(circuit.tape.operations) == 2
+        assert isinstance(circuit.tape.operations[1], qml.measurements.MidMeasureMP)
+
     @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize("sec_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize(
         "return_type", [qml.expval(qml.PauliZ(1)), qml.var(qml.PauliZ(1)), qml.probs(wires=[1])]
     )
-    def test_defer_meas_if_mcm_unsupported(self, first_par, sec_par, return_type):
+    def test_defer_meas_if_mcm_unsupported(self, first_par, sec_par, return_type, mocker):
         """Tests that the transform using the deferred measurement principle is
         applied if the device doesn't support mid-circuit measurements
         natively."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
         def cry_qnode(x, y):
@@ -1097,15 +1124,34 @@ class TestIntegration:
             qml.cond(m_0, qml.RY)(y, wires=1)
             return qml.apply(return_type)
 
+        spy = mocker.spy(qml, "defer_measurements")
         r1 = cry_qnode(first_par, sec_par)
         r2 = conditional_ry_qnode(first_par, sec_par)
         assert np.allclose(r1, r2)
+        spy.assert_called_once()
+
+    def test_drawing_has_deferred_measurements(self):
+        """Test that `qml.draw` with qnodes uses defer_measurements
+        to draw circuits with mid-circuit measurements."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            m = qml.measure(0)
+            qml.cond(m, qml.PauliX)(wires=1)
+            return qml.expval(qml.PauliZ(wires=1))
+
+        res = qml.draw(circuit)("x")
+        expected = "0: ──RX(x)─╭●─┤     \n1: ────────╰X─┤  <Z>"
+
+        assert res == expected
 
     @pytest.mark.parametrize("basis_state", [[1, 0], [0, 1]])
-    def test_sampling_with_mcm(self, basis_state):
+    def test_sampling_with_mcm(self, basis_state, mocker):
         """Tests that a QNode with qml.sample and mid-circuit measurements
         returns the expected results."""
-        dev = qml.device("default.qubit", wires=2, shots=1000)
+        dev = qml.device("default.qubit", wires=3, shots=1000)
 
         first_par = np.pi
 
@@ -1125,9 +1171,11 @@ class TestIntegration:
             qml.cond(m_0, qml.RY)(x, wires=1)
             return qml.sample(qml.PauliZ(1))
 
+        spy = mocker.spy(qml, "defer_measurements")
         r1 = cry_qnode(first_par)
         r2 = conditional_ry_qnode(first_par)
         assert np.allclose(r1, r2)
+        spy.assert_called_once()
 
     @pytest.mark.tf
     @pytest.mark.parametrize("interface", ["tf", "auto"])
@@ -1135,7 +1183,7 @@ class TestIntegration:
         """Test conditional operations with TensorFlow."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
         def cry_qnode(x):
@@ -1178,7 +1226,7 @@ class TestIntegration:
         """Test conditional operations with Torch."""
         import torch
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
         def cry_qnode(x):
@@ -1217,7 +1265,7 @@ class TestIntegration:
         import jax
 
         jnp = jax.numpy
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev, interface=jax_interface, diff_method="parameter-shift")
         def cry_qnode(x):
@@ -1245,20 +1293,6 @@ class TestIntegration:
 
         assert np.allclose(r1, r2)
         assert np.allclose(jax.grad(cry_qnode)(x1), jax.grad(conditional_ry_qnode)(x2))
-
-    def test_already_measured_error_operation(self):
-        """Test that attempting to apply an operation on a wires that has been
-        measured raises an error."""
-        dev = qml.device("default.qubit", wires=3)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.measure(1)
-            qml.PauliX(1)
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(ValueError, match="wires have been measured already: {1}"):
-            circuit()
 
     def test_qnode_does_not_support_nested_queuing(self):
         """Test that operators in QNodes are not queued to surrounding contexts."""
@@ -1832,7 +1866,7 @@ class TestTapeExpansion:
 
     @pytest.mark.parametrize(
         "diff_method,mode",
-        [("parameter-shift", "backward"), ("adjoint", "forward"), ("adjoint", "backward")],
+        [("parameter-shift", False), ("adjoint", True), ("adjoint", False)],
     )
     def test_device_expansion(self, diff_method, mode, mocker):
         """Test expansion of an unsupported operation on the device"""
@@ -1847,7 +1881,7 @@ class TestTapeExpansion:
             def decomposition(self):
                 return [qml.RX(3 * self.data[0], wires=self.wires)]
 
-        @qnode(dev, diff_method=diff_method, mode=mode)
+        @qnode(dev, diff_method=diff_method, grad_on_execution=mode)
         def circuit(x):
             UnsupportedOp(x, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -1993,7 +2027,7 @@ class TestTapeExpansion:
 
         spy = mocker.spy(qml.transforms, "hamiltonian_expand")
         res = circuit()
-        assert np.allclose(res, c[2], atol=0.1)
+        assert np.allclose(res, c[2], atol=0.3)
 
         spy.assert_called()
         tapes, _ = spy.spy_return

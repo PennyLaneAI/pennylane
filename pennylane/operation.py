@@ -121,11 +121,11 @@ Operator Types
     ~CVOperation
     ~Channel
     ~Tensor
-    ~StatePrep
+    ~StatePrepBase
 
 .. currentmodule:: pennylane.operation
 
-.. inheritance-diagram:: Operator Operation Observable Channel CV CVObservable CVOperation Tensor StatePrep
+.. inheritance-diagram:: Operator Operation Observable Channel CV CVObservable CVOperation Tensor StatePrepBase
     :parts: 1
 
 Errors
@@ -250,6 +250,7 @@ from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .utils import pauli_eigs
+from .pytrees import register_pytree
 
 # =============================================================================
 # Errors
@@ -674,6 +675,9 @@ class Operator(abc.ABC):
     """
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
 
+    def __init_subclass__(cls, **_):
+        register_pytree(cls, cls._flatten, cls._unflatten)
+
     def __copy__(self):
         cls = self.__class__
         copied_op = cls.__new__(cls)
@@ -715,30 +719,11 @@ class Operator(abc.ABC):
             )
         )
 
-    # pylint: disable=useless-super-delegation
     def __eq__(self, other):
-        warnings.warn(
-            "The behaviour of operator equality will be updated soon. Currently, op1 == op2 is "
-            "True if op1 and op2 are the same object. Soon, op1 == op2 will be equivalent to "
-            "qml.equal(op1, op2). To continue using operator equality in its current state, "
-            "use 'op1 is op2'.",
-            UserWarning,
-        )
+        return qml.equal(self, other)
 
-        return super().__eq__(other)
-
-    # pylint: disable=useless-super-delegation
     def __hash__(self):
-        warnings.warn(
-            "The behaviour of operator hashing will be updated soon. Currently, each operator "
-            "instance has a unique hash. Soon, an operator's hash will be determined by the "
-            "combined hash of the name, wires, parameters and hyperparameters of the operator. "
-            "To continue using operator hashing in its current state, wrap the operator inside "
-            "a qml.queuing.WrappedObj instance.",
-            UserWarning,
-        )
-
-        return super().__hash__()
+        return self.hash
 
     @staticmethod
     def compute_matrix(*params, **hyperparams):  # pylint:disable=unused-argument
@@ -1051,7 +1036,7 @@ class Operator(abc.ABC):
         # check that the number of wires given corresponds to required number
         if self.num_wires in {AllWires, AnyWires}:
             if (
-                not isinstance(self, (qml.Barrier, qml.Snapshot, qml.Hamiltonian))
+                not isinstance(self, (qml.Barrier, qml.Snapshot, qml.Hamiltonian, qml.GlobalPhase))
                 and len(qml.wires.Wires(wires)) == 0
             ):
                 raise ValueError(
@@ -1403,7 +1388,6 @@ class Operator(abc.ABC):
         used outside of ``QuantumTape._process_queue``.
 
         Options are:
-            * `"_prep"`
             * `"_ops"`
             * `"_measurements"`
             * `None`
@@ -1857,7 +1841,6 @@ class Observable(Operator):
         used outside of ``QuantumTape._process_queue``.
 
         Options are:
-            * `"_prep"`
             * `"_ops"`
             * `"_measurements"`
             * None
@@ -2442,6 +2425,7 @@ class Tensor(Observable):
 
         If we define a custom wire ordering, the matrix representation changes
         accordingly:
+
         >>> print(t.sparse_matrix(wire_order=[1, 0]))
         (0, 1)	1
         (1, 0)	1
@@ -2823,11 +2807,10 @@ class CVObservable(CV, Observable):
         return self.heisenberg_expand(U, wire_order)
 
 
-class StatePrep(Operation):
+class StatePrepBase(Operation):
     """An interface for state-prep operations."""
 
     grad_method = None
-    _queue_category = "_prep"
 
     # pylint:disable=too-few-public-methods
     @abc.abstractmethod
@@ -3007,3 +2990,10 @@ def active_new_opmath():
     True
     """
     return __use_new_opmath
+
+
+def __getattr__(name):
+    """To facilitate StatePrep rename"""
+    if name == "StatePrep":
+        return StatePrepBase
+    raise AttributeError(f"module 'pennylane.operation' has no attribute '{name}'")

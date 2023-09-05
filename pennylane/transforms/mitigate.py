@@ -512,7 +512,7 @@ def mitigate_with_zne(
         folding = fold_global_tape
 
     tape = circuit.expand(stop_at=lambda op: not isinstance(op, QuantumScript))
-    script_removed = QuantumScript(tape._ops)
+    script_removed = QuantumScript(tape.operations[tape.num_preps :])
 
     tapes = [
         [folding(script_removed, s, **folding_kwargs) for _ in range(reps_per_factor)]
@@ -520,16 +520,16 @@ def mitigate_with_zne(
     ]
 
     tapes = [tape_ for tapes_ in tapes for tape_ in tapes_]  # flattens nested list
-    out_tapes = [QuantumScript(tape_.operations, tape.measurements, tape._prep) for tape_ in tapes]
+    prep_ops = tape.operations[: tape.num_preps]
+    out_tapes = [QuantumScript(prep_ops + tape_.operations, tape.measurements) for tape_ in tapes]
 
     def processing_fn(results):
         """Maps from input tape executions to an error-mitigated estimate"""
-        if qml.active_return():
-            for i, tape in enumerate(out_tapes):
-                # stack the results if there are multiple measurements
-                # this will not create ragged arrays since only expval measurements are allowed
-                if len(tape.observables) > 1:
-                    results[i] = qml.math.stack(results[i])
+        for i, tape in enumerate(out_tapes):
+            # stack the results if there are multiple measurements
+            # this will not create ragged arrays since only expval measurements are allowed
+            if len(tape.observables) > 1:
+                results[i] = qml.math.stack(results[i])
 
         # Averaging over reps_per_factor repetitions
         results_flattened = []
@@ -540,14 +540,9 @@ def mitigate_with_zne(
 
         extrapolated = extrapolate(scale_factors, results_flattened, **extrapolate_kwargs)
 
-        if qml.active_return():
-            extrapolated = extrapolated[0] if shape(extrapolated) == (1,) else extrapolated
+        extrapolated = extrapolated[0] if shape(extrapolated) == (1,) else extrapolated
 
-            # unstack the results in the case of multiple measurements
-            return (
-                extrapolated if shape(extrapolated) == () else tuple(qml.math.unstack(extrapolated))
-            )
-
-        return extrapolated[0] if shape(extrapolated) == (1,) else extrapolated
+        # unstack the results in the case of multiple measurements
+        return extrapolated if shape(extrapolated) == () else tuple(qml.math.unstack(extrapolated))
 
     return out_tapes, processing_fn

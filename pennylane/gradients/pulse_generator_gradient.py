@@ -27,8 +27,8 @@ from .parameter_shift import _make_zero_rep
 from .pulse_gradient import _assert_has_jax, raise_pulse_diff_on_qnode
 from .gradient_transform import (
     _all_zero_grad,
-    assert_active_return,
     assert_no_state_returns,
+    assert_no_tape_batching,
     assert_no_variance,
     choose_grad_methods,
     gradient_analysis_and_validation,
@@ -678,9 +678,9 @@ def _pulse_generator(tape, argnum=None, atol=1e-7):
     """
     transform_name = "pulse generator parameter-shift"
     _assert_has_jax(transform_name)
-    assert_active_return(transform_name)
     assert_no_state_returns(tape.measurements, transform_name)
     assert_no_variance(tape.measurements, transform_name)
+    assert_no_tape_batching(tape, transform_name)
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)

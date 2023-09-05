@@ -38,7 +38,13 @@ from pennylane.pauli import pauli_decompose
 import pennylane.resource
 import pennylane.qchem
 from pennylane.fermi import FermiC, FermiA, jordan_wigner
-from pennylane.qchem import taper, symmetry_generators, paulix_ops, taper_operation, import_operator
+from pennylane.qchem import (
+    taper,
+    symmetry_generators,
+    paulix_ops,
+    taper_operation,
+    import_operator,
+)
 from pennylane._device import Device, DeviceError
 from pennylane._grad import grad, jacobian
 from pennylane._qubit_device import QubitDevice
@@ -76,7 +82,6 @@ from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane import qaoa
 from pennylane.qnode import QNode, qnode
-from pennylane.return_types import enable_return, disable_return, active_return
 from pennylane.transforms import (
     adjoint_metric_tensor,
     batch_params,

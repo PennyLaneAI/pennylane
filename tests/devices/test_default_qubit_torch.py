@@ -279,7 +279,7 @@ class TestApply:
         dev = device(wires=1, torch_device=torch_device)
         state = init_state(1, torch_device=torch_device)
 
-        dev.apply([qml.QubitStateVector(state, wires=[0])])
+        dev.apply([qml.StatePrep(state, wires=[0])])
 
         res = dev.state
         expected = state
@@ -323,7 +323,7 @@ class TestApply:
         state = torch.tensor([0, 1])
 
         with pytest.raises(ValueError, match=r"State vector must have shape \(2\*\*wires,\)"):
-            dev.apply([qml.QubitStateVector(state, wires=[0, 1])])
+            dev.apply([qml.StatePrep(state, wires=[0, 1])])
 
     @pytest.mark.parametrize(
         "state", [torch.tensor([0, 12]), torch.tensor([1.0, -1.0], requires_grad=True)]
@@ -334,7 +334,7 @@ class TestApply:
         dev = device(wires=2, torch_device=torch_device)
 
         with pytest.raises(ValueError, match=r"Sum of amplitudes-squared does not equal one"):
-            dev.apply([qml.QubitStateVector(state, wires=[0])])
+            dev.apply([qml.StatePrep(state, wires=[0])])
 
     def test_invalid_state_prep(self, device, torch_device):
         """Test that an exception is raised if a state preparation is not the
@@ -346,7 +346,7 @@ class TestApply:
             qml.DeviceError,
             match=r"cannot be used after other Operations have already been applied",
         ):
-            dev.apply([qml.PauliZ(0), qml.QubitStateVector(state, wires=[0])])
+            dev.apply([qml.PauliZ(0), qml.StatePrep(state, wires=[0])])
 
     @pytest.mark.parametrize("op,mat", single_qubit)
     def test_single_qubit_no_parameters(self, device, torch_device, init_state, op, mat, tol):
@@ -354,7 +354,7 @@ class TestApply:
         dev = device(wires=1, torch_device=torch_device)
         state = init_state(1, torch_device=torch_device)
 
-        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue = [qml.StatePrep(state, wires=[0])]
         queue += [op(wires=0)]
         dev.apply(queue)
 
@@ -373,7 +373,7 @@ class TestApply:
         state = init_state(1, torch_device=torch_device)
 
         par = torch.tensor(theta, dtype=torch.complex128, device=torch_device)
-        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue = [qml.StatePrep(state, wires=[0])]
         queue += [op(par, wires=0)]
         dev.apply(queue)
 
@@ -391,7 +391,7 @@ class TestApply:
         b = torch.tensor(1.3432, dtype=torch.complex128, device=torch_device)
         c = torch.tensor(-0.654, dtype=torch.complex128, device=torch_device)
 
-        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue = [qml.StatePrep(state, wires=[0])]
         queue += [qml.Rot(a, b, c, wires=0)]
         dev.apply(queue)
 
@@ -409,7 +409,7 @@ class TestApply:
         b = torch.tensor(1.3432, dtype=torch.complex128, device=torch_device)
         c = torch.tensor(-0.654, dtype=torch.complex128, device=torch_device)
 
-        queue = [qml.QubitStateVector(state, wires=[0, 1])]
+        queue = [qml.StatePrep(state, wires=[0, 1])]
         queue += [qml.CRot(a, b, c, wires=[0, 1])]
         dev.apply(queue)
 
@@ -424,7 +424,7 @@ class TestApply:
         dev = device(wires=2, torch_device=torch_device)
         state = init_state(2, torch_device=torch_device)
 
-        queue = [qml.QubitStateVector(state, wires=[0, 1])]
+        queue = [qml.StatePrep(state, wires=[0, 1])]
         queue += [op(wires=[0, 1])]
         dev.apply(queue)
 
@@ -441,7 +441,7 @@ class TestApply:
         dev = device(wires=N, torch_device=torch_device)
         state = init_state(N, torch_device=torch_device)
 
-        queue = [qml.QubitStateVector(state, wires=range(N))]
+        queue = [qml.StatePrep(state, wires=range(N))]
         queue += [qml.QubitUnitary(mat, wires=range(N))]
         dev.apply(queue)
 
@@ -458,7 +458,7 @@ class TestApply:
             [-1.0 + 1j, 1.0 + 1j], requires_grad=True, dtype=torch.complex128, device=torch_device
         ) / math.sqrt(2)
 
-        queue = [qml.QubitStateVector(state, wires=0), qml.DiagonalQubitUnitary(diag, wires=0)]
+        queue = [qml.StatePrep(state, wires=0), qml.DiagonalQubitUnitary(diag, wires=0)]
         dev.apply(queue)
 
         res = dev.state
@@ -471,7 +471,7 @@ class TestApply:
         dev = device(wires=3, torch_device=torch_device)
         state = init_state(3, torch_device=torch_device)
 
-        queue = [qml.QubitStateVector(state, wires=[0, 1, 2])]
+        queue = [qml.StatePrep(state, wires=[0, 1, 2])]
         queue += [op(wires=[0, 1, 2])]
         dev.apply(queue)
 
@@ -486,7 +486,7 @@ class TestApply:
         dev = device(wires=2, torch_device=torch_device)
         state = init_state(2, torch_device=torch_device)
 
-        queue = [qml.QubitStateVector(state, wires=[0, 1])]
+        queue = [qml.StatePrep(state, wires=[0, 1])]
         queue += [op(theta, wires=[0, 1])]
         dev.apply(queue)
 
@@ -503,7 +503,7 @@ class TestApply:
         state = init_state(4, torch_device=torch_device)
 
         par = torch.tensor(theta, device=torch_device)
-        queue = [qml.QubitStateVector(state, wires=[0, 1, 2, 3])]
+        queue = [qml.StatePrep(state, wires=[0, 1, 2, 3])]
         queue += [op(par, wires=[0, 1, 2, 3])]
         dev.apply(queue)
 
@@ -568,14 +568,14 @@ class TestApplyBroadcasted:
             dev.apply([qml.BasisState(state, wires=[0, 1, 2, 3])])
 
     @pytest.mark.parametrize("batch_size", [1, 3])
-    def test_qubit_state_vector_broadcasted(
+    def test_state_prep_broadcasted(
         self, device, torch_device, broadcasted_init_state, batch_size, tol
     ):
         """Test broadcasted qubit state vector application"""
         dev = device(wires=1, torch_device=torch_device)
         state = broadcasted_init_state(1, batch_size, torch_device=torch_device)
 
-        dev.apply([qml.QubitStateVector(state, wires=[0])])
+        dev.apply([qml.StatePrep(state, wires=[0])])
 
         res = dev.state
         expected = state
@@ -616,23 +616,23 @@ class TestApplyBroadcasted:
         assert torch.allclose(res, state)
         spy.assert_called()
 
-    def test_invalid_qubit_state_vector_size_broadcasted(self, device, torch_device):
+    def test_invalid_state_prep_size_broadcasted(self, device, torch_device):
         """Test that an exception is raised if the state
         vector is the wrong size"""
         dev = device(wires=2, torch_device=torch_device)
         state = torch.tensor([[0, 1], [1, 0], [1, 1], [0, 0]])
 
         with pytest.raises(ValueError, match=r"State vector must have shape \(2\*\*wires,\)"):
-            dev.apply([qml.QubitStateVector(state, wires=[0, 1])])
+            dev.apply([qml.StatePrep(state, wires=[0, 1])])
 
-    def test_invalid_qubit_state_vector_norm_broadcasted(self, device, torch_device):
+    def test_invalid_state_prep_norm_broadcasted(self, device, torch_device):
         """Test that an exception is raised if the state
         vector is not normalized"""
         dev = device(wires=2, torch_device=torch_device)
         state = torch.tensor([[1, 0], [0, 12], [1.3, 1]], requires_grad=True)
 
         with pytest.raises(ValueError, match=r"Sum of amplitudes-squared does not equal one"):
-            dev.apply([qml.QubitStateVector(state, wires=[0])])
+            dev.apply([qml.StatePrep(state, wires=[0])])
 
     @pytest.mark.parametrize("op,mat", single_qubit)
     def test_single_qubit_no_parameters_broadcasted(
@@ -642,7 +642,7 @@ class TestApplyBroadcasted:
         dev = device(wires=1, torch_device=torch_device)
         state = broadcasted_init_state(1, 3, torch_device=torch_device)
 
-        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue = [qml.StatePrep(state, wires=[0])]
         queue += [op(wires=0)]
         dev.apply(queue)
 
@@ -662,7 +662,7 @@ class TestApplyBroadcasted:
         state = broadcasted_init_state(1, 3, torch_device=torch_device)
 
         par = torch.tensor(theta, dtype=torch.complex128, device=torch_device)
-        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue = [qml.StatePrep(state, wires=[0])]
         queue += [op(par, wires=0)]
         dev.apply(queue)
 
@@ -681,7 +681,7 @@ class TestApplyBroadcasted:
         state = init_state(1, torch_device=torch_device)
 
         par = torch.tensor(theta, dtype=torch.complex128, device=torch_device)
-        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue = [qml.StatePrep(state, wires=[0])]
         queue += [op(par, wires=0)]
         dev.apply(queue)
 
@@ -702,7 +702,7 @@ class TestApplyBroadcasted:
         state = broadcasted_init_state(1, 3, torch_device=torch_device)
 
         par = torch.tensor(theta, dtype=torch.complex128, device=torch_device)
-        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue = [qml.StatePrep(state, wires=[0])]
         queue += [op(par, wires=0)]
         dev.apply(queue)
 
@@ -722,7 +722,7 @@ class TestApplyBroadcasted:
         b = torch.tensor(1.3432, dtype=torch.complex128, device=torch_device)
         c = torch.tensor(-0.654, dtype=torch.complex128, device=torch_device)
 
-        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue = [qml.StatePrep(state, wires=[0])]
         queue += [qml.Rot(a, b, c, wires=0)]
         dev.apply(queue)
 
@@ -740,7 +740,7 @@ class TestApplyBroadcasted:
         b = torch.tensor([1.3432, 0.6324, 6.32], dtype=torch.complex128, device=torch_device)
         c = torch.tensor(-0.654, dtype=torch.complex128, device=torch_device)
 
-        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue = [qml.StatePrep(state, wires=[0])]
         queue += [qml.Rot(a, b, c, wires=0)]
         dev.apply(queue)
 
@@ -758,7 +758,7 @@ class TestApplyBroadcasted:
         b = torch.tensor([1.3432, 0.6324, 6.32], dtype=torch.complex128, device=torch_device)
         c = torch.tensor(-0.654, dtype=torch.complex128, device=torch_device)
 
-        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue = [qml.StatePrep(state, wires=[0])]
         queue += [qml.Rot(a, b, c, wires=0)]
         dev.apply(queue)
 
@@ -778,7 +778,7 @@ class TestApplyBroadcasted:
         b = torch.tensor(1.3432, dtype=torch.complex128, device=torch_device)
         c = torch.tensor(-0.654, dtype=torch.complex128, device=torch_device)
 
-        queue = [qml.QubitStateVector(state, wires=[0, 1])]
+        queue = [qml.StatePrep(state, wires=[0, 1])]
         queue += [qml.CRot(a, b, c, wires=[0, 1])]
         dev.apply(queue)
 
@@ -796,7 +796,7 @@ class TestApplyBroadcasted:
         b = torch.tensor(-0.654, dtype=torch.complex128, device=torch_device)
         c = torch.tensor([1.3432, 0.6324, 6.32], dtype=torch.complex128, device=torch_device)
 
-        queue = [qml.QubitStateVector(state, wires=[0, 1])]
+        queue = [qml.StatePrep(state, wires=[0, 1])]
         queue += [qml.CRot(a, b, c, wires=[0, 1])]
         dev.apply(queue)
 
@@ -816,7 +816,7 @@ class TestApplyBroadcasted:
         b = torch.tensor(-0.654, dtype=torch.complex128, device=torch_device)
         c = torch.tensor([1.3432, 0.6324, 6.32], dtype=torch.complex128, device=torch_device)
 
-        queue = [qml.QubitStateVector(state, wires=[0, 1])]
+        queue = [qml.StatePrep(state, wires=[0, 1])]
         queue += [qml.CRot(a, b, c, wires=[0, 1])]
         dev.apply(queue)
 
@@ -833,7 +833,7 @@ class TestApplyBroadcasted:
         dev = device(wires=2, torch_device=torch_device)
         state = broadcasted_init_state(2, 3, torch_device=torch_device)
 
-        queue = [qml.QubitStateVector(state, wires=[0, 1])]
+        queue = [qml.StatePrep(state, wires=[0, 1])]
         queue += [op(wires=[0, 1])]
         dev.apply(queue)
 
@@ -853,7 +853,7 @@ class TestApplyBroadcasted:
         dev = device(wires=N, torch_device=torch_device)
         state = broadcasted_init_state(N, 3, torch_device=torch_device)
 
-        queue = [qml.QubitStateVector(state, wires=range(N))]
+        queue = [qml.StatePrep(state, wires=range(N))]
         queue += [qml.QubitUnitary(mat, wires=range(N))]
         dev.apply(queue)
 
@@ -870,7 +870,7 @@ class TestApplyBroadcasted:
         dev = device(wires=N, torch_device=torch_device)
         state = init_state(N, torch_device=torch_device)
 
-        queue = [qml.QubitStateVector(state, wires=range(N))]
+        queue = [qml.StatePrep(state, wires=range(N))]
         queue += [qml.QubitUnitary(mat, wires=range(N))]
         dev.apply(queue)
 
@@ -889,7 +889,7 @@ class TestApplyBroadcasted:
         dev = device(wires=N, torch_device=torch_device)
         state = broadcasted_init_state(N, 3, torch_device=torch_device)
 
-        queue = [qml.QubitStateVector(state, wires=range(N))]
+        queue = [qml.StatePrep(state, wires=range(N))]
         queue += [qml.QubitUnitary(mat, wires=range(N))]
         dev.apply(queue)
 
@@ -905,7 +905,7 @@ class TestApplyBroadcasted:
         dev = device(wires=3, torch_device=torch_device)
         state = broadcasted_init_state(3, 2, torch_device=torch_device)
 
-        queue = [qml.QubitStateVector(state, wires=[0, 1, 2])]
+        queue = [qml.StatePrep(state, wires=[0, 1, 2])]
         queue += [op(wires=[0, 1, 2])]
         dev.apply(queue)
 
@@ -1709,7 +1709,7 @@ class TestQNodeIntegration:
 
         @qml.qnode(dev, interface="torch")
         def circuit(params):
-            qml.QubitStateVector(state, wires=[0])
+            qml.StatePrep(state, wires=[0])
             op(params[0], wires=[0])
             return qml.expval(qml.PauliZ(0))
 
@@ -1729,7 +1729,7 @@ class TestQNodeIntegration:
 
         @qml.qnode(dev, interface="torch")
         def circuit(params):
-            qml.QubitStateVector(state, wires=[0, 1])
+            qml.StatePrep(state, wires=[0, 1])
             op(params[0], wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
@@ -1751,7 +1751,7 @@ class TestQNodeIntegration:
 
         @qml.qnode(dev, interface="torch")
         def circuit(params):
-            qml.QubitStateVector(state, wires=[0, 1, 2, 3])
+            qml.StatePrep(state, wires=[0, 1, 2, 3])
             op(params[0], wires=[0, 1, 2, 3])
             return qml.expval(qml.PauliZ(0))
 
@@ -1774,7 +1774,7 @@ class TestQNodeIntegration:
 
         @qml.qnode(dev, interface="torch")
         def circuit(params):
-            qml.QubitStateVector(state, wires=[0, 1])
+            qml.StatePrep(state, wires=[0, 1])
             qml.CRot(params[0], params[1], params[2], wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
@@ -1962,7 +1962,7 @@ class TestPassthruIntegration:
             return qml.expval(qml.PauliZ(0))  # , qml.var(qml.PauliZ(1))
 
         dev1 = qml.device("default.qubit.torch", wires=3, torch_device=torch_device)
-        dev2 = qml.device("default.qubit", wires=3)
+        dev2 = qml.device("default.qubit.legacy", wires=3)
 
         circuit1 = qml.QNode(circuit, dev1, diff_method="backprop", interface="torch")
         circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift")
@@ -2149,13 +2149,15 @@ class TestPassthruIntegration:
         using the PyTorch interface, using a variety of differentiation methods."""
         dev = qml.device("default.qubit.torch", wires=1, torch_device=torch_device)
 
-        input_state = torch.tensor(1j * np.array([1, -1]) / math.sqrt(2), device=torch_device)
+        input_state = torch.tensor(
+            1j * np.array([1, -1]) / math.sqrt(2.0), device=torch_device, dtype=torch.complex128
+        )
 
         @qml.qnode(dev, diff_method=diff_method, interface="torch")
         def circuit(x, weights, w):
             """In this example, a mixture of scalar
             arguments, array arguments, and keyword arguments are used."""
-            qml.QubitStateVector(input_state, wires=w)
+            qml.StatePrep(input_state, wires=w)
             operation(x, weights[0], weights[1], wires=w)
             return qml.expval(qml.PauliX(w))
 

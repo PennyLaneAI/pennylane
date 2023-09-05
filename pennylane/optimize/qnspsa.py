@@ -428,9 +428,6 @@ class QNSPSAOptimizer:
 
         loss_curr, loss_next = qml.execute([tape_loss_curr, tape_loss_next], cost.device, None)
 
-        if not qml.active_return():
-            loss_curr, loss_next = qml.math.squeeze(loss_curr), qml.math.squeeze(loss_next)
-
         # self.k has been updated earlier
         ind = (self.k - 2) % self.last_n_steps.size
         self.last_n_steps[ind] = loss_curr

@@ -16,11 +16,10 @@ This module contains the Identity operation that is common to both
 cv and qubit computing paradigms in PennyLane.
 """
 from functools import lru_cache
-
 from scipy import sparse
 
 import pennylane as qml
-from pennylane.operation import AnyWires, CVObservable, Operation
+from pennylane.operation import AnyWires, AllWires, CVObservable, Operation
 
 
 class Identity(CVObservable, Operation):
@@ -50,6 +49,9 @@ class Identity(CVObservable, Operation):
     _queue_category = "_ops"
 
     ev_order = 1
+
+    def _flatten(self):
+        return tuple(), (self.wires, tuple())
 
     def __init__(self, *params, wires=None, id=None):
         super().__init__(*params, wires=wires, id=id)
@@ -174,3 +176,168 @@ class Identity(CVObservable, Operation):
 
     def pow(self, _):
         return [Identity(wires=self.wires)]
+
+
+class GlobalPhase(Operation):
+    r"""A global phase operation that multiplies all components of the state by :math:`e^{-i \phi}`.
+
+    **Details:**
+
+    * Number of wires: All (the operation acts on all wires)
+    * Number of parameters: 1
+    * Gradient recipe: None
+
+    Args:
+        phi (TensorLike): the global phase
+        wires (Iterable[Any] or Any): unused argument - the operator is applied to all wires
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified.
+
+    **Example**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(phi=None, return_state=False):
+            qml.PauliX(0)
+            if phi:
+                qml.GlobalPhase(phi)
+            if return_state:
+                return qml.state()
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+    The circuit yields the same expectation values with and without the global phase:
+
+    >>> circuit()
+    (tensor(-1., requires_grad=True), tensor(1., requires_grad=True))
+    >>> circuit(phi=0.123)
+    (tensor(-1., requires_grad=True), tensor(1., requires_grad=True))
+
+    However, the states of the two systems differ by a global phase factor:
+
+    >>> circuit(return_state=True)
+    tensor([0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j], requires_grad=True)
+    >>> circuit(return_state=True, phi=0.123)
+    tensor([0.        +0.j        , 0.        +0.j        ,
+            0.99244503-0.12269009j, 0.        +0.j        ], requires_grad=True)
+
+    The operator can be applied with a control to create a relative phase between terms:
+
+    .. code-block:: python3
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(0)
+            qml.ctrl(qml.GlobalPhase(0.123), 0)
+            return qml.state()
+
+        >>> circuit()
+        tensor([0.70710678+0.j        , 0.        +0.j        ,
+                0.70176461-0.08675499j, 0.        +0.j        ], requires_grad=True)
+
+
+    """
+    grad_method = "A"
+    num_params = 1
+    num_wires = AllWires
+    """int: Number of wires that the operator acts on."""
+
+    def __init__(self, phi, wires=None, id=None):
+        super().__init__(phi, wires=[] if wires is None else wires, id=id)
+
+    @staticmethod
+    def compute_eigvals(phi, n_wires=1):  # pylint: disable=arguments-differ
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{\dagger},
+
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.GlobalPhase.eigvals`
+
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> qml.GlobalPhase.compute_eigvals(np.pi/2)
+        array([6.123234e-17+1.j, 6.123234e-17+1.j])
+        """
+        return qml.math.exp(-1j * phi) * qml.math.ones(2**n_wires)
+
+    @staticmethod
+    def compute_matrix(phi, n_wires=1):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.GlobalPhase.matrix`
+
+        Returns:
+            ndarray: matrix
+
+        **Example**
+
+        >>> qml.GlobalPhase.compute_matrix(np.pi/4, n_wires=1)
+        array([[0.70710678-0.70710678j, 0.        +0.j        ],
+               [0.        +0.j        , 0.70710678-0.70710678j]])
+        """
+        interface = qml.math.get_interface(phi)
+        if interface == "tensorflow":
+            return qml.math.exp(-1j * qml.math.cast(phi, complex)) * qml.math.eye(int(2**n_wires))
+        return qml.math.exp(-1j * qml.math.cast(phi, complex)) * qml.math.eye(
+            int(2**n_wires), like=interface
+        )
+
+    @staticmethod
+    def compute_sparse_matrix(phi, n_wires=1):  # pylint: disable=arguments-differ
+        return qml.math.exp(-1j * phi) * sparse.eye(int(2**n_wires), format="csr")
+
+    @staticmethod
+    def compute_diagonalizing_gates(
+        phi, wires, n_wires=1
+    ):  # pylint: disable=arguments-differ,unused-argument
+        r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
+
+        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
+        :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
+
+        The diagonalizing gates rotate the state into the eigenbasis
+        of the operator.
+
+        .. seealso:: :meth:`~.GlobalPhase.diagonalizing_gates`.
+
+        Args:
+            wires (Iterable[Any], Wires): wires that the operator acts on
+
+        Returns:
+            list[.Operator]: list of diagonalizing gates
+
+        **Example**
+
+        >>> qml.GlobalPhase.compute_diagonalizing_gates(1.2, wires=[0])
+        []
+        """
+        return []
+
+    def matrix(self, wire_order=None):
+        n_wires = len(wire_order) if wire_order else len(self.wires)
+        return self.compute_matrix(self.data[0], n_wires=n_wires)
+
+    def adjoint(self):
+        return GlobalPhase(-1 * self.data[0], self.wires)
+
+    def pow(self, z):
+        return [GlobalPhase(z * self.data[0], self.wires)]
+
+    def generator(self):
+        wires = self.wires or [0]
+        return -1 * qml.Identity(wires)

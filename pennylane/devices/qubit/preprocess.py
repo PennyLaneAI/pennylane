@@ -23,7 +23,7 @@ from functools import partial
 
 import pennylane as qml
 
-from pennylane.operation import Tensor, StatePrep
+from pennylane.operation import Tensor, StatePrepBase
 from pennylane.measurements import (
     MidMeasureMP,
     StateMeasurement,
@@ -150,7 +150,7 @@ def validate_and_expand_adjoint(
     try:
         new_ops = [
             final_op
-            for op in circuit._ops
+            for op in circuit.operations[circuit.num_preps :]
             for final_op in _operator_decomposition_gen(op, _accepted_adjoint_operator)
         ]
     except RecursionError as e:
@@ -158,8 +158,6 @@ def validate_and_expand_adjoint(
             "Reached recursion limit trying to decompose operations. "
             "Operator decomposition may have entered an infinite loop."
         ) from e
-
-    prep = circuit._prep[:1]
 
     for k in circuit.trainable_params:
         if hasattr(circuit._par_info[k]["op"], "return_type"):
@@ -189,7 +187,8 @@ def validate_and_expand_adjoint(
 
         measurements.append(m)
 
-    return qml.tape.QuantumScript(new_ops, measurements, prep, circuit.shots)
+    new_ops = circuit.operations[: circuit.num_preps] + new_ops
+    return qml.tape.QuantumScript(new_ops, measurements, shots=circuit.shots)
 
 
 def validate_measurements(
@@ -250,8 +249,8 @@ def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
 
     if not all(_accepted_operator(op) for op in circuit.operations):
         try:
-            # don't decompose initial operations if its StatePrep
-            prep_op = [circuit[0]] if isinstance(circuit[0], StatePrep) else []
+            # don't decompose initial operations if its StatePrepBase
+            prep_op = [circuit[0]] if isinstance(circuit[0], StatePrepBase) else []
 
             new_ops = [
                 final_op
@@ -356,7 +355,7 @@ def preprocess(
 
     Args:
         circuits (Sequence[QuantumTape]): Batch of tapes to be processed.
-        execution_config (.ExecutionConfig): execution configuration with configurable
+        execution_config (ExecutionConfig): execution configuration with configurable
             options for the execution.
 
     Returns:

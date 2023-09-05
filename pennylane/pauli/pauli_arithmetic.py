@@ -445,7 +445,7 @@ class PauliSentence(dict):
 
     def _to_sparse_mat(self, wire_order, buffer_size=None):
         """Compute the sparse matrix of the Pauli sentence by efficiently adding the Pauli words
-        that conform it. See pauli_sparse_matrices.md for the technical details."""
+        that it is composed of. See pauli_sparse_matrices.md for the technical details."""
         pauli_words = list(self)  # Ensure consistent ordering
         n_wires = len(wire_order)
         matrix_size = 2**n_wires
@@ -478,13 +478,18 @@ class PauliSentence(dict):
         matrix += self._sum_different_structure_pws(
             mat_indices[:, :n_matrices_in_buffer], mat_data[:, :n_matrices_in_buffer]
         )
+        matrix.eliminate_zeros()
         return matrix
 
     def _sum_same_structure_pws(self, pauli_words, wire_order):
         """Sums Pauli words with the same sparse structure."""
-        mat = pauli_words[0].to_mat(wire_order, coeff=self[pauli_words[0]], format="csr")
+        mat = pauli_words[0].to_mat(
+            wire_order, coeff=qml.math.to_numpy(self[pauli_words[0]]), format="csr"
+        )
         for word in pauli_words[1:]:
-            mat.data += word.to_mat(wire_order, coeff=self[word], format="csr").data
+            mat.data += word.to_mat(
+                wire_order, coeff=qml.math.to_numpy(self[word]), format="csr"
+            ).data
         return mat
 
     @staticmethod

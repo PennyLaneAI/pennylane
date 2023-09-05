@@ -141,7 +141,7 @@ class TestInitialization:
         assert op.id == "something"
 
         assert op.num_params == 0
-        assert op.parameters == []
+        assert op.parameters == []  # pylint: disable=use-implicit-booleaness-not-comparison
         assert op.data == ()
 
         assert op.num_wires == 4
@@ -311,7 +311,7 @@ class TestProperties:
         op = Controlled(DummyOp(1), 0)
         assert op.has_diagonalizing_gates is value
 
-    @pytest.mark.parametrize("value", ("_ops", "_prep", None))
+    @pytest.mark.parametrize("value", ("_ops", None))
     def test_queue_cateogry(self, value):
         """Test that Controlled defers `_queue_category` to base operator."""
 
@@ -631,7 +631,7 @@ class TestQueuing:
             op = Controlled(base, (0, 1))
 
         assert base not in q
-        assert q.queue[0] == op
+        assert qml.equal(q.queue[0], op)
 
     def test_queuing_base_defined_outside(self):
         """Test that base isn't added to queue if its defined outside the recording context."""
@@ -942,7 +942,7 @@ class TestDifferentiation:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(b):
-            qml.QubitStateVector(init_state, wires=0)
+            qml.StatePrep(init_state, wires=0)
             Controlled(qml.RY(b, wires=1), control_wires=0)
             return qml.expval(qml.PauliX(0))
 
@@ -958,15 +958,17 @@ class TestDifferentiation:
         import torch
 
         dev = qml.device("default.qubit", wires=2)
-        init_state = torch.tensor([1.0, -1.0], requires_grad=False) / np.sqrt(2)
+        init_state = torch.tensor(
+            [1.0, -1.0], requires_grad=False, dtype=torch.complex128
+        ) / np.sqrt(2)
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(b):
-            qml.QubitStateVector(init_state, wires=0)
+            qml.StatePrep(init_state, wires=0)
             Controlled(qml.RY(b, wires=1), control_wires=0)
             return qml.expval(qml.PauliX(0))
 
-        b = torch.tensor(0.123, requires_grad=True)
+        b = torch.tensor(0.123, requires_grad=True, dtype=torch.float64)
         loss = circuit(b)
         loss.backward()  # pylint:disable=no-member
 
@@ -982,6 +984,8 @@ class TestDifferentiation:
 
         import jax
 
+        jax.config.update("jax_enable_x64", True)
+
         jnp = jax.numpy
 
         dev = qml.device("default.qubit", wires=2)
@@ -989,7 +993,7 @@ class TestDifferentiation:
         @qml.qnode(dev, diff_method=diff_method, interface=jax_interface)
         def circuit(b):
             init_state = onp.array([1.0, -1.0]) / np.sqrt(2)
-            qml.QubitStateVector(init_state, wires=0)
+            qml.StatePrep(init_state, wires=0)
             Controlled(qml.RY(b, wires=1), control_wires=0)
             return qml.expval(qml.PauliX(0))
 
@@ -1009,7 +1013,7 @@ class TestDifferentiation:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(b):
-            qml.QubitStateVector(init_state, wires=0)
+            qml.StatePrep(init_state, wires=0)
             Controlled(qml.RY(b, wires=1), control_wires=0)
             return qml.expval(qml.PauliX(0))
 
@@ -1076,7 +1080,7 @@ class TestControlledSupportsBroadcasting:
         "DiagonalQubitUnitary",
         "PauliRot",
         "MultiRZ",
-        "QubitStateVector",
+        "StatePrep",
         "AmplitudeEmbedding",
         "AngleEmbedding",
         "IQPEmbedding",
@@ -1234,22 +1238,22 @@ class TestControlledSupportsBroadcasting:
         [([1.0, 0.0], 1), ([0.5, -0.5j, 0.5, -0.5], 2), (np.ones(8) / np.sqrt(8), 3)],
     )
     def test_controlled_qubit_state_vector(self, state_, num_wires):
-        """Test that QubitStateVector, which is marked as supporting parameter broadcasting,
+        """Test that StatePrep, which is marked as supporting parameter broadcasting,
         actually does support broadcasting."""
 
         state = np.array([state_])
-        base = qml.QubitStateVector(state, wires=list(range(num_wires)))
+        base = qml.StatePrep(state, wires=list(range(num_wires)))
         op = Controlled(base, "wire1")
 
         assert op.batch_size == 1
-        qml.QubitStateVector.compute_decomposition(state, list(range(num_wires)))
+        qml.StatePrep.compute_decomposition(state, list(range(num_wires)))
         op.decomposition()
 
         state = np.array([state_] * 3)
-        base = qml.QubitStateVector(state, wires=list(range(num_wires)))
+        base = qml.StatePrep(state, wires=list(range(num_wires)))
         op = Controlled(base, "wire1")
         assert op.batch_size == 3
-        qml.QubitStateVector.compute_decomposition(state, list(range(num_wires)))
+        qml.StatePrep.compute_decomposition(state, list(range(num_wires)))
         op.decomposition()
 
     @pytest.mark.parametrize(
@@ -1707,7 +1711,7 @@ class TestCtrlTransformDifferentiation:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(b):
-            qml.QubitStateVector(init_state, wires=0)
+            qml.StatePrep(init_state, wires=0)
             qml.ctrl(qml.RY, control=0)(b, wires=[1])
             return qml.expval(qml.PauliX(0))
 
@@ -1723,15 +1727,17 @@ class TestCtrlTransformDifferentiation:
         import torch
 
         dev = qml.device("default.qubit", wires=2)
-        init_state = torch.tensor([1.0, -1.0], requires_grad=False) / np.sqrt(2)
+        init_state = torch.tensor(
+            [1.0, -1.0], requires_grad=False, dtype=torch.complex128
+        ) / np.sqrt(2)
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(b):
-            qml.QubitStateVector(init_state, wires=0)
+            qml.StatePrep(init_state, wires=0)
             qml.ctrl(qml.RY, control=0)(b, wires=[1])
             return qml.expval(qml.PauliX(0))
 
-        b = torch.tensor(0.123, requires_grad=True)
+        b = torch.tensor(0.123, requires_grad=True, dtype=torch.float64)
         loss = circuit(b)
         loss.backward()  # pylint:disable=no-member
 
@@ -1747,6 +1753,8 @@ class TestCtrlTransformDifferentiation:
 
         import jax
 
+        jax.config.update("jax_enable_x64", True)
+
         jnp = jax.numpy
 
         dev = qml.device("default.qubit", wires=2)
@@ -1754,7 +1762,7 @@ class TestCtrlTransformDifferentiation:
         @qml.qnode(dev, diff_method=diff_method, interface=jax_interface)
         def circuit(b):
             init_state = onp.array([1.0, -1.0]) / onp.sqrt(2)
-            qml.QubitStateVector(init_state, wires=0)
+            qml.StatePrep(init_state, wires=0)
             qml.ctrl(qml.RY, control=0)(b, wires=[1])
             return qml.expval(qml.PauliX(0))
 
@@ -1774,7 +1782,7 @@ class TestCtrlTransformDifferentiation:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(b):
-            qml.QubitStateVector(init_state, wires=0)
+            qml.StatePrep(init_state, wires=0)
             qml.ctrl(qml.RY, control=0)(b, wires=[1])
             return qml.expval(qml.PauliX(0))
 

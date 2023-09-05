@@ -52,7 +52,7 @@ def adjoint_jacobian(tape: QuantumTape, state=None):
         * Observable being measured must have a matrix.
 
     Args:
-        tape (.QuantumTape): circuit that the function takes the gradient of
+        tape (QuantumTape): circuit that the function takes the gradient of
         state (TensorLike): the final state of the circuit; if not provided,
             the final state will be computed by executing the tape
 
@@ -76,7 +76,7 @@ def adjoint_jacobian(tape: QuantumTape, state=None):
 
     param_number = len(tape.get_parameters(trainable_only=False, operations_only=True)) - 1
     trainable_param_number = len(tape.trainable_params) - 1
-    for op in reversed(tape._ops):
+    for op in reversed(tape.operations[tape.num_preps :]):
         adj_op = qml.adjoint(op)
         ket = apply_operation(adj_op, ket)
 
@@ -127,7 +127,7 @@ def adjoint_jvp(tape: QuantumTape, tangents: Tuple[Number], state=None):
         * Observable being measured must have a matrix.
 
     Args:
-        tape (.QuantumTape): circuit that the function takes the gradient of
+        tape (QuantumTape): circuit that the function takes the gradient of
         tangents (Tuple[Number]): gradient vector for input parameters.
         state (TensorLike): the final state of the circuit; if not provided,
             the final state will be computed by executing the tape
@@ -152,7 +152,7 @@ def adjoint_jvp(tape: QuantumTape, tangents: Tuple[Number], state=None):
 
     tangents_out = np.zeros(n_obs)
 
-    for op in reversed(tape._ops):
+    for op in reversed(tape.operations[tape.num_preps :]):
         adj_op = qml.adjoint(op)
         ket = apply_operation(adj_op, ket)
 
@@ -201,7 +201,7 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
         * Observable being measured must have a matrix.
 
     Args:
-        tape (.QuantumTape): circuit that the function takes the gradient of
+        tape (QuantumTape): circuit that the function takes the gradient of
         cotangents (Tuple[Number]): gradient vector for output parameters
         state (TensorLike): the final state of the circuit; if not provided,
             the final state will be computed by executing the tape
@@ -224,7 +224,7 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
 
     cotangents_in = np.empty(len(tape.trainable_params))
 
-    for op in reversed(tape._ops):
+    for op in reversed(tape.operations[tape.num_preps :]):
         adj_op = qml.adjoint(op)
         ket = apply_operation(adj_op, ket)
 

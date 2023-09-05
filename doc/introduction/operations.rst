@@ -213,6 +213,7 @@ Parametrized gates
     ~pennylane.IsingYY
     ~pennylane.IsingZZ
     ~pennylane.PSWAP
+    ~pennylane.GlobalPhase
 
 :html:`</div>`
 
@@ -291,7 +292,7 @@ State preparation
     :nosignatures:
 
     ~pennylane.BasisState
-    ~pennylane.QubitStateVector
+    ~pennylane.StatePrep
     ~pennylane.QubitDensityMatrix
 
 :html:`</div>`

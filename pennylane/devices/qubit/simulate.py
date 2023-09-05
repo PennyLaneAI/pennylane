@@ -44,7 +44,7 @@ def get_final_state(circuit, debugger=None):
         circuit = qml.map_wires(circuit, wire_map)
 
     prep = None
-    if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrep):
+    if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         prep = circuit[0]
 
     state = create_initial_state(circuit.wires, prep)
@@ -116,18 +116,16 @@ def simulate(circuit: qml.tape.QuantumScript, rng=None, debugger=None) -> Result
     This is an internal function that will be called by the successor to ``default.qubit``.
 
     Args:
-        circuit (.QuantumScript): The single circuit to simulate
+        circuit (QuantumTape): The single circuit to simulate
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
-        debugger (._Debugger): The debugger to use
+        debugger (_Debugger): The debugger to use
 
     Returns:
         tuple(TensorLike): The results of the simulation
 
     Note that this function can return measurements for non-commuting observables simultaneously.
-
-    It does currently not support sampling or observables without diagonalizing gates.
 
     This function assumes that all operations provide matrices.
 

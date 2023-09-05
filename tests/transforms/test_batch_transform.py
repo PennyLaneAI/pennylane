@@ -340,7 +340,7 @@ class TestBatchTransform:
         b = 0.4
         x = 0.543
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         dev = self.my_transform(dev, a, b)
 
         @qml.qnode(dev, interface="autograd")
@@ -371,7 +371,7 @@ class TestBatchTransform:
         b = 0.4
         x = 0.543
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         dev = self.my_transform(a, b)(dev)  # pylint: disable=no-value-for-parameter
 
         @qml.qnode(dev, interface="autograd")
@@ -625,6 +625,8 @@ class TestBatchTransformGradients:
         jax"""
         import jax
 
+        jax.config.update("jax_enable_x64", True)
+
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(self.circuit, dev, diff_method=diff_method)
 
@@ -643,7 +645,8 @@ class TestBatchTransformGradients:
         grad = jax.grad(cost, argnums=[0, 1])(x, weights)
         expected = qml.grad(self.expval)(x_np, weights_np)
         assert len(grad) == len(expected)
-        assert all(np.allclose(g, e) for g, e in zip(grad, expected))
+        for g, e in zip(grad, expected):
+            assert qml.math.allclose(g, e)
 
     def test_batch_transforms_qnode(self, diff_method, mocker):
         """Test that batch transforms can be applied to a QNode
@@ -676,7 +679,7 @@ class TestMapBatchTransform:
 
     def test_result(self, mocker):
         """Test that it correctly applies the transform to be mapped"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
         H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
         x = 0.6
         y = 0.7
@@ -710,7 +713,7 @@ class TestMapBatchTransform:
 
     def test_differentiation(self):
         """Test that an execution using map_batch_transform can be differentiated"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
         H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
 
         weights = np.array([0.6, 0.8], requires_grad=True)

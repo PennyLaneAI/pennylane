@@ -108,7 +108,7 @@ def cast(tensor, dtype):
     >>> cast(x, "complex128")
     <tf.Tensor: shape=(2,), dtype=complex128, numpy=array([1.+0.j, 2.+0.j])>
     """
-    if isinstance(tensor, (list, tuple)):
+    if isinstance(tensor, (list, tuple, int, float, complex)):
         tensor = np.asarray(tensor)
 
     if not isinstance(dtype, str):
@@ -138,7 +138,9 @@ def cast_like(tensor1, tensor2):
     >>> cast_like(x, y)
     tensor([1., 2.])
     """
-    if not is_abstract(tensor2):
+    if isinstance(tensor2, ArrayBox):
+        dtype = ar.to_numpy(tensor2._value).dtype.type  # pylint: disable=protected-access
+    elif not is_abstract(tensor2):
         dtype = ar.to_numpy(tensor2).dtype.type
     else:
         dtype = tensor2.dtype
@@ -395,6 +397,22 @@ def is_abstract(tensor, like=None):
     return False
 
 
+def import_should_record_backprop():  # pragma: no cover
+    """Return should_record_backprop or an equivalent function from TensorFlow."""
+    import tensorflow.python as tfpy
+
+    if hasattr(tfpy.eager.tape, "should_record_backprop"):
+        from tensorflow.python.eager.tape import should_record_backprop
+    elif hasattr(tfpy.eager.tape, "should_record"):
+        from tensorflow.python.eager.tape import should_record as should_record_backprop
+    elif hasattr(tfpy.eager.record, "should_record_backprop"):
+        from tensorflow.python.eager.record import should_record_backprop
+    else:
+        raise ImportError("Cannot import should_record_backprop from TensorFlow.")
+
+    return should_record_backprop
+
+
 def requires_grad(tensor, interface=None):
     """Returns True if the tensor is considered trainable.
 
@@ -452,11 +470,7 @@ def requires_grad(tensor, interface=None):
     if interface == "tensorflow":
         import tensorflow as tf
 
-        try:
-            from tensorflow.python.eager.tape import should_record_backprop
-        except ImportError:  # pragma: no cover
-            from tensorflow.python.eager.tape import should_record as should_record_backprop
-
+        should_record_backprop = import_should_record_backprop()
         return should_record_backprop([tf.convert_to_tensor(tensor)])
 
     if interface == "autograd":
@@ -505,11 +519,7 @@ def in_backprop(tensor, interface=None):
     if interface == "tensorflow":
         import tensorflow as tf
 
-        try:
-            from tensorflow.python.eager.tape import should_record_backprop
-        except ImportError:  # pragma: no cover
-            from tensorflow.python.eager.tape import should_record as should_record_backprop
-
+        should_record_backprop = import_should_record_backprop()
         return should_record_backprop([tf.convert_to_tensor(tensor)])
 
     if interface == "autograd":

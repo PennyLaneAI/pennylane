@@ -553,6 +553,7 @@ class TestSparseMatrix:
 
         expected_sparse_matrix = csr_matrix(op.matrix()).multiply(scalar)
         expected_sparse_matrix.sort_indices()
+        expected_sparse_matrix.eliminate_zeros()
 
         assert isinstance(sparse_matrix, type(expected_sparse_matrix))
         assert all(sparse_matrix.data == expected_sparse_matrix.data)
@@ -572,6 +573,7 @@ class TestSparseMatrix:
 
         expected_sparse_matrix = csr_matrix(op.matrix()).multiply(scalar)
         expected_sparse_matrix.sort_indices()
+        expected_sparse_matrix.eliminate_zeros()
 
         assert isinstance(sparse_matrix, type(expected_sparse_matrix))
         assert all(sparse_matrix.data == expected_sparse_matrix.data)
@@ -591,6 +593,7 @@ class TestSparseMatrix:
 
         expected_sparse_matrix = csr_matrix(op.matrix()).multiply(scalar)
         expected_sparse_matrix.sort_indices()
+        expected_sparse_matrix.eliminate_zeros()
 
         assert isinstance(sparse_matrix, type(expected_sparse_matrix))
         assert all(sparse_matrix.data == expected_sparse_matrix.data)
@@ -610,6 +613,7 @@ class TestSparseMatrix:
 
         expected_sparse_matrix = csr_matrix(op.matrix()).multiply(scalar)
         expected_sparse_matrix.sort_indices()
+        expected_sparse_matrix.eliminate_zeros()
 
         assert isinstance(sparse_matrix, type(expected_sparse_matrix))
         assert all(sparse_matrix.data == expected_sparse_matrix.data)
@@ -626,6 +630,7 @@ class TestSparseMatrix:
 
         expected_sparse_matrix = scalar * op.matrix()
         expected_sparse_matrix = csr_matrix(expected_sparse_matrix)
+        expected_sparse_matrix.eliminate_zeros()
 
         assert np.allclose(sparse_matrix.todense(), expected_sparse_matrix.todense())
 
@@ -1005,8 +1010,8 @@ class TestIntegration:
         results = my_circ()
 
         assert sum(results.values()) == 20
-        assert 1.23 in results
-        assert -1.23 not in results
+        assert 1.23 in results  # pylint:disable=unsupported-membership-test
+        assert -1.23 not in results  # pylint:disable=unsupported-membership-test
 
     def test_differentiable_scalar(self):
         """Test that the gradient can be computed of the scalar when a SProd op

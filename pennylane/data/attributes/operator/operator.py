@@ -126,6 +126,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 # pennylane/ops/state_preparation.py
                 qml.BasisState,
                 qml.QubitStateVector,
+                qml.StatePrep,
                 qml.QubitDensityMatrix,
                 # pennylane/ops/qutrit/matrix_obs.py
                 qml.QutritUnitary,
@@ -169,8 +170,8 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 qml.CatState,
                 qml.NumberOperator,
                 qml.TensorN,
-                qml.X,
-                qml.P,
+                qml.QuadX,
+                qml.QuadP,
                 qml.QuadOperator,
                 qml.PolyXP,
                 qml.FockStateProjector,

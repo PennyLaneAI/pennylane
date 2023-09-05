@@ -27,7 +27,7 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
-from pennylane import BasisState, DeviceError, QubitDevice, QubitStateVector, Snapshot
+from pennylane import BasisState, DeviceError, QubitDevice, StatePrep, Snapshot
 from pennylane.devices.qubit import measure
 from pennylane.operation import Operation
 from pennylane.ops import Sum
@@ -110,9 +110,11 @@ class DefaultQubit(QubitDevice):
     author = "Xanadu Inc."
 
     operations = {
+        "GlobalPhase",
         "Identity",
         "Snapshot",
         "BasisState",
+        "StatePrep",
         "QubitStateVector",
         "QubitUnitary",
         "ControlledQubitUnitary",
@@ -270,13 +272,13 @@ class DefaultQubit(QubitDevice):
 
         # apply the circuit operations
         for i, operation in enumerate(operations):
-            if i > 0 and isinstance(operation, (QubitStateVector, BasisState)):
+            if i > 0 and isinstance(operation, (StatePrep, BasisState)):
                 raise DeviceError(
                     f"Operation {operation.name} cannot be used after other Operations have already been applied "
                     f"on a {self.short_name} device."
                 )
 
-            if isinstance(operation, QubitStateVector):
+            if isinstance(operation, StatePrep):
                 self._apply_state_vector(operation.parameters[0], operation.wires)
             elif isinstance(operation, BasisState):
                 self._apply_basis_state(operation.parameters[0], operation.wires)
@@ -323,6 +325,8 @@ class DefaultQubit(QubitDevice):
         """
         if operation.__class__.__name__ == "Identity":
             return state
+        if operation.name == "GlobalPhase":
+            return self._apply_global_phase(state, operation)
         wires = operation.wires
 
         if str(operation.name) in self._apply_ops:  # cast to string because of Tensor
@@ -339,6 +343,10 @@ class DefaultQubit(QubitDevice):
             return self._apply_unitary_einsum(state, matrix, wires)
 
         return self._apply_unitary(state, matrix, wires)
+
+    def _apply_global_phase(self, state, operation: qml.GlobalPhase):  # pylint: disable=no-self-use
+        """Applies a :class:`~.GlobalPhase` operation to the state."""
+        return qml.math.exp(-1j * operation.data[0]) * state
 
     def _apply_x(self, state, axes, **kwargs):
         """Applies a PauliX gate by rolling 1 unit along the axis specified in ``axes``.

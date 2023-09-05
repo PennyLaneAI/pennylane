@@ -162,7 +162,7 @@ class TestMatrixParameters:
 
         @qml.qnode(qml.device("default.qubit", wires=2))
         def matrices_circuit():
-            qml.QubitStateVector([1.0, 0.0, 0.0, 0.0], wires=(0, 1))
+            qml.StatePrep([1.0, 0.0, 0.0, 0.0], wires=(0, 1))
             qml.QubitUnitary(np.eye(2), wires=0)
             return qml.expval(qml.Hermitian(np.eye(2), wires=0))
 
@@ -184,7 +184,7 @@ class TestMatrixParameters:
         @qml.gradients.param_shift(shifts=[(0.2,)])  # pylint:disable=no-value-for-parameter
         @qml.qnode(qml.device("default.qubit", wires=2))
         def matrices_circuit(x):
-            qml.QubitStateVector([1.0, 0.0, 0.0, 0.0], wires=(0, 1))
+            qml.StatePrep([1.0, 0.0, 0.0, 0.0], wires=(0, 1))
             qml.QubitUnitary(np.eye(2, requires_grad=False), wires=0)
             qml.RX(x, wires=1)
             return qml.expval(qml.Hermitian(np.eye(2, requires_grad=False), wires=1))

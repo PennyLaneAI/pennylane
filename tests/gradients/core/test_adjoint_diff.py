@@ -26,7 +26,7 @@ class TestAdjointJacobian:
     @pytest.fixture
     def dev(self):
         """Fixture that creates a device with two wires."""
-        return qml.device("default.qubit", wires=2)
+        return qml.device("default.qubit.legacy", wires=2)
 
     def test_not_expval(self, dev):
         """Test if a QuantumFunctionError is raised for a tape with measurements that are not
@@ -43,7 +43,7 @@ class TestAdjointJacobian:
     def test_finite_shots_warns(self):
         """Tests warning raised when finite shots specified"""
 
-        dev = qml.device("default.qubit", wires=1, shots=10)
+        dev = qml.device("default.qubit.legacy", wires=1, shots=10)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.expval(qml.PauliZ(0))
@@ -88,7 +88,7 @@ class TestAdjointJacobian:
         """Test attempting to compute the gradient of a tape that obtains the
         expectation value of a Hermitian operator emits a warning if the
         parameters to Hermitian are trainable."""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
 
         mx = qml.matrix(qml.PauliX(0) @ qml.PauliY(2))
         with qml.queuing.AnnotatedQueue() as q:
@@ -108,7 +108,7 @@ class TestAdjointJacobian:
         """Tests that the automatic gradients of Pauli rotations are correct."""
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.QubitStateVector(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
+            qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
             G(theta, wires=[0])
             qml.expval(qml.PauliZ(0))
 
@@ -133,7 +133,7 @@ class TestAdjointJacobian:
         params = np.array([theta, theta**3, np.sqrt(2) * theta])
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.QubitStateVector(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
+            qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
             qml.Rot(*params, wires=[0])
             qml.expval(qml.PauliZ(0))
 
@@ -193,7 +193,7 @@ class TestAdjointJacobian:
 
     def test_multiple_rx_gradient(self, tol):
         """Tests that the gradient of multiple RX gates in a circuit yields the correct result."""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
         params = np.array([np.pi, np.pi / 2, np.pi / 3])
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -331,7 +331,7 @@ class TestAdjointJacobian:
     def test_gradient_of_tape_with_hermitian(self, tol):
         """Test that computing the gradient of a tape that obtains the
         expectation value of a Hermitian operator works correctly."""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
 
         a, b, c = [0.5, 0.3, -0.7]
 

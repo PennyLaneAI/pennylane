@@ -95,13 +95,13 @@ class TestConstruction:
         """Test that observables are processed correctly"""
         tape, _, obs = make_tape
 
-        # test that the internal tape._measurements list is created properly
-        assert isinstance(tape._measurements[0], MeasurementProcess)
-        assert tape._measurements[0].return_type == qml.measurements.Expectation
-        assert tape._measurements[0].obs == obs[0]
+        # test that the internal tape.measurements list is created properly
+        assert isinstance(tape.measurements[0], MeasurementProcess)
+        assert tape.measurements[0].return_type == qml.measurements.Expectation
+        assert qml.equal(tape.measurements[0].obs, obs[0])
 
-        assert isinstance(tape._measurements[1], MeasurementProcess)
-        assert tape._measurements[1].return_type == qml.measurements.Probability
+        assert isinstance(tape.measurements[1], MeasurementProcess)
+        assert tape.measurements[1].return_type == qml.measurements.Probability
 
         # test the public observables property
         assert len(tape.observables) == 2
@@ -227,9 +227,7 @@ class TestConstruction:
         assert tape.output_dim == 5
         assert tape.batch_size is None
 
-        assert a not in tape.operations
-        assert b not in tape.operations
-
+        assert not any(qml.equal(a, op) or qml.equal(b, op) for op in tape.operations)
         assert tape.wires == qml.wires.Wires([0, "a"])
 
     def test_state_preparation(self):
@@ -237,21 +235,23 @@ class TestConstruction:
         params = [np.array([1, 0, 1, 0]) / np.sqrt(2), 1]
 
         with QuantumTape() as tape:
-            A = qml.QubitStateVector(params[0], wires=[0, 1])
+            A = qml.StatePrep(params[0], wires=[0, 1])
             B = qml.RX(params[1], wires=0)
             qml.expval(qml.PauliZ(wires=1))
 
-        assert tape.operations == [A, B]
-        assert tape._prep == [A]
+        assert tape.operations == tape._ops == [A, B]
         assert tape.get_parameters() == params
 
-    def test_state_preparation_error(self):
-        """Test that an exception is raised if a state preparation comes
+    def test_state_preparation_queued_after_operation(self):
+        """Test that no exception is raised if a state preparation comes
         after a quantum operation"""
-        with pytest.raises(ValueError, match="must occur prior to ops"):
-            with QuantumTape():
-                qml.PauliX(wires=0)
-                qml.BasisState(np.array([0, 1]), wires=[0, 1])
+        with QuantumTape() as tape:
+            qml.PauliX(wires=0)
+            qml.BasisState(np.array([0, 1]), wires=[0, 1])
+
+        assert len(tape.operations) == 2
+        assert qml.equal(tape.operations[0], qml.PauliX(wires=0))
+        assert qml.equal(tape.operations[1], qml.BasisState(np.array([0, 1]), wires=[0, 1]))
 
     def test_measurement_before_operation(self):
         """Test that an exception is raised if a measurement occurs before a operation"""
@@ -280,7 +280,7 @@ class TestConstruction:
         with QuantumTape() as tape:
             qml.RX(0.432, wires=0)
 
-        s = tape.__repr__()
+        s = repr(tape)
         expected = "<QuantumTape: wires=[0], params=1>"
         assert s == expected
 
@@ -813,7 +813,7 @@ class TestParameters:
         params = [a, 0.32, 0.76, 1.0]
 
         with QuantumTape() as tape:
-            op_ = qml.QubitStateVector(params[0], wires=[0, 1])
+            op_ = qml.StatePrep(params[0], wires=[0, 1])
             qml.Rot(params[1], params[2], params[3], wires=0)
 
         assert tape.num_params == len(params)
@@ -849,244 +849,6 @@ class TestParameters:
 
         assert np.all(obs.data[0] == H)
         assert np.all(new_tape[1].obs.data[0] == H2)
-
-
-# TODO: remove this class when set_parameters is removed
-class TestParametersOld:
-    """Tests for parameter processing, setting, and manipulation"""
-
-    @pytest.fixture
-    def make_tape(self):
-        params = [0.432, 0.123, 0.546, 0.32, 0.76]
-
-        with QuantumTape() as tape:
-            qml.RX(params[0], wires=0)
-            qml.Rot(*params[1:4], wires=0)
-            qml.CNOT(wires=[0, "a"])
-            qml.RX(params[4], wires=4)
-            qml.expval(qml.PauliX(wires="a"))
-            qml.probs(wires=[0, "a"])
-
-        return tape, params
-
-    @pytest.fixture
-    def make_tape_with_hermitian(self):
-        params = [0.432, 0.123, 0.546, 0.32, 0.76]
-        hermitian = qml.numpy.eye(2, requires_grad=False)
-
-        with QuantumTape() as tape:
-            qml.RX(params[0], wires=0)
-            qml.Rot(*params[1:4], wires=0)
-            qml.CNOT(wires=[0, "a"])
-            qml.RX(params[4], wires=4)
-            qml.expval(qml.Hermitian(hermitian, wires="a"))
-
-        return tape, params, hermitian
-
-    def test_parameter_processing(self, make_tape):
-        """Test that parameters are correctly counted and processed"""
-        tape, params = make_tape
-        assert tape.num_params == len(params)
-        assert tape.trainable_params == list(range(len(params)))
-        assert tape.get_parameters() == params
-
-    @pytest.mark.parametrize("operations_only", [False, True])
-    def test_parameter_processing_operations_only(self, make_tape_with_hermitian, operations_only):
-        """Test the operations_only flag for getting the parameters on a tape with
-        qml.Hermitian is measured"""
-        tape, circuit_params, hermitian = make_tape_with_hermitian
-        num_all_params = len(circuit_params) + 1  # + 1 for hermitian
-        assert tape.num_params == num_all_params
-        assert tape.trainable_params == list(range(num_all_params))
-        assert (
-            tape.get_parameters(operations_only=operations_only) == circuit_params
-            if operations_only
-            else circuit_params + [hermitian]
-        )
-
-    def test_set_trainable_params(self, make_tape):
-        """Test that setting trainable parameters works as expected"""
-        tape, params = make_tape
-        trainable = [0, 2, 3]
-        tape.trainable_params = trainable
-        assert tape._trainable_params == trainable
-        assert tape.num_params == 3
-        assert tape.get_parameters() == [params[i] for i in tape.trainable_params]
-
-        # add additional trainable parameters
-        trainable = {1, 2, 3, 4}
-        tape.trainable_params = trainable
-        assert tape._trainable_params == [1, 2, 3, 4]
-        assert tape.num_params == 4
-        assert tape.get_parameters() == [params[i] for i in tape.trainable_params]
-
-        # set trainable_params in wrong order
-        trainable = {3, 4, 1}
-        tape.trainable_params = trainable
-        assert tape._trainable_params == [1, 3, 4]
-        assert tape.num_params == 3
-        assert tape.get_parameters() == [params[i] for i in tape.trainable_params]
-
-    def test_changing_params(self, make_tape):
-        """Test that changing trainable parameters works as expected"""
-        tape, params = make_tape
-        trainable = (0, 2, 3)
-        tape.trainable_params = trainable
-        assert tape._trainable_params == list(trainable)
-        assert tape.num_params == 3
-        assert tape.get_parameters() == [params[i] for i in tape.trainable_params]
-        assert tape.get_parameters(trainable_only=False) == params
-
-    def test_set_trainable_params_error(self, make_tape):
-        """Test that exceptions are raised if incorrect parameters
-        are set as trainable"""
-        tape, _ = make_tape
-
-        with pytest.raises(ValueError, match="must be non-negative integers"):
-            tape.trainable_params = [-1, 0]
-
-        with pytest.raises(ValueError, match="must be non-negative integers"):
-            tape.trainable_params = (0.5,)
-
-        with pytest.raises(ValueError, match="only has 5 parameters"):
-            tape.trainable_params = {0, 7}
-
-    def test_setting_parameters(self, make_tape):
-        """Test that parameters are correctly modified after construction"""
-        tape, _ = make_tape
-        new_params = [0.6543, -0.654, 0, 0.3, 0.6]
-
-        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
-            tape.set_parameters(new_params)
-
-        for pinfo, pval in zip(tape._par_info, new_params):
-            assert pinfo["op"].data[pinfo["p_idx"]] == pval
-
-        assert tape.get_parameters() == new_params
-
-        new_params = (0.1, -0.2, 1, 5, 0)
-        with pytest.warns(UserWarning, match=r"The tape.data setter is deprecated"):
-            tape.data = new_params
-
-        for pinfo, pval in zip(tape._par_info, new_params):
-            assert pinfo["op"].data[pinfo["p_idx"]] == pval
-
-        assert tape.get_parameters() == list(new_params)
-
-    def test_setting_free_parameters(self, make_tape):
-        """Test that free parameters are correctly modified after construction"""
-        tape, params = make_tape
-        new_params = [-0.654, 0.3]
-
-        tape.trainable_params = [1, 3]
-        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
-            tape.set_parameters(new_params)
-
-        count = 0
-        for idx, pinfo in enumerate(tape._par_info):
-            if idx in tape.trainable_params:
-                assert pinfo["op"].data[pinfo["p_idx"]] == new_params[count]
-                count += 1
-            else:
-                assert pinfo["op"].data[pinfo["p_idx"]] == params[idx]
-
-        assert tape.get_parameters(trainable_only=False) == [
-            params[0],
-            new_params[0],
-            params[2],
-            new_params[1],
-            params[4],
-        ]
-
-    def test_setting_parameters_unordered(self, make_tape):
-        """Test that an 'unordered' trainable_params set does not affect
-        the setting of parameter values"""
-        tape, params = make_tape
-        new_params = [-0.654, 0.3]
-
-        tape.trainable_params = [3, 1]
-        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
-            tape.set_parameters(new_params)
-
-        assert tape.get_parameters(trainable_only=True) == new_params
-        assert tape.get_parameters(trainable_only=False) == [
-            params[0],
-            new_params[0],
-            params[2],
-            new_params[1],
-            params[4],
-        ]
-
-    def test_setting_all_parameters(self, make_tape):
-        """Test that all parameters are correctly modified after construction"""
-        tape, _ = make_tape
-        new_params = [0.6543, -0.654, 0, 0.3, 0.6]
-
-        tape.trainable_params = [1, 3]
-        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
-            tape.set_parameters(new_params, trainable_only=False)
-
-        for pinfo, pval in zip(tape._par_info, new_params):
-            assert pinfo["op"].data[pinfo["p_idx"]] == pval
-
-        assert tape.get_parameters(trainable_only=False) == new_params
-
-    def test_setting_parameters_error(self, make_tape):
-        """Test that exceptions are raised if incorrect parameters
-        are attempted to be set"""
-        tape, _ = make_tape
-
-        with pytest.raises(ValueError, match="Number of provided parameters does not match"):
-            with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
-                tape.set_parameters([0.54])
-
-        with pytest.raises(ValueError, match="Number of provided parameters does not match"):
-            with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
-                tape.trainable_params = [2, 3]
-                tape.set_parameters([0.54, 0.54, 0.123])
-
-    def test_array_parameter(self):
-        """Test that array parameters integrate properly"""
-        a = np.array([1, 1, 0, 0]) / np.sqrt(2)
-        params = [a, 0.32, 0.76, 1.0]
-
-        with QuantumTape() as tape:
-            op_ = qml.QubitStateVector(params[0], wires=[0, 1])
-            qml.Rot(params[1], params[2], params[3], wires=0)
-
-        assert tape.num_params == len(params)
-        assert tape.get_parameters() == params
-
-        b = np.array([0, 1, 0, 0])
-        new_params = [b, 0.543, 0.654, 0.123]
-        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
-            tape.set_parameters(new_params)
-
-        assert tape.get_parameters() == new_params
-
-        assert np.all(op_.data[0] == b)
-
-    def test_measurement_parameter(self):
-        """Test that measurement parameters integrate properly"""
-        H = np.array([[1, 0], [0, -1]])
-        params = [0.32, 0.76, 1.0, H]
-
-        with QuantumTape() as tape:
-            qml.Rot(params[0], params[1], params[2], wires=0)
-            obs = qml.Hermitian(params[3], wires=0)
-            qml.expval(obs)
-
-        assert tape.num_params == len(params)
-        assert tape.get_parameters() == params
-
-        H2 = np.array([[0, 1], [1, 1]])
-        new_params = [0.543, 0.654, 0.123, H2]
-        with pytest.warns(UserWarning, match=r"The method tape.set_parameters is deprecated"):
-            tape.set_parameters(new_params)
-
-        assert tape.get_parameters() == new_params
-
-        assert np.all(obs.data[0] == H2)
 
 
 class TestInverseAdjoint:
@@ -1251,7 +1013,7 @@ class TestExpand:
         zip(
             [
                 qml.BasisState([1, 0], wires=[0, 1]),
-                qml.QubitStateVector([0, 1, 0, 0], wires=[0, 1]),
+                qml.StatePrep([0, 1, 0, 0], wires=[0, 1]),
             ],
             [
                 qml.BasisStatePreparation([1, 0], wires=[0, 1]),
@@ -1260,14 +1022,14 @@ class TestExpand:
         ),
     )
     def test_expansion_state_prep(self, skip_first, op, decomp):
-        """Test that StatePrep operations are expanded correctly without
+        """Test that StatePrepBase operations are expanded correctly without
         expanding other operations in the tape.
         """
         ops = [
             qml.PauliZ(wires=0),
             qml.Rot(0.1, 0.2, 0.3, wires=0),
             qml.BasisState([0], wires=1),
-            qml.QubitStateVector([0, 1], wires=0),
+            qml.StatePrep([0, 1], wires=0),
         ]
         tape = QuantumTape(ops=ops, measurements=[], prep=[op])
         new_tape = expand_tape_state_prep(tape, skip_first=skip_first)

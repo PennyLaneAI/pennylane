@@ -52,6 +52,12 @@ accessible from the ``pennylane.devices.experimental`` submodule.
     Device
     DefaultQubit2
 
+Qubit Simulation Tools
+----------------------
+
+.. currentmodule:: pennylane.devices.qubit
+.. automodule:: pennylane.devices.qubit
+
 """
 
 from . import experimental
