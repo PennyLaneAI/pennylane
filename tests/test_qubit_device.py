@@ -1148,7 +1148,7 @@ class TestExecution:
         """Test the number of times a qubit device is executed over a QNode's
         lifetime is tracked by `num_executions`"""
 
-        dev_1 = qml.device("default.qubit", wires=2)
+        dev_1 = qml.device("default.qubit.legacy", wires=2)
 
         def circuit_1(x, y):
             qml.RX(x, wires=[0])
@@ -1164,7 +1164,7 @@ class TestExecution:
         assert dev_1.num_executions == num_evals_1
 
         # test a second instance of a default qubit device
-        dev_2 = qml.device("default.qubit", wires=2)
+        dev_2 = qml.device("default.qubit.legacy", wires=2)
 
         def circuit_2(x):
             qml.RX(x, wires=[0])
@@ -1209,7 +1209,7 @@ class TestExecutionBroadcasted:
         """Test the number of times a qubit device is executed over a QNode's
         lifetime is tracked by `num_executions`"""
 
-        dev_1 = qml.device("default.qubit", wires=2)
+        dev_1 = qml.device("default.qubit.legacy", wires=2)
 
         def circuit_1(x, y):
             qml.RX(x, wires=[0])
@@ -1225,7 +1225,7 @@ class TestExecutionBroadcasted:
         assert dev_1.num_executions == num_evals_1
 
         # test a second instance of a default qubit device
-        dev_2 = qml.device("default.qubit", wires=2)
+        dev_2 = qml.device("default.qubit.legacy", wires=2)
 
         assert dev_2.num_executions == 0
 
@@ -1392,7 +1392,7 @@ class TestResourcesTracker:
     )  # Resources(wires, gates, gate_types, gate_sizes, depth, shots)
 
     devices = (
-        "default.qubit",
+        "default.qubit.legacy",
         "default.qubit.autograd",
         "default.qubit.jax",
         "default.qubit.torch",
@@ -1441,7 +1441,7 @@ class TestResourcesTracker:
     @pytest.mark.all_interfaces
     def test_tracker_grad(self):
         """Test that the tracker can track resources through a gradient computation"""
-        dev = qml.device("default.qubit", wires=1, shots=100)
+        dev = qml.device("default.qubit.legacy", wires=1, shots=100)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
