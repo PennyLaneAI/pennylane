@@ -42,7 +42,7 @@ def first_valid_transform(
 
 
 def expand_transform(
-    tape: qml.tape.QuantumTape, index: int    # pylint:disable=unused-argument
+    tape: qml.tape.QuantumTape, index: int  # pylint:disable=unused-argument
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """A valid expand transform."""
     return [tape], lambda x: x
