@@ -207,6 +207,15 @@ def test_hamiltonian(H, new_coeffs, expected_H):
     assert new_H is not H
 
 
+def test_hamiltonian_grouping_indices():
+    """Test that bind_new_parameters with a Hamiltonian preserves the grouping indices."""
+    H = qml.Hamiltonian([1.0, 2.0], [qml.PauliX(0), qml.PauliX(1)])
+    H.compute_grouping()
+    new_H = bind_new_parameters(H, [2.3, 3.4])
+    assert H.grouping_indices == new_H.grouping_indices
+    assert new_H.data == (2.3, 3.4)
+
+
 @pytest.mark.parametrize(
     "op, new_params, expected_op",
     [

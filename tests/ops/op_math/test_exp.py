@@ -20,6 +20,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import (
     AnyWires,
+    AllWires,
     DecompositionUndefinedError,
     GeneratorUndefinedError,
     ParameterFrequenciesUndefinedError,
@@ -461,7 +462,11 @@ class TestDecomposition:
 
         phi = 1.23
 
-        wires = [0, 1, 2] if op_class.num_wires is AnyWires else list(range(op_class.num_wires))
+        wires = (
+            [0, 1, 2]
+            if op_class.num_wires in {AnyWires, AllWires}
+            else list(range(op_class.num_wires))
+        )
 
         # PauliRot and PCPhase each have an extra required arg
         if op_class is qml.PauliRot:
@@ -480,6 +485,10 @@ class TestDecomposition:
                 and qml.math.isclose(dec[0].data[0], phi)
                 and dec[0].wires == op.wires
             )
+        elif op_class is qml.GlobalPhase:
+            # exp(qml.GlobalPhase.generator(), phi) decomposes to PauliRot
+            # cannot compare GlobalPhase and PauliRot with qml.equal
+            assert np.allclose(op.matrix(wire_order=op.wires), dec[0].matrix(wire_order=op.wires))
         else:
             assert qml.equal(op, dec[0])
 
