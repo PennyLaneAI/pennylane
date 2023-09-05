@@ -490,55 +490,87 @@ def classical_fisher(
             [2.16840434e-18, 2.81967252e-01]]]))
 
     """
-    new_tape = _make_probs(tape)
+    tapes, prob_fn = _make_probs(tape)
+    interface = qml.math.get_interface(*tape.data)
 
-    def wrapper(*args, **kwargs):
-        old_interface = qnode.interface
-
-        if old_interface == "auto":
-            qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
-
-        interface = qnode.interface
+    def processing_fn(res):
+        probs = prob_fn(res)
 
         if interface in ("jax", "jax-jit"):
-            import jax
-
-            jac = jax.jacobian(new_qnode, argnums=argnums)
+            j = []
 
         if interface == "torch":
-            jac = _torch_jac(new_qnode)
+            j = []
 
         if interface == "autograd":
-            jac = qml.jacobian(new_qnode)
+            j = []
 
         if interface == "tf":
-            jac = _tf_jac(new_qnode)
-
-        j = jac(*args, **kwargs)
-        p = new_qnode(*args, **kwargs)
-
-        if old_interface == "auto":
-            qnode.interface = "auto"
+            j = []
 
         # In case multiple variables are used, we create a list of cfi matrices
         if isinstance(j, tuple):
             res = []
             for j_i in j:
-                res.append(_compute_cfim(p, j_i))
+                res.append(_compute_cfim(probs, j_i))
 
             if len(j) == 1:
                 return res[0]
 
             return res
 
-        return _compute_cfim(p, j)
+        return _compute_cfim(probs, j)
 
-    return wrapper
+    return tapes, processing_fn
+
+    # def wrapper(*args, **kwargs):
+    #     old_interface = qnode.interface
+
+    #     if old_interface == "auto":
+    #         qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
+
+    #     interface = qnode.interface
+
+    #     if interface in ("jax", "jax-jit"):
+    #         import jax
+
+    #         jac = jax.jacobian(new_qnode, argnums=argnums)
+
+    #     if interface == "torch":
+    #         jac = _torch_jac(new_qnode)
+
+    #     if interface == "autograd":
+    #         jac = qml.jacobian(new_qnode)
+
+    #     if interface == "tf":
+    #         jac = _tf_jac(new_qnode)
+
+    #     j = jac(*args, **kwargs)
+    #     p = new_qnode(*args, **kwargs)
+
+    #     if old_interface == "auto":
+    #         qnode.interface = "auto"
+
+    #     # In case multiple variables are used, we create a list of cfi matrices
+    #     if isinstance(j, tuple):
+    #         res = []
+    #         for j_i in j:
+    #             res.append(_compute_cfim(p, j_i))
+
+    #         if len(j) == 1:
+    #             return res[0]
+
+    #         return res
+
+    #     return _compute_cfim(p, j)
+
+    # return wrapper
 
 
 @classical_fisher.custom_qnode_transform
 def _cf_qnode_transform(self, qnode, targs, tkwargs):
     old_interface = qnode.interface
+    new_qnode = _make_probs(qnode)
 
     if old_interface == "auto":
         qnode.interface = qml.math.get_interface(*targs, *list(tkwargs.values()))
@@ -559,16 +591,16 @@ def _cf_qnode_transform(self, qnode, targs, tkwargs):
     if interface == "tf":
         jac = _tf_jac(new_qnode)
 
-    j = jac(*args, **kwargs)
-    p = new_qnode(*args, **kwargs)
+    j = jac(*targs, **tkwargs)
 
     if old_interface == "auto":
         qnode.interface = "auto"
 
-    return self.default_qnode_transform(qnode, targs, tkwargs)
+    return self.default_qnode_transform(new_qnode, targs, tkwargs)
 
 
-def quantum_fisher(qnode, *args, **kwargs):
+@transform
+def quantum_fisher(tape: QuantumTape, *args, **kwargs) -> (Sequence[QuantumTape], Callable):
     r"""Returns a function that computes the quantum fisher information matrix (QFIM) of a given :class:`.QNode`.
 
     Given a parametrized quantum state :math:`|\psi(\bm{\theta})\rangle`, the quantum fisher information matrix (QFIM) quantifies how changes to the parameters :math:`\bm{\theta}`
@@ -653,7 +685,7 @@ def quantum_fisher(qnode, *args, **kwargs):
 
     """
 
-    if qnode.device.shots is not None and isinstance(qnode.device, DefaultQubit):
+    if tape.shots is not None and isinstance(qnode.device, DefaultQubit):
 
         def wrapper(*args0, **kwargs0):
             return 4 * metric_tensor(qnode, *args, **kwargs)(*args0, **kwargs0)
