@@ -120,7 +120,7 @@ class TestBroadcastExpand:
         @qml.transforms.broadcast_expand
         @qml.qnode(dev)
         def circuit(x, y, z, obs):
-            qml.QubitStateVector(np.array([1, 0, 0, 0]), wires=[0, 1])
+            qml.StatePrep(np.array([1, 0, 0, 0]), wires=[0, 1])
             RX_broadcasted(x, wires=0)
             qml.PauliY(0)
             RX_broadcasted(y, wires=1)
