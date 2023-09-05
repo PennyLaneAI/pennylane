@@ -249,7 +249,7 @@ class TestCountsIntegration:
         """Test that the counts function outputs counts of the right size"""
         n_sample = 10
 
-        dev = qml.device("default.qubit", wires=2, shots=n_sample)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=n_sample)
         spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev)
@@ -268,7 +268,7 @@ class TestCountsIntegration:
         """Test that the counts function outputs counts of the right size with batching"""
         n_sample = 10
 
-        dev = qml.device("default.qubit", wires=2, shots=n_sample)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=n_sample)
         spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev)
@@ -288,7 +288,7 @@ class TestCountsIntegration:
         """Test the output of combining expval, var and counts"""
         n_sample = 10
 
-        dev = qml.device("default.qubit", wires=3, shots=n_sample)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=n_sample)
         spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev, diff_method="parameter-shift")
@@ -312,7 +312,7 @@ class TestCountsIntegration:
         """Test the return type and shape of sampling counts from a single wire"""
         n_sample = 10
 
-        dev = qml.device("default.qubit", wires=1, shots=n_sample)
+        dev = qml.device("default.qubit.legacy", wires=1, shots=n_sample)
         spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev)
@@ -333,7 +333,7 @@ class TestCountsIntegration:
         where a rectangular array is expected"""
         n_sample = 10
 
-        dev = qml.device("default.qubit", wires=3, shots=n_sample)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=n_sample)
         spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev)
@@ -357,7 +357,7 @@ class TestCountsIntegration:
     def test_observable_return_type_is_counts(self):
         """Test that the return type of the observable is :attr:`ObservableReturnTypes.Counts`"""
         n_shots = 10
-        dev = qml.device("default.qubit", wires=1, shots=n_shots)
+        dev = qml.device("default.qubit.legacy", wires=1, shots=n_shots)
 
         @qml.qnode(dev)
         def circuit():
@@ -369,7 +369,7 @@ class TestCountsIntegration:
 
     def test_providing_no_observable_and_no_wires_counts(self, mocker):
         """Test that we can provide no observable and no wires to sample function"""
-        dev = qml.device("default.qubit", wires=2, shots=1000)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=1000)
         spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev)
@@ -388,7 +388,7 @@ class TestCountsIntegration:
         """Test that we can provide no observable but specify wires to the sample function"""
         wires = [0, 2]
         wires_obj = qml.wires.Wires(wires)
-        dev = qml.device("default.qubit", wires=3, shots=1000)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=1000)
         spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev)
@@ -407,7 +407,7 @@ class TestCountsIntegration:
     def test_batched_counts_work_individually(self, mocker):
         """Test that each counts call operates independently"""
         n_shots = 10
-        dev = qml.device("default.qubit", wires=1, shots=n_shots)
+        dev = qml.device("default.qubit.legacy", wires=1, shots=n_shots)
         spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev)
@@ -425,7 +425,7 @@ class TestCountsIntegration:
         """Check all interfaces with computational basis state counts and
         finite shot"""
         n_shots = 10
-        dev = qml.device("default.qubit", wires=3, shots=n_shots)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=n_shots)
         spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev, interface=interface)
@@ -445,7 +445,7 @@ class TestCountsIntegration:
         """Check all interfaces with observable measurement counts and finite
         shot"""
         n_shots = 10
-        dev = qml.device("default.qubit", wires=3, shots=n_shots)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=n_shots)
         spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev, interface=interface)
@@ -466,7 +466,7 @@ class TestCountsIntegration:
     ):  # pylint:disable=too-many-arguments
         """Check all interfaces with computational basis state counts and
         different shot vectors"""
-        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=shot_vec)
         spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev, interface=interface)
@@ -491,7 +491,7 @@ class TestCountsIntegration:
     def test_counts_operator_binned(self, shot_vec, interface, mocker):
         """Check all interfaces with observable measurement counts and different
         shot vectors"""
-        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=shot_vec)
         spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev, interface=interface)
@@ -513,7 +513,7 @@ class TestCountsIntegration:
     def test_counts_binned_4_wires(self, shot_vec, mocker):
         """Check the autograd interface with computational basis state counts and
         different shot vectors on a device with 4 wires"""
-        dev = qml.device("default.qubit", wires=4, shots=shot_vec)
+        dev = qml.device("default.qubit.legacy", wires=4, shots=shot_vec)
         spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev, interface="autograd")
@@ -539,7 +539,7 @@ class TestCountsIntegration:
     def test_counts_operator_binned_4_wires(self, shot_vec, mocker):
         """Check the autograd interface with observable samples to obtain
         counts from and different shot vectors on a device with 4 wires"""
-        dev = qml.device("default.qubit", wires=4, shots=shot_vec)
+        dev = qml.device("default.qubit.legacy", wires=4, shots=shot_vec)
         spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev, interface="autograd")
@@ -575,7 +575,7 @@ class TestCountsIntegration:
     def test_counts_observable_finite_shots(self, interface, meas2, shots, mocker):
         """Check all interfaces with observable measurement counts and finite
         shot"""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=shots)
         spy = mocker.spy(qml.QubitDevice, "sample")
 
         if isinstance(shots, tuple) and interface == "torch":
@@ -610,7 +610,7 @@ class TestCountsIntegration:
         including 0 count values, if observable is given and all_outcomes=True"""
 
         n_shots = 10
-        dev = qml.device("default.qubit", wires=1, shots=n_shots)
+        dev = qml.device("default.qubit.legacy", wires=1, shots=n_shots)
         spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev)
@@ -630,7 +630,7 @@ class TestCountsIntegration:
         count and no observable are given and all_outcomes=True"""
 
         n_shots = 10
-        dev = qml.device("default.qubit", wires=2, shots=n_shots)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=n_shots)
         spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev)
@@ -649,7 +649,7 @@ class TestCountsIntegration:
         if wire count is given and all_outcomes=True"""
 
         n_shots = 10
-        dev = qml.device("default.qubit", wires=4, shots=n_shots)
+        dev = qml.device("default.qubit.legacy", wires=4, shots=n_shots)
         spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev)
@@ -667,7 +667,7 @@ class TestCountsIntegration:
         qml.Hermitian observable"""
 
         n_shots = 10
-        dev = qml.device("default.qubit", wires=2, shots=n_shots)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=n_shots)
         spy = mocker.spy(qml.QubitDevice, "sample")
 
         A = np.array([[1, 0], [0, -1]])
@@ -686,7 +686,7 @@ class TestCountsIntegration:
         """Tests that the all_outcomes=True option for counts works when
         multiple measurements are performed"""
 
-        dev = qml.device("default.qubit", wires=2, shots=10)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=10)
         spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev)
@@ -703,7 +703,7 @@ class TestCountsIntegration:
     def test_batched_all_outcomes(self, mocker):
         """Tests that all_outcomes=True works with broadcasting."""
         n_shots = 10
-        dev = qml.device("default.qubit", wires=1, shots=n_shots)
+        dev = qml.device("default.qubit.legacy", wires=1, shots=n_shots)
         spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev)
@@ -723,7 +723,7 @@ class TestCountsIntegration:
     @pytest.mark.parametrize("shots", [1, 100])
     def test_counts_no_arguments(self, shots):
         """Test that using ``qml.counts`` with no arguments returns the counts of all wires."""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=shots)
 
         @qml.qnode(dev)
         def circuit():
@@ -740,7 +740,7 @@ class TestCountsIntegration:
 def test_counts_no_op_finite_shots(interface, wires, basis_state, mocker):
     """Check all interfaces with computational basis state counts and finite shot"""
     n_shots = 10
-    dev = qml.device("default.qubit", wires=3, shots=n_shots)
+    dev = qml.device("default.qubit.legacy", wires=3, shots=n_shots)
     spy = mocker.spy(qml.QubitDevice, "sample")
 
     @qml.qnode(dev, interface=interface)
@@ -762,7 +762,7 @@ def test_batched_counts_no_op_finite_shots(interface, wires, basis_states, mocke
     """Check all interfaces with computational basis state counts and
     finite shot"""
     n_shots = 10
-    dev = qml.device("default.qubit", wires=3, shots=n_shots)
+    dev = qml.device("default.qubit.legacy", wires=3, shots=n_shots)
     spy = mocker.spy(qml.QubitDevice, "sample")
 
     @qml.qnode(dev, interface=interface)
@@ -782,7 +782,7 @@ def test_batched_counts_and_expval_no_op_finite_shots(interface, wires, basis_st
     """Check all interfaces with computational basis state counts and
     finite shot"""
     n_shots = 10
-    dev = qml.device("default.qubit", wires=3, shots=n_shots)
+    dev = qml.device("default.qubit.legacy", wires=3, shots=n_shots)
     spy = mocker.spy(qml.QubitDevice, "sample")
 
     @qml.qnode(dev, interface=interface)
@@ -803,7 +803,7 @@ def test_batched_counts_and_expval_no_op_finite_shots(interface, wires, basis_st
 def test_batched_counts_operator_finite_shots(interface, mocker):
     """Check all interfaces with observable measurement counts, batching and finite shots"""
     n_shots = 10
-    dev = qml.device("default.qubit", wires=3, shots=n_shots)
+    dev = qml.device("default.qubit.legacy", wires=3, shots=n_shots)
     spy = mocker.spy(qml.QubitDevice, "sample")
 
     @qml.qnode(dev, interface=interface)
@@ -821,7 +821,7 @@ def test_batched_counts_operator_finite_shots(interface, mocker):
 def test_batched_counts_and_expval_operator_finite_shots(interface, mocker):
     """Check all interfaces with observable measurement counts, batching and finite shots"""
     n_shots = 10
-    dev = qml.device("default.qubit", wires=3, shots=n_shots)
+    dev = qml.device("default.qubit.legacy", wires=3, shots=n_shots)
     spy = mocker.spy(qml.QubitDevice, "sample")
 
     @qml.qnode(dev, interface=interface)
