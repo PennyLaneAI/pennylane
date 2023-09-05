@@ -703,7 +703,7 @@ def _sum_torch(tensor, axis=None, keepdims=False, dtype=None):
 
 ar.register_function("torch", "sum", _sum_torch)
 ar.register_function("torch", "cond", _cond)
-ar.register_function("torch", "pad", _i("torch").nn.functional.pad)
+ar.register_function("torch", "pad", lambda *a, **b: _i("torch").nn.functional.pad(*a, **b))
 
 
 # -------------------------------- JAX --------------------------------- #

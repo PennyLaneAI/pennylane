@@ -160,11 +160,6 @@ class StateMP(StateMeasurement):
         if not wires or wire_order == wires:
             return state
 
-        if set(wire_order) == set(wires):
-            state = qml.math.reshape(state, (2,) * len(wire_order))
-            desired_axes = [wires.index(w) for w in wire_order]
-            return qml.math.flatten(qml.math.transpose(state, desired_axes))
-
         if not wires.contains_wires(wire_order):
             raise WireError(
                 f"Unexpected wires {set(wire_order) - set(wires)} found in wire order. Expected wire order to be a subset of {wires}"
