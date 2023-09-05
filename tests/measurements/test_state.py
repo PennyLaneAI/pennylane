@@ -107,6 +107,36 @@ class TestStateMP:
             # autograd.numpy.pad drops pennylane tensor for some reason
             assert qml.math.get_interface(result) == interface
 
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch", "tensorflow"])
+    def test_expand_state_batched_all_interfaces(self, interface):
+        """Test that expanding the state over wires preserves interface."""
+        mp = StateMP(wires=[4, 2, 0, 1])
+        ket = qml.math.array(
+            [
+                [0.48j, 0.48, -0.64j, 0.36],
+                [0.3, 0.4, 0.5, 1 / np.sqrt(2)],
+                [-0.3, -0.4, -0.5, -1 / np.sqrt(2)],
+            ],
+            like=interface,
+        )
+        result = mp.process_state(ket, wire_order=Wires([1, 2]))
+        reshaped = qml.math.reshape(result, (3, 2, 2, 2, 2))
+        assert qml.math.all(reshaped[:, 1, :, 1, :] == 0)
+        assert qml.math.allclose(
+            reshaped[:, 0, :, 0, :],
+            np.array(
+                [
+                    [[0.48j, -0.64j], [0.48, 0.36]],
+                    [[0.3, 0.5], [0.4, 1 / np.sqrt(2)]],
+                    [[-0.3, -0.5], [-0.4, -1 / np.sqrt(2)]],
+                ],
+            ),
+        )
+        if interface != "autograd":
+            # autograd.numpy.pad drops pennylane tensor for some reason
+            assert qml.math.get_interface(result) == interface
+
     @pytest.mark.jax
     @pytest.mark.parametrize(
         "wires,expected",
