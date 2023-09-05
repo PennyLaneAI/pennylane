@@ -1182,7 +1182,9 @@ def test_custom_wire_labels_allowed_without_reset():
         qml.state()
 
     tape = qml.tape.QuantumScript.from_queue(q)
-    tape = qml.defer_measurements(tape)
+    tapes, _ = qml.defer_measurements(tape)
+    tape = tapes[0]
+
     assert len(tape) == 3
     assert qml.equal(tape[0], qml.Hadamard("a"))
     assert qml.equal(tape[1], qml.CNOT(["a", "b"]))
