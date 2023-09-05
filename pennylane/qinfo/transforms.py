@@ -14,7 +14,7 @@
 """QNode transforms for the quantum information quantities."""
 # pylint: disable=import-outside-toplevel, not-callable
 import functools
-from typing import Callable, Sequence
+from typing import Callable, Sequence, Optional, Union
 
 import pennylane as qml
 from pennylane.devices import DefaultQubit
@@ -57,7 +57,6 @@ def reduced_dm(tape: QuantumTape, wires: Sequence[int]) -> (Sequence[QuantumTape
 
     .. seealso:: :func:`pennylane.density_matrix` and :func:`pennylane.math.reduce_dm`
     """
-    tape = tape.copy()
     wire_map = {w: i for i, w in enumerate(tape.wires)}
     indices = [wire_map[w] for w in wires]
 
@@ -81,7 +80,7 @@ def reduced_dm(tape: QuantumTape, wires: Sequence[int]) -> (Sequence[QuantumTape
 
 @transform
 def purity(tape: QuantumTape, wires: Sequence[int]) -> (Sequence[QuantumTape], Callable):
-    r"""Compute the purity of a :class:`~.QNode` returning :func:`~pennylane.state`.
+    r"""Compute the purity of a :class:`~.QuantumTape` returning :func:`~pennylane.state`.
 
     .. math::
         \gamma = \text{Tr}(\rho^2)
@@ -94,12 +93,12 @@ def purity(tape: QuantumTape, wires: Sequence[int]) -> (Sequence[QuantumTape], C
     the overall state, include all wires in the ``wires`` argument.
 
     Args:
-        qnode (pennylane.QNode): A :class:`.QNode` objeect returning a :func:`~pennylane.state`.
+        tape (pennylane.tape.QuantumTape): A :class:`.QuantumTape` objeect returning a :func:`~pennylane.state`.
         wires (Sequence(int)): List of wires in the considered subsystem.
 
     Returns:
-        function: A function that computes the purity of the wrapped circuit and accepts the same
-        arguments.
+        tuple(Sequence[QuantumTape], Callable): Sequence of transformed tapes and a
+            post-processing function to convert the tape results into the purity.
 
     **Example**
 
@@ -129,7 +128,6 @@ def purity(tape: QuantumTape, wires: Sequence[int]) -> (Sequence[QuantumTape], C
 
     .. seealso:: :func:`pennylane.math.purity`
     """
-    tape = tape.copy()
     wire_map = {w: i for i, w in enumerate(tape.wires)}
     indices = [wire_map[w] for w in wires]
 
@@ -155,19 +153,19 @@ def purity(tape: QuantumTape, wires: Sequence[int]) -> (Sequence[QuantumTape], C
 def vn_entropy(
     tape: QuantumTape, wires: Sequence[int], base: float = None
 ) -> (Sequence[QuantumTape], Callable):
-    r"""Compute the Von Neumann entropy from a :class:`.QNode` returning a :func:`~pennylane.state`.
+    r"""Compute the Von Neumann entropy from a :class:`.QuantumTape` returning a :func:`~pennylane.state`.
 
     .. math::
         S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
 
     Args:
-        qnode (tensor_like): A :class:`.QNode` returning a :func:`~pennylane.state`.
+        tape (.QuantumTape): A :class:`.QuantumTape` returning a :func:`~pennylane.state`.
         wires (Sequence(int)): List of wires in the considered subsystem.
         base (float): Base for the logarithm, default is None the natural logarithm is used in this case.
 
     Returns:
-        function: A function that computes the Von Neumann entropy of the considered subsystem
-        for the wrapped circuit and accepts the same arguments.
+        tuple(Sequence[QuantumTape], Callable): Sequence of transformed tapes and a
+            post-processing function to convert the tape results into the Von Neumann entropy.
 
     **Example**
 
@@ -182,13 +180,13 @@ def vn_entropy(
             return qml.state()
 
     >>> vn_entropy(circuit, wires=[0])(np.pi/2)
-    0.6931472
+    0.6931471805599453
 
     The function is differentiable with backpropagation for all interfaces, e.g.:
 
     >>> param = np.array(np.pi/4, requires_grad=True)
     >>> qml.grad(vn_entropy(circuit, wires=[0]))(param)
-    0.6232252401402305
+    tensor(0.62322524, requires_grad=True)
 
     .. seealso:: :func:`pennylane.math.vn_entropy` and :func:`pennylane.vn_entropy`
     """
@@ -224,7 +222,7 @@ def vn_entropy(
 def mutual_info(
     tape: QuantumTape, wires0: Sequence[int], wires1: Sequence[int], base: float = None
 ) -> (Sequence[QuantumTape], Callable):
-    r"""Compute the mutual information from a :class:`.QNode` returning a :func:`~pennylane.state`:
+    r"""Compute the mutual information from a :class:`.QuantumTape` returning a :func:`~pennylane.state`:
 
     .. math::
 
@@ -243,8 +241,8 @@ def mutual_info(
         base (float): Base for the logarithm. If None, the natural logarithm is used.
 
     Returns:
-        function: A function that computes the mutual information from the output state
-        of the QNode and accepts the same arguments.
+        tuple(Sequence[QuantumTape], Callable): Sequence of transformed tapes and a
+            post-processing function to convert the tape results into the mutual information.
 
     **Example**
 
@@ -267,7 +265,7 @@ def mutual_info(
     >>> mutual_info_circuit(x)
     0.3325090393262875
     >>> qml.grad(mutual_info_circuit)(np.array(0.4, requires_grad=True))
-    1.2430067731198946
+    tensor(1.24300677, requires_grad=True)
 
     .. seealso:: :func:`~.qinfo.vn_entropy`, :func:`pennylane.math.mutual_info` and :func:`pennylane.mutual_info`
     """
@@ -347,9 +345,11 @@ def _make_probs(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], 
     return [qscript], post_processing_fn
 
 
-def classical_fisher(qnode, argnums=0):
-    r"""Returns a function that computes the classical fisher information matrix (CFIM) of a given :class:`.QNode` or
-    quantum tape.
+@transform
+def classical_fisher(
+    tape: QuantumTape, argnums: Optional[Union[int, Sequence[int]]] = 0
+) -> (Sequence[QuantumTape], Callable):
+    r"""Returns a function that computes the classical fisher information matrix (CFIM) of a given :class:`.QuantumTape`.
 
     Given a parametrized (classical) probability distribution :math:`p(\bm{\theta})`, the classical fisher information
     matrix quantifies how changes to the parameters :math:`\bm{\theta}` are reflected in the probability distribution.
@@ -365,7 +365,7 @@ def classical_fisher(qnode, argnums=0):
     for :math:`N` qubits.
 
     Args:
-        tape (:class:`.QNode` or qml.QuantumTape): A :class:`.QNode` or quantum tape that may have arbitrary return types.
+        tape (qml.QuantumTape): A :class:`.QuantumTape` that may have arbitrary return types.
         argnums (Optional[int or List[int]]): Arguments to be differentiated in case interface ``jax`` is used.
 
     Returns:
@@ -472,7 +472,7 @@ def classical_fisher(qnode, argnums=0):
 
         @qml.qnode(dev)
         def circ(params):
-            qml.RX(qml.math.cos(params[0]), wires=0)
+            qml.RX(qml.math.cos(params[0]), wires=0)z
             qml.RX(qml.math.cos(params[0]), wires=1)
             qml.RX(qml.math.cos(params[1]), wires=0)
             qml.RX(qml.math.cos(params[1]), wires=1)
@@ -490,7 +490,7 @@ def classical_fisher(qnode, argnums=0):
             [2.16840434e-18, 2.81967252e-01]]]))
 
     """
-    new_qnode = _make_probs(qnode)
+    new_tape = _make_probs(tape)
 
     def wrapper(*args, **kwargs):
         old_interface = qnode.interface
@@ -534,6 +534,38 @@ def classical_fisher(qnode, argnums=0):
         return _compute_cfim(p, j)
 
     return wrapper
+
+
+@classical_fisher.custom_qnode_transform
+def _cf_qnode_transform(self, qnode, targs, tkwargs):
+    old_interface = qnode.interface
+
+    if old_interface == "auto":
+        qnode.interface = qml.math.get_interface(*targs, *list(tkwargs.values()))
+
+    interface = qnode.interface
+
+    if interface in ("jax", "jax-jit"):
+        import jax
+
+        jac = jax.jacobian(new_qnode, argnums=targs[0])
+
+    if interface == "torch":
+        jac = _torch_jac(new_qnode)
+
+    if interface == "autograd":
+        jac = qml.jacobian(new_qnode)
+
+    if interface == "tf":
+        jac = _tf_jac(new_qnode)
+
+    j = jac(*args, **kwargs)
+    p = new_qnode(*args, **kwargs)
+
+    if old_interface == "auto":
+        qnode.interface = "auto"
+
+    return self.default_qnode_transform(qnode, targs, tkwargs)
 
 
 def quantum_fisher(qnode, *args, **kwargs):
