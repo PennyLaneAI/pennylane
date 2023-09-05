@@ -78,7 +78,7 @@ class TestProbs:
 
     def test_queue(self):
         """Test that the right measurement class is queued."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev)
         def circuit():
@@ -97,7 +97,7 @@ class TestProbs:
     @pytest.mark.parametrize("shots", [None, 10])
     def test_shape(self, wires, shots):
         """Test that the shape is correct."""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=shots)
         res = qml.probs(wires=wires)
         assert res.shape(dev, Shots(shots)) == (2 ** len(wires),)
 
@@ -106,7 +106,7 @@ class TestProbs:
         """Test that the shape is correct with the shot vector too."""
         res = qml.probs(wires=wires)
         shot_vector = (1, 2, 3)
-        dev = qml.device("default.qubit", wires=3, shots=shot_vector)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=shot_vector)
         assert res.shape(dev, Shots(shot_vector)) == (
             (2 ** len(wires),),
             (2 ** len(wires),),
@@ -133,7 +133,7 @@ class TestProbs:
     @pytest.mark.parametrize("shots", [None, 100])
     def test_probs_no_arguments(self, shots):
         """Test that using ``qml.probs`` with no arguments returns the probabilities of all wires."""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=shots)
 
         @qml.qnode(dev)
         def circuit():
@@ -145,7 +145,7 @@ class TestProbs:
 
     def test_full_prob(self, init_state, tol, mocker):
         """Test that the correct probability is returned."""
-        dev = qml.device("default.qubit", wires=4)
+        dev = qml.device("default.qubit.legacy", wires=4)
         spy = mocker.spy(qml.QubitDevice, "probability")
 
         state = init_state(4)
@@ -163,7 +163,7 @@ class TestProbs:
 
     def test_marginal_prob(self, init_state, tol, mocker):
         """Test that the correct marginal probability is returned."""
-        dev = qml.device("default.qubit", wires=4)
+        dev = qml.device("default.qubit.legacy", wires=4)
         spy = mocker.spy(qml.QubitDevice, "probability")
 
         state = init_state(4)
@@ -183,7 +183,7 @@ class TestProbs:
     def test_marginal_prob_more_wires(self, init_state, mocker, tol):
         """Test that the correct marginal probability is returned, when the
         states_to_binary method is used for probability computations."""
-        dev = qml.device("default.qubit", wires=4)
+        dev = qml.device("default.qubit.legacy", wires=4)
         spy_probs = mocker.spy(qml.QubitDevice, "probability")
         state = init_state(4)
 
@@ -244,7 +244,7 @@ class TestProbs:
 
     def test_integration(self, tol, mocker):
         """Test the probability is correct for a known state preparation."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
         spy = mocker.spy(qml.QubitDevice, "probability")
 
         @qml.qnode(dev)
@@ -266,7 +266,7 @@ class TestProbs:
     def test_integration_analytic_false(self, tol, mocker, shots):
         """Test the probability is correct for a known state preparation when the
         analytic attribute is set to False."""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=shots)
         spy = mocker.spy(qml.QubitDevice, "probability")
 
         @qml.qnode(dev)
@@ -283,7 +283,7 @@ class TestProbs:
     @pytest.mark.parametrize("shots", [None, 100])
     def test_batch_size(self, mocker, shots):
         """Test the probability is correct for a batched input."""
-        dev = qml.device("default.qubit", wires=1, shots=shots)
+        dev = qml.device("default.qubit.legacy", wires=1, shots=shots)
         spy = mocker.spy(qml.QubitDevice, "probability")
 
         @qml.qnode(dev)
@@ -298,12 +298,33 @@ class TestProbs:
 
         custom_measurement_process(dev, spy)
 
+    @pytest.mark.tf
+    @pytest.mark.parametrize(
+        "prep_op, expected",
+        [
+            (None, [1, 0]),
+            (qml.QubitStateVector([[0, 1], [1, 0]], 0), [[0, 1], [1, 0]]),
+        ],
+    )
+    def test_process_state_tf_autograph(self, prep_op, expected):
+        """Test that process_state passes when decorated with tf.function."""
+        import tensorflow as tf
+
+        wires = qml.wires.Wires([0])
+
+        @tf.function
+        def probs_from_state(state):
+            return qml.probs(wires=wires).process_state(state, wires)
+
+        state = qml.devices.qubit.create_initial_state(wires, prep_operation=prep_op)
+        assert np.allclose(probs_from_state(state), expected)
+
     @pytest.mark.autograd
     def test_numerical_analytic_diff_agree(self, tol, mocker):
         """Test that the finite difference and parameter shift rule
         provide the same Jacobian."""
         w = 4
-        dev = qml.device("default.qubit", wires=w)
+        dev = qml.device("default.qubit.legacy", wires=w)
         spy = mocker.spy(qml.QubitDevice, "probability")
 
         def circuit(x, y, z):
@@ -339,7 +360,7 @@ class TestProbs:
     @pytest.mark.parametrize("hermitian", [1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])])
     def test_prob_generalize_param_one_qubit(self, hermitian, tol, mocker):
         """Test that the correct probability is returned."""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         spy = mocker.spy(qml.QubitDevice, "probability")
 
         @qml.qnode(dev)
@@ -366,7 +387,7 @@ class TestProbs:
     @pytest.mark.parametrize("hermitian", [1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])])
     def test_prob_generalize_param(self, hermitian, tol, mocker):
         """Test that the correct probability is returned."""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
         spy = mocker.spy(qml.QubitDevice, "probability")
 
         @qml.qnode(dev)
@@ -398,7 +419,7 @@ class TestProbs:
     @pytest.mark.parametrize("hermitian", [1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])])
     def test_prob_generalize_param_multiple(self, hermitian, tol, mocker):
         """Test that the correct probability is returned."""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
         spy = mocker.spy(qml.QubitDevice, "probability")
 
         @qml.qnode(dev)
@@ -443,7 +464,7 @@ class TestProbs:
     def test_prob_generalize_initial_state(self, hermitian, wire, init_state, tol, mocker):
         """Test that the correct probability is returned."""
         # pylint:disable=too-many-arguments
-        dev = qml.device("default.qubit", wires=4)
+        dev = qml.device("default.qubit.legacy", wires=4)
         spy = mocker.spy(qml.QubitDevice, "probability")
         state = init_state(4)
 
@@ -487,7 +508,7 @@ class TestProbs:
     def test_operation_prob(self, operation, wire, init_state, tol, mocker):
         "Test the rotated probability with different wires and rotating operations."
         # pylint:disable=too-many-arguments
-        dev = qml.device("default.qubit", wires=4)
+        dev = qml.device("default.qubit.legacy", wires=4)
         spy = mocker.spy(qml.QubitDevice, "probability")
         state = init_state(4)
 
@@ -529,7 +550,7 @@ class TestProbs:
     @pytest.mark.parametrize("observable", [(qml.PauliX, qml.PauliY)])
     def test_observable_tensor_prob(self, observable, init_state, tol, mocker):
         "Test the rotated probability with a tensor observable."
-        dev = qml.device("default.qubit", wires=4)
+        dev = qml.device("default.qubit.legacy", wires=4)
         spy = mocker.spy(qml.QubitDevice, "probability")
         state = init_state(4)
 
@@ -567,7 +588,7 @@ class TestProbs:
         "Test that an error is returned for hamiltonians."
         H = qml.Hamiltonian(coeffs, obs)
 
-        dev = qml.device("default.qubit", wires=4)
+        dev = qml.device("default.qubit.legacy", wires=4)
         state = init_state(4)
 
         @qml.qnode(dev)
@@ -592,7 +613,7 @@ class TestProbs:
         """Test that Operators that do not have a diagonalizing_gates representation cannot
         be used in probability measurements."""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev)
         def circuit():
@@ -610,7 +631,7 @@ class TestProbs:
     def test_prob_wires_and_hermitian(self, hermitian):
         """Test that we can cannot give simultaneously wires and a hermitian."""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev)
         def circuit():
@@ -662,7 +683,7 @@ class TestProbs:
         assert np.allclose(res, expected)
 
     def test_non_commuting_probs_raises_error(self):
-        dev = qml.device("default.qubit", wires=5)
+        dev = qml.device("default.qubit.legacy", wires=5)
 
         @qml.qnode(dev)
         def circuit(x, y):
@@ -678,7 +699,7 @@ class TestProbs:
 
     def test_commuting_probs_in_computational_basis(self):
         """Test that `qml.probs` can be used in the computational basis with other commuting observables."""
-        dev = qml.device("default.qubit", wires=5)
+        dev = qml.device("default.qubit.legacy", wires=5)
 
         @qml.qnode(dev)
         def circuit(x, y):

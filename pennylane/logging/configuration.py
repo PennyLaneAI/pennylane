@@ -78,6 +78,7 @@ def enable_logging():
     Enabling logging through this method will override any externally defined logging configurations.
 
     **Example**
+
     >>> qml.logging.enable_logging()
     """
     _add_trace_level()

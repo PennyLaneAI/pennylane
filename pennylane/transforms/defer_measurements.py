@@ -156,7 +156,7 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
     # Apply controlled operations to store measurement outcomes and replace
     # classically controlled operations
     control_wires = {}
-    cur_wire = max(tape.wires) + 1
+    cur_wire = max(tape.wires) + 1 if reused_measurement_wires else None
 
     for op in tape:
         if isinstance(op, MidMeasureMP):

@@ -6,31 +6,6 @@ Deprecations
 Pending deprecations
 --------------------
 
-* The `RandomLayers.compute_decomposition` keyword argument `ratio_imprivitive` will be changed to `ratio_imprim` to
-  match the call signature of the operation. 
-
-  - Deprecated in v0.32
-  - Removed in v0.33
-
-* ``qml.enable_return`` and ``qml.disable_return`` are deprecated. Please avoid calling
-  ``disable_return``, as the old return system is deprecated along with these switch functions.
-
-  - Deprecated in v0.32
-  - Will be removed in v0.33
-
-* The ``mode`` keyword argument in ``QNode`` is deprecated, as it was only used in the old return
-  system (which is also deprecated). Please use ``grad_on_execution`` instead.
-
-  - Deprecated in v0.32
-  - Will be removed in v0.33
-
-* The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
-  instead. Using a list of observables in ``QubitDevice.statistics`` is deprecated. Please use a
-  ``QuantumTape`` instead.
-
-  - Still accessible in v0.28, v0.29, v0.30
-  - Will be removed in v0.31
-
 * ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
   
   - Deprecated in v0.24
@@ -96,14 +71,65 @@ Pending deprecations
   `Fermionic Operator <https://pennylane.ai/qml/demos/tutorial_fermionic_operators>`_
   tutorial for more details.
 
-* The CV observables ``qml.X`` and ``qml.P`` have been deprecated, and usage will now
-  raise a warning. Please use ``qml.QuadX`` and ``qml.QuadP`` instead.
-
   - Deprecated in v0.32
   - Will be removed in v0.33
 
+* The ``tuple`` input type in ``qubit_observable`` has been deprecated. Please use a fermionic
+  operator object. The ``tuple`` return type in ``fermionic_hamiltonian`` and
+  ``fermionic_observable`` has been deprecated and these functions will return a fermionic operator
+  by default.
+
+  - Deprecated in v0.32
+  - Will be removed in v0.33
+  
+* The ``prep`` keyword argument in ``QuantumScript`` is deprecated and will be removed from `QuantumScript`.
+  ``StatePrepBase`` operations should be placed at the beginning of the `ops` list instead.
+
+  - Deprecated in v0.33
+  - Will be removed in v0.34
+
+
+Completed deprecation cycles
+----------------------------
+
+* The ``sampler_seed`` argument of ``qml.gradients.spsa_grad`` has been removed.
+  Instead, the ``sampler_rng`` argument should be set, either to an integer value, which will be used
+  to create a PRNG internally, or to a NumPy pseudo-random number generator (PRNG) created via
+  ``np.random.default_rng(seed)``.
+  The advantage of passing a PRNG is that one can reuse that PRNG when calling ``spsa_grad``
+  multiple times, for instance during an optimization procedure.
+
+  - Deprecated in v0.32
+  - Removed in v0.33
+
+* The ``RandomLayers.compute_decomposition`` keyword argument ``ratio_imprivitive`` has been changed to
+  ``ratio_imprim`` to match the call signature of the operation.
+
+  - Deprecated in v0.32
+  - Removed in v0.33
+
+* The ``QuantumScript.set_parameters`` method and the ``QuantumScript.data`` setter have
+  been removed. Please use ``QuantumScript.bind_new_parameters`` instead.
+
+* The ``observables`` argument in ``QubitDevice.statistics`` is removed. Please use ``circuit``
+  instead. Using a list of observables in ``QubitDevice.statistics`` is removed. Please use a
+  ``QuantumTape`` instead.
+
+  - Still accessible in v0.28-v0.31
+  - Removed in v0.32
+
+
+* The CV observables ``qml.X`` and ``qml.P`` have been removed. Use ``qml.QuadX`` and ``qml.QuadP`` instead.
+
+  - Deprecated in v0.32
+  - Removed in v0.33
+
+
 * The method ``tape.unwrap()`` and corresponding ``UnwrapTape`` and ``Unwrap`` classes are
-  deprecated, and usage will now raise a warning.
+  removed.
+ 
+  - Deprecated in v0.32
+  - Removed in v0.33
 
   Instead of ``tape.unwrap()``, use :func:`~.transforms.convert_to_numpy_parameters`:
 
@@ -117,35 +143,17 @@ Pending deprecations
 
     torch_params = qscript.get_parameters()
     numpy_params = unwrapped_qscript.get_parameters()
-    
-* The ``QuantumScript.set_parameters`` method and the ``QuantumScript.data`` setter has
-  been deprecated. Please use ``QuantumScript.bind_new_parameters`` instead.
+
+* ``qml.enable_return`` and ``qml.disable_return`` have been removed. The old return types are no longer available.
 
   - Deprecated in v0.32
-  - Will be removed in v0.33
+  - Removed in v0.33
 
-* The ``tuple`` input type in ``qubit_observable`` has been deprecated. Please use a fermionic
-  operator object. The ``tuple`` return type in ``fermionic_hamiltonian`` and
-  ``fermionic_observable`` has been deprecated and these functions will return a fermionic operator
-  by default.
+* The ``mode`` keyword argument in ``QNode`` has been removed, as it was only used in the old return
+  system (which has also been removed). Please use ``grad_on_execution`` instead.
 
   - Deprecated in v0.32
-  - Will be removed in v0.33
-
-* The ``sampler_seed`` argument of ``qml.gradients.spsa_grad`` has been deprecated, along with a bug
-  fix of the seed-setting behaviour.
-  Instead, the ``sampler_rng`` argument should be set, either to an integer value, which will be used
-  to create a PRNG internally, or to a NumPy pseudo-random number generator (PRNG) created via
-  ``np.random.default_rng(seed)``.
-  The advantage of passing a PRNG is that one can reuse that PRNG when calling ``spsa_grad``
-  multiple times, for instance during an optimization procedure.
-
-  - Deprecated in v0.32
-  - Will be removed in v0.33
-
-
-Completed deprecation cycles
-----------------------------
+  - Removed in v0.33
 
 * ``qml.math.purity``, ``qml.math.vn_entropy``, ``qml.math.mutual_info``, ``qml.math.fidelity``,
   ``qml.math.relative_entropy``, and ``qml.math.max_entropy`` no longer support state vectors as

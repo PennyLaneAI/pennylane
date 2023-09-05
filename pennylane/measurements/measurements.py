@@ -22,7 +22,6 @@ import functools
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Sequence, Tuple, Optional
-import warnings
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -191,40 +190,6 @@ class MeasurementProcess(ABC):
             f"The numeric type of the measurement {self.__class__.__name__} is not defined."
         )
 
-    def _shape_legacy(self, device, shots: Shots) -> Tuple:  # pylint: disable=unused-arguments
-        """The expected output shape of the MeasurementProcess.
-
-        Note that the output shape is dependent on the shots and device when:
-
-        * The measurement type is either ``ProbabilityMP``, ``StateMP`` (from :func:`.state`) or
-          ``SampleMP``;
-        * The shot vector was defined.
-
-        For example, assuming a circuit with ``shots=None``, expectation values
-        and variances define ``shape=(1,)``, whereas probabilities in the qubit
-        model define ``shape=(1, 2**num_wires)`` where ``num_wires`` is the
-        number of wires the measurement acts on.
-
-        Note that the shapes for vector-valued measurements such as
-        ``ProbabilityMP`` and ``StateMP`` are adjusted to the output of
-        ``qml.execute`` and may have an extra first element that is squeezed
-        when using QNodes.
-
-        Args:
-            device (pennylane.Device): a PennyLane device to use for determining the shape
-            shots (~.Shots): object defining the number and batches of shots
-
-        Returns:
-            Tuple: the output shape
-
-        Raises:
-            QuantumFunctionError: the return type of the measurement process is
-                unrecognized and cannot deduce the numeric type
-        """
-        raise qml.QuantumFunctionError(
-            f"The shape of the measurement {self.__class__.__name__} is not defined"
-        )
-
     def shape(self, device, shots: Shots) -> Tuple:
         """The expected output shape of the MeasurementProcess.
 
@@ -250,8 +215,6 @@ class MeasurementProcess(ABC):
             QuantumFunctionError: the return type of the measurement process is
                 unrecognized and cannot deduce the numeric type
         """
-        if not qml.active_return():
-            return self._shape_legacy(device, shots)
         raise qml.QuantumFunctionError(
             f"The shape of the measurement {self.__class__.__name__} is not defined"
         )
@@ -292,31 +255,11 @@ class MeasurementProcess(ABC):
         except qml.operation.DecompositionUndefinedError:
             return []
 
-    # pylint: disable=useless-super-delegation
     def __eq__(self, other):
-        warnings.warn(
-            "The behaviour of measurement process equality will be updated soon. Currently, "
-            "mp1 == mp2 is True if mp1 and mp2 are the same object. Soon, mp1 == mp2 will be "
-            "equivalent to qml.equal(mp1, mp2). To continue using measurement process equality "
-            "in its current state, use 'mp1 is mp2'.",
-            UserWarning,
-        )
+        return qml.equal(self, other)
 
-        return super().__eq__(other)
-
-    # pylint: disable=useless-super-delegation
     def __hash__(self):
-        warnings.warn(
-            "The behaviour of measurement process hashing will be updated soon. Currently, each "
-            "measurement process instance has a unique hash. Soon, a measurement process's hash "
-            "will be determined by the combined hash of the name, wires, observable and/or "
-            "eigenvalues of the measurement process. To continue using measurement process hashing "
-            "in its current state, wrap the measurement process inside a qml.queuing.WrappedObj "
-            "instance.",
-            UserWarning,
-        )
-
-        return super().__hash__()
+        return self.hash
 
     def __repr__(self):
         """Representation of this class."""

@@ -21,9 +21,10 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import spsa_grad
-from pennylane.gradients.spsa_gradient import _spsa_grad_legacy
 from pennylane.gradients.spsa_gradient import _rademacher_sampler
 from pennylane.operation import AnyWires, Observable
+
+# pylint:disable = use-implicit-booleaness-not-comparison
 
 
 def coordinate_sampler(indices, num_params, idx, rng=None):
@@ -155,37 +156,6 @@ class TestSpsaGradient:
             tapes, proc_fn = spsa_grad(
                 tape, sampler=sampler_required_arg, num_directions=100, sampler_rng=sampler_rng
             )
-
-    def test_sampler_seed_deprecation(self):
-        """
-        Ensure that passing the sampler_seed kwarg results in a deprecation warning
-        and cannot be combined with the new sampler_rng kwarg.
-        """
-        dev = qml.device("default.qubit", wires=1)
-
-        @qml.qnode(dev, diff_method="spsa", sampler_seed=3)
-        def circuit_warn(param):
-            qml.RX(param, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        warning = "The sampler_seed argument is deprecated."
-        with pytest.warns(UserWarning, match=warning):
-            qml.grad(circuit_warn)(np.array(1.0))
-
-        with pytest.warns(UserWarning, match=warning):
-            _spsa_grad_legacy(circuit_warn, sampler_seed=3)(np.array(1.0))
-
-        @qml.qnode(dev, diff_method="spsa", sampler_rng=2, sampler_seed=3)
-        def circuit_raise(param):
-            qml.RX(param, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        err = "Both sampler_rng and sampler_seed were specified."
-        with pytest.raises(ValueError, match=err):
-            qml.grad(circuit_raise)(np.array(1.0))
-
-        with pytest.raises(ValueError, match=err):
-            _spsa_grad_legacy(circuit_raise, sampler_rng=2, sampler_seed=3)(np.array(1.0))
 
     def test_invalid_sampler_rng(self):
         """Tests that if sampler_rng has an unexpected type, an error is raised."""

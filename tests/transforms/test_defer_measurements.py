@@ -1171,3 +1171,32 @@ class TestDrawing:
             "3: ─╰X─╰●─╰●──────────────────┤     "
         )
         assert qml.draw(transformed_qnode)() == expected
+
+
+def test_custom_wire_labels_allowed_without_reset():
+    """Test that custom wire labels work if no qubits are re-used."""
+    with qml.queuing.AnnotatedQueue() as q:
+        qml.Hadamard("a")
+        ma = qml.measure("a", reset=False)
+        qml.cond(ma, qml.PauliX)("b")
+        qml.state()
+
+    tape = qml.tape.QuantumScript.from_queue(q)
+    tape = qml.defer_measurements(tape)
+    assert len(tape) == 3
+    assert qml.equal(tape[0], qml.Hadamard("a"))
+    assert qml.equal(tape[1], qml.CNOT(["a", "b"]))
+    assert qml.equal(tape[2], qml.state())
+
+
+def test_custom_wire_labels_fails_with_reset():
+    """Test that custom wire labels do not work if any qubits are re-used."""
+    with qml.queuing.AnnotatedQueue() as q:
+        qml.Hadamard("a")
+        ma = qml.measure("a", reset=True)
+        qml.cond(ma, qml.PauliX)("b")
+        qml.state()
+
+    tape = qml.tape.QuantumScript.from_queue(q)
+    with pytest.raises(TypeError, match="can only concatenate str"):
+        qml.defer_measurements(tape)
