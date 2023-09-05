@@ -76,7 +76,7 @@ class TestInitialization:
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
     def test_vn_entropy(self, interface, state_vector, expected):
         """Tests the output of qml.vn_entropy"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev, interface=interface)
         def circuit():
@@ -94,7 +94,7 @@ class TestInitialization:
 
     def test_queue(self):
         """Test that the right measurement class is queued."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev)
         def circuit():
@@ -121,7 +121,7 @@ class TestInitialization:
     def test_shape(self, shots, shape):
         """Test the ``shape`` method."""
         meas = qml.vn_entropy(wires=0)
-        dev = qml.device("default.qubit", wires=1, shots=shots)
+        dev = qml.device("default.qubit.legacy", wires=1, shots=shots)
 
         assert meas.shape(dev, Shots(shots)) == shape
 
@@ -131,7 +131,7 @@ class TestIntegration:
 
     parameters = np.linspace(0, 2 * np.pi, 10)
 
-    devices = ["default.qubit", "default.mixed", "lightning.qubit"]
+    devices = ["default.qubit.legacy", "default.mixed", "lightning.qubit"]
 
     single_wires_list = [
         [0],
@@ -142,12 +142,12 @@ class TestIntegration:
 
     check_state = [True, False]
 
-    devices = ["default.qubit", "default.mixed"]
+    devices = ["default.qubit.legacy", "default.mixed"]
     diff_methods = ["backprop", "finite-diff"]
 
     def test_shot_vec_error(self):
         """Test an error is raised when using shot vectors with vn_entropy."""
-        dev = qml.device("default.qubit", wires=2, shots=[1, 10, 10, 1000])
+        dev = qml.device("default.qubit.legacy", wires=2, shots=[1, 10, 10, 1000])
 
         @qml.qnode(device=dev)
         def circuit(x):
@@ -187,7 +187,7 @@ class TestIntegration:
     def test_IsingXX_qnode_entropy_grad(self, param, wires, base, diff_method):
         """Test entropy for a QNode gradient with autograd."""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit_entropy(x):
@@ -234,7 +234,7 @@ class TestIntegration:
         """Test entropy for a QNode gradient with torch."""
         import torch
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev, interface="torch", diff_method=diff_method)
         def circuit_entropy(x):
@@ -286,7 +286,7 @@ class TestIntegration:
         """Test entropy for a QNode gradient with tf."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev, interface=interface, diff_method=diff_method)
         def circuit_entropy(x):
@@ -339,7 +339,7 @@ class TestIntegration:
         """Test entropy for a QNode gradient with Jax."""
         import jax
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev, interface=interface, diff_method=diff_method)
         def circuit_entropy(x):
@@ -388,7 +388,7 @@ class TestIntegration:
         """Test entropy for a QNode gradient with Jax-jit."""
         import jax
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev, interface=interface, diff_method=diff_method)
         def circuit_entropy(x):

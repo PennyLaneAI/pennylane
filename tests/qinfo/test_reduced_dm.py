@@ -158,7 +158,7 @@ class TestDensityMatrixQNode:
     def test_density_matrix_c_dtype(self, wires, c_dtype):
         """Test different complex dtype."""
 
-        dev = qml.device("default.qubit", wires=2, c_dtype=c_dtype)
+        dev = qml.device("default.qubit.legacy", wires=2, c_dtype=c_dtype)
 
         @qml.qnode(dev, diff_method=None)
         def circuit(x):

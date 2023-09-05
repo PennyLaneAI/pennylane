@@ -22,30 +22,30 @@ from pennylane import numpy as np
 from pennylane import qnode
 
 qubit_device_and_diff_method = [
-    ["default.qubit", "finite-diff", False],
-    ["default.qubit", "parameter-shift", False],
-    ["default.qubit", "backprop", True],
-    ["default.qubit", "adjoint", True],
-    ["default.qubit", "adjoint", False],
-    ["default.qubit", "spsa", False],
-    ["default.qubit", "hadamard", False],
+    ["default.qubit.legacy", "finite-diff", False],
+    ["default.qubit.legacy", "parameter-shift", False],
+    ["default.qubit.legacy", "backprop", True],
+    ["default.qubit.legacy", "adjoint", True],
+    ["default.qubit.legacy", "adjoint", False],
+    ["default.qubit.legacy", "spsa", False],
+    ["default.qubit.legacy", "hadamard", False],
 ]
 
 interface_qubit_device_and_diff_method = [
-    ["autograd", "default.qubit", "finite-diff", False],
-    ["autograd", "default.qubit", "parameter-shift", False],
-    ["autograd", "default.qubit", "backprop", True],
-    ["autograd", "default.qubit", "adjoint", True],
-    ["autograd", "default.qubit", "adjoint", False],
-    ["autograd", "default.qubit", "spsa", False],
-    ["autograd", "default.qubit", "hadamard", False],
-    ["auto", "default.qubit", "finite-diff", False],
-    ["auto", "default.qubit", "parameter-shift", False],
-    ["auto", "default.qubit", "backprop", True],
-    ["auto", "default.qubit", "adjoint", True],
-    ["auto", "default.qubit", "adjoint", False],
-    ["auto", "default.qubit", "spsa", False],
-    ["auto", "default.qubit", "hadamard", False],
+    ["autograd", "default.qubit.legacy", "finite-diff", False],
+    ["autograd", "default.qubit.legacy", "parameter-shift", False],
+    ["autograd", "default.qubit.legacy", "backprop", True],
+    ["autograd", "default.qubit.legacy", "adjoint", True],
+    ["autograd", "default.qubit.legacy", "adjoint", False],
+    ["autograd", "default.qubit.legacy", "spsa", False],
+    ["autograd", "default.qubit.legacy", "hadamard", False],
+    ["auto", "default.qubit.legacy", "finite-diff", False],
+    ["auto", "default.qubit.legacy", "parameter-shift", False],
+    ["auto", "default.qubit.legacy", "backprop", True],
+    ["auto", "default.qubit.legacy", "adjoint", True],
+    ["auto", "default.qubit.legacy", "adjoint", False],
+    ["auto", "default.qubit.legacy", "spsa", False],
+    ["auto", "default.qubit.legacy", "hadamard", False],
 ]
 
 pytestmark = pytest.mark.autograd
@@ -71,7 +71,7 @@ class TestQNode:
         if diff_method != "parameter-shift":
             pytest.skip("Test only supports parameter-shift")
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
 
         @qnode(dev, interface=interface, diff_method=diff_method)
         def circuit(x, y):
@@ -301,7 +301,7 @@ class TestQNode:
 
         a = np.array([0.1, 0.2], requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qml.device("default.qubit.legacy", wires=wires)
 
         @qnode(dev, interface=interface, diff_method=diff_method, **kwargs)
         def circuit(a):
@@ -329,7 +329,7 @@ class TestQNode:
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qnode(dev, interface=interface, diff_method=diff_method)
         def circuit(a, b):
@@ -554,7 +554,7 @@ class TestShotsIntegration:
 
     def test_changing_shots(self, mocker, tol):
         """Test that changing shots works on execution"""
-        dev = qml.device("default.qubit", wires=2, shots=None)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=None)
         a, b = np.array([0.543, -0.654], requires_grad=True)
 
         @qnode(dev, diff_method=qml.gradients.param_shift)
@@ -586,7 +586,7 @@ class TestShotsIntegration:
     def test_gradient_integration(self):
         """Test that temporarily setting the shots works
         for gradient computations"""
-        dev = qml.device("default.qubit", wires=2, shots=None)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=None)
         a, b = np.array([0.543, -0.654], requires_grad=True)
 
         @qnode(dev, diff_method=qml.gradients.param_shift)
@@ -609,7 +609,7 @@ class TestShotsIntegration:
 
     def test_update_diff_method(self, mocker):
         """Test that temporarily setting the shots updates the diff method"""
-        dev = qml.device("default.qubit", wires=2, shots=100)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=100)
         a, b = np.array([0.543, -0.654], requires_grad=True)
 
         spy = mocker.spy(qml, "execute")
@@ -934,7 +934,7 @@ class TestQubitIntegration:
             qml.CNOT(wires=[1, 2])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(2))
 
-        dev2 = qml.device("default.qubit", wires=num_wires)
+        dev2 = qml.device("default.qubit.legacy", wires=num_wires)
 
         @qnode(dev2, interface=interface, diff_method=diff_method)
         def circuit2(data, weights):
@@ -1562,7 +1562,7 @@ class TestCV:
 
 def test_adjoint_reuse_device_state(mocker):
     """Tests that the autograd interface reuses the device state for adjoint differentiation"""
-    dev = qml.device("default.qubit", wires=1)
+    dev = qml.device("default.qubit.legacy", wires=1)
 
     @qnode(dev, diff_method="adjoint")
     def circ(x):
@@ -1773,7 +1773,7 @@ class TestSample:
 
     def test_backprop_error(self):
         """Test that sampling in backpropagation grad_on_execution raises an error"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qnode(dev, diff_method="backprop")
         def circuit():
@@ -1787,7 +1787,7 @@ class TestSample:
         """Test that the sample function outputs samples of the right size"""
         n_sample = 10
 
-        dev = qml.device("default.qubit", wires=2, shots=n_sample)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=n_sample)
 
         @qnode(dev)
         def circuit():
@@ -1810,7 +1810,7 @@ class TestSample:
 
         n_sample = 10
 
-        dev = qml.device("default.qubit", wires=3, shots=n_sample)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=n_sample)
 
         @qnode(dev, diff_method="parameter-shift")
         def circuit():
@@ -1832,7 +1832,7 @@ class TestSample:
         """Test the return type and shape of sampling a single wire"""
         n_sample = 10
 
-        dev = qml.device("default.qubit", wires=1, shots=n_sample)
+        dev = qml.device("default.qubit.legacy", wires=1, shots=n_sample)
 
         @qnode(dev)
         def circuit():
@@ -1850,7 +1850,7 @@ class TestSample:
         where a rectangular array is expected"""
         n_sample = 10
 
-        dev = qml.device("default.qubit", wires=3, shots=n_sample)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=n_sample)
 
         @qnode(dev)
         def circuit():
@@ -2388,7 +2388,7 @@ class TestReturn:
         assert hess.shape == (3, 2, 2)
 
 
-@pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+@pytest.mark.parametrize("dev_name", ["default.qubit.legacy", "default.mixed"])
 def test_no_ops(dev_name):
     """Test that the return value of the QNode matches in the interface
     even if there are no ops"""
