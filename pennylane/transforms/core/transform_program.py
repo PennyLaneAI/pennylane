@@ -131,10 +131,14 @@ class TransformProgram:
         return bool(self._transform_program)
 
     def __add__(self, other):
-        program = TransformProgram(self._transform_program)
-        for container in other:
-            program.push_back(container)
-        return program
+        if self.is_informative and other.is_informative:
+            raise TransformError("The transform program already has an informative transform.")
+
+        transforms = self._transform_program + other._transform_program
+        if self.is_informative:
+            transforms.append(transforms.pop(len(self) - 1))
+
+        return TransformProgram(transforms)
 
     def __repr__(self):
         """The string representation of the transform program class."""
@@ -152,8 +156,11 @@ class TransformProgram:
 
         # Program can only contain one informative transform and at the end of the program
         if self.is_informative:
-            raise TransformError("The transform program already has an informative transform.")
-        self._transform_program.append(transform_container)
+            if transform_container.is_informative or not transform_container.requires_exec:
+                raise TransformError("The transform program already has an informative transform.")
+            self._transform_program.insert(-1, transform_container)
+        else:
+            self._transform_program.append(transform_container)
 
     def insert_front(self, transform_container: TransformContainer):
         """Insert the transform container at the beginning of the program.
@@ -161,7 +168,9 @@ class TransformProgram:
         Args:
             transform_container(TransformContainer): A transform represented by its container.
         """
-        if transform_container.is_informative and not self.is_empty():
+        if (
+            transform_container.is_informative or not transform_container.requires_exec
+        ) and not self.is_empty():
             raise TransformError(
                 "Informative transforms can only be added at the end of the program."
             )
@@ -207,10 +216,13 @@ class TransformProgram:
             **tkwargs: Any additional keyword arguments that are passed to the transform.
 
         """
-        if transform.is_informative and not self.is_empty():
+        if (transform.is_informative or not transform.requires_exec) and not self.is_empty():
             raise TransformError(
                 "Informative transforms can only be added at the end of the program."
             )
+
+        if transform.expand_transform:
+            self.insert_front(TransformContainer(transform.expand_transform, targs, tkwargs))
 
         self.insert_front(
             TransformContainer(
@@ -221,9 +233,6 @@ class TransformProgram:
                 transform.is_informative,
             )
         )
-
-        if transform.expand_transform:
-            self.insert_front(TransformContainer(transform.expand_transform, targs, tkwargs))
 
     def pop_front(self):
         """Pop the transform container at the beginning of the program.
@@ -263,7 +272,7 @@ class TransformProgram:
         Returns:
             bool: Boolean
         """
-        return self[-1].is_informative if self else False
+        return self[-1].is_informative or not self[-1].requires_exec if self else False
 
     def __call__(self, tapes: Tuple[QuantumTape]) -> Tuple[ResultBatch, BatchPostProcessingFn]:
         if self.is_informative:

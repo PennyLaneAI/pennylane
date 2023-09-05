@@ -38,17 +38,20 @@ class TransformDispatcher:
     .. seealso:: :func:`~.pennylane.transforms.core.transform`
     """
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         transform,
         expand_transform=None,
         classical_cotransform=None,
         is_informative=False,
+        requires_exec=True,
     ):  # pylint:disable=redefined-outer-name
         self._transform = transform
         self._expand_transform = expand_transform
         self._classical_cotransform = classical_cotransform
         self._is_informative = is_informative
+        self._requires_exec = requires_exec
 
         self._qnode_transform = self.default_qnode_transform
 
@@ -92,8 +95,12 @@ class TransformDispatcher:
 
     @property
     def is_informative(self):
-        """Return True is the transform does not need to be executed."""
+        """Return True is the transform is informative."""
         return self._is_informative
+
+    @property
+    def requires_exec(self):
+        """Return True if the transformed tapes must be executed."""
 
     def custom_qnode_transform(self, fn):
         """Register a custom QNode execution wrapper function
@@ -177,13 +184,20 @@ class TransformContainer:
     """
 
     def __init__(
-        self, transform, args=None, kwargs=None, classical_cotransform=None, is_informative=False
+        self,
+        transform,
+        args=None,
+        kwargs=None,
+        classical_cotransform=None,
+        is_informative=False,
+        requires_exec=True,
     ):  # pylint:disable=redefined-outer-name,too-many-arguments
         self._transform = transform
         self._args = args or []
         self._kwargs = kwargs or {}
         self._classical_cotransform = classical_cotransform
         self._is_informative = is_informative
+        self._requires_exec = requires_exec
 
     def __iter__(self):
         return iter(
@@ -193,6 +207,7 @@ class TransformContainer:
                 self._kwargs,
                 self._classical_cotransform,
                 self._is_informative,
+                self._requires_exec,
             )
         )
 
@@ -218,5 +233,10 @@ class TransformContainer:
 
     @property
     def is_informative(self):
-        """Return True is the transform does not need to be executed."""
+        """Return True is the transform is informative."""
         return self._is_informative
+
+    @property
+    def requires_exec(self):
+        """Return True if the transform needs to be executed"""
+        return self._requires_exec
