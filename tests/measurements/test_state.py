@@ -125,7 +125,7 @@ class TestState:
     def test_state_shape_and_dtype(self, wires):
         """Test that the state is of correct size and dtype for a trivial circuit"""
 
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qml.device("default.qubit.legacy", wires=wires)
 
         @qml.qnode(dev)
         def func():
@@ -138,7 +138,7 @@ class TestState:
     def test_return_type_is_state(self):
         """Test that the return type of the observable is State"""
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
 
         @qml.qnode(dev)
         def func():
@@ -154,7 +154,7 @@ class TestState:
     def test_state_correct_ghz(self, wires):
         """Test that the correct state is returned when the circuit prepares a GHZ state"""
 
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qml.device("default.qubit.legacy", wires=wires)
 
         @qml.qnode(dev)
         def func():
@@ -175,7 +175,7 @@ class TestState:
         """Test that an exception is raised when a state is returned along with another return
         type"""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev)
         def func():
@@ -193,7 +193,7 @@ class TestState:
         """Test that the returned state is equal to the one stored in dev.state for a template
         circuit"""
 
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qml.device("default.qubit.legacy", wires=wires)
 
         weights = np.random.random(
             qml.templates.StronglyEntanglingLayers.shape(n_layers=3, n_wires=wires)
@@ -212,7 +212,7 @@ class TestState:
         """Test that the state correctly outputs in the tensorflow interface"""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", wires=4)
+        dev = qml.device("default.qubit.legacy", wires=4)
 
         @qml.qnode(dev, interface="tf")
         def func():
@@ -233,7 +233,7 @@ class TestState:
         """Test that the state correctly outputs in the torch interface"""
         import torch
 
-        dev = qml.device("default.qubit", wires=4)
+        dev = qml.device("default.qubit.legacy", wires=4)
 
         @qml.qnode(dev, interface="torch")
         def func():
@@ -252,7 +252,7 @@ class TestState:
     @pytest.mark.autograd
     def test_jacobian_not_supported(self):
         """Test if an error is raised if the jacobian method is called via qml.grad"""
-        dev = qml.device("default.qubit", wires=4)
+        dev = qml.device("default.qubit.legacy", wires=4)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def func(x):
@@ -274,7 +274,7 @@ class TestState:
     def test_no_state_capability(self, monkeypatch):
         """Test if an error is raised for devices that are not capable of returning the state.
         This is tested by changing the capability of default.qubit"""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         capabilities = dev.capabilities().copy()
         capabilities["returns_state"] = False
 
@@ -304,7 +304,7 @@ class TestState:
         """Test that the returned state is equal to the expected returned state for all of
         PennyLane's built in statevector devices"""
 
-        dev = qml.device("default.qubit", wires=4)
+        dev = qml.device("default.qubit.legacy", wires=4)
 
         @qml.qnode(dev, diff_method=diff_method)
         def func():
@@ -408,7 +408,7 @@ class TestState:
     @pytest.mark.parametrize("wires", [[0, 2, 3, 1], ["a", -1, "b", 1000]])
     def test_custom_wire_labels(self, wires):
         """Test the state when custom wire labels are used"""
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qml.device("default.qubit.legacy", wires=wires)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def func():
@@ -424,14 +424,14 @@ class TestState:
     @pytest.mark.parametrize("shots", [None, 1, 10])
     def test_shape(self, shots):
         """Test that the shape is correct for qml.state."""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=shots)
         res = qml.state()
         assert res.shape(dev, Shots(shots)) == (2**3,)
 
     @pytest.mark.parametrize("s_vec", [(3, 2, 1), (1, 5, 10), (3, 1, 20)])
     def test_shape_shot_vector(self, s_vec):
         """Test that the shape is correct for qml.state with the shot vector too."""
-        dev = qml.device("default.qubit", wires=3, shots=s_vec)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=s_vec)
         res = qml.state()
         assert res.shape(dev, Shots(s_vec)) == ((2**3,), (2**3,), (2**3,))
 
@@ -447,7 +447,7 @@ class TestDensityMatrix:
     # pylint: disable=too-many-public-methods
 
     @pytest.mark.parametrize("wires", range(2, 5))
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit.legacy", "default.mixed"])
     def test_density_matrix_shape_and_dtype(self, dev_name, wires):
         """Test that the density matrix is of correct size and dtype for a
         trivial circuit"""
@@ -463,7 +463,7 @@ class TestDensityMatrix:
         assert state_val.shape == (2, 2)
         assert state_val.dtype == np.complex128
 
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit.legacy", "default.mixed"])
     def test_return_type_is_state(self, dev_name):
         """Test that the return type of the observable is State"""
 
@@ -480,7 +480,7 @@ class TestDensityMatrix:
         assert obs[0].return_type is State
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit.legacy", "default.mixed"])
     @pytest.mark.parametrize("diff_method", [None, "backprop"])
     def test_correct_density_matrix_torch(self, dev_name, diff_method):
         """Test that the correct density matrix is returned using torch interface."""
@@ -504,7 +504,7 @@ class TestDensityMatrix:
             )
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit.legacy", "default.mixed"])
     @pytest.mark.parametrize("diff_method", [None, "backprop"])
     def test_correct_density_matrix_jax(self, dev_name, diff_method):
         """Test that the correct density matrix is returned using JAX interface."""
@@ -527,7 +527,7 @@ class TestDensityMatrix:
             )
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit.legacy", "default.mixed"])
     @pytest.mark.parametrize("diff_method", [None, "backprop"])
     def test_correct_density_matrix_tf(self, dev_name, diff_method):
         """Test that the correct density matrix is returned using the TensorFlow interface."""
@@ -549,7 +549,7 @@ class TestDensityMatrix:
                 qml.density_matrix(wires=0).process_state(state=dev.state, wire_order=dev.wires),
             )
 
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit.legacy", "default.mixed"])
     def test_correct_density_matrix_product_state_first(self, dev_name):
         """Test that the correct density matrix is returned when
         tracing out a product state"""
@@ -573,7 +573,7 @@ class TestDensityMatrix:
                 qml.density_matrix(wires=0).process_state(state=dev.state, wire_order=dev.wires),
             )
 
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit.legacy", "default.mixed"])
     def test_correct_density_matrix_product_state_second(self, dev_name):
         """Test that the correct density matrix is returned when
         tracing out a product state"""
@@ -596,7 +596,7 @@ class TestDensityMatrix:
                 qml.density_matrix(wires=1).process_state(state=dev.state, wire_order=dev.wires),
             )
 
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit.legacy", "default.mixed"])
     @pytest.mark.parametrize("return_wire_order", ([0, 1], [1, 0]))
     def test_correct_density_matrix_product_state_both(self, dev_name, return_wire_order):
         """Test that the correct density matrix is returned
@@ -625,7 +625,7 @@ class TestDensityMatrix:
                 ),
             )
 
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit.legacy", "default.mixed"])
     def test_correct_density_matrix_three_wires_first_two(self, dev_name):
         """Test that the correct density matrix is returned for an example with three wires,
         and tracing out the third wire."""
@@ -657,7 +657,7 @@ class TestDensityMatrix:
                 ),
             )
 
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit.legacy", "default.mixed"])
     def test_correct_density_matrix_three_wires_last_two(self, dev_name):
         """Test that the correct density matrix is returned for an example with three wires,
         and tracing out the first wire."""
@@ -693,7 +693,7 @@ class TestDensityMatrix:
                 ),
             )
 
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit.legacy", "default.mixed"])
     @pytest.mark.parametrize(
         "return_wire_order", ([0], [1], [2], [0, 1], [1, 0], [0, 2], [2, 0], [1, 2, 0], [2, 1, 0])
     )
@@ -733,7 +733,7 @@ class TestDensityMatrix:
                 ),
             )
 
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit.legacy", "default.mixed"])
     def test_correct_density_matrix_mixed_state(self, dev_name):
         """Test that the correct density matrix for an example with a mixed state"""
 
@@ -749,7 +749,7 @@ class TestDensityMatrix:
 
         assert np.allclose(np.array([[0.5 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 0.5 + 0.0j]]), density)
 
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit.legacy", "default.mixed"])
     def test_correct_density_matrix_all_wires(self, dev_name):
         """Test that the correct density matrix is returned when all wires are given"""
 
@@ -781,7 +781,7 @@ class TestDensityMatrix:
                 ),
             )
 
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit.legacy", "default.mixed"])
     def test_return_with_other_types(self, dev_name):
         """Test that an exception is raised when a state is returned along with another return
         type"""
@@ -804,7 +804,7 @@ class TestDensityMatrix:
     def test_no_state_capability(self, monkeypatch):
         """Test if an error is raised for devices that are not capable of returning
         the density matrix. This is tested by changing the capability of default.qubit"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
         capabilities = dev.capabilities().copy()
         capabilities["returns_state"] = False
 
@@ -833,7 +833,7 @@ class TestDensityMatrix:
             func()
 
     @pytest.mark.parametrize("wires", [[0, 2], ["a", -1]])
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit.legacy", "default.mixed"])
     def test_custom_wire_labels(self, wires, dev_name):
         """Test that the correct density matrix for an example with a mixed
         state when using custom wires"""
@@ -860,7 +860,7 @@ class TestDensityMatrix:
             )
 
     @pytest.mark.parametrize("wires", [[3, 1], ["b", 1000]])
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit.legacy", "default.mixed"])
     def test_custom_wire_labels_all_wires(self, wires, dev_name):
         """Test that the correct density matrix for an example with a mixed
         state when using custom wires"""
@@ -889,14 +889,14 @@ class TestDensityMatrix:
     @pytest.mark.parametrize("shots", [None, 1, 10])
     def test_shape(self, shots):
         """Test that the shape is correct for qml.density_matrix."""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=shots)
         res = qml.density_matrix(wires=[0, 1])
         assert res.shape(dev, Shots(shots)) == (2**2, 2**2)
 
     @pytest.mark.parametrize("s_vec", [(3, 2, 1), (1, 5, 10), (3, 1, 20)])
     def test_shape_shot_vector(self, s_vec):
         """Test that the shape is correct for qml.density_matrix with the shot vector too."""
-        dev = qml.device("default.qubit", wires=3, shots=s_vec)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=s_vec)
         res = qml.density_matrix(wires=[0, 1])
         assert res.shape(dev, Shots(s_vec)) == (
             (2**2, 2**2),

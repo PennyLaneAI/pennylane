@@ -29,9 +29,9 @@ SEED_FOR_SPSA = 42
 spsa_kwargs = {"h": 0.05, "num_directions": 20, "sampler_rng": np.random.default_rng(SEED_FOR_SPSA)}
 
 qubit_device_and_diff_method = [
-    ["default.qubit", "finite-diff", {"h": 0.05}],
-    ["default.qubit", "parameter-shift", {}],
-    ["default.qubit", "spsa", spsa_kwargs],
+    ["default.qubit.legacy", "finite-diff", {"h": 0.05}],
+    ["default.qubit.legacy", "parameter-shift", {}],
+    ["default.qubit.legacy", "spsa", spsa_kwargs],
 ]
 
 TOLS = {
