@@ -71,15 +71,15 @@ class TestPurityUnitTest:
     def test_shape_new(self, shots, shape):
         """Test the ``shape_new`` method."""
         meas = qml.purity(wires=0)
-        dev = qml.device("default.qubit.legacy", wires=1, shots=shots)
+        dev = qml.device("default.qubit", wires=1, shots=shots)
         assert meas.shape(dev, Shots(shots)) == shape
 
 
 class TestPurityIntegration:
     """Test the purity meausrement with qnodes and devices."""
 
-    devices = ["default.qubit.legacy", "lightning.qubit", "default.mixed"]
-    grad_supported_devices = ["default.qubit.legacy", "default.mixed"]
+    devices = ["default.qubit", "lightning.qubit", "default.mixed"]
+    grad_supported_devices = ["default.qubit", "default.mixed"]
     mix_supported_devices = ["default.mixed"]
 
     diff_methods = ["backprop", "finite-diff"]

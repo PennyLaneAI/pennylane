@@ -15,6 +15,7 @@
 """
 This module contains the qml.mutual_info measurement.
 """
+from copy import copy
 from typing import Sequence, Optional
 
 import pennylane as qml
@@ -130,6 +131,13 @@ class MutualInfoMP(StateMeasurement):
     @property
     def numeric_type(self):
         return float
+
+    def map_wires(self, wire_map: dict):
+        new_measurement = copy(self)
+        new_measurement._wires = [
+            Wires([wire_map.get(wire, wire)]) for wires in self.wires for wire in wires
+        ]
+        return new_measurement
 
     def shape(self, device, shots):
         if not shots.has_partitioned_shots:
