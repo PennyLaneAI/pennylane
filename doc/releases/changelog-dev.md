@@ -6,7 +6,7 @@
 
 * Measurement statistics can now be collected for mid-circuit measurements. Currently,
   `qml.expval`, `qml.var`, `qml.probs`, `qml.sample`, and `qml.counts` are supported on
-  `default.qubit` and the new `DefaultQubit2` device.
+  `default.qubit`, `default.mixed`, and the new `DefaultQubit2` device.
   [(#4544)](https://github.com/PennyLaneAI/pennylane/pull/4544)
 
   ```python
