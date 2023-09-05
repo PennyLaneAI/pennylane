@@ -124,7 +124,7 @@ class TestHadamardGrad:
 
         assert np.allclose(res_hadamard, res_param_shift, atol=tol, rtol=0)
 
-    @pytest.mark.xfail("summing final_res fails with new numpy because of ragged arrays")
+    @pytest.mark.xfail(reason="summing final_res fails with new numpy because of ragged arrays")
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     @pytest.mark.parametrize("G", [qml.CRX, qml.CRY, qml.CRZ])
     def test_controlled_rotation_gradient(self, G, theta, tol):
