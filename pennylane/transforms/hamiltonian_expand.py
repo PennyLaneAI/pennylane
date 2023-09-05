@@ -15,15 +15,17 @@
 Contains the hamiltonian expand tape transform
 """
 # pylint: disable=protected-access
-from typing import List
+from typing import List, Sequence, Callable
 
 import pennylane as qml
 from pennylane.measurements import ExpectationMP, MeasurementProcess
 from pennylane.ops import SProd, Sum
 from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.transforms.core import transform
 
 
-def hamiltonian_expand(tape: QuantumTape, group=True):
+@transform
+def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape], Callable):
     r"""
     Splits a tape measuring a Hamiltonian expectation into mutliple tapes of Pauli expectations,
     and provides a function to recombine the results.
@@ -35,7 +37,7 @@ def hamiltonian_expand(tape: QuantumTape, group=True):
             If grouping information can be found in the Hamiltonian, it will be used even if group=False.
 
     Returns:
-        tuple[list[.QuantumTape], function]: Returns a tuple containing a list of
+        tuple[Sequence[.QuantumTape], Callable]: Returns a tuple containing a list of
         quantum tapes to be evaluated, and a function to be applied to these
         tape executions to compute the expectation value.
 
@@ -67,7 +69,7 @@ def hamiltonian_expand(tape: QuantumTape, group=True):
     Applying the processing function results in the expectation value of the Hamiltonian:
 
     >>> fn(res)
-    -0.5
+    array(-0.5)
 
     Fewer tapes can be constructed by grouping commuting observables. This can be achieved
     by the ``group`` keyword argument:
@@ -200,7 +202,8 @@ def hamiltonian_expand(tape: QuantumTape, group=True):
 
 
 # pylint: disable=too-many-branches, too-many-statements
-def sum_expand(tape: QuantumTape, group=True):
+@transform
+def sum_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape], Callable):
     """Splits a quantum tape measuring a Sum expectation into multiple tapes of summand
     expectations, and provides a function to recombine the results.
 
@@ -211,7 +214,7 @@ def sum_expand(tape: QuantumTape, group=True):
             wires, leading to fewer tapes.
 
     Returns:
-        tuple[list[.QuantumTape], function]: Returns a tuple containing a list of
+        tuple[Sequence[.QuantumTape], Callable]: Returns a tuple containing a list of
         quantum tapes to be evaluated, and a function to be applied to these
         tape executions to compute the expectation value.
 
