@@ -399,7 +399,10 @@ class TestDecomposition:
         """Tests that the decomposition doesn't exist if the coefficient has a real component."""
         op = Exp(qml.PauliX(0), coeff)
         assert not op.has_decomposition
-        with pytest.raises(DecompositionUndefinedError):
+        with pytest.raises(
+            DecompositionUndefinedError,
+            match="Decomposition is not defined for real coefficients of hermitian operators.",
+        ):
             op.decomposition()
 
     def test_non_pauli_word_base_no_decomposition(self):
