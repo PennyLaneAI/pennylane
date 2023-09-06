@@ -16,15 +16,17 @@
 import warnings
 from functools import reduce, wraps
 from itertools import product
+from typing import Sequence, Callable
 
 import pennylane as qml
 import pennylane.numpy as np
 from pennylane.measurements import ClassicalShadowMP
 from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.transforms.core import transform
 
 
-@qml.batch_transform
-def _replace_obs(tape: QuantumTape, obs, *args, **kwargs):
+@transform
+def _replace_obs(tape: QuantumTape, obs, *args, **kwargs) -> (Sequence[QuantumTape], Callable):
     """
     Tape transform to replace the measurement processes with the given one
     """
@@ -88,7 +90,7 @@ def shadow_expval(H, k=1):
     """
 
     def decorator(qnode):
-        return wraps(qnode)(_replace_obs(qnode, qml.shadow_expval, H, k=k))
+        return _replace_obs(qnode, qml.shadow_expval, H, k=k)
 
     return decorator
 
