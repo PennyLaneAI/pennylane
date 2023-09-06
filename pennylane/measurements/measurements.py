@@ -445,7 +445,7 @@ class MeasurementProcess(ABC):
         new_measurement = copy.copy(self)
         if self.obs is not None:
             new_measurement.obs = self.obs.map_wires(wire_map=wire_map)
-        else:
+        elif self._wires is not None:
             new_measurement._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         return new_measurement
 

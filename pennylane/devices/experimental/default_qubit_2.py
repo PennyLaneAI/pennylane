@@ -15,6 +15,7 @@
 This module contains the next generation successor to default qubit
 """
 
+from copy import copy
 from functools import partial
 from numbers import Number
 from typing import Union, Callable, Tuple, Optional, Sequence
@@ -229,10 +230,9 @@ class DefaultQubit2(Device):
                 for m_idx, mp in enumerate(measurements):
                     if not mp.obs and not mp.wires:
                         modified = True
-                        kwargs = {}
-                        if getattr(mp, "all_outcomes", False) is True:
-                            kwargs["all_outcomes"] = True
-                        measurements[m_idx] = type(mp)(wires=self.wires, **kwargs)
+                        new_mp = copy(mp)
+                        new_mp._wires = self.wires  # pylint:disable=protected-access
+                        measurements[m_idx] = new_mp
                 if modified:
                     circuits[i] = type(circuit)(
                         circuit.operations, measurements, shots=circuit.shots
