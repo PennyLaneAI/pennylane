@@ -9,16 +9,14 @@
 
 <h3>Improvements 🛠</h3>
 
-<<<<<<< HEAD
 * The qchem ``fermionic_dipole`` and ``particle_number`` functions are updated to use a
   ``FermiSentence``. The deprecated features for using tuples to represent fermionic operations are
   removed.
   [(#4546)](https://github.com/PennyLaneAI/pennylane/pull/4546)
   [(#4556)](https://github.com/PennyLaneAI/pennylane/pull/4556)
-=======
+
 * Add the method ``add_transform`` and ``insert_front_transform`` transform in the ``TransformProgram``.
   [(#4559)](https://github.com/PennyLaneAI/pennylane/pull/4559)
->>>>>>> master
 
 * Dunder ``__add__`` method is added to the ``TransformProgram`` class, therefore two programs can be added using ``+`` .
   [(#4549)](https://github.com/PennyLaneAI/pennylane/pull/4549)
