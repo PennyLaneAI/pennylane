@@ -278,15 +278,15 @@ class TransformProgram:
         return self[-1].is_informative or not self[-1].requires_exec if self else False
 
     def __call__(self, tapes: Tuple[QuantumTape]) -> Tuple[ResultBatch, BatchPostProcessingFn]:
-        if self.is_informative:
-            raise NotImplementedError("Informative transforms are not yet supported.")
-
         if not self:
             return tapes, null_postprocessing
         processing_fns_stack = []
 
+        # informative_transform = self._transform_program.pop(-1) if self.is_informative else None
+        informative_fn = None
+
         for transform_container in self:
-            transform, args, kwargs, cotransform, _ = transform_container
+            transform, args, kwargs, cotransform, _, _ = transform_container
             if cotransform:
                 raise NotImplementedError(
                     "cotransforms are not yet integrated with TransformProgram"
@@ -308,15 +308,20 @@ class TransformProgram:
             batch_postprocessing = partial(_batch_postprocessing, individual_fns=fns, slices=slices)
             batch_postprocessing.__doc__ = _batch_postprocessing.__doc__
 
-            processing_fns_stack.append(batch_postprocessing)
-
             # set input tapes for next iteration.
             tapes = execution_tapes
 
-        postprocessing_fn = partial(
-            _apply_postprocessing_stack,
-            postprocessing_stack=processing_fns_stack,
-        )
+            if transform.is_informative and not transform.requires_exec:
+                informative_fn = batch_postprocessing
+                continue
+
+            processing_fns_stack.append(batch_postprocessing)
+
+        def postprocessing_fn(res):
+            if informative_fn:
+                res = informative_fn(tapes)
+            return _apply_postprocessing_stack(res, processing_fns_stack)
+
         postprocessing_fn.__doc__ = _apply_postprocessing_stack.__doc__
 
         return tuple(tapes), postprocessing_fn

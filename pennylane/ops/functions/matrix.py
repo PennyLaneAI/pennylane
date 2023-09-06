@@ -123,6 +123,9 @@ def matrix(op: qml.operation.Operator, *, wire_order=None) -> TensorLike:
         >>> qml.grad(cost)(theta)
         -0.14943813247359922
     """
+    if not isinstance(op, qml.operation.Operator):
+        return _matrix(op, wire_order=wire_order)
+
     if isinstance(op, qml.operation.Tensor) and wire_order is not None:
         op = 1.0 * op  # convert to a Hamiltonian
 

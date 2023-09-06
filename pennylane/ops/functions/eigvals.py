@@ -104,6 +104,9 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
         array([ 0.92387953+0.38268343j,  0.92387953-0.38268343j,
                -0.92387953+0.38268343j, -0.92387953-0.38268343j])
     """
+    if not isinstance(op, qml.operation.Operator):
+        return _eigvals_tape(op)
+
     if isinstance(op, qml.Hamiltonian):
         warnings.warn(
             "For Hamiltonians, the eigenvalues will be computed numerically. "
