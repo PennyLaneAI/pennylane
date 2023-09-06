@@ -26,7 +26,8 @@ def compute_indices_MPS(wires, n_block_wires, offset=0):
     Args:
         wires (Iterable): wires that the template acts on
         n_block_wires (int): number of wires per block_gen
-        offset (wires): offset for positioning the subsequent blocks relative to the default ``n_block_wires/2``, where :math:`|\text{offset}| < \text{n_block_wires} / 2`
+        offset (wires): offset for positioning the subsequent blocks relative to the default :math:`O_d = \lfloor \text{n_block_wires}/2  \rfloor`, where :math:`\text{offset} + O_d \in [1, \text{n_block_wires} - 1]`
+
     Returns:
         layers (Tuple[Tuple]]): array of wire indices or wire labels for each block
     """
@@ -84,7 +85,7 @@ class MPS(Operation):
         block (Callable): quantum circuit that defines a block
         n_params_block (int): the number of parameters in a block; equal to the length of the ``weights`` argument in ``block``
         template_weights (Sequence): list containing the weights for all blocks
-        offset (int): offset for positioning the subsequent blocks relative to the default :math:` \lfloor \text{n_block_wires}/2  \rfloor`, where :math:`|\text{offset}| <  \lfloor \text{n_block_wires} / 2  \rfloor`
+        offset (int): offset for positioning the subsequent blocks relative to the default :math:`O_d = \lfloor \text{n_block_wires}/2  \rfloor`, where :math:`\text{offset} + O_d \in [1, \text{n_block_wires} - 1]`
         **kwargs: additional keyword arguments for implementing the ``block``
 
     .. note::
@@ -247,7 +248,7 @@ class MPS(Operation):
         Args:
             wires (Sequence): number of wires the template acts on
             n_block_wires (int): number of wires per block
-            offset (int): offset for positioning the subsequent blocks relative to the default ``n_block_wires/2``, where :math:`|\text{offset}| < \text{n_block_wires} / 2`
+            offset (int): offset for positioning the subsequent blocks relative to the default :math:`O_d = \lfloor \text{n_block_wires}/2  \rfloor`, where :math:`\text{offset} + O_d \in [1, \text{n_block_wires} - 1]`
 
         Returns:
             n_blocks (int): number of blocks; expected length of the template_weights argument
