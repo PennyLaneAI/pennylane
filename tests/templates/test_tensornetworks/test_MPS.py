@@ -63,22 +63,6 @@ class TestIndicesMPS:
     @pytest.mark.parametrize(
         ("n_wires", "n_block_wires"),
         [
-            (5, 3),
-            (9, 5),
-            (11, 7),
-        ],
-    )
-    def test_exception_n_block_wires_uneven(self, n_wires, n_block_wires):
-        """Verifies that an exception is raised if n_block_wires is not even."""
-
-        with pytest.raises(
-            ValueError, match=f"n_block_wires must be an even integer; got {n_block_wires}"
-        ):
-            compute_indices_MPS(range(n_wires), n_block_wires)
-
-    @pytest.mark.parametrize(
-        ("n_wires", "n_block_wires"),
-        [
             (3, 4),
             (6, 8),
             (10, 14),
@@ -119,8 +103,8 @@ class TestIndicesMPS:
 
         with pytest.raises(
             ValueError,
-            match=f"Absolute value of offest must be smaller than half of the n_block_wires; "
-            f"got offset = {offset} and n_block_wires = {n_block_wires}",
+            match="Provided offset is outside the expected range; "
+            f"the expected range for n_block_wires = {n_block_wires}",
         ):
             compute_indices_MPS(range(n_wires), n_block_wires, offset)
 
@@ -174,7 +158,6 @@ class TestTemplateInputs:
     @pytest.mark.parametrize(
         ("block", "n_params_block", "wires", "n_block_wires", "offset", "msg_match"),
         [
-            (None, None, [1, 2, 3, 4], 7, 0, "n_block_wires must be an even integer; got 7"),
             (
                 None,
                 None,
@@ -190,7 +173,7 @@ class TestTemplateInputs:
                 [1, 2, 3, 4],
                 0,
                 0,
-                "number of wires in each block must be larger than or equal to 2; "
+                "The number of wires in each block must be larger than or equal to 2; "
                 "got n_block_wires = 0",
             ),
             (
@@ -199,8 +182,7 @@ class TestTemplateInputs:
                 [1, 2, 3, 4, 5, 6, 7, 8],
                 4,
                 2,
-                "Absolute value of offest must be smaller than half of the n_block_wires; "
-                "got offset = 2 and n_block_wires = 4",
+                "Provided offset is outside the expected range; ",
             ),
         ],
     )
@@ -326,8 +308,8 @@ class TestAttributes:
 
         with pytest.raises(
             ValueError,
-            match=f"Absolute value of offest must be smaller than half of the n_block_wires; "
-            f"got offset = {offset} and n_block_wires = {n_block_wires}",
+            match=r"Provided offset is outside the expected range; "
+            f"the expected range for n_block_wires = {n_block_wires}",
         ):
             qml.MPS.get_n_blocks(wires, n_block_wires, offset)
 
@@ -390,6 +372,12 @@ class TestTemplateOutputs:
         qml.MultiControlledX(wires=[wires[3], wires[4], wires[5], wires[6]])
         qml.MultiControlledX(wires=[wires[4], wires[5], wires[6], wires[7]])
 
+    @staticmethod
+    def circuit4_MPS(wires, **kwargs):  # pylint: disable=unused-argument
+        qml.MultiControlledX(wires=[wires[0], wires[1], wires[2], wires[3]])
+        qml.MultiControlledX(wires=[wires[2], wires[3], wires[4], wires[5]])
+        qml.MultiControlledX(wires=[wires[4], wires[5], wires[6], wires[7]])
+
     @pytest.mark.parametrize(
         (
             "block",
@@ -397,6 +385,7 @@ class TestTemplateOutputs:
             "wires",
             "n_block_wires",
             "template_weights",
+            "offset",
             "kwargs",
             "expected_circuit",
         ),
@@ -407,6 +396,7 @@ class TestTemplateOutputs:
                 [1, 2, 3, 4],
                 2,
                 [[0.1, 0.2], [-0.2, 0.3], [0.3, 0.4]],
+                0,
                 {},
                 "circuit1_MPS",
             ),
@@ -416,6 +406,7 @@ class TestTemplateOutputs:
                 [1, 2, 3],
                 2,
                 [[0.1, 0.2, 0.3], [0.2, 0.3, -0.4]],
+                0,
                 {},
                 "circuit2_MPS",
             ),
@@ -425,8 +416,19 @@ class TestTemplateOutputs:
                 [1, 2, 3, 4, 5, 6, 7, 8],
                 4,
                 None,
+                -1,
                 {"k": 2},
                 "circuit3_MPS",
+            ),
+            (
+                "circuit3_block",
+                0,
+                [1, 2, 3, 4, 5, 6, 7, 8, 9],
+                5,
+                None,
+                0,
+                {"k": 2},
+                "circuit4_MPS",
             ),
         ],
     )
@@ -437,6 +439,7 @@ class TestTemplateOutputs:
         wires,
         n_block_wires,
         template_weights,
+        offset,
         kwargs,
         expected_circuit,
     ):
@@ -447,7 +450,15 @@ class TestTemplateOutputs:
 
         @qml.qnode(dev)
         def circuit_template():
-            qml.MPS(wires, n_block_wires, block, n_params_block, template_weights, **kwargs)
+            qml.MPS(
+                wires,
+                n_block_wires,
+                block,
+                n_params_block,
+                template_weights,
+                offset=offset,
+                **kwargs,
+            )
             return qml.expval(qml.PauliZ(wires=wires[-1]))
 
         template_result = circuit_template()

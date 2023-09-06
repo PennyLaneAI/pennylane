@@ -33,12 +33,9 @@ def compute_indices_MPS(wires, n_block_wires, offset=0):
 
     n_wires = len(wires)
 
-    if n_block_wires % 2 != 0:
-        raise ValueError(f"n_block_wires must be an even integer; got {n_block_wires}")
-
     if n_block_wires < 2:
         raise ValueError(
-            f"number of wires in each block must be larger than or equal to 2; got n_block_wires = {n_block_wires}"
+            f"The number of wires in each block must be larger than or equal to 2; got n_block_wires = {n_block_wires}"
         )
 
     if n_block_wires > n_wires:
@@ -46,12 +43,15 @@ def compute_indices_MPS(wires, n_block_wires, offset=0):
             f"n_block_wires must be smaller than or equal to the number of wires; got n_block_wires = {n_block_wires} and number of wires = {n_wires}"
         )
 
-    if not abs(offset) < n_block_wires / 2:
+    offset_limits = (
+        qml.math.array([-n_block_wires // 2 + 1, n_block_wires // 2 - 1]) + n_block_wires % 2
+    )
+    if offset < offset_limits[0] or offset > offset_limits[1]:
         raise ValueError(
-            f"Absolute value of offest must be smaller than half of the n_block_wires; got offset = {offset} and n_block_wires = {n_block_wires}"
+            f"Provided offset is outside the expected range; the expected range for n_block_wires = {n_block_wires} is range{offset_limits[0], offset_limits[1]}"
         )
 
-    if not abs(offset) and n_wires % (n_block_wires / 2) > 0:
+    if not abs(offset) and not n_block_wires % 2 and n_wires % (n_block_wires / 2) > 0:
         warnings.warn(
             f"The number of wires should be a multiple of {int(n_block_wires/2)}; got {n_wires}"
         )
@@ -89,8 +89,10 @@ class MPS(Operation):
 
     .. note::
 
-        The expected number of blocks can be obtained from ``qml.MPS.get_n_blocks(wires, n_block_wires, offset=0)``.
-        The length of ``template_weights`` argument should match the number of blocks.
+        The expected number of blocks can be obtained from ``qml.MPS.get_n_blocks(wires, n_block_wires, offset=0)``, and
+        the length of ``template_weights`` argument should match the number of blocks. Whenever either `n_block_wires`
+        is odd or `offset` is nonzero, the template deviates from the maximally unbalanced tree architecture described in
+        `arXiv:1803.11537 <https://arxiv.org/abs/1803.11537>`_.
 
     .. details::
         :title: Usage Details
@@ -132,7 +134,7 @@ class MPS(Operation):
             import pennylane as qml
             import numpy as np
 
-            def block(weights, wires):
+            def block(wires):
                 qml.MultiControlledX(wires=[wires[i] for i in range(len(wires))])
 
             n_wires = 8
@@ -183,7 +185,7 @@ class MPS(Operation):
         n_blocks = self.get_n_blocks(wires, n_block_wires, offset)
 
         if template_weights is not None:
-            shape = qml.math.shape(template_weights)[-4:]  # (n_blocks, n_params_block)
+            shape = qml.math.shape(template_weights)  # (n_blocks, n_params_block)
             if shape[0] != n_blocks:
                 raise ValueError(
                     f"Weights tensor must have first dimension of length {n_blocks}; got {shape[0]}"
@@ -251,7 +253,7 @@ class MPS(Operation):
             n_blocks (int): number of blocks; expected length of the template_weights argument
         """
         n_wires = len(wires)
-        if n_wires % (n_block_wires / 2) > 0:
+        if not abs(offset) and not n_block_wires % 2 and n_wires % (n_block_wires / 2) > 0:
             warnings.warn(
                 f"The number of wires should be a multiple of {int(n_block_wires/2)}; got {n_wires}"
             )
@@ -261,13 +263,13 @@ class MPS(Operation):
                 f"n_block_wires must be smaller than or equal to the number of wires; got n_block_wires = {n_block_wires} and number of wires = {n_wires}"
             )
 
-        if not abs(offset) < n_block_wires / 2:
+        offset_limits = (
+            qml.math.array([-n_block_wires // 2 + 1, n_block_wires // 2 - 1]) + n_block_wires % 2
+        )
+        if offset < offset_limits[0] or offset > offset_limits[1]:
             raise ValueError(
-                f"Absolute value of offest must be smaller than half of the n_block_wires; got offset = {offset} and n_block_wires = {n_block_wires}"
+                f"Provided offset is outside the expected range; the expected range for n_block_wires = {n_block_wires} is range{offset_limits[0], offset_limits[1]}"
             )
-
-        if not abs(offset):
-            return int(n_wires / (n_block_wires / 2) - 1)
 
         n_step = n_block_wires // 2 + offset
         n_layers = n_wires - int(n_wires % (n_block_wires // 2)) - n_step
