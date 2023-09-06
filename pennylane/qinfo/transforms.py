@@ -68,9 +68,7 @@ def reduced_dm(qnode, wires):
 
         # TODO: optimize given the wires by creating a tape with relevant operations
         state_built = qnode(*args, **kwargs)
-        density_matrix = dm_func(
-            state_built, indices=indices, c_dtype=getattr(qnode.device, "C_DTYPE", "complex128")
-        )
+        density_matrix = dm_func(state_built, indices=indices, c_dtype=qnode.device.C_DTYPE)
         return density_matrix
 
     return wrapper
@@ -147,9 +145,7 @@ def purity(qnode, wires):
         if not dm_measurement:
             state_built = qml.math.dm_from_state_vector(state_built)
 
-        return qml.math.purity(
-            state_built, indices, c_dtype=getattr(qnode.device, "C_DTYPE", "complex128")
-        )
+        return qml.math.purity(state_built, indices, c_dtype=qnode.device.C_DTYPE)
 
     return wrapper
 
@@ -216,17 +212,12 @@ def vn_entropy(qnode, wires, base=None):
 
             density_matrix = qnode(*args, **kwargs)
             entropy = qml.math.vn_entropy(
-                density_matrix,
-                indices,
-                base,
-                c_dtype=getattr(qnode.device, "C_DTYPE", "complex128"),
+                density_matrix, indices, base, c_dtype=qnode.device.C_DTYPE
             )
             return entropy
 
         density_matrix = density_matrix_qnode(*args, **kwargs)
-        entropy = qml.math.vn_entropy(
-            density_matrix, indices, base, c_dtype=getattr(qnode.device, "C_DTYPE", "complex128")
-        )
+        entropy = qml.math.vn_entropy(density_matrix, indices, base, c_dtype=qnode.device.C_DTYPE)
         return entropy
 
     return wrapper
