@@ -15,8 +15,6 @@
 A wrapper module for the PennyLane's native compilation mode via Catalyst.
 """
 
-import functools
-
 try:
     import catalyst
 

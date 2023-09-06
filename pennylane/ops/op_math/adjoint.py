@@ -27,7 +27,15 @@ from .symbolicop import SymbolicOp
 
 # pylint: disable=no-member
 def adjoint(fn, lazy=True):
-    """Create the adjoint of an Operator or a function that applies the adjoint of the provided function.
+    r"""Create the adjoint of an Operator or a function that applies the adjoint of the provided
+    function.
+
+    .. important::
+
+        The :func:`qml.adjoint()` function is QJIT compatible with no support for ``lazy`` evaluation.
+        Besides, performing the adjoint of quantum functions that contain mid-circuit measurements
+        is neither supported.
+        Check the :func:`catalyst.adjoint() <catalyst.adjoint>` for the documentation.
 
     Args:
         fn (function or :class:`~.operation.Operator`): A single operator or a quantum function that
@@ -121,6 +129,7 @@ def adjoint(fn, lazy=True):
         import catalyst
 
         if catalyst.utils.tracing.TracingContext.is_tracing():
+            assert lazy, "Lazy Evaluation is not supported in Catalyst."
             return catalyst.adjoint(fn)
     except ImportError:
         # If this's not callled during tracing, there's no need to

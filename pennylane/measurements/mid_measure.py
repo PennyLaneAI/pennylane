@@ -26,11 +26,17 @@ from .measurements import MeasurementProcess, MidMeasure
 
 
 def measure(wires: Wires, reset: Optional[bool] = False):
-    r"""Perform a mid-circuit measurement in the computational basis on the
-    supplied qubit.
+    r"""Perform a mid-circuit measurement on the supplied qubit.
 
-    Measurement outcomes can be obtained and used to conditionally apply
-    operations.
+    .. important::
+
+        The :func:`qml.measure()` function is QJIT compatible with no support
+        for ``reset`` and this is not performed in the computational basis.
+        You can return the result of mid-circuit measurement from a JIT compiled hybrid function.
+        Check the :func:`catalyst.measure() <catalyst.measure>` for the documentation.
+
+    This is in the computational basis and its outcome can be obtained and used to conditionally
+    apply operations.
 
     If a device doesn't support mid-circuit measurements natively, then the
     QNode will apply the :func:`defer_measurements` transform.
@@ -94,6 +100,7 @@ def measure(wires: Wires, reset: Optional[bool] = False):
     Raises:
         QuantumFunctionError: if multiple wires were specified
     """
+
     wire = Wires(wires)
     if len(wire) > 1:
         raise qml.QuantumFunctionError(
@@ -104,6 +111,7 @@ def measure(wires: Wires, reset: Optional[bool] = False):
         from catalyst import utils, measure
 
         if utils.tracing.TracingContext.is_tracing():
+            assert not reset, "Reset option is not supported in Catalyst."
             return measure(wire[0])
     except ImportError:
         # If this's not callled during tracing, there's no need to

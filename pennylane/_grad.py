@@ -25,19 +25,70 @@ from autograd.wrap_util import unary_to_nary
 make_vjp = unary_to_nary(_make_vjp)
 
 
-def grad(fn, argnum=None, method=None, h=None):
+def grad(fun, argnum=None, **kwargs):
+    r"""Returns the gradient as a callable function of (functions of) QNodes.
+
+    .. important::
+
+        The :func:`qml.grad()` function is QJIT compatible with no support
+        for device grad_method capturing. The user should provide the method
+        used for differentiation, which can be any of ``["auto", "fd"]``
+        where:
+
+            - ``method="auto"`` represents deferring the quantum differentiation to the method
+            specified by the QNode, while the classical computation is differentiated
+            using traditional auto-diff. Catalyst supports ``"parameter-shift"`` and
+            ``"adjoint"`` on internal QNodes. Notably, QNodes with
+            ``diff_method="finite-diff"`` is not supported with ``"auto"``.
+
+            - ``method="fd"`` represents first-order finite-differences for the entire hybrid
+            function.
+        In addition, the step-size value (``h=``) for the finite-difference (``"fd"``)
+        method can be provided. Currently, higher-order differentiation is only supported by
+        the finite-difference method.
+        Check the :func:`catalyst.grad() <catalyst.grad>` for the documentation.
+
+    By default, gradients are computed for arguments which contain the property
+    ``requires_grad=True``. Alternatively, the ``argnum`` keyword argument can
+    be specified to compute gradients for function arguments without this property,
+    such as scalars, lists, tuples, dicts, or vanilla NumPy arrays. Setting
+    ``argnum`` to the index of an argument with ``requires_grad=False`` will raise
+    a ``NonDifferentiableError``.
+
+    When the output gradient function is executed, both the forward pass
+    *and* the backward pass will be performed in order to
+    compute the gradient. The value of the forward pass is available via the
+    :attr:`~.forward` property.
+
+    .. warning::
+        ``grad`` is intended to be used with the Autograd interface only.
+
+    Args:
+        func (function): a plain QNode, or a Python function that contains
+            a combination of quantum and classical nodes
+        argnum (int, list(int), None): Which argument(s) to take the gradient
+            with respect to. By default, the arguments themselves are used
+            to determine differentiability, by examining the ``requires_grad``
+            property.
+
+    Returns:
+        function: The function that returns the gradient of the input
+        function with respect to the differentiable arguments, or, if specified,
+        the arguments in ``argnum``.
+    """
+
     try:
         import catalyst
 
         if catalyst.utils.tracing.TracingContext.is_tracing():
-            return catalyst.grad(fn, method=method, h=h, argnum=argnum)
+            return catalyst.grad(fun, method=kwargs.get("method"), h=kwargs.get("h"), argnum=argnum)
     except ImportError:
         # If this's not callled during tracing, there's no need to
         # patch this to `catalyst.grad` and it can be treated as
         # a regular `qml.grad` call.
         pass
 
-    return Grad(fn, argnum)
+    return Grad(fun, argnum)
 
 
 class Grad:
@@ -119,9 +170,6 @@ class Grad:
     def __call__(self, *args, **kwargs):
         """Evaluates the gradient function, and saves the function value
         calculated during the forward pass in :attr:`.forward`."""
-        if self._qjit_ctx_tracing:
-            return grad(self._fun, argnum=self._argnum)
-
         grad_fn, argnum = self._get_grad_fn(args)
 
         if not isinstance(argnum, int) and not argnum:
@@ -163,9 +211,28 @@ class Grad:
         return grad_value, ans
 
 
-def jacobian(func, argnum=None, method=None, h=None):
+def jacobian(func, argnum=None, **kwargs):
     """Returns the Jacobian as a callable function of vector-valued
     (functions of) QNodes.
+
+    .. important::
+
+        The :func:`qml.jacobian()` function is QJIT compatible with no support
+        for device grad_method capturing. The user should provide the method
+        used for differentiation, which can be any of ``["auto", "fd"]``
+        where:
+
+            - ``method="auto"`` represents deferring the quantum differentiation to the method
+            specified by the QNode, while the classical computation is differentiated
+            using traditional auto-diff. Catalyst supports ``"parameter-shift"`` and
+            ``"adjoint"`` on internal QNodes. Notably, QNodes with
+            ``diff_method="finite-diff"`` is not supported with ``"auto"``.
+
+            - ``method="fd"`` represents first-order finite-differences for the entire hybrid
+            function.
+        In addition, the step-size value (``h=``) for the finite-difference (``"fd"``)
+        method can be provided.
+        Check the :func:`catalyst.jacobian() <catalyst.jacobian>` for the documentation.
 
     This is a wrapper around the :mod:`autograd.jacobian` function.
 
@@ -313,7 +380,9 @@ def jacobian(func, argnum=None, method=None, h=None):
         import catalyst
 
         if catalyst.utils.tracing.TracingContext.is_tracing():
-            return catalyst.jacobian(func, method=method, h=h, argnum=argnum)
+            return catalyst.jacobian(
+                func, method=kwargs.get("method"), h=kwargs.get("h"), argnum=argnum
+            )
     except ImportError:
         # If this's not callled during tracing, there's no need to
         # patch this to `catalyst.grad` and it can be treated as
