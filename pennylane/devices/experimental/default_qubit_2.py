@@ -24,7 +24,6 @@ import numpy as np
 from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.typing import Result, ResultBatch
 from pennylane.transforms import convert_to_numpy_parameters
-from pennylane._version import __version__
 from pennylane.wires import Wires, WireError
 from pennylane import DeviceError, Snapshot
 
@@ -136,8 +135,6 @@ class DefaultQubit2(Device):
     DeviceArray(-0.93203914, dtype=float32, weak_type=True)
 
     """
-
-    pennylane_requires = __version__
 
     @property
     def name(self):

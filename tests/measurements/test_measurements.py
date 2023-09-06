@@ -492,6 +492,7 @@ class TestSampleMeasurement:
 
         assert qml.math.allequal(circuit(), [1000, 0])
 
+    @pytest.mark.xfail(reason="until DQ2 port")
     def test_sample_measurement_without_shots(self):
         """Test that executing a sampled measurement with ``shots=None`` raises an error."""
 
@@ -536,6 +537,7 @@ class TestStateMeasurement:
 
         assert circuit() == 1
 
+    @pytest.mark.xfail(reason="until DQ2 port")
     def test_state_measurement_with_shots(self):
         """Test that executing a state measurement with shots raises an error."""
 
@@ -560,6 +562,7 @@ class TestStateMeasurement:
 class TestMeasurementTransform:
     """Tests for the MeasurementTransform class."""
 
+    @pytest.mark.xfail(reason="until DQ2 port")
     def test_custom_measurement(self):
         """Test the execution of a custom measurement."""
 

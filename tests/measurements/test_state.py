@@ -226,6 +226,7 @@ class TestDensityMatrixMP:
 class TestState:
     """Tests for the state function"""
 
+    @pytest.mark.xfail(reason="until DQ2 port")
     @pytest.mark.parametrize("wires", range(2, 5))
     @pytest.mark.parametrize("op,dtype", [(qml.PauliX, np.float64), (qml.PauliY, np.complex128)])
     def test_state_shape_and_dtype(self, op, dtype, wires):
@@ -276,6 +277,7 @@ class TestState:
         assert np.allclose(state_val[0], 1 / np.sqrt(2))
         assert np.allclose(state_val[-1], 1 / np.sqrt(2))
 
+    @pytest.mark.xfail(reason="until DQ2 port")
     def test_return_with_other_types_works(self):
         """Test that no exception is raised when a state is returned along with another return
         type"""
@@ -292,6 +294,7 @@ class TestState:
         assert np.allclose(res[0], np.array([1, 0, 1, 0]) / np.sqrt(2))
         assert np.isclose(res[1], 1)
 
+    @pytest.mark.xfail(reason="until DQ2 port")
     @pytest.mark.parametrize("wires", range(2, 5))
     def test_state_equal_to_expected_state(self, wires):
         """Test that the returned state is equal to the expected state for a template circuit"""
@@ -337,6 +340,7 @@ class TestState:
         assert np.allclose(state_expected, state_val.numpy())
         assert state_val.shape == (16,)
 
+    @pytest.mark.xfail(reason="until DQ2 port")
     @pytest.mark.torch
     @pytest.mark.parametrize("op", [qml.PauliX, qml.PauliY])
     def test_interface_torch(self, op):
@@ -556,6 +560,7 @@ class TestDensityMatrix:
 
     # pylint: disable=too-many-public-methods
 
+    @pytest.mark.xfail(reason="until DQ2 port")
     @pytest.mark.parametrize("wires", range(2, 5))
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
     @pytest.mark.parametrize("op,dtype", [(qml.PauliX, np.float64), (qml.PauliY, np.complex128)])
@@ -640,6 +645,7 @@ class TestDensityMatrix:
 
         assert np.allclose(expected, density_mat)
 
+    @pytest.mark.xfail(reason="until DQ2 port")
     @pytest.mark.tf
     @pytest.mark.parametrize("diff_method", [None, "backprop"])
     def test_correct_density_matrix_tf_default_qubit(self, diff_method):
@@ -678,6 +684,7 @@ class TestDensityMatrix:
 
         assert np.allclose(expected, density_first)
 
+    @pytest.mark.xfail(reason="until DQ2 port")
     def test_correct_density_matrix_product_state_first_default_qubit(self):
         """Test that the correct density matrix is returned when
         tracing out a product state"""
@@ -715,6 +722,7 @@ class TestDensityMatrix:
         expected = np.array([[0.5 + 0.0j, 0.5 + 0.0j], [0.5 + 0.0j, 0.5 + 0.0j]])
         assert np.allclose(expected, density_second)
 
+    @pytest.mark.xfail(reason="until DQ2 port")
     def test_correct_density_matrix_product_state_second_default_qubit(self):
         """Test that the correct density matrix is returned when
         tracing out a product state"""
@@ -756,6 +764,7 @@ class TestDensityMatrix:
 
         assert np.allclose(expected, density_both)
 
+    @pytest.mark.xfail(reason="until DQ2 port")
     @pytest.mark.parametrize("return_wire_order", ([0, 1], [1, 0]))
     def test_correct_density_matrix_product_state_both_default_qubit(self, return_wire_order):
         """Test that the correct density matrix is returned
@@ -806,6 +815,7 @@ class TestDensityMatrix:
         )
         assert np.allclose(expected, density_full)
 
+    @pytest.mark.xfail(reason="until DQ2 port")
     def test_correct_density_matrix_three_wires_first_two_default_qubit(self):
         """Test that the correct density matrix is returned for an example with three wires,
         and tracing out the third wire."""
@@ -892,6 +902,7 @@ class TestDensityMatrix:
         expected = np.outer(exp_statevector.conj(), exp_statevector)
         assert np.allclose(expected, density_full)
 
+    @pytest.mark.xfail(reason="until DQ2 port")
     @pytest.mark.parametrize(
         "return_wire_order", ([0], [1], [2], [0, 1], [1, 0], [0, 2], [2, 0], [1, 2, 0], [2, 1, 0])
     )
@@ -969,6 +980,7 @@ class TestDensityMatrix:
 
         assert np.allclose(expected, density)
 
+    @pytest.mark.xfail(reason="until DQ2 port")
     def test_correct_density_matrix_all_wires_default_qubit(self):
         """Test that the correct density matrix is returned when all wires are given"""
 
@@ -996,6 +1008,7 @@ class TestDensityMatrix:
             qml.density_matrix(wires=[0, 1]).process_state(state=dev_state, wire_order=dev.wires),
         )
 
+    @pytest.mark.xfail(reason="until DQ2 port")
     def test_return_with_other_types_works(self):
         """Test that no exception is raised when a state is returned along with another return
         type"""

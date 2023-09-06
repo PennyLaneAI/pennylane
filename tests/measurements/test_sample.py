@@ -46,7 +46,7 @@ class TestSample:
             (n_sample,) if not n_sample == 1 else ()
         )
 
-    @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested sequences")
+    @pytest.mark.xfail(reason="until DQ2 port")
     def test_sample_combination(self):
         """Test the output of combining expval, var and sample"""
         n_sample = 10

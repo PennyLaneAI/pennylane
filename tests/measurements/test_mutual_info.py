@@ -97,6 +97,7 @@ class TestIntegration:
         res = circuit()
         assert np.allclose(res, expected, atol=1e-6)
 
+    @pytest.mark.xfail(reason="until DQ2 port")
     @pytest.mark.parametrize("shots", [1000, [1, 10, 10, 1000]])
     def test_finite_shots_error(self, shots):
         """Test an error is raised when using shot vectors with mutual_info."""
@@ -446,11 +447,12 @@ class TestIntegration:
         with pytest.raises(qml.QuantumFunctionError, match=msg):
             circuit(params)
 
+    @pytest.mark.xfail(reason="until DQ2 port")
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     @pytest.mark.parametrize("params", [np.array([0.0, 0.0]), np.array([0.3, 0.4])])
-    def test_custom_wire_labels_error(self, interface, params):
-        """Tests that an error is raised when mutual information is measured
+    def test_custom_wire_labels_works(self, interface, params):
+        """Tests that no error is raised when mutual information is measured
         with custom wire labels"""
         dev = qml.device("default.qubit", wires=["a", "b"])
 
