@@ -277,13 +277,13 @@ class TestMatrix:
     def get_qft_mat(num_wires):
         """Helper function to generate the matrix of a qft protocol."""
         omega = math.exp(np.pi * 1.0j / 2 ** (num_wires - 1))
-        mat = math.zeros((2 ** num_wires, 2 ** num_wires), dtype="complex128")
+        mat = math.zeros((2**num_wires, 2**num_wires), dtype="complex128")
 
-        for m in range(2 ** num_wires):
-            for n in range(2 ** num_wires):
+        for m in range(2**num_wires):
+            for n in range(2**num_wires):
                 mat[m, n] = omega ** (m * n)
 
-        return 1 / math.sqrt(2 ** num_wires) * mat
+        return 1 / math.sqrt(2**num_wires) * mat
 
     def test_sum_templates(self):
         """Test that we can sum templates and generated matrix is correct."""

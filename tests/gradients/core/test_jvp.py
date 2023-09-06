@@ -92,14 +92,14 @@ tests_compute_jvp_single = [
         [np.array([[4, -3, 2], [0, 2, 1]])] * 3,
         np.array(-48),
     ),
-    (tuple(_x * x for x in [2, 1, -9]), [_x] * 3, -6 * np.sum(_x ** 2)),
+    (tuple(_x * x for x in [2, 1, -9]), [_x] * 3, -6 * np.sum(_x**2)),
     # Multiple mixed parameters, scalar output
     (
         (np.array([1, 3]), np.array(2), np.array([[0, 5, 2, 1]])),
         [np.array([2, -1]), np.array(-5), np.array([[1, 2, 3, -2]])],
         np.array(3),
     ),
-    ((np.array(2), np.array(2), _x), [np.array(-1), np.array(5), _x], 8 + np.sum(_x ** 2)),
+    ((np.array(2), np.array(2), _x), [np.array(-1), np.array(5), _x], 8 + np.sum(_x**2)),
     # Multiple same-shape tensor parameters, tensor output
     (
         tuple(np.outer([-4, 5, 2], [1, 2, 3]) * x for x in [2, 1, -9]),
@@ -114,7 +114,7 @@ tests_compute_jvp_single = [
     (
         tuple(np.tensordot([[-4, 5, 2], [1, 3, -2]], _x, axes=0) * x for x in [2, 1, -9]),
         [_x] * 3,
-        -6 * np.sum(_x ** 2) * np.array([[-4, 5, 2], [1, 3, -2]]),
+        -6 * np.sum(_x**2) * np.array([[-4, 5, 2], [1, 3, -2]]),
     ),
     # Multiple mixed parameters, tensor output
     (
@@ -125,7 +125,7 @@ tests_compute_jvp_single = [
     (
         tuple(np.tensordot([[-4, 5, 2], [1, 3, -2]], v, axes=0) for v in [2, 2, _x]),
         [np.array(-1), np.array(5), _x],
-        (8 + np.sum(_x ** 2)) * np.array([[-4, 5, 2], [1, 3, -2]]),
+        (8 + np.sum(_x**2)) * np.array([[-4, 5, 2], [1, 3, -2]]),
     ),
 ]
 

@@ -389,7 +389,7 @@ class TestGatesQubit:
 
         res = circuit()
 
-        expected = np.zeros([2 ** n_wires])
+        expected = np.zeros([2**n_wires])
         expected[np.ravel_multi_index(basis_state, [2] * n_wires)] = 1
         assert np.allclose(res, expected, atol=tol(dev.shots))
 

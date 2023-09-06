@@ -413,7 +413,7 @@ class TestFermiWordArithmetic:
     @pytest.mark.parametrize("f1, pow, result_fw", tup_fw_pow)
     def test_pow(self, f1, pow, result_fw):
         """Test that raising a FermiWord to an integer power returns the expected FermiWord"""
-        assert f1 ** pow == result_fw
+        assert f1**pow == result_fw
 
     tup_fw_pow_error = ((fw1, -1), (fw3, 1.5))
 
@@ -421,7 +421,7 @@ class TestFermiWordArithmetic:
     def test_pow_error(self, f1, pow):
         """Test that invalid values for the exponent raises an error"""
         with pytest.raises(ValueError, match="The exponent must be a positive integer."):
-            f1 ** pow  # pylint: disable=pointless-statement
+            f1**pow  # pylint: disable=pointless-statement
 
     @pytest.mark.parametrize(
         "method_name", ("__add__", "__sub__", "__mul__", "__radd__", "__rsub__", "__rmul__")
@@ -915,7 +915,7 @@ class TestFermiSentenceArithmetic:
     @pytest.mark.parametrize("f1, pow, result", tup_fs_pow)
     def test_pow(self, f1, pow, result):
         """Test that raising a FermiWord to an integer power returns the expected FermiWord"""
-        assert f1 ** pow == result
+        assert f1**pow == result
 
     tup_fs_pow_error = ((fs1, -1), (fs3, 1.5))
 
@@ -923,7 +923,7 @@ class TestFermiSentenceArithmetic:
     def test_pow_error(self, f1, pow):
         """Test that invalid values for the exponent raises an error"""
         with pytest.raises(ValueError, match="The exponent must be a positive integer."):
-            f1 ** pow  # pylint: disable=pointless-statement
+            f1**pow  # pylint: disable=pointless-statement
 
     TYPE_ERRORS = (
         (fs1, [1.5]),

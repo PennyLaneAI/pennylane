@@ -161,7 +161,7 @@ class TestOps:
 
         res = tape.gradient(out, param)
 
-        assert np.allclose(res, np.zeros(wires ** 2))
+        assert np.allclose(res, np.zeros(wires**2))
 
     def test_full_subsystem(self, mocker):
         """Test applying a state vector to the full subsystem"""
@@ -225,7 +225,7 @@ class TestApplyChannelMethodChoice:
         spy_exp = mocker.spy(DefaultMixed, exp_method)
         spy_unexp = mocker.spy(DefaultMixed, unexp_method)
         dev = qml.device("default.mixed", wires=dev_wires)
-        state = np.zeros((2 ** dev_wires, 2 ** dev_wires))
+        state = np.zeros((2**dev_wires, 2**dev_wires))
         state[0, 0] = 1.0
         dev._state = np.array(state).reshape([2] * (2 * dev_wires))
         dev._apply_operation(op)
@@ -261,7 +261,7 @@ class TestApplyChannelMethodChoice:
         spy_exp = mocker.spy(DefaultMixed, exp_method)
         spy_unexp = mocker.spy(DefaultMixed, unexp_method)
         dev = qml.device("default.mixed", wires=dev_wires)
-        state = np.zeros((2 ** dev_wires, 2 ** dev_wires))
+        state = np.zeros((2**dev_wires, 2**dev_wires))
         state[0, 0] = 1.0
         dev._state = tf.reshape(tf.constant(state), [2] * (2 * dev_wires))
         dev._apply_operation(op)

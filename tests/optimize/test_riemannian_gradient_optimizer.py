@@ -189,7 +189,7 @@ def test_riemannian_gradient_evolution(circuit, hamiltonian):
     hamiltonian_np = hamiltonian.sparse_matrix(wire_order=wires).toarray()
     riemannian_gradient_np = hamiltonian_np @ rho - rho @ hamiltonian_np
 
-    phi_exact = expm(-0.1 * riemannian_gradient_np * 2 ** nqubits) @ phi
+    phi_exact = expm(-0.1 * riemannian_gradient_np * 2**nqubits) @ phi
     rho_exact = np.outer(phi_exact, phi_exact.conj())
     opt = RiemannianGradientOptimizer(circuit=test_circuit, stepsize=0.1, exact=True)
     opt.step_and_cost()

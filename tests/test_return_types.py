@@ -50,7 +50,7 @@ class TestSingleReturnExecute:
         else:
             res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None, interface=interface)
 
-        assert res[0].shape == (2 ** wires,)
+        assert res[0].shape == (2**wires,)
         assert isinstance(res[0], np.ndarray)
 
     @pytest.mark.parametrize("wires", test_wires)
@@ -74,7 +74,7 @@ class TestSingleReturnExecute:
         else:
             res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None, interface=interface)
 
-        assert res[0].shape == (2 ** wires, 2 ** wires)
+        assert res[0].shape == (2**wires, 2**wires)
         assert isinstance(res[0], np.ndarray)
 
     @pytest.mark.parametrize("device", devices)
@@ -99,7 +99,7 @@ class TestSingleReturnExecute:
         else:
             res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None, interface=interface)
 
-        assert res[0].shape == (2 ** d_wires, 2 ** d_wires)
+        assert res[0].shape == (2**d_wires, 2**d_wires)
         assert isinstance(res[0], np.ndarray)
 
     @pytest.mark.parametrize("device", devices)
@@ -849,7 +849,7 @@ class TestMixMeasurementsShotVector:
                     # Scalar-val meas
                     assert r.shape == ()
                 else:
-                    assert r.shape == (2 ** 2,)
+                    assert r.shape == (2**2,)
 
                     # Probs add up to 1
                     assert np.allclose(sum(r), 1)
@@ -1188,7 +1188,7 @@ class TestMixMeasurementsShotVector:
                 if expval_or_var:
                     assert r.shape == ()
                 elif probs:
-                    assert r.shape == (2 ** 2,)
+                    assert r.shape == (2**2,)
 
                     # Probs add up to 1
                     assert np.allclose(sum(r), 1)

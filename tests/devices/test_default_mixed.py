@@ -46,31 +46,31 @@ INV_SQRT2 = 1 / np.sqrt(2)
 def basis_state(index, nr_wires):
     """Generate the density matrix of the computational basis state
     indicated by ``index``."""
-    rho = np.zeros((2 ** nr_wires, 2 ** nr_wires), dtype=np.complex128)
+    rho = np.zeros((2**nr_wires, 2**nr_wires), dtype=np.complex128)
     rho[index, index] = 1
     return rho
 
 
 def hadamard_state(nr_wires):
     """Generate the equal superposition state (Hadamard on all qubits)"""
-    return np.ones((2 ** nr_wires, 2 ** nr_wires), dtype=np.complex128) / (2 ** nr_wires)
+    return np.ones((2**nr_wires, 2**nr_wires), dtype=np.complex128) / (2**nr_wires)
 
 
 def max_mixed_state(nr_wires):
     """Generate the maximally mixed state."""
-    return np.eye(2 ** nr_wires, dtype=np.complex128) / (2 ** nr_wires)
+    return np.eye(2**nr_wires, dtype=np.complex128) / (2**nr_wires)
 
 
 def root_state(nr_wires):
     """Pure state with equal amplitudes but phases equal to roots of unity"""
-    dim = 2 ** nr_wires
+    dim = 2**nr_wires
     ket = [np.exp(1j * 2 * np.pi * n / dim) / np.sqrt(dim) for n in range(dim)]
     return np.outer(ket, np.conj(ket))
 
 
 def random_state(num_wires):
     """Generate a random density matrix."""
-    shape = (2 ** num_wires, 2 ** num_wires)
+    shape = (2**num_wires, 2**num_wires)
     state = np.random.random(shape) + 1j * np.random.random(shape)
     state = state @ state.T.conj()
     state /= np.trace(state)
@@ -90,7 +90,7 @@ class TestCreateBasisState:
     @pytest.mark.parametrize("index", [0, 1])
     def test_expected_state(self, nr_wires, index, tol):
         """Tests output basis state against the expected one"""
-        rho = np.zeros((2 ** nr_wires, 2 ** nr_wires))
+        rho = np.zeros((2**nr_wires, 2**nr_wires))
         rho[index, index] = 1
         rho = np.reshape(rho, [2] * (2 * nr_wires))
         dev = qml.device("default.mixed", wires=nr_wires)
@@ -106,11 +106,11 @@ class TestState:
         """Tests that the state has the correct shape"""
         dev = qml.device("default.mixed", wires=nr_wires)
 
-        assert (2 ** nr_wires, 2 ** nr_wires) == np.shape(dev.state)
+        assert (2**nr_wires, 2**nr_wires) == np.shape(dev.state)
 
     def test_init_state(self, nr_wires, tol):
         """Tests that the state is |0...0><0...0| after initialization of the device"""
-        rho = np.zeros((2 ** nr_wires, 2 ** nr_wires))
+        rho = np.zeros((2**nr_wires, 2**nr_wires))
         rho[0, 0] = 1
         dev = qml.device("default.mixed", wires=nr_wires)
 
@@ -122,7 +122,7 @@ class TestState:
         first wires"""
         dev = qml.device("default.mixed", wires=nr_wires)
         dev.apply([op(wires=[0, 1])])
-        current_state = np.reshape(dev._state, (2 ** nr_wires, 2 ** nr_wires))
+        current_state = np.reshape(dev._state, (2**nr_wires, 2**nr_wires))
 
         assert np.allclose(dev.state, current_state, atol=tol, rtol=0)
 
@@ -140,7 +140,7 @@ class TestState:
         """Tests that state is correctly retrieved after applying a channel on the first wires"""
         dev = qml.device("default.mixed", wires=nr_wires)
         dev.apply([op])
-        current_state = np.reshape(dev._state, (2 ** nr_wires, 2 ** nr_wires))
+        current_state = np.reshape(dev._state, (2**nr_wires, 2**nr_wires))
 
         assert np.allclose(dev.state, current_state, atol=tol, rtol=0)
 
@@ -149,7 +149,7 @@ class TestState:
         """Tests that state is correctly retrieved after applying operations on the first wires"""
         dev = qml.device("default.mixed", wires=nr_wires)
         dev.apply([op(wires=0)])
-        current_state = np.reshape(dev._state, (2 ** nr_wires, 2 ** nr_wires))
+        current_state = np.reshape(dev._state, (2**nr_wires, 2**nr_wires))
 
         assert np.allclose(dev.state, current_state, atol=tol, rtol=0)
 
@@ -206,7 +206,7 @@ class TestAnalyticProb:
     def test_prob_init_state(self, nr_wires, tol):
         """Tests that we obtain the correct probabilities for the state |0...0><0...0|"""
         dev = qml.device("default.mixed", wires=nr_wires)
-        probs = np.zeros(2 ** nr_wires)
+        probs = np.zeros(2**nr_wires)
         probs[0] = 1
 
         assert np.allclose(probs, dev.analytic_probability(), atol=tol, rtol=0)
@@ -214,8 +214,8 @@ class TestAnalyticProb:
     def test_prob_basis_state(self, nr_wires, tol):
         """Tests that we obtain correct probabilities for the basis state |1...1><1...1|"""
         dev = qml.device("default.mixed", wires=nr_wires)
-        dev._state = dev._create_basis_state(2 ** nr_wires - 1)
-        probs = np.zeros(2 ** nr_wires)
+        dev._state = dev._create_basis_state(2**nr_wires - 1)
+        probs = np.zeros(2**nr_wires)
         probs[-1] = 1
 
         assert np.allclose(probs, dev.analytic_probability(), atol=tol, rtol=0)
@@ -224,7 +224,7 @@ class TestAnalyticProb:
         """Tests that we obtain correct probabilities for the equal superposition state"""
         dev = qml.device("default.mixed", wires=nr_wires)
         dev._state = hadamard_state(nr_wires)
-        probs = np.ones(2 ** nr_wires) / (2 ** nr_wires)
+        probs = np.ones(2**nr_wires) / (2**nr_wires)
 
         assert np.allclose(probs, dev.analytic_probability(), atol=tol, rtol=0)
 
@@ -232,7 +232,7 @@ class TestAnalyticProb:
         """Tests that we obtain correct probabilities for the maximally mixed state"""
         dev = qml.device("default.mixed", wires=nr_wires)
         dev._state = max_mixed_state(nr_wires)
-        probs = np.ones(2 ** nr_wires) / (2 ** nr_wires)
+        probs = np.ones(2**nr_wires) / (2**nr_wires)
 
         assert np.allclose(probs, dev.analytic_probability(), atol=tol, rtol=0)
 
@@ -240,7 +240,7 @@ class TestAnalyticProb:
         """Tests that we obtain correct probabilities for the root state"""
         dev = qml.device("default.mixed", wires=nr_wires)
         dev._state = root_state(nr_wires)
-        probs = np.ones(2 ** nr_wires) / (2 ** nr_wires)
+        probs = np.ones(2**nr_wires) / (2**nr_wires)
 
         assert np.allclose(probs, dev.analytic_probability(), atol=tol, rtol=0)
 
@@ -254,7 +254,7 @@ class TestAnalyticProb:
     def test_probability_not_negative(self, nr_wires):
         """Test that probabilities are always real"""
         dev = qml.device("default.mixed", wires=nr_wires)
-        dev._state = np.zeros([2 ** nr_wires, 2 ** nr_wires])
+        dev._state = np.zeros([2**nr_wires, 2**nr_wires])
         dev._state[0, 0] = 1
         dev._state[1, 1] = -5e-17
 
@@ -614,7 +614,7 @@ class TestApplyBasisState:
         dev = qml.device("default.mixed", wires=nr_wires)
         state = np.ones(nr_wires)
         dev._apply_basis_state(state, wires=Wires(range(nr_wires)))
-        b_state = basis_state(2 ** nr_wires - 1, nr_wires)
+        b_state = basis_state(2**nr_wires - 1, nr_wires)
         target_state = np.reshape(b_state, [2] * 2 * nr_wires)
 
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
@@ -669,7 +669,7 @@ class TestApplyStateVector:
     def test_apply_equal(self, nr_wires, tol):
         """Checks that an equal superposition state is correctly applied"""
         dev = qml.device("default.mixed", wires=nr_wires)
-        state = np.ones(2 ** nr_wires) / np.sqrt(2 ** nr_wires)
+        state = np.ones(2**nr_wires) / np.sqrt(2**nr_wires)
         dev._apply_state_vector(state, Wires(range(nr_wires)))
         eq_state = hadamard_state(nr_wires)
         target_state = np.reshape(eq_state, [2] * 2 * nr_wires)
@@ -680,7 +680,7 @@ class TestApplyStateVector:
     def test_apply_root(self, nr_wires, tol):
         """Checks that a root state is correctly applied"""
         dev = qml.device("default.mixed", wires=nr_wires)
-        dim = 2 ** nr_wires
+        dim = 2**nr_wires
         state = np.array([np.exp(1j * 2 * np.pi * n / dim) / np.sqrt(dim) for n in range(dim)])
         dev._apply_state_vector(state, Wires(range(nr_wires)))
         r_state = root_state(nr_wires)
@@ -722,7 +722,7 @@ class TestApplyStateVector:
         not a number. This test helps with coverage"""
         nr_wires = 2
         dev = qml.device("default.mixed", wires=[0, 1])
-        state = np.ones(2 ** nr_wires) / np.sqrt(2 ** nr_wires)
+        state = np.ones(2**nr_wires) / np.sqrt(2**nr_wires)
         dev._apply_state_vector(state, Wires(range(nr_wires)))
         eq_state = hadamard_state(nr_wires)
         target_state = np.reshape(eq_state, [2] * 2 * nr_wires)
@@ -750,7 +750,7 @@ class TestApplyDensityMatrix:
     def test_apply_equal(self, nr_wires, tol):
         """Checks that an equal superposition state is correctly applied"""
         dev = qml.device("default.mixed", wires=nr_wires)
-        state = np.ones(2 ** nr_wires) / np.sqrt(2 ** nr_wires)
+        state = np.ones(2**nr_wires) / np.sqrt(2**nr_wires)
         rho = np.outer(state, state.conj())
         dev._apply_density_matrix(rho, Wires(range(nr_wires)))
         eq_state = hadamard_state(nr_wires)
@@ -762,7 +762,7 @@ class TestApplyDensityMatrix:
     def test_apply_root(self, nr_wires, tol):
         """Checks that a root state is correctly applied"""
         dev = qml.device("default.mixed", wires=nr_wires)
-        dim = 2 ** nr_wires
+        dim = 2**nr_wires
         state = np.array([np.exp(1j * 2 * np.pi * n / dim) / np.sqrt(dim) for n in range(dim)])
         rho = np.outer(state, state.conj())
         dev._apply_density_matrix(rho, Wires(range(nr_wires)))
@@ -827,7 +827,7 @@ class TestApplyDensityMatrix:
         not a number. This test helps with coverage"""
         nr_wires = 2
         dev = qml.device("default.mixed", wires=[0, 1])
-        state = np.ones(2 ** nr_wires) / np.sqrt(2 ** nr_wires)
+        state = np.ones(2**nr_wires) / np.sqrt(2**nr_wires)
         rho = np.outer(state, state.conj())
         dev._apply_density_matrix(rho, Wires(range(nr_wires)))
         eq_state = hadamard_state(nr_wires)
@@ -972,13 +972,13 @@ class TestApply:
         state = np.ones(nr_wires)
         dev.apply([BasisState(state, wires=range(nr_wires))])
 
-        assert np.allclose(dev.state, basis_state(2 ** nr_wires - 1, nr_wires), atol=tol, rtol=0)
+        assert np.allclose(dev.state, basis_state(2**nr_wires - 1, nr_wires), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("nr_wires", [1, 2, 3])
     def test_apply_state_vector(self, nr_wires, tol):
         """Tests that we correctly apply a `StatePrep` operation for the root state"""
         dev = qml.device("default.mixed", wires=nr_wires)
-        dim = 2 ** nr_wires
+        dim = 2**nr_wires
         state = np.array([np.exp(1j * 2 * np.pi * n / dim) / np.sqrt(dim) for n in range(dim)])
         dev.apply([StatePrep(state, wires=range(nr_wires))])
 
@@ -989,7 +989,7 @@ class TestApply:
         wires are passed as an ordered list"""
         nr_wires = 3
         dev = qml.device("default.mixed", wires=[0, 1, 2])
-        dim = 2 ** nr_wires
+        dim = 2**nr_wires
         state = np.array([np.exp(1j * 2 * np.pi * n / dim) / np.sqrt(dim) for n in range(dim)])
         dev.apply([StatePrep(state, wires=[0, 1, 2])])
 
@@ -1000,7 +1000,7 @@ class TestApply:
         wires passed are a strict subset of the device wires"""
         nr_wires = 2
         dev = qml.device("default.mixed", wires=[0, 1, 2])
-        dim = 2 ** nr_wires
+        dim = 2**nr_wires
         state = np.array([np.exp(1j * 2 * np.pi * n / dim) / np.sqrt(dim) for n in range(dim)])
         dev.apply([StatePrep(state, wires=[0, 1])])
 
@@ -1053,13 +1053,13 @@ class TestApply:
     def test_apply_specialunitary(self, tol, num_wires):
         """Tests that a special unitary is correctly applied"""
         np.random.seed(2514)
-        theta = np.random.random(4 ** num_wires - 1)
+        theta = np.random.random(4**num_wires - 1)
 
         dev = qml.device("default.mixed", wires=num_wires)
         dev.apply([qml.SpecialUnitary(theta, wires=list(range(num_wires)))])
 
         mat = qml.SpecialUnitary.compute_matrix(theta, num_wires)
-        init_rho = np.zeros((2 ** num_wires, 2 ** num_wires))
+        init_rho = np.zeros((2**num_wires, 2**num_wires))
         init_rho[0, 0] = 1
         target_rho = mat @ init_rho @ mat.conj().T
 

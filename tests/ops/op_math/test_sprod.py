@@ -963,7 +963,7 @@ class TestIntegration:
             return qml.var(sprod_op)
 
         var = my_circ()
-        true_var = qnp.array(1.23 ** 2 / 2)
+        true_var = qnp.array(1.23**2 / 2)
         assert qnp.allclose(var, true_var)
 
     def test_measurement_process_probs(self):
@@ -1118,7 +1118,7 @@ class TestArithmetic:
         """Test the pow method for SProd Operators."""
 
         sprod_op = SProd(3, qml.RX(1.23, wires=0))
-        final_op = SProd(scalar=3 ** 2, base=qml.pow(base=qml.RX(1.23, wires=0), z=2))
+        final_op = SProd(scalar=3**2, base=qml.pow(base=qml.RX(1.23, wires=0), z=2))
         pow_op = sprod_op.pow(z=2)[0]
 
         # TODO: Use qml.equal when supported for nested operators

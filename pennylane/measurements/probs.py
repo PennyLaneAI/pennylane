@@ -175,7 +175,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         # `samples` typically has two axes ((shots, wires)) but can also have three with
         # broadcasting ((batch_size, shots, wires)) so that we simply read out the batch_size.
         batch_size = samples.shape[0] if qml.math.ndim(samples) == 3 else None
-        dim = 2 ** num_wires
+        dim = 2**num_wires
         # count the basis state occurrences, and construct the probability vector
         new_bin_size = bin_size or samples.shape[-2]
         new_shape = (-1, new_bin_size) if batch_size is None else (batch_size, -1, new_bin_size)
@@ -185,7 +185,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         num_wires = len(wire_order)
-        dim = 2 ** num_wires
+        dim = 2**num_wires
         # Compute batch_size
         expected_shape = [2] * num_wires
         expected_size = dim
@@ -197,12 +197,12 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
             flat_state = qml.math.reshape(state, (batch_size, dim))
             real_state = qml.math.real(flat_state)
             imag_state = qml.math.imag(flat_state)
-            return self.marginal_prob(real_state ** 2 + imag_state ** 2, wire_order, batch_size)
+            return self.marginal_prob(real_state**2 + imag_state**2, wire_order, batch_size)
 
         flat_state = qml.math.reshape(state, (dim,))
         real_state = qml.math.real(flat_state)
         imag_state = qml.math.imag(flat_state)
-        return self.marginal_prob(real_state ** 2 + imag_state ** 2, wire_order, None)
+        return self.marginal_prob(real_state**2 + imag_state**2, wire_order, None)
 
     @staticmethod
     def _count_samples(indices, batch_size, dim):

@@ -108,7 +108,7 @@ def test_grover_diffusion_matrix(n_wires):
     wires = list(range(n_wires))
 
     # Test-oracle
-    oracle = np.identity(2 ** n_wires)
+    oracle = np.identity(2**n_wires)
     oracle[0, 0] = -1
 
     # s1 = H|0>, Hadamard on a single qubit in the ground state
@@ -120,7 +120,7 @@ def test_grover_diffusion_matrix(n_wires):
     G_matrix = qml.GroverOperator(wires=wires).matrix()
 
     amplitudes = G_matrix @ oracle @ s
-    probs = amplitudes ** 2
+    probs = amplitudes**2
 
     # Create Grover diffusion matrix G in alternative way
     oplist = list(itertools.repeat(Hadamard.compute_matrix(), n_wires - 1))
@@ -137,7 +137,7 @@ def test_grover_diffusion_matrix(n_wires):
     G = M @ CX @ M
 
     amplitudes2 = G @ oracle @ s
-    probs2 = amplitudes2 ** 2
+    probs2 = amplitudes2**2
 
     assert np.allclose(probs, probs2)
 
@@ -170,7 +170,7 @@ def test_grover_diffusion_matrix_results():
     # Grover diffusion matrix
     G_matrix = qml.GroverOperator(wires=wires).matrix()
 
-    oracle_matrix = np.identity(2 ** n_wires)
+    oracle_matrix = np.identity(2**n_wires)
     oracle_matrix[-1, -1] = -1
 
     # s1 = H|0>, Hadamard on a single qubit in the ground state
@@ -181,7 +181,7 @@ def test_grover_diffusion_matrix_results():
 
     amplitudes = G_matrix @ oracle_matrix @ s
     # Check that the probabilities are the same
-    probs_matrix = amplitudes ** 2
+    probs_matrix = amplitudes**2
 
     assert np.allclose(probs_example, probs_matrix)
 

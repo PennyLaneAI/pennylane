@@ -96,7 +96,7 @@ class TShift(Operation):
         >>> print(qml.TShift.compute_eigvals())
         [ -0.5+0.8660254j -0.5-0.8660254j 1. +0.j         ]
         """
-        return np.array([OMEGA, OMEGA ** 2, 1])
+        return np.array([OMEGA, OMEGA**2, 1])
 
     # TODO: Add compute_decomposition once parametric ops are added.
 
@@ -152,7 +152,7 @@ class TClock(Operation):
          [ 0. +0.j        -0.5+0.8660254j  0. +0.j       ]
          [ 0. +0.j         0. +0.j        -0.5-0.8660254j]]
         """
-        return np.diag([1, OMEGA, OMEGA ** 2])
+        return np.diag([1, OMEGA, OMEGA**2])
 
     @staticmethod
     def compute_eigvals():
@@ -176,7 +176,7 @@ class TClock(Operation):
         >>> print(qml.TClock.compute_eigvals())
         [ 1. +0.j        -0.5+0.8660254j -0.5-0.8660254j]
         """
-        return np.array([1, OMEGA, OMEGA ** 2])
+        return np.array([1, OMEGA, OMEGA**2])
 
     # TODO: Add compute_decomposition() once parametric ops are added.
 
@@ -283,7 +283,7 @@ class TAdd(Operation):
         >>> print(qml.TAdd.compute_eigvals())
         [-0.5+0.8660254j -0.5-0.8660254j  1. +0.j        -0.5+0.8660254j -0.5-0.8660254j  1. +0.j         1. +0.j         1. +0.j         1. +0.j       ]
         """
-        return np.array([OMEGA, OMEGA ** 2, 1, OMEGA, OMEGA ** 2, 1, 1, 1, 1])
+        return np.array([OMEGA, OMEGA**2, 1, OMEGA, OMEGA**2, 1, 1, 1, 1])
 
     # TODO: Add compute_decomposition() once parametric ops are added.
 
@@ -513,7 +513,7 @@ class THadamard(Operation):
 
         if subspace is None:
             return (-1j / np.sqrt(3)) * np.array(
-                [[1, 1, 1], [1, OMEGA, OMEGA ** 2], [1, OMEGA ** 2, OMEGA]]
+                [[1, 1, 1], [1, OMEGA, OMEGA**2], [1, OMEGA**2, OMEGA]]
             )
 
         mat = np.eye(3, dtype=np.complex128)

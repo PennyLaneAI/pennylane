@@ -114,8 +114,8 @@ def expand_matrix(mat, wires, wire_order=None, sparse_format="csr"):
 
     def eye_interface(dim):
         if interface == "scipy":
-            return eye(2 ** dim, format="coo")
-        return qml.math.cast_like(qml.math.eye(2 ** dim, like=interface), mat)
+            return eye(2**dim, format="coo")
+        return qml.math.cast_like(qml.math.eye(2**dim, like=interface), mat)
 
     def kron_interface(mat1, mat2):
         if interface == "scipy":
@@ -229,7 +229,7 @@ def _permute_dense_matrix(matrix, wires, wire_order, batch_dim):
     # transpose matrix
     matrix = qml.math.transpose(matrix, axes=perm)
     # reshape back
-    shape = [batch_dim] + [2 ** num_wires] * 2 if batch_dim else [2 ** num_wires] * 2
+    shape = [batch_dim] + [2**num_wires] * 2 if batch_dim else [2**num_wires] * 2
     return qml.math.reshape(matrix, shape)
 
 
@@ -245,8 +245,8 @@ def _sparse_swap_mat(qubit_i, qubit_j, n):
         s[i], s[j] = sj, si  # swap qubits
         return int(f"0b{''.join(s)}", 2)  # convert to int
 
-    data = [1] * (2 ** n)
-    index_i = list(range(2 ** n))  # bras (we don't change anything)
+    data = [1] * (2**n)
+    index_i = list(range(2**n))  # bras (we don't change anything)
     index_j = [
         swap_qubits(idx, qubit_i, qubit_j) for idx in index_i
     ]  # kets (we swap qubits i and j): |10> --> |01>
@@ -269,7 +269,7 @@ def _permutation_sparse_matrix(expanded_wires: Iterable, wire_order: Iterable) -
     for i in range(n_total_wires):
         if expanded_wires[i] != wire_order[i]:
             if U is None:
-                U = eye(2 ** n_total_wires, format="csr")
+                U = eye(2**n_total_wires, format="csr")
             j = expanded_wires.index(wire_order[i])  # location of correct wire
             U = U @ _sparse_swap_mat(i, j, n_total_wires)  # swap incorrect wire for correct wire
             U.eliminate_zeros()

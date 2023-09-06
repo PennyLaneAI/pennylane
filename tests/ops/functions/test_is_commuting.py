@@ -817,7 +817,7 @@ class TestCommutingFunction:
 
     def test_operation_1_not_supported(self):
         """Test that giving a non supported operation raises an error."""
-        rho = np.zeros((2 ** 1, 2 ** 1), dtype=np.complex128)
+        rho = np.zeros((2**1, 2**1), dtype=np.complex128)
         rho[0, 0] = 1
         with pytest.raises(
             qml.QuantumFunctionError, match="Operation QubitDensityMatrix not supported."

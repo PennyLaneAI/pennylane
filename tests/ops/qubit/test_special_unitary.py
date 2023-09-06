@@ -46,10 +46,10 @@ class TestPauliUtils:
     def test_pauli_basis_matrices(self, n):
         """Test that the Pauli basis matrices are correct."""
         basis = pauli_basis_matrices(n)
-        d = 4 ** n - 1
-        assert basis.shape == (d, 2 ** n, 2 ** n)
+        d = 4**n - 1
+        assert basis.shape == (d, 2**n, 2**n)
         assert np.allclose(basis, basis.conj().transpose([0, 2, 1]))
-        assert all(np.allclose(np.eye(2 ** n), b @ b) for b in basis)
+        assert all(np.allclose(np.eye(2**n), b @ b) for b in basis)
 
     def test_pauli_basis_matrices_raises_too_few_wires(self):
         """Test that pauli_basis_matrices raises an error if less than one wire is given."""
@@ -65,7 +65,7 @@ class TestPauliUtils:
     def test_pauli_basis_strings(self, n):
         """Test that the Pauli words are correct."""
         words = pauli_basis_strings(n)
-        d = 4 ** n - 1
+        d = 4**n - 1
         assert len(words) == d  # There are d words
         assert len(set(words)) == d  # The words are unique
         assert all(len(w) == n for w in words)  # The words all have length n
@@ -118,7 +118,7 @@ class TestGetOneParameterGenerators:
         from jax import numpy as jnp
 
         np.random.seed(14521)
-        d = 4 ** n - 1
+        d = 4**n - 1
         theta = jnp.array(np.random.random(d))
         fn = (
             jax.jit(self.get_one_parameter_generators, static_argnums=[1, 2])
@@ -126,7 +126,7 @@ class TestGetOneParameterGenerators:
             else self.get_one_parameter_generators
         )
         Omegas = fn(theta, n, "jax")
-        assert Omegas.shape == (d, 2 ** n, 2 ** n)
+        assert Omegas.shape == (d, 2**n, 2**n)
         assert all(jnp.allclose(O.conj().T, -O) for O in Omegas)
 
     @pytest.mark.jax
@@ -145,10 +145,10 @@ class TestGetOneParameterGenerators:
             else self.get_one_parameter_generators
         )
         basis = pauli_basis_matrices(n)
-        d = 4 ** n - 1
+        d = 4**n - 1
         for i, (theta, pauli_mat) in enumerate(zip(jnp.eye(d), basis)):
             Omegas = fn(theta, n, "jax")
-            assert Omegas.shape == (d, 2 ** n, 2 ** n)
+            assert Omegas.shape == (d, 2**n, 2**n)
             assert all(jnp.allclose(O.conj().T, -O) for O in Omegas)
             assert jnp.allclose(Omegas[i], 1j * pauli_mat)
 
@@ -159,10 +159,10 @@ class TestGetOneParameterGenerators:
         import tensorflow as tf
 
         np.random.seed(14521)
-        d = 4 ** n - 1
+        d = 4**n - 1
         theta = tf.Variable(np.random.random(d))
         Omegas = self.get_one_parameter_generators(theta, n, "tf")
-        assert Omegas.shape == (d, 2 ** n, 2 ** n)
+        assert Omegas.shape == (d, 2**n, 2**n)
         assert all(qml.math.allclose(qml.math.conj(qml.math.T(O)), -O) for O in Omegas)
 
     @pytest.mark.tf
@@ -172,11 +172,11 @@ class TestGetOneParameterGenerators:
 
         n = 1
         basis = pauli_basis_matrices(n)
-        d = 4 ** n - 1
+        d = 4**n - 1
         for i, (theta, pauli_mat) in enumerate(zip(np.eye(d), basis)):
             theta = tf.Variable(theta)
             Omegas = self.get_one_parameter_generators(theta, n, "tf")
-            assert Omegas.shape == (d, 2 ** n, 2 ** n)
+            assert Omegas.shape == (d, 2**n, 2**n)
             assert all(qml.math.allclose(qml.math.conj(qml.math.T(O)), -O) for O in Omegas)
             assert qml.math.allclose(Omegas[i], 1j * pauli_mat)
 
@@ -187,10 +187,10 @@ class TestGetOneParameterGenerators:
         import torch
 
         np.random.seed(14521)
-        d = 4 ** n - 1
+        d = 4**n - 1
         theta = torch.tensor(np.random.random(d), requires_grad=True)
         Omegas = self.get_one_parameter_generators(theta, n, "torch")
-        assert Omegas.shape == (d, 2 ** n, 2 ** n)
+        assert Omegas.shape == (d, 2**n, 2**n)
         assert all(qml.math.allclose(qml.math.conj(qml.math.T(O)), -O) for O in Omegas)
 
     @pytest.mark.torch
@@ -200,10 +200,10 @@ class TestGetOneParameterGenerators:
 
         n = 1
         basis = pauli_basis_matrices(n)
-        d = 4 ** n - 1
+        d = 4**n - 1
         for i, (theta, pauli_mat) in enumerate(zip(torch.eye(d, requires_grad=True), basis)):
             Omegas = self.get_one_parameter_generators(theta, n, "torch")
-            assert Omegas.shape == (d, 2 ** n, 2 ** n)
+            assert Omegas.shape == (d, 2**n, 2**n)
             assert all(
                 qml.math.allclose(qml.math.conj(qml.math.T(O)), -O, atol=3e-8) for O in Omegas
             )
@@ -252,7 +252,7 @@ class TestGetOneParameterGeneratorsDiffability:
         from jax import numpy as jnp
 
         np.random.seed(14521)
-        d = 4 ** n - 1
+        d = 4**n - 1
         theta = jnp.array(np.random.random(d), dtype=jnp.complex128)
         fn = (
             jax.jit(self.get_one_parameter_generators, static_argnums=[1, 2])
@@ -260,7 +260,7 @@ class TestGetOneParameterGeneratorsDiffability:
             else self.get_one_parameter_generators
         )
         dOmegas = jax.jacobian(fn, holomorphic=True)(theta, n, "jax")
-        assert dOmegas.shape == (d, 2 ** n, 2 ** n, d)
+        assert dOmegas.shape == (d, 2**n, 2**n, d)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("n", [1, 2])
@@ -269,12 +269,12 @@ class TestGetOneParameterGeneratorsDiffability:
         import tensorflow as tf
 
         np.random.seed(14521)
-        d = 4 ** n - 1
+        d = 4**n - 1
         theta = tf.Variable(np.random.random(d))
         with tf.GradientTape() as t:
             Omegas = self.get_one_parameter_generators(theta, n, "tf")
         dOmegas = t.jacobian(Omegas, theta)
-        assert dOmegas.shape == (d, 2 ** n, 2 ** n, d)
+        assert dOmegas.shape == (d, 2**n, 2**n, d)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("n", [1, 2])
@@ -283,14 +283,14 @@ class TestGetOneParameterGeneratorsDiffability:
         import torch
 
         np.random.seed(14521)
-        d = 4 ** n - 1
+        d = 4**n - 1
         theta = torch.tensor(np.random.random(d), requires_grad=True)
 
         def fn(theta):
             return self.get_one_parameter_generators(theta, n, "torch")
 
         dOmegas = torch.autograd.functional.jacobian(fn, theta)
-        assert dOmegas.shape == (d, 2 ** n, 2 ** n, d)
+        assert dOmegas.shape == (d, 2**n, 2**n, d)
 
     def test_raises_autograd(self):
         """Test that computing generator derivatives raises an error
@@ -313,7 +313,7 @@ class TestGetOneParameterCoeffs:
         from jax import numpy as jnp
 
         np.random.seed(14521)
-        d = 4 ** n - 1
+        d = 4**n - 1
         theta = jnp.array(np.random.random(d))
         op = qml.SpecialUnitary(theta, list(range(n)))
         omegas = op.get_one_parameter_coeffs("jax")
@@ -332,7 +332,7 @@ class TestGetOneParameterCoeffs:
         import tensorflow as tf
 
         np.random.seed(14521)
-        d = 4 ** n - 1
+        d = 4**n - 1
         theta = tf.Variable(np.random.random(d))
         op = qml.SpecialUnitary(theta, list(range(n)))
         omegas = op.get_one_parameter_coeffs("tf")
@@ -351,7 +351,7 @@ class TestGetOneParameterCoeffs:
         import torch
 
         np.random.seed(14521)
-        d = 4 ** n - 1
+        d = 4**n - 1
         theta = torch.tensor(np.random.random(d), requires_grad=True)
         op = qml.SpecialUnitary(theta, list(range(n)))
         omegas = op.get_one_parameter_coeffs("torch")
@@ -416,18 +416,18 @@ class TestSpecialUnitary:
         """Test that ``compute_matrix`` returns a correctly-shaped
         unitary matrix for random input parameters."""
         np.random.seed(seed)
-        d = 4 ** n - 1
+        d = 4**n - 1
         theta = np.random.random(d)
         theta = self.interface_array(theta, interface)
         matrices = [
             qml.SpecialUnitary(theta, list(range(n))).matrix(),
             qml.SpecialUnitary.compute_matrix(theta, n),
         ]
-        I = self.interface_array(np.eye(2 ** n), interface)
+        I = self.interface_array(np.eye(2**n), interface)
         for matrix in matrices:
             if interface == "torch":
                 matrix = matrix.detach().numpy()
-            assert matrix.shape == (2 ** n, 2 ** n)
+            assert matrix.shape == (2**n, 2**n)
             assert np.allclose(matrix @ qml.math.conj(qml.math.T(matrix)), I)
 
     @pytest.mark.parametrize("interface", interfaces)
@@ -437,18 +437,18 @@ class TestSpecialUnitary:
         unitary matrix for random input parameters and more than 5 wires."""
         np.random.seed(seed)
         n = 6
-        d = 4 ** n - 1
+        d = 4**n - 1
         theta = np.random.random(d)
         theta = self.interface_array(theta, interface)
         matrices = [
             qml.SpecialUnitary(theta, list(range(n))).matrix(),
             qml.SpecialUnitary.compute_matrix(theta, n),
         ]
-        I = self.interface_array(np.eye(2 ** n, dtype=np.complex128), interface)
+        I = self.interface_array(np.eye(2**n, dtype=np.complex128), interface)
         for matrix in matrices:
             if interface == "torch":
                 matrix = matrix.detach().numpy()
-            assert matrix.shape == (2 ** n, 2 ** n)
+            assert matrix.shape == (2**n, 2**n)
             assert np.allclose(matrix @ qml.math.conj(qml.math.T(matrix)), I)
 
     @pytest.mark.parametrize("interface", interfaces)
@@ -458,7 +458,7 @@ class TestSpecialUnitary:
         """Test that ``compute_matrix`` returns a correctly-shaped
         unitary matrix for broadcasted random input parameters."""
         np.random.seed(seed)
-        d = 4 ** n - 1
+        d = 4**n - 1
         theta = np.random.random((2, d))
         separate_matrices = [qml.SpecialUnitary.compute_matrix(t, n) for t in theta]
         theta = self.interface_array(theta, interface)
@@ -466,11 +466,11 @@ class TestSpecialUnitary:
             qml.SpecialUnitary(theta, list(range(n))).matrix(),
             qml.SpecialUnitary.compute_matrix(theta, n),
         ]
-        I = self.interface_array(np.eye(2 ** n), interface)
+        I = self.interface_array(np.eye(2**n), interface)
         for matrix in matrices:
             if interface == "torch":
                 matrix = matrix.detach().numpy()
-            assert matrix.shape == (2, 2 ** n, 2 ** n)
+            assert matrix.shape == (2, 2**n, 2**n)
             assert all(np.allclose(m @ qml.math.conj(qml.math.T(m)), I) for m in matrix)
             assert qml.math.allclose(separate_matrices, matrix)
 
@@ -479,7 +479,7 @@ class TestSpecialUnitary:
         """Test that ``compute_matrix`` returns a Pauli rotation matrix for
         inputs with a single non-zero parameter, and that the parameter mapping
         matches the lexicographical ordering of ``pauli_basis_strings``."""
-        d = 4 ** n - 1
+        d = 4**n - 1
         words = pauli_basis_strings(n)
         x = 0.2142
         for word, theta in zip(words, np.eye(d)):
@@ -489,7 +489,7 @@ class TestSpecialUnitary:
             ]
             paulirot_matrix = qml.PauliRot(-2 * x, word, list(range(n))).matrix()
             for matrix in matrices:
-                assert np.allclose(matrix @ matrix.conj().T, np.eye(2 ** n))
+                assert np.allclose(matrix @ matrix.conj().T, np.eye(2**n))
                 assert np.allclose(paulirot_matrix, matrix)
 
     @pytest.mark.parametrize("n, theta, expected", special_matrix_cases)
@@ -552,7 +552,7 @@ class TestSpecialUnitary:
 
         jax.config.update("jax_enable_x64", True)
 
-        d = 4 ** n - 1
+        d = 4**n - 1
         words = pauli_basis_strings(n)
         wires = list(range(n))
 
@@ -586,7 +586,7 @@ class TestSpecialUnitary:
         decomposes into a non-trainable SpecialUnitary and TmpPauliRot ops."""
         import torch
 
-        d = 4 ** n - 1
+        d = 4**n - 1
         words = pauli_basis_strings(n)
         wires = list(range(n))
         theta = torch.tensor(theta, requires_grad=True)
@@ -613,7 +613,7 @@ class TestSpecialUnitary:
         decomposes into a non-trainable SpecialUnitary and TmpPauliRot ops."""
         import tensorflow as tf
 
-        d = 4 ** n - 1
+        d = 4**n - 1
         words = pauli_basis_strings(n)
         wires = list(range(n))
         theta = tf.Variable(theta)

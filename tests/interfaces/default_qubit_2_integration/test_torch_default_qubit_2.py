@@ -368,7 +368,7 @@ class TestTorchExecuteIntegration:
             ops = [
                 qml.RY(a * c, wires=0),
                 qml.RZ(b, wires=0),
-                qml.RX(c + c ** 2 + torch.sin(a), wires=0),
+                qml.RX(c + c**2 + torch.sin(a), wires=0),
             ]
 
             tape = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliZ(0))], shots=shots)

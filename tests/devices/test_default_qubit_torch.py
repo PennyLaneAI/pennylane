@@ -150,7 +150,7 @@ def init_state_fixture(scope="session"):
     def _init_state(n, torch_device):
         """random initial state"""
         torch.manual_seed(42)
-        state = torch.rand([2 ** n], dtype=torch.complex128) + torch.rand([2 ** n]) * 1j
+        state = torch.rand([2**n], dtype=torch.complex128) + torch.rand([2**n]) * 1j
         state /= torch.linalg.norm(state)
         return state.to(torch_device)
 
@@ -166,8 +166,8 @@ def broadcasted_init_state_fixture(scope="session"):
         """random initial state"""
         torch.manual_seed(42)
         state = (
-            torch.rand([batch_size, 2 ** n], dtype=torch.complex128)
-            + torch.rand([batch_size, 2 ** n]) * 1j
+            torch.rand([batch_size, 2**n], dtype=torch.complex128)
+            + torch.rand([batch_size, 2**n]) * 1j
         )
         state /= torch.linalg.norm(state, axis=1)[:, np.newaxis]
         return state.to(torch_device)
@@ -248,7 +248,7 @@ class TestApply:
         dev.apply([qml.BasisState(state, wires=[0, 1, 2, 3])])
 
         res = dev.state
-        expected = torch.zeros([2 ** 4], dtype=torch.complex128, device=torch_device)
+        expected = torch.zeros([2**4], dtype=torch.complex128, device=torch_device)
         expected[2] = 1
 
         assert isinstance(res, torch.Tensor)
@@ -539,7 +539,7 @@ class TestApplyBroadcasted:
         dev.apply([qml.BasisState(state, wires=[0, 1, 2, 3])])
 
         res = dev.state
-        expected = torch.zeros([2 ** 4], dtype=torch.complex128, device=torch_device)
+        expected = torch.zeros([2**4], dtype=torch.complex128, device=torch_device)
         expected[0, 2] = expected[1, 0] = 1
 
         assert isinstance(res, torch.Tensor)
@@ -1692,7 +1692,7 @@ class TestQNodeIntegration:
         expected = torch.tensor(
             [
                 [phase / np.sqrt(2), 0, np.conj(phase) / np.sqrt(2), 0],
-                [phase ** 2 / np.sqrt(2), 0, np.conj(phase) ** 2 / np.sqrt(2), 0],
+                [phase**2 / np.sqrt(2), 0, np.conj(phase) ** 2 / np.sqrt(2), 0],
             ],
             dtype=torch.complex128,
             device=torch_device,

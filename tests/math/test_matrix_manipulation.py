@@ -803,7 +803,7 @@ class TestReduceMatrices:
 
         assert final_wires == expected_wires
         assert qml.math.allclose(reduced_mat, expected_matrix)
-        assert reduced_mat.shape == (2 ** 5, 2 ** 5)
+        assert reduced_mat.shape == (2**5, 2**5)
 
     def test_prod_matrices(self):
         """Test the reduce_matrices function with the dot method."""
@@ -817,4 +817,4 @@ class TestReduceMatrices:
 
         assert final_wires == expected_wires
         assert qml.math.allclose(reduced_mat, expected_matrix)
-        assert reduced_mat.shape == (2 ** 5, 2 ** 5)
+        assert reduced_mat.shape == (2**5, 2**5)

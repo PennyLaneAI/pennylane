@@ -523,7 +523,7 @@ class TestGenerateSamples:
         """Tests that the generate_samples method calls on its auxiliary methods correctly"""
 
         dev = mock_qutrit_device()
-        number_of_states = 3 ** dev.num_wires
+        number_of_states = 3**dev.num_wires
 
         with monkeypatch.context() as m:
             # Mock the auxiliary methods such that they return the expected values
@@ -835,7 +835,7 @@ class TestMarginalProb:
         """Test that the correct arguments are passed to the marginal_prob method"""
 
         # Generate probabilities
-        probs = np.array([random() for i in range(3 ** 3)])
+        probs = np.array([random() for i in range(3**3)])
         probs /= sum(probs)
 
         spy = mocker.spy(np, "sum")

@@ -126,7 +126,7 @@ class TestSingleOperation:
 
         # compute the expected matrix
         perm = np.swapaxes(
-            np.swapaxes(np.arange(2 ** 5).reshape([2] * 5), 0, 1), 0, target_wire
+            np.swapaxes(np.arange(2**5).reshape([2] * 5), 0, 1), 0, target_wire
         ).flatten()
         expected = np.kron(CNOT, np.eye(8))[:, perm][perm]
         assert np.allclose(res, expected)

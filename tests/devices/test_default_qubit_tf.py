@@ -119,7 +119,7 @@ def init_state_fixture(scope="session"):
     def _init_state(n):
         """random initial state"""
         np.random.seed(4214152)
-        state = np.random.random([2 ** n]) + np.random.random([2 ** n]) * 1j
+        state = np.random.random([2**n]) + np.random.random([2**n]) * 1j
         state /= np.linalg.norm(state)
         return state
 
@@ -134,7 +134,7 @@ def broadcasted_init_state_fixture(scope="session"):
     def _broadcasted_init_state(n, batch_size):
         """random initial state"""
         np.random.seed(4214152)
-        state = np.random.random([batch_size, 2 ** n]) + np.random.random([batch_size, 2 ** n]) * 1j
+        state = np.random.random([batch_size, 2**n]) + np.random.random([batch_size, 2**n]) * 1j
         return state / np.linalg.norm(state, axis=1)[:, np.newaxis]
 
     return _broadcasted_init_state
@@ -289,7 +289,7 @@ class TestApply:
         dev.apply([qml.BasisState(state, wires=[0, 1, 2, 3])])
 
         res = dev.state
-        expected = np.zeros([2 ** 4])
+        expected = np.zeros([2**4])
         expected[np.ravel_multi_index(state, [2] * 4)] = 1
 
         assert isinstance(res, tf.Tensor)
@@ -590,7 +590,7 @@ class TestApplyBroadcasted:
         dev.apply([qml.BasisState(state, wires=[0, 1, 2, 3])])
 
         res = dev.state
-        expected = np.zeros([2 ** 4])
+        expected = np.zeros([2**4])
         expected[np.ravel_multi_index(state, [2] * 4)] = 1
 
         assert isinstance(res, tf.Tensor)
@@ -1540,7 +1540,7 @@ class TestQNodeIntegration:
         expected = np.array(
             [
                 [phase / np.sqrt(2), 0, np.conj(phase) / np.sqrt(2), 0],
-                [phase ** 2 / np.sqrt(2), 0, np.conj(phase) ** 2 / np.sqrt(2), 0],
+                [phase**2 / np.sqrt(2), 0, np.conj(phase) ** 2 / np.sqrt(2), 0],
             ]
         )
         assert np.allclose(state, expected, atol=tol, rtol=0)

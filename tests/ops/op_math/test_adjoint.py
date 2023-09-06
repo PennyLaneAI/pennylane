@@ -754,7 +754,7 @@ class TestDecompositionExpand:
         """Test that when the base gate doesn't have a decomposition, the Adjoint decomposition
         method raises the proper error."""
         nr_wires = 2
-        rho = np.zeros((2 ** nr_wires, 2 ** nr_wires), dtype=np.complex128)
+        rho = np.zeros((2**nr_wires, 2**nr_wires), dtype=np.complex128)
         rho[0, 0] = 1  # initialize the pure state density matrix for the |0><0| state
         base = qml.QubitDensityMatrix(rho, wires=(0, 1))
 

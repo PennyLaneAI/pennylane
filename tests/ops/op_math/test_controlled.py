@@ -1522,7 +1522,7 @@ def test_diagonal_ctrl():
                 [3 + 4j, 1 - 2j],
             ]
         )
-        * 30 ** -0.5,
+        * 30**-0.5,
     ],
 )
 def test_qubit_unitary(M):
@@ -1553,7 +1553,7 @@ def test_qubit_unitary(M):
                 [3 + 4j, 1 - 2j],
             ]
         )
-        * 30 ** -0.5,
+        * 30**-0.5,
     ],
 )
 def test_controlledqubitunitary(M):

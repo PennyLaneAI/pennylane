@@ -291,7 +291,7 @@ class TestCaching:
         expected_runs = 1  # forward pass
         expected_runs += 2 * N  # Jacobian
         expected_runs += 4 * N + 1  # Hessian diagonal
-        expected_runs += 4 * N ** 2  # Hessian off-diagonal
+        expected_runs += 4 * N**2  # Hessian off-diagonal
         assert dev.num_executions == expected_runs
 
         # Use caching: number of executions is ideal

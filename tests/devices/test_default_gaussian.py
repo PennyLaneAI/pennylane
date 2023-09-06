@@ -549,7 +549,7 @@ class TestDefaultGaussianDevice:
         # on a coherent state
         for n in range(3):
             mean = dev.expval("FockStateProjector", Wires([0]), [np.array([n])])
-            expected = np.abs(np.exp(-np.abs(alpha) ** 2 / 2) * alpha ** n / np.sqrt(fac(n))) ** 2
+            expected = np.abs(np.exp(-np.abs(alpha) ** 2 / 2) * alpha**n / np.sqrt(fac(n))) ** 2
             assert mean == pytest.approx(expected, abs=tol)
 
         # test correct mean for number state expectation |<n|S(r)>|^2
@@ -560,7 +560,7 @@ class TestDefaultGaussianDevice:
         mean = dev.expval("FockStateProjector", Wires([0]), [np.array([2 * n])])
         expected = (
             np.abs(
-                np.sqrt(fac(2 * n)) / (2 ** n * fac(n)) * (-np.tanh(r)) ** n / np.sqrt(np.cosh(r))
+                np.sqrt(fac(2 * n)) / (2**n * fac(n)) * (-np.tanh(r)) ** n / np.sqrt(np.cosh(r))
             )
             ** 2
         )
@@ -575,7 +575,7 @@ class TestDefaultGaussianDevice:
         dev.apply("ThermalState", wires=Wires([0]), par=[nbar])
         dev.apply("Displacement", wires=Wires([0]), par=[alpha, 0])
         var = dev.var("NumberOperator", Wires([0]), [])
-        assert var == pytest.approx(nbar ** 2 + nbar + np.abs(alpha) ** 2 * (1 + 2 * nbar), abs=tol)
+        assert var == pytest.approx(nbar**2 + nbar + np.abs(alpha) ** 2 * (1 + 2 * nbar), abs=tol)
 
     def test_variance_coherent_homodyne(self, tol):
         """test correct variance for Homodyne P measurement"""
@@ -602,7 +602,7 @@ class TestDefaultGaussianDevice:
 
         for n in range(3):
             var = dev.var("FockStateProjector", Wires([0]), [np.array([n])])
-            mean = np.abs(np.exp(-np.abs(alpha) ** 2 / 2) * alpha ** n / np.sqrt(fac(n))) ** 2
+            mean = np.abs(np.exp(-np.abs(alpha) ** 2 / 2) * alpha**n / np.sqrt(fac(n))) ** 2
             assert var == pytest.approx(mean * (1 - mean), abs=tol)
 
     def test_variance_squeezed_numberstate(self, tol):
@@ -617,7 +617,7 @@ class TestDefaultGaussianDevice:
         var = dev.var("FockStateProjector", Wires([0]), [np.array([2 * n])])
         mean = (
             np.abs(
-                np.sqrt(fac(2 * n)) / (2 ** n * fac(n)) * (-np.tanh(r)) ** n / np.sqrt(np.cosh(r))
+                np.sqrt(fac(2 * n)) / (2**n * fac(n)) * (-np.tanh(r)) ** n / np.sqrt(np.cosh(r))
             )
             ** 2
         )
@@ -820,12 +820,12 @@ class TestDefaultGaussianIntegration:
         def circuit():
             return qml.var(qml.PolyXP(np.diag([0, 1, 0]), wires=0))
 
-        assert circuit() == pytest.approx(dev.hbar ** 2 / 2)
+        assert circuit() == pytest.approx(dev.hbar**2 / 2)
 
     def test_nonzero_shots(self, tol_stochastic):
         """Test that the default gaussian plugin provides correct result for high shot number"""
 
-        shots = 10 ** 4
+        shots = 10**4
         dev = qml.device("default.gaussian", wires=1, shots=shots)
 
         p = 0.543

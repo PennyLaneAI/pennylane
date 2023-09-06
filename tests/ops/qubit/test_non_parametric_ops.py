@@ -1087,7 +1087,7 @@ class TestMultiControlledX:
         worker_wires = [5, 6]
         n_all_wires = 7
 
-        rnd_state = unitary_group.rvs(2 ** n_all_wires, random_state=1)[0]
+        rnd_state = unitary_group.rvs(2**n_all_wires, random_state=1)[0]
         spy = mocker.spy(qml.MultiControlledX, "decomposition")
         dev = qml.device("default.qubit", wires=n_all_wires)
 

@@ -295,7 +295,7 @@ ar.register_function("tensorflow", "fft.ifft2", _ifft2_tf)
 def _round_tf(tensor, decimals=0):
     """Implement a TensorFlow version of np.round"""
     tf = _i("tf")
-    tol = 10 ** decimals
+    tol = 10**decimals
     return tf.round(tensor * tol) / tol
 
 
@@ -534,7 +534,7 @@ ar.autoray._FUNC_ALIASES["torch", "arctan2"] = "atan2"
 def _round_torch(tensor, decimals=0):
     """Implement a Torch version of np.round"""
     torch = _i("torch")
-    tol = 10 ** decimals
+    tol = 10**decimals
     return torch.round(tensor * tol) / tol
 
 

@@ -1840,13 +1840,13 @@ class TestDynamicType:
         dev = DefaultQubit2(max_workers=max_workers)
         ops = [qml.adjoint(qml.Hadamard(q)) for q in wires]
         basis_state = np.zeros((n_wires,))
-        state_vector = np.zeros((2 ** n_wires,))
+        state_vector = np.zeros((2**n_wires,))
         state_vector[0] = 1
 
         for state in [basis_state, state_vector]:
             qs = qml.tape.QuantumScript(ops, [qml.expval(qml.Projector(state, wires))])
             res = dev.execute(qs)
-            assert np.isclose(res, 1 / 2 ** n_wires)
+            assert np.isclose(res, 1 / 2**n_wires)
 
 
 @pytest.mark.parametrize("max_workers", [None, 1, 2])

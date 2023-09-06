@@ -88,8 +88,8 @@ class TestApply:
             np.array([1 / np.sqrt(2), 0.5, -0.5]),
             [1, 2],
         ),
-        (qml.THadamard, [0, 1, 0], np.array([1, OMEGA, OMEGA ** 2]) * (-1j / np.sqrt(3)), None),
-        (qml.THadamard, [0, 0, 1], np.array([1, OMEGA ** 2, OMEGA]) * (-1j / np.sqrt(3)), None),
+        (qml.THadamard, [0, 1, 0], np.array([1, OMEGA, OMEGA**2]) * (-1j / np.sqrt(3)), None),
+        (qml.THadamard, [0, 0, 1], np.array([1, OMEGA**2, OMEGA]) * (-1j / np.sqrt(3)), None),
     ]
 
     @pytest.mark.parametrize("operation, input, expected_output, subspace", test_data_no_parameters)
@@ -715,7 +715,7 @@ class TestSample:
 
         # s1 should only contain 1 and -1, which is guaranteed if
         # they square to 1
-        assert np.allclose(s1 ** 2, 1, atol=tol, rtol=0)
+        assert np.allclose(s1**2, 1, atol=tol, rtol=0)
 
 
 class TestDefaultQutritIntegration:
@@ -757,7 +757,7 @@ class TestDefaultQutritIntegration:
             TSWAP @ np.kron(U_thadamard_01, np.eye(3)),
             np.array([1, 1, 0, 0, 0, 0, 0, 0, 0]) / np.sqrt(2),
         ),
-        (1, TCLOCK @ TSHIFT @ U_thadamard_01, np.array([0, OMEGA, OMEGA ** 2]) / np.sqrt(2)),
+        (1, TCLOCK @ TSHIFT @ U_thadamard_01, np.array([0, OMEGA, OMEGA**2]) / np.sqrt(2)),
         (
             3,
             np.kron(np.eye(3), TADD) @ np.kron(np.eye(3), np.kron(U_thadamard_01, np.eye(3))),
@@ -1044,7 +1044,7 @@ class TestTensorSample:
         expected = state.conj().T @ obs_mat @ state
         assert np.allclose(mean, expected, atol=tol_stochastic, rtol=0)
 
-        var = (s1 ** 2) @ p - (s1 @ p) ** 2
+        var = (s1**2) @ p - (s1 @ p) ** 2
         expected = (
             state.conj().T @ obs_mat @ obs_mat @ state - (state.conj().T @ obs_mat @ state) ** 2
         )
@@ -1087,7 +1087,7 @@ class TestTensorSample:
         expected = state.conj().T @ obs_mat @ state
         assert np.allclose(mean, expected, atol=tol_stochastic, rtol=0)
 
-        var = (s1 ** 2) @ p - (s1 @ p) ** 2
+        var = (s1**2) @ p - (s1 @ p) ** 2
         expected = (
             state.conj().T @ obs_mat @ obs_mat @ state - (state.conj().T @ obs_mat @ state) ** 2
         )
@@ -1238,7 +1238,7 @@ class TestApplyOps:
     """Tests for special methods listed in _apply_ops that use array manipulation tricks to apply
     gates in DefaultQutrit."""
 
-    state = np.arange(3 ** 4, dtype=np.complex128).reshape((3, 3, 3, 3))
+    state = np.arange(3**4, dtype=np.complex128).reshape((3, 3, 3, 3))
     dev = qml.device("default.qutrit", wires=4)
 
     single_qutrit_ops = [

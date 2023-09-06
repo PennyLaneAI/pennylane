@@ -242,43 +242,37 @@ class TestFolderMapView:
     def test_repr(self):
         """Test that __repr__ is equivalent to a dict repr, with the private
         keys removed."""
-        assert (
-            repr(
-                FolderMapView(
-                    {
-                        "__params": {
-                            "qchem": ["molname", "basis", "bondlength"],
-                        },
-                        "qchem": {
-                            "H2": {
-                                "__default": "STO-3G",
-                                "STO-3G": {"__default": "0.7", "0.7": "qchem/H2/STO-3G/0.7.h5"},
-                            }
-                        },
-                    }
-                )
+        assert repr(
+            FolderMapView(
+                {
+                    "__params": {
+                        "qchem": ["molname", "basis", "bondlength"],
+                    },
+                    "qchem": {
+                        "H2": {
+                            "__default": "STO-3G",
+                            "STO-3G": {"__default": "0.7", "0.7": "qchem/H2/STO-3G/0.7.h5"},
+                        }
+                    },
+                }
             )
-            == repr({"qchem": {"H2": {"STO-3G": {"0.7": "qchem/H2/STO-3G/0.7.h5"}}}})
-        )
+        ) == repr({"qchem": {"H2": {"STO-3G": {"0.7": "qchem/H2/STO-3G/0.7.h5"}}}})
 
     def test_str(self):
         """Test that __str__ is equivalent to a dict __str__, with the private
         keys removed."""
-        assert (
-            str(
-                FolderMapView(
-                    {
-                        "__params": {
-                            "qchem": ["molname", "basis", "bondlength"],
-                        },
-                        "qchem": {
-                            "H2": {
-                                "__default": "STO-3G",
-                                "STO-3G": {"__default": "0.7", "0.7": "qchem/H2/STO-3G/0.7.h5"},
-                            }
-                        },
-                    }
-                )
+        assert str(
+            FolderMapView(
+                {
+                    "__params": {
+                        "qchem": ["molname", "basis", "bondlength"],
+                    },
+                    "qchem": {
+                        "H2": {
+                            "__default": "STO-3G",
+                            "STO-3G": {"__default": "0.7", "0.7": "qchem/H2/STO-3G/0.7.h5"},
+                        }
+                    },
+                }
             )
-            == str({"qchem": {"H2": {"STO-3G": {"0.7": "qchem/H2/STO-3G/0.7.h5"}}}})
-        )
+        ) == str({"qchem": {"H2": {"STO-3G": {"0.7": "qchem/H2/STO-3G/0.7.h5"}}}})

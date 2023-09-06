@@ -61,7 +61,7 @@ def square_kernel_matrix(X, kernel, assume_normalized_kernel=False):
     if assume_normalized_kernel and N == 1:
         return qml.math.eye(1, like=qml.math.get_interface(X))
 
-    matrix = [None] * N ** 2
+    matrix = [None] * N**2
 
     # Compute all off-diagonal kernel values, using symmetry of the kernel matrix
     for i in range(N):

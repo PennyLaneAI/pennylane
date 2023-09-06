@@ -23,7 +23,7 @@ from pennylane.optimize import GradientDescentOptimizer
 univariate = [
     (np.sin, np.cos),
     (lambda x: np.exp(x / 10.0), lambda x: np.exp(x / 10.0) / 10.0),
-    (lambda x: x ** 2, lambda x: 2 * x),
+    (lambda x: x**2, lambda x: 2 * x),
 ]
 
 multivariate = [
@@ -39,7 +39,7 @@ multivariate = [
             ),
         ),
     ),
-    (lambda x: np.sum([x_ ** 2 for x_ in x]), lambda x: (np.array([2 * x_ for x_ in x]),)),
+    (lambda x: np.sum([x_**2 for x_ in x]), lambda x: (np.array([2 * x_ for x_ in x]),)),
 ]
 
 

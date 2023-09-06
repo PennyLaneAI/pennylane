@@ -762,7 +762,7 @@ class TestSampleBroadcasted:
 
         # s1 should only contain 1 and -1, which is guaranteed if
         # they square to 1
-        assert np.allclose(s1 ** 2, 1, atol=tol, rtol=0)
+        assert np.allclose(s1**2, 1, atol=tol, rtol=0)
 
 
 class TestDefaultQubitIntegrationBroadcasted:
@@ -805,7 +805,7 @@ class TestDefaultQubitIntegrationBroadcasted:
     def test_nonzero_shots_broadcasted(self, tol):
         """Test that the default qubit plugin provides correct result for high shot number"""
 
-        shots = 10 ** 5
+        shots = 10**5
         dev = qml.device("default.qubit.legacy", wires=1, shots=shots)
 
         p = np.array([0.543, np.pi / 2, 0.0, 1.0])
@@ -1318,13 +1318,13 @@ class TestTensorSampleBroadcasted:
         p = dev.probability(wires=dev.map_wires(obs.wires))
 
         # s1 should only contain 1 and -1
-        assert np.allclose(s1 ** 2, 1, atol=tol_stochastic, rtol=0)
+        assert np.allclose(s1**2, 1, atol=tol_stochastic, rtol=0)
 
         mean = p @ s1
         expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
         assert np.allclose(mean, expected, atol=tol_stochastic, rtol=0)
 
-        var = p @ (s1 ** 2) - (p @ s1).real ** 2
+        var = p @ (s1**2) - (p @ s1).real ** 2
         expected = (
             8 * np.sin(theta) ** 2 * np.cos(2 * varphi) * np.sin(phi) ** 2
             - np.cos(2 * (theta - phi))
@@ -1358,13 +1358,13 @@ class TestTensorSampleBroadcasted:
         p = dev.marginal_prob(dev.probability(), wires=obs.wires)
 
         # s1 should only contain 1 and -1
-        assert np.allclose(s1 ** 2, 1, atol=tol_stochastic, rtol=0)
+        assert np.allclose(s1**2, 1, atol=tol_stochastic, rtol=0)
 
         mean = p @ s1
         expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
         assert np.allclose(mean, expected, atol=tol_stochastic, rtol=0)
 
-        var = p @ (s1 ** 2) - (p @ s1).real ** 2
+        var = p @ (s1**2) - (p @ s1).real ** 2
         expected = (
             3
             + np.cos(2 * phi) * np.cos(varphi) ** 2
@@ -1424,7 +1424,7 @@ class TestTensorSampleBroadcasted:
         )
         assert np.allclose(mean, expected, atol=tol_stochastic, rtol=0)
 
-        var = p @ (s1 ** 2) - (p @ s1).real ** 2
+        var = p @ (s1**2) - (p @ s1).real ** 2
         expected = (
             0.01
             * (
@@ -1618,7 +1618,7 @@ class TestApplyOpsBroadcasted:
     """Tests for special methods listed in _apply_ops that use array manipulation tricks to apply
     gates in DefaultQubit."""
 
-    broadcasted_state = np.arange(2 ** 4 * 3, dtype=np.complex128).reshape((3, 2, 2, 2, 2))
+    broadcasted_state = np.arange(2**4 * 3, dtype=np.complex128).reshape((3, 2, 2, 2, 2))
     dev = qml.device("default.qubit.legacy", wires=4)
 
     single_qubit_ops = [

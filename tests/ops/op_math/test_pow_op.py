@@ -36,7 +36,7 @@ class TempOperator(qml.operation.Operator):
 def pow_using_dunder_method(base, z, id=None):
     """Helper function which computes the base raised to the power invoking the __pow__ dunder
     method."""
-    return base ** z
+    return base**z
 
 
 class TestConstructor:
@@ -783,7 +783,7 @@ class TestSparseMatrix:
 
         op = Pow(base, 3)
 
-        H_cubed = H ** 3
+        H_cubed = H**3
         sparse_mat = op.sparse_matrix()
         assert isinstance(sparse_mat, csr_matrix)
         sparse_mat_array = sparse_mat.toarray()

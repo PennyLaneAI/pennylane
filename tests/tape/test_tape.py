@@ -1819,11 +1819,11 @@ measures = [
 multi_measurements = [
     ([qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))], ((), ())),
     ([qml.probs(wires=[0]), qml.probs(wires=[1])], ((2,), (2,))),
-    ([qml.probs(wires=[0]), qml.probs(wires=[1, 2])], ((2 ** 1,), (2 ** 2,))),
-    ([qml.probs(wires=[0, 2]), qml.probs(wires=[1])], ((2 ** 2,), (2 ** 1,))),
+    ([qml.probs(wires=[0]), qml.probs(wires=[1, 2])], ((2**1,), (2**2,))),
+    ([qml.probs(wires=[0, 2]), qml.probs(wires=[1])], ((2**2,), (2**1,))),
     (
         [qml.probs(wires=[0]), qml.probs(wires=[1, 2]), qml.probs(wires=[0, 1, 2])],
-        ((2 ** 1,), (2 ** 2,), (2 ** 3,)),
+        ((2**1,), (2**2,), (2**3,)),
     ),
 ]
 

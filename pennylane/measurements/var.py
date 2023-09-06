@@ -131,4 +131,4 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         # already applied to the state
         prob = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
         # In case of broadcasting, `prob` has two axes and these are a matrix-vector products
-        return qml.math.dot(prob, (eigvals ** 2)) - qml.math.dot(prob, eigvals) ** 2
+        return qml.math.dot(prob, (eigvals**2)) - qml.math.dot(prob, eigvals) ** 2

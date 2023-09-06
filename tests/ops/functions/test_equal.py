@@ -1620,7 +1620,7 @@ def f1(p, t):
 
 
 def f2(p, t):
-    return p[0] * t ** 2 + p[1]
+    return p[0] * t**2 + p[1]
 
 
 @pytest.mark.jax

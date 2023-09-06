@@ -41,7 +41,7 @@ def f1(p, t):
 
 def f2(p, t):
     """Compute the function p * cos(t**2)."""
-    return p * np.cos(t ** 2)
+    return p * np.cos(t**2)
 
 
 param = [1.2, 2.3]

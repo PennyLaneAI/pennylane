@@ -225,7 +225,7 @@ def find_and_place_cuts(
 
         # Need to reseed if a seed is passed:
         seed = kwargs.pop("seed", None)
-        seeds = np.random.default_rng(seed).choice(2 ** 15, cut_strategy.trials_per_probe).tolist()
+        seeds = np.random.default_rng(seed).choice(2**15, cut_strategy.trials_per_probe).tolist()
 
         cut_edges_probed = {
             (cut_kwargs["num_fragments"], trial_id): cut_method(

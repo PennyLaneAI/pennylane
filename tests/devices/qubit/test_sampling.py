@@ -41,7 +41,7 @@ def fixture_init_state():
 def samples_to_probs(samples, num_wires):
     """Converts samples to probs"""
     samples_decimal = [np.ravel_multi_index(sample, [2] * num_wires) for sample in samples]
-    counts = [0] * (2 ** num_wires)
+    counts = [0] * (2**num_wires)
 
     for sample in samples_decimal:
         counts[sample] += 1
@@ -107,7 +107,7 @@ class TestSampleState:
         """Tests that sample_state works as expected with many wires, and with re-ordering."""
         shots = 10000
         shape = (2,) * num_wires
-        flat_state = np.arange(1, 2 ** num_wires + 1, dtype=np.float64)
+        flat_state = np.arange(1, 2**num_wires + 1, dtype=np.float64)
         original_norm = np.linalg.norm(flat_state)
         flat_state /= original_norm
         state = flat_state.reshape(shape)

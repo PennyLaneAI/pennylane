@@ -259,14 +259,14 @@ class DefaultQubit2(Device):
             results = tuple(simulate(c, rng=self._rng, debugger=self._debugger) for c in circuits)
         else:
             vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
-            seeds = self._rng.integers(2 ** 31 - 1, size=len(vanilla_circuits))
+            seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
             _wrap_simulate = partial(simulate, debugger=None)
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
                 exec_map = executor.map(_wrap_simulate, vanilla_circuits, seeds)
                 results = tuple(exec_map)
 
             # reset _rng to mimic serial behavior
-            self._rng = np.random.default_rng(self._rng.integers(2 ** 31 - 1))
+            self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
         return results[0] if is_single_circuit else results
 
@@ -294,7 +294,7 @@ class DefaultQubit2(Device):
                 res = tuple(exec_map)
 
             # reset _rng to mimic serial behavior
-            self._rng = np.random.default_rng(self._rng.integers(2 ** 31 - 1))
+            self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
         return res[0] if is_single_circuit else res
 
@@ -325,13 +325,13 @@ class DefaultQubit2(Device):
             )
         else:
             vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
-            seeds = self._rng.integers(2 ** 31 - 1, size=len(vanilla_circuits))
+            seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
 
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
                 results = tuple(executor.map(_adjoint_jac_wrapper, vanilla_circuits, seeds))
 
             # reset _rng to mimic serial behavior
-            self._rng = np.random.default_rng(self._rng.integers(2 ** 31 - 1))
+            self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
         results, jacs = tuple(zip(*results))
         return (results[0], jacs[0]) if is_single_circuit else (results, jacs)
@@ -380,7 +380,7 @@ class DefaultQubit2(Device):
                 res = tuple(executor.map(adjoint_jvp, vanilla_circuits, tangents))
 
             # reset _rng to mimic serial behavior
-            self._rng = np.random.default_rng(self._rng.integers(2 ** 31 - 1))
+            self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
         return res[0] if is_single_circuit else res
 
@@ -412,7 +412,7 @@ class DefaultQubit2(Device):
             )
         else:
             vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
-            seeds = self._rng.integers(2 ** 31 - 1, size=len(vanilla_circuits))
+            seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
 
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
                 results = tuple(
@@ -420,7 +420,7 @@ class DefaultQubit2(Device):
                 )
 
             # reset _rng to mimic serial behavior
-            self._rng = np.random.default_rng(self._rng.integers(2 ** 31 - 1))
+            self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
         results, jvps = tuple(zip(*results))
         return (results[0], jvps[0]) if is_single_circuit else (results, jvps)
@@ -469,7 +469,7 @@ class DefaultQubit2(Device):
                 res = tuple(executor.map(adjoint_vjp, vanilla_circuits, cotangents))
 
             # reset _rng to mimic serial behavior
-            self._rng = np.random.default_rng(self._rng.integers(2 ** 31 - 1))
+            self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
         return res[0] if is_single_circuit else res
 
@@ -501,7 +501,7 @@ class DefaultQubit2(Device):
             )
         else:
             vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
-            seeds = self._rng.integers(2 ** 31 - 1, size=len(vanilla_circuits))
+            seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
 
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
                 results = tuple(
@@ -509,7 +509,7 @@ class DefaultQubit2(Device):
                 )
 
             # reset _rng to mimic serial behavior
-            self._rng = np.random.default_rng(self._rng.integers(2 ** 31 - 1))
+            self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
         results, vjps = tuple(zip(*results))
         return (results[0], vjps[0]) if is_single_circuit else (results, vjps)

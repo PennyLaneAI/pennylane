@@ -133,8 +133,8 @@ def _generalized_pauli_decompose(
     if padding:
         shape = qml.math.shape(matrix)
         num_qubits = int(qml.math.ceil(qml.math.log2(qml.math.max(shape))))
-        if shape[0] != shape[1] or shape[0] != 2 ** num_qubits:
-            padd_diffs = qml.math.abs(qml.math.array(shape) - 2 ** num_qubits)
+        if shape[0] != shape[1] or shape[0] != 2**num_qubits:
+            padd_diffs = qml.math.abs(qml.math.array(shape) - 2**num_qubits)
             padding = (
                 ((0, padd_diffs[0]), (0, padd_diffs[1]))
                 if qml.math.get_interface(matrix) != "torch"
@@ -149,7 +149,7 @@ def _generalized_pauli_decompose(
         )
 
     num_qubits = int(qml.math.log2(shape[0]))
-    if shape[0] != 2 ** num_qubits:
+    if shape[0] != 2**num_qubits:
         raise ValueError(
             f"Dimension of the matrix should be a power of 2, got {shape}. Use 'padding=True' for these matrices."
         )
@@ -301,7 +301,7 @@ def pauli_decompose(
     """
     shape = qml.math.shape(H)
     n = int(qml.math.log2(shape[0]))
-    N = 2 ** n
+    N = 2**n
 
     if check_hermitian:
         if shape != (N, N):

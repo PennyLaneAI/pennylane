@@ -348,14 +348,14 @@ class TestQNode:
         def circuit(a, b, c):
             qml.RY(a * c, wires=0)
             qml.RZ(b, wires=0)
-            qml.RX(c + c ** 2 + torch.sin(a), wires=0)
+            qml.RX(c + c**2 + torch.sin(a), wires=0)
             return qml.expval(qml.PauliZ(0))
 
         res = circuit(a, b, c)
 
         if diff_method == "finite-diff":
             assert circuit.qtape.trainable_params == [0, 2]
-            assert circuit.qtape.get_parameters() == [a * c, c + c ** 2 + torch.sin(a)]
+            assert circuit.qtape.get_parameters() == [a * c, c + c**2 + torch.sin(a)]
 
         res.backward()
 

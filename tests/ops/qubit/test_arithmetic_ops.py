@@ -218,7 +218,7 @@ class TestQubitSum:
             qml.adjoint(qml.QubitSum)(wires=range(3))
             return qml.probs(wires=range(3))
 
-        u = np.array([f(state) for state in np.eye(2 ** 3)]).T
+        u = np.array([f(state) for state in np.eye(2**3)]).T
         assert np.allclose(u, qml.QubitSum.compute_matrix())
 
     def test_matrix_representation(self, tol):

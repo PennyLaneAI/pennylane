@@ -127,14 +127,11 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* `hamiltonian comaparison` now also `rounds off the float to 15digit` to remove float point errors. Have just added a line of rounded float comaprison.
-[(#4470)](https://github.com/PennyLaneAI/pennylane/issues/4567)
-
 * `convert_to_numpy_parameters` now uses `qml.ops.functions.bind_new_parameters`. This reinitializes the operation and
   makes sure everything references the new numpy parameters.
 
 * `tf.function` no longer breaks `ProbabilityMP.process_state` which is needed by new devices.
-  [(#4575)](https://github.com/PennyLaneAI/pennylane/pull/4470)
+  [(#4470)](https://github.com/PennyLaneAI/pennylane/pull/4470)
 
 <h3>Contributors ✍️</h3>
 
@@ -144,4 +141,4 @@ Lillian M. A. Frederiksen,
 Romain Moyard,
 Mudit Pandey,
 Matthew Silverman
-Yash Prabhat Dubey
+

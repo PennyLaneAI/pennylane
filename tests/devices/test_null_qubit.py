@@ -412,7 +412,7 @@ class TestNullQubitIntegration:
 
     def test_nonzero_shots(self):
         """Test that the NullQubit plugin provides correct result for high shot number"""
-        dev = qml.device("null.qubit", wires=1, shots=10 ** 5)
+        dev = qml.device("null.qubit", wires=1, shots=10**5)
 
         p = 0.543
 
@@ -873,7 +873,7 @@ class TestTensorVar:
 class TestApplyOps:
     """Tests special methods to apply gates in NullQubit."""
 
-    state = np.arange(2 ** 4, dtype=np.complex128).reshape((2, 2, 2, 2))
+    state = np.arange(2**4, dtype=np.complex128).reshape((2, 2, 2, 2))
     dev = qml.device("null.qubit", wires=4)
 
     single_qubit_ops = [

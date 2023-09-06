@@ -147,7 +147,7 @@ def kahypar_cut(
         context.suppressOutput(True)
 
     # KaHyPar fixes seed to 42 by default, need to manually sample seed to randomize:
-    kahypar_seed = np.random.default_rng(seed).choice(2 ** 15)
+    kahypar_seed = np.random.default_rng(seed).choice(2**15)
     context.setSeed(kahypar_seed)
 
     kahypar.partition(hypergraph, context)

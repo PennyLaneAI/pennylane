@@ -64,7 +64,7 @@ def fixture_init_state():
 
     def _init_state(n):
         """An initial state over n wires"""
-        state = np.random.random([2 ** n]) + np.random.random([2 ** n]) * 1j
+        state = np.random.random([2**n]) + np.random.random([2**n]) * 1j
         state /= np.linalg.norm(state)
         return state
 
@@ -348,9 +348,9 @@ class TestProbs:
 
         # Both jacobians should be of shape (2**prob.wires, num_params)
         assert isinstance(res_F, tuple) and len(res_F) == 3
-        assert all(_r.shape == (2 ** 2,) for _r in res_F)
+        assert all(_r.shape == (2**2,) for _r in res_F)
         assert isinstance(res_A, tuple) and len(res_A) == 3
-        assert all(_r.shape == (2 ** 2,) for _r in res_A)
+        assert all(_r.shape == (2**2,) for _r in res_A)
 
         # Check that they agree up to numeric tolerance
         assert all(np.allclose(_rF, _rA, atol=tol, rtol=0) for _rF, _rA in zip(res_F, res_A))

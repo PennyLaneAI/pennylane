@@ -529,8 +529,8 @@ def _ucisd_state(cisd_solver, tol=1e-15):
     c0, c1a, c1b, c2aa, c2ab, c2bb = [cisdvec[idx] for idx in idxs]
 
     # numbers representing the Hartree-Fock vector, e.g., bin(ref_a)[::-1] = 1111...10...0
-    ref_a = int(2 ** nelec_a - 1)
-    ref_b = int(2 ** nelec_b - 1)
+    ref_a = int(2**nelec_a - 1)
+    ref_b = int(2**nelec_b - 1)
 
     dict_fcimatr = dict(zip(list(zip([ref_a], [ref_b])), [c0]))
 
@@ -636,7 +636,7 @@ def _wfdict_to_statevector(wf_dict, norbs):
         bin_ab = "".join(i + j for i, j in zip(bin_a, bin_b))
         statevector[int(bin_ab, 2)] += coeff
 
-    statevector = statevector / np.sqrt(np.sum(statevector ** 2))
+    statevector = statevector / np.sqrt(np.sum(statevector**2))
 
     return statevector
 
@@ -690,7 +690,7 @@ def _rcisd_state(cisd_solver, tol=1e-15):
     )
 
     # numbers representing the Hartree-Fock vector, e.g., bin(ref_a)[::-1] = 1111...10...0
-    ref_a = int(2 ** nocc - 1)
+    ref_a = int(2**nocc - 1)
     ref_b = ref_a
 
     dict_fcimatr = dict(zip(list(zip([ref_a], [ref_b])), [c0]))
@@ -816,8 +816,8 @@ def _rccsd_state(ccsd_solver, tol=1e-15):
     t2ab = t2ab - 0.5 * np.kron(t1a, t1b).reshape(nelec_a, nvir_a, nelec_b, nvir_b).numpy()
 
     # numbers representing the Hartree-Fock vector, e.g., bin(ref_a)[::-1] = 1111...10...0
-    ref_a = int(2 ** nelec_a - 1)
-    ref_b = int(2 ** nelec_b - 1)
+    ref_a = int(2**nelec_a - 1)
+    ref_b = int(2**nelec_b - 1)
 
     dict_fcimatr = dict(zip(list(zip([ref_a], [ref_b])), [1.0]))
 
@@ -951,8 +951,8 @@ def _uccsd_state(ccsd_solver, tol=1e-15):
     )
 
     # numbers representing the Hartree-Fock vector, e.g., bin(ref_a)[::-1] = 1111...10...0
-    ref_a = int(2 ** nelec_a - 1)
-    ref_b = int(2 ** nelec_b - 1)
+    ref_a = int(2**nelec_a - 1)
+    ref_b = int(2**nelec_b - 1)
 
     dict_fcimatr = dict(zip(list(zip([ref_a], [ref_b])), [1.0]))
 

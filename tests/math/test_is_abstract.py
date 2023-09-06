@@ -31,7 +31,7 @@ class TestTensorFlow:
         import tensorflow as tf
 
         def cost(x, w):
-            y = x ** 2
+            y = x**2
             z = tf.ones([2, 2])
 
             assert tf.executing_eagerly()
@@ -64,7 +64,7 @@ class TestTensorFlow:
 
         @tf.function(jit_compile=jit_compile)
         def cost(x, w):
-            y = x ** 2
+            y = x**2
             z = tf.ones([2, 2])
 
             assert not tf.executing_eagerly()
@@ -101,7 +101,7 @@ class TestJAX:
         import jax.numpy as jnp
 
         def cost(x, w):
-            y = x ** 2
+            y = x**2
             z = jnp.ones([2, 2])
 
             assert not qml.math.is_abstract(w)
@@ -132,7 +132,7 @@ class TestJAX:
 
         @functools.partial(jax.jit, static_argnums=[2])
         def cost(x, w, w_is_abstract=True):
-            y = x ** 2
+            y = x**2
             z = jnp.ones([2, 2])
 
             assert qml.math.is_abstract(w) == w_is_abstract

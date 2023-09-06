@@ -154,7 +154,7 @@ class TestQNodeIntegration:
         expected = np.array(
             [
                 [phase / np.sqrt(2), 0, np.conj(phase) / np.sqrt(2), 0],
-                [phase ** 2 / np.sqrt(2), 0, np.conj(phase) ** 2 / np.sqrt(2), 0],
+                [phase**2 / np.sqrt(2), 0, np.conj(phase) ** 2 / np.sqrt(2), 0],
             ]
         )
         assert np.allclose(state, expected, atol=tol, rtol=0)
@@ -727,7 +727,7 @@ class TestOps:
 
         param = np.array(0.3, requires_grad=True)
         res = qml.jacobian(circuit)(param)
-        assert np.allclose(res, np.zeros(wires ** 2))
+        assert np.allclose(res, np.zeros(wires**2))
 
     def test_full_subsystem(self, mocker):
         """Test applying a state vector to the full subsystem"""
@@ -773,7 +773,7 @@ class TestOpsBroadcasted:
 
         param = np.array([0.3, 0.9, -4.3], requires_grad=True)
         res = qml.jacobian(circuit)(param)
-        assert np.allclose(res, np.zeros((3, wires ** 2, 3)))
+        assert np.allclose(res, np.zeros((3, wires**2, 3)))
 
     def test_full_subsystem_broadcasted(self, mocker):
         """Test applying a state vector to the full subsystem"""

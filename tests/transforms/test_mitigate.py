@@ -454,7 +454,7 @@ class TestDifferentiableZNE:
         """Testing the custom diffable _polyfit function"""
         # pylint: disable=protected-access
         x = np.linspace(1, 4, 4)
-        y = 3.0 * x ** 2 + 2.0 * x + 1.0
+        y = 3.0 * x**2 + 2.0 * x + 1.0
         coeffs = qml.transforms.mitigate._polyfit(x, y, 2)
         assert qml.math.allclose(qml.math.squeeze(coeffs), [3, 2, 1])
 

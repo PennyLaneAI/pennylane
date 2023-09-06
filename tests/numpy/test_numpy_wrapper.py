@@ -299,12 +299,12 @@ class TestNumpyIntegration:
         assert not res.requires_grad
 
         x = np.array([[1, 2], [3, 4]])
-        res = x ** 2
+        res = x**2
         assert isinstance(res, np.tensor)
         assert res.requires_grad
 
         x = np.array([[1, 2], [3, 4]], requires_grad=False)
-        res = x ** 2
+        res = x**2
         assert isinstance(res, np.tensor)
         assert not res.requires_grad
 

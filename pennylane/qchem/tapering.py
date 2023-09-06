@@ -257,7 +257,7 @@ def clifford(generators, paulixops):
     """
     cliff = []
     for i, t in enumerate(generators):
-        cliff.append(pauli_sentence(1 / 2 ** 0.5 * (paulixops[i] + t)))
+        cliff.append(pauli_sentence(1 / 2**0.5 * (paulixops[i] + t)))
 
     u = functools.reduce(lambda p, q: p * q, cliff)
 

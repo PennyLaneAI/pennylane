@@ -101,10 +101,10 @@ class TestIntegrationMultipleReturns:
         assert len(res) == 2
 
         assert isinstance(res[0], np.ndarray)
-        assert res[0].shape == (2 ** 1,)
+        assert res[0].shape == (2**1,)
 
         assert isinstance(res[1], np.ndarray)
-        assert res[1].shape == (2 ** 1,)
+        assert res[1].shape == (2**1,)
 
     def test_mix_meas(self, device):  # pylint: disable=too-many-arguments
         """Return multiple different measurements."""
@@ -127,13 +127,13 @@ class TestIntegrationMultipleReturns:
         assert len(res) == 4
 
         assert isinstance(res[0], np.ndarray)
-        assert res[0].shape == (2 ** 1,)
+        assert res[0].shape == (2**1,)
 
         assert isinstance(res[1], np.ndarray)
         assert res[1].shape == ()
 
         assert isinstance(res[2], np.ndarray)
-        assert res[2].shape == (2 ** 1,)
+        assert res[2].shape == (2**1,)
 
         assert isinstance(res[3], np.ndarray)
         assert res[3].shape == ()

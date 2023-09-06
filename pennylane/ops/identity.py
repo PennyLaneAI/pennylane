@@ -84,7 +84,7 @@ class Identity(CVObservable, Operation):
         >>> print(qml.Identity.compute_eigvals())
         [ 1 1]
         """
-        return qml.math.ones(2 ** n_wires)
+        return qml.math.ones(2**n_wires)
 
     @staticmethod
     @lru_cache()
@@ -105,12 +105,12 @@ class Identity(CVObservable, Operation):
         [[1. 0.]
          [0. 1.]]
         """
-        return qml.math.eye(int(2 ** n_wires))
+        return qml.math.eye(int(2**n_wires))
 
     @staticmethod
     @lru_cache()
     def compute_sparse_matrix(n_wires=1):  # pylint: disable=arguments-differ
-        return sparse.eye(int(2 ** n_wires), format="csr")
+        return sparse.eye(int(2**n_wires), format="csr")
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -270,7 +270,7 @@ class GlobalPhase(Operation):
         >>> qml.GlobalPhase.compute_eigvals(np.pi/2)
         array([6.123234e-17+1.j, 6.123234e-17+1.j])
         """
-        return qml.math.exp(-1j * phi) * qml.math.ones(2 ** n_wires)
+        return qml.math.exp(-1j * phi) * qml.math.ones(2**n_wires)
 
     @staticmethod
     def compute_matrix(phi, n_wires=1):  # pylint: disable=arguments-differ
@@ -291,14 +291,14 @@ class GlobalPhase(Operation):
         """
         interface = qml.math.get_interface(phi)
         if interface == "tensorflow":
-            return qml.math.exp(-1j * qml.math.cast(phi, complex)) * qml.math.eye(int(2 ** n_wires))
+            return qml.math.exp(-1j * qml.math.cast(phi, complex)) * qml.math.eye(int(2**n_wires))
         return qml.math.exp(-1j * qml.math.cast(phi, complex)) * qml.math.eye(
-            int(2 ** n_wires), like=interface
+            int(2**n_wires), like=interface
         )
 
     @staticmethod
     def compute_sparse_matrix(phi, n_wires=1):  # pylint: disable=arguments-differ
-        return qml.math.exp(-1j * phi) * sparse.eye(int(2 ** n_wires), format="csr")
+        return qml.math.exp(-1j * phi) * sparse.eye(int(2**n_wires), format="csr")
 
     @staticmethod
     def compute_diagonalizing_gates(

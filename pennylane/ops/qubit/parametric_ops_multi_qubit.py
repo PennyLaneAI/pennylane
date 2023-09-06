@@ -110,7 +110,7 @@ class MultiRZ(Operation):
 
         diags = qml.math.exp(qml.math.outer(-0.5j * theta, eigs))
         return diags[:, :, np.newaxis] * qml.math.cast_like(
-            qml.math.eye(2 ** num_wires, like=diags), diags
+            qml.math.eye(2**num_wires, like=diags), diags
         )
 
     def generator(self):

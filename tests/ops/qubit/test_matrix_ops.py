@@ -367,7 +367,7 @@ class TestWalshHadamardTransform:
     def test_compare_matrix_mult(self, n, provide_n):
         """Test against matrix multiplication for a few random inputs."""
         np.random.seed(382)
-        inp = np.random.random(2 ** n)
+        inp = np.random.random(2**n)
         output = _walsh_hadamard_transform(inp, n=n if provide_n else None)
         h = np.array([[0.5, 0.5], [0.5, -0.5]])
         h = reduce(np.kron, [h] * n)
@@ -386,7 +386,7 @@ class TestWalshHadamardTransform:
     def test_compare_matrix_mult_broadcasted(self, n, provide_n):
         """Test against matrix multiplication for a few random inputs."""
         np.random.seed(382)
-        inp = np.random.random((5, 2 ** n))
+        inp = np.random.random((5, 2**n))
         output = _walsh_hadamard_transform(inp, n=n if provide_n else None)
         h = np.array([[0.5, 0.5], [0.5, -0.5]])
         h = reduce(np.kron, [h] * n)
@@ -511,7 +511,7 @@ class TestDiagonalQubitUnitary:
     def test_decomposition_matrix_match(self, n):
         """Test that the matrix of the decomposition matches the original matrix."""
         np.random.seed(7241)
-        D = np.exp(1j * np.random.random(2 ** n))
+        D = np.exp(1j * np.random.random(2**n))
         wires = list(range(n))
         decomp = qml.DiagonalQubitUnitary.compute_decomposition(D, wires)
         decomp2 = qml.DiagonalQubitUnitary(D, wires=wires).decomposition()
@@ -526,7 +526,7 @@ class TestDiagonalQubitUnitary:
     def test_decomposition_matrix_match_broadcasted(self, n):
         """Test that the broadcasted matrix of the decomposition matches the original matrix."""
         np.random.seed(7241)
-        D = np.exp(1j * np.random.random((5, 2 ** n)))
+        D = np.exp(1j * np.random.random((5, 2**n)))
         wires = list(range(n))
         decomp = qml.DiagonalQubitUnitary.compute_decomposition(D, wires)
         decomp2 = qml.DiagonalQubitUnitary(D, wires=wires).decomposition()

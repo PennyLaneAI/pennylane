@@ -65,8 +65,8 @@ class TestComputeclassicalFisher:
     @pytest.mark.parametrize("n_wires", np.arange(1, 5))
     def test_construction_of_compute_cfim(self, n_params, n_wires):
         """Test that the construction in _compute_cfim is correct"""
-        dp = np.arange(2 ** n_wires * n_params, dtype=float).reshape(2 ** n_wires, n_params)
-        p = np.ones(2 ** n_wires)
+        dp = np.arange(2**n_wires * n_params, dtype=float).reshape(2**n_wires, n_params)
+        p = np.ones(2**n_wires)
 
         res = _compute_cfim(p, dp)
 
@@ -85,8 +85,8 @@ class TestComputeclassicalFisher:
         and some dummy gradient dp"""
         # implicitly also does the unit test for the correct output shape
 
-        dp = np.ones(2 ** n_wires * n_params, dtype=float).reshape(2 ** n_wires, n_params)
-        p = np.zeros(2 ** n_wires)
+        dp = np.ones(2**n_wires * n_params, dtype=float).reshape(2**n_wires, n_params)
+        p = np.zeros(2**n_wires)
         p[0] = 1
         res = _compute_cfim(p, dp)
         assert np.allclose(res, np.ones((n_params, n_params)))
