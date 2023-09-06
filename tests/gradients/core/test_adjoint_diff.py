@@ -130,7 +130,7 @@ class TestAdjointJacobian:
     def test_Rot_gradient(self, theta, tol, dev):
         """Tests that the device gradient of an arbitrary Euler-angle-parameterized gate is
         correct."""
-        params = np.array([theta, theta**3, np.sqrt(2) * theta])
+        params = np.array([theta, theta ** 3, np.sqrt(2) * theta])
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)

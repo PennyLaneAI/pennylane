@@ -310,14 +310,14 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
                 if multi_measurements:
                     for prob_idx in measurements_probs:
                         num_wires_probs = len(tape.measurements[prob_idx].wires)
-                        res_reshaped = qml.math.reshape(res[prob_idx], (2**num_wires_probs, 2))
+                        res_reshaped = qml.math.reshape(res[prob_idx], (2 ** num_wires_probs, 2))
                         final_res[idx][prob_idx] = qml.math.tensordot(
                             res_reshaped, projector, axes=[[1], [0]]
                         )
                 else:
                     prob_idx = measurements_probs[0]
                     num_wires_probs = len(tape.measurements[prob_idx].wires)
-                    res = qml.math.reshape(res, (2**num_wires_probs, 2))
+                    res = qml.math.reshape(res, (2 ** num_wires_probs, 2))
                     final_res[idx] = qml.math.tensordot(res, projector, axes=[[1], [0]])
         grads = []
         idx = 0

@@ -104,7 +104,7 @@ def contracted_norm(l, alpha, a):
     """
     lx, ly, lz = l
 
-    c = np.pi**1.5 / 2 ** sum(l) * _fac2(2 * lx - 1) * _fac2(2 * ly - 1) * _fac2(2 * lz - 1)
+    c = np.pi ** 1.5 / 2 ** sum(l) * _fac2(2 * lx - 1) * _fac2(2 * ly - 1) * _fac2(2 * lz - 1)
     s = (
         (a.reshape(len(a), 1) * a) / ((alpha.reshape(len(alpha), 1) + alpha) ** (sum(l) + 1.5))
     ).sum()
@@ -213,7 +213,7 @@ def expansion(la, lb, ra, rb, alpha, beta, t):
     r = ra - rb
 
     if la == lb == t == 0:
-        return qml.math.exp(-q * r**2)
+        return qml.math.exp(-q * r ** 2)
 
     if t < 0 or t > (la + lb):
         return 0.0
@@ -565,7 +565,7 @@ def _diff2(i, j, ri, rj, alpha, beta):
     d2 = (
         -2 * beta * (2 * j + 1) * qml.math.sqrt(np.pi / p) * expansion(i, j, ri, rj, alpha, beta, 0)
     )
-    d3 = 4 * beta**2 * qml.math.sqrt(np.pi / p) * expansion(i, j + 2, ri, rj, alpha, beta, 0)
+    d3 = 4 * beta ** 2 * qml.math.sqrt(np.pi / p) * expansion(i, j + 2, ri, rj, alpha, beta, 0)
 
     return d1 + d2 + d3
 
@@ -775,7 +775,7 @@ def _hermite_coulomb(t, u, v, n, p, dr):
         array[float]: value of the Hermite integral
     """
     x, y, z = dr[0], dr[1], dr[2]
-    T = p * (dr**2).sum(axis=0)
+    T = p * (dr ** 2).sum(axis=0)
     r = 0
 
     if t == u == v == 0:
@@ -981,7 +981,7 @@ def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta
             (-1) ** (r + s + w)
         ) * _hermite_coulomb(t + r, u + s, v + w, 0, (p * q) / (p + q), p_ab - p_cd)
 
-    g = g * 2 * (np.pi**2.5) / (p * q * qml.math.sqrt(p + q))
+    g = g * 2 * (np.pi ** 2.5) / (p * q * qml.math.sqrt(p + q))
 
     return g
 

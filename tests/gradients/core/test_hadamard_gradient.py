@@ -103,7 +103,7 @@ class TestHadamardGrad:
     def test_rot_gradient(self, theta, tol):
         """Tests that the automatic gradient of an arbitrary Euler-angle-parameterized gate is correct."""
         dev = qml.device("default.qubit", wires=2)
-        params = np.array([theta, theta**3, np.sqrt(2) * theta])
+        params = np.array([theta, theta ** 3, np.sqrt(2) * theta])
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
@@ -213,7 +213,7 @@ class TestHadamardGrad:
         """Tests that the automatic gradient of an arbitrary controlled Euler-angle-parameterized
         gate is correct."""
         dev = qml.device("default.qubit", wires=3)
-        a, b, c = np.array([theta, theta**3, np.sqrt(2) * theta])
+        a, b, c = np.array([theta, theta ** 3, np.sqrt(2) * theta])
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)

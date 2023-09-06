@@ -85,5 +85,5 @@ class RMSPropOptimizer(AdagradOptimizer):
             grad (ndarray): gradient at the index.
         """
         self.accumulation[index] = (
-            self.decay * self.accumulation[index] + (1 - self.decay) * grad**2
+            self.decay * self.accumulation[index] + (1 - self.decay) * grad ** 2
         )

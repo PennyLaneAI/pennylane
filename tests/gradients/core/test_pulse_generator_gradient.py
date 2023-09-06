@@ -340,7 +340,7 @@ class TestOneParameterPauliRotCoeffs:
         import jax.numpy as jnp
 
         r_dtype, c_dtype = getattr(jnp, r_dtype), getattr(jnp, c_dtype)
-        dim = 2**num_wires
+        dim = 2 ** num_wires
         gen_shapes = [pardim + (dim, dim) for pardim in pardims]
         gens = tuple(np.random.random(sh) + 1j * np.random.random(sh) for sh in gen_shapes)
         # make skew-Hermitian and cast to right complex dtype
@@ -349,7 +349,7 @@ class TestOneParameterPauliRotCoeffs:
         coeffs = _one_parameter_paulirot_coeffs(gens, num_wires)
         assert isinstance(coeffs, tuple)
         assert len(coeffs) == len(pardims)
-        assert all(c.shape == (4**num_wires - 1, *pardim) for c, pardim in zip(coeffs, pardims))
+        assert all(c.shape == (4 ** num_wires - 1, *pardim) for c, pardim in zip(coeffs, pardims))
         assert all(c.dtype == r_dtype for c in coeffs)
 
     @pytest.mark.parametrize("num_wires", [1, 2, 3])
@@ -360,10 +360,10 @@ class TestOneParameterPauliRotCoeffs:
         paulirot_gens = -0.5j * pauli_basis_matrices(num_wires)
         # With many entries, each containing one basis element
         paulirot_coeffs = _one_parameter_paulirot_coeffs(paulirot_gens, num_wires)
-        assert qml.math.allclose(paulirot_coeffs, np.eye(4**num_wires - 1))
+        assert qml.math.allclose(paulirot_coeffs, np.eye(4 ** num_wires - 1))
         # With a "single entry" containing all basis elements
         paulirot_coeffs = _one_parameter_paulirot_coeffs([paulirot_gens], num_wires)
-        assert qml.math.allclose(paulirot_coeffs, np.eye(4**num_wires - 1))
+        assert qml.math.allclose(paulirot_coeffs, np.eye(4 ** num_wires - 1))
 
 
 @pytest.mark.jax
@@ -373,7 +373,7 @@ class TestNonzeroCoeffsAndWords:
     @pytest.mark.parametrize("num_wires", [1, 2, 3])
     def test_all_zero(self, num_wires):
         """Test that no coefficients and words are returned when all coefficients vanish."""
-        dim = 4**num_wires - 1
+        dim = 4 ** num_wires - 1
         shapes = [(dim, 3), (dim,), (dim, 2, 5)]
         # Generate zero coefficients only
         coeffs = tuple(np.zeros(shape) for shape in shapes)
@@ -390,12 +390,12 @@ class TestNonzeroCoeffsAndWords:
         to keep the Pauli word in the filter."""
         # Create many coefficients, each greater or equal ``1`` at distinct places.
         rng = np.random.default_rng(42)
-        coeffs = tuple(rng.uniform(1, 2, size=(4**num_wires - 1, 4**num_wires - 1)))
+        coeffs = tuple(rng.uniform(1, 2, size=(4 ** num_wires - 1, 4 ** num_wires - 1)))
         new_coeffs, words = _nonzero_coeffs_and_words(coeffs, num_wires)
 
         # The coefficients should not have changed and all words should be returned
         assert all(qml.math.allclose(nc, c) for nc, c in zip(new_coeffs, coeffs))
-        assert len(words) == 4**num_wires - 1
+        assert len(words) == 4 ** num_wires - 1
         # Also check that the order of the words is consistent.
         assert all(w == exp for w, exp in zip(words, pauli_basis_strings(num_wires)))
 
@@ -405,7 +405,7 @@ class TestNonzeroCoeffsAndWords:
     def test_single_zeros(self, num_wires, remove_ids):
         """Test that a removing single entries/Pauli words leads to the corresponding
         rows in the coefficients being skipped."""
-        dim = 4**num_wires - 1
+        dim = 4 ** num_wires - 1
         # Set a few coefficients to zero
         coeffs = tuple(np.zeros(dim) if i in remove_ids else e for i, e in enumerate(np.eye(dim)))
         new_coeffs, words = _nonzero_coeffs_and_words(coeffs, num_wires)
@@ -416,7 +416,7 @@ class TestNonzeroCoeffsAndWords:
         exp_coeffs = tuple(c[mask] for c in coeffs)
         exp_words = [w for i, w in zip(mask, pauli_basis_strings(num_wires)) if i]
         assert all(qml.math.allclose(nc, c) for nc, c in zip(new_coeffs, exp_coeffs))
-        assert len(words) == 4**num_wires - 1 - len(remove_ids)
+        assert len(words) == 4 ** num_wires - 1 - len(remove_ids)
         assert all(w == exp for w, exp in zip(words, exp_words))
 
         # Remove entries in np.eye(...) coefficients tuple altogether, effectively doing
@@ -425,7 +425,7 @@ class TestNonzeroCoeffsAndWords:
         new_coeffs, words = _nonzero_coeffs_and_words(coeffs, num_wires)
         exp_coeffs = tuple(c[mask] for c in coeffs)
         assert all(qml.math.allclose(nc, c) for nc, c in zip(new_coeffs, exp_coeffs))
-        assert len(words) == 4**num_wires - 1 - len(remove_ids)
+        assert len(words) == 4 ** num_wires - 1 - len(remove_ids)
         assert all(w == exp for w, exp in zip(words, exp_words))
 
     def test_atol(self):
@@ -1474,6 +1474,6 @@ class TestPulseGeneratorDiff:
         grad = fun(params)
         assert qml.math.isclose(grad, exp_grad)
 
-        exp_diff_of_grad = -4 * jnp.cos(2 * p) * T**2
+        exp_diff_of_grad = -4 * jnp.cos(2 * p) * T ** 2
         diff_of_grad = jax.grad(fun)(params)
         assert qml.math.isclose(diff_of_grad, exp_diff_of_grad)

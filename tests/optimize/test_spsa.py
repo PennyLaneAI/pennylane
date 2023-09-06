@@ -18,12 +18,12 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-univariate = [(np.sin), (lambda x: np.exp(x / 10.0)), (lambda x: x**2)]
+univariate = [(np.sin), (lambda x: np.exp(x / 10.0)), (lambda x: x ** 2)]
 
 multivariate = [
     (lambda x: np.sin(x[0]) + np.cos(x[1])),
     (lambda x: np.exp(x[0] / 3) * np.tanh(x[1])),
-    (lambda x: np.sum([x_**2 for x_ in x])),
+    (lambda x: np.sum([x_ ** 2 for x_ in x])),
 ]
 
 
@@ -44,7 +44,7 @@ class TestSPSAOptimizer:
         A = 1.0
         a = 0.05 * (A + 1) ** alpha
         k = 1
-        ck = c / k**gamma
+        ck = c / k ** gamma
         ak = a / (A + k) ** alpha
         # assume delta is 1.
         di = 1
@@ -67,7 +67,7 @@ class TestSPSAOptimizer:
         A = 10.0
         a = 0.05 * (A + 1) ** alpha
         k = 1
-        ck = c / k**gamma
+        ck = c / k ** gamma
         ak = a / (A + k) ** alpha
         deltas = np.array(np.meshgrid([1, -1], [1, -1])).T.reshape(-1, 2)
 
@@ -162,7 +162,7 @@ class TestSPSAOptimizer:
         A = 1.0
         a = 0.05 * (A + 1) ** alpha
         k = 1
-        ck = c / k**gamma
+        ck = c / k ** gamma
         ak = a / (A + k) ** alpha
         deltas = np.array(np.meshgrid([1, -1], [1, -1], [1, -1])).T.reshape(-1, 3)
 
@@ -226,7 +226,7 @@ class TestSPSAOptimizer:
         A = 1.0
         a = 0.05 * (A + 1) ** alpha
         k = 1
-        ck = c / k**gamma
+        ck = c / k ** gamma
         ak = a / (A + k) ** alpha
         # pylint:disable=too-many-function-args
         deltas = np.array(np.meshgrid([1, -1], [1, -1], [1, -1], [1, -1])).T.reshape(-1, 2, 2)
@@ -268,7 +268,7 @@ class TestSPSAOptimizer:
         A = 1.0
         a = 0.05 * (A + 1) ** alpha
         k = 1
-        ck = c / k**gamma
+        ck = c / k ** gamma
         ak = a / (A + k) ** alpha
 
         # assume delta is 1.
@@ -296,7 +296,7 @@ class TestSPSAOptimizer:
         A = 1.0
         a = 0.05 * (A + 1) ** alpha
         k = 1
-        ck = c / k**gamma
+        ck = c / k ** gamma
         ak = a / (A + k) ** alpha
         # assume delta is 1.
         di = 1

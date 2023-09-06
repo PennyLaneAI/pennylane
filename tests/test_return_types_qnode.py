@@ -49,7 +49,7 @@ class TestIntegrationSingleReturn:
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
-        assert res.shape == (2**wires,)
+        assert res.shape == (2 ** wires,)
         assert isinstance(res, np.ndarray)
 
     @pytest.mark.parametrize("wires", test_wires)
@@ -64,7 +64,7 @@ class TestIntegrationSingleReturn:
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
-        assert res.shape == (2**wires, 2**wires)
+        assert res.shape == (2 ** wires, 2 ** wires)
         assert isinstance(res, np.ndarray)
 
     @pytest.mark.parametrize("device", devices)
@@ -82,7 +82,7 @@ class TestIntegrationSingleReturn:
         res = qnode(0.5)
 
         dim = 3 if device == "default.qutrit" else 2
-        assert res.shape == (dim**d_wires, dim**d_wires)
+        assert res.shape == (dim ** d_wires, dim ** d_wires)
         assert isinstance(res, np.ndarray)
 
     @pytest.mark.parametrize("device", devices)
@@ -334,7 +334,7 @@ class TestIntegrationSingleReturnTensorFlow:
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(tf.Variable(0.5))
 
-        assert res.shape == (2**wires,)
+        assert res.shape == (2 ** wires,)
         assert isinstance(res, tf.Tensor)
 
     @pytest.mark.parametrize("wires", test_wires)
@@ -352,7 +352,7 @@ class TestIntegrationSingleReturnTensorFlow:
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(tf.Variable(0.5))
 
-        assert res.shape == (2**wires, 2**wires)
+        assert res.shape == (2 ** wires, 2 ** wires)
         assert isinstance(res, tf.Tensor)
 
     wires_tf = [2, 3]
@@ -373,7 +373,7 @@ class TestIntegrationSingleReturnTensorFlow:
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(tf.Variable(0.5))
 
-        assert res.shape == (2**d_wires, 2**d_wires)
+        assert res.shape == (2 ** d_wires, 2 ** d_wires)
         assert isinstance(res, tf.Tensor)
 
     @pytest.mark.parametrize("device", devices)
@@ -550,7 +550,7 @@ class TestIntegrationSingleReturnTorch:
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(torch.tensor(0.5, requires_grad=True))
 
-        assert res.shape == (2**wires,)
+        assert res.shape == (2 ** wires,)
         assert isinstance(res, torch.Tensor)
 
     @pytest.mark.parametrize("wires", test_wires)
@@ -568,7 +568,7 @@ class TestIntegrationSingleReturnTorch:
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(torch.tensor(0.5, requires_grad=True))
 
-        assert res.shape == (2**wires, 2**wires)
+        assert res.shape == (2 ** wires, 2 ** wires)
         assert isinstance(res, torch.Tensor)
 
     @pytest.mark.parametrize("device", devices)
@@ -587,7 +587,7 @@ class TestIntegrationSingleReturnTorch:
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(torch.tensor(0.5, requires_grad=True))
 
-        assert res.shape == (2**d_wires, 2**d_wires)
+        assert res.shape == (2 ** d_wires, 2 ** d_wires)
         assert isinstance(res, torch.Tensor)
 
     @pytest.mark.parametrize("device", devices)
@@ -768,7 +768,7 @@ class TestIntegrationSingleReturnJax:
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(jax.numpy.array(0.5))
 
-        assert res.shape == (2**wires,)
+        assert res.shape == (2 ** wires,)
         assert isinstance(res, jax.numpy.ndarray)
 
     @pytest.mark.parametrize("wires", test_wires)
@@ -789,7 +789,7 @@ class TestIntegrationSingleReturnJax:
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(jax.numpy.array(0.5))
 
-        assert res.shape == (2**wires, 2**wires)
+        assert res.shape == (2 ** wires, 2 ** wires)
         assert isinstance(res, jax.numpy.ndarray)
 
     @pytest.mark.parametrize("device", devices)
@@ -811,7 +811,7 @@ class TestIntegrationSingleReturnJax:
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(jax.numpy.array(0.5))
 
-        assert res.shape == (2**d_wires, 2**d_wires)
+        assert res.shape == (2 ** d_wires, 2 ** d_wires)
         assert isinstance(res, jax.numpy.ndarray)
 
     @pytest.mark.parametrize("device", devices)
@@ -2555,7 +2555,7 @@ class TestIntegrationMultipleMeasurementsShotVector:
                     # Scalar-val meas
                     assert r.shape == ()
                 else:
-                    assert r.shape == (2**2,)
+                    assert r.shape == (2 ** 2,)
 
                     # Probs add up to 1
                     assert np.allclose(sum(r), 1)
@@ -2882,7 +2882,7 @@ class TestIntegrationMultipleMeasurementsShotVector:
                 if expval_or_var:
                     assert r.shape == ()
                 elif probs:
-                    assert r.shape == (2**2,)
+                    assert r.shape == (2 ** 2,)
 
                     # Probs add up to 1
                     assert np.allclose(sum(r), 1)

@@ -126,7 +126,7 @@ class TestPurity:
         expected_purity = (
             0.5
             if is_partial
-            else 4 * (0.5 - (1 - param) * param) ** 2 + 4 * (1 - param) ** 2 * param**2
+            else 4 * (0.5 - (1 - param) * param) ** 2 + 4 * (1 - param) ** 2 * param ** 2
         )
         assert qml.math.allclose(purity, expected_purity)
 

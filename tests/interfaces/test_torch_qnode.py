@@ -386,14 +386,14 @@ class TestQNode:
         def circuit(a, b, c):
             qml.RY(a * c, wires=0)
             qml.RZ(b, wires=0)
-            qml.RX(c + c**2 + torch.sin(a), wires=0)
+            qml.RX(c + c ** 2 + torch.sin(a), wires=0)
             return qml.expval(qml.PauliZ(0))
 
         res = circuit(a, b, c)
 
         if diff_method == "finite-diff":
             assert circuit.qtape.trainable_params == [0, 2]
-            assert circuit.qtape.get_parameters() == [a * c, c + c**2 + torch.sin(a)]
+            assert circuit.qtape.get_parameters() == [a * c, c + c ** 2 + torch.sin(a)]
 
         res.backward()
 
@@ -1309,13 +1309,13 @@ class TestCV:
             return qml.var(qml.NumberOperator(0))
 
         res = circuit(n, a)
-        expected = n**2 + n + torch.abs(a) ** 2 * (1 + 2 * n)
+        expected = n ** 2 + n + torch.abs(a) ** 2 * (1 + 2 * n)
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
         # circuit jacobians
         res.backward()
         res = torch.tensor([n.grad, a.grad])
-        expected = torch.tensor([[2 * a**2 + 2 * n + 1, 2 * a * (2 * n + 1)]])
+        expected = torch.tensor([[2 * a ** 2 + 2 * n + 1, 2 * a * (2 * n + 1)]])
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
 

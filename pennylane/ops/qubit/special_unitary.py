@@ -157,7 +157,7 @@ def _pauli_decompose(matrix, num_wires):
     # ``tensordot``, which gives us a vectorized way to compute the coefficients.
     coefficients = qml.math.tensordot(basis, matrix, axes=[[1, 2], [-1, -2]])
     # Finally, cast to the original data type and renormalize
-    return qml.math.cast(coefficients, matrix.dtype) / 2**num_wires
+    return qml.math.cast(coefficients, matrix.dtype) / 2 ** num_wires
 
 
 class SpecialUnitary(Operation):
@@ -406,7 +406,7 @@ class SpecialUnitary(Operation):
         num_wires = 1 if isinstance(wires, int) else len(wires)
         self.hyperparameters["num_wires"] = num_wires
         theta_shape = qml.math.shape(theta)
-        expected_dim = 4**num_wires - 1
+        expected_dim = 4 ** num_wires - 1
 
         if len(theta_shape) not in {1, 2}:
             raise ValueError(

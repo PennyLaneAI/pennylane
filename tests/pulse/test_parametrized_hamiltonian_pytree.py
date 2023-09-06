@@ -44,7 +44,7 @@ def f1(p, t):
 
 def f2(p, t):
     """Compute the function p * cos(t**2)."""
-    return np.cos(p * t**2)
+    return np.cos(p * t ** 2)
 
 
 PH = qml.dot([1, f1, f2], [qml.PauliX(0), qml.PauliY(1), qml.Hadamard(3)])

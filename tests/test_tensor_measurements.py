@@ -387,9 +387,9 @@ class TestTensorSample:
         s1 = circuit(theta, phi, varphi)
 
         # s1 should only contain 1 and -1
-        assert np.allclose(s1**2, 1, atol=tol_stochastic, rtol=0)
+        assert np.allclose(s1 ** 2, 1, atol=tol_stochastic, rtol=0)
 
-        zero_state = np.zeros(2**3)
+        zero_state = np.zeros(2 ** 3)
         zero_state[0] = 1
         psi = zero_state
         psi = tensor_product([Rotx(theta), I, I]) @ zero_state
@@ -419,7 +419,7 @@ class TestTensorSample:
 
         s1 = circuit(theta, phi, varphi)
 
-        zero_state = np.zeros(2**3)
+        zero_state = np.zeros(2 ** 3)
         zero_state[0] = 1
         psi = zero_state
         psi = tensor_product([Rotx(theta), I, I]) @ zero_state
@@ -439,7 +439,7 @@ class TestTensorSample:
         assert np.allclose(dev.probability(), expected_probabilities, atol=tol_stochastic, rtol=0)
 
         # s1 should only contain 1 and -1
-        assert np.allclose(s1**2, 1, atol=tol_stochastic, rtol=0)
+        assert np.allclose(s1 ** 2, 1, atol=tol_stochastic, rtol=0)
 
     def test_tensor_hermitian(self, theta, phi, varphi, tol_stochastic):
         """Test that a tensor product involving qml.Hermitian works correctly"""
@@ -466,7 +466,7 @@ class TestTensorSample:
         eigvals = np.linalg.eigvalsh(np.kron(Z, A))
         assert set(np.round(s1, 8)).issubset(set(np.round(eigvals, 8)))
 
-        zero_state = np.zeros(2**3)
+        zero_state = np.zeros(2 ** 3)
         zero_state[0] = 1
         psi = tensor_product([Rotx(theta), I, I]) @ zero_state
         psi = tensor_product([I, Rotx(phi), I]) @ psi

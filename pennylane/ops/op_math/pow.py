@@ -273,7 +273,7 @@ class Pow(ScalarSymbolicOp):
     def compute_sparse_matrix(*params, base=None, z=0):
         if isinstance(z, int):
             base_matrix = base.compute_sparse_matrix(*params, **base.hyperparameters)
-            return base_matrix**z
+            return base_matrix ** z
         raise SparseMatrixUndefinedError
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
@@ -333,7 +333,7 @@ class Pow(ScalarSymbolicOp):
 
     def eigvals(self):
         base_eigvals = self.base.eigvals()
-        return [value**self.z for value in base_eigvals]
+        return [value ** self.z for value in base_eigvals]
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property

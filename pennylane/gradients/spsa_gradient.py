@@ -301,7 +301,7 @@ def spsa_grad(
         )
         # Use only the non-zero part of `direction` for the shifts, to skip redundant zero shifts
         _shifts = qml.math.tensordot(h * shifts, direction[indices], axes=0)
-        all_coeffs.append(qml.math.tensordot(coeffs / h**n, inv_direction, axes=0))
+        all_coeffs.append(qml.math.tensordot(coeffs / h ** n, inv_direction, axes=0))
         g_tapes = generate_multishifted_tapes(tape, indices, _shifts)
         gradient_tapes.extend(g_tapes)
 

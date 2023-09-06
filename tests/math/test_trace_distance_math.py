@@ -35,9 +35,9 @@ class TestTraceDistanceMath:
         (
             (
                 [[1, 0], [0, 0]],
-                qml.math.reduce_statevector([x, np.sqrt(1 - x**2)], indices=[0]),
+                qml.math.reduce_statevector([x, np.sqrt(1 - x ** 2)], indices=[0]),
             ),
-            np.sqrt(1 - x**2),
+            np.sqrt(1 - x ** 2),
         )
         for x in np.linspace(0, 1, 10)
     ]
@@ -45,7 +45,7 @@ class TestTraceDistanceMath:
         (
             (
                 [[0.5, 0.5], [0.5, 0.5]],
-                qml.math.reduce_statevector([x, np.sqrt(1 - x**2) * 1j], indices=[0]),
+                qml.math.reduce_statevector([x, np.sqrt(1 - x ** 2) * 1j], indices=[0]),
             ),
             np.sqrt(2) / 2,
         )

@@ -208,7 +208,7 @@ class TestConvertersZX:
     def test_circuit(self, decompose):
         """Test a simple circuit."""
 
-        I = qml.math.eye(2**2)
+        I = qml.math.eye(2 ** 2)
 
         operations = [
             qml.RZ(5 / 4 * np.pi, wires=0),
@@ -316,7 +316,7 @@ class TestConvertersZX:
         mat_product = qml.math.dot(matrix_qscript, qml.math.conj(matrix_zx.T))
         # Remove global phase
         mat_product /= mat_product[0, 0]
-        I = qml.math.eye(2**5)
+        I = qml.math.eye(2 ** 5)
         assert qml.math.allclose(mat_product, I)
 
         qscript_back = qml.transforms.from_zx(zx_g)
@@ -332,7 +332,7 @@ class TestConvertersZX:
 
     def test_expand_measurements(self):
         """Test with expansion of measurements."""
-        I = qml.math.eye(2**2)
+        I = qml.math.eye(2 ** 2)
 
         operations = [
             qml.RX(0.1, wires=0),
@@ -374,7 +374,7 @@ class TestConvertersZX:
 
     def test_embeddings(self):
         """Test with expansion of prep."""
-        I = qml.math.eye(2**2)
+        I = qml.math.eye(2 ** 2)
 
         prep = [qml.AngleEmbedding(features=[1, 2], wires=range(2), rotation="Z")]
 

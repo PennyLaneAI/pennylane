@@ -49,7 +49,7 @@ class TestUnitTestClassicalShadows:
         assert (T, n) == shadow.recipes.shape
         assert shadow.snapshots == T
         assert shadow.local_snapshots().shape == (T, n, 2, 2)
-        assert shadow.global_snapshots().shape == (T, 2**n, 2**n)
+        assert shadow.global_snapshots().shape == (T, 2 ** n, 2 ** n)
 
     def test_shape_mismatch_error(self):
         """Test than an error is raised when a ClassicalShadow object
@@ -196,10 +196,10 @@ class TestStateReconstruction:
         shadow = ClassicalShadow(bits, recipes)
 
         state = shadow.global_snapshots()
-        assert state.shape == (10000, 2**wires, 2**wires)
+        assert state.shape == (10000, 2 ** wires, 2 ** wires)
 
         state = np.mean(state, axis=0)
-        expected = np.ones((2**wires, 2**wires)) / (2**wires)
+        expected = np.ones((2 ** wires, 2 ** wires)) / (2 ** wires)
 
         assert qml.math.allclose(state, expected, atol=1e-1)
 
@@ -212,10 +212,10 @@ class TestStateReconstruction:
         shadow = ClassicalShadow(bits, recipes)
 
         state = shadow.global_snapshots()
-        assert state.shape == (10000, 2**wires, 2**wires)
+        assert state.shape == (10000, 2 ** wires, 2 ** wires)
 
         state = np.mean(state, axis=0)
-        expected = np.zeros((2**wires, 2**wires))
+        expected = np.zeros((2 ** wires, 2 ** wires))
         expected[np.array([0, 0, -1, -1]), np.array([0, -1, 0, -1])] = 0.5
 
         assert qml.math.allclose(state, expected, atol=1e-1)
@@ -230,7 +230,7 @@ class TestStateReconstruction:
         shadow = ClassicalShadow(bits, recipes)
 
         state = shadow.global_snapshots(snapshots=snapshots)
-        assert state.shape == (snapshots, 2**wires, 2**wires)
+        assert state.shape == (snapshots, 2 ** wires, 2 ** wires)
 
     @pytest.mark.parametrize("wires", [1, 3])
     def test_subset_reconstruction_iterable(self, wires):
@@ -243,7 +243,7 @@ class TestStateReconstruction:
         # choose 1000 random indices
         snapshots = np.random.choice(np.arange(10000, dtype=np.int64), size=1000, replace=False)
         state = shadow.global_snapshots(snapshots=snapshots)
-        assert state.shape == (len(snapshots), 2**wires, 2**wires)
+        assert state.shape == (len(snapshots), 2 ** wires, 2 ** wires)
 
         # check the results against obtaining the full global snapshots
         expected = shadow.global_snapshots()

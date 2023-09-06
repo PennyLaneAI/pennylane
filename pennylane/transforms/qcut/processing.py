@@ -179,7 +179,7 @@ def qcut_processing_fn_mc(
         t_s = f * sigma_s
         c_s = np.prod([evals[s] for s in setting])
         K = len(sample_mid)
-        expvals.append(8**K * c_s * t_s)
+        expvals.append(8 ** K * c_s * t_s)
 
     return qml.math.convert_like(np.mean(expvals), res0)
 
@@ -380,7 +380,7 @@ def _process_tensor(results, n_prep: int, n_meas: int):
         tensor_like: the corresponding fragment tensor
     """
     n = n_prep + n_meas
-    dim_meas = 4**n_meas
+    dim_meas = 4 ** n_meas
 
     # Step 1
     intermediate_shape = (4,) * n_prep + (dim_meas,)
@@ -456,7 +456,7 @@ def _to_tensors(
         n_meas = len(m)
         n = n_prep + n_meas
 
-        dim = 4**n
+        dim = 4 ** n
         results_slice = results[ctr : dim + ctr]
 
         tensors.append(_process_tensor(results_slice, n_prep, n_meas))

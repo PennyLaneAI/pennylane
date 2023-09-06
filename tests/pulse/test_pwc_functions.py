@@ -106,7 +106,7 @@ class TestPWC_from_function:
         passed in turn returns a callable with arguments (params, t)"""
 
         def f(x):
-            return x**2
+            return x ** 2
 
         c1 = qml.pulse.pwc_from_function(10, 10)
         c2 = c1(f)
@@ -124,7 +124,7 @@ class TestPWC_from_function:
 
         @qml.pulse.pwc_from_function(9, 10)
         def f(param, t):
-            return t**2 + param
+            return t ** 2 + param
 
         argspec = inspect.getfullargspec(f)
 
@@ -136,13 +136,13 @@ class TestPWC_from_function:
         when t is one of the input time_bins"""
 
         def f_initial(param, t):
-            return t**2 + param
+            return t ** 2 + param
 
         f_pwc = qml.pulse.pwc_from_function(timespan=9, num_bins=10)(f_initial)
 
         @qml.pulse.pwc_from_function(timespan=9, num_bins=10)
         def f_decorated(param, t):
-            return t**2 + param
+            return t ** 2 + param
 
         time_bins = np.linspace(0, 9, 10)
         for i in time_bins:
@@ -183,7 +183,7 @@ class TestPWC_from_function:
         """Tests that both shapes for input t work when creating a pwc function"""
 
         def f(params, t):
-            return params[1] * t**2 + params[0]
+            return params[1] * t ** 2 + params[0]
 
         params = [1.2, 2.3]
 
@@ -209,7 +209,7 @@ class TestPWC_from_function:
 
         @qml.pulse.pwc_from_function((1, 3), 12)
         def f(params, t):
-            return params[1] * t**2 + params[0]
+            return params[1] * t ** 2 + params[0]
 
         assert jax.jit(f)([1.2, 2.3], 0) == 0
         assert jax.jit(f)([1.2, 2.3], 2) != 0
@@ -365,7 +365,7 @@ class TestIntegration:
 
         @qml.pulse.pwc_from_function((3, 7), 10)
         def f2(params, t):
-            return params[0] + params[1] * t**2
+            return params[0] + params[1] * t ** 2
 
         H = f1 * qml.PauliX(0) + f2 * qml.PauliY(1)
         params = [1.2, [2.3, 3.4]]
@@ -401,7 +401,7 @@ class TestIntegration:
 
         @qml.pulse.pwc_from_function((3, 7), 10)
         def f2(params, t):
-            return params[0] + params[1] * t**2
+            return params[0] + params[1] * t ** 2
 
         H = f1 * qml.PauliX(0) + f2 * qml.PauliY(1)
 
@@ -446,7 +446,7 @@ class TestIntegration:
 
         @qml.pulse.pwc_from_function((3, 7), 10)
         def f2(params, t):
-            return params[0] + params[1] * t**2
+            return params[0] + params[1] * t ** 2
 
         H = f1 * qml.PauliX(0) + f2 * qml.PauliY(1)
 

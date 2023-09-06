@@ -1273,8 +1273,8 @@ class TestParameterShiftHessianQNode:
 
         assert np.allclose(hessian, expected)
         assert hessian_qruns < jacobian_qruns
-        assert hessian_qruns <= 2**2 * 1  # 1 = (1+2-1)C(2)
-        assert hessian_qruns <= 3**1
+        assert hessian_qruns <= 2 ** 2 * 1  # 1 = (1+2-1)C(2)
+        assert hessian_qruns <= 3 ** 1
 
     @pytest.mark.xfail(reason="Update tracker for new return types")
     def test_fewer_device_invocations_vector_input(self):
@@ -1300,8 +1300,8 @@ class TestParameterShiftHessianQNode:
 
         assert np.allclose(hessian, expected)
         assert hessian_qruns < jacobian_qruns
-        assert hessian_qruns <= 2**2 * 3  # 3 = (2+2-1)C(2)
-        assert hessian_qruns <= 3**2
+        assert hessian_qruns <= 2 ** 2 * 3  # 3 = (2+2-1)C(2)
+        assert hessian_qruns <= 3 ** 2
 
     @pytest.mark.xfail(reason="Update tracker for new return types")
     def test_fewer_device_invocations_vector_output(self):
@@ -1328,8 +1328,8 @@ class TestParameterShiftHessianQNode:
 
         assert np.allclose(hessian, expected)
         assert hessian_qruns < jacobian_qruns
-        assert hessian_qruns <= 2**2 * 6  # 6 = (3+2-1)C(2)
-        assert hessian_qruns <= 3**3
+        assert hessian_qruns <= 2 ** 2 * 6  # 6 = (3+2-1)C(2)
+        assert hessian_qruns <= 3 ** 3
 
     def test_error_unsupported_operation_without_argnum(self):
         """Test that the correct error is thrown for unsupported operations when

@@ -121,7 +121,7 @@ class TestReconstructEqu:
         lambda x: 0.1 * qml.math.cos(-2.1 * x) + 2.9 * qml.math.sin(4.2 * x - 1.2),
         lambda x: qml.math.ones_like(x) * 4.01,
         lambda x: qml.math.sum(
-            [i**2 * 0.1 * qml.math.sin(i * 3.921 * x - 2.7 / i) for i in range(1, 10)]
+            [i ** 2 * 0.1 * qml.math.sin(i * 3.921 * x - 2.7 / i) for i in range(1, 10)]
         ),
     ]
 
@@ -134,7 +134,7 @@ class TestReconstructEqu:
         + 4.2 * 2.9 * qml.math.cos(4.2 * x - 1.2),
         lambda x: 0.0,
         lambda x: qml.math.sum(
-            [i * 3.921 * i**2 * 0.1 * qml.math.cos(i * 3.921 * x - 2.7 / i) for i in range(1, 10)]
+            [i * 3.921 * i ** 2 * 0.1 * qml.math.cos(i * 3.921 * x - 2.7 / i) for i in range(1, 10)]
         ),
     ]
 
@@ -330,7 +330,7 @@ class TestReconstructGen:
         lambda x: 0.1 * np.cos(-0.1 * x) + 2.9 * np.sin(0.3 * x - 1.2),
         lambda x: np.sum([np.sin(i * x) for i in range(1, 10)]),
         lambda x: np.sum(
-            [i**0.9 * 0.2 * np.sin(i**1.2 * 3.921 * x - 5.1 / i) for i in np.arange(1, 10)]
+            [i ** 0.9 * 0.2 * np.sin(i ** 1.2 * 3.921 * x - 5.1 / i) for i in np.arange(1, 10)]
         ),
     ]
 
@@ -339,7 +339,7 @@ class TestReconstructGen:
         [3.2],
         [-0.3, -0.1, 0.0, 0.1, 0.3],
         list(np.arange(1, 10)),
-        [3.921 * i**1.2 for i in np.arange(1, 10)],
+        [3.921 * i ** 1.2 for i in np.arange(1, 10)],
     ]
 
     expected_grads = [
@@ -348,7 +348,7 @@ class TestReconstructGen:
         lambda x: (-0.1) ** 2 * np.sin(-0.1 * x) + 0.3 * 2.9 * np.cos(0.3 * x - 1.2),
         lambda x: np.sum([i * np.cos(i * x) for i in range(1, 10)]),
         lambda x: np.sum(
-            [i**2.1 * 3.921 * 0.2 * np.cos(i**1.2 * 3.921 * x - 5.1 / i) for i in range(1, 10)]
+            [i ** 2.1 * 3.921 * 0.2 * np.cos(i ** 1.2 * 3.921 * x - 5.1 / i) for i in range(1, 10)]
         ),
     ]
 
@@ -763,8 +763,8 @@ def qnode_5(Z, y):
 _x = 0.1
 _y = 2.3
 
-_X = pnp.array([i**1.2 - 2.0 / i for i in range(1, 6)])
-_Y = pnp.array([i**0.9 - 1.0 / i for i in range(1, 6)])
+_X = pnp.array([i ** 1.2 - 2.0 / i for i in range(1, 6)])
+_Y = pnp.array([i ** 0.9 - 1.0 / i for i in range(1, 6)])
 _Z = pnp.array(
     [
         [0.3, 9.1, -0.2, 0.6, 1.2],

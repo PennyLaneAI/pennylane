@@ -200,7 +200,7 @@ class TestQNodeIntegration:
         expected = np.array(
             [
                 [phase / jnp.sqrt(2), 0, jnp.conj(phase) / jnp.sqrt(2), 0],
-                [phase**2 / jnp.sqrt(2), 0, jnp.conj(phase) ** 2 / jnp.sqrt(2), 0],
+                [phase ** 2 / jnp.sqrt(2), 0, jnp.conj(phase) ** 2 / jnp.sqrt(2), 0],
             ]
         )
         assert jnp.allclose(state, expected, atol=tol, rtol=0)
@@ -241,7 +241,7 @@ class TestQNodeIntegration:
         expected = np.array(
             [
                 [phase / jnp.sqrt(2), 0, jnp.conj(phase) / jnp.sqrt(2), 0],
-                [phase**2 / jnp.sqrt(2), 0, jnp.conj(phase) ** 2 / jnp.sqrt(2), 0],
+                [phase ** 2 / jnp.sqrt(2), 0, jnp.conj(phase) ** 2 / jnp.sqrt(2), 0],
             ]
         )
         assert jnp.allclose(state, expected, atol=tol, rtol=0)
@@ -812,7 +812,7 @@ class TestPassthruIntegration:
         """Tests that the automatic gradient of a arbitrary controlled Euler-angle-parameterized
         gate is correct."""
         dev = qml.device("default.qubit.jax", wires=2)
-        a, b, c = np.array([theta, theta**3, np.sqrt(2) * theta])
+        a, b, c = np.array([theta, theta ** 3, np.sqrt(2) * theta])
 
         @qml.qnode(dev, diff_method="backprop", interface="jax")
         def circuit(a, b, c):
@@ -1098,7 +1098,7 @@ class TestOps:
 
         param = 0.3
         res = jacobian_transform(circuit)(param)
-        assert jnp.allclose(res, jnp.zeros(wires**2))
+        assert jnp.allclose(res, jnp.zeros(wires ** 2))
 
     def test_full_subsystem(self, mocker):
         """Test applying a state vector to the full subsystem"""
@@ -1169,7 +1169,7 @@ class TestOpsBroadcasted:
 
         param = jnp.array([0.3, 0.9, -4.3])
         res = jacobian_transform(circuit)(param)
-        assert jnp.allclose(res, jnp.zeros((3, wires**2, 3)))
+        assert jnp.allclose(res, jnp.zeros((3, wires ** 2, 3)))
 
     def test_full_subsystem_broadcasted(self, mocker):
         """Test applying a state vector to the full subsystem"""

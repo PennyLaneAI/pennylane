@@ -155,7 +155,7 @@ class TestDecomposition:
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-        weights = np.random.random(size=(2**4 - 2))
+        weights = np.random.random(size=(2 ** 4 - 2))
 
         dev = qml.device("default.qubit", wires=3)
         dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
@@ -196,7 +196,7 @@ class TestInputs:
     def test_id(self):
         """Tests that the id attribute can be set."""
         template = qml.ArbitraryStatePreparation(
-            np.random.random(size=(2**4 - 2)), wires=[0, 1, 2], id="a"
+            np.random.random(size=(2 ** 4 - 2)), wires=[0, 1, 2], id="a"
         )
         assert template.id == "a"
 

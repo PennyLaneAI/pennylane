@@ -136,7 +136,7 @@ class TestFuncToUnitary:
         when used within a PennyLane circuit, i.e., so that the probability of the final control
         wire encodes the function."""
         wires = 3
-        M = 2**wires
+        M = 2 ** wires
         func = lambda i: np.sin(i) ** 2
 
         r = func_to_unitary(func, M)
@@ -343,7 +343,7 @@ class TestQuantumMonteCarlo:
         following the example in the usage details"""
         # pylint: disable=cell-var-from-loop
         m = 5
-        M = 2**m
+        M = 2 ** m
 
         xmax = np.pi
         xs = np.linspace(-xmax, xmax, M)
@@ -356,7 +356,7 @@ class TestQuantumMonteCarlo:
         estimates = []
 
         for n in range(4, 11):
-            N = 2**n
+            N = 2 ** n
 
             target_wires = range(m + 1)
             estimation_wires = range(m + 1, n + m + 1)
@@ -393,7 +393,7 @@ class TestQuantumMonteCarlo:
         from jax import numpy as jnp
 
         m = 5
-        M = 2**m
+        M = 2 ** m
 
         xmax = jnp.pi
         xs = jnp.linspace(-xmax, xmax, M)
@@ -406,7 +406,7 @@ class TestQuantumMonteCarlo:
         estimates = []
 
         for n in range(4, 11):
-            N = 2**n
+            N = 2 ** n
 
             target_wires = range(m + 1)
             estimation_wires = range(m + 1, n + m + 1)
@@ -439,7 +439,7 @@ class TestQuantumMonteCarlo:
         """Test that the QuantumMonteCarlo template can correctly estimate the expectation value
         following the example in the usage details when the wires have custom labels"""
         m = 5
-        M = 2**m
+        M = 2 ** m
 
         xmax = np.pi
         xs = np.linspace(-xmax, xmax, M)
@@ -450,7 +450,7 @@ class TestQuantumMonteCarlo:
         func = lambda i: np.cos(xs[i]) ** 2
 
         n = 10
-        N = 2**n
+        N = 2 ** n
 
         target_wires = [0, "a", -1.1, -10, "bbb", 1000]
         estimation_wires = ["bob", -3, 42, "penny", "lane", 247, "straw", "berry", 5.5, 6.6]
@@ -472,7 +472,7 @@ class TestQuantumMonteCarlo:
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        xs = np.linspace(-np.pi, np.pi, 2**5)
+        xs = np.linspace(-np.pi, np.pi, 2 ** 5)
         probs = np.array([norm().pdf(x) for x in xs])
         probs /= np.sum(probs)
         func = lambda i: np.cos(xs[i]) ** 2

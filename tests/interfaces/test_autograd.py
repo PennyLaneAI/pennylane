@@ -699,7 +699,7 @@ class TestAutogradExecuteIntegration:
             with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a * c, wires=0)
                 qml.RZ(b, wires=0)
-                qml.RX(c + c**2 + np.sin(a), wires=0)
+                qml.RX(c + c ** 2 + np.sin(a), wires=0)
                 qml.expval(qml.PauliZ(0))
 
             tape = qml.tape.QuantumScript.from_queue(q)

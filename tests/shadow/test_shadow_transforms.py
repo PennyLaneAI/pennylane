@@ -111,7 +111,7 @@ class TestStateForward:
         circuit = qml.shadows.shadow_state(wires=range(wires), diffable=diffable)(circuit)
 
         actual = circuit()
-        expected = np.ones((2**wires, 2**wires)) / (2**wires)
+        expected = np.ones((2 ** wires, 2 ** wires)) / (2 ** wires)
 
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
@@ -123,7 +123,7 @@ class TestStateForward:
         circuit = qml.shadows.shadow_state(wires=range(wires), diffable=diffable)(circuit)
 
         actual = circuit()
-        expected = np.zeros((2**wires, 2**wires))
+        expected = np.zeros((2 ** wires, 2 ** wires))
         expected[np.array([0, 0, -1, -1]), np.array([0, -1, 0, -1])] = 0.5
 
         assert qml.math.allclose(actual, expected, atol=1e-1)

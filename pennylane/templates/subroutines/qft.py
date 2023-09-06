@@ -78,7 +78,7 @@ class QFT(Operation):
     @staticmethod
     @functools.lru_cache()
     def compute_matrix(n_wires):  # pylint: disable=arguments-differ
-        dimension = 2**n_wires
+        dimension = 2 ** n_wires
 
         mat = np.zeros((dimension, dimension), dtype=np.complex128)
         omega = np.exp(2 * np.pi * 1j / dimension)
@@ -111,7 +111,7 @@ class QFT(Operation):
         [Toffoli(wires=[1, 2, 4]), CNOT(wires=[1, 2]), Toffoli(wires=[0, 2, 4])]
 
         """
-        shifts = [2 * np.pi * 2**-i for i in range(2, n_wires + 1)]
+        shifts = [2 * np.pi * 2 ** -i for i in range(2, n_wires + 1)]
 
         decomp_ops = []
         for i, wire in enumerate(wires):

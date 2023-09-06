@@ -55,7 +55,7 @@ class ValidOp(CompositeOp):
         return False
 
     def matrix(self, wire_order=None):
-        return np.eye(2**self.num_wires)
+        return np.eye(2 ** self.num_wires)
 
     def eigvals(self):
         return self.eigendecomposition["eigval"]

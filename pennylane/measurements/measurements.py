@@ -240,7 +240,7 @@ class MeasurementProcess(ABC):
         """
         cutoff = getattr(device, "cutoff", None)
         base = 2 if cutoff is None else cutoff
-        return base**num_wires
+        return base ** num_wires
 
     def diagonalizing_gates(self):
         """Returns the gates that diagonalize the measured wires such that they

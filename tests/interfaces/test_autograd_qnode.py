@@ -394,14 +394,14 @@ class TestQNode:
         def circuit(a, b, c):
             qml.RY(a * c, wires=0)
             qml.RZ(b, wires=0)
-            qml.RX(c + c**2 + np.sin(a), wires=0)
+            qml.RX(c + c ** 2 + np.sin(a), wires=0)
             return qml.expval(qml.PauliZ(0))
 
         res = qml.jacobian(circuit)(a, b, c)
 
         assert circuit.qtape.trainable_params == [0, 2]
         tape_params = np.array(circuit.qtape.get_parameters())
-        assert np.all(tape_params == [a * c, c + c**2 + np.sin(a)])
+        assert np.all(tape_params == [a * c, c + c ** 2 + np.sin(a)])
 
         assert isinstance(res, tuple) and len(res) == 2
         assert res[0].shape == ()
@@ -1551,12 +1551,12 @@ class TestCV:
             return qml.var(qml.NumberOperator(0))
 
         res = circuit(n, a)
-        expected = n**2 + n + np.abs(a) ** 2 * (1 + 2 * n)
+        expected = n ** 2 + n + np.abs(a) ** 2 * (1 + 2 * n)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # circuit jacobians
         res = qml.jacobian(circuit)(n, a)
-        expected = np.array([[2 * a**2 + 2 * n + 1, 2 * a * (2 * n + 1)]])
+        expected = np.array([[2 * a ** 2 + 2 * n + 1, 2 * a * (2 * n + 1)]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 

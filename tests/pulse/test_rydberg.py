@@ -91,7 +91,7 @@ class TestRydbergInteraction:
         )
 
         # Only 3 of the interactions will be non-negligible
-        assert H_res.coeffs == [2.5**-6, 5**-6, 2.5**-6]
+        assert H_res.coeffs == [2.5 ** -6, 5 ** -6, 2.5 ** -6]
         assert qml.equal(H_res([], t=5), H_exp([], t=5))
 
 

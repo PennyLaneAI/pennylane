@@ -395,7 +395,7 @@ class Hamiltonian(Observable):
         else:
             wires = wire_order
         n = len(wires)
-        matrix = scipy.sparse.csr_matrix((2**n, 2**n), dtype="complex128")
+        matrix = scipy.sparse.csr_matrix((2 ** n, 2 ** n), dtype="complex128")
 
         coeffs = qml.math.toarray(self.data)
 
@@ -419,7 +419,7 @@ class Hamiltonian(Observable):
             for wire_lab in wires:
                 if wire_lab in op.wires:
                     if i_count > 0:
-                        mat.append(scipy.sparse.eye(2**i_count, format="coo"))
+                        mat.append(scipy.sparse.eye(2 ** i_count, format="coo"))
                     i_count = 0
                     idx = op.wires.index(wire_lab)
                     # obs is an array storing the single-wire observables which
@@ -430,7 +430,7 @@ class Hamiltonian(Observable):
                     i_count += 1
 
             if i_count > 0:
-                mat.append(scipy.sparse.eye(2**i_count, format="coo"))
+                mat.append(scipy.sparse.eye(2 ** i_count, format="coo"))
 
             red_mat = (
                 functools.reduce(lambda i, j: scipy.sparse.kron(i, j, format="coo"), mat) * coeff
@@ -616,8 +616,11 @@ class Hamiltonian(Observable):
         if isinstance(other, Hamiltonian):
             self.simplify()
             other.simplify()
-            return ((round(list(self._obs_data())[0][0],15),list(self._obs_data())[0][1]) == (
-                (round(list(other._obs_data())[0][0],15), list(other._obs_data())[0][1])))  # pylint: disable=protected-access
+            if self._obs_data() == other._obs_data():  # pylint: disable=protected-access
+                return True
+            return (round(list(self._obs_data())[0][0], 15), list(self._obs_data())[0][1]) == (
+                (round(list(other._obs_data())[0][0], 15), list(other._obs_data())[0][1])
+            )  # pylint: disable=protected-access
 
         if isinstance(other, (Tensor, Observable)):
             self.simplify()

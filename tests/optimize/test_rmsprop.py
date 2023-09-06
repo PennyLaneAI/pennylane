@@ -40,7 +40,7 @@ class TestRMSPropOptimizer:
         sgd_opt = RMSPropOptimizer(stepsize, decay=gamma, eps=eps)
         grad, args = np.array(grad), np.array(args, requires_grad=True)
 
-        a1 = (1 - gamma) * grad**2
+        a1 = (1 - gamma) * grad ** 2
         expected = args - stepsize / np.sqrt(a1 + eps) * grad
         res = sgd_opt.apply_grad(grad, args)
         assert np.allclose(res, expected, atol=tol)
@@ -49,7 +49,7 @@ class TestRMSPropOptimizer:
         grad = grad + args
         args = expected
 
-        a2 = gamma * a1 + (1 - gamma) * grad**2
+        a2 = gamma * a1 + (1 - gamma) * grad ** 2
         expected = args - stepsize / np.sqrt(a2 + eps) * grad
         res = sgd_opt.apply_grad(grad, args)
         assert np.allclose(res, expected, atol=tol)
@@ -61,7 +61,7 @@ class TestRMSPropOptimizer:
         stepsize, gamma = 0.1, 0.5
         rms_opt = RMSPropOptimizer(stepsize, decay=gamma)
 
-        univariate_funcs = [np.sin, lambda x: np.exp(x / 10.0), lambda x: x**2]
+        univariate_funcs = [np.sin, lambda x: np.exp(x / 10.0), lambda x: x ** 2]
         grad_uni_fns = [np.cos, lambda x: np.exp(x / 10.0) / 10.0, lambda x: 2 * x]
 
         for gradf, f in zip(grad_uni_fns, univariate_funcs):
@@ -90,7 +90,7 @@ class TestRMSPropOptimizer:
         multivariate_funcs = [
             lambda x: np.sin(x[0]) + np.cos(x[1]),
             lambda x: np.exp(x[0] / 3) * np.tanh(x[1]),
-            lambda x: np.sum([x_**2 for x_ in x]),
+            lambda x: np.sum([x_ ** 2 for x_ in x]),
         ]
         grad_multi_funcs = [
             lambda x: (np.array([np.cos(x[0]), -np.sin(x[1])]),),

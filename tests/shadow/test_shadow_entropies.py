@@ -50,7 +50,7 @@ def expected_entropy_ising_xx(param, alpha):
     if alpha == 1 or qml.math.isclose(alpha, 1):
         return qml.math.entr(eigs)
 
-    return qml.math.log(qml.math.sum(eigs**alpha)) / (1 - alpha)
+    return qml.math.log(qml.math.sum(eigs ** alpha)) / (1 - alpha)
 
 
 class TestShadowEntropies:
@@ -118,7 +118,7 @@ class TestShadowEntropies:
             exact_2 = -np.log(np.trace(rdm @ rdm))
 
             alpha = 1.5
-            exact_alpha = qml.math.log(qml.math.sum(evs**alpha)) / (1 - alpha)
+            exact_alpha = qml.math.log(qml.math.sum(evs ** alpha)) / (1 - alpha)
 
             exact_vn = qml.math.entr(evs)
             exact = [exact_vn, exact_alpha, exact_2]

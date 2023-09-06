@@ -607,7 +607,7 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
 
     # Special case: the identity Pauli
     if pauli_names == ["Identity"]:
-        return np.eye(2**n_qubits)
+        return np.eye(2 ** n_qubits)
 
     # If there is more than one qubit, we must go through the wire map wire
     # by wire and pick out the relevant matrices
@@ -850,7 +850,7 @@ def _pauli_group_generator(n_qubits, wire_map=None):
     if not wire_map:
         wire_map = {wire_idx: wire_idx for wire_idx in range(n_qubits)}
 
-    while element_idx < 4**n_qubits:
+    while element_idx < 4 ** n_qubits:
         binary_string = format(element_idx, f"#0{2*n_qubits+2}b")[2:]
         binary_vector = [float(b) for b in binary_string]
         yield binary_to_pauli(binary_vector, wire_map=wire_map)

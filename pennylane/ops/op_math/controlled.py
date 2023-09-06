@@ -350,7 +350,7 @@ class Controlled(SymbolicOp):
     @property
     def _control_int(self):
         """Int. Conversion of ``control_values`` to an integer."""
-        return sum(2**i for i, val in enumerate(reversed(self.control_values)) if val)
+        return sum(2 ** i for i, val in enumerate(reversed(self.control_values)) if val)
 
     # Properties on the wires ##########################
 

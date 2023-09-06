@@ -668,7 +668,7 @@ class TestSample:
         res = circuit()
 
         # res should only contain 1 and -1
-        assert np.allclose(res**2, 1, atol=tol(False))
+        assert np.allclose(res ** 2, 1, atol=tol(False))
 
     def test_sample_values_hermitian(self, device, tol):
         """Tests if the samples of a Hermitian observable returned by sample have
@@ -889,7 +889,7 @@ class TestTensorSample:
         res = circuit()
 
         # res should only contain 1 and -1
-        assert np.allclose(res**2, 1, atol=tol(False))
+        assert np.allclose(res ** 2, 1, atol=tol(False))
 
         mean = np.mean(res)
         expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
@@ -934,7 +934,7 @@ class TestTensorSample:
         res = circuit()
 
         # s1 should only contain 1 and -1
-        assert np.allclose(res**2, 1, atol=tol(False))
+        assert np.allclose(res ** 2, 1, atol=tol(False))
 
         mean = np.mean(res)
         expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
@@ -1168,7 +1168,7 @@ class TestTensorSample:
                 + (np.sin(theta / 2) * np.sin(phi / 2) * np.cos(varphi / 2)) ** 2
                 + (np.sin(theta / 2) * np.cos(phi / 2) * np.cos(varphi / 2)) ** 2
             )
-            - expected_mean**2
+            - expected_mean ** 2
         )
         assert np.allclose(sorted(np.unique(res)), [-1, 0, 1], atol=tol(False))
         assert np.allclose(np.mean(res), expected_mean, atol=tol(False))
@@ -1292,7 +1292,7 @@ class TestVar:
         expected_mean = 0.5 * (
             (np.cos(theta / 2) * np.cos(phi / 2)) ** 2 + (np.cos(theta / 2) * np.sin(phi / 2)) ** 2
         )
-        expected_var = expected_mean - expected_mean**2
+        expected_var = expected_mean - expected_mean ** 2
         assert np.allclose(res, expected_var, atol=tol(dev.shots))
 
 
@@ -1584,7 +1584,7 @@ class TestTensorVar:
                 + (np.sin(theta / 2) * np.sin(phi / 2) * np.cos(varphi / 2)) ** 2
                 + (np.sin(theta / 2) * np.cos(phi / 2) * np.cos(varphi / 2)) ** 2
             )
-            - expected_mean**2
+            - expected_mean ** 2
         )
         assert np.allclose(res, expected_var, atol=tol(False))
 

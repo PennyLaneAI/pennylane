@@ -731,14 +731,14 @@ class TestPauliError:
 
     def test_p_zero(self, tol):
         """Test resulting Kraus matrices for p=0"""
-        expected_Ks = [np.eye(2**5), np.zeros((2**5, 2**5))]
+        expected_Ks = [np.eye(2 ** 5), np.zeros((2 ** 5, 2 ** 5))]
         c = channel.PauliError("XXXXX", 0, wires=[0, 1, 2, 3, 4])
 
         assert np.allclose(c.kraus_matrices(), expected_Ks, atol=tol, rtol=0)
 
     def test_p_one(self, tol):
         """Test resulting Kraus matrices for p=1"""
-        expected_Ks = [np.zeros((2**5, 2**5)), np.flip(np.eye(2**5), axis=1)]
+        expected_Ks = [np.zeros((2 ** 5, 2 ** 5)), np.flip(np.eye(2 ** 5), axis=1)]
         c = channel.PauliError("XXXXX", 1, wires=[0, 1, 2, 3, 4])
 
         assert np.allclose(c.kraus_matrices(), expected_Ks, atol=tol, rtol=0)
@@ -1004,14 +1004,14 @@ class TestThermalRelaxationError:
         e1 = -p_reset * pe + p_reset
         v1 = np.array([[0], [0], [1], [0]])
         common_term = np.sqrt(
-            4 * eT2**2 + 4 * p_reset**2 * pe**2 - 4 * p_reset**2 * pe + p_reset**2
+            4 * eT2 ** 2 + 4 * p_reset ** 2 * pe ** 2 - 4 * p_reset ** 2 * pe + p_reset ** 2
         )
         e2 = 1 - p_reset / 2 - common_term / 2
         term2 = 2 * eT2 / (2 * p_reset * pe - p_reset - common_term)
-        v2 = np.array([[term2], [0], [0], [1]]) / np.sqrt(term2**2 + 1**2)
+        v2 = np.array([[term2], [0], [0], [1]]) / np.sqrt(term2 ** 2 + 1 ** 2)
         term3 = 2 * eT2 / (2 * p_reset * pe - p_reset + common_term)
         e3 = 1 - p_reset / 2 + common_term / 2
-        v3 = np.array([[term3], [0], [0], [1]]) / np.sqrt(term3**2 + 1**2)
+        v3 = np.array([[term3], [0], [0], [1]]) / np.sqrt(term3 ** 2 + 1 ** 2)
 
         expected_K0 = np.sqrt(e0) * v0.reshape((2, 2), order="F")
         assert np.allclose(

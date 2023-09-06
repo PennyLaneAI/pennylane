@@ -141,7 +141,7 @@ class TestQNode:
         def circuit(a, b, c):
             qml.RY(a * c, wires=0)
             qml.RZ(b, wires=0)
-            qml.RX(c + c**2 + jax.numpy.sin(a), wires=0)
+            qml.RX(c + c ** 2 + jax.numpy.sin(a), wires=0)
             return qml.expval(qml.PauliZ(0))
 
         res = jax.grad(circuit, argnums=[0, 2])(a, b, c)

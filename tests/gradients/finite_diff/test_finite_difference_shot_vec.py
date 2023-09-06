@@ -702,7 +702,7 @@ class TestFiniteDiffIntegration:
 
         cx, sx, cy, sy = np.cos(x / 2), np.sin(x / 2), np.cos(y / 2), np.sin(y / 2)
         # probability vector is [cx**2 * cy**2, cx**2 * sy**2, sx**2 * sy**2, sx**2 * cy**2]
-        exp_dprob = np.array([-(cx**2), cx**2, sx**2, -(sx**2)]) * (2 * sy * cy)
+        exp_dprob = np.array([-(cx ** 2), cx ** 2, sx ** 2, -(sx ** 2)]) * (2 * sy * cy)
         exp_probs = [np.zeros(4), exp_dprob]
         exp_expval = [0, -np.sin(y) * np.cos(x)]
 

@@ -510,7 +510,7 @@ class TestGradientTransformIntegration:
         assert np.allclose(classical_jac, np.array([[2 * w[0], 0], [0, 1]]))
 
         x, _ = w
-        expected = [-2 * x * np.sin(x**2), 0]
+        expected = [-2 * x * np.sin(x ** 2), 0]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_classical_processing_multiple_arguments(self, mocker, tol):
@@ -536,7 +536,7 @@ class TestGradientTransformIntegration:
         classical_jac = spy.spy_return(d, w)
         assert np.allclose(classical_jac, np.array([[2 * w[0], 0], [0, 1]]).T)
 
-        expected = np.array([-2 * x * np.cos(np.cos(d)) * np.sin(x**2), 0])
+        expected = np.array([-2 * x * np.cos(np.cos(d)) * np.sin(x ** 2), 0])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # set d as differentiable
@@ -549,8 +549,8 @@ class TestGradientTransformIntegration:
         assert np.allclose(classical_jac[0], [-np.sin(d), 0, 0])
         assert np.allclose(classical_jac[1], np.array([[0, 2 * w[0], 0], [0, 0, 1]]).T)
 
-        expected_dd = np.cos(x**2) * np.sin(d) * np.sin(np.cos(d))
-        expected_dw = np.array([-2 * x * np.cos(np.cos(d)) * np.sin(x**2), 0])
+        expected_dd = np.cos(x ** 2) * np.sin(d) * np.sin(np.cos(d))
+        expected_dw = np.array([-2 * x * np.cos(np.cos(d)) * np.sin(x ** 2), 0])
         assert np.allclose(res[0], expected_dd, atol=tol, rtol=0)
         assert np.allclose(res[1], expected_dw, atol=tol, rtol=0)
 
@@ -587,7 +587,7 @@ class TestGradientTransformIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[0, 1])
 
-        w = np.array([0.543**2, -0.654], requires_grad=True)
+        w = np.array([0.543 ** 2, -0.654], requires_grad=True)
         expected = qml.jacobian(circuit1)(w)
 
         assert np.allclose(res[0], expected.T[0], atol=tol, rtol=0)
@@ -664,18 +664,18 @@ class TestInterfaceIntegration:
         @qml.gradients.param_shift
         @qml.qnode(dev)
         def circuit(x):
-            qml.RY(x**2, wires=[1])
+            qml.RY(x ** 2, wires=[1])
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliX(1))
 
         x = np.array(-0.654, requires_grad=True)
 
         res = circuit(x)
-        expected = -4 * x * np.cos(x**2) * np.sin(x**2)
+        expected = -4 * x * np.cos(x ** 2) * np.sin(x ** 2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         res = qml.grad(circuit)(x)
-        expected = -2 * (4 * x**2 * np.cos(2 * x**2) + np.sin(2 * x**2))
+        expected = -2 * (4 * x ** 2 * np.cos(2 * x ** 2) + np.sin(2 * x ** 2))
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.tf
@@ -689,7 +689,7 @@ class TestInterfaceIntegration:
         @qml.gradients.param_shift
         @qml.qnode(dev, interface="tf", diff_method="parameter-shift")
         def circuit(x):
-            qml.RY(x**2, wires=[1])
+            qml.RY(x ** 2, wires=[1])
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliX(1))
 
@@ -699,11 +699,11 @@ class TestInterfaceIntegration:
         with tf.GradientTape() as tape:
             res = circuit(x)
 
-        expected = -4 * x_ * np.cos(x_**2) * np.sin(x_**2)
+        expected = -4 * x_ * np.cos(x_ ** 2) * np.sin(x_ ** 2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         res = tape.gradient(res, x)
-        expected = -2 * (4 * x_**2 * np.cos(2 * x_**2) + np.sin(2 * x_**2))
+        expected = -2 * (4 * x_ ** 2 * np.cos(2 * x_ ** 2) + np.sin(2 * x_ ** 2))
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.torch
@@ -744,16 +744,16 @@ class TestInterfaceIntegration:
         @qml.gradients.param_shift
         @qml.qnode(dev, interface="jax")
         def circuit(x):
-            qml.RY(x**2, wires=[1])
+            qml.RY(x ** 2, wires=[1])
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliX(1))
 
         x = jnp.array(-0.654)
 
         res = circuit(x)
-        expected = -4 * x * np.cos(x**2) * np.sin(x**2)
+        expected = -4 * x * np.cos(x ** 2) * np.sin(x ** 2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         res = jax.grad(circuit)(x)
-        expected = -2 * (4 * x**2 * np.cos(2 * x**2) + np.sin(2 * x**2))
+        expected = -2 * (4 * x ** 2 * np.cos(2 * x ** 2) + np.sin(2 * x ** 2))
         assert np.allclose(res, expected, atol=tol, rtol=0)

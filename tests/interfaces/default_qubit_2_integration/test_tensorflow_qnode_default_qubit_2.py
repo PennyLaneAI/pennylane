@@ -307,7 +307,7 @@ class TestQNode:
         def circuit(x, y, z):
             qml.RY(x * z, wires=0)
             qml.RZ(y, wires=0)
-            qml.RX(z + z**2 + tf.sin(a), wires=0)
+            qml.RX(z + z ** 2 + tf.sin(a), wires=0)
             return qml.expval(qml.PauliZ(0))
 
         with tf.GradientTape() as tape:
@@ -315,7 +315,7 @@ class TestQNode:
 
         if diff_method == "finite-diff":
             assert circuit.qtape.trainable_params == [0, 2]
-            assert circuit.qtape.get_parameters() == [a * c, c + c**2 + tf.sin(a)]
+            assert circuit.qtape.get_parameters() == [a * c, c + c ** 2 + tf.sin(a)]
 
         res = tape.jacobian(res, [a, b, c])
 

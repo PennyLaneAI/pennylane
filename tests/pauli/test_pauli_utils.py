@@ -524,7 +524,7 @@ class TestPauliGroup:
         """Test that the size of the returned Pauli group is correct."""
         for n_qubits in range(1, 5):
             pg = list(pauli_group(n_qubits))
-            assert len(pg) == 4**n_qubits
+            assert len(pg) == 4 ** n_qubits
 
     def test_pauli_group_invalid_input(self):
         """Test that invalid inputs to the Pauli group are handled correctly."""
@@ -729,7 +729,7 @@ class TestPartitionPauliGroup:
     @pytest.mark.parametrize("n", range(1, 9))
     def test_scaling(self, n):
         """Test if the number of groups is equal to 3**n"""
-        assert len(partition_pauli_group(n)) == 3**n
+        assert len(partition_pauli_group(n)) == 3 ** n
 
     @pytest.mark.parametrize("n", range(1, 6))
     def test_is_qwc(self, n):

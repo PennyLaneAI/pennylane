@@ -237,7 +237,7 @@ class TestState:
             return state()
 
         state_val = func()
-        assert state_val.shape == (2**wires,)
+        assert state_val.shape == (2 ** wires,)
         assert state_val.dtype == np.complex128
 
     def test_return_type_is_state(self):
@@ -531,14 +531,14 @@ class TestState:
         """Test that the shape is correct for qml.state."""
         dev = qml.device("default.qubit.legacy", wires=3, shots=shots)
         res = qml.state()
-        assert res.shape(dev, Shots(shots)) == (2**3,)
+        assert res.shape(dev, Shots(shots)) == (2 ** 3,)
 
     @pytest.mark.parametrize("s_vec", [(3, 2, 1), (1, 5, 10), (3, 1, 20)])
     def test_shape_shot_vector(self, s_vec):
         """Test that the shape is correct for qml.state with the shot vector too."""
         dev = qml.device("default.qubit.legacy", wires=3, shots=s_vec)
         res = qml.state()
-        assert res.shape(dev, Shots(s_vec)) == ((2**3,), (2**3,), (2**3,))
+        assert res.shape(dev, Shots(s_vec)) == ((2 ** 3,), (2 ** 3,), (2 ** 3,))
 
     def test_numeric_type(self):
         """Test that the numeric type of state measurements."""
@@ -996,7 +996,7 @@ class TestDensityMatrix:
         """Test that the shape is correct for qml.density_matrix."""
         dev = qml.device("default.qubit.legacy", wires=3, shots=shots)
         res = qml.density_matrix(wires=[0, 1])
-        assert res.shape(dev, Shots(shots)) == (2**2, 2**2)
+        assert res.shape(dev, Shots(shots)) == (2 ** 2, 2 ** 2)
 
     @pytest.mark.parametrize("s_vec", [(3, 2, 1), (1, 5, 10), (3, 1, 20)])
     def test_shape_shot_vector(self, s_vec):
@@ -1004,7 +1004,7 @@ class TestDensityMatrix:
         dev = qml.device("default.qubit.legacy", wires=3, shots=s_vec)
         res = qml.density_matrix(wires=[0, 1])
         assert res.shape(dev, Shots(s_vec)) == (
-            (2**2, 2**2),
-            (2**2, 2**2),
-            (2**2, 2**2),
+            (2 ** 2, 2 ** 2),
+            (2 ** 2, 2 ** 2),
+            (2 ** 2, 2 ** 2),
         )

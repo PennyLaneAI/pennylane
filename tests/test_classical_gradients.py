@@ -49,7 +49,7 @@ class TestGradientUnivar:
     def test_poly(self, tol):
         """Tests a polynomial function."""
         x_vals = np.linspace(-10, 10, 16, endpoint=False)
-        func = lambda x: 2 * x**2 + 3 * x + 4
+        func = lambda x: 2 * x ** 2 + 3 * x + 4
         g = qml.grad(func, 0)
         auto_grad = [g(x) for x in x_vals]
         correct_grad = 4 * x_vals + 3
@@ -90,7 +90,7 @@ class TestGradientMultiVar:
 
     def test_quadratic(self, tol):
         """Tests gradients with a quadratic function."""
-        multi_var = lambda x: np.sum([x_**2 for x_ in x])
+        multi_var = lambda x: np.sum([x_ ** 2 for x_ in x])
         grad_multi_var = lambda x: np.array([2 * x_ for x_ in x])
         x_vec = np.random.uniform(-5, 5, size=(2))
         g = qml.grad(multi_var, 0)
@@ -162,7 +162,7 @@ class TestGradientMultiargs:
         x = -2.5
         y = 1.5
         gradf = lambda x, y: (2 * x, 2 * y)
-        f = lambda x, y: np.sum([x_**2 for x_ in [x, y]])
+        f = lambda x, y: np.sum([x_ ** 2 for x_ in [x, y]])
 
         # gradient wrt first argument
         gx = qml.grad(f, 0)
@@ -287,7 +287,7 @@ class TestGrad:
 
     def test_no_argnum_grad(self, mocker, tol):
         """Test the qml.grad function for inferred argnums"""
-        cost_fn = lambda x, y: np.sin(x) * np.cos(y) + x * y**2
+        cost_fn = lambda x, y: np.sin(x) * np.cos(y) + x * y ** 2
 
         x = np.array(0.5, requires_grad=True)
         y = np.array(0.2, requires_grad=True)
@@ -296,7 +296,7 @@ class TestGrad:
         spy = mocker.spy(grad_fn, "_grad_with_forward")
 
         res = grad_fn(x, y)
-        expected = np.array([np.cos(x) * np.cos(y) + y**2, -np.sin(x) * np.sin(y) + 2 * x * y])
+        expected = np.array([np.cos(x) * np.cos(y) + y ** 2, -np.sin(x) * np.sin(y) + 2 * x * y])
         assert np.allclose(res, expected, atol=tol, rtol=0)
         assert spy.call_args_list[0][1]["argnum"] == [0, 1]
 
@@ -305,7 +305,7 @@ class TestGrad:
         spy.call_args_list = []
 
         res = grad_fn(x, y)
-        expected = np.array([np.cos(x) * np.cos(y) + y**2])
+        expected = np.array([np.cos(x) * np.cos(y) + y ** 2])
         assert np.allclose(res, expected, atol=tol, rtol=0)
         assert spy.call_args_list[0][1]["argnum"] == 0
 
@@ -315,19 +315,19 @@ class TestJacobian:
 
     def test_single_argnum_jacobian(self, tol):
         """Test the qml.jacobian function for a single argnum"""
-        cost_fn = lambda x, y: np.array([np.sin(x) * np.cos(y), x * y**2])
+        cost_fn = lambda x, y: np.array([np.sin(x) * np.cos(y), x * y ** 2])
 
         x = np.array(0.5, requires_grad=True)
         y = np.array(0.2, requires_grad=True)
 
         jac_fn = qml.jacobian(cost_fn, argnum=0)
         res = jac_fn(x, y)
-        expected = np.array([np.cos(x) * np.cos(y), y**2])
+        expected = np.array([np.cos(x) * np.cos(y), y ** 2])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_multiple_argnum_jacobian(self, tol):
         """Test the qml.jacobian function for multiple argnums"""
-        cost_fn = lambda x, y: np.array([np.sin(x) * np.cos(y), x * y**2])
+        cost_fn = lambda x, y: np.array([np.sin(x) * np.cos(y), x * y ** 2])
 
         x = np.array(0.5, requires_grad=True)
         y = np.array(0.2, requires_grad=True)
@@ -335,14 +335,14 @@ class TestJacobian:
         jac_fn = qml.jacobian(cost_fn, argnum=[0, 1])
         res = jac_fn(x, y)
         expected = (
-            np.array([np.cos(x) * np.cos(y), y**2]),
+            np.array([np.cos(x) * np.cos(y), y ** 2]),
             np.array([-np.sin(x) * np.sin(y), 2 * x * y]),
         )
         assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
 
     def test_no_argnum_jacobian(self, tol):
         """Test the qml.jacobian function for inferred argnums"""
-        cost_fn = lambda x, y: np.array([np.sin(x) * np.cos(y), x * y**2])
+        cost_fn = lambda x, y: np.array([np.sin(x) * np.cos(y), x * y ** 2])
 
         x = np.array(0.5, requires_grad=True)
         y = np.array(0.2, requires_grad=True)
@@ -350,7 +350,7 @@ class TestJacobian:
         jac_fn = qml.jacobian(cost_fn)
         res = jac_fn(x, y)
         expected = (
-            np.array([np.cos(x) * np.cos(y), y**2]),
+            np.array([np.cos(x) * np.cos(y), y ** 2]),
             np.array([-np.sin(x) * np.sin(y), 2 * x * y]),
         )
         assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))

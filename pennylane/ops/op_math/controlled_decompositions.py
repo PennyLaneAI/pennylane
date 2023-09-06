@@ -77,7 +77,7 @@ def _bisect_compute_a(u: np.ndarray):
     if np.isclose(zr, -1):
         # special case [[-1, 0], [0, -1]]
         # would cause divide by 0 with the other formula, so we use hardcoded solution
-        return np.array([[1, -1], [1, 1]]) * 2**-0.5
+        return np.array([[1, -1], [1, 1]]) * 2 ** -0.5
     ar = np.sqrt((np.sqrt((zr + 1) / 2) + 1) / 2)
     mul = 1 / (2 * np.sqrt((zr + 1) * (np.sqrt((zr + 1) / 2) + 1)))
     ai = zi * mul
@@ -116,9 +116,9 @@ def _bisect_compute_b(u: np.ndarray):
         c = sqrt(2 * w + 2) / 2
         d = 0
     else:
-        b = sqrt(2) * s * sqrt((1 - w) / (s**2 + t**2)) * Abs(t) / (2 * t)
-        c = sqrt(2) * sqrt((1 - w) / (s**2 + t**2)) * (w + 1) * Abs(t) / (2 * t)
-        d = -sqrt(2) * sqrt((1 - w) / (s**2 + t**2)) * Abs(t) / 2
+        b = sqrt(2) * s * sqrt((1 - w) / (s ** 2 + t ** 2)) * Abs(t) / (2 * t)
+        c = sqrt(2) * sqrt((1 - w) / (s ** 2 + t ** 2)) * (w + 1) * Abs(t) / (2 * t)
+        d = -sqrt(2) * sqrt((1 - w) / (s ** 2 + t ** 2)) * Abs(t) / 2
     return _param_su2(c, d, b, 0)
 
 

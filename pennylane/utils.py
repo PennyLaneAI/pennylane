@@ -178,7 +178,7 @@ def expand_vector(vector, original_wires, expanded_wires):
     if not set(expanded_wires).issuperset(original_wires):
         raise ValueError("Invalid target subsystems provided in 'original_wires' argument.")
 
-    if qml.math.shape(vector) != (2**N,):
+    if qml.math.shape(vector) != (2 ** N,):
         raise ValueError("Vector parameter must be of length 2**len(original_wires)")
 
     dims = [2] * N
@@ -186,7 +186,7 @@ def expand_vector(vector, original_wires, expanded_wires):
 
     if D > 0:
         extra_dims = [2] * D
-        ones = qml.math.ones(2**D).reshape(extra_dims)
+        ones = qml.math.ones(2 ** D).reshape(extra_dims)
         expanded_tensor = qml.math.tensordot(tensor, ones, axes=0)
     else:
         expanded_tensor = tensor
@@ -203,4 +203,4 @@ def expand_vector(vector, original_wires, expanded_wires):
         expanded_tensor, tuple(original_indices), tuple(wire_indices)
     )
 
-    return qml.math.reshape(expanded_tensor, 2**M)
+    return qml.math.reshape(expanded_tensor, 2 ** M)

@@ -640,7 +640,7 @@ class TestParameterShiftRule:
 
         shot_vec = tuple([1000000] * 2)
         dev = qml.device("default.qubit", wires=1, shots=shot_vec)
-        params = np.array([theta, theta**3, np.sqrt(2) * theta])
+        params = np.array([theta, theta ** 3, np.sqrt(2) * theta])
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
@@ -727,7 +727,7 @@ class TestParameterShiftRule:
         gate is correct."""
         shot_vec = tuple([1000000] * 2)
         dev = qml.device("default.qubit", wires=2, shots=shot_vec)
-        a, b, c = np.array([theta, theta**3, np.sqrt(2) * theta])
+        a, b, c = np.array([theta, theta ** 3, np.sqrt(2) * theta])
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)

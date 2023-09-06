@@ -107,7 +107,7 @@ def test_apply_controlled_z(n_wires):
 
     # Note the sign flip in the following. The sign does not matter when performing the Q unitary
     # because two Zs are used.
-    z_ideal = -_make_Z(2**n_wires)
+    z_ideal = -_make_Z(2 ** n_wires)
 
     circ = lambda: qml.ControlledQubitUnitary(z_ideal, wires=wires, control_wires=control_wire)
     u_ideal = get_unitary(circ, n_all_wires)
@@ -129,7 +129,7 @@ def test_apply_controlled_v(n_wires):
 
     # Note the sign flip in the following. The sign does not matter when performing the Q unitary
     # because two Vs are used.
-    v_ideal = -_make_V(2**n_wires)
+    v_ideal = -_make_V(2 ** n_wires)
 
     circ = lambda: qml.ControlledQubitUnitary(v_ideal, wires=wires, control_wires=control_wire)
     u_ideal = get_unitary(circ, n_all_wires)
@@ -153,7 +153,7 @@ class TestApplyControlledQ:
         control_wire = n_wires
 
         a_mat = unitary_group.rvs(2 ** (n_wires - 1), random_state=1967)
-        r_mat = unitary_group.rvs(2**n_wires, random_state=1967)
+        r_mat = unitary_group.rvs(2 ** n_wires, random_state=1967)
         q_mat = make_Q(a_mat, r_mat)
 
         def fn():
@@ -195,7 +195,7 @@ class TestQuantumMonteCarlo:
         estimation_wires = range(n_wires, 2 * n_wires)
 
         a_mat = unitary_group.rvs(2 ** (n_wires - 1), random_state=1967)
-        r_mat = unitary_group.rvs(2**n_wires, random_state=1967)
+        r_mat = unitary_group.rvs(2 ** n_wires, random_state=1967)
         q_mat = make_Q(a_mat, r_mat)
 
         def fn():
@@ -234,7 +234,7 @@ class TestQuantumMonteCarlo:
         wire labels are also used."""
 
         m = 5  # number of wires in A
-        M = 2**m
+        M = 2 ** m
 
         xmax = np.pi  # bound to region [-pi, pi]
         xs = np.linspace(-xmax, xmax, M)

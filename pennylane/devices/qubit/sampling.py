@@ -338,7 +338,7 @@ def sample_state(
 
     wires_to_sample = wires or state_wires
     num_wires = len(wires_to_sample)
-    basis_states = np.arange(2**num_wires)
+    basis_states = np.arange(2 ** num_wires)
 
     probs = qml.probs(wires=wires_to_sample).process_state(state, state_wires)
 

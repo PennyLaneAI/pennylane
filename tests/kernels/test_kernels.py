@@ -380,7 +380,7 @@ class TestKernelTargetAlignment:
             rescale_class_labels=False,
         )
 
-        assert alignment == 1.6 / (2 * math.sqrt(2 + 2 * 0.2**2))
+        assert alignment == 1.6 / (2 * math.sqrt(2 + 2 * 0.2 ** 2))
         assert alignment == alignment_assume
 
     def test_alignment_value_other_labels(self):
@@ -398,7 +398,7 @@ class TestKernelTargetAlignment:
             rescale_class_labels=False,
         )
 
-        assert alignment == 2.4 / (2 * math.sqrt(2 + 2 * 0.2**2))
+        assert alignment == 2.4 / (2 * math.sqrt(2 + 2 * 0.2 ** 2))
         assert alignment == alignment_assume
 
     def test_alignment_value_three(self):
@@ -621,14 +621,14 @@ class TestRegularization:
 def depolarize(mat, rates, num_wires, level):
     """Apply effect of depolarizing noise in circuit to kernel matrix."""
     if level == "per_circuit":
-        noisy_mat = (1 - rates) * mat + rates / (2**num_wires) * np.ones_like(mat)
+        noisy_mat = (1 - rates) * mat + rates / (2 ** num_wires) * np.ones_like(mat)
     elif level == "per_embedding":
         noisy_mat = np.copy(mat)
         for i in range(len(mat)):
             for j in range(i, len(mat)):
                 rate = rates[i] + rates[j] - rates[i] * rates[j]
                 noisy_mat[i, j] *= 1 - rate
-                noisy_mat[i, j] += rate / (2**num_wires)
+                noisy_mat[i, j] += rate / (2 ** num_wires)
 
     return noisy_mat
 

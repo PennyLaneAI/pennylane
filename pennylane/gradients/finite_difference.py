@@ -434,7 +434,7 @@ def finite_diff(
                         pre_grads[i] = pre_grads[i] + r_i * c
 
             coeff_div = qml.math.cast_like(
-                qml.math.convert_like(1 / h**n, pre_grads[0]), pre_grads[0]
+                qml.math.convert_like(1 / h ** n, pre_grads[0]), pre_grads[0]
             )
 
             if len(tape.measurements) > 1:

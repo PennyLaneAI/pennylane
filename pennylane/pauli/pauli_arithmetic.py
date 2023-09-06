@@ -448,7 +448,7 @@ class PauliSentence(dict):
         that it is composed of. See pauli_sparse_matrices.md for the technical details."""
         pauli_words = list(self)  # Ensure consistent ordering
         n_wires = len(wire_order)
-        matrix_size = 2**n_wires
+        matrix_size = 2 ** n_wires
         matrix = sparse.csr_matrix((matrix_size, matrix_size), dtype="complex128")
         op_sparse_idx = _ps_to_sparse_index(pauli_words, wire_order)
         _, unique_sparse_structures, unique_invs = np.unique(
@@ -456,7 +456,7 @@ class PauliSentence(dict):
         )
         pw_sparse_structures = unique_sparse_structures[unique_invs]
 
-        buffer_size = buffer_size or 2**30  # Default to 1GB of memory
+        buffer_size = buffer_size or 2 ** 30  # Default to 1GB of memory
         # Convert bytes to number of matrices:
         # complex128 (16) for each data entry and int64 (8) for each indices entry
         buffer_size = max(1, buffer_size // ((16 + 8) * matrix_size))

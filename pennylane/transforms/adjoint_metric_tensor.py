@@ -152,7 +152,7 @@ def _adjoint_metric_tensor_tape(tape):
     # of untrainable operations after each trainable one.
     trainable_operations, group_after_trainable_op = _group_operations(tape)
 
-    dim = 2**tape.num_wires
+    dim = 2 ** tape.num_wires
     # generate and extract initial state
     prep = tape[0] if len(tape) > 0 and isinstance(tape[0], qml.operation.StatePrep) else None
 
@@ -174,7 +174,7 @@ def _adjoint_metric_tensor_tape(tape):
         phi = qml.devices.qubit.apply_operation(generator_1, psi)
 
         phi_real, phi_imag = _reshape_real_imag(phi, dim)
-        diag_value = prefactor_1**2 * (
+        diag_value = prefactor_1 ** 2 * (
             qml.math.dot(phi_real, phi_real) + qml.math.dot(phi_imag, phi_imag)
         )
         L = qml.math.scatter_element_add(L, (j, j), diag_value)

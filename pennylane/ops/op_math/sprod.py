@@ -271,7 +271,7 @@ class SProd(ScalarSymbolicOp):
 
     def pow(self, z):
         """Returns the operator raised to a given power."""
-        return [SProd(scalar=self.scalar**z, base=Pow(base=self.base, z=z))]
+        return [SProd(scalar=self.scalar ** z, base=Pow(base=self.base, z=z))]
 
     def adjoint(self):
         """Create an operation that is the adjoint of this one.

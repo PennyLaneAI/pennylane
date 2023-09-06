@@ -85,7 +85,7 @@ def shadow_expval(H, k=1, seed=None):
     >>> qml.jacobian(circuit)(x, Hs)
     [-0.48312, -0.00198, -0.00375,  0.00168]
     """
-    seed = seed or np.random.randint(2**30)
+    seed = seed or np.random.randint(2 ** 30)
     return ShadowExpvalMP(H=H, seed=seed, k=k)
 
 
@@ -208,7 +208,7 @@ def classical_shadow(wires, seed=None):
         False
     """
     wires = Wires(wires)
-    seed = seed or np.random.randint(2**30)
+    seed = seed or np.random.randint(2 ** 30)
     return ClassicalShadowMP(wires=wires, seed=seed)
 
 

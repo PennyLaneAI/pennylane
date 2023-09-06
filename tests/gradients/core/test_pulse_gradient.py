@@ -981,7 +981,7 @@ class TestStochPulseGrad:
         theta_jac = jnp.array(
             [
                 theta / x,
-                x / y**2 * (jnp.cos(y * T[1]) - jnp.cos(y * T[0]))
+                x / y ** 2 * (jnp.cos(y * T[1]) - jnp.cos(y * T[0]))
                 + x / y * (jnp.sin(y * T[1]) * T[1] - jnp.sin(y * T[0]) * T[0]),
             ]
         )
@@ -1020,7 +1020,7 @@ class TestStochPulseGrad:
         theta_jac = jnp.array(
             [
                 theta / x,
-                x / y**2 * (jnp.cos(y * T[1]) - jnp.cos(y * T[0]))
+                x / y ** 2 * (jnp.cos(y * T[1]) - jnp.cos(y * T[0]))
                 + x / y * (jnp.sin(y * T[1]) * T[1] - jnp.sin(y * T[0]) * T[0]),
             ]
         )
@@ -1061,7 +1061,7 @@ class TestStochPulseGrad:
         theta_jac = jnp.array(
             [
                 theta / x,
-                x / y**2 * (jnp.cos(y * T[1]) - jnp.cos(y * T[0]))
+                x / y ** 2 * (jnp.cos(y * T[1]) - jnp.cos(y * T[0]))
                 + x / y * (jnp.sin(y * T[1]) * T[1] - jnp.sin(y * T[0]) * T[0]),
             ]
         )
@@ -1782,6 +1782,6 @@ class TestStochPulseGradDiff:
         grad = fun(params)
         assert qml.math.isclose(grad, exp_grad)
 
-        exp_diff_of_grad = -4 * jnp.cos(2 * p) * T**2
+        exp_diff_of_grad = -4 * jnp.cos(2 * p) * T ** 2
         diff_of_grad = jax.grad(fun)(params)
         assert qml.math.isclose(diff_of_grad, exp_diff_of_grad)

@@ -41,7 +41,7 @@ class TestQFT:
         dev = qml.device("default.qubit", wires=n_qubits)
 
         out_states = []
-        for state in np.eye(2**n_qubits):
+        for state in np.eye(2 ** n_qubits):
             dev.reset()
             ops = [qml.StatePrep(state, wires=range(n_qubits))] + decomp
             dev.apply(ops)
