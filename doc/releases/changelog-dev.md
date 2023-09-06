@@ -31,6 +31,8 @@
   [(4440)](https://github.com/PennyLaneAI/pennylane/pull/4440)
 
 <h3>Improvements 🛠</h3>
+* The qchem ``fermionic_dipole`` and ``particle_number`` functions are updated to use a ``FermiSentence``
+  [(#4546)](https://github.com/PennyLaneAI/pennylane/pull/4546)
 
 * Add the method ``add_transform`` and ``insert_front_transform`` transform in the ``TransformProgram``.
   [(#4559)](https://github.com/PennyLaneAI/pennylane/pull/4559)
@@ -186,6 +188,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Soran Jahangiri,
 Lillian M. A. Frederiksen,
 Romain Moyard,
 Mudit Pandey,
