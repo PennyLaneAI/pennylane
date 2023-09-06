@@ -264,8 +264,6 @@ def expand_tape_state_prep(tape, skip_first=True, force_decompose=False):
     """
 
     def full_decomposition(operation, force_decompose=False):
-        if not isinstance(operation, StatePrepBase):
-            return operation
         new_ops = []
         for op in operation.decomposition():
             if force_decompose and isinstance(
