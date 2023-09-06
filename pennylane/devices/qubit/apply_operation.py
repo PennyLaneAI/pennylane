@@ -195,6 +195,18 @@ def apply_operation(
 
 
 @apply_operation.register
+def apply_identity(op: qml.Identity, state, is_state_batched: bool = False, debugger=None):
+    """Applies a :class:`~.Identity` operation by just returning the input state."""
+    return state
+
+
+@apply_operation.register
+def apply_global_phase(op: qml.GlobalPhase, state, is_state_batched: bool = False, debugger=None):
+    """Applies a :class:`~.GlobalPhase` operation by multiplying the state by ``exp(1j * op.data[0])``"""
+    return qml.math.exp(-1j * qml.math.cast(op.data[0], complex)) * state
+
+
+@apply_operation.register
 def apply_paulix(op: qml.PauliX, state, is_state_batched: bool = False, debugger=None):
     """Apply :class:`pennylane.PauliX` operator to the quantum state"""
     axis = op.wires[0] + is_state_batched

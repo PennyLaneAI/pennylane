@@ -17,8 +17,70 @@
 
 * Wires can be provided to the new device API.
   [(#4538)](https://github.com/PennyLaneAI/pennylane/pull/4538)
+  [(#4562)](https://github.com/PennyLaneAI/pennylane/pull/4562)
+
+* The new device API now has a `repr()`
+  [(#4562)](https://github.com/PennyLaneAI/pennylane/pull/4562)
+
+* The density matrix aspects of `StateMP` have been split into their own measurement
+  process, `DensityMatrixMP`.
+  [(#4558)](https://github.com/PennyLaneAI/pennylane/pull/4558)
+
+* The `StateMP` measurement now accepts a wire order (eg. a device wire order). The `process_state`
+  method will re-order the given state to go from the inputted wire-order to the process's wire-order.
+  If the process's wire-order contains extra wires, it will assume those are in the zero-state.
+  [(#4570)](https://github.com/PennyLaneAI/pennylane/pull/4570)
 
 <h3>Breaking changes 💔</h3>
+
+* The `__eq__` and `__hash__` methods of `Operator` and `MeasurementProcess` no longer rely on the
+  object's address is memory. Using `==` with operators and measurement processes will now behave the
+  same as `qml.equal`, and objects of the same type with the same data and hyperparameters will have
+  the same hash.
+  [(#4536)](https://github.com/PennyLaneAI/pennylane/pull/4536)
+
+  In the following scenario, the second and third code blocks show the previous and current behaviour
+  of operator and measurement process equality, determined by the `__eq__` dunder method:
+
+  ```python
+  op1 = qml.PauliX(0)
+  op2 = qml.PauliX(0)
+  op3 = op1
+  ```
+  Old behaviour:
+  ```pycon
+  >>> op1 == op2
+  False
+  >>> op1 == op3
+  True
+  ```
+  New behaviour:
+  ```pycon
+  >>> op1 == op2
+  True
+  >>> op1 == op3
+  True
+  ```
+
+  The `__hash__` dunder method defines the hash of an object. The default hash of an object
+  is determined by the objects memory address. However, the new hash is determined by the
+  properties and attributes of operators and measurement processes. Consider the scenario below.
+  The second and third code blocks show the previous and current behaviour.
+
+  ```python
+  op1 = qml.PauliX(0)
+  op2 = qml.PauliX(0)
+  ```
+  Old behaviour:
+  ```pycon
+  >>> print({op1, op2})
+  {PauliX(wires=[0]), PauliX(wires=[0])}
+  ```
+  New behaviour:
+  ```pycon
+  >>> print({op1, op2})
+  {PauliX(wires=[0])}
+  ```
 
 * The old return type and associated functions ``qml.enable_return`` and ``qml.disable_return`` are removed.
   [(#4503)](https://github.com/PennyLaneAI/pennylane/pull/4503)
@@ -33,7 +95,8 @@
   Instead of ``tape.unwrap()``, use :func:`~.transforms.convert_to_numpy_parameters`.
   [(#4535)](https://github.com/PennyLaneAI/pennylane/pull/4535)
 
-* The ``RandomLayers.compute_decomposition`` keyword argument ``ratio_imprivitive`` has been changed to
+* The ``RandomLayers.compute_
+osition`` keyword argument ``ratio_imprivitive`` has been changed to
   ``ratio_imprim`` to match the call signature of the operation.
   [(#4552)](https://github.com/PennyLaneAI/pennylane/pull/4552)
 
@@ -47,7 +110,6 @@
   been removed. Please use ``QuantumScript.bind_new_parameters`` instead.
   [(#4548)](https://github.com/PennyLaneAI/pennylane/pull/4548)
 
-  
 <h3>Deprecations 👋</h3>
 
 * The ``prep`` keyword argument in ``QuantumScript`` is deprecated and will be removed from `QuantumScript`.
@@ -69,6 +131,9 @@
 * Fix `skip_first` option in `expand_tape_state_prep` and add `force_decompose` which forces the decomposition of `BasisStatePreparation` and `MottonenStatePreparation` operations into gates.
   [(#4564)](https://github.com/PennyLaneAI/pennylane/pull/4564)
 
+* `convert_to_numpy_parameters` now uses `qml.ops.functions.bind_new_parameters`. This reinitializes the operation and
+  makes sure everything references the new numpy parameters.
+
 * `tf.function` no longer breaks `ProbabilityMP.process_state` which is needed by new devices.
   [(#4470)](https://github.com/PennyLaneAI/pennylane/pull/4470)
 
@@ -79,5 +144,6 @@ This release contains contributions from (in alphabetical order):
 Lillian M. A. Frederiksen,
 Vincent Michaud-Rioux,
 Romain Moyard,
+Mudit Pandey,
 Matthew Silverman
 
