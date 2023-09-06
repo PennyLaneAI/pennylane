@@ -49,6 +49,7 @@ def no_tape_transform(
     circuit: qml.tape.QuantumTape, index: int
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Transform without tape."""
+    circuit = circuit.copy()
     circuit._ops.pop(index)  # pylint:disable=protected-access
     return [circuit], lambda x: x
 
@@ -57,6 +58,7 @@ def no_quantum_tape_transform(
     tape: qml.operation.Operator, index: int
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Transform with wrong hinting."""
+    tape = tape.copy()
     tape._ops.pop(index)  # pylint:disable=protected-access
     return [tape], lambda x: x
 
@@ -97,6 +99,7 @@ def first_valid_transform(
     tape: qml.tape.QuantumTape, index: int
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """A valid transform."""
+    tape = tape.copy()
     tape._ops.pop(index)  # pylint:disable=protected-access
     return [tape], lambda x: x
 
@@ -106,6 +109,7 @@ def second_valid_transform(
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """A valid trasnform."""
     tape1 = tape.copy()
+    tape2 = tape.copy()
     tape2 = tape._ops.pop(index)  # pylint:disable=protected-access
 
     def fn(results):
@@ -118,8 +122,8 @@ valid_transforms = [first_valid_transform, second_valid_transform]
 
 
 ##########################################
-# Non-valid expand transform
-def multiple_args_expand_transform(
+# Valid expand transform
+def expand_transform(
     tape: qml.tape.QuantumTape, index: int
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Multiple args expand fn."""
@@ -127,8 +131,10 @@ def multiple_args_expand_transform(
     return [tape], lambda x: x
 
 
-# Valid expand transform
-def expand_transform(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
+# Non-valid expand transform
+def non_valid_expand_transform(
+    tape: qml.tape.QuantumTape,
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     """A valid expand transform."""
     return [tape], lambda x: x
 
@@ -279,7 +285,7 @@ class TestTransformDispatcher:
         assert isinstance(qnode_transformed.transform_program, qml.transforms.core.TransformProgram)
         expand_transform_container = qnode_transformed.transform_program.pop_front()
         assert isinstance(expand_transform_container, qml.transforms.core.TransformContainer)
-        assert expand_transform_container.args == []
+        assert expand_transform_container.args == [0]
         assert expand_transform_container.kwargs == {}
         assert expand_transform_container.classical_cotransform is None
         assert not expand_transform_container.is_informative
@@ -350,13 +356,13 @@ class TestTransformDispatcher:
             transform(first_valid_transform, expand_transform=non_callable)
 
     def test_multiple_args_expand_transform(self):
-        """Test that an expand transform must take a single argument which is the tape."""
+        """Test that an expand transform must match the signature of the transform"""
 
         with pytest.raises(
             TransformError,
-            match="The expand transform does not support arg and kwargs other than tape.",
+            match="The expand transform must have the same signature as the transform",
         ):
-            transform(first_valid_transform, expand_transform=multiple_args_expand_transform)
+            transform(first_valid_transform, expand_transform=non_valid_expand_transform)
 
     def test_cotransform_not_implemented(self):
         """Test that a co-transform must be a callable."""
