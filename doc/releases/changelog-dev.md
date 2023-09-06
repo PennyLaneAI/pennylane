@@ -118,6 +118,24 @@
   ``StatePrepBase`` operations should be placed at the beginning of the `ops` list instead.
   [(#4554)](https://github.com/PennyLaneAI/pennylane/pull/4554)
 
+* The following decorator syntax for transforms has been deprecated and will raise a warning:
+  ```python
+  @transform_fn(**transform_kwargs)
+  @qml.qnode(dev)
+  def circuit():
+      ...
+  ```
+  If you are using a transform that has supporting `transform_kwargs`, please call the
+  transform directly using `circuit = transform_fn(circuit, **transform_kwargs)`,
+  or use `functools.partial`:
+  ```python
+  @functools.partial(transform_fn, **transform_kwargs)
+  @qml.qnode(dev)
+  def circuit():
+      ...
+  ```
+  [(#4457)](https://github.com/PennyLaneAI/pennylane/pull/4457/)
+
 <h3>Documentation 📝</h3>
 
 * Minor documentation improvements to the new device API. The documentation now correctly states that interface-specific
