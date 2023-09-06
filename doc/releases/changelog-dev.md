@@ -57,6 +57,11 @@
   If the process's wire-order contains extra wires, it will assume those are in the zero-state.
   [(#4570)](https://github.com/PennyLaneAI/pennylane/pull/4570)
 
+* Various changes to measurements to improve feature parity between the legacy `default.qubit` and
+  the new `DefaultQubit2`. This includes not trying to squeeze batched `CountsMP` results and implementing
+  `MutualInfoMP.map_wires`.
+  [(#4574)](https://github.com/PennyLaneAI/pennylane/pull/4574)
+
 <h3>Breaking changes 💔</h3>
 
 * The `__eq__` and `__hash__` methods of `Operator` and `MeasurementProcess` no longer rely on the
