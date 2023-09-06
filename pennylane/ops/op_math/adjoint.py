@@ -125,17 +125,10 @@ def adjoint(fn, lazy=True):
         Adjoint(S)(wires=[0])
 
     """
-    try:
-        import catalyst
-
-        if catalyst.utils.tracing.TracingContext.is_tracing():
-            assert lazy, "Lazy Evaluation is not supported in Catalyst"
-            return catalyst.adjoint(fn)
-    except ImportError:
-        # If this's not callled during tracing, there's no need to
-        # patch this to `catalyst.adjoint` and it can be treated as
-        # a regular `qml.adjoint` call.
-        pass
+    # The QJIT compilation support
+    if qml.pl_qjit_available and qml.catalyst_is_tracing():
+        assert lazy, "Lazy Evaluation is not supported in Catalyst"
+        return qml.catalyst_adjoint(fn)
 
     if isinstance(fn, Operator):
         return Adjoint(fn) if lazy else _single_op_eager(fn, update_queue=True)

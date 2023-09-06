@@ -106,17 +106,10 @@ def measure(wires: Wires, reset: Optional[bool] = False):
             "Only a single qubit can be measured in the middle of the circuit"
         )
 
-    try:
-        from catalyst import utils, measure
-
-        if utils.tracing.TracingContext.is_tracing():
-            assert not reset, "reset option is not supported in Catalyst"
-            return measure(wire[0])
-    except ImportError:
-        # If this's not callled during tracing, there's no need to
-        # patch this to `catalyst.measure` and it can be treated as
-        # a regular `qml.measure` call.
-        pass
+    # The QJIT compilation support
+    if qml.pl_qjit_available and qml.catalyst_is_tracing():
+        assert not reset, "reset option is not supported in Catalyst"
+        return qml.catalyst_measure(wire[0])
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())[:8]

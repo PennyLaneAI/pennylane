@@ -16,6 +16,8 @@ This module contains the autograd wrappers :class:`grad` and :func:`jacobian`
 """
 import warnings
 
+import pennylane as qml
+
 from autograd import jacobian as _jacobian
 from autograd.core import make_vjp as _make_vjp
 from autograd.numpy.numpy_boxes import ArrayBox
@@ -77,16 +79,9 @@ def grad(fun, argnum=None, **kwargs):
         the arguments in ``argnum``.
     """
 
-    try:
-        import catalyst
-
-        if catalyst.utils.tracing.TracingContext.is_tracing():
-            return catalyst.grad(fun, method=kwargs.get("method"), h=kwargs.get("h"), argnum=argnum)
-    except ImportError:
-        # If this's not callled during tracing, there's no need to
-        # patch this to `catalyst.grad` and it can be treated as
-        # a regular `qml.grad` call.
-        pass
+    # The QJIT compilation support
+    if qml.pl_qjit_available and qml.catalyst_is_tracing():
+        return qml.catalyst_grad(fun, method=kwargs.get("method"), h=kwargs.get("h"), argnum=argnum)
 
     return Grad(fun, argnum)
 
@@ -376,18 +371,10 @@ def jacobian(func, argnum=None, **kwargs):
     """
     # pylint: disable=no-value-for-parameter
 
-    try:
-        import catalyst
-
-        if catalyst.utils.tracing.TracingContext.is_tracing():
-            return catalyst.jacobian(
-                func, method=kwargs.get("method"), h=kwargs.get("h"), argnum=argnum
-            )
-    except ImportError:
-        # If this's not callled during tracing, there's no need to
-        # patch this to `catalyst.grad` and it can be treated as
-        # a regular `qml.grad` call.
-        pass
+    if qml.pl_qjit_available and qml.catalyst_is_tracing():
+        return qml.catalyst_jacobian(
+            func, method=kwargs.get("method"), h=kwargs.get("h"), argnum=argnum
+        )
 
     def _get_argnum(args):
         """Inspect the arguments for differentiability and return the

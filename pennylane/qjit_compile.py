@@ -23,7 +23,10 @@ except ImportError:
     pl_qjit_available = False
 
 
+# Catalyst QJIT decorator
 def qjit(*args, **kwargs):
+    """The ``catalyst.qjit`` wrapper method"""
+
     if not pl_qjit_available:
         raise ImportError(
             "Catalyst is required for the QJIT-compilation mode, "
@@ -33,7 +36,10 @@ def qjit(*args, **kwargs):
     return catalyst.qjit(*args, **kwargs)
 
 
+# Catalyst control-flow statements
 def if_cond(*args, **kwargs):
+    """The ``catalyst.cond`` wrapper method"""
+
     if not pl_qjit_available:
         raise ImportError(
             "Catalyst is required for the QJIT-compilation mode, "
@@ -44,6 +50,8 @@ def if_cond(*args, **kwargs):
 
 
 def for_loop(*args, **kwargs):
+    """The ``catalyst.for_loop`` wrapper method"""
+
     if not pl_qjit_available:
         raise ImportError(
             "Catalyst is required for the QJIT-compilation mode, "
@@ -54,6 +62,8 @@ def for_loop(*args, **kwargs):
 
 
 def while_loop(*args, **kwargs):
+    """The ``catalyst.while`` wrapper method"""
+
     if not pl_qjit_available:
         raise ImportError(
             "Catalyst is required for the QJIT-compilation mode, "
@@ -63,8 +73,43 @@ def while_loop(*args, **kwargs):
     return catalyst.while_loop(*args, **kwargs)
 
 
+# Catalyst wrapper methods used in dispatchers
+def catalyst_is_tracing():
+    """The ``catalyst.while`` wrapper method"""
+
+    return catalyst.utils.tracing.TracingContext.is_tracing()
+
+
+def catalyst_measure(wires):
+    """The ``catalyst.measure`` wrapper method"""
+
+    return catalyst.measure(wires)
+
+
+def catalyst_adjoint(fn):
+    """The ``catalyst.adjoint`` wrapper method"""
+
+    return catalyst.adjoint(fn)
+
+
+def catalyst_grad(fun, method=None, h=None, argnum=None):
+    """The ``catalyst.grad`` wrapper method"""
+
+    return catalyst.grad(fun, method=method, h=h, argnum=argnum)
+
+
+def catalyst_jacobian(fun, method=None, h=None, argnum=None):
+    """The ``catalyst.jacobian`` wrapper method"""
+
+    return catalyst.jacobian(fun, method=method, h=h, argnum=argnum)
+
+
 if pl_qjit_available:
     qjit.__doc__ = catalyst.qjit.__doc__
     if_cond.__doc__ = catalyst.cond.__doc__
     for_loop.__doc__ = catalyst.for_loop.__doc__
     while_loop.__doc__ = catalyst.while_loop.__doc__
+    catalyst_measure.__doc__ = catalyst.measure.__doc__
+    catalyst_adjoint.__doc__ = catalyst.adjoint.__doc__
+    catalyst_grad.__doc__ = catalyst.grad.__doc__
+    catalyst_jacobian.__doc__ = catalyst.jacobian.__doc__
