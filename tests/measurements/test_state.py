@@ -29,6 +29,7 @@ from pennylane.measurements import (
 )
 from pennylane.math.quantum import reduce_statevector, reduce_dm
 from pennylane.math.matrix_manipulation import _permute_dense_matrix
+from pennylane.wires import Wires, WireError
 
 
 class TestStateMP:
@@ -45,17 +46,121 @@ class TestStateMP:
     def test_process_state_vector(self, vec):
         """Test the processing of a state vector."""
 
-        mp = StateMP()
+        mp = StateMP(wires=None)
         assert mp.return_type == State
         assert mp.numeric_type is complex
 
         processed = mp.process_state(vec, None)
         assert qml.math.allclose(processed, vec)
 
-    def test_state_does_not_accept_wires(self):
-        """Test that StateMP does not accept wires."""
-        with pytest.raises(TypeError, match="unexpected keyword argument 'wires'"):
-            StateMP(wires=[0])
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch", "tensorflow"])
+    def test_state_returns_itself_if_wires_match(self, interface):
+        """Test that when wire_order matches the StateMP, the state is returned."""
+        ket = qml.math.array([0.48j, 0.48, -0.64j, 0.36], like=interface)
+        assert StateMP(wires=[1, 0]).process_state(ket, wire_order=Wires([1, 0])) is ket
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("wires, wire_order", [([1, 0], [0, 1]), (["b", "a"], ["a", "b"])])
+    def test_reorder_state(self, interface, wires, wire_order):
+        """Test that a state can be re-ordered."""
+        ket = qml.math.array([0.48j, 0.48, -0.64j, 0.36], like=interface)
+        result = StateMP(wires=wires).process_state(ket, wire_order=Wires(wire_order))
+        assert qml.math.allclose(result, np.array([0.48j, -0.64j, 0.48, 0.36]))
+        assert qml.math.get_interface(ket) == interface
+
+    @pytest.mark.parametrize(
+        "mp_wires, expected_state",
+        [
+            ([0, 1, 2], [1, 0, 2, 0, 3, 0, 4, 0]),
+            ([2, 0, 1], [1, 2, 3, 4, 0, 0, 0, 0]),
+            ([1, 0, 2], [1, 0, 3, 0, 2, 0, 4, 0]),
+            ([1, 2, 0], [1, 3, 0, 0, 2, 4, 0, 0]),
+        ],
+    )
+    @pytest.mark.parametrize("custom_wire_labels", [False, True])
+    def test_expand_state_over_wires(self, mp_wires, expected_state, custom_wire_labels):
+        """Test the expanded state is correctly ordered with extra wires being zero."""
+        wire_order = [0, 1]
+        if custom_wire_labels:
+            # non-lexicographical-ordered
+            wire_map = {0: "b", 1: "c", 2: "a"}
+            mp_wires = [wire_map[w] for w in mp_wires]
+            wire_order = ["b", "c"]
+        mp = StateMP(wires=mp_wires)
+        ket = np.arange(1, 5)
+        result = mp.process_state(ket, wire_order=Wires(wire_order))
+        assert np.array_equal(result, expected_state)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch", "tensorflow"])
+    def test_expand_state_all_interfaces(self, interface):
+        """Test that expanding the state over wires preserves interface."""
+        mp = StateMP(wires=[4, 2, 0, 1])
+        ket = qml.math.array([0.48j, 0.48, -0.64j, 0.36], like=interface)
+        result = mp.process_state(ket, wire_order=Wires([1, 2]))
+        reshaped = qml.math.reshape(result, (2, 2, 2, 2))
+        assert qml.math.all(reshaped[1, :, 1, :] == 0)
+        assert qml.math.allclose(reshaped[0, :, 0, :], np.array([[0.48j, -0.64j], [0.48, 0.36]]))
+        if interface != "autograd":
+            # autograd.numpy.pad drops pennylane tensor for some reason
+            assert qml.math.get_interface(result) == interface
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch", "tensorflow"])
+    def test_expand_state_batched_all_interfaces(self, interface):
+        """Test that expanding the state over wires preserves interface."""
+        mp = StateMP(wires=[4, 2, 0, 1])
+        ket = qml.math.array(
+            [
+                [0.48j, 0.48, -0.64j, 0.36],
+                [0.3, 0.4, 0.5, 1 / np.sqrt(2)],
+                [-0.3, -0.4, -0.5, -1 / np.sqrt(2)],
+            ],
+            like=interface,
+        )
+        result = mp.process_state(ket, wire_order=Wires([1, 2]))
+        reshaped = qml.math.reshape(result, (3, 2, 2, 2, 2))
+        assert qml.math.all(reshaped[:, 1, :, 1, :] == 0)
+        assert qml.math.allclose(
+            reshaped[:, 0, :, 0, :],
+            np.array(
+                [
+                    [[0.48j, -0.64j], [0.48, 0.36]],
+                    [[0.3, 0.5], [0.4, 1 / np.sqrt(2)]],
+                    [[-0.3, -0.5], [-0.4, -1 / np.sqrt(2)]],
+                ],
+            ),
+        )
+        if interface != "autograd":
+            # autograd.numpy.pad drops pennylane tensor for some reason
+            assert qml.math.get_interface(result) == interface
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize(
+        "wires,expected",
+        [
+            ([1, 0], np.array([0.48j, -0.64j, 0.48, 0.36])),
+            ([2, 1, 0], np.array([0.48j, -0.64j, 0.48, 0.36, 0.0, 0.0, 0.0, 0.0])),
+        ],
+    )
+    def test_state_jax_jit(self, wires, expected):
+        """Test that re-ordering and expanding works with jax-jit."""
+        import jax
+
+        @jax.jit
+        def get_state(ket):
+            return StateMP(wires=wires).process_state(ket, wire_order=Wires([0, 1]))
+
+        result = get_state(jax.numpy.array([0.48j, 0.48, -0.64j, 0.36]))
+        assert qml.math.allclose(result, expected)
+        assert isinstance(result, jax.Array)
+
+    def test_wire_ordering_error(self):
+        """Test that a wire order error is raised when unknown wires are given."""
+        with pytest.raises(WireError, match=r"Unexpected wires \{2\} found in wire order"):
+            StateMP(wires=[0, 1]).process_state([1, 0], wire_order=[2])
 
 
 class TestDensityMatrixMP:
