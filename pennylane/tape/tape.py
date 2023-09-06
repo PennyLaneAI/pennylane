@@ -388,14 +388,13 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     >>> qml.execute([tape], dev, gradient_fn=None)
     [array([0.77750694])]
 
-    The trainable parameters of the tape can be explicitly set, and the values of
-    the parameters modified in-place:
+    A new tape can be created by passing new parameters along with the indices
+    to be updated to :meth:`~pennylane.tape.QuantumScript.bind_new_parameters`:
 
-    >>> tape.trainable_params = [0] # set only the first parameter as trainable
-    >>> tape.set_parameters([0.56])
+    >>> new_tape = tape.bind_new_parameters(params=[0.56], indices=[0])
     >>> tape.get_parameters()
-    [0.56]
-    >>> tape.get_parameters(trainable_only=False)
+    [0.432, 0.543, 0.133]
+    >>> new_tape.get_parameters()
     [0.56, 0.543, 0.133]
 
 
@@ -466,7 +465,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
 
         Also calls `_update()` which sets many attributes.
         """
-        self._ops, self._measurements, _ = process_queue(self)
+        self._ops, self._measurements = process_queue(self)
         self._update()
 
     def __getitem__(self, key):

@@ -78,7 +78,7 @@ def test_ObservableReturnTypes(return_type, value):
 def test_no_measure():
     """Test that failing to specify a measurement
     raises an exception"""
-    dev = qml.device("default.qubit", wires=2)
+    dev = qml.device("default.qubit.legacy", wires=2)
 
     @qml.qnode(dev)
     def circuit(x):
@@ -104,7 +104,7 @@ def test_numeric_type_unrecognized_error():
 def test_shape_unrecognized_error():
     """Test that querying the shape of a measurement process with an
     unrecognized return type raises an error."""
-    dev = qml.device("default.qubit", wires=2)
+    dev = qml.device("default.qubit.legacy", wires=2)
     mp = NotValidMeasurement()
     with pytest.raises(
         qml.QuantumFunctionError,
@@ -125,33 +125,32 @@ def test_none_return_type():
 
 
 def test_eq_correctness():
-    """Test that using `==` on two equivalent operators is True when both measurement
-    processes are the same object and False otherwise."""
+    """Test that using `==` on measurement processes behaves the same as
+    `qml.equal`."""
 
     class DummyMP(MeasurementProcess):
         """Dummy measurement process with no return type."""
 
-    mp1 = DummyMP(0)
-    mp2 = DummyMP(0)
+    mp1 = DummyMP(wires=qml.wires.Wires(0))
+    mp2 = DummyMP(wires=qml.wires.Wires(0))
 
-    with pytest.warns(UserWarning, match="The behaviour of measurement process equality"):
-        assert mp1 == mp1  # pylint: disable=comparison-with-itself
-        assert mp1 != mp2
+    assert mp1 == mp1  # pylint: disable=comparison-with-itself
+    assert mp1 == mp2
 
 
 def test_hash_correctness():
-    """Test that the hash of two equivalent measurement processes is the same when
-    both are the same object and different otherwise."""
+    """Test that the hash of two equivalent measurement processes is the same."""
 
     class DummyMP(MeasurementProcess):
         """Dummy measurement process with no return type."""
 
-    mp1 = DummyMP(0)
-    mp2 = DummyMP(0)
+    mp1 = DummyMP(wires=qml.wires.Wires(0))
+    mp2 = DummyMP(wires=qml.wires.Wires(0))
 
-    with pytest.warns(UserWarning, match="The behaviour of measurement process hashing"):
-        assert len({mp1, mp1}) == 1
-        assert len({mp1, mp2}) == 2
+    assert len({mp1, mp2}) == 1
+    assert hash(mp1) == mp1.hash
+    assert hash(mp2) == mp2.hash
+    assert hash(mp1) == hash(mp2)
 
 
 @pytest.mark.parametrize(
@@ -245,7 +244,7 @@ class TestStatisticsQueuing:
         if stat_func is sample:
             pytest.skip("Sampling is not yet supported with symbolic operators.")
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev)
         def circuit():
@@ -484,7 +483,7 @@ class TestSampleMeasurement:
             def process_samples(self, samples, wire_order, shot_range, bin_size):
                 return qml.math.sum(samples[..., self.wires])
 
-        dev = qml.device("default.qubit", wires=2, shots=1000)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=1000)
 
         @qml.qnode(dev)
         def circuit():
@@ -501,7 +500,7 @@ class TestSampleMeasurement:
             def process_samples(self, samples, wire_order, shot_range, bin_size):
                 return qml.math.sum(samples[..., self.wires])
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev)
         def circuit():
@@ -516,7 +515,7 @@ class TestSampleMeasurement:
     def test_method_overriden_by_device(self):
         """Test that the device can override a measurement process."""
 
-        dev = qml.device("default.qubit", wires=2, shots=1000)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=1000)
 
         @qml.qnode(dev)
         def circuit():
@@ -539,7 +538,7 @@ class TestStateMeasurement:
             def process_state(self, state, wire_order):
                 return qml.math.sum(state)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev)
         def circuit():
@@ -554,7 +553,7 @@ class TestStateMeasurement:
             def process_state(self, state, wire_order):
                 return qml.math.sum(state)
 
-        dev = qml.device("default.qubit", wires=2, shots=1000)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=1000)
 
         @qml.qnode(dev)
         def circuit():
@@ -569,7 +568,7 @@ class TestStateMeasurement:
     def test_method_overriden_by_device(self):
         """Test that the device can override a measurement process."""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev, interface="autograd")
         def circuit():
@@ -591,7 +590,7 @@ class TestMeasurementTransform:
             def process(self, tape, device):
                 return {device.shots: len(tape)}
 
-        dev = qml.device("default.qubit", wires=2, shots=1000)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=1000)
 
         @qml.qnode(dev)
         def circuit():
@@ -602,7 +601,7 @@ class TestMeasurementTransform:
     def test_method_overriden_by_device(self):
         """Test that the device can override a measurement process."""
 
-        dev = qml.device("default.qubit", wires=2, shots=1000)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=1000)
 
         @qml.qnode(dev)
         def circuit():

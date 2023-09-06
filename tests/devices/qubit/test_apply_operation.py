@@ -205,6 +205,41 @@ class TestTwoQubitStateSpecialCases:
         assert qml.math.allclose(initial1[1], new1[0])
         assert qml.math.allclose(initial1[0], new1[1])
 
+    def test_identity(self, method, wire, ml_framework):
+        """Test the application of a GlobalPhase gate on a two qubit state."""
+
+        initial_state = np.array(
+            [
+                [0.04624539 + 0.3895457j, 0.22399401 + 0.53870339j],
+                [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
+            ]
+        )
+        initial_state = qml.math.asarray(initial_state, like=ml_framework)
+
+        new_state = method(qml.Identity(wire), initial_state)
+
+        assert qml.math.allclose(initial_state, new_state)
+
+    def test_globalphase(self, method, wire, ml_framework):
+        """Test the application of a GlobalPhase gate on a two qubit state."""
+
+        initial_state = np.array(
+            [
+                [0.04624539 + 0.3895457j, 0.22399401 + 0.53870339j],
+                [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
+            ]
+        )
+        initial_state = qml.math.asarray(initial_state, like=ml_framework)
+
+        phase = qml.math.asarray(-2.3, like=ml_framework)
+        shift = qml.math.exp(-1j * qml.math.cast(phase, np.complex128))
+
+        new_state_with_wire = method(qml.GlobalPhase(phase, wire), initial_state)
+        new_state_no_wire = method(qml.GlobalPhase(phase), initial_state)
+
+        assert qml.math.allclose(shift * initial_state, new_state_with_wire)
+        assert qml.math.allclose(shift * initial_state, new_state_no_wire)
+
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 class TestSnapshot:
