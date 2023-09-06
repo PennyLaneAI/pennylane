@@ -19,6 +19,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
+from pennylane.measurements import SampleMP, StateMP, ProbabilityMP
 from pennylane.resource import Resources
 from pennylane.devices.experimental import DefaultQubit2, ExecutionConfig
 from pennylane.devices.qubit.preprocess import validate_and_expand_adjoint
@@ -255,6 +256,28 @@ class TestPreprocessing:
 
         with pytest.raises(qml.wires.WireError, match=r"Cannot run circuit\(s\) on"):
             dev.preprocess([circuit_valid_0, invalid_circuit])
+
+    @pytest.mark.parametrize(
+        "mp_fn,mp_cls,shots",
+        [
+            (qml.sample, SampleMP, 10),
+            (qml.state, StateMP, None),
+            (qml.probs, ProbabilityMP, None),
+        ],
+    )
+    def test_measurement_is_swapped_out(self, mp_fn, mp_cls, shots):
+        """Test that preprocessing swaps out any MP with no wires or obs"""
+        dev = DefaultQubit2(wires=3)
+        original_mp = mp_fn()
+        exp_z = qml.expval(qml.PauliZ(0))
+        qs = qml.tape.QuantumScript([qml.Hadamard(0)], [original_mp, exp_z], shots=shots)
+        tapes, _, _ = dev.preprocess(qs)
+        assert len(tapes) == 1
+        tape = tapes[0]
+        assert tape.operations == qs.operations
+        assert tape.measurements != qs.measurements
+        assert qml.equal(tape.measurements[0], mp_cls(wires=[0, 1, 2]))
+        assert tape.measurements[1] is exp_z
 
 
 class TestSupportsDerivatives:
@@ -1847,6 +1870,61 @@ class TestDynamicType:
             qs = qml.tape.QuantumScript(ops, [qml.expval(qml.Projector(state, wires))])
             res = dev.execute(qs)
             assert np.isclose(res, 1 / 2**n_wires)
+
+
+class TestIntegration:
+    """Various integration tests"""
+
+    @pytest.mark.parametrize("wires,expected", [(None, [1, 0]), (3, [0, 0, 1])])
+    def test_sample_uses_device_wires(self, wires, expected):
+        """Test that if device wires are given, then they are used by sample."""
+        dev = DefaultQubit2(wires=wires, shots=5)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(2)
+            qml.Identity(0)
+            return qml.sample()
+
+        assert np.array_equal(circuit(), [expected] * 5)
+
+    @pytest.mark.parametrize(
+        "wires,expected",
+        [
+            (None, [0, 0, 1, 0]),
+            (3, [0, 1] + [0] * 6),
+        ],
+    )
+    def test_state_uses_device_wires(self, wires, expected):
+        """Test that if device wires are given, then they are used by state."""
+        dev = DefaultQubit2(wires=wires)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(2)
+            qml.Identity(0)
+            return qml.state()
+
+        assert np.array_equal(circuit(), expected)
+
+    @pytest.mark.parametrize(
+        "wires,expected",
+        [
+            (None, [0, 0, 1, 0]),
+            (3, [0, 1] + [0] * 6),
+        ],
+    )
+    def test_probs_uses_device_wires(self, wires, expected):
+        """Test that if device wires are given, then they are used by probs."""
+        dev = DefaultQubit2(wires=wires)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(2)
+            qml.Identity(0)
+            return qml.probs()
+
+        assert np.array_equal(circuit(), expected)
 
 
 @pytest.mark.parametrize("max_workers", [None, 1, 2])

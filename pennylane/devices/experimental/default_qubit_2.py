@@ -213,14 +213,27 @@ class DefaultQubit2(Device):
         if isinstance(circuits, QuantumScript):
             circuits = [circuits]
             is_single_circuit = True
+        else:
+            # if it's a tuple, it will break assignment below
+            circuits = list(circuits)
 
-        if self.wires and (
-            extra_wires := set(Wires.all_wires(c.wires for c in circuits)) - set(self.wires)
-        ):
-            raise WireError(
-                f"Cannot run circuit(s) on {self.name} as they contain wires "
-                f"not found on the device: {extra_wires}"
-            )
+        if self.wires:
+            if extra_wires := set(Wires.all_wires(c.wires for c in circuits)) - set(self.wires):
+                raise WireError(
+                    f"Cannot run circuit(s) on {self.name} as they contain wires "
+                    f"not found on the device: {extra_wires}"
+                )
+            for i, circuit in enumerate(circuits):
+                measurements = circuit.measurements.copy()
+                modified = False
+                for m_idx, mp in enumerate(measurements):
+                    if not mp.obs and not mp.wires:
+                        modified = True
+                        measurements[m_idx] = type(mp)(wires=self.wires)
+                if modified:
+                    circuits[i] = type(circuit)(
+                        circuit.operations, measurements, shots=circuit.shots
+                    )
 
         # prefer config over device value
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
