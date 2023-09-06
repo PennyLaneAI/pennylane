@@ -31,6 +31,9 @@
   If the process's wire-order contains extra wires, it will assume those are in the zero-state.
   [(#4570)](https://github.com/PennyLaneAI/pennylane/pull/4570)
 
+* Improve builtin types support with `qml.pauli_decompose`.
+  [(#4577)](https://github.com/PennyLaneAI/pennylane/pull/4577)
+
 <h3>Breaking changes 💔</h3>
 
 * The `__eq__` and `__hash__` methods of `Operator` and `MeasurementProcess` no longer rely on the
