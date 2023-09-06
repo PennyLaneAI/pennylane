@@ -26,7 +26,7 @@ from pennylane import numpy as np
 from pennylane.measurements import SampleMP
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript, QuantumTape
-from pennylane.transforms.batch_transform import batch_transform
+from pennylane.transforms.core import transform
 from pennylane.wires import Wires
 
 from .cutstrategy import CutStrategy
@@ -46,7 +46,26 @@ from .tapes import _qcut_expand_fn, graph_to_tape, tape_to_graph
 from .utils import find_and_place_cuts, fragment_graph, replace_wire_cut_nodes
 
 
-@batch_transform
+def _cut_circuit_mc_expand(
+    tape: QuantumTape,
+    classical_processing_fn: Optional[callable] = None,
+    max_depth: int = 1,
+    shots: Optional[int] = None,
+    device_wires: Optional[Wires] = None,
+    auto_cutter: Union[bool, Callable] = False,
+    **kwargs,
+) -> (Sequence[QuantumTape], Callable):
+    """Main entry point for expanding operations in sample-based tapes until
+    reaching a depth that includes :class:`~.WireCut` operations."""
+    # pylint: disable=unused-argument, too-many-arguments
+
+    def processing_fn(res):
+        return res[0]
+
+    return [_qcut_expand_fn(tape, max_depth, auto_cutter)], processing_fn
+
+
+@partial(transform, expand_transform=_cut_circuit_mc_expand)
 def cut_circuit_mc(
     tape: QuantumTape,
     classical_processing_fn: Optional[callable] = None,
@@ -55,7 +74,7 @@ def cut_circuit_mc(
     shots: Optional[int] = None,
     device_wires: Optional[Wires] = None,
     **kwargs,
-) -> Tuple[Tuple[QuantumTape], Callable]:
+) -> (Sequence[QuantumTape], Callable):
     """
     Cut up a circuit containing sample measurements into smaller fragments using a
     Monte Carlo method.
@@ -442,44 +461,66 @@ def cut_circuit_mc(
     tapes = tuple(tape for c in configurations for tape in c)
 
     if classical_processing_fn:
-        return tapes, partial(
-            qcut_processing_fn_mc,
-            communication_graph=communication_graph,
-            settings=settings,
-            shots=shots,
-            classical_processing_fn=classical_processing_fn,
-        )
 
-    return tapes, partial(
-        qcut_processing_fn_sample, communication_graph=communication_graph, shots=shots
-    )
+        def processing_fn(results):
+            results = qcut_processing_fn_mc(
+                results,
+                communication_graph=communication_graph,
+                settings=settings,
+                shots=shots,
+                classical_processing_fn=classical_processing_fn,
+            )
 
+            return results
 
-def _cut_circuit_mc_expand(
-    tape: QuantumTape,
-    classical_processing_fn: Optional[callable] = None,
-    max_depth: int = 1,
-    shots: Optional[int] = None,
-    device_wires: Optional[Wires] = None,
-    auto_cutter: Union[bool, Callable] = False,
-    **kwargs,
-):
-    """Main entry point for expanding operations in sample-based tapes until
-    reaching a depth that includes :class:`~.WireCut` operations."""
-    # pylint: disable=unused-argument, too-many-arguments
-    return _qcut_expand_fn(tape, max_depth, auto_cutter)
+    else:
+
+        def processing_fn(results):
+            results = qcut_processing_fn_sample(
+                results, communication_graph=communication_graph, shots=shots
+            )
+
+            return results[0]
+
+    return tapes, processing_fn
 
 
-cut_circuit_mc.expand_fn = _cut_circuit_mc_expand
+class CustomQNode(qml.QNode):
+    """
+    A subclass with a custom __call__ method. The custom QNode transform returns an instance
+    of this class.
+    """
+
+    def __call__(self, *args, **kwargs):
+        shots = kwargs.pop("shots", False)
+        shots = shots or self.device.shots
+
+        if shots is None:
+            raise ValueError(
+                "A shots value must be provided in the device "
+                "or when calling the QNode to be cut"
+            )
+
+        # find the qcut transform inside the transform program and set the shots argument
+        qcut_tc = [
+            tc for tc in self.transform_program if tc.transform.__name__ == "cut_circuit_mc"
+        ][-1]
+        qcut_tc._kwargs["shots"] = shots
+
+        kwargs["shots"] = 1
+        return super().__call__(*args, **kwargs)
 
 
-@cut_circuit_mc.custom_qnode_wrapper
-def qnode_execution_wrapper_mc(self, qnode, targs, tkwargs):
+@cut_circuit_mc.custom_qnode_transform
+def _qnode_transform_mc(self, qnode, targs, tkwargs):
     """Here, we overwrite the QNode execution wrapper in order
-    to replace execution variables"""
-
-    transform_max_diff = tkwargs.pop("max_diff", None)
-    tkwargs.setdefault("device_wires", qnode.device.wires)
+    to access the device wires."""
+    if tkwargs.get("shots", False):
+        raise ValueError(
+            "Cannot provide a 'shots' value directly to the cut_circuit_mc "
+            "decorator when transforming a QNode. Please provide the number of shots in "
+            "the device or when calling the QNode."
+        )
 
     if "shots" in inspect.signature(qnode.func).parameters:
         raise ValueError(
@@ -488,56 +529,16 @@ def qnode_execution_wrapper_mc(self, qnode, targs, tkwargs):
             "taken by the device."
         )
 
-    def _wrapper(*args, **kwargs):
-        if tkwargs.get("shots", False):
-            raise ValueError(
-                "Cannot provide a 'shots' value directly to the cut_circuit_mc "
-                "decorator when transforming a QNode. Please provide the number of shots in "
-                "the device or when calling the QNode."
-            )
+    tkwargs.setdefault("device_wires", qnode.device.wires)
 
-        shots = kwargs.pop("shots", False)
-        shots = shots or qnode.device.shots
+    execute_kwargs = getattr(qnode, "execute_kwargs", {}).copy()
+    execute_kwargs["cache"] = False
 
-        if shots is None:
-            raise ValueError(
-                "A shots value must be provided in the device "
-                "or when calling the QNode to be cut"
-            )
+    new_qnode = self.default_qnode_transform(qnode, targs, tkwargs)
+    new_qnode.__class__ = CustomQNode
+    new_qnode.execute_kwargs = execute_kwargs
 
-        qnode.construct(args, kwargs)
-        tapes, processing_fn = self.construct(qnode.qtape, *targs, **tkwargs, shots=shots)
-
-        interface = qnode.interface
-        execute_kwargs = getattr(qnode, "execute_kwargs", {}).copy()
-        max_diff = execute_kwargs.pop("max_diff", 2)
-        max_diff = transform_max_diff or max_diff
-
-        gradient_fn = getattr(qnode, "gradient_fn", qnode.diff_method)
-        gradient_kwargs = getattr(qnode, "gradient_kwargs", {})
-
-        if interface is None or not self.differentiable:
-            gradient_fn = None
-
-        execute_kwargs["cache"] = False
-
-        res = qml.execute(
-            tapes,
-            device=qnode.device,
-            gradient_fn=gradient_fn,
-            interface=interface,
-            max_diff=max_diff,
-            override_shots=1,
-            gradient_kwargs=gradient_kwargs,
-            **execute_kwargs,
-        )
-
-        out = processing_fn(res)
-        if isinstance(out, list) and len(out) == 1:
-            return out[0]
-        return out
-
-    return _wrapper
+    return new_qnode
 
 
 MC_STATES = [

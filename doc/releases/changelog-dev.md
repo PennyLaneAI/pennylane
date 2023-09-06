@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* All batch transforms are updated to the new transform program system.
+  [(4440)](https://github.com/PennyLaneAI/pennylane/pull/4440)
+
 <h3>Improvements 🛠</h3>
 
 * Add the method ``add_transform`` and ``insert_front_transform`` transform in the ``TransformProgram``.
@@ -25,6 +28,11 @@
 * The density matrix aspects of `StateMP` have been split into their own measurement
   process, `DensityMatrixMP`.
   [(#4558)](https://github.com/PennyLaneAI/pennylane/pull/4558)
+
+* The `StateMP` measurement now accepts a wire order (eg. a device wire order). The `process_state`
+  method will re-order the given state to go from the inputted wire-order to the process's wire-order.
+  If the process's wire-order contains extra wires, it will assume those are in the zero-state.
+  [(#4570)](https://github.com/PennyLaneAI/pennylane/pull/4570)
 
 <h3>Breaking changes 💔</h3>
 
@@ -109,6 +117,24 @@
 * The ``prep`` keyword argument in ``QuantumScript`` is deprecated and will be removed from `QuantumScript`.
   ``StatePrepBase`` operations should be placed at the beginning of the `ops` list instead.
   [(#4554)](https://github.com/PennyLaneAI/pennylane/pull/4554)
+
+* The following decorator syntax for transforms has been deprecated and will raise a warning:
+  ```python
+  @transform_fn(**transform_kwargs)
+  @qml.qnode(dev)
+  def circuit():
+      ...
+  ```
+  If you are using a transform that has supporting `transform_kwargs`, please call the
+  transform directly using `circuit = transform_fn(circuit, **transform_kwargs)`,
+  or use `functools.partial`:
+  ```python
+  @functools.partial(transform_fn, **transform_kwargs)
+  @qml.qnode(dev)
+  def circuit():
+      ...
+  ```
+  [(#4457)](https://github.com/PennyLaneAI/pennylane/pull/4457/)
 
 <h3>Documentation 📝</h3>
 
