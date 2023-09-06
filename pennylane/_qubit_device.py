@@ -272,10 +272,27 @@ class QubitDevice(Device):
                 ),
             )
 
-        self.check_validity(circuit.operations, circuit.observables)
+        operations = circuit.operations
+        if any(
+            isinstance(
+                op,
+                (
+                    qml.BasisState,
+                    qml.StatePrep,
+                    qml.BasisStatePreparation,
+                    qml.MottonenStatePreparation,
+                ),
+            )
+            for op in operations
+        ):
+            tape = qml.tape.QuantumTape(ops=operations, measurements=[])
+            tape = qml.tape.expand_tape_state_prep(tape, skip_first=False, force_decompose=True)
+            operations = tape._ops
+
+        self.check_validity(operations, circuit.observables)
 
         # apply all circuit operations
-        self.apply(circuit.operations, rotations=self._get_diagonalizing_gates(circuit), **kwargs)
+        self.apply(operations, rotations=self._get_diagonalizing_gates(circuit), **kwargs)
 
         # generate computational basis samples
         if self.shots is not None or circuit.is_sampled:

@@ -277,12 +277,15 @@ def expand_tape_state_prep(tape, skip_first=True, force_decompose=False):
     first_op = tape.operations[0]
     new_ops = (
         [first_op]
-        if not isinstance(first_op, StatePrepBase) or skip_first
+        if not isinstance(
+            first_op, (StatePrepBase, qml.BasisStatePreparation, qml.MottonenStatePreparation)
+        )
+        or skip_first
         else full_decomposition(first_op, force_decompose=force_decompose)
     )
 
     for op in tape.operations[1:]:
-        if isinstance(op, StatePrepBase):
+        if isinstance(op, (StatePrepBase, qml.BasisStatePreparation, qml.MottonenStatePreparation)):
             new_ops.extend(full_decomposition(op, force_decompose=force_decompose))
         else:
             new_ops.append(op)

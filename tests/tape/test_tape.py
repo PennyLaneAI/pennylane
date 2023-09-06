@@ -1027,12 +1027,13 @@ class TestExpand:
         expanding other operations in the tape.
         """
         ops = [
+            op,
             qml.PauliZ(wires=0),
             qml.Rot(0.1, 0.2, 0.3, wires=0),
             qml.BasisState([0], wires=1),
             qml.StatePrep([0, 1], wires=0),
         ]
-        tape = QuantumTape(ops=ops, measurements=[], prep=[op])
+        tape = QuantumTape(ops=ops, measurements=[])
         new_tape = expand_tape_state_prep(
             tape, skip_first=skip_first, force_decompose=force_decompose
         )
@@ -1065,6 +1066,11 @@ class TestExpand:
         assert len(new_tape.operations) == len(true_decomposition)
         for tape_op, true_op in zip(new_tape.operations, true_decomposition):
             assert qml.equal(tape_op, true_op)
+
+        dev = qml.device("default.qubit", wires=4)
+        new_tape = QuantumTape(new_tape)
+        ref_type = QuantumTape(true_decomposition)
+        assert np.allclose(dev.execute(new_tape), dev.execute(ref_type))
 
     @pytest.mark.filterwarnings("ignore:The ``name`` property and keyword argument of")
     def test_stopping_criterion_with_depth(self):
