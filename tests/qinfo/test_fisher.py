@@ -45,6 +45,7 @@ class TestMakeProbs:
 
         assert isinstance(res, np.ndarray)
         assert res.shape == (4,)
+        assert np.isclose(sum(res), 1)
 
     @pytest.mark.parametrize("shots", [None, 100])
     def test_make_probs(self, shots):

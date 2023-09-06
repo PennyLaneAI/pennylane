@@ -234,6 +234,9 @@ class TransformProgram:
             )
         )
 
+        if transform.expand_transform:
+            self.insert_front(TransformContainer(transform.expand_transform, targs, tkwargs))
+
     def pop_front(self):
         """Pop the transform container at the beginning of the program.
 
