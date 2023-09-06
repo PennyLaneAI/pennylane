@@ -38,6 +38,16 @@ def test_shots():
         DefaultQubit2().shots = 10
 
 
+def test_wires():
+    """Test that a device can be created with wires."""
+    assert DefaultQubit2().wires is None
+    assert DefaultQubit2(wires=2).wires == qml.wires.Wires([0, 1])
+    assert DefaultQubit2(wires=[0, 2]).wires == qml.wires.Wires([0, 2])
+
+    with pytest.raises(AttributeError):
+        DefaultQubit2().wires = [0, 1]
+
+
 def test_debugger_attribute():
     """Test that DefaultQubit2 has a debugger attribute and that it is `None`"""
     # pylint: disable=protected-access
@@ -227,6 +237,24 @@ class TestPreprocessing:
         _, _, new_config = dev.preprocess(circuit, config)
 
         assert new_config.device_options["max_workers"] == max_workers
+
+    def test_circuit_wire_validation(self):
+        """Test that preprocessing validates wires on the circuits being executed."""
+        dev = DefaultQubit2(wires=3)
+        circuit_valid_0 = qml.tape.QuantumScript([qml.PauliX(0)])
+        circuits, _, _ = dev.preprocess(circuit_valid_0)
+        assert circuits == [circuit_valid_0]
+
+        circuit_valid_1 = qml.tape.QuantumScript([qml.PauliX(1)])
+        circuits, _, _ = dev.preprocess([circuit_valid_0, circuit_valid_1])
+        assert circuits == [circuit_valid_0, circuit_valid_1]
+
+        invalid_circuit = qml.tape.QuantumScript([qml.PauliX(4)])
+        with pytest.raises(qml.wires.WireError, match=r"Cannot run circuit\(s\) on"):
+            dev.preprocess(invalid_circuit)
+
+        with pytest.raises(qml.wires.WireError, match=r"Cannot run circuit\(s\) on"):
+            dev.preprocess([circuit_valid_0, invalid_circuit])
 
 
 class TestSupportsDerivatives:
@@ -1382,20 +1410,18 @@ class TestPreprocessingIntegration:
         expected_expval = np.cos(y)
         assert qml.math.allclose(expected_expval, processed_results[1])
 
-    def test_preprocess_defer_measurements_integration(self, mocker):
+    def test_preprocess_defer_measurements(self, mocker):
         """Test that a QNode with mid-circuit measurements is transformed
         using defer_measurements."""
         dev = DefaultQubit2()
 
-        @qml.qnode(dev)
-        def circuit():
-            qml.PauliX(0)
-            qml.measure(0)
-            return qml.expval(qml.PauliZ(0))
-
+        tape = qml.tape.QuantumScript(
+            [qml.PauliX(0), qml.measurements.MidMeasureMP(qml.wires.Wires(0))],
+            [qml.expval(qml.PauliZ(0))],
+        )
         spy = mocker.spy(qml, "defer_measurements")
-        _ = circuit()
 
+        _, _, _ = dev.preprocess(tape)
         spy.assert_called_once()
 
 

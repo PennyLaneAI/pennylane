@@ -30,7 +30,7 @@ requirements = [
     "semantic-version>=2.7",
     "autoray>=0.3.1",
     "cachetools",
-    "pennylane-lightning>=0.31",
+    "pennylane-lightning>=0.32",
     "requests",
     "typing_extensions",
 ]
@@ -48,6 +48,7 @@ info = {
         # This requires a rename in the setup file of all devices, and is best done during another refactor
         "pennylane.plugins": [
             "default.qubit = pennylane.devices:DefaultQubit",
+            "default.qubit.legacy = pennylane.devices:DefaultQubit",
             "default.gaussian = pennylane.devices:DefaultGaussian",
             "default.qubit.tf = pennylane.devices.default_qubit_tf:DefaultQubitTF",
             "default.qubit.torch = pennylane.devices.default_qubit_torch:DefaultQubitTorch",

@@ -23,6 +23,7 @@ from pennylane.measurements import (
     ExpectationMP,
     ClassicalShadowMP,
     ShadowExpvalMP,
+    CountsMP,
 )
 from pennylane.typing import TensorLike
 from .apply_operation import apply_operation
@@ -119,10 +120,10 @@ def measure_with_samples(
     have already been mapped to integer wires used in the device.
 
     Args:
-        mp (List[Union[~.measurements.SampleMeasurement, ~.measurements.ClassicalShadowMP, ~.measurements.ShadowExpvalMP]]):
+        mp (List[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]]):
             The sample measurements to perform
         state (np.ndarray[complex]): The state vector to sample from
-        shots (~.measurements.Shots): The number of samples to take
+        shots (Shots): The number of samples to take
         is_state_batched (bool): whether the state is batched or not
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
@@ -194,7 +195,8 @@ def _measure_with_samples_diagonalizing_gates(
     def _process_single_shot(samples):
         processed = []
         for mp in mps:
-            if not isinstance(res := mp.process_samples(samples, wires), dict):
+            res = mp.process_samples(samples, wires)
+            if not isinstance(mp, CountsMP):
                 res = qml.math.squeeze(res)
 
             processed.append(res)
@@ -329,7 +331,7 @@ def sample_state(
             If no value is provided, a default RNG will be used
 
     Returns:
-        ndarray[bool]: Sample values of the shape (shots, num_wires)
+        ndarray[int]: Sample values of the shape (shots, num_wires)
     """
     rng = np.random.default_rng(rng)
 
@@ -349,4 +351,5 @@ def sample_state(
         samples = rng.choice(basis_states, shots, p=probs)
 
     powers_of_two = 1 << np.arange(num_wires, dtype=np.int64)[::-1]
-    return (samples[..., None] & powers_of_two).astype(np.bool8)
+    states_sampled_base_ten = samples[..., None] & powers_of_two
+    return (states_sampled_base_ten > 0).astype(np.int64)

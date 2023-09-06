@@ -877,10 +877,14 @@ class QNode:
                 "All measurements must be returned in the order they are measured."
             )
 
+        num_wires = (
+            self.device.num_wires if isinstance(self.device, qml.Device) else len(self.tape.wires)
+        )
         for obj in self.tape.operations + self.tape.observables:
             if (
                 getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires
-                and len(obj.wires) != self.device.num_wires
+                and obj.wires
+                and len(obj.wires) != num_wires
             ):
                 # check here only if enough wires
                 raise qml.QuantumFunctionError(f"Operator {obj.name} must act on all wires")
@@ -891,6 +895,15 @@ class QNode:
                     "SparseHamiltonian observable must be used with the parameter-shift "
                     "differentiation method"
                 )
+
+        # Apply the deferred measurement principle if the device doesn't
+        # support mid-circuit measurements natively
+        expand_mid_measure = any(isinstance(op, MidMeasureMP) for op in self.tape.operations) and (
+            isinstance(self.device, qml.devices.experimental.Device)
+            or not self.device.capabilities().get("supports_mid_measure", False)
+        )
+        if expand_mid_measure:
+            self._tape = qml.defer_measurements(self._tape)
 
         if self.expansion_strategy == "device":
             self._tape = self.device.expand_fn(self.tape, max_expansion=self.max_expansion)
