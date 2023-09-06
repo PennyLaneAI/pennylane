@@ -1009,9 +1009,8 @@ def _uccsd_state(ccsd_solver, tol=1e-15):
     return dict_fcimatr
 
 
-def _dmrg_state(wf, reordering=None, tol=1e-15):
-    r"""
-    Construct a wavefunction from the dmrg wavefunction Block2 ``dtrie`` object.
+def _dmrg_state(wavefunction, reordering=None, tol=1e-15):
+    r"""Construct a wavefunction from the DMRG wavefunction obtained from the Block2 library.
 
     The generated wavefunction is a dictionary where the keys represent a configuration, which
     corresponds to a Slater determinant, and the values are the CI coefficients of the Slater
@@ -1026,11 +1025,11 @@ def _dmrg_state(wf, reordering=None, tol=1e-15):
     contribution from the doubly-excited state, i.e., :math:`|0 0 1 1 \rangle`, will be
     ``{(1, 1): 0.99, (2, 2): 0.01}``.
 
-    The determinants and coefficients are supplied externally, to be pre-calculated by the user using 
-    Block2 DMRGDriver's `get_csf_coefficients()` method.
+    The determinants and coefficients should be supplied externally. They should be calculated by
+    using Block2 DMRGDriver's `get_csf_coefficients()` method.
 
     Args:
-        [dets, coeffs] (list of arrays): determinants and coefficients in physicist notation
+        wavefunction tuple(array[int], array[float]): determinants and coefficients in physicist notation
         tol (float): the tolerance for discarding Slater determinants with small coefficients
 
     Returns:
@@ -1044,64 +1043,21 @@ def _dmrg_state(wf, reordering=None, tol=1e-15):
     >>> from pyblock2 import DMRGDriver
     >>> mol = gto.M(atom=[['Li', (0, 0, 0)], ['Li', (0,0,0.71)]], basis='sto6g', symmetry="d2h")
     >>> myhf = scf.RHF(mol).run()
-    >>> ncas, n_elec, spin, ecore, h1e, g2e, orb_sym = \
-                            itg.get_uhf_integrals(mf, ncore, ncas, g2e_symm=8)
-    >>> driver = DMRGDriver(scratch=dir, \
-                            symm_type=SymmetryTypes.SZ, n_threads=n_threads, stack_mem=mem)
-    >>> driver.initialize_system(n_sites=ncas, n_elec=n_elec,\
-                                        spin=spin, orb_sym=orb_sym)
+    >>> ncas, n_elec, spin, ecore, h1e, g2e, orb_sym = itg.get_uhf_integrals(mf, ncore, ncas, g2e_symm=8)
+    >>> driver = DMRGDriver(scratch=dir, symm_type=SymmetryTypes.SZ, n_threads=n_threads, stack_mem=mem)
+    >>> driver.initialize_system(n_sites=ncas, n_elec=n_elec, spin=spin, orb_sym=orb_sym)
     >>> mpo = driver.get_qc_mpo(h1e=h1e, g2e=g2e, ecore=ecore+eshift, reorder=reorder, iprint=iprint)
     >>> ket = driver.get_random_mps(tag="GS", bond_dim=schedule[0][0], occs=occs, nroots=nroots, dot=dot)
-    >>> energies = driver.dmrg(mpo, ket, n_sweeps=n_sweeps[ii], bond_dims=Mvals, 
-                                    noises=noisevals, thrds=thrdsvals, iprint=iprint, tol=tol)
-    >>> dets, dvals = driver.get_csf_coefficients(ket)
-    >>> wf_dmrg = _dmrg_state([dets, dvals], tol=1e-1)
-    >>> print(wf_dmrg)
-    (dmrg wavefunction printed here)
+    >>> energies = driver.dmrg(mpo, ket, n_sweeps=n_sweeps[ii], bond_dims=Mvals, noises=noisevals, thrds=thrdsvals, iprint=iprint, tol=tol)
+    >>> wavefunction = driver.get_csf_coefficients(ket)
+    >>> wf_dmrg = _dmrg_state(wavefunction, tol=1e-1)
     """
-
-    dets, coeffs = wf
-
-    def sitevec_to_fock(det):
-        """
-        Do the conversion from the DMRG site vector representation
-        for Slater dets to that of Fock number occupation basis.
-
-        SF: with additional args, this could be taken out of this function.
-        """
-
-        # if reorder used, un-do
-        if reordering is not None:
-            idx = np.argsort(reordering)
-            det = det[idx]
-
-        stra = ""
-        strb = ""
-        for elem in det:
-            if elem == 0:
-                stra += "0"
-                strb += "0"
-                continue
-            elif elem == 1:
-                stra += "1"
-                strb += "0"
-            elif elem == 2:
-                stra += "0"
-                strb += "1"
-            elif elem == 3:
-                stra += "1"
-                strb += "1"
-
-        # flip order and interpret as binary reps of integers
-        inta = int(stra[::-1], 2)
-        intb = int(strb[::-1], 2)
-
-        return inta, intb
+    dets, coeffs = wavefunction
 
     row, col, dat = [], [], []
     ## process the data into an fci_dict
     for ii, det in enumerate(dets):
-        stra, strb = sitevec_to_fock(det)
+        stra, strb = _sitevec_to_fock(det)
         row.append(stra)
         col.append(strb)
 
@@ -1128,3 +1084,32 @@ def _dmrg_state(wf, reordering=None, tol=1e-15):
     dict_fcimatr = {key: value for key, value in dict_fcimatr.items() if abs(value) > tol}
 
     return dict_fcimatr
+
+
+def _sitevec_to_fock(det):
+    r"""Covert a Slater determinant from site vector to occupation number vector representation.
+
+    Args:
+        det (list): determinant in site vector representation
+
+    Returns:
+        tuple: tuple of integers representing binaries that correspond to occupation vectors in alpha and beta spin sectors
+
+    **Example**
+
+    >>> det = [1 2 1 0 0 2]
+    >>> _sitevec_to_fock(det)
+    >>> (5, 34)
+    """
+
+    map_dmrg = {0: "00", 1: "10", 2: "01", 3: "11"}
+
+    strab = [map_dmrg[key] for key in det]
+
+    stra = "".join(i[0] for i in strab)
+    strb = "".join(i[1] for i in strab)
+
+    inta = int(stra[::-1], 2)
+    intb = int(strb[::-1], 2)
+
+    return inta, intb
