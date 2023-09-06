@@ -101,7 +101,6 @@ def _generator_backcompatibility(op):
     raise qml.operation.GeneratorUndefinedError
 
 
-@qml.op_transform
 def generator(op, format="prefactor"):
     r"""Returns the generator of an operation.
 

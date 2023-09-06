@@ -14,18 +14,20 @@
 """
 This module contains the qml.eigvals function.
 """
+from typing import Sequence, Callable
 import warnings
 
 # pylint: disable=protected-access
-from functools import reduce
-
+from functools import reduce, partial, singledispatch
 import scipy
 
 import pennylane as qml
+from pennylane.transforms.core import transform
+from pennylane.typing import TensorLike
 
 
-@qml.op_transform
-def eigvals(op, k=1, which="SA"):
+@singledispatch
+def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
     r"""The eigenvalues of one or more operations.
 
     .. note::
@@ -39,8 +41,7 @@ def eigvals(op, k=1, which="SA"):
         `documentation <https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigsh.html#scipy.sparse.linalg.eigsh>`_.
 
     Args:
-        op (.Operator, pennylane.QNode, .QuantumTape, or Callable): An operator, quantum node, tape,
-            or function that applies quantum operations.
+        op (.Operator or .QuantumTape): A quantum operator or tape.
         k (int): The number of eigenvalues to be returned for a :class:`~.SparseHamiltonian`.
         which (str): Method for computing the eigenvalues of a :class:`~.SparseHamiltonian`. The
             possible methods are ``'LM'`` (largest in magnitude), ``'SM'`` (smallest in magnitude),
@@ -48,11 +49,10 @@ def eigvals(op, k=1, which="SA"):
             from each end of the spectrum).
 
     Returns:
-        tensor_like or function: If an operator is provided as input, the eigenvalues are returned
-        directly. If a QNode or quantum function is provided as input, a function which accepts the
-        same arguments as the QNode or quantum function is returned. When called, this function will
-        return the unitary matrix in the appropriate autodiff framework (Autograd, TensorFlow,
-        PyTorch, JAX) given its parameters.
+        TensorLike or (Sequence[.QuantumTape], Callable): If an operator is provided as input, the eigenvalues
+        are returned directly. If a quantum tape is provided as input, a list of transformed tapes and a post-processing
+        function are returned. When called, this function will return the unitary matrix in the appropriate autodiff
+        framework (Autograd, TensorFlow, PyTorch, JAX) given its parameters.
 
     **Example**
 
@@ -123,27 +123,31 @@ def eigvals(op, k=1, which="SA"):
     return op.eigvals()
 
 
-@eigvals.tape_transform
-def _eigvals(tape):
-    op_wires = [op.wires for op in tape.operations]
-    all_wires = qml.wires.Wires.all_wires(op_wires).tolist()
-    unique_wires = qml.wires.Wires.unique_wires(op_wires).tolist()
+@partial(transform, is_informative=True, requires_exec=False)
+@eigvals.register
+def _eigvals_tape(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
+    def processing_fn(res):
+        op_wires = [op.wires for op in res[0].operations]
+        all_wires = qml.wires.Wires.all_wires(op_wires).tolist()
+        unique_wires = qml.wires.Wires.unique_wires(op_wires).tolist()
 
-    if len(all_wires) != len(unique_wires):
-        warnings.warn(
-            "For multiple operations, the eigenvalues will be computed numerically. "
-            "This may be computationally intensive for a large number of wires.",
-            UserWarning,
-        )
-        return qml.math.linalg.eigvals(qml.matrix(tape))
+        if len(all_wires) != len(unique_wires):
+            warnings.warn(
+                "For multiple operations, the eigenvalues will be computed numerically. "
+                "This may be computationally intensive for a large number of wires.",
+                UserWarning,
+            )
+            return qml.math.linalg.eigvals(qml.matrix(res[0]))
 
-    # TODO: take into account wire ordering, by reordering eigenvalues
-    # as per operator wires/wire ordering, and by inserting implicit identity
-    # matrices (eigenvalues [1, 1]) at missing locations.
+        # TODO: take into account wire ordering, by reordering eigenvalues
+        # as per operator wires/wire ordering, and by inserting implicit identity
+        # matrices (eigenvalues [1, 1]) at missing locations.
 
-    ev = [eigvals(op) for op in tape.operations]
+        ev = [eigvals(op) for op in res[0].operations]
 
-    if len(ev) == 1:
-        return ev[0]
+        if len(ev) == 1:
+            return ev[0]
 
-    return reduce(qml.math.kron, ev)
+        return reduce(qml.math.kron, ev)
+
+    return [tape], processing_fn

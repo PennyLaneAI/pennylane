@@ -15,22 +15,27 @@
 This module contains the qml.matrix function.
 """
 # pylint: disable=protected-access
+from functools import partial, singledispatch
+from typing import Sequence, Callable
+
 import pennylane as qml
+from pennylane.transforms.core import transform
+from pennylane.typing import TensorLike
 
 
-@qml.op_transform
-def matrix(op, *, wire_order=None):
+@singledispatch
+def matrix(op: qml.operation.Operator, *, wire_order=None) -> TensorLike:
     r"""The matrix representation of an operation or quantum circuit.
 
     Args:
-        op (.Operator, pennylane.QNode, .QuantumTape, or Callable): An operator, quantum node, tape,
-            or function that applies quantum operations.
+        op (.Operator or .QuantumTape): A quantum operator or tape.
         wire_order (Sequence[Any], optional): Order of the wires in the quantum circuit.
             Defaults to the order in which the wires appear in the quantum function.
 
     Returns:
-        tensor_like or function: Function which accepts the same arguments as the QNode or quantum
-        function. When called, this function will return the unitary matrix in the appropriate
+        TensorLike or (Sequence[.QuantumTape], Callable): If an operator is provided as input, the matrix
+        is returned directly. If a quantum tape is provided, a list of transformed tapes and a post-processing
+        function are returned. When called, this function will return unitary matrix in the appropriate
         autodiff framework (Autograd, TensorFlow, PyTorch, JAX) given its parameters.
 
     **Example**
@@ -127,26 +132,32 @@ def matrix(op, *, wire_order=None):
     return op.matrix(wire_order=wire_order)
 
 
-@matrix.tape_transform
-def _matrix(tape, wire_order=None):
-    """Defines how matrix works if applied to a tape containing multiple operations."""
-    if not tape.wires:
-        raise qml.operation.MatrixUndefinedError
-    params = tape.get_parameters(trainable_only=False)
-    interface = qml.math.get_interface(*params)
+@partial(transform, is_informative=True, requires_exec=False)
+@matrix.register
+def _matrix(
+    tape: qml.tape.QuantumTape, wire_order=None
+) -> (Sequence[qml.tape.QuantumTape], Callable):
+    def processing_fn(res):
+        """Defines how matrix works if applied to a tape containing multiple operations."""
+        if not res[0].wires:
+            raise qml.operation.MatrixUndefinedError
+        params = res[0].get_parameters(trainable_only=False)
+        interface = qml.math.get_interface(*params)
 
-    wire_order = wire_order or tape.wires
+        wire_order = wire_order or res[0].wires
 
-    # initialize the unitary matrix
-    if len(tape.operations) == 0:
-        result = qml.math.eye(2 ** len(wire_order), like=interface)
-    else:
-        result = matrix(tape.operations[0], wire_order=wire_order)
+        # initialize the unitary matrix
+        if len(res[0].operations) == 0:
+            result = qml.math.eye(2 ** len(wire_order), like=interface)
+        else:
+            result = matrix(res[0].operations[0], wire_order=wire_order)
 
-    for op in tape.operations[1:]:
-        U = matrix(op, wire_order=wire_order)
-        # Coerce the matrices U and result and use matrix multiplication. Broadcasted axes
-        # are handled correctly automatically by ``matmul`` (See e.g. NumPy documentation)
-        result = qml.math.matmul(*qml.math.coerce([U, result], like=interface), like=interface)
+        for op in res[0].operations[1:]:
+            U = matrix(op, wire_order=wire_order)
+            # Coerce the matrices U and result and use matrix multiplication. Broadcasted axes
+            # are handled correctly automatically by ``matmul`` (See e.g. NumPy documentation)
+            result = qml.math.matmul(*qml.math.coerce([U, result], like=interface), like=interface)
 
-    return result
+        return result
+
+    return [tape], processing_fn
