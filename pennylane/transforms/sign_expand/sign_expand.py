@@ -15,10 +15,11 @@ Contains the sign (and xi) decomposition tape transform, implementation of ideas
 # pylint: disable=protected-access
 import json
 from os import path
-from functools import partial
+from typing import Sequence, Callable
+
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.transforms.batch_transform import batch_transform
+from pennylane.transforms.core import transform
 
 
 def controlled_pauli_evolution(theta, wires, pauli_word, controls):
@@ -194,13 +195,10 @@ def construct_sgn_circuit(  # pylint: disable=too-many-arguments
     return tapes
 
 
-batch_transform_with_diff_false = partial(batch_transform, differentiable=False)
-
-
-@batch_transform_with_diff_false
+@transform
 def sign_expand(  # pylint: disable=too-many-arguments
-    tape, circuit=False, J=10, delta=0.0, controls=("Hadamard", "Target")
-):
+    tape: qml.tape.QuantumTape, circuit=False, J=10, delta=0.0, controls=("Hadamard", "Target")
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""
     Splits a tape measuring a (fast-forwardable) Hamiltonian expectation into mutliple tapes of
     the Xi or sgn decomposition, and provides a function to recombine the results.
