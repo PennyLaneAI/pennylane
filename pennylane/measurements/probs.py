@@ -264,18 +264,16 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         Returns:
             array[float]: array of the resulting marginal probabilities.
         """
-        # TODO: Add when ``qml.probs()`` is supported
-        # if self.wires == Wires([]):
-        #     # no need to marginalize
-        #     return prob
+        if self.wires == Wires([]):
+            # no need to marginalize
+            return prob
 
         # determine which subsystems are to be summed over
-        self_wires = self.wires or qml.wires.Wires(wire_order)
-        inactive_wires = Wires.unique_wires([wire_order, self_wires])
+        inactive_wires = Wires.unique_wires([wire_order, self.wires])
 
         # translate to wire labels used by device
         wire_map = dict(zip(wire_order, range(len(wire_order))))
-        mapped_wires = [wire_map[w] for w in self_wires]
+        mapped_wires = [wire_map[w] for w in self.wires]
         inactive_wires = [wire_map[w] for w in inactive_wires]
 
         # reshape the probability so that each axis corresponds to a wire
