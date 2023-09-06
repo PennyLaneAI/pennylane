@@ -276,7 +276,7 @@ class TestGenerateShiftRule:
                 raise RuntimeError("We shouldn't end up here")
 
         # sort columns according to abs(shift)
-        result = rule[np.argsort(np.abs(rule[:, -1]))]
+        result = rule[np.argsort(np.abs(rule[:, -1]), kind="mergesort")]
 
         assert np.allclose(result, correct_terms)
 
