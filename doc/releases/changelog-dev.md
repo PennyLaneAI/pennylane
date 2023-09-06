@@ -5,7 +5,7 @@
 <h3>New features since last release</h3>
 
 * All batch transforms are updated to the new transform program system.
-  [(4440)](https://github.com/PennyLaneAI/pennylane/pull/4440)
+  [(#4440)](https://github.com/PennyLaneAI/pennylane/pull/4440)
 
 <h3>Improvements 🛠</h3>
 
@@ -38,6 +38,9 @@
   the new `DefaultQubit2`. This includes not trying to squeeze batched `CountsMP` results and implementing
   `MutualInfoMP.map_wires`.
   [(#4574)](https://github.com/PennyLaneAI/pennylane/pull/4574)
+
+* `DefaultQubit2` now works as expected with measurement processes that don't specify wires.
+  [(#4580)](https://github.com/PennyLaneAI/pennylane/pull/4580)
 
 <h3>Breaking changes 💔</h3>
 
