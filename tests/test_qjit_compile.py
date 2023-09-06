@@ -20,15 +20,10 @@ import pytest
 import pennylane as qml
 import numpy as np
 
-try:
-    import catalyst
-except ImportError:
-    pytest.skip(
-        "skipping qjit-compile tests because ``pennylane-catalyst`` is not installed",
-        allow_module_level=True,
-    )
+pytest.importorskip("catalyst")
 
 # pylint: disable=too-few-public-methods, too-many-public-methods
+
 
 class TestCatalystJAXFrontend:
     """Test ``catalyst.qjit`` with JAX interface"""
@@ -41,7 +36,7 @@ class TestCatalystJAXFrontend:
 
     def test_compilation_opt(self):
         """Test user-configurable compilation options"""
-        dev = qml.device('lightning.qubit', wires=2)
+        dev = qml.device("lightning.qubit", wires=2)
 
         @qml.qjit(target="mlir")
         @qml.qnode(dev)
@@ -56,7 +51,7 @@ class TestCatalystJAXFrontend:
 
     def test_for_loop(self):
         """Test Catalyst control-flow statement (``qml.for_loop``)"""
-        dev = qml.device('lightning.qubit', wires=2)
+        dev = qml.device("lightning.qubit", wires=2)
 
         @qml.qjit
         @qml.qnode(dev)
@@ -74,7 +69,7 @@ class TestCatalystJAXFrontend:
 
     def test_for_loop(self):
         """Test Catalyst control-flow statement (``qml.if_cond``)"""
-        dev = qml.device('lightning.qubit', wires=1)
+        dev = qml.device("lightning.qubit", wires=1)
 
         @qml.qjit
         @qml.qnode(dev)
@@ -153,7 +148,7 @@ class TestCatalystJAXFrontend:
             qml.adjoint(qml.RZ, lazy=False)(theta, wires=0)
 
         with pytest.raises(AssertionError, match="Lazy Evaluation is not supported in Catalyst"):
-            qml.qjit(circuit)(np.pi/2)
+            qml.qjit(circuit)(np.pi / 2)
 
     def test_adjoint(self):
         """Test adjoint"""
@@ -164,13 +159,15 @@ class TestCatalystJAXFrontend:
         def workflow(theta):
             qml.adjoint(qml.RZ)(theta, wires=0)
             qml.adjoint(qml.RZ(theta, wires=0))
+
             def func():
                 qml.RX(theta, wires=0)
                 qml.RY(theta, wires=0)
+
             qml.adjoint(func)()
             return qml.probs()
 
-        workflow(np.pi/2)
+        workflow(np.pi / 2)
 
     def test_grad_1(self):
         """Test gradient"""
@@ -219,7 +216,7 @@ class TestCatalystJAXFrontend:
         def grad_fn(p: float):
             return qml.jacobian(func)(p)
 
-        expected = np.array([-0.25103906,  0.25103906])
+        expected = np.array([-0.25103906, 0.25103906])
         assert np.allclose(grad_fn(0.526), expected)
 
     def test_jacobian_2(self):
@@ -235,5 +232,5 @@ class TestCatalystJAXFrontend:
         def grad_fn(p: float):
             return qml.jacobian(func, method="fd", h=0.5)(p)
 
-        expected = np.array([-0.34657838,  0.34657838])
+        expected = np.array([-0.34657838, 0.34657838])
         assert np.allclose(grad_fn(0.526), expected)
