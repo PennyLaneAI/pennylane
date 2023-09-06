@@ -6,12 +6,6 @@ Deprecations
 Pending deprecations
 --------------------
 
-* The `RandomLayers.compute_decomposition` keyword argument `ratio_imprivitive` will be changed to `ratio_imprim` to
-  match the call signature of the operation. 
-
-  - Deprecated in v0.32
-  - Removed in v0.33
-
 * ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
   
   - Deprecated in v0.24
@@ -77,9 +71,6 @@ Pending deprecations
   `Fermionic Operator <https://pennylane.ai/qml/demos/tutorial_fermionic_operators>`_
   tutorial for more details.
 
-* The ``QuantumScript.set_parameters`` method and the ``QuantumScript.data`` setter has
-  been deprecated. Please use ``QuantumScript.bind_new_parameters`` instead.
-
   - Deprecated in v0.32
   - Will be removed in v0.33
 
@@ -90,9 +81,18 @@ Pending deprecations
 
   - Deprecated in v0.32
   - Will be removed in v0.33
+  
+* The ``prep`` keyword argument in ``QuantumScript`` is deprecated and will be removed from `QuantumScript`.
+  ``StatePrepBase`` operations should be placed at the beginning of the `ops` list instead.
 
-* The ``sampler_seed`` argument of ``qml.gradients.spsa_grad`` has been deprecated, along with a bug
-  fix of the seed-setting behaviour.
+  - Deprecated in v0.33
+  - Will be removed in v0.34
+
+
+Completed deprecation cycles
+----------------------------
+
+* The ``sampler_seed`` argument of ``qml.gradients.spsa_grad`` has been removed.
   Instead, the ``sampler_rng`` argument should be set, either to an integer value, which will be used
   to create a PRNG internally, or to a NumPy pseudo-random number generator (PRNG) created via
   ``np.random.default_rng(seed)``.
@@ -100,11 +100,16 @@ Pending deprecations
   multiple times, for instance during an optimization procedure.
 
   - Deprecated in v0.32
-  - Will be removed in v0.33
+  - Removed in v0.33
 
+* The ``RandomLayers.compute_decomposition`` keyword argument ``ratio_imprivitive`` has been changed to
+  ``ratio_imprim`` to match the call signature of the operation.
 
-Completed deprecation cycles
-----------------------------
+  - Deprecated in v0.32
+  - Removed in v0.33
+
+* The ``QuantumScript.set_parameters`` method and the ``QuantumScript.data`` setter have
+  been removed. Please use ``QuantumScript.bind_new_parameters`` instead.
 
 * The ``observables`` argument in ``QubitDevice.statistics`` is removed. Please use ``circuit``
   instead. Using a list of observables in ``QubitDevice.statistics`` is removed. Please use a
@@ -112,6 +117,7 @@ Completed deprecation cycles
 
   - Still accessible in v0.28-v0.31
   - Removed in v0.32
+
 
 * The CV observables ``qml.X`` and ``qml.P`` have been removed. Use ``qml.QuadX`` and ``qml.QuadP`` instead.
 

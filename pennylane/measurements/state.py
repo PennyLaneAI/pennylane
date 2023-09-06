@@ -17,7 +17,7 @@ This module contains the qml.state measurement.
 from typing import Sequence, Optional
 
 import pennylane as qml
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WireError
 
 from .measurements import State, StateMeasurement
 
@@ -81,7 +81,7 @@ def state() -> "StateMP":
     return StateMP()
 
 
-def density_matrix(wires) -> "StateMP":
+def density_matrix(wires) -> "DensityMatrixMP":
     r"""Quantum density matrix in the computational basis.
 
     This function accepts no observables and instead instructs the QNode to return its density
@@ -93,7 +93,7 @@ def density_matrix(wires) -> "StateMP":
         wires (Sequence[int] or int): the wires of the subsystem
 
     Returns:
-        StateMP: Measurement process instance
+        DensityMatrixMP: Measurement process instance
 
     **Example:**
 
@@ -122,17 +122,16 @@ def density_matrix(wires) -> "StateMP":
         with a compatible device.
     """
     wires = Wires(wires)
-    return StateMP(wires=wires)
+    return DensityMatrixMP(wires=wires)
 
 
 class StateMP(StateMeasurement):
     """Measurement process that returns the quantum state in the computational basis.
 
-    Please refer to :func:`state` and :func:`density_matrix` for detailed documentation.
+    Please refer to :func:`state` for detailed documentation.
 
     Args:
         wires (.Wires): The wires the measurement process applies to.
-            This can only be specified if an observable was not provided.
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
     """
@@ -152,26 +151,72 @@ class StateMP(StateMeasurement):
         num_shot_elements = (
             sum(s.copies for s in shots.shot_vector) if shots.has_partitioned_shots else 1
         )
-
-        if self.wires:
-            # qml.density_matrix()
-            dim = 2 ** len(self.wires)
-            return (
-                (dim, dim)
-                if num_shot_elements == 1
-                else tuple((dim, dim) for _ in range(num_shot_elements))
-            )
-
-        # qml.state()
         dim = 2 ** len(device.wires)
         return (dim,) if num_shot_elements == 1 else tuple((dim,) for _ in range(num_shot_elements))
 
-    # pylint: disable=redefined-outer-name
     def process_state(self, state: Sequence[complex], wire_order: Wires):
-        if self.wires:
-            # qml.density_matrix
-            wire_map = dict(zip(wire_order, range(len(wire_order))))
-            mapped_wires = [wire_map[w] for w in self.wires]
-            return qml.math.reduce_statevector(state, indices=mapped_wires, c_dtype=state.dtype)
-        # qml.state
-        return state
+        # pylint:disable=redefined-outer-name
+        wires = self.wires
+        if not wires or wire_order == wires:
+            return state
+
+        if not wires.contains_wires(wire_order):
+            raise WireError(
+                f"Unexpected wires {set(wire_order) - set(wires)} found in wire order. Expected wire order to be a subset of {wires}"
+            )
+
+        # pad with zeros, put existing wires last
+        is_torch = qml.math.get_interface(state) == "torch"
+        is_state_batched = qml.math.ndim(state) == 2
+        pad_width = 2 ** len(wires) - 2 ** len(wire_order)
+        pad = (pad_width, 0) if is_torch else (0, pad_width)
+        shape = (2,) * len(wires)
+        if is_state_batched:
+            pad = ((0, 0), pad)
+            shape = (qml.math.shape(state)[0],) + shape
+        elif is_torch:
+            pad = (pad,)
+
+        state = qml.math.pad(state, pad)
+        state = qml.math.reshape(state, shape)
+
+        # re-order
+        new_wire_order = Wires.unique_wires([wires, wire_order]) + wire_order
+        desired_axes = [new_wire_order.index(w) for w in wires]
+        if is_state_batched:
+            desired_axes = [0] + [i + 1 for i in desired_axes]
+        state = qml.math.transpose(state, desired_axes)
+        return qml.math.flatten(state)
+
+
+class DensityMatrixMP(StateMP):
+    """Measurement process that returns the quantum state in the computational basis.
+
+    Please refer to :func:`density_matrix` for detailed documentation.
+
+    Args:
+        wires (.Wires): The wires the measurement process applies to.
+        id (str): custom label given to a measurement instance, can be useful for some applications
+            where the instance has to be identified
+    """
+
+    def __init__(self, wires: Wires, id: Optional[str] = None):
+        super().__init__(wires=wires, id=id)
+
+    def shape(self, device, shots):
+        num_shot_elements = (
+            sum(s.copies for s in shots.shot_vector) if shots.has_partitioned_shots else 1
+        )
+
+        dim = 2 ** len(self.wires)
+        return (
+            (dim, dim)
+            if num_shot_elements == 1
+            else tuple((dim, dim) for _ in range(num_shot_elements))
+        )
+
+    def process_state(self, state: Sequence[complex], wire_order: Wires):
+        # pylint:disable=redefined-outer-name
+        wire_map = dict(zip(wire_order, range(len(wire_order))))
+        mapped_wires = [wire_map[w] for w in self.wires]
+        return qml.math.reduce_statevector(state, indices=mapped_wires, c_dtype=state.dtype)
