@@ -286,7 +286,7 @@ class QubitDevice(Device):
             for op in operations
         ):
             tape = qml.tape.QuantumTape(ops=operations, measurements=[])
-            tape = qml.tape.expand_tape_state_prep(tape, skip_first=False, force_decompose=True)
+            tape = qml.tape.expand_tape_state_prep(tape, skip_first=True, force_decompose=True)
             operations = tape._ops
 
         self.check_validity(operations, circuit.observables)

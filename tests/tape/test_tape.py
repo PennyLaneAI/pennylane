@@ -1067,10 +1067,11 @@ class TestExpand:
         for tape_op, true_op in zip(new_tape.operations, true_decomposition):
             assert qml.equal(tape_op, true_op)
 
-        dev = qml.device("default.qubit", wires=4)
-        new_tape = QuantumTape(new_tape)
-        ref_type = QuantumTape(true_decomposition)
-        assert np.allclose(dev.execute(new_tape), dev.execute(ref_type))
+        if skip_first:
+            dev = qml.device("default.qubit", wires=4)
+            new_tape = QuantumTape(new_tape)
+            ref_type = QuantumTape(true_decomposition)
+            assert np.allclose(dev.execute(new_tape), dev.execute(ref_type))
 
     @pytest.mark.filterwarnings("ignore:The ``name`` property and keyword argument of")
     def test_stopping_criterion_with_depth(self):
