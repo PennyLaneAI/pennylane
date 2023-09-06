@@ -58,22 +58,10 @@ def particle_number(orbitals):
     if orbitals <= 0:
         raise ValueError(f"'orbitals' must be greater than 0; got for 'orbitals' {orbitals}")
 
-    r = np.arange(orbitals)
-    table = np.vstack([r, r, np.ones([orbitals])]).T
-
     sentence = FermiSentence({})
 
-    for i in table:
-        sentence.update(
-            {
-                FermiWord(
-                    {
-                        (0, int(i[0])): "+",
-                        (1, int(i[1])): "-",
-                    }
-                ): i[2]
-            }
-        )
+    for i in range(orbitals):
+        sentence.update({FermiWord({(0, i): "+", (1, i): "-"}): 1.0})
 
     sentence.simplify()
 
