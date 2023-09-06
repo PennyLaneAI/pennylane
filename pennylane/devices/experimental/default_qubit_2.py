@@ -229,7 +229,10 @@ class DefaultQubit2(Device):
                 for m_idx, mp in enumerate(measurements):
                     if not mp.obs and not mp.wires:
                         modified = True
-                        measurements[m_idx] = type(mp)(wires=self.wires)
+                        kwargs = {}
+                        if getattr(mp, "all_outcomes", False) is True:
+                            kwargs["all_outcomes"] = True
+                        measurements[m_idx] = type(mp)(wires=self.wires, **kwargs)
                 if modified:
                     circuits[i] = type(circuit)(
                         circuit.operations, measurements, shots=circuit.shots
