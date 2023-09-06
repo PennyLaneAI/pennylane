@@ -20,102 +20,11 @@ from pennylane import numpy as pnp
 from pennylane.devices import DefaultQubit
 from pennylane.measurements import (
     State,
-    StateMP,
-    DensityMatrixMP,
     Shots,
     density_matrix,
     expval,
     state,
 )
-from pennylane.math.quantum import reduce_statevector, reduce_dm
-from pennylane.math.matrix_manipulation import _permute_dense_matrix
-
-
-class TestStateMP:
-    """Tests for the State measurement process."""
-
-    @pytest.mark.parametrize(
-        "vec",
-        [
-            np.array([0.6, 0.8j]),
-            np.eye(4)[3],
-            np.array([0.48j, 0.48, -0.64j, 0.36]),
-        ],
-    )
-    def test_process_state_vector(self, vec):
-        """Test the processing of a state vector."""
-
-        mp = StateMP()
-        assert mp.return_type == State
-        assert mp.numeric_type is complex
-
-        processed = mp.process_state(vec, None)
-        assert qml.math.allclose(processed, vec)
-
-    def test_state_does_not_accept_wires(self):
-        """Test that StateMP does not accept wires."""
-        with pytest.raises(TypeError, match="unexpected keyword argument 'wires'"):
-            StateMP(wires=[0])
-
-
-class TestDensityMatrixMP:
-    """Tests for the DensityMatrix measurement process"""
-
-    @pytest.mark.parametrize(
-        "vec, wires",
-        [
-            (np.array([0.6, 0.8j]), [0]),
-            (np.eye(4, dtype=np.complex64)[3], [0]),
-            (np.array([0.48j, 0.48, -0.64j, 0.36]), [0, 1]),
-            (np.array([0.48j, 0.48, -0.64j, 0.36]), [0]),
-        ],
-    )
-    def test_process_state_matrix_from_vec(self, vec, wires):
-        """Test the processing of a state vector into a matrix."""
-
-        mp = DensityMatrixMP(wires=wires)
-        assert mp.return_type == State
-        assert mp.numeric_type is complex
-
-        num_wires = int(np.log2(len(vec)))
-        processed = mp.process_state(vec, list(range(num_wires)))
-        assert qml.math.shape(processed) == (2 ** len(wires), 2 ** len(wires))
-        if len(wires) == num_wires:
-            exp = np.outer(vec, vec.conj())
-        else:
-            exp = reduce_statevector(vec, wires)
-        assert qml.math.allclose(processed, exp)
-
-    @pytest.mark.xfail(
-        reason="DensityMatrixMP.process_state no longer supports density matrix parameters"
-    )
-    @pytest.mark.parametrize(
-        "mat, wires",
-        [
-            (np.eye(4, dtype=np.complex64) / 4, [0]),
-            (np.eye(4, dtype=np.complex64) / 4, [1, 0]),
-            (np.outer([0.6, 0.8j], [0.6, -0.8j]), [0]),
-            (np.outer([0.36j, 0.48, 0.64, 0.48j], [-0.36j, 0.48, 0.64, -0.48j]), [0, 1]),
-            (np.outer([0.36j, 0.48, 0.64, 0.48j], [-0.36j, 0.48, 0.64, -0.48j]), [0]),
-            (np.outer([0.36j, 0.48, 0.64, 0.48j], [-0.36j, 0.48, 0.64, -0.48j]), [1]),
-        ],
-    )
-    def test_process_state_matrix_from_matrix(self, mat, wires):
-        """Test the processing of a density matrix into a matrix."""
-
-        mp = DensityMatrixMP(wires=wires)
-        assert mp.return_type == State
-        assert mp.numeric_type is complex
-
-        num_wires = int(np.log2(len(mat)))
-        order = list(range(num_wires))
-        processed = mp.process_state(mat, order)
-        assert qml.math.shape(processed) == (2 ** len(wires), 2 ** len(wires))
-        if len(wires) == num_wires:
-            exp = _permute_dense_matrix(mat, wires, order, None)
-        else:
-            exp = reduce_dm(mat, wires)
-        assert qml.math.allclose(processed, exp)
 
 
 class TestState:
@@ -434,11 +343,6 @@ class TestState:
         dev = qml.device("default.qubit.legacy", wires=3, shots=s_vec)
         res = qml.state()
         assert res.shape(dev, Shots(s_vec)) == ((2**3,), (2**3,), (2**3,))
-
-    def test_numeric_type(self):
-        """Test that the numeric type of state measurements."""
-        assert qml.state().numeric_type == complex
-        assert qml.density_matrix(wires=[0, 1]).numeric_type == complex
 
 
 class TestDensityMatrix:

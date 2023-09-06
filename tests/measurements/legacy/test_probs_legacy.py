@@ -17,13 +17,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.measurements import (
-    MeasurementProcess,
-    Probability,
-    ProbabilityMP,
-    Shots,
-)
-from pennylane.queuing import AnnotatedQueue
+from pennylane.measurements import ProbabilityMP, Shots
 
 
 # TODO: Remove this when new CustomMP are the default
@@ -88,11 +82,6 @@ class TestProbs:
 
         assert isinstance(circuit.tape[0], ProbabilityMP)
 
-    def test_numeric_type(self):
-        """Test that the numeric type is correct."""
-        res = qml.probs(wires=0)
-        assert res.numeric_type is float
-
     @pytest.mark.parametrize("wires", [[0], [2, 1], ["a", "c", 3]])
     @pytest.mark.parametrize("shots", [None, 10])
     def test_shape(self, wires, shots):
@@ -112,23 +101,6 @@ class TestProbs:
             (2 ** len(wires),),
             (2 ** len(wires),),
         )
-
-    @pytest.mark.parametrize("wires", [[0], [0, 1], [1, 0, 2]])
-    def test_annotating_probs(self, wires):
-        """Test annotating probs"""
-        with AnnotatedQueue() as q:
-            qml.probs(wires)
-
-        assert len(q.queue) == 1
-
-        meas_proc = q.queue[0]
-        assert isinstance(meas_proc, MeasurementProcess)
-        assert meas_proc.return_type == Probability
-
-    def test_probs_empty_wires(self):
-        """Test that using ``qml.probs`` with an empty wire list raises an error."""
-        with pytest.raises(ValueError, match="Cannot set an empty list of wires."):
-            qml.probs(wires=[])
 
     @pytest.mark.parametrize("shots", [None, 100])
     def test_probs_no_arguments(self, shots):
@@ -200,48 +172,6 @@ class TestProbs:
 
         custom_measurement_process(dev, spy_probs)
 
-    @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
-    @pytest.mark.parametrize(
-        "subset_wires,expected",
-        [
-            ([0, 1], [0.25, 0.25, 0.25, 0.25]),
-            ([1, 2], [0.5, 0, 0.5, 0]),
-            ([0, 2], [0.5, 0, 0.5, 0]),
-            ([2, 0], [0.5, 0.5, 0, 0]),
-            ([2, 1], [0.5, 0.5, 0, 0]),
-            ([1, 2, 0], [0.25, 0.25, 0, 0, 0.25, 0.25, 0, 0]),
-        ],
-    )
-    def test_process_state(self, interface, subset_wires, expected):
-        """Tests that process_state functions as expected with all interfaces."""
-        state = qml.math.array([1 / 2, 0] * 4, like=interface)
-        wires = qml.wires.Wires(range(3))
-        subset_probs = qml.probs(wires=subset_wires).process_state(state, wires)
-        assert subset_probs.shape == (len(expected),)
-        assert qml.math.allclose(subset_probs, expected)
-
-    @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
-    @pytest.mark.parametrize(
-        "subset_wires,expected",
-        [
-            ([1, 2], [[0.5, 0, 0.5, 0], [0, 0.5, 0, 0.5]]),
-            ([2, 0], [[0.5, 0.5, 0, 0], [0, 0, 0.5, 0.5]]),
-            (
-                [1, 2, 0],
-                [[0.25, 0.25, 0, 0, 0.25, 0.25, 0, 0], [0, 0, 0.25, 0.25, 0, 0, 0.25, 0.25]],
-            ),
-        ],
-    )
-    def test_process_state_batched(self, interface, subset_wires, expected):
-        """Tests that process_state functions as expected with all interfaces with batching."""
-        states = qml.math.array([[1 / 2, 0] * 4, [0, 1 / 2] * 4], like=interface)
-        wires = qml.wires.Wires(range(3))
-        subset_probs = qml.probs(wires=subset_wires).process_state(states, wires)
-        assert subset_probs.shape == qml.math.shape(expected)
-        assert qml.math.allclose(subset_probs, expected)
-
     def test_integration(self, tol, mocker):
         """Test the probability is correct for a known state preparation."""
         dev = qml.device("default.qubit.legacy", wires=2)
@@ -297,27 +227,6 @@ class TestProbs:
         assert np.allclose(res, expected, atol=0.1, rtol=0.1)
 
         custom_measurement_process(dev, spy)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize(
-        "prep_op, expected",
-        [
-            (None, [1, 0]),
-            (qml.QubitStateVector([[0, 1], [1, 0]], 0), [[0, 1], [1, 0]]),
-        ],
-    )
-    def test_process_state_tf_autograph(self, prep_op, expected):
-        """Test that process_state passes when decorated with tf.function."""
-        import tensorflow as tf
-
-        wires = qml.wires.Wires([0])
-
-        @tf.function
-        def probs_from_state(state):
-            return qml.probs(wires=wires).process_state(state, wires)
-
-        state = qml.devices.qubit.create_initial_state(wires, prep_operation=prep_op)
-        assert np.allclose(probs_from_state(state), expected)
 
     @pytest.mark.autograd
     def test_numerical_analytic_diff_agree(self, tol, mocker):
@@ -644,43 +553,6 @@ class TestProbs:
             "provided. The wires for probs will be determined directly from the observable.",
         ):
             circuit()
-
-    @pytest.mark.parametrize(
-        "wires, expected",
-        [
-            (
-                [0],
-                [
-                    [[0, 0, 0.5], [1, 1, 0.5]],
-                    [[0.5, 0.5, 0], [0.5, 0.5, 1]],
-                    [[0, 0.5, 1], [1, 0.5, 0]],
-                ],
-            ),
-            (
-                [0, 1],
-                [
-                    [[0, 0, 0], [0, 0, 0.5], [0.5, 0, 0], [0.5, 1, 0.5]],
-                    [[0.5, 0.5, 0], [0, 0, 0], [0, 0, 0], [0.5, 0.5, 1]],
-                    [[0, 0.5, 0.5], [0, 0, 0.5], [0.5, 0, 0], [0.5, 0.5, 0]],
-                ],
-            ),
-        ],
-    )
-    def test_estimate_probability_with_binsize_with_broadcasting(self, wires, expected):
-        """Tests the estimate_probability method with a bin size and parameter broadcasting"""
-        samples = np.array(
-            [
-                [[1, 0], [1, 1], [1, 1], [1, 1], [1, 1], [0, 1]],
-                [[0, 0], [1, 1], [1, 1], [0, 0], [1, 1], [1, 1]],
-                [[1, 0], [1, 1], [1, 1], [0, 0], [0, 1], [0, 0]],
-            ]
-        )
-
-        res = qml.probs(wires=wires).process_samples(
-            samples=samples, wire_order=wires, shot_range=None, bin_size=2
-        )
-
-        assert np.allclose(res, expected)
 
     def test_non_commuting_probs_raises_error(self):
         dev = qml.device("default.qubit.legacy", wires=5)

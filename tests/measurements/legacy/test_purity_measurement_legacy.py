@@ -18,7 +18,7 @@ import pytest
 import numpy as np
 import pennylane as qml
 
-from pennylane.measurements import PurityMP, Shots
+from pennylane.measurements import Shots
 
 # pylint: disable=too-many-arguments
 
@@ -54,33 +54,16 @@ def expected_purity_grad_ising_xx(param):
     return grad_expected_purity
 
 
-class TestPurityUnitTest:
-    """Tests for purity measurements"""
-
-    def test_return_type(self):
-        """Test that the return type is defined and the purity enum."""
-        m = PurityMP(wires=qml.wires.Wires((0, 1)))
-        assert m.return_type is qml.measurements.Purity
-
-    def test_numeric_type(self):
-        """Test that the numeric type of PurityMP is float."""
-        m = PurityMP(wires=qml.wires.Wires(0))
-        assert m.numeric_type is float
-
-    @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ()), ((1, 10), ((), ()))])
-    def test_shape_new(self, shots, shape):
-        """Test the ``shape_new`` method."""
-        meas = qml.purity(wires=0)
-        dev = qml.device("default.qubit.legacy", wires=1, shots=shots)
-        assert meas.shape(dev, Shots(shots)) == shape
+@pytest.mark.parametrize("shots, shape", [(None, ()), (10, ()), ((1, 10), ((), ()))])
+def test_shape_new(shots, shape):
+    """Test the ``shape_new`` method."""
+    meas = qml.purity(wires=0)
+    dev = qml.device("default.qubit.legacy", wires=1, shots=shots)
+    assert meas.shape(dev, Shots(shots)) == shape
 
 
 class TestPurityIntegration:
     """Test the purity meausrement with qnodes and devices."""
-
-    devices = ["default.qubit.legacy", "lightning.qubit", "default.mixed"]
-    grad_supported_devices = ["default.qubit.legacy", "default.mixed"]
-    mix_supported_devices = ["default.mixed"]
 
     diff_methods = ["backprop", "finite-diff"]
 
@@ -89,13 +72,12 @@ class TestPurityIntegration:
 
     wires_list = [([0], True), ([1], True), ([0, 1], False)]
 
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
-    def test_IsingXX_qnode_purity(self, device, param, wires, is_partial):
+    def test_IsingXX_qnode_purity(self, param, wires, is_partial):
         """Tests purity for a qnode"""
 
-        dev = qml.device(device, wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev)
         def circuit(x):
@@ -106,38 +88,13 @@ class TestPurityIntegration:
         expected_purity = expected_purity_ising_xx(param) if is_partial else 1
         assert qml.math.allclose(purity, expected_purity)
 
-    @pytest.mark.parametrize("device", mix_supported_devices)
-    @pytest.mark.parametrize("wires,is_partial", wires_list)
-    @pytest.mark.parametrize("param", probs)
-    def test_bit_flip_qnode_purity(self, device, wires, param, is_partial):
-        """Tests purity for a qnode on a noisy device with bit flips"""
-
-        dev = qml.device(device, wires=2)
-
-        @qml.qnode(dev)
-        def circuit(p):
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.BitFlip(p, wires=0)
-            qml.BitFlip(p, wires=1)
-            return qml.purity(wires=wires)
-
-        purity = circuit(param)
-        expected_purity = (
-            0.5
-            if is_partial
-            else 4 * (0.5 - (1 - param) * param) ** 2 + 4 * (1 - param) ** 2 * param**2
-        )
-        assert qml.math.allclose(purity, expected_purity)
-
-    @pytest.mark.parametrize("device", grad_supported_devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_IsingXX_qnode_purity_grad(self, device, param, wires, is_partial, diff_method):
+    def test_IsingXX_qnode_purity_grad(self, param, wires, is_partial, diff_method):
         """Tests purity for a qnode"""
 
-        dev = qml.device(device, wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(x):
@@ -148,38 +105,16 @@ class TestPurityIntegration:
         expected_grad = expected_purity_grad_ising_xx(param) if is_partial else 0
         assert qml.math.allclose(grad_purity, expected_grad, rtol=1e-04, atol=1e-05)
 
-    @pytest.mark.parametrize("device", mix_supported_devices)
-    @pytest.mark.parametrize("wires,is_partial", wires_list)
-    @pytest.mark.parametrize("param", probs)
-    @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_bit_flip_qnode_purity_grad(self, device, wires, param, is_partial, diff_method):
-        """Tests gradient of purity for a qnode on a noisy device with bit flips"""
-
-        dev = qml.device(device, wires=2)
-
-        @qml.qnode(dev, diff_method=diff_method)
-        def circuit(p):
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.BitFlip(p, wires=0)
-            qml.BitFlip(p, wires=1)
-            return qml.purity(wires=wires)
-
-        purity_grad = qml.grad(circuit)(param)
-        expected_purity_grad = 0 if is_partial else 32 * (param - 0.5) ** 3
-        assert qml.math.allclose(purity_grad, expected_purity_grad, rtol=1e-04, atol=1e-05)
-
     @pytest.mark.jax
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("interface", ["jax"])
-    def test_IsingXX_qnode_purity_jax(self, device, param, wires, is_partial, interface):
+    def test_IsingXX_qnode_purity_jax(self, param, wires, is_partial, interface):
         """Test purity for a QNode with jax interface."""
 
         import jax.numpy as jnp
 
-        dev = qml.device(device, wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev, interface=interface)
         def circuit(x):
@@ -191,19 +126,16 @@ class TestPurityIntegration:
         assert qml.math.allclose(purity, expected_purity)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("device", grad_supported_devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("diff_method", diff_methods)
     @pytest.mark.parametrize("interface", ["jax"])
-    def test_IsingXX_qnode_purity_grad_jax(
-        self, device, param, wires, is_partial, diff_method, interface
-    ):
+    def test_IsingXX_qnode_purity_grad_jax(self, param, wires, is_partial, diff_method, interface):
         """Test purity for a QNode gradient with Jax."""
 
         import jax
 
-        dev = qml.device(device, wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev, interface=interface, diff_method=diff_method)
         def circuit(x):
@@ -216,17 +148,16 @@ class TestPurityIntegration:
         assert qml.math.allclose(grad_purity, grad_expected_purity, rtol=1e-04, atol=1e-05)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("interface", ["jax-jit"])
-    def test_IsingXX_qnode_purity_jax_jit(self, device, param, wires, is_partial, interface):
+    def test_IsingXX_qnode_purity_jax_jit(self, param, wires, is_partial, interface):
         """Test purity for a QNode with jax interface."""
 
         import jax
         import jax.numpy as jnp
 
-        dev = qml.device(device, wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev, interface=interface)
         def circuit(x):
@@ -238,19 +169,18 @@ class TestPurityIntegration:
         assert qml.math.allclose(purity, expected_purity)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("device", grad_supported_devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("diff_method", diff_methods)
     @pytest.mark.parametrize("interface", ["jax-jit"])
     def test_IsingXX_qnode_purity_grad_jax_jit(
-        self, device, param, wires, is_partial, diff_method, interface
+        self, param, wires, is_partial, diff_method, interface
     ):
         """Test purity for a QNode gradient with Jax."""
 
         import jax
 
-        dev = qml.device(device, wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev, interface=interface, diff_method=diff_method)
         def circuit(x):
@@ -263,16 +193,15 @@ class TestPurityIntegration:
         assert qml.math.allclose(grad_purity, grad_expected_purity, rtol=1e-04, atol=1e-05)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("interface", ["torch"])
-    def test_IsingXX_qnode_purity_torch(self, device, param, wires, is_partial, interface):
+    def test_IsingXX_qnode_purity_torch(self, param, wires, is_partial, interface):
         """Tests purity for a qnode"""
 
         import torch
 
-        dev = qml.device(device, wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev, interface=interface)
         def circuit(x):
@@ -284,19 +213,18 @@ class TestPurityIntegration:
         assert qml.math.allclose(purity, expected_purity)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("device", grad_supported_devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("diff_method", diff_methods)
     @pytest.mark.parametrize("interface", ["torch"])
     def test_IsingXX_qnode_purity_grad_torch(
-        self, device, param, wires, is_partial, diff_method, interface
+        self, param, wires, is_partial, diff_method, interface
     ):
         """Test purity for a QNode gradient with torch."""
 
         import torch
 
-        dev = qml.device(device, wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev, interface=interface, diff_method=diff_method)
         def circuit(x):
@@ -313,16 +241,15 @@ class TestPurityIntegration:
         assert qml.math.allclose(grad_purity, expected_grad, rtol=1e-04, atol=1e-05)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("interface", ["tf"])
-    def test_IsingXX_qnode_purity_tf(self, device, param, wires, is_partial, interface):
+    def test_IsingXX_qnode_purity_tf(self, param, wires, is_partial, interface):
         """Tests purity for a qnode"""
 
         import tensorflow as tf
 
-        dev = qml.device(device, wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev, interface=interface)
         def circuit(x):
@@ -334,19 +261,16 @@ class TestPurityIntegration:
         assert qml.math.allclose(purity, expected_purity)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("device", grad_supported_devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("diff_method", diff_methods)
     @pytest.mark.parametrize("interface", ["tf"])
-    def test_IsingXX_qnode_purity_grad_tf(
-        self, device, param, wires, is_partial, diff_method, interface
-    ):
+    def test_IsingXX_qnode_purity_grad_tf(self, param, wires, is_partial, diff_method, interface):
         """Test purity for a QNode gradient with tf."""
 
         import tensorflow as tf
 
-        dev = qml.device(device, wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev, interface=interface, diff_method=diff_method)
         def circuit(x):
@@ -363,12 +287,11 @@ class TestPurityIntegration:
 
         assert qml.math.allclose(grad_purity, grad_expected_purity, rtol=1e-04, atol=1e-05)
 
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("param", parameters)
-    def test_qnode_entropy_custom_wires(self, device, param):
+    def test_qnode_entropy_custom_wires(self, param):
         """Test that purity can be returned with custom wires."""
 
-        dev = qml.device(device, wires=["a", 1])
+        dev = qml.device("default.qubit.legacy", wires=["a", 1])
 
         @qml.qnode(dev)
         def circuit(x):

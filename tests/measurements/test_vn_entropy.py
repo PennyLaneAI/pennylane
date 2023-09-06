@@ -134,7 +134,6 @@ class TestIntegration:
 
     check_state = [True, False]
 
-    devices = ["default.qubit", "default.mixed"]
     diff_methods = ["backprop", "finite-diff"]
 
     @pytest.mark.xfail(reason="until DQ2 port")

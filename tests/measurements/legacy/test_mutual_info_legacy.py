@@ -12,64 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the mutual_info module"""
-import copy
-
 import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane.interfaces import INTERFACE_MAP
-from pennylane.measurements import MutualInfo, Shots
-from pennylane.measurements.mutual_info import MutualInfoMP
-from pennylane.wires import Wires
+from pennylane.measurements import Shots
 
 
-class TestMutualInfoUnitTests:
-    """Tests for the mutual_info function"""
-
-    def test_queue(self):
-        """Test that the right measurement class is queued."""
-
-        with qml.queuing.AnnotatedQueue() as q:
-            m = qml.mutual_info(wires0=[0], wires1=[1])
-
-        assert q.queue[0] is m
-        assert isinstance(q.queue[0], MutualInfoMP)
-
-    @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ()), ([1, 10], ((), ()))])
-    def test_shape(self, shots, shape):
-        """Test that the shape is correct."""
-        dev = qml.device("default.qubit.legacy", wires=3, shots=shots)
-        res = qml.mutual_info(wires0=[0], wires1=[1])
-        assert res.shape(dev, Shots(shots)) == shape
-
-    def test_properties(self):
-        """Test that the properties are correct."""
-        meas = qml.mutual_info(wires0=[0], wires1=[1])
-        assert meas.numeric_type == float
-        assert meas.return_type == MutualInfo
-
-    def test_copy(self):
-        """Test that the ``__copy__`` method also copies the ``log_base`` information."""
-        meas = qml.mutual_info(wires0=[0], wires1=[1], log_base=2)
-        meas_copy = copy.copy(meas)
-        assert meas_copy.log_base == 2
-        assert meas_copy.wires == Wires([0, 1])
-
-    def test_repr(self):
-        """Test that the representation includes information about both wires and the log_base"""
-        m1 = qml.mutual_info(wires0=[0], wires1=[1])
-        assert repr(m1) == "MutualInfo(wires0=[0], wires1=[1], log_base=None)"
-
-    def test_hash(self):
-        """Test the hash property includes the log_base property and the separation of the wires into two subsytems."""
-        m1 = MutualInfoMP(wires=[Wires(0), Wires(1)], log_base=2)
-        m2 = MutualInfoMP(wires=[Wires(0), Wires(1)], log_base=10)
-        assert m1.hash != m2.hash
-
-        m3 = MutualInfoMP(wires=[Wires((0, 1)), Wires(2)])
-        m4 = MutualInfoMP(wires=[Wires((0)), Wires((1, 2))])
-        assert m3.hash != m4.hash
+@pytest.mark.parametrize("shots, shape", [(None, ()), (10, ()), ([1, 10], ((), ()))])
+def test_shape(shots, shape):
+    """Test that the shape is correct."""
+    dev = qml.device("default.qubit.legacy", wires=3, shots=shots)
+    res = qml.mutual_info(wires0=[0], wires1=[1])
+    assert res.shape(dev, Shots(shots)) == shape
 
 
 class TestIntegration:
@@ -431,14 +387,13 @@ class TestIntegration:
         assert np.allclose(actual, expected, atol=tol)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("device", ["default.qubit.legacy", "default.mixed", "lightning.qubit"])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     @pytest.mark.parametrize(
         "params", [np.array([0.0, 0.0]), np.array([0.3, 0.4]), np.array([0.6, 0.8])]
     )
-    def test_subsystem_overlap_error(self, device, interface, params):
+    def test_subsystem_overlap_error(self, interface, params):
         """Test that an error is raised when the subsystems overlap"""
-        dev = qml.device(device, wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
 
         params = qml.math.asarray(params, like=interface)
 
@@ -455,15 +410,14 @@ class TestIntegration:
             circuit(params)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("device", ["default.qubit.legacy", "default.mixed", "lightning.qubit"])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     @pytest.mark.parametrize(
         "params", [np.array([0.0, 0.0]), np.array([0.3, 0.4]), np.array([0.6, 0.8])]
     )
-    def test_custom_wire_labels_error(self, device, interface, params):
+    def test_custom_wire_labels_error(self, interface, params):
         """Tests that an error is raised when mutual information is measured
         with custom wire labels"""
-        dev = qml.device(device, wires=["a", "b"])
+        dev = qml.device("default.qubit.legacy", wires=["a", "b"])
 
         params = qml.math.asarray(params, like=interface)
 

@@ -12,14 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the qml.counts measurement process."""
-import copy
 import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import AllCounts, Counts, CountsMP
+from pennylane.measurements import AllCounts, Counts
 from pennylane.operation import Operator
-from pennylane.wires import Wires
 
 
 # TODO: Remove this when new CustomMP are the default
@@ -46,166 +44,6 @@ def custom_measurement_process(device, spy):
         for old, new in zip(old_res, new_res):
             assert old.keys() == new.keys()
             assert qml.math.allequal(list(old.values()), list(new.values()))
-
-
-class TestCounts:
-    """Tests for the counts function"""
-
-    def test_counts_properties(self):
-        """Test that the properties are correct."""
-        meas1 = qml.counts(wires=0)
-        meas2 = qml.counts(op=qml.PauliX(0), all_outcomes=True)
-        assert meas1.samples_computational_basis is True
-        assert meas1.return_type == Counts
-        assert meas2.samples_computational_basis is False
-        assert meas2.return_type == AllCounts
-
-    def test_queue(self):
-        """Test that the right measurement class is queued."""
-
-        with qml.queuing.AnnotatedQueue() as q:
-            op = qml.PauliX(0)
-            m = qml.counts(op)
-
-        assert q.queue[0] is m
-        assert isinstance(m, CountsMP)
-
-    def test_copy(self):
-        """Test that the ``__copy__`` method also copies the ``all_outcomes`` information."""
-        meas = qml.counts(wires=0, all_outcomes=True)
-        meas_copy = copy.copy(meas)
-        assert meas_copy.wires == Wires(0)
-        assert meas_copy.all_outcomes is True
-
-    def test_providing_observable_and_wires(self):
-        """Test that a ValueError is raised if both an observable is provided and wires are
-        specified"""
-
-        with pytest.raises(
-            ValueError,
-            match="Cannot specify the wires to sample if an observable is provided."
-            " The wires to sample will be determined directly from the observable.",
-        ):
-            qml.counts(qml.PauliZ(0), wires=[0, 1])
-
-    def test_observable_might_not_be_hermitian(self):
-        """Test that a UserWarning is raised if the provided
-        argument might not be hermitian."""
-
-        with pytest.warns(UserWarning, match="Prod might not be hermitian."):
-            qml.counts(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
-
-    def test_hash(self):
-        """Test that the hash property includes the all_outcomes property."""
-        m1 = qml.counts(all_outcomes=True)
-        m2 = qml.counts(all_outcomes=False)
-
-        assert m1.hash != m2.hash
-
-        m3 = CountsMP(eigvals=[0.5, -0.5], wires=qml.wires.Wires(0), all_outcomes=True)
-        assert m3.hash != m1.hash
-
-    def test_repr(self):
-        """Test that the repr includes the all_outcomes property."""
-        m1 = CountsMP(wires=Wires(0), all_outcomes=True)
-        assert repr(m1) == "CountsMP(wires=[0], all_outcomes=True)"
-
-        m2 = CountsMP(obs=qml.PauliX(0), all_outcomes=True)
-        assert repr(m2) == "CountsMP(PauliX(wires=[0]), all_outcomes=True)"
-
-        m3 = CountsMP(eigvals=(-1, 1), all_outcomes=False)
-        assert repr(m3) == "CountsMP(eigvals=[-1  1], wires=[], all_outcomes=False)"
-
-
-class TestProcessSamples:
-    """Unit tests for the counts.process_samples method"""
-
-    def test_counts_shape_single_wires(self):
-        """Test that the counts output is correct for single wires"""
-        shots = 1000
-        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int64)
-
-        result = qml.counts(wires=0).process_samples(samples, wire_order=[0])
-
-        assert len(result) == 2
-        assert set(result.keys()) == {"0", "1"}
-        assert result["0"] == np.count_nonzero(samples[:, 0] == 0)
-        assert result["1"] == np.count_nonzero(samples[:, 0] == 1)
-
-    def test_counts_shape_multi_wires(self):
-        """Test that the counts function outputs counts of the right size
-        for multiple wires"""
-        shots = 1000
-        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int64)
-
-        result = qml.counts(wires=[0, 1]).process_samples(samples, wire_order=[0, 1])
-
-        assert len(result) == 4
-        assert set(result.keys()) == {"00", "01", "10", "11"}
-        assert result["00"] == np.count_nonzero(
-            np.logical_and(samples[:, 0] == 0, samples[:, 1] == 0)
-        )
-        assert result["01"] == np.count_nonzero(
-            np.logical_and(samples[:, 0] == 0, samples[:, 1] == 1)
-        )
-        assert result["10"] == np.count_nonzero(
-            np.logical_and(samples[:, 0] == 1, samples[:, 1] == 0)
-        )
-        assert result["11"] == np.count_nonzero(
-            np.logical_and(samples[:, 0] == 1, samples[:, 1] == 1)
-        )
-
-    def test_counts_obs(self):
-        """Test that the counts function outputs counts of the right size for observables"""
-        shots = 1000
-        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int64)
-
-        result = qml.counts(qml.PauliZ(0)).process_samples(samples, wire_order=[0])
-
-        assert len(result) == 2
-        assert set(result.keys()) == {1, -1}
-        assert result[1] == np.count_nonzero(samples[:, 0] == 0)
-        assert result[-1] == np.count_nonzero(samples[:, 0] == 1)
-
-    def test_counts_all_outcomes_wires(self):
-        """Test that the counts output is correct when all_outcomes is passed"""
-        shots = 1000
-        samples = np.zeros((shots, 2)).astype(np.int64)
-
-        result1 = qml.counts(wires=0, all_outcomes=False).process_samples(samples, wire_order=[0])
-
-        assert len(result1) == 1
-        assert set(result1.keys()) == {"0"}
-        assert result1["0"] == shots
-
-        result2 = qml.counts(wires=0, all_outcomes=True).process_samples(samples, wire_order=[0])
-
-        assert len(result2) == 2
-        assert set(result2.keys()) == {"0", "1"}
-        assert result2["0"] == shots
-        assert result2["1"] == 0
-
-    def test_counts_all_outcomes_obs(self):
-        """Test that the counts output is correct when all_outcomes is passed"""
-        shots = 1000
-        samples = np.zeros((shots, 2)).astype(np.int64)
-
-        result1 = qml.counts(qml.PauliZ(0), all_outcomes=False).process_samples(
-            samples, wire_order=[0]
-        )
-
-        assert len(result1) == 1
-        assert set(result1.keys()) == {1}
-        assert result1[1] == shots
-
-        result2 = qml.counts(qml.PauliZ(0), all_outcomes=True).process_samples(
-            samples, wire_order=[0]
-        )
-
-        assert len(result2) == 2
-        assert set(result2.keys()) == {1, -1}
-        assert result2[1] == shots
-        assert result2[-1] == 0
 
 
 class TestCountsIntegration:

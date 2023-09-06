@@ -12,18 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the vn_entropy module"""
-import copy
-
 import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane.interfaces import INTERFACE_MAP
-from pennylane.measurements import VnEntropy, Shots
+from pennylane.measurements import Shots
 from pennylane.measurements.vn_entropy import VnEntropyMP
-from pennylane.wires import Wires
 
-# pylint: disable=too-many-arguments, no-member
+# pylint: disable=too-many-arguments
 
 
 def expected_entropy_ising_xx(param):
@@ -104,19 +101,6 @@ class TestInitialization:
 
         assert isinstance(circuit.tape[0], VnEntropyMP)
 
-    def test_copy(self):
-        """Test that the ``__copy__`` method also copies the ``log_base`` information."""
-        meas = qml.vn_entropy(wires=0, log_base=2)
-        meas_copy = copy.copy(meas)
-        assert meas_copy.log_base == 2
-        assert meas_copy.wires == Wires(0)
-
-    def test_properties(self):
-        """Test that the properties are correct."""
-        meas = qml.vn_entropy(wires=0)
-        assert meas.numeric_type == float
-        assert meas.return_type == VnEntropy
-
     @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ()), ((1, 10), ((), ()))])
     def test_shape(self, shots, shape):
         """Test the ``shape`` method."""
@@ -131,8 +115,6 @@ class TestIntegration:
 
     parameters = np.linspace(0, 2 * np.pi, 10)
 
-    devices = ["default.qubit.legacy", "default.mixed", "lightning.qubit"]
-
     single_wires_list = [
         [0],
         [1],
@@ -142,7 +124,6 @@ class TestIntegration:
 
     check_state = [True, False]
 
-    devices = ["default.qubit.legacy", "default.mixed"]
     diff_methods = ["backprop", "finite-diff"]
 
     def test_shot_vec_error(self):
@@ -162,12 +143,11 @@ class TestIntegration:
 
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("param", parameters)
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("base", base)
-    def test_IsingXX_qnode_entropy(self, param, wires, device, base):
+    def test_IsingXX_qnode_entropy(self, param, wires, base):
         """Test entropy for a QNode numpy."""
 
-        dev = qml.device(device, wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev)
         def circuit_entropy(x):
@@ -205,14 +185,13 @@ class TestIntegration:
     @pytest.mark.torch
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("param", parameters)
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("interface", ["torch"])
-    def test_IsingXX_qnode_torch_entropy(self, param, wires, device, base, interface):
+    def test_IsingXX_qnode_torch_entropy(self, param, wires, base, interface):
         """Test entropy for a QNode with torch interface."""
         import torch
 
-        dev = qml.device(device, wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev, interface=interface)
         def circuit_entropy(x):
@@ -256,14 +235,13 @@ class TestIntegration:
     @pytest.mark.tf
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("param", parameters)
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("interface", ["tf"])
-    def test_IsingXX_qnode_tf_entropy(self, param, wires, device, base, interface):
+    def test_IsingXX_qnode_tf_entropy(self, param, wires, base, interface):
         """Test entropy for a QNode with tf interface."""
         import tensorflow as tf
 
-        dev = qml.device(device, wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev, interface=interface)
         def circuit_entropy(x):
@@ -309,14 +287,13 @@ class TestIntegration:
     @pytest.mark.jax
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("param", parameters)
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("interface", ["jax"])
-    def test_IsingXX_qnode_jax_entropy(self, param, wires, device, base, interface):
+    def test_IsingXX_qnode_jax_entropy(self, param, wires, base, interface):
         """Test entropy for a QNode with jax interface."""
         import jax.numpy as jnp
 
-        dev = qml.device(device, wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev, interface=interface)
         def circuit_entropy(x):
@@ -358,14 +335,13 @@ class TestIntegration:
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("base", base)
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("interface", ["jax"])
-    def test_IsingXX_qnode_jax_jit_entropy(self, param, wires, base, device, interface):
+    def test_IsingXX_qnode_jax_jit_entropy(self, param, wires, base, interface):
         """Test entropy for a QNode with jax-jit interface."""
         import jax
         import jax.numpy as jnp
 
-        dev = qml.device(device, wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev, interface=interface)
         def circuit_entropy(x):
@@ -401,11 +377,10 @@ class TestIntegration:
 
         assert qml.math.allclose(grad_entropy, grad_expected_entropy, rtol=1e-04, atol=1e-05)
 
-    @pytest.mark.parametrize("device", devices)
-    def test_qnode_entropy_no_custom_wires(self, device):
+    def test_qnode_entropy_no_custom_wires(self):
         """Test that entropy cannot be returned with custom wires."""
 
-        dev = qml.device(device, wires=["a", 1])
+        dev = qml.device("default.qubit.legacy", wires=["a", 1])
 
         @qml.qnode(dev)
         def circuit_entropy(x):

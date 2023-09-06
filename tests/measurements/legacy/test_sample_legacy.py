@@ -17,7 +17,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.measurements import MeasurementShapeError, Sample, Shots
-from pennylane.operation import EigvalsUndefinedError, Operator
+from pennylane.operation import Operator
 
 # pylint: disable=protected-access, no-member
 
@@ -282,40 +282,6 @@ class TestSample:
 
         custom_measurement_process(dev, spy)
 
-    @pytest.mark.parametrize(
-        "obs,exp",
-        [
-            # Single observables
-            (None, int),  # comp basis samples
-            (qml.PauliX(0), int),
-            (qml.PauliY(0), int),
-            (qml.PauliZ(0), int),
-            (qml.Hadamard(0), int),
-            (qml.Identity(0), int),
-            (qml.Hermitian(np.diag([1, 2]), 0), float),
-            (qml.Hermitian(np.diag([1.0, 2.0]), 0), float),
-            # Tensor product observables
-            (
-                qml.PauliX("c")
-                @ qml.PauliY("a")
-                @ qml.PauliZ(1)
-                @ qml.Hadamard("wire1")
-                @ qml.Identity("b"),
-                int,
-            ),
-            (qml.Projector([0, 1], wires=[0, 1]) @ qml.PauliZ(2), float),
-            (qml.Hermitian(np.array(np.eye(2)), wires=[0]) @ qml.PauliZ(2), float),
-            (
-                qml.Projector([0, 1], wires=[0, 1]) @ qml.Hermitian(np.array(np.eye(2)), wires=[2]),
-                float,
-            ),
-        ],
-    )
-    def test_numeric_type(self, obs, exp):
-        """Test that the numeric type is correct."""
-        res = qml.sample(obs) if obs is not None else qml.sample()
-        assert res.numeric_type is exp
-
     def test_shape_no_shots_error(self):
         """Test that the appropriate error is raised with no shots are specified"""
         dev = qml.device("default.qubit.legacy", wires=2, shots=None)
@@ -386,11 +352,6 @@ class TestSample:
         # pylint: disable=unsubscriptable-object
         assert binned_samples[0].shape == (shot_vec[0],)
 
-    def test_sample_empty_wires(self):
-        """Test that using ``qml.sample`` with an empty wire list raises an error."""
-        with pytest.raises(ValueError, match="Cannot set an empty list of wires."):
-            qml.sample(wires=[])
-
     @pytest.mark.parametrize("shots", [2, 100])
     def test_sample_no_arguments(self, shots):
         """Test that using ``qml.sample`` with no arguments returns the samples of all wires."""
@@ -404,15 +365,6 @@ class TestSample:
 
         # pylint: disable=comparison-with-callable
         assert res.shape == (shots, 3)
-
-    def test_new_sample_with_operator_with_no_eigvals(self):
-        """Test that calling process with an operator that has no eigvals defined raises an error."""
-
-        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
-            num_wires = 1
-
-        with pytest.raises(EigvalsUndefinedError, match="Cannot compute samples of"):
-            qml.sample(op=DummyOp(0)).process_samples(samples=np.array([[1, 0]]), wire_order=[0])
 
 
 @pytest.mark.jax
