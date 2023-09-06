@@ -33,7 +33,7 @@ def qjit(*args, **kwargs):
     return catalyst.qjit(*args, **kwargs)
 
 
-def cond(*args, **kwargs):
+def if_cond(*args, **kwargs):
     if not pl_qjit_available:
         raise ImportError(
             "Catalyst is required for the QJIT-compilation mode, "
@@ -65,6 +65,6 @@ def while_loop(*args, **kwargs):
 
 if pl_qjit_available:
     qjit.__doc__ = catalyst.qjit.__doc__
-    cond.__doc__ = catalyst.cond.__doc__
+    if_cond.__doc__ = catalyst.cond.__doc__
     for_loop.__doc__ = catalyst.for_loop.__doc__
     while_loop.__doc__ = catalyst.while_loop.__doc__

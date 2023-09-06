@@ -33,3 +33,4 @@ requests~=2.28.1
 # navbar and header data to be updated at the source
 pennylane-sphinx-theme
 tomli~=2.0.0 # Drop once minimum Python version is 3.11
+pennylane-catalyst

@@ -129,7 +129,7 @@ def adjoint(fn, lazy=True):
         import catalyst
 
         if catalyst.utils.tracing.TracingContext.is_tracing():
-            assert lazy, "Lazy Evaluation is not supported in Catalyst."
+            assert lazy, "Lazy Evaluation is not supported in Catalyst"
             return catalyst.adjoint(fn)
     except ImportError:
         # If this's not callled during tracing, there's no need to

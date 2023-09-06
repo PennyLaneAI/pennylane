@@ -110,7 +110,7 @@ def measure(wires: Wires, reset: Optional[bool] = False):
         from catalyst import utils, measure
 
         if utils.tracing.TracingContext.is_tracing():
-            assert not reset, "Reset option is not supported in Catalyst."
+            assert not reset, "reset option is not supported in Catalyst"
             return measure(wire[0])
     except ImportError:
         # If this's not callled during tracing, there's no need to
