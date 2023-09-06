@@ -1926,6 +1926,31 @@ class TestIntegration:
 
         assert np.array_equal(circuit(), expected)
 
+    @pytest.mark.parametrize(
+        "wires,all_outcomes,expected",
+        [
+            (None, False, {"10": 10}),
+            (None, True, {"10": 10, "00": 0, "01": 0, "11": 0}),
+            (3, False, {"001": 10}),
+            (
+                3,
+                True,
+                {"001": 10, "000": 0, "010": 0, "011": 0, "100": 0, "101": 0, "110": 0, "111": 0},
+            ),
+        ],
+    )
+    def test_counts_uses_device_wires(self, wires, all_outcomes, expected):
+        """Test that if device wires are given, then they are used by probs."""
+        dev = DefaultQubit2(wires=wires, shots=10)
+
+        @qml.qnode(dev, interface=None)
+        def circuit():
+            qml.PauliX(2)
+            qml.Identity(0)
+            return qml.counts(all_outcomes=all_outcomes)
+
+        assert circuit() == expected
+
 
 @pytest.mark.parametrize("max_workers", [None, 1, 2])
 def test_broadcasted_parameter(max_workers):

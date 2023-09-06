@@ -112,7 +112,7 @@ def sample(op: Optional[Operator] = None, wires=None) -> "SampleMP":
             )
         wires = Wires(wires)
 
-    return SampleMP(obs=op, wires=wires)
+    return SampleMP(obs=op, wires=wires or None)
 
 
 class SampleMP(SampleMeasurement):
