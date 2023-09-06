@@ -1962,7 +1962,7 @@ class TestPassthruIntegration:
             return qml.expval(qml.PauliZ(0))  # , qml.var(qml.PauliZ(1))
 
         dev1 = qml.device("default.qubit.torch", wires=3, torch_device=torch_device)
-        dev2 = qml.device("default.qubit", wires=3)
+        dev2 = qml.device("default.qubit.legacy", wires=3)
 
         circuit1 = qml.QNode(circuit, dev1, diff_method="backprop", interface="torch")
         circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift")

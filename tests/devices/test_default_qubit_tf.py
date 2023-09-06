@@ -1795,8 +1795,8 @@ class TestPassthruIntegration:
                 qml.CNOT(wires=[i, i + 1])
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))
 
-        dev1 = qml.device("default.qubit", wires=3)
-        dev2 = qml.device("default.qubit", wires=3)
+        dev1 = qml.device("default.qubit.legacy", wires=3)
+        dev2 = qml.device("default.qubit.legacy", wires=3)
 
         def cost(x):
             return qml.math.stack(circuit(x))
