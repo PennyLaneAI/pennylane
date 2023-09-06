@@ -27,6 +27,9 @@
   (array(0.6), array([1, 1, 1, 0, 1]))
   ```
 
+* All batch transforms are updated to the new transform program system.
+  [(4440)](https://github.com/PennyLaneAI/pennylane/pull/4440)
+
 <h3>Improvements 🛠</h3>
 
 * Add the method ``add_transform`` and ``insert_front_transform`` transform in the ``TransformProgram``.
