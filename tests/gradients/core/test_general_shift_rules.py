@@ -181,6 +181,51 @@ class TestGenerateShiftRule:
 
         assert np.allclose(generated_terms, correct_terms)
 
+    def test_get_shift_rule_temporary(self):
+        """temporary"""
+
+        frequencies = (1, 4, 5, 6)
+
+        correct_terms = np.array(
+            [
+                [2.81118045, 0.39269908],
+                [0.31327576, 1.17809725],
+                [-0.80804458, 1.96349541],
+                [-0.3101399, 2.74889357],
+                [-2.81118045, -0.39269908],
+                [-0.31327576, -1.17809725],
+                [0.80804458, -1.96349541],
+                [0.3101399, -2.74889357],
+            ]
+        )
+
+        rule = _get_shift_rule(frequencies)
+
+        assert np.allclose(rule, correct_terms)
+
+    def test_process_shifts_temporary(self):
+        """temporary"""
+
+        from pennylane.gradients.general_shift_rules import process_shifts
+
+        frequencies = (1, 4, 5, 6)
+
+        correct_terms = [
+            [2.8111804455102014, np.pi / 8],
+            [-2.8111804455102014, -np.pi / 8],
+            [0.31327576445128014, 3 * np.pi / 8],
+            [-0.31327576445128014, -3 * np.pi / 8],
+            [-0.8080445791083615, 5 * np.pi / 8],
+            [0.8080445791083615, -5 * np.pi / 8],
+            [-0.3101398980494395, 7 * np.pi / 8],
+            [0.3101398980494395, -7 * np.pi / 8],
+        ]
+
+        rule = _get_shift_rule(frequencies)
+        result = process_shifts(rule, tol=1e-10)
+
+        assert np.allclose(result, correct_terms)
+
     def test_eight_term_rule_non_equidistant_default_shifts(self):
         """Tests the correct non-equidistant eight term shift rule is generated given the
         frequencies using the default shifts. The frequency [1,4,5,6] corresponds to e.g.
