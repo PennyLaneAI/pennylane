@@ -203,12 +203,23 @@ class TestGenerateShiftRule:
 
         assert np.allclose(rule, correct_terms)
 
-    def test_process_shifts_temporary(self):
+    def test_process_shifts_behaviour_temporary(self):
         """temporary"""
 
-        from pennylane.gradients.general_shift_rules import process_shifts
-
         frequencies = (1, 4, 5, 6)
+
+        correct_rule = np.array(
+            [
+                [2.81118045, 0.39269908],
+                [0.31327576, 1.17809725],
+                [-0.80804458, 1.96349541],
+                [-0.3101399, 2.74889357],
+                [-2.81118045, -0.39269908],
+                [-0.31327576, -1.17809725],
+                [0.80804458, -1.96349541],
+                [0.3101399, -2.74889357],
+            ]
+        )
 
         correct_terms = [
             [2.8111804455102014, np.pi / 8],
@@ -222,7 +233,50 @@ class TestGenerateShiftRule:
         ]
 
         rule = _get_shift_rule(frequencies)
-        result = process_shifts(rule, tol=1e-10)
+
+        assert np.allclose(rule, correct_rule)
+
+        # set all small coefficients, multipliers if present, and shifts to zero.
+        tol = 1e-10
+        rule[np.abs(rule) < tol] = 0
+
+        # remove columns where the coefficients are 0
+        rule = rule[~(rule[:, 0] == 0)]
+
+        # assert that none of that changed the rule
+        assert np.allclose(rule, correct_rule)
+
+        batch_duplicates = True
+
+        if batch_duplicates:
+            round_decimals = int(-np.log10(tol))
+            rounded_rule = np.round(rule[:, 1:], round_decimals)
+
+            assert np.allclose(rounded_rule, rule[:, 1:])
+
+            # determine unique shifts or (multiplier, shift) combinations
+            unique_mods = np.unique(rounded_rule, axis=0)
+
+            expected_unique_mods = np.array(
+                [
+                    [-2.74889357],
+                    [-1.96349541],
+                    [-1.17809725],
+                    [-0.39269908],
+                    [0.39269908],
+                    [1.17809725],
+                    [1.96349541],
+                    [2.74889357],
+                ]
+            )
+
+            assert np.allclose(unique_mods, expected_unique_mods)
+
+            if rule.shape[0] != unique_mods.shape[0]:
+                raise RuntimeError("We shouldn't end up here")
+
+        # sort columns according to abs(shift)
+        result = rule[np.argsort(np.abs(rule[:, -1]))]
 
         assert np.allclose(result, correct_terms)
 
