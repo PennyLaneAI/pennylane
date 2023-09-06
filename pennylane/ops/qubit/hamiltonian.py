@@ -616,6 +616,9 @@ class Hamiltonian(Observable):
         if isinstance(other, Hamiltonian):
             self.simplify()
             other.simplify()
+            if self._obs_data() == other._obs_data() : # pylint: disable=protected-access
+                return True
+            #for removing float point error
             return ((round(list(self._obs_data())[0][0],15),list(self._obs_data())[0][1]) == (
                 (round(list(other._obs_data())[0][0],15), list(other._obs_data())[0][1])))  # pylint: disable=protected-access
 
