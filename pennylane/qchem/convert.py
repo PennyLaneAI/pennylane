@@ -1009,9 +1009,8 @@ def _uccsd_state(ccsd_solver, tol=1e-15):
     return dict_fcimatr
 
 
-def _shci_state(shci_solver, tol=1e-15):
-    r"""
-    Construct a wavefunction from Dice's ``SHCI`` Solver object.
+def _shci_state(wavefunction, tol=1e-15):
+    r"""Construct a wavefunction from the SHCI wavefunction obtained from the Dice library.
 
     The generated wavefunction is a dictionary where the keys represent a configuration, which
     corresponds to a Slater determinant, and the values are the CI coefficients of the Slater
@@ -1026,17 +1025,19 @@ def _shci_state(shci_solver, tol=1e-15):
     contribution from the doubly-excited state, i.e., :math:`|0 0 1 1 \rangle`, will be
     ``{(1, 1): 0.99, (2, 2): 0.01}``.
 
-    The determinants and coefficients are stored under SHCI.outputfile, and are output when the SHCI
-    method is executed.
+    The determinants and coefficients should be supplied externally. They are typically stored under
+    SHCI.outputfile.
 
     Args:
-        shci_solver (CASCI object from PySCF): the solver object from SHCI that plugs into PySCF's CASCI class
+        wavefunction tuple(array[int], array[str]): determinants and coefficients in physicist notation
         tol (float): the tolerance for discarding Slater determinants with small coefficients
     Returns:
         dict: dictionary of the form `{(int_a, int_b) :coeff}`, with integers `int_a, int_b`
-        having binary represention corresponding to the Fock occupation vector in alpha and beta
+        having binary representation corresponding to the Fock occupation vector in alpha and beta
         spin sectors, respectively, and coeff being the CI coefficients of those configurations
+
     **Example**
+
     >>> from pyscf import gto, scf, mcscf
     >>> from pyscf.shciscf import shci
     >>> import numpy as np
@@ -1056,7 +1057,7 @@ def _shci_state(shci_solver, tol=1e-15):
     {(7, 7): 0.8874167069, (11, 11): -0.3075774156, (19, 19): -0.3075774156, (35, 35): -0.1450474361}
     """
 
-    coefs, dets = get_dets_coefs_output(shci_solver.fcisolver.outputFile)
+    coefs, dets = wavefunction
 
     xa = []
     xb = []
@@ -1064,10 +1065,10 @@ def _shci_state(shci_solver, tol=1e-15):
 
     for coef, det in zip(coefs, dets):
         if abs(coef) > tol:
-            bin_a, bin_b = convert_bin_ab(det)
+            bin_a, bin_b = _sitevec_to_fock(det)
 
-            xa.append(int(bin_a, 2))
-            xb.append(int(bin_b, 2))
+            xa.append(bin_a)
+            xb.append(bin_b)
             dat.append(coef)
 
     ## create the FCI matrix as a dict
@@ -1079,73 +1080,35 @@ def _shci_state(shci_solver, tol=1e-15):
     return dict_fcimatr
 
 
-def get_dets_coefs_output(output_file):
+def _sitevec_to_fock(det, format):
+    r"""Covert a Slater determinant from site vector to occupation number vector representation.
+
+    Args:
+        det (array[int]): determinant in site vector representation
+        format (str): the format of the determinant
+
+    Returns:
+        tuple: tuple of integers representing binaries that correspond to occupation vectors in
+            alpha and beta spin sectors
+
+    **Example**
+
+    >>> det = np.array([1, 2, 1, 0, 0, 2])
+    >>> _sitevec_to_fock(det)
+    >>> (5, 34)
     """
-    Get CI coef of SHCI from output file and parse them.
-    """
-    coefs = []
-    dets = []
 
-    with open(output_file) as fp:
-        line = fp.readline()
-        cnt = 1
-        while line:
-            search = line.strip()[:5]
-            while search == "State":
-                line = fp.readline()
-                cnt += 1
-                try:
-                    num = int(line.strip()[0])
-                    data = line.strip().split("  ")
-                    coefs.append(float(data[3]))
-                    data_dets = ""
-                    for i in np.arange(4, len(data)):
-                        data_dets += data[i]
-                    dets.append((data_dets).split())
-                except:
-                    search = line.strip()[:5]
-            line = fp.readline()
-            cnt += 1
+    if format == "dmrg":
+        map = {0: "00", 1: "10", 2: "01", 3: "11"}
+    elif format == "shci":
+        map = {"0": "00", "a": "10", "b": "01", "2": "11"}
 
-    return coefs, dets
+    strab = [map[key] for key in det]
 
+    stra = "".join(i[0] for i in strab)
+    strb = "".join(i[1] for i in strab)
 
-def convert_bin_ab(list_string):
-    """
-    Change of notation for Slater determinants
-    """
-    bin_a = ""
-    bin_b = ""
-    for el in list_string:
-        if el == "2":
-            bin_a += "1"
-            bin_b += "1"
-        elif el == "a":
-            bin_a += "1"
-            bin_b += "0"
-        elif el == "b":
-            bin_a += "0"
-            bin_b += "1"
-        elif el == "0":
-            bin_a += "0"
-            bin_b += "0"
+    inta = int(stra[::-1], 2)
+    intb = int(strb[::-1], 2)
 
-    return bin_a[::-1], bin_b[::-1]
-
-def getinitialStateSHCI(mf, nelecas):
-    
-    '''Get initial state for SHCI - specially for spin sectior different from zero'''
-    
-    norb, nelec_a, nelec_b = get_mol_attrs(mf.mol)
-    n_total = nelec_a + nelec_b
-    n_frozen_s = int((n_total-np.sum(np.array(nelecas)))/2)
-    nelec_a -= n_frozen_s
-    nelec_b -= n_frozen_s
-
-    initialState = []
-    for i in range(int(nelec_a)):
-        initialState.append((2 * i))
-    for i in range(int(nelec_b)):
-        initialState.append((2 * i + 1))
-        
-    return np.array([initialState])
+    return inta, intb
