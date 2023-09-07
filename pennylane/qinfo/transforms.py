@@ -17,7 +17,7 @@ import functools
 from typing import Callable, Sequence
 
 import pennylane as qml
-from pennylane.devices import DefaultQubit
+from pennylane.devices import DefaultQubit, DefaultMixed
 from pennylane.measurements import StateMP, DensityMatrixMP
 from pennylane.tape import QuantumTape
 from pennylane.transforms import adjoint_metric_tensor, metric_tensor
@@ -70,7 +70,7 @@ def reduced_dm(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Ca
         dm_func = (
             qml.math.reduce_dm
             if isinstance(measurements[0], DensityMatrixMP)
-            or kwargs.get("device", None) == "default.mixed"
+            or isinstance(kwargs.get("device", None), DefaultMixed)
             else qml.math.reduce_statevector
         )
         density_matrix = dm_func(res[0], indices=indices)
@@ -162,7 +162,7 @@ def purity(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Callab
         density_matrix = (
             res[0]
             if isinstance(measurements[0], DensityMatrixMP)
-            or kwargs.get("device", None) == "default.mixed"
+            or isinstance(kwargs.get("device", None), DefaultMixed)
             else qml.math.dm_from_state_vector(res[0])
         )
 
@@ -242,9 +242,8 @@ def vn_entropy(
                 raise ValueError("The qfunc return type needs to be a state.")
 
             # determine if the measurement is a state vector or a density matrix
-            if (
-                not isinstance(measurements[0], DensityMatrixMP)
-                and kwargs.get("device", None) != "default.mixed"
+            if not isinstance(measurements[0], DensityMatrixMP) and not isinstance(
+                kwargs.get("device", None), DefaultMixed
             ):
                 # if state vector, the entropy is 0
                 return 0.0
@@ -341,7 +340,7 @@ def mutual_info(
         density_matrix = (
             res[0]
             if isinstance(measurements[0], DensityMatrixMP)
-            or kwargs.get("device", None) == "default.mixed"
+            or isinstance(kwargs.get("device", None), DefaultMixed)
             else qml.math.dm_from_state_vector(res[0])
         )
         entropy = qml.math.mutual_info(density_matrix, indices0, indices1, base=base)
