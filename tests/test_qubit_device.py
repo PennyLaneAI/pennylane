@@ -607,8 +607,7 @@ class TestExpval:
             m.setattr("numpy.mean", lambda obs, axis=None: obs)
             res = dev.expval(obs)
 
-        with pytest.warns(UserWarning, match="The behaviour of operator"):
-            assert res == obs
+        assert res == obs
 
     def test_no_eigval_error(self, mock_qubit_device_with_original_statistics):
         """Tests that an error is thrown if expval is called with an observable that does
@@ -688,8 +687,7 @@ class TestVar:
             m.setattr("numpy.var", lambda obs, axis=None: obs)
             res = dev.var(obs)
 
-        with pytest.warns(UserWarning, match="The behaviour of operator"):
-            assert res == obs
+        assert res == obs
 
     def test_no_eigval_error(self, mock_qubit_device_with_original_statistics):
         """Tests that an error is thrown if var is called with an observable that does not have eigenvalues defined."""
