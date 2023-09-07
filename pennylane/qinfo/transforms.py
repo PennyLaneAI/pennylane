@@ -234,23 +234,24 @@ def vn_entropy(
     wire_map = {w: i for i, w in enumerate(all_wires)}
     indices = [wire_map[w] for w in wires]
 
-    def processing_fn(res):
-        # If pure state directly return 0.
-        if len(wires) == len(all_wires):
-            measurements = tape.measurements
-            if len(measurements) != 1 or not isinstance(measurements[0], StateMP):
-                raise ValueError("The qfunc return type needs to be a state.")
+    measurements = tape.measurements
+    if len(measurements) != 1 or not isinstance(measurements[0], StateMP):
+        raise ValueError("The qfunc return type needs to be a state.")
 
-            # determine if the measurement is a state vector or a density matrix
-            if not isinstance(measurements[0], DensityMatrixMP) and not isinstance(
-                kwargs.get("device", None), DefaultMixed
-            ):
-                # if state vector, the entropy is 0
+    def processing_fn(res):
+        # determine if the measurement is a state vector or a density matrix
+        if not isinstance(measurements[0], DensityMatrixMP) and not isinstance(
+            kwargs.get("device", None), DefaultMixed
+        ):  # Compute entropy from state vector
+            if len(wires) == len(all_wires):
+                # The subsystem has all wires, so the entropy is 0
                 return 0.0
 
-            entropy = qml.math.vn_entropy(res[0], indices, base)
+            density_matrix = qml.math.dm_from_state_vector(res[0])
+            entropy = qml.math.vn_entropy(density_matrix, indices, base)
             return entropy
 
+        # Compute entropy from density matrix
         entropy = qml.math.vn_entropy(res[0], indices, base)
         return entropy
 
