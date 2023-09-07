@@ -24,6 +24,27 @@ from .measure import measure
 from .sampling import measure_with_samples
 
 
+INTERFACE_TO_LIKE = {
+    # map interfaces known by autoray to themselves
+    None: None,
+    "numpy": "numpy",
+    "autograd": "autograd",
+    "jax": "jax",
+    "torch": "torch",
+    "tensorflow": "tensorflow",
+    # map non-standard interfaces to those known by autoray
+    "auto": None,
+    "scipy": "numpy",
+    "jax-jit": "jax",
+    "jax-python": "jax",
+    "JAX": "jax",
+    "pytorch": "torch",
+    "tf": "tensorflow",
+    "tensorflow-autograph": "tensorflow",
+    "tf-autograph": "tensorflow",
+}
+
+
 def get_final_state(circuit, debugger=None, interface=None):
     """
     Get the final state that results from executing the given quantum script.
@@ -47,9 +68,7 @@ def get_final_state(circuit, debugger=None, interface=None):
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         prep = circuit[0]
 
-    state = create_initial_state(
-        circuit.wires, prep, like="tensorflow" if interface == "tf" else interface
-    )
+    state = create_initial_state(circuit.wires, prep, like=INTERFACE_TO_LIKE[interface])
 
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)

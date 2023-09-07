@@ -81,6 +81,7 @@ class TestInitializeState:
         state[2, 1, 0] = 0  # set to zero to make test below simple
         assert qml.math.allequal(state, np.zeros((3, 2, 2)))
 
+    @pytest.mark.torch
     def test_create_initial_state_casts_to_like_with_prep_op(self):
         """Tests that the like argument is ignored when a prep-op is provided."""
         prep_op = self.DefaultPrep([0, 0, 0, 1], wires=[0, 1])

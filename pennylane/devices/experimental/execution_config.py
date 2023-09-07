@@ -63,7 +63,7 @@ class ExecutionConfig:
     device_options: Optional[dict] = None
     """Various options for the device executing a quantum circuit"""
 
-    interface: str = "autograd"
+    interface: Optional[str] = None
     """The machine learning framework to use"""
 
     derivative_order: int = 1
