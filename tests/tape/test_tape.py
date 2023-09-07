@@ -1069,7 +1069,6 @@ class TestExpand:
 
         if skip_first:
             dev = qml.device("default.qubit", wires=4)
-            new_tape = QuantumTape(new_tape)
             ref_type = QuantumTape(true_decomposition)
             assert np.allclose(dev.execute(new_tape), dev.execute(ref_type))
 
