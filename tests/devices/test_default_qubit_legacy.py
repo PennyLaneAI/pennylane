@@ -98,17 +98,17 @@ def test_analytic_deprecation():
         DeviceError,
         match=msg,
     ):
-        qml.device("default.qubit", wires=1, shots=1, analytic=True)
+        qml.device("default.qubit.legacy", wires=1, shots=1, analytic=True)
 
 
 def test_dtype_errors():
     """Test that if an incorrect dtype is provided to the device then an error is raised."""
     with pytest.raises(DeviceError, match="Real datatype must be a floating point type."):
-        qml.device("default.qubit", wires=1, r_dtype=np.complex128)
+        qml.device("default.qubit.legacy", wires=1, r_dtype=np.complex128)
     with pytest.raises(
         DeviceError, match="Complex datatype must be a complex floating point type."
     ):
-        qml.device("default.qubit", wires=1, c_dtype=np.float64)
+        qml.device("default.qubit.legacy", wires=1, c_dtype=np.float64)
 
 
 def test_custom_op_with_matrix():
@@ -117,7 +117,7 @@ def test_custom_op_with_matrix():
     class DummyOp(qml.operation.Operation):
         num_wires = 1
 
-        def compute_matrix(self):
+        def compute_matrix(self):  # pylint:disable=arguments-differ
             return np.eye(2)
 
     with qml.queuing.AnnotatedQueue() as q:
@@ -125,7 +125,7 @@ def test_custom_op_with_matrix():
         qml.state()
 
     tape = qml.tape.QuantumScript.from_queue(q)
-    dev = qml.device("default.qubit", wires=1)
+    dev = qml.device("default.qubit.legacy", wires=1)
     assert qml.math.allclose(dev.execute(tape), np.array([1, 0]))
 
 
@@ -614,6 +614,23 @@ class TestApply:
         )
         assert qubit_device_2_wires._state.dtype == qubit_device_2_wires.C_DTYPE
 
+    @pytest.mark.parametrize("wire", [None, [0], [1], [2]])
+    @pytest.mark.parametrize(
+        "input_state", ([1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1])
+    )
+    def test_apply_global_phase(self, qubit_device_3_wires, tol, wire, input_state):
+        """Tests that applying an operation yields the expected output state for single wire
+        operations that have parameters."""
+
+        qubit_device_3_wires._state = np.array(input_state, dtype=qubit_device_3_wires.C_DTYPE)
+        phase = 0.234
+
+        qubit_device_3_wires.apply([qml.GlobalPhase(phase, wires=wire)])
+        expected_output = np.array(input_state) * np.exp(-1j * phase)
+
+        assert np.allclose(qubit_device_3_wires._state, np.array(expected_output), atol=tol, rtol=0)
+        assert qubit_device_3_wires._state.dtype == qubit_device_3_wires.C_DTYPE
+
     def test_apply_errors_qubit_state_vector(self, qubit_device_2_wires):
         """Test that apply fails for incorrect state preparation, and > 2 qubit gates"""
         with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
@@ -775,7 +792,7 @@ class TestExpval:
     def test_expval_estimate(self):
         """Test that the expectation value is not analytically calculated"""
 
-        dev = qml.device("default.qubit", wires=1, shots=3)
+        dev = qml.device("default.qubit.legacy", wires=1, shots=3)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
@@ -902,7 +919,7 @@ class TestVar:
     def test_var_estimate(self):
         """Test that the variance is not analytically calculated"""
 
-        dev = qml.device("default.qubit", wires=1, shots=3)
+        dev = qml.device("default.qubit.legacy", wires=1, shots=3)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
@@ -926,7 +943,7 @@ class TestSample:
         # Explicitly resetting is necessary as the internal
         # state is set to None in __init__ and only properly
         # initialized during reset
-        dev = qml.device("default.qubit", wires=2, shots=1000)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=1000)
 
         dev.apply([qml.RX(1.5708, wires=[0]), qml.RX(1.5708, wires=[1])])
 
@@ -958,7 +975,7 @@ class TestSample:
         # Explicitly resetting is necessary as the internal
         # state is set to None in __init__ and only properly
         # initialized during reset
-        dev = qml.device("default.qubit", wires=2, shots=1000)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=1000)
 
         dev.apply([qml.RX(1.5708, wires=[0])])
         dev._wires_measured = {0}
@@ -978,7 +995,7 @@ class TestDefaultQubitIntegration:
     def test_defines_correct_capabilities(self):
         """Test that the device defines the right capabilities"""
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         cap = dev.capabilities()
         capabilities = {
             "model": "qubit",
@@ -1016,7 +1033,7 @@ class TestDefaultQubitIntegration:
 
         res = circuit(p)
         assert np.isclose(res, expected, atol=tol, rtol=0)
-        assert res.dtype == r_dtype
+        assert res.dtype == r_dtype  # pylint:disable=no-member
 
     def test_qubit_identity(self, qubit_device_1_wire, tol):
         """Test that the default qubit plugin provides correct result for the Identity expectation"""
@@ -1035,7 +1052,7 @@ class TestDefaultQubitIntegration:
         """Test that the default qubit plugin provides correct result for high shot number"""
 
         shots = 10**5
-        dev = qml.device("default.qubit", wires=1, shots=shots)
+        dev = qml.device("default.qubit.legacy", wires=1, shots=shots)
 
         p = 0.543
 
@@ -1178,7 +1195,7 @@ class TestDefaultQubitIntegration:
         the correct dimensions
         """
 
-        dev = qml.device("default.qubit", wires=2, shots=1000)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=1000)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
@@ -1198,7 +1215,7 @@ class TestDefaultQubitIntegration:
         the correct dimensions
         """
 
-        dev = qml.device("default.qubit", wires=num_wires, shots=1000)
+        dev = qml.device("default.qubit.legacy", wires=num_wires, shots=1000)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
@@ -1218,7 +1235,7 @@ class TestTensorExpval:
 
     def test_paulix_pauliy(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
         dev.reset()
 
         obs = qml.PauliX(0) @ qml.PauliY(2)
@@ -1242,7 +1259,7 @@ class TestTensorExpval:
 
     def test_pauliz_identity(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliZ and Identity works correctly"""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
         dev.reset()
 
         obs = qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2)
@@ -1266,7 +1283,7 @@ class TestTensorExpval:
 
     def test_pauliz_hadamard(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
         obs = qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2)
 
         dev.reset()
@@ -1289,7 +1306,7 @@ class TestTensorExpval:
 
     def test_hermitian(self, theta, phi, varphi, tol):
         """Test that a tensor product involving qml.Hermitian works correctly"""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
         dev.reset()
 
         A = np.array(
@@ -1327,7 +1344,7 @@ class TestTensorExpval:
 
     def test_hermitian_hermitian(self, theta, phi, varphi, tol):
         """Test that a tensor product involving two Hermitian matrices works correctly"""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
 
         A1 = np.array([[1, 2], [2, 4]])
 
@@ -1376,7 +1393,7 @@ class TestTensorExpval:
 
     def test_hermitian_identity_expectation(self, theta, phi, varphi, tol):
         """Test that a tensor product involving an Hermitian matrix and the identity works correctly"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         A = np.array(
             [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
@@ -1400,7 +1417,7 @@ class TestTensorExpval:
 
     def test_hermitian_two_wires_identity_expectation(self, theta, phi, varphi, tol):
         """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
 
         A = np.array(
             [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
@@ -1429,7 +1446,7 @@ class TestTensorVar:
 
     def test_paulix_pauliy(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
 
         obs = qml.PauliX(0) @ qml.PauliY(2)
 
@@ -1459,7 +1476,7 @@ class TestTensorVar:
 
     def test_pauliz_hadamard(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
         obs = qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2)
 
         dev.reset()
@@ -1487,7 +1504,7 @@ class TestTensorVar:
 
     def test_hermitian(self, theta, phi, varphi, tol):
         """Test that a tensor product involving qml.Hermitian works correctly"""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
 
         A = np.array(
             [
@@ -1553,7 +1570,7 @@ class TestTensorSample:
 
     def test_paulix_pauliy(self, theta, phi, varphi, tol_stochastic):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
-        dev = qml.device("default.qubit", wires=3, shots=int(1e6))
+        dev = qml.device("default.qubit.legacy", wires=3, shots=int(1e6))
 
         obs = qml.PauliX(0) @ qml.PauliY(2)
 
@@ -1595,7 +1612,7 @@ class TestTensorSample:
 
     def test_pauliz_hadamard(self, theta, phi, varphi, tol_stochastic):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
-        dev = qml.device("default.qubit", wires=3, shots=int(1e6))
+        dev = qml.device("default.qubit.legacy", wires=3, shots=int(1e6))
         obs = qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2)
         dev.apply(
             [
@@ -1633,7 +1650,7 @@ class TestTensorSample:
 
     def test_hermitian(self, theta, phi, varphi, tol_stochastic):
         """Test that a tensor product involving qml.Hermitian works correctly"""
-        dev = qml.device("default.qubit", wires=3, shots=int(1e6))
+        dev = qml.device("default.qubit.legacy", wires=3, shots=int(1e6))
 
         A = 0.1 * np.array(
             [
@@ -1748,7 +1765,7 @@ class TestDtypePreserved:
         examples.
         """
 
-        dev = qml.device("default.qubit", wires=4, r_dtype=r_dtype, c_dtype=c_dtype)
+        dev = qml.device("default.qubit.legacy", wires=4, r_dtype=r_dtype, c_dtype=c_dtype)
 
         n_wires = op.num_wires
         n_params = op.num_params
@@ -1764,7 +1781,7 @@ class TestDtypePreserved:
             return qml.state()
 
         res = circuit()
-        assert res.dtype == c_dtype
+        assert res.dtype == c_dtype  # pylint:disable=no-member
 
     @pytest.mark.parametrize(
         "measurement",
@@ -1779,7 +1796,7 @@ class TestDtypePreserved:
         """Test that the default qubit plugin provides correct result for a simple circuit"""
         p = 0.543
 
-        dev = qml.device("default.qubit", wires=3, r_dtype=r_dtype, c_dtype=c_dtype)
+        dev = qml.device("default.qubit.legacy", wires=3, r_dtype=r_dtype, c_dtype=c_dtype)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
@@ -1797,7 +1814,7 @@ class TestDtypePreserved:
         """Test that the default qubit plugin provides correct result for a simple circuit"""
         p = 0.543
 
-        dev = qml.device("default.qubit", wires=3, r_dtype=r_dtype, c_dtype=c_dtype)
+        dev = qml.device("default.qubit.legacy", wires=3, r_dtype=r_dtype, c_dtype=c_dtype)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
@@ -1819,8 +1836,8 @@ class TestProbabilityIntegration:
     @pytest.mark.parametrize("x", [[0.2, 0.5], [0.4, 0.9], [0.8, 0.3]])
     def test_probability(self, x, tol):
         """Test that the probability function works for finite and infinite shots"""
-        dev = qml.device("default.qubit", wires=2, shots=1000)
-        dev_analytic = qml.device("default.qubit", wires=2, shots=None)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=1000)
+        dev_analytic = qml.device("default.qubit.legacy", wires=2, shots=None)
 
         def circuit(x):
             qml.RX(x[0], wires=0)
@@ -1840,7 +1857,7 @@ class TestProbabilityIntegration:
         """Test analytic_probability call when generating samples"""
         self.analytic_counter = False
 
-        dev = qml.device("default.qubit", wires=2, shots=1000)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=1000)
         monkeypatch.setattr(dev, "analytic_probability", self.mock_analytic_counter)
 
         # generate samples through `generate_samples` (using 'analytic_probability')
@@ -1851,7 +1868,7 @@ class TestProbabilityIntegration:
 
     def test_stateless_analytic_return(self):
         """Test that analytic_probability returns None if device is stateless"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
         dev._state = None
 
         assert dev.analytic_probability() is None
@@ -1862,7 +1879,7 @@ class TestWiresIntegration:
 
     def make_circuit_probs(self, wires):
         """Factory for a qnode returning probabilities using arbitrary wire labels."""
-        dev = qml.device("default.qubit", wires=wires)
+        dev = qml.device("default.qubit.legacy", wires=wires)
         n_wires = len(wires)
 
         @qml.qnode(dev, diff_method="parameter-shift")
@@ -1895,7 +1912,7 @@ class TestWiresIntegration:
 
     def test_wires_not_found_exception(self):
         """Tests that an exception is raised when wires not present on the device are adressed."""
-        dev = qml.device("default.qubit", wires=["a", "b"])
+        dev = qml.device("default.qubit.legacy", wires=["a", "b"])
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.5, wires="c")
@@ -1914,7 +1931,7 @@ class TestWiresIntegration:
     @pytest.mark.parametrize("dev_wires, wires_to_map", wires_to_try)
     def test_map_wires_caches(self, dev_wires, wires_to_map):
         """Test that multiple calls to map_wires will use caching."""
-        dev = qml.device("default.qubit", wires=dev_wires)
+        dev = qml.device("default.qubit.legacy", wires=dev_wires)
 
         original_hits = dev.map_wires.cache_info().hits
         original_misses = dev.map_wires.cache_info().misses
@@ -1985,7 +2002,7 @@ class TestApplyOps:
     gates in DefaultQubit."""
 
     state = np.arange(2**4, dtype=np.complex128).reshape((2, 2, 2, 2))
-    dev = qml.device("default.qubit", wires=4)
+    dev = qml.device("default.qubit.legacy", wires=4)
 
     single_qubit_ops = [
         (qml.PauliX, dev._apply_x),
@@ -2127,6 +2144,7 @@ class TestStateVector:
         spy.assert_called()
 
 
+# pylint:disable = unnecessary-lambda-assignment
 class TestApplyOperationUnit:
     """Unit tests for the internal _apply_operation method."""
 
@@ -2137,7 +2155,7 @@ class TestApplyOperationUnit:
         This test provides a new internal function that `default.qubit` uses to
         apply `PauliX` (rather than redefining the gate itself).
         """
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
 
         # Create a dummy operation
         expected_test_output = np.ones(1)
@@ -2156,7 +2174,7 @@ class TestApplyOperationUnit:
     def test_diagonal_operation_case(self, monkeypatch):
         """Tests the case when the operation to be applied is
         diagonal in the computational basis and the _apply_diagonal_unitary method is used."""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         par = 0.3
 
         test_state = np.array([1, 0])
@@ -2182,7 +2200,7 @@ class TestApplyOperationUnit:
     def test_apply_einsum_case(self, monkeypatch):
         """Tests the case when np.einsum is used to apply an operation in
         default.qubit."""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
 
         test_state = np.array([1, 0])
         wires = 0
@@ -2220,7 +2238,7 @@ class TestApplyOperationUnit:
     def test_apply_tensordot_case(self, monkeypatch):
         """Tests the case when np.tensordot is used to apply an operation in
         default.qubit."""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
 
         test_state = np.array([1, 0])
         wires = [0, 1, 2]
@@ -2259,7 +2277,7 @@ class TestApplyOperationUnit:
     def test_apply_unitary_tensordot_double_broadcasting_error(self):
         """Tests that an error is raised if attempting to use _apply_unitary
         with a broadcasted matrix and a broadcasted state simultaneously."""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
 
         class BroadcastedToffoli(qml.operation.Operation):
             num_wires = 3
@@ -2280,7 +2298,7 @@ class TestApplyOperationUnit:
 
     def test_identity_skipped(self, mocker):
         """Test that applying the identity operation does not perform any additional computations."""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
 
         starting_state = np.array([1, 0])
         op = qml.Identity(0)
@@ -2302,7 +2320,7 @@ class TestHamiltonianSupport:
 
     def test_do_not_split_analytic(self, mocker):
         """Tests that the Hamiltonian is not split for shots=None."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
         H = qml.Hamiltonian(np.array([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
 
         @qml.qnode(dev, diff_method="parameter-shift", interface=None)
@@ -2317,7 +2335,7 @@ class TestHamiltonianSupport:
 
     def test_split_finite_shots(self, mocker):
         """Tests that the Hamiltonian is split for finite shots."""
-        dev = qml.device("default.qubit", wires=2, shots=10)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=10)
         spy = mocker.spy(dev, "expval")
 
         H = qml.Hamiltonian(np.array([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
@@ -2333,7 +2351,7 @@ class TestHamiltonianSupport:
 
     def test_error_hamiltonian_expval_finite_shots(self):
         """Tests that the Hamiltonian is split for finite shots."""
-        dev = qml.device("default.qubit", wires=2, shots=10)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=10)
         H = qml.Hamiltonian([0.1, 0.2], [qml.PauliX(0), qml.PauliZ(1)])
 
         with pytest.raises(AssertionError, match="Hamiltonian must be used with shots=None"):
@@ -2341,7 +2359,7 @@ class TestHamiltonianSupport:
 
     def test_error_hamiltonian_expval_wrong_wires(self):
         """Tests that expval fails if Hamiltonian uses non-device wires."""
-        dev = qml.device("default.qubit", wires=2, shots=None)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=None)
         H = qml.Hamiltonian([0.1, 0.2, 0.3], [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(2)])
 
         with pytest.raises(
@@ -2352,7 +2370,7 @@ class TestHamiltonianSupport:
 
     def test_Hamiltonian_filtered_from_rotations(self, mocker):
         """Tests that the device does not attempt to get rotations for Hamiltonians."""
-        dev = qml.device("default.qubit", wires=2, shots=10)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=10)
         H = qml.Hamiltonian([0.1, 0.2], [qml.PauliX(0), qml.PauliZ(1)])
 
         spy = mocker.spy(qml.QubitDevice, "_get_diagonalizing_gates")
@@ -2392,7 +2410,7 @@ class TestSumSupport:
 
     def test_super_expval_not_called(self, is_state_batched, mocker):
         """Tests basic expval result, and ensures QubitDevice.expval is not called."""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         spy = mocker.spy(qml.QubitDevice, "expval")
         obs = qml.sum(qml.s_prod(0.1, qml.PauliX(0)), qml.s_prod(0.2, qml.PauliZ(0)))
         assert np.isclose(dev.expval(obs), 0.2)
@@ -2403,7 +2421,7 @@ class TestSumSupport:
         """Tests that coeffs passed to a sum are trainable with autograd."""
         if is_state_batched:
             pytest.skip(msg="Broadcasting, qml.jacobian and new return types do not work together")
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         qnode = qml.QNode(self.circuit, dev, interface="autograd")
         y, z = np.array([1.1, 2.2])
         actual = qml.grad(qnode, argnum=[0, 1])(y, z, is_state_batched)
@@ -2414,7 +2432,7 @@ class TestSumSupport:
         """Tests that coeffs passed to a sum are trainable with torch."""
         import torch
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         qnode = qml.QNode(self.circuit, dev, interface="torch")
         y, z = torch.tensor(1.1, requires_grad=True), torch.tensor(2.2, requires_grad=True)
         _qnode = partial(qnode, is_state_batched=is_state_batched)
@@ -2426,7 +2444,7 @@ class TestSumSupport:
         """Tests that coeffs passed to a sum are trainable with tf."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         qnode = qml.QNode(self.circuit, dev, interface="tensorflow")
         y, z = tf.Variable(1.1, dtype=tf.float64), tf.Variable(2.2, dtype=tf.float64)
         with tf.GradientTape() as tape:
@@ -2439,7 +2457,7 @@ class TestSumSupport:
         """Tests that coeffs passed to a sum are trainable with jax."""
         import jax
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         qnode = qml.QNode(self.circuit, dev, interface="jax")
         y, z = jax.numpy.array([1.1, 2.2])
         actual = jax.jacobian(qnode, argnums=[0, 1])(y, z, is_state_batched)
@@ -2452,7 +2470,7 @@ class TestGetBatchSize:
     @pytest.mark.parametrize("shape", [(4, 4), (1, 8), (4,)])
     def test_batch_size_None(self, shape):
         """Test that a ``batch_size=None`` is reported correctly."""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         tensor0 = np.ones(shape, dtype=complex)
         assert dev._get_batch_size(tensor0, shape, qml.math.prod(shape)) is None
         tensor1 = np.arange(np.prod(shape)).reshape(shape)
@@ -2462,7 +2480,7 @@ class TestGetBatchSize:
     @pytest.mark.parametrize("batch_size", [1, 3])
     def test_batch_size_int(self, shape, batch_size):
         """Test that an integral ``batch_size`` is reported correctly."""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         full_shape = (batch_size,) + shape
         tensor0 = np.ones(full_shape, dtype=complex)
         assert dev._get_batch_size(tensor0, shape, qml.math.prod(shape)) == batch_size
@@ -2473,7 +2491,7 @@ class TestGetBatchSize:
     def test_invalid_tensor(self):
         """Test that an error is raised if a tensor is provided that does not
         have a proper shape/ndim."""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         with pytest.raises(ValueError, match="could not broadcast"):
             dev._get_batch_size([qml.math.ones((2, 3)), qml.math.ones((2, 2))], (2, 2, 2), 8)
 
@@ -2493,4 +2511,5 @@ class TestDenseMatrixDecompositionThreshold:
     def test_threshold(self, op, n_wires, condition):
         wires = np.linspace(0, n_wires - 1, n_wires, dtype=int)
         op = op(wires=wires)
+        # pylint:disable=no-member
         assert DefaultQubit.stopping_condition.__get__(op)(op) == condition

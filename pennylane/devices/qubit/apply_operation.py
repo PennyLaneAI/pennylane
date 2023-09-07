@@ -146,9 +146,9 @@ def apply_operation(
 
     Args:
         op (Operator): The operation to apply to ``state``
-        state (tensor_like): The starting state.
+        state (TensorLike): The starting state.
         is_state_batched (bool): Boolean representing whether the state is batched or not
-        debugger (._Debugger): The debugger to use
+        debugger (_Debugger): The debugger to use
 
     Returns:
         ndarray: output state
@@ -192,6 +192,18 @@ def apply_operation(
     ) or (op.batch_size and is_state_batched):
         return apply_operation_einsum(op, state, is_state_batched=is_state_batched)
     return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
+
+@apply_operation.register
+def apply_identity(op: qml.Identity, state, is_state_batched: bool = False, debugger=None):
+    """Applies a :class:`~.Identity` operation by just returning the input state."""
+    return state
+
+
+@apply_operation.register
+def apply_global_phase(op: qml.GlobalPhase, state, is_state_batched: bool = False, debugger=None):
+    """Applies a :class:`~.GlobalPhase` operation by multiplying the state by ``exp(1j * op.data[0])``"""
+    return qml.math.exp(-1j * qml.math.cast(op.data[0], complex)) * state
 
 
 @apply_operation.register

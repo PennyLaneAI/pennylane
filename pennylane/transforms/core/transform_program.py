@@ -20,7 +20,7 @@ from typing import Callable, List, Tuple, Optional, Sequence
 from pennylane.typing import Result, ResultBatch
 from pennylane.tape import QuantumTape
 
-from .transform_dispatcher import TransformContainer, TransformError
+from .transform_dispatcher import TransformContainer, TransformError, TransformDispatcher
 
 PostProcessingFn = Callable[[ResultBatch], Result]
 BatchPostProcessingFn = Callable[[ResultBatch], ResultBatch]
@@ -130,6 +130,12 @@ class TransformProgram:
     def __bool__(self):
         return bool(self._transform_program)
 
+    def __add__(self, other):
+        program = TransformProgram(self._transform_program)
+        for container in other:
+            program.push_back(container)
+        return program
+
     def __repr__(self):
         """The string representation of the transform program class."""
         contents = ", ".join(f"{transform_c.transform.__name__}" for transform_c in self)
@@ -160,6 +166,64 @@ class TransformProgram:
                 "Informative transforms can only be added at the end of the program."
             )
         self._transform_program.insert(0, transform_container)
+
+    def add_transform(self, transform: TransformDispatcher, *targs, **tkwargs):
+        """Add a transform (dispatcher) to the end of the program.
+
+        Note that this should be a function decorated with/called by
+        `qml.transforms.transform`, and not a `TransformContainer`.
+
+        Args:
+            transform (TransformDispatcher): The transform to add to the transform program.
+            *targs: Any additional arguments that are passed to the transform.
+
+        Keyword Args:
+            **tkwargs: Any additional keyword arguments that are passed to the transform.
+
+        """
+        if not isinstance(transform, TransformDispatcher):
+            raise TransformError("Only transform dispatcher can be added to the transform program.")
+
+        if transform.expand_transform:
+            self.push_back(TransformContainer(transform.expand_transform, targs, tkwargs))
+        self.push_back(
+            TransformContainer(
+                transform.transform,
+                targs,
+                tkwargs,
+                transform.classical_cotransform,
+                transform.is_informative,
+            )
+        )
+
+    def insert_front_transform(self, transform: TransformDispatcher, *targs, **tkwargs):
+        """Add a transform (dispatcher) to the beginning of the program.
+
+        Args:
+            transform(TransformDispatcher): The transform to add to the front of the transform program.
+            *targs: Any additional arguments that are passed to the transform.
+
+        Keyword Args:
+            **tkwargs: Any additional keyword arguments that are passed to the transform.
+
+        """
+        if transform.is_informative and not self.is_empty():
+            raise TransformError(
+                "Informative transforms can only be added at the end of the program."
+            )
+
+        self.insert_front(
+            TransformContainer(
+                transform.transform,
+                targs,
+                tkwargs,
+                transform.classical_cotransform,
+                transform.is_informative,
+            )
+        )
+
+        if transform.expand_transform:
+            self.insert_front(TransformContainer(transform.expand_transform, targs, tkwargs))
 
     def pop_front(self):
         """Pop the transform container at the beginning of the program.

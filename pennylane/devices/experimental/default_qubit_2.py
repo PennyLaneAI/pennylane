@@ -24,6 +24,7 @@ import numpy as np
 from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.typing import Result, ResultBatch
 from pennylane.transforms import convert_to_numpy_parameters
+from pennylane.wires import Wires, WireError
 from pennylane import DeviceError, Snapshot
 
 from . import Device
@@ -140,8 +141,8 @@ class DefaultQubit2(Device):
         """The name of the device."""
         return "default.qubit.2"
 
-    def __init__(self, shots=None, seed="global", max_workers=None) -> None:
-        super().__init__(shots=shots)
+    def __init__(self, wires=None, shots=None, seed="global", max_workers=None) -> None:
+        super().__init__(wires=wires, shots=shots)
         self._max_workers = max_workers
         seed = np.random.randint(0, high=10000000) if seed == "global" else seed
         self._rng = np.random.default_rng(seed)
@@ -212,6 +213,14 @@ class DefaultQubit2(Device):
         if isinstance(circuits, QuantumScript):
             circuits = [circuits]
             is_single_circuit = True
+
+        if self.wires and (
+            extra_wires := set(Wires.all_wires(c.wires for c in circuits)) - set(self.wires)
+        ):
+            raise WireError(
+                f"Cannot run circuit(s) on {self.name} as they contain wires "
+                f"not found on the device: {extra_wires}"
+            )
 
         # prefer config over device value
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
