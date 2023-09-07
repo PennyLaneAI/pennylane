@@ -156,10 +156,7 @@ class TransformProgram:
 
         # Program can only contain one informative transform and at the end of the program
         if self.is_informative:
-            # TODO: Remove this or not?
-            if transform_container.is_informative or not transform_container.requires_exec:
-                raise TransformError("The transform program already has an informative transform.")
-            self._transform_program.insert(-1, transform_container)
+            raise TransformError("The transform program already has an informative transform.")
         else:
             self._transform_program.append(transform_container)
 
@@ -223,9 +220,6 @@ class TransformProgram:
                 "Informative transforms can only be added at the end of the program."
             )
 
-        if transform.expand_transform:
-            self.insert_front(TransformContainer(transform.expand_transform, targs, tkwargs))
-
         self.insert_front(
             TransformContainer(
                 transform.transform,
@@ -236,6 +230,9 @@ class TransformProgram:
                 transform.requires_exec,
             )
         )
+
+        if transform.expand_transform:
+            self.insert_front(TransformContainer(transform.expand_transform, targs, tkwargs))
 
     def pop_front(self):
         """Pop the transform container at the beginning of the program.
