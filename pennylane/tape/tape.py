@@ -234,15 +234,13 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     return new_tape
 
 
-def expand_tape_state_prep(tape, skip_first=True, force_decompose=False):
+def expand_tape_state_prep(tape, skip_first=True):
     """Expand all instances of StatePrepBase operations in the tape.
 
     Args:
         tape (QuantumScript): The tape to expand.
         skip_first (bool): If ``True``, will not expand a ``StatePrepBase`` operation if
             it is the first operation in the tape.
-        force_decompose (bool): If ``True``, ``MottonenStatePreparation`` operations are
-            further decomposed into gates.
 
     Returns:
         QuantumTape: The expanded version of ``tape``.
@@ -262,31 +260,16 @@ def expand_tape_state_prep(tape, skip_first=True, force_decompose=False):
     >>> new_tape = qml.tape.tape.expand_tape_state_prep(tape, skip_first=False)
     [MottonenStatePreparation(array([0, 1]), wires=[0]), PauliZ(wires=[1]), MottonenStatePreparation(array([1, 0]), wires=[0])]
     """
-
-    def full_decomposition(operation, force_decompose=False):
-        new_ops = []
-        for op in operation.decomposition():
-            if force_decompose and isinstance(
-                op, (qml.BasisStatePreparation, qml.MottonenStatePreparation)
-            ):
-                new_ops.extend(op.decomposition())
-            else:
-                new_ops.append(op)
-        return new_ops
-
     first_op = tape.operations[0]
     new_ops = (
         [first_op]
-        if not isinstance(
-            first_op, (StatePrepBase, qml.BasisStatePreparation, qml.MottonenStatePreparation)
-        )
-        or skip_first
-        else full_decomposition(first_op, force_decompose=force_decompose)
+        if not isinstance(first_op, StatePrepBase) or skip_first
+        else first_op.decomposition()
     )
 
     for op in tape.operations[1:]:
-        if isinstance(op, (StatePrepBase, qml.BasisStatePreparation, qml.MottonenStatePreparation)):
-            new_ops.extend(full_decomposition(op, force_decompose=force_decompose))
+        if isinstance(op, StatePrepBase):
+            new_ops.extend(op.decomposition())
         else:
             new_ops.append(op)
 

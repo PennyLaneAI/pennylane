@@ -1007,7 +1007,6 @@ class TestExpand:
         new_tape = tape.expand(depth=3)
         assert len(new_tape.operations) == 11
 
-    @pytest.mark.parametrize("force_decompose", (True, False))
     @pytest.mark.parametrize("skip_first", (True, False))
     @pytest.mark.parametrize(
         "op, decomp",
@@ -1022,55 +1021,34 @@ class TestExpand:
             ],
         ),
     )
-    def test_expansion_state_prep(self, force_decompose, skip_first, op, decomp):
+    def test_expansion_state_prep(self, skip_first, op, decomp):
         """Test that StatePrepBase operations are expanded correctly without
         expanding other operations in the tape.
         """
         ops = [
-            op,
             qml.PauliZ(wires=0),
             qml.Rot(0.1, 0.2, 0.3, wires=0),
             qml.BasisState([0], wires=1),
             qml.StatePrep([0, 1], wires=0),
         ]
-        tape = QuantumTape(ops=ops, measurements=[])
-        new_tape = expand_tape_state_prep(
-            tape, skip_first=skip_first, force_decompose=force_decompose
-        )
+        tape = QuantumTape(ops=ops, measurements=[], prep=[op])
+        new_tape = expand_tape_state_prep(tape, skip_first=skip_first)
 
         true_decomposition = []
         if skip_first:
             true_decomposition.append(op)
         else:
-            if force_decompose:
-                true_decomposition.extend(decomp.decomposition())
-            else:
-                true_decomposition.append(decomp)
+            true_decomposition.append(decomp)
         true_decomposition += [
             qml.PauliZ(wires=0),
             qml.Rot(0.1, 0.2, 0.3, wires=0),
+            qml.BasisStatePreparation([0], wires=[1]),
+            qml.MottonenStatePreparation([0, 1], wires=[0]),
         ]
-        if force_decompose:
-            true_decomposition.extend(qml.BasisStatePreparation([0], wires=[1]).decomposition())
-            true_decomposition.extend(
-                qml.MottonenStatePreparation([0, 1], wires=[0]).decomposition()
-            )
-        else:
-            true_decomposition.extend(
-                [
-                    qml.BasisStatePreparation([0], wires=[1]),
-                    qml.MottonenStatePreparation([0, 1], wires=[0]),
-                ]
-            )
 
         assert len(new_tape.operations) == len(true_decomposition)
         for tape_op, true_op in zip(new_tape.operations, true_decomposition):
             assert qml.equal(tape_op, true_op)
-
-        if skip_first:
-            dev = qml.device("default.qubit", wires=4)
-            ref_type = QuantumTape(true_decomposition)
-            assert np.allclose(dev.execute(new_tape), dev.execute(ref_type))
 
     @pytest.mark.filterwarnings("ignore:The ``name`` property and keyword argument of")
     def test_stopping_criterion_with_depth(self):
