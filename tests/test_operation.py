@@ -1010,7 +1010,7 @@ class TestOperatorIntegration:
         """Test that an exception is raised if the class is defined with ALL wires,
         but then instantiated with only one"""
 
-        dev1 = qml.device("default.qubit", wires=2)
+        dev1 = qml.device("default.qubit.legacy", wires=2)
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operator"""
@@ -2686,7 +2686,7 @@ def test_custom_operator_is_jax_pytree():
     assert qml.equal(new_op, CustomOperator(2.3, wires=0))
 
 
-# pylint: disable=unused-import
+# pylint: disable=unused-import,no-name-in-module
 def test_get_attr():
     """Test that importing attributes of operation work as expected"""
 

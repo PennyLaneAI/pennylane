@@ -135,7 +135,7 @@ class MutualInfoMP(StateMeasurement):
     def map_wires(self, wire_map: dict):
         new_measurement = copy(self)
         new_measurement._wires = [
-            Wires([wire_map.get(wire, wire)]) for wires in self.wires for wire in wires
+            Wires([wire_map.get(wire, wire) for wire in wires]) for wires in self.raw_wires
         ]
         return new_measurement
 

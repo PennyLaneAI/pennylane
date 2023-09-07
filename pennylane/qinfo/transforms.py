@@ -14,11 +14,13 @@
 """QNode transforms for the quantum information quantities."""
 # pylint: disable=import-outside-toplevel, not-callable
 import functools
+from typing import Sequence, Callable
 
 import pennylane as qml
 from pennylane.devices import DefaultQubit
 from pennylane.measurements import StateMP
-from pennylane.transforms import adjoint_metric_tensor, batch_transform, metric_tensor
+from pennylane.transforms import adjoint_metric_tensor, metric_tensor
+from pennylane.transforms.core import transform
 
 
 def _get_qnode_wires(qnode):
@@ -351,19 +353,15 @@ def _compute_cfim(p, dp):
     return dp_over_p @ dp
 
 
-@batch_transform
-def _make_probs(tape, wires=None, post_processing_fn=None):
+@transform
+def _make_probs(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Ignores the return types of the provided circuit and creates a new one
     that outputs probabilities"""
-    qscript = qml.tape.QuantumScript(
-        tape.operations, [qml.probs(wires=wires or tape.wires)], shots=tape.shots
-    )
+    qscript = qml.tape.QuantumScript(tape.operations, [qml.probs(tape.wires)], shots=tape.shots)
 
-    if post_processing_fn is None:
-
-        def post_processing_fn(res):
-            # only a single probs measurement, so no stacking needed
-            return res[0]
+    def post_processing_fn(res):
+        # only a single probs measurement, so no stacking needed
+        return res[0]
 
     return [qscript], post_processing_fn
 
