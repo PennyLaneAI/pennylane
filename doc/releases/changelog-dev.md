@@ -26,6 +26,9 @@
   process, `DensityMatrixMP`.
   [(#4558)](https://github.com/PennyLaneAI/pennylane/pull/4558)
 
+* `qml.exp` returns a more informative error message when decomposition is unavailable for non-unitary operator.
+  [(#4571)](https://github.com/PennyLaneAI/pennylane/pull/4571)
+
 <h3>Breaking changes 💔</h3>
 
 * The `__eq__` and `__hash__` methods of `Operator` and `MeasurementProcess` no longer rely on the
@@ -135,5 +138,6 @@ This release contains contributions from (in alphabetical order):
 Lillian M. A. Frederiksen,
 Romain Moyard,
 Mudit Pandey,
-Matthew Silverman
+Matthew Silverman,
+Jay Soni,
 
