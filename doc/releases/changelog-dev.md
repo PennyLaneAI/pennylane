@@ -43,7 +43,7 @@
 
 * `devices.qubit.simulate` now accepts an interface keyword argument. If a QNode with `DefaultQubit2`
   specifies an interface, the result will be computed with that interface.
-  [(#)]()
+  [(#4582)](https://github.com/PennyLaneAI/pennylane/pull/4582)
 
 <h3>Breaking changes 💔</h3>
 
