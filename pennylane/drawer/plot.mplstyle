@@ -23,3 +23,5 @@ grid.linestyle: :
 
 font.sans-serif: Quicksand, DejaVu Sans, Bitstream Vera Sans, Computer Modern Sans Serif, Lucida Grande, Verdana, Geneva, Lucid, Arial, Helvetica, Avant Garde, sans-serif
 font.weight: bold
+
+figure.dpi: 300
