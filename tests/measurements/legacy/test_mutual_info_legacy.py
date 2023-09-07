@@ -12,75 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the mutual_info module"""
-import copy
-
 import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import MutualInfo, Shots
-from pennylane.measurements.mutual_info import MutualInfoMP
-from pennylane.wires import Wires
+from pennylane.interfaces import INTERFACE_MAP
+from pennylane.measurements import Shots
 
 
-class TestMutualInfoUnitTests:
-    """Tests for the mutual_info function"""
-
-    def test_queue(self):
-        """Test that the right measurement class is queued."""
-
-        with qml.queuing.AnnotatedQueue() as q:
-            m = qml.mutual_info(wires0=[0], wires1=[1])
-
-        assert q.queue[0] is m
-        assert isinstance(q.queue[0], MutualInfoMP)
-
-    @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ()), ([1, 10], ((), ()))])
-    def test_shape(self, shots, shape):
-        """Test that the shape is correct."""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
-        res = qml.mutual_info(wires0=[0], wires1=[1])
-        assert res.shape(dev, Shots(shots)) == shape
-
-    def test_properties(self):
-        """Test that the properties are correct."""
-        meas = qml.mutual_info(wires0=[0], wires1=[1])
-        assert meas.numeric_type == float
-        assert meas.return_type == MutualInfo
-
-    def test_copy(self):
-        """Test that the ``__copy__`` method also copies the ``log_base`` information."""
-        meas = qml.mutual_info(wires0=[0], wires1=[1], log_base=2)
-        meas_copy = copy.copy(meas)
-        assert meas_copy.log_base == 2
-        assert meas_copy.wires == Wires([0, 1])
-
-    def test_repr(self):
-        """Test that the representation includes information about both wires and the log_base"""
-        m1 = qml.mutual_info(wires0=[0], wires1=[1])
-        assert repr(m1) == "MutualInfo(wires0=[0], wires1=[1], log_base=None)"
-
-    def test_hash(self):
-        """Test the hash property includes the log_base property and the separation of the wires into two subsytems."""
-        m1 = MutualInfoMP(wires=[Wires(0), Wires(1)], log_base=2)
-        m2 = MutualInfoMP(wires=[Wires(0), Wires(1)], log_base=10)
-        assert m1.hash != m2.hash
-
-        m3 = MutualInfoMP(wires=[Wires((0, 1)), Wires(2)])
-        m4 = MutualInfoMP(wires=[Wires((0)), Wires((1, 2))])
-        assert m3.hash != m4.hash
-
-    def test_map_wires(self):
-        """Test that map_wires works as expected."""
-        mapped1 = MutualInfoMP(wires=[Wires([0]), Wires([1])]).map_wires({0: 1, 1: 0})
-        assert mapped1.raw_wires == [Wires([1]), Wires([0])]
-        assert qml.equal(mapped1, MutualInfoMP(wires=[Wires([1]), Wires([0])]))
-
-        mapped2 = MutualInfoMP(wires=[Wires(["a", "b"]), Wires(["c"])]).map_wires(
-            {"a": 0, "b": 1, "c": 2}
-        )
-        assert mapped2.raw_wires == [Wires([0, 1]), Wires([2])]
-        assert qml.equal(mapped2, MutualInfoMP(wires=[Wires([0, 1]), Wires([2])]))
+@pytest.mark.parametrize("shots, shape", [(None, ()), (10, ()), ([1, 10], ((), ()))])
+def test_shape(shots, shape):
+    """Test that the shape is correct."""
+    dev = qml.device("default.qubit.legacy", wires=3, shots=shots)
+    res = qml.mutual_info(wires0=[0], wires1=[1])
+    assert res.shape(dev, Shots(shots)) == shape
 
 
 class TestIntegration:
@@ -99,7 +44,7 @@ class TestIntegration:
     )
     def test_mutual_info_output(self, interface, state, expected):
         """Test the output of qml.mutual_info"""
-        dev = qml.device("default.qubit", wires=4)
+        dev = qml.device("default.qubit.legacy", wires=4)
 
         @qml.qnode(dev, interface=interface)
         def circuit():
@@ -107,13 +52,17 @@ class TestIntegration:
             return qml.mutual_info(wires0=[0, 2], wires1=[1, 3])
 
         res = circuit()
+        new_res = qml.mutual_info(wires0=[0, 2], wires1=[1, 3]).process_state(
+            state=circuit.device.state, wire_order=circuit.device.wires
+        )
         assert np.allclose(res, expected, atol=1e-6)
+        assert np.allclose(new_res, expected, atol=1e-6)
+        assert INTERFACE_MAP.get(qml.math.get_interface(new_res)) == interface
+        assert res.dtype == new_res.dtype  # pylint: disable=no-member
 
-    @pytest.mark.xfail(reason="until DQ2 port")
-    @pytest.mark.parametrize("shots", [1000, [1, 10, 10, 1000]])
-    def test_finite_shots_error(self, shots):
+    def test_shot_vec_error(self):
         """Test an error is raised when using shot vectors with mutual_info."""
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=[1, 10, 10, 1000])
 
         @qml.qnode(device=dev)
         def circuit(x):
@@ -121,13 +70,15 @@ class TestIntegration:
             qml.CRX(x, wires=[0, 1])
             return qml.mutual_info(wires0=[0], wires1=[1])
 
-        with pytest.raises(qml.DeviceError, match="Circuits with finite shots must only contain"):
+        with pytest.raises(
+            NotImplementedError, match="mutual information is not supported with shot vectors"
+        ):
             circuit(0.5)
 
     diff_methods = ["backprop", "finite-diff"]
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
+    @pytest.mark.parametrize("device", ["default.qubit.legacy", "default.mixed", "lightning.qubit"])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     @pytest.mark.parametrize("params", np.linspace(0, 2 * np.pi, 8))
     def test_qnode_state(self, device, interface, params):
@@ -153,7 +104,7 @@ class TestIntegration:
         assert np.allclose(actual, expected)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
+    @pytest.mark.parametrize("device", ["default.qubit.legacy", "default.mixed", "lightning.qubit"])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     @pytest.mark.parametrize("params", zip(np.linspace(0, np.pi, 8), np.linspace(0, 2 * np.pi, 8)))
     def test_qnode_mutual_info(self, device, interface, params):
@@ -184,7 +135,7 @@ class TestIntegration:
 
         assert np.allclose(actual, expected)
 
-    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
+    @pytest.mark.parametrize("device", ["default.qubit.legacy", "default.mixed", "lightning.qubit"])
     def test_mutual_info_wire_labels(self, device):
         """Test that mutual_info is correct with custom wire labels"""
         param = np.array([0.678, 1.234])
@@ -214,7 +165,7 @@ class TestIntegration:
         import jax
         import jax.numpy as jnp
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         params = jnp.array(params)
 
@@ -242,7 +193,7 @@ class TestIntegration:
         import jax
         import jax.numpy as jnp
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         params = jnp.array(params)
 
@@ -274,7 +225,7 @@ class TestIntegration:
     def test_qnode_grad(self, param, diff_method, interface):
         """Test that the gradient of mutual information works for QNodes
         with the autograd interface"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev, interface=interface, diff_method=diff_method)
         def circuit(param):
@@ -306,7 +257,7 @@ class TestIntegration:
         import jax
         import jax.numpy as jnp
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         param = jnp.array(param)
 
@@ -340,7 +291,7 @@ class TestIntegration:
         import jax
         import jax.numpy as jnp
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         param = jnp.array(param)
 
@@ -373,7 +324,7 @@ class TestIntegration:
         with the tensorflow interface"""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         param = tf.Variable(param)
 
@@ -409,7 +360,7 @@ class TestIntegration:
         with the torch interface"""
         import torch
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev, interface=interface, diff_method=diff_method)
         def circuit(param):
@@ -436,14 +387,13 @@ class TestIntegration:
         assert np.allclose(actual, expected, atol=tol)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     @pytest.mark.parametrize(
         "params", [np.array([0.0, 0.0]), np.array([0.3, 0.4]), np.array([0.6, 0.8])]
     )
-    def test_subsystem_overlap_error(self, device, interface, params):
+    def test_subsystem_overlap_error(self, interface, params):
         """Test that an error is raised when the subsystems overlap"""
-        dev = qml.device(device, wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
 
         params = qml.math.asarray(params, like=interface)
 
@@ -459,14 +409,15 @@ class TestIntegration:
         with pytest.raises(qml.QuantumFunctionError, match=msg):
             circuit(params)
 
-    @pytest.mark.xfail(reason="until DQ2 port")
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
-    @pytest.mark.parametrize("params", [np.array([0.0, 0.0]), np.array([0.3, 0.4])])
-    def test_custom_wire_labels_works(self, interface, params):
-        """Tests that no error is raised when mutual information is measured
+    @pytest.mark.parametrize(
+        "params", [np.array([0.0, 0.0]), np.array([0.3, 0.4]), np.array([0.6, 0.8])]
+    )
+    def test_custom_wire_labels_error(self, interface, params):
+        """Tests that an error is raised when mutual information is measured
         with custom wire labels"""
-        dev = qml.device("default.qubit", wires=["a", "b"])
+        dev = qml.device("default.qubit.legacy", wires=["a", "b"])
 
         params = qml.math.asarray(params, like=interface)
 
@@ -477,13 +428,6 @@ class TestIntegration:
             qml.CNOT(wires=["a", "b"])
             return qml.mutual_info(wires0=["a"], wires1=["b"])
 
-        @qml.qnode(dev, interface=interface)
-        def circuit_expected(params):
-            qml.RY(params[0], wires="a")
-            qml.RY(params[1], wires="b")
-            qml.CNOT(wires=["a", "b"])
-            return qml.state()
-
-        actual = circuit(params)
-        expected = qml.qinfo.mutual_info(circuit_expected, wires0=["a"], wires1=["b"])(params)
-        assert np.allclose(actual, expected)
+        msg = "Returning the mutual information is not supported when using custom wire labels"
+        with pytest.raises(qml.QuantumFunctionError, match=msg):
+            circuit(params)
