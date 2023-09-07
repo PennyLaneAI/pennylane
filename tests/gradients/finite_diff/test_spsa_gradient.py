@@ -81,7 +81,7 @@ class TestRademacherSampler:
         num = 5
         rng = np.random.default_rng(42)
         first_direction = _rademacher_sampler(ids, num, rng=rng)
-        np.random.seed = 0  # Setting the global seed should have no effect.
+        np.random.seed(0)  # Setting the global seed should have no effect.
         rng = np.random.default_rng(42)
         second_direction = _rademacher_sampler(ids, num, rng=rng)
         assert np.allclose(first_direction, second_direction)
