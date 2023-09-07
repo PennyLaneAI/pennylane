@@ -256,11 +256,16 @@ class DefaultQubit2(Device):
 
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
-            results = tuple(simulate(c, rng=self._rng, debugger=self._debugger) for c in circuits)
+            results = tuple(
+                simulate(
+                    c, rng=self._rng, debugger=self._debugger, interface=execution_config.interface
+                )
+                for c in circuits
+            )
         else:
             vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
             seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
-            _wrap_simulate = partial(simulate, debugger=None)
+            _wrap_simulate = partial(simulate, debugger=None, interface=execution_config.interface)
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
                 exec_map = executor.map(_wrap_simulate, vanilla_circuits, seeds)
                 results = tuple(exec_map)
