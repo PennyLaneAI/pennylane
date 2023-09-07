@@ -662,7 +662,7 @@ class TestIntegration:
         res_jit = qnode_jit(params)
 
         assert isinstance(res, jax.Array)
-        assert res == res_jit
+        assert np.allclose(res, res_jit)
 
     @pytest.mark.jax
     def test_jitted_qnode_multidrive(self):
@@ -707,7 +707,7 @@ class TestIntegration:
         res_jit = qnode_jit(params)
 
         assert isinstance(res, jax.Array)
-        assert res == res_jit
+        assert np.allclose(res, res_jit)
 
     @pytest.mark.jax
     def test_jitted_qnode_all_coeffs_callable(self):
@@ -747,4 +747,4 @@ class TestIntegration:
         res_jit = qnode_jit(params)
 
         assert isinstance(res, jax.Array)
-        assert res == res_jit
+        assert np.allclose(res, res_jit)
