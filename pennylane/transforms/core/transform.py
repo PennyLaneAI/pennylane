@@ -24,7 +24,7 @@ def transform(
     expand_transform=None,
     classical_cotransform=None,
     is_informative=None,
-    requires_exec=True,
+    final_transform=False,
 ):
     """The transform function is to be used to validate and dispatch a quantum transform on PennyLane objects (tape,
     qfunc and Qnode). It can be used directly as a decorator on qfunc and qnodes.
@@ -48,9 +48,9 @@ def transform(
 
         classical_cotransform (callable): A classical co-transform. NOT YET SUPPORTED.
         is_informative (bool): Whether or not a transform is informative. If true the transform is queued at the end
-            of the transform program.
-        requires_exec (bool): Whether or not the transform requires the transformed tapes to be executed. If false,
-            the transform is queued at the end of the transform program.
+            of the transform program and the tapes or qnode aren't executed.
+        final_transform (bool): Whether or not the transform is terminal. If true the transform is queued at the end
+            of the transform program. ``is_informative`` supersedes ``final_transform``.
 
     **Example**
 
@@ -140,7 +140,7 @@ def transform(
         expand_transform=expand_transform,
         classical_cotransform=classical_cotransform,
         is_informative=is_informative,
-        requires_exec=requires_exec,
+        final_transform=final_transform,
     )
 
 

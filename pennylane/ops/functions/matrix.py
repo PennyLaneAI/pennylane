@@ -135,7 +135,7 @@ def matrix(op: qml.operation.Operator, *, wire_order=None) -> TensorLike:
     return op.matrix(wire_order=wire_order)
 
 
-@partial(transform, is_informative=True, requires_exec=False)
+@partial(transform, is_informative=True)
 @matrix.register
 def _matrix(
     tape: qml.tape.QuantumTape, wire_order=None

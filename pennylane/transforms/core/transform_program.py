@@ -131,11 +131,11 @@ class TransformProgram:
         return bool(self._transform_program)
 
     def __add__(self, other):
-        if self.is_informative and other.is_informative:
+        if self.has_final_transform and other.has_final_transform:
             raise TransformError("The transform program already has an informative transform.")
 
         transforms = self._transform_program + other._transform_program
-        if self.is_informative:
+        if self.has_final_transform:
             transforms.append(transforms.pop(len(self) - 1))
 
         return TransformProgram(transforms)
@@ -155,10 +155,9 @@ class TransformProgram:
             raise TransformError("Only transform container can be added to the transform program.")
 
         # Program can only contain one informative transform and at the end of the program
-        if self.is_informative:
-            raise TransformError("The transform program already has an informative transform.")
-        else:
-            self._transform_program.append(transform_container)
+        if self.has_final_transform:
+            raise TransformError("The transform program already has a terminal transform.")
+        self._transform_program.append(transform_container)
 
     def insert_front(self, transform_container: TransformContainer):
         """Insert the transform container at the beginning of the program.
@@ -166,9 +165,7 @@ class TransformProgram:
         Args:
             transform_container(TransformContainer): A transform represented by its container.
         """
-        if (
-            transform_container.is_informative or not transform_container.requires_exec
-        ) and not self.is_empty():
+        if (transform_container.final_transform) and not self.is_empty():
             raise TransformError(
                 "Informative transforms can only be added at the end of the program."
             )
@@ -200,7 +197,7 @@ class TransformProgram:
                 tkwargs,
                 transform.classical_cotransform,
                 transform.is_informative,
-                transform.requires_exec,
+                transform.final_transform,
             )
         )
 
@@ -215,7 +212,7 @@ class TransformProgram:
             **tkwargs: Any additional keyword arguments that are passed to the transform.
 
         """
-        if (transform.is_informative or not transform.requires_exec) and not self.is_empty():
+        if transform.final_transform and not self.is_empty():
             raise TransformError(
                 "Informative transforms can only be added at the end of the program."
             )
@@ -227,7 +224,7 @@ class TransformProgram:
                 tkwargs,
                 transform.classical_cotransform,
                 transform.is_informative,
-                transform.requires_exec,
+                transform.final_transform,
             )
         )
 
@@ -274,23 +271,20 @@ class TransformProgram:
         """
         return self[-1].is_informative if self else False
 
+    @property
+    def has_final_transform(self) -> bool:
+        """Check if the transform program has a terminal transform or not."""
+        return self[-1].final_transform if self else False
+
     def __call__(self, tapes: Tuple[QuantumTape]) -> Tuple[ResultBatch, BatchPostProcessingFn]:
         if not self:
             return tapes, null_postprocessing
-        processing_fns_stack = []
 
-        # informative_transform = self._transform_program.pop(-1) if self.is_informative else None
+        processing_fns_stack = []
         informative_fn = None
 
         for transform_container in self:
-            (
-                transform,
-                args,
-                kwargs,
-                cotransform,
-                is_informative,
-                requires_exec,
-            ) = transform_container
+            transform, args, kwargs, cotransform, is_informative, _ = transform_container
 
             if cotransform:
                 raise NotImplementedError(
@@ -316,7 +310,7 @@ class TransformProgram:
             # set input tapes for next iteration.
             tapes = execution_tapes
 
-            if is_informative and not requires_exec:
+            if is_informative:
                 informative_fn = batch_postprocessing
                 continue
 

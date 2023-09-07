@@ -46,13 +46,14 @@ class TransformDispatcher:
         expand_transform=None,
         classical_cotransform=None,
         is_informative=False,
-        requires_exec=True,
+        final_transform=False,
     ):  # pylint:disable=redefined-outer-name
         self._transform = transform
         self._expand_transform = expand_transform
         self._classical_cotransform = classical_cotransform
         self._is_informative = is_informative
-        self._requires_exec = requires_exec
+        # is_informative supersedes final_transform
+        self._final_transform = is_informative or final_transform
 
         self._qnode_transform = self.default_qnode_transform
 
@@ -121,9 +122,9 @@ class TransformDispatcher:
         return self._is_informative
 
     @property
-    def requires_exec(self):
+    def final_transform(self):
         """Return True if the transformed tapes must be executed."""
-        return self._requires_exec
+        return self._final_transform
 
     def custom_qnode_transform(self, fn):
         """Register a custom QNode execution wrapper function
@@ -172,7 +173,7 @@ class TransformDispatcher:
                 tkwargs,
                 self._classical_cotransform,
                 self._is_informative,
-                self._requires_exec,
+                self._final_transform,
             )
         )
         return qnode
@@ -218,14 +219,14 @@ class TransformContainer:
         kwargs=None,
         classical_cotransform=None,
         is_informative=False,
-        requires_exec=True,
+        final_transform=True,
     ):  # pylint:disable=redefined-outer-name,too-many-arguments
         self._transform = transform
         self._args = args or []
         self._kwargs = kwargs or {}
         self._classical_cotransform = classical_cotransform
         self._is_informative = is_informative
-        self._requires_exec = requires_exec
+        self._final_transform = final_transform
 
     def __iter__(self):
         return iter(
@@ -235,7 +236,7 @@ class TransformContainer:
                 self._kwargs,
                 self._classical_cotransform,
                 self._is_informative,
-                self._requires_exec,
+                self.final_transform,
             )
         )
 
@@ -265,6 +266,6 @@ class TransformContainer:
         return self._is_informative
 
     @property
-    def requires_exec(self):
+    def final_transform(self):
         """Return True if the transform needs to be executed"""
-        return self._requires_exec
+        return self._final_transform

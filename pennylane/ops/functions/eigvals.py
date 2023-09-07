@@ -126,7 +126,7 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
     return op.eigvals()
 
 
-@partial(transform, is_informative=True, requires_exec=False)
+@partial(transform, is_informative=True)
 @eigvals.register
 def _eigvals_tape(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
     def processing_fn(res):

@@ -249,7 +249,7 @@ def to_zx(tape, expand_measurement=False):  # pylint: disable=unused-argument
     return _to_zx(QuantumScript([tape]))
 
 
-@partial(transform, is_informative=True, requires_exec=False)
+@partial(transform, is_informative=True)
 @to_zx.register
 def _to_zx(tape: QuantumTape, expand_measurements=False) -> (Sequence[QuantumTape], Callable):
     """Private function to convert a PennyLane tape to a `PyZX graph <https://pyzx.readthedocs.io/en/latest/>`_ ."""
