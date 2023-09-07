@@ -153,7 +153,7 @@ class TransformDispatcher:
         The default method that takes in a QNode and returns another QNode
         with the transform applied.
         """
-        qnode = copy.deepcopy(qnode)
+        qnode = copy.copy(qnode)
 
         if self.expand_transform:
             qnode.add_transform(TransformContainer(self._expand_transform, targs, tkwargs))

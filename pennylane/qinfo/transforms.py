@@ -66,14 +66,16 @@ def reduced_dm(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Ca
         raise ValueError("The qfunc measurement needs to be State.")
 
     def processing_fn(res):
+        device = kwargs.get("device", None)
+        c_dtype = device.C_DTYPE if device else "complex128"
+
         # determine the density matrix
         dm_func = (
             qml.math.reduce_dm
-            if isinstance(measurements[0], DensityMatrixMP)
-            or isinstance(kwargs.get("device", None), DefaultMixed)
+            if isinstance(measurements[0], DensityMatrixMP) or isinstance(device, DefaultMixed)
             else qml.math.reduce_statevector
         )
-        density_matrix = dm_func(res[0], indices=indices)
+        density_matrix = dm_func(res[0], indices=indices, c_dtype=c_dtype)
 
         return density_matrix
 
@@ -158,15 +160,17 @@ def purity(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Callab
         raise ValueError("The qfunc return type needs to be a state.")
 
     def processing_fn(res):
+        device = kwargs.get("device", None)
+        c_dtype = device.C_DTYPE if device else "complex128"
+
         # determine the density matrix
         density_matrix = (
             res[0]
-            if isinstance(measurements[0], DensityMatrixMP)
-            or isinstance(kwargs.get("device", None), DefaultMixed)
-            else qml.math.dm_from_state_vector(res[0])
+            if isinstance(measurements[0], DensityMatrixMP) or isinstance(device, DefaultMixed)
+            else qml.math.dm_from_state_vector(res[0], c_dtype=c_dtype)
         )
 
-        return qml.math.purity(density_matrix, indices)
+        return qml.math.purity(density_matrix, indices, c_dtype=c_dtype)
 
     return [tape], processing_fn
 
@@ -239,20 +243,23 @@ def vn_entropy(
         raise ValueError("The qfunc return type needs to be a state.")
 
     def processing_fn(res):
+        device = kwargs.get("device", None)
+        c_dtype = device.C_DTYPE if device else "complex128"
+
         # determine if the measurement is a state vector or a density matrix
         if not isinstance(measurements[0], DensityMatrixMP) and not isinstance(
-            kwargs.get("device", None), DefaultMixed
+            device, DefaultMixed
         ):  # Compute entropy from state vector
             if len(wires) == len(all_wires):
                 # The subsystem has all wires, so the entropy is 0
                 return 0.0
 
-            density_matrix = qml.math.dm_from_state_vector(res[0])
-            entropy = qml.math.vn_entropy(density_matrix, indices, base)
+            density_matrix = qml.math.dm_from_state_vector(res[0], c_dtype=c_dtype)
+            entropy = qml.math.vn_entropy(density_matrix, indices, base, c_dtype=c_dtype)
             return entropy
 
         # Compute entropy from density matrix
-        entropy = qml.math.vn_entropy(res[0], indices, base)
+        entropy = qml.math.vn_entropy(res[0], indices, base, c_dtype)
         return entropy
 
     return [tape], processing_fn
@@ -338,13 +345,17 @@ def mutual_info(
         raise ValueError("The qfunc return type needs to be a state.")
 
     def processing_fn(res):
+        device = kwargs.get("device", None)
+        c_dtype = device.C_DTYPE if device else "complex128"
+
         density_matrix = (
             res[0]
-            if isinstance(measurements[0], DensityMatrixMP)
-            or isinstance(kwargs.get("device", None), DefaultMixed)
-            else qml.math.dm_from_state_vector(res[0])
+            if isinstance(measurements[0], DensityMatrixMP) or isinstance(device, DefaultMixed)
+            else qml.math.dm_from_state_vector(res[0], c_dtype=c_dtype)
         )
-        entropy = qml.math.mutual_info(density_matrix, indices0, indices1, base=base)
+        entropy = qml.math.mutual_info(
+            density_matrix, indices0, indices1, base=base, c_dtype=c_dtype
+        )
         return entropy
 
     return [tape], processing_fn
