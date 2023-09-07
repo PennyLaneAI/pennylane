@@ -287,7 +287,7 @@ class QubitDevice(Device):
         ):
             tape = qml.tape.QuantumScript(ops=operations, measurements=[])
             tape = qml.tape.expand_tape_state_prep(tape, skip_first=True, force_decompose=True)
-            operations = tape._ops
+            operations = tape.operations
 
         self.check_validity(operations, circuit.observables)
 
