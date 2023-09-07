@@ -1097,14 +1097,14 @@ def _sitevec_to_fock(det):
 
     **Example**
 
-    >>> det = [1, 2, 1, 0, 0, 2]
+    >>> det = np.array([1, 2, 1, 0, 0, 2])
     >>> _sitevec_to_fock(det)
     >>> (5, 34)
     """
 
     map_dmrg = {0: "00", 1: "10", 2: "01", 3: "11"}
 
-    strab = [map_dmrg[key] for key in det]
+    strab = [map_dmrg[key] for key in det.tolist()]
 
     stra = "".join(i[0] for i in strab)
     strb = "".join(i[1] for i in strab)
