@@ -156,7 +156,7 @@
 <h3>Bug fixes 🐛</h3>
 
 * Fixed issue where `__copy__` method of the `qml.Select()` operator attempted to access un-initialized data.
-
+[(#4551)](https://github.com/PennyLaneAI/pennylane/pull/4551)
 * `convert_to_numpy_parameters` now uses `qml.ops.functions.bind_new_parameters`. This reinitializes the operation and
   makes sure everything references the new numpy parameters.
 
