@@ -14,6 +14,8 @@
 """
 Tests for mitigation transforms.
 """
+# pylint:disable=no-self-use
+from functools import partial
 import pytest
 
 from packaging import version
@@ -121,7 +123,12 @@ class TestMitigateWithZNE:
         np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
-        @qml.transforms.mitigate_with_zne([1, 2, 3], fold_global, richardson_extrapolate)
+        @partial(
+            qml.transforms.mitigate_with_zne,
+            scale_factors=[1, 2, 3],
+            folding=fold_global,
+            extrapolate=richardson_extrapolate,
+        )
         @qml.qnode(dev)
         def mitigated_circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -214,7 +221,12 @@ class TestMitiqIntegration:
         np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
-        @qml.transforms.mitigate_with_zne([1, 2, 3], fold_global, RichardsonFactory.extrapolate)
+        @partial(
+            qml.transforms.mitigate_with_zne,
+            scale_factors=[1, 2, 3],
+            folding=fold_global,
+            extrapolate=RichardsonFactory.extrapolate,
+        )
         @qml.qnode(dev)
         def mitigated_circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -259,7 +271,12 @@ class TestMitiqIntegration:
         np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
-        @qml.transforms.mitigate_with_zne([1, 2, 3], fold_global, RichardsonFactory.extrapolate)
+        @partial(
+            qml.transforms.mitigate_with_zne,
+            scale_factors=[1, 2, 3],
+            folding=fold_global,
+            extrapolate=RichardsonFactory.extrapolate,
+        )
         @qml.qnode(dev)
         def mitigated_circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -294,8 +311,12 @@ class TestMitiqIntegration:
         np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
-        @qml.transforms.mitigate_with_zne(
-            [1, 2, 3], fold_gates_at_random, RichardsonFactory.extrapolate, reps_per_factor=2
+        @partial(
+            qml.transforms.mitigate_with_zne,
+            scale_factors=[1, 2, 3],
+            folding=fold_gates_at_random,
+            extrapolate=RichardsonFactory.extrapolate,
+            reps_per_factor=2,
         )
         @qml.qnode(dev)
         def mitigated_circuit(w1, w2):
@@ -338,7 +359,12 @@ class TestMitiqIntegration:
         exact_qnode = qml.QNode(circuit, dev_noise_free)
         noisy_qnode = qml.QNode(circuit, dev)
 
-        @qml.transforms.mitigate_with_zne([1, 2, 3], fold_global, RichardsonFactory.extrapolate)
+        @partial(
+            qml.transforms.mitigate_with_zne,
+            scale_factors=[1, 2, 3],
+            folding=fold_global,
+            extrapolate=RichardsonFactory.extrapolate,
+        )
         @qml.qnode(dev)
         def mitigated_qnode(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -383,7 +409,12 @@ class TestMitiqIntegration:
         np.random.seed(0)
         w1, w2 = [np.random.random(s, requires_grad=True) for s in shapes]
 
-        @qml.transforms.mitigate_with_zne([1, 2, 3], fold_global, RichardsonFactory.extrapolate)
+        @partial(
+            qml.transforms.mitigate_with_zne,
+            scale_factors=[1, 2, 3],
+            folding=fold_global,
+            extrapolate=RichardsonFactory.extrapolate,
+        )
         @qml.qnode(dev)
         def mitigated_circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -466,8 +497,8 @@ class TestDifferentiableZNE:
 
         scale_factors = [1.0, 2.0, 3.0]
 
-        mitigated_qnode = mitigate_with_zne(scale_factors, fold_global, richardson_extrapolate)(
-            qnode_noisy
+        mitigated_qnode = mitigate_with_zne(
+            qnode_noisy, scale_factors, fold_global, richardson_extrapolate
         )
 
         theta = np.array([np.pi / 4, np.pi / 4], requires_grad=True)
@@ -492,8 +523,8 @@ class TestDifferentiableZNE:
 
         scale_factors = [1.0, 2.0, 3.0]
 
-        mitigated_qnode = mitigate_with_zne(scale_factors, fold_global, richardson_extrapolate)(
-            qnode_noisy
+        mitigated_qnode = mitigate_with_zne(
+            qnode_noisy, scale_factors, fold_global, richardson_extrapolate
         )
 
         theta = jnp.array(
@@ -521,7 +552,7 @@ class TestDifferentiableZNE:
         scale_factors = [1.0, 2.0, 3.0]
 
         mitigated_qnode = jax.jit(
-            mitigate_with_zne(scale_factors, fold_global, richardson_extrapolate)(qnode_noisy)
+            mitigate_with_zne(qnode_noisy, scale_factors, fold_global, richardson_extrapolate)
         )
 
         theta = jnp.array(
@@ -547,8 +578,8 @@ class TestDifferentiableZNE:
 
         scale_factors = [1.0, 2.0, 3.0]
 
-        mitigated_qnode = mitigate_with_zne(scale_factors, fold_global, richardson_extrapolate)(
-            qnode_noisy
+        mitigated_qnode = mitigate_with_zne(
+            qnode_noisy, scale_factors, fold_global, richardson_extrapolate
         )
 
         theta = torch.tensor([np.pi / 4, np.pi / 4], requires_grad=True)
@@ -576,8 +607,8 @@ class TestDifferentiableZNE:
 
         scale_factors = [1.0, 2.0, 3.0]
 
-        mitigated_qnode = mitigate_with_zne(scale_factors, fold_global, richardson_extrapolate)(
-            qnode_noisy
+        mitigated_qnode = mitigate_with_zne(
+            qnode_noisy, scale_factors, fold_global, richardson_extrapolate
         )
 
         theta = tf.Variable([np.pi / 4, np.pi / 4])
@@ -604,8 +635,8 @@ class TestDifferentiableZNE:
 
         scale_factors = [1.0, 2.0, 3.0]
 
-        mitigated_qnode = mitigate_with_zne(scale_factors, fold_global, richardson_extrapolate)(
-            qnode_noisy
+        mitigated_qnode = mitigate_with_zne(
+            qnode_noisy, scale_factors, fold_global, richardson_extrapolate
         )
 
         theta = np.array([np.pi / 4, np.pi / 6], requires_grad=True)
@@ -631,8 +662,8 @@ class TestDifferentiableZNE:
 
         scale_factors = [1.0, 2.0, 3.0]
 
-        mitigated_qnode = mitigate_with_zne(scale_factors, fold_global, richardson_extrapolate)(
-            qnode_noisy
+        mitigated_qnode = mitigate_with_zne(
+            qnode_noisy, scale_factors, fold_global, richardson_extrapolate
         )
 
         theta = jnp.array(
@@ -661,7 +692,7 @@ class TestDifferentiableZNE:
         scale_factors = [1.0, 2.0, 3.0]
 
         mitigated_qnode = jax.jit(
-            mitigate_with_zne(scale_factors, fold_global, richardson_extrapolate)(qnode_noisy)
+            mitigate_with_zne(qnode_noisy, scale_factors, fold_global, richardson_extrapolate)
         )
 
         theta = jnp.array(
@@ -688,8 +719,8 @@ class TestDifferentiableZNE:
 
         scale_factors = [1.0, 2.0, 3.0]
 
-        mitigated_qnode = mitigate_with_zne(scale_factors, fold_global, richardson_extrapolate)(
-            qnode_noisy
+        mitigated_qnode = mitigate_with_zne(
+            qnode_noisy, scale_factors, fold_global, richardson_extrapolate
         )
 
         theta = torch.tensor([np.pi / 4, np.pi / 6], requires_grad=True)
@@ -717,8 +748,8 @@ class TestDifferentiableZNE:
 
         scale_factors = [1.0, 2.0, 3.0]
 
-        mitigated_qnode = mitigate_with_zne(scale_factors, fold_global, richardson_extrapolate)(
-            qnode_noisy
+        mitigated_qnode = mitigate_with_zne(
+            qnode_noisy, scale_factors, fold_global, richardson_extrapolate
         )
 
         theta = tf.Variable([np.pi / 4, np.pi / 6])

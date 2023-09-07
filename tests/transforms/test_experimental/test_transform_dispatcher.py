@@ -49,6 +49,7 @@ def no_tape_transform(
     circuit: qml.tape.QuantumTape, index: int
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Transform without tape."""
+    circuit = circuit.copy()
     circuit._ops.pop(index)  # pylint:disable=protected-access
     return [circuit], lambda x: x
 
@@ -57,6 +58,7 @@ def no_quantum_tape_transform(
     tape: qml.operation.Operator, index: int
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Transform with wrong hinting."""
+    tape = tape.copy()
     tape._ops.pop(index)  # pylint:disable=protected-access
     return [tape], lambda x: x
 
@@ -97,6 +99,7 @@ def first_valid_transform(
     tape: qml.tape.QuantumTape, index: int
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """A valid transform."""
+    tape = tape.copy()
     tape._ops.pop(index)  # pylint:disable=protected-access
     return [tape], lambda x: x
 
@@ -106,6 +109,7 @@ def second_valid_transform(
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """A valid trasnform."""
     tape1 = tape.copy()
+    tape2 = tape.copy()
     tape2 = tape._ops.pop(index)  # pylint:disable=protected-access
 
     def fn(results):
@@ -118,8 +122,8 @@ valid_transforms = [first_valid_transform, second_valid_transform]
 
 
 ##########################################
-# Non-valid expand transform
-def multiple_args_expand_transform(
+# Valid expand transform
+def expand_transform(
     tape: qml.tape.QuantumTape, index: int
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Multiple args expand fn."""
@@ -127,8 +131,10 @@ def multiple_args_expand_transform(
     return [tape], lambda x: x
 
 
-# Valid expand transform
-def expand_transform(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
+# Non-valid expand transform
+def non_valid_expand_transform(
+    tape: qml.tape.QuantumTape,
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     """A valid expand transform."""
     return [tape], lambda x: x
 
@@ -174,7 +180,7 @@ class TestTransformDispatcher:
         assert not dispatched_transform.is_informative
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
-    def test_integration_dispatcher_with_valid_transform_decorator(self, valid_transform):
+    def test_integration_dispatcher_with_valid_transform_decorator_partial(self, valid_transform):
         """Test that no error is raised with the transform function and that the transform dispatcher returns
         the right object."""
 
@@ -190,6 +196,33 @@ class TestTransformDispatcher:
             qml.PauliX(wires=0)
             qml.RZ(a, wires=1)
             return qml.expval(qml.PauliZ(wires=0))
+
+        assert isinstance(qnode_circuit, qml.QNode)
+        assert isinstance(qnode_circuit.transform_program, qml.transforms.core.TransformProgram)
+        assert isinstance(
+            qnode_circuit.transform_program.pop_front(), qml.transforms.core.TransformContainer
+        )
+
+    @pytest.mark.parametrize("valid_transform", valid_transforms)
+    def test_integration_dispatcher_with_valid_transform_decorator(self, valid_transform):
+        """Test that a warning is raised with the transform function and that the transform dispatcher returns
+        the right object."""
+
+        dispatched_transform = transform(valid_transform)
+        targs = [0]
+
+        msg = r"Decorating a QNode with @transform_fn\(\*\*transform_kwargs\) has been deprecated"
+        with pytest.warns(UserWarning, match=msg):
+
+            @dispatched_transform(targs)
+            @qml.qnode(device=dev)
+            def qnode_circuit(a):
+                """QNode circuit."""
+                qml.Hadamard(wires=0)
+                qml.CNOT(wires=[0, 1])
+                qml.PauliX(wires=0)
+                qml.RZ(a, wires=1)
+                return qml.expval(qml.PauliZ(wires=0))
 
         assert isinstance(qnode_circuit, qml.QNode)
         assert isinstance(qnode_circuit.transform_program, qml.transforms.core.TransformProgram)
@@ -252,7 +285,7 @@ class TestTransformDispatcher:
         assert isinstance(qnode_transformed.transform_program, qml.transforms.core.TransformProgram)
         expand_transform_container = qnode_transformed.transform_program.pop_front()
         assert isinstance(expand_transform_container, qml.transforms.core.TransformContainer)
-        assert expand_transform_container.args == []
+        assert expand_transform_container.args == [0]
         assert expand_transform_container.kwargs == {}
         assert expand_transform_container.classical_cotransform is None
         assert not expand_transform_container.is_informative
@@ -323,13 +356,13 @@ class TestTransformDispatcher:
             transform(first_valid_transform, expand_transform=non_callable)
 
     def test_multiple_args_expand_transform(self):
-        """Test that an expand transform must take a single argument which is the tape."""
+        """Test that an expand transform must match the signature of the transform"""
 
         with pytest.raises(
             TransformError,
-            match="The expand transform does not support arg and kwargs other than tape.",
+            match="The expand transform must have the same signature as the transform",
         ):
-            transform(first_valid_transform, expand_transform=multiple_args_expand_transform)
+            transform(first_valid_transform, expand_transform=non_valid_expand_transform)
 
     def test_cotransform_not_implemented(self):
         """Test that a co-transform must be a callable."""
@@ -338,17 +371,6 @@ class TestTransformDispatcher:
             NotImplementedError, match="Classical cotransforms are not yet integrated."
         ):
             transform(first_valid_transform, classical_cotransform=non_callable)
-
-    def test_apply_dispatched_transform_non_valid_obj(self):
-        """Test that applying a dispatched function on a non-valid object raises an error."""
-        dispatched_transform = transform(first_valid_transform)
-        obj = qml.RX(0.1, wires=0)
-        with pytest.raises(
-            TransformError,
-            match="The object on which the transform is applied is not valid. It can only be a tape, a QNode or a "
-            "qfunc.",
-        ):
-            dispatched_transform(obj)
 
     def test_qfunc_transform_multiple_tapes(self):
         """Test that quantum function is not compatible with multiple tapes."""

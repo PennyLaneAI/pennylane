@@ -149,6 +149,29 @@ Completed deprecation cycles
   - Deprecated in v0.32
   - Removed in v0.33
 
+* The following decorator syntax for transforms has been deprecated:
+
+  .. code-block:: python
+
+      @transform_fn(**transform_kwargs)
+      @qml.qnode(dev)
+      def circuit():
+          ...
+
+  If you are using a transform that has supporting ``transform_kwargs``, please call the
+  transform directly using ``circuit = transform_fn(circuit, **transform_kwargs)``,
+  or use ``functools.partial``:
+
+  .. code-block:: python
+
+      @functools.partial(transform_fn, **transform_kwargs)
+      @qml.qnode(dev)
+      def circuit():
+          ...
+
+  - Deprecated in v0.33
+  - Will be removed in v0.34
+
 * The ``mode`` keyword argument in ``QNode`` has been removed, as it was only used in the old return
   system (which has also been removed). Please use ``grad_on_execution`` instead.
 
