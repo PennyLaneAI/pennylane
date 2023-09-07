@@ -1076,3 +1076,17 @@ def test_rccsd_state(molecule, basis, symm, tol, wf_ref):
 
     assert wf_ccsd.keys() == wf_ref.keys()
     assert np.allclose(abs(np.array(list(wf_ccsd.values()))), abs(np.array(list(wf_ref.values()))))
+
+
+@pytest.mark.parametrize(
+    ("sitevec", "state_ref"),
+    [
+        ([1, 2, 1, 0, 0, 2], (5, 34)),
+    ],
+)
+def test_sitevec_to_fock(sitevec, state_ref):
+    r"""Test that _sitevec_to_fock returns the correct state."""
+
+    state = qml.qchem.convert._sitevec_to_fock(sitevec)
+
+    assert state == state_ref

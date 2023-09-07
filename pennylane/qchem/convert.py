@@ -1055,7 +1055,7 @@ def _dmrg_state(wavefunction, reordering=None, tol=1e-15):
     dets, coeffs = wavefunction
 
     row, col, dat = [], [], []
-    ## process the data into an fci_dict
+
     for ii, det in enumerate(dets):
         stra, strb = _sitevec_to_fock(det)
         row.append(stra)
@@ -1090,14 +1090,14 @@ def _sitevec_to_fock(det):
     r"""Covert a Slater determinant from site vector to occupation number vector representation.
 
     Args:
-        det (list): determinant in site vector representation
+        det (array[int]): determinant in site vector representation
 
     Returns:
         tuple: tuple of integers representing binaries that correspond to occupation vectors in alpha and beta spin sectors
 
     **Example**
 
-    >>> det = [1 2 1 0 0 2]
+    >>> det = [1, 2, 1, 0, 0, 2]
     >>> _sitevec_to_fock(det)
     >>> (5, 34)
     """
