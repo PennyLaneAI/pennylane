@@ -345,11 +345,9 @@ def _make_probs(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], 
     return [qscript], post_processing_fn
 
 
-@transform
-def classical_fisher(
-    tape: QuantumTape, argnums: Optional[Union[int, Sequence[int]]] = 0
-) -> (Sequence[QuantumTape], Callable):
-    r"""Returns a function that computes the classical fisher information matrix (CFIM) of a given :class:`.QuantumTape`.
+def classical_fisher(qnode, argnums=0):
+    r"""Returns a function that computes the classical fisher information matrix (CFIM) of a given :class:`.QNode` or
+    quantum tape.
 
     Given a parametrized (classical) probability distribution :math:`p(\bm{\theta})`, the classical fisher information
     matrix quantifies how changes to the parameters :math:`\bm{\theta}` are reflected in the probability distribution.
@@ -365,7 +363,7 @@ def classical_fisher(
     for :math:`N` qubits.
 
     Args:
-        tape (qml.QuantumTape): A :class:`.QuantumTape` that may have arbitrary return types.
+        tape (:class:`.QNode` or qml.QuantumTape): A :class:`.QNode` or quantum tape that may have arbitrary return types.
         argnums (Optional[int or List[int]]): Arguments to be differentiated in case interface ``jax`` is used.
 
     Returns:
@@ -472,7 +470,7 @@ def classical_fisher(
 
         @qml.qnode(dev)
         def circ(params):
-            qml.RX(qml.math.cos(params[0]), wires=0)z
+            qml.RX(qml.math.cos(params[0]), wires=0)
             qml.RX(qml.math.cos(params[0]), wires=1)
             qml.RX(qml.math.cos(params[1]), wires=0)
             qml.RX(qml.math.cos(params[1]), wires=1)
@@ -490,117 +488,53 @@ def classical_fisher(
             [2.16840434e-18, 2.81967252e-01]]]))
 
     """
-    tapes, prob_fn = _make_probs(tape)
-    interface = qml.math.get_interface(*tape.data)
+    new_qnode = _make_probs(qnode)
 
-    def processing_fn(res):
-        probs = prob_fn(res)
+    def wrapper(*args, **kwargs):
+        old_interface = qnode.interface
+
+        if old_interface == "auto":
+            qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
+
+        interface = qnode.interface
 
         if interface in ("jax", "jax-jit"):
-            j = []
+            import jax
+
+            jac = jax.jacobian(new_qnode, argnums=argnums)
 
         if interface == "torch":
-            j = []
+            jac = _torch_jac(new_qnode)
 
         if interface == "autograd":
-            j = []
+            jac = qml.jacobian(new_qnode)
 
         if interface == "tf":
-            j = []
+            jac = _tf_jac(new_qnode)
+
+        j = jac(*args, **kwargs)
+        p = new_qnode(*args, **kwargs)
+
+        if old_interface == "auto":
+            qnode.interface = "auto"
 
         # In case multiple variables are used, we create a list of cfi matrices
         if isinstance(j, tuple):
             res = []
             for j_i in j:
-                res.append(_compute_cfim(probs, j_i))
+                res.append(_compute_cfim(p, j_i))
 
             if len(j) == 1:
                 return res[0]
 
             return res
 
-        return _compute_cfim(probs, j)
+        return _compute_cfim(p, j)
 
-    return tapes, processing_fn
-
-    # def wrapper(*args, **kwargs):
-    #     old_interface = qnode.interface
-
-    #     if old_interface == "auto":
-    #         qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
-
-    #     interface = qnode.interface
-
-    #     if interface in ("jax", "jax-jit"):
-    #         import jax
-
-    #         jac = jax.jacobian(new_qnode, argnums=argnums)
-
-    #     if interface == "torch":
-    #         jac = _torch_jac(new_qnode)
-
-    #     if interface == "autograd":
-    #         jac = qml.jacobian(new_qnode)
-
-    #     if interface == "tf":
-    #         jac = _tf_jac(new_qnode)
-
-    #     j = jac(*args, **kwargs)
-    #     p = new_qnode(*args, **kwargs)
-
-    #     if old_interface == "auto":
-    #         qnode.interface = "auto"
-
-    #     # In case multiple variables are used, we create a list of cfi matrices
-    #     if isinstance(j, tuple):
-    #         res = []
-    #         for j_i in j:
-    #             res.append(_compute_cfim(p, j_i))
-
-    #         if len(j) == 1:
-    #             return res[0]
-
-    #         return res
-
-    #     return _compute_cfim(p, j)
-
-    # return wrapper
+    return wrapper
 
 
-@classical_fisher.custom_qnode_transform
-def _cf_qnode_transform(self, qnode, targs, tkwargs):
-    old_interface = qnode.interface
-    new_qnode = _make_probs(qnode)
-
-    if old_interface == "auto":
-        qnode.interface = qml.math.get_interface(*targs, *list(tkwargs.values()))
-
-    interface = qnode.interface
-
-    if interface in ("jax", "jax-jit"):
-        import jax
-
-        jac = jax.jacobian(new_qnode, argnums=targs[0])
-
-    if interface == "torch":
-        jac = _torch_jac(new_qnode)
-
-    if interface == "autograd":
-        jac = qml.jacobian(new_qnode)
-
-    if interface == "tf":
-        jac = _tf_jac(new_qnode)
-
-    j = jac(*targs, **tkwargs)
-
-    if old_interface == "auto":
-        qnode.interface = "auto"
-
-    return self.default_qnode_transform(new_qnode, targs, tkwargs)
-
-
-@transform
-def quantum_fisher(tape: QuantumTape, *args, **kwargs) -> (Sequence[QuantumTape], Callable):
+def quantum_fisher(qnode, *args, **kwargs):
     r"""Returns a function that computes the quantum fisher information matrix (QFIM) of a given :class:`.QNode`.
 
     Given a parametrized quantum state :math:`|\psi(\bm{\theta})\rangle`, the quantum fisher information matrix (QFIM) quantifies how changes to the parameters :math:`\bm{\theta}`
@@ -685,7 +619,7 @@ def quantum_fisher(tape: QuantumTape, *args, **kwargs) -> (Sequence[QuantumTape]
 
     """
 
-    if tape.shots is not None and isinstance(qnode.device, DefaultQubit):
+    if qnode.device.shots is not None and isinstance(qnode.device, DefaultQubit):
 
         def wrapper(*args0, **kwargs0):
             return 4 * metric_tensor(qnode, *args, **kwargs)(*args0, **kwargs0)
