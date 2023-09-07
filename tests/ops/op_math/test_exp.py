@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for the ``Exp`` class"""
 import copy
+import re
 
 import pytest
 
@@ -410,12 +411,18 @@ class TestDecomposition:
         """Tests that the decomposition doesn't exist if the base is not a pauli word."""
         op = Exp(qml.S(0), -0.5j, num_steps=100)
         assert not op.has_decomposition
-        with pytest.raises(DecompositionUndefinedError):
+        with pytest.raises(
+            DecompositionUndefinedError,
+            match=re.escape(f"The decomposition of the {op} operator is not defined. "),
+        ):
             op.decomposition()
 
         op = Exp(2 * qml.S(0) + qml.PauliZ(1), -0.5j, num_steps=100)
         assert not op.has_decomposition
-        with pytest.raises(DecompositionUndefinedError):
+        with pytest.raises(
+            DecompositionUndefinedError,
+            match=re.escape(f"The decomposition of the {op} operator is not defined. "),
+        ):
             op.decomposition()
 
     def test_nontensor_tensor_no_decomposition(self):
@@ -569,6 +576,18 @@ class TestDecomposition:
             DecompositionUndefinedError,
             match="Please set a value to ``num_steps`` when instantiating the ``Exp`` operator",
         ):
+            op.decomposition()
+
+    def test_real_coeff_and_none_num_steps_error(self):
+        """Test that the decomposition raises an error if ``num_steps`` is None and
+        the coefficient has non-zero real part"""
+        op = qml.exp(qml.sum(qml.PauliX(0), qml.PauliY(1)), 1.23 + 0.5j)
+        msg = (
+            "Please set a value to ``num_steps`` when instantiating the ``Exp`` operator "
+            "if a Suzuki-Trotter decomposition is required. "
+            "Decomposition is not defined for real coefficients of hermitian operators."
+        )
+        with pytest.raises(DecompositionUndefinedError, match=msg):
             op.decomposition()
 
     @pytest.mark.parametrize(
