@@ -15,6 +15,7 @@
 This module contains the transform function, the transform dispatcher and the transform container.
 """
 import copy
+import warnings
 import types
 
 import pennylane as qml
@@ -60,9 +61,8 @@ class TransformDispatcher:
             # is the object we wish to transform
             obj, *targs = targs
 
-        if isinstance(obj, qml.tape.QuantumTape):
-            new_tape = copy.deepcopy(obj)
-            return self._transform(new_tape, *targs, **tkwargs)
+        if isinstance(obj, qml.tape.QuantumScript):
+            return self._transform(obj, *targs, **tkwargs)
         if isinstance(obj, qml.QNode):
             return self._qnode_transform(
                 obj,
@@ -72,9 +72,30 @@ class TransformDispatcher:
         if callable(obj):
             return self._qfunc_transform(obj, targs, tkwargs)
 
-        raise TransformError(
-            "The object on which the transform is applied is not valid. It can only be a tape, a QNode or a qfunc."
+        # Input is not a QNode nor a quantum tape nor a device.
+        # Assume Python decorator syntax:
+        #
+        # result = some_transform(*transform_args)(qnode)(*qnode_args)
+
+        warnings.warn(
+            "Decorating a QNode with @transform_fn(**transform_kwargs) has been "
+            "deprecated and will be removed in a future version. Please decorate "
+            "with @functools.partial(transform_fn, **transform_kwargs) instead, "
+            "or call the transform directly using qnode = transform_fn(qnode, **transform_kwargs)",
+            UserWarning,
         )
+
+        if obj is not None:
+            targs = (obj, *targs)
+
+        def wrapper(obj):
+            return self(obj, *targs, **tkwargs)
+
+        wrapper.__doc__ = (
+            f"Partial of transform {self._transform} with bound arguments and keyword arguments."
+        )
+
+        return wrapper
 
     @property
     def transform(self):
@@ -135,7 +156,7 @@ class TransformDispatcher:
         qnode = copy.deepcopy(qnode)
 
         if self.expand_transform:
-            qnode.add_transform(TransformContainer(self._expand_transform))
+            qnode.add_transform(TransformContainer(self._expand_transform, targs, tkwargs))
         qnode.add_transform(
             TransformContainer(
                 self._transform, targs, tkwargs, self._classical_cotransform, self._is_informative

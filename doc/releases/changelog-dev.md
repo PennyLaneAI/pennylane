@@ -4,7 +4,12 @@
 
 <h3>New features since last release</h3>
 
+* All batch transforms are updated to the new transform program system.
+  [(4440)](https://github.com/PennyLaneAI/pennylane/pull/4440)
+
 <h3>Improvements 🛠</h3>
+* The qchem ``fermionic_dipole`` and ``particle_number`` functions are updated to use a ``FermiSentence``
+  [(#4546)](https://github.com/PennyLaneAI/pennylane/pull/4546)
 
 * Add the method ``add_transform`` and ``insert_front_transform`` transform in the ``TransformProgram``.
   [(#4559)](https://github.com/PennyLaneAI/pennylane/pull/4559)
@@ -25,6 +30,16 @@
 * The density matrix aspects of `StateMP` have been split into their own measurement
   process, `DensityMatrixMP`.
   [(#4558)](https://github.com/PennyLaneAI/pennylane/pull/4558)
+
+* The `StateMP` measurement now accepts a wire order (eg. a device wire order). The `process_state`
+  method will re-order the given state to go from the inputted wire-order to the process's wire-order.
+  If the process's wire-order contains extra wires, it will assume those are in the zero-state.
+  [(#4570)](https://github.com/PennyLaneAI/pennylane/pull/4570)
+
+* Various changes to measurements to improve feature parity between the legacy `default.qubit` and
+  the new `DefaultQubit2`. This includes not trying to squeeze batched `CountsMP` results and implementing
+  `MutualInfoMP.map_wires`.
+  [(#4574)](https://github.com/PennyLaneAI/pennylane/pull/4574)
 
 <h3>Breaking changes 💔</h3>
 
@@ -110,6 +125,24 @@
   ``StatePrepBase`` operations should be placed at the beginning of the `ops` list instead.
   [(#4554)](https://github.com/PennyLaneAI/pennylane/pull/4554)
 
+* The following decorator syntax for transforms has been deprecated and will raise a warning:
+  ```python
+  @transform_fn(**transform_kwargs)
+  @qml.qnode(dev)
+  def circuit():
+      ...
+  ```
+  If you are using a transform that has supporting `transform_kwargs`, please call the
+  transform directly using `circuit = transform_fn(circuit, **transform_kwargs)`,
+  or use `functools.partial`:
+  ```python
+  @functools.partial(transform_fn, **transform_kwargs)
+  @qml.qnode(dev)
+  def circuit():
+      ...
+  ```
+  [(#4457)](https://github.com/PennyLaneAI/pennylane/pull/4457/)
+
 <h3>Documentation 📝</h3>
 
 * Minor documentation improvements to the new device API. The documentation now correctly states that interface-specific
@@ -132,6 +165,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Soran Jahangiri,
 Lillian M. A. Frederiksen,
 Romain Moyard,
 Mudit Pandey,

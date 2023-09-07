@@ -559,7 +559,7 @@ class TestDiffMulti:
         jax.config.update("jax_enable_x64", True)
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.batch_params(all_operations=True)  # pylint:disable=no-value-for-parameter
+        @functools.partial(qml.batch_params, all_operations=True)
         @qml.qnode(dev, diff_method=diff_method, interface=interface)
         def circuit(x):
             qml.RY(x, wires=0)
@@ -609,7 +609,7 @@ class TestDiffMulti:
         dev = qml.device("default.qubit", wires=2)
 
         @jax.jit
-        @qml.batch_params(all_operations=True)  # pylint:disable=no-value-for-parameter
+        @functools.partial(qml.batch_params, all_operations=True)
         @qml.qnode(dev, diff_method=diff_method, interface=interface)
         def circuit(x):
             qml.RY(x, wires=0)

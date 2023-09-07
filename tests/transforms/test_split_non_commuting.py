@@ -68,13 +68,11 @@ class TestUnittestSplitNonCommuting:
 
         spy = mocker.spy(qml.math, "concatenate")
 
-        assert split == [tape]
         assert all(isinstance(t, qml.tape.QuantumScript) for t in split)
         assert fn([0.5]) == 0.5
 
         qs = qml.tape.QuantumScript(tape.operations, tape.measurements)
         split, fn = split_non_commuting(qs)
-        assert split == [qs]
         assert all(isinstance(i_qs, qml.tape.QuantumScript) for i_qs in split)
         assert fn([0.5]) == 0.5
 
@@ -193,6 +191,38 @@ class TestIntegration:
             )
 
         res = circuit()
+        assert isinstance(res, tuple)
+        assert len(res) == 6
+        assert all(isinstance(r, np.ndarray) for r in res)
+        assert all(r.shape == () for r in res)
+
+        res = qml.math.stack(res)
+
+        assert all(np.isclose(res, np.array([0.0, -1.0, 0.0, 0.0, 1.0, 1 / np.sqrt(2)])))
+
+    def test_expval_non_commuting_observables_qnode(self):
+        """Test expval with multiple non-commuting operators as a tranform program on the qnode."""
+        dev = qml.device("default.qubit", wires=6)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(1)
+            qml.Hadamard(0)
+            qml.PauliZ(0)
+            qml.Hadamard(3)
+            qml.Hadamard(5)
+            qml.T(5)
+            return (
+                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)),
+                qml.expval(qml.PauliX(0)),
+                qml.expval(qml.PauliZ(1)),
+                qml.expval(qml.PauliX(1) @ qml.PauliX(4)),
+                qml.expval(qml.PauliX(3)),
+                qml.expval(qml.PauliY(5)),
+            )
+
+        res = split_non_commuting(circuit)()
+
         assert isinstance(res, tuple)
         assert len(res) == 6
         assert all(isinstance(r, np.ndarray) for r in res)

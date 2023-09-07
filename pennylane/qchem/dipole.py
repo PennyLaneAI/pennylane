@@ -15,6 +15,7 @@
 This module contains the functions needed for computing the dipole moment.
 """
 import pennylane as qml
+from pennylane.fermi import FermiSentence, FermiWord
 
 from .basis_data import atomic_numbers
 from .hartree_fock import scf
@@ -188,9 +189,16 @@ def fermionic_dipole(mol, cutoff=1.0e-18, core=None, active=None):
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
     >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
-    >>> coeffs, ops = fermionic_dipole(mol)(*args)[2]
-    >>> ops
-    [[], [0, 0], [0, 2], [1, 1], [1, 3], [2, 0], [2, 2], [3, 1], [3, 3]]
+    >>> fermionic_dipole(mol)(*args)[2]
+    -0.4999999988651487 * a⁺(0) a(0)
+    + 0.82709948984052 * a⁺(0) a(2)
+    + -0.4999999988651487 * a⁺(1) a(1)
+    + 0.82709948984052 * a⁺(1) a(3)
+    + 0.82709948984052 * a⁺(2) a(0)
+    + -0.4999999899792451 * a⁺(2) a(2)
+    + 0.82709948984052 * a⁺(3) a(1)
+    + -0.4999999899792451 * a⁺(3) a(3)
+    + 1.0 * I
     """
 
     def _fermionic_dipole(*args):
@@ -200,8 +208,7 @@ def fermionic_dipole(mol, cutoff=1.0e-18, core=None, active=None):
             *args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
-            tuple(array[float], list[list[int]]): the dipole moment coefficients and the indices of
-            the spin orbitals the creation and annihilation operators act on
+            FermiSentence: fermionic dipole moment
         """
         constants, integrals = dipole_integrals(mol, core, active)(*args)
 
@@ -211,12 +218,12 @@ def fermionic_dipole(mol, cutoff=1.0e-18, core=None, active=None):
             nd[1] = nd[1] + atomic_numbers[s] * mol.coordinates[i][1]
             nd[2] = nd[2] + atomic_numbers[s] * mol.coordinates[i][2]
 
-        f = []
+        d_ferm = []
         for i in range(3):
-            coeffs, ops = fermionic_observable(constants[i], integrals[i], cutoff=cutoff)
-            f.append((qml.math.concatenate((nd[i], coeffs * (-1))), [[]] + ops))
+            f = fermionic_observable(constants[i], integrals[i], cutoff=cutoff, fs=True)
+            d_ferm.append(FermiSentence({FermiWord({}): nd[i][0]}) - f)
 
-        return f
+        return d_ferm
 
     return _fermionic_dipole
 
@@ -283,7 +290,8 @@ def dipole_moment(mol, cutoff=1.0e-18, core=None, active=None):
     >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> dipole_moment(mol)(*args)[2].ops
-    [PauliZ(wires=[0]),
+    [Identity(wires=[0]),
+     PauliZ(wires=[0]),
      PauliY(wires=[0]) @ PauliZ(wires=[1]) @ PauliY(wires=[2]),
      PauliX(wires=[0]) @ PauliZ(wires=[1]) @ PauliX(wires=[2]),
      PauliZ(wires=[1]),
