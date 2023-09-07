@@ -1076,3 +1076,38 @@ def test_rccsd_state(molecule, basis, symm, tol, wf_ref):
 
     assert wf_ccsd.keys() == wf_ref.keys()
     assert np.allclose(abs(np.array(list(wf_ccsd.values()))), abs(np.array(list(wf_ref.values()))))
+
+
+@pytest.mark.parametrize(
+    ("sitevec", "format", "state_ref"),
+    [
+        ("aba00b", "shci", (5, 34)),
+    ],
+)
+def test_sitevec_to_fock(sitevec, format, state_ref):
+    r"""Test that _sitevec_to_fock returns the correct state."""
+
+    state = qml.qchem.convert._sitevec_to_fock(sitevec, format)
+
+    assert state == state_ref
+
+
+@pytest.mark.parametrize(
+    ("wavefunction", "state_ref"),
+    [
+        (
+            (
+                ["02", "20"],
+                np.array([-0.10660077, 0.9943019]),
+            ),
+            {(2, 2): np.array([-0.10660077]), (1, 1): np.array([0.9943019])},
+        ),
+    ],
+)
+def test_shci_state(wavefunction, state_ref):
+    r"""Test that _dmrg_state returns the correct state."""
+
+    state = qml.qchem.convert._shci_state(wavefunction)
+    print(state)
+
+    assert state == state_ref

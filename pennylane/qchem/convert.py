@@ -1057,7 +1057,7 @@ def _shci_state(wavefunction, tol=1e-15):
     {(7, 7): 0.8874167069, (11, 11): -0.3075774156, (19, 19): -0.3075774156, (35, 35): -0.1450474361}
     """
 
-    coefs, dets = wavefunction
+    dets, coefs = wavefunction
 
     xa = []
     xb = []
@@ -1065,7 +1065,7 @@ def _shci_state(wavefunction, tol=1e-15):
 
     for coef, det in zip(coefs, dets):
         if abs(coef) > tol:
-            bin_a, bin_b = _sitevec_to_fock(det)
+            bin_a, bin_b = _sitevec_to_fock(det, "shci")
 
             xa.append(bin_a)
             xb.append(bin_b)
