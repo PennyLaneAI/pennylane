@@ -1009,7 +1009,7 @@ def _uccsd_state(ccsd_solver, tol=1e-15):
     return dict_fcimatr
 
 
-def _dmrg_state(wavefunction, reordering=None, tol=1e-15):
+def _dmrg_state(wavefunction, tol=1e-15):
     r"""Construct a wavefunction from the DMRG wavefunction obtained from the Block2 library.
 
     The generated wavefunction is a dictionary where the keys represent a configuration, which
@@ -1034,7 +1034,7 @@ def _dmrg_state(wavefunction, reordering=None, tol=1e-15):
 
     Returns:
         dict: dictionary of the form `{(int_a, int_b) :coeff}`, with integers `int_a, int_b`
-        having binary represention corresponding to the Fock occupation vector in alpha and beta
+        having binary representation corresponding to the Fock occupation vector in alpha and beta
         spin sectors, respectively, and coeff being the CI coefficients of those configurations
 
     **Example**
@@ -1093,7 +1093,8 @@ def _sitevec_to_fock(det):
         det (array[int]): determinant in site vector representation
 
     Returns:
-        tuple: tuple of integers representing binaries that correspond to occupation vectors in alpha and beta spin sectors
+        tuple: tuple of integers representing binaries that correspond to occupation vectors in
+            alpha and beta spin sectors
 
     **Example**
 
