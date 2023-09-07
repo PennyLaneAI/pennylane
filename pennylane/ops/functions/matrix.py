@@ -147,16 +147,17 @@ def _matrix(
         params = res[0].get_parameters(trainable_only=False)
         interface = qml.math.get_interface(*params)
 
-        wire_order = wire_order or res[0].wires
+        # Can't name it wire_order; reference before assignment error gets raised
+        wires_order = wire_order or res[0].wires
 
         # initialize the unitary matrix
         if len(res[0].operations) == 0:
-            result = qml.math.eye(2 ** len(wire_order), like=interface)
+            result = qml.math.eye(2 ** len(wires_order), like=interface)
         else:
-            result = matrix(res[0].operations[0], wire_order=wire_order)
+            result = matrix(res[0].operations[0], wire_order=wires_order)
 
         for op in res[0].operations[1:]:
-            U = matrix(op, wire_order=wire_order)
+            U = matrix(op, wire_order=wires_order)
             # Coerce the matrices U and result and use matrix multiplication. Broadcasted axes
             # are handled correctly automatically by ``matmul`` (See e.g. NumPy documentation)
             result = qml.math.matmul(*qml.math.coerce([U, result], like=interface), like=interface)

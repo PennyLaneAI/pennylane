@@ -123,6 +123,7 @@ class TransformDispatcher:
     @property
     def requires_exec(self):
         """Return True if the transformed tapes must be executed."""
+        return self._requires_exec
 
     def custom_qnode_transform(self, fn):
         """Register a custom QNode execution wrapper function
@@ -166,7 +167,12 @@ class TransformDispatcher:
             qnode.add_transform(TransformContainer(self._expand_transform, targs, tkwargs))
         qnode.add_transform(
             TransformContainer(
-                self._transform, targs, tkwargs, self._classical_cotransform, self._is_informative
+                self._transform,
+                targs,
+                tkwargs,
+                self._classical_cotransform,
+                self._is_informative,
+                self._requires_exec,
             )
         )
         return qnode
