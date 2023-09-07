@@ -17,7 +17,7 @@ This module contains the qml.state measurement.
 from typing import Sequence, Optional
 
 import pennylane as qml
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WireError
 
 from .measurements import State, StateMeasurement
 
@@ -131,12 +131,13 @@ class StateMP(StateMeasurement):
     Please refer to :func:`state` for detailed documentation.
 
     Args:
+        wires (.Wires): The wires the measurement process applies to.
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
     """
 
-    def __init__(self, *, id: Optional[str] = None):
-        super().__init__(wires=None, id=id)
+    def __init__(self, wires: Optional[Wires] = None, id: Optional[str] = None):
+        super().__init__(wires=wires, id=id)
 
     @property
     def return_type(self):
@@ -155,7 +156,37 @@ class StateMP(StateMeasurement):
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         # pylint:disable=redefined-outer-name
-        return state
+        wires = self.wires
+        if not wires or wire_order == wires:
+            return state
+
+        if not wires.contains_wires(wire_order):
+            raise WireError(
+                f"Unexpected wires {set(wire_order) - set(wires)} found in wire order. Expected wire order to be a subset of {wires}"
+            )
+
+        # pad with zeros, put existing wires last
+        is_torch = qml.math.get_interface(state) == "torch"
+        is_state_batched = qml.math.ndim(state) == 2
+        pad_width = 2 ** len(wires) - 2 ** len(wire_order)
+        pad = (pad_width, 0) if is_torch else (0, pad_width)
+        shape = (2,) * len(wires)
+        if is_state_batched:
+            pad = ((0, 0), pad)
+            shape = (qml.math.shape(state)[0],) + shape
+        elif is_torch:
+            pad = (pad,)
+
+        state = qml.math.pad(state, pad)
+        state = qml.math.reshape(state, shape)
+
+        # re-order
+        new_wire_order = Wires.unique_wires([wires, wire_order]) + wire_order
+        desired_axes = [new_wire_order.index(w) for w in wires]
+        if is_state_batched:
+            desired_axes = [0] + [i + 1 for i in desired_axes]
+        state = qml.math.transpose(state, desired_axes)
+        return qml.math.flatten(state)
 
 
 class DensityMatrixMP(StateMP):
@@ -170,8 +201,7 @@ class DensityMatrixMP(StateMP):
     """
 
     def __init__(self, wires: Wires, id: Optional[str] = None):
-        # pylint:disable=non-parent-init-called,super-init-not-called
-        StateMeasurement.__init__(self, wires=wires, id=id)
+        super().__init__(wires=wires, id=id)
 
     def shape(self, device, shots):
         num_shot_elements = (
