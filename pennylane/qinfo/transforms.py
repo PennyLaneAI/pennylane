@@ -640,7 +640,9 @@ def quantum_fisher(qnode, *args, **kwargs):
 
     """
 
-    if qnode.device.shots is not None and isinstance(qnode.device, DefaultQubit):
+    if qnode.device.shots and isinstance(
+        qnode.device, (DefaultQubit, qml.devices.experimental.Device)
+    ):
 
         def wrapper(*args0, **kwargs0):
             return 4 * metric_tensor(qnode, *args, **kwargs)(*args0, **kwargs0)
