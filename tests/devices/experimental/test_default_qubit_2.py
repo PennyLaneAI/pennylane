@@ -485,11 +485,11 @@ class TestBasicCircuit:
         dev = DefaultQubit2()
 
         @qml.qnode(dev, interface="tf")
-        def circuit():
-            op(param, wires=[0])
+        def circuit(p):
+            op(p, wires=[0])
             return qml.expval(qml.PauliZ(0))
 
-        res = circuit()
+        res = circuit(param)
         assert qml.math.get_interface(res) == "tensorflow"
         assert qml.math.allclose(res, -1)
 

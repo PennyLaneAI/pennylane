@@ -54,6 +54,7 @@ def get_final_state(circuit, debugger=None, interface=None):
     Args:
         circuit (.QuantumScript): The single circuit to simulate
         debugger (._Debugger): The debugger to use
+        interface (str): The machine learning interface to create the initial state with
 
     Returns:
         Tuple[TensorLike, bool]: A tuple containing the final state of the quantum script and
@@ -139,6 +140,7 @@ def simulate(circuit: qml.tape.QuantumScript, rng=None, debugger=None, interface
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
         debugger (_Debugger): The debugger to use
+        interface (str): The machine learning interface to create the initial state with
 
     Returns:
         tuple(TensorLike): The results of the simulation
