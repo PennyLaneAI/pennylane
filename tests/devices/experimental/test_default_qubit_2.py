@@ -478,6 +478,21 @@ class TestBasicCircuit:
         assert qml.math.allclose(grad0[0], -tf.cos(phi))
         assert qml.math.allclose(grad1[0], -tf.sin(phi))
 
+    @pytest.mark.tf
+    @pytest.mark.parametrize("op,param", [(qml.RX, np.pi), (qml.BasisState, [1])])
+    def test_qnode_returns_correct_interface(self, op, param):
+        """Test that even if no interface parameters are given, result is correct."""
+        dev = DefaultQubit2()
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(p):
+            op(p, wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        res = circuit(param)
+        assert qml.math.get_interface(res) == "tensorflow"
+        assert qml.math.allclose(res, -1)
+
 
 class TestSampleMeasurements:
     """A copy of the `qubit.simulate` tests, but using the device"""

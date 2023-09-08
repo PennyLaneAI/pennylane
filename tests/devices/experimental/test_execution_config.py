@@ -25,7 +25,7 @@ def test_default_values():
     config = ExecutionConfig()
     assert config.derivative_order == 1
     assert config.device_options == {}
-    assert config.interface == "autograd"
+    assert config.interface is None
     assert config.gradient_method is None
     assert config.gradient_keyword_arguments == {}
     assert config.grad_on_execution is None

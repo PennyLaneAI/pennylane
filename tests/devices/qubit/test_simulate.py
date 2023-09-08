@@ -180,6 +180,15 @@ class TestBasicCircuit:
         assert qml.math.allclose(grad0[0], -tf.cos(phi))
         assert qml.math.allclose(grad1[0], -tf.sin(phi))
 
+    @pytest.mark.jax
+    @pytest.mark.parametrize("op", [qml.RX(np.pi, 0), qml.BasisState([1], 0)])
+    def test_result_has_correct_interface(self, op):
+        """Test that even if no interface parameters are given, result is correct."""
+        qs = qml.tape.QuantumScript([op], [qml.expval(qml.PauliZ(0))])
+        res = simulate(qs, interface="jax")
+        assert qml.math.get_interface(res) == "jax"
+        assert qml.math.allclose(res, -1)
+
 
 class TestBroadcasting:
     """Test that simulate works with broadcasted parameters"""
