@@ -39,9 +39,8 @@ def expand_state_over_wires(state, state_wires, all_wires, is_state_batched):
     Returns:
         TensorLike: The state in the new desired size and order
     """
-    is_torch = qml.math.get_interface(state) == "torch"
     pad_width = 2 ** len(all_wires) - 2 ** len(state_wires)
-    pad = (pad_width, 0) if is_torch else (0, pad_width)
+    pad = (pad_width, 0) if qml.math.get_interface(state) == "torch" else (0, pad_width)
     shape = (2,) * len(all_wires)
     if is_state_batched:
         pad = ((0, 0), pad)
@@ -49,8 +48,7 @@ def expand_state_over_wires(state, state_wires, all_wires, is_state_batched):
         shape = (batch_size,) + shape
         state = qml.math.reshape(state, (batch_size, -1))
     else:
-        if is_torch:
-            pad = (pad,)
+        pad = (pad,)
         state = qml.math.flatten(state)
 
     state = qml.math.pad(state, pad, mode="constant")
