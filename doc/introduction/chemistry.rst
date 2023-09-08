@@ -207,7 +207,7 @@ Differentiable observables
     ~pennylane.qchem.fermionic_dipole
     ~pennylane.qchem.fermionic_hamiltonian
     ~pennylane.qchem.fermionic_observable
-    ~pennylane.qchem.jordan_wigner
+    ~pennylane.jordan_wigner
     ~pennylane.qchem.molecular_hamiltonian
     ~pennylane.qchem.qubit_observable
 

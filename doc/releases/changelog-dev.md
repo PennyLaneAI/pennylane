@@ -9,6 +9,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* The qchem ``fermionic_dipole`` and ``particle_number`` functions are updated to use a
+  ``FermiSentence``. The deprecated features for using tuples to represent fermionic operations are
+  removed.
+  [(#4546)](https://github.com/PennyLaneAI/pennylane/pull/4546)
+  [(#4556)](https://github.com/PennyLaneAI/pennylane/pull/4556)
+
 * Add the method ``add_transform`` and ``insert_front_transform`` transform in the ``TransformProgram``.
   [(#4559)](https://github.com/PennyLaneAI/pennylane/pull/4559)
 
@@ -33,6 +39,11 @@
   method will re-order the given state to go from the inputted wire-order to the process's wire-order.
   If the process's wire-order contains extra wires, it will assume those are in the zero-state.
   [(#4570)](https://github.com/PennyLaneAI/pennylane/pull/4570)
+
+* Various changes to measurements to improve feature parity between the legacy `default.qubit` and
+  the new `DefaultQubit2`. This includes not trying to squeeze batched `CountsMP` results and implementing
+  `MutualInfoMP.map_wires`.
+  [(#4574)](https://github.com/PennyLaneAI/pennylane/pull/4574)
 
 <h3>Breaking changes 💔</h3>
 
@@ -158,6 +169,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Soran Jahangiri,
 Lillian M. A. Frederiksen,
 Romain Moyard,
 Mudit Pandey,
