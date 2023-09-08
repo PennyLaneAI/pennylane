@@ -34,8 +34,10 @@ def reduced_dm(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Ca
         wires (Sequence(int)): List of wires in the considered subsystem.
 
     Returns:
-        tuple(Sequence[QuantumTape], Callable): Sequence of transformed tapes and a
-            post-processing function to convert the tape results into a density matrix
+        pennylane.QNode or qfunc or tuple[List[.QuantumTape], Callable]: If a QNode
+            is passed, it returns a QNode with the transform added to its transform program.
+            If a tape is passed, returns a tuple containing a list of quantum tapes to be
+            evaluated, and a function to be applied to these tape executions.
 
     **Example**
 
@@ -57,6 +59,7 @@ def reduced_dm(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Ca
 
     .. seealso:: :func:`pennylane.density_matrix` and :func:`pennylane.math.reduce_dm`
     """
+    # device_wires is provided by the custom QNode transform
     all_wires = kwargs.get("device_wires", tape.wires)
     wire_map = {w: i for i, w in enumerate(all_wires)}
     indices = [wire_map[w] for w in wires]
@@ -66,6 +69,7 @@ def reduced_dm(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Ca
         raise ValueError("The qfunc measurement needs to be State.")
 
     def processing_fn(res):
+        # device is provided by the custom QNode transform
         device = kwargs.get("device", None)
         c_dtype = device.C_DTYPE if device else "complex128"
 
@@ -119,8 +123,10 @@ def purity(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Callab
         wires (Sequence(int)): List of wires in the considered subsystem.
 
     Returns:
-        tuple(Sequence[QuantumTape], Callable): Sequence of transformed tapes and a
-            post-processing function to convert the tape results into the purity.
+        pennylane.QNode or qfunc or tuple[List[.QuantumTape], Callable]: If a QNode
+            is passed, it returns a QNode with the transform added to its transform program.
+            If a tape is passed, returns a tuple containing a list of quantum tapes to be
+            evaluated, and a function to be applied to these tape executions.
 
     **Example**
 
@@ -150,6 +156,7 @@ def purity(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Callab
 
     .. seealso:: :func:`pennylane.math.purity`
     """
+    # device_wires is provided by the custom QNode transform
     all_wires = kwargs.get("device_wires", tape.wires)
     wire_map = {w: i for i, w in enumerate(all_wires)}
     indices = [wire_map[w] for w in wires]
@@ -160,6 +167,7 @@ def purity(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Callab
         raise ValueError("The qfunc return type needs to be a state.")
 
     def processing_fn(res):
+        # device is provided by the custom QNode transform
         device = kwargs.get("device", None)
         c_dtype = device.C_DTYPE if device else "complex128"
 
@@ -208,8 +216,10 @@ def vn_entropy(
         base (float): Base for the logarithm, default is None the natural logarithm is used in this case.
 
     Returns:
-        tuple(Sequence[QuantumTape], Callable): Sequence of transformed tapes and a
-            post-processing function to convert the tape results into the Von Neumann entropy.
+        pennylane.QNode or qfunc or tuple[List[.QuantumTape], Callable]: If a QNode
+            is passed, it returns a QNode with the transform added to its transform program.
+            If a tape is passed, returns a tuple containing a list of quantum tapes to be
+            evaluated, and a function to be applied to these tape executions.
 
     **Example**
 
@@ -234,6 +244,7 @@ def vn_entropy(
 
     .. seealso:: :func:`pennylane.math.vn_entropy` and :func:`pennylane.vn_entropy`
     """
+    # device_wires is provided by the custom QNode transform
     all_wires = kwargs.get("device_wires", tape.wires)
     wire_map = {w: i for i, w in enumerate(all_wires)}
     indices = [wire_map[w] for w in wires]
@@ -243,6 +254,7 @@ def vn_entropy(
         raise ValueError("The qfunc return type needs to be a state.")
 
     def processing_fn(res):
+        # device is provided by the custom QNode transform
         device = kwargs.get("device", None)
         c_dtype = device.C_DTYPE if device else "complex128"
 
@@ -306,8 +318,10 @@ def mutual_info(
         base (float): Base for the logarithm. If None, the natural logarithm is used.
 
     Returns:
-        tuple(Sequence[QuantumTape], Callable): Sequence of transformed tapes and a
-            post-processing function to convert the tape results into the mutual information.
+        pennylane.QNode or qfunc or tuple[List[.QuantumTape], Callable]: If a QNode
+            is passed, it returns a QNode with the transform added to its transform program.
+            If a tape is passed, returns a tuple containing a list of quantum tapes to be
+            evaluated, and a function to be applied to these tape executions.
 
     **Example**
 
@@ -334,6 +348,7 @@ def mutual_info(
 
     .. seealso:: :func:`~.qinfo.vn_entropy`, :func:`pennylane.math.mutual_info` and :func:`pennylane.mutual_info`
     """
+    # device_wires is provided by the custom QNode transform
     all_wires = kwargs.get("device_wires", tape.wires)
     wire_map = {w: i for i, w in enumerate(all_wires)}
     indices0 = [wire_map[w] for w in wires0]
@@ -345,6 +360,7 @@ def mutual_info(
         raise ValueError("The qfunc return type needs to be a state.")
 
     def processing_fn(res):
+        # device is provided by the custom QNode transform
         device = kwargs.get("device", None)
         c_dtype = device.C_DTYPE if device else "complex128"
 
