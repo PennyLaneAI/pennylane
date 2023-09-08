@@ -45,6 +45,10 @@
   `MutualInfoMP.map_wires`.
   [(#4574)](https://github.com/PennyLaneAI/pennylane/pull/4574)
 
+* `AmplitudeEmbedding` now inherits from `StatePrepBase`, allowing for it to not be decomposed
+  when at the beginning of a circuit, thus behaving like `StatePrep`.
+  [(#)]()
+
 <h3>Breaking changes 💔</h3>
 
 * The `__eq__` and `__hash__` methods of `Operator` and `MeasurementProcess` no longer rely on the
