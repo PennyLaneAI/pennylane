@@ -312,6 +312,24 @@ class TestPhasedDecomposition:
         ):
             qml.pauli_decompose(hamiltonian, wire_order=wire_order, check_hermitian=False)
 
+    # Multiple interfaces will be tested
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("matrix", test_hamiltonians)
+    def test_builtins(self, matrix):
+        """Test builtins support in pauli_decompose"""
+
+        import jax
+        import torch
+        import tensorflow as tf
+
+        libraries = [np.array, jax.numpy.array, torch.tensor, tf.Variable]
+        matrices = [[[library(i) for i in row] for row in matrix] for library in libraries]
+
+        interfaces = ["numpy", "jax", "torch", "tensorflow"]
+        for mat, interface in zip(matrices, interfaces):
+            coeffs = qml.pauli_decompose(mat).coeffs
+            assert qml.math.get_interface(coeffs[0]) == interface
+
     # Multiple interfaces will be tested with math module
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize(
