@@ -62,7 +62,7 @@ def append_time_evolution(
         n (int): number of Trotter steps.
 
     Returns:
-        qnode (pennylane.QNode) or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
+        pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
         it returns a QNode with the transform added to its transform program.
         If a tape is passed, returns a tuple containing a list of
         quantum tapes to be evaluated, and a function to be applied to these

@@ -164,7 +164,7 @@ def commute_controlled(tape: QuantumTape, direction="right") -> (Sequence[Quantu
             specified direction.
 
     Returns:
-        qnode (pennylane.QNode) or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
+        pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
         it returns a QNode with the transform added to its transform program. If a qfunc is passed,
         it returns a transformed quantum function. If a tape is passed, returns a tuple containing a list of
         quantum tapes to be evaluated, and a function to be applied to these
