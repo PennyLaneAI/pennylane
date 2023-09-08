@@ -177,7 +177,7 @@ class StateMP(StateMeasurement):
         elif is_torch:
             pad = (pad,)
 
-        state = qml.math.pad(state, pad)
+        state = qml.math.pad(state, pad, mode="constant")
         state = qml.math.reshape(state, shape)
 
         # re-order

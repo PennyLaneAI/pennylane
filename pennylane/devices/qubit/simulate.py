@@ -53,7 +53,7 @@ def expand_state_over_wires(state, state_wires, all_wires, is_state_batched):
             pad = (pad,)
         state = qml.math.flatten(state)
 
-    state = qml.math.pad(state, pad)
+    state = qml.math.pad(state, pad, mode="constant")
     state = qml.math.reshape(state, shape)
 
     # re-order
