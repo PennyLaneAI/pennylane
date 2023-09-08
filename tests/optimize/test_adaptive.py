@@ -153,8 +153,12 @@ def test_append_gate(circuit):
     final_circuit = qml.optimize.adaptive.append_gate(circuit.func, param, [gate])
     qnode = qml.QNode(final_circuit, dev)
     _ = qnode()
-
     assert qml.equal(qnode.tape.operations[-1], gate)
+
+    final_circuit, fn = qml.optimize.adaptive.append_gate(qnode.tape, param, [gate])
+
+    assert isinstance(final_circuit, list)
+    assert isinstance(fn(final_circuit), qml.tape.QuantumTape)
 
 
 @qml.qnode(dev)

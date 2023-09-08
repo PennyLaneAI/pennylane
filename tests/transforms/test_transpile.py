@@ -270,3 +270,28 @@ class TestTranspile:
         assert qml.math.allclose(
             original_expectation, transpiled_expectation, atol=np.finfo(float).eps
         )
+
+    def test_transpile_ops_anywires_1_qubit_qnode(self):
+        """test that transpile does not alter output for expectation value of an observable if the qfunc contains
+        1-qubit operations with AnyWires defined for the operation"""
+        dev = qml.device("default.qubit", wires=[0, 1, 2])
+
+        @qml.qnode(device=dev)
+        def circuit(param):
+            qml.MultiRZ(param, wires=[0])
+            qml.PhaseShift(param, wires=2)
+            qml.MultiRZ(param, wires=[0, 2])
+            return qml.probs(wires=[0, 1])
+
+        param = 0.3
+
+        # build circuit without transpile
+        original_expectation = circuit(param)
+
+        # build circuit with transpile
+        transpiled_qnode = transpile(circuit, coupling_map=[(0, 1), (1, 2)])
+        transpiled_expectation = transpiled_qnode(param)
+
+        assert qml.math.allclose(
+            original_expectation, transpiled_expectation, atol=np.finfo(float).eps
+        )

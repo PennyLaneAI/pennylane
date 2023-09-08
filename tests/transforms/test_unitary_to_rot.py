@@ -68,6 +68,24 @@ def qfunc(U):
 class TestDecomposeSingleQubitUnitaryTransform:
     """Tests to ensure the transform itself works in all interfaces."""
 
+    def test_unitary_to_rot_qnode(self):
+        """Test for applying the transform on a QNode."""
+        dev = qml.device("default.qubit", wires=2)
+
+        U = np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix()
+
+        @qml.qnode(device=dev)
+        def circuit(U):
+            qml.Hadamard(wires=1)
+            qml.QubitUnitary(U, wires=0)
+            qml.CNOT(wires=[1, 0])
+            return qml.expval(qml.PauliZ(0))
+
+        transformed_qnode = unitary_to_rot(circuit)
+        res_trans = transformed_qnode(U)
+        res = circuit(U)
+        assert np.allclose(res_trans, res)
+
     @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decomps)
     def test_unitary_to_rot(self, U, expected_gates, expected_params):
         """Test that the transform works in the autograd interface."""
