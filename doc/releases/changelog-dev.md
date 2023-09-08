@@ -58,6 +58,9 @@
   process, `DensityMatrixMP`.
   [(#4558)](https://github.com/PennyLaneAI/pennylane/pull/4558)
 
+* `qml.exp` returns a more informative error message when decomposition is unavailable for non-unitary operator.
+  [(#4571)](https://github.com/PennyLaneAI/pennylane/pull/4571)
+
 * The `StateMP` measurement now accepts a wire order (eg. a device wire order). The `process_state`
   method will re-order the given state to go from the inputted wire-order to the process's wire-order.
   If the process's wire-order contains extra wires, it will assume those are in the zero-state.
@@ -197,3 +200,4 @@ Lillian M. A. Frederiksen,
 Romain Moyard,
 Mudit Pandey,
 Matthew Silverman,
+Jay Soni,
