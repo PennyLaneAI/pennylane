@@ -103,7 +103,7 @@ class TestQNode:
         # gradients should work
         grad = qml.grad(circuit)(a)
 
-        assert isinstance(grad, float if diff_method == "adjoint" else np.tensor)
+        assert isinstance(grad, float)
         assert grad.shape == tuple()
 
     def test_jacobian(self, interface, dev, diff_method, grad_on_execution, mocker, tol):
@@ -1654,7 +1654,7 @@ class TestReturn:
 
         grad = qml.grad(circuit)(a)
 
-        assert isinstance(grad, float if diff_method == "adjoint" else np.tensor)
+        assert isinstance(grad, np.tensor if diff_method == "backprop" else float)
 
     def test_grad_single_measurement_multiple_param(self, dev, diff_method, grad_on_execution):
         """For one measurement and multiple param, the gradient is a tuple of arrays."""
