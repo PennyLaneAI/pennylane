@@ -223,6 +223,21 @@ class TestIntegration:
         with pytest.raises(ValueError, match="Cannot provide a 'device_wires' value"):
             _ = qml.qinfo.mutual_info(circuit, wires0=[0], wires1=[1], device_wires=dev.wires)
 
+    def test_mutual_info_no_state_error(self):
+        """Test that the correct error is raised if the return type is not State."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.RY(params, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.probs()
+
+        transformed_circuit = qml.qinfo.mutual_info(circuit, wires0=[0], wires1=[1])
+
+        with pytest.raises(ValueError, match="The qfunc return type needs to be a state"):
+            _ = transformed_circuit(0.1)
+
     @pytest.mark.jax
     @pytest.mark.parametrize("params", np.linspace(0, 2 * np.pi, 8))
     def test_qnode_state_jax_jit(self, params):
