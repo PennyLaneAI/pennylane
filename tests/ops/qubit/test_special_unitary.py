@@ -750,6 +750,9 @@ class TestSpecialUnitary:
         assert np.allclose(jac, expected)
 
 
+@pytest.mark.parametrize(
+    "dev_fn", [qml.devices.DefaultQubit, qml.devices.experimental.DefaultQubit2]
+)
 class TestSpecialUnitaryIntegration:
     """Test that the operation SpecialUnitary is executable and
     differentiable in a QNode context, both with automatic differentiation
@@ -772,9 +775,9 @@ class TestSpecialUnitaryIntegration:
     state = qml.SpecialUnitary.compute_matrix(x, 2) @ np.eye(4)[0]
     exp = np.vdot(state, qml.matrix(qml.PauliZ(0) @ qml.PauliX(1)) @ state).real
 
-    def test_qnode_numpy(self):
+    def test_qnode_numpy(self, dev_fn):
         """Test that the QNode executes with Numpy."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = dev_fn(wires=2)
         qnode = qml.QNode(self.circuit, dev, interface=None)
 
         res = qnode(self.x)
@@ -782,11 +785,11 @@ class TestSpecialUnitaryIntegration:
         assert qml.math.isclose(res, self.exp)
 
     @pytest.mark.autograd
-    def test_qnode_autograd(self):
+    def test_qnode_autograd(self, dev_fn):
         """Test that the QNode executes with Autograd.
         Neither hardware-ready nor autodiff gradients are available in Autograd."""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = dev_fn(wires=2)
         qnode = qml.QNode(self.circuit, dev, interface="autograd")
 
         x = qml.numpy.array(self.x, requires_grad=True)
@@ -797,7 +800,7 @@ class TestSpecialUnitaryIntegration:
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [False, True])
     @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (10000, 1e-1)])
-    def test_qnode_jax(self, shots, atol, use_jit):
+    def test_qnode_jax(self, dev_fn, shots, atol, use_jit):
         """Test that the QNode executes and is differentiable with JAX. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
         if use_jit and shots is not None:
@@ -806,7 +809,7 @@ class TestSpecialUnitaryIntegration:
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = dev_fn(wires=2, shots=shots)
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
         if use_jit:
@@ -838,12 +841,12 @@ class TestSpecialUnitaryIntegration:
 
     @pytest.mark.torch
     @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (10000, 1e-1)])
-    def test_qnode_torch(self, shots, atol):
+    def test_qnode_torch(self, dev_fn, shots, atol):
         """Test that the QNode executes and is differentiable with Torch. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
         import torch
 
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = dev_fn(wires=2, shots=shots)
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
 
@@ -870,12 +873,12 @@ class TestSpecialUnitaryIntegration:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (10000, 1e-1)])
-    def test_qnode_tf(self, shots, atol):
+    def test_qnode_tf(self, dev_fn, shots, atol):
         """Test that the QNode executes and is differentiable with TensorFlow. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = dev_fn(wires=2, shots=shots)
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
 
@@ -929,21 +932,10 @@ class TestTmpPauliRot:
         assert "IX" in rep
 
     @pytest.mark.parametrize("word", ["X", "IZ", "YYY"])
-    def test_decomposition_at_zero(self, word):
-        """Test the decomposition of TmpPauliRot at zero to return an empty list."""
-        wires = list(range(len(word)))
-        op = TmpPauliRot(0.0, word, wires=wires)
-        assert op.decomposition() == []
-        assert TmpPauliRot.compute_decomposition(0.0, wires, word) == []
-
-    @pytest.mark.parametrize("word", ["X", "IZ", "YYY"])
-    @pytest.mark.parametrize("x", [1.2, 1e-4])
+    @pytest.mark.parametrize("x", [0, 1.2, 1e-4])
     def test_decomposition_nonzero(self, word, x):
-        """Test the decomposition of TmpPauliRot away from zero to return a PauliRot."""
+        """Test the decomposition of TmpPauliRot is the same as that of PauliRot."""
         wires = list(range(len(word)))
         op = TmpPauliRot(x, word, wires=wires)
-        decomp = op.decomposition()
-        decomp2 = TmpPauliRot.compute_decomposition(x, wires, word)
-        for dec in [decomp, decomp2]:
-            assert len(dec) == 1
-            assert qml.equal(dec[0], qml.PauliRot(x, word, wires))
+        rot = qml.PauliRot(x, word, wires=wires)
+        assert op.decomposition() == rot.decomposition()
