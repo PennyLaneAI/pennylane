@@ -35,9 +35,9 @@ def reduced_dm(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Ca
 
     Returns:
         pennylane.QNode or qfunc or tuple[List[.QuantumTape], Callable]: If a QNode
-            is passed, it returns a QNode with the transform added to its transform program.
-            If a tape is passed, returns a tuple containing a list of quantum tapes to be
-            evaluated, and a function to be applied to these tape executions.
+        is passed, it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of quantum tapes to be
+        evaluated, and a function to be applied to these tape executions.
 
     **Example**
 
@@ -124,9 +124,9 @@ def purity(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Callab
 
     Returns:
         pennylane.QNode or qfunc or tuple[List[.QuantumTape], Callable]: If a QNode
-            is passed, it returns a QNode with the transform added to its transform program.
-            If a tape is passed, returns a tuple containing a list of quantum tapes to be
-            evaluated, and a function to be applied to these tape executions.
+        is passed, it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of quantum tapes to be
+        evaluated, and a function to be applied to these tape executions.
 
     **Example**
 
@@ -217,9 +217,9 @@ def vn_entropy(
 
     Returns:
         pennylane.QNode or qfunc or tuple[List[.QuantumTape], Callable]: If a QNode
-            is passed, it returns a QNode with the transform added to its transform program.
-            If a tape is passed, returns a tuple containing a list of quantum tapes to be
-            evaluated, and a function to be applied to these tape executions.
+        is passed, it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of quantum tapes to be
+        evaluated, and a function to be applied to these tape executions.
 
     **Example**
 
@@ -319,9 +319,9 @@ def mutual_info(
 
     Returns:
         pennylane.QNode or qfunc or tuple[List[.QuantumTape], Callable]: If a QNode
-            is passed, it returns a QNode with the transform added to its transform program.
-            If a tape is passed, returns a tuple containing a list of quantum tapes to be
-            evaluated, and a function to be applied to these tape executions.
+        is passed, it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of quantum tapes to be
+        evaluated, and a function to be applied to these tape executions.
 
     **Example**
 
