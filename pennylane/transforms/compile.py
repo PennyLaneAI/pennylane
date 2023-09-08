@@ -62,7 +62,7 @@ def compile(
             for tape expansion into the basis gates.
 
     Returns:
-        qnode (pennylane.QNode) or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
+        pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
         it returns a QNode with the transform added to its transform program.
         If a tape is passed, returns a tuple containing a list of
         quantum tapes to be evaluated, and a function to be applied to these
@@ -148,7 +148,6 @@ def compile(
     else:
         for p in pipeline:
             p_func = p.func if isinstance(p, partial) else p
-            print(p_func)
             if not isinstance(p_func, TransformDispatcher):
                 raise ValueError("Invalid transform function {p} passed to compile.")
 
