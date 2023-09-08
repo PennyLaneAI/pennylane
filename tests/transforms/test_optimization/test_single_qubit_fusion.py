@@ -48,6 +48,27 @@ class TestSingleQubitFusion:
         matrix_obtained = qml.matrix(transformed_qfunc, [0])()
         assert check_matrix_equivalence(matrix_expected, matrix_obtained)
 
+    def test_single_qubit_full_fusion_qnode(self):
+        """Test that a sequence of single-qubit gates all fuse."""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(device=dev)
+        def circuit():
+            qml.RZ(0.3, wires=0)
+            qml.Hadamard(wires=0)
+            qml.Rot(0.1, 0.2, 0.3, wires=0)
+            qml.RX(0.1, wires=0)
+            qml.SX(wires=0)
+            qml.T(wires=0)
+            qml.PauliX(wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        # Compare matrices
+        matrix_expected = qml.matrix(circuit)()
+        optimized_qnode = single_qubit_fusion(circuit)
+        matrix_obtained = qml.matrix(optimized_qnode)()
+        assert check_matrix_equivalence(matrix_expected, matrix_obtained)
+
     def test_single_qubit_fusion_no_gates_after(self):
         """Test that gates with nothing after are applied without modification."""
 

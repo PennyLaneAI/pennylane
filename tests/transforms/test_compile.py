@@ -151,6 +151,24 @@ class TestCompileIntegration:
         compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
 
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
+    def test_compile_default_pipeline_qnode(self, wires):
+        """Test that the default pipeline returns the correct results."""
+
+        qfunc = build_qfunc(wires)
+        dev = qml.device("default.qubit", wires=Wires(wires))
+
+        qnode = qml.QNode(qfunc, dev)
+
+        transformed_qfunc = compile(qfunc)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        transformed_qnode_direct = compile(qnode)
+
+        qfun_res = transformed_qnode(0.1, 0.2, 0.3)
+        qnode_res = transformed_qnode_direct(0.1, 0.2, 0.3)
+
+        assert np.allclose(qfun_res, qnode_res)
+
+    @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
     def test_compile_pipeline_with_non_default_arguments(self, wires):
         """Test that using non-default arguments returns the correct results."""
 

@@ -30,13 +30,13 @@ class TestQNode:
         measurement yields the correct results and is transformed correctly."""
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def qnode1():
             return qml.expval(qml.PauliZ(0))
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def qnode2():
             qml.measure(1)
             return qml.expval(qml.PauliZ(0))

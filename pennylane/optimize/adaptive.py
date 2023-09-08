@@ -53,7 +53,7 @@ def append_gate(tape: QuantumTape, params, gates) -> (Sequence[QuantumTape], Cal
         """A postprocesing function returned by a transform that only converts the batch of results
         into a result for a single ``QuantumTape``.
         """
-        return results[0]
+        return results[0]  # pragma: no cover
 
     return [new_tape], null_postprocessing
 

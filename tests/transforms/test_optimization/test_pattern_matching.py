@@ -73,6 +73,34 @@ class TestPatternMatchingOptimization:
 
         assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
+    def test_simple_quantum_function_pattern_matching_qnode(self):
+        """Test pattern matching algorithm for circuit optimization with a CNOTs template."""
+        dev = qml.device("default.qubit", wires=5)
+
+        @qml.qnode(device=dev)
+        def circuit():
+            qml.Toffoli(wires=[3, 4, 0])
+            qml.CNOT(wires=[1, 4])
+            qml.CNOT(wires=[2, 1])
+            qml.Hadamard(wires=3)
+            qml.PauliZ(wires=1)
+            qml.CNOT(wires=[2, 3])
+            qml.Toffoli(wires=[2, 3, 0])
+            qml.CNOT(wires=[1, 4])
+            return qml.expval(qml.PauliX(wires=0))
+
+        with qml.queuing.AnnotatedQueue() as q_template:
+            qml.CNOT(wires=[1, 2])
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[0, 2])
+
+        template = qml.tape.QuantumScript.from_queue(q_template)
+
+        optimized_qnode = pattern_matching_optimization(circuit, pattern_tapes=[template])
+        assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(circuit)())
+
     def test_custom_quantum_cost(self):
         """Test pattern matching algorithm for circuit optimization with a CNOTs template with custom quantum dict."""
 
