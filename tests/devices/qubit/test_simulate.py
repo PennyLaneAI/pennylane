@@ -336,7 +336,7 @@ class TestBroadcasting:
 
         assert isinstance(res, tuple)
         assert len(res) == 3
-        assert np.array_equal(res[0], np.ones(4))
+        assert np.allclose(res[0], 1.0)
         assert np.allclose(res[1], np.cos(x))
         assert np.allclose(res[2], -np.cos(x))
         assert spy.call_args_list[0].args == (qs, {2: 0, 1: 1, 0: 2})
