@@ -15,6 +15,7 @@ r"""
 Contains the ``layer`` template constructor.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+from pennylane.math import shape
 
 
 def _preprocess(args, depth):
@@ -28,9 +29,13 @@ def _preprocess(args, depth):
     """
 
     for arg in args:
-        if len(arg) != depth:
+        try:
+            arg_depth = len(arg)
+        except TypeError:
+            arg_depth = shape(arg)[0]
+        if arg_depth != depth:
             raise ValueError(
-                f"Each positional argument must have length matching 'depth'; expected {depth} got {len(arg)}"
+                f"Each positional argument must have length matching 'depth'; expected {depth} got {arg_depth}"
             )
 
 
