@@ -326,8 +326,8 @@ class TestPhasedDecomposition:
         matrices = [[[library(i) for i in row] for row in matrix] for library in libraries]
 
         interfaces = ["numpy", "jax", "torch", "tensorflow"]
-        for matrix, interface in zip(matrices, interfaces):
-            coeffs = qml.pauli_decompose(matrix).coeffs
+        for mat, interface in zip(matrices, interfaces):
+            coeffs = qml.pauli_decompose(mat).coeffs
             assert qml.math.get_interface(coeffs[0]) == interface
 
     # Multiple interfaces will be tested with math module
