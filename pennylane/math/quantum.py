@@ -739,6 +739,7 @@ def sqrt_matrix(density_matrix):
     if len(shape) > 2:
         # broadcasting case
         i = qml.math.cast_like(qml.math.convert_like(qml.math.eye(shape[-1]), evs), evs)
+        sqrt_evs = qml.math.expand_dims(qml.math.sqrt(evs), 1) * i
         #casting the sqrt envs to complex to fix TypeError
         sqrt_evs = qml.math.cast_like(sqrt_evs, vecs)
         # Returning the real part of this computation as the complex part is guaranteed to be 0
