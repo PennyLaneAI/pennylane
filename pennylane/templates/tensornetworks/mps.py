@@ -85,15 +85,15 @@ class MPS(Operation):
         block (Callable): quantum circuit that defines a block
         n_params_block (int): the number of parameters in a block; equal to the length of the ``weights`` argument in ``block``
         template_weights (Sequence): list containing the weights for all blocks
-        offset (int): offset for positioning the subsequent blocks relative to the default :math:`O_d = \lfloor \text{n_block_wires}/2  \rfloor`, where :math:`\text{offset} + O_d \in [1, \text{n_block_wires} - 1]`
+        offset (int): offset for positioning the subsequent blocks relative to the default :math:`O_d = \lfloor \text{n_block_wires}/2  \rfloor`, where :math:`\text{offset} + O_d \in [1,\ \text{n_block_wires} - 1]`
         **kwargs: additional keyword arguments for implementing the ``block``
 
     .. note::
 
         The expected number of blocks can be obtained from ``qml.MPS.get_n_blocks(wires, n_block_wires, offset=0)``, and
-        the length of ``template_weights`` argument should match the number of blocks. Whenever either `n_block_wires`
-        is odd or `offset` is nonzero, the template deviates from the maximally unbalanced tree architecture described in
-        `arXiv:1803.11537 <https://arxiv.org/abs/1803.11537>`_.
+        the length of ``template_weights`` argument should match the number of blocks. Whenever either ``n_block_wires``
+        is odd or ``offset`` is nonzero, the template deviates from the maximally unbalanced tree architecture described
+        in `arXiv:1803.11537 <https://arxiv.org/abs/1803.11537>`_.
 
     .. details::
         :title: Usage Details
