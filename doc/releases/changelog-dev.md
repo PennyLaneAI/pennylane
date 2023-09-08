@@ -5,7 +5,10 @@
 <h3>New features since last release</h3>
 
 * All batch transforms are updated to the new transform program system.
-  [(4440)](https://github.com/PennyLaneAI/pennylane/pull/4440)
+  [(#4440)](https://github.com/PennyLaneAI/pennylane/pull/4440)
+
+* Quantum information transforms are updated to the new transform program system.
+  [(#4569)](https://github.com/PennyLaneAI/pennylane/pull/4569)
 
 <h3>Improvements 🛠</h3>
 
