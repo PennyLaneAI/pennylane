@@ -1019,7 +1019,7 @@ class TestExpand:
             [
                 qml.BasisStatePreparation([1, 0], wires=[0, 1]),
                 qml.MottonenStatePreparation([0, 1, 0, 0], wires=[0, 1]),
-                qml.StatePrep([0, 1, 0, 0], wires=[0, 1]),
+                qml.StatePrep([0, 1, 0, 0], wires=[0, 1]),  # still a StatePrepBase :/
             ],
         ),
     )

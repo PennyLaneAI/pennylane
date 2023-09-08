@@ -58,28 +58,24 @@ class TestInitializeState:
         state[0, 1, 0] = 0  # set to zero to make test below simple
         assert qml.math.allequal(state, np.zeros((2, 2, 2)))
 
-    def test_create_initial_state_with_StatePrep(self):
+    @pytest.mark.parametrize("prep_op_cls", [qml.StatePrep, qml.AmplitudeEmbedding])
+    def test_create_initial_state_with_StatePrep(self, prep_op_cls):
         """Tests that create_initial_state works with the StatePrep operator."""
-        prep_op = qml.StatePrep(np.array([0, 1, 0, 0, 0, 0, 0, 1]) / np.sqrt(2), wires=[0, 1, 2])
+        prep_op = prep_op_cls(np.array([0, 1, 0, 0, 0, 0, 0, 1]) / np.sqrt(2), wires=[0, 1, 2])
         state = create_initial_state([0, 1, 2], prep_operation=prep_op)
-        assert state[0, 0, 1] == 1 / np.sqrt(2)
-        assert state[1, 1, 1] == 1 / np.sqrt(2)
-        state[0, 0, 1] = 0
-        state[1, 1, 1] = 0  # set to zero to make test below simple
-        assert qml.math.allequal(state, np.zeros((2, 2, 2)))
+        expected = np.zeros((2, 2, 2))
+        expected[0, 0, 1] = expected[1, 1, 1] = 1 / np.sqrt(2)
+        assert np.array_equal(state, expected)
 
-    def test_create_initial_state_with_StatePrep_broadcasted(self):
+    @pytest.mark.parametrize("prep_op_cls", [qml.StatePrep, qml.AmplitudeEmbedding])
+    def test_create_initial_state_with_StatePrep_broadcasted(self, prep_op_cls):
         """Tests that create_initial_state works with a broadcasted StatePrep
         operator."""
-        prep_op = qml.StatePrep(np.array([[0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), wires=[0, 1])
+        prep_op = prep_op_cls(np.array([[0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]), wires=[0, 1])
         state = create_initial_state([0, 1], prep_operation=prep_op)
-        assert state[0, 0, 1] == 1
-        assert state[1, 1, 1] == 1
-        assert state[2, 1, 0] == 1
-        state[0, 0, 1] = 0
-        state[1, 1, 1] = 0
-        state[2, 1, 0] = 0  # set to zero to make test below simple
-        assert qml.math.allequal(state, np.zeros((3, 2, 2)))
+        expected = np.zeros((3, 2, 2))
+        expected[0, 0, 1] = expected[1, 1, 1] = expected[2, 1, 0] = 1
+        assert np.array_equal(state, expected)
 
     def test_create_initial_state_prefers_op_interface_over_like(self):
         """Tests that the like argument is ignored when a prep-op is provided."""
