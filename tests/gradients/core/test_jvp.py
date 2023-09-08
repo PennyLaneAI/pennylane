@@ -496,8 +496,6 @@ class TestJVP:
         with multiple expval outputs"""
         if batch_dim is not None:
             pytest.skip(msg="JVP computation of batched tapes is disallowed, see #4462")
-        if batch_dim == 1:
-            pytest.skip(msg="batch dimension of 1 gets squeezed out")
         dev = qml.device("default.qubit", wires=2)
         x = 0.543 if batch_dim is None else 0.543 * np.arange(1, 1 + batch_dim)
         y = -0.654

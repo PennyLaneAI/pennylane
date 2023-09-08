@@ -1383,9 +1383,6 @@ class TestPulseGeneratorIntegration:
         import jax
         import jax.numpy as jnp
 
-        if dev_name == "default.qubit":
-            pytest.skip("num_executions is not correct")
-
         jax.config.update("jax_enable_x64", True)
 
         params = [jnp.array(0.21), jnp.array(-0.171), jnp.array([0.05, 0.03, -0.1])]
@@ -1408,8 +1405,9 @@ class TestPulseGeneratorIntegration:
         )
         qnode_backprop = qml.QNode(ansatz, dev, interface="jax")
 
-        grad_pulse_grad = jax.grad(qnode_pulse_grad)(params)
-        assert dev.num_executions == 1 + 12  # one forward execution, dim(DLA)=6
+        with qml.Tracker(dev) as tracker:
+            grad_pulse_grad = jax.grad(qnode_pulse_grad)(params)
+        assert tracker.totals["executions"] == 1 + 12  # one forward execution, dim(DLA)=6
         grad_backprop = jax.grad(qnode_backprop)(params)
 
         assert all(
