@@ -8,8 +8,12 @@
   [(4440)](https://github.com/PennyLaneAI/pennylane/pull/4440)
 
 <h3>Improvements 🛠</h3>
-* The qchem ``fermionic_dipole`` and ``particle_number`` functions are updated to use a ``FermiSentence``
+
+* The qchem ``fermionic_dipole`` and ``particle_number`` functions are updated to use a
+  ``FermiSentence``. The deprecated features for using tuples to represent fermionic operations are
+  removed.
   [(#4546)](https://github.com/PennyLaneAI/pennylane/pull/4546)
+  [(#4556)](https://github.com/PennyLaneAI/pennylane/pull/4556)
 
 * Add the method ``add_transform`` and ``insert_front_transform`` transform in the ``TransformProgram``.
   [(#4559)](https://github.com/PennyLaneAI/pennylane/pull/4559)
@@ -30,6 +34,9 @@
 * The density matrix aspects of `StateMP` have been split into their own measurement
   process, `DensityMatrixMP`.
   [(#4558)](https://github.com/PennyLaneAI/pennylane/pull/4558)
+
+* `qml.exp` returns a more informative error message when decomposition is unavailable for non-unitary operator.
+  [(#4571)](https://github.com/PennyLaneAI/pennylane/pull/4571)
 
 * The `StateMP` measurement now accepts a wire order (eg. a device wire order). The `process_state`
   method will re-order the given state to go from the inputted wire-order to the process's wire-order.
@@ -169,5 +176,6 @@ Soran Jahangiri,
 Lillian M. A. Frederiksen,
 Romain Moyard,
 Mudit Pandey,
-Matthew Silverman
+Matthew Silverman,
+Jay Soni,
 
