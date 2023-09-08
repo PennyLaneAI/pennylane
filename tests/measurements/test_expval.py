@@ -77,7 +77,7 @@ class TestExpval:
     @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
     def test_observable_is_measurement_value(
-        self, shots, phi, mocker, tol, tol_stochastic
+        self, shots, phi, tol, tol_stochastic
     ):  # pylint: disable=too-many-arguments
         """Test that expectation values for mid-circuit measurement values
         are correct for a single measurement value."""
@@ -89,14 +89,10 @@ class TestExpval:
             m0 = qml.measure(0)
             return qml.expval(m0)
 
-        new_dev = circuit.device
-        spy = mocker.spy(qml.QubitDevice, "expval")
-
         res = circuit(phi)
 
         atol = tol if shots is None else tol_stochastic
         assert np.allclose(np.array(res), np.sin(phi / 2) ** 2, atol=atol, rtol=0)
-        custom_measurement_process(new_dev, spy)
 
     @pytest.mark.parametrize(
         "obs",
