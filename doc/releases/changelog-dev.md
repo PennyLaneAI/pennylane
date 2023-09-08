@@ -47,7 +47,7 @@
 
 * `AmplitudeEmbedding` now inherits from `StatePrepBase`, allowing for it to not be decomposed
   when at the beginning of a circuit, thus behaving like `StatePrep`.
-  [(#)]()
+  [(#4583)](https://github.com/PennyLaneAI/pennylane/pull/4583)
 
 <h3>Breaking changes 💔</h3>
 
