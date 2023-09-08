@@ -276,6 +276,7 @@ def vn_entropy(
 
     return [tape], processing_fn
 
+
 @vn_entropy.custom_qnode_transform
 def _vn_entropy_qnode(self, qnode, targs, tkwargs):
     if tkwargs.get("device", False):
