@@ -34,8 +34,10 @@ def reduced_dm(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Ca
         wires (Sequence(int)): List of wires in the considered subsystem.
 
     Returns:
-        tuple(Sequence[QuantumTape], Callable): Sequence of transformed tapes and a
-            post-processing function to convert the tape results into a density matrix
+        pennylane.QNode or qfunc or tuple[List[.QuantumTape], Callable]: If a QNode
+        is passed, it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of quantum tapes to be
+        evaluated, and a function to be applied to these tape executions.
 
     **Example**
 
@@ -57,6 +59,7 @@ def reduced_dm(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Ca
 
     .. seealso:: :func:`pennylane.density_matrix` and :func:`pennylane.math.reduce_dm`
     """
+    # device_wires is provided by the custom QNode transform
     all_wires = kwargs.get("device_wires", tape.wires)
     wire_map = {w: i for i, w in enumerate(all_wires)}
     indices = [wire_map[w] for w in wires]
@@ -66,14 +69,17 @@ def reduced_dm(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Ca
         raise ValueError("The qfunc measurement needs to be State.")
 
     def processing_fn(res):
+        # device is provided by the custom QNode transform
+        device = kwargs.get("device", None)
+        c_dtype = device.C_DTYPE if device else "complex128"
+
         # determine the density matrix
         dm_func = (
             qml.math.reduce_dm
-            if isinstance(measurements[0], DensityMatrixMP)
-            or isinstance(kwargs.get("device", None), DefaultMixed)
+            if isinstance(measurements[0], DensityMatrixMP) or isinstance(device, DefaultMixed)
             else qml.math.reduce_statevector
         )
-        density_matrix = dm_func(res[0], indices=indices)
+        density_matrix = dm_func(res[0], indices=indices, c_dtype=c_dtype)
 
         return density_matrix
 
@@ -117,8 +123,10 @@ def purity(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Callab
         wires (Sequence(int)): List of wires in the considered subsystem.
 
     Returns:
-        tuple(Sequence[QuantumTape], Callable): Sequence of transformed tapes and a
-            post-processing function to convert the tape results into the purity.
+        pennylane.QNode or qfunc or tuple[List[.QuantumTape], Callable]: If a QNode
+        is passed, it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of quantum tapes to be
+        evaluated, and a function to be applied to these tape executions.
 
     **Example**
 
@@ -148,6 +156,7 @@ def purity(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Callab
 
     .. seealso:: :func:`pennylane.math.purity`
     """
+    # device_wires is provided by the custom QNode transform
     all_wires = kwargs.get("device_wires", tape.wires)
     wire_map = {w: i for i, w in enumerate(all_wires)}
     indices = [wire_map[w] for w in wires]
@@ -158,15 +167,18 @@ def purity(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Callab
         raise ValueError("The qfunc return type needs to be a state.")
 
     def processing_fn(res):
+        # device is provided by the custom QNode transform
+        device = kwargs.get("device", None)
+        c_dtype = device.C_DTYPE if device else "complex128"
+
         # determine the density matrix
         density_matrix = (
             res[0]
-            if isinstance(measurements[0], DensityMatrixMP)
-            or isinstance(kwargs.get("device", None), DefaultMixed)
-            else qml.math.dm_from_state_vector(res[0])
+            if isinstance(measurements[0], DensityMatrixMP) or isinstance(device, DefaultMixed)
+            else qml.math.dm_from_state_vector(res[0], c_dtype=c_dtype)
         )
 
-        return qml.math.purity(density_matrix, indices)
+        return qml.math.purity(density_matrix, indices, c_dtype=c_dtype)
 
     return [tape], processing_fn
 
@@ -204,8 +216,10 @@ def vn_entropy(
         base (float): Base for the logarithm, default is None the natural logarithm is used in this case.
 
     Returns:
-        tuple(Sequence[QuantumTape], Callable): Sequence of transformed tapes and a
-            post-processing function to convert the tape results into the Von Neumann entropy.
+        pennylane.QNode or qfunc or tuple[List[.QuantumTape], Callable]: If a QNode
+        is passed, it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of quantum tapes to be
+        evaluated, and a function to be applied to these tape executions.
 
     **Example**
 
@@ -230,6 +244,7 @@ def vn_entropy(
 
     .. seealso:: :func:`pennylane.math.vn_entropy` and :func:`pennylane.vn_entropy`
     """
+    # device_wires is provided by the custom QNode transform
     all_wires = kwargs.get("device_wires", tape.wires)
     wire_map = {w: i for i, w in enumerate(all_wires)}
     indices = [wire_map[w] for w in wires]
@@ -239,24 +254,27 @@ def vn_entropy(
         raise ValueError("The qfunc return type needs to be a state.")
 
     def processing_fn(res):
+        # device is provided by the custom QNode transform
+        device = kwargs.get("device", None)
+        c_dtype = device.C_DTYPE if device else "complex128"
+
         # determine if the measurement is a state vector or a density matrix
         if not isinstance(measurements[0], DensityMatrixMP) and not isinstance(
-            kwargs.get("device", None), DefaultMixed
+            device, DefaultMixed
         ):  # Compute entropy from state vector
             if len(wires) == len(all_wires):
                 # The subsystem has all wires, so the entropy is 0
                 return 0.0
 
-            density_matrix = qml.math.dm_from_state_vector(res[0])
-            entropy = qml.math.vn_entropy(density_matrix, indices, base)
+            density_matrix = qml.math.dm_from_state_vector(res[0], c_dtype=c_dtype)
+            entropy = qml.math.vn_entropy(density_matrix, indices, base, c_dtype=c_dtype)
             return entropy
 
         # Compute entropy from density matrix
-        entropy = qml.math.vn_entropy(res[0], indices, base)
+        entropy = qml.math.vn_entropy(res[0], indices, base, c_dtype)
         return entropy
 
     return [tape], processing_fn
-
 
 @vn_entropy.custom_qnode_transform
 def _vn_entropy_qnode(self, qnode, targs, tkwargs):
@@ -299,8 +317,10 @@ def mutual_info(
         base (float): Base for the logarithm. If None, the natural logarithm is used.
 
     Returns:
-        tuple(Sequence[QuantumTape], Callable): Sequence of transformed tapes and a
-            post-processing function to convert the tape results into the mutual information.
+        pennylane.QNode or qfunc or tuple[List[.QuantumTape], Callable]: If a QNode
+        is passed, it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of quantum tapes to be
+        evaluated, and a function to be applied to these tape executions.
 
     **Example**
 
@@ -327,6 +347,7 @@ def mutual_info(
 
     .. seealso:: :func:`~.qinfo.vn_entropy`, :func:`pennylane.math.mutual_info` and :func:`pennylane.mutual_info`
     """
+    # device_wires is provided by the custom QNode transform
     all_wires = kwargs.get("device_wires", tape.wires)
     wire_map = {w: i for i, w in enumerate(all_wires)}
     indices0 = [wire_map[w] for w in wires0]
@@ -338,13 +359,18 @@ def mutual_info(
         raise ValueError("The qfunc return type needs to be a state.")
 
     def processing_fn(res):
+        # device is provided by the custom QNode transform
+        device = kwargs.get("device", None)
+        c_dtype = device.C_DTYPE if device else "complex128"
+
         density_matrix = (
             res[0]
-            if isinstance(measurements[0], DensityMatrixMP)
-            or isinstance(kwargs.get("device", None), DefaultMixed)
-            else qml.math.dm_from_state_vector(res[0])
+            if isinstance(measurements[0], DensityMatrixMP) or isinstance(device, DefaultMixed)
+            else qml.math.dm_from_state_vector(res[0], c_dtype=c_dtype)
         )
-        entropy = qml.math.mutual_info(density_matrix, indices0, indices1, base=base)
+        entropy = qml.math.mutual_info(
+            density_matrix, indices0, indices1, base=base, c_dtype=c_dtype
+        )
         return entropy
 
     return [tape], processing_fn

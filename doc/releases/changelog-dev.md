@@ -5,11 +5,18 @@
 <h3>New features since last release</h3>
 
 * All batch transforms are updated to the new transform program system.
-  [(4440)](https://github.com/PennyLaneAI/pennylane/pull/4440)
+  [(#4440)](https://github.com/PennyLaneAI/pennylane/pull/4440)
+
+* Quantum information transforms are updated to the new transform program system.
+  [(#4569)](https://github.com/PennyLaneAI/pennylane/pull/4569)
 
 <h3>Improvements 🛠</h3>
-* The qchem ``fermionic_dipole`` and ``particle_number`` functions are updated to use a ``FermiSentence``
+
+* The qchem ``fermionic_dipole`` and ``particle_number`` functions are updated to use a
+  ``FermiSentence``. The deprecated features for using tuples to represent fermionic operations are
+  removed.
   [(#4546)](https://github.com/PennyLaneAI/pennylane/pull/4546)
+  [(#4556)](https://github.com/PennyLaneAI/pennylane/pull/4556)
 
 * Add the method ``add_transform`` and ``insert_front_transform`` transform in the ``TransformProgram``.
   [(#4559)](https://github.com/PennyLaneAI/pennylane/pull/4559)
@@ -30,6 +37,9 @@
 * The density matrix aspects of `StateMP` have been split into their own measurement
   process, `DensityMatrixMP`.
   [(#4558)](https://github.com/PennyLaneAI/pennylane/pull/4558)
+
+* `qml.exp` returns a more informative error message when decomposition is unavailable for non-unitary operator.
+  [(#4571)](https://github.com/PennyLaneAI/pennylane/pull/4571)
 
 * The `StateMP` measurement now accepts a wire order (eg. a device wire order). The `process_state`
   method will re-order the given state to go from the inputted wire-order to the process's wire-order.
@@ -155,6 +165,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fix `skip_first` option in `expand_tape_state_prep`.
+  [(#4564)](https://github.com/PennyLaneAI/pennylane/pull/4564)
+
 * `convert_to_numpy_parameters` now uses `qml.ops.functions.bind_new_parameters`. This reinitializes the operation and
   makes sure everything references the new numpy parameters.
 
@@ -167,7 +180,9 @@ This release contains contributions from (in alphabetical order):
 
 Soran Jahangiri,
 Lillian M. A. Frederiksen,
+Vincent Michaud-Rioux,
 Romain Moyard,
 Mudit Pandey,
-Matthew Silverman
+Matthew Silverman,
+Jay Soni,
 
