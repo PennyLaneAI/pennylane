@@ -185,7 +185,7 @@ class TransformProgram:
             raise TransformError("Only transform dispatcher can be added to the transform program.")
 
         if transform.expand_transform:
-            self.push_back(TransformContainer(transform.expand_transform))
+            self.push_back(TransformContainer(transform.expand_transform, targs, tkwargs))
         self.push_back(
             TransformContainer(
                 transform.transform,
@@ -223,7 +223,7 @@ class TransformProgram:
         )
 
         if transform.expand_transform:
-            self.insert_front(TransformContainer(transform.expand_transform))
+            self.insert_front(TransformContainer(transform.expand_transform, targs, tkwargs))
 
     def pop_front(self):
         """Pop the transform container at the beginning of the program.

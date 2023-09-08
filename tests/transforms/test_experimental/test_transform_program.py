@@ -36,11 +36,14 @@ def first_valid_transform(
     tape: qml.tape.QuantumTape, index: int
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """A valid transform."""
+    tape = tape.copy()
     tape._ops.pop(index)  # pylint:disable=protected-access
     return [tape], lambda x: x
 
 
-def expand_transform(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
+def expand_transform(
+    tape: qml.tape.QuantumTape, index: int  # pylint:disable=unused-argument
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     """A valid expand transform."""
     return [tape], lambda x: x
 
@@ -50,6 +53,7 @@ def second_valid_transform(
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """A valid trasnform."""
     tape1 = tape.copy()
+    tape2 = tape.copy()
     tape2 = tape._ops.pop(index)  # pylint:disable=protected-access
 
     def fn(results):
