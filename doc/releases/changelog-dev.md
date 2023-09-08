@@ -185,6 +185,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fix `skip_first` option in `expand_tape_state_prep`.
+  [(#4564)](https://github.com/PennyLaneAI/pennylane/pull/4564)
+
 * `convert_to_numpy_parameters` now uses `qml.ops.functions.bind_new_parameters`. This reinitializes the operation and
   makes sure everything references the new numpy parameters.
 
@@ -197,6 +200,7 @@ This release contains contributions from (in alphabetical order):
 
 Soran Jahangiri,
 Lillian M. A. Frederiksen,
+Vincent Michaud-Rioux,
 Romain Moyard,
 Mudit Pandey,
 Matthew Silverman,
