@@ -125,7 +125,7 @@
 
 * The private `TmpPauliRot` operator used for `SpecialUnitary` always has the same decomposition as
   `PauliRot`.
-  [(#)]()
+  [(#4585)](https://github.com/PennyLaneAI/pennylane/pull/4585)
 
 <h3>Deprecations 👋</h3>
 
