@@ -71,7 +71,6 @@ class TestTraceDistanceQnode:
 
         @qml.qnode(dev)
         def circuit1():
-            qml.Identity(0)
             return qml.state()
 
         td = qml.qinfo.trace_distance(circuit0, circuit1, wires0=[0], wires1=[0])(np.pi, None)

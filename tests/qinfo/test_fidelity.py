@@ -101,7 +101,6 @@ class TestFidelityQnode:
 
         @qml.qnode(dev)
         def circuit1():
-            qml.Identity(0)
             return qml.state()
 
         fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])((np.pi))
@@ -114,7 +113,6 @@ class TestFidelityQnode:
 
         @qml.qnode(dev)
         def circuit0():
-            qml.Identity(0)
             return qml.state()
 
         @qml.qnode(dev)

@@ -295,8 +295,6 @@ class TestHamiltonianExpand:
 
 with AnnotatedQueue() as s_tape1:
     qml.PauliX(0)
-    for i in range(4):
-        qml.Identity(i)
     S1 = qml.s_prod(1.5, qml.prod(qml.PauliZ(0), qml.PauliZ(1)))
     qml.expval(S1)
     qml.expval(S1)
@@ -407,6 +405,9 @@ class TestSumExpand:
     @pytest.mark.parametrize(("qscript", "output"), zip(SUM_QSCRIPTS, SUM_OUTPUTS))
     def test_sums(self, qscript, output):
         """Tests that the sum_expand transform returns the correct value"""
+        processed, _, _ = dev.preprocess(qscript)
+        assert len(processed) == 1
+        qscript = processed[0]
         tapes, fn = sum_expand(qscript)
         results = dev.execute(tapes)
         expval = fn(results)
@@ -417,6 +418,9 @@ class TestSumExpand:
     def test_sums_no_grouping(self, qscript, output):
         """Tests that the sum_expand transform returns the correct value
         if we switch grouping off"""
+        processed, _, _ = dev.preprocess(qscript)
+        assert len(processed) == 1
+        qscript = processed[0]
         tapes, fn = sum_expand(qscript, group=False)
         results = dev.execute(tapes)
         expval = fn(results)
