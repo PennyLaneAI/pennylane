@@ -5,7 +5,10 @@
 <h3>New features since last release</h3>
 
 * All batch transforms are updated to the new transform program system.
-  [(4440)](https://github.com/PennyLaneAI/pennylane/pull/4440)
+  [(#4440)](https://github.com/PennyLaneAI/pennylane/pull/4440)
+
+* Quantum information transforms are updated to the new transform program system.
+  [(#4569)](https://github.com/PennyLaneAI/pennylane/pull/4569)
 
 <h3>Improvements 🛠</h3>
 
@@ -35,15 +38,28 @@
   process, `DensityMatrixMP`.
   [(#4558)](https://github.com/PennyLaneAI/pennylane/pull/4558)
 
+* `qml.exp` returns a more informative error message when decomposition is unavailable for non-unitary operator.
+  [(#4571)](https://github.com/PennyLaneAI/pennylane/pull/4571)
+
 * The `StateMP` measurement now accepts a wire order (eg. a device wire order). The `process_state`
   method will re-order the given state to go from the inputted wire-order to the process's wire-order.
   If the process's wire-order contains extra wires, it will assume those are in the zero-state.
   [(#4570)](https://github.com/PennyLaneAI/pennylane/pull/4570)
 
+* Improve builtin types support with `qml.pauli_decompose`.
+  [(#4577)](https://github.com/PennyLaneAI/pennylane/pull/4577)
+
 * Various changes to measurements to improve feature parity between the legacy `default.qubit` and
   the new `DefaultQubit2`. This includes not trying to squeeze batched `CountsMP` results and implementing
   `MutualInfoMP.map_wires`.
   [(#4574)](https://github.com/PennyLaneAI/pennylane/pull/4574)
+
+* `devices.qubit.simulate` now accepts an interface keyword argument. If a QNode with `DefaultQubit2`
+  specifies an interface, the result will be computed with that interface.
+  [(#4582)](https://github.com/PennyLaneAI/pennylane/pull/4582)
+
+* `DefaultQubit2` now works as expected with measurement processes that don't specify wires.
+  [(#4580)](https://github.com/PennyLaneAI/pennylane/pull/4580)
 
 <h3>Breaking changes 💔</h3>
 
@@ -159,6 +175,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fix `skip_first` option in `expand_tape_state_prep`.
+  [(#4564)](https://github.com/PennyLaneAI/pennylane/pull/4564)
+
 * `convert_to_numpy_parameters` now uses `qml.ops.functions.bind_new_parameters`. This reinitializes the operation and
   makes sure everything references the new numpy parameters.
 
@@ -171,7 +190,9 @@ This release contains contributions from (in alphabetical order):
 
 Soran Jahangiri,
 Lillian M. A. Frederiksen,
+Vincent Michaud-Rioux,
 Romain Moyard,
 Mudit Pandey,
-Matthew Silverman
+Matthew Silverman,
+Jay Soni,
 
