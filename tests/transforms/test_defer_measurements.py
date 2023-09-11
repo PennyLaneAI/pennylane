@@ -1057,13 +1057,15 @@ class TestQubitReuseAndReset:
     def test_new_wire_for_multiple_measurements(self):
         """Test that a new wire is added if there are multiple mid-circuit measurements
         on the same wire."""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev)
         def circ(x, y):
             qml.RX(x, 0)
             qml.measure(0)
             qml.RY(y, 1)
+            qml.measure(0)
+            qml.RZ(x + y, 1)
             qml.measure(0)
             return qml.expval(qml.PauliZ(1))
 
@@ -1073,9 +1075,11 @@ class TestQubitReuseAndReset:
             qml.RX(1.0, 0),
             qml.CNOT([0, 2]),
             qml.RY(2.0, 1),
+            qml.CNOT([0, 3]),
+            qml.RZ(3.0, 1),
         ]
 
-        assert len(circ.qtape.operations) == 3
+        assert len(circ.qtape.operations) == 5
         for op, exp in zip(circ.qtape.operations, expected):
             assert qml.equal(op, exp)
 
