@@ -69,10 +69,17 @@
   If the process's wire-order contains extra wires, it will assume those are in the zero-state.
   [(#4570)](https://github.com/PennyLaneAI/pennylane/pull/4570)
 
+* Improve builtin types support with `qml.pauli_decompose`.
+  [(#4577)](https://github.com/PennyLaneAI/pennylane/pull/4577)
+
 * Various changes to measurements to improve feature parity between the legacy `default.qubit` and
   the new `DefaultQubit2`. This includes not trying to squeeze batched `CountsMP` results and implementing
   `MutualInfoMP.map_wires`.
   [(#4574)](https://github.com/PennyLaneAI/pennylane/pull/4574)
+
+* `devices.qubit.simulate` now accepts an interface keyword argument. If a QNode with `DefaultQubit2`
+  specifies an interface, the result will be computed with that interface.
+  [(#4582)](https://github.com/PennyLaneAI/pennylane/pull/4582)
 
 <h3>Breaking changes 💔</h3>
 
