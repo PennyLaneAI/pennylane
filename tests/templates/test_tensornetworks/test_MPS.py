@@ -93,9 +93,9 @@ class TestIndicesMPS:
     @pytest.mark.parametrize(
         ("n_wires", "n_block_wires", "offset"),
         [
-            (18, 6, 3),
-            (12, 4, -2),
-            (10, 4, 2),
+            (18, 6, 6),
+            (12, 4, 0),
+            (10, 4, 4),
         ],
     )
     def test_exception_offset(self, n_wires, n_block_wires, offset):
@@ -135,7 +135,7 @@ class TestIndicesMPS:
             (
                 ["a", "b", "c", "d", "e", "f", "g", "h"],
                 4,
-                -1,
+                1,
                 (
                     ("a", "b", "c", "d"),
                     ("b", "c", "d", "e"),
@@ -163,7 +163,7 @@ class TestTemplateInputs:
                 None,
                 [1, 2, 3, 4],
                 6,
-                0,
+                None,
                 "n_block_wires must be smaller than or equal to the number of wires; "
                 "got n_block_wires = 6 and number of wires = 4",
             ),
@@ -172,7 +172,7 @@ class TestTemplateInputs:
                 None,
                 [1, 2, 3, 4],
                 0,
-                0,
+                None,
                 "The number of wires in each block must be larger than or equal to 2; "
                 "got n_block_wires = 0",
             ),
@@ -181,7 +181,7 @@ class TestTemplateInputs:
                 None,
                 [1, 2, 3, 4, 5, 6, 7, 8],
                 4,
-                2,
+                4,
                 "Provided offset is outside the expected range; ",
             ),
         ],
@@ -287,10 +287,10 @@ class TestAttributes:
     @pytest.mark.parametrize(
         ("wires", "n_block_wires", "offset", "expected_n_blocks"),
         [
-            (range(14), 4, -1, 11),
-            (range(15), 4, 1, 4),
-            (range(18), 6, -2, 13),
-            (range(20), 6, 2, 3),
+            (range(14), 4, 1, 11),
+            (range(15), 4, 3, 4),
+            (range(18), 6, 1, 13),
+            (range(20), 6, 5, 3),
         ],
     )
     def test_get_n_blocks_with_offset(self, wires, n_block_wires, offset, expected_n_blocks):
@@ -301,7 +301,7 @@ class TestAttributes:
     @pytest.mark.filterwarnings("ignore")
     @pytest.mark.parametrize(
         ("wires", "n_block_wires", "offset"),
-        [(range(12), 6, 3), (range(9), 4, -2)],
+        [(range(12), 6, 6), (range(9), 4, 0)],
     )
     def test_get_n_blocks_error_with_offset(self, wires, offset, n_block_wires):
         """Test that the number of blocks attribute raises an error when offset is out of bounds."""
@@ -396,7 +396,7 @@ class TestTemplateOutputs:
                 [1, 2, 3, 4],
                 2,
                 [[0.1, 0.2], [-0.2, 0.3], [0.3, 0.4]],
-                0,
+                None,
                 {},
                 "circuit1_MPS",
             ),
@@ -406,7 +406,7 @@ class TestTemplateOutputs:
                 [1, 2, 3],
                 2,
                 [[0.1, 0.2, 0.3], [0.2, 0.3, -0.4]],
-                0,
+                None,
                 {},
                 "circuit2_MPS",
             ),
@@ -416,7 +416,7 @@ class TestTemplateOutputs:
                 [1, 2, 3, 4, 5, 6, 7, 8],
                 4,
                 None,
-                -1,
+                1,
                 {"k": 2},
                 "circuit3_MPS",
             ),
@@ -426,7 +426,7 @@ class TestTemplateOutputs:
                 [1, 2, 3, 4, 5, 6, 7, 8, 9],
                 5,
                 None,
-                0,
+                2,
                 {"k": 2},
                 "circuit4_MPS",
             ),

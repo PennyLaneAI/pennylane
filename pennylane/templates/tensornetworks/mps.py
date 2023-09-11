@@ -20,13 +20,15 @@ import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 
 
-def compute_indices_MPS(wires, n_block_wires, offset=0):
+def compute_indices_MPS(wires, n_block_wires, offset=None):
     r"""Generate a list containing the wires for each block.
 
     Args:
         wires (Iterable): wires that the template acts on
         n_block_wires (int): number of wires per block_gen
-        offset (wires): offset for positioning the subsequent blocks relative to the default :math:`O_d = \lfloor \text{n_block_wires}/2  \rfloor`, where :math:`\text{offset} + O_d \in [1, \text{n_block_wires} - 1]`
+        offset (wires): offset value for positioning the subsequent blocks relative to each other.
+            If ``None``, it defaults to :math:`\text{offset} = \lfloor \text{n_block_wires}/2  \rfloor`,
+            otherwise :math:`\text{offset} \in [1, \text{n_block_wires} - 1]`.
 
     Returns:
         layers (Tuple[Tuple]]): array of wire indices or wire labels for each block
@@ -44,20 +46,15 @@ def compute_indices_MPS(wires, n_block_wires, offset=0):
             f"n_block_wires must be smaller than or equal to the number of wires; got n_block_wires = {n_block_wires} and number of wires = {n_wires}"
         )
 
-    offset_limits = (
-        qml.math.array([-n_block_wires // 2 + 1, n_block_wires // 2 - 1]) + n_block_wires % 2
-    )
-    if offset < offset_limits[0] or offset > offset_limits[1]:
+    if offset is None:
+        offset = n_block_wires // 2
+
+    if offset < 1 or offset > n_block_wires - 1:
         raise ValueError(
-            f"Provided offset is outside the expected range; the expected range for n_block_wires = {n_block_wires} is range{offset_limits[0], offset_limits[1]}"
+            f"Provided offset is outside the expected range; the expected range for n_block_wires = {n_block_wires} is range{1, n_block_wires - 1}"
         )
 
-    if not abs(offset) and not n_block_wires % 2 and n_wires % (n_block_wires / 2) > 0:
-        warnings.warn(
-            f"The number of wires should be a multiple of {int(n_block_wires/2)}; got {n_wires}"
-        )
-
-    n_step = n_block_wires // 2 + offset
+    n_step = offset
     n_layers = len(wires) - int(len(wires) % (n_block_wires // 2)) - n_step
 
     return tuple(
@@ -85,15 +82,17 @@ class MPS(Operation):
         block (Callable): quantum circuit that defines a block
         n_params_block (int): the number of parameters in a block; equal to the length of the ``weights`` argument in ``block``
         template_weights (Sequence): list containing the weights for all blocks
-        offset (int): offset for positioning the subsequent blocks relative to the default :math:`O_d = \lfloor \text{n_block_wires}/2  \rfloor`, where :math:`\text{offset} + O_d \in [1,\ \text{n_block_wires} - 1]`
+        offset (wires): offset value for positioning the subsequent blocks relative to each other.
+            If ``None``, it defaults to :math:`\text{offset} = \lfloor \text{n_block_wires}/2  \rfloor`,
+            otherwise :math:`\text{offset} \in [1, \text{n_block_wires} - 1]`.
         **kwargs: additional keyword arguments for implementing the ``block``
 
     .. note::
 
         The expected number of blocks can be obtained from ``qml.MPS.get_n_blocks(wires, n_block_wires, offset=0)``, and
         the length of ``template_weights`` argument should match the number of blocks. Whenever either ``n_block_wires``
-        is odd or ``offset`` is nonzero, the template deviates from the maximally unbalanced tree architecture described
-        in `arXiv:1803.11537 <https://arxiv.org/abs/1803.11537>`_.
+        is odd or ``offset`` is not ``\lfloor \text{n_block_wires}/2  \rfloor``, the template deviates from the maximally
+        unbalanced tree architecture described in `arXiv:1803.11537 <https://arxiv.org/abs/1803.11537>`_.
 
     .. details::
         :title: Usage Details
@@ -178,10 +177,13 @@ class MPS(Operation):
         block,
         n_params_block=0,
         template_weights=None,
-        offset=0,
+        offset=None,
         id=None,
         **kwargs,
     ):
+        if offset is None:
+            offset = n_block_wires // 2
+
         ind_gates = compute_indices_MPS(wires, n_block_wires, offset)
         n_blocks = self.get_n_blocks(wires, n_block_wires, offset)
 
@@ -242,13 +244,15 @@ class MPS(Operation):
         return [qml.apply(op) for op in decomp] if qml.QueuingManager.recording() else decomp
 
     @staticmethod
-    def get_n_blocks(wires, n_block_wires, offset=0):
+    def get_n_blocks(wires, n_block_wires, offset=None):
         r"""Returns the expected number of blocks for a set of wires and number of wires per block.
 
         Args:
             wires (Sequence): number of wires the template acts on
             n_block_wires (int): number of wires per block
-            offset (int): offset for positioning the subsequent blocks relative to the default :math:`O_d = \lfloor \text{n_block_wires}/2  \rfloor`, where :math:`\text{offset} + O_d \in [1, \text{n_block_wires} - 1]`
+            offset (wires): offset value for positioning the subsequent blocks relative to each other.
+                If ``None``, it defaults to :math:`\text{offset} = \lfloor \text{n_block_wires}/2  \rfloor`,
+                otherwise :math:`\text{offset} \in [1, \text{n_block_wires} - 1]`.
 
         Returns:
             n_blocks (int): number of blocks; expected length of the template_weights argument
@@ -264,15 +268,15 @@ class MPS(Operation):
                 f"n_block_wires must be smaller than or equal to the number of wires; got n_block_wires = {n_block_wires} and number of wires = {n_wires}"
             )
 
-        offset_limits = (
-            qml.math.array([-n_block_wires // 2 + 1, n_block_wires // 2 - 1]) + n_block_wires % 2
-        )
-        if offset < offset_limits[0] or offset > offset_limits[1]:
+        if offset is None:
+            offset = n_block_wires // 2
+
+        if offset < 1 or offset > n_block_wires - 1:
             raise ValueError(
-                f"Provided offset is outside the expected range; the expected range for n_block_wires = {n_block_wires} is range{offset_limits[0], offset_limits[1]}"
+                f"Provided offset is outside the expected range; the expected range for n_block_wires = {n_block_wires} is range{1, n_block_wires - 1}"
             )
 
-        n_step = n_block_wires // 2 + offset
+        n_step = offset
         n_layers = n_wires - int(n_wires % (n_block_wires // 2)) - n_step
 
         return len([idx for idx in range(0, n_layers, n_step) if not idx + n_block_wires > n_wires])
