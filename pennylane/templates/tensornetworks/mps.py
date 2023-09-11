@@ -84,7 +84,7 @@ class MPS(Operation):
         template_weights (Sequence): list containing the weights for all blocks
         offset (wires): offset value for positioning the subsequent blocks relative to each other.
             If ``None``, it defaults to :math:`\text{offset} = \lfloor \text{n_block_wires}/2  \rfloor`,
-            otherwise :math:`\text{offset} \in [1, \text{n_block_wires} - 1]`.
+            otherwise :math:`\text{offset} \in [1, \text{n_block_wires} - 1]`
         **kwargs: additional keyword arguments for implementing the ``block``
 
     .. note::
@@ -127,7 +127,7 @@ class MPS(Operation):
         2: ───────────────╰X──RY(-0.30)─╭●──RY(0.10)──┤
         3: ─────────────────────────────╰X──RY(-0.30)─┤  <Z>
 
-        MPS can also be used with an ``offset`` argument that shifts the positioning the subsequent blocks relative to the default ``n_block_wires/2``.
+        MPS can also be used with an ``offset`` argument that shifts the positioning the subsequent blocks from the default ``n_block_wires/2``.
 
         .. code-block:: python
 
@@ -144,7 +144,7 @@ class MPS(Operation):
             dev= qml.device('default.qubit',wires=n_wires)
             @qml.qnode(dev)
             def circuit():
-                qml.MPS(range(n_wires),n_block_wires, block, n_params_block, offset = -1)
+                qml.MPS(range(n_wires),n_block_wires, block, n_params_block, offset = 1)
                 return qml.state()
 
         >>> print(qml.draw(circuit, expansion_strategy='device')())
