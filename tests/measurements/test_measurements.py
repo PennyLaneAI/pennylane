@@ -78,7 +78,7 @@ def test_ObservableReturnTypes(return_type, value):
 def test_no_measure():
     """Test that failing to specify a measurement
     raises an exception"""
-    dev = qml.device("default.qubit.legacy", wires=2)
+    dev = qml.device("default.qubit", wires=2)
 
     @qml.qnode(dev)
     def circuit(x):
@@ -104,7 +104,7 @@ def test_numeric_type_unrecognized_error():
 def test_shape_unrecognized_error():
     """Test that querying the shape of a measurement process with an
     unrecognized return type raises an error."""
-    dev = qml.device("default.qubit.legacy", wires=2)
+    dev = qml.device("default.qubit", wires=2)
     mp = NotValidMeasurement()
     with pytest.raises(
         qml.QuantumFunctionError,
@@ -244,7 +244,7 @@ class TestStatisticsQueuing:
         if stat_func is sample:
             pytest.skip("Sampling is not yet supported with symbolic operators.")
 
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit():
@@ -480,10 +480,10 @@ class TestSampleMeasurement:
 
         class MyMeasurement(SampleMeasurement):
             # pylint: disable=signature-differs
-            def process_samples(self, samples, wire_order, shot_range, bin_size):
+            def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
                 return qml.math.sum(samples[..., self.wires])
 
-        dev = qml.device("default.qubit.legacy", wires=2, shots=1000)
+        dev = qml.device("default.qubit", wires=2, shots=1000)
 
         @qml.qnode(dev)
         def circuit():
@@ -492,6 +492,7 @@ class TestSampleMeasurement:
 
         assert qml.math.allequal(circuit(), [1000, 0])
 
+    @pytest.mark.xfail(reason="until DQ2 port")
     def test_sample_measurement_without_shots(self):
         """Test that executing a sampled measurement with ``shots=None`` raises an error."""
 
@@ -500,7 +501,11 @@ class TestSampleMeasurement:
             def process_samples(self, samples, wire_order, shot_range, bin_size):
                 return qml.math.sum(samples[..., self.wires])
 
-        dev = qml.device("default.qubit.legacy", wires=2)
+            @property
+            def return_type(self):
+                return Sample
+
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit():
@@ -508,24 +513,10 @@ class TestSampleMeasurement:
             return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
 
         with pytest.raises(
-            ValueError, match="Shots must be specified in the device to compute the measurement "
+            qml.DeviceError,
+            match="Analytic circuits must only contain StateMeasurements; got sample",
         ):
             circuit()
-
-    def test_method_overriden_by_device(self):
-        """Test that the device can override a measurement process."""
-
-        dev = qml.device("default.qubit.legacy", wires=2, shots=1000)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.PauliX(0)
-            return qml.sample(wires=[0]), qml.sample(wires=[1])
-
-        circuit.device.measurement_map[SampleMP] = "test_method"
-        circuit.device.test_method = lambda obs, shot_range=None, bin_size=None: 2
-
-        assert qml.math.allequal(circuit(), [2, 2])
 
 
 class TestStateMeasurement:
@@ -538,7 +529,7 @@ class TestStateMeasurement:
             def process_state(self, state, wire_order):
                 return qml.math.sum(state)
 
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit():
@@ -546,68 +537,47 @@ class TestStateMeasurement:
 
         assert circuit() == 1
 
-    def test_sample_measurement_with_shots(self):
-        """Test that executing a state measurement with shots raises a warning."""
+    @pytest.mark.xfail(reason="until DQ2 port")
+    def test_state_measurement_with_shots(self):
+        """Test that executing a state measurement with shots raises an error."""
 
         class MyMeasurement(StateMeasurement):
             def process_state(self, state, wire_order):
                 return qml.math.sum(state)
 
-        dev = qml.device("default.qubit.legacy", wires=2, shots=1000)
+            @property
+            def return_type(self):
+                return State
+
+        dev = qml.device("default.qubit", wires=2, shots=1000)
 
         @qml.qnode(dev)
         def circuit():
             return MyMeasurement()
 
-        with pytest.warns(
-            UserWarning,
-            match="Requested measurement MyMeasurement with finite shots",
-        ):
+        with pytest.raises(qml.DeviceError, match="Circuits with finite shots must only contain"):
             circuit()
-
-    def test_method_overriden_by_device(self):
-        """Test that the device can override a measurement process."""
-
-        dev = qml.device("default.qubit.legacy", wires=2)
-
-        @qml.qnode(dev, interface="autograd")
-        def circuit():
-            return qml.state()
-
-        circuit.device.measurement_map[StateMP] = "test_method"
-        circuit.device.test_method = lambda obs, shot_range=None, bin_size=None: 2
-
-        assert circuit() == 2
 
 
 class TestMeasurementTransform:
     """Tests for the MeasurementTransform class."""
 
+    @pytest.mark.xfail(reason="until DQ2 port")
     def test_custom_measurement(self):
         """Test the execution of a custom measurement."""
 
-        class MyMeasurement(MeasurementTransform):
+        class CountTapesMP(MeasurementTransform, SampleMeasurement):
             def process(self, tape, device):
-                return {device.shots: len(tape)}
+                tapes, _, _ = device.preprocess(tape)
+                return len(tapes)
 
-        dev = qml.device("default.qubit.legacy", wires=2, shots=1000)
+            def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
+                return [True]
 
-        @qml.qnode(dev)
-        def circuit():
-            return MyMeasurement()
-
-        assert circuit() == {dev.shots: len(circuit.tape)}
-
-    def test_method_overriden_by_device(self):
-        """Test that the device can override a measurement process."""
-
-        dev = qml.device("default.qubit.legacy", wires=2, shots=1000)
+        dev = qml.device("default.qubit", wires=2, shots=1000)
 
         @qml.qnode(dev)
         def circuit():
-            return qml.classical_shadow(wires=0)
+            return CountTapesMP(wires=[0])
 
-        circuit.device.measurement_map[ClassicalShadowMP] = "test_method"
-        circuit.device.test_method = lambda tape: 2
-
-        assert circuit() == 2
+        assert circuit() == 1

@@ -1654,14 +1654,7 @@ class TestReturn:
 
         grad = qml.grad(circuit)(a)
 
-        import sys  # pylint: disable=import-outside-toplevel
-
-        python_version = sys.version_info.minor
-        if diff_method == "backprop" and python_version > 7:
-            # Since numpy 1.23.0
-            assert isinstance(grad, np.ndarray)
-        else:
-            assert isinstance(grad, float)
+        assert isinstance(grad, np.tensor if diff_method == "backprop" else float)
 
     def test_grad_single_measurement_multiple_param(self, dev, diff_method, grad_on_execution):
         """For one measurement and multiple param, the gradient is a tuple of arrays."""
