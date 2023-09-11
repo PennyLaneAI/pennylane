@@ -60,6 +60,23 @@ class TestPurity:
 
     wires_list = [([0], True), ([1], True), ([0, 1], False)]
 
+    def test_purity_cannot_specify_device(self):
+        """Test that an error is raised if a device or device wires are given
+        to the purity transform manually."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.RY(params, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        with pytest.raises(ValueError, match="Cannot provide a 'device' value"):
+            _ = qml.qinfo.purity(circuit, wires=[0], device=dev)
+
+        with pytest.raises(ValueError, match="Cannot provide a 'device_wires' value"):
+            _ = qml.qinfo.purity(circuit, wires=[0], device_wires=dev.wires)
+
     def test_qnode_not_returning_state(self):
         """Test that the QNode of reduced_dm function must return state."""
 
