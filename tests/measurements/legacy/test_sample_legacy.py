@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import MeasurementShapeError, Sample, Shots, MeasurementValue
+from pennylane.measurements import MeasurementShapeError, Sample, Shots
 from pennylane.operation import Operator
 
 # pylint: disable=protected-access, no-member
@@ -31,7 +31,7 @@ def custom_measurement_process(device, spy):
     for call_args in call_args_list:
         meas = call_args.args[1]
         shot_range, bin_size = (call_args.kwargs["shot_range"], call_args.kwargs["bin_size"])
-        if isinstance(meas, (Operator, MeasurementValue)):
+        if isinstance(meas, Operator):
             meas = qml.sample(op=meas)
         assert qml.math.allequal(
             device.sample(call_args.args[1], **call_args.kwargs),
