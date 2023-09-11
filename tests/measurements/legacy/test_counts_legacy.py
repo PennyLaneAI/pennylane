@@ -428,40 +428,6 @@ class TestCountsIntegration:
 
         custom_measurement_process(dev, spy)
 
-    def test_counts_shape_single_measurement_value(self):
-        """Test that the counts output is correct for single mid-circuit measurement
-        values."""
-        shots = 1000
-        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int64)
-        mv = qml.measure(0)
-
-        result = qml.counts(mv).process_samples(samples, wire_order=[0])
-
-        assert len(result) == 2
-        assert set(result.keys()) == {"0", "1"}
-        assert result["0"] == np.count_nonzero(samples[:, 0] == 0)
-        assert result["1"] == np.count_nonzero(samples[:, 0] == 1)
-
-    def test_counts_all_outcomes_measurement_value(self):
-        """Test that the counts output is correct when all_outcomes is passed
-        for mid-circuit measurement values."""
-        shots = 1000
-        samples = np.zeros((shots, 2)).astype(np.int64)
-        mv = qml.measure(0)
-
-        result1 = qml.counts(mv, all_outcomes=False).process_samples(samples, wire_order=[0])
-
-        assert len(result1) == 1
-        assert set(result1.keys()) == {"0"}
-        assert result1["0"] == shots
-
-        result2 = qml.counts(mv, all_outcomes=True).process_samples(samples, wire_order=[0])
-
-        assert len(result2) == 2
-        assert set(result2.keys()) == {"0", "1"}
-        assert result2["0"] == shots
-        assert result2["1"] == 0
-
     def test_all_outcomes_kwarg_no_observable_no_wires(self, mocker):
         """Test that the dictionary keys are *all* the possible combinations
         of basis states for the device, including 0 count values, if no wire
