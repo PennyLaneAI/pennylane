@@ -613,15 +613,16 @@ class Hamiltonian(Observable):
         >>> ob1.compare(ob2)
         False
         """
-        # pylint: disable=protected-access
         if isinstance(other, Hamiltonian):
-            H1 = copy(self).simplify()
-            H2 = copy(other).simplify()
-            return H1._obs_data() == H2._obs_data()
+            self.simplify()
+            other.simplify()
+            return self._obs_data() == other._obs_data()  # pylint: disable=protected-access
 
         if isinstance(other, (Tensor, Observable)):
-            H1 = copy(self).simplify()
-            return H1._obs_data() == {(1, frozenset(other._obs_data()))}
+            self.simplify()
+            return self._obs_data() == {
+                (1, frozenset(other._obs_data()))  # pylint: disable=protected-access
+            }
 
         raise ValueError("Can only compare a Hamiltonian, and a Hamiltonian/Observable/Tensor.")
 

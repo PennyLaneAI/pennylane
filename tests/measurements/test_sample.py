@@ -16,10 +16,10 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import MeasurementShapeError, Sample, Shots, MeasurementValue
+from pennylane.measurements import MeasurementShapeError, Sample, Shots
 from pennylane.operation import EigvalsUndefinedError, Operator
 
-# pylint: disable=protected-access, no-member
+# pylint: disable=protected-access, no-member, too-many-public-methods
 
 
 class TestSample:
