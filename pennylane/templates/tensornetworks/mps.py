@@ -91,7 +91,7 @@ class MPS(Operation):
 
         The expected number of blocks can be obtained from ``qml.MPS.get_n_blocks(wires, n_block_wires, offset=0)``, and
         the length of ``template_weights`` argument should match the number of blocks. Whenever either ``n_block_wires``
-        is odd or ``offset`` is not ``\lfloor \text{n_block_wires}/2  \rfloor``, the template deviates from the maximally
+        is odd or ``offset`` is not :math:`\lfloor \text{n_block_wires}/2  \rfloor`, the template deviates from the maximally
         unbalanced tree architecture described in `arXiv:1803.11537 <https://arxiv.org/abs/1803.11537>`_.
 
     .. details::
