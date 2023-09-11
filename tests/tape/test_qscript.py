@@ -903,16 +903,13 @@ measures = [
     (qml.var(qml.PauliZ(0)), ()),
     (qml.probs(wires=[0]), (2,)),
     (qml.probs(wires=[0, 1]), (4,)),
-    (qml.state(), (2,)),
+    (qml.state(), (8,)),  # Assumes 3-qubit device
     (qml.density_matrix(wires=[0, 1]), (4, 4)),
     (
         qml.sample(qml.PauliZ(0)),
         None,
     ),  # Shape is None because the expected shape is in the test case
-    (
-        qml.sample(wires=[0, 1, 2]),
-        None,
-    ),  # Shape is None because the expected shape is in the test case
+    (qml.sample(), None),  # Shape is None because the expected shape is in the test case
     (qml.mutual_info(wires0=[0], wires1=[1]), ()),
     (qml.vn_entropy(wires=[0, 1]), ()),
 ]
@@ -1290,7 +1287,9 @@ class TestOutputShape:
         ops = [qml.RY(0.3, 0), qml.RX(0.2, 0)]
         qs = QuantumScript(ops, [qml.sample()] * num_samples, shots=shots)
 
-        expected = tuple(tuple(() if s == 1 else (s,) for _ in range(num_samples)) for s in shots)
+        expected = tuple(
+            tuple((3,) if s == 1 else (s, 3) for _ in range(num_samples)) for s in shots
+        )
 
         res = qs.shape(dev)
         assert res == expected

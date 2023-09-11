@@ -125,7 +125,7 @@ class TestDecomposition:
     def test_state_preparation_fidelity(self, tol, state_vector, wires, target_state):
         """Tests that the template produces correct states with high fidelity."""
 
-        @qml.qnode(qml.device("default.qubit"))
+        @qml.qnode(qml.device("default.qubit", wires=3))
         def circuit():
             qml.MottonenStatePreparation(state_vector, wires)
             return (
@@ -214,7 +214,7 @@ class TestDecomposition:
     ):
         """Tests that the template produces states with correct probability distribution."""
 
-        @qml.qnode(qml.device("default.qubit"))
+        @qml.qnode(qml.device("default.qubit", wires=3))
         def circuit():
             qml.MottonenStatePreparation(state_vector, wires)
             return (

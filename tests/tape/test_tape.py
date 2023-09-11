@@ -1813,16 +1813,13 @@ measures = [
     (qml.var(qml.PauliZ(0)), ()),
     (qml.probs(wires=[0]), (2,)),
     (qml.probs(wires=[0, 1]), (4,)),
-    (qml.state(), (2,)),
+    (qml.state(), (8,)),  # Assumes 3-qubit device
     (qml.density_matrix(wires=[0, 1]), (4, 4)),
     (
         qml.sample(qml.PauliZ(0)),
         None,
     ),  # Shape is None because the expected shape is in the test case
-    (
-        qml.sample(wires=[0, 1, 2]),
-        None,
-    ),  # Shape is None because the expected shape is in the test case
+    (qml.sample(), None),  # Shape is None because the expected shape is in the test case
 ]
 
 multi_measurements = [
@@ -2227,7 +2224,7 @@ class TestNumericType:
         result = circuit(0.3, 0.2)
 
         # Double-check the domain of the QNode output
-        assert np.issubdtype(result[0].dtype, float)  # pylint:disable=unsubscriptable-object
+        assert np.issubdtype(result[0].dtype, float)
         assert circuit.qtape.numeric_type is float
 
     @pytest.mark.autograd
@@ -2254,8 +2251,8 @@ class TestNumericType:
         result = circuit(0, 3)
         assert isinstance(result, tuple)
         assert len(result) == 2
-        assert result[0].dtype == float  # pylint:disable=no-member
-        assert result[1].dtype == int  # pylint:disable=no-member
+        assert result[0].dtype == float
+        assert result[1].dtype == int
 
         assert circuit.qtape.numeric_type == (float, int)
 
