@@ -109,29 +109,11 @@ class TestIndicesMPS:
             compute_indices_MPS(range(n_wires), n_block_wires, offset)
 
     @pytest.mark.parametrize(
-        ("n_wires", "n_block_wires"),
-        [
-            (5, 4),
-            (9, 4),
-            (7, 6),
-        ],
-    )
-    def test_warning_many_wires(self, n_wires, n_block_wires):
-        """Verifies that a warning is raised if n_wires doesn't correspond to n_block_wires."""
-
-        with pytest.warns(
-            Warning,
-            match=f"The number of wires should be a multiple of {int(n_block_wires/2)}; "
-            f"got {n_wires}",
-        ):
-            compute_indices_MPS(range(n_wires), n_block_wires)
-
-    @pytest.mark.parametrize(
         ("wires", "n_block_wires", "offset", "expected_indices"),
         [
-            ([1, 2, 3, 4], 2, 0, ((1, 2), (2, 3), (3, 4))),
-            (["a", "b", "c", "d"], 2, 0, (("a", "b"), ("b", "c"), ("c", "d"))),
-            ([1, 2, 3, 4, 5, 6, 7, 8], 4, 1, ((1, 2, 3, 4), (4, 5, 6, 7))),
+            ([1, 2, 3, 4], 2, 1, ((1, 2), (2, 3), (3, 4))),
+            (["a", "b", "c", "d"], 2, 1, (("a", "b"), ("b", "c"), ("c", "d"))),
+            ([1, 2, 3, 4, 5, 6, 7, 8], 4, 3, ((1, 2, 3, 4), (4, 5, 6, 7))),
             (
                 ["a", "b", "c", "d", "e", "f", "g", "h"],
                 4,

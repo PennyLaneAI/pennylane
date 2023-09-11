@@ -181,9 +181,6 @@ class MPS(Operation):
         id=None,
         **kwargs,
     ):
-        if offset is None:
-            offset = n_block_wires // 2
-
         ind_gates = compute_indices_MPS(wires, n_block_wires, offset)
         n_blocks = self.get_n_blocks(wires, n_block_wires, offset)
 
@@ -258,7 +255,8 @@ class MPS(Operation):
             n_blocks (int): number of blocks; expected length of the template_weights argument
         """
         n_wires = len(wires)
-        if not abs(offset) and not n_block_wires % 2 and n_wires % (n_block_wires / 2) > 0:
+
+        if offset is None and not n_block_wires % 2 and n_wires % (n_block_wires // 2) > 0:
             warnings.warn(
                 f"The number of wires should be a multiple of {int(n_block_wires/2)}; got {n_wires}"
             )
