@@ -187,7 +187,7 @@
 * Fix `ProbabilityMP.process_state` so it allows for proper Autograph compilation. Without this,
   decorating a QNode that returns an `expval` with `tf.function` would fail when computing the
   expectation.
-  [(#)]()
+  [(#4590)](https://github.com/PennyLaneAI/pennylane/pull/4590)
 
 <h3>Contributors ✍️</h3>
 
