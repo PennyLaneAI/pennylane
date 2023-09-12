@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* All quantum functions transforms are update to the new transform program system.
+ [(#4439)](https://github.com/PennyLaneAI/pennylane/pull/4439)
+
 * All batch transforms are updated to the new transform program system.
   [(#4440)](https://github.com/PennyLaneAI/pennylane/pull/4440)
 
