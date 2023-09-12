@@ -58,6 +58,9 @@
   specifies an interface, the result will be computed with that interface.
   [(#4582)](https://github.com/PennyLaneAI/pennylane/pull/4582)
 
+* `DefaultQubit2` now works as expected with measurement processes that don't specify wires.
+  [(#4580)](https://github.com/PennyLaneAI/pennylane/pull/4580)
+
 <h3>Breaking changes 💔</h3>
 
 * The `__eq__` and `__hash__` methods of `Operator` and `MeasurementProcess` no longer rely on the
@@ -180,6 +183,11 @@
 
 * `tf.function` no longer breaks `ProbabilityMP.process_state` which is needed by new devices.
   [(#4470)](https://github.com/PennyLaneAI/pennylane/pull/4470)
+
+* Fix `ProbabilityMP.process_state` so it allows for proper Autograph compilation. Without this,
+  decorating a QNode that returns an `expval` with `tf.function` would fail when computing the
+  expectation.
+  [(#4590)](https://github.com/PennyLaneAI/pennylane/pull/4590)
 
 <h3>Contributors ✍️</h3>
 
