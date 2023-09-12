@@ -17,8 +17,9 @@ import functools
 from typing import Sequence, Callable
 
 import pennylane as qml
-from pennylane.devices import DefaultQubit
-from pennylane.measurements import StateMP
+from pennylane.tape import QuantumTape
+from pennylane.devices import DefaultQubit, DefaultMixed
+from pennylane.measurements import StateMP, DensityMP
 from pennylane.transforms import adjoint_metric_tensor, metric_tensor
 from pennylane.transforms.core import transform
 
