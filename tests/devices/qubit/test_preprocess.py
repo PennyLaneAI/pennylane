@@ -380,7 +380,7 @@ class TestBatchTransform:
         device = qml.devices.experimental.DefaultQubit2()
 
         program, _ = device.preprocess()
-        tapes, batch_fn = program([tape])
+        tapes, _ = program([tape])
 
         assert len(tapes) == 1
         for op, expected in zip(tapes[0].circuit, ops + measurements):
@@ -395,7 +395,7 @@ class TestBatchTransform:
         device = qml.devices.experimental.DefaultQubit2()
 
         program, _ = device.preprocess()
-        tapes, batch_fn = program([tape])
+        tapes, _ = program([tape])
 
         assert len(tapes) == 1
         for op, expected in zip(tapes[0].circuit, ops + measurements):
@@ -414,7 +414,7 @@ class TestBatchTransform:
         device = qml.devices.experimental.DefaultQubit2()
 
         program, _ = device.preprocess(execution_config=execution_config)
-        tapes, batch_fn = program([tape])
+        tapes, _ = program([tape])
         expected_ops = [
             [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX(np.pi, wires=1)],
             [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX(np.pi / 2, wires=1)],
