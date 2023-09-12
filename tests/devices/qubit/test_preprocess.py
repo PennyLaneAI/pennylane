@@ -587,7 +587,6 @@ class TestPreprocess:
 
     def test_choose_best_gradient_method(self):
         """Test that preprocessing chooses backprop as the best gradient method."""
-        tape = QuantumScript(ops=[], measurements=[])
         config = qml.devices.ExecutionConfig(gradient_method="best")
         _, config = preprocess(config)
         assert config.gradient_method == "backprop"
@@ -596,8 +595,6 @@ class TestPreprocess:
 
     def test_config_choices_for_adjoint(self):
         """Test that preprocessing request grad on execution and says to use the device gradient if adjoint is requested."""
-
-        tape = QuantumScript(ops=[], measurements=[])
         config = qml.devices.ExecutionConfig(
             gradient_method="adjoint", use_device_gradient=None, grad_on_execution=None
         )

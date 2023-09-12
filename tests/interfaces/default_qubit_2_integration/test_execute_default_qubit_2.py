@@ -16,7 +16,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.interfaces.execution import _batch_transform, _preprocess_expand_fn
+from pennylane.interfaces.execution import _preprocess_expand_fn
 
 from pennylane.devices.experimental import DefaultQubit2
 
@@ -62,8 +62,6 @@ class TestBatchTransformHelper:
         dev = DefaultQubit2()
 
         qs = qml.tape.QuantumScript([CustomOp(0)], [qml.expval(qml.PauliZ(0))])
-
-        config = qml.devices.experimental.ExecutionConfig()
 
         with pytest.warns(UserWarning, match="device batch transforms cannot be turned off"):
             qml.execute((qs, qs), device=dev, device_batch_transform=False)
