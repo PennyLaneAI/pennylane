@@ -112,10 +112,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
 
         # estimate the ev
         samples = qml.sample(op=self.obs).process_samples(
-            samples=samples,
-            wire_order=wire_order,
-            shot_range=shot_range,
-            bin_size=bin_size,
+            samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
         )
 
         # With broadcasting, we want to take the mean over axis 1, which is the -1st/-2nd with/
