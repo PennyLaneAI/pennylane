@@ -108,7 +108,16 @@ def validate_multiprocessing_workers(
     threads per worker.
 
     Args:
+        tape (QuantumTape): a quantum circuit.
         max_workers (int): Maximal number of multiprocessing workers
+        device (pennylane.devices.experimental.Device): The device to be checked.
+
+    Returns:
+        qnode (pennylane.QNode) or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
+        it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of
+        quantum tapes to be evaluated, and a function to be applied to these
+        tape executions.
     """
     if max_workers is not None:
         threads_per_proc = os.cpu_count()  # all threads by default
@@ -161,8 +170,11 @@ def validate_and_expand_adjoint(
         circuit(.QuantumTape): the tape to validate
 
     Returns:
-        Union[.QuantumTape, .DeviceError]: The expanded tape, such that it is supported by adjoint differentiation.
-        If the circuit is invalid for adjoint differentiation, a DeviceError with an explanation is returned instead.
+        qnode (pennylane.QNode) or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
+        it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of
+        quantum tapes to be evaluated, and a function to be applied to these
+        tape executions.
     """
 
     try:

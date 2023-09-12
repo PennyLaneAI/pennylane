@@ -124,9 +124,6 @@ def broadcast_expand(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
         processing_fn = lambda x: x[0]
     else:
         num_tapes = tape.batch_size
-        if num_tapes is None:
-            raise ValueError("The provided tape is not broadcasted.")
-
         new_ops = _split_operations(tape.operations, num_tapes)
 
         output_tapes = []
