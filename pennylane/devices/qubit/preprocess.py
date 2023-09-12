@@ -110,7 +110,7 @@ def validate_device_wires(
         device (pennylane.devices.experimental.Device): The device to be checked.
 
     Returns:
-        qnode (pennylane.QNode) or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
+        pennylane.QNode or qfunc or Tuple[List[.QuantumTape], Callable]: If a QNode is passed,
         it returns a QNode with the transform added to its transform program.
         If a tape is passed, returns a tuple containing a list of
         quantum tapes to be evaluated, and a function to be applied to these
@@ -158,7 +158,7 @@ def validate_multiprocessing_workers(
         device (pennylane.devices.experimental.Device): The device to be checked.
 
     Returns:
-        qnode (pennylane.QNode) or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
+        pennylane.QNode or qfunc or Tuple[List[.QuantumTape], Callable]: If a QNode is passed,
         it returns a QNode with the transform added to its transform program.
         If a tape is passed, returns a tuple containing a list of
         quantum tapes to be evaluated, and a function to be applied to these
@@ -192,10 +192,7 @@ def validate_multiprocessing_workers(
         if device._debugger and device._debugger.active:
             raise DeviceError("Debugging with ``Snapshots`` is not available with multiprocessing.")
 
-        def _has_snapshot(circuit):
-            return any(isinstance(c, Snapshot) for c in circuit)
-
-        if _has_snapshot(tape):
+        if any(isinstance(op, Snapshot) for op in tape.operations):
             raise RuntimeError(
                 """ProcessPoolExecutor cannot execute a QuantumScript with
                 a ``Snapshot`` operation. Change the value of ``max_workers``
@@ -222,7 +219,7 @@ def validate_and_expand_adjoint(
         circuit(.QuantumTape): the tape to validate
 
     Returns:
-        qnode (pennylane.QNode) or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
+        pennylane.QNode or qfunc or Tuple[List[.QuantumTape], Callable]: If a QNode is passed,
         it returns a QNode with the transform added to its transform program.
         If a tape is passed, returns a tuple containing a list of
         quantum tapes to be evaluated, and a function to be applied to these
@@ -301,7 +298,7 @@ def validate_measurements(
             options for the execution.
 
     Returns:
-        qnode (pennylane.QNode) or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
+        pennylane.QNode or qfunc or Tuple[List[.QuantumTape], Callable]: If a QNode is passed,
         it returns a QNode with the transform added to its transform program.
         If a tape is passed, returns a tuple containing a list of
         quantum tapes to be evaluated, and a function to be applied to these
@@ -348,7 +345,7 @@ def expand_fn(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Ca
         tape (.QuantumTape): the circuit to expand.
 
     Returns:
-        qnode (pennylane.QNode) or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
+        pennylane.QNode or qfunc or Tuple[List[.QuantumTape], Callable]: If a QNode is passed,
         it returns a QNode with the transform added to its transform program.
         If a tape is passed, returns a tuple containing a list of
         quantum tapes to be evaluated, and a function to be applied to these

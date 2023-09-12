@@ -193,11 +193,11 @@ class DefaultQubit2(Device):
 
         Args:
             execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A data structure describing the
-                parameters needed to fully describe the execution. Includes such information as shots.
+                parameters needed to fully describe the execution.
 
         Returns:
             TransformProgram, ExecutionConfig: A tranform program that when called returns QuantumTapes that the device
-            can natively execute, a postprocessing function to be called after execution, and a configuration with
+            can natively execute as well as a postprocessing function to be called after execution, and a configuration with
             unset specifications filled in.
 
         This device:
