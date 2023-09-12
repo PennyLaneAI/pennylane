@@ -119,25 +119,28 @@ def broadcast_expand(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
     array([0.98006658, 0.82533561, 0.54030231])
     """
     # pylint: disable=protected-access
-    num_tapes = tape.batch_size
-    if num_tapes is None:
-        raise ValueError("The provided tape is not broadcasted.")
+    if tape.batch_size is None:
+        output_tapes = [tape]
+        processing_fn = lambda x: x[0]
+    else:
+        num_tapes = tape.batch_size
+        new_ops = _split_operations(tape.operations, num_tapes)
 
-    new_ops = _split_operations(tape.operations, num_tapes)
+        output_tapes = []
+        for ops in new_ops:
+            new_tape = qml.tape.QuantumScript(ops, tape.measurements, shots=tape.shots)
+            new_tape.trainable_params = tape.trainable_params
+            output_tapes.append(new_tape)
 
-    output_tapes = []
-    for ops in new_ops:
-        new_tape = qml.tape.QuantumScript(ops, tape.measurements, shots=tape.shots)
-        new_tape.trainable_params = tape.trainable_params
-        output_tapes.append(new_tape)
-
-    def processing_fn(results: qml.typing.ResultBatch) -> qml.typing.Result:
-        if len(tape.measurements) > 1:
-            processed_results = [
-                qml.math.squeeze(qml.math.stack([results[b][i] for b in range(tape.batch_size)]))
-                for i in range(len(tape.measurements))
-            ]
-            return tuple(processed_results)
-        return qml.math.squeeze(qml.math.stack(results))
+        def processing_fn(results: qml.typing.ResultBatch) -> qml.typing.Result:
+            if len(tape.measurements) > 1:
+                processed_results = [
+                    qml.math.squeeze(
+                        qml.math.stack([results[b][i] for b in range(tape.batch_size)])
+                    )
+                    for i in range(len(tape.measurements))
+                ]
+                return tuple(processed_results)
+            return qml.math.squeeze(qml.math.stack(results))
 
     return output_tapes, processing_fn
