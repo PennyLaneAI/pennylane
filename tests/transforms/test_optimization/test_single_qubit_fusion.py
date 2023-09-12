@@ -50,7 +50,6 @@ class TestSingleQubitFusion:
 
     def test_single_qubit_full_fusion_qnode(self):
         """Test that a sequence of single-qubit gates all fuse."""
-        dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(device=dev)
         def circuit():
