@@ -68,7 +68,7 @@ def qfunc(U):
 class TestDecomposeSingleQubitUnitaryTransform:
     """Tests to ensure the transform itself works in all interfaces."""
 
-    def test_unitary_to_rot_qnode(self):
+    def test_unitary_to_rot_device_transform_programqnode(self):
         """Test for applying the transform on a QNode."""
         dev = qml.device("default.qubit", wires=2)
 
