@@ -66,6 +66,7 @@ class TestSingleQubitFusion:
         # Compare matrices
         matrix_expected = qml.matrix(circuit)()
         optimized_qnode = single_qubit_fusion(circuit)
+        optimized_qnode()
         matrix_obtained = qml.matrix(optimized_qnode)()
         assert check_matrix_equivalence(matrix_expected, matrix_obtained)
 

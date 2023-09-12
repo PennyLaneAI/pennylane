@@ -99,6 +99,7 @@ class TestPatternMatchingOptimization:
         template = qml.tape.QuantumScript.from_queue(q_template)
 
         optimized_qnode = pattern_matching_optimization(circuit, pattern_tapes=[template])
+        optimized_qnode()
         assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(circuit)())
 
     def test_custom_quantum_cost(self):
