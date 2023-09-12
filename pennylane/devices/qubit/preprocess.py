@@ -388,51 +388,6 @@ def expand_fn(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Ca
     return [tape], null_postprocessing
 
 
-def batch_transform(
-    circuit: qml.tape.QuantumScript, execution_config: ExecutionConfig = DefaultExecutionConfig
-) -> Tuple[Tuple[qml.tape.QuantumScript], PostprocessingFn]:
-    """Apply a differentiable batch transform for preprocessing a circuit
-    prior to execution.
-
-    By default, this method contains logic for generating multiple
-    circuits, one per term, of a circuit that terminates in ``expval(Sum)``.
-
-    .. warning::
-
-        This method will be tracked by autodifferentiation libraries,
-        such as Autograd, JAX, TensorFlow, and Torch. Please make sure
-        to use ``qml.math`` for autodiff-agnostic tensor processing
-        if required.
-
-    Args:
-        circuit (.QuantumTape): the circuit to preprocess
-        execution_config (.ExecutionConfig): execution configuration with configurable
-            options for the execution.
-
-    Returns:
-        tuple[Sequence[.QuantumTape], callable]: Returns a tuple containing
-        the sequence of circuits to be executed, and a post-processing function
-        to be applied to the list of evaluated circuit results.
-    """
-    # Check whether the circuit was broadcasted or if the diff method is anything other than adjoint
-    if circuit.batch_size is None or execution_config.gradient_method != "adjoint":
-        # If the circuit wasn't broadcasted, or if built-in PennyLane broadcasting
-        # can be used, then no action required
-        circuits = [circuit]
-
-        def batch_fn(res: ResultBatch) -> Result:
-            """A post-processing function to convert the results of a batch of
-            executions into the result of a single executiion."""
-            return res[0]
-
-        return circuits, batch_fn
-
-    # Expand each of the broadcasted circuits
-    tapes, batch_fn = qml.transforms.broadcast_expand(circuit)
-
-    return tapes, batch_fn
-
-
 def _update_config(config: ExecutionConfig) -> ExecutionConfig:
     """Choose the "best" options for the configuration if they are left unspecified.
 
