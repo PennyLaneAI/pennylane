@@ -187,10 +187,16 @@
 * Fix mocking in the unit tests for `qml.qchem.mol_data`.
   [(#4591)](https://github.com/PennyLaneAI/pennylane/pull/4591)
 
+* Fix `ProbabilityMP.process_state` so it allows for proper Autograph compilation. Without this,
+  decorating a QNode that returns an `expval` with `tf.function` would fail when computing the
+  expectation.
+  [(#4590)](https://github.com/PennyLaneAI/pennylane/pull/4590)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Utkarsh Azad
 Soran Jahangiri,
 Lillian M. A. Frederiksen,
 Vincent Michaud-Rioux,
