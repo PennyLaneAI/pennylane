@@ -40,6 +40,6 @@ def create_initial_state(
         num_wires = len(wires)
         state = np.zeros((2,) * num_wires)
         state[(0,) * num_wires] = 1
-        return qml.math.array(state, like=like)
+        return qml.math.asarray(state, like=like)
 
-    return prep_operation.state_vector(wire_order=list(wires))
+    return qml.math.asarray(prep_operation.state_vector(wire_order=list(wires)), like=like)

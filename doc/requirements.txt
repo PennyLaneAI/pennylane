@@ -1,7 +1,7 @@
 --find-links https://download.pytorch.org/whl/torch_stable.html
 pip
 appdirs
-autograd<=1.5
+autograd
 autoray
 # jax==0.4.10
 # jaxlib==0.4.10

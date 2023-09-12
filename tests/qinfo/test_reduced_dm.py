@@ -42,6 +42,23 @@ wires_list = [[0], [1], [0, 1], [1, 0]]
 class TestDensityMatrixQNode:
     """Tests for the (reduced) density matrix for QNodes returning states."""
 
+    def test_reduced_dm_cannot_specify_device(self):
+        """Test that an error is raised if a device or device wires are given
+        to the reduced_dm transform manually."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.RY(params, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        with pytest.raises(ValueError, match="Cannot provide a 'device' value"):
+            _ = qml.qinfo.reduced_dm(circuit, wires=[0], device=dev)
+
+        with pytest.raises(ValueError, match="Cannot provide a 'device_wires' value"):
+            _ = qml.qinfo.reduced_dm(circuit, wires=[0], device_wires=dev.wires)
+
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("interface", interfaces)
     @pytest.mark.parametrize("angle", angle_values)

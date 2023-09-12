@@ -61,9 +61,8 @@ class TransformDispatcher:
             # is the object we wish to transform
             obj, *targs = targs
 
-        if isinstance(obj, qml.tape.QuantumTape):
-            new_tape = copy.deepcopy(obj)
-            return self._transform(new_tape, *targs, **tkwargs)
+        if isinstance(obj, qml.tape.QuantumScript):
+            return self._transform(obj, *targs, **tkwargs)
         if isinstance(obj, qml.QNode):
             return self._qnode_transform(
                 obj,
@@ -154,10 +153,19 @@ class TransformDispatcher:
         The default method that takes in a QNode and returns another QNode
         with the transform applied.
         """
+        # pylint: disable=protected-access
+        if (
+            isinstance(qnode._original_device, qml.Device)
+            and hasattr(qnode._original_device, "_state")
+            and qml.math.is_abstract(qnode._original_device._state)
+        ):
+            qnode._original_device.reset()
+            qnode.device.reset()
+
         qnode = copy.deepcopy(qnode)
 
         if self.expand_transform:
-            qnode.add_transform(TransformContainer(self._expand_transform))
+            qnode.add_transform(TransformContainer(self._expand_transform, targs, tkwargs))
         qnode.add_transform(
             TransformContainer(
                 self._transform, targs, tkwargs, self._classical_cotransform, self._is_informative
