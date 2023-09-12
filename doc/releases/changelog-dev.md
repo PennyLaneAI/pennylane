@@ -61,7 +61,7 @@
 * `DefaultQubit2` now works as expected with measurement processes that don't specify wires.
   [(#4580)](https://github.com/PennyLaneAI/pennylane/pull/4580)
 
-* `AmplitudeEmbedding` now inherits from `StatePrepBase`, allowing for it to not be decomposed
+* `AmplitudeEmbedding` now inherits from `StatePrep`, allowing for it to not be decomposed
   when at the beginning of a circuit, thus behaving like `StatePrep`.
   [(#4583)](https://github.com/PennyLaneAI/pennylane/pull/4583)
 
