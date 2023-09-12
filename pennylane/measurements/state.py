@@ -166,18 +166,17 @@ class StateMP(StateMeasurement):
             )
 
         # pad with zeros, put existing wires last
-        is_torch = qml.math.get_interface(state) == "torch"
         is_state_batched = qml.math.ndim(state) == 2
         pad_width = 2 ** len(wires) - 2 ** len(wire_order)
-        pad = (pad_width, 0) if is_torch else (0, pad_width)
+        pad = (pad_width, 0) if qml.math.get_interface(state) == "torch" else (0, pad_width)
         shape = (2,) * len(wires)
         if is_state_batched:
             pad = ((0, 0), pad)
             shape = (qml.math.shape(state)[0],) + shape
-        elif is_torch:
+        else:
             pad = (pad,)
 
-        state = qml.math.pad(state, pad)
+        state = qml.math.pad(state, pad, mode="constant")
         state = qml.math.reshape(state, shape)
 
         # re-order
