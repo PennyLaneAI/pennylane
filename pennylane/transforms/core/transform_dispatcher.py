@@ -61,7 +61,6 @@ class TransformDispatcher:
             # is the object we wish to transform
             obj, *targs = targs
 
-
         if isinstance(obj, qml.tape.QuantumScript):
             return self._transform(obj, *targs, **tkwargs)
         if isinstance(obj, qml.QNode):
