@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* Operator transforms `qml.matrix`, `qml.eigvals`, `qml.generator`, and `qml.transforms.to_zx` are updated
+  to the new transform program system.
+  [(#4573)](https://github.com/PennyLaneAI/pennylane/pull/4573)
+
 * All batch transforms are updated to the new transform program system.
   [(#4440)](https://github.com/PennyLaneAI/pennylane/pull/4440)
 
@@ -200,4 +204,3 @@ Romain Moyard,
 Mudit Pandey,
 Matthew Silverman,
 Jay Soni,
-
