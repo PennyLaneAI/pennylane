@@ -37,7 +37,7 @@ def transform(
         expand_transform(callable): An expand transform is defined as a function that has the following requirements:
 
             * An expand transform is a function that is applied before applying the defined quantum transform. It
-              takes a quantum tape as single input and returns a single tape in a sequence with a dummy processing
+              takes the same arguments as the transform and returns a single tape in a sequence with a dummy processing
               function.
 
             * The expand transform must have the same type hinting as a quantum transform.
