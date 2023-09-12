@@ -16,10 +16,13 @@ This module contains functions for computing the parameter-shift gradient
 of a qubit-based quantum tape.
 """
 # pylint: disable=protected-access,too-many-arguments,too-many-statements
+from typing import Sequence, Callable
+
 import numpy as np
 
 import pennylane as qml
 from pennylane.measurements import VarianceMP
+from pennylane.transforms.core import transform
 
 from .finite_difference import finite_diff
 from .general_shift_rules import (
@@ -719,16 +722,16 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
     return gradient_tapes, processing_fn
 
 
-@gradient_transform
+@transform
 def param_shift(
-    tape,
+    tape: qml.tape.QuantumTape,
     argnum=None,
     shifts=None,
     gradient_recipes=None,
     fallback_fn=finite_diff,
     f0=None,
     broadcast=False,
-):
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Transform a QNode to compute the parameter-shift gradient of all gate
     parameters with respect to its inputs.
 
@@ -1101,3 +1104,35 @@ def param_shift(
         return gradient_tapes, processing_fn
 
     return gradient_tapes, fn
+
+
+@param_shift.custom_qnode_transform
+def _qnode_transform_param_shift(self, qnode, targs, tkwargs):
+    """Here, we overwrite the QNode execution wrapper."""
+
+    argnums = tkwargs.get("argnums", None)
+
+    interface = qml.math.get_interface(*args)
+    trainable_params = qml.math.get_trainable_indices(args)
+
+    if interface == "jax" and tkwargs.get("argnum", None):
+        raise qml.QuantumFunctionError(
+            "argnum does not work with the Jax interface. You should use argnums instead."
+        )
+
+    if interface == "jax" and not trainable_params:
+        if argnums is None:
+            argnums_ = [0]
+
+        else:
+            argnums_ = [argnums] if isinstance(argnums, int) else argnums
+
+        params = qml.math.jax_argnums_to_tape_trainable(
+            qnode, argnums_, self.expand_fn, args, kwargs
+        )
+        argnums_ = qml.math.get_trainable_indices(params)
+        kwargs["argnums"] = argnums_
+
+    new_qnode = self.default_qnode_transform(qnode, targs, tkwargs)
+
+    return new_qnode
