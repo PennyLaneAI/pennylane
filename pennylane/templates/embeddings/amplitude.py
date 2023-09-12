@@ -128,7 +128,9 @@ class AmplitudeEmbedding(StatePrep):
         super(StatePrep, self).__init__(features, wires=wires, id=id)
 
     @staticmethod
-    def compute_decomposition(features, wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        features, wires
+    ):  # pylint: disable=arguments-differ,arguments-renamed
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
