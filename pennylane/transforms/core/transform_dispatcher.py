@@ -15,6 +15,7 @@
 This module contains the transform function, the transform dispatcher and the transform container.
 """
 import copy
+import warnings
 import types
 
 import pennylane as qml
@@ -60,7 +61,8 @@ class TransformDispatcher:
             # is the object we wish to transform
             obj, *targs = targs
 
-        if isinstance(obj, (qml.tape.QuantumTape, qml.tape.QuantumScript)):
+
+        if isinstance(obj, qml.tape.QuantumScript):
             return self._transform(obj, *targs, **tkwargs)
         if isinstance(obj, qml.QNode):
             return self._qnode_transform(
@@ -71,9 +73,30 @@ class TransformDispatcher:
         if callable(obj):
             return self._qfunc_transform(obj, targs, tkwargs)
 
-        raise TransformError(
-            "The object on which the transform is applied is not valid. It can only be a tape, a QNode or a qfunc."
+        # Input is not a QNode nor a quantum tape nor a device.
+        # Assume Python decorator syntax:
+        #
+        # result = some_transform(*transform_args)(qnode)(*qnode_args)
+
+        warnings.warn(
+            "Decorating a QNode with @transform_fn(**transform_kwargs) has been "
+            "deprecated and will be removed in a future version. Please decorate "
+            "with @functools.partial(transform_fn, **transform_kwargs) instead, "
+            "or call the transform directly using qnode = transform_fn(qnode, **transform_kwargs)",
+            UserWarning,
         )
+
+        if obj is not None:
+            targs = (obj, *targs)
+
+        def wrapper(obj):
+            return self(obj, *targs, **tkwargs)
+
+        wrapper.__doc__ = (
+            f"Partial of transform {self._transform} with bound arguments and keyword arguments."
+        )
+
+        return wrapper
 
     @property
     def transform(self):
@@ -131,6 +154,15 @@ class TransformDispatcher:
         The default method that takes in a QNode and returns another QNode
         with the transform applied.
         """
+        # pylint: disable=protected-access
+        if (
+            isinstance(qnode._original_device, qml.Device)
+            and hasattr(qnode._original_device, "_state")
+            and qml.math.is_abstract(qnode._original_device._state)
+        ):
+            qnode._original_device.reset()
+            qnode.device.reset()
+
         qnode = copy.deepcopy(qnode)
 
         if self.expand_transform:

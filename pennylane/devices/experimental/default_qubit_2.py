@@ -15,6 +15,7 @@
 This module contains the next generation successor to default qubit
 """
 
+from copy import copy
 from functools import partial
 from numbers import Number
 from typing import Union, Callable, Tuple, Optional, Sequence
@@ -24,6 +25,7 @@ import numpy as np
 from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.typing import Result, ResultBatch
 from pennylane.transforms import convert_to_numpy_parameters
+from pennylane.wires import Wires, WireError
 from pennylane import DeviceError, Snapshot
 
 from . import Device
@@ -237,12 +239,20 @@ class DefaultQubit2(Device):
             self.tracker.record()
 
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
+        interface = (
+            execution_config.interface
+            if execution_config.gradient_method in {"backprop", None}
+            else None
+        )
         if max_workers is None:
-            results = tuple(simulate(c, rng=self._rng, debugger=self._debugger) for c in circuits)
+            results = tuple(
+                simulate(c, rng=self._rng, debugger=self._debugger, interface=interface)
+                for c in circuits
+            )
         else:
             vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
             seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
-            _wrap_simulate = partial(simulate, debugger=None)
+            _wrap_simulate = partial(simulate, debugger=None, interface=interface)
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
                 exec_map = executor.map(_wrap_simulate, vanilla_circuits, seeds)
                 results = tuple(exec_map)
