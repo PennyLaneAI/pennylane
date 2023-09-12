@@ -1992,7 +1992,7 @@ def test_broadcasted_parameter(max_workers):
 
     config = ExecutionConfig()
     config.gradient_method = "adjoint"
-    program, config = dev.preprocess(qs, config)
+    program, config = dev.preprocess(config)
     batch, pre_processing_fn = program([qs])
     assert len(batch) == 2
     results = dev.execute(batch, config)
