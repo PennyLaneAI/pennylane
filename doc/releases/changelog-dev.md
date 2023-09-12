@@ -184,6 +184,11 @@
 * `tf.function` no longer breaks `ProbabilityMP.process_state` which is needed by new devices.
   [(#4470)](https://github.com/PennyLaneAI/pennylane/pull/4470)
 
+* Fix `ProbabilityMP.process_state` so it allows for proper Autograph compilation. Without this,
+  decorating a QNode that returns an `expval` with `tf.function` would fail when computing the
+  expectation.
+  [(#)]()
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
