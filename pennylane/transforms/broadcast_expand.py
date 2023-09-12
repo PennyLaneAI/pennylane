@@ -121,7 +121,14 @@ def broadcast_expand(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
     # pylint: disable=protected-access
     if tape.batch_size is None:
         output_tapes = [tape]
-        processing_fn = lambda x: x[0]
+
+        def null_postprocessing(results):
+            """A postprocesing function returned by a transform that only converts the batch of results
+            into a result for a single ``QuantumTape``.
+            """
+            return results[0]
+
+        processing_fn = null_postprocessing
     else:
         num_tapes = tape.batch_size
         new_ops = _split_operations(tape.operations, num_tapes)
