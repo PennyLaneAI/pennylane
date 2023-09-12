@@ -828,4 +828,9 @@ class TestPreprocess:
 
 def test_validate_multiprocessing_workers_None():
     """Test that validation does not fail when max_workers is None"""
-    validate_multiprocessing_workers(None)
+    qs = QuantumScript(
+        [qml.Rot(0.1, 0.2, 0.3, wires=0), qml.CNOT([0, 1])],
+        [qml.expval(qml.PauliZ(1))],
+    )
+    device = qml.devices.experimental.DefaultQubit2()
+    validate_multiprocessing_workers(qs, None, device)
