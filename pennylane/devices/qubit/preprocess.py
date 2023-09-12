@@ -18,6 +18,7 @@ that they are supported for execution by a device."""
 from dataclasses import replace
 import os
 from typing import Generator, Callable, Tuple, Union, Sequence
+from copy import copy
 import warnings
 
 import pennylane as qml
@@ -34,8 +35,7 @@ from pennylane.measurements import (
 from pennylane.typing import ResultBatch, Result
 from pennylane import DeviceError
 from pennylane.transforms.core import transform, TransformProgram
-from pennylane.wires import Wires, WireError
-from copy import copy
+from pennylane.wires import WireError
 
 from ..experimental import ExecutionConfig, DefaultExecutionConfig
 
@@ -103,6 +103,19 @@ def _operator_decomposition_gen(
 def validate_device_wires(
     tape: qml.tape.QuantumTape, device
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
+    """Validates the device wires.
+
+    Args:
+        tape (QuantumTape): a quantum circuit.
+        device (pennylane.devices.experimental.Device): The device to be checked.
+
+    Returns:
+        qnode (pennylane.QNode) or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
+        it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of
+        quantum tapes to be evaluated, and a function to be applied to these
+        tape executions.
+    """
     if device.wires:
         if extra_wires := set(tape.wires) - set(device.wires):
             raise WireError(
