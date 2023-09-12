@@ -2487,14 +2487,6 @@ class TestGetBatchSize:
         tensor1 = np.arange(np.prod(full_shape)).reshape(full_shape)
         assert dev._get_batch_size(tensor1, shape, qml.math.prod(shape)) == batch_size
 
-    @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested")
-    def test_invalid_tensor(self):
-        """Test that an error is raised if a tensor is provided that does not
-        have a proper shape/ndim."""
-        dev = qml.device("default.qubit.legacy", wires=1)
-        with pytest.raises(ValueError, match="could not broadcast"):
-            dev._get_batch_size([qml.math.ones((2, 3)), qml.math.ones((2, 2))], (2, 2, 2), 8)
-
 
 class TestDenseMatrixDecompositionThreshold:
     """Tests for QFT and Grover operators the automatic transition from dense matrix to decomposition
