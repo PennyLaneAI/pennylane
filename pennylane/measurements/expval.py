@@ -130,11 +130,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
             idx = int("".join(str(i) for i in self.obs.parameters[0]), 2)
             probs = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
             return probs[idx]
-        eigvals = (
-            qml.math.asarray(self.obs.eigvals(), dtype="float64")
-            if not isinstance(self.obs, MeasurementValue)
-            else qml.math.asarray(qml.math.arange(0, 2 ** len(self.wires)), dtype="float64")
-        )
+        eigvals = qml.math.asarray(self.eigvals(), dtype="float64")
         # we use ``self.wires`` instead of ``self.obs`` because the observable was
         # already applied to the state
         prob = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)

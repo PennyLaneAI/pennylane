@@ -164,6 +164,8 @@ class MeasurementValue(Generic[T]):
         processing_fn (callable): A lazily transformation applied to the measurement values.
     """
 
+    name = "MeasurementValue"
+
     def __init__(self, measurements, processing_fn):
         self.measurements = measurements
         self.processing_fn = processing_fn

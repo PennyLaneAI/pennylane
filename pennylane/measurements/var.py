@@ -135,11 +135,7 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
             probs = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
             return probs[idx] - probs[idx] ** 2
 
-        eigvals = (
-            qml.math.asarray(self.obs.eigvals(), dtype="float64")
-            if not isinstance(self.obs, MeasurementValue)
-            else qml.math.asarray(qml.math.arange(0, 2 ** len(self.wires)), dtype="float64")
-        )
+        eigvals = qml.math.asarray(self.eigvals(), dtype="float64")
 
         # we use ``wires`` instead of ``op`` because the observable was
         # already applied to the state

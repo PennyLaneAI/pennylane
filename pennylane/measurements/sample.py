@@ -193,11 +193,7 @@ class SampleMP(SampleMeasurement):
     ):
         wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]
-        name = (
-            self.obs.name
-            if self.obs is not None and not isinstance(self.obs, MeasurementValue)
-            else None
-        )
+        name = self.obs.name if self.obs is not None else None
         # Select the samples from samples that correspond to ``shot_range`` if provided
         if shot_range is not None:
             # Indexing corresponds to: (potential broadcasting, shots, wires). Note that the last
@@ -226,15 +222,12 @@ class SampleMP(SampleMeasurement):
             powers_of_two = 2 ** qml.math.arange(num_wires)[::-1]
             indices = samples @ powers_of_two
             indices = qml.math.array(indices)  # Add np.array here for Jax support.
-            if isinstance(self.obs, MeasurementValue):
-                samples = qml.math.arange(0, 2 ** len(self.obs.wires), 1)[indices]
-            else:
-                try:
-                    samples = self.obs.eigvals()[indices]
-                except qml.operation.EigvalsUndefinedError as e:
-                    # if observable has no info on eigenvalues, we cannot return this measurement
-                    raise qml.operation.EigvalsUndefinedError(
-                        f"Cannot compute samples of {self.obs.name}."
-                    ) from e
+            try:
+                samples = self.eigvals()[indices]
+            except qml.operation.EigvalsUndefinedError as e:
+                # if observable has no info on eigenvalues, we cannot return this measurement
+                raise qml.operation.EigvalsUndefinedError(
+                    f"Cannot compute samples of {self.obs.name}."
+                ) from e
 
         return samples if bin_size is None else samples.reshape((bin_size, -1))
