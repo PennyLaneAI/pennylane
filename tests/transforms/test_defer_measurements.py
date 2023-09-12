@@ -275,8 +275,8 @@ class TestConditionalOperations:
         tape = qml.tape.QuantumScript.from_queue(q)
         tapes, _ = qml.defer_measurements(tape)
         tape = tapes[0]
-        print(tape.measurements)
-        assert len(tape.operations) == 2
+
+        assert len(tape.operations) == 4
         assert len(tape.measurements) == 1
 
         # Check the two underlying Controlled instances
@@ -373,7 +373,11 @@ class TestConditionalOperations:
         tape = qml.tape.QuantumScript.from_queue(q)
         tapes, _ = qml.defer_measurements(tape)
         tape = tapes[0]
-        assert len(tape.operations) == 5 + 2  # 5 regular ops + 2 conditional ops
+
+        assert (
+            len(tape.operations) == 5 + 1 + 1 + 2
+        )  # 5 regular ops + 1 measurement op + 1 reset op + 2 conditional ops
+
         assert len(tape.measurements) == 1
 
         # Check the each operation
@@ -466,7 +470,7 @@ class TestConditionalOperations:
         tape = qml.tape.QuantumScript.from_queue(q)
         tapes, _ = qml.defer_measurements(tape)
         tape = tapes[0]
-        assert len(tape.operations) == 1
+        assert len(tape.operations) == 3
         assert len(tape.measurements) == 1
 
         # Check the underlying CNOT for storing measurement state
