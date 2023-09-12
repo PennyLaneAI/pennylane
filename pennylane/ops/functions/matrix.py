@@ -19,12 +19,13 @@ from functools import partial, singledispatch
 from typing import Sequence, Callable
 
 import pennylane as qml
+from pennylane.transforms.op_transforms import OperationTransformError
 from pennylane.transforms.core import transform
 from pennylane.typing import TensorLike
 
 
 @singledispatch
-def matrix(op: qml.operation.Operator, *, wire_order=None) -> TensorLike:
+def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
     r"""The matrix representation of an operation or quantum circuit.
 
     Args:
@@ -124,7 +125,10 @@ def matrix(op: qml.operation.Operator, *, wire_order=None) -> TensorLike:
         -0.14943813247359922
     """
     if not isinstance(op, qml.operation.Operator):
-        return _matrix(op, wire_order=wire_order)
+        if isinstance(op, (qml.tape.QuantumScript, qml.QNode)) or callable(op):
+            return _matrix(op, wire_order=wire_order)
+
+        raise OperationTransformError("Input is not an Operator, tape, QNode, or quantum function")
 
     if isinstance(op, qml.operation.Tensor) and wire_order is not None:
         op = 1.0 * op  # convert to a Hamiltonian
@@ -132,23 +136,28 @@ def matrix(op: qml.operation.Operator, *, wire_order=None) -> TensorLike:
     if isinstance(op, qml.Hamiltonian):
         return op.sparse_matrix(wire_order=wire_order).toarray()
 
-    return op.matrix(wire_order=wire_order)
+    if op.has_matrix:
+        return op.matrix(wire_order=wire_order)
+
+    tapes, fn = matrix(op.expand(), wire_order=wire_order)
+    return fn(tapes)
 
 
 @partial(transform, is_informative=True)
 @matrix.register
 def _matrix(
-    tape: qml.tape.QuantumTape, wire_order=None
+    tape: qml.tape.QuantumTape, wire_order=None, **kwargs
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     def processing_fn(res):
         """Defines how matrix works if applied to a tape containing multiple operations."""
-        if not res[0].wires:
+        wires = kwargs.get("device_wires", None) or res[0].wires
+        if not wires:
             raise qml.operation.MatrixUndefinedError
         params = res[0].get_parameters(trainable_only=False)
         interface = qml.math.get_interface(*params)
 
         # Can't name it wire_order; reference before assignment error gets raised
-        wires_order = wire_order or res[0].wires
+        wires_order = wire_order or wires
 
         # initialize the unitary matrix
         if len(res[0].operations) == 0:
@@ -165,3 +174,15 @@ def _matrix(
         return result
 
     return [tape], processing_fn
+
+
+@_matrix.custom_qnode_transform
+def _matrix_qnode(self, qnode, targs, tkwargs):
+    if tkwargs.get("device_wires", None):
+        raise ValueError(
+            "Cannot provide a 'device_wires' value directly to the matrix decorator when "
+            "transforming a QNode."
+        )
+
+    tkwargs.setdefault("device_wires", qnode.device.wires)
+    return self.default_qnode_transform(qnode, targs, tkwargs)

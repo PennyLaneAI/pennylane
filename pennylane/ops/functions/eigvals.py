@@ -123,7 +123,11 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
         return qml.math.linalg.eigvalsh(sparse_matrix.toarray())
 
     # TODO: make `eigvals` take a `wire_order` argument to mimic `matrix`
-    return op.eigvals()
+    try:
+        return op.eigvals()
+    except qml.operation.EigvalsUndefinedError:
+        tapes, fn = eigvals(op.expand(), k=k, which=which)
+        return fn(tapes)
 
 
 @partial(transform, is_informative=True)
@@ -140,7 +144,8 @@ def _eigvals_tape(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape]
                 "This may be computationally intensive for a large number of wires.",
                 UserWarning,
             )
-            return qml.math.linalg.eigvals(qml.matrix(res[0]))
+            tapes, mat_fn = qml.matrix(res[0])
+            return qml.math.linalg.eigvals(mat_fn(tapes))
 
         # TODO: take into account wire ordering, by reordering eigenvalues
         # as per operator wires/wire ordering, and by inserting implicit identity

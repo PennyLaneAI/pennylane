@@ -192,7 +192,7 @@ class TransformDispatcher:
 
         def qfunc_transformed(*args, **kwargs):
             tape = qml.tape.make_qscript(qfunc)(*args, **kwargs)
-            transformed_tapes, _ = self._transform(tape, *targs, **tkwargs)
+            transformed_tapes, processing_fn = self._transform(tape, *targs, **tkwargs)
 
             if len(transformed_tapes) != 1:
                 raise TransformError(
@@ -201,6 +201,9 @@ class TransformDispatcher:
                 )
 
             transformed_tape = transformed_tapes[0]
+
+            if self.is_informative:
+                return processing_fn(transformed_tapes)
 
             for op in transformed_tape.circuit:
                 qml.apply(op)
