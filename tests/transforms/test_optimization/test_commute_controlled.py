@@ -486,7 +486,7 @@ def qnode_circuit():
 
 
 class TestTransformDispatch:
-    """Test commuute controlled on tape, qfunc and QNode."""
+    """Test commute controlled on tape, qfunc and QNode."""
 
     def test_tape(self):
         """Test the transform on tape."""
