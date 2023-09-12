@@ -1487,7 +1487,8 @@ class TestPreprocessingIntegration:
         )
         spy = mocker.spy(qml, "defer_measurements")
 
-        _, _ = dev.preprocess()
+        program, _ = dev.preprocess()
+        program([tape])
         spy.assert_called_once()
 
 
