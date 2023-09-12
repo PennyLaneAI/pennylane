@@ -81,11 +81,12 @@ class TestInitializeState:
         state[2, 1, 0] = 0  # set to zero to make test below simple
         assert qml.math.allequal(state, np.zeros((3, 2, 2)))
 
-    def test_create_initial_state_prefers_op_interface_over_like(self):
+    @pytest.mark.torch
+    def test_create_initial_state_casts_to_like_with_prep_op(self):
         """Tests that the like argument is ignored when a prep-op is provided."""
         prep_op = self.DefaultPrep([0, 0, 0, 1], wires=[0, 1])
         state = create_initial_state([0, 1], prep_operation=prep_op, like="torch")
-        assert qml.math.get_interface(state) == "numpy"
+        assert qml.math.get_interface(state) == "torch"
 
     def test_create_initial_state_defaults_to_numpy(self):
         """Tests that the default interface is vanilla numpy."""

@@ -236,7 +236,6 @@ class TestState:
 
         @qml.qnode(dev)
         def func():
-            qml.Identity(wires=list(range(wires)))
             op(0)
             return state()
 

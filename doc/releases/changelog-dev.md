@@ -54,6 +54,13 @@
   `MutualInfoMP.map_wires`.
   [(#4574)](https://github.com/PennyLaneAI/pennylane/pull/4574)
 
+* `devices.qubit.simulate` now accepts an interface keyword argument. If a QNode with `DefaultQubit2`
+  specifies an interface, the result will be computed with that interface.
+  [(#4582)](https://github.com/PennyLaneAI/pennylane/pull/4582)
+
+* `DefaultQubit2` now works as expected with measurement processes that don't specify wires.
+  [(#4580)](https://github.com/PennyLaneAI/pennylane/pull/4580)
+
 <h3>Breaking changes 💔</h3>
 
 * The `__eq__` and `__hash__` methods of `Operator` and `MeasurementProcess` no longer rely on the
