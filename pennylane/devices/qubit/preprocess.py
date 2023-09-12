@@ -21,7 +21,7 @@ from typing import Generator, Callable, Tuple, Union, Sequence
 import warnings
 
 import pennylane as qml
-
+from pennylane import Snapshot
 from pennylane.operation import Tensor, StatePrepBase
 from pennylane.measurements import (
     MidMeasureMP,
@@ -97,7 +97,10 @@ def _operator_decomposition_gen(
 #######################
 
 
-def validate_multiprocessing_workers(max_workers):
+@transform
+def validate_multiprocessing_workers(
+    tape: qml.tape.QuantumTape, max_workers: int, device
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Validates the number of workers for multiprocessing.
 
     Checks that the CPU is not oversubscribed and warns user if it is,
@@ -107,31 +110,44 @@ def validate_multiprocessing_workers(max_workers):
     Args:
         max_workers (int): Maximal number of multiprocessing workers
     """
-    if max_workers is None:
-        return
-    threads_per_proc = os.cpu_count()  # all threads by default
-    varname = "OMP_NUM_THREADS"
-    varnames = ["MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS"]
-    for var in varnames:
-        if os.getenv(var):  # pragma: no cover
-            varname = var
-            threads_per_proc = int(os.getenv(var))
-            break
-    num_threads = threads_per_proc * max_workers
-    num_cpu = os.cpu_count()
-    num_threads_suggest = max(1, os.cpu_count() // max_workers)
-    num_workers_suggest = max(1, os.cpu_count() // threads_per_proc)
-    if num_threads > num_cpu:
-        warnings.warn(
-            f"""The device requested {num_threads} threads ({max_workers} processes
-            times {threads_per_proc} threads per process), but the processor only has
-            {num_cpu} logical cores. The processor is likely oversubscribed, which may
-            lead to performance deterioration. Consider decreasing the number of processes,
-            setting the device or execution config argument `max_workers={num_workers_suggest}`
-            for example, or decreasing the number of threads per process by setting the
-            environment variable `{varname}={num_threads_suggest}`.""",
-            UserWarning,
-        )
+    if max_workers is not None:
+        threads_per_proc = os.cpu_count()  # all threads by default
+        varname = "OMP_NUM_THREADS"
+        varnames = ["MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS"]
+        for var in varnames:
+            if os.getenv(var):  # pragma: no cover
+                varname = var
+                threads_per_proc = int(os.getenv(var))
+                break
+        num_threads = threads_per_proc * max_workers
+        num_cpu = os.cpu_count()
+        num_threads_suggest = max(1, os.cpu_count() // max_workers)
+        num_workers_suggest = max(1, os.cpu_count() // threads_per_proc)
+        if num_threads > num_cpu:
+            warnings.warn(
+                f"""The device requested {num_threads} threads ({max_workers} processes
+                times {threads_per_proc} threads per process), but the processor only has
+                {num_cpu} logical cores. The processor is likely oversubscribed, which may
+                lead to performance deterioration. Consider decreasing the number of processes,
+                setting the device or execution config argument `max_workers={num_workers_suggest}`
+                for example, or decreasing the number of threads per process by setting the
+                environment variable `{varname}={num_threads_suggest}`.""",
+                UserWarning,
+            )
+
+        if device._debugger and device._debugger.active:
+            raise DeviceError("Debugging with ``Snapshots`` is not available with multiprocessing.")
+
+        def _has_snapshot(circuit):
+            return any(isinstance(c, Snapshot) for c in circuit)
+
+        if _has_snapshot(tape):
+            raise RuntimeError(
+                """ProcessPoolExecutor cannot execute a QuantumScript with
+                a ``Snapshot`` operation. Change the value of ``max_workers``
+                to ``None`` or execute the QuantumScript separately."""
+            )
+    return [tape], lambda x: x[0]
 
 
 @transform
@@ -388,7 +404,6 @@ def preprocess(
     them to ensure all operators and measurements are supported by the execution device.
 
     Args:
-        circuits (Sequence[QuantumTape]): Batch of tapes to be processed.
         execution_config (ExecutionConfig): execution configuration with configurable
             options for the execution.
 

@@ -15,7 +15,6 @@
 This module contains the next generation successor to default qubit
 """
 
-from copy import copy
 from functools import partial
 from numbers import Number
 from typing import Union, Callable, Tuple, Optional, Sequence
@@ -25,8 +24,7 @@ import numpy as np
 from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.typing import Result, ResultBatch
 from pennylane.transforms import convert_to_numpy_parameters
-from pennylane.wires import Wires, WireError
-from pennylane import DeviceError, Snapshot
+from pennylane.transforms.core import TransformProgram
 
 from . import Device
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
@@ -188,14 +186,11 @@ class DefaultQubit2(Device):
 
     def preprocess(
         self,
-        circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Tuple[QuantumTapeBatch, PostprocessingFn, ExecutionConfig]:
         """Converts an arbitrary circuit or batch of circuits into a batch natively executable by the :meth:`~.execute` method.
 
         Args:
-            circuits (Union[QuantumTape, Sequence[QuantumTape]]): The circuit or a batch of circuits to preprocess
-                before execution on the device
             execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A data structure describing the
                 parameters needed to fully describe the execution. Includes such information as shots.
 
@@ -211,14 +206,18 @@ class DefaultQubit2(Device):
         * Currently does not intrinsically support parameter broadcasting
 
         """
-        if isinstance(circuits, QuantumScript):
-            circuits = [circuits]
+        transform_program = TransformProgram()
+        # Set max workers if on the device
+        if self._max_workers:
+            execution_config.device_options["max_workers"] = self._max_workers
 
-        # prefer config over device value
-        max_workers = execution_config.device_options.get("max_workers", self._max_workers)
-        self._validate_multiprocessing(max_workers, circuits)
+        # Validate multi processing
+        max_workers = execution_config.device_options.get("max_workers")
+        transform_program.add_transform(validate_multiprocessing_workers, max_workers, self)
 
-        transform_program, config = preprocess(execution_config=execution_config)
+        # General preprocessing (Validate measurement, expand, adjoint expand, broadcast expand)
+        transform_program_preprocess, config = preprocess(execution_config=execution_config)
+        transform_program = transform_program + transform_program_preprocess
 
         return transform_program, config
 
@@ -505,31 +504,6 @@ class DefaultQubit2(Device):
 
         results, vjps = tuple(zip(*results))
         return (results[0], vjps[0]) if is_single_circuit else (results, vjps)
-
-    def _validate_multiprocessing(self, max_workers, circuits):
-        """Make sure the tapes can be processed by a ProcessPoolExecutor instance.
-
-        Args:
-            max_workers (Union[int]): Maximal number of multiprocessing workers
-            circuits (QuantumTape_or_Batch): Quantum tapes
-        """
-        if max_workers is None:
-            return
-
-        validate_multiprocessing_workers(max_workers)
-
-        if self._debugger and self._debugger.active:
-            raise DeviceError("Debugging with ``Snapshots`` is not available with multiprocessing.")
-
-        def _has_snapshot(circuit):
-            return any(isinstance(c, Snapshot) for c in circuit)
-
-        if any(_has_snapshot(c) for c in circuits):
-            raise RuntimeError(
-                """ProcessPoolExecutor cannot execute a QuantumScript with
-                a ``Snapshot`` operation. Change the value of ``max_workers``
-                to ``None`` or execute the QuantumScript separately."""
-            )
 
 
 def _adjoint_jac_wrapper(c, rng=None, debugger=None):
