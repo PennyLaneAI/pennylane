@@ -623,7 +623,7 @@ class PCPhase(Operation):
             return qml.math.diag(qml.math.exp(arg * prefactors))
 
         diags = qml.math.exp(qml.math.outer(arg, prefactors))
-        return qml.math.stack(qml.math.diag(d) for d in diags)
+        return qml.math.stack([qml.math.diag(d) for d in diags])
 
     @staticmethod
     def compute_eigvals(*params, **hyperparams):
