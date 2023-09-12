@@ -273,6 +273,7 @@ class TestConditionalOperations:
             qml.apply(terminal_measurement)
 
         tape = qml.tape.QuantumScript.from_queue(q)
+
         tapes, _ = qml.defer_measurements(tape)
         tape = tapes[0]
 
@@ -371,6 +372,7 @@ class TestConditionalOperations:
             qml.apply(terminal_measurement)
 
         tape = qml.tape.QuantumScript.from_queue(q)
+
         tapes, _ = qml.defer_measurements(tape)
         tape = tapes[0]
 
@@ -470,6 +472,7 @@ class TestConditionalOperations:
         tape = qml.tape.QuantumScript.from_queue(q)
         tapes, _ = qml.defer_measurements(tape)
         tape = tapes[0]
+
         assert len(tape.operations) == 3
         assert len(tape.measurements) == 1
 
