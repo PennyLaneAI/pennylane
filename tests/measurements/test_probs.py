@@ -109,7 +109,6 @@ class TestProbs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.Identity(wires=[0, 1, 2])
             return qml.probs()
 
         res = circuit()

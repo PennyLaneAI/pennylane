@@ -367,7 +367,6 @@ class TestSample:
 
         @qml.qnode(dev)
         def circuit():
-            qml.Identity(wires=list(range(3)))
             return qml.sample()
 
         res = circuit()

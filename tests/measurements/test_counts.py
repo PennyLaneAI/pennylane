@@ -379,7 +379,6 @@ class TestCountsIntegration:
 
         @qml.qnode(dev, interface=interface)
         def circuit():
-            qml.Identity(wires=[0, 1, 2])
             qml.PauliX(1)
             return qml.counts(wires=wires)
 
@@ -415,7 +414,6 @@ class TestCountsIntegration:
 
         @qml.qnode(dev, interface=interface)
         def circuit():
-            qml.Identity(wires=[0, 1, 2])
             qml.PauliX(1)
             return qml.counts(wires=wires)
 
@@ -457,7 +455,6 @@ class TestCountsIntegration:
 
         @qml.qnode(dev, interface="autograd")
         def circuit():
-            qml.Identity(0)
             qml.PauliX(1)
             qml.PauliX(2)
             qml.PauliX(3)
@@ -563,7 +560,6 @@ class TestCountsIntegration:
 
         @qml.qnode(dev)
         def circuit():
-            qml.Identity(wires=[0, 1])
             return qml.counts(all_outcomes=True)
 
         res = circuit()
@@ -611,7 +607,6 @@ class TestCountsIntegration:
 
         @qml.qnode(dev)
         def circuit():
-            qml.Identity(wires=[0, 1])
             return qml.sample(qml.PauliZ(0)), qml.counts(), qml.counts(all_outcomes=True)
 
         res = circuit()
@@ -644,7 +639,6 @@ class TestCountsIntegration:
 
         @qml.qnode(dev)
         def circuit():
-            qml.Identity(wires=[0, 1, 2])
             return qml.counts()
 
         res = circuit()
@@ -662,7 +656,6 @@ def test_counts_no_op_finite_shots(interface, wires, basis_state):
 
     @qml.qnode(dev, interface=interface)
     def circuit():
-        qml.Identity(wires=[0, 1, 2])
         qml.PauliX(1)
         return qml.counts(wires=wires)
 
@@ -682,7 +675,6 @@ def test_batched_counts_no_op_finite_shots(interface, wires, basis_states):
 
     @qml.qnode(dev, interface=interface)
     def circuit():
-        qml.Identity(wires=[0, 1, 2])
         qml.pow(qml.PauliX(1), z=[1, 2])
         return qml.counts(wires=wires)
 
@@ -700,7 +692,6 @@ def test_batched_counts_and_expval_no_op_finite_shots(interface, wires, basis_st
 
     @qml.qnode(dev, interface=interface)
     def circuit():
-        qml.Identity(2)
         qml.pow(qml.PauliX(1), z=[1, 2])
         return qml.counts(wires=wires), qml.expval(qml.PauliZ(0))
 
