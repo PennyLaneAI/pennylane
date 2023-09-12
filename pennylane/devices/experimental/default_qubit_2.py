@@ -79,7 +79,8 @@ class DefaultQubit2(Device):
             qscripts.append(qs)
 
     >>> dev = DefaultQubit2()
-    >>> new_batch, post_processing_fn, execution_config = dev.preprocess(qscripts)
+    >>> program, execution_config = dev.preprocess()
+    >>> new_batch, post_processing_fn = program(qscripts)
     >>> results = dev.execute(new_batch, execution_config=execution_config)
     >>> post_processing_fn(results)
     [-0.0006888975950537501,
@@ -92,7 +93,8 @@ class DefaultQubit2(Device):
     parallel as follows
 
     >>> dev = DefaultQubit2(max_workers=5)
-    >>> new_batch, post_processing_fn, execution_config = dev.preprocess(qscripts)
+    >>> program, execution_config = dev.preprocess()
+    >>> new_batch, post_processing_fn = program(qscripts)
     >>> results = dev.execute(new_batch, execution_config=execution_config)
     >>> post_processing_fn(results)
 
@@ -125,7 +127,8 @@ class DefaultQubit2(Device):
         @jax.jit
         def f(x):
             qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-            new_batch, post_processing_fn, execution_config = dev.preprocess(qs)
+            program, execution_config = dev.preprocess()
+            new_batch, post_processing_fn = program([qs])
             results = dev.execute(new_batch, execution_config=execution_config)
             return post_processing_fn(results)
 
@@ -189,14 +192,14 @@ class DefaultQubit2(Device):
         self,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Tuple[QuantumTapeBatch, PostprocessingFn, ExecutionConfig]:
-        """Converts an arbitrary circuit or batch of circuits into a batch natively executable by the :meth:`~.execute` method.
+        """This function defines the device transform program to be applied and an updated device configuration.
 
         Args:
             execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A data structure describing the
                 parameters needed to fully describe the execution.
 
         Returns:
-            TransformProgram, ExecutionConfig: A tranform program that when called returns QuantumTapes that the device
+            TransformProgram, ExecutionConfig: A transform program that when called returns QuantumTapes that the device
             can natively execute as well as a postprocessing function to be called after execution, and a configuration with
             unset specifications filled in.
 
