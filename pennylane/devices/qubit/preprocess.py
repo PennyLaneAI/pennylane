@@ -351,7 +351,7 @@ def expand_fn(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Ca
         quantum tapes to be evaluated, and a function to be applied to these
         tape executions.
     """
-    if any(isinstance(o, MidMeasureMP) for o in circuit.operations):
+    if any(isinstance(o, MidMeasureMP) for o in tape.operations):
         tapes, _ = qml.defer_measurements(tape)
         tape = tapes[0]
 
