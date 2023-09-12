@@ -33,6 +33,7 @@ from ..qubit.preprocess import (
     preprocess,
     validate_and_expand_adjoint,
     validate_multiprocessing_workers,
+    validate_device_wires,
 )
 from ..qubit.adjoint_jacobian import adjoint_jacobian, adjoint_vjp, adjoint_jvp
 
@@ -207,18 +208,16 @@ class DefaultQubit2(Device):
 
         """
         transform_program = TransformProgram()
-        # Set max workers if on the device
-        if self._max_workers:
-            execution_config.device_options["max_workers"] = self._max_workers
+        # Validate device wires
+        transform_program.add_transform(validate_device_wires, self)
 
         # Validate multi processing
-        max_workers = execution_config.device_options.get("max_workers")
+        max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         transform_program.add_transform(validate_multiprocessing_workers, max_workers, self)
 
         # General preprocessing (Validate measurement, expand, adjoint expand, broadcast expand)
         transform_program_preprocess, config = preprocess(execution_config=execution_config)
         transform_program = transform_program + transform_program_preprocess
-
         return transform_program, config
 
     def execute(

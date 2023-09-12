@@ -34,6 +34,8 @@ from pennylane.measurements import (
 from pennylane.typing import ResultBatch, Result
 from pennylane import DeviceError
 from pennylane.transforms.core import transform, TransformProgram
+from pennylane.wires import Wires, WireError
+from copy import copy
 
 from ..experimental import ExecutionConfig, DefaultExecutionConfig
 
@@ -98,6 +100,36 @@ def _operator_decomposition_gen(
 
 
 @transform
+def validate_device_wires(
+    tape: qml.tape.QuantumTape, device
+) -> (Sequence[qml.tape.QuantumTape], Callable):
+    if device.wires:
+        if extra_wires := set(tape.wires) - set(device.wires):
+            raise WireError(
+                f"Cannot run circuit(s) on {device.name} as they contain wires "
+                f"not found on the device: {extra_wires}"
+            )
+        measurements = tape.measurements.copy()
+        modified = False
+        for m_idx, mp in enumerate(measurements):
+            if not mp.obs and not mp.wires:
+                modified = True
+                new_mp = copy(mp)
+                new_mp._wires = device.wires  # pylint:disable=protected-access
+                measurements[m_idx] = new_mp
+        if modified:
+            tape = type(tape)(tape.operations, measurements, shots=tape.shots)
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [tape], null_postprocessing
+
+
+@transform
 def validate_multiprocessing_workers(
     tape: qml.tape.QuantumTape, max_workers: int, device
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
@@ -156,7 +188,14 @@ def validate_multiprocessing_workers(
                 a ``Snapshot`` operation. Change the value of ``max_workers``
                 to ``None`` or execute the QuantumScript separately."""
             )
-    return [tape], lambda x: x[0]
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [tape], null_postprocessing
 
 
 @transform

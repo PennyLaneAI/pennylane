@@ -97,7 +97,7 @@ class TestBatchTransformHelper:
         dev = DefaultQubit2()
         config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
 
-        program, new_config = dev.preprocess(tapes, config)
+        program, new_config = dev.preprocess(config)
         res_tapes, batch_fn = program(tapes)
         expected_ops = [
             [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RX(np.pi, wires=1)],
