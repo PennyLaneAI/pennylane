@@ -138,6 +138,8 @@ def cast_like(tensor1, tensor2):
     >>> cast_like(x, y)
     tensor([1., 2.])
     """
+    if isinstance(tensor2, tuple) and len(tensor2) > 0:
+        tensor2 = tensor2[0]
     if isinstance(tensor2, ArrayBox):
         dtype = ar.to_numpy(tensor2._value).dtype.type  # pylint: disable=protected-access
     elif not is_abstract(tensor2):
