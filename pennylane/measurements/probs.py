@@ -185,24 +185,31 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         num_wires = len(wire_order)
-        dim = 2**num_wires
-        # Compute batch_size
-        expected_shape = [2] * num_wires
-        expected_size = dim
-        size = qml.math.size(state)
-
-        # code split in this way to remain tf.function jit-friendly
-        if qml.math.ndim(state) > len(expected_shape) or size > expected_size:
-            batch_size = size // expected_size
-            flat_state = qml.math.reshape(state, (batch_size, dim))
-            real_state = qml.math.real(flat_state)
-            imag_state = qml.math.imag(flat_state)
-            return self.marginal_prob(real_state**2 + imag_state**2, wire_order, batch_size)
-
-        flat_state = qml.math.reshape(state, (dim,))
+        batch_size = self._compute_batch_size(state, num_wires)
+        shape = (2**num_wires,) if batch_size is None else (batch_size, 2**num_wires)
+        flat_state = qml.math.reshape(state, shape)
         real_state = qml.math.real(flat_state)
         imag_state = qml.math.imag(flat_state)
-        return self.marginal_prob(real_state**2 + imag_state**2, wire_order, None)
+        return self.marginal_prob(real_state**2 + imag_state**2, wire_order)
+
+    @staticmethod
+    def _compute_batch_size(state, num_wires):
+        """This logic is isolated because tf.function cannot compile without the try-except
+        clause below (it raises a tf.errors.OperatorNotAllowedInGraphError because it can't
+        handle a function that sometimes returns a tuple, and other times returns None)."""
+
+        expected_shape = [2] * num_wires
+        expected_size = 2**num_wires
+        size = qml.math.size(state)
+
+        try:
+            if qml.math.ndim(state) > len(expected_shape) or size > expected_size:
+                return size // expected_size
+        except Exception as err:  # pylint:disable=broad-except
+            if not qml.math.is_abstract(state):
+                raise err
+
+        return None
 
     @staticmethod
     def _count_samples(indices, batch_size, dim):
@@ -230,7 +237,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
 
         return prob
 
-    def marginal_prob(self, prob, wire_order, batch_size):
+    def marginal_prob(self, prob, wire_order):
         r"""Return the marginal probability of the computational basis
         states by summing the probabilities on the non-specified wires.
 
@@ -281,7 +288,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         shape = [2] * num_device_wires
         desired_axes = np.argsort(np.argsort(mapped_wires))
         flat_shape = (-1,)
-        if batch_size is not None:
+        if (batch_size := self._compute_batch_size(prob, num_device_wires)) is not None:
             # prob now is reshaped to have self.num_wires+1 axes in the case of broadcasting
             shape.insert(0, batch_size)
             inactive_wires = [idx + 1 for idx in inactive_wires]
