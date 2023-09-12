@@ -19,6 +19,7 @@ from pennylane.ops.op_math import ctrl
 
 from pennylane.tape import QuantumTape
 from pennylane.transforms.core import transform
+
 from pennylane.wires import Wires
 from pennylane.queuing import QueuingManager
 
@@ -197,6 +198,8 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
 def _add_control_gate(op, control_wires):
     """Helper function to add control gates"""
     control = [control_wires[m.id] for m in op.meas_val.measurements]
+    new_ops = []
+
     for branch, value in op.meas_val._items():  # pylint: disable=protected-access
         if value:
             qscript = qml.tape.make_qscript(
