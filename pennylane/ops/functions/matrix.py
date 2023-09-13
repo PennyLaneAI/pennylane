@@ -134,10 +134,10 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
     if isinstance(op, qml.Hamiltonian):
         return op.sparse_matrix(wire_order=wire_order).toarray()
 
-    if op.has_matrix:
+    try:
         return op.matrix(wire_order=wire_order)
-
-    return matrix(op.expand(), wire_order=wire_order)
+    except (TypeError, ValueError, qml.operation.MatrixUndefinedError):
+        return matrix(op.expand(), wire_order=wire_order)
 
 
 @matrix.register
