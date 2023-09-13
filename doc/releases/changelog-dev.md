@@ -202,7 +202,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Utkarsh Azad
+Utkarsh Azad,
+Diego Guala,
 Soran Jahangiri,
 Lillian M. A. Frederiksen,
 Vincent Michaud-Rioux,
