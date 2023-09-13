@@ -237,8 +237,7 @@ class TestInterfaces:
 
         features = jnp.array([0, 1, 0])
 
-        # use legacy device until qml.state is fixed
-        dev = qml.device("default.qubit.legacy", wires=3)
+        dev = qml.device("default.qubit", wires=3)
 
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)

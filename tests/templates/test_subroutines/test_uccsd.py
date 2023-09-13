@@ -150,8 +150,8 @@ class TestDecomposition:
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
 
         weights = [0.1, 0.2]
-        dev = qml.device("default.qubit.legacy", wires=4)
-        dev2 = qml.device("default.qubit.legacy", wires=["z", "a", "k", "e"])
+        dev = qml.device("default.qubit", wires=4)
+        dev2 = qml.device("default.qubit", wires=["z", "a", "k", "e"])
 
         @qml.qnode(dev)
         def circuit():
@@ -162,7 +162,7 @@ class TestDecomposition:
                 d_wires=[[[0, 1], [2, 3]]],
                 init_state=np.array([0, 1, 0, 1]),
             )
-            return qml.expval(qml.Identity(0))
+            return qml.expval(qml.Identity(0)), qml.state()
 
         @qml.qnode(dev2)
         def circuit2():
@@ -173,12 +173,13 @@ class TestDecomposition:
                 d_wires=[[["z", "a"], ["k", "e"]]],
                 init_state=np.array([0, 1, 0, 1]),
             )
-            return qml.expval(qml.Identity("z"))
+            return qml.expval(qml.Identity("z")), qml.state()
 
-        circuit()
-        circuit2()
+        res1, state1 = circuit()
+        res2, state2 = circuit2()
 
-        assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
 
 class TestInputs:
