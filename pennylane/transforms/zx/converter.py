@@ -247,8 +247,7 @@ def to_zx(tape, expand_measurements=False):  # pylint: disable=unused-argument
     """
     # If it is a simple operation just transform it to a tape
     if isinstance(tape, qml.operation.Operator):
-        tapes, zx_fn = _to_zx(QuantumScript([tape]))
-        return zx_fn(tapes)
+        return _to_zx(QuantumScript([tape]))
 
     return _to_zx(tape, expand_measurements=expand_measurements)
 

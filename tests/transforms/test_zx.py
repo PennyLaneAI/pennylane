@@ -77,16 +77,12 @@ class TestConvertersZX:
 
         if script:
             qs = QuantumScript([operation])
-            mat_tapes, mat_fn = qml.matrix(qs)
-            matrix_qscript = mat_fn(mat_tapes)
-            zx_tapes, zx_fn = qml.transforms.to_zx(qs)
-            zx_g = zx_fn(zx_tapes)
-
         else:
             qs = operation
-            matrix_qscript = qml.matrix(qs)
-            zx_g = qml.transforms.to_zx(qs)
 
+        matrix_qscript = qml.matrix(qs)
+
+        zx_g = qml.transforms.to_zx(qs)
         matrix_zx = zx_g.to_matrix()
 
         assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
@@ -101,8 +97,7 @@ class TestConvertersZX:
         qscript_back = qml.transforms.from_zx(zx_g)
         assert isinstance(qscript_back, qml.tape.QuantumScript)
 
-        mat_tapes, mat_fn = qml.matrix(qscript_back, wire_order=list(range(len(qs.wires))))
-        matrix_qscript_back = mat_fn(mat_tapes)
+        matrix_qscript_back = qml.matrix(qscript_back, wire_order=list(range(len(qs.wires))))
 
         # Check whether the two matrices are each others conjugate transposes
         mat_product = qml.math.dot(matrix_qscript, qml.math.conj(matrix_qscript_back.T))
@@ -117,19 +112,16 @@ class TestConvertersZX:
     def test_supported_operation_params(self, operation, script):
         """Test to convert the script to a ZX graph and back for supported operations with parameters."""
 
-        I = qml.math.eye(2 ** len(operation.wires))
-
         if script:
             qs = QuantumScript([operation])
-            mat_tapes, mat_fn = qml.matrix(qs)
-            matrix_qscript = mat_fn(mat_tapes)
-            zx_tapes, zx_fn = qml.transforms.to_zx(qs)
-            zx_g = zx_fn(zx_tapes)
-
         else:
             qs = operation
-            matrix_qscript = qml.matrix(qs)
-            zx_g = qml.transforms.to_zx(qs)
+
+        I = qml.math.eye(2 ** len(operation.wires))
+
+        matrix_qscript = qml.matrix(qs)
+
+        zx_g = qml.transforms.to_zx(qs)
 
         matrix_zx = zx_g.to_matrix()
 
@@ -144,8 +136,7 @@ class TestConvertersZX:
         qscript_back = qml.transforms.from_zx(zx_g)
         assert isinstance(qscript_back, qml.tape.QuantumScript)
 
-        mat_tapes, mat_fn = qml.matrix(qscript_back, wire_order=list(range(len(qs.wires))))
-        matrix_qscript_back = mat_fn(mat_tapes)
+        matrix_qscript_back = qml.matrix(qscript_back, wire_order=list(range(len(qs.wires))))
 
         # Check whether the two matrices are each others conjugate transposes
         mat_product = qml.math.dot(matrix_qscript, qml.math.conj(matrix_qscript_back.T))
@@ -159,19 +150,16 @@ class TestConvertersZX:
     def test_operation_need_expansion(self, operation, script):
         """Test to convert the script to a ZX graph and back for operations that needs expansions."""
 
-        I = qml.math.eye(2 ** len(operation.wires))
-
         if script:
             qs = QuantumScript([operation])
-            mat_tapes, mat_fn = qml.matrix(qs)
-            matrix_qscript = mat_fn(mat_tapes)
-            zx_tapes, zx_fn = qml.transforms.to_zx(qs)
-            zx_g = zx_fn(zx_tapes)
-
         else:
             qs = operation
-            matrix_qscript = qml.matrix(qs)
-            zx_g = qml.transforms.to_zx(qs)
+
+        I = qml.math.eye(2 ** len(operation.wires))
+
+        matrix_qscript = qml.matrix(qs)
+
+        zx_g = qml.transforms.to_zx(qs)
 
         matrix_zx = zx_g.to_matrix()
 
@@ -186,8 +174,7 @@ class TestConvertersZX:
         qscript_back = qml.transforms.from_zx(zx_g)
         assert isinstance(qscript_back, qml.tape.QuantumScript)
 
-        mat_tapes, mat_fn = qml.matrix(qscript_back, wire_order=list(range(len(qs.wires))))
-        matrix_qscript_back = mat_fn(mat_tapes)
+        matrix_qscript_back = qml.matrix(qscript_back, wire_order=list(range(len(qs.wires))))
 
         # Check whether the two matrices are each others conjugate transposes
         mat_product = qml.math.dot(matrix_qscript, qml.math.conj(matrix_qscript_back.T))
@@ -203,11 +190,9 @@ class TestConvertersZX:
         I = qml.math.eye(2 ** len(operation.wires))
 
         qs = QuantumScript([operation], [], [])
-        mat_tapes, mat_fn = qml.matrix(qs)
-        matrix_qscript = mat_fn(mat_tapes)
+        matrix_qscript = qml.matrix(qs)
 
-        zx_tapes, zx_fn = qml.transforms.to_zx(qs)
-        zx_g = zx_fn(zx_tapes)
+        zx_g = qml.transforms.to_zx(qs)
         assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
 
         matrix_zx = zx_g.to_matrix()
@@ -241,13 +226,11 @@ class TestConvertersZX:
         ]
 
         qs = QuantumScript(operations, [], [])
-        zx_tapes, zx_fn = qml.transforms.to_zx(qs)
-        zx_g = zx_fn(zx_tapes)
+        zx_g = qml.transforms.to_zx(qs)
 
         assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
 
-        mat_tapes, mat_fn = qml.matrix(qs)
-        matrix_qscript = mat_fn(mat_tapes)
+        matrix_qscript = qml.matrix(qs)
         matrix_zx = zx_g.to_matrix()
         # Check whether the two matrices are each others conjugate transposes
         mat_product = qml.math.dot(matrix_qscript, qml.math.conj(matrix_zx.T))
@@ -258,8 +241,7 @@ class TestConvertersZX:
         qscript_back = qml.transforms.from_zx(zx_g, decompose_phases=decompose)
         assert isinstance(qscript_back, qml.tape.QuantumScript)
 
-        mat_tapes, mat_fn = qml.matrix(qscript_back, wire_order=list(range(len(qs.wires))))
-        matrix_qscript_back = mat_fn(mat_tapes)
+        matrix_qscript_back = qml.matrix(qscript_back, wire_order=list(range(len(qs.wires))))
 
         # Check whether the two matrices are each others conjugate transposes
         mat_product = qml.math.dot(matrix_qscript, qml.math.conj(matrix_qscript_back.T))
@@ -325,13 +307,11 @@ class TestConvertersZX:
         ]
 
         qs = QuantumScript(operations, [], [])
-        zx_tapes, zx_fn = qml.transforms.to_zx(qs)
-        zx_g = zx_fn(zx_tapes)
+        zx_g = qml.transforms.to_zx(qs)
 
         assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
 
-        mat_tapes, mat_fn = qml.matrix(qs)
-        matrix_qscript = mat_fn(mat_tapes)
+        matrix_qscript = qml.matrix(qs)
         matrix_zx = zx_g.to_matrix()
         # Check whether the two matrices are each others conjugate transposes
         mat_product = qml.math.dot(matrix_qscript, qml.math.conj(matrix_zx.T))
@@ -343,8 +323,7 @@ class TestConvertersZX:
         qscript_back = qml.transforms.from_zx(zx_g)
         assert isinstance(qscript_back, qml.tape.QuantumScript)
 
-        mat_tapes, mat_fn = qml.matrix(qscript_back, wire_order=list(range(len(qs.wires))))
-        matrix_qscript_back = mat_fn(mat_tapes)
+        matrix_qscript_back = qml.matrix(qscript_back, wire_order=list(range(len(qs.wires))))
 
         # Check whether the two matrices are each others conjugate transposes
         mat_product = qml.math.dot(matrix_qscript, qml.math.conj(matrix_qscript_back.T))
@@ -368,16 +347,14 @@ class TestConvertersZX:
         measurements = [qml.expval(qml.PauliZ(0) @ qml.PauliX(1))]
 
         qs = QuantumScript(operations, measurements, [])
-        zx_tapes, zx_fn = qml.transforms.to_zx(qs, expand_measurements=True)
-        zx_g = zx_fn(zx_tapes)
+        zx_g = qml.transforms.to_zx(qs, expand_measurements=True)
         assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
 
         # Add rotation Hadamard because of PauliX
         operations.append(qml.Hadamard(wires=[1]))
         operations_with_rotations = operations
         qscript_with_rot = QuantumScript(operations_with_rotations, [], [])
-        mat_tapes, mat_fn = qml.matrix(qscript_with_rot)
-        matrix_qscript = mat_fn(mat_tapes)
+        matrix_qscript = qml.matrix(qscript_with_rot)
 
         matrix_zx = zx_g.to_matrix()
         # Check whether the two matrices are each others conjugate transposes
@@ -389,8 +366,7 @@ class TestConvertersZX:
         qscript_back = qml.transforms.from_zx(zx_g)
         assert isinstance(qscript_back, qml.tape.QuantumScript)
 
-        mat_tapes, mat_fn = qml.matrix(qscript_back, wire_order=list(range(len(qs.wires))))
-        matrix_qscript_back = mat_fn(mat_tapes)
+        matrix_qscript_back = qml.matrix(qscript_back, wire_order=list(range(len(qs.wires))))
         # Check whether the two matrices are each others conjugate transposes
         mat_product = qml.math.dot(matrix_qscript, qml.math.conj(matrix_qscript_back.T))
         # Remove global phase
@@ -413,14 +389,12 @@ class TestConvertersZX:
             qml.SWAP(wires=[0, 1]),
         ]
 
-        qs = QuantumScript(prep + operations, [])
-        zx_tapes, zx_fn = qml.transforms.to_zx(qs)
-        zx_g = zx_fn(zx_tapes)
+        qs = QuantumScript(operations, [], prep)
+        zx_g = qml.transforms.to_zx(qs)
 
         assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
 
-        mat_tapes, mat_fn = qml.matrix(qs)
-        matrix_qscript = mat_fn(mat_tapes)
+        matrix_qscript = qml.matrix(qs)
         matrix_zx = zx_g.to_matrix()
         # Check whether the two matrices are each others conjugate transposes
         mat_product = qml.math.dot(matrix_qscript, qml.math.conj(matrix_zx.T))
@@ -431,8 +405,7 @@ class TestConvertersZX:
         qscript_back = qml.transforms.from_zx(zx_g)
         assert isinstance(qscript_back, qml.tape.QuantumScript)
 
-        mat_tapes, mat_fn = qml.matrix(qscript_back, wire_order=list(range(len(qs.wires))))
-        matrix_qscript_back = mat_fn(mat_tapes)
+        matrix_qscript_back = qml.matrix(qscript_back, wire_order=list(range(len(qs.wires))))
         # Check whether the two matrices are each others conjugate transposes
         mat_product = qml.math.dot(matrix_qscript, qml.math.conj(matrix_qscript_back.T))
         # Remove global phase
@@ -497,13 +470,11 @@ class TestConvertersZX:
         operations = [qml.sum(qml.PauliX(0), qml.PauliZ(0))]
 
         qs = QuantumScript(operations, [], [])
-        zx_tapes, zx_fn = qml.transforms.to_zx(qs)
-
         with pytest.raises(
             qml.QuantumFunctionError,
             match="The expansion of the quantum tape failed, PyZX does not support",
         ):
-            _ = zx_fn(zx_tapes)
+            qml.transforms.to_zx(qs)
 
     def test_same_type_nodes_simple_edge(self):
         """Test that a Green-Green nodes with simple edge has no corresponding circuit."""

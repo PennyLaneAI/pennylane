@@ -126,13 +126,14 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
     try:
         return op.eigvals()
     except qml.operation.EigvalsUndefinedError:
-        tapes, fn = eigvals(op.expand(), k=k, which=which)
-        return fn(tapes)
+        return _eigvals_tape(op.expand(), k=k, which=which)
 
 
 @partial(transform, is_informative=True)
 @eigvals.register
-def _eigvals_tape(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
+def _eigvals_tape(
+    tape: qml.tape.QuantumTape, k=1, which="SA"
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     def processing_fn(res):
         op_wires = [op.wires for op in res[0].operations]
         all_wires = qml.wires.Wires.all_wires(op_wires).tolist()
@@ -144,14 +145,14 @@ def _eigvals_tape(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape]
                 "This may be computationally intensive for a large number of wires.",
                 UserWarning,
             )
-            tapes, mat_fn = qml.matrix(res[0])
-            return qml.math.linalg.eigvals(mat_fn(tapes))
+            matrix = qml.matrix(res[0])
+            return qml.math.linalg.eigvals(matrix)
 
         # TODO: take into account wire ordering, by reordering eigenvalues
         # as per operator wires/wire ordering, and by inserting implicit identity
         # matrices (eigenvalues [1, 1]) at missing locations.
 
-        ev = [eigvals(op) for op in res[0].operations]
+        ev = [eigvals(op, k=k, which=which) for op in res[0].operations]
 
         if len(ev) == 1:
             return ev[0]

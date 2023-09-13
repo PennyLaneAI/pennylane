@@ -126,7 +126,7 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
     """
     if not isinstance(op, qml.operation.Operator):
         if isinstance(op, (qml.tape.QuantumScript, qml.QNode)) or callable(op):
-            return _matrix(op, wire_order=wire_order)
+            return _matrix_tape(op, wire_order=wire_order)
 
         raise OperationTransformError("Input is not an Operator, tape, QNode, or quantum function")
 
@@ -139,13 +139,12 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
     if op.has_matrix:
         return op.matrix(wire_order=wire_order)
 
-    tapes, fn = matrix(op.expand(), wire_order=wire_order)
-    return fn(tapes)
+    return _matrix_tape(op.expand(), wire_order=wire_order)
 
 
 @partial(transform, is_informative=True)
 @matrix.register
-def _matrix(
+def _matrix_tape(
     tape: qml.tape.QuantumTape, wire_order=None, **kwargs
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     def processing_fn(res):
@@ -176,7 +175,7 @@ def _matrix(
     return [tape], processing_fn
 
 
-@_matrix.custom_qnode_transform
+@_matrix_tape.custom_qnode_transform
 def _matrix_qnode(self, qnode, targs, tkwargs):
     if tkwargs.get("device_wires", None):
         raise ValueError(

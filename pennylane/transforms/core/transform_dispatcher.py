@@ -66,13 +66,14 @@ class TransformDispatcher:
             obj, *targs = targs
 
         if isinstance(obj, qml.tape.QuantumScript):
-            return self._transform(obj, *targs, **tkwargs)
+            transformed_tapes, processing_fn = self._transform(obj, *targs, **tkwargs)
+
+            if self.is_informative:
+                return processing_fn(transformed_tapes)
+            return transformed_tapes, processing_fn
+
         if isinstance(obj, qml.QNode):
-            return self._qnode_transform(
-                obj,
-                targs,
-                tkwargs,
-            )
+            return self._qnode_transform(obj, targs, tkwargs)
         if callable(obj):
             return self._qfunc_transform(obj, targs, tkwargs)
 

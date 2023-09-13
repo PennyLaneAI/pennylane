@@ -192,14 +192,14 @@ class TestMultipleOperations:
             qml.CNOT(wires=["b", "c"])
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        tapes, fn = qml.matrix(tape, wire_order)
+        matrix = qml.matrix(tape, wire_order)
         expected_matrix = I_CNOT @ X_S_H
-        assert np.allclose(fn(tapes), expected_matrix)
+        assert np.allclose(matrix, expected_matrix)
 
         qs = qml.tape.QuantumScript(tape.operations)
-        tapes, fn = qml.matrix(qs, wire_order)
+        qs_matrix = qml.matrix(qs, wire_order)
 
-        assert np.allclose(fn(tapes), expected_matrix)
+        assert np.allclose(qs_matrix, expected_matrix)
 
     def test_multiple_operations_qfunc(self):
         """Check the total matrix for a qfunc containing multiple gates"""
@@ -246,13 +246,13 @@ class TestWithParameterBroadcasting:
             qml.CNOT(wires=["b", "c"])
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        tapes, fn = qml.matrix(tape, wire_order)
+        matrix = qml.matrix(tape, wire_order)
         expected_matrix = [I_CNOT @ I_S_H, -1j * I_CNOT @ X_S_H, I_CNOT @ np.kron(RX(0.7), S_H)]
-        assert np.allclose(fn(tapes), expected_matrix)
+        assert np.allclose(matrix, expected_matrix)
 
         qs = qml.tape.QuantumScript(tape.operations)
-        tapes, fn = qml.matrix(qs, wire_order)
-        assert np.allclose(fn(tapes), expected_matrix)
+        qs_matrix = qml.matrix(qs, wire_order)
+        assert np.allclose(qs_matrix, expected_matrix)
 
     def test_multiple_operations_tape_leading_broadcasted_op(self):
         """Check the total matrix for a tape containing multiple gates
@@ -267,9 +267,9 @@ class TestWithParameterBroadcasting:
             qml.CNOT(wires=["b", "c"])
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        tapes, fn = qml.matrix(tape, wire_order)
+        matrix = qml.matrix(tape, wire_order)
         expected_matrix = [I_CNOT @ I_S_H, -1j * I_CNOT @ X_S_H, I_CNOT @ np.kron(RX(0.7), S_H)]
-        assert np.allclose(fn(tapes), expected_matrix)
+        assert np.allclose(matrix, expected_matrix)
 
     def test_multiple_operations_tape_multi_broadcasted_op(self):
         """Check the total matrix for a tape containing multiple gates
@@ -286,7 +286,7 @@ class TestWithParameterBroadcasting:
             qml.RX(angles2, wires="c")
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        tapes, fn = qml.matrix(tape, wire_order)
+        matrix = qml.matrix(tape, wire_order)
         I_I_X = np.kron(np.eye(4), X)
         expected_matrix = [
             I_CNOT @ I_S_H,
@@ -294,7 +294,7 @@ class TestWithParameterBroadcasting:
             -1j * I_I_X @ I_CNOT @ I_S_H,
             -I_I_X @ I_CNOT @ X_S_H,
         ]
-        assert np.allclose(fn(tapes), expected_matrix)
+        assert np.allclose(matrix, expected_matrix)
 
     def test_multiple_operations_tape_bcasting_matches_Hilbert_dim(self):
         """Check the total matrix for a tape containing multiple gates
@@ -311,7 +311,7 @@ class TestWithParameterBroadcasting:
             qml.RX(angles2, wires="b")
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        tapes, fn = qml.matrix(tape, wire_order)
+        matrix = qml.matrix(tape, wire_order)
         I_HS = np.kron(I, H @ S)
         X_HS = np.kron(X, H @ S)
         I_X = np.kron(I, X)
@@ -321,7 +321,7 @@ class TestWithParameterBroadcasting:
             -1j * I_X @ CNOT @ I_HS,
             -I_X @ CNOT @ X_HS,
         ]
-        assert np.allclose(fn(tapes), expected_matrix)
+        assert np.allclose(matrix, expected_matrix)
 
 
 class TestCustomWireOrdering:
@@ -341,13 +341,13 @@ class TestCustomWireOrdering:
             qml.PauliZ(wires=2)
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        tapes, fn = qml.matrix(tape)
+        matrix = qml.matrix(tape)
         expected_matrix = np.kron(X, np.kron(Y, Z))
-        assert np.allclose(fn(tapes), expected_matrix)
+        assert np.allclose(matrix, expected_matrix)
 
-        tapes, fn = qml.matrix(tape, wire_order=[1, 0, 2])
+        matrix = qml.matrix(tape, wire_order=[1, 0, 2])
         expected_matrix = np.kron(Y, np.kron(X, Z))
-        assert np.allclose(fn(tapes), expected_matrix)
+        assert np.allclose(matrix, expected_matrix)
 
     def test_qfunc_wireorder(self):
         """Test changing the wire order when using a qfunc"""
@@ -409,8 +409,8 @@ class TestTemplates:
             op.decomposition()
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        expected_tapes, expected_fn = qml.matrix(tape)
-        np.allclose(res, expected_fn(expected_tapes))
+        expected = qml.matrix(tape)
+        np.allclose(res, expected)
 
     def test_qfunc(self):
         """Test a template used within a qfunc"""
@@ -430,8 +430,8 @@ class TestTemplates:
             qml.RX(x, wires=0)
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        expected_tapes, expected_fn = qml.matrix(tape)
-        np.allclose(res, expected_fn(expected_tapes))
+        expected = qml.matrix(tape)
+        np.allclose(res, expected)
 
     def test_nested_instantiated(self):
         """Test an operation that must be decomposed twice"""
@@ -453,8 +453,8 @@ class TestTemplates:
             op.decomposition()
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        expected_tapes, expected_fn = qml.matrix(tape)
-        np.allclose(res, expected_fn(expected_tapes))
+        expected = qml.matrix(tape)
+        np.allclose(res, expected)
 
     def test_nested_qfunc(self):
         """Test an operation that must be decomposed twice"""
@@ -482,8 +482,8 @@ class TestTemplates:
             qml.RX(x, wires=0)
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        expected_tapes, expected_fn = qml.matrix(tape)
-        np.allclose(res, expected_fn(expected_tapes))
+        expected = qml.matrix(tape)
+        np.allclose(res, expected)
 
 
 class TestValidation:
@@ -716,8 +716,7 @@ class TestMeasurements:
     def test_all_measurement_matrices_are_identity(self, measurements, N):
         """Test that the matrix of a script with only observables is Identity."""
         qscript = qml.tape.QuantumScript(measurements=measurements)
-        tapes, fn = qml.matrix(qscript)
-        assert np.array_equal(fn(tapes), np.eye(N))
+        assert np.array_equal(qml.matrix(qscript), np.eye(N))
 
 
 @pytest.mark.jax

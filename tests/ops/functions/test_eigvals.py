@@ -209,8 +209,7 @@ class TestMultipleOperations:
             qml.Hadamard(wires="c")
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        tapes, eig_fn = qml.eigvals(tape)
-        res = eig_fn(tapes)
+        res = qml.eigvals(tape)
         expected = np.linalg.eigvals(np.kron(X, np.kron(S, H)))
 
         assert np.allclose(np.sort(res.real), np.sort(expected.real))
@@ -227,8 +226,7 @@ class TestMultipleOperations:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
-            tapes, eig_fn = qml.eigvals(tape)
-            res = eig_fn(tapes)
+            res = qml.eigvals(tape)
 
         expected = np.linalg.eigvals(np.kron(I, CNOT) @ np.kron(X, np.kron(S, H)))
         assert np.allclose(res, expected)
@@ -322,8 +320,7 @@ class TestTemplates:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
-            tapes, eig_fn = qml.eigvals(tape)
-            expected = eig_fn(tapes)
+            expected = qml.eigvals(tape)
 
         assert np.allclose(res, expected)
 
@@ -348,8 +345,7 @@ class TestTemplates:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
-            tapes, eig_fn = qml.eigvals(tape)
-            expected = eig_fn(tapes)
+            expected = qml.eigvals(tape)
 
         assert np.allclose(res, expected)
 
@@ -376,8 +372,7 @@ class TestTemplates:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
-            tapes, eig_fn = qml.eigvals(tape)
-            expected = eig_fn(tapes)
+            expected = qml.eigvals(tape)
 
         assert np.allclose(res, expected)
 
@@ -410,8 +405,7 @@ class TestTemplates:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
-            tapes, eig_fn = qml.eigvals(tape)
-            expected = eig_fn(tapes)
+            expected = qml.eigvals(tape)
 
         assert np.allclose(res, expected)
 
