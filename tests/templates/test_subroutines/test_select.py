@@ -209,7 +209,7 @@ class TestSelect:
 
     def test_copy(self):
         """Test that the copy function of Select works correctly."""
-        ops = [qml.PauliX(wires=2), qml.PauliX(wires=3), qml.PauliY(wires=2), qml.SWAP([2, 3])]
+        ops = [qml.PauliX(wires=2), qml.RX(0.2,wires=3), qml.PauliY(wires=2), qml.SWAP([2, 3])]
         op = qml.Select(ops, control=[0, 1])
         op_copy = copy.copy(op)
 
