@@ -13,7 +13,7 @@
 <h3>Improvements 🛠</h3>
 
 * Tensor-network template `qml.MPS` now supports changing `offset` between subsequent blocks for more flexibility.
- [#4531](https://github.com/PennyLaneAI/pennylane/pull/4531)
+ [(#4531)](https://github.com/PennyLaneAI/pennylane/pull/4531)
 
 * The qchem ``fermionic_dipole`` and ``particle_number`` functions are updated to use a
   ``FermiSentence``. The deprecated features for using tuples to represent fermionic operations are

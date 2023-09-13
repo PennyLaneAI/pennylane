@@ -26,7 +26,7 @@ def compute_indices_MPS(wires, n_block_wires, offset=None):
     Args:
         wires (Iterable): wires that the template acts on
         n_block_wires (int): number of wires per block_gen
-        offset (wires): offset value for positioning the subsequent blocks relative to each other.
+        offset (int): offset value for positioning the subsequent blocks relative to each other.
             If ``None``, it defaults to :math:`\text{offset} = \lfloor \text{n_block_wires}/2  \rfloor`,
             otherwise :math:`\text{offset} \in [1, \text{n_block_wires} - 1]`.
 
@@ -82,7 +82,7 @@ class MPS(Operation):
         block (Callable): quantum circuit that defines a block
         n_params_block (int): the number of parameters in a block; equal to the length of the ``weights`` argument in ``block``
         template_weights (Sequence): list containing the weights for all blocks
-        offset (wires): offset value for positioning the subsequent blocks relative to each other.
+        offset (int): offset value for positioning the subsequent blocks relative to each other.
             If ``None``, it defaults to :math:`\text{offset} = \lfloor \text{n_block_wires}/2  \rfloor`,
             otherwise :math:`\text{offset} \in [1, \text{n_block_wires} - 1]`
         **kwargs: additional keyword arguments for implementing the ``block``
@@ -165,8 +165,8 @@ class MPS(Operation):
     @classmethod
     def _unflatten(cls, data, metadata):
         new_op = cls.__new__(cls)
-        new_op._hyperparameters = dict(metadata[1])  # pylint: disable=protected-access
-        new_op._weights = data[0] if len(data) else None  # pylint: disable=protected-access
+        setattr(new_op, "_hyperparameters", dict(metadata[1]))
+        setattr(new_op, "_weights", data[0] if len(data) else None)
         Operation.__init__(new_op, *data, wires=metadata[0])
         return new_op
 
@@ -247,7 +247,7 @@ class MPS(Operation):
         Args:
             wires (Sequence): number of wires the template acts on
             n_block_wires (int): number of wires per block
-            offset (wires): offset value for positioning the subsequent blocks relative to each other.
+            offset (int): offset value for positioning the subsequent blocks relative to each other.
                 If ``None``, it defaults to :math:`\text{offset} = \lfloor \text{n_block_wires}/2  \rfloor`,
                 otherwise :math:`\text{offset} \in [1, \text{n_block_wires} - 1]`.
 
