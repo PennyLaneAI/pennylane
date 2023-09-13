@@ -391,13 +391,19 @@ def reorder_grads(grads, tape_specs):
 
 
 # pylint: disable=too-many-return-statements,too-many-branches
-def _contract_qjac_with_cjac(qjac, cjac, num_measurements, has_partitioned_shots):
+def _contract_qjac_with_cjac(qjac, cjac, tape):
     """Contract a quantum Jacobian with a classical preprocessing Jacobian.
     Essentially, this function computes the generalized version of
     ``tensordot(qjac, cjac)`` over the tape parameter axis, adapted to the new
     return type system. This function takes the measurement shapes and different
     QNode arguments into account.
     """
+    num_measurements = len(tape.measurements)
+    has_partitioned_shots = tape.shots.has_partitioned_shots
+
+    if isinstance(qjac, tuple) and len(qjac) == 1:
+        qjac = qjac[0]
+
     if isinstance(cjac, tuple) and len(cjac) == 1:
         cjac = cjac[0]
 
@@ -598,8 +604,6 @@ class gradient_transform(qml.batch_transform):
                 qnode, argnum=argnum_cjac, expand_fn=self.expand_fn
             )(*args, **kwargs)
 
-            num_measurements = len(qnode.tape.measurements)
-            has_partitioned_shots = qnode.tape.shots.has_partitioned_shots
-            return _contract_qjac_with_cjac(qjac, cjac, num_measurements, has_partitioned_shots)
+            return _contract_qjac_with_cjac(qjac, cjac, qnode.tape)
 
         return jacobian_wrapper

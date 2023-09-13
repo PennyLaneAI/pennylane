@@ -114,6 +114,7 @@ class TransformProgram:
 
     def __init__(self, initial_program: Optional[Sequence] = None):
         self._transform_program = list(initial_program) if initial_program else []
+        self._classical_jacobians = None
 
     def __iter__(self):
         """list[TransformContainer]: Return an iterator to the underlying transform program."""
@@ -352,10 +353,11 @@ class TransformProgram:
         for index, transform in enumerate(self):
             if transform.classical_cotransform:
                 argnums = transform._kwargs.get("argnums", None)
-                transform._kwargs.pop("argnums")
+                transform._kwargs.pop("argnums", None)
                 classical_jacobians.append(jacobian(classical_preprocessing, TransformProgram(self[0:index+1]), argnums, *args, **kwargs))
             classical_jacobians.append(None)
-        print(classical_jacobians)
+        # QNode reset the tape
+        qnode.construct(args, kwargs)
         self._classical_jacobians = classical_jacobians
 
     # def set_all_argnums(self, qnode, argnums, args, kwargs):
@@ -400,6 +402,7 @@ class TransformProgram:
     #     self.argnums = argnums
 
     def __call__(self, tapes: Tuple[QuantumTape]) -> Tuple[ResultBatch, BatchPostProcessingFn]:
+        print("hello")
         if self.is_informative:
             raise NotImplementedError("Informative transforms are not yet supported.")
 
@@ -407,18 +410,21 @@ class TransformProgram:
             return tapes, null_postprocessing
         processing_fns_stack = []
 
-        for transform_container in self:
+        for i, transform_container in enumerate(self):
             transform, targs, tkwargs, cotransform, _ = transform_container
 
             execution_tapes = []
             fns = []
             slices = []
 
+            classical_fns = []
+            slices_classical = []
+
             start = 0
-            for tape in tapes:
+            start_classical = 0
+            for j, tape in enumerate(tapes):
                 # TODO add argnums
                 # tape.trainable_params = argnums
-
                 new_tapes, fn = transform(tape, *targs, **tkwargs)
                 execution_tapes.extend(new_tapes)
 
@@ -428,9 +434,18 @@ class TransformProgram:
                 slices.append(slice(start, end))
                 start = end
 
+                if cotransform and self._classical_jacobians:
+                    classical_fns.append(partial(cotransform, cjac=self._classical_jacobians[i][j], tape=tape))
+                    slices_classical.append(slice(start_classical, start_classical+1))
+                    start_classical += 1
+
+            if cotransform:
+                batch_postprocessing_classical = partial(_batch_postprocessing, individual_fns=classical_fns, slices=slices)
+                batch_postprocessing_classical.__doc__ = _batch_postprocessing.__doc__
+                processing_fns_stack.append(batch_postprocessing_classical)
+
             batch_postprocessing = partial(_batch_postprocessing, individual_fns=fns, slices=slices)
             batch_postprocessing.__doc__ = _batch_postprocessing.__doc__
-
             processing_fns_stack.append(batch_postprocessing)
 
             # set input tapes for next iteration.
@@ -441,5 +456,5 @@ class TransformProgram:
             postprocessing_stack=processing_fns_stack,
         )
         postprocessing_fn.__doc__ = _apply_postprocessing_stack.__doc__
-
+        print("tapes", tapes)
         return tuple(tapes), postprocessing_fn
