@@ -37,7 +37,7 @@ def get_batch_size(tensor, expected_shape, expected_size):
         if ndim > len(expected_shape) or size > expected_size:
             return size // expected_size
 
-    except Exception as err:  # pylint:disable=broad-except, pragma: no-cover
+    except Exception as err:  # pragma: no cover, pylint:disable=broad-except
         # This except clause covers the usage of tf.function, which is not compatible
         # with `DefaultQubit._get_batch_size`
         if not qml.math.is_abstract(tensor):
