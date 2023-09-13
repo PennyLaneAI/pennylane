@@ -16,7 +16,6 @@ This module contains the functions for computing different types of measurement
 outcomes from quantum observables - expectation values, variances of expectations,
 and measurement samples using AnnotatedQueues.
 """
-import contextlib
 import copy
 import functools
 from abc import ABC, abstractmethod
@@ -335,8 +334,7 @@ class MeasurementProcess(ABC):
             return qml.math.arange(0, 2 ** len(self.wires), 1)
 
         if self.obs is not None:
-            with contextlib.suppress(qml.operation.EigvalsUndefinedError):
-                return self.obs.eigvals()
+            return self.obs.eigvals()
         return self._eigvals
 
     @property
