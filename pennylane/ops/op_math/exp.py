@@ -384,7 +384,7 @@ class Exp(ScalarSymbolicOp, Operation):
             try:
                 eigvals = self.eigvals()
                 eigvals_mat = (
-                    math.stack(math.diag(e) for e in eigvals)
+                    math.stack([math.diag(e) for e in eigvals])
                     if qml.math.ndim(self.scalar) > 0
                     else math.diag(eigvals)
                 )

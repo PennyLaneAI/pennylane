@@ -187,3 +187,23 @@ class TestExpval:
         m4 = ExpectationMP(eigvals=[-1, 1], wires=qml.wires.Wires(1))
         assert m1.hash != m4.hash
         assert m3.hash != m4.hash
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize(
+        "state,expected",
+        [
+            ([1.0, 0.0], 1.0),
+            ([[1.0, 0.0], [0.0, 1.0]], [1.0, -1.0]),
+        ],
+    )
+    def test_tf_function(self, state, expected):
+        """Test that tf.function does not break process_state"""
+        import tensorflow as tf
+
+        @tf.function
+        def compute_expval(s):
+            mp = ExpectationMP(obs=qml.PauliZ(0))
+            return mp.process_state(s, wire_order=qml.wires.Wires([0]))
+
+        state = tf.Variable(state, dtype=tf.float64)
+        assert qml.math.allequal(compute_expval(state), expected)

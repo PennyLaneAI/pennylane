@@ -77,7 +77,7 @@ def process_shifts(rule, tol=1e-10, batch_duplicates=True):
             rule = np.hstack([np.stack(coeffs)[:, np.newaxis], unique_mods])
 
     # sort columns according to abs(shift)
-    return rule[np.argsort(np.abs(rule[:, -1]))]
+    return rule[np.argsort(np.abs(rule[:, -1]), kind="stable")]
 
 
 @functools.lru_cache(maxsize=None)
