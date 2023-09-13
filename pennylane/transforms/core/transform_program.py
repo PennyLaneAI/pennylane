@@ -132,7 +132,7 @@ class TransformProgram:
 
     def __add__(self, other):
         if self.has_final_transform and other.has_final_transform:
-            raise TransformError("The transform program already has an informative transform.")
+            raise TransformError("The transform program already has a terminal transform.")
 
         transforms = self._transform_program + other._transform_program
         if self.has_final_transform:

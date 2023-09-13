@@ -232,14 +232,14 @@ class TransformContainer:
         kwargs=None,
         classical_cotransform=None,
         is_informative=False,
-        final_transform=True,
+        final_transform=False,
     ):  # pylint:disable=redefined-outer-name,too-many-arguments
         self._transform = transform
         self._args = args or []
         self._kwargs = kwargs or {}
         self._classical_cotransform = classical_cotransform
         self._is_informative = is_informative
-        self._final_transform = final_transform
+        self._final_transform = is_informative or final_transform
 
     def __iter__(self):
         return iter(
