@@ -107,12 +107,14 @@ def _apply_diagonalizing_gates(
     return state
 
 
+# pylint:disable = too-many-arguments
 def measure_with_samples(
     mps: List[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]],
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,
     rng=None,
+    prng_key=None,
 ) -> List[TensorLike]:
     """
     Returns the samples of the measurement process performed on the given state.
@@ -128,6 +130,9 @@ def measure_with_samples(
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. If None, a random key will be
+            generated. Only for simulation using JAX.
 
     Returns:
         List[TensorLike[Any]]: Sample measurement results
@@ -146,7 +151,11 @@ def measure_with_samples(
             # measure with the usual method (rotate into the measurement basis)
             measure_fn = _measure_with_samples_diagonalizing_gates
 
-        all_res.extend(measure_fn(group, state, shots, is_state_batched=is_state_batched, rng=rng))
+        all_res.extend(
+            measure_fn(
+                group, state, shots, is_state_batched=is_state_batched, rng=rng, prng_key=prng_key
+            )
+        )
 
     flat_indices = [_i for i in indices for _i in i]
 
@@ -168,6 +177,7 @@ def _measure_with_samples_diagonalizing_gates(
     shots: Shots,
     is_state_batched: bool = False,
     rng=None,
+    prng_key=None,
 ) -> TensorLike:
     """
     Returns the samples of the measurement process performed on the given state,
@@ -211,7 +221,12 @@ def _measure_with_samples_diagonalizing_gates(
             # better to call sample_state just once with total_shots, then use
             # the shot_range keyword argument
             samples = sample_state(
-                state, shots=s, is_state_batched=is_state_batched, wires=wires, rng=rng
+                state,
+                shots=s,
+                is_state_batched=is_state_batched,
+                wires=wires,
+                rng=rng,
+                prng_key=prng_key,
             )
 
             processed_samples.append(_process_single_shot(samples))
@@ -224,6 +239,7 @@ def _measure_with_samples_diagonalizing_gates(
         is_state_batched=is_state_batched,
         wires=wires,
         rng=rng,
+        prng_key=prng_key,
     )
 
     return _process_single_shot(samples)
@@ -235,6 +251,7 @@ def _measure_classical_shadow(
     shots: Shots,
     is_state_batched: bool = False,
     rng=None,
+    prng_key=None,
 ):
     """
     Returns the result of a classical shadow measurement on the given state.
@@ -273,6 +290,7 @@ def _measure_hamiltonian_with_samples(
     shots: Shots,
     is_state_batched: bool = False,
     rng=None,
+    prng_key=None,
 ):
     # the list contains only one element based on how we group measurements
     mp = mp[0]
@@ -286,6 +304,7 @@ def _measure_hamiltonian_with_samples(
             s,
             is_state_batched=is_state_batched,
             rng=rng,
+            prng_key=prng_key,
         )
         return sum(c * res for c, res in zip(mp.obs.terms()[0], results))
 
@@ -299,6 +318,7 @@ def _measure_sum_with_samples(
     shots: Shots,
     is_state_batched: bool = False,
     rng=None,
+    prng_key=None,
 ):
     # the list contains only one element based on how we group measurements
     mp = mp[0]
@@ -307,7 +327,12 @@ def _measure_sum_with_samples(
     # of the terms separately and sum
     def _sum_for_single_shot(s):
         results = measure_with_samples(
-            [ExpectationMP(t) for t in mp.obs], state, s, is_state_batched=is_state_batched, rng=rng
+            [ExpectationMP(t) for t in mp.obs],
+            state,
+            s,
+            is_state_batched=is_state_batched,
+            rng=rng,
+            prng_key=prng_key,
         )
         return sum(results)
 
@@ -316,7 +341,12 @@ def _measure_sum_with_samples(
 
 
 def sample_state(
-    state, shots: int, is_state_batched: bool = False, wires=None, rng=None
+    state,
+    shots: int,
+    is_state_batched: bool = False,
+    wires=None,
+    rng=None,
+    prng_key=None,
 ) -> np.ndarray:
     """
     Returns a series of samples of a state.
@@ -333,6 +363,10 @@ def sample_state(
     Returns:
         ndarray[int]: Sample values of the shape (shots, num_wires)
     """
+    if prng_key:
+        return sample_state_jax_prng(
+            state, shots, is_state_batched=is_state_batched, wires=wires, rng=rng, prng_key=prng_key
+        )
     rng = np.random.default_rng(rng)
 
     total_indices = len(state.shape) - is_state_batched
@@ -353,3 +387,32 @@ def sample_state(
     powers_of_two = 1 << np.arange(num_wires, dtype=np.int64)[::-1]
     states_sampled_base_ten = samples[..., None] & powers_of_two
     return (states_sampled_base_ten > 0).astype(np.int64)
+
+
+# pylint:disable = unused-argument
+def sample_state_jax_prng(
+    state,
+    shots: int,
+    is_state_batched: bool = False,
+    wires=None,
+    rng=None,
+    prng_key=None,
+) -> np.ndarray:
+    """
+    Returns a series of samples of a state for the JAX interface based on the PRNG if provided.
+    If one is not provided, a random PRNG key will be generated.
+
+    Args:
+        state (array[complex]): A state vector to be sampled
+        shots (int): The number of samples to take
+        is_state_batched (bool): whether the state is batched or not
+        wires (Sequence[int]): The wires to sample
+        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]):
+            A seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
+            If no value is provided, a default RNG will be used
+
+    Returns:
+        ndarray[int]: Sample values of the shape (shots, num_wires)
+    """
+
+    return

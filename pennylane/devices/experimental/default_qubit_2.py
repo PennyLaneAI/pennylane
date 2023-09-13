@@ -59,6 +59,9 @@ class DefaultQubit2(Device):
             using a pool of at most ``max_workers`` processes. If ``max_workers`` is ``None``,
             only the current process executes tapes. If you experience any
             issue, say using JAX, TensorFlow, Torch, try setting ``max_workers`` to ``None``.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is the key to the JAX
+            pseudo random number generator. If None, a random key will be generated. Only for simulation
+            using JAX.
 
     **Example:**
 
@@ -144,11 +147,15 @@ class DefaultQubit2(Device):
         """The name of the device."""
         return "default.qubit.2"
 
-    def __init__(self, wires=None, shots=None, seed="global", max_workers=None) -> None:
+    # pylint:disable = too-many-arguments
+    def __init__(
+        self, wires=None, shots=None, seed="global", max_workers=None, prng_key=None
+    ) -> None:
         super().__init__(wires=wires, shots=shots)
         self._max_workers = max_workers
         seed = np.random.randint(0, high=10000000) if seed == "global" else seed
         self._rng = np.random.default_rng(seed)
+        self._prng_key = prng_key
         self._debugger = None
 
     def supports_derivatives(
@@ -245,9 +252,22 @@ class DefaultQubit2(Device):
             if execution_config.gradient_method in {"backprop", None}
             else None
         )
+
+        prng_key = self._prng_key
+        # if interface != "jax" and prng_key:
+        #     warnings.warn(f"Device has a JAX PRNG key specified, but the interface is {interface}. "
+        #                   f"The PRNG key will not be used.")
+        #     prng_key = None
+
         if max_workers is None:
             results = tuple(
-                simulate(c, rng=self._rng, debugger=self._debugger, interface=interface)
+                simulate(
+                    c,
+                    rng=self._rng,
+                    prng_key=prng_key,
+                    debugger=self._debugger,
+                    interface=interface,
+                )
                 for c in circuits
             )
         else:
@@ -255,7 +275,9 @@ class DefaultQubit2(Device):
             seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
             _wrap_simulate = partial(simulate, debugger=None, interface=interface)
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-                exec_map = executor.map(_wrap_simulate, vanilla_circuits, seeds)
+                exec_map = executor.map(
+                    _wrap_simulate, vanilla_circuits, seeds, [prng_key] * len(vanilla_circuits)
+                )  # does this not need interface and debugger for this part?
                 results = tuple(exec_map)
 
             # reset _rng to mimic serial behavior
@@ -314,14 +336,24 @@ class DefaultQubit2(Device):
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             results = tuple(
-                _adjoint_jac_wrapper(c, rng=self._rng, debugger=self._debugger) for c in circuits
+                _adjoint_jac_wrapper(
+                    c, rng=self._rng, debugger=self._debugger, prng_key=self._prng_key
+                )
+                for c in circuits
             )
         else:
             vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
             seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
 
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-                results = tuple(executor.map(_adjoint_jac_wrapper, vanilla_circuits, seeds))
+                results = tuple(
+                    executor.map(
+                        _adjoint_jac_wrapper,
+                        vanilla_circuits,
+                        seeds,
+                        [self._prng_key] * len(vanilla_circuits),
+                    )
+                )
 
             # reset _rng to mimic serial behavior
             self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
@@ -400,7 +432,9 @@ class DefaultQubit2(Device):
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             results = tuple(
-                _adjoint_jvp_wrapper(c, t, rng=self._rng, debugger=self._debugger)
+                _adjoint_jvp_wrapper(
+                    c, t, rng=self._rng, debugger=self._debugger, prng_key=self._prng_key
+                )
                 for c, t in zip(circuits, tangents)
             )
         else:
@@ -409,7 +443,13 @@ class DefaultQubit2(Device):
 
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
                 results = tuple(
-                    executor.map(_adjoint_jvp_wrapper, vanilla_circuits, tangents, seeds)
+                    executor.map(
+                        _adjoint_jvp_wrapper,
+                        vanilla_circuits,
+                        tangents,
+                        seeds,
+                        [self._prng_key] * len(vanilla_circuits),
+                    )
                 )
 
             # reset _rng to mimic serial behavior
@@ -489,7 +529,9 @@ class DefaultQubit2(Device):
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             results = tuple(
-                _adjoint_vjp_wrapper(c, t, rng=self._rng, debugger=self._debugger)
+                _adjoint_vjp_wrapper(
+                    c, t, rng=self._rng, prng_key=self._prng_key, debugger=self._debugger
+                )
                 for c, t in zip(circuits, cotangents)
             )
         else:
@@ -498,7 +540,13 @@ class DefaultQubit2(Device):
 
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
                 results = tuple(
-                    executor.map(_adjoint_vjp_wrapper, vanilla_circuits, cotangents, seeds)
+                    executor.map(
+                        _adjoint_vjp_wrapper,
+                        vanilla_circuits,
+                        cotangents,
+                        seeds,
+                        [self._prng_key] * len(vanilla_circuits),
+                    )
                 )
 
             # reset _rng to mimic serial behavior
@@ -508,22 +556,22 @@ class DefaultQubit2(Device):
         return (results[0], vjps[0]) if is_single_circuit else (results, vjps)
 
 
-def _adjoint_jac_wrapper(c, rng=None, debugger=None):
+def _adjoint_jac_wrapper(c, rng=None, prng_key=None, debugger=None):
     state, is_state_batched = get_final_state(c, debugger=debugger)
     jac = adjoint_jacobian(c, state=state)
-    res = measure_final_state(c, state, is_state_batched, rng=rng)
+    res = measure_final_state(c, state, is_state_batched, rng=rng, prng_key=prng_key)
     return res, jac
 
 
-def _adjoint_jvp_wrapper(c, t, rng=None, debugger=None):
+def _adjoint_jvp_wrapper(c, t, rng=None, prng_key=None, debugger=None):
     state, is_state_batched = get_final_state(c, debugger=debugger)
     jvp = adjoint_jvp(c, t, state=state)
-    res = measure_final_state(c, state, is_state_batched, rng=rng)
+    res = measure_final_state(c, state, is_state_batched, rng=rng, prng_key=prng_key)
     return res, jvp
 
 
-def _adjoint_vjp_wrapper(c, t, rng=None, debugger=None):
+def _adjoint_vjp_wrapper(c, t, rng=None, prng_key=None, debugger=None):
     state, is_state_batched = get_final_state(c, debugger=debugger)
     vjp = adjoint_vjp(c, t, state=state)
-    res = measure_final_state(c, state, is_state_batched, rng=rng)
+    res = measure_final_state(c, state, is_state_batched, rng=rng, prng_key=prng_key)
     return res, vjp
