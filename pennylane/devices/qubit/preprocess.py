@@ -17,12 +17,12 @@ that they are supported for execution by a device."""
 # pylint: disable=protected-access
 from dataclasses import replace
 import os
-from typing import Generator, Callable, Tuple, Union
+from typing import Generator, Callable, Tuple, Union, Sequence
+from copy import copy
 import warnings
-from functools import partial
 
 import pennylane as qml
-
+from pennylane import Snapshot
 from pennylane.operation import Tensor, StatePrepBase
 from pennylane.measurements import (
     MidMeasureMP,
@@ -34,6 +34,8 @@ from pennylane.measurements import (
 )
 from pennylane.typing import ResultBatch, Result
 from pennylane import DeviceError
+from pennylane.transforms.core import transform, TransformProgram
+from pennylane.wires import WireError
 
 from ..experimental import ExecutionConfig, DefaultExecutionConfig
 
@@ -57,6 +59,7 @@ _observables = {
     "Exp",
     "Evolution",
 }
+
 
 ### UTILITY FUNCTIONS FOR EXPANDING UNSUPPORTED OPERATIONS ###
 
@@ -101,7 +104,53 @@ def _operator_decomposition_gen(
 #######################
 
 
-def validate_multiprocessing_workers(max_workers):
+@transform
+def validate_device_wires(
+    tape: qml.tape.QuantumTape, device
+) -> (Sequence[qml.tape.QuantumTape], Callable):
+    """Validates the device wires.
+
+    Args:
+        tape (QuantumTape): a quantum circuit.
+        device (pennylane.devices.experimental.Device): The device to be checked.
+
+    Returns:
+        pennylane.QNode or qfunc or Tuple[List[.QuantumTape], Callable]: If a QNode is passed,
+        it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of
+        quantum tapes to be evaluated, and a function to be applied to these
+        tape executions.
+    """
+    if device.wires:
+        if extra_wires := set(tape.wires) - set(device.wires):
+            raise WireError(
+                f"Cannot run circuit(s) on {device.name} as they contain wires "
+                f"not found on the device: {extra_wires}"
+            )
+        measurements = tape.measurements.copy()
+        modified = False
+        for m_idx, mp in enumerate(measurements):
+            if not mp.obs and not mp.wires:
+                modified = True
+                new_mp = copy(mp)
+                new_mp._wires = device.wires  # pylint:disable=protected-access
+                measurements[m_idx] = new_mp
+        if modified:
+            tape = type(tape)(tape.operations, measurements, shots=tape.shots)
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [tape], null_postprocessing
+
+
+@transform
+def validate_multiprocessing_workers(
+    tape: qml.tape.QuantumTape, max_workers: int, device
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Validates the number of workers for multiprocessing.
 
     Checks that the CPU is not oversubscribed and warns user if it is,
@@ -109,38 +158,65 @@ def validate_multiprocessing_workers(max_workers):
     threads per worker.
 
     Args:
+        tape (QuantumTape): a quantum circuit.
         max_workers (int): Maximal number of multiprocessing workers
+        device (pennylane.devices.experimental.Device): The device to be checked.
+
+    Returns:
+        pennylane.QNode or qfunc or Tuple[List[.QuantumTape], Callable]: If a QNode is passed,
+        it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of
+        quantum tapes to be evaluated, and a function to be applied to these
+        tape executions.
     """
-    if max_workers is None:
-        return
-    threads_per_proc = os.cpu_count()  # all threads by default
-    varname = "OMP_NUM_THREADS"
-    varnames = ["MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS"]
-    for var in varnames:
-        if os.getenv(var):  # pragma: no cover
-            varname = var
-            threads_per_proc = int(os.getenv(var))
-            break
-    num_threads = threads_per_proc * max_workers
-    num_cpu = os.cpu_count()
-    num_threads_suggest = max(1, os.cpu_count() // max_workers)
-    num_workers_suggest = max(1, os.cpu_count() // threads_per_proc)
-    if num_threads > num_cpu:
-        warnings.warn(
-            f"""The device requested {num_threads} threads ({max_workers} processes
-            times {threads_per_proc} threads per process), but the processor only has
-            {num_cpu} logical cores. The processor is likely oversubscribed, which may
-            lead to performance deterioration. Consider decreasing the number of processes,
-            setting the device or execution config argument `max_workers={num_workers_suggest}`
-            for example, or decreasing the number of threads per process by setting the
-            environment variable `{varname}={num_threads_suggest}`.""",
-            UserWarning,
-        )
+    if max_workers is not None:
+        threads_per_proc = os.cpu_count()  # all threads by default
+        varname = "OMP_NUM_THREADS"
+        varnames = ["MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS"]
+        for var in varnames:
+            if os.getenv(var):  # pragma: no cover
+                varname = var
+                threads_per_proc = int(os.getenv(var))
+                break
+        num_threads = threads_per_proc * max_workers
+        num_cpu = os.cpu_count()
+        num_threads_suggest = max(1, os.cpu_count() // max_workers)
+        num_workers_suggest = max(1, os.cpu_count() // threads_per_proc)
+        if num_threads > num_cpu:
+            warnings.warn(
+                f"""The device requested {num_threads} threads ({max_workers} processes
+                times {threads_per_proc} threads per process), but the processor only has
+                {num_cpu} logical cores. The processor is likely oversubscribed, which may
+                lead to performance deterioration. Consider decreasing the number of processes,
+                setting the device or execution config argument `max_workers={num_workers_suggest}`
+                for example, or decreasing the number of threads per process by setting the
+                environment variable `{varname}={num_threads_suggest}`.""",
+                UserWarning,
+            )
+
+        if device._debugger and device._debugger.active:
+            raise DeviceError("Debugging with ``Snapshots`` is not available with multiprocessing.")
+
+        if any(isinstance(op, Snapshot) for op in tape.operations):
+            raise RuntimeError(
+                """ProcessPoolExecutor cannot execute a QuantumScript with
+                a ``Snapshot`` operation. Change the value of ``max_workers``
+                to ``None`` or execute the QuantumScript separately."""
+            )
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [tape], null_postprocessing
 
 
+@transform
 def validate_and_expand_adjoint(
-    circuit: qml.tape.QuantumTape,
-) -> Union[qml.tape.QuantumTape, DeviceError]:  # pylint: disable=protected-access
+    tape: qml.tape.QuantumTape,
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Function for validating that the operations and observables present in the input circuit
     are valid for adjoint differentiation.
 
@@ -148,14 +224,17 @@ def validate_and_expand_adjoint(
         circuit(.QuantumTape): the tape to validate
 
     Returns:
-        Union[.QuantumTape, .DeviceError]: The expanded tape, such that it is supported by adjoint differentiation.
-        If the circuit is invalid for adjoint differentiation, a DeviceError with an explanation is returned instead.
+        pennylane.QNode or qfunc or Tuple[List[.QuantumTape], Callable]: If a QNode is passed,
+        it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of
+        quantum tapes to be evaluated, and a function to be applied to these
+        tape executions.
     """
 
     try:
         new_ops = [
             final_op
-            for op in circuit.operations[circuit.num_preps :]
+            for op in tape.operations[tape.num_preps :]
             for final_op in _operator_decomposition_gen(op, _accepted_adjoint_operator)
         ]
     except RecursionError as e:
@@ -164,11 +243,11 @@ def validate_and_expand_adjoint(
             "Operator decomposition may have entered an infinite loop."
         ) from e
 
-    for k in circuit.trainable_params:
-        if hasattr(circuit._par_info[k]["op"], "return_type"):
+    for k in tape.trainable_params:
+        if hasattr(tape._par_info[k]["op"], "return_type"):
             warnings.warn(
                 "Differentiating with respect to the input parameters of "
-                f"{circuit._par_info[k]['op'].name} is not supported with the "
+                f"{tape._par_info[k]['op'].name} is not supported with the "
                 "adjoint differentiation method. Gradients are computed "
                 "only with regards to the trainable parameters of the circuit.\n\n Mark "
                 "the parameters of the measured observables as non-trainable "
@@ -178,27 +257,36 @@ def validate_and_expand_adjoint(
 
     # Check validity of measurements
     measurements = []
-    for m in circuit.measurements:
+    for m in tape.measurements:
         if not isinstance(m, ExpectationMP):
-            return DeviceError(
+            raise DeviceError(
                 "Adjoint differentiation method does not support "
                 f"measurement {m.__class__.__name__}."
             )
 
         if not m.obs.has_matrix:
-            return DeviceError(
+            raise DeviceError(
                 f"Adjoint differentiation method does not support observable {m.obs.name}."
             )
 
         measurements.append(m)
 
-    new_ops = circuit.operations[: circuit.num_preps] + new_ops
-    return qml.tape.QuantumScript(new_ops, measurements, shots=circuit.shots)
+    new_ops = tape.operations[: tape.num_preps] + new_ops
+    new_tape = qml.tape.QuantumScript(new_ops, measurements, shots=tape.shots)
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [new_tape], null_postprocessing
 
 
+@transform
 def validate_measurements(
-    circuit: qml.tape.QuantumTape, execution_config: ExecutionConfig = DefaultExecutionConfig
-):
+    tape: qml.tape.QuantumTape, execution_config: ExecutionConfig = DefaultExecutionConfig
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Check that the circuit contains a valid set of measurements. A valid
     set of measurements is defined as:
 
@@ -210,14 +298,22 @@ def validate_measurements(
     If the circuit has an invalid set of measurements, then an error is raised.
 
     Args:
-        circuit (.QuantumTape): the circuit to validate
+        tape (.QuantumTape): the circuit to validate
         execution_config (.ExecutionConfig): execution configuration with configurable
             options for the execution.
+
+    Returns:
+        pennylane.QNode or qfunc or Tuple[List[.QuantumTape], Callable]: If a QNode is passed,
+        it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of
+        quantum tapes to be evaluated, and a function to be applied to these
+        tape executions.
     """
-    if not circuit.shots:
-        for m in circuit.measurements:
+    if not tape.shots:
+        for m in tape.measurements:
             if not isinstance(m, StateMeasurement):
                 raise DeviceError(f"Analytic circuits must only contain StateMeasurements; got {m}")
+
     else:
         # check if an analytic diff method is used with finite shots
         if execution_config.gradient_method in ["adjoint", "backprop"]:
@@ -226,14 +322,23 @@ def validate_measurements(
                 f"gradient methods; got {execution_config.gradient_method}"
             )
 
-        for m in circuit.measurements:
+        for m in tape.measurements:
             if not isinstance(m, (SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP)):
                 raise DeviceError(
                     f"Circuits with finite shots must only contain SampleMeasurements, ClassicalShadowMP, or ShadowExpvalMP; got {m}"
                 )
 
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
 
-def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
+    return [tape], null_postprocessing
+
+
+@transform
+def expand_fn(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Method for expanding or decomposing an input circuit.
 
     This method expands the tape if:
@@ -242,24 +347,27 @@ def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
     - any operations are not supported on the device.
 
     Args:
-        circuit (.QuantumTape): the circuit to expand.
+        tape (.QuantumTape): the circuit to expand.
 
     Returns:
-        .QuantumTape: The expanded/decomposed circuit, such that the device
-        will natively support all operations.
+        pennylane.QNode or qfunc or Tuple[List[.QuantumTape], Callable]: If a QNode is passed,
+        it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of
+        quantum tapes to be evaluated, and a function to be applied to these
+        tape executions.
     """
+    if any(isinstance(o, MidMeasureMP) for o in tape.operations):
+        tapes, _ = qml.defer_measurements(tape)
+        tape = tapes[0]
 
-    if any(isinstance(o, MidMeasureMP) for o in circuit.operations):
-        circuit = qml.defer_measurements(circuit)
-
-    if not all(_accepted_operator(op) for op in circuit.operations):
+    if not all(_accepted_operator(op) for op in tape.operations):
         try:
             # don't decompose initial operations if its StatePrepBase
-            prep_op = [circuit[0]] if isinstance(circuit[0], StatePrepBase) else []
+            prep_op = [tape[0]] if isinstance(tape[0], StatePrepBase) else []
 
             new_ops = [
                 final_op
-                for op in circuit.operations[bool(prep_op) :]
+                for op in tape.operations[bool(prep_op) :]
                 for final_op in _operator_decomposition_gen(op, _accepted_operator)
             ]
         except RecursionError as e:
@@ -267,63 +375,22 @@ def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
                 "Reached recursion limit trying to decompose operations. "
                 "Operator decomposition may have entered an infinite loop."
             ) from e
-        circuit = qml.tape.QuantumScript(
-            prep_op + new_ops, circuit.measurements, shots=circuit.shots
-        )
+        tape = qml.tape.QuantumScript(prep_op + new_ops, tape.measurements, shots=tape.shots)
 
-    for observable in circuit.observables:
+    for observable in tape.observables:
         if isinstance(observable, Tensor):
             if any(o.name not in _observables for o in observable.obs):
                 raise DeviceError(f"Observable {observable} not supported on DefaultQubit2")
         elif observable.name not in _observables:
             raise DeviceError(f"Observable {observable} not supported on DefaultQubit2")
 
-    return circuit
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
 
-
-def batch_transform(
-    circuit: qml.tape.QuantumScript, execution_config: ExecutionConfig = DefaultExecutionConfig
-) -> Tuple[Tuple[qml.tape.QuantumScript], PostprocessingFn]:
-    """Apply a differentiable batch transform for preprocessing a circuit
-    prior to execution.
-
-    By default, this method contains logic for generating multiple
-    circuits, one per term, of a circuit that terminates in ``expval(Sum)``.
-
-    .. warning::
-
-        This method will be tracked by autodifferentiation libraries,
-        such as Autograd, JAX, TensorFlow, and Torch. Please make sure
-        to use ``qml.math`` for autodiff-agnostic tensor processing
-        if required.
-
-    Args:
-        circuit (.QuantumTape): the circuit to preprocess
-        execution_config (.ExecutionConfig): execution configuration with configurable
-            options for the execution.
-
-    Returns:
-        tuple[Sequence[.QuantumTape], callable]: Returns a tuple containing
-        the sequence of circuits to be executed, and a post-processing function
-        to be applied to the list of evaluated circuit results.
-    """
-    # Check whether the circuit was broadcasted or if the diff method is anything other than adjoint
-    if circuit.batch_size is None or execution_config.gradient_method != "adjoint":
-        # If the circuit wasn't broadcasted, or if built-in PennyLane broadcasting
-        # can be used, then no action required
-        circuits = [circuit]
-
-        def batch_fn(res: ResultBatch) -> Result:
-            """A post-processing function to convert the results of a batch of
-            executions into the result of a single executiion."""
-            return res[0]
-
-        return circuits, batch_fn
-
-    # Expand each of the broadcasted circuits
-    tapes, batch_fn = qml.transforms.broadcast_expand(circuit)
-
-    return tapes, batch_fn
+    return [tape], null_postprocessing
 
 
 def _update_config(config: ExecutionConfig) -> ExecutionConfig:
@@ -350,7 +417,6 @@ def _update_config(config: ExecutionConfig) -> ExecutionConfig:
 
 
 def preprocess(
-    circuits: Tuple[qml.tape.QuantumScript],
     execution_config: ExecutionConfig = DefaultExecutionConfig,
 ) -> Tuple[Tuple[qml.tape.QuantumScript], PostprocessingFn, ExecutionConfig]:
     """Preprocess a batch of :class:`~.QuantumTape` objects to make them ready for execution.
@@ -359,25 +425,25 @@ def preprocess(
     them to ensure all operators and measurements are supported by the execution device.
 
     Args:
-        circuits (Sequence[QuantumTape]): Batch of tapes to be processed.
         execution_config (ExecutionConfig): execution configuration with configurable
             options for the execution.
 
     Returns:
-        Tuple[QuantumTape], Callable, ExecutionConfig: QuantumTapes that the device can natively execute,
-        a postprocessing function to be called after execution, and a configuration with originally unset specifications filled in.
+        TransformProgram, ExecutionConfig: A transform program and a configuration with originally unset specifications
+        filled in.
     """
-    for c in circuits:
-        validate_measurements(c, execution_config)
+    transform_program = TransformProgram()
 
-    circuits = tuple(expand_fn(c) for c in circuits)
+    # Validate measurement
+    transform_program.add_transform(validate_measurements, execution_config)
+
+    # Circuit expand
+    transform_program.add_transform(expand_fn)
+
     if execution_config.gradient_method == "adjoint":
-        circuits = tuple(validate_and_expand_adjoint(c) for c in circuits)
-        for circuit_or_error in circuits:
-            if isinstance(circuit_or_error, DeviceError):
-                raise circuit_or_error  # it's an error
+        # Adjoint expand
+        transform_program.add_transform(validate_and_expand_adjoint)
+        ### Broadcast expand
+        transform_program.add_transform(qml.transforms.broadcast_expand)
 
-    transform = partial(batch_transform, execution_config=execution_config)
-    circuits, batch_fn = qml.transforms.map_batch_transform(transform, circuits)
-
-    return circuits, batch_fn, _update_config(execution_config)
+    return transform_program, _update_config(execution_config)
