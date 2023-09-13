@@ -244,7 +244,8 @@ def _draw_qnode(
             qnode.device, qml.devices.experimental.Device
         ):
             qnode.construct(args, kwargs)
-            tapes = qnode.device.preprocess(qnode.tape)
+            program, _ = qnode.device.preprocess()
+            tapes = program([qnode.tape])
             _wire_order = wire_order or qnode.tape.wires
         else:
             original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
@@ -546,7 +547,9 @@ def _draw_mpl_qnode(
             qnode.device, qml.devices.experimental.Device
         ):
             qnode.construct(args, kwargs)
-            tape = qnode.device.preprocess(qnode.tape)[0][0]
+            program, _ = qnode.device.preprocess()
+            tapes, _ = program([qnode.tape])
+            tape = tapes[0]
             _wire_order = wire_order or qnode.tape.wires
         else:
             original_expansion_strategy = getattr(qnode, "expansion_strategy", None)

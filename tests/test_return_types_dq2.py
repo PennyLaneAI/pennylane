@@ -1250,7 +1250,7 @@ class TestDeviceNewUnits:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         res = qml.execute(tapes=[tape], device=dev, gradient_fn=None)
-        assert res == [0]
+        assert res == (0,)
 
     def test_custom_wire_labels_error(self):
         """Tests that an error is raised when mutual information is measured
@@ -1263,4 +1263,4 @@ class TestDeviceNewUnits:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         res = qml.execute(tapes=[tape], device=dev, gradient_fn=None)
-        assert res == [0]
+        assert res == (0,)
