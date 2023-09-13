@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* All quantum functions transforms are update to the new transform program system.
+ [(#4439)](https://github.com/PennyLaneAI/pennylane/pull/4439)
+
 * All batch transforms are updated to the new transform program system.
   [(#4440)](https://github.com/PennyLaneAI/pennylane/pull/4440)
 
@@ -63,6 +66,10 @@
 
 * `DefaultQubit2` now works as expected with measurement processes that don't specify wires.
   [(#4580)](https://github.com/PennyLaneAI/pennylane/pull/4580)
+
+* `AmplitudeEmbedding` now inherits from `StatePrep`, allowing for it to not be decomposed
+  when at the beginning of a circuit, thus behaving like `StatePrep`.
+  [(#4583)](https://github.com/PennyLaneAI/pennylane/pull/4583)
 
 <h3>Breaking changes 💔</h3>
 
