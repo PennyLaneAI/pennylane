@@ -15,8 +15,10 @@
 This module contains the qml.generator function.
 """
 # pylint: disable=protected-access
+from functools import singledispatch
 import inspect
 import warnings
+from collections.abc import Callable
 
 import numpy as np
 
@@ -101,7 +103,8 @@ def _generator_backcompatibility(op):
     raise qml.operation.GeneratorUndefinedError
 
 
-def generator(op, format="prefactor"):
+@singledispatch
+def generator(op: qml.operation.Operator, format="prefactor"):
     r"""Returns the generator of an operation.
 
     Args:
@@ -167,11 +170,43 @@ def generator(op, format="prefactor"):
     -0.5*(PauliX(wires=[0]))
     """
 
+    if op.num_params != 1:
+        raise ValueError(f"Operation {op.name} is not written in terms of a single parameter")
+
+    try:
+        gen = op.generator()
+    except TypeError:
+        # For backwards compatibility with PennyLane
+        # versions <=0.22, assume op.generator is a property
+        gen = _generator_backcompatibility(op)
+
+    if not gen.is_hermitian:
+        raise qml.QuantumFunctionError(
+            f"Generator {gen.name} of operation {op.name} is not hermitian"
+        )
+
+    if format == "prefactor":
+        return _generator_prefactor(gen)
+
+    if format == "hamiltonian":
+        return _generator_hamiltonian(gen, op)
+
+    if format == "arithmetic":
+        h = _generator_hamiltonian(gen, op)
+        return qml.dot(h.coeffs, h.ops)
+
+    if format == "observable":
+        return gen
+
+    raise ValueError(
+        "format must be one of ('prefactor', 'hamiltonian', 'observable', 'arithmetic')"
+    )
+
+
+@generator.register
+def _generator_callable(op: Callable, format="prefactor"):
     def processing_fn(*args, **kwargs):
-        if callable(op):
-            gen_op = op(*args, **kwargs)
-        else:
-            gen_op = op
+        gen_op = op(*args, **kwargs)
 
         if gen_op.num_params != 1:
             raise ValueError(
@@ -207,7 +242,4 @@ def generator(op, format="prefactor"):
             "format must be one of ('prefactor', 'hamiltonian', 'observable', 'arithmetic')"
         )
 
-    if callable(op):
-        return processing_fn
-
-    return processing_fn()
+    return processing_fn

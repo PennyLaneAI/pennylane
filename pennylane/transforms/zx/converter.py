@@ -17,9 +17,11 @@
 from functools import partial, singledispatch
 from typing import Sequence, Callable
 from collections import OrderedDict
+from collections.abc import Callable as class_Callable
 import numpy as np
 import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.transforms.op_transforms import OperationTransformError
 from pennylane.transforms.core import transform
 from pennylane.wires import Wires
 
@@ -246,15 +248,31 @@ def to_zx(tape, expand_measurements=False):  # pylint: disable=unused-argument
         Copyright (C) 2018 - Aleks Kissinger and John van de Wetering
     """
     # If it is a simple operation just transform it to a tape
-    if isinstance(tape, qml.operation.Operator):
-        return _to_zx(QuantumScript([tape]))
+    if not isinstance(tape, qml.operation.Operator):
+        raise OperationTransformError("Input is not an Operator, tape, QNode, or quantum function")
 
-    return _to_zx(tape, expand_measurements=expand_measurements)
+    return to_zx(QuantumScript([tape]))
+
+
+@to_zx.register
+def _to_zx_tape(tape: qml.tape.QuantumScript, expand_measurements=False):
+    return _to_zx_transform(tape, expand_measurements=expand_measurements)
+
+
+@to_zx.register
+def _to_zx_qnode(tape: qml.QNode, expand_measurements=False):
+    return _to_zx_transform(tape, expand_measurements=expand_measurements)
+
+
+@to_zx.register
+def _to_zx_qfunc(tape: class_Callable, expand_measurements=False):
+    return _to_zx_transform(tape, expand_measurements=expand_measurements)
 
 
 @partial(transform, is_informative=True)
-@to_zx.register
-def _to_zx(tape: QuantumTape, expand_measurements=False) -> (Sequence[QuantumTape], Callable):
+def _to_zx_transform(
+    tape: QuantumTape, expand_measurements=False
+) -> (Sequence[QuantumTape], Callable):
     """Private function to convert a PennyLane tape to a `PyZX graph <https://pyzx.readthedocs.io/en/latest/>`_ ."""
     # Avoid to make PyZX a requirement for PennyLane.
     try:
