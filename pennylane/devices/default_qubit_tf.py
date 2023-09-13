@@ -36,7 +36,7 @@ except ImportError as e:  # pragma: no cover
 
 from pennylane.math.single_dispatch import _ndim_tf
 from . import DefaultQubitLegacy
-from .default_qubit import tolerance
+from .default_qubit_legacy import tolerance
 
 
 class DefaultQubitTF(DefaultQubitLegacy):

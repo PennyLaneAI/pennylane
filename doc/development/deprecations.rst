@@ -44,7 +44,7 @@ Pending deprecations
   - Behaviour will change in v0.33
 
 * The public methods of ``DefaultQubit`` are pending changes to
-  follow the new device API, as used in ``DefaultQubit2``.
+  follow the new device API.
 
   We will be switching to the new device interface in a coming release.
   In this new interface, simulation implementation details

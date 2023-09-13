@@ -26,7 +26,7 @@ import pytest
 import pennylane as qml
 from pennylane import DeviceError
 from pennylane import numpy as np
-from pennylane.devices.default_qubit import DefaultQubitLegacy, _get_slice
+from pennylane.devices.default_qubit_legacy import DefaultQubitLegacy, _get_slice
 from pennylane.pulse import ParametrizedHamiltonian
 from pennylane.wires import WireError, Wires
 

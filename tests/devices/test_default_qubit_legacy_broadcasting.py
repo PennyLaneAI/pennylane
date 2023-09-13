@@ -53,7 +53,7 @@ from gate_data import (
 
 import pennylane as qml
 from pennylane import numpy as np, DeviceError
-from pennylane.devices.default_qubit import DefaultQubitLegacy
+from pennylane.devices.default_qubit_legacy import DefaultQubitLegacy
 
 THETA = np.linspace(0.11, 1, 3)
 PHI = np.linspace(0.32, 1, 3)
