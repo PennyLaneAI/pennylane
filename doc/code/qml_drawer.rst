@@ -42,6 +42,11 @@ The following images are generated via the code:
     qml.drawer.use_style(style)
     fig, ax = qml.draw_mpl(circuit)(1.2345, 1.2345)
 
+Note that the shown ``pennylane`` style can be replicated exactly by having the
+Quicksand Bold font installed and refreshing the Matplotlib font cache (by
+deleting the fontlist file in ``.matplotlib``). If this font is not available,
+the drawer will fall back on a default font.
+
 Currently Available Styles
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. |bws| image:: ../_static/style/black_white_style.png
