@@ -565,7 +565,8 @@ class TestMeasurementTransform:
 
         class CountTapesMP(MeasurementTransform, SampleMeasurement):
             def process(self, tape, device):
-                tapes, _, _ = device.preprocess(tape)
+                program, _ = device.preprocess()
+                tapes, _ = program([tape])
                 return len(tapes)
 
             def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):

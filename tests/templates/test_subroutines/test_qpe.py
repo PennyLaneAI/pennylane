@@ -99,7 +99,7 @@ class TestDecomposition:
                 qml.probs(estimation_wires)
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            tapes, _, _ = dev.preprocess(tape)
+            tapes, _ = dev.preprocess()[0]([tape])
             assert len(tapes) == 1
 
             res = dev.execute(tapes)[0].flatten()
@@ -151,7 +151,7 @@ class TestDecomposition:
                 qml.probs(estimation_wires)
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            tapes, _, _ = dev.preprocess(tape)
+            tapes, _ = dev.preprocess()[0]([tape])
             assert len(tapes) == 1
             res = dev.execute(tapes)[0].flatten()
 
@@ -197,7 +197,7 @@ class TestDecomposition:
                 prep=[qml.StatePrep(eig_vec, wires=target_wires)],
             )
 
-            tapes, _, _ = dev.preprocess(tape)
+            tapes, _ = dev.preprocess()[0]([tape])
             res = dev.execute(tapes)[0].flatten()
             assert len(tapes) == 1
 
@@ -240,7 +240,7 @@ class TestDecomposition:
                 prep=[qml.StatePrep(eig_vec, wires=target_wires)],
             )
 
-            tapes, _, _ = dev.preprocess(tape)
+            tapes, _ = dev.preprocess()[0]([tape])
             assert len(tapes) == 1
             res = dev.execute(tapes)[0].flatten()
 

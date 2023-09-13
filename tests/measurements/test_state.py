@@ -307,7 +307,8 @@ class TestState:
             return state()
 
         state_val = func()
-        scripts, _, _ = dev.preprocess(func.tape)
+        program, _ = dev.preprocess()
+        scripts, _ = program([func.tape])
         assert len(scripts) == 1
         expected_state, _ = qml.devices.qubit.get_final_state(scripts[0])
         assert np.allclose(state_val, expected_state.flatten())

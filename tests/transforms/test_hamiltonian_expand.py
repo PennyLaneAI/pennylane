@@ -405,7 +405,7 @@ class TestSumExpand:
     @pytest.mark.parametrize(("qscript", "output"), zip(SUM_QSCRIPTS, SUM_OUTPUTS))
     def test_sums(self, qscript, output):
         """Tests that the sum_expand transform returns the correct value"""
-        processed, _, _ = dev.preprocess(qscript)
+        processed, _ = dev.preprocess()[0]([qscript])
         assert len(processed) == 1
         qscript = processed[0]
         tapes, fn = sum_expand(qscript)
@@ -418,7 +418,7 @@ class TestSumExpand:
     def test_sums_no_grouping(self, qscript, output):
         """Tests that the sum_expand transform returns the correct value
         if we switch grouping off"""
-        processed, _, _ = dev.preprocess(qscript)
+        processed, _ = dev.preprocess()[0]([qscript])
         assert len(processed) == 1
         qscript = processed[0]
         tapes, fn = sum_expand(qscript, group=False)
