@@ -19,9 +19,8 @@ import pytest
 
 import pennylane as qml
 
-# TODO: add back lightning.qubit here
 test_wires = [2, 3, 4]
-devices = ["default.qubit", "default.mixed", "default.qutrit"]
+devices = ["default.qubit", "lightning.qubit", "default.mixed", "default.qutrit"]
 
 
 def qubit_ansatz(x):
@@ -990,8 +989,7 @@ class TestIntegrationSingleReturnJax:
 
 multi_return_wires = [([0], [1]), ([1], [0]), ([0], [0]), ([1], [1])]
 
-# TODO: add back lightning.qubit here
-devices = ["default.qubit", "default.mixed", "default.qutrit"]
+devices = ["default.qubit", "lightning.qubit", "default.mixed", "default.qutrit"]
 
 
 class TestIntegrationMultipleReturns:
