@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* All quantum functions transforms are update to the new transform program system.
+ [(#4439)](https://github.com/PennyLaneAI/pennylane/pull/4439)
+
 * All batch transforms are updated to the new transform program system.
   [(#4440)](https://github.com/PennyLaneAI/pennylane/pull/4440)
 
@@ -184,6 +187,9 @@
 * `tf.function` no longer breaks `ProbabilityMP.process_state` which is needed by new devices.
   [(#4470)](https://github.com/PennyLaneAI/pennylane/pull/4470)
 
+* Fix mocking in the unit tests for `qml.qchem.mol_data`.
+  [(#4591)](https://github.com/PennyLaneAI/pennylane/pull/4591)
+
 * Fix `ProbabilityMP.process_state` so it allows for proper Autograph compilation. Without this,
   decorating a QNode that returns an `expval` with `tf.function` would fail when computing the
   expectation.
@@ -193,6 +199,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Utkarsh Azad
 Soran Jahangiri,
 Lillian M. A. Frederiksen,
 Vincent Michaud-Rioux,

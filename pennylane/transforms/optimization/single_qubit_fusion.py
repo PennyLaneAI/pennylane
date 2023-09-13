@@ -13,16 +13,21 @@
 # limitations under the License.
 """Transform for fusing sequences of single-qubit gates."""
 # pylint: disable=too-many-branches
-from pennylane import apply
-from pennylane.transforms import qfunc_transform
+from typing import Sequence, Callable
+
+from pennylane.tape import QuantumTape
+from pennylane.transforms.core import transform
 from pennylane.ops.qubit import Rot
 from pennylane.math import allclose, stack, is_abstract
+from pennylane.queuing import QueuingManager
 
 from .optimization_utils import find_next_gate, fuse_rot_angles
 
 
-@qfunc_transform
-def single_qubit_fusion(tape, atol=1e-8, exclude_gates=None):
+@transform
+def single_qubit_fusion(
+    tape: QuantumTape, atol=1e-8, exclude_gates=None
+) -> (Sequence[QuantumTape], Callable):
     r"""Quantum function transform to fuse together groups of single-qubit
     operations into a general single-qubit unitary operation (:class:`~.Rot`).
 
@@ -31,7 +36,7 @@ def single_qubit_fusion(tape, atol=1e-8, exclude_gates=None):
     (on the same qubit) with that property defined will be fused into one ``Rot``.
 
     Args:
-        qfunc (function): A quantum function.
+        tape (QuantumTape): A quantum tape.
         atol (float): An absolute tolerance for which to apply a rotation after
             fusion. After fusion of gates, if the fused angles :math:`\theta` are such that
             :math:`|\theta|\leq \text{atol}`, no rotation gate will be applied.
@@ -40,7 +45,11 @@ def single_qubit_fusion(tape, atol=1e-8, exclude_gates=None):
             be fused will be fused.
 
     Returns:
-        function: the transformed quantum function
+        pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
+        it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of
+        quantum tapes to be evaluated, and a function to be applied to these
+        tape executions.
 
     **Example**
 
@@ -66,7 +75,7 @@ def single_qubit_fusion(tape, atol=1e-8, exclude_gates=None):
     Full single-qubit gate fusion allows us to collapse this entire sequence into a
     single ``qml.Rot`` rotation gate.
 
-    >>> optimized_qfunc = single_qubit_fusion()(qfunc)
+    >>> optimized_qfunc = single_qubit_fusion(qfunc)
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
     >>> print(qml.draw(optimized_qnode)([0.1, 0.2, 0.3], [0.4, 0.5, 0.6]))
     0: ──Rot(3.57, 2.09, 2.05)──┤ ⟨X⟩
@@ -74,7 +83,7 @@ def single_qubit_fusion(tape, atol=1e-8, exclude_gates=None):
     """
     # Make a working copy of the list to traverse
     list_copy = tape.operations.copy()
-
+    new_operations = []
     while len(list_copy) > 0:
         current_gate = list_copy[0]
 
@@ -82,7 +91,7 @@ def single_qubit_fusion(tape, atol=1e-8, exclude_gates=None):
         # of fusion potential
         if exclude_gates is not None:
             if current_gate.name in exclude_gates:
-                apply(current_gate)
+                new_operations.append(current_gate)
                 list_copy.pop(0)
                 continue
 
@@ -91,7 +100,7 @@ def single_qubit_fusion(tape, atol=1e-8, exclude_gates=None):
         try:
             cumulative_angles = stack(current_gate.single_qubit_rot_angles())
         except (NotImplementedError, AttributeError):
-            apply(current_gate)
+            new_operations.append(current_gate)
             list_copy.pop(0)
             continue
 
@@ -99,7 +108,7 @@ def single_qubit_fusion(tape, atol=1e-8, exclude_gates=None):
         next_gate_idx = find_next_gate(current_gate.wires, list_copy[1:])
 
         if next_gate_idx is None:
-            apply(current_gate)
+            new_operations.append(current_gate)
             list_copy.pop(0)
             continue
 
@@ -109,7 +118,7 @@ def single_qubit_fusion(tape, atol=1e-8, exclude_gates=None):
         if exclude_gates is not None:
             next_gate = list_copy[next_gate_idx + 1]
             if next_gate.name in exclude_gates:
-                apply(current_gate)
+                new_operations.append(current_gate)
                 list_copy.pop(0)
                 continue
 
@@ -139,7 +148,8 @@ def single_qubit_fusion(tape, atol=1e-8, exclude_gates=None):
         # If we are tracing/jitting, don't perform any conditional checks and
         # apply the rotation regardless of the angles.
         if is_abstract(cumulative_angles):
-            Rot(*cumulative_angles, wires=current_gate.wires)
+            with QueuingManager.stop_recording():
+                new_operations.append(Rot(*cumulative_angles, wires=current_gate.wires))
         # If not tracing, check whether all angles are 0 (or equivalently, if the RY
         # angle is close to 0, and so is the sum of the RZ angles
         else:
@@ -149,11 +159,19 @@ def single_qubit_fusion(tape, atol=1e-8, exclude_gates=None):
                 atol=atol,
                 rtol=0,
             ):
-                Rot(*cumulative_angles, wires=current_gate.wires)
+                with QueuingManager.stop_recording():
+                    new_operations.append(Rot(*cumulative_angles, wires=current_gate.wires))
 
         # Remove the starting gate from the list
         list_copy.pop(0)
 
-    # Queue the measurements normally
-    for m in tape.measurements:
-        apply(m)
+    new_tape = QuantumTape(new_operations, tape.measurements, shots=tape.shots)
+    new_tape._qfunc_output = tape._qfunc_output  # pylint: disable=protected-access
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [new_tape], null_postprocessing

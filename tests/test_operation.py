@@ -426,15 +426,6 @@ class TestBroadcasting:
         assert op.ndim_params == (0, 2)
         assert op._batch_size == exp_batch_size
 
-    @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested sequences")
-    def test_error_broadcasted_params_not_silenced(self):
-        """Handling tf.function properly requires us to catch a specific
-        error and to silence it. Here we test it does not silence others."""
-
-        x = [qml.math.ones((2, 2)), qml.math.ones((2, 3))]
-        with pytest.raises(ValueError, match="could not broadcast input array"):
-            qml.RX(x, 0)
-
     @pytest.mark.tf
     @pytest.mark.parametrize("jit_compile", [True, False])
     def test_with_tf_function(self, jit_compile):

@@ -14,7 +14,7 @@
 """
 Tests for the Fourier reconstruction transform.
 """
-# pylint: disable=too-many-arguments,too-few-public-methods
+# pylint: disable=too-many-arguments,too-few-public-methods, unnecessary-lambda-assignment, consider-using-dict-items
 from inspect import signature
 from itertools import chain
 from functools import reduce
@@ -901,7 +901,7 @@ class TestReconstruct:
                     # Dirichlet reconstruction
                     assert np.isclose(
                         grad(pnp.array(x0, requires_grad=True)),
-                        exp_qnode_grad(*pnp.array(params, requires_grad=True))[inner_key],
+                        exp_qnode_grad(*params)[inner_key],
                     )
                 assert np.isclose(
                     grad(pnp.array(x0 + 0.1, requires_grad=True)),
