@@ -27,6 +27,25 @@ EINSUM_OP_WIRECOUNT_PERF_THRESHOLD = 3
 EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD = 13
 
 
+def get_batch_size(tensor, expected_shape, expected_size):
+    """Determine whether a tensor has an additional batch dimension for broadcasting,
+    compared to an expected_shape. Differs from QubitDevice implementation by the
+    exception made for abstract tensors."""
+    try:
+        size = qml.math.size(tensor)
+        ndim = qml.math.ndim(tensor)
+        if ndim > len(expected_shape) or size > expected_size:
+            return size // expected_size
+
+    except Exception as err:  # pylint:disable=broad-except
+        # This except clause covers the usage of tf.function, which is not compatible
+        # with `DefaultQubit._get_batch_size`
+        if not qml.math.is_abstract(tensor):
+            raise err
+
+    return None
+
+
 def _get_slice(index, axis, num_axes):
     """Allows slicing along an arbitrary axis of an array or tensor.
 
@@ -87,9 +106,13 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
     )
 
     new_mat_shape = [2] * (num_indices * 2)
-    if op.batch_size is not None:
+    dim = 2**num_indices
+    batch_size = get_batch_size(mat, (dim, dim), dim**2)
+    if batch_size is not None:
         # Add broadcasting dimension to shape
-        new_mat_shape = [mat.shape[0]] + new_mat_shape
+        new_mat_shape = [batch_size] + new_mat_shape
+        if op.batch_size is None:
+            op._batch_size = batch_size  # pylint:disable=protected-access
     reshaped_mat = math.reshape(mat, new_mat_shape)
 
     return math.einsum(einsum_indices, reshaped_mat, state)
@@ -112,9 +135,13 @@ def apply_operation_tensordot(op: qml.operation.Operator, state, is_state_batche
     num_indices = len(op.wires)
 
     new_mat_shape = [2] * (num_indices * 2)
-    if is_mat_batched := op.batch_size is not None:
+    dim = 2**num_indices
+    batch_size = get_batch_size(mat, (dim, dim), dim**2)
+    if is_mat_batched := batch_size is not None:
         # Add broadcasting dimension to shape
-        new_mat_shape = [mat.shape[0]] + new_mat_shape
+        new_mat_shape = [batch_size] + new_mat_shape
+        if op.batch_size is None:
+            op._batch_size = batch_size  # pylint:disable=protected-access
     reshaped_mat = math.reshape(mat, new_mat_shape)
 
     mat_axes = list(range(-num_indices, 0))

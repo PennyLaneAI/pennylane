@@ -24,7 +24,7 @@ from pennylane.measurements import StateMeasurement, MeasurementProcess, Expecta
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
-from .apply_operation import apply_operation
+from .apply_operation import apply_operation, get_batch_size
 
 
 def state_diagonalizing_gates(
@@ -46,9 +46,11 @@ def state_diagonalizing_gates(
     total_indices = len(state.shape) - is_state_batched
     wires = Wires(range(total_indices))
 
-    flattened_state = (
-        math.reshape(state, (state.shape[0], -1)) if is_state_batched else math.flatten(state)
-    )
+    dim = 2**total_indices
+    batch_size = get_batch_size(state, (2,) * total_indices, dim)
+    # Do not flatten the state completely but leave the broadcasting dimension if there is one
+    shape = (batch_size, dim) if batch_size is not None else (dim,)
+    flattened_state = math.reshape(state, shape)
     return measurementprocess.process_state(flattened_state, wires)
 
 
