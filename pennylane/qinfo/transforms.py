@@ -14,12 +14,12 @@
 """QNode transforms for the quantum information quantities."""
 # pylint: disable=import-outside-toplevel, not-callable
 import functools
-from typing import Callable, Sequence
+from typing import Sequence, Callable
 
 import pennylane as qml
+from pennylane.tape import QuantumTape
 from pennylane.devices import DefaultQubit, DefaultMixed
 from pennylane.measurements import StateMP, DensityMatrixMP
-from pennylane.tape import QuantumTape
 from pennylane.transforms import adjoint_metric_tensor, metric_tensor
 from pennylane.transforms.core import transform
 
