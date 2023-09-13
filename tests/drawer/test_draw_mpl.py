@@ -71,12 +71,16 @@ def test_standard_use():
 
 
 @pytest.mark.parametrize(
+    "device",
+    [qml.device("default.qubit.legacy", wires=3), qml.devices.experimental.DefaultQubit2(wires=3)],
+)
+@pytest.mark.parametrize(
     "strategy, initial_strategy, n_lines", [("gradient", "device", 3), ("device", "gradient", 13)]
 )
-def test_expansion_strategy(strategy, initial_strategy, n_lines):
+def test_expansion_strategy(device, strategy, initial_strategy, n_lines):
     """Test that the expansion strategy keyword controls what operations are drawn."""
 
-    @qml.qnode(qml.device("default.qubit", wires=3), expansion_strategy=initial_strategy)
+    @qml.qnode(device, expansion_strategy=initial_strategy)
     def circuit():
         qml.Permute([2, 0, 1], wires=(0, 1, 2))
         return qml.expval(qml.PauliZ(0))

@@ -24,10 +24,7 @@ from pennylane import numpy as np
 from pennylane.drawer import draw
 
 
-dev_fns = [qml.devices.DefaultQubit, qml.devices.experimental.DefaultQubit2]
-devices = [dev_fn(wires=(0, "a", 1.234)) for dev_fn in dev_fns]
-
-
+@qml.qnode(qml.device("default.qubit", wires=(0, "a", 1.234)))
 def circuit(x, y, z):
     """A quantum circuit on three wires."""
     qml.RX(x, wires=0)
@@ -36,32 +33,29 @@ def circuit(x, y, z):
     return qml.expval(qml.PauliZ(0))
 
 
-@pytest.mark.parametrize("dev", devices)
 class TestLabelling:
     """Test the wire labels."""
 
-    def test_any_wire_labels(self, dev):
+    def test_any_wire_labels(self):
         """Test wire labels with different kinds of objects."""
 
-        split_str = draw(qml.QNode(circuit, dev))(1.2, 2.3, 3.4).split("\n")
+        split_str = draw(circuit)(1.2, 2.3, 3.4).split("\n")
         assert split_str[0][:6] == "    0:"
         assert split_str[1][:6] == "    a:"
         assert split_str[2][:6] == "1.234:"
 
-    def test_wire_order(self, dev):
+    def test_wire_order(self):
         """Test wire_order keyword changes order of the wires."""
 
-        split_str = draw(qml.QNode(circuit, dev), wire_order=[1.234, "a", 0, "b"])(
-            1.2, 2.3, 3.4
-        ).split("\n")
+        split_str = draw(circuit, wire_order=[1.234, "a", 0, "b"])(1.2, 2.3, 3.4).split("\n")
         assert split_str[0][:6] == "1.234:"
         assert split_str[1][:6] == "    a:"
         assert split_str[2][:6] == "    0:"
 
-    def test_show_all_wires(self, dev):
+    def test_show_all_wires(self):
         """Test show_all_wires=True forces empty wires to display."""
 
-        @qml.qnode(type(dev)(wires=(0, 1)))
+        @qml.qnode(qml.device("default.qubit", wires=(0, 1)))
         def circ():
             return qml.expval(qml.PauliZ(0))
 
@@ -69,10 +63,10 @@ class TestLabelling:
         assert split_str[0][:2] == "0:"
         assert split_str[1][:2] == "1:"
 
-    def test_show_all_wires_and_wire_order(self, dev):
+    def test_show_all_wires_and_wire_order(self):
         """Test show_all_wires forces empty wires to display when empty wire is in wire order."""
 
-        @qml.qnode(type(dev)(wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def circ():
             return qml.expval(qml.PauliZ(0))
 
@@ -81,32 +75,31 @@ class TestLabelling:
         assert split_str[1][:2] == "a:"
 
 
-@pytest.mark.parametrize("dev", devices)
 class TestDecimals:
     """Test the decimals keyword argument."""
 
-    def test_decimals_None(self, dev):
+    def test_decimals_None(self):
         """Test that when decimals is ``None``, parameters are omitted."""
 
         expected = "    0: ──RX─┤  <Z>\n    a: ──RY─┤     \n1.234: ──RZ─┤     "
-        assert draw(qml.QNode(circuit, dev), decimals=None)(1.234, 2.345, 3.456) == expected
+        assert draw(circuit, decimals=None)(1.234, 2.345, 3.456) == expected
 
-    def test_decimals(self, dev):
+    def test_decimals(self):
         """Test decimals keyword makes the operation parameters included to given precision"""
 
         expected = "    0: ──RX(1.2)─┤  <Z>\n    a: ──RY(2.3)─┤     \n1.234: ──RZ(3.5)─┤     "
-        assert draw(qml.QNode(circuit, dev), decimals=1)(1.234, 2.345, 3.456) == expected
+        assert draw(circuit, decimals=1)(1.234, 2.345, 3.456) == expected
 
-    def test_decimals_higher_value(self, dev):
+    def test_decimals_higher_value(self):
         """Test all decimals places display when requested value is bigger than number precision."""
 
         out = "    0: ──RX(1.0000)─┤  <Z>\n    a: ──RY(2.0000)─┤     \n1.234: ──RZ(3.0000)─┤     "
-        assert qml.draw(qml.QNode(circuit, dev), decimals=4)(1, 2, 3) == out
+        assert qml.draw(circuit, decimals=4)(1, 2, 3) == out
 
-    def test_decimals_multiparameters(self, dev):
+    def test_decimals_multiparameters(self):
         """Test decimals also displays parameters when the operation has multiple parameters."""
 
-        @qml.qnode(type(dev)(wires=(0)))
+        @qml.qnode(qml.device("default.qubit", wires=(0)))
         def circ(x):
             qml.Rot(*x, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -114,67 +107,60 @@ class TestDecimals:
         expected = "0: ──Rot(1.2,2.3,3.5)─┤  <Z>"
         assert draw(circ, decimals=1)([1.234, 2.345, 3.456]) == expected
 
-    def test_decimals_0(self, dev):
+    def test_decimals_0(self):
         """Test decimals=0 rounds to integers."""
 
         expected = "    0: ──RX(1)─┤  <Z>\n    a: ──RY(2)─┤     \n1.234: ──RZ(3)─┤     "
-        assert draw(qml.QNode(circuit, dev), decimals=0)(1.234, 2.3456, 3.456) == expected
+        assert draw(circuit, decimals=0)(1.234, 2.3456, 3.456) == expected
 
-    def test_qml_numpy_parameters(self, dev):
+    def test_qml_numpy_parameters(self):
         """Test numpy parameters display as normal numbers."""
 
         expected = "    0: ──RX(1.00)─┤  <Z>\n    a: ──RY(2.00)─┤     \n1.234: ──RZ(3.00)─┤     "
-        assert draw(qml.QNode(circuit, dev))(np.array(1), np.array(2), np.array(3)) == expected
+        assert draw(circuit)(np.array(1), np.array(2), np.array(3)) == expected
 
     @pytest.mark.torch
-    def test_torch_parameters(self, dev):
+    def test_torch_parameters(self):
         """Test torch parameters display as normal numbers."""
 
         import torch
 
         expected = "    0: ──RX(1.2)─┤  <Z>\n    a: ──RY(2.3)─┤     \n1.234: ──RZ(3.5)─┤     "
-        out = draw(qml.QNode(circuit, dev), decimals=1)(
-            torch.tensor(1.23), torch.tensor(2.34), torch.tensor(3.45)
-        )
+        out = draw(circuit, decimals=1)(torch.tensor(1.23), torch.tensor(2.34), torch.tensor(3.45))
         assert out == expected
 
     @pytest.mark.tf
-    def test_tensorflow_parameters(self, dev):
+    def test_tensorflow_parameters(self):
         """Test tensorflow parameters display as normal numbers."""
         import tensorflow as tf
 
         expected = "    0: ──RX(1.2)─┤  <Z>\n    a: ──RY(2.3)─┤     \n1.234: ──RZ(3.5)─┤     "
-        out = draw(qml.QNode(circuit, dev), decimals=1)(
-            tf.Variable(1.234), tf.Variable(2.345), tf.Variable(3.456)
-        )
+        out = draw(circuit, decimals=1)(tf.Variable(1.234), tf.Variable(2.345), tf.Variable(3.456))
         assert out == expected
 
     @pytest.mark.jax
-    def test_jax_parameters(self, dev):
+    def test_jax_parameters(self):
         """Test jax parameters in tape display as normal numbers."""
         import jax.numpy as jnp
 
         expected = "    0: ──RX(1.2)─┤  <Z>\n    a: ──RY(2.3)─┤     \n1.234: ──RZ(3.5)─┤     "
-        out = draw(qml.QNode(circuit, dev), decimals=1)(
-            jnp.array(1.234), jnp.array(2.345), jnp.array(3.456)
-        )
+        out = draw(circuit, decimals=1)(jnp.array(1.234), jnp.array(2.345), jnp.array(3.456))
         assert out == expected
 
-    def test_string_decimals(self, dev):
+    def test_string_decimals(self):
         """Test displays string valued parameters."""
 
         expected = "    0: ──RX(x)─┤  <Z>\n    a: ──RY(y)─┤     \n1.234: ──RZ(z)─┤     "
-        assert draw(qml.QNode(circuit, dev))("x", "y", "z") == expected
+        assert draw(circuit)("x", "y", "z") == expected
 
 
-@pytest.mark.parametrize("dev_fn", dev_fns)
 class TestMatrixParameters:
     """Test that tapes containing matrix-valued parameters are drawn correctly."""
 
-    def test_matrix_parameters(self, dev_fn):
+    def test_matrix_parameters(self):
         """Test matrix valued parameters remembered and printed out upon request."""
 
-        @qml.qnode(dev_fn(wires=2))
+        @qml.qnode(qml.device("default.qubit", wires=2))
         def matrices_circuit():
             qml.StatePrep([1.0, 0.0, 0.0, 0.0], wires=(0, 1))
             qml.QubitUnitary(np.eye(2), wires=0)
@@ -192,11 +178,11 @@ class TestMatrixParameters:
 
         assert draw(matrices_circuit)() == expected2
 
-    def test_matrix_parameters_batch_transform(self, dev_fn):
+    def test_matrix_parameters_batch_transform(self):
         """Test matrix parameters only printed once after a batch transform."""
 
         @qml.gradients.param_shift(shifts=[(0.2,)])  # pylint:disable=no-value-for-parameter
-        @qml.qnode(dev_fn(wires=2))
+        @qml.qnode(qml.device("default.qubit", wires=2))
         def matrices_circuit(x):
             qml.StatePrep([1.0, 0.0, 0.0, 0.0], wires=(0, 1))
             qml.QubitUnitary(np.eye(2, requires_grad=False), wires=0)
@@ -223,14 +209,13 @@ class TestMatrixParameters:
         assert output == expected2
 
 
-@pytest.mark.parametrize("dev_fn", dev_fns)
 class TestMaxLength:
     """Test the max_length keyword."""
 
-    def test_max_length_default(self, dev_fn):
+    def test_max_length_default(self):
         """Test max length default to 100."""
 
-        @qml.qnode(dev_fn(wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def long_circuit():
             for _ in range(100):
                 qml.PauliX(0)
@@ -240,10 +225,10 @@ class TestMaxLength:
         assert 95 <= max(len(s) for s in out.split("\n")) <= 100
 
     @pytest.mark.parametrize("ml", [10, 15, 20])
-    def test_setting_max_length(self, dev_fn, ml):
+    def test_setting_max_length(self, ml):
         """Test that setting a maximal length works as expected."""
 
-        @qml.qnode(dev_fn(wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def long_circuit():
             for _ in range(10):
                 qml.PauliX(0)
@@ -253,14 +238,13 @@ class TestMaxLength:
         assert max(len(s) for s in out.split("\n")) <= ml
 
 
-@pytest.mark.parametrize("dev_fn", dev_fns)
 class TestLayering:
     """Test operations are placed in the correct locations."""
 
-    def test_adjacent_ops(self, dev_fn):
+    def test_adjacent_ops(self):
         """Test non-blocking gates end up on same layer."""
 
-        @qml.qnode(dev_fn(wires=3))
+        @qml.qnode(qml.device("default.qubit", wires=3))
         def circ():
             _ = [qml.PauliX(i) for i in range(3)]
             return [qml.expval(qml.PauliZ(i)) for i in range(3)]
@@ -268,10 +252,10 @@ class TestLayering:
         expected = "0: ──X─┤  <Z>\n1: ──X─┤  <Z>\n2: ──X─┤  <Z>"
         assert draw(circ)() == expected
 
-    def test_blocking_ops(self, dev_fn):
+    def test_blocking_ops(self):
         """Test single qubits gates on the same wire block each other."""
 
-        @qml.qnode(dev_fn(wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def circ():
             _ = [qml.PauliX(0) for i in range(3)]
             return qml.expval(qml.PauliZ(0))
@@ -279,10 +263,10 @@ class TestLayering:
         expected = "0: ──X──X──X─┤  <Z>"
         assert draw(circ)() == expected
 
-    def test_blocking_multiwire_gate(self, dev_fn):
+    def test_blocking_multiwire_gate(self):
         """Test gate gets blocked by multi-wire gate."""
 
-        @qml.qnode(dev_fn(wires=3))
+        @qml.qnode(qml.device("default.qubit", wires=3))
         def circ():
             qml.PauliX(0)
             qml.IsingXX(1.234, wires=(0, 2))
@@ -297,7 +281,6 @@ class TestLayering:
         assert draw(circ)() == expected
 
 
-@pytest.mark.parametrize("dev_fn", dev_fns)
 @pytest.mark.parametrize(
     "transform",
     [
@@ -305,11 +288,11 @@ class TestLayering:
         partial(qml.gradients.param_shift, shifts=[(0.2,)]),
     ],
 )
-def test_draw_batch_transform(transform, dev_fn):
+def test_draw_batch_transform(transform):
     """Test that drawing a batch transform works correctly."""
 
     @transform
-    @qml.qnode(dev_fn(wires=1))
+    @qml.qnode(qml.device("default.qubit", wires=1))
     def circ(x):
         qml.Hadamard(wires=0)
         qml.RX(x, wires=0)
@@ -323,7 +306,7 @@ def test_draw_batch_transform(transform, dev_fn):
 def test_nested_tapes():
     """Test nested tapes inside the qnode."""
 
-    @qml.qnode(qml.device("default.qubit.legacy", wires=1))
+    @qml.qnode(qml.device("default.qubit", wires=1))
     def circ():
         with qml.queuing.AnnotatedQueue():
             qml.PauliX(0)
@@ -346,13 +329,16 @@ def test_nested_tapes():
     assert draw(circ)() == expected
 
 
-@pytest.mark.parametrize("dev_fn", dev_fns)
-def test_expansion_strategy(dev_fn):
+@pytest.mark.parametrize(
+    "device",
+    [qml.device("default.qubit.legacy", wires=2), qml.devices.experimental.DefaultQubit2(wires=2)],
+)
+def test_expansion_strategy(device):
     """Test expansion strategy keyword modifies tape expansion."""
 
     H = qml.PauliX(0) + qml.PauliZ(1) + 0.5 * qml.PauliX(0) @ qml.PauliX(1)
 
-    @qml.qnode(dev_fn(wires=2))
+    @qml.qnode(device)
     def circ(t):
         qml.ApproxTimeEvolution(H, t, 2)
         return qml.probs(wires=0)
