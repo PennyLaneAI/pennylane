@@ -17,7 +17,7 @@ import pytest
 from pennylane import numpy as np
 
 import pennylane as qml
-from pennylane.devices.experimental import DefaultQubit2
+from pennylane.devices import DefaultQubit2
 from pennylane.gradients import param_shift
 from pennylane.interfaces import execute
 

@@ -21,7 +21,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qnode
-from pennylane.devices.experimental import DefaultQubit2
+from pennylane.devices import DefaultQubit2
 
 qubit_device_and_diff_method = [
     [DefaultQubit2(), "finite-diff", False],

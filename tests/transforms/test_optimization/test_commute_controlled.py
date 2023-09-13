@@ -470,7 +470,7 @@ def qfunc_circuit():
 
 
 ### QNode
-dev = qml.devices.experimental.DefaultQubit2()
+dev = qml.devices.DefaultQubit2()
 
 
 @qml.qnode(device=dev)

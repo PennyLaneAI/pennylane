@@ -38,13 +38,13 @@ to verify and test quantum gradient computations.
 Next generation devices
 -----------------------
 
-:class:`pennylane.devices.experimental.Device` in an experimental interface for the next generation of devices that
-will eventually replace :class:`pennylane.Device` and :class:`pennylane.QubitDevice`.
+:class:`pennylane.devices.Device` is the latest interface for the next generation of devices that
+replaces :class:`pennylane.Device` and :class:`pennylane.QubitDevice`.
 
-While the current interface :class:`pennylane.Device` is imported top level, the new :class:`pennylane.devices.experimental.Device` is
-accessible from the ``pennylane.devices.experimental`` submodule.
+While the previous interface :class:`pennylane.Device` is imported top level, the new :class:`pennylane.devices.Device` is
+accessible from the ``pennylane.devices`` submodule.
 
-.. currentmodule:: pennylane.devices.experimental
+.. currentmodule:: pennylane.devices
 .. autosummary::
     :toctree: api
 
@@ -60,8 +60,9 @@ Qubit Simulation Tools
 
 """
 
-from . import experimental
-from .experimental import ExecutionConfig
+from .execution_config import ExecutionConfig, DefaultExecutionConfig
+from .device_api import Device
+from .default_qubit_2 import DefaultQubit2
 
 # DefaultQubitTF and DefaultQubitAutograd not imported here since this
 # would lead to an automatic import of tensorflow and autograd, which are

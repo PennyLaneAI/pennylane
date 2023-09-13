@@ -57,7 +57,7 @@ class TestSnapshot:
     def test_default_qubit2(self):
         """Test that multiple snapshots are returned correctly on the new
         state-vector simulator."""
-        dev = qml.devices.experimental.DefaultQubit2()
+        dev = qml.devices.DefaultQubit2()
 
         # TODO: add additional QNode test once the new device supports it
 
@@ -217,9 +217,7 @@ class TestSnapshot:
     def test_unsupported_device_new(self):
         """Test that an error is raised on unsupported devices."""
 
-        class DummyDevice(
-            qml.devices.experimental.Device
-        ):  # pylint: disable=too-few-public-methods
+        class DummyDevice(qml.devices.Device):  # pylint: disable=too-few-public-methods
             def execute(self, *args, **kwargs):
                 return args, kwargs
 

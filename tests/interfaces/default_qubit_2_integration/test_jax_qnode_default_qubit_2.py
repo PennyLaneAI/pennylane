@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import qnode
-from pennylane.devices.experimental import DefaultQubit2
+from pennylane.devices import DefaultQubit2
 
 device_seed = 42
 

@@ -21,7 +21,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.measurements import SampleMP, StateMP, ProbabilityMP
 from pennylane.resource import Resources
-from pennylane.devices.experimental import DefaultQubit2, ExecutionConfig
+from pennylane.devices import DefaultQubit2, ExecutionConfig
 from pennylane.devices.qubit.preprocess import validate_and_expand_adjoint
 
 
@@ -115,7 +115,7 @@ class TestTracking:
         assert len(dev.tracker.history) == 0
 
     def test_tracking_batch(self):
-        """Test that the experimental default qubit integrates with the tracker."""
+        """Test that the new default qubit integrates with the tracker."""
 
         qs = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
 
@@ -143,7 +143,7 @@ class TestTracking:
 
     def test_tracking_execute_and_derivatives(self):
         """Test that the execute_and_compute_* calls are being tracked for the
-        experimental default qubit device"""
+        new default qubit device"""
 
         qs = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
         dev = DefaultQubit2()
@@ -172,7 +172,7 @@ class TestTracking:
         }
 
     def test_tracking_resources(self):
-        """Test that resources are tracked for the experimental default qubit device."""
+        """Test that resources are tracked for the new default qubit device."""
         qs = qml.tape.QuantumScript(
             [
                 qml.Hadamard(0),

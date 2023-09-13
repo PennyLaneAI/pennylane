@@ -28,14 +28,14 @@ from pennylane.transforms.core import TransformProgram
 
 from . import Device
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
-from ..qubit.simulate import simulate, get_final_state, measure_final_state
-from ..qubit.preprocess import (
+from .qubit.simulate import simulate, get_final_state, measure_final_state
+from .qubit.preprocess import (
     preprocess,
     validate_and_expand_adjoint,
     validate_multiprocessing_workers,
     validate_device_wires,
 )
-from ..qubit.adjoint_jacobian import adjoint_jacobian, adjoint_vjp, adjoint_jvp
+from .qubit.adjoint_jacobian import adjoint_jacobian, adjoint_vjp, adjoint_jvp
 
 Result_or_ResultBatch = Union[Result, ResultBatch]
 QuantumTapeBatch = Sequence[QuantumTape]

@@ -37,7 +37,7 @@ from pennylane import DeviceError
 from pennylane.transforms.core import transform, TransformProgram
 from pennylane.wires import WireError
 
-from ..experimental import ExecutionConfig, DefaultExecutionConfig
+from pennylane.devices import ExecutionConfig, DefaultExecutionConfig
 
 PostprocessingFn = Callable[[ResultBatch], Union[Result, ResultBatch]]
 
@@ -107,7 +107,7 @@ def validate_device_wires(
 
     Args:
         tape (QuantumTape): a quantum circuit.
-        device (pennylane.devices.experimental.Device): The device to be checked.
+        device (pennylane.devices.Device): The device to be checked.
 
     Returns:
         pennylane.QNode or qfunc or Tuple[List[.QuantumTape], Callable]: If a QNode is passed,
@@ -155,7 +155,7 @@ def validate_multiprocessing_workers(
     Args:
         tape (QuantumTape): a quantum circuit.
         max_workers (int): Maximal number of multiprocessing workers
-        device (pennylane.devices.experimental.Device): The device to be checked.
+        device (pennylane.devices.Device): The device to be checked.
 
     Returns:
         pennylane.QNode or qfunc or Tuple[List[.QuantumTape], Callable]: If a QNode is passed,

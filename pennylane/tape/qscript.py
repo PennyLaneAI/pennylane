@@ -790,7 +790,7 @@ class QuantumScript:
             ((4,), (), (4,))
         """
 
-        if isinstance(device, qml.devices.experimental.Device):
+        if isinstance(device, qml.devices.Device):
             # MP.shape (called below) takes 2 arguments: `device` and `shots`.
             # With the new device interface, shots are stored on tapes rather than the device
             # As well, MP.shape needs the device largely to see the device wires, and this is

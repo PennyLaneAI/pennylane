@@ -53,8 +53,8 @@ Pending deprecations
   in a workflow will remain the same.
   
   If you directly interact with device methods, please consult
-  :class:`pennylane.devices.experimental.Device` and
-  :class:`pennylane.devices.experimental.DefaultQubit2`
+  :class:`pennylane.devices.Device` and
+  :class:`pennylane.devices.DefaultQubit2`
   for more information on what the new interface will look like and be prepared
   to make updates in a coming release. If you have any feedback on these
   changes, please create an

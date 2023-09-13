@@ -18,7 +18,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.interfaces.execution import _preprocess_expand_fn
 
-from pennylane.devices.experimental import DefaultQubit2
+from pennylane.devices import DefaultQubit2
 
 
 class TestPreprocessExpandFn:
@@ -93,7 +93,7 @@ class TestBatchTransformHelper:
         ]
 
         dev = DefaultQubit2()
-        config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
+        config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 
         program, new_config = dev.preprocess(config)
         res_tapes, batch_fn = program(tapes)
