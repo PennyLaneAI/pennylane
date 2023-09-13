@@ -308,7 +308,8 @@ class TestProperties:
         the eigvals method to return a NotImplementedError"""
         obs = qml.NumberOperator(wires=0)
         m = qml.expval(op=obs)
-        assert m.eigvals() is None
+        with pytest.raises(qml.operation.EigvalsUndefinedError):
+            _ = m.eigvals()
 
     def test_repr(self):
         """Test the string representation of a MeasurementProcess."""
