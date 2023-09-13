@@ -314,26 +314,27 @@ def test_inconsistent_active_spaces(
         )
 
 
-def mock_get_cids(identifier, namespcae, pcp=None):
+def mock_get_cids(identifier, namespace, pcp=None):
     """Return PubChem Compound ID for the provided identifier"""
     records = {
         297: [
             ("CH4", "name"),
-            ("74-82-8", "CAS"),
-            ("[C]", "SMILES"),
-            ("InChI=1S/CH4/h1H4", "InChI"),
-            ("VNWKTOKETHGBQD-UHFFFAOYSA-N", "InChIKey"),
+            ("74-82-8", "name"),
+            ("[C]", "smiles"),
+            ("InChI=1S/CH4/h1H4", "inchi"),
+            ("VNWKTOKETHGBQD-UHFFFAOYSA-N", "inchikey"),
             (297, "CID"),
         ],
         783: [
             ("H2", "name"),
-            ("InChI=1S/H2/h1H", "InChI"),
+            ("InChI=1S/H2/h1H", "inchi"),
             (783, "CID"),
         ],
     }
-    for key, val in records.items():
-        if (identifier, namespcae) in val:
-            return key
+    for key, vals in records.items():
+        for val in vals:
+            if (identifier, namespace) == val:
+                return [key]
     raise pcp.NotFoundError
 
 
@@ -402,9 +403,10 @@ def test_consistent_pubchem_mol_data(identifier, identifier_type):
     ref_mol_data_2d = (["H", "H"], np.array([[3.77945225, 0.0, 0.0], [5.66917837, 0.0, 0.0]]))
 
     mock_gc, mock_fc = ft.partial(mock_get_cids, pcp=pcp), ft.partial(mock_from_cid, pcp=pcp)
-    with patch.object(pcp.Compound, "get_cids", mock_gc) and patch.object(
+    with patch.dict(sys.modules, {"pubchempy": pcp}) and patch.object(
         pcp.Compound, "from_cid", mock_fc
     ):
+        pcp.get_cids = mock_gc
         pub_mol_data = qchem.mol_data(identifier, identifier_type)
         ref_mol_data = ref_mol_data_2d if pub_mol_data[0] == ["H", "H"] else ref_mol_data_3d
 
@@ -427,9 +429,10 @@ def test_inconsistent_pubchem_mol_data(identifier, identifier_type, message_matc
     pcp = pytest.importorskip("pubchempy")
 
     mock_gc, mock_fc = ft.partial(mock_get_cids, pcp=pcp), ft.partial(mock_from_cid, pcp=pcp)
-    with patch.object(pcp.Compound, "get_cids", mock_gc) and patch.object(
+    with patch.dict(sys.modules, {"pubchempy": pcp}) and patch.object(
         pcp.Compound, "from_cid", mock_fc
     ):
+        pcp.get_cids = mock_gc
         with pytest.raises(ValueError, match=message_match):
             qchem.mol_data(identifier, identifier_type)
 

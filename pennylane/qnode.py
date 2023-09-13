@@ -872,6 +872,7 @@ class QNode:
         terminal_measurements = [
             m for m in self.tape.measurements if not isinstance(m, MidMeasureMP)
         ]
+
         if any(ret is not m for ret, m in zip(measurement_processes, terminal_measurements)):
             raise qml.QuantumFunctionError(
                 "All measurements must be returned in the order they are measured."
@@ -903,7 +904,8 @@ class QNode:
             or not self.device.capabilities().get("supports_mid_measure", False)
         )
         if expand_mid_measure:
-            self._tape = qml.defer_measurements(self._tape)
+            tapes, _ = qml.defer_measurements(self._tape)
+            self._tape = tapes[0]
 
         if self.expansion_strategy == "device":
             self._tape = self.device.expand_fn(self.tape, max_expansion=self.max_expansion)
