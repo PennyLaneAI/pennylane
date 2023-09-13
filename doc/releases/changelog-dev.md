@@ -15,6 +15,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Tensor-network template `qml.MPS` now supports changing `offset` between subsequent blocks for more flexibility.
+ [(#4531)](https://github.com/PennyLaneAI/pennylane/pull/4531)
+
 * The qchem ``fermionic_dipole`` and ``particle_number`` functions are updated to use a
   ``FermiSentence``. The deprecated features for using tuples to represent fermionic operations are
   removed.
@@ -182,6 +185,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed issue where `__copy__` method of the `qml.Select()` operator attempted to access un-initialized data.
+[(#4551)](https://github.com/PennyLaneAI/pennylane/pull/4551)
+
 * Fix `skip_first` option in `expand_tape_state_prep`.
   [(#4564)](https://github.com/PennyLaneAI/pennylane/pull/4564)
 
@@ -203,7 +209,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Utkarsh Azad
+Utkarsh Azad,
+Diego Guala,
 Soran Jahangiri,
 Lillian M. A. Frederiksen,
 Vincent Michaud-Rioux,
