@@ -821,7 +821,7 @@ class TestTapeConstruction:
             qml.GlobalPhase(x, wires=0)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        dev = qml.devices.DefaultQubit2()  # TODO: add wires, change comment below
+        dev = qml.devices.DefaultQubit()  # TODO: add wires, change comment below
         qn = QNode(circuit1, dev)
 
         # fails when GlobalPhase is a strict subset of all tape wires
@@ -1695,7 +1695,7 @@ class TestTransformProgramIntegration:
         """Test a transform that scales the number of shots used in an execution."""
 
         # note that this won't work with the old device interface :(
-        dev = qml.devices.DefaultQubit2()
+        dev = qml.devices.DefaultQubit()
 
         def num_of_shots_from_sample(results):
             return len(results[0])
@@ -1757,7 +1757,7 @@ class TestNewDeviceIntegration:
 
     def test_get_gradient_fn_default_qubit2(self):
         """Tests the get_gradient_fn is backprop for best for default qubit2."""
-        dev = qml.devices.DefaultQubit2()
+        dev = qml.devices.DefaultQubit()
         gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(dev, "autograd", "best")
         assert gradient_fn == "backprop"
         assert not kwargs
@@ -1765,7 +1765,7 @@ class TestNewDeviceIntegration:
 
     def test_get_gradient_fn_default_qubit2_adjoint(self):
         """Test that the get_gradient_fn and _validate_adjoint_methods work for default qubit 2."""
-        dev = qml.devices.DefaultQubit2()
+        dev = qml.devices.DefaultQubit()
         gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(dev, "autograd", "adjoint")
         assert gradient_fn == "adjoint"
         assert len(kwargs) == 0
@@ -1842,7 +1842,7 @@ class TestNewDeviceIntegration:
     def test_shots_integration(self):
         """Test that shots provided at call time are passed through the workflow."""
 
-        dev = qml.devices.DefaultQubit2()
+        dev = qml.devices.DefaultQubit()
 
         @qml.qnode(dev, diff_method=None)
         def circuit():

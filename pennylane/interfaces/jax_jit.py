@@ -76,7 +76,7 @@ def _jac_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.Device"
         device (Device): the device used to execute the tape.
 
     >>> tape = qml.tape.QuantumScript([qml.RX(1.0, wires=0)], [qml.expval(qml.PauliX(0)), qml.probs(0)])
-    >>> dev = qml.devices.DefaultQubit2()
+    >>> dev = qml.devices.DefaultQubit()
     >>> _jac_shape_dtype_struct(tape, dev)
     (ShapeDtypeStruct(shape=(), dtype=float64),
     ShapeDtypeStruct(shape=(2,), dtype=float64))
@@ -112,7 +112,7 @@ def _switched_jacobian(tape, device, original_trainable_parameters, jacs):
     Note that this adds an additional nesting dimension to ``jacs``, with one jacobian
     for each original trainable parameter. I am unsure why this works.
 
-    >>> dev = qml.devices.DefaultQubit2()
+    >>> dev = qml.devices.DefaultQubit()
     >>> config = qml.devices.ExecutionConfig(gradient_method="adjoint")
     >>> tape = qml.tape.QuantumTape([qml.RY(1.0, 0), qml.RX(0.6, 0), qml.RX(0.7, 0)], [qml.expval(qml.PauliZ(0))])
     >>> tape.trainable_params = [0, 2]

@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import qnode
-from pennylane.devices import DefaultQubit2
+from pennylane.devices import DefaultQubit
 
 pytestmark = pytest.mark.torch
 
@@ -27,13 +27,13 @@ jacobian = torch.autograd.functional.jacobian
 hessian = torch.autograd.functional.hessian
 
 qubit_device_and_diff_method = [
-    [DefaultQubit2(), "finite-diff", False],
-    [DefaultQubit2(), "parameter-shift", False],
-    [DefaultQubit2(), "backprop", True],
-    [DefaultQubit2(), "adjoint", True],
-    [DefaultQubit2(), "adjoint", False],
-    [DefaultQubit2(), "spsa", False],
-    [DefaultQubit2(), "hadamard", False],
+    [DefaultQubit(), "finite-diff", False],
+    [DefaultQubit(), "parameter-shift", False],
+    [DefaultQubit(), "backprop", True],
+    [DefaultQubit(), "adjoint", True],
+    [DefaultQubit(), "adjoint", False],
+    [DefaultQubit(), "spsa", False],
+    [DefaultQubit(), "hadamard", False],
 ]
 
 interface_and_qubit_device_and_diff_method = [
@@ -497,7 +497,7 @@ class TestShotsIntegration:
 
     def test_changing_shots(self):
         """Test that changing shots works on execution"""
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
         a, b = torch.tensor([0.543, -0.654], requires_grad=True, dtype=torch.float64)
 
         @qnode(dev, interface="torch", diff_method=qml.gradients.param_shift)
@@ -520,7 +520,7 @@ class TestShotsIntegration:
     def test_gradient_integration(self):
         """Test that temporarily setting the shots works
         for gradient computations"""
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
         a, b = torch.tensor([0.543, -0.654], requires_grad=True)
 
         @qnode(dev, interface="torch", diff_method=qml.gradients.param_shift)
@@ -545,7 +545,7 @@ class TestShotsIntegration:
         weights = torch.tensor([0.543, -0.654], requires_grad=True)
         a, b = weights
 
-        @qnode(DefaultQubit2(), interface="torch", diff_method=qml.gradients.param_shift)
+        @qnode(DefaultQubit(), interface="torch", diff_method=qml.gradients.param_shift)
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -569,7 +569,7 @@ class TestShotsIntegration:
 
         spy = mocker.spy(qml, "execute")
 
-        @qnode(DefaultQubit2(), interface="torch")
+        @qnode(DefaultQubit(), interface="torch")
         def cost_fn(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -1338,7 +1338,7 @@ class TestSample:
     def test_sample_dimension(self):
         """Test sampling works as expected"""
 
-        @qnode(DefaultQubit2(), diff_method="parameter-shift", interface="torch")
+        @qnode(DefaultQubit(), diff_method="parameter-shift", interface="torch")
         def circuit():
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
@@ -1358,7 +1358,7 @@ class TestSample:
     def test_sampling_expval(self):
         """Test sampling works as expected if combined with expectation values"""
 
-        @qnode(DefaultQubit2(), diff_method="parameter-shift", interface="torch")
+        @qnode(DefaultQubit(), diff_method="parameter-shift", interface="torch")
         def circuit():
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
@@ -1377,7 +1377,7 @@ class TestSample:
     def test_counts_expval(self):
         """Test counts works as expected if combined with expectation values"""
 
-        @qnode(DefaultQubit2(), diff_method="parameter-shift", interface="torch")
+        @qnode(DefaultQubit(), diff_method="parameter-shift", interface="torch")
         def circuit():
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
@@ -1395,7 +1395,7 @@ class TestSample:
     def test_sample_combination(self):
         """Test the output of combining expval, var and sample"""
 
-        @qnode(DefaultQubit2(), diff_method="parameter-shift", interface="torch")
+        @qnode(DefaultQubit(), diff_method="parameter-shift", interface="torch")
         def circuit():
             qml.RX(0.54, wires=0)
 
@@ -1416,7 +1416,7 @@ class TestSample:
     def test_single_wire_sample(self):
         """Test the return type and shape of sampling a single wire"""
 
-        @qnode(DefaultQubit2(), diff_method="parameter-shift", interface="torch")
+        @qnode(DefaultQubit(), diff_method="parameter-shift", interface="torch")
         def circuit():
             qml.RX(0.54, wires=0)
             return qml.sample(qml.PauliZ(0))
@@ -1430,7 +1430,7 @@ class TestSample:
         """Test the return type and shape of sampling multiple wires
         where a rectangular array is expected"""
 
-        @qnode(DefaultQubit2(), diff_method="parameter-shift", interface="torch")
+        @qnode(DefaultQubit(), diff_method="parameter-shift", interface="torch")
         def circuit():
             return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))
 
@@ -1447,12 +1447,12 @@ class TestSample:
 
 
 qubit_device_and_diff_method_and_grad_on_execution = [
-    [DefaultQubit2(), "backprop", True],
-    [DefaultQubit2(), "finite-diff", False],
-    [DefaultQubit2(), "parameter-shift", False],
-    [DefaultQubit2(), "adjoint", True],
-    [DefaultQubit2(), "adjoint", False],
-    [DefaultQubit2(), "hadamard", False],
+    [DefaultQubit(), "backprop", True],
+    [DefaultQubit(), "finite-diff", False],
+    [DefaultQubit(), "parameter-shift", False],
+    [DefaultQubit(), "adjoint", True],
+    [DefaultQubit(), "adjoint", False],
+    [DefaultQubit(), "hadamard", False],
 ]
 
 
@@ -2171,7 +2171,7 @@ def test_no_ops():
     """Test that the return value of the QNode matches in the interface
     even if there are no ops"""
 
-    @qml.qnode(DefaultQubit2(), interface="torch")
+    @qml.qnode(DefaultQubit(), interface="torch")
     def circuit():
         qml.Hadamard(wires=0)
         return qml.state()

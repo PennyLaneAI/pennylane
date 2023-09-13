@@ -26,7 +26,7 @@ import pennylane as qml
 
 device_suite = (
     qml.device("default.qubit.legacy", wires=5),
-    qml.devices.DefaultQubit2(),
+    qml.devices.DefaultQubit(),
     qml.device("lightning.qubit", wires=5),
 )
 
@@ -39,7 +39,7 @@ class TestTransformProgram:
     def test_transform_program_none(self, interface):
         """Test that if no transform program is provided, null default behavior is used."""
 
-        dev = qml.devices.DefaultQubit2()
+        dev = qml.devices.DefaultQubit()
 
         tape0 = qml.tape.QuantumScript([qml.RX(1.0, 0)], [qml.expval(qml.PauliZ(0))])
         tape1 = qml.tape.QuantumScript([qml.RY(2.0, 0)], [qml.state()])
@@ -59,7 +59,7 @@ class TestTransformProgram:
     def test_transform_program_modifies_circuit(self, interface):
         """Integration tests for a transform program that modifies the input tapes."""
 
-        dev = qml.devices.DefaultQubit2()
+        dev = qml.devices.DefaultQubit()
 
         def null_postprocessing(results):
             return results[0]
@@ -102,7 +102,7 @@ class TestTransformProgram:
 
         Note that this only works with the new device interface.
         """
-        dev = qml.devices.DefaultQubit2()
+        dev = qml.devices.DefaultQubit()
 
         def null_postprocessing(results):
             return results

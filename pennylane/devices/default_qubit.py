@@ -44,7 +44,7 @@ QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
 
 
-class DefaultQubit2(Device):
+class DefaultQubit(Device):
     """A PennyLane device written in Python and capable of backpropagation derivatives.
 
     Args:
@@ -78,7 +78,7 @@ class DefaultQubit2(Device):
             qs = qml.tape.QuantumScript([op], [qml.expval(qml.PauliZ(0))])
             qscripts.append(qs)
 
-    >>> dev = DefaultQubit2()
+    >>> dev = DefaultQubit()
     >>> program, execution_config = dev.preprocess()
     >>> new_batch, post_processing_fn = program(qscripts)
     >>> results = dev.execute(new_batch, execution_config=execution_config)
@@ -92,7 +92,7 @@ class DefaultQubit2(Device):
     Suppose one has a processor with 5 cores or more, these scripts can be executed in
     parallel as follows
 
-    >>> dev = DefaultQubit2(max_workers=5)
+    >>> dev = DefaultQubit(max_workers=5)
     >>> program, execution_config = dev.preprocess()
     >>> new_batch, post_processing_fn = program(qscripts)
     >>> results = dev.execute(new_batch, execution_config=execution_config)
@@ -158,7 +158,7 @@ class DefaultQubit2(Device):
     ) -> bool:
         """Check whether or not derivatives are available for a given configuration and circuit.
 
-        ``DefaultQubit2`` supports backpropagation derivatives with analytic results, as well as
+        ``DefaultQubit`` supports backpropagation derivatives with analytic results, as well as
         adjoint differentiation.
 
         Args:
@@ -336,7 +336,7 @@ class DefaultQubit2(Device):
     ) -> bool:
         """Whether or not this device defines a custom jacobian vector product.
 
-        ``DefaultQubit2`` supports backpropagation derivatives with analytic results, as well as
+        ``DefaultQubit`` supports backpropagation derivatives with analytic results, as well as
         adjoint differentiation.
 
         Args:
@@ -425,7 +425,7 @@ class DefaultQubit2(Device):
     ) -> bool:
         """Whether or not this device defines a custom vector jacobian product.
 
-        ``DefaultQubit2`` supports backpropagation derivatives with analytic results, as well as
+        ``DefaultQubit`` supports backpropagation derivatives with analytic results, as well as
         adjoint differentiation.
 
         Args:

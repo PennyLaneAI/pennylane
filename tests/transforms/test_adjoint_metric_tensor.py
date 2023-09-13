@@ -261,7 +261,7 @@ class TestAdjointMetricTensorTape:
         """Test that the output is correct when using Autograd and
         calling the adjoint metric tensor directly on a tape."""
         expected = autodiff_metric_tensor(ansatz, 3)(*params)
-        dev = qml.devices.DefaultQubit2()
+        dev = qml.devices.DefaultQubit()
 
         wires = ("a", "b", "c")
 

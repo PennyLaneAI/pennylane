@@ -57,7 +57,7 @@ class TestSnapshot:
     def test_default_qubit2(self):
         """Test that multiple snapshots are returned correctly on the new
         state-vector simulator."""
-        dev = qml.devices.DefaultQubit2()
+        dev = qml.devices.DefaultQubit()
 
         # TODO: add additional QNode test once the new device supports it
 

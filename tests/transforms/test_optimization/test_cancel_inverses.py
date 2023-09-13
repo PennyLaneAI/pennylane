@@ -367,7 +367,7 @@ def qfunc_circuit(theta):
 
 
 ### QNode
-dev = qml.devices.DefaultQubit2()
+dev = qml.devices.DefaultQubit()
 
 
 @qml.qnode(device=dev)

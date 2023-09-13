@@ -50,7 +50,7 @@ accessible from the ``pennylane.devices`` submodule.
 
     ExecutionConfig
     Device
-    DefaultQubit2
+    DefaultQubit
 
 Qubit Simulation Tools
 ----------------------
@@ -62,7 +62,7 @@ Qubit Simulation Tools
 
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
 from .device_api import Device
-from .default_qubit_2 import DefaultQubit2
+from .default_qubit import DefaultQubit
 
 # DefaultQubitTF and DefaultQubitAutograd not imported here since this
 # would lead to an automatic import of tensorflow and autograd, which are

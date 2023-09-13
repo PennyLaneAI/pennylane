@@ -26,7 +26,7 @@ def test_shots_new_device_interface():
     """Test that calling set_shots on a device implementing the new interface leaves it
     untouched.
     """
-    dev = qml.devices.DefaultQubit2()
+    dev = qml.devices.DefaultQubit()
     with pytest.raises(ValueError):
         with set_shots(dev, 10):
             pass

@@ -34,7 +34,7 @@ class _Debugger:
             raise DeviceError("Device does not support snapshots.")
 
         # new device API: check if it's the simulator device
-        if isinstance(dev, qml.devices.Device) and not isinstance(dev, qml.devices.DefaultQubit2):
+        if isinstance(dev, qml.devices.Device) and not isinstance(dev, qml.devices.DefaultQubit):
             raise DeviceError("Device does not support snapshots.")
 
         self.snapshots = {}
