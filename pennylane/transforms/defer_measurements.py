@@ -172,8 +172,10 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
             # Store measurement outcome in new wire if wire gets reused
             if op.wires[0] in reused_measurement_wires or op.wires[0] in measured_wires:
                 control_wires[op.id] = cur_wire
+
                 with QueuingManager.stop_recording():
                     new_operations.append(qml.CNOT([op.wires[0], cur_wire]))
+
                 if op.reset:
                     with QueuingManager.stop_recording():
                         new_operations.append(qml.CNOT([cur_wire, op.wires[0]]))
