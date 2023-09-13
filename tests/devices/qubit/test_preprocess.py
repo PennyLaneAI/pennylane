@@ -262,7 +262,12 @@ class TestExpandFnTransformations:
         assert new_qs.measurements == qs.measurements
 
     @pytest.mark.parametrize(
-        "prep_op", (qml.BasisState([1], wires=0), qml.StatePrep([0, 1], wires=1))
+        "prep_op",
+        (
+            qml.BasisState([1], wires=0),
+            qml.StatePrep([0, 1], wires=1),
+            qml.AmplitudeEmbedding([0, 1], wires=1),
+        ),
     )
     def test_expand_fn_state_prep(self, prep_op):
         """Test that the expand_fn only expands mid-circuit instances of StatePrepBase"""
@@ -272,6 +277,7 @@ class TestExpandFnTransformations:
             qml.StatePrep([0, 1], wires=1),
             qml.BasisState([1], wires=0),
             qml.RZ(0.123, wires=1),
+            qml.AmplitudeEmbedding([0, 1, 0, 0], wires=[0, 1]),
         ]
         measurements = [qml.expval(qml.PauliZ(0)), qml.probs()]
         tape = QuantumScript(ops=ops, measurements=measurements)
@@ -284,10 +290,13 @@ class TestExpandFnTransformations:
             qml.RY(3.14159265, wires=1),  # decomposition of StatePrep
             qml.PauliX(wires=0),  # decomposition of BasisState
             qml.RZ(0.123, wires=1),
+            qml.RY(1.57079633, wires=[1]),  # decomposition of AmplitudeEmbedding
+            qml.CNOT(wires=[0, 1]),
+            qml.RY(1.57079633, wires=[1]),
+            qml.CNOT(wires=[0, 1]),
         ]
 
-        for op, exp in zip(expanded_tape.circuit, expected + measurements):
-            assert qml.equal(op, exp)
+        assert expanded_tape.circuit == expected + measurements
 
 
 class TestValidateMeasurements:
