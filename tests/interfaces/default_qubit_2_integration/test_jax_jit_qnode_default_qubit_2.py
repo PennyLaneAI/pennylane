@@ -1224,6 +1224,9 @@ class TestQubitIntegrationHigherOrder:
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
 
+        # `qml.state` needs wires with jax-jit because `tape.shape` uses the device wires
+        dev._wires = qml.wires.Wires([0, 1])  # pylint:disable=protected-access
+
         @qnode(
             dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
         )
