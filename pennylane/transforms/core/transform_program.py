@@ -265,6 +265,75 @@ class TransformProgram:
         """
         return self[-1].is_informative if self else False
 
+    @property
+    def has_classical_cotransform(self) -> bool:
+        """Check if the transform program has some classical cotransforms.
+
+        Returns:
+            bool: Boolean
+        """
+        return any([t.classical_cotransform is not None for t in self])
+
+    def set_classical_jacobians(self, qnode, args, kwargs):
+        def classical_preprocessing(program, *args, **kwargs):
+            """Returns the trainable gate parameters for a given QNode input."""
+            kwargs.pop("shots", None)
+            kwargs.pop("argnums", None)
+            qnode.construct(args, kwargs)
+            tape = qnode.qtape
+
+            tapes, _ = program((tape,))
+            return tuple(qml.math.stack(tape.get_parameters(trainable_only=True)) for tape in tapes)
+
+        classical_jacobians = []
+        for transform, index in enumerate(self):
+            if transform.classical_cotransform:
+                classical_jacobians.append(jax.jacobian(classical_preprocessing)(self[0:index], args, kwargs))
+            classical_jacobians.append(None)
+
+        self._classical_jacobians = classical_jacobians
+
+    def set_all_argnums(self, qnode, argnums, args, kwargs):
+        """This functions gets the tape parameters from the QNode construction given some argnums (only for Jax).
+        The tape parameters are transformed to JVPTracer if they are from argnums. This function imitates the behavior
+        of Jax in order to mark trainable parameters.
+
+        Args:
+            qnode(qml.QNode): the quantum node.
+            argnums(int, list[int]): the parameters that we want to set as trainable (on the QNode level).
+            expand_fn(callable): the function that is expanding the tape.
+
+        Return:
+            list[float, jax.JVPTracer]: List of parameters where the trainable one are `JVPTracer`.
+        """
+        def jax_argnums_to_tape_trainable(program, args, kwargs)
+            import jax
+
+            with jax.core.new_main(jax.interpreters.ad.JVPTrace) as main:
+                trace = jax.interpreters.ad.JVPTrace(main, 0)
+
+            args_jvp = [
+                jax.interpreters.ad.JVPTracer(trace, arg, jax.numpy.zeros(arg.shape))
+                if i in argnums
+                else arg
+                for i, arg in enumerate(args)
+            ]
+
+            qnode.construct(args_jvp, kwargs)
+            tape = qnode.qtape
+            tapes, _ = program((tape,))
+            del trace
+            return tuple(tape.get_parameters(trainable_only=False) for tape in tapes)
+
+        argnums = []
+        for transform, index in enumerate(self):
+            if transform.classical_cotransform:
+                argnums.append(jax_argnums_to_tape_trainable(self[0:index], args, kwargs))
+            else:
+                argnums.append(None)
+
+        self.argnums = argnums
+
     def __call__(self, tapes: Tuple[QuantumTape]) -> Tuple[ResultBatch, BatchPostProcessingFn]:
         if self.is_informative:
             raise NotImplementedError("Informative transforms are not yet supported.")
@@ -274,11 +343,7 @@ class TransformProgram:
         processing_fns_stack = []
 
         for transform_container in self:
-            transform, args, kwargs, cotransform, _ = transform_container
-            if cotransform:
-                raise NotImplementedError(
-                    "cotransforms are not yet integrated with TransformProgram"
-                )
+            transform, targs, tkwargs, cotransform, _ = transform_container
 
             execution_tapes = []
             fns = []
@@ -286,8 +351,13 @@ class TransformProgram:
 
             start = 0
             for tape in tapes:
-                new_tapes, fn = transform(tape, *args, **kwargs)
+                #TODO add argnums
+                #tape.trainable_params = argnums
+
+                new_tapes, fn = transform(tape, *targs, **tkwargs)
                 execution_tapes.extend(new_tapes)
+
+                # TODO add classical cotransform
                 fns.append(fn)
                 end = start + len(new_tapes)
                 slices.append(slice(start, end))

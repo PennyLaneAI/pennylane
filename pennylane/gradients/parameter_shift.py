@@ -38,7 +38,6 @@ from .gradient_transform import (
     assert_multimeasure_not_broadcasted,
     choose_grad_methods,
     gradient_analysis_and_validation,
-    gradient_transform,
     _no_trainable_grad,
     reorder_grads,
 )
@@ -1104,35 +1103,3 @@ def param_shift(
         return gradient_tapes, processing_fn
 
     return gradient_tapes, fn
-
-
-@param_shift.custom_qnode_transform
-def _qnode_transform_param_shift(self, qnode, targs, tkwargs):
-    """Here, we overwrite the QNode execution wrapper."""
-
-    argnums = tkwargs.get("argnums", None)
-
-    interface = qml.math.get_interface(*args)
-    trainable_params = qml.math.get_trainable_indices(args)
-
-    if interface == "jax" and tkwargs.get("argnum", None):
-        raise qml.QuantumFunctionError(
-            "argnum does not work with the Jax interface. You should use argnums instead."
-        )
-
-    if interface == "jax" and not trainable_params:
-        if argnums is None:
-            argnums_ = [0]
-
-        else:
-            argnums_ = [argnums] if isinstance(argnums, int) else argnums
-
-        params = qml.math.jax_argnums_to_tape_trainable(
-            qnode, argnums_, self.expand_fn, args, kwargs
-        )
-        argnums_ = qml.math.get_trainable_indices(params)
-        kwargs["argnums"] = argnums_
-
-    new_qnode = self.default_qnode_transform(qnode, targs, tkwargs)
-
-    return new_qnode
