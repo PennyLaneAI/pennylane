@@ -17,12 +17,14 @@ of a qubit-based quantum tape.
 """
 # pylint: disable=protected-access,too-many-arguments,too-many-statements
 from typing import Sequence, Callable
+from functools import partial
 
 import numpy as np
 
 import pennylane as qml
 from pennylane.measurements import VarianceMP
 from pennylane.transforms.core import transform
+from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 
 from .finite_difference import finite_diff
 from .general_shift_rules import (
@@ -721,7 +723,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
     return gradient_tapes, processing_fn
 
 
-@transform
+@partial(transform, classical_cotransform=_contract_qjac_with_cjac)
 def param_shift(
     tape: qml.tape.QuantumTape,
     argnum=None,

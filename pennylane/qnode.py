@@ -960,8 +960,8 @@ class QNode:
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
         # Calculcate the classical jacobians if needed
-        transform_program.get_classical_jacobians(self, args, kwargs)
-
+        if self.transform_program.has_classical_cotransform:
+            self.transform_program.set_all_classical_jacobians(self, args, kwargs)
         # pylint: disable=unexpected-keyword-arg
         res = qml.execute(
             (self._tape,),
