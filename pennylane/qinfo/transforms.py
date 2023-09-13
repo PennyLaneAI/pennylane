@@ -18,7 +18,7 @@ from typing import Sequence, Callable
 
 import pennylane as qml
 from pennylane.tape import QuantumTape
-from pennylane.devices import DefaultQubit, DefaultMixed
+from pennylane.devices import DefaultQubitLegacy, DefaultMixed
 from pennylane.measurements import StateMP, DensityMatrixMP
 from pennylane.transforms import adjoint_metric_tensor, metric_tensor
 from pennylane.transforms.core import transform
@@ -731,7 +731,7 @@ def quantum_fisher(qnode, *args, **kwargs):
 
     """
 
-    if qnode.device.shots is not None and isinstance(qnode.device, DefaultQubit):
+    if qnode.device.shots is not None and isinstance(qnode.device, DefaultQubitLegacy):
 
         def wrapper(*args0, **kwargs0):
             return 4 * metric_tensor(qnode, *args, **kwargs)(*args0, **kwargs0)

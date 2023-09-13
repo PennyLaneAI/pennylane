@@ -77,13 +77,14 @@ def _get_slice(index, axis, num_axes):
 
 
 # pylint: disable=unused-argument
-class DefaultQubit(QubitDevice):
+class DefaultQubitLegacy(QubitDevice):
     """Default qubit device for PennyLane.
 
     .. warning::
 
-        The API of ``DefaultQubit`` will be updated soon to follow a new device interface described
-        in :class:`pennylane.devices.experimental.Device`.
+        This is the legacy implementation of DefaultQubit. It has been replaced by
+        ``qml.devices.experimental.DefaultQubit2``, which can be accessed with the familiar constructor,
+        ``qml.device("default.qubit")``.
 
         This change will not alter device behaviour for most workflows, but may have implications for
         plugin developers and users who directly interact with device methods. Please consult

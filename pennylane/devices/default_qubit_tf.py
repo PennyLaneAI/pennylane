@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains a TensorFlow implementation of the :class:`~.DefaultQubit`
+"""This module contains a TensorFlow implementation of the :class:`~.DefaultQubitLegacy`
 reference plugin.
 """
 import itertools
@@ -35,12 +35,12 @@ except ImportError as e:  # pragma: no cover
 
 
 from pennylane.math.single_dispatch import _ndim_tf
-from . import DefaultQubit
+from . import DefaultQubitLegacy
 from .default_qubit import tolerance
 
 
-class DefaultQubitTF(DefaultQubit):
-    """Simulator plugin based on ``"default.qubit"``, written using TensorFlow.
+class DefaultQubitTF(DefaultQubitLegacy):
+    """Simulator plugin based on ``"default.qubit.legacy"``, written using TensorFlow.
 
     **Short name:** ``default.qubit.tf``
 
@@ -250,12 +250,12 @@ class DefaultQubitTF(DefaultQubit):
         ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
 
         if batch_size:
-            # This is the only logical branch that differs from DefaultQubit
+            # This is the only logical branch that differs from DefaultQubitLegacy
             raise NotImplementedError(
                 "Parameter broadcasting is not supported together with initializing the state "
                 "vector of a subsystem of the device when using DefaultQubitTF."
             )
-        # The following line is unchanged in the "else"-clause in DefaultQubit's implementation
+        # The following line is unchanged in the "else"-clause in DefaultQubitLegacy's implementation
         state = self._scatter(ravelled_indices, state, [2**self.num_wires])
         state = self._reshape(state, output_shape)
         self._state = self._asarray(state, dtype=self.C_DTYPE)

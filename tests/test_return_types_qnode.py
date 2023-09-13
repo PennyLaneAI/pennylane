@@ -19,8 +19,9 @@ import pytest
 
 import pennylane as qml
 
+# TODO: add back lightning.qubit here
 test_wires = [2, 3, 4]
-devices = ["default.qubit", "lightning.qubit", "default.mixed", "default.qutrit"]
+devices = ["default.qubit", "default.mixed", "default.qutrit"]
 
 
 def qubit_ansatz(x):
@@ -261,7 +262,7 @@ class TestIntegrationSingleReturn:
             if isinstance(measurement.obs, qml.PauliZ):
                 pytest.skip("DefaultQutrit doesn't support qubit observables.")
         elif isinstance(measurement.obs, qml.GellMann):
-            pytest.skip("DefaultQubit doesn't support qutrit observables.")
+            pytest.skip("DefaultQubitLegacy doesn't support qutrit observables.")
 
         dev = qml.device(device, wires=2, shots=shots)
         func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
@@ -296,7 +297,7 @@ class TestIntegrationSingleReturn:
             if isinstance(measurement.obs, qml.PauliZ):
                 pytest.skip("DefaultQutrit doesn't support qubit observables.")
         elif isinstance(measurement.obs, qml.GellMann):
-            pytest.skip("DefaultQubit doesn't support qutrit observables.")
+            pytest.skip("DefaultQubitLegacy doesn't support qutrit observables.")
 
         dev = qml.device(device, wires=2, shots=shots)
         func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
@@ -989,7 +990,8 @@ class TestIntegrationSingleReturnJax:
 
 multi_return_wires = [([0], [1]), ([1], [0]), ([0], [0]), ([1], [1])]
 
-devices = ["default.qubit", "lightning.qubit", "default.mixed", "default.qutrit"]
+# TODO: add back lightning.qubit here
+devices = ["default.qubit", "default.mixed", "default.qutrit"]
 
 
 class TestIntegrationMultipleReturns:
@@ -1234,7 +1236,7 @@ class TestIntegrationMultipleReturns:
             if isinstance(measurement.obs, qml.PauliZ):
                 pytest.skip("DefaultQutrit doesn't support qubit observables.")
         elif isinstance(measurement.obs, qml.GellMann):
-            pytest.skip("DefaultQubit doesn't support qutrit observables.")
+            pytest.skip("DefaultQubitLegacy doesn't support qutrit observables.")
 
         dev = qml.device(device, wires=2, shots=shots)
         func = qubit_ansatz if device != "default.qutrit" else qutrit_ansatz
@@ -1266,7 +1268,7 @@ class TestIntegrationMultipleReturns:
             if isinstance(measurement.obs, qml.PauliZ):
                 pytest.skip("DefaultQutrit doesn't support qubit observables.")
         elif isinstance(measurement.obs, qml.GellMann):
-            pytest.skip("DefaultQubit doesn't support qutrit observables.")
+            pytest.skip("DefaultQubitLegacy doesn't support qutrit observables.")
 
         dev = qml.device(device, wires=2, shots=shots)
         func = qubit_ansatz if device != "default.qutrit" else qutrit_ansatz

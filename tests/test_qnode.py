@@ -242,7 +242,7 @@ class TestValidation:
             capabilities.update(model="None")
             return capabilities
 
-        monkeypatch.setattr(qml.devices.DefaultQubit, "capabilities", capabilities)
+        monkeypatch.setattr(qml.devices.DefaultQubitLegacy, "capabilities", capabilities)
         dev = qml.device("default.qubit", wires=1)
 
         with pytest.raises(
@@ -306,7 +306,7 @@ class TestValidation:
             return capabilities
 
         # finite differences is the fallback when we know nothing about the device
-        monkeypatch.setattr(qml.devices.DefaultQubit, "capabilities", capabilities)
+        monkeypatch.setattr(qml.devices.DefaultQubitLegacy, "capabilities", capabilities)
         res = QNode.get_best_method(dev, "another_interface")
         assert res == (qml.gradients.finite_diff, {}, dev)
 
@@ -365,7 +365,7 @@ class TestValidation:
             return capabilities
 
         # finite differences is the fallback when we know nothing about the device
-        monkeypatch.setattr(qml.devices.DefaultQubit, "capabilities", capabilities)
+        monkeypatch.setattr(qml.devices.DefaultQubitLegacy, "capabilities", capabilities)
         res = QNode.best_method_str(dev, "another_interface")
         assert res == "finite-diff"
 
