@@ -1223,9 +1223,8 @@ class TestQubitIntegrationHigherOrder:
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
-
-        # `qml.state` needs wires with jax-jit because `tape.shape` uses the device wires
-        dev._wires = qml.wires.Wires([0, 1])  # pylint:disable=protected-access
+        if not dev.wires:
+            dev._wires = qml.wires.Wires([0, 1])  # pylint:disable=protected-access
 
         @qnode(
             dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
@@ -1238,7 +1237,7 @@ class TestQubitIntegrationHigherOrder:
 
         def cost_fn(x, y):
             res = circuit(x, y)
-            assert res.dtype is np.dtype("complex128")  # pylint:disable=no-member
+            assert res.dtype is np.dtype("complex128")
             probs = jax.numpy.abs(res) ** 2
             return probs[0] + probs[2]
 
