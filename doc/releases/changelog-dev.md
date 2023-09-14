@@ -176,6 +176,8 @@
   Note that these functions are unstable while device upgrades are underway.
   [(#4555)](https://github.com/PennyLaneAI/pennylane/pull/4555)
 
+* Minor documentation improvement to the usage example in the `qml.QuantumMonteCarlo` page. Integral was missing the differential dx with respect to which the integration is being performed. [(#4593)](https://github.com/PennyLaneAI/pennylane/pull/4593)  
+
 <h3>Bug fixes 🐛</h3>
 
 * Fix `skip_first` option in `expand_tape_state_prep`.
@@ -195,6 +197,9 @@
   expectation.
   [(#4590)](https://github.com/PennyLaneAI/pennylane/pull/4590)
 
+
+
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -204,6 +209,7 @@ Soran Jahangiri,
 Lillian M. A. Frederiksen,
 Vincent Michaud-Rioux,
 Romain Moyard,
+Daniel F. Nino,
 Mudit Pandey,
 Matthew Silverman,
 Jay Soni,
