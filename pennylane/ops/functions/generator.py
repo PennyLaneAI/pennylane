@@ -168,7 +168,11 @@ def generator(op: qml.operation.Operator, format="prefactor"):
     """
 
     def processing_fn(*args, **kwargs):
-        gen_op = op(*args, **kwargs) if callable(op) else op
+        if callable(op):
+            with qml.queuing.QueuingManager.stop_recording():
+                gen_op = op(*args, **kwargs)
+        else:
+            gen_op = op
 
         if gen_op.num_params != 1:
             raise ValueError(
