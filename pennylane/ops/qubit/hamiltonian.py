@@ -16,6 +16,8 @@ This submodule contains the discrete-variable quantum operations that perform
 arithmetic operations on their input states.
 """
 # pylint: disable=too-many-arguments,too-many-instance-attributes
+from ast import Continue
+from fcntl import F_SEAL_SEAL
 import itertools
 import numbers
 from collections.abc import Iterable
@@ -617,15 +619,16 @@ class Hamiltonian(Observable):
             self.simplify()
             other.simplify()
 
-            for selfdata in self._obs_data():
-                flag = False
+            for self_data in self._obs_data():
+                is_equal = False
                 for other_data in other._obs_data():
-                    if np.isclose(selfdata[0], otherdata[0]):
-                        flag =True
-                        continue
-                if not flag:
+                    if np.isclose(self_data[0], other_data[0]):
+                        is_equal =True
+                        Continue
+                if not is_equal:
                     return False
             return True
+            
         if isinstance(other, (Tensor, Observable)):
             self.simplify()
             return self._obs_data() == {
