@@ -620,7 +620,6 @@ def execute(
     # Exiting early if we do not need to deal with an interface boundary
     if no_interface_boundary_required:
         results = inner_execute(tapes)
-        print("results", results)
         return post_processing(results)
 
     _grad_on_execution = False

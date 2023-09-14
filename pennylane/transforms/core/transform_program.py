@@ -294,6 +294,9 @@ class TransformProgram:
             if old_interface == "auto":
                 qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
+            if qnode.interface in ["autograd", "tensorflow", "tf"]:
+                raise qml.transforms.TransformError("Wrong interface")
+
             if qnode.interface == "torch":
                 import torch
 
@@ -322,7 +325,7 @@ class TransformProgram:
         for index, transform in enumerate(self):
             if transform.classical_cotransform:
                 argnums = transform._kwargs.get("argnums", None)
-                classical_jacobians.append(jacobian(classical_preprocessing, TransformProgram(self[0:index+1]), argnums, *args, **kwargs))
+                classical_jacobians.append(jacobian(classical_preprocessing, TransformProgram(self[0:index]), argnums, *args, **kwargs))
             else:
                 classical_jacobians.append(None)
         self._classical_jacobians = classical_jacobians
@@ -351,7 +354,6 @@ class TransformProgram:
 
         argnums = []
         for index, transform in enumerate(self):
-            print(transform)
             argnums_ = transform.kwargs.get("argnums", None)
             argnums_ = [0] if qnode.interface in ["jax", "jax-jit"] and argnums_ is None else argnums_
             if transform.classical_cotransform and argnums_:
@@ -370,6 +372,7 @@ class TransformProgram:
 
         if not self:
             return tapes, null_postprocessing
+
         processing_fns_stack = []
 
         for i, transform_container in enumerate(self):
@@ -396,6 +399,7 @@ class TransformProgram:
                 start = end
 
                 if cotransform and self._classical_jacobians:
+                    print(self._classical_jacobians)
                     classical_fns.append(partial(cotransform, cjac=self._classical_jacobians[i][j], tape=tape))
                     slices_classical.append(slice(start_classical, start_classical+1))
                     start_classical += 1

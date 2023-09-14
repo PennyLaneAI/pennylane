@@ -327,7 +327,7 @@ def jacobian(func, argnum=None):
                 "If this is unintended, please add trainable parameters via the "
                 "'requires_grad' attribute or 'argnum' keyword."
             )
-
+        print(args, _argnum, func)
         jac = tuple(_jacobian(func, arg)(*args, **kwargs) for arg in _argnum)
 
         return jac[0] if unpack else jac
