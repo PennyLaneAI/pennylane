@@ -24,6 +24,15 @@ from pennylane.transforms.core import transform
 from pennylane.typing import TensorLike
 
 
+def check_wires(wires, wire_order):
+    """Helper function for validating wire order"""
+    if wire_order and not set(wires).issubset(wire_order):
+        raise OperationTransformError(
+            f"Wires in circuit {list(wires)} are inconsistent with "
+            f"those in wire_order {list(wire_order)}"
+        )
+
+
 def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
     r"""The matrix representation of an operation or quantum circuit.
 
@@ -130,11 +139,7 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
             )
         return _matrix_transform(op, wire_order=wire_order)
 
-    if wire_order and not set(op.wires).issubset(wire_order):
-        raise OperationTransformError(
-            f"Wires in circuit {list(op.wires)} are inconsistent with "
-            f"those in wire_order {list(wire_order)}"
-        )
+    check_wires(op.wires, wire_order)
 
     if isinstance(op, qml.operation.Tensor) and wire_order is not None:
         op = 1.0 * op  # convert to a Hamiltonian
@@ -155,11 +160,7 @@ def _matrix_transform(
     if not tape.wires:
         raise qml.operation.MatrixUndefinedError
 
-    if wire_order and not set(tape.wires).issubset(wire_order):
-        raise OperationTransformError(
-            f"Wires in circuit {list(tape.wires)} are inconsistent with "
-            f"those in wire_order {list(wire_order)}"
-        )
+    check_wires(tape.wires, wire_order)
 
     wires = kwargs.get("device_wires", None) or tape.wires
     wire_order = wire_order or wires
