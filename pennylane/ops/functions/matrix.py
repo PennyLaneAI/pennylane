@@ -183,11 +183,5 @@ def _matrix_transform(
 
 @_matrix_transform.custom_qnode_transform
 def _matrix_transform_qnode(self, qnode, targs, tkwargs):
-    if tkwargs.get("device_wires", None):
-        raise ValueError(
-            "Cannot provide a 'device_wires' value directly to the matrix decorator when "
-            "transforming a QNode."
-        )
-
     tkwargs.setdefault("device_wires", qnode.device.wires)
     return self.default_qnode_transform(qnode, targs, tkwargs)

@@ -21,6 +21,7 @@ import numpy as np
 import pytest
 import pennylane as qml
 from pennylane.tape import QuantumScript
+from pennylane.transforms.op_transforms import OperationTransformError
 
 pyzx = pytest.importorskip("pyzx")
 
@@ -67,6 +68,14 @@ def test_import_pyzx(monkeypatch):
 
 class TestConvertersZX:
     """Test converters to_zx and from_zx."""
+
+    def test_invalid_argument(self):
+        """Assert error raised when input is neither a tape, QNode, nor quantum function"""
+        with pytest.raises(
+            OperationTransformError,
+            match="Input is not an Operator, tape, QNode, or quantum function",
+        ):
+            _ = qml.transforms.to_zx(None)
 
     @pytest.mark.parametrize("script", qscript)
     @pytest.mark.parametrize("operation", supported_operations)

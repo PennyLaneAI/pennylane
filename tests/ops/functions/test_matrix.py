@@ -493,7 +493,7 @@ class TestValidation:
             OperationTransformError,
             match="Input is not an Operator, tape, QNode, or quantum function",
         ):
-            qml.matrix(None)(0.5)
+            _ = qml.matrix(None)
 
     def test_inconsistent_wires(self):
         """Assert error raised when wire labels in wire_order and circuit are inconsistent"""
