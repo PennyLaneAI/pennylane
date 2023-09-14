@@ -401,7 +401,7 @@ def _contract_qjac_with_cjac(qjac, cjac, tape):
     print("qjac", qjac, "cjac", cjac)
     num_measurements = len(tape.measurements)
     has_partitioned_shots = tape.shots.has_partitioned_shots
-
+    print("qjac", qjac)
     if isinstance(qjac, tuple) and len(qjac) == 1:
         qjac = qjac[0]
 
@@ -439,6 +439,7 @@ def _contract_qjac_with_cjac(qjac, cjac, tape):
 
         if not (multi_meas or has_partitioned_shots):
             # Single parameter, single measurements
+            print(_reshape(qjac), cjac)
             return tdot(_reshape(qjac), cjac)
 
         if not (multi_meas and has_partitioned_shots):

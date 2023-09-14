@@ -322,7 +322,6 @@ class TransformProgram:
         for index, transform in enumerate(self):
             if transform.classical_cotransform:
                 argnums = transform._kwargs.get("argnums", None)
-                transform._kwargs.pop("argnums", None)
                 classical_jacobians.append(jacobian(classical_preprocessing, TransformProgram(self[0:index+1]), argnums, *args, **kwargs))
             else:
                 classical_jacobians.append(None)
@@ -352,22 +351,20 @@ class TransformProgram:
 
         argnums = []
         for index, transform in enumerate(self):
-            argnums_ = transform._kwargs.get("argnums", None)
+            print(transform)
+            argnums_ = transform.kwargs.get("argnums", None)
             argnums_ = [0] if qnode.interface in ["jax", "jax-jit"] and argnums_ is None else argnums_
             if transform.classical_cotransform and argnums_:
                 params = jax_argnums_to_tape_trainable(TransformProgram(self[0:index]), argnums_, args, kwargs)
-                print(params)
                 argnums_ = [qml.math.get_trainable_indices(param) for param in params]
                 argnums.append(argnums_)
             else:
                 argnums.append(None)
 
         self._argnums = argnums
-        print(self._argnums)
         qnode.construct(args, kwargs)
 
     def __call__(self, tapes: Tuple[QuantumTape]) -> Tuple[ResultBatch, BatchPostProcessingFn]:
-        print("hello")
         if self.is_informative:
             raise NotImplementedError("Informative transforms are not yet supported.")
 
@@ -388,11 +385,8 @@ class TransformProgram:
             start = 0
             start_classical = 0
             for j, tape in enumerate(tapes):
-                if self._argnums:
-                    print(self._argnums, any(self._argnums))
-                    if not all(item is None for item in self._argnums):
-                        tape.trainable_params = self._argnums[i][j]
-                        print(tape.trainable_params)
+                if self._argnums and not all(item is None for item in self._argnums):
+                    tkwargs["argnums"] = self._argnums[i][j]
                 new_tapes, fn = transform(tape, *targs, **tkwargs)
                 execution_tapes.extend(new_tapes)
 
