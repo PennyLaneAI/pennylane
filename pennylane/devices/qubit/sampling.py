@@ -192,6 +192,9 @@ def _measure_with_samples_diagonalizing_gates(
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. If None, a random key will be
+            generated. Only for simulation using JAX.
 
     Returns:
         TensorLike[Any]: Sample measurement results
@@ -359,6 +362,9 @@ def sample_state(
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]):
             A seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. If None, a random key will be
+            generated. Only for simulation using JAX.
 
     Returns:
         ndarray[int]: Sample values of the shape (shots, num_wires)
@@ -366,7 +372,7 @@ def sample_state(
     if (
         prng_key is not None
     ):  # is this being passed the only instance where it should be used? I think this should be if interface == "jax". I could fix this in execute, but then what about all the other things?
-        return sample_state_jax_prng(
+        return sample_state_jax(
             state, shots, is_state_batched=is_state_batched, wires=wires, rng=rng, prng_key=prng_key
         )
     rng = np.random.default_rng(rng)
@@ -392,7 +398,7 @@ def sample_state(
 
 
 # pylint:disable = unused-argument
-def sample_state_jax_prng(
+def sample_state_jax(
     state,
     shots: int,
     is_state_batched: bool = False,
@@ -412,6 +418,9 @@ def sample_state_jax_prng(
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]):
             A seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. If None, a random key will be
+            generated. Only for simulation using JAX.
 
     Returns:
         ndarray[int]: Sample values of the shape (shots, num_wires)
