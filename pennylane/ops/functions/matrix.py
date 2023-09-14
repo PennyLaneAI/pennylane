@@ -130,6 +130,12 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
             )
         return _matrix_transform(op, wire_order=wire_order)
 
+    if wire_order and not set(op.wires).issubset(wire_order):
+        raise OperationTransformError(
+            f"Wires in circuit {op.wires.tolist()} are inconsistent with "
+            f"those in wire_order {wire_order.tolist()}"
+        )
+
     if isinstance(op, qml.operation.Tensor) and wire_order is not None:
         op = 1.0 * op  # convert to a Hamiltonian
 
@@ -138,7 +144,7 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
 
     try:
         return op.matrix(wire_order=wire_order)
-    except (TypeError, ImportError, qml.operation.MatrixUndefinedError):
+    except:  # pylint: disable=bare-except
         return matrix(op.expand(), wire_order=wire_order)
 
 
@@ -146,25 +152,31 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
 def _matrix_transform(
     tape: qml.tape.QuantumTape, wire_order=None, **kwargs
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
+    wires = kwargs.get("device_wires", None) or tape.wires
+    if not wires:
+        raise qml.operation.MatrixUndefinedError
+
+    if wire_order and not set(wires).issubset(wire_order):
+        raise OperationTransformError(
+            f"Wires in circuit {wires.tolist()} are inconsistent with "
+            f"those in wire_order {wire_order.tolist()}"
+        )
+    wire_order = wire_order or wires
+
     def processing_fn(res):
         """Defines how matrix works if applied to a tape containing multiple operations."""
-        wires = kwargs.get("device_wires", None) or res[0].wires
-        if not wires:
-            raise qml.operation.MatrixUndefinedError
+
         params = res[0].get_parameters(trainable_only=False)
         interface = qml.math.get_interface(*params)
 
-        # Can't name it wire_order; reference before assignment error gets raised
-        wires_order = wire_order or wires
-
         # initialize the unitary matrix
         if len(res[0].operations) == 0:
-            result = qml.math.eye(2 ** len(wires_order), like=interface)
+            result = qml.math.eye(2 ** len(wire_order), like=interface)
         else:
-            result = matrix(res[0].operations[0], wire_order=wires_order)
+            result = matrix(res[0].operations[0], wire_order=wire_order)
 
         for op in res[0].operations[1:]:
-            U = matrix(op, wire_order=wires_order)
+            U = matrix(op, wire_order=wire_order)
             # Coerce the matrices U and result and use matrix multiplication. Broadcasted axes
             # are handled correctly automatically by ``matmul`` (See e.g. NumPy documentation)
             result = qml.math.matmul(*qml.math.coerce([U, result], like=interface), like=interface)
