@@ -75,7 +75,7 @@ class TestSampleState:
         # prng_key defaults to None, should NOT call _sample_state_jax
         _ = sample_state(state, 10)
 
-        assert spy.called_once()
+        spy.assert_called_once()
 
     @pytest.mark.jax
     def test_sample_state_jax(self):
