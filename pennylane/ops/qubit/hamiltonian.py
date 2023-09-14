@@ -623,12 +623,12 @@ class Hamiltonian(Observable):
                 is_equal = False
                 for other_data in other._obs_data():
                     if np.isclose(self_data[0], other_data[0]):
-                        is_equal =True
+                        is_equal = True
                         Continue
                 if not is_equal:
                     return False
             return True
-            
+
         if isinstance(other, (Tensor, Observable)):
             self.simplify()
             return self._obs_data() == {
