@@ -20,6 +20,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.devices.qubit import simulate
 from pennylane.devices.qubit import sample_state, measure_with_samples
+from pennylane.devices.qubit.sampling import _sample_state_jax
 
 two_qubit_state = np.array([[0, 1j], [-1, 0]], dtype=np.complex128) / np.sqrt(2)
 APPROX_ATOL = 0.01
@@ -61,6 +62,57 @@ class TestSampleState:
         assert samples.shape == (10, 2)
         assert samples.dtype == np.int64
         assert all(qml.math.allequal(s, [0, 1]) or qml.math.allequal(s, [1, 0]) for s in samples)
+
+    @pytest.mark.jax
+    def test_sample_state_jax(self):
+        """Tests that the returned samples are as expected when explicitly calling _sample_state_jax."""
+        state = qml.math.array(two_qubit_state, like="jax")
+        # rng used when prng_key is None, normally passed from sample_state
+        rng = np.random.default_rng()
+
+        samples = _sample_state_jax(state, 10, rng=rng)
+
+        assert samples.shape == (10, 2)
+        assert samples.dtype == np.int64
+        assert all(qml.math.allequal(s, [0, 1]) or qml.math.allequal(s, [1, 0]) for s in samples)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("prng_key", [None, 0, 27])
+    def test_sample_state_jax_prng_key(self, prng_key):
+        """Test that _sample_state_jax executes as expected for all expected input types for prng_key"""
+        state = qml.math.array(two_qubit_state, like="jax")
+        # used when prng_key is None, normally passed from sample_state
+        rng = np.random.default_rng()
+
+        samples = _sample_state_jax(state, shots=10, rng=rng, prng_key=prng_key)
+        samples2 = _sample_state_jax(state, shots=10, rng=rng, prng_key=prng_key)
+
+        assert samples.shape == samples2.shape == (10, 2)
+        assert samples.dtype == samples2.dtype == np.int64
+        assert all(qml.math.allequal(s, [0, 1]) or qml.math.allequal(s, [1, 0]) for s in samples)
+
+        if prng_key is None:
+            assert not np.allclose(samples, samples2)
+        else:
+            import jax
+
+            key2 = jax.random.PRNGKey(prng_key)
+            samples3 = _sample_state_jax(state, shots=10, prng_key=key2)
+            samples4 = _sample_state_jax(state, shots=10, prng_key=key2)
+
+            assert np.allclose(samples, samples2, samples3, samples4)
+
+    @pytest.mark.jax
+    def test_prng_key_determines_sample_state_jax_results(self):
+        """Test that setting the prng_key determines the results for _sample_state_jax"""
+        state = qml.math.array(two_qubit_state, like="jax")
+
+        samples = _sample_state_jax(state, shots=10, prng_key=12)
+        samples2 = _sample_state_jax(state, shots=10, prng_key=12)
+        samples3 = _sample_state_jax(state, shots=10, prng_key=13)
+
+        assert np.all(samples == samples2)
+        assert not np.allclose(samples, samples3)
 
     @pytest.mark.parametrize("wire_order", [[2], [2, 0], [0, 2, 1]])
     def test_marginal_sample_state(self, wire_order):

@@ -261,9 +261,7 @@ class DefaultQubit2(Device):
             )
             prng_key = None
         if interface == "jax" and prng_key is None:
-            prng_key = (
-                self._rng.random()
-            )  # this is duplicated in an unreachable line of the sample_state_jax function
+            prng_key = int(self._rng.integers(2**31 - 1, size=1))
 
         if max_workers is None:
             results = tuple(

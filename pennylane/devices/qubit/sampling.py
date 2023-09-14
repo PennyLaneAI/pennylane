@@ -369,13 +369,14 @@ def sample_state(
     Returns:
         ndarray[int]: Sample values of the shape (shots, num_wires)
     """
+    rng = np.random.default_rng(rng)
+
     if (
         prng_key is not None
     ):  # is this being passed the only instance where it should be used? I think this should be if interface == "jax". I could fix this in execute, but then what about all the other things?
-        return sample_state_jax(
+        return _sample_state_jax(
             state, shots, is_state_batched=is_state_batched, wires=wires, rng=rng, prng_key=prng_key
         )
-    rng = np.random.default_rng(rng)
 
     total_indices = len(state.shape) - is_state_batched
     state_wires = qml.wires.Wires(range(total_indices))
@@ -398,7 +399,7 @@ def sample_state(
 
 
 # pylint:disable = unused-argument
-def sample_state_jax(
+def _sample_state_jax(
     state,
     shots: int,
     is_state_batched: bool = False,
@@ -431,7 +432,7 @@ def sample_state_jax(
 
     if prng_key is None:
         # Assuming op-by-op, so we'll just make one.
-        key = jax.random.PRNGKey(rng.random())
+        key = jax.random.PRNGKey(rng.integers(2**31 - 1, size=1)[0])
     elif isinstance(prng_key, int):
         key = jax.random.PRNGKey(prng_key)
     else:
