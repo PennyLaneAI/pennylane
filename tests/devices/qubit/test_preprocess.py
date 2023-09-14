@@ -73,6 +73,8 @@ class TestPrivateHelpers:
             (qml.QFT(wires=range(10)), False),
             (qml.GroverOperator(wires=range(10)), True),
             (qml.GroverOperator(wires=range(14)), False),
+            (qml.pow(qml.RX(1.1, 0), 3), True),
+            (qml.pow(qml.RX(pnp.array(1.1), 0), 3), False),
         ],
     )
     def test_accepted_operator(self, op, expected):

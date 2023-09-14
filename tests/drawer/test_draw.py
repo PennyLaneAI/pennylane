@@ -329,12 +329,16 @@ def test_nested_tapes():
     assert draw(circ)() == expected
 
 
-def test_expansion_strategy():
+@pytest.mark.parametrize(
+    "device",
+    [qml.device("default.qubit.legacy", wires=2), qml.devices.experimental.DefaultQubit2(wires=2)],
+)
+def test_expansion_strategy(device):
     """Test expansion strategy keyword modifies tape expansion."""
 
     H = qml.PauliX(0) + qml.PauliZ(1) + 0.5 * qml.PauliX(0) @ qml.PauliX(1)
 
-    @qml.qnode(qml.device("default.qubit", wires=2))
+    @qml.qnode(device)
     def circ(t):
         qml.ApproxTimeEvolution(H, t, 2)
         return qml.probs(wires=0)
