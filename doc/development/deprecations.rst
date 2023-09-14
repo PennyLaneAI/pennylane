@@ -54,7 +54,7 @@ Pending deprecations
   
   If you directly interact with device methods, please consult
   :class:`pennylane.devices.Device` and
-  :class:`pennylane.devices.DefaultQubit2`
+  :class:`pennylane.devices.DefaultQubit`
   for more information on what the new interface will look like and be prepared
   to make updates in a coming release. If you have any feedback on these
   changes, please create an

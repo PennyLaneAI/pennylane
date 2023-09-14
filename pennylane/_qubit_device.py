@@ -177,7 +177,7 @@ class QubitDevice(Device):
 
     **Example:**
 
-    Let's create device that inherits from :class:`~pennylane.devices.DefaultQubitLegacy` and overrides the
+    Let's create a device that inherits from :class:`~pennylane.devices.DefaultQubitLegacy` and overrides the
     logic of the `qml.sample` measurement. To do so we will need to update the ``measurement_map``
     dictionary:
 
