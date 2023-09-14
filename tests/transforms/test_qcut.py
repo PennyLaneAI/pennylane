@@ -2457,19 +2457,22 @@ class TestMCPostprocessing:
             )
 
 
+@pytest.mark.parametrize(
+    "dev_fn", [qml.devices.DefaultQubit, qml.devices.experimental.DefaultQubit2]
+)
 class TestCutCircuitMCTransform:
     """
     Tests that the `cut_circuit_mc` transform gives the correct results.
     """
 
     @flaky(max_runs=3)
-    def test_cut_circuit_mc_expval(self):
+    def test_cut_circuit_mc_expval(self, dev_fn):
         """
         Tests that a circuit containing sampling measurements can be cut and
         recombined to give the correct expectation value
         """
 
-        dev_sim = qml.device("default.qubit", wires=3)
+        dev_sim = dev_fn(wires=3)
 
         @qml.qnode(dev_sim)
         def target_circuit(v):
@@ -2486,7 +2489,7 @@ class TestCutCircuitMCTransform:
             qml.RX(2.3, wires=2)
             return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=2))
 
-        dev = qml.device("default.qubit", wires=2, shots=10000)
+        dev = dev_fn(wires=2, shots=10000)
 
         @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
         @qml.qnode(dev)
@@ -2510,13 +2513,13 @@ class TestCutCircuitMCTransform:
         target = target_circuit(v)
         assert np.isclose(cut_res_mc, target, atol=0.1)  # not guaranteed to pass each time
 
-    def test_cut_circuit_mc_sample(self):
+    def test_cut_circuit_mc_sample(self, dev_fn):
         """
         Tests that a circuit containing sampling measurements can be cut and
         postprocessed to return bitstrings of the original circuit size.
         """
 
-        dev = qml.device("default.qubit", wires=3, shots=100)
+        dev = dev_fn(wires=3, shots=100)
 
         @qml.qnode(dev)
         def circuit(x):
@@ -2542,13 +2545,13 @@ class TestCutCircuitMCTransform:
         assert cut_res_bs.shape == target.shape
         assert isinstance(cut_res_bs, type(target))
 
-    def test_override_samples(self):
+    def test_override_samples(self, dev_fn):
         """
         Tests that the number of shots used on a device can be temporarily
         altered when executing the QNode
         """
         shots = 100
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = dev_fn(wires=2, shots=shots)
 
         @qml.cut_circuit_mc
         @qml.qnode(dev)
@@ -2577,13 +2580,13 @@ class TestCutCircuitMCTransform:
 
         assert cut_res_original.shape == (shots, 2)
 
-    def test_no_shots(self):
+    def test_no_shots(self, dev_fn):
         """
         Tests that the correct error message is given if a device is provided
         without shots
         """
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = dev_fn(wires=2)
 
         @qml.cut_circuit_mc
         @qml.qnode(dev)
@@ -2605,13 +2608,13 @@ class TestCutCircuitMCTransform:
         with pytest.raises(ValueError, match="A shots value must be provided in the device "):
             cut_circuit(v)
 
-    def test_sample_obs_error(self):
+    def test_sample_obs_error(self, dev_fn):
         """
         Tests that a circuit with sample measurements containing observables
         gives the correct error
         """
         shots = 100
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = dev_fn(wires=2, shots=shots)
 
         @qml.cut_circuit_mc
         @qml.qnode(dev)
@@ -2633,13 +2636,13 @@ class TestCutCircuitMCTransform:
         with pytest.raises(ValueError, match="The Monte Carlo circuit cutting workflow only "):
             cut_circuit(v)
 
-    def test_transform_shots_error(self):
+    def test_transform_shots_error(self, dev_fn):
         """
         Tests that the correct error is given when a `shots` argument is passed
         when transforming a qnode
         """
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = dev_fn(wires=2)
 
         with pytest.raises(
             ValueError, match="Cannot provide a 'shots' value directly to the cut_circuit_mc "
@@ -2661,12 +2664,12 @@ class TestCutCircuitMCTransform:
                 qml.RX(2.3, wires=2)
                 return qml.sample(wires=[0, 2])
 
-    def test_multiple_meas_error(self):
+    def test_multiple_meas_error(self, dev_fn):
         """
         Tests that attempting to cut a circuit with multiple sample measurements
         using `cut_circuit_mc` gives the correct error
         """
-        dev = qml.device("default.qubit", wires=3, shots=100)
+        dev = dev_fn(wires=3, shots=100)
 
         @qml.cut_circuit_mc
         @qml.qnode(dev)
@@ -2690,12 +2693,12 @@ class TestCutCircuitMCTransform:
         ):
             cut_circuit(v)
 
-    def test_non_sample_meas_error(self):
+    def test_non_sample_meas_error(self, dev_fn):
         """
         Tests that attempting to cut a circuit with non-sample measurements
         using `cut_circuit_mc` gives the correct error
         """
-        dev = qml.device("default.qubit", wires=2, shots=100)
+        dev = dev_fn(wires=2, shots=100)
 
         @qml.cut_circuit_mc
         @qml.qnode(dev)
@@ -2719,13 +2722,13 @@ class TestCutCircuitMCTransform:
         ):
             cut_circuit(v)
 
-    def test_qnode_shots_arg_error(self):
+    def test_qnode_shots_arg_error(self, dev_fn):
         """
         Tests that if a shots argument is passed directly to the qnode when using
         `cut_circuit_mc` the correct error is given
         """
         shots = 100
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = dev_fn(wires=2, shots=shots)
 
         with pytest.raises(
             ValueError,
@@ -2737,13 +2740,13 @@ class TestCutCircuitMCTransform:
             def cut_circuit(x, shots=shots):  # pylint: disable=unused-variable,unused-argument
                 return qml.sample(wires=[0, 2])
 
-    def test_no_interface(self):
+    def test_no_interface(self, dev_fn):
         """
         Tests that if no interface is provided when using `cut_circuit_mc` the
         correct output is given
         """
         shots = 100
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = dev_fn(wires=2, shots=shots)
 
         @qml.cut_circuit_mc
         @qml.qnode(dev, interface=None)
@@ -2767,7 +2770,7 @@ class TestCutCircuitMCTransform:
         assert isinstance(res, np.ndarray)
 
     @pytest.mark.autograd
-    def test_samples_autograd(self):
+    def test_samples_autograd(self, dev_fn):
         """
         Tests that `cut_circuit_mc` returns the correct type of sample
         output value in autograd
@@ -2775,7 +2778,7 @@ class TestCutCircuitMCTransform:
         import autograd
 
         shots = 10
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = dev_fn(wires=2, shots=shots)
 
         @qml.cut_circuit_mc
         @qml.qnode(dev)
@@ -2802,7 +2805,7 @@ class TestCutCircuitMCTransform:
         assert isinstance(res, type(convert_input))
 
     @pytest.mark.tf
-    def test_samples_tf(self):
+    def test_samples_tf(self, dev_fn):
         """
         Tests that `cut_circuit_mc` returns the correct type of sample
         output value in tf
@@ -2810,7 +2813,7 @@ class TestCutCircuitMCTransform:
         import tensorflow as tf
 
         shots = 10
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = dev_fn(wires=2, shots=shots)
 
         @qml.cut_circuit_mc
         @qml.qnode(dev)
@@ -2837,7 +2840,7 @@ class TestCutCircuitMCTransform:
         assert isinstance(res, type(convert_input))
 
     @pytest.mark.torch
-    def test_samples_torch(self):
+    def test_samples_torch(self, dev_fn):
         """
         Tests that `cut_circuit_mc` returns the correct type of sample
         output value in torch
@@ -2845,7 +2848,7 @@ class TestCutCircuitMCTransform:
         import torch
 
         shots = 10
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = dev_fn(wires=2, shots=shots)
 
         @qml.cut_circuit_mc
         @qml.qnode(dev)
@@ -2872,7 +2875,7 @@ class TestCutCircuitMCTransform:
         assert isinstance(res, type(convert_input))
 
     @pytest.mark.jax
-    def test_samples_jax(self):
+    def test_samples_jax(self, dev_fn):
         """
         Tests that `cut_circuit_mc` returns the correct type of sample
         output value in Jax
@@ -2880,7 +2883,7 @@ class TestCutCircuitMCTransform:
         import jax
 
         shots = 10
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = dev_fn(wires=2, shots=shots)
 
         @qml.cut_circuit_mc
         @qml.qnode(dev)
@@ -2907,7 +2910,7 @@ class TestCutCircuitMCTransform:
         assert isinstance(res, type(convert_input))
 
     @pytest.mark.autograd
-    def test_mc_autograd(self):
+    def test_mc_autograd(self, dev_fn):
         """
         Tests that `cut_circuit_mc` returns the correct type of expectation
         value output in autograd
@@ -2915,7 +2918,7 @@ class TestCutCircuitMCTransform:
         import autograd
 
         shots = 10
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = dev_fn(wires=2, shots=shots)
 
         @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
         @qml.qnode(dev)
@@ -2940,7 +2943,7 @@ class TestCutCircuitMCTransform:
         assert isinstance(res, type(convert_input))
 
     @pytest.mark.tf
-    def test_mc_tf(self):
+    def test_mc_tf(self, dev_fn):
         """
         Tests that `cut_circuit_mc` returns the correct type of expectation
         value output in tf
@@ -2948,7 +2951,7 @@ class TestCutCircuitMCTransform:
         import tensorflow as tf
 
         shots = 10
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = dev_fn(wires=2, shots=shots)
 
         @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
         @qml.qnode(dev)
@@ -2973,7 +2976,7 @@ class TestCutCircuitMCTransform:
         assert isinstance(res, type(convert_input))
 
     @pytest.mark.torch
-    def test_mc_torch(self):
+    def test_mc_torch(self, dev_fn):
         """
         Tests that `cut_circuit_mc` returns the correct type of expectation
         value output in torch
@@ -2981,7 +2984,7 @@ class TestCutCircuitMCTransform:
         import torch
 
         shots = 10
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = dev_fn(wires=2, shots=shots)
 
         @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
         @qml.qnode(dev)
@@ -3006,7 +3009,7 @@ class TestCutCircuitMCTransform:
         assert isinstance(res, type(convert_input))
 
     @pytest.mark.jax
-    def test_mc_jax(self):
+    def test_mc_jax(self, dev_fn):
         """
         Tests that `cut_circuit_mc` returns the correct type of expectation
         value output in Jax
@@ -3014,7 +3017,7 @@ class TestCutCircuitMCTransform:
         import jax
 
         shots = 10
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = dev_fn(wires=2, shots=shots)
 
         @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
         @qml.qnode(dev)
@@ -3038,14 +3041,14 @@ class TestCutCircuitMCTransform:
 
         assert isinstance(res, type(convert_input))
 
-    def test_mc_with_mid_circuit_measurement(self, mocker):
+    def test_mc_with_mid_circuit_measurement(self, dev_fn, mocker):
         """Tests the full sample-based circuit cutting pipeline successfully returns a
         single value for a circuit that contains mid-circuit
         measurements and terminal sample measurements using the `cut_circuit_mc`
         transform."""
 
         shots = 10
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = dev_fn(wires=3, shots=shots)
 
         @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
         @qml.qnode(dev)
@@ -3066,12 +3069,12 @@ class TestCutCircuitMCTransform:
         spy.assert_called_once()
         assert res.size == 1
 
-    def test_mc_circuit_with_disconnected_components(self):
+    def test_mc_circuit_with_disconnected_components(self, dev_fn):
         """Tests if a sample-based circuit that is fragmented into subcircuits such
         that some of the subcircuits are disconnected from the final terminal sample
         measurements is executed successfully"""
         shots = 10
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = dev_fn(wires=3, shots=shots)
 
         @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
         @qml.qnode(dev)
@@ -3087,11 +3090,11 @@ class TestCutCircuitMCTransform:
         res = circuit(x)
         assert res.size == 1
 
-    def test_mc_circuit_with_trivial_wire_cut(self, mocker):
+    def test_mc_circuit_with_trivial_wire_cut(self, dev_fn, mocker):
         """Tests that a sample-based circuit with a trivial wire cut (not
         separating the circuit into fragments) is executed successfully"""
         shots = 10
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = dev_fn(wires=2, shots=shots)
 
         @partial(qml.cut_circuit_mc, classical_processing_fn=fn)
         @qml.qnode(dev)
@@ -3110,7 +3113,7 @@ class TestCutCircuitMCTransform:
         assert len(spy.call_args[0][0]) == shots
         assert len(spy.call_args[0]) == 1
 
-    def test_mc_complicated_circuit(self, mocker):
+    def test_mc_complicated_circuit(self, dev_fn, mocker):
         """
         Tests that the full sample-based circuit cutting pipeline successfully returns a
         value for a complex circuit with multiple wire cut scenarios. The circuit is cut into
@@ -3125,7 +3128,7 @@ class TestCutCircuitMCTransform:
 
         # We need a 4-qubit device to account for mid-circuit measurements
         shots = 10
-        dev = qml.device("default.qubit", wires=4, shots=shots)
+        dev = dev_fn(wires=4, shots=shots)
 
         def two_qubit_unitary(param, wires):
             qml.Hadamard(wires=[wires[0]])
