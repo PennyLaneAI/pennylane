@@ -14,7 +14,7 @@
 """
 This module contains the next generation successor to default qubit
 """
-
+import warnings
 from functools import partial
 from numbers import Number
 from typing import Union, Callable, Tuple, Optional, Sequence
@@ -254,10 +254,16 @@ class DefaultQubit2(Device):
         )
 
         prng_key = self._prng_key
-        # if interface != "jax" and prng_key:
-        #     warnings.warn(f"Device has a JAX PRNG key specified, but the interface is {interface}. "
-        #                   f"The PRNG key will not be used.")
-        #     prng_key = None
+        if interface != "jax" and prng_key:
+            warnings.warn(
+                f"Device has a JAX PRNG key specified, but the interface is {interface}. "
+                f"The PRNG key will not be used."
+            )
+            prng_key = None
+        if interface == "jax" and prng_key is None:
+            prng_key = (
+                self._rng.random()
+            )  # this is duplicated in an unreachable line of the sample_state_jax function
 
         if max_workers is None:
             results = tuple(

@@ -363,7 +363,9 @@ def sample_state(
     Returns:
         ndarray[int]: Sample values of the shape (shots, num_wires)
     """
-    if prng_key:
+    if (
+        prng_key is not None
+    ):  # is this being passed the only instance where it should be used? I think this should be if interface == "jax". I could fix this in execute, but then what about all the other things?
         return sample_state_jax_prng(
             state, shots, is_state_batched=is_state_batched, wires=wires, rng=rng, prng_key=prng_key
         )
@@ -414,5 +416,42 @@ def sample_state_jax_prng(
     Returns:
         ndarray[int]: Sample values of the shape (shots, num_wires)
     """
+    # pylint: disable=import-outside-toplevel
+    import jax
+    import jax.numpy as jnp
 
-    return
+    if prng_key is None:
+        # Assuming op-by-op, so we'll just make one.
+        key = jax.random.PRNGKey(rng.random())
+    elif isinstance(prng_key, int):
+        key = jax.random.PRNGKey(prng_key)
+    else:
+        key = prng_key
+
+    total_indices = len(state.shape) - is_state_batched
+    state_wires = qml.wires.Wires(range(total_indices))
+
+    wires_to_sample = wires or state_wires
+    num_wires = len(wires_to_sample)
+    basis_states = np.arange(2**num_wires)
+
+    probs = qml.probs(wires=wires_to_sample).process_state(state, state_wires)
+
+    if is_state_batched:
+        # Produce separate keys for each of the probabilities along the broadcasted axis
+        keys = []
+        for _ in state:
+            key, subkey = jax.random.split(key)
+            keys.append(subkey)
+        samples = jnp.array(
+            [
+                jax.random.choice(_key, basis_states, shape=(shots,), p=prob)
+                for _key, prob in zip(keys, probs)
+            ]
+        )
+    else:
+        samples = jax.random.choice(key, basis_states, shape=(shots,), p=probs)
+
+    powers_of_two = 1 << np.arange(num_wires, dtype=np.int64)[::-1]
+    states_sampled_base_ten = samples[..., None] & powers_of_two
+    return (states_sampled_base_ten > 0).astype(np.int64)
