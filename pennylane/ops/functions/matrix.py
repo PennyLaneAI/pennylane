@@ -15,9 +15,8 @@
 This module contains the qml.matrix function.
 """
 # pylint: disable=protected-access
-from functools import partial, singledispatch
 from typing import Sequence, Callable
-from collections.abc import Callable as class_Callable
+from functools import partial
 
 import pennylane as qml
 from pennylane.transforms.op_transforms import OperationTransformError
@@ -25,7 +24,6 @@ from pennylane.transforms.core import transform
 from pennylane.typing import TensorLike
 
 
-@singledispatch
 def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
     r"""The matrix representation of an operation or quantum circuit.
 
@@ -126,7 +124,11 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
         -0.14943813247359922
     """
     if not isinstance(op, qml.operation.Operator):
-        raise OperationTransformError("Input is not an Operator, tape, QNode, or quantum function")
+        if not isinstance(op, (qml.tape.QuantumScript, qml.QNode)) and not callable(op):
+            raise OperationTransformError(
+                "Input is not an Operator, tape, QNode, or quantum function"
+            )
+        return _matrix_transform(op, wire_order=wire_order)
 
     if isinstance(op, qml.operation.Tensor) and wire_order is not None:
         op = 1.0 * op  # convert to a Hamiltonian
@@ -138,21 +140,6 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
         return op.matrix(wire_order=wire_order)
     except:  # pylint: disable=bare-except
         return matrix(op.expand(), wire_order=wire_order)
-
-
-@matrix.register
-def _matrix_tape(op: qml.tape.QuantumScript, wire_order=None):
-    return _matrix_transform(op, wire_order=wire_order)
-
-
-@matrix.register
-def _matrix_qnode(op: qml.QNode, wire_order=None):
-    return _matrix_transform(op, wire_order=wire_order)
-
-
-@matrix.register
-def _matrix_qfunc(op: class_Callable, wire_order=None):
-    return _matrix_transform(op, wire_order=wire_order)
 
 
 @partial(transform, is_informative=True)

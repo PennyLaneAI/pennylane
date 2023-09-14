@@ -15,11 +15,10 @@
 This module contains the qml.eigvals function.
 """
 from typing import Sequence, Callable
-from collections.abc import Callable as class_Callable
 import warnings
 
 # pylint: disable=protected-access
-from functools import reduce, partial, singledispatch
+from functools import reduce, partial
 import scipy
 
 import pennylane as qml
@@ -28,7 +27,6 @@ from pennylane.transforms.core import transform
 from pennylane.typing import TensorLike
 
 
-@singledispatch
 def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
     r"""The eigenvalues of one or more operations.
 
@@ -107,7 +105,11 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
                -0.92387953+0.38268343j, -0.92387953-0.38268343j])
     """
     if not isinstance(op, qml.operation.Operator):
-        raise OperationTransformError("Input is not an Operator, tape, QNode, or quantum function")
+        if not isinstance(op, (qml.tape.QuantumScript, qml.QNode)) and not callable(op):
+            raise OperationTransformError(
+                "Input is not an Operator, tape, QNode, or quantum function"
+            )
+        return _eigvals_tranform(op, k=k, which=which)
 
     if isinstance(op, qml.Hamiltonian):
         warnings.warn(
@@ -129,21 +131,6 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
         return op.eigvals()
     except qml.operation.EigvalsUndefinedError:
         return eigvals(op.expand(), k=k, which=which)
-
-
-@eigvals.register
-def _eigvals_tape(op: qml.tape.QuantumScript, k=1, which="SA"):
-    return _eigvals_tranform(op, k=k, which=which)
-
-
-@eigvals.register
-def _eigvals_qnode(op: qml.QNode, k=1, which="SA"):
-    return _eigvals_tranform(op, k=k, which=which)
-
-
-@eigvals.register
-def _eigvals_qfunc(op: class_Callable, k=1, which="SA"):
-    return _eigvals_tranform(op, k=k, which=which)
 
 
 @partial(transform, is_informative=True)

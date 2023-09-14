@@ -14,10 +14,9 @@
 """Transforms for interacting with PyZX, framework for ZX calculus."""
 # pylint: disable=too-many-statements, too-many-branches, too-many-return-statements, too-many-arguments
 
-from functools import partial, singledispatch
+from functools import partial
 from typing import Sequence, Callable
 from collections import OrderedDict
-from collections.abc import Callable as class_Callable
 import numpy as np
 import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumTape
@@ -50,7 +49,6 @@ class EdgeType:  # pylint: disable=too-few-public-methods
     HADAMARD = 2
 
 
-@singledispatch
 def to_zx(tape, expand_measurements=False):  # pylint: disable=unused-argument
     """This transform converts a PennyLane quantum tape to a ZX-Graph in the `PyZX framework <https://pyzx.readthedocs.io/en/latest/>`_.
     The graph can be optimized and transformed by well-known ZX-calculus reductions.
@@ -249,24 +247,13 @@ def to_zx(tape, expand_measurements=False):  # pylint: disable=unused-argument
     """
     # If it is a simple operation just transform it to a tape
     if not isinstance(tape, qml.operation.Operator):
-        raise OperationTransformError("Input is not an Operator, tape, QNode, or quantum function")
+        if not isinstance(tape, (qml.tape.QuantumScript, qml.QNode)) and not callable(tape):
+            raise OperationTransformError(
+                "Input is not an Operator, tape, QNode, or quantum function"
+            )
+        return _to_zx_transform(tape, expand_measurements=expand_measurements)
 
     return to_zx(QuantumScript([tape]))
-
-
-@to_zx.register
-def _to_zx_tape(tape: qml.tape.QuantumScript, expand_measurements=False):
-    return _to_zx_transform(tape, expand_measurements=expand_measurements)
-
-
-@to_zx.register
-def _to_zx_qnode(tape: qml.QNode, expand_measurements=False):
-    return _to_zx_transform(tape, expand_measurements=expand_measurements)
-
-
-@to_zx.register
-def _to_zx_qfunc(tape: class_Callable, expand_measurements=False):
-    return _to_zx_transform(tape, expand_measurements=expand_measurements)
 
 
 @partial(transform, is_informative=True)
