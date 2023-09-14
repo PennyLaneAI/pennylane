@@ -58,7 +58,7 @@ class TestPatternMatchingOptimization:
         qnode = qml.QNode(circuit, dev)
         qnode()
 
-        optimized_qfunc = pattern_matching_optimization(pattern_tapes=[template])(circuit)
+        optimized_qfunc = pattern_matching_optimization(circuit, pattern_tapes=[template])
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
 
@@ -72,6 +72,35 @@ class TestPatternMatchingOptimization:
         assert cnots_optimized_qnode == 3
 
         assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
+
+    def test_simple_quantum_function_pattern_matching_qnode(self):
+        """Test pattern matching algorithm for circuit optimization with a CNOTs template."""
+        dev = qml.device("default.qubit", wires=5)
+
+        @qml.qnode(device=dev)
+        def circuit():
+            qml.Toffoli(wires=[3, 4, 0])
+            qml.CNOT(wires=[1, 4])
+            qml.CNOT(wires=[2, 1])
+            qml.Hadamard(wires=3)
+            qml.PauliZ(wires=1)
+            qml.CNOT(wires=[2, 3])
+            qml.Toffoli(wires=[2, 3, 0])
+            qml.CNOT(wires=[1, 4])
+            return qml.expval(qml.PauliX(wires=0))
+
+        with qml.queuing.AnnotatedQueue() as q_template:
+            qml.CNOT(wires=[1, 2])
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[0, 2])
+
+        template = qml.tape.QuantumScript.from_queue(q_template)
+
+        optimized_qnode = pattern_matching_optimization(circuit, pattern_tapes=[template])
+        optimized_qnode()
+        assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(circuit)())
 
     def test_custom_quantum_cost(self):
         """Test pattern matching algorithm for circuit optimization with a CNOTs template with custom quantum dict."""
@@ -102,8 +131,8 @@ class TestPatternMatchingOptimization:
 
         quantum_cost = {"CNOT": 10}
         optimized_qfunc = pattern_matching_optimization(
-            pattern_tapes=[template], custom_quantum_cost=quantum_cost
-        )(circuit)
+            circuit, pattern_tapes=[template], custom_quantum_cost=quantum_cost
+        )
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
 
@@ -142,7 +171,7 @@ class TestPatternMatchingOptimization:
         qnode = qml.QNode(circuit, dev)
         qnode()
 
-        optimized_qfunc = pattern_matching_optimization(pattern_tapes=[template])(circuit)
+        optimized_qfunc = pattern_matching_optimization(circuit, pattern_tapes=[template])
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
 
@@ -180,7 +209,7 @@ class TestPatternMatchingOptimization:
         qnode = qml.QNode(circuit, dev)
         qnode()
 
-        optimized_qfunc = pattern_matching_optimization(pattern_tapes=[template])(circuit)
+        optimized_qfunc = pattern_matching_optimization(circuit, pattern_tapes=[template])
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
 
@@ -225,7 +254,7 @@ class TestPatternMatchingOptimization:
         qnode = qml.QNode(circuit, dev)
         qnode()
 
-        optimized_qfunc = pattern_matching_optimization(pattern_tapes=[template])(circuit)
+        optimized_qfunc = pattern_matching_optimization(circuit, pattern_tapes=[template])
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
 
@@ -268,8 +297,8 @@ class TestPatternMatchingOptimization:
 
         quantum_cost = {"SWAP": 10, "CNOT": 1}
         optimized_qfunc = pattern_matching_optimization(
-            pattern_tapes=[template], custom_quantum_cost=quantum_cost
-        )(circuit)
+            circuit, pattern_tapes=[template], custom_quantum_cost=quantum_cost
+        )
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
 
@@ -318,7 +347,7 @@ class TestPatternMatchingOptimization:
         qnode = qml.QNode(circuit, dev)
         qnode()
 
-        optimized_qfunc = pattern_matching_optimization(pattern_tapes=[template])(circuit)
+        optimized_qfunc = pattern_matching_optimization(circuit, pattern_tapes=[template])
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
 
@@ -367,7 +396,7 @@ class TestPatternMatchingOptimization:
         qnode = qml.QNode(circuit, dev)
         qnode()
 
-        optimized_qfunc = pattern_matching_optimization(pattern_tapes=[template])(circuit)
+        optimized_qfunc = pattern_matching_optimization(circuit, pattern_tapes=[template])
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
 
@@ -424,8 +453,8 @@ class TestPatternMatchingOptimization:
         qnode = qml.QNode(circuit, dev)
         qnode(0.1, 0.2)
 
-        optimized_qfunc = pattern_matching_optimization(pattern_tapes=[template_rx, template_rz])(
-            circuit
+        optimized_qfunc = pattern_matching_optimization(
+            circuit, pattern_tapes=[template_rx, template_rz]
         )
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode(0.1, 0.2)
@@ -480,8 +509,8 @@ class TestPatternMatchingOptimization:
         qnode()
 
         optimized_qfunc = pattern_matching_optimization(
-            pattern_tapes=[template_x, template_z, template_cnot]
-        )(circuit)
+            circuit, pattern_tapes=[template_x, template_z, template_cnot]
+        )
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
 
@@ -566,7 +595,7 @@ class TestPatternMatchingOptimization:
         qnode = qml.QNode(mod_5_4, dev)
         qnode()
 
-        optimized_qfunc = pattern_matching_optimization(pattern_tapes=[template])(mod_5_4)
+        optimized_qfunc = pattern_matching_optimization(mod_5_4, pattern_tapes=[template])
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
 
@@ -689,7 +718,7 @@ class TestPatternMatchingOptimization:
         qnode = qml.QNode(vbe_adder_3, dev)
         qnode()
 
-        optimized_qfunc = pattern_matching_optimization(pattern_tapes=[template])(vbe_adder_3)
+        optimized_qfunc = pattern_matching_optimization(vbe_adder_3, pattern_tapes=[template])
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
 
@@ -730,7 +759,7 @@ class TestPatternMatchingOptimization:
         with pytest.raises(
             qml.QuantumFunctionError, match="The pattern is not a valid quantum tape."
         ):
-            optimized_qfunc = pattern_matching_optimization(pattern_tapes=[template])(circuit)
+            optimized_qfunc = pattern_matching_optimization(circuit, pattern_tapes=[template])
             optimized_qnode = qml.QNode(optimized_qfunc, dev)
             optimized_qnode()
 
@@ -757,7 +786,7 @@ class TestPatternMatchingOptimization:
         with pytest.raises(
             qml.QuantumFunctionError, match="Pattern is not valid, it does not implement identity."
         ):
-            optimized_qfunc = pattern_matching_optimization(pattern_tapes=[template])(circuit)
+            optimized_qfunc = pattern_matching_optimization(circuit, pattern_tapes=[template])
             optimized_qnode = qml.QNode(optimized_qfunc, dev)
             optimized_qnode()
 
@@ -778,7 +807,7 @@ class TestPatternMatchingOptimization:
         with pytest.raises(
             qml.QuantumFunctionError, match="Circuit has less qubits than the pattern."
         ):
-            optimized_qfunc = pattern_matching_optimization(pattern_tapes=[template])(circuit)
+            optimized_qfunc = pattern_matching_optimization(circuit, pattern_tapes=[template])
             optimized_qnode = qml.QNode(optimized_qfunc, dev)
             optimized_qnode()
 
@@ -808,7 +837,7 @@ class TestPatternMatchingOptimization:
         dev = qml.device("default.qubit", wires=10)
 
         with pytest.raises(qml.QuantumFunctionError, match="The pattern contains measurements."):
-            optimized_qfunc = pattern_matching_optimization(pattern_tapes=[template])(circuit)
+            optimized_qfunc = pattern_matching_optimization(circuit, pattern_tapes=[template])
             optimized_qnode = qml.QNode(optimized_qfunc, dev)
             optimized_qnode()
 
