@@ -825,6 +825,12 @@ class TestHamiltonian:
         assert H2.compare(qml.GellMann(wires=2, index=2) @ qml.GellMann(wires=1, index=2)) is False
         assert H2.compare(H4) is False
 
+    def test_hamiltonian_compare():
+        """to test if hamiltonian comapre function has float point error"""
+        H2 = qml.Hamiltonian([0.3, 0.3], [qml.PauliZ(0), qml.PauliZ(0)])
+        H1 = qml.Hamiltonian([0.1, 0.2, 0.3], [qml.PauliZ(0), qml.PauliZ(0), qml.PauliZ(0)])
+        assert H1.compare(H2)
+
     def test_hamiltonian_equal_error(self):
         """Tests that the correct error is raised when compare() is called on invalid type"""
 
