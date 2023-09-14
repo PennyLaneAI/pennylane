@@ -24,7 +24,7 @@ from pennylane.measurements import StateMeasurement, MeasurementProcess, Expecta
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
-from .apply_operation import apply_operation, get_batch_size
+from .apply_operation import apply_operation
 
 
 def flatten_state(state, num_wires):
@@ -39,7 +39,7 @@ def flatten_state(state, num_wires):
         A flat state, with an extra batch dimension if necessary
     """
     dim = 2**num_wires
-    batch_size = get_batch_size(state, (2,) * num_wires, dim)
+    batch_size = math.get_batch_size(state, (2,) * num_wires, dim)
     shape = (batch_size, dim) if batch_size is not None else (dim,)
     return math.reshape(state, shape)
 

@@ -27,25 +27,6 @@ EINSUM_OP_WIRECOUNT_PERF_THRESHOLD = 3
 EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD = 13
 
 
-def get_batch_size(tensor, expected_shape, expected_size):
-    """Determine whether a tensor has an additional batch dimension for broadcasting,
-    compared to an expected_shape. Differs from QubitDevice implementation by the
-    exception made for abstract tensors."""
-    try:
-        size = qml.math.size(tensor)
-        ndim = qml.math.ndim(tensor)
-        if ndim > len(expected_shape) or size > expected_size:
-            return size // expected_size
-
-    except Exception as err:  # pragma: no cover, pylint:disable=broad-except
-        # This except clause covers the usage of tf.function, which is not compatible
-        # with `DefaultQubit._get_batch_size`
-        if not qml.math.is_abstract(tensor):
-            raise err
-
-    return None
-
-
 def _get_slice(index, axis, num_axes):
     """Allows slicing along an arbitrary axis of an array or tensor.
 
@@ -107,7 +88,7 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
 
     new_mat_shape = [2] * (num_indices * 2)
     dim = 2**num_indices
-    batch_size = get_batch_size(mat, (dim, dim), dim**2)
+    batch_size = math.get_batch_size(mat, (dim, dim), dim**2)
     if batch_size is not None:
         # Add broadcasting dimension to shape
         new_mat_shape = [batch_size] + new_mat_shape
@@ -136,7 +117,7 @@ def apply_operation_tensordot(op: qml.operation.Operator, state, is_state_batche
 
     new_mat_shape = [2] * (num_indices * 2)
     dim = 2**num_indices
-    batch_size = get_batch_size(mat, (dim, dim), dim**2)
+    batch_size = math.get_batch_size(mat, (dim, dim), dim**2)
     if is_mat_batched := batch_size is not None:
         # Add broadcasting dimension to shape
         new_mat_shape = [batch_size] + new_mat_shape
