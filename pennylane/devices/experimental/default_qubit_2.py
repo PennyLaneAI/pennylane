@@ -14,7 +14,7 @@
 """
 This module contains the next generation successor to default qubit
 """
-import warnings
+
 from functools import partial
 from numbers import Number
 from typing import Union, Callable, Tuple, Optional, Sequence
@@ -59,9 +59,10 @@ class DefaultQubit2(Device):
             using a pool of at most ``max_workers`` processes. If ``max_workers`` is ``None``,
             only the current process executes tapes. If you experience any
             issue, say using JAX, TensorFlow, Torch, try setting ``max_workers`` to ``None``.
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is the key to the JAX
-            pseudo random number generator. If None, a random key will be generated. Only for simulation
-            using JAX.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. Defaults to None.
+            This is the key to the JAX pseudo random number generator. Only for simulation using JAX.
+            When using JAX, if no PRNG key is provided, ``np.random.default_rng(seed).choice`` will be
+            used rather than ``jax.random.choice`` to generate results.
 
     **Example:**
 
@@ -253,22 +254,12 @@ class DefaultQubit2(Device):
             else None
         )
 
-        prng_key = self._prng_key
-        if interface != "jax" and prng_key:
-            warnings.warn(
-                f"Device has a JAX PRNG key specified, but the interface is {interface}. "
-                f"The PRNG key will not be used."
-            )
-            prng_key = None
-        if interface == "jax" and prng_key is None:
-            prng_key = int(self._rng.integers(2**31 - 1, size=1))
-
         if max_workers is None:
             results = tuple(
                 simulate(
                     c,
                     rng=self._rng,
-                    prng_key=prng_key,
+                    prng_key=self._prng_key,
                     debugger=self._debugger,
                     interface=interface,
                 )
@@ -280,7 +271,10 @@ class DefaultQubit2(Device):
             _wrap_simulate = partial(simulate, debugger=None, interface=interface)
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
                 exec_map = executor.map(
-                    _wrap_simulate, vanilla_circuits, seeds, [prng_key] * len(vanilla_circuits)
+                    _wrap_simulate,
+                    vanilla_circuits,
+                    seeds,
+                    [self._prng_key] * len(vanilla_circuits),
                 )  # does this not need interface and debugger for this part?
                 results = tuple(exec_map)
 

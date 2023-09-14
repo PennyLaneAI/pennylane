@@ -369,14 +369,12 @@ def sample_state(
     Returns:
         ndarray[int]: Sample values of the shape (shots, num_wires)
     """
-    rng = np.random.default_rng(rng)
-
-    if (
-        prng_key is not None
-    ):  # is this being passed the only instance where it should be used? I think this should be if interface == "jax". I could fix this in execute, but then what about all the other things?
+    if prng_key is not None:
         return _sample_state_jax(
-            state, shots, is_state_batched=is_state_batched, wires=wires, rng=rng, prng_key=prng_key
+            state, shots, is_state_batched=is_state_batched, wires=wires, prng_key=prng_key
         )
+
+    rng = np.random.default_rng(rng)
 
     total_indices = len(state.shape) - is_state_batched
     state_wires = qml.wires.Wires(range(total_indices))
@@ -404,7 +402,6 @@ def _sample_state_jax(
     shots: int,
     is_state_batched: bool = False,
     wires=None,
-    rng=None,
     prng_key=None,
 ) -> np.ndarray:
     """
@@ -416,12 +413,9 @@ def _sample_state_jax(
         shots (int): The number of samples to take
         is_state_batched (bool): whether the state is batched or not
         wires (Sequence[int]): The wires to sample
-        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]):
-            A seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
-            If no value is provided, a default RNG will be used
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. If None, a random key will be
-            generated. Only for simulation using JAX.
+        prng_key (Union[int, jax.random.PRNGKey]): A``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. You should only end up here
+            if there is a PRNG key.
 
     Returns:
         ndarray[int]: Sample values of the shape (shots, num_wires)
@@ -430,13 +424,9 @@ def _sample_state_jax(
     import jax
     import jax.numpy as jnp
 
-    if prng_key is None:
-        # Assuming op-by-op, so we'll just make one.
-        key = jax.random.PRNGKey(rng.integers(2**31 - 1, size=1)[0])
-    elif isinstance(prng_key, int):
+    key = prng_key
+    if isinstance(prng_key, int):
         key = jax.random.PRNGKey(prng_key)
-    else:
-        key = prng_key
 
     total_indices = len(state.shape) - is_state_batched
     state_wires = qml.wires.Wires(range(total_indices))

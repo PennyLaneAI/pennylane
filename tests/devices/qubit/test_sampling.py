@@ -64,43 +64,52 @@ class TestSampleState:
         assert all(qml.math.allequal(s, [0, 1]) or qml.math.allequal(s, [1, 0]) for s in samples)
 
     @pytest.mark.jax
+    def test_prng_key_uses_sample_state_jax(self, mocker):
+        """Tests that sample_state calls _sample_state_jax if PRNG key is not None"""
+
+        spy = mocker.spy(qml.devices.qubit.sampling, "_sample_state_jax")
+        state = qml.math.array(two_qubit_state, like="jax")
+
+        # prng_key specified, should call _sample_state_jax
+        _ = sample_state(state, 10, prng_key=15)
+        # prng_key defaults to None, should NOT call _sample_state_jax
+        _ = sample_state(state, 10)
+
+        assert spy.called_once()
+
+    @pytest.mark.jax
     def test_sample_state_jax(self):
         """Tests that the returned samples are as expected when explicitly calling _sample_state_jax."""
         state = qml.math.array(two_qubit_state, like="jax")
-        # rng used when prng_key is None, normally passed from sample_state
-        rng = np.random.default_rng()
 
-        samples = _sample_state_jax(state, 10, rng=rng)
+        samples = _sample_state_jax(state, 10, prng_key=84)
 
         assert samples.shape == (10, 2)
         assert samples.dtype == np.int64
         assert all(qml.math.allequal(s, [0, 1]) or qml.math.allequal(s, [1, 0]) for s in samples)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("prng_key", [None, 0, 27])
-    def test_sample_state_jax_prng_key(self, prng_key):
+    def test_sample_state_jax_prng_key(self):
         """Test that _sample_state_jax executes as expected for all expected input types for prng_key"""
-        state = qml.math.array(two_qubit_state, like="jax")
-        # used when prng_key is None, normally passed from sample_state
-        rng = np.random.default_rng()
+        import jax
 
-        samples = _sample_state_jax(state, shots=10, rng=rng, prng_key=prng_key)
-        samples2 = _sample_state_jax(state, shots=10, rng=rng, prng_key=prng_key)
+        state = qml.math.array(two_qubit_state, like="jax")
+        int_key = 27
+        prng_key = jax.random.PRNGKey(int_key)
+
+        samples = _sample_state_jax(state, shots=10, prng_key=int_key)
+        samples2 = _sample_state_jax(state, shots=10, prng_key=int_key)
+        samples3 = _sample_state_jax(state, shots=10, prng_key=prng_key)
 
         assert samples.shape == samples2.shape == (10, 2)
         assert samples.dtype == samples2.dtype == np.int64
-        assert all(qml.math.allequal(s, [0, 1]) or qml.math.allequal(s, [1, 0]) for s in samples)
+        assert all(
+            qml.math.allequal(s, [0, 1]) or qml.math.allequal(s, [1, 0])
+            for samples in [samples, samples2, samples3]
+            for s in samples
+        )
 
-        if prng_key is None:
-            assert not np.allclose(samples, samples2)
-        else:
-            import jax
-
-            key2 = jax.random.PRNGKey(prng_key)
-            samples3 = _sample_state_jax(state, shots=10, prng_key=key2)
-            samples4 = _sample_state_jax(state, shots=10, prng_key=key2)
-
-            assert np.allclose(samples, samples2, samples3, samples4)
+        assert np.allclose(samples, samples2, samples3)
 
     @pytest.mark.jax
     def test_prng_key_determines_sample_state_jax_results(self):

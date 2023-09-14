@@ -1683,6 +1683,20 @@ class TestPRNGKey:
 
         assert np.all(result1 == result2)
 
+    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    def test_no_prng_key_uses_seed(self, max_workers):
+        """Test that if no prng_key is set, the seed will be used for the JAX interface"""
+        qs = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.sample(wires=0)], shots=1000)
+        config = ExecutionConfig(interface="jax")
+
+        dev1 = DefaultQubit2(seed=123, max_workers=max_workers)
+        result1 = dev1.execute(qs, config)
+
+        dev2 = DefaultQubit2(seed=123, max_workers=max_workers)
+        result2 = dev2.execute(qs, config)
+
+        assert np.all(result1 == result2)
+
 
 class TestHamiltonianSamples:
     """Test that the measure_with_samples function works as expected for
