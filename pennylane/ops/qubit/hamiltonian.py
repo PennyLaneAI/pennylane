@@ -616,8 +616,16 @@ class Hamiltonian(Observable):
         if isinstance(other, Hamiltonian):
             self.simplify()
             other.simplify()
-            return self._obs_data() == other._obs_data()  # pylint: disable=protected-access
 
+            for selfdata in self._obs_data():
+                flag = False
+                for otherdata in other._obs_data():
+                    if (round(selfdata[0],15),selfdata[1])== (round(otherdata[0],15),otherdata[1]):#to remove floatt point error
+                        flag =True
+                        Continue
+                if not flag:
+                    return False
+            return True
         if isinstance(other, (Tensor, Observable)):
             self.simplify()
             return self._obs_data() == {
