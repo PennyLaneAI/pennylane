@@ -899,10 +899,9 @@ class TestReconstruct:
                 if nums_frequency is None:
                     # Gradient evaluation at reconstruction point not supported for
                     # Dirichlet reconstruction
-                    pytest.xfail("params is a ragged array")
                     assert np.isclose(
                         grad(pnp.array(x0, requires_grad=True)),
-                        exp_qnode_grad(*pnp.array(params, requires_grad=True))[inner_key],
+                        exp_qnode_grad(*params)[inner_key],
                     )
                 assert np.isclose(
                     grad(pnp.array(x0 + 0.1, requires_grad=True)),

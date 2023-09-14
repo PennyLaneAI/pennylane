@@ -24,8 +24,7 @@ import numpy as np
 from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.typing import Result, ResultBatch
 from pennylane.transforms import convert_to_numpy_parameters
-from pennylane.wires import Wires, WireError
-from pennylane import DeviceError, Snapshot
+from pennylane.transforms.core import TransformProgram
 
 from . import Device
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
@@ -34,6 +33,7 @@ from ..qubit.preprocess import (
     preprocess,
     validate_and_expand_adjoint,
     validate_multiprocessing_workers,
+    validate_device_wires,
 )
 from ..qubit.adjoint_jacobian import adjoint_jacobian, adjoint_vjp, adjoint_jvp
 
@@ -79,7 +79,8 @@ class DefaultQubit2(Device):
             qscripts.append(qs)
 
     >>> dev = DefaultQubit2()
-    >>> new_batch, post_processing_fn, execution_config = dev.preprocess(qscripts)
+    >>> program, execution_config = dev.preprocess()
+    >>> new_batch, post_processing_fn = program(qscripts)
     >>> results = dev.execute(new_batch, execution_config=execution_config)
     >>> post_processing_fn(results)
     [-0.0006888975950537501,
@@ -92,7 +93,8 @@ class DefaultQubit2(Device):
     parallel as follows
 
     >>> dev = DefaultQubit2(max_workers=5)
-    >>> new_batch, post_processing_fn, execution_config = dev.preprocess(qscripts)
+    >>> program, execution_config = dev.preprocess()
+    >>> new_batch, post_processing_fn = program(qscripts)
     >>> results = dev.execute(new_batch, execution_config=execution_config)
     >>> post_processing_fn(results)
 
@@ -125,7 +127,8 @@ class DefaultQubit2(Device):
         @jax.jit
         def f(x):
             qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-            new_batch, post_processing_fn, execution_config = dev.preprocess(qs)
+            program, execution_config = dev.preprocess()
+            new_batch, post_processing_fn = program([qs])
             results = dev.execute(new_batch, execution_config=execution_config)
             return post_processing_fn(results)
 
@@ -181,26 +184,24 @@ class DefaultQubit2(Device):
             if circuit is None:
                 return True
 
-            return isinstance(validate_and_expand_adjoint(circuit), QuantumScript)
+            return isinstance(validate_and_expand_adjoint(circuit)[0][0], QuantumScript)
 
         return False
 
     def preprocess(
         self,
-        circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Tuple[QuantumTapeBatch, PostprocessingFn, ExecutionConfig]:
-        """Converts an arbitrary circuit or batch of circuits into a batch natively executable by the :meth:`~.execute` method.
+        """This function defines the device transform program to be applied and an updated device configuration.
 
         Args:
-            circuits (Union[QuantumTape, Sequence[QuantumTape]]): The circuit or a batch of circuits to preprocess
-                before execution on the device
-            execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A data structure describing the parameters needed to fully describe
-                the execution. Includes such information as shots.
+            execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A data structure describing the
+                parameters needed to fully describe the execution.
 
         Returns:
-            Tuple[QuantumTape], Callable, ExecutionConfig: QuantumTapes that the device can natively execute,
-            a postprocessing function to be called after execution, and a configuration with unset specifications filled in.
+            TransformProgram, ExecutionConfig: A transform program that when called returns QuantumTapes that the device
+            can natively execute as well as a postprocessing function to be called after execution, and a configuration with
+            unset specifications filled in.
 
         This device:
 
@@ -209,34 +210,18 @@ class DefaultQubit2(Device):
         * Currently does not intrinsically support parameter broadcasting
 
         """
-        is_single_circuit = False
-        if isinstance(circuits, QuantumScript):
-            circuits = [circuits]
-            is_single_circuit = True
+        transform_program = TransformProgram()
+        # Validate device wires
+        transform_program.add_transform(validate_device_wires, self)
 
-        if self.wires and (
-            extra_wires := set(Wires.all_wires(c.wires for c in circuits)) - set(self.wires)
-        ):
-            raise WireError(
-                f"Cannot run circuit(s) on {self.name} as they contain wires "
-                f"not found on the device: {extra_wires}"
-            )
-
-        # prefer config over device value
+        # Validate multi processing
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
-        self._validate_multiprocessing(max_workers, circuits)
+        transform_program.add_transform(validate_multiprocessing_workers, max_workers, self)
 
-        batch, post_processing_fn, config = preprocess(circuits, execution_config=execution_config)
-
-        if is_single_circuit:
-
-            def convert_batch_to_single_output(results: ResultBatch) -> Result:
-                """Unwraps a dimension so that executing the batch of circuits looks like executing a single circuit."""
-                return post_processing_fn(results)[0]
-
-            return batch, convert_batch_to_single_output, config
-
-        return batch, post_processing_fn, config
+        # General preprocessing (Validate measurement, expand, adjoint expand, broadcast expand)
+        transform_program_preprocess, config = preprocess(execution_config=execution_config)
+        transform_program = transform_program + transform_program_preprocess
+        return transform_program, config
 
     def execute(
         self,
@@ -255,12 +240,20 @@ class DefaultQubit2(Device):
             self.tracker.record()
 
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
+        interface = (
+            execution_config.interface
+            if execution_config.gradient_method in {"backprop", None}
+            else None
+        )
         if max_workers is None:
-            results = tuple(simulate(c, rng=self._rng, debugger=self._debugger) for c in circuits)
+            results = tuple(
+                simulate(c, rng=self._rng, debugger=self._debugger, interface=interface)
+                for c in circuits
+            )
         else:
             vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
             seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
-            _wrap_simulate = partial(simulate, debugger=None)
+            _wrap_simulate = partial(simulate, debugger=None, interface=interface)
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
                 exec_map = executor.map(_wrap_simulate, vanilla_circuits, seeds)
                 results = tuple(exec_map)
@@ -513,31 +506,6 @@ class DefaultQubit2(Device):
 
         results, vjps = tuple(zip(*results))
         return (results[0], vjps[0]) if is_single_circuit else (results, vjps)
-
-    def _validate_multiprocessing(self, max_workers, circuits):
-        """Make sure the tapes can be processed by a ProcessPoolExecutor instance.
-
-        Args:
-            max_workers (Union[int]): Maximal number of multiprocessing workers
-            circuits (QuantumTape_or_Batch): Quantum tapes
-        """
-        if max_workers is None:
-            return
-
-        validate_multiprocessing_workers(max_workers)
-
-        if self._debugger and self._debugger.active:
-            raise DeviceError("Debugging with ``Snapshots`` is not available with multiprocessing.")
-
-        def _has_snapshot(circuit):
-            return any(isinstance(c, Snapshot) for c in circuit)
-
-        if any(_has_snapshot(c) for c in circuits):
-            raise RuntimeError(
-                """ProcessPoolExecutor cannot execute a QuantumScript with
-                a ``Snapshot`` operation. Change the value of ``max_workers``
-                to ``None`` or execute the QuantumScript separately."""
-            )
 
 
 def _adjoint_jac_wrapper(c, rng=None, debugger=None):
