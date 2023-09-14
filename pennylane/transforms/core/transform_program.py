@@ -281,10 +281,9 @@ class TransformProgram:
             return tapes, null_postprocessing
 
         processing_fns_stack = []
-        informative_fn = None
 
         for transform_container in self:
-            transform, args, kwargs, cotransform, is_informative, _ = transform_container
+            transform, args, kwargs, cotransform, _, _ = transform_container
 
             if cotransform:
                 raise NotImplementedError(
@@ -307,19 +306,15 @@ class TransformProgram:
             batch_postprocessing = partial(_batch_postprocessing, individual_fns=fns, slices=slices)
             batch_postprocessing.__doc__ = _batch_postprocessing.__doc__
 
+            processing_fns_stack.append(batch_postprocessing)
+
             # set input tapes for next iteration.
             tapes = execution_tapes
 
-            if is_informative:
-                informative_fn = batch_postprocessing
-                continue
-
-            processing_fns_stack.append(batch_postprocessing)
-
-        def postprocessing_fn(res):
-            if informative_fn:
-                res = informative_fn(tapes)
-            return _apply_postprocessing_stack(res, processing_fns_stack)
+        postprocessing_fn = partial(
+            _apply_postprocessing_stack,
+            postprocessing_stack=processing_fns_stack,
+        )
 
         postprocessing_fn.__doc__ = _apply_postprocessing_stack.__doc__
 

@@ -138,7 +138,7 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
 
     try:
         return op.matrix(wire_order=wire_order)
-    except:  # pylint: disable=bare-except
+    except (TypeError, ImportError, qml.operation.MatrixUndefinedError):
         return matrix(op.expand(), wire_order=wire_order)
 
 
