@@ -185,6 +185,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed float point issue while comparing two Hamiltonians in `Hamiltonian.compare`.
+  [(#4567)](https://github.com/PennyLaneAI/pennylane/issues/4567)
+
 * Fixed issue where `__copy__` method of the `qml.Select()` operator attempted to access un-initialized data.
 [(#4551)](https://github.com/PennyLaneAI/pennylane/pull/4551)
 
@@ -218,4 +221,4 @@ Romain Moyard,
 Mudit Pandey,
 Matthew Silverman,
 Jay Soni,
-
+Yash Prabhat,
