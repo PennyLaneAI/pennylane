@@ -132,8 +132,8 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
 
     if wire_order and not set(op.wires).issubset(wire_order):
         raise OperationTransformError(
-            f"Wires in circuit {op.wires.tolist()} are inconsistent with "
-            f"those in wire_order {wire_order.tolist()}"
+            f"Wires in circuit {list(op.wires)} are inconsistent with "
+            f"those in wire_order {list(wire_order)}"
         )
 
     if isinstance(op, qml.operation.Tensor) and wire_order is not None:
@@ -152,15 +152,16 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
 def _matrix_transform(
     tape: qml.tape.QuantumTape, wire_order=None, **kwargs
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
-    wires = kwargs.get("device_wires", None) or tape.wires
-    if not wires:
+    if not tape.wires:
         raise qml.operation.MatrixUndefinedError
 
-    if wire_order and not set(wires).issubset(wire_order):
+    if wire_order and not set(tape.wires).issubset(wire_order):
         raise OperationTransformError(
-            f"Wires in circuit {wires.tolist()} are inconsistent with "
-            f"those in wire_order {wire_order.tolist()}"
+            f"Wires in circuit {list(tape.wires)} are inconsistent with "
+            f"those in wire_order {list(wire_order)}"
         )
+
+    wires = kwargs.get("device_wires", None) or tape.wires
     wire_order = wire_order or wires
 
     def processing_fn(res):

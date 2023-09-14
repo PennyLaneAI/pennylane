@@ -495,6 +495,27 @@ class TestValidation:
         ):
             qml.matrix(None)(0.5)
 
+    def test_inconsistent_wires(self):
+        """Assert error raised when wire labels in wire_order and circuit are inconsistent"""
+
+        def circuit():
+            qml.PauliX(wires=1)
+            qml.PauliZ(wires=0)
+
+        wires = [0, "b"]
+
+        with pytest.raises(
+            OperationTransformError,
+            match=r"Wires in circuit \[1, 0\] are inconsistent with those in wire_order \[0, 'b'\]",
+        ):
+            qml.matrix(circuit, wire_order=wires)()
+
+        with pytest.raises(
+            OperationTransformError,
+            match=r"Wires in circuit \[0\] are inconsistent with those in wire_order \[1\]",
+        ):
+            qml.matrix(qml.PauliX(0), wire_order=[1])
+
 
 class TestInterfaces:
     @pytest.mark.tf
