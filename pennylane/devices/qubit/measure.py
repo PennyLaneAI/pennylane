@@ -149,7 +149,7 @@ def get_measurement_function(
             if measurementprocess.obs.name == "SparseHamiltonian":
                 return csr_dot_products
 
-            backprop_mode = math.get_interface(state) != "numpy"
+            backprop_mode = math.get_interface(state, *measurementprocess.obs.data) != "numpy"
             if isinstance(measurementprocess.obs, Hamiltonian):
                 # need to work out thresholds for when its faster to use "backprop mode" measurements
                 return sum_of_terms_method if backprop_mode else csr_dot_products
