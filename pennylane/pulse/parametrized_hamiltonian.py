@@ -15,8 +15,6 @@
 """
 This submodule contains the ParametrizedHamiltonian class
 """
-from copy import copy
-
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
@@ -257,24 +255,6 @@ class ParametrizedHamiltonian:
             terms.append(term)
 
         return "  " + "\n+ ".join(terms)
-
-    def map_wires(self, wire_map):
-        """Returns a copy of the current ParametrizedHamiltonian with its wires changed according
-        to the given wire map.
-
-        Args:
-            wire_map (dict): dictionary containing the old wires as keys and the new wires as values
-
-        Returns:
-            .ParametrizedHamiltonian: A new instance with mapped wires
-        """
-        new_ph = copy(self)
-        new_ph.ops_parametrized = [op.map_wires(wire_map) for op in self.ops_parametrized]
-        new_ph.ops_fixed = [op.map_wires(wire_map) for op in self.ops_fixed]
-        new_ph.wires = Wires.all_wires(
-            [op.wires for op in new_ph.ops_fixed] + [op.wires for op in new_ph.ops_parametrized]
-        )
-        return new_ph
 
     def H_fixed(self):
         """The fixed term(s) of the ``ParametrizedHamiltonian``. Returns a ``Sum`` operator of ``SProd``
