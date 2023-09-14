@@ -398,6 +398,7 @@ def _contract_qjac_with_cjac(qjac, cjac, tape):
     return type system. This function takes the measurement shapes and different
     QNode arguments into account.
     """
+    print("qjac", qjac, "cjac", cjac)
     num_measurements = len(tape.measurements)
     has_partitioned_shots = tape.shots.has_partitioned_shots
 
@@ -448,6 +449,7 @@ def _contract_qjac_with_cjac(qjac, cjac, tape):
 
     if not multi_meas:
         # Multiple parameters, single measurement
+        print("qjac", qjac)
         qjac = qml.math.stack(qjac)
         if not cjac_is_tuple:
             return tdot(qjac, qml.math.stack(cjac))

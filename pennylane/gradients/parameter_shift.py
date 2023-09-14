@@ -159,7 +159,6 @@ def _single_meas_grad(result, coeffs, unshifted_coeff, r0):
             )  # pragma: no cover
         # return the unshifted term, which is the only contribution
         return qml.math.array(unshifted_coeff * r0)
-
     result = qml.math.stack(result)
     coeffs = qml.math.convert_like(coeffs, result)
     g = qml.math.tensordot(result, coeffs, [[0], [0]])
@@ -412,6 +411,8 @@ def expval_param_shift(
     tape_specs = (single_measure, num_params, num_measurements, tape.shots)
 
     def processing_fn(results):
+        print(len(results))
+        print(results)
         start, r0 = (1, results[0]) if at_least_one_unshifted and f0 is None else (0, f0)
         grads = []
         for data in gradient_data:

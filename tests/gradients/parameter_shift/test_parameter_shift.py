@@ -4052,7 +4052,8 @@ class TestQnodeJax:
         res = qml.gradients.param_shift(circuit)(x)
 
         res_expected = jax.jacobian(circuit)(x)
-
+        print("_____________________")
+        print(res, res_expected)
         assert res.shape == res_expected.shape
         assert np.allclose(res, res_expected)
 

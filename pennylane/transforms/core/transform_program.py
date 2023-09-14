@@ -115,6 +115,7 @@ class TransformProgram:
     def __init__(self, initial_program: Optional[Sequence] = None):
         self._transform_program = list(initial_program) if initial_program else []
         self._classical_jacobians = None
+        self._argnums = None
 
     def __iter__(self):
         """list[TransformContainer]: Return an iterator to the underlying transform program."""
@@ -286,31 +287,18 @@ class TransformProgram:
             tapes, _ = program((tape,))
             return tuple(qml.math.stack(tape.get_parameters(trainable_only=True)) for tape in tapes)
 
-        def jacobian(classical_function, program, argnums, *args, **kwargs):  # pylint: disable=inconsistent-return-statements
+        def jacobian(classical_function, program, argnums, *args, **kwargs):
             classical_function = partial(classical_function, program)
             old_interface = qnode.interface
 
             if old_interface == "auto":
                 qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
-            if qnode.interface == "autograd":
-                jac = qml.jacobian(classical_function, argnum=argnums)(*args, **kwargs)
-
             if qnode.interface == "torch":
                 import torch
 
                 def _jacobian(*args, **kwargs):  # pylint: disable=unused-argument
                     jac = torch.autograd.functional.jacobian(classical_function, args)
-
-                    torch_argnum = (
-                        argnums
-                        if argnums is not None
-                        else qml.math.get_trainable_indices(args)
-                    )
-                    if qml.math.isscalar(torch_argnum):
-                        jac = jac[torch_argnum]
-                    else:
-                        jac = tuple((jac[idx] for idx in torch_argnum))
                     return jac
 
                 jac = _jacobian(*args, **kwargs)
@@ -325,25 +313,6 @@ class TransformProgram:
 
                 jac = _jacobian(*args, **kwargs)
 
-            if qnode.interface == "tf":
-                import tensorflow as tf
-
-                def _jacobian(*args, **kwargs):
-                    if qml.math.isscalar(argnums):
-                        sub_args = args[argnums]
-                    elif argnums is None:
-                        sub_args = args
-                    else:
-                        sub_args = tuple((args[i] for i in argnums))
-
-                    with tf.GradientTape() as tape:
-                        gate_params = classical_function(*args, **kwargs)
-
-                    jac = tape.jacobian(gate_params, sub_args)
-                    return jac
-
-                jac = _jacobian(*args, **kwargs)
-
             if old_interface == "auto":
                 qnode.interface = "auto"
 
@@ -355,51 +324,47 @@ class TransformProgram:
                 argnums = transform._kwargs.get("argnums", None)
                 transform._kwargs.pop("argnums", None)
                 classical_jacobians.append(jacobian(classical_preprocessing, TransformProgram(self[0:index+1]), argnums, *args, **kwargs))
-            classical_jacobians.append(None)
+            else:
+                classical_jacobians.append(None)
+        self._classical_jacobians = classical_jacobians
         # QNode reset the tape
         qnode.construct(args, kwargs)
-        self._classical_jacobians = classical_jacobians
 
-    # def set_all_argnums(self, qnode, argnums, args, kwargs):
-    #     """This functions gets the tape parameters from the QNode construction given some argnums (only for Jax).
-    #     The tape parameters are transformed to JVPTracer if they are from argnums. This function imitates the behavior
-    #     of Jax in order to mark trainable parameters.
-    #
-    #     Args:
-    #         qnode(qml.QNode): the quantum node.
-    #         argnums(int, list[int]): the parameters that we want to set as trainable (on the QNode level).
-    #         expand_fn(callable): the function that is expanding the tape.
-    #
-    #     Return:
-    #         list[float, jax.JVPTracer]: List of parameters where the trainable one are `JVPTracer`.
-    #     """
-    #     def jax_argnums_to_tape_trainable(program, args, kwargs)
-    #         import jax
-    #
-    #         with jax.core.new_main(jax.interpreters.ad.JVPTrace) as main:
-    #             trace = jax.interpreters.ad.JVPTrace(main, 0)
-    #
-    #         args_jvp = [
-    #             jax.interpreters.ad.JVPTracer(trace, arg, jax.numpy.zeros(arg.shape))
-    #             if i in argnums
-    #             else arg
-    #             for i, arg in enumerate(args)
-    #         ]
-    #
-    #         qnode.construct(args_jvp, kwargs)
-    #         tape = qnode.qtape
-    #         tapes, _ = program((tape,))
-    #         del trace
-    #         return tuple(tape.get_parameters(trainable_only=False) for tape in tapes)
-    #
-    #     argnums = []
-    #     for transform, index in enumerate(self):
-    #         if transform.classical_cotransform:
-    #             argnums.append(jax_argnums_to_tape_trainable(self[0:index], args, kwargs))
-    #         else:
-    #             argnums.append(None)
-    #
-    #     self.argnums = argnums
+    def set_all_argnums(self, qnode, args, kwargs):
+        def jax_argnums_to_tape_trainable(program, argnums, args, kwargs):
+            import jax
+
+            with jax.core.new_main(jax.interpreters.ad.JVPTrace) as main:
+                trace = jax.interpreters.ad.JVPTrace(main, 0)
+
+            args_jvp = [
+                jax.interpreters.ad.JVPTracer(trace, arg, jax.numpy.zeros(arg.shape))
+                if i in argnums
+                else arg
+                for i, arg in enumerate(args)
+            ]
+
+            qnode.construct(args_jvp, kwargs)
+            tape = qnode.qtape
+            tapes, _ = program((tape,))
+            del trace
+            return tuple(tape.get_parameters(trainable_only=False) for tape in tapes)
+
+        argnums = []
+        for index, transform in enumerate(self):
+            argnums_ = transform._kwargs.get("argnums", None)
+            argnums_ = [0] if qnode.interface in ["jax", "jax-jit"] and argnums_ is None else argnums_
+            if transform.classical_cotransform and argnums_:
+                params = jax_argnums_to_tape_trainable(TransformProgram(self[0:index]), argnums_, args, kwargs)
+                print(params)
+                argnums_ = [qml.math.get_trainable_indices(param) for param in params]
+                argnums.append(argnums_)
+            else:
+                argnums.append(None)
+
+        self._argnums = argnums
+        print(self._argnums)
+        qnode.construct(args, kwargs)
 
     def __call__(self, tapes: Tuple[QuantumTape]) -> Tuple[ResultBatch, BatchPostProcessingFn]:
         print("hello")
@@ -423,12 +388,14 @@ class TransformProgram:
             start = 0
             start_classical = 0
             for j, tape in enumerate(tapes):
-                # TODO add argnums
-                # tape.trainable_params = argnums
+                if self._argnums:
+                    print(self._argnums, any(self._argnums))
+                    if not all(item is None for item in self._argnums):
+                        tape.trainable_params = self._argnums[i][j]
+                        print(tape.trainable_params)
                 new_tapes, fn = transform(tape, *targs, **tkwargs)
                 execution_tapes.extend(new_tapes)
 
-                # TODO add classical cotransform
                 fns.append(fn)
                 end = start + len(new_tapes)
                 slices.append(slice(start, end))
@@ -440,7 +407,7 @@ class TransformProgram:
                     start_classical += 1
 
             if cotransform:
-                batch_postprocessing_classical = partial(_batch_postprocessing, individual_fns=classical_fns, slices=slices)
+                batch_postprocessing_classical = partial(_batch_postprocessing, individual_fns=classical_fns, slices=slices_classical)
                 batch_postprocessing_classical.__doc__ = _batch_postprocessing.__doc__
                 processing_fns_stack.append(batch_postprocessing_classical)
 
@@ -456,5 +423,7 @@ class TransformProgram:
             postprocessing_stack=processing_fns_stack,
         )
         postprocessing_fn.__doc__ = _apply_postprocessing_stack.__doc__
-        print("tapes", tapes)
+
+        # Reset classical jacobians
+        self._classical_jacobians = []
         return tuple(tapes), postprocessing_fn

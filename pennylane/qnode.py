@@ -964,6 +964,8 @@ class QNode:
         # Calculcate the classical jacobians if needed
         if self.transform_program.has_classical_cotransform:
             self.transform_program.set_all_classical_jacobians(self, args, kwargs)
+            self.transform_program.set_all_argnums(self, args, kwargs)
+
         # pylint: disable=unexpected-keyword-arg
         res = qml.execute(
             (self._tape,),
