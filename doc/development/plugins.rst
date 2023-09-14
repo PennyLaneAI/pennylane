@@ -108,9 +108,9 @@ as well as potential further capabilities, by providing the following class attr
               return obj.name in {'CNOT', 'PauliX', 'PauliY', 'PauliZ'}
           return qml.BooleanFn(accepts_obj)
 
-  If the device does *not* inherit from :class:`~.DefaultQubit`, then supported operations can be determined
+  If the device does *not* inherit from :class:`~.DefaultQubitLegacy`, then supported operations can be determined
   by the :attr:`pennylane.Device.operations` property.  This property is a list of string names for supported operations.
-  :class:`~.DefaultQubit` supports any operation with a matrix, even if it's name isn't specifically enumerated
+  :class:`~.DefaultQubitLegacy` supports any operation with a matrix, even if it's name isn't specifically enumerated
   in :attr:`pennylane.Device.operations`.
 
   .. code-block:: python
