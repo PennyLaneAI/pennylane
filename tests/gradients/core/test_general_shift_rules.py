@@ -189,26 +189,17 @@ class TestGenerateShiftRule:
         frequencies = (1, 4, 5, 6)
 
         correct_terms = [
-            [-2.8111804455102014, -np.pi / 8],
             [2.8111804455102014, np.pi / 8],
-            [-0.31327576445128014, -3 * np.pi / 8],
+            [-2.8111804455102014, -np.pi / 8],
             [0.31327576445128014, 3 * np.pi / 8],
-            [0.8080445791083615, -5 * np.pi / 8],
+            [-0.31327576445128014, -3 * np.pi / 8],
             [-0.8080445791083615, 5 * np.pi / 8],
-            [0.3101398980494395, -7 * np.pi / 8],
+            [0.8080445791083615, -5 * np.pi / 8],
             [-0.3101398980494395, 7 * np.pi / 8],
+            [0.3101398980494395, -7 * np.pi / 8],
         ]
 
         generated_terms = generate_shift_rule(frequencies)
-
-        # # the algorith sorts wrt *absolute value* of the shift (second value in each entry of correct_terms),
-        # # such that smaller shifts come first.
-        # # For shifts of matching amplitude and opposite sign, the sorting algorithm is not stable wrt which
-        # # order the terms are returned in, so we sort before comparing to the expected results
-        for i in range(0, 8, 2):
-            pair = generated_terms[i : i + 2]
-            sorting_indices = np.argsort(pair[:, -1])
-            generated_terms[i : i + 2] = pair[sorting_indices]
 
         assert np.allclose(generated_terms, correct_terms)
 
@@ -221,26 +212,17 @@ class TestGenerateShiftRule:
         custom_shifts = (1 / 13 * np.pi, 3 / 7 * np.pi, 2 / 3 * np.pi, 3 / 4 * np.pi)
 
         correct_terms = [
-            [-2.709571194594805, -np.pi / 13],
             [2.709571194594805, np.pi / 13],
-            [0.12914139932030527, -3 * np.pi / 7],
+            [-2.709571194594805, -np.pi / 13],
             [-0.12914139932030527, 3 * np.pi / 7],
-            [0.3820906256032637, -2 * np.pi / 3],
+            [0.12914139932030527, -3 * np.pi / 7],
             [-0.3820906256032637, 2 * np.pi / 3],
-            [-0.436088184940856, -3 * np.pi / 4],
+            [0.3820906256032637, -2 * np.pi / 3],
             [0.436088184940856, 3 * np.pi / 4],
+            [-0.436088184940856, -3 * np.pi / 4],
         ]
 
         generated_terms = generate_shift_rule(frequencies, custom_shifts)
-
-        # # the algorith sorts wrt *absolute value* of the shift (second value in each entry of correct_terms),
-        # # such that smaller shifts come first.
-        # # For shifts of matching amplitude and opposite sign, the sorting algorithm is not stable wrt which
-        # # order the terms are returned in, so we sort before comparing to the expected results
-        for i in range(0, 8, 2):
-            pair = generated_terms[i : i + 2]
-            sorting_indices = np.argsort(pair[:, -1])
-            generated_terms[i : i + 2] = pair[sorting_indices]
 
         assert np.allclose(generated_terms, correct_terms)
 
