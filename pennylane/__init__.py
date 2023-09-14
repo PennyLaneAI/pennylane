@@ -334,7 +334,9 @@ def device(name, *args, **kwargs):
         # loads the device class
         plugin_device_class = plugin_devices[name].load()
 
-        if Version(version()) not in SimpleSpec(plugin_device_class.pennylane_requires):
+        if hasattr(plugin_device_class, "pennylane_requires") and Version(
+            version()
+        ) not in SimpleSpec(plugin_device_class.pennylane_requires):
             raise DeviceError(
                 f"The {name} plugin requires PennyLane versions {plugin_device_class.pennylane_requires}, "
                 f"however PennyLane version {__version__} is installed."
