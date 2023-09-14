@@ -198,12 +198,11 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         clause below (it raises a tf.errors.OperatorNotAllowedInGraphError because it can't
         handle a function that sometimes returns a tuple, and other times returns None)."""
 
-        expected_shape = [2] * num_wires
         expected_size = 2**num_wires
         size = qml.math.size(state)
 
         try:
-            if qml.math.ndim(state) > len(expected_shape) or size > expected_size:
+            if qml.math.ndim(state) > 1 or size > expected_size:
                 return size // expected_size
         except Exception as err:  # pylint:disable=broad-except
             if not qml.math.is_abstract(state):
