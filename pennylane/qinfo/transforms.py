@@ -13,8 +13,8 @@
 # limitations under the License.
 """QNode transforms for the quantum information quantities."""
 # pylint: disable=import-outside-toplevel, not-callable
-import functools
-from typing import Sequence, Callable
+from functools import partial
+from typing import Callable, Sequence
 
 import pennylane as qml
 from pennylane.tape import QuantumTape
@@ -24,7 +24,7 @@ from pennylane.transforms import adjoint_metric_tensor, metric_tensor
 from pennylane.transforms.core import transform
 
 
-@transform
+@partial(transform, final_transform=True)
 def reduced_dm(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Callable):
     """Compute the reduced density matrix from a :class:`~.QNode` returning
     :func:`~pennylane.state`.
@@ -104,7 +104,7 @@ def _reduced_dm_qnode(self, qnode, targs, tkwargs):
     return self.default_qnode_transform(qnode, targs, tkwargs)
 
 
-@transform
+@partial(transform, final_transform=True)
 def purity(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Callable):
     r"""Compute the purity of a :class:`~.QuantumTape` returning :func:`~pennylane.state`.
 
@@ -201,7 +201,7 @@ def _purity_qnode(self, qnode, targs, tkwargs):
     return self.default_qnode_transform(qnode, targs, tkwargs)
 
 
-@transform
+@partial(transform, final_transform=True)
 def vn_entropy(
     tape: QuantumTape, wires: Sequence[int], base: float = None, **kwargs
 ) -> (Sequence[QuantumTape], Callable):
@@ -295,7 +295,7 @@ def _vn_entropy_qnode(self, qnode, targs, tkwargs):
     return self.default_qnode_transform(qnode, targs, tkwargs)
 
 
-@transform
+@partial(transform, final_transform=True)
 def mutual_info(
     tape: QuantumTape, wires0: Sequence[int], wires1: Sequence[int], base: float = None, **kwargs
 ) -> (Sequence[QuantumTape], Callable):
@@ -401,7 +401,7 @@ def _torch_jac(circ):
     import torch
 
     def wrapper(*args, **kwargs):
-        loss = functools.partial(circ, **kwargs)
+        loss = partial(circ, **kwargs)
         if len(args) > 1:
             return torch.autograd.functional.jacobian(loss, args, create_graph=True)
         return torch.autograd.functional.jacobian(loss, *args, create_graph=True)
