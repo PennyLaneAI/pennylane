@@ -1074,10 +1074,7 @@ def _dmrg_state(wavefunction, tol=1e-15):
         lstb = np.pad(lstb, (0, maxlen - len(lstb)))
 
         which_occ = np.where(lsta == 1)[0]
-        if len(which_occ) == 0:
-            parity = 1.0
-        else:
-            parity = (-1) ** np.sum([np.sum(lstb[: int(ind)]) for ind in which_occ])
+        parity = (-1) ** np.sum([np.sum(lstb[: int(ind)]) for ind in which_occ])
         dat.append(parity * coeffs[ii])
 
     ## create the FCI matrix as a dict
