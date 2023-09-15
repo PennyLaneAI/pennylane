@@ -177,13 +177,13 @@ class QubitDevice(Device):
 
     **Example:**
 
-    Let's create device that inherits from :class:`~pennylane.devices.DefaultQubit` and overrides the
+    Let's create a device that inherits from :class:`~pennylane.devices.DefaultQubitLegacy` and overrides the
     logic of the `qml.sample` measurement. To do so we will need to update the ``measurement_map``
     dictionary:
 
     .. code-block:: python
 
-        class NewDevice(DefaultQubit):
+        class NewDevice(DefaultQubitLegacy):
             def __init__(self, wires, shots):
                 super().__init__(wires=wires, shots=shots)
                 self.measurement_map[SampleMP] = "sample_measurement"
