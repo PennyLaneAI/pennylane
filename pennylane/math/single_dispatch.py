@@ -35,8 +35,28 @@ def _i(name):
 
 # ------------------------------- Builtins -------------------------------- #
 
-ar.register_function("builtins", "ndim", lambda x: np.ndim(np.array(x)))
-ar.register_function("builtins", "shape", lambda x: np.array(x).shape)
+
+def _builtins_ndim(x):
+    # pylint:disable=unexpected-keyword-arg
+    if not isinstance(x, (list, tuple)) or len(x) == 0:
+        return np.ndim(np.array(x))
+
+    interface = ar.infer_backend(x[0])
+    return np.ndim(np.array(x)) if interface == "builtins" else ar.ndim(x, like=interface)
+
+
+def _builtins_shape(x):
+    # pylint:disable=unexpected-keyword-arg
+    if not isinstance(x, (list, tuple)) or len(x) == 0:
+        return np.array(x).shape
+
+    interface = ar.infer_backend(x[0])
+    return np.array(x).shape if interface == "builtins" else ar.shape(x, like=interface)
+
+
+ar.register_function("builtins", "ndim", _builtins_ndim)
+ar.register_function("builtins", "shape", _builtins_shape)
+
 
 # -------------------------------- SciPy --------------------------------- #
 # the following is required to ensure that SciPy sparse Hamiltonians passed to
