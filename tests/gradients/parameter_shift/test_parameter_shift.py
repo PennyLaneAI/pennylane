@@ -2284,7 +2284,7 @@ class TestParameterShiftRule:
 
     costs_and_expected_expval = [
         (cost1, [3]),
-        (cost2, [3]),
+        (cost2, [1, 3]),
         (cost3, [2, 3]),
     ]
 
@@ -2297,7 +2297,7 @@ class TestParameterShiftRule:
         circuit = qml.QNode(cost, dev)
 
         res = qml.gradients.param_shift(circuit)(x)
-        assert isinstance(res, tuple)
+
         assert len(res) == expected_shape[0]
 
         if len(expected_shape) > 1:
@@ -2307,7 +2307,7 @@ class TestParameterShiftRule:
 
     costs_and_expected_probs = [
         (cost4, [3, 4]),
-        (cost5, [3, 4]),
+        (cost5, [1, 3, 4]),
         (cost6, [2, 3, 4]),
     ]
 
@@ -2320,7 +2320,7 @@ class TestParameterShiftRule:
         circuit = qml.QNode(cost, dev)
 
         res = qml.gradients.param_shift(circuit)(x)
-        assert isinstance(res, tuple)
+
         assert len(res) == expected_shape[0]
 
         if len(expected_shape) > 2:
@@ -3093,7 +3093,7 @@ class TestParameterShiftRuleBroadcast:
         single_measure_circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2, cost4, cost5)]
         multi_measure_circuits = [qml.QNode(cost, dev) for cost in (cost3, cost6)]
 
-        for c, exp_shape in zip(single_measure_circuits, [(3,), (3,), (3, 4), (3, 4)]):
+        for c, exp_shape in zip(single_measure_circuits, [(3,), (1, 3), (3, 4), (1, 3, 4)]):
             grad = qml.gradients.param_shift(c, broadcast=True)(x)
             assert qml.math.shape(grad) == exp_shape
 

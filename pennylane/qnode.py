@@ -909,11 +909,11 @@ class QNode:
 
         if self.expansion_strategy == "device":
             self._tape = self.device.expand_fn(self.tape, max_expansion=self.max_expansion)
-
-        # If the gradient function is a transform, expand the tape so that
-        # all operations are supported by the transform.
-        if isinstance(self.gradient_fn, qml.gradients.gradient_transform):
-            self._tape = self.gradient_fn.expand_fn(self._tape)
+        #
+        # # If the gradient function is a transform, expand the tape so that
+        # # all operations are supported by the transform.
+        # if isinstance(self.gradient_fn, qml.transforms.core.TransformDispatcher):
+        #     self._tape = self.gradient_fn.expand_fn(self._tape)
 
         if old_interface == "auto":
             self.interface = "auto"

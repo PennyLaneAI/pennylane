@@ -156,6 +156,9 @@ class TransformProgram:
         # Program can only contain one informative transform and at the end of the program
         if self.is_informative:
             raise TransformError("The transform program already has an informative transform.")
+        if self.has_classical_cotransform:
+            raise TransformError("The transform program already has an gradient based transform. For higher order"
+                                 " derivatives use the QNode kwarg with max diff directly.")
         self._transform_program.append(transform_container)
 
     def insert_front(self, transform_container: TransformContainer):
@@ -284,8 +287,11 @@ class TransformProgram:
             kwargs.pop("argnums", None)
             qnode.construct(args, kwargs)
             tape = qnode.qtape
-            tapes, _ = program((tape,))
-            return tuple(qml.math.stack(tape.get_parameters(trainable_only=True)) for tape in tapes)
+            if not program.is_empty:
+                tapes, _ = program((tape,))
+                return tuple(qml.math.stack(tape.get_parameters(trainable_only=True)) for tape in tapes)
+            else:
+                return qml.math.stack(tape.get_parameters(trainable_only=True))
 
         def jacobian(classical_function, program, argnums, *args, **kwargs):
             classical_function = partial(classical_function, program)
@@ -294,8 +300,21 @@ class TransformProgram:
             if old_interface == "auto":
                 qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
-            if qnode.interface in ["autograd", "tensorflow", "tf"]:
-                raise qml.transforms.TransformError("Wrong interface")
+            if qnode.interface == "autograd":
+                jac = qml.jacobian(classical_function, argnum=argnums)(*args, **kwargs)
+
+            if qnode.interface == "tf":
+                import tensorflow as tf
+
+                def _jacobian(*args, **kwargs):
+
+                    with tf.GradientTape() as tape:
+                        gate_params = classical_function(*args, **kwargs)
+
+                    jac = tape.jacobian(gate_params, args)
+                    return jac
+
+                jac = _jacobian(*args, **kwargs)
 
             if qnode.interface == "torch":
                 import torch
@@ -320,15 +339,20 @@ class TransformProgram:
                 qnode.interface = "auto"
 
             return jac
-
+        if len(self) > 1 and qnode.interface in ["autograd", "tensorflow", "tf"]:
+            raise qml.transforms.TransformError("Taking the gradient of a qnode is only support when there is a single transform")
         classical_jacobians = []
         for index, transform in enumerate(self):
             if transform.classical_cotransform:
                 argnums = transform._kwargs.get("argnums", None)
-                classical_jacobians.append(jacobian(classical_preprocessing, TransformProgram(self[0:index]), argnums, *args, **kwargs))
+                sub_program = TransformProgram(self[0:index])
+                classical_jacobian = jacobian(classical_preprocessing, sub_program, argnums, *args, **kwargs)
+                classical_jacobian = [classical_jacobian] if sub_program.is_empty else classical_jacobian
+                classical_jacobians.append(classical_jacobian)
             else:
                 classical_jacobians.append(None)
         self._classical_jacobians = classical_jacobians
+        print(self._classical_jacobians)
         # QNode reset the tape
         qnode.construct(args, kwargs)
 
