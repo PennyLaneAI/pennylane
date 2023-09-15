@@ -1101,15 +1101,19 @@ def _sitevec_to_fock(det, format):
 
     >>> det = [1, 2, 1, 0, 0, 2]
     >>> _sitevec_to_fock(det, format = 'dmrg')
-    >>> (5, 34)
+    (5, 34)
+
+    >>> det = ["a", "b", "a", "0", "0", "b"]
+    >>> _sitevec_to_fock(det, format = 'shci')
+    (5, 34)
     """
 
     if format == "dmrg":
-        map = {0: "00", 1: "10", 2: "01", 3: "11"}
+        format_map = {0: "00", 1: "10", 2: "01", 3: "11"}
     elif format == "shci":
-        map = {"0": "00", "a": "10", "b": "01", "2": "11"}
+        format_map = {"0": "00", "a": "10", "b": "01", "2": "11"}
 
-    strab = [map[key] for key in det]
+    strab = [format_map[key] for key in det]
 
     stra = "".join(i[0] for i in strab)
     strb = "".join(i[1] for i in strab)
