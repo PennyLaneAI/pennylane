@@ -16,6 +16,7 @@ Contains the Select template.
 """
 # pylint: disable=too-many-arguments
 
+import copy
 import itertools
 import pennylane as qml
 from pennylane.operation import Operation
@@ -97,6 +98,21 @@ class Select(Operation):
 
         all_wires = target_wires + control
         super().__init__(*self.data, wires=all_wires, id=id)
+
+    def __copy__(self):
+        """Copy this op"""
+        cls = self.__class__
+        copied_op = cls.__new__(cls)
+
+        new_data = copy.copy(self.data)
+
+        for attr, value in vars(self).items():
+            if attr != "data":
+                setattr(copied_op, attr, value)
+
+        copied_op.data = new_data
+
+        return copied_op
 
     @property
     def data(self):

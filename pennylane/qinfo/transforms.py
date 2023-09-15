@@ -18,7 +18,7 @@ from typing import Sequence, Callable
 
 import pennylane as qml
 from pennylane.tape import QuantumTape
-from pennylane.devices import DefaultQubitLegacy, DefaultMixed
+from pennylane.devices import DefaultQubit, DefaultQubitLegacy, DefaultMixed
 from pennylane.measurements import StateMP, DensityMatrixMP
 from pennylane.transforms import adjoint_metric_tensor, metric_tensor
 from pennylane.transforms.core import transform
@@ -71,7 +71,7 @@ def reduced_dm(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Ca
     def processing_fn(res):
         # device is provided by the custom QNode transform
         device = kwargs.get("device", None)
-        c_dtype = device.C_DTYPE if device else "complex128"
+        c_dtype = getattr(device, "C_DTYPE", "complex128")
 
         # determine the density matrix
         dm_func = (
@@ -169,7 +169,7 @@ def purity(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Callab
     def processing_fn(res):
         # device is provided by the custom QNode transform
         device = kwargs.get("device", None)
-        c_dtype = device.C_DTYPE if device else "complex128"
+        c_dtype = getattr(device, "C_DTYPE", "complex128")
 
         # determine the density matrix
         density_matrix = (
@@ -256,7 +256,7 @@ def vn_entropy(
     def processing_fn(res):
         # device is provided by the custom QNode transform
         device = kwargs.get("device", None)
-        c_dtype = device.C_DTYPE if device else "complex128"
+        c_dtype = getattr(device, "C_DTYPE", "complex128")
 
         # determine if the measurement is a state vector or a density matrix
         if not isinstance(measurements[0], DensityMatrixMP) and not isinstance(
@@ -362,7 +362,7 @@ def mutual_info(
     def processing_fn(res):
         # device is provided by the custom QNode transform
         device = kwargs.get("device", None)
-        c_dtype = device.C_DTYPE if device else "complex128"
+        c_dtype = getattr(device, "C_DTYPE", "complex128")
 
         density_matrix = (
             res[0]
@@ -731,7 +731,7 @@ def quantum_fisher(qnode, *args, **kwargs):
 
     """
 
-    if qnode.device.shots is not None and isinstance(qnode.device, DefaultQubitLegacy):
+    if qnode.device.shots and isinstance(qnode.device, (DefaultQubitLegacy, DefaultQubit)):
 
         def wrapper(*args0, **kwargs0):
             return 4 * metric_tensor(qnode, *args, **kwargs)(*args0, **kwargs0)
