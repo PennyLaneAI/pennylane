@@ -274,6 +274,11 @@ def apply_parametrized_evolution(
 ):
     """Apply ParametrizedEvolution by evolving the state rather than the operator matrix
     if we are operating on more than half of the subsystem"""
+    if is_state_batched:
+        raise RuntimeError(
+            "ParameterizedEvolution does not support batching, but received a batched state"
+        )
+
     # shape(state) is static (not a tracer), we can use an if statement
     num_wires = len(qml.math.shape(state))
     state = qml.math.cast(state, complex)
@@ -310,8 +315,9 @@ def _evolve_state_vector_under_parametrized_evolution(
 
     except ImportError as e:  # pragma: no cover
         raise ImportError(
-            "evolving a ParametrizedEvolution requires installing jax>0.3.20"
-        ) from e  # update to be the pulse error - should we standardize this?
+            "Module jax is required for the ``ParametrizedEvolution`` class. "
+            "You can install jax via: pip install jax"
+        ) from e
 
     if operation.data is None or operation.t is None:
         raise ValueError(

@@ -449,6 +449,24 @@ class TestApplyParameterizedEvolution:
         # einsum twice, and the default apply_operation only once
         assert spy.call_count == 2
 
+    def test_batched_state_raises_an_error(self):
+        """Test that if is_state_batche=True, an error is raised"""
+        H = time_independent_hamiltonian()
+        params = np.array([1.0, 2.0])
+        t = 4
+
+        op = qml.pulse.ParametrizedEvolution(H=H, params=params, t=t)
+
+        initial_state = np.array(
+            [
+                [[0.81677345 + 0.0j, 0.0 + 0.0j], [0.0 - 0.57695852j, 0.0 + 0.0j]],
+                [[0.33894597 + 0.0j, 0.0 + 0.0j], [0.0 - 0.94080584j, 0.0 + 0.0j]],
+            ]
+        )
+
+        with pytest.raises(RuntimeError, match="does not support batching"):
+            _ = apply_operation(op, initial_state, is_state_batched=True)
+
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 class TestSnapshot:
