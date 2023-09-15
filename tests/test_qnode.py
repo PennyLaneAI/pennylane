@@ -1095,7 +1095,7 @@ class TestIntegration:
         assert isinstance(circuit.tape.operations[1], qml.measurements.MidMeasureMP)
 
     @pytest.mark.parametrize(
-        "dev", [qml.device("default.qubit", wires=3), qml.devices.experimental.DefaultQubit2()]
+        "dev", [qml.device("default.qubit", wires=3), qml.device("default.qubit.legacy", wires=3)]
     )
     @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize("sec_par", np.linspace(0.15, np.pi - 0.3, 3))
