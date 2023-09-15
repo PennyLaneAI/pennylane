@@ -415,6 +415,16 @@ class TestSumExpand:
         assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
 
     @pytest.mark.parametrize(("qscript", "output"), zip(SUM_QSCRIPTS, SUM_OUTPUTS))
+    def test_sums_legacy(self, qscript, output):
+        """Tests that the sum_expand transform returns the correct value"""
+        dev_old = qml.device("default.qubit.legacy", wires=4)
+        tapes, fn = sum_expand(qscript)
+        results = dev_old.batch_execute(tapes)
+        expval = fn(results)
+
+        assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
+
+    @pytest.mark.parametrize(("qscript", "output"), zip(SUM_QSCRIPTS, SUM_OUTPUTS))
     def test_sums_no_grouping(self, qscript, output):
         """Tests that the sum_expand transform returns the correct value
         if we switch grouping off"""
