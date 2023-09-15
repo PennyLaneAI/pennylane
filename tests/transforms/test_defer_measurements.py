@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as np
-from pennylane.devices.experimental import DefaultQubit2
+from pennylane.devices import DefaultQubit
 
 
 class TestQNode:
@@ -157,7 +157,7 @@ class TestQNode:
     def test_measurement_statistics_single_wire(self, shots):
         """Test that users can collect measurement statistics on
         a single mid-circuit measurement."""
-        dev = DefaultQubit2(seed=10)
+        dev = DefaultQubit(seed=10)
 
         @qml.qnode(dev)
         def circ1(x):
@@ -165,7 +165,7 @@ class TestQNode:
             m0 = qml.measure(0)
             return qml.probs(op=m0)
 
-        dev = DefaultQubit2(seed=10)
+        dev = DefaultQubit(seed=10)
 
         @qml.qnode(dev)
         def circ2(x):
@@ -179,8 +179,8 @@ class TestQNode:
     def test_terminal_measurements(self, shots):
         """Test that mid-circuit measurement statistics and terminal measurements
         can be made together."""
-        # Using DefaultQubit2 to allow non-commuting measurements
-        dev = DefaultQubit2(seed=10)
+        # Using DefaultQubit to allow non-commuting measurements
+        dev = DefaultQubit(seed=10)
 
         @qml.qnode(dev)
         def circ1(x, y):
@@ -189,7 +189,7 @@ class TestQNode:
             qml.RY(y, 1)
             return qml.expval(qml.PauliX(1)), qml.probs(op=m0)
 
-        dev = DefaultQubit2(seed=10)
+        dev = DefaultQubit(seed=10)
 
         @qml.qnode(dev)
         def circ2(x, y):
