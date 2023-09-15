@@ -24,9 +24,9 @@ class TestSnapshot:
 
     # pylint: disable=protected-access
     @pytest.mark.parametrize("method", [None, "backprop", "parameter-shift", "adjoint"])
-    def test_default_qubit(self, method):
+    def test_default_qubit_legacy(self, method):
         """Test that multiple snapshots are returned correctly on the state-vector simulator."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev, diff_method=method)
         def circuit():
@@ -57,7 +57,7 @@ class TestSnapshot:
     def test_default_qubit2(self):
         """Test that multiple snapshots are returned correctly on the new
         state-vector simulator."""
-        dev = qml.devices.experimental.DefaultQubit2()
+        dev = qml.devices.DefaultQubit()
 
         # TODO: add additional QNode test once the new device supports it
 
@@ -190,7 +190,7 @@ class TestSnapshot:
 
     def test_unsupported_device(self):
         """Test that an error is raised on unsupported devices."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
         # remove attributes to simulate unsupported device
         delattr(dev, "_debugger")
         dev.operations.remove("Snapshot")
@@ -217,9 +217,7 @@ class TestSnapshot:
     def test_unsupported_device_new(self):
         """Test that an error is raised on unsupported devices."""
 
-        class DummyDevice(
-            qml.devices.experimental.Device
-        ):  # pylint: disable=too-few-public-methods
+        class DummyDevice(qml.devices.Device):  # pylint: disable=too-few-public-methods
             def execute(self, *args, **kwargs):
                 return args, kwargs
 

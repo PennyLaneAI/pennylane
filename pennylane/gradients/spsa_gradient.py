@@ -17,7 +17,6 @@ of a quantum tape.
 """
 # pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements
 from functools import partial
-import warnings
 
 import numpy as np
 
@@ -70,7 +69,6 @@ def spsa_grad(
     num_directions=1,
     sampler=_rademacher_sampler,
     sampler_rng=None,
-    sampler_seed=None,
 ):
     r"""Transform a QNode to compute the SPSA gradient of all gate
     parameters with respect to its inputs. This estimator shifts all parameters
@@ -287,19 +285,6 @@ def spsa_grad(
             f"The argument sampler_rng is expected to be a NumPy PRNG, an integer or None, but is {sampler_rng}."
         )
 
-    if sampler_seed is not None:
-        msg = (
-            "The sampler_seed argument is deprecated. Use the sampler_rng argument "
-            "instead to pass a random number generator or a seed."
-        )
-        if sampler_rng is None:
-            warnings.warn(msg, UserWarning)
-            sampler_rng = sampler_seed
-        else:
-            raise ValueError(
-                "Both sampler_rng and sampler_seed were specified. Only specify one.\n" + msg
-            )
-
     sampler_rng = np.random.default_rng(sampler_rng)
 
     method_map = choose_grad_methods(diff_methods, argnum)
@@ -329,7 +314,7 @@ def spsa_grad(
         if num_measurements == 1:
             grads = 0
             for rep, _coeffs in enumerate(all_coeffs):
-                res = results[rep * tapes_per_grad : (rep + 1) * tapes_per_grad]
+                res = list(results[rep * tapes_per_grad : (rep + 1) * tapes_per_grad])
                 if r0 is not None:
                     res.insert(0, r0)
                 res = qml.math.stack(res)

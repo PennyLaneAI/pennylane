@@ -15,6 +15,7 @@
 Tests for the Select template.
 """
 # pylint: disable=protected-access,too-many-arguments,import-outside-toplevel, no-self-use
+import copy
 import pytest
 import numpy as np
 from pennylane import numpy as pnp
@@ -25,7 +26,7 @@ class TestSelect:
     """Tests that the template defines the correct decomposition."""
 
     @pytest.mark.parametrize(
-        ("ops", "control_wires", "expected_gates", "n_wires"),
+        ("ops", "control", "expected_gates", "n_wires"),
         [
             (
                 [qml.PauliX(wires=0), qml.PauliY(wires=0)],
@@ -70,21 +71,21 @@ class TestSelect:
             ),
         ],
     )
-    def test_operation_result(self, ops, control_wires, expected_gates, n_wires):
+    def test_operation_result(self, ops, control, expected_gates, n_wires):
         """Test the correctness of the Select template output."""
         dev = qml.device("default.qubit", wires=n_wires)
 
         @qml.qnode(dev)
         def circuit1():
-            for wire in control_wires:
+            for wire in control:
                 qml.Hadamard(wires=wire)
 
-            qml.Select(ops, control_wires)
+            qml.Select(ops, control)
             return qml.state()
 
         @qml.qnode(dev)
         def circuit2():
-            for wire in control_wires:
+            for wire in control:
                 qml.Hadamard(wires=wire)
             for op in expected_gates:
                 qml.apply(op)
@@ -93,7 +94,7 @@ class TestSelect:
         assert np.allclose(circuit1(), circuit2())
 
     @pytest.mark.parametrize(
-        ("ops", "control_wires", "expected_gates"),
+        ("ops", "control", "expected_gates"),
         [
             (
                 [qml.PauliX(wires=0), qml.PauliY(wires=0)],
@@ -128,10 +129,10 @@ class TestSelect:
             ),
         ],
     )
-    def test_queued_ops(self, ops, control_wires, expected_gates):
+    def test_queued_ops(self, ops, control, expected_gates):
         """Test the correctness of the Select template queued operations."""
         with qml.tape.OperationRecorder() as recorder:
-            qml.Select(ops, control_wires=control_wires)
+            qml.Select(ops, control=control)
 
         select_ops = recorder.expand().operations
 
@@ -139,7 +140,7 @@ class TestSelect:
         assert [op.wires for op in select_ops] == [op.wires for op in expected_gates]
 
     @pytest.mark.parametrize(
-        ("ops", "control_wires", "expected_gates"),
+        ("ops", "control", "expected_gates"),
         [
             (
                 [qml.PauliX(wires=0), qml.PauliY(wires=0)],
@@ -174,11 +175,11 @@ class TestSelect:
             ),
         ],
     )
-    def test_decomposition(self, ops, control_wires, expected_gates):
+    def test_decomposition(self, ops, control, expected_gates):
         """Unit test checking that compute_decomposition and decomposition work as expected."""
-        op = qml.Select(ops, control_wires=control_wires)
+        op = qml.Select(ops, control=control)
         select_decomposition = op.decomposition()
-        select_compute_decomposition = op.compute_decomposition(ops, control_wires)
+        select_compute_decomposition = op.compute_decomposition(ops, control)
 
         assert all(qml.equal(op1, op2) for op1, op2 in zip(select_decomposition, expected_gates))
         assert all(
@@ -189,7 +190,7 @@ class TestSelect:
     def test_flatten_unflatten(self):
         """Test that the _flatten and _unflatten functions work as expected."""
         ops = [qml.PauliX(wires=2), qml.PauliX(wires=3), qml.PauliY(wires=2), qml.SWAP([2, 3])]
-        op = qml.Select(ops, control_wires=[0, 1])
+        op = qml.Select(ops, control=[0, 1])
         data, metadata = op._flatten()
 
         assert hash(metadata)
@@ -197,21 +198,29 @@ class TestSelect:
         assert len(data) == len(ops)
         assert all(qml.equal(op1, op2) for op1, op2 in zip(data, ops))
 
-        assert metadata == op.control_wires
+        assert metadata == op.control
 
         new_op = type(op)._unflatten(*op._flatten())
         assert all(qml.equal(op1, op2) for op1, op2 in zip(op.ops, new_op.ops))
         assert op.wires == new_op.wires
-        assert op.control_wires == new_op.control_wires
+        assert op.control == new_op.control
         assert op.target_wires == new_op.target_wires
         assert op is not new_op
+
+    def test_copy(self):
+        """Test that the copy function of Select works correctly."""
+        ops = [qml.PauliX(wires=2), qml.RX(0.2, wires=3), qml.PauliY(wires=2), qml.SWAP([2, 3])]
+        op = qml.Select(ops, control=[0, 1])
+        op_copy = copy.copy(op)
+
+        assert qml.equal(op, op_copy)
 
 
 class TestErrorMessages:
     """Test that the correct errors are raised"""
 
     @pytest.mark.parametrize(
-        ("ops", "control_wires", "msg_match"),
+        ("ops", "control", "msg_match"),
         [
             (
                 [qml.PauliX(wires=1), qml.PauliY(wires=0), qml.PauliZ(wires=0)],
@@ -230,13 +239,13 @@ class TestErrorMessages:
             ),
         ],
     )
-    def test_control_wires_in_ops(self, ops, control_wires, msg_match):
+    def test_control_in_ops(self, ops, control, msg_match):
         """Test an error is raised when a control wire is in one of the ops"""
         with pytest.raises(ValueError, match=msg_match):
-            qml.Select(ops, control_wires)
+            qml.Select(ops, control)
 
     @pytest.mark.parametrize(
-        ("ops", "control_wires", "msg_match"),
+        ("ops", "control", "msg_match"),
         [
             (
                 [qml.PauliX(wires=0), qml.PauliY(wires=0), qml.PauliZ(wires=0)],
@@ -255,15 +264,15 @@ class TestErrorMessages:
             ),
         ],
     )
-    def test_too_many_ops(self, ops, control_wires, msg_match):
+    def test_too_many_ops(self, ops, control, msg_match):
         """Test that error is raised if more ops are requested than can fit in control wires"""
         with pytest.raises(ValueError, match=msg_match):
-            qml.Select(ops, control_wires)
+            qml.Select(ops, control)
 
 
 def select_rx_circuit(angles):
     """Circuit that uses Select for tests."""
-    qml.Select([qml.RX(angles[0], wires=[1]), qml.RY(angles[1], wires=[1])], control_wires=0)
+    qml.Select([qml.RX(angles[0], wires=[1]), qml.RY(angles[1], wires=[1])], control=0)
     return qml.expval(qml.PauliZ(wires=1))
 
 
@@ -285,6 +294,25 @@ class TestInterfaces:
 
         circuit_default = qml.QNode(manual_rx_circuit, dev)
         circuit_select = qml.QNode(select_rx_circuit, dev)
+
+        input_default = [0.5, 0.2]
+        input_grad = pnp.array(input_default, requires_grad=True)
+
+        grad_fn = qml.grad(circuit_default)
+        grads = grad_fn(input_grad)
+
+        grad_fn2 = qml.grad(circuit_select)
+        grads2 = grad_fn2(input_grad)
+
+        assert qml.math.allclose(grads, grads2)
+
+    @pytest.mark.autograd
+    def test_autograd_parameter_shift(self):
+        """Tests the autograd interface using the parameter-shift method."""
+        dev = qml.device("default.qubit", wires=2)
+
+        circuit_default = qml.QNode(manual_rx_circuit, dev, diff_method="parameter-shift")
+        circuit_select = qml.QNode(select_rx_circuit, dev, diff_method="parameter-shift")
 
         input_default = [0.5, 0.2]
         input_grad = pnp.array(input_default, requires_grad=True)

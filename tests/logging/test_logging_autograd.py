@@ -88,7 +88,7 @@ class TestLogging:
             (
                 "pennylane.interfaces.execution",
                 [
-                    "device=<DefaultQubit device (wires=2, shots=None)",
+                    "device=<DefaultQubitLegacy device (wires=2, shots=None)",
                     "gradient_fn=None, interface=None",
                 ],
             ),
@@ -129,7 +129,7 @@ class TestLogging:
                 "pennylane.qnode",
                 [
                     "Creating QNode(func=<function TestLogging.test_dq_qnode_execution_grad",
-                    "device=<DefaultQubit device (wires=2, shots=None)",
+                    "device=<DefaultQubitLegacy device (wires=2, shots=None)",
                     f"interface=auto, diff_method={diff_method[0]}, expansion_strategy=gradient, max_expansion=10, grad_on_execution=best,",
                 ],
             ),

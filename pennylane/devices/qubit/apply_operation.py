@@ -87,9 +87,13 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
     )
 
     new_mat_shape = [2] * (num_indices * 2)
-    if op.batch_size is not None:
+    dim = 2**num_indices
+    batch_size = math.get_batch_size(mat, (dim, dim), dim**2)
+    if batch_size is not None:
         # Add broadcasting dimension to shape
-        new_mat_shape = [mat.shape[0]] + new_mat_shape
+        new_mat_shape = [batch_size] + new_mat_shape
+        if op.batch_size is None:
+            op._batch_size = batch_size  # pylint:disable=protected-access
     reshaped_mat = math.reshape(mat, new_mat_shape)
 
     return math.einsum(einsum_indices, reshaped_mat, state)
@@ -112,9 +116,13 @@ def apply_operation_tensordot(op: qml.operation.Operator, state, is_state_batche
     num_indices = len(op.wires)
 
     new_mat_shape = [2] * (num_indices * 2)
-    if is_mat_batched := op.batch_size is not None:
+    dim = 2**num_indices
+    batch_size = math.get_batch_size(mat, (dim, dim), dim**2)
+    if is_mat_batched := batch_size is not None:
         # Add broadcasting dimension to shape
-        new_mat_shape = [mat.shape[0]] + new_mat_shape
+        new_mat_shape = [batch_size] + new_mat_shape
+        if op.batch_size is None:
+            op._batch_size = batch_size  # pylint:disable=protected-access
     reshaped_mat = math.reshape(mat, new_mat_shape)
 
     mat_axes = list(range(-num_indices, 0))
@@ -146,9 +154,9 @@ def apply_operation(
 
     Args:
         op (Operator): The operation to apply to ``state``
-        state (tensor_like): The starting state.
+        state (TensorLike): The starting state.
         is_state_batched (bool): Boolean representing whether the state is batched or not
-        debugger (._Debugger): The debugger to use
+        debugger (_Debugger): The debugger to use
 
     Returns:
         ndarray: output state
@@ -192,6 +200,18 @@ def apply_operation(
     ) or (op.batch_size and is_state_batched):
         return apply_operation_einsum(op, state, is_state_batched=is_state_batched)
     return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
+
+@apply_operation.register
+def apply_identity(op: qml.Identity, state, is_state_batched: bool = False, debugger=None):
+    """Applies a :class:`~.Identity` operation by just returning the input state."""
+    return state
+
+
+@apply_operation.register
+def apply_global_phase(op: qml.GlobalPhase, state, is_state_batched: bool = False, debugger=None):
+    """Applies a :class:`~.GlobalPhase` operation by multiplying the state by ``exp(1j * op.data[0])``"""
+    return qml.math.exp(-1j * qml.math.cast(op.data[0], complex)) * state
 
 
 @apply_operation.register

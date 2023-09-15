@@ -52,12 +52,12 @@ class DefaultMixed(QubitDevice):
     .. warning::
 
         The API of ``DefaultMixed`` will be updated soon to follow a new device interface described
-        in :class:`pennylane.devices.experimental.Device`.
+        in :class:`pennylane.devices.Device`.
 
         This change will not alter device behaviour for most workflows, but may have implications for
         plugin developers and users who directly interact with device methods. Please consult
-        :class:`pennylane.devices.experimental.Device` and the implementation in
-        :class:`pennylane.devices.experimental.DefaultQubit2` for more information on what the new
+        :class:`pennylane.devices.Device` and the implementation in
+        :class:`pennylane.devices.DefaultQubit` for more information on what the new
         interface will look like and be prepared to make updates in a coming release. If you have any
         feedback on these changes, please create an
         `issue <https://github.com/PennyLaneAI/pennylane/issues>`_ or post in our
@@ -148,6 +148,7 @@ class DefaultMixed(QubitDevice):
         "ThermalRelaxationError",
         "ECR",
         "ParametrizedEvolution",
+        "GlobalPhase",
     }
 
     _reshape = staticmethod(qnp.reshape)
