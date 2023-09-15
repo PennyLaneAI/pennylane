@@ -1080,9 +1080,7 @@ def test_rccsd_state(molecule, basis, symm, tol, wf_ref):
 
 @pytest.mark.parametrize(
     ("sitevec", "format", "state_ref"),
-    [
-        ("aba00b", "shci", (5, 34)),
-    ],
+    [([1, 2, 1, 0, 0, 2], "dmrg", (5, 34)), (["a", "b", "a", "0", "0", "b"], "shci", (5, 34))],
 )
 def test_sitevec_to_fock(sitevec, format, state_ref):
     r"""Test that _sitevec_to_fock returns the correct state."""
@@ -1105,7 +1103,7 @@ def test_sitevec_to_fock(sitevec, format, state_ref):
     ],
 )
 def test_shci_state(wavefunction, state_ref):
-    r"""Test that _dmrg_state returns the correct state."""
+    r"""Test that _shci_state returns the correct state."""
 
     state = qml.qchem.convert._shci_state(wavefunction)
     print(state)

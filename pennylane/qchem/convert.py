@@ -1065,7 +1065,7 @@ def _shci_state(wavefunction, tol=1e-15):
 
     for coef, det in zip(coefs, dets):
         if abs(coef) > tol:
-            bin_a, bin_b = _sitevec_to_fock(det, "shci")
+            bin_a, bin_b = _sitevec_to_fock(list(det), "shci")
 
             xa.append(bin_a)
             xb.append(bin_b)
@@ -1084,7 +1084,7 @@ def _sitevec_to_fock(det, format):
     r"""Covert a Slater determinant from site vector to occupation number vector representation.
 
     Args:
-        det (array[int]): determinant in site vector representation
+        det (list): determinant in site vector representation
         format (str): the format of the determinant
 
     Returns:
@@ -1093,17 +1093,17 @@ def _sitevec_to_fock(det, format):
 
     **Example**
 
-    >>> det = np.array([1, 2, 1, 0, 0, 2])
-    >>> _sitevec_to_fock(det)
-    >>> (5, 34)
+    >>> det = [1, 2, 1, 0, 0, 2]
+    >>> _sitevec_to_fock(det, format = 'dmrg')
+    (5, 34)
     """
 
     if format == "dmrg":
-        map = {0: "00", 1: "10", 2: "01", 3: "11"}
+        format_map = {0: "00", 1: "10", 2: "01", 3: "11"}
     elif format == "shci":
-        map = {"0": "00", "a": "10", "b": "01", "2": "11"}
+        format_map = {"0": "00", "a": "10", "b": "01", "2": "11"}
 
-    strab = [map[key] for key in det]
+    strab = [format_map[key] for key in det]
 
     stra = "".join(i[0] for i in strab)
     strb = "".join(i[1] for i in strab)
