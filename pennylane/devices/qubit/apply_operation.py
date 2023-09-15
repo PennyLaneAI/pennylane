@@ -269,18 +269,19 @@ def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debu
 
 # pylint:disable = no-value-for-parameter, import-outside-toplevel
 @apply_operation.register
-def apply_parametrized_evolution(op: qml.pulse.ParametrizedEvolution, state, **kwargs):
+def apply_parametrized_evolution(
+    op: qml.pulse.ParametrizedEvolution, state, is_state_batched: bool = False, debugger=None
+):
     """Apply ParametrizedEvolution by evolving the state rather than the operator matrix
     if we are operating on more than half of the subsystem"""
-    # if we are jitting this, the shape of state will be fixed, right? Just the contents are a tracer?
-    # given that wires is a static value (it is not a tracer), we can use an if statement
+    # shape(state) is static (not a tracer), we can use an if statement
     num_wires = len(qml.math.shape(state))
     state = qml.math.cast(state, complex)
     if 2 * len(op.wires) > num_wires and not op.hyperparameters["complementary"]:
         # the subsystem operated is more than half of the system based on the state vector --> evolve state
         return _evolve_state_vector_under_parametrized_evolution(op, state, num_wires)
     # otherwise --> evolve matrix
-    return _apply_operation_default(op, state)
+    return _apply_operation_default(op, state, is_state_batched, debugger)
 
 
 def _evolve_state_vector_under_parametrized_evolution(
@@ -300,7 +301,6 @@ def _evolve_state_vector_under_parametrized_evolution(
     Returns:
         _type_: _description_
     """
-    print(num_wires)
 
     try:
         import jax
