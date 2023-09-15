@@ -1747,7 +1747,6 @@ def test_no_error_missing_aux_wire_not_used(recwarn):
     assert len(recwarn) == 0
 
 
-@pytest.mark.xfail(reason="The new default.qubit does not enforce tape wires")
 def test_raises_circuit_that_uses_missing_wire():
     """Test that an error in the original circuit is reraised properly and not caught. This avoids
     accidentally catching relevant errors, which can lead to a recursion error."""
@@ -1763,7 +1762,7 @@ def test_raises_circuit_that_uses_missing_wire():
         return qml.expval(qml.PauliZ(0))
 
     x = np.array([1.3, 0.2])
-    with pytest.raises(qml.wires.WireError, match=r"Did not find some of the wires \(0, 1\)"):
+    with pytest.raises(qml.wires.WireError, match=r"contain wires not found on the device: \{1\}"):
         qml.transforms.metric_tensor(circuit)(x)
 
 
