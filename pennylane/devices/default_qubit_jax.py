@@ -11,14 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains a jax implementation of the :class:`~.DefaultQubit`
+"""This module contains a jax implementation of the :class:`~.DefaultQubitLegacy`
 reference plugin.
 """
 # pylint: disable=ungrouped-imports
 import numpy as np
 
 import pennylane as qml
-from pennylane.devices import DefaultQubit
+from pennylane.devices import DefaultQubitLegacy
 from pennylane.pulse import ParametrizedEvolution
 from pennylane.typing import TensorLike
 
@@ -34,8 +34,8 @@ except ImportError as e:  # pragma: no cover
     raise ImportError("default.qubit.jax device requires installing jax>0.3.20") from e
 
 
-class DefaultQubitJax(DefaultQubit):
-    """Simulator plugin based on ``"default.qubit"``, written using jax.
+class DefaultQubitJax(DefaultQubitLegacy):
+    """Simulator plugin based on ``"default.qubit.legacy"``, written using jax.
 
     **Short name:** ``default.qubit.jax``
 
@@ -163,7 +163,7 @@ class DefaultQubitJax(DefaultQubit):
     _size = staticmethod(jnp.size)
     _ndim = staticmethod(jnp.ndim)
 
-    operations = DefaultQubit.operations.union({"ParametrizedEvolution"})
+    operations = DefaultQubitLegacy.operations.union({"ParametrizedEvolution"})
 
     def __init__(self, wires, *, shots=None, prng_key=None, analytic=None):
         if jax_config.read("jax_enable_x64"):
