@@ -37,7 +37,7 @@ from pennylane import DeviceError
 from pennylane.transforms.core import transform, TransformProgram
 from pennylane.wires import WireError
 
-from ..experimental import ExecutionConfig, DefaultExecutionConfig
+from pennylane.devices import ExecutionConfig, DefaultExecutionConfig
 
 PostprocessingFn = Callable[[ResultBatch], Union[Result, ResultBatch]]
 
@@ -70,7 +70,12 @@ def _accepted_operator(op: qml.operation.Operator) -> bool:
         return False
     if op.name == "GroverOperator" and len(op.wires) >= 13:
         return False
-    return op.name == "Snapshot" or op.has_matrix
+    if op.name == "Snapshot":
+        return True
+    if op.__class__.__name__ == "Pow" and qml.operation.is_trainable(op):
+        return False
+
+    return op.has_matrix
 
 
 def _accepted_adjoint_operator(op: qml.operation.Operator) -> bool:
@@ -81,7 +86,7 @@ def _accepted_adjoint_operator(op: qml.operation.Operator) -> bool:
 def _operator_decomposition_gen(
     op: qml.operation.Operator, acceptance_function: Callable[[qml.operation.Operator], bool]
 ) -> Generator[qml.operation.Operator, None, None]:
-    """A generator that yields the next operation that is accepted by DefaultQubit2."""
+    """A generator that yields the next operation that is accepted by DefaultQubit."""
     if acceptance_function(op):
         yield op
     else:
@@ -89,7 +94,7 @@ def _operator_decomposition_gen(
             decomp = op.decomposition()
         except qml.operation.DecompositionUndefinedError as e:
             raise DeviceError(
-                f"Operator {op} not supported on DefaultQubit2. Must provide either a matrix or a decomposition."
+                f"Operator {op} not supported on DefaultQubit. Must provide either a matrix or a decomposition."
             ) from e
 
         for sub_op in decomp:
@@ -107,7 +112,7 @@ def validate_device_wires(
 
     Args:
         tape (QuantumTape): a quantum circuit.
-        device (pennylane.devices.experimental.Device): The device to be checked.
+        device (pennylane.devices.Device): The device to be checked.
 
     Returns:
         pennylane.QNode or qfunc or Tuple[List[.QuantumTape], Callable]: If a QNode is passed,
@@ -155,7 +160,7 @@ def validate_multiprocessing_workers(
     Args:
         tape (QuantumTape): a quantum circuit.
         max_workers (int): Maximal number of multiprocessing workers
-        device (pennylane.devices.experimental.Device): The device to be checked.
+        device (pennylane.devices.Device): The device to be checked.
 
     Returns:
         pennylane.QNode or qfunc or Tuple[List[.QuantumTape], Callable]: If a QNode is passed,
@@ -375,9 +380,9 @@ def expand_fn(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Ca
     for observable in tape.observables:
         if isinstance(observable, Tensor):
             if any(o.name not in _observables for o in observable.obs):
-                raise DeviceError(f"Observable {observable} not supported on DefaultQubit2")
+                raise DeviceError(f"Observable {observable} not supported on DefaultQubit")
         elif observable.name not in _observables:
-            raise DeviceError(f"Observable {observable} not supported on DefaultQubit2")
+            raise DeviceError(f"Observable {observable} not supported on DefaultQubit")
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results

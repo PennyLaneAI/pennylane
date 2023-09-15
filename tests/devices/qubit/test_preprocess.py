@@ -29,7 +29,7 @@ from pennylane.devices.qubit.preprocess import (
     validate_measurements,
     validate_multiprocessing_workers,
 )
-from pennylane.devices.experimental import ExecutionConfig
+from pennylane.devices import ExecutionConfig
 from pennylane.measurements import MidMeasureMP, MeasurementValue
 from pennylane.tape import QuantumScript
 from pennylane import DeviceError
@@ -73,6 +73,8 @@ class TestPrivateHelpers:
             (qml.QFT(wires=range(10)), False),
             (qml.GroverOperator(wires=range(10)), True),
             (qml.GroverOperator(wires=range(14)), False),
+            (qml.pow(qml.RX(1.1, 0), 3), True),
+            (qml.pow(qml.RX(pnp.array(1.1), 0), 3), False),
         ],
     )
     def test_accepted_operator(self, op, expected):
@@ -386,7 +388,7 @@ class TestBatchTransform:
         measurements = [qml.expval(qml.PauliZ(1))]
         tape = QuantumScript(ops=ops, measurements=measurements)
 
-        device = qml.devices.experimental.DefaultQubit2()
+        device = qml.devices.DefaultQubit()
 
         program, _ = device.preprocess()
         tapes, _ = program([tape])
@@ -401,7 +403,7 @@ class TestBatchTransform:
         ops = [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX([np.pi, np.pi / 2], wires=1)]
         measurements = [qml.expval(qml.PauliZ(1))]
         tape = QuantumScript(ops=ops, measurements=measurements)
-        device = qml.devices.experimental.DefaultQubit2()
+        device = qml.devices.DefaultQubit()
 
         program, _ = device.preprocess()
         tapes, _ = program([tape])
@@ -420,7 +422,7 @@ class TestBatchTransform:
         execution_config = ExecutionConfig()
         execution_config.gradient_method = "adjoint"
 
-        device = qml.devices.experimental.DefaultQubit2()
+        device = qml.devices.DefaultQubit()
 
         program, _ = device.preprocess(execution_config=execution_config)
         tapes, _ = program([tape])
@@ -796,7 +798,7 @@ class TestPreprocess:
         """Test that preprocessing fails if adjoint differentiation is requested and an
         invalid tape is used"""
         qs = QuantumScript(ops, measurement)
-        execution_config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
+        execution_config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 
         with pytest.raises(DeviceError, match=message):
             program, _ = preprocess(execution_config)
@@ -808,7 +810,7 @@ class TestPreprocess:
             [qml.Rot(0.1, 0.2, 0.3, wires=0), qml.CNOT([0, 1])],
             [qml.expval(qml.PauliZ(1))],
         )
-        execution_config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
+        execution_config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 
         program, _ = preprocess(execution_config)
         expanded_tapes, _ = program([qs])
@@ -836,5 +838,5 @@ def test_validate_multiprocessing_workers_None():
         [qml.Rot(0.1, 0.2, 0.3, wires=0), qml.CNOT([0, 1])],
         [qml.expval(qml.PauliZ(1))],
     )
-    device = qml.devices.experimental.DefaultQubit2()
+    device = qml.devices.DefaultQubit()
     validate_multiprocessing_workers(qs, None, device)

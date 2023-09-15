@@ -19,16 +19,16 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qnode
-from pennylane.devices.experimental import DefaultQubit2
+from pennylane.devices import DefaultQubit
 
 qubit_device_and_diff_method = [
-    [DefaultQubit2(), "backprop", True],
-    [DefaultQubit2(), "finite-diff", False],
-    [DefaultQubit2(), "parameter-shift", False],
-    [DefaultQubit2(), "adjoint", True],
-    [DefaultQubit2(), "adjoint", False],
-    [DefaultQubit2(), "spsa", False],
-    [DefaultQubit2(), "hadamard", False],
+    [DefaultQubit(), "backprop", True],
+    [DefaultQubit(), "finite-diff", False],
+    [DefaultQubit(), "parameter-shift", False],
+    [DefaultQubit(), "adjoint", True],
+    [DefaultQubit(), "adjoint", False],
+    [DefaultQubit(), "spsa", False],
+    [DefaultQubit(), "hadamard", False],
 ]
 interface_and_qubit_device_and_diff_method = [
     ["auto"] + inner_list for inner_list in qubit_device_and_diff_method
@@ -739,7 +739,7 @@ class TestShotsIntegration:
 
     def test_diff_method_None(self, interface):
         """Test device works with diff_method=None."""
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
 
         @jax.jit
         @qml.qnode(dev, diff_method=None, interface=interface)
@@ -754,7 +754,7 @@ class TestShotsIntegration:
         """Test that changing shots works on execution"""
         a, b = jax.numpy.array([0.543, -0.654])
 
-        @qnode(DefaultQubit2(), diff_method=qml.gradients.param_shift, interface=interface)
+        @qnode(DefaultQubit(), diff_method=qml.gradients.param_shift, interface=interface)
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -774,7 +774,7 @@ class TestShotsIntegration:
         for gradient computations"""
         a, b = jax.numpy.array([0.543, -0.654])
 
-        @qnode(DefaultQubit2(), diff_method=qml.gradients.param_shift, interface=interface)
+        @qnode(DefaultQubit(), diff_method=qml.gradients.param_shift, interface=interface)
         def cost_fn(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -794,7 +794,7 @@ class TestShotsIntegration:
 
         spy = mocker.spy(qml, "execute")
 
-        @qnode(DefaultQubit2(), interface=interface)
+        @qnode(DefaultQubit(), interface=interface)
         def cost_fn(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -1223,6 +1223,8 @@ class TestQubitIntegrationHigherOrder:
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
+        if not dev.wires:
+            dev._wires = qml.wires.Wires([0, 1])  # pylint:disable=protected-access
 
         @qnode(
             dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
@@ -1235,7 +1237,7 @@ class TestQubitIntegrationHigherOrder:
 
         def cost_fn(x, y):
             res = circuit(x, y)
-            assert res.dtype is np.dtype("complex128")  # pylint:disable=no-member
+            assert res.dtype is np.dtype("complex128")
             probs = jax.numpy.abs(res) ** 2
             return probs[0] + probs[2]
 
@@ -2478,7 +2480,7 @@ def test_jax_device_hessian_shots(hessian, diff_method):
     """The hessian of multiple measurements with a multiple param array return a single array."""
 
     @partial(jax.jit, static_argnames="shots")
-    @qml.qnode(DefaultQubit2(), diff_method=diff_method, max_diff=2)
+    @qml.qnode(DefaultQubit(), diff_method=diff_method, max_diff=2)
     def circuit(x):
         qml.RY(x[0], wires=0)
         qml.RX(x[1], wires=0)
