@@ -1014,10 +1014,14 @@ class TestExpand:
             [
                 qml.BasisState([1, 0], wires=[0, 1]),
                 qml.StatePrep([0, 1, 0, 0], wires=[0, 1]),
+                qml.AmplitudeEmbedding([0, 1, 0, 0], wires=[0, 1]),
+                qml.PauliZ(0),
             ],
             [
                 qml.BasisStatePreparation([1, 0], wires=[0, 1]),
                 qml.MottonenStatePreparation([0, 1, 0, 0], wires=[0, 1]),
+                qml.StatePrep([0, 1, 0, 0], wires=[0, 1]),  # still a StatePrepBase :/
+                qml.PauliZ(0),
             ],
         ),
     )
@@ -1026,12 +1030,13 @@ class TestExpand:
         expanding other operations in the tape.
         """
         ops = [
+            op,
             qml.PauliZ(wires=0),
             qml.Rot(0.1, 0.2, 0.3, wires=0),
             qml.BasisState([0], wires=1),
             qml.StatePrep([0, 1], wires=0),
         ]
-        tape = QuantumTape(ops=ops, measurements=[], prep=[op])
+        tape = QuantumTape(ops=ops, measurements=[])
         new_tape = expand_tape_state_prep(tape, skip_first=skip_first)
 
         true_decomposition = []

@@ -44,7 +44,7 @@ Pending deprecations
   - Behaviour will change in v0.33
 
 * The public methods of ``DefaultQubit`` are pending changes to
-  follow the new device API, as used in ``DefaultQubit2``.
+  follow the new device API.
 
   We will be switching to the new device interface in a coming release.
   In this new interface, simulation implementation details
@@ -53,8 +53,8 @@ Pending deprecations
   in a workflow will remain the same.
   
   If you directly interact with device methods, please consult
-  :class:`pennylane.devices.experimental.Device` and
-  :class:`pennylane.devices.experimental.DefaultQubit2`
+  :class:`pennylane.devices.Device` and
+  :class:`pennylane.devices.DefaultQubit`
   for more information on what the new interface will look like and be prepared
   to make updates in a coming release. If you have any feedback on these
   changes, please create an
@@ -62,27 +62,8 @@ Pending deprecations
   `discussion forum <https://discuss.pennylane.ai/>`_.
 
   - Deprecated in v0.31
-
-* ``qml.qchem.jordan_wigner`` is deprecated, and usage will now raise a warning.
-  Use ``qml.jordan_wigner`` instead. List input to define the fermionic operator
-  is also deprecated; the fermionic operators ``qml.FermiA``, ``qml.FermiC``,
-  ``qml.FermiWord`` and ``qml.FermiSentence`` should be used instead. See the
-  :mod:`pennylane.fermi` module documentation and the
-  `Fermionic Operator <https://pennylane.ai/qml/demos/tutorial_fermionic_operators>`_
-  tutorial for more details.
-
-  - Deprecated in v0.32
-  - Will be removed in v0.33
-
-* The ``tuple`` input type in ``qubit_observable`` has been deprecated. Please use a fermionic
-  operator object. The ``tuple`` return type in ``fermionic_hamiltonian`` and
-  ``fermionic_observable`` has been deprecated and these functions will return a fermionic operator
-  by default.
-
-  - Deprecated in v0.32
-  - Will be removed in v0.33
   
-* The ``prep`` keyword argument in ``QuantumScript`` is deprecated and will be removed from `QuantumScript`.
+* The ``prep`` keyword argument in ``QuantumScript`` is deprecated and will be removed from ``QuantumScript``.
   ``StatePrepBase`` operations should be placed at the beginning of the `ops` list instead.
 
   - Deprecated in v0.33
@@ -91,6 +72,25 @@ Pending deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+* ``qml.qchem.jordan_wigner`` had been removed.
+  Use ``qml.jordan_wigner`` instead. List input to define the fermionic operator
+  is no longer accepted; the fermionic operators ``qml.FermiA``, ``qml.FermiC``,
+  ``qml.FermiWord`` and ``qml.FermiSentence`` should be used instead. See the
+  :mod:`pennylane.fermi` module documentation and the
+  `Fermionic Operator <https://pennylane.ai/qml/demos/tutorial_fermionic_operators>`_
+  tutorial for more details.
+
+  - Deprecated in v0.32
+  - Removed in v0.33
+
+* The ``tuple`` input type in ``qubit_observable`` has been deprecated. Please use a fermionic
+  operator object. The ``tuple`` return type in ``fermionic_hamiltonian`` and
+  ``fermionic_observable`` has been deprecated and these functions will return a fermionic operator
+  by default.
+
+  - Deprecated in v0.32
+  - Removed in v0.33
 
 * The ``sampler_seed`` argument of ``qml.gradients.spsa_grad`` has been removed.
   Instead, the ``sampler_rng`` argument should be set, either to an integer value, which will be used

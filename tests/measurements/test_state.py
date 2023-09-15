@@ -17,7 +17,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.devices import DefaultQubit
+from pennylane.devices import DefaultQubitLegacy
 from pennylane.measurements import (
     State,
     StateMP,
@@ -236,7 +236,6 @@ class TestState:
 
         @qml.qnode(dev)
         def func():
-            qml.Identity(wires=list(range(wires)))
             op(0)
             return state()
 
@@ -400,7 +399,7 @@ class TestState:
             return state()
 
         with monkeypatch.context() as m:
-            m.setattr(DefaultQubit, "capabilities", lambda *args, **kwargs: capabilities)
+            m.setattr(DefaultQubitLegacy, "capabilities", lambda *args, **kwargs: capabilities)
             with pytest.raises(qml.QuantumFunctionError, match="The current device is not capable"):
                 func()
 
@@ -1051,7 +1050,7 @@ class TestDensityMatrix:
             return density_matrix(0)
 
         with monkeypatch.context() as m:
-            m.setattr(DefaultQubit, "capabilities", lambda *args, **kwargs: capabilities)
+            m.setattr(DefaultQubitLegacy, "capabilities", lambda *args, **kwargs: capabilities)
             with pytest.raises(
                 qml.QuantumFunctionError,
                 match="The current device is not capable" " of returning the state",

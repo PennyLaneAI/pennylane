@@ -20,11 +20,11 @@ with open("pennylane/_version.py") as f:
     version = f.readlines()[-1].split()[-1].strip("\"'")
 
 requirements = [
-    "numpy<1.24",
+    "numpy",
     "scipy",
     "networkx",
     "rustworkx",
-    "autograd<=1.5",
+    "autograd",
     "toml",
     "appdirs",
     "semantic-version>=2.7",
@@ -47,8 +47,8 @@ info = {
         # TODO: rename entry point 'pennylane.plugins' to 'pennylane.devices'.
         # This requires a rename in the setup file of all devices, and is best done during another refactor
         "pennylane.plugins": [
-            "default.qubit = pennylane.devices:DefaultQubit",
-            "default.qubit.legacy = pennylane.devices:DefaultQubit",
+            "default.qubit = pennylane.devices:DefaultQubitLegacy",
+            "default.qubit.legacy = pennylane.devices:DefaultQubitLegacy",
             "default.gaussian = pennylane.devices:DefaultGaussian",
             "default.qubit.tf = pennylane.devices.default_qubit_tf:DefaultQubitTF",
             "default.qubit.torch = pennylane.devices.default_qubit_torch:DefaultQubitTorch",

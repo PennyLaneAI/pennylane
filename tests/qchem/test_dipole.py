@@ -21,7 +21,8 @@ import pennylane as qml
 from pennylane import PauliX, PauliY, PauliZ
 from pennylane import numpy as np
 from pennylane import qchem
-from pennylane.operation import enable_new_opmath, disable_new_opmath
+from pennylane.fermi import from_string
+from pennylane.operation import disable_new_opmath, enable_new_opmath
 
 
 @pytest.mark.parametrize(
@@ -40,14 +41,14 @@ from pennylane.operation import enable_new_opmath, disable_new_opmath
             np.array(
                 [
                     [
-                        [0.95622463, 0.7827277, -0.53222294],
-                        [0.7827277, 1.42895581, 0.23469918],
-                        [-0.53222294, 0.23469918, 0.48381955],
+                        [0.95622463, -0.7827277, -0.53222294],
+                        [-0.7827277, 1.42895581, -0.23469918],
+                        [-0.53222294, -0.23469918, 0.48381955],
                     ],
                     [
-                        [0.55538736, -0.53229398, -0.78262324],
-                        [-0.53229398, 0.3203965, 0.47233426],
-                        [-0.78262324, 0.47233426, 0.79021614],
+                        [0.55538736, 0.53229398, -0.78262324],
+                        [0.53229398, 0.3203965, -0.47233426],
+                        [-0.78262324, -0.47233426, 0.79021614],
                     ],
                     [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
                 ]
@@ -67,12 +68,12 @@ from pennylane.operation import enable_new_opmath, disable_new_opmath
             np.array(
                 [
                     [
-                        [1.42895581, 0.23469918],
-                        [0.23469918, 0.48381955],
+                        [1.42895581, -0.23469918],
+                        [-0.23469918, 0.48381955],
                     ],
                     [
-                        [0.3203965, 0.47233426],
-                        [0.47233426, 0.79021614],
+                        [0.3203965, -0.47233426],
+                        [-0.47233426, 0.79021614],
                     ],
                     [[0.0, 0.0], [0.0, 0.0]],
                 ]
@@ -104,52 +105,25 @@ def test_dipole_integrals(symbols, geometry, charge, core, active, core_ref, int
             None,
             # x component of fermionic dipole computed with PL-QChem dipole (format is modified:
             # the signs of the coefficients, except that from the nuclear contribution, is flipped.
-            (
-                np.array(
-                    [
-                        2.869,
-                        -0.956224634652776,
-                        -0.782727697897828,
-                        0.532222940905614,
-                        -0.956224634652776,
-                        -0.782727697897828,
-                        0.532222940905614,
-                        -0.782727697897828,
-                        -1.42895581236226,
-                        -0.234699175620383,
-                        -0.782727697897828,
-                        -1.42895581236226,
-                        -0.234699175620383,
-                        0.532222940905614,
-                        -0.234699175620383,
-                        -0.483819552892797,
-                        0.532222940905614,
-                        -0.234699175620383,
-                        -0.483819552892797,
-                    ]
-                ),
-                [
-                    [],
-                    [0, 0],
-                    [0, 2],
-                    [0, 4],
-                    [1, 1],
-                    [1, 3],
-                    [1, 5],
-                    [2, 0],
-                    [2, 2],
-                    [2, 4],
-                    [3, 1],
-                    [3, 3],
-                    [3, 5],
-                    [4, 0],
-                    [4, 2],
-                    [4, 4],
-                    [5, 1],
-                    [5, 3],
-                    [5, 5],
-                ],
-            ),
+            2.869 * from_string("")
+            + -0.956224634652776 * from_string("0+ 0-")
+            + -0.782727697897828 * from_string("0+ 2-")
+            + 0.532222940905614 * from_string("0+ 4-")
+            + -0.956224634652776 * from_string("1+ 1-")
+            + -0.782727697897828 * from_string("1+ 3-")
+            + 0.532222940905614 * from_string("1+ 5-")
+            + -0.782727697897828 * from_string("2+ 0-")
+            + -1.42895581236226 * from_string("2+ 2-")
+            + -0.234699175620383 * from_string("2+ 4-")
+            + -0.782727697897828 * from_string("3+ 1-")
+            + -1.42895581236226 * from_string("3+ 3-")
+            + -0.234699175620383 * from_string("3+ 5-")
+            + 0.532222940905614 * from_string("4+ 0-")
+            + -0.234699175620383 * from_string("4+ 2-")
+            + -0.483819552892797 * from_string("4+ 4-")
+            + 0.532222940905614 * from_string("5+ 1-")
+            + -0.234699175620383 * from_string("5+ 3-")
+            + -0.483819552892797 * from_string("5+ 5-"),
         ),
         (
             ["H", "H", "H"],
@@ -161,34 +135,16 @@ def test_dipole_integrals(symbols, geometry, charge, core, active, core_ref, int
             [1, 2],
             # x component of fermionic dipole computed with PL-QChem dipole (format is modified:
             # the signs of the coefficients, except that from the nuclear contribution, is flipped.
-            (
-                np.array(
-                    [
-                        2.869,
-                        -1.912449269305551,
-                        -1.4289558123627388,
-                        -0.2346991756194219,
-                        -1.4289558123627388,
-                        -0.2346991756194219,
-                        -0.2346991756194219,
-                        -0.48381955289231976,
-                        -0.2346991756194219,
-                        -0.48381955289231976,
-                    ]
-                ),
-                [
-                    [],
-                    [],
-                    [0, 0],
-                    [0, 2],
-                    [1, 1],
-                    [1, 3],
-                    [2, 0],
-                    [2, 2],
-                    [3, 1],
-                    [3, 3],
-                ],
-            ),
+            2.869 * from_string("")
+            - 1.912449269305551 * from_string("")
+            + -1.4289558123627388 * from_string("0+ 0-")
+            + -0.2346991756194219 * from_string("0+ 2-")
+            + -1.4289558123627388 * from_string("1+ 1-")
+            + -0.2346991756194219 * from_string("1+ 3-")
+            + -0.2346991756194219 * from_string("2+ 0-")
+            + -0.48381955289231976 * from_string("2+ 2-")
+            + -0.2346991756194219 * from_string("3+ 1-")
+            + -0.48381955289231976 * from_string("3+ 3-"),
         ),
     ],
 )
