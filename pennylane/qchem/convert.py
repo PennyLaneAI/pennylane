@@ -1090,7 +1090,7 @@ def _sitevec_to_fock(det, format):
     r"""Covert a Slater determinant from site vector to occupation number vector representation.
 
     Args:
-        det (list[int]): determinant in site vector representation
+        det (list): determinant in site vector representation
         format (str): the format of the determinant
 
     Returns:
@@ -1100,7 +1100,7 @@ def _sitevec_to_fock(det, format):
     **Example**
 
     >>> det = [1, 2, 1, 0, 0, 2]
-    >>> _sitevec_to_fock(det)
+    >>> _sitevec_to_fock(det, format = 'dmrg')
     >>> (5, 34)
     """
 
