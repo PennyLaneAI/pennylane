@@ -266,7 +266,7 @@ class SPSAOptimizer:
             if isinstance(dev_shots, Shots):
                 shots = dev_shots if dev_shots.has_partitioned_shots else Shots(None)
             elif objective_fn.device.shot_vector is not None:
-                shots = Shots(objective_fn.device._raw_shot_sequence)
+                shots = Shots(objective_fn.device._raw_shot_sequence)  # pragma: no cover
             else:
                 shots = Shots(None)
             if np.prod(objective_fn.func(*args).shape(objective_fn.device, shots)) > 1:

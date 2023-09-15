@@ -4638,7 +4638,7 @@ class TestCutStrategy:
         """Test if ill-initialized instances throw errors."""
 
         if (
-            isinstance(devices, (qml.Device, qml.devices.experimental.Device))
+            isinstance(devices, (qml.Device, qml.devices.Device))
             and imbalance_tolerance is None
             and num_fragments_probed is None
         ):
