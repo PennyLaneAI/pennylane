@@ -146,7 +146,13 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
 
     for op in tape.operations:
         if isinstance(op, MidMeasureMP):
-            if op.reset is True:
+            if op.postselect is not None:
+                if tape.shots and (tape.shots.has_partitioned_shots or tape.batch_size):
+                    raise ValueError(
+                        "Cannot postselect on mid-circuit measurements when the circuit has finite "
+                        "shots if the circuit is batched or the shots are partitioned."
+                    )
+            if op.reset:
                 reused_measurement_wires.add(op.wires[0])
 
             if op.wires[0] in measured_wires:
@@ -168,6 +174,10 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
     for op in tape.operations:
         if isinstance(op, MidMeasureMP):
             _ = measured_wires.pop(0)
+
+            if op.postselect is not None:
+                with QueuingManager.stop_recording():
+                    new_operations.append(qml.Projector([op.postselect], wires=op.wires[0]))
 
             # Store measurement outcome in new wire if wire gets reused
             if op.wires[0] in reused_measurement_wires or op.wires[0] in measured_wires:

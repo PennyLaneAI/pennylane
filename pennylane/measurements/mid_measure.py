@@ -24,7 +24,7 @@ from pennylane.wires import Wires
 from .measurements import MeasurementProcess, MidMeasure
 
 
-def measure(wires: Wires, reset: Optional[bool] = False):
+def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[int] = None):
     r"""Perform a mid-circuit measurement in the computational basis on the
     supplied qubit.
 
@@ -86,6 +86,9 @@ def measure(wires: Wires, reset: Optional[bool] = False):
         wires (Wires): The wire of the qubit the measurement process applies to.
         reset (Optional[bool]): Whether to reset the wire to the :math:`|0 \rangle`
             state after measurement.
+        postselect (Optional[int]): Which basis state to postselect after a mid-circuit
+            measurement. None by default. If postselection is requested, only the post-measurement
+            state that is used for postselection will be considered in the remaining circuit.
 
     Returns:
         MidMeasureMP: measurement process instance
@@ -102,7 +105,7 @@ def measure(wires: Wires, reset: Optional[bool] = False):
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())[:8]
-    mp = MidMeasureMP(wires=wire, reset=reset, id=measurement_id)
+    mp = MidMeasureMP(wires=wire, reset=reset, postselect=postselect, id=measurement_id)
     return MeasurementValue([mp], processing_fn=lambda v: v)
 
 
@@ -121,14 +124,22 @@ class MidMeasureMP(MeasurementProcess):
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
         reset (bool): Whether to reset the wire after measurement.
+        postselect (Optional[int]): Which basis state to postselect after a mid-circuit
+            measurement. None by default. If postselection is requested, only the post-measurement
+            state that is used for postselection will be considered in the remaining circuit.
         id (str): Custom label given to a measurement instance.
     """
 
     def __init__(
-        self, wires: Optional[Wires] = None, reset: Optional[bool] = False, id: Optional[str] = None
+        self,
+        wires: Optional[Wires] = None,
+        reset: Optional[bool] = False,
+        postselect: Optional[int] = None,
+        id: Optional[str] = None,
     ):
         super().__init__(wires=Wires(wires), id=id)
         self.reset = reset
+        self.postselect = postselect
 
     @property
     def return_type(self):

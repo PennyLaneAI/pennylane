@@ -13,7 +13,7 @@
 # limitations under the License.
 """Simulate a quantum script."""
 # pylint: disable=protected-access
-from numpy.random import default_rng
+from numpy.random import default_rng, binomial
 
 import pennylane as qml
 from pennylane.typing import Result
@@ -114,6 +114,24 @@ def get_final_state(circuit, debugger=None, interface=None):
 
         # new state is batched if i) the old state is batched, or ii) the new op adds a batch dim
         is_state_batched = is_state_batched or op.batch_size is not None
+
+        if isinstance(op, qml.Projector):
+            # Handle postselection on mid-circuit measurements
+            if is_state_batched:
+                for i in qml.math.shape(state)[0]:
+                    state[i] = state[i] / qml.math.norm(state[i])
+            else:
+                norm = qml.math.norm(state)
+                if qml.math.isclose(norm, 0.0):
+                    raise ValueError("Requested postselection on state with 0 probability.")
+
+                state = state / norm
+
+                if circuit.shots:
+                    # defer_measurements will raise an error with batched shots or broadcasting
+                    # so we can assume that both the state and shots are unbatched.
+                    postselected_shots = binomial(circuit.shots.total_shots, norm)
+                    circuit._shots = qml.measurements.Shots(postselected_shots)
 
     if set(circuit.op_wires) < set(circuit.wires):
         state = expand_state_over_wires(
