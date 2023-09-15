@@ -619,7 +619,7 @@ class Hamiltonian(Observable):
 
             for selfdata in self._obs_data():
                 flag = False
-                for otherdata in other._obs_data():
+                for other_data in other._obs_data():
                     if np.isclose(selfdata[0], otherdata[0]):
                         flag =True
                         continue
