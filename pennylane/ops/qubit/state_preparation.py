@@ -214,7 +214,7 @@ class StatePrep(StatePrepBase):
 
         wire_order = Wires(wire_order)
         if not wire_order.contains_wires(self.wires):
-            raise WireError("Custom wire_order must contain all StatePrep wires")
+            raise WireError(f"Custom wire_order must contain all {self.name} wires")
 
         num_total_wires = len(wire_order)
         indices = tuple(

@@ -96,7 +96,7 @@ class Device(abc.ABC):
 
         >>> op = qml.Permute(["c", 3,"a",2,0], wires=[3,2,"a",0,"c"])
         >>> circuit = qml.tape.QuantumScript([op], [qml.state()])
-        >>> dev = DefaultQubit2()
+        >>> dev = DefaultQubit()
         >>> dev.execute(circuit)
         MatrixUndefinedError
         >>> circuit = qml.tape.QuantumScript([qml.Rot(1.2, 2.3, 3.4, 0)], [qml.expval(qml.PauliZ(0))])

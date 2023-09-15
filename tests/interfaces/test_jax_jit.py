@@ -142,8 +142,8 @@ class TestJaxExecuteUnitTests:
     def test_no_gradients_on_execution(self, mocker):
         """Test that no grad on execution uses the `device.batch_execute` and `device.gradients` pathway"""
         dev = qml.device("default.qubit.legacy", wires=1)
-        spy_execute = mocker.spy(qml.devices.DefaultQubit, "batch_execute")
-        spy_gradients = mocker.spy(qml.devices.DefaultQubit, "gradients")
+        spy_execute = mocker.spy(qml.devices.DefaultQubitLegacy, "batch_execute")
+        spy_gradients = mocker.spy(qml.devices.DefaultQubitLegacy, "gradients")
 
         def cost(a):
             with qml.queuing.AnnotatedQueue() as q:

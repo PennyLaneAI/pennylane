@@ -134,10 +134,14 @@ class TransformProgram:
         return bool(self._transform_program)
 
     def __add__(self, other):
-        program = TransformProgram(self._transform_program)
-        for container in other:
-            program.push_back(container)
-        return program
+        if self.has_final_transform and other.has_final_transform:
+            raise TransformError("The transform program already has a terminal transform.")
+
+        transforms = self._transform_program + other._transform_program
+        if self.has_final_transform:
+            transforms.append(transforms.pop(len(self) - 1))
+
+        return TransformProgram(transforms)
 
     def __repr__(self):
         """The string representation of the transform program class."""
@@ -159,6 +163,8 @@ class TransformProgram:
         if self.has_classical_cotransform:
             raise TransformError("The transform program already has an gradient based transform. For higher order"
                                  " derivatives use the QNode kwarg with max diff directly.")
+        if self.has_final_transform:
+            raise TransformError("The transform program already has a terminal transform.")
         self._transform_program.append(transform_container)
 
     def insert_front(self, transform_container: TransformContainer):
@@ -167,7 +173,7 @@ class TransformProgram:
         Args:
             transform_container(TransformContainer): A transform represented by its container.
         """
-        if transform_container.is_informative and not self.is_empty():
+        if (transform_container.final_transform) and not self.is_empty():
             raise TransformError(
                 "Informative transforms can only be added at the end of the program."
             )
@@ -199,6 +205,7 @@ class TransformProgram:
                 tkwargs,
                 transform.classical_cotransform,
                 transform.is_informative,
+                transform.final_transform,
             )
         )
 
@@ -213,7 +220,7 @@ class TransformProgram:
             **tkwargs: Any additional keyword arguments that are passed to the transform.
 
         """
-        if transform.is_informative and not self.is_empty():
+        if transform.final_transform and not self.is_empty():
             raise TransformError(
                 "Informative transforms can only be added at the end of the program."
             )
@@ -225,6 +232,7 @@ class TransformProgram:
                 tkwargs,
                 transform.classical_cotransform,
                 transform.is_informative,
+                transform.final_transform,
             )
         )
 
@@ -272,6 +280,10 @@ class TransformProgram:
         return self[-1].is_informative if self else False
 
     @property
+    def has_final_transform(self) -> bool:
+        """Check if the transform program has a terminal transform or not."""
+        return self[-1].final_transform if self else False
+ 
     def has_classical_cotransform(self) -> bool:
         """Check if the transform program has some classical cotransforms.
 
@@ -391,9 +403,6 @@ class TransformProgram:
         qnode.construct(args, kwargs)
 
     def __call__(self, tapes: Tuple[QuantumTape]) -> Tuple[ResultBatch, BatchPostProcessingFn]:
-        if self.is_informative:
-            raise NotImplementedError("Informative transforms are not yet supported.")
-
         if not self:
             return tapes, null_postprocessing
 
@@ -444,6 +453,7 @@ class TransformProgram:
             _apply_postprocessing_stack,
             postprocessing_stack=processing_fns_stack,
         )
+
         postprocessing_fn.__doc__ = _apply_postprocessing_stack.__doc__
 
         # Reset classical jacobians
