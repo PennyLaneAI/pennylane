@@ -705,7 +705,9 @@ class QNode:
             config = qml.devices.ExecutionConfig(gradient_method="backprop", interface=interface)
             if device.supports_derivatives(config):
                 return "backprop", {}, device
-            raise qml.QuantumFunctionError(f"Device {device.name} does not support backprop")
+            raise qml.QuantumFunctionError(
+                f"Device {device.name} does not support backprop with {config}"
+            )
 
         mapped_interface = INTERFACE_MAP.get(interface, interface)
 
