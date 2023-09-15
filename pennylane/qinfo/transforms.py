@@ -13,8 +13,8 @@
 # limitations under the License.
 """QNode transforms for the quantum information quantities."""
 # pylint: disable=import-outside-toplevel, not-callable
-import functools
-from typing import Sequence, Callable
+from functools import partial
+from typing import Callable, Sequence
 
 import pennylane as qml
 from pennylane.tape import QuantumTape
@@ -24,7 +24,7 @@ from pennylane.transforms import adjoint_metric_tensor, metric_tensor
 from pennylane.transforms.core import transform
 
 
-@transform
+@partial(transform, final_transform=True)
 def reduced_dm(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Callable):
     """Compute the reduced density matrix from a :class:`~.QNode` returning
     :func:`~pennylane.state`.
@@ -71,7 +71,7 @@ def reduced_dm(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Ca
     def processing_fn(res):
         # device is provided by the custom QNode transform
         device = kwargs.get("device", None)
-        c_dtype = device.C_DTYPE if device else "complex128"
+        c_dtype = getattr(device, "C_DTYPE", "complex128")
 
         # determine the density matrix
         dm_func = (
@@ -104,7 +104,7 @@ def _reduced_dm_qnode(self, qnode, targs, tkwargs):
     return self.default_qnode_transform(qnode, targs, tkwargs)
 
 
-@transform
+@partial(transform, final_transform=True)
 def purity(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Callable):
     r"""Compute the purity of a :class:`~.QuantumTape` returning :func:`~pennylane.state`.
 
@@ -169,7 +169,7 @@ def purity(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Callab
     def processing_fn(res):
         # device is provided by the custom QNode transform
         device = kwargs.get("device", None)
-        c_dtype = device.C_DTYPE if device else "complex128"
+        c_dtype = getattr(device, "C_DTYPE", "complex128")
 
         # determine the density matrix
         density_matrix = (
@@ -201,7 +201,7 @@ def _purity_qnode(self, qnode, targs, tkwargs):
     return self.default_qnode_transform(qnode, targs, tkwargs)
 
 
-@transform
+@partial(transform, final_transform=True)
 def vn_entropy(
     tape: QuantumTape, wires: Sequence[int], base: float = None, **kwargs
 ) -> (Sequence[QuantumTape], Callable):
@@ -256,7 +256,7 @@ def vn_entropy(
     def processing_fn(res):
         # device is provided by the custom QNode transform
         device = kwargs.get("device", None)
-        c_dtype = device.C_DTYPE if device else "complex128"
+        c_dtype = getattr(device, "C_DTYPE", "complex128")
 
         # determine if the measurement is a state vector or a density matrix
         if not isinstance(measurements[0], DensityMatrixMP) and not isinstance(
@@ -295,7 +295,7 @@ def _vn_entropy_qnode(self, qnode, targs, tkwargs):
     return self.default_qnode_transform(qnode, targs, tkwargs)
 
 
-@transform
+@partial(transform, final_transform=True)
 def mutual_info(
     tape: QuantumTape, wires0: Sequence[int], wires1: Sequence[int], base: float = None, **kwargs
 ) -> (Sequence[QuantumTape], Callable):
@@ -362,7 +362,7 @@ def mutual_info(
     def processing_fn(res):
         # device is provided by the custom QNode transform
         device = kwargs.get("device", None)
-        c_dtype = device.C_DTYPE if device else "complex128"
+        c_dtype = getattr(device, "C_DTYPE", "complex128")
 
         density_matrix = (
             res[0]
@@ -401,7 +401,7 @@ def _torch_jac(circ):
     import torch
 
     def wrapper(*args, **kwargs):
-        loss = functools.partial(circ, **kwargs)
+        loss = partial(circ, **kwargs)
         if len(args) > 1:
             return torch.autograd.functional.jacobian(loss, args, create_graph=True)
         return torch.autograd.functional.jacobian(loss, *args, create_graph=True)
@@ -731,7 +731,9 @@ def quantum_fisher(qnode, *args, **kwargs):
 
     """
 
-    if qnode.device.shots is not None and isinstance(qnode.device, DefaultQubit):
+    if qnode.device.shots and isinstance(
+        qnode.device, (DefaultQubit, qml.devices.experimental.DefaultQubit2)
+    ):
 
         def wrapper(*args0, **kwargs0):
             return 4 * metric_tensor(qnode, *args, **kwargs)(*args0, **kwargs0)
