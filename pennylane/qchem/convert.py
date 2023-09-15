@@ -1039,25 +1039,28 @@ def _dmrg_state(wavefunction, tol=1e-15):
 
     **Example**
 
-    >>> from pyscf import gto, scf
-    >>> from pyblock2 import DMRGDriver
-    >>> mol = gto.M(atom=[['Li', (0, 0, 0)], ['Li', (0,0,0.71)]], basis='sto6g', symmetry="d2h")
-    >>> myhf = scf.RHF(mol).run()
-    >>> ncas, n_elec, spin, ecore, h1e, g2e, orb_sym = itg.get_uhf_integrals(mf, ncore, ncas, g2e_symm=8)
-    >>> driver = DMRGDriver(scratch=dir, symm_type=SymmetryTypes.SZ, n_threads=n_threads, stack_mem=mem)
+    >>> from pyscf import gto, scf, mcscf
+    >>> from pyblock2.driver.core import DMRGDriver, SymmetryTypes
+    >>> from pyblock2._pyscf.ao2mo import integrals as itg
+    >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]], basis='sto3g')
+    >>> mf = scf.RHF(mol).run()
+    >>> mc = mcscf.CASCI(mf, 2, 2)
+    >>> ncas, n_elec, spin, ecore, h1e, g2e, orb_sym = itg.get_rhf_integrals(mf, mc.ncore, mc.ncas, g2e_symm=8)
+    >>> driver = DMRGDriver(scratch="./tmp", symm_type=SymmetryTypes.SU2)
     >>> driver.initialize_system(n_sites=ncas, n_elec=n_elec, spin=spin, orb_sym=orb_sym)
-    >>> mpo = driver.get_qc_mpo(h1e=h1e, g2e=g2e, ecore=ecore+eshift, reorder=reorder, iprint=iprint)
-    >>> ket = driver.get_random_mps(tag="GS", bond_dim=schedule[0][0], occs=occs, nroots=nroots, dot=dot)
-    >>> energies = driver.dmrg(mpo, ket, n_sweeps=n_sweeps[ii], bond_dims=Mvals, noises=noisevals, thrds=thrdsvals, iprint=iprint, tol=tol)
+    >>> mpo = driver.get_qc_mpo(h1e=h1e, g2e=g2e, ecore=ecore)
+    >>> ket = driver.get_random_mps(tag="GS")
     >>> wavefunction = driver.get_csf_coefficients(ket)
     >>> wf_dmrg = _dmrg_state(wavefunction, tol=1e-1)
+    >>> print(wf_dmrg)
+    {(2, 2): 0.6995876453534665, (1, 2): 0.7021101425511932, (1, 1): 0.13273460059658818}
     """
     dets, coeffs = wavefunction
 
     row, col, dat = [], [], []
 
     for ii, det in enumerate(dets):
-        stra, strb = _sitevec_to_fock(det)
+        stra, strb = _sitevec_to_fock(det.tolist())
         row.append(stra)
         col.append(strb)
 
@@ -1086,11 +1089,12 @@ def _dmrg_state(wavefunction, tol=1e-15):
     return dict_fcimatr
 
 
-def _sitevec_to_fock(det):
+def _sitevec_to_fock(det, format):
     r"""Covert a Slater determinant from site vector to occupation number vector representation.
 
     Args:
-        det (array[int]): determinant in site vector representation
+        det (list[int]): determinant in site vector representation
+        format (str): the format of the determinant
 
     Returns:
         tuple: tuple of integers representing binaries that correspond to occupation vectors in
@@ -1098,14 +1102,17 @@ def _sitevec_to_fock(det):
 
     **Example**
 
-    >>> det = np.array([1, 2, 1, 0, 0, 2])
+    >>> det = [1, 2, 1, 0, 0, 2]
     >>> _sitevec_to_fock(det)
     >>> (5, 34)
     """
 
-    map_dmrg = {0: "00", 1: "10", 2: "01", 3: "11"}
+    if format == "dmrg":
+        map = {0: "00", 1: "10", 2: "01", 3: "11"}
+    elif format == "shci":
+        map = {"0": "00", "a": "10", "b": "01", "2": "11"}
 
-    strab = [map_dmrg[key] for key in det.tolist()]
+    strab = [map[key] for key in det]
 
     stra = "".join(i[0] for i in strab)
     strb = "".join(i[1] for i in strab)
