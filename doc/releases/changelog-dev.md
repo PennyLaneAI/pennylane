@@ -224,6 +224,7 @@ This release contains contributions from (in alphabetical order):
 Utkarsh Azad,
 Diego Guala,
 Soran Jahangiri,
+Stepan Fomichev,
 Lillian M. A. Frederiksen,
 Vincent Michaud-Rioux,
 Romain Moyard,
