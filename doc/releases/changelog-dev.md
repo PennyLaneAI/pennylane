@@ -59,6 +59,7 @@
   method will re-order the given state to go from the inputted wire-order to the process's wire-order.
   If the process's wire-order contains extra wires, it will assume those are in the zero-state.
   [(#4570)](https://github.com/PennyLaneAI/pennylane/pull/4570)
+  [(#4602)](https://github.com/PennyLaneAI/pennylane/pull/4602)
 
 * Improve builtin types support with `qml.pauli_decompose`.
   [(#4577)](https://github.com/PennyLaneAI/pennylane/pull/4577)
@@ -78,6 +79,10 @@
 * `AmplitudeEmbedding` now inherits from `StatePrep`, allowing for it to not be decomposed
   when at the beginning of a circuit, thus behaving like `StatePrep`.
   [(#4583)](https://github.com/PennyLaneAI/pennylane/pull/4583)
+
+* `StateMeasurement.process_state` now assumes the input is flat. `ProbabilityMP.process_state` has
+  been updated to reflect this assumption and avoid redundant reshaping.
+  [(#4602)](https://github.com/PennyLaneAI/pennylane/pull/4602)
 
 <h3>Breaking changes 💔</h3>
 
