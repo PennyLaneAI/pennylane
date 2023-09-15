@@ -30,7 +30,6 @@ from pennylane.measurements import (
     CountsMP,
     Expectation,
     ExpectationMP,
-    MeasurementValue,
     MidMeasureMP,
     Probability,
     ProbabilityMP,
@@ -997,7 +996,7 @@ class Device(abc.ABC):
                         raise DeviceError(
                             f"Observable {i.name} not supported on device {self.short_name}"
                         )
-            elif not isinstance(o, MeasurementValue):
+            else:
                 observable_name = o.name
 
                 if not self.supports_observable(observable_name):
