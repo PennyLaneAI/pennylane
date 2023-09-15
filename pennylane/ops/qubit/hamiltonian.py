@@ -620,7 +620,7 @@ class Hamiltonian(Observable):
             for selfdata in self._obs_data():
                 flag = False
                 for otherdata in other._obs_data():
-                    if (round(selfdata[0],15),selfdata[1])== (round(otherdata[0],15),otherdata[1]):#to remove floatt point error
+                    if np.isclose(selfdata[0], otherdata[0]):
                         flag =True
                         Continue
                 if not flag:
