@@ -1096,6 +1096,10 @@ def _sitevec_to_fock(det, format):
     >>> det = [1, 2, 1, 0, 0, 2]
     >>> _sitevec_to_fock(det, format = 'dmrg')
     (5, 34)
+
+    >>> det = ["a", "b", "a", "0", "0", "b"]
+    >>> _sitevec_to_fock(det, format = 'shci')
+    (5, 34)
     """
 
     if format == "dmrg":
