@@ -72,7 +72,7 @@ def test_standard_use():
 
 @pytest.mark.parametrize(
     "device",
-    [qml.device("default.qubit.legacy", wires=3), qml.devices.experimental.DefaultQubit2(wires=3)],
+    [qml.device("default.qubit.legacy", wires=3), qml.devices.DefaultQubit(wires=3)],
 )
 @pytest.mark.parametrize(
     "strategy, initial_strategy, n_lines", [("gradient", "device", 3), ("device", "gradient", 13)]

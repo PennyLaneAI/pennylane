@@ -22,7 +22,7 @@ from pennylane.gradients.parameter_shift import (
     _put_zeros_in_pdA2_involutory,
     _make_zero_rep,
 )
-from pennylane.devices import DefaultQubit
+from pennylane.devices import DefaultQubitLegacy
 from pennylane.operation import Observable, AnyWires
 
 
@@ -2373,12 +2373,12 @@ class TestParameterShiftRule:
                 return []
 
         # pylint: disable=too-few-public-methods
-        class DeviceSupporingSpecialObservable(DefaultQubit):
+        class DeviceSupporingSpecialObservable(DefaultQubitLegacy):
             """A custom device that supports the above special observable."""
 
             name = "Device supporting SpecialObservable"
             short_name = "default.qubit.specialobservable"
-            observables = DefaultQubit.observables.union({"SpecialObservable"})
+            observables = DefaultQubitLegacy.observables.union({"SpecialObservable"})
 
             # pylint: disable=unused-argument
             @staticmethod
