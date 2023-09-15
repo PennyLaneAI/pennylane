@@ -1094,11 +1094,16 @@ def test_sitevec_to_fock(sitevec, format, state_ref):
     ("wavefunction", "state_ref"),
     [
         (
-            (
-                np.array([[0, 3], [3, 0]]),
-                np.array([-0.10660077, 0.9943019]),
-            ),
+            (np.array([[0, 3], [3, 0]]), np.array([-0.10660077, 0.9943019])),
             {(2, 2): np.array([-0.10660077]), (1, 1): np.array([0.9943019])},
+        ),
+        (
+            (np.array([[0, 3], [1, 2], [3, 0]]), np.array([0.69958765, 0.70211014, 0.1327346])),
+            {
+                (2, 2): np.array([0.69958765]),
+                (1, 2): np.array([0.70211014]),
+                (1, 1): np.array([0.1327346]),
+            },
         ),
     ],
 )
@@ -1106,5 +1111,5 @@ def test_dmrg_state(wavefunction, state_ref):
     r"""Test that _dmrg_state returns the correct state."""
 
     state = qml.qchem.convert._dmrg_state(wavefunction)
-
+    print(state)
     assert state == state_ref
