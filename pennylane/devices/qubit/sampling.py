@@ -131,8 +131,7 @@ def measure_with_samples(
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. If None, a random key will be
-            generated. Only for simulation using JAX.
+            the key to the JAX pseudo random number generator. Only for simulation using JAX.
 
     Returns:
         List[TensorLike[Any]]: Sample measurement results
@@ -193,8 +192,7 @@ def _measure_with_samples_diagonalizing_gates(
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. If None, a random key will be
-            generated. Only for simulation using JAX.
+            the key to the JAX pseudo random number generator. Only for simulation using JAX.
 
     Returns:
         TensorLike[Any]: Sample measurement results
@@ -363,15 +361,14 @@ def sample_state(
             A seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. If None, a random key will be
-            generated. Only for simulation using JAX.
+            the key to the JAX pseudo random number generator. Only for simulation using JAX.
 
     Returns:
         ndarray[int]: Sample values of the shape (shots, num_wires)
     """
     if prng_key is not None:
         return _sample_state_jax(
-            state, shots, is_state_batched=is_state_batched, wires=wires, prng_key=prng_key
+            state, shots, prng_key, is_state_batched=is_state_batched, wires=wires
         )
 
     rng = np.random.default_rng(rng)
@@ -400,9 +397,9 @@ def sample_state(
 def _sample_state_jax(
     state,
     shots: int,
+    prng_key,
     is_state_batched: bool = False,
     wires=None,
-    prng_key=None,
 ) -> np.ndarray:
     """
     Returns a series of samples of a state for the JAX interface based on the PRNG.
@@ -410,10 +407,10 @@ def _sample_state_jax(
     Args:
         state (array[complex]): A state vector to be sampled
         shots (int): The number of samples to take
-        is_state_batched (bool): whether the state is batched or not
-        wires (Sequence[int]): The wires to sample
         prng_key (Union[int, jax.random.PRNGKey]): A``jax.random.PRNGKey``. This is
             the key to the JAX pseudo random number generator.
+        is_state_batched (bool): whether the state is batched or not
+        wires (Sequence[int]): The wires to sample
 
     Returns:
         ndarray[int]: Sample values of the shape (shots, num_wires)
