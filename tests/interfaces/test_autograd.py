@@ -21,7 +21,7 @@ from pennylane import numpy as np
 from pennylane.operation import Observable, AnyWires
 
 import pennylane as qml
-from pennylane.devices import DefaultQubit
+from pennylane.devices import DefaultQubitLegacy
 from pennylane.gradients import finite_diff, param_shift
 
 pytestmark = pytest.mark.autograd
@@ -149,8 +149,8 @@ class TestAutogradExecuteUnitTests:
     def test_no_gradients_on_execution(self, mocker):
         """Test that no grad on execution uses the `device.batch_execute` and `device.gradients` pathway"""
         dev = qml.device("default.qubit.legacy", wires=1)
-        spy_execute = mocker.spy(qml.devices.DefaultQubit, "batch_execute")
-        spy_gradients = mocker.spy(qml.devices.DefaultQubit, "gradients")
+        spy_execute = mocker.spy(qml.devices.DefaultQubitLegacy, "batch_execute")
+        spy_gradients = mocker.spy(qml.devices.DefaultQubitLegacy, "gradients")
 
         def cost(a):
             with qml.queuing.AnnotatedQueue() as q:
@@ -1318,7 +1318,7 @@ class TestCustomJacobian:
     def test_custom_jacobians(self):
         """Test custom Jacobian device methood"""
 
-        class CustomJacobianDevice(DefaultQubit):
+        class CustomJacobianDevice(DefaultQubitLegacy):
             @classmethod
             def capabilities(cls):
                 capabilities = super().capabilities()
@@ -1347,7 +1347,7 @@ class TestCustomJacobian:
         """Test computing the gradient using the parameter-shift
         rule with a device that provides a jacobian"""
 
-        class MyQubit(DefaultQubit):
+        class MyQubit(DefaultQubitLegacy):
             @classmethod
             def capabilities(cls):
                 capabilities = super().capabilities().copy()
@@ -1428,10 +1428,10 @@ class SpecialObservable(Observable):
         return []
 
 
-class DeviceSupportingSpecialObservable(DefaultQubit):
+class DeviceSupportingSpecialObservable(DefaultQubitLegacy):
     name = "Device supporting SpecialObservable"
     short_name = "default.qubit.specialobservable"
-    observables = DefaultQubit.observables.union({"SpecialObservable"})
+    observables = DefaultQubitLegacy.observables.union({"SpecialObservable"})
 
     @staticmethod
     def _asarray(arr, dtype=None):
