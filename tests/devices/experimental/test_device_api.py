@@ -18,7 +18,7 @@ Tests for the basic default behavior of the Device API.
 import pytest
 
 import pennylane as qml
-from pennylane.devices.experimental import Device, ExecutionConfig, DefaultExecutionConfig
+from pennylane.devices import Device, ExecutionConfig, DefaultExecutionConfig
 from pennylane.wires import Wires
 
 
@@ -92,7 +92,7 @@ class TestMinimalDevice:
 
         a = (1,)
         assert fn(a) == (1,)
-        assert config is qml.devices.experimental.DefaultExecutionConfig
+        assert config is qml.devices.DefaultExecutionConfig
 
     def test_preprocess_batch_circuits(self):
         """Test that preprocessing a batch doesn't do anything."""

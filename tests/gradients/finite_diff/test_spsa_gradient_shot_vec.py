@@ -21,7 +21,7 @@ from pennylane import numpy as np
 
 import pennylane as qml
 from pennylane.gradients import spsa_grad
-from pennylane.devices import DefaultQubit
+from pennylane.devices import DefaultQubitLegacy
 from pennylane.measurements import Shots
 from pennylane.operation import Observable, AnyWires
 
@@ -514,13 +514,13 @@ class TestSpsaGradient:
                 """Diagonalizing gates"""
                 return []
 
-        class DeviceSupportingSpecialObservable(DefaultQubit):
+        class DeviceSupportingSpecialObservable(DefaultQubitLegacy):
             """A device class supporting SpecialObservable."""
 
             # pylint:disable=too-few-public-methods
             name = "Device supporting SpecialObservable"
             short_name = "default.qubit.specialobservable"
-            observables = DefaultQubit.observables.union({"SpecialObservable"})
+            observables = DefaultQubitLegacy.observables.union({"SpecialObservable"})
 
             @staticmethod
             def _asarray(arr, dtype=None):

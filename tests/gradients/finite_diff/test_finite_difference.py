@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.devices import DefaultQubit
+from pennylane.devices import DefaultQubitLegacy
 from pennylane.gradients import finite_diff, finite_diff_coeffs
 from pennylane.operation import AnyWires, Observable
 
@@ -500,12 +500,12 @@ class TestFiniteDiff:
                 return []
 
         # pylint: disable=too-few-public-methods
-        class DeviceSupportingSpecialObservable(DefaultQubit):
+        class DeviceSupportingSpecialObservable(DefaultQubitLegacy):
             """A device that supports the above SpecialObservable as a return type."""
 
             name = "Device supporting SpecialObservable"
             short_name = "default.qubit.specialobservable"
-            observables = DefaultQubit.observables.union({"SpecialObservable"})
+            observables = DefaultQubitLegacy.observables.union({"SpecialObservable"})
 
             # pylint: disable=unused-argument
             @staticmethod

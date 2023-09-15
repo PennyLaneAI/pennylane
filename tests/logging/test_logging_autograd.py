@@ -88,7 +88,7 @@ class TestLogging:
             (
                 "pennylane.interfaces.execution",
                 [
-                    "device=<default.qubit.2",
+                    "device=<default.qubit.2 device (wires=2)",
                     "gradient_fn=None, interface=None",
                 ],
             ),
@@ -128,7 +128,7 @@ class TestLogging:
                 "pennylane.qnode",
                 [
                     "Creating QNode(func=<function TestLogging.test_dq_qnode_execution_grad",
-                    "device=<default.qubit.2",
+                    "device=<default.qubit.2 device (wires=2)",
                     f"interface=auto, diff_method={diff_method}, expansion_strategy=gradient, max_expansion=10, grad_on_execution=best,",
                 ],
             ),

@@ -26,7 +26,6 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import QNode
-from pennylane.devices import experimental
 from pennylane import numpy as pnp
 from pennylane import qnode
 from pennylane.tape import QuantumScript
@@ -242,7 +241,7 @@ class TestValidation:
             capabilities.update(model="None")
             return capabilities
 
-        monkeypatch.setattr(qml.devices.DefaultQubit, "capabilities", capabilities)
+        monkeypatch.setattr(qml.devices.DefaultQubitLegacy, "capabilities", capabilities)
         dev = qml.device("default.qubit.legacy", wires=1)
 
         with pytest.raises(
@@ -306,7 +305,7 @@ class TestValidation:
             return capabilities
 
         # finite differences is the fallback when we know nothing about the device
-        monkeypatch.setattr(qml.devices.DefaultQubit, "capabilities", capabilities)
+        monkeypatch.setattr(qml.devices.DefaultQubitLegacy, "capabilities", capabilities)
         res = QNode.get_best_method(dev, "another_interface")
         assert res == (qml.gradients.finite_diff, {}, dev)
 
@@ -365,7 +364,7 @@ class TestValidation:
             return capabilities
 
         # finite differences is the fallback when we know nothing about the device
-        monkeypatch.setattr(qml.devices.DefaultQubit, "capabilities", capabilities)
+        monkeypatch.setattr(qml.devices.DefaultQubitLegacy, "capabilities", capabilities)
         res = QNode.best_method_str(dev, "another_interface")
         assert res == "finite-diff"
 
@@ -822,7 +821,7 @@ class TestTapeConstruction:
             qml.GlobalPhase(x, wires=0)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        dev = qml.devices.experimental.DefaultQubit2()  # TODO: add wires, change comment below
+        dev = qml.devices.DefaultQubit()  # TODO: add wires, change comment below
         qn = QNode(circuit1, dev)
 
         # fails when GlobalPhase is a strict subset of all tape wires
@@ -1696,7 +1695,7 @@ class TestTransformProgramIntegration:
         """Test a transform that scales the number of shots used in an execution."""
 
         # note that this won't work with the old device interface :(
-        dev = qml.devices.experimental.DefaultQubit2()
+        dev = qml.devices.DefaultQubit()
 
         def num_of_shots_from_sample(results):
             return len(results[0])
@@ -1716,7 +1715,7 @@ class TestTransformProgramIntegration:
 
 
 # pylint: disable=unused-argument
-class CustomDevice(experimental.Device):
+class CustomDevice(qml.devices.Device):
     """A null device that just returns 0."""
 
     def __repr__(self):
@@ -1727,7 +1726,7 @@ class CustomDevice(experimental.Device):
 
 
 class TestNewDeviceIntegration:
-    """Basic tests for integration of the experimental device interface and the QNode."""
+    """Basic tests for integration of the new device interface and the QNode."""
 
     dev = CustomDevice()
 
@@ -1758,7 +1757,7 @@ class TestNewDeviceIntegration:
 
     def test_get_gradient_fn_default_qubit2(self):
         """Tests the get_gradient_fn is backprop for best for default qubit2."""
-        dev = experimental.DefaultQubit2()
+        dev = qml.devices.DefaultQubit()
         gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(dev, "autograd", "best")
         assert gradient_fn == "backprop"
         assert not kwargs
@@ -1766,7 +1765,7 @@ class TestNewDeviceIntegration:
 
     def test_get_gradient_fn_default_qubit2_adjoint(self):
         """Test that the get_gradient_fn and _validate_adjoint_methods work for default qubit 2."""
-        dev = experimental.DefaultQubit2()
+        dev = qml.devices.DefaultQubit()
         gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(dev, "autograd", "adjoint")
         assert gradient_fn == "adjoint"
         assert len(kwargs) == 0
@@ -1801,7 +1800,7 @@ class TestNewDeviceIntegration:
         """Test that a custom device and designate that it supports backprop derivatives."""
 
         # pylint: disable=unused-argument
-        class BackpropDevice(experimental.Device):
+        class BackpropDevice(qml.devices.Device):
             """A device that says it supports backpropagation."""
 
             def execute(self, circuits, execution_config=None):
@@ -1820,7 +1819,7 @@ class TestNewDeviceIntegration:
         """Test that a custom device can specify that it supports device derivatives."""
 
         # pylint: disable=unused-argument
-        class DerivativeDevice(experimental.Device):
+        class DerivativeDevice(qml.devices.Device):
             """A device that says it supports device derivatives."""
 
             def execute(self, circuits, execution_config=None):
@@ -1843,7 +1842,7 @@ class TestNewDeviceIntegration:
     def test_shots_integration(self):
         """Test that shots provided at call time are passed through the workflow."""
 
-        dev = experimental.DefaultQubit2()
+        dev = qml.devices.DefaultQubit()
 
         @qml.qnode(dev, diff_method=None)
         def circuit():

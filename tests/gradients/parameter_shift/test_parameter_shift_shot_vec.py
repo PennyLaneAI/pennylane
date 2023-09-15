@@ -19,7 +19,7 @@ from flaky import flaky
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.gradients import param_shift
-from pennylane.devices import DefaultQubit
+from pennylane.devices import DefaultQubitLegacy
 from pennylane.measurements import Shots
 from pennylane.operation import Observable, AnyWires
 
@@ -2025,12 +2025,12 @@ class TestParameterShiftRule:
                 """Diagonalizing gates"""
                 return []
 
-        class DeviceSupporingSpecialObservable(DefaultQubit):
+        class DeviceSupporingSpecialObservable(DefaultQubitLegacy):
             """A custom device that supports the above SpecialObservable."""
 
             name = "Device supporting SpecialObservable"
             short_name = "default.qubit.specialobservable"
-            observables = DefaultQubit.observables.union({"SpecialObservable"})
+            observables = DefaultQubitLegacy.observables.union({"SpecialObservable"})
 
             # pylint: disable=unused-argument
             @staticmethod

@@ -125,7 +125,7 @@ def specs(qnode, max_expansion=None, expansion_strategy=None):
 
         info["num_device_wires"] = (
             len(qnode.tape.wires)
-            if isinstance(qnode.device, qml.devices.experimental.Device)
+            if isinstance(qnode.device, qml.devices.Device)
             else len(qnode.device.wires)
         )
         info["device_name"] = getattr(qnode.device, "short_name", qnode.device.name)

@@ -44,7 +44,7 @@ Pending deprecations
   - Behaviour will change in v0.33
 
 * The public methods of ``DefaultQubit`` are pending changes to
-  follow the new device API, as used in ``DefaultQubit2``.
+  follow the new device API.
 
   We will be switching to the new device interface in a coming release.
   In this new interface, simulation implementation details
@@ -53,8 +53,8 @@ Pending deprecations
   in a workflow will remain the same.
   
   If you directly interact with device methods, please consult
-  :class:`pennylane.devices.experimental.Device` and
-  :class:`pennylane.devices.experimental.DefaultQubit2`
+  :class:`pennylane.devices.Device` and
+  :class:`pennylane.devices.DefaultQubit`
   for more information on what the new interface will look like and be prepared
   to make updates in a coming release. If you have any feedback on these
   changes, please create an

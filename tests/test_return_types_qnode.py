@@ -261,7 +261,7 @@ class TestIntegrationSingleReturn:
             if isinstance(measurement.obs, qml.PauliZ):
                 pytest.skip("DefaultQutrit doesn't support qubit observables.")
         elif isinstance(measurement.obs, qml.GellMann):
-            pytest.skip("DefaultQubit doesn't support qutrit observables.")
+            pytest.skip("DefaultQubitLegacy doesn't support qutrit observables.")
 
         dev = qml.device(device, wires=2, shots=shots)
         func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
@@ -296,7 +296,7 @@ class TestIntegrationSingleReturn:
             if isinstance(measurement.obs, qml.PauliZ):
                 pytest.skip("DefaultQutrit doesn't support qubit observables.")
         elif isinstance(measurement.obs, qml.GellMann):
-            pytest.skip("DefaultQubit doesn't support qutrit observables.")
+            pytest.skip("DefaultQubitLegacy doesn't support qutrit observables.")
 
         dev = qml.device(device, wires=2, shots=shots)
         func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
@@ -1234,7 +1234,7 @@ class TestIntegrationMultipleReturns:
             if isinstance(measurement.obs, qml.PauliZ):
                 pytest.skip("DefaultQutrit doesn't support qubit observables.")
         elif isinstance(measurement.obs, qml.GellMann):
-            pytest.skip("DefaultQubit doesn't support qutrit observables.")
+            pytest.skip("DefaultQubitLegacy doesn't support qutrit observables.")
 
         dev = qml.device(device, wires=2, shots=shots)
         func = qubit_ansatz if device != "default.qutrit" else qutrit_ansatz
@@ -1266,7 +1266,7 @@ class TestIntegrationMultipleReturns:
             if isinstance(measurement.obs, qml.PauliZ):
                 pytest.skip("DefaultQutrit doesn't support qubit observables.")
         elif isinstance(measurement.obs, qml.GellMann):
-            pytest.skip("DefaultQubit doesn't support qutrit observables.")
+            pytest.skip("DefaultQubitLegacy doesn't support qutrit observables.")
 
         dev = qml.device(device, wires=2, shots=shots)
         func = qubit_ansatz if device != "default.qutrit" else qutrit_ansatz
