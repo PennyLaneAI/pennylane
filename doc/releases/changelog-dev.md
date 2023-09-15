@@ -157,8 +157,8 @@
   been removed. Please use ``QuantumScript.bind_new_parameters`` instead.
   [(#4548)](https://github.com/PennyLaneAI/pennylane/pull/4548)
 
-* The private `TmpPauliRot` operator used for `SpecialUnitary` always has the same decomposition as
-  `PauliRot`.
+* The private `TmpPauliRot` operator used for `SpecialUnitary` no longer decomposes to nothing
+  when the theta value is trainable.
   [(#4585)](https://github.com/PennyLaneAI/pennylane/pull/4585)
 
 <h3>Deprecations 👋</h3>
