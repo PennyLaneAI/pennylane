@@ -510,8 +510,12 @@ class TestMeasureSamples:
 class TestBroadcasting:
     """Test that measurements work when the state has a batch dim"""
 
-    def test_sample_measure(self):
+    @pytest.mark.parametrize("prng_key", (None, 1984))
+    def test_sample_measure(self, mocker, prng_key):
         """Test that broadcasting works for qml.sample and single shots"""
+
+        spy = mocker.spy(qml.devices.qubit.sampling, "_sample_state_jax")
+
         rng = np.random.default_rng(123)
         shots = qml.measurements.Shots(100)
 
@@ -523,10 +527,15 @@ class TestBroadcasting:
         state = np.stack(state)
 
         measurement = qml.sample(wires=[0, 1])
-        res = measure_with_samples([measurement], state, shots, is_state_batched=True, rng=rng)[0]
+        res = measure_with_samples(
+            [measurement], state, shots, is_state_batched=True, rng=rng, prng_key=prng_key
+        )[0]
 
         assert res.shape == (3, shots.total_shots, 2)
         assert res.dtype == np.int64
+
+        # convert to numpy array because prng_key -> JAX -> ArrayImpl -> angry vanilla numpy below
+        res = [np.array(r) for r in res]
 
         # first batch of samples is always |11>
         assert np.all(res[0] == 1)
@@ -536,6 +545,11 @@ class TestBroadcasting:
 
         # third batch of samples can be any of |00>, |01>, |10>, or |11>
         assert np.all(np.logical_or(res[2] == 0, res[2] == 1))
+
+        if prng_key is None:
+            spy.assert_not_called()
+        else:
+            spy.assert_called()
 
     @pytest.mark.parametrize(
         "measurement, expected",
@@ -548,8 +562,12 @@ class TestBroadcasting:
             (qml.var(qml.PauliZ(1)), np.array([0, 0, 1])),
         ],
     )
-    def test_nonsample_measure(self, measurement, expected):
+    @pytest.mark.parametrize("prng_key", (None, 1984))
+    def test_nonsample_measure(self, mocker, measurement, expected, prng_key):
         """Test that broadcasting works for the other sample measurements and single shots"""
+
+        spy = mocker.spy(qml.devices.qubit.sampling, "_sample_state_jax")
+
         rng = np.random.default_rng(123)
         shots = qml.measurements.Shots(10000)
 
@@ -560,8 +578,15 @@ class TestBroadcasting:
         ]
         state = np.stack(state)
 
-        res = measure_with_samples([measurement], state, shots, is_state_batched=True, rng=rng)
+        res = measure_with_samples(
+            [measurement], state, shots, is_state_batched=True, rng=rng, prng_key=prng_key
+        )
         assert np.allclose(res, expected, atol=0.01)
+
+        if prng_key is None:
+            spy.assert_not_called()
+        else:
+            spy.assert_called()
 
     @pytest.mark.parametrize(
         "shots",
@@ -573,8 +598,12 @@ class TestBroadcasting:
             (200, (100, 2)),
         ],
     )
-    def test_sample_measure_shot_vector(self, shots):
+    @pytest.mark.parametrize("prng_key", (None, 184))
+    def test_sample_measure_shot_vector(self, mocker, shots, prng_key):
         """Test that broadcasting works for qml.sample and shot vectors"""
+
+        spy = mocker.spy(qml.devices.qubit.sampling, "_sample_state_jax")
+
         rng = np.random.default_rng(123)
         shots = qml.measurements.Shots(shots)
 
@@ -586,7 +615,9 @@ class TestBroadcasting:
         state = np.stack(state)
 
         measurement = qml.sample(wires=[0, 1])
-        res = measure_with_samples([measurement], state, shots, is_state_batched=True, rng=rng)
+        res = measure_with_samples(
+            [measurement], state, shots, is_state_batched=True, rng=rng, prng_key=prng_key
+        )
 
         assert isinstance(res, tuple)
         assert len(res) == shots.num_copies
@@ -599,6 +630,9 @@ class TestBroadcasting:
             assert r.shape == (3, s, 2)
             assert r.dtype == np.int64
 
+            # convert to numpy array because prng_key -> JAX -> ArrayImpl -> angry vanilla numpy below
+            r = [np.array(i) for i in r]
+
             # first batch of samples is always |11>
             assert np.all(r[0] == 1)
 
@@ -608,6 +642,12 @@ class TestBroadcasting:
             # third batch of samples can be any of |00>, |01>, |10>, or |11>
             assert np.all(np.logical_or(r[2] == 0, r[2] == 1))
 
+            if prng_key is None:
+                spy.assert_not_called()
+            else:
+                spy.assert_called()
+
+    # pylint:disable = too-many-arguments
     @pytest.mark.parametrize(
         "shots",
         [
@@ -629,8 +669,12 @@ class TestBroadcasting:
             (qml.var(qml.PauliZ(1)), np.array([0, 0, 1])),
         ],
     )
-    def test_nonsample_measure_shot_vector(self, shots, measurement, expected):
+    @pytest.mark.parametrize("prng_key", (None, 184))
+    def test_nonsample_measure_shot_vector(self, mocker, shots, measurement, expected, prng_key):
         """Test that broadcasting works for the other sample measurements and shot vectors"""
+
+        spy = mocker.spy(qml.devices.qubit.sampling, "_sample_state_jax")
+
         rng = np.random.default_rng(123)
         shots = qml.measurements.Shots(shots)
 
@@ -641,7 +685,9 @@ class TestBroadcasting:
         ]
         state = np.stack(state)
 
-        res = measure_with_samples([measurement], state, shots, is_state_batched=True, rng=rng)
+        res = measure_with_samples(
+            [measurement], state, shots, is_state_batched=True, rng=rng, prng_key=prng_key
+        )
 
         assert isinstance(res, tuple)
         assert len(res) == shots.num_copies
@@ -653,6 +699,11 @@ class TestBroadcasting:
 
             assert r.shape == expected.shape
             assert np.allclose(r, expected, atol=0.01)
+
+        if prng_key is None:
+            spy.assert_not_called()
+        else:
+            spy.assert_called()
 
 
 class TestHamiltonianSamples:
