@@ -91,6 +91,7 @@ class TestStateMP:
         mp = StateMP(wires=mp_wires)
         ket = np.arange(1, 5)
         result = mp.process_state(ket, wire_order=Wires(wire_order))
+        assert qml.math.get_dtype_name(result) == "complex128"
         assert np.array_equal(result, expected_state)
 
     @pytest.mark.all_interfaces
@@ -554,6 +555,19 @@ class TestState:
         state_val = func()
 
         assert np.allclose(state_expected, state_val)
+
+    def test_return_type_is_complex(self):
+        """Test that state always returns a complex value."""
+        dev = qml.devices.DefaultQubit()
+
+        @qml.qnode(dev)
+        def func():
+            qml.StatePrep([1, 0, 0, 0], wires=[0, 1])
+            return state()
+
+        state_val = func()
+        assert state_val.dtype == np.complex128
+        assert np.array_equal(state_val, [1, 0, 0, 0])
 
     @pytest.mark.parametrize("shots", [None, 1, 10])
     def test_shape(self, shots):

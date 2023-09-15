@@ -158,7 +158,7 @@ class StateMP(StateMeasurement):
         # pylint:disable=redefined-outer-name
         wires = self.wires
         if not wires or wire_order == wires:
-            return state
+            return qml.math.cast(state, "complex128")
 
         if not wires.contains_wires(wire_order):
             raise WireError(
@@ -188,7 +188,8 @@ class StateMP(StateMeasurement):
         if is_state_batched:
             desired_axes = [0] + [i + 1 for i in desired_axes]
         state = qml.math.transpose(state, desired_axes)
-        return qml.math.reshape(state, flat_shape)
+        state = qml.math.reshape(state, flat_shape)
+        return qml.math.cast(state, "complex128")
 
 
 class DensityMatrixMP(StateMP):
