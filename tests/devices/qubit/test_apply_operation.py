@@ -14,6 +14,7 @@
 """
 Tests the apply_operation functions from devices/qubit
 """
+from functools import reduce
 import pytest
 
 import numpy as np
@@ -239,6 +240,214 @@ class TestTwoQubitStateSpecialCases:
 
         assert qml.math.allclose(shift * initial_state, new_state_with_wire)
         assert qml.math.allclose(shift * initial_state, new_state_no_wire)
+
+
+# pylint:disable = unused-argument
+def time_independent_hamiltonian():
+    """Create a time-independent Hamiltonian on two qubits."""
+    ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0), qml.PauliX(1)]
+
+    def f1(params, t):
+        return params  # constant
+
+    def f2(params, t):
+        return params  # constant
+
+    coeffs = [f1, f2, 4, 9]
+
+    return qml.pulse.ParametrizedHamiltonian(coeffs, ops)
+
+
+def time_dependent_hamiltonian():
+    """Create a time-dependent two-qubit Hamiltonian that takes two scalar parameters."""
+    import jax.numpy as jnp
+
+    ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0), qml.PauliX(1)]
+
+    def f1(params, t):
+        return params * t
+
+    def f2(params, t):
+        return params * jnp.cos(t)
+
+    coeffs = [f1, f2, 4, 9]
+    return qml.pulse.ParametrizedHamiltonian(coeffs, ops)
+
+
+@pytest.mark.jax
+class TestApplyParameterizedEvolution:
+    @pytest.mark.parametrize("method", methods)
+    def test_parameterized_evolution_time_independent(self, method):
+        """Test that applying a ParameterizedEvolution gives the expected state
+        for a time-independent hamiltonian"""
+
+        import jax.numpy as jnp
+
+        initial_state = np.array(
+            [
+                [0.04624539 + 0.3895457j, 0.22399401 + 0.53870339j],
+                [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
+            ]
+        )
+
+        H = time_independent_hamiltonian()
+        params = jnp.array([1.0, 2.0])
+        t = 4
+
+        op = qml.pulse.ParametrizedEvolution(H=H, params=params, t=t)
+
+        true_mat = qml.math.expm(-1j * qml.matrix(H(params, t=t)) * t)
+        U = qml.QubitUnitary(U=true_mat, wires=[0, 1])
+
+        new_state = method(op, initial_state)
+        new_state_expected = apply_operation(U, initial_state)
+
+        assert np.allclose(new_state, new_state_expected, atol=0.002)
+
+    @pytest.mark.parametrize("method", methods)
+    def test_parameterized_evolution_time_dependent(self, method):
+        """Test that applying a ParameterizedEvolution gives the expected state
+        for a time dependent Hamiltonian"""
+
+        import jax
+        import jax.numpy as jnp
+
+        initial_state = np.array(
+            [
+                [0.04624539 + 0.3895457j, 0.22399401 + 0.53870339j],
+                [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
+            ]
+        )
+
+        H = time_dependent_hamiltonian()
+        params = jnp.array([1.0, 2.0])
+        t = 4
+
+        op = qml.pulse.ParametrizedEvolution(H=H, params=params, t=t)
+
+        def generator(params):
+            time_step = 1e-3
+            times = jnp.arange(0, t, step=time_step)
+            for ti in times:
+                yield jax.scipy.linalg.expm(-1j * time_step * qml.matrix(H(params, t=ti)))
+
+        true_mat = reduce(lambda x, y: y @ x, generator(params))
+        U = qml.QubitUnitary(U=true_mat, wires=[0, 1])
+
+        new_state = method(op, initial_state)
+        new_state_expected = apply_operation(U, initial_state)
+
+        assert np.allclose(new_state, new_state_expected, atol=0.002)
+
+    def test_large_state_small_matrix_evolves_matrix(self, mocker):
+        """Test that applying a ParameterizedEvolution operating on less
+        than half of the wires in the state uses the default function to evolve
+        the matrix"""
+
+        import jax.numpy as jnp
+
+        spy = mocker.spy(qml.math, "einsum")
+
+        initial_state = np.array(
+            [
+                [0.04624539 + 0.3895457j, 0.22399401 + 0.53870339j],
+                [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
+            ]
+        )
+
+        H = time_independent_hamiltonian()
+        params = jnp.array([1.0, 2.0])
+        t = 4
+
+        op = qml.pulse.ParametrizedEvolution(H=H, params=params, t=t)
+
+        true_mat = qml.math.expm(-1j * qml.matrix(H(params, t=t)) * t)
+        U = qml.QubitUnitary(U=true_mat, wires=[0, 1])
+
+        new_state = apply_operation(op, initial_state)
+        new_state_expected = apply_operation(U, initial_state)
+
+        assert np.allclose(new_state, new_state_expected, atol=0.002)
+
+        # seems like _evolve_state_vector_under_parametrized_evolution calls
+        # einsum twice, and the default apply_operation only once
+        assert spy.call_count == 1
+
+    def test_small_evolves_state(self, mocker):
+        """Test that applying a ParameterizedEvolution operating on less
+        than half of the wires in the state uses the default function to evolve
+        the matrix"""
+
+        import jax.numpy as jnp
+
+        spy = mocker.spy(qml.math, "einsum")
+
+        initial_state = np.array(
+            [
+                [
+                    [
+                        [
+                            [-0.02018048 + 0.0j, 0.0 + 0.05690523j],
+                            [0.0 + 0.01425524j, 0.04019714 + 0.0j],
+                        ],
+                        [
+                            [0.0 - 0.07174284j, -0.20230159 + 0.0j],
+                            [-0.05067824 + 0.0j, 0.0 + 0.14290331j],
+                        ],
+                    ],
+                    [
+                        [
+                            [0.0 + 0.05690523j, 0.16046226 + 0.0j],
+                            [0.04019714 + 0.0j, 0.0 - 0.11334853j],
+                        ],
+                        [
+                            [-0.20230159 + 0.0j, 0.0 + 0.57045322j],
+                            [0.0 + 0.14290331j, 0.402961 + 0.0j],
+                        ],
+                    ],
+                ],
+                [
+                    [
+                        [
+                            [0.0 + 0.01425524j, 0.04019714 + 0.0j],
+                            [0.01006972 + 0.0j, 0.0 - 0.02839476j],
+                        ],
+                        [
+                            [-0.05067824 + 0.0j, 0.0 + 0.14290331j],
+                            [0.0 + 0.03579848j, 0.10094511 + 0.0j],
+                        ],
+                    ],
+                    [
+                        [
+                            [0.04019714 + 0.0j, 0.0 - 0.11334853j],
+                            [0.0 - 0.02839476j, -0.08006798 + 0.0j],
+                        ],
+                        [
+                            [0.0 + 0.14290331j, 0.402961 + 0.0j],
+                            [0.10094511 + 0.0j, 0.0 - 0.2846466j],
+                        ],
+                    ],
+                ],
+            ]
+        )
+
+        H = time_independent_hamiltonian()
+        params = jnp.array([1.0, 2.0])
+        t = 4
+
+        op = qml.pulse.ParametrizedEvolution(H=H, params=params, t=t)
+
+        true_mat = qml.math.expm(-1j * qml.matrix(H(params, t=t)) * t)
+        U = qml.QubitUnitary(U=true_mat, wires=[0, 1])
+
+        new_state = apply_operation(op, initial_state)
+        new_state_expected = apply_operation(U, initial_state)
+
+        assert np.allclose(new_state, new_state_expected, atol=0.002)
+
+        # seems like _evolve_state_vector_under_parametrized_evolution calls
+        # einsum twice, and the default apply_operation only once
+        assert spy.call_count == 2
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
