@@ -352,7 +352,7 @@ class TestSupportsDerivatives:
         assert dev.supports_jvp() is True
         assert dev.supports_vjp() is True
 
-        config = ExecutionConfig(gradient_method="backprop")
+        config = ExecutionConfig(gradient_method="backprop", interface="auto")
         assert dev.supports_derivatives(config) is True
         assert dev.supports_jvp(config) is True
         assert dev.supports_vjp(config) is True
@@ -363,6 +363,11 @@ class TestSupportsDerivatives:
         assert dev.supports_vjp(config, qs) is True
 
         config = ExecutionConfig(gradient_method="backprop", device_options={"max_workers": 1})
+        assert dev.supports_derivatives(config) is False
+        assert dev.supports_jvp(config) is False
+        assert dev.supports_vjp(config) is False
+
+        config = ExecutionConfig(gradient_method="backprop", interface=None)
         assert dev.supports_derivatives(config) is False
         assert dev.supports_jvp(config) is False
         assert dev.supports_vjp(config) is False
