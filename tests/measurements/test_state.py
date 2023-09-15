@@ -58,7 +58,9 @@ class TestStateMP:
     def test_state_returns_itself_if_wires_match(self, interface):
         """Test that when wire_order matches the StateMP, the state is returned."""
         ket = qml.math.array([0.48j, 0.48, -0.64j, 0.36], like=interface)
-        assert StateMP(wires=[1, 0]).process_state(ket, wire_order=Wires([1, 0])) is ket
+        assert np.array_equal(
+            StateMP(wires=[1, 0]).process_state(ket, wire_order=Wires([1, 0])), ket
+        )
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch", "tensorflow"])
