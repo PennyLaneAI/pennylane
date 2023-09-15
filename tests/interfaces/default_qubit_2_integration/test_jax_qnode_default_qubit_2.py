@@ -20,18 +20,18 @@ import pytest
 
 import pennylane as qml
 from pennylane import qnode
-from pennylane.devices.experimental import DefaultQubit2
+from pennylane.devices import DefaultQubit
 
 device_seed = 42
 
 device_and_diff_method = [
-    [DefaultQubit2(seed=device_seed), "backprop", True],
-    [DefaultQubit2(seed=device_seed), "finite-diff", False],
-    [DefaultQubit2(seed=device_seed), "parameter-shift", False],
-    [DefaultQubit2(seed=device_seed), "adjoint", True],
-    [DefaultQubit2(seed=device_seed), "adjoint", False],
-    [DefaultQubit2(seed=device_seed), "spsa", False],
-    [DefaultQubit2(seed=device_seed), "hadamard", False],
+    [DefaultQubit(seed=device_seed), "backprop", True],
+    [DefaultQubit(seed=device_seed), "finite-diff", False],
+    [DefaultQubit(seed=device_seed), "parameter-shift", False],
+    [DefaultQubit(seed=device_seed), "adjoint", True],
+    [DefaultQubit(seed=device_seed), "adjoint", False],
+    [DefaultQubit(seed=device_seed), "spsa", False],
+    [DefaultQubit(seed=device_seed), "hadamard", False],
 ]
 
 interface_and_device_and_diff_method = [
@@ -685,7 +685,7 @@ class TestShotsIntegration:
     def test_diff_method_None(self, interface):
         """Test device works with diff_method=None."""
 
-        @qml.qnode(DefaultQubit2(), diff_method=None, interface=interface)
+        @qml.qnode(DefaultQubit(), diff_method=None, interface=interface)
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -696,7 +696,7 @@ class TestShotsIntegration:
         """Test that changing shots works on execution"""
         a, b = jax.numpy.array([0.543, -0.654])
 
-        @qnode(DefaultQubit2(), diff_method=qml.gradients.param_shift, interface=interface)
+        @qnode(DefaultQubit(), diff_method=qml.gradients.param_shift, interface=interface)
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -716,7 +716,7 @@ class TestShotsIntegration:
         for gradient computations"""
         a, b = jax.numpy.array([0.543, -0.654])
 
-        @qnode(DefaultQubit2(), diff_method=qml.gradients.param_shift, interface=interface)
+        @qnode(DefaultQubit(), diff_method=qml.gradients.param_shift, interface=interface)
         def cost_fn(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -734,7 +734,7 @@ class TestShotsIntegration:
 
         spy = mocker.spy(qml, "execute")
 
-        @qnode(DefaultQubit2(), interface=interface)
+        @qnode(DefaultQubit(), interface=interface)
         def cost_fn(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -2176,7 +2176,7 @@ def test_no_ops():
     """Test that the return value of the QNode matches in the interface
     even if there are no ops"""
 
-    @qml.qnode(DefaultQubit2(), interface="jax")
+    @qml.qnode(DefaultQubit(), interface="jax")
     def circuit():
         qml.Hadamard(wires=0)
         return qml.state()

@@ -61,7 +61,7 @@ and subclassing it:
 .. warning::
 
     The API of PennyLane devices will be updated soon to follow a new interface defined by
-    the experimental :class:`pennylane.devices.experimental.Device` class. This guide describes
+    the :class:`pennylane.devices.Device` class. This guide describes
     how to create a device with the current :class:`pennylane.Device` and
     :class:`pennylane.QubitDevice` base classes, and will be updated as we switch to the new API.
     In the meantime, please reach out to the PennyLane team if you would like help with building
@@ -108,9 +108,9 @@ as well as potential further capabilities, by providing the following class attr
               return obj.name in {'CNOT', 'PauliX', 'PauliY', 'PauliZ'}
           return qml.BooleanFn(accepts_obj)
 
-  If the device does *not* inherit from :class:`~.DefaultQubit`, then supported operations can be determined
+  If the device does *not* inherit from :class:`~.DefaultQubitLegacy`, then supported operations can be determined
   by the :attr:`pennylane.Device.operations` property.  This property is a list of string names for supported operations.
-  :class:`~.DefaultQubit` supports any operation with a matrix, even if it's name isn't specifically enumerated
+  :class:`~.DefaultQubitLegacy` supports any operation with a matrix, even if it's name isn't specifically enumerated
   in :attr:`pennylane.Device.operations`.
 
   .. code-block:: python

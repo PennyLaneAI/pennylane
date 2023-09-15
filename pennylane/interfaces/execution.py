@@ -40,7 +40,7 @@ from .set_shots import set_shots
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-device_type = Union[qml.Device, "qml.devices.experimental.Device"]
+device_type = Union[qml.Device, "qml.devices.Device"]
 
 INTERFACE_MAP = {
     None: "Numpy",
@@ -140,16 +140,16 @@ def _get_ml_boundary_execute(interface: str, grad_on_execution: bool) -> Callabl
 def _batch_transform(
     tapes: Sequence[QuantumTape],
     device: device_type,
-    config: "qml.devices.experimental.ExecutionConfig",
+    config: "qml.devices.ExecutionConfig",
     override_shots: Union[bool, int, Sequence[int]] = False,
     device_batch_transform: bool = True,
-) -> Tuple[Sequence[QuantumTape], Callable, "qml.devices.experimental.ExecutionConfig"]:
+) -> Tuple[Sequence[QuantumTape], Callable, "qml.devices.ExecutionConfig"]:
     """Apply the device batch transform unless requested not to.
 
     Args:
         tapes (Tuple[.QuantumTape]): batch of tapes to preprocess
-        device (Device, devices.experimental.Device): the device that defines the required batch transformation
-        config (qml.devices.experimental.ExecutionConfig): the config that characterizes the requested computation
+        device (Device, devices.Device): the device that defines the required batch transformation
+        config (qml.devices.ExecutionConfig): the config that characterizes the requested computation
         override_shots (int): The number of shots to use for the execution. If ``False``, then the
             number of shots on the device is used.
         device_batch_transform (bool): Whether to apply any batch transforms defined by the device
@@ -181,7 +181,7 @@ def _preprocess_expand_fn(
     Args:
         expand_fn (str, Callable): If string, then it must be "device".  Otherwise, it should be a map
             from one tape to a new tape. The final tape must be natively executable by the device.
-        device (Device, devices.experimental.Device): The device that we will be executing on.
+        device (Device, devices.Device): The device that we will be executing on.
         max_expansion (int): The number of times the internal circuit should be expanded when
             executed on a device. Expansion occurs when an operation or measurement is not
             supported, and results in a gate decomposition. If any operations in the decomposition
@@ -193,7 +193,7 @@ def _preprocess_expand_fn(
     """
     if expand_fn != "device":
         return expand_fn
-    if isinstance(device, qml.devices.experimental.Device):
+    if isinstance(device, qml.devices.Device):
 
         def blank_expansion_function(tape):  # pylint: disable=function-redefined
             """A blank expansion function since the new device handles expansion in preprocessing."""
@@ -558,7 +558,7 @@ def execute(
         _gradient_method = gradient_fn
     else:
         _gradient_method = "gradient-transform"
-    config = qml.devices.experimental.ExecutionConfig(
+    config = qml.devices.ExecutionConfig(
         interface=interface,
         gradient_method=_gradient_method,
         grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
@@ -598,7 +598,7 @@ def execute(
 
     #### Executing the configured setup #####
 
-    if isinstance(device, qml.devices.experimental.Device):
+    if isinstance(device, qml.devices.Device):
         if not device_batch_transform:
             warnings.warn(
                 "device batch transforms cannot be turned off with the new device interface.",
