@@ -405,8 +405,7 @@ def _sample_state_jax(
     prng_key=None,
 ) -> np.ndarray:
     """
-    Returns a series of samples of a state for the JAX interface based on the PRNG if provided.
-    If one is not provided, a random PRNG key will be generated.
+    Returns a series of samples of a state for the JAX interface based on the PRNG.
 
     Args:
         state (array[complex]): A state vector to be sampled
@@ -414,8 +413,7 @@ def _sample_state_jax(
         is_state_batched (bool): whether the state is batched or not
         wires (Sequence[int]): The wires to sample
         prng_key (Union[int, jax.random.PRNGKey]): A``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. You should only end up here
-            if there is a PRNG key.
+            the key to the JAX pseudo random number generator.
 
     Returns:
         ndarray[int]: Sample values of the shape (shots, num_wires)
