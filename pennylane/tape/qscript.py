@@ -37,8 +37,9 @@ from pennylane.measurements import (
 from pennylane.typing import TensorLike
 from pennylane.operation import Observable, Operator, Operation
 from pennylane.queuing import AnnotatedQueue, process_queue
+from pennylane.wires import Wires
 
-_empty_wires = qml.wires.Wires([])
+_empty_wires = Wires([])
 
 
 OPENQASM_GATES = {
@@ -396,6 +397,11 @@ class QuantumScript:
             idx += 1
         return idx
 
+    @property
+    def op_wires(self) -> Wires:
+        """Returns the wires that the tape operations act on."""
+        return Wires.all_wires(op.wires for op in self.operations)
+
     ##### Update METHODS ###############
 
     def _update(self):
@@ -423,7 +429,7 @@ class QuantumScript:
             is_sampled (bool): Whether any measurement is of type ``Sample`` or ``Counts``
             all_sampled (bool): Whether all measurements are of type ``Sample`` or ``Counts``
         """
-        self.wires = qml.wires.Wires.all_wires(dict.fromkeys(op.wires for op in self))
+        self.wires = Wires.all_wires(dict.fromkeys(op.wires for op in self))
         self.num_wires = len(self.wires)
 
         is_sample_type = [
@@ -787,11 +793,9 @@ class QuantumScript:
         if isinstance(device, qml.devices.experimental.Device):
             # MP.shape (called below) takes 2 arguments: `device` and `shots`.
             # With the new device interface, shots are stored on tapes rather than the device
-            # As well, MP.shape needs the device largely to see the device wires, and this is
-            # also stored on tapes in the new device interface. TODO: refactor MP.shape to accept
-            # `wires` instead of device (not currently done because probs.shape uses device.cutoff)
+            # TODO: refactor MP.shape to accept `wires` instead of device (not currently done
+            # because probs.shape uses device.cutoff)
             shots = self.shots
-            device = self
         else:
             shots = (
                 Shots(device._raw_shot_sequence)
@@ -1140,7 +1144,7 @@ class QuantumScript:
             for wire in range(len(wires)):
                 qasm_str += f"measure q[{wire}] -> c[{wire}];\n"
         else:
-            measured_wires = qml.wires.Wires.all_wires([m.wires for m in self.measurements])
+            measured_wires = Wires.all_wires([m.wires for m in self.measurements])
 
             for w in measured_wires:
                 wire_indx = self.wires.index(w)
@@ -1152,6 +1156,50 @@ class QuantumScript:
     def from_queue(cls, queue, shots: Optional[Union[int, Sequence, Shots]] = None):
         """Construct a QuantumScript from an AnnotatedQueue."""
         return cls(*process_queue(queue), shots=shots)
+
+    def map_to_standard_wires(self):
+        """
+        Map a circuit's wires such that they are in a standard order. If no
+        mapping is required, the unmodified circuit is returned.
+
+        Returns:
+            QuantumScript: The circuit with wires in the standard order
+
+        The standard order is defined by the operator wires being increasing
+        integers starting at zero, to match array indices. If there are any
+        measurement wires that are not in any operations, those will be mapped
+        to higher values.
+
+        **Example:**
+
+        >>> circuit = qml.tape.QuantumScript([qml.PauliX("a")], [qml.expval(qml.PauliZ("b"))])
+        >>> map_circuit_to_standard_wires(circuit).circuit
+        [PauliX(wires=[0]), expval(PauliZ(wires=[1]))]
+
+        If any measured wires are not in any operations, they will be mapped last:
+
+        >>> circuit = qml.tape.QuantumScript([qml.PauliX(1)], [qml.probs(wires=[0, 1])])
+        >>> qml.devices.qubit.map_circuit_to_standard_wires(circuit).circuit
+        [PauliX(wires=[0]), probs(wires=[1, 0])]
+
+        If no wire-mapping is needed, then the returned circuit *is* the inputted circuit:
+
+        >>> circuit = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliZ(1))])
+        >>> qml.devices.qubit.map_circuit_to_standard_wires(circuit) is circuit
+        True
+
+        """
+        op_wires = Wires.all_wires(op.wires for op in self.operations)
+        meas_wires = Wires.all_wires(mp.wires for mp in self.measurements)
+        num_op_wires = len(op_wires)
+        meas_only_wires = set(meas_wires) - set(op_wires)
+        if set(op_wires) == set(range(num_op_wires)) and meas_only_wires == set(
+            range(num_op_wires, num_op_wires + len(meas_only_wires))
+        ):
+            return self
+
+        wire_map = {w: i for i, w in enumerate(op_wires + meas_only_wires)}
+        return qml.map_wires(self, wire_map)
 
 
 def make_qscript(fn, shots: Optional[Union[int, Sequence, Shots]] = None):

@@ -39,17 +39,21 @@ class TransformDispatcher:
     .. seealso:: :func:`~.pennylane.transforms.core.transform`
     """
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         transform,
         expand_transform=None,
         classical_cotransform=None,
         is_informative=False,
+        final_transform=False,
     ):  # pylint:disable=redefined-outer-name
         self._transform = transform
         self._expand_transform = expand_transform
         self._classical_cotransform = classical_cotransform
         self._is_informative = is_informative
+        # is_informative supersedes final_transform
+        self._final_transform = is_informative or final_transform
 
         self._qnode_transform = self.default_qnode_transform
 
@@ -62,13 +66,14 @@ class TransformDispatcher:
             obj, *targs = targs
 
         if isinstance(obj, qml.tape.QuantumScript):
-            return self._transform(obj, *targs, **tkwargs)
+            transformed_tapes, processing_fn = self._transform(obj, *targs, **tkwargs)
+
+            if self.is_informative:
+                return processing_fn(transformed_tapes)
+            return transformed_tapes, processing_fn
+
         if isinstance(obj, qml.QNode):
-            return self._qnode_transform(
-                obj,
-                targs,
-                tkwargs,
-            )
+            return self._qnode_transform(obj, targs, tkwargs)
         if callable(obj):
             return self._qfunc_transform(obj, targs, tkwargs)
 
@@ -114,8 +119,13 @@ class TransformDispatcher:
 
     @property
     def is_informative(self):
-        """Return True is the transform does not need to be executed."""
+        """Return True is the transform is informative."""
         return self._is_informative
+
+    @property
+    def final_transform(self):
+        """Return True if the transformed tapes must be executed."""
+        return self._final_transform
 
     def custom_qnode_transform(self, fn):
         """Register a custom QNode execution wrapper function
@@ -153,13 +163,27 @@ class TransformDispatcher:
         The default method that takes in a QNode and returns another QNode
         with the transform applied.
         """
+        # pylint: disable=protected-access
+        if (
+            isinstance(qnode._original_device, qml.Device)
+            and hasattr(qnode._original_device, "_state")
+            and qml.math.is_abstract(qnode._original_device._state)
+        ):
+            qnode._original_device.reset()
+            qnode.device.reset()
+
         qnode = copy.deepcopy(qnode)
 
         if self.expand_transform:
             qnode.add_transform(TransformContainer(self._expand_transform, targs, tkwargs))
         qnode.add_transform(
             TransformContainer(
-                self._transform, targs, tkwargs, self._classical_cotransform, self._is_informative
+                self._transform,
+                targs,
+                tkwargs,
+                self._classical_cotransform,
+                self._is_informative,
+                self._final_transform,
             )
         )
         return qnode
@@ -169,7 +193,7 @@ class TransformDispatcher:
 
         def qfunc_transformed(*args, **kwargs):
             tape = qml.tape.make_qscript(qfunc)(*args, **kwargs)
-            transformed_tapes, _ = self._transform(tape, *targs, **tkwargs)
+            transformed_tapes, processing_fn = self._transform(tape, *targs, **tkwargs)
 
             if len(transformed_tapes) != 1:
                 raise TransformError(
@@ -179,10 +203,13 @@ class TransformDispatcher:
 
             transformed_tape = transformed_tapes[0]
 
+            if self.is_informative:
+                return processing_fn(transformed_tapes)
+
             for op in transformed_tape.circuit:
                 qml.apply(op)
 
-            return tape._qfunc_output  # pylint:disable=protected-access
+            return transformed_tape._qfunc_output  # pylint:disable=protected-access
 
         return qfunc_transformed
 
@@ -199,13 +226,20 @@ class TransformContainer:
     """
 
     def __init__(
-        self, transform, args=None, kwargs=None, classical_cotransform=None, is_informative=False
+        self,
+        transform,
+        args=None,
+        kwargs=None,
+        classical_cotransform=None,
+        is_informative=False,
+        final_transform=False,
     ):  # pylint:disable=redefined-outer-name,too-many-arguments
         self._transform = transform
         self._args = args or []
         self._kwargs = kwargs or {}
         self._classical_cotransform = classical_cotransform
         self._is_informative = is_informative
+        self._final_transform = is_informative or final_transform
 
     def __iter__(self):
         return iter(
@@ -215,6 +249,7 @@ class TransformContainer:
                 self._kwargs,
                 self._classical_cotransform,
                 self._is_informative,
+                self.final_transform,
             )
         )
 
@@ -240,5 +275,10 @@ class TransformContainer:
 
     @property
     def is_informative(self):
-        """Return True is the transform does not need to be executed."""
+        """Return True is the transform is informative."""
         return self._is_informative
+
+    @property
+    def final_transform(self):
+        """Return True if the transform needs to be executed"""
+        return self._final_transform

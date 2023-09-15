@@ -101,8 +101,7 @@ def _generator_backcompatibility(op):
     raise qml.operation.GeneratorUndefinedError
 
 
-@qml.op_transform
-def generator(op, format="prefactor"):
+def generator(op: qml.operation.Operator, format="prefactor"):
     r"""Returns the generator of an operation.
 
     Args:
@@ -167,34 +166,48 @@ def generator(op, format="prefactor"):
     >>> qml.generator(op, format="arithmetic")  # output is an instance of `SProd`
     -0.5*(PauliX(wires=[0]))
     """
-    if op.num_params != 1:
-        raise ValueError(f"Operation {op.name} is not written in terms of a single parameter")
 
-    try:
-        gen = op.generator()
-    except TypeError:
-        # For backwards compatibility with PennyLane
-        # versions <=0.22, assume op.generator is a property
-        gen = _generator_backcompatibility(op)
+    def processing_fn(*args, **kwargs):
+        if callable(op):
+            with qml.queuing.QueuingManager.stop_recording():
+                gen_op = op(*args, **kwargs)
+        else:
+            gen_op = op
 
-    if not gen.is_hermitian:
-        raise qml.QuantumFunctionError(
-            f"Generator {gen.name} of operation {op.name} is not hermitian"
+        if gen_op.num_params != 1:
+            raise ValueError(
+                f"Operation {gen_op.name} is not written in terms of a single parameter"
+            )
+
+        try:
+            gen = gen_op.generator()
+        except TypeError:
+            # For backwards compatibility with PennyLane
+            # versions <=0.22, assume gen_op.generator is a property
+            gen = _generator_backcompatibility(gen_op)
+
+        if not gen.is_hermitian:
+            raise qml.QuantumFunctionError(
+                f"Generator {gen.name} of operation {gen_op.name} is not hermitian"
+            )
+
+        if format == "prefactor":
+            return _generator_prefactor(gen)
+
+        if format == "hamiltonian":
+            return _generator_hamiltonian(gen, gen_op)
+
+        if format == "arithmetic":
+            h = _generator_hamiltonian(gen, gen_op)
+            return qml.dot(h.coeffs, h.ops)
+
+        if format == "observable":
+            return gen
+
+        raise ValueError(
+            "format must be one of ('prefactor', 'hamiltonian', 'observable', 'arithmetic')"
         )
 
-    if format == "prefactor":
-        return _generator_prefactor(gen)
-
-    if format == "hamiltonian":
-        return _generator_hamiltonian(gen, op)
-
-    if format == "arithmetic":
-        h = _generator_hamiltonian(gen, op)
-        return qml.dot(h.coeffs, h.ops)
-
-    if format == "observable":
-        return gen
-
-    raise ValueError(
-        "format must be one of ('prefactor', 'hamiltonian', 'observable', 'arithmetic')"
-    )
+    if callable(op):
+        return processing_fn
+    return processing_fn()

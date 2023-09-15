@@ -139,7 +139,18 @@ def non_valid_expand_transform(
     return [tape], lambda x: x
 
 
-class TestTransformDispatcher:
+##########################################
+# Valid informative transform
+def informative_transform(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
+    """A valid informative transform"""
+
+    def fn(results):
+        return len(results[0].operations)
+
+    return [tape], fn
+
+
+class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
     """Test the transform function (validate and dispatch)."""
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
@@ -178,6 +189,42 @@ class TestTransformDispatcher:
             qnode_transformed.transform_program.pop_front(), qml.transforms.core.TransformContainer
         )
         assert not dispatched_transform.is_informative
+
+    def test_integration_dispatcher_with_informative_transform(self):
+        """Test that no error is raised with the transform function and that the transform dispatcher returns
+        the right object when an informative transform is applied."""
+
+        dispatched_transform = transform(informative_transform, is_informative=True)
+
+        # Applied on a tape (return processed results)
+        expected = len(tape_circuit.operations)
+        num_ops = dispatched_transform(tape_circuit)
+        assert num_ops == expected
+
+        # Applied on a qfunc (return a qfunc)
+        qfunc = dispatched_transform(qfunc_circuit)
+        assert callable(qfunc)
+
+        # Applied on a qnode (return a qnode with populated the program)
+        @qml.qnode(device=dev)
+        def qnode_circuit(a):
+            """QNode circuit."""
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=0)
+            qml.RZ(a, wires=1)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        qnode_transformed = dispatched_transform(qnode_circuit)
+        assert not qnode_circuit.transform_program
+
+        assert qnode_transformed(0.1) == 4
+        assert isinstance(qnode_transformed, qml.QNode)
+        assert isinstance(qnode_transformed.transform_program, qml.transforms.core.TransformProgram)
+        assert isinstance(
+            qnode_transformed.transform_program.pop_front(), qml.transforms.core.TransformContainer
+        )
+        assert dispatched_transform.is_informative
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_integration_dispatcher_with_valid_transform_decorator_partial(self, valid_transform):
@@ -380,6 +427,17 @@ class TestTransformDispatcher:
         ):
             dispatched_transform(qfunc_circuit, 0)(0.42)
 
+    def test_informative_transform_tape_return(self):
+        """Test that disaptched informative transforms return processed results instead of
+        a list of tapes and processing function."""
+        tape = qml.tape.QuantumScript(
+            [qml.PauliX(0), qml.CNOT([0, 1]), qml.RX(0.234, 1), qml.Hadamard(1)]
+        )
+        dispatched_transform = transform(informative_transform, is_informative=True)
+
+        num_ops = dispatched_transform(tape)
+        assert num_ops == 4
+
     def test_dispatched_transform_attribute(self):
         """Test the dispatcher attributes."""
         dispatched_transform = transform(first_valid_transform)
@@ -394,19 +452,21 @@ class TestTransformDispatcher:
             first_valid_transform, args=[0], kwargs={}, classical_cotransform=None
         )
 
-        q_transform, args, kwargs, cotransform, is_informative = container
+        q_transform, args, kwargs, cotransform, is_informative, final_transform = container
 
         assert q_transform is first_valid_transform
         assert args == [0]
         assert kwargs == {}
         assert cotransform is None
         assert not is_informative
+        assert not final_transform
 
         assert container.transform is first_valid_transform
         assert container.args == [0]
         assert not container.kwargs
         assert container.classical_cotransform is None
         assert not container.is_informative
+        assert not container.final_transform
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_custom_qnode_transform(self, valid_transform):

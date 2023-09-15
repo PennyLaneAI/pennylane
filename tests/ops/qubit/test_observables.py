@@ -214,11 +214,8 @@ class TestHermitian:
         """Tests that an error is raised if the input to Hermitian is ragged."""
         ham = [[1, 0], [0, 1, 2]]
 
-        with pytest.warns(
-            np.VisibleDeprecationWarning, match="Creating an ndarray from ragged nested sequences"
-        ):
-            with pytest.raises(ValueError, match="must be a square matrix"):
-                qml.Hermitian(ham, wires=0)
+        with pytest.raises(ValueError, match="The requested array has an inhomogeneous shape"):
+            qml.Hermitian(ham, wires=0)
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
     def test_hermitian_eigegendecomposition_single_wire(self, observable, eigvals, eigvecs, tol):

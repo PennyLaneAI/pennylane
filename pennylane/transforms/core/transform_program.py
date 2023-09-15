@@ -131,10 +131,14 @@ class TransformProgram:
         return bool(self._transform_program)
 
     def __add__(self, other):
-        program = TransformProgram(self._transform_program)
-        for container in other:
-            program.push_back(container)
-        return program
+        if self.has_final_transform and other.has_final_transform:
+            raise TransformError("The transform program already has a terminal transform.")
+
+        transforms = self._transform_program + other._transform_program
+        if self.has_final_transform:
+            transforms.append(transforms.pop(len(self) - 1))
+
+        return TransformProgram(transforms)
 
     def __repr__(self):
         """The string representation of the transform program class."""
@@ -151,8 +155,8 @@ class TransformProgram:
             raise TransformError("Only transform container can be added to the transform program.")
 
         # Program can only contain one informative transform and at the end of the program
-        if self.is_informative:
-            raise TransformError("The transform program already has an informative transform.")
+        if self.has_final_transform:
+            raise TransformError("The transform program already has a terminal transform.")
         self._transform_program.append(transform_container)
 
     def insert_front(self, transform_container: TransformContainer):
@@ -161,7 +165,7 @@ class TransformProgram:
         Args:
             transform_container(TransformContainer): A transform represented by its container.
         """
-        if transform_container.is_informative and not self.is_empty():
+        if (transform_container.final_transform) and not self.is_empty():
             raise TransformError(
                 "Informative transforms can only be added at the end of the program."
             )
@@ -193,6 +197,7 @@ class TransformProgram:
                 tkwargs,
                 transform.classical_cotransform,
                 transform.is_informative,
+                transform.final_transform,
             )
         )
 
@@ -207,7 +212,7 @@ class TransformProgram:
             **tkwargs: Any additional keyword arguments that are passed to the transform.
 
         """
-        if transform.is_informative and not self.is_empty():
+        if transform.final_transform and not self.is_empty():
             raise TransformError(
                 "Informative transforms can only be added at the end of the program."
             )
@@ -219,6 +224,7 @@ class TransformProgram:
                 tkwargs,
                 transform.classical_cotransform,
                 transform.is_informative,
+                transform.final_transform,
             )
         )
 
@@ -265,16 +271,20 @@ class TransformProgram:
         """
         return self[-1].is_informative if self else False
 
-    def __call__(self, tapes: Tuple[QuantumTape]) -> Tuple[ResultBatch, BatchPostProcessingFn]:
-        if self.is_informative:
-            raise NotImplementedError("Informative transforms are not yet supported.")
+    @property
+    def has_final_transform(self) -> bool:
+        """Check if the transform program has a terminal transform or not."""
+        return self[-1].final_transform if self else False
 
+    def __call__(self, tapes: Tuple[QuantumTape]) -> Tuple[ResultBatch, BatchPostProcessingFn]:
         if not self:
             return tapes, null_postprocessing
+
         processing_fns_stack = []
 
         for transform_container in self:
-            transform, args, kwargs, cotransform, _ = transform_container
+            transform, args, kwargs, cotransform, _, _ = transform_container
+
             if cotransform:
                 raise NotImplementedError(
                     "cotransforms are not yet integrated with TransformProgram"
@@ -305,6 +315,7 @@ class TransformProgram:
             _apply_postprocessing_stack,
             postprocessing_stack=processing_fns_stack,
         )
+
         postprocessing_fn.__doc__ = _apply_postprocessing_stack.__doc__
 
         return tuple(tapes), postprocessing_fn
