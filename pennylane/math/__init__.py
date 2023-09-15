@@ -34,7 +34,7 @@ The following frameworks are currently supported:
 import autoray as ar
 
 from .is_independent import is_independent
-from .matrix_manipulation import expand_matrix, reduce_matrices
+from .matrix_manipulation import expand_matrix, reduce_matrices, get_batch_size
 from .multi_dispatch import (
     add,
     array,

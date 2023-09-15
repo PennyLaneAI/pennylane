@@ -4,10 +4,27 @@
 
 <h3>New features since last release</h3>
 
+* Operator transforms `qml.matrix`, `qml.eigvals`, `qml.generator`, and `qml.transforms.to_zx` are updated
+  to the new transform program system.
+  [(#4573)](https://github.com/PennyLaneAI/pennylane/pull/4573)
+
+* All quantum functions transforms are update to the new transform program system.
+ [(#4439)](https://github.com/PennyLaneAI/pennylane/pull/4439)
+
 * All batch transforms are updated to the new transform program system.
-  [(4440)](https://github.com/PennyLaneAI/pennylane/pull/4440)
+  [(#4440)](https://github.com/PennyLaneAI/pennylane/pull/4440)
+
+* Quantum information transforms are updated to the new transform program system.
+  [(#4569)](https://github.com/PennyLaneAI/pennylane/pull/4569)
+
+* `qml.devices.DefaultQubit` now implements the new device API. The old version of `default.qubit`
+  is still accessible via `qml.devices.DefaultQubitLegacy`, or via short name `default.qubit.legacy`.
+  [(#4594)](https://github.com/PennyLaneAI/pennylane/pull/4594)
 
 <h3>Improvements 🛠</h3>
+
+* Tensor-network template `qml.MPS` now supports changing `offset` between subsequent blocks for more flexibility.
+ [(#4531)](https://github.com/PennyLaneAI/pennylane/pull/4531)
 
 * The qchem ``fermionic_dipole`` and ``particle_number`` functions are updated to use a
   ``FermiSentence``. The deprecated features for using tuples to represent fermionic operations are
@@ -35,15 +52,32 @@
   process, `DensityMatrixMP`.
   [(#4558)](https://github.com/PennyLaneAI/pennylane/pull/4558)
 
+* `qml.exp` returns a more informative error message when decomposition is unavailable for non-unitary operator.
+  [(#4571)](https://github.com/PennyLaneAI/pennylane/pull/4571)
+
 * The `StateMP` measurement now accepts a wire order (eg. a device wire order). The `process_state`
   method will re-order the given state to go from the inputted wire-order to the process's wire-order.
   If the process's wire-order contains extra wires, it will assume those are in the zero-state.
   [(#4570)](https://github.com/PennyLaneAI/pennylane/pull/4570)
 
+* Improve builtin types support with `qml.pauli_decompose`.
+  [(#4577)](https://github.com/PennyLaneAI/pennylane/pull/4577)
+
 * Various changes to measurements to improve feature parity between the legacy `default.qubit` and
   the new `DefaultQubit2`. This includes not trying to squeeze batched `CountsMP` results and implementing
   `MutualInfoMP.map_wires`.
   [(#4574)](https://github.com/PennyLaneAI/pennylane/pull/4574)
+
+* `devices.qubit.simulate` now accepts an interface keyword argument. If a QNode with `DefaultQubit2`
+  specifies an interface, the result will be computed with that interface.
+  [(#4582)](https://github.com/PennyLaneAI/pennylane/pull/4582)
+
+* `DefaultQubit2` now works as expected with measurement processes that don't specify wires.
+  [(#4580)](https://github.com/PennyLaneAI/pennylane/pull/4580)
+
+* `AmplitudeEmbedding` now inherits from `StatePrep`, allowing for it to not be decomposed
+  when at the beginning of a circuit, thus behaving like `StatePrep`.
+  [(#4583)](https://github.com/PennyLaneAI/pennylane/pull/4583)
 
 <h3>Breaking changes 💔</h3>
 
@@ -163,19 +197,36 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed issue where `__copy__` method of the `qml.Select()` operator attempted to access un-initialized data.
+[(#4551)](https://github.com/PennyLaneAI/pennylane/pull/4551)
+
+* Fix `skip_first` option in `expand_tape_state_prep`.
+  [(#4564)](https://github.com/PennyLaneAI/pennylane/pull/4564)
+
 * `convert_to_numpy_parameters` now uses `qml.ops.functions.bind_new_parameters`. This reinitializes the operation and
   makes sure everything references the new numpy parameters.
 
 * `tf.function` no longer breaks `ProbabilityMP.process_state` which is needed by new devices.
   [(#4470)](https://github.com/PennyLaneAI/pennylane/pull/4470)
 
+* Fix mocking in the unit tests for `qml.qchem.mol_data`.
+  [(#4591)](https://github.com/PennyLaneAI/pennylane/pull/4591)
+
+* Fix `ProbabilityMP.process_state` so it allows for proper Autograph compilation. Without this,
+  decorating a QNode that returns an `expval` with `tf.function` would fail when computing the
+  expectation.
+  [(#4590)](https://github.com/PennyLaneAI/pennylane/pull/4590)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Utkarsh Azad,
+Diego Guala,
 Soran Jahangiri,
 Lillian M. A. Frederiksen,
+Vincent Michaud-Rioux,
 Romain Moyard,
 Mudit Pandey,
-Matthew Silverman
-
+Matthew Silverman,
+Jay Soni,

@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Transforms for pushing commuting gates through targets/control qubits."""
+from typing import Sequence, Callable
 
-from pennylane import apply
+from pennylane.tape import QuantumTape
+from pennylane.transforms.core import transform
 from pennylane.wires import Wires
-from pennylane.transforms import qfunc_transform
 
 from .optimization_utils import find_next_gate
 
@@ -151,20 +152,23 @@ def _commute_controlled_left(op_list):
     return op_list
 
 
-@qfunc_transform
-def commute_controlled(tape, direction="right"):
-    """Quantum function transform to move commuting gates past
-    control and target qubits of controlled operations.
+@transform
+def commute_controlled(tape: QuantumTape, direction="right") -> (Sequence[QuantumTape], Callable):
+    """Quantum transform to move commuting gates past control and target qubits of controlled operations.
 
     Args:
-        qfunc (function): A quantum function.
+        tape (QuantumTape): A quantum tape.
         direction (str): The direction in which to move single-qubit gates.
             Options are "right" (default), or "left". Single-qubit gates will
             be pushed through controlled operations as far as possible in the
             specified direction.
 
     Returns:
-        function: the transformed quantum function
+        pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
+        it returns a QNode with the transform added to its transform program. If a qfunc is passed,
+        it returns a transformed quantum function. If a tape is passed, returns a tuple containing a list of
+        quantum tapes to be evaluated, and a function to be applied to these
+        tape executions.
 
     **Example**
 
@@ -219,6 +223,13 @@ def commute_controlled(tape, direction="right"):
     else:
         op_list = _commute_controlled_left(tape.operations)
 
-    # Once the list is rearranged, queue all the operations
-    for op in op_list + tape.measurements:
-        apply(op)
+    new_tape = QuantumTape(op_list, tape.measurements, shots=tape.shots)
+    new_tape._qfunc_output = tape._qfunc_output  # pylint: disable=protected-access
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [new_tape], null_postprocessing

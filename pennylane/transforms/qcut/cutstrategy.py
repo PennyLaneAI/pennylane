@@ -125,16 +125,16 @@ class CutStrategy:
         if devices is None and self.max_free_wires is None:
             raise ValueError("One of arguments `devices` and max_free_wires` must be provided.")
 
-        if isinstance(devices, qml.Device):
+        if isinstance(devices, (qml.Device, qml.devices.Device)):
             devices = (devices,)
 
         if devices is not None:
             if not isinstance(devices, SequenceType) or any(
-                (not isinstance(d, qml.Device) for d in devices)
+                (not isinstance(d, (qml.Device, qml.devices.Device)) for d in devices)
             ):
                 raise ValueError(
                     "Argument `devices` must be a list or tuple containing elements of type "
-                    "`qml.Device`"
+                    "`qml.Device` or `qml.devices.Device`"
                 )
 
             device_wire_sizes = [len(d.wires) for d in devices]
