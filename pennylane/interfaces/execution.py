@@ -617,6 +617,9 @@ def execute(
         def post_processing(results):
             return program_post_processing(program_pre_processing(results))
 
+    if transform_program.is_informative:
+        return post_processing(tapes)
+
     # Exiting early if we do not need to deal with an interface boundary
     if no_interface_boundary_required:
         results = inner_execute(tapes)

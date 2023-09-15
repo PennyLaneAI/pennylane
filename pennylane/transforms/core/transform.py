@@ -20,13 +20,17 @@ from .transform_dispatcher import TransformDispatcher, TransformError
 
 
 def transform(
-    quantum_transform, expand_transform=None, classical_cotransform=None, is_informative=None
+    quantum_transform,
+    expand_transform=None,
+    classical_cotransform=None,
+    is_informative=None,
+    final_transform=False,
 ):
     """The transform function is to be used to validate and dispatch a quantum transform on PennyLane objects (tape,
     qfunc and Qnode). It can be used directly as a decorator on qfunc and qnodes.
 
     Args:
-        quantum_transform(callable): A quantum transform is defined as a function that has the following requirements:
+        quantum_transform (callable): A quantum transform is defined as a function that has the following requirements:
 
             * A quantum transform is a function that takes a quantum tape as first input and returns a sequence of tapes
               and a processing function.
@@ -34,7 +38,7 @@ def transform(
             * The transform must have type hinting of the following form: my_quantum_transform(tape:
               qml.tape.QuantumTape, ...) -> ( Sequence[qml.tape.QuantumTape], callable)
 
-        expand_transform(callable): An expand transform is defined as a function that has the following requirements:
+        expand_transform (callable): An expand transform is defined as a function that has the following requirements:
 
             * An expand transform is a function that is applied before applying the defined quantum transform. It
               takes the same arguments as the transform and returns a single tape in a sequence with a dummy processing
@@ -42,8 +46,11 @@ def transform(
 
             * The expand transform must have the same type hinting as a quantum transform.
 
-        classical_cotransform(callable): A classical co-transform. NOT YET SUPPORTED.
-        is_informative(bool): If true the execution is skipped, because the transform is informative.
+        classical_cotransform (callable): A classical co-transform. NOT YET SUPPORTED.
+        is_informative (bool): Whether or not a transform is informative. If true the transform is queued at the end
+            of the transform program and the tapes or qnode aren't executed.
+        final_transform (bool): Whether or not the transform is terminal. If true the transform is queued at the end
+            of the transform program. ``is_informative`` supersedes ``final_transform``.
 
     **Example**
 
@@ -133,6 +140,7 @@ def transform(
         expand_transform=expand_transform,
         classical_cotransform=classical_cotransform,
         is_informative=is_informative,
+        final_transform=final_transform,
     )
 
 
