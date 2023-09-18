@@ -73,9 +73,9 @@ class TestSampleState:
         state = qml.math.array(two_qubit_state, like="jax")
 
         # prng_key specified, should call _sample_state_jax
-        _ = sample_state(state, 10, seed=jax.random.PRNGKey(15))
+        _ = sample_state(state, 10, prng_key=jax.random.PRNGKey(15))
         # prng_key defaults to None, should NOT call _sample_state_jax
-        _ = sample_state(state, 10, seed=15)
+        _ = sample_state(state, 10, rng=15)
 
         spy.assert_called_once()
 
@@ -85,7 +85,7 @@ class TestSampleState:
 
         state = qml.math.array(two_qubit_state, like="jax")
 
-        samples = _sample_state_jax(state, 10, seed=jax.random.PRNGKey(84))
+        samples = _sample_state_jax(state, 10, prng_key=jax.random.PRNGKey(84))
 
         assert samples.shape == (10, 2)
         assert samples.dtype == np.int64
@@ -97,9 +97,9 @@ class TestSampleState:
 
         state = qml.math.array(two_qubit_state, like="jax")
 
-        samples = _sample_state_jax(state, shots=10, seed=jax.random.PRNGKey(12))
-        samples2 = _sample_state_jax(state, shots=10, seed=jax.random.PRNGKey(12))
-        samples3 = _sample_state_jax(state, shots=10, seed=jax.random.PRNGKey(13))
+        samples = _sample_state_jax(state, shots=10, prng_key=jax.random.PRNGKey(12))
+        samples2 = _sample_state_jax(state, shots=10, prng_key=jax.random.PRNGKey(12))
+        samples3 = _sample_state_jax(state, shots=10, prng_key=jax.random.PRNGKey(13))
 
         assert np.all(samples == samples2)
         assert not np.allclose(samples, samples3)
@@ -668,7 +668,7 @@ class TestBroadcastingPRNG:
             shots,
             is_state_batched=True,
             rng=rng,
-            seed=jax.random.PRNGKey(184),
+            prng_key=jax.random.PRNGKey(184),
         )[0]
 
         spy.assert_called()
@@ -720,7 +720,7 @@ class TestBroadcastingPRNG:
             shots,
             is_state_batched=True,
             rng=rng,
-            seed=jax.random.PRNGKey(184),
+            prng_key=jax.random.PRNGKey(184),
         )
 
         spy.assert_called()
@@ -758,7 +758,7 @@ class TestBroadcastingPRNG:
             shots,
             is_state_batched=True,
             rng=rng,
-            seed=jax.random.PRNGKey(184),
+            prng_key=jax.random.PRNGKey(184),
         )
 
         spy.assert_called()
@@ -829,7 +829,7 @@ class TestBroadcastingPRNG:
             shots,
             is_state_batched=True,
             rng=rng,
-            seed=jax.random.PRNGKey(184),
+            prng_key=jax.random.PRNGKey(184),
         )
 
         spy.assert_called()
