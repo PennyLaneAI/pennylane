@@ -23,6 +23,19 @@ import pennylane as qml
 from .tape_mpl import tape_mpl
 from .tape_text import tape_text
 
+def catalyst_qjit(qnode):
+    """The ``catalyst.while`` wrapper method"""
+    try:
+        import catalyst
+
+        pl_qjit_available = True
+    except ImportError:
+        pl_qjit_available = False
+
+    if pl_qjit_available:
+        return isinstance(qnode, catalyst.QJIT)
+    else:
+        return False
 
 def draw(
     qnode,
@@ -195,6 +208,17 @@ def draw(
     1: ───────────╰X─┤
 
     """
+    if catalyst_qjit(qnode):
+        return _draw_qnode(
+            qnode.user_function,
+            wire_order=wire_order,
+            show_all_wires=show_all_wires,
+            decimals=decimals,
+            max_length=max_length,
+            show_matrices=show_matrices,
+            expansion_strategy=expansion_strategy,
+        )
+
     if hasattr(qnode, "construct"):
         return _draw_qnode(
             qnode,
