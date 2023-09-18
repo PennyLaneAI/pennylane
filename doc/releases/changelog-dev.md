@@ -79,7 +79,7 @@
   when at the beginning of a circuit, thus behaving like `StatePrep`.
   [(#4583)](https://github.com/PennyLaneAI/pennylane/pull/4583)
 
-* The new device API can now take a `prng_key` kwarg, to set the key for the JAX pseudo random 
+* DefaultQubit2 can now take a `prng_key` kwarg, to set the key for the JAX pseudo random 
   number generator when using the JAX interface. This corresponds to the `prng_key` on 
   `DefaultQubitJax` in the old API.
   [(#4596)](https://github.com/PennyLaneAI/pennylane/pull/4596)
