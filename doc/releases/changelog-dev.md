@@ -79,6 +79,10 @@
   when at the beginning of a circuit, thus behaving like `StatePrep`.
   [(#4583)](https://github.com/PennyLaneAI/pennylane/pull/4583)
 
+* Added `qml.math.get_deep_interface` to get the interface of a scalar hidden deep in lists or tuples.
+  Updated `qml.math.ndim` and `qml.math.shape` to use this to better compute the ndim and shape.
+  [(#4603)](https://github.com/PennyLaneAI/pennylane/pull/4603)
+
 <h3>Breaking changes 💔</h3>
 
 * The `__eq__` and `__hash__` methods of `Operator` and `MeasurementProcess` no longer rely on the
