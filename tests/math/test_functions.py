@@ -136,9 +136,9 @@ class TestGetMultiTensorbox:
 
     def test_get_deep_interface(self):
         """Test get_deep_interface returns the interface of deep values."""
-        assert fn.get_interface([()]) == "builtins"
-        assert fn.get_interface(([1, 2], [3, 4])) == "builtins"
-        assert fn.get_interface([[jnp.array(1.1)]]) == "jax"
+        assert fn.get_deep_interface([()]) == "builtins"
+        assert fn.get_deep_interface(([1, 2], [3, 4])) == "builtins"
+        assert fn.get_deep_interface([[jnp.array(1.1)]]) == "jax"
 
 
 test_abs_data = [
