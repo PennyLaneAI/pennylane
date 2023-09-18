@@ -134,6 +134,12 @@ class TestGetMultiTensorbox:
         res = fn.get_interface(y, x)
         assert res == "numpy"
 
+    def test_get_deep_interface(self):
+        """Test get_deep_interface returns the interface of deep values."""
+        assert fn.get_interface([()]) == "builtins"
+        assert fn.get_interface(([1, 2], [3, 4])) == "builtins"
+        assert fn.get_interface([[jnp.array(1.1)]]) == "jax"
+
 
 test_abs_data = [
     (1, -2, 3 + 4j),
@@ -1325,6 +1331,13 @@ def test_shape(shape, interface, create_array):
 
     t = create_array(shape)
     assert fn.shape(t) == shape
+
+
+@pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch", "tensorflow"])
+def test_shape_and_ndim_deep(interface):
+    val = [[fn.asarray(1, like=interface)]]
+    assert fn.shape(val) == (1, 1)
+    assert fn.ndim(val) == 2
 
 
 @pytest.mark.parametrize(

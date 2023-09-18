@@ -19,6 +19,9 @@ from importlib import import_module
 import autoray as ar
 import numpy as np
 import semantic_version
+from scipy.linalg import block_diag as _scipy_block_diag
+
+from .utils import get_deep_interface
 
 
 def _i(name):
@@ -37,21 +40,15 @@ def _i(name):
 
 
 def _builtins_ndim(x):
-    # pylint:disable=unexpected-keyword-arg
-    if not isinstance(x, (list, tuple)) or len(x) == 0:
-        return np.ndim(np.array(x))
-
-    interface = ar.infer_backend(x[0])
-    return np.ndim(np.array(x)) if interface == "builtins" else ar.ndim(x, like=interface)
+    interface = get_deep_interface(x)
+    x = ar.numpy.asarray(x, like=interface)
+    return ar.ndim(x)
 
 
 def _builtins_shape(x):
-    # pylint:disable=unexpected-keyword-arg
-    if not isinstance(x, (list, tuple)) or len(x) == 0:
-        return np.array(x).shape
-
-    interface = ar.infer_backend(x[0])
-    return np.array(x).shape if interface == "builtins" else ar.shape(x, like=interface)
+    interface = get_deep_interface(x)
+    x = ar.numpy.asarray(x, like=interface)
+    return ar.shape(x)
 
 
 ar.register_function("builtins", "ndim", _builtins_ndim)
@@ -70,7 +67,6 @@ ar.register_function("scipy", "ndim", np.ndim)
 
 
 # -------------------------------- NumPy --------------------------------- #
-from scipy.linalg import block_diag as _scipy_block_diag
 
 ar.register_function("numpy", "flatten", lambda x: x.flatten())
 ar.register_function("numpy", "coerce", lambda x: x)
