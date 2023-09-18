@@ -140,8 +140,9 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. If None, a random key will be
-            generated. Only for simulation using JAX.
+            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+            If None, the default ``sample_state`` function and a ``numpy.random.default_rng``
+            will be for sampling.
 
     Returns:
         Tuple[TensorLike]: The measurement results
