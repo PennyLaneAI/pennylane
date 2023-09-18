@@ -15,7 +15,6 @@
 
 from random import shuffle
 
-import jax.random
 import pytest
 
 import pennylane as qml
@@ -68,6 +67,7 @@ class TestSampleState:
     @pytest.mark.jax
     def test_prng_key_as_seed_uses_sample_state_jax(self, mocker):
         """Tests that sample_state calls _sample_state_jax if the seed is a JAX PRNG key"""
+        import jax
 
         spy = mocker.spy(qml.devices.qubit.sampling, "_sample_state_jax")
         state = qml.math.array(two_qubit_state, like="jax")
@@ -82,6 +82,7 @@ class TestSampleState:
     @pytest.mark.jax
     def test_sample_state_jax(self):
         """Tests that the returned samples are as expected when explicitly calling _sample_state_jax."""
+        import jax
 
         state = qml.math.array(two_qubit_state, like="jax")
 
@@ -94,6 +95,7 @@ class TestSampleState:
     @pytest.mark.jax
     def test_prng_key_determines_sample_state_jax_results(self):
         """Test that setting the seed as a JAX PRNG key determines the results for _sample_state_jax"""
+        import jax
 
         state = qml.math.array(two_qubit_state, like="jax")
 
@@ -648,6 +650,7 @@ class TestBroadcastingPRNG:
 
     def test_sample_measure(self, mocker):
         """Test that broadcasting works for qml.sample and single shots"""
+        import jax
 
         spy = mocker.spy(qml.devices.qubit.sampling, "_sample_state_jax")
 
@@ -701,6 +704,7 @@ class TestBroadcastingPRNG:
     )
     def test_nonsample_measure(self, mocker, measurement, expected):
         """Test that broadcasting works for the other sample measurements and single shots"""
+        import jax
 
         spy = mocker.spy(qml.devices.qubit.sampling, "_sample_state_jax")
 
@@ -738,6 +742,8 @@ class TestBroadcastingPRNG:
     )
     def test_sample_measure_shot_vector(self, mocker, shots):
         """Test that broadcasting works for qml.sample and shot vectors"""
+
+        import jax
 
         spy = mocker.spy(qml.devices.qubit.sampling, "_sample_state_jax")
 
@@ -810,6 +816,8 @@ class TestBroadcastingPRNG:
     )
     def test_nonsample_measure_shot_vector(self, mocker, shots, measurement, expected):
         """Test that broadcasting works for the other sample measurements and shot vectors"""
+
+        import jax
 
         spy = mocker.spy(qml.devices.qubit.sampling, "_sample_state_jax")
 
