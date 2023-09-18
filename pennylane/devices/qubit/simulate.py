@@ -118,18 +118,24 @@ def get_final_state(circuit, debugger=None, interface=None):
         if isinstance(op, qml.Projector):
             # Handle postselection on mid-circuit measurements
             if is_state_batched:
-                for i in qml.math.shape(state)[0]:
+                for i, _ in state:
+                    norm = qml.math.norm(state[i])
+                    if qml.math.isclose(norm, 0.0):
+                        raise ValueError("Requested postselection on value with zero probability.")
+
                     state[i] = state[i] / qml.math.norm(state[i])
             else:
                 norm = qml.math.norm(state)
                 if qml.math.isclose(norm, 0.0):
-                    raise ValueError("Requested postselection on value with 0 probability.")
+                    raise ValueError("Requested postselection on value with zero probability.")
 
                 state = state / norm
 
+                # defer_measurements will raise an error with batched shots or broadcasting so we can
+                # assume that both the state and shots are unbatched.
                 if circuit.shots:
-                    # defer_measurements will raise an error with batched shots or broadcasting
-                    # so we can assume that both the state and shots are unbatched.
+                    # Clip the number of shots using a binomial distribution using the probability of
+                    # measuring the postselected state.
                     postselected_shots = binomial(circuit.shots.total_shots, norm)
                     circuit._shots = qml.measurements.Shots(postselected_shots)
 

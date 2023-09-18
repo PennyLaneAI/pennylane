@@ -23,7 +23,7 @@ from pennylane.transforms.core import transform
 from pennylane.wires import Wires
 from pennylane.queuing import QueuingManager
 
-# pylint: disable=too-many-branches
+# pylint: disable=too-many-branches, too-many-statements
 
 
 @transform
@@ -188,7 +188,12 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
 
                 if op.reset:
                     with QueuingManager.stop_recording():
-                        new_operations.append(qml.CNOT([cur_wire, op.wires[0]]))
+                        if op.postselect == 1:
+                            # We know that the measured wire will be in the |1> state if postselected
+                            # |1>. So we can just apply a PauliX instead of a CNOT to reset
+                            new_operations.append(qml.PauliX(op.wires[0]))
+                        else:
+                            new_operations.append(qml.CNOT([cur_wire, op.wires[0]]))
 
                 cur_wire += 1
             else:

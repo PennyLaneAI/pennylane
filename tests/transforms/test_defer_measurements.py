@@ -14,11 +14,12 @@
 """
 Tests for the transform implementing the deferred measurement principle.
 """
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods, too-many-arguments
 import math
 import pytest
 
 import pennylane as qml
+from pennylane.measurements import MidMeasureMP, MeasurementValue
 import pennylane.numpy as np
 from pennylane.devices import DefaultQubit
 
@@ -152,6 +153,127 @@ class TestQNode:
         deferred_tape2 = deferred_tapes2[0]
         assert len(deferred_tape2.wires) == 3
         assert len(deferred_tape2.operations) == 4
+
+    @pytest.mark.parametrize("shots", [None, 1000])
+    @pytest.mark.parametrize("phi", np.linspace(np.pi / 2, 7 * np.pi / 2, 6))
+    def test_postselection_qnode(self, phi, shots):
+        """Test that a Projector is queued when postselection is requested
+        on a mid-circuit measurement"""
+        dev = DefaultQubit()
+
+        @qml.qnode(dev)
+        def circ1(phi):
+            qml.RX(phi, wires=0)
+            # Postselecting on |1> on wire 0 means that the probability of measuring
+            # |1> on wire 0 is 1
+            m = qml.measure(0, postselect=1)
+            qml.cond(m, qml.PauliX)(wires=1)
+            # Probability of measuring |1> on wire 1 should be 1
+            return qml.probs(wires=1)
+
+        assert np.allclose(circ1(phi, shots=shots), [0, 1])
+
+        expected_circuit = [
+            qml.RX(phi, 0),
+            qml.Projector([1], wires=0),
+            qml.CNOT([0, 1]),
+            qml.probs(wires=1),
+        ]
+
+        for op, expected_op in zip(circ1.qtape, expected_circuit):
+            assert qml.equal(op, expected_op)
+
+    @pytest.mark.parametrize("shots", [None, 1000])
+    @pytest.mark.parametrize("phi", np.linspace(np.pi / 4, 4 * np.pi, 4))
+    @pytest.mark.parametrize("theta", np.linspace(np.pi / 3, 3 * np.pi, 4))
+    def test_multiple_postselection_qnode(self, phi, theta, shots, tol, tol_stochastic):
+        """Test that a qnode with mid-circuit measurements with postselection
+        is transformed correctly by defer_measurements"""
+        dev = DefaultQubit()
+
+        # Initializing mid circuit measurements here so that id can be controlled (affects
+        # wire ordering for qml.cond)
+        mp0 = MidMeasureMP(wires=0, postselect=0, id=0)
+        mv0 = MeasurementValue([mp0], lambda v: v)
+        mp1 = MidMeasureMP(wires=1, postselect=0, id=1)
+        mv1 = MeasurementValue([mp1], lambda v: v)
+        mp2 = MidMeasureMP(wires=2, reset=True, postselect=1, id=2)
+        mv2 = MeasurementValue([mp2], lambda v: v)
+
+        @qml.qnode(dev)
+        def circ1(phi, theta):
+            qml.RX(phi, 0)
+            qml.apply(mp0)
+            qml.CNOT([0, 1])
+            qml.apply(mp1)
+            qml.cond(~(mv0 & mv1), qml.RY)(theta, wires=2)
+            qml.apply(mp2)
+            qml.cond(mv2, qml.PauliX)(1)
+            return qml.probs(wires=[0, 1, 2])
+
+        @qml.qnode(dev)
+        def circ2():
+            # To add wire 0 to tape
+            qml.Identity(0)
+            qml.PauliX(1)
+            qml.Identity(2)
+            return qml.probs(wires=[0, 1, 2])
+
+        atol = tol if shots is None else tol_stochastic
+        assert np.allclose(circ1(phi, theta, shots=shots), circ2(), atol=atol, rtol=0)
+
+        expected_circuit = [
+            qml.RX(phi, wires=0),
+            qml.Projector([0], wires=0),
+            qml.CNOT([0, 3]),
+            qml.CNOT([0, 1]),
+            qml.Projector([0], wires=1),
+            qml.CNOT([1, 4]),
+            qml.ops.Controlled(
+                qml.RY(theta, wires=[2]), control_wires=[3, 4], control_values=[False, False]
+            ),
+            qml.ops.Controlled(
+                qml.RY(theta, wires=[2]), control_wires=[3, 4], control_values=[False, True]
+            ),
+            qml.ops.Controlled(
+                qml.RY(theta, wires=[2]), control_wires=[3, 4], control_values=[True, False]
+            ),
+            qml.Projector([1], wires=2),
+            qml.CNOT([2, 5]),
+            qml.PauliX(2),
+            qml.CNOT([5, 1]),
+            qml.probs(wires=[0, 1, 2]),
+        ]
+
+        for op, expected_op in zip(circ1.qtape, expected_circuit):
+            assert qml.equal(op, expected_op)
+
+    def test_postselection_error(self):
+        """Test that an error is raised if the circuit being transformed has batched dimensions
+        or partitioned shots."""
+        dev = DefaultQubit()
+
+        @qml.qnode(dev)
+        def circ1():
+            qml.RX([0.1, 0.2], wires=0)
+            _ = qml.measure(0, postselect=1)
+            return qml.probs()
+
+        # Test that no error is raised if broadcasting with analytic execution
+        _ = circ1()
+
+        with pytest.raises(ValueError, match="Cannot postselect on mid-circuit measurements"):
+            # Error with finite shots and broadcasting
+            _ = circ1(shots=10)
+
+        @qml.qnode(dev)
+        def circ2():
+            qml.measure(0, postselect=1)
+            return qml.probs()
+
+        with pytest.raises(ValueError, match="Cannot postselect on mid-circuit measurements"):
+            # Error with shot vector
+            _ = circ2(shots=[10, 10])
 
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 1000]])
     def test_measurement_statistics_single_wire(self, shots):

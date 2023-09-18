@@ -48,6 +48,39 @@ def test_custom_operation():
     assert qml.math.allclose(result, -1.0)
 
 
+def test_projector_probability_error():
+    """Test that an error is raised if a Projector is applied in the operation queue
+    and the resulting state is null."""
+    tape = qml.tape.QuantumScript([qml.PauliX(0), qml.Projector([0], wires=0)], [qml.state()])
+    with pytest.raises(ValueError, match="Requested postselection on value with zero probability"):
+        _ = simulate(tape)
+
+    # Test with broadcasting
+    tape = qml.tape.QuantumScript(
+        [qml.RX([0.0, 0.0], wires=0), qml.Projector([1], 0)], [qml.state()]
+    )
+    with pytest.raises(ValueError, match="Requested postselection on value with zero probability"):
+        _ = simulate(tape)
+
+
+def test_projector_norm():
+    """Test that the norm of the state is maintained after applying a projector"""
+    tape = qml.tape.QuantumScript(
+        [qml.PauliX(0), qml.RX(0.123, 1), qml.Projector([0], wires=1)], [qml.state()]
+    )
+    res = simulate(tape)
+    assert np.isclose(np.linalg.norm(res), 1.0)
+
+    # Test with broadcasting
+    tape = qml.tape.QuantumScript(
+        [qml.PauliX(0), qml.RX([0.123, 0.456], 1), qml.Projector([0], wires=1)], [qml.state()]
+    )
+    res = simulate(tape)
+    assert len(res) == 2
+    for r in res:
+        assert np.isclose(np.linalg.norm(r), 1.0)
+
+
 # pylint: disable=too-few-public-methods
 class TestStatePrepBase:
     """Tests integration with various state prep methods."""
@@ -349,6 +382,21 @@ class TestBroadcasting:
         assert np.allclose(res[1], np.cos(x))
         assert np.allclose(res[2], -np.cos(x))
         assert spy.call_args_list[0].args == (qs, {2: 0, 1: 1, 0: 2})
+
+    def test_broadcasting_with_projector(self):
+        """Test that postselecting a broadcasted state works correctly"""
+        tape = qml.tape.QuantumScript(
+            [
+                qml.RX([0.1, 0.2], 0),
+                qml.Projector([0], wires=0),
+            ],
+            [qml.state()],
+        )
+
+        res = simulate(tape)
+        assert len(res) == 2
+        for r in res:
+            assert np.allclose(r, [1, 0])
 
 
 class TestDebugger:
