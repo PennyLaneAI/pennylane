@@ -123,7 +123,7 @@ def get_final_state(circuit, debugger=None, interface=None):
             else:
                 norm = qml.math.norm(state)
                 if qml.math.isclose(norm, 0.0):
-                    raise ValueError("Requested postselection on state with 0 probability.")
+                    raise ValueError("Requested postselection on value with 0 probability.")
 
                 state = state / norm
 
