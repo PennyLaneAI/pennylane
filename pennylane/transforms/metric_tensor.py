@@ -17,9 +17,9 @@ methods of computing the metric tensor.
 """
 import functools
 import warnings
+import numpy as np
 
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.circuit_graph import LayerData
 from pennylane.queuing import WrappedObj
 
@@ -808,9 +808,8 @@ def _metric_tensor_hadamard(
         # Get full block-diagonal tensor
         diag_mt = diag_proc_fn(diag_res)
 
-        if qml.active_return():
-            # the off diag tapes only have a single expval measurement
-            off_diag_res = [qml.math.expand_dims(res, 0) for res in off_diag_res]
+        # the off diag tapes only have a single expval measurement
+        off_diag_res = [qml.math.expand_dims(res, 0) for res in off_diag_res]
 
         # Prepare the mask to match the used interface
         mask = qml.math.convert_like(mask, diag_mt)
@@ -844,14 +843,15 @@ def _metric_tensor_hadamard(
         # Rescale first and second term
         coeffs_gen = (c for c in qml.math.hstack(coeffs_list))
         # flattened coeffs_list but also with 0s where parameters are not in argnum
-        extended_coeffs_list = [
-            next(coeffs_gen) if param_in_argnum else 0.0
-            for param_in_argnum in qml.math.hstack(in_argnum_list)
-        ]
-
-        scale = qml.math.convert_like(
-            qml.math.tensordot(extended_coeffs_list, extended_coeffs_list, axes=0), results[0]
+        interface = qml.math.get_interface(*results)
+        extended_coeffs_list = qml.math.asarray(
+            [
+                next(coeffs_gen) if param_in_argnum else 0.0
+                for param_in_argnum in qml.math.hstack(in_argnum_list)
+            ],
+            like=interface,
         )
+        scale = qml.math.tensordot(extended_coeffs_list, extended_coeffs_list, axes=0)
         off_diag_mt = scale * off_diag_mt
 
         # Combine block-diagonal and off block-diagonal

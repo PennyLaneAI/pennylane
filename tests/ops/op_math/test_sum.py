@@ -1081,10 +1081,11 @@ class TestIntegration:
 
         @qml.qnode(dev, interface=None)
         def circuit():
-            return qml.expval(Sum(qml.RX(1.1, 0), qml.RY(qnp.array(2.2), 0)))
+            return qml.expval(
+                Sum(qml.s_prod(1.1, qml.PauliX(0)), qml.s_prod(qnp.array(2.2), qml.PauliY(1)))
+            )
 
-        with pytest.warns(UserWarning):
-            circuit()
+        circuit()
         assert circuit.tape.trainable_params == [1]
 
 

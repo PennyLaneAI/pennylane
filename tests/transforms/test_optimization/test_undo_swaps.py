@@ -42,6 +42,20 @@ class TestUndoSwaps:
         assert len(tape.operations) == 2
         assert np.allclose(res[0], 0.5)
 
+    def test_one_qubit_gates_transform_qnode(self):
+        """Test that a single-qubit gate changes correctly with a SWAP."""
+
+        @qml.qnode(device=dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.PauliX(wires=1)
+            qml.SWAP(wires=[0, 1])
+            return qml.probs(1)
+
+        transformed_qnode = undo_swaps(circuit)
+        res = transformed_qnode()
+        assert np.allclose(res[0], 0.5)
+
     def test_two_qubits_gates_transform(self):
         """Test that a two-qubit gate changes correctly with a SWAP."""
 

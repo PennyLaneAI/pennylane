@@ -509,34 +509,6 @@ class TestInternalFunctions:
         with pytest.raises(DeviceError, match="Gate Conditional not supported on device"):
             dev.check_validity(tape.operations, tape.observables)
 
-    def test_batch_transform_defers_measurement(self, mock_device_with_paulis_and_methods, mocker):
-        """Test that batch_transform transforms a tape with mid-circuit measurements using
-        defer_measurements."""
-        dev = mock_device_with_paulis_and_methods(wires=3)
-        spy = mocker.spy(qml, "defer_measurements")
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.PauliX(0)
-            m0 = qml.measure(0)
-            qml.cond(m0, qml.RX)(0.123, 1)
-            qml.expval(qml.PauliZ(1))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-
-        new_tapes, _ = dev.batch_transform(tape)
-        spy.assert_called_once()
-
-        new_tape = new_tapes[0]
-        expected_circuit = [
-            qml.PauliX(0),
-            qml.ops.Controlled(qml.RX(0.123, 1), 0),
-            qml.expval(qml.PauliZ(1)),
-        ]
-
-        assert len(new_tape.circuit) == len(expected_circuit)
-        for o, e in zip(new_tape.circuit, expected_circuit):
-            assert qml.equal(o, e)
-
     @pytest.mark.parametrize(
         "wires, subset, expected_subset",
         [
@@ -589,7 +561,7 @@ class TestInternalFunctions:
         prep = [op]
         ops = [qml.AngleEmbedding(features=[0.1], wires=[0], rotation="Z"), op, qml.PauliZ(wires=2)]
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
         tape = qml.tape.QuantumTape(ops=ops, measurements=[], prep=prep, shots=100)
         new_tape = dev.default_expand_fn(tape)
 
@@ -946,7 +918,7 @@ class TestDeviceInit:
         with monkeypatch.context() as m:
             m.setattr(qml, "version", lambda: "0.0.1")
             with pytest.raises(DeviceError, match="plugin requires PennyLane versions"):
-                qml.device("default.qubit", wires=0)
+                qml.device("default.qubit.legacy", wires=0)
 
     @pytest.mark.skip(reason="Reloading PennyLane messes with tape mode")
     def test_refresh_entrypoints(self, monkeypatch):
@@ -1003,7 +975,7 @@ class TestDeviceInit:
 
     def test_shot_vector_property(self):
         """Tests shot vector initialization."""
-        dev = qml.device("default.qubit", wires=1, shots=[1, 3, 3, 4, 4, 4, 3])
+        dev = qml.device("default.qubit.legacy", wires=1, shots=[1, 3, 3, 4, 4, 4, 3])
         shot_vector = dev.shot_vector
         assert len(shot_vector) == 4
         assert shot_vector[0].shots == 1

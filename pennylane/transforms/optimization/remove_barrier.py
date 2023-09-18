@@ -13,19 +13,25 @@
 # limitations under the License.
 """Transform for removing the Barrier gate from quantum circuits."""
 # pylint: disable=too-many-branches
-from pennylane import apply
-from pennylane.transforms import qfunc_transform
+from typing import Sequence, Callable
+
+from pennylane.tape import QuantumTape
+from pennylane.transforms.core import transform
 
 
-@qfunc_transform
-def remove_barrier(tape):
-    """Quantum function transform to remove Barrier gates.
+@transform
+def remove_barrier(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
+    """Quantum transform to remove Barrier gates.
 
     Args:
         qfunc (function): A quantum function.
 
     Returns:
-        function: the transformed quantum function
+        pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
+        it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of
+        quantum tapes to be evaluated, and a function to be applied to these
+        tape executions.
 
     **Example**
 
@@ -60,17 +66,24 @@ def remove_barrier(tape):
     """
     # Make a working copy of the list to traverse
     list_copy = tape.operations.copy()
-
+    operations = []
     while len(list_copy) > 0:
         current_gate = list_copy[0]
 
         # Remove Barrier gate
         if current_gate.name != "Barrier":
-            apply(current_gate)
+            operations.append(current_gate)
 
         list_copy.pop(0)
         continue
 
-    # Queue the measurements normally
-    for m in tape.measurements:
-        apply(m)
+    new_tape = QuantumTape(operations, tape.measurements, shots=tape.shots)
+    new_tape._qfunc_output = tape._qfunc_output  # pylint: disable=protected-access
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]  # pragma: no cover
+
+    return [new_tape], null_postprocessing

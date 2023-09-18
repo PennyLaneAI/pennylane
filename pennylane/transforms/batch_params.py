@@ -15,10 +15,12 @@
 Contains the batch dimension transform.
 """
 # pylint: disable=import-outside-toplevel
+from typing import Callable, Sequence
+
 import pennylane as qml
 
 
-from .batch_transform import batch_transform
+from .core import transform
 
 
 def _nested_stack(res):
@@ -78,8 +80,10 @@ def _split_operations(ops, params, split_indices, num_tapes):
     return new_ops
 
 
-@batch_transform
-def batch_params(tape, all_operations=False):
+@transform
+def batch_params(
+    tape: qml.tape.QuantumTape, all_operations=False
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Transform a QNode to support an initial batch dimension
     for operation parameters.
 
@@ -196,9 +200,6 @@ def batch_params(tape, all_operations=False):
         output_tapes.append(new_tape)
 
     def processing_fn(res):
-        if qml.active_return():
-            return _nested_stack(res)
-
-        return qml.math.squeeze(qml.math.stack(res))
+        return _nested_stack(res)
 
     return output_tapes, processing_fn

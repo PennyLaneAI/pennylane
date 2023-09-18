@@ -150,30 +150,7 @@ class SampleMP(SampleMeasurement):
         every_term_standard = all(o.__class__ in int_eigval_obs for o in tensor_terms)
         return int if every_term_standard else float
 
-    def _shape_legacy(self, device, shots):
-        if not shots:
-            raise MeasurementShapeError(
-                "Shots are required to obtain the shape of the measurement "
-                f"{self.__class__.__name__}."
-            )
-        if shots.has_partitioned_shots:
-            if self.obs is None:
-                # TODO: revisit when qml.sample without an observable fully
-                # supports shot vectors
-                raise MeasurementShapeError(
-                    "Getting the output shape of a measurement returning samples along with "
-                    "a device with a shot vector is not supported."
-                )
-            return tuple(
-                (s.shots,) * s.copies if s.shots != 1 else tuple() * s.copies
-                for s in shots.shot_vector
-            )
-        len_wires = len(self.wires) if len(self.wires) > 0 else len(device.wires)
-        return (1, shots.total_shots) if self.obs is not None else (1, shots.total_shots, len_wires)
-
     def shape(self, device, shots):
-        if not qml.active_return():
-            return self._shape_legacy(device, shots)
         if not shots:
             raise MeasurementShapeError(
                 "Shots are required to obtain the shape of the measurement "
@@ -229,9 +206,7 @@ class SampleMP(SampleMeasurement):
 
         if str(name) in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}
-            samples = 1 - 2 * qml.math.squeeze(samples)
-            if samples.shape == ():
-                samples = samples.reshape((1,))
+            samples = 1 - 2 * qml.math.squeeze(samples, axis=-1)
         else:
             # Replace the basis state in the computational basis with the correct eigenvalue.
             # Extract only the columns of the basis samples required based on ``wires``.

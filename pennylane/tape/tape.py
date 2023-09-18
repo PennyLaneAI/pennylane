@@ -239,19 +239,31 @@ def expand_tape_state_prep(tape, skip_first=True):
 
     Args:
         tape (QuantumScript): The tape to expand.
-        skip_first (Bool): If ``True``, will not expand a StatePrepBase operation if
+        skip_first (bool): If ``True``, will not expand a ``StatePrepBase`` operation if
             it is the first operation in the tape.
 
     Returns:
         QuantumTape: The expanded version of ``tape``.
 
     **Example**
-    ...
+
+    If a ``StatePrepBase`` occurs as the first operation of a tape, the operation will not be expanded:
+
+    >>> ops = [qml.StatePrep([0, 1], wires=0), qml.PauliZ(1), qml.StatePrep([1, 0], wires=0)]
+    >>> tape = qml.tape.QuantumScript(ops, [])
+    >>> new_tape = qml.tape.tape.expand_tape_state_prep(tape)
+    >>> new_tape.operations
+    [StatePrep(array([0, 1]), wires=[0]), PauliZ(wires=[1]), MottonenStatePreparation(array([1, 0]), wires=[0])]
+
+    To force expansion, the keyword argument ``skip_first`` can be set to ``False``:
+
+    >>> new_tape = qml.tape.tape.expand_tape_state_prep(tape, skip_first=False)
+    [MottonenStatePreparation(array([0, 1]), wires=[0]), PauliZ(wires=[1]), MottonenStatePreparation(array([1, 0]), wires=[0])]
     """
     first_op = tape.operations[0]
     new_ops = (
         [first_op]
-        if isinstance(first_op, StatePrepBase) and skip_first
+        if not isinstance(first_op, StatePrepBase) or skip_first
         else first_op.decomposition()
     )
 
@@ -376,14 +388,13 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     >>> qml.execute([tape], dev, gradient_fn=None)
     [array([0.77750694])]
 
-    The trainable parameters of the tape can be explicitly set, and the values of
-    the parameters modified in-place:
+    A new tape can be created by passing new parameters along with the indices
+    to be updated to :meth:`~pennylane.tape.QuantumScript.bind_new_parameters`:
 
-    >>> tape.trainable_params = [0] # set only the first parameter as trainable
-    >>> tape.set_parameters([0.56])
+    >>> new_tape = tape.bind_new_parameters(params=[0.56], indices=[0])
     >>> tape.get_parameters()
-    [0.56]
-    >>> tape.get_parameters(trainable_only=False)
+    [0.432, 0.543, 0.133]
+    >>> new_tape.get_parameters()
     [0.56, 0.543, 0.133]
 
 
@@ -454,7 +465,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
 
         Also calls `_update()` which sets many attributes.
         """
-        self._ops, self._measurements, _ = process_queue(self)
+        self._ops, self._measurements = process_queue(self)
         self._update()
 
     def __getitem__(self, key):
