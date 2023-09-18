@@ -213,6 +213,8 @@
   expectation.
   [(#4590)](https://github.com/PennyLaneAI/pennylane/pull/4590)
 
+* The `torch.nn.Module` properties are now accessible on a `pennylane.qnn.TorchLayer`.
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -220,6 +222,7 @@ This release contains contributions from (in alphabetical order):
 Utkarsh Azad,
 Diego Guala,
 Soran Jahangiri,
+Christina Lee,
 Lillian M. A. Frederiksen,
 Vincent Michaud-Rioux,
 Romain Moyard,
