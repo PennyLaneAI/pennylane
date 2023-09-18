@@ -104,6 +104,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `MeasurementProcess.eigvals()` now raises an `EigvalsUndefinedError` if the measurement observable
+  does not have eigenvalues.
+  [(#4544)](https://github.com/PennyLaneAI/pennylane/pull/4544)
+
 * The `__eq__` and `__hash__` methods of `Operator` and `MeasurementProcess` no longer rely on the
   object's address is memory. Using `==` with operators and measurement processes will now behave the
   same as `qml.equal`, and objects of the same type with the same data and hyperparameters will have
