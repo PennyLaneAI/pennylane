@@ -41,6 +41,11 @@ class BasisState(StatePrepBase):
         target device, PennyLane will attempt to decompose the operation
         into :class:`~.PauliX` operations.
 
+    .. note::
+
+        When called in the middle of a circuit, the action of the operation is defined
+        as :math:`U|0\rangle = |\psi\rangle`
+
     Args:
         n (array): prepares the basis state :math:`\ket{n}`, where ``n`` is an
             array of integers from the set :math:`\{0, 1\}`, i.e.,
@@ -132,6 +137,11 @@ class StatePrep(StatePrepBase):
         using the method developed by Möttönen et al. (Quantum Info. Comput.,
         2005).
 
+    .. note::
+
+        When called in the middle of a circuit, the action of the operation is defined
+        as :math:`U|0\rangle = |\psi\rangle`
+
     Args:
         state (array[complex]): a state vector of size 2**len(wires)
         wires (Sequence[int] or int): the wire(s) the operation acts on
@@ -204,7 +214,7 @@ class StatePrep(StatePrepBase):
 
         wire_order = Wires(wire_order)
         if not wire_order.contains_wires(self.wires):
-            raise WireError("Custom wire_order must contain all StatePrep wires")
+            raise WireError(f"Custom wire_order must contain all {self.name} wires")
 
         num_total_wires = len(wire_order)
         indices = tuple(

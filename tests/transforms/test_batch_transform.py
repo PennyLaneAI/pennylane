@@ -340,7 +340,7 @@ class TestBatchTransform:
         b = 0.4
         x = 0.543
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         dev = self.my_transform(dev, a, b)
 
         @qml.qnode(dev, interface="autograd")
@@ -371,7 +371,7 @@ class TestBatchTransform:
         b = 0.4
         x = 0.543
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         dev = self.my_transform(a, b)(dev)  # pylint: disable=no-value-for-parameter
 
         @qml.qnode(dev, interface="autograd")
@@ -679,7 +679,7 @@ class TestMapBatchTransform:
 
     def test_result(self, mocker):
         """Test that it correctly applies the transform to be mapped"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
         H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
         x = 0.6
         y = 0.7
@@ -713,7 +713,7 @@ class TestMapBatchTransform:
 
     def test_differentiation(self):
         """Test that an execution using map_batch_transform can be differentiated"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
         H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
 
         weights = np.array([0.6, 0.8], requires_grad=True)

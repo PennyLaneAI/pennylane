@@ -719,7 +719,7 @@ class TestSample:
 
     @pytest.mark.parametrize(
         "observable",
-        sorted(set(qml.ops.cv.obs) - set(["QuadP", "QuadX", "QuadOperator", "X", "P"])),
+        sorted(set(qml.ops.cv.obs) - set(["QuadP", "QuadX", "QuadOperator"])),
     )
     def test_sample_error_unsupported_observable(self, gaussian_device_2_wires, observable):
         """Test that the sample function raises an error if the given observable is not supported"""
@@ -773,21 +773,6 @@ class TestDefaultGaussianIntegration:
             """Test quantum function"""
             qml.Displacement(x, 0, wires=0)
             return qml.expval(qml.QuadX(0))
-
-        assert circuit(p) == pytest.approx(p * np.sqrt(2 * hbar), abs=tol)
-
-    def test_gaussian_circuit_deprecated_x(self, tol):
-        """Test that the default gaussian plugin still provides correct result for simple circuit with
-        the deprecated observable X"""
-        dev = qml.device("default.gaussian", wires=1)
-
-        p = 0.543
-
-        @qml.qnode(dev)
-        def circuit(x):
-            """Test quantum function"""
-            qml.Displacement(x, 0, wires=0)
-            return qml.expval(qml.X(0))
 
         assert circuit(p) == pytest.approx(p * np.sqrt(2 * hbar), abs=tol)
 

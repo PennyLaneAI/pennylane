@@ -31,7 +31,7 @@ from .gradient_transform import (
     choose_grad_methods,
     _grad_method_validation,
     gradient_transform,
-    _no_trainable_grad_legacy,
+    _no_trainable_grad,
 )
 from .parameter_shift import _get_operation_recipe, expval_param_shift
 
@@ -172,7 +172,7 @@ def _transform_observable(obs, Z, device_wires):
         A = A + A.T
 
     # TODO: if the A matrix corresponds to a known observable in PennyLane,
-    # for example qml.X, qml.P, qml.NumberOperator, we should return that
+    # for example qml.QuadX, qml.QuadP, qml.NumberOperator, we should return that
     # instead. This will allow for greater device compatibility.
     return qml.PolyXP(A, wires=device_wires)
 
@@ -664,7 +664,7 @@ def param_shift_cv(
         >>> fn(qml.execute(gradient_tapes, dev, None))
         array([[-0.32487113, -0.4054074 , -0.87049853,  0.4054074 ]])
     """
-    if qml.active_return() and len(tape.measurements) > 1:
+    if len(tape.measurements) > 1:
         raise ValueError(
             "Computing the gradient of CV circuits that return more than one measurement is not possible."
         )
@@ -679,7 +679,7 @@ def param_shift_cv(
     diff_methods = _gradient_analysis_and_validation_cv(tape, method)
 
     if argnum is None and not tape.trainable_params:
-        return _no_trainable_grad_legacy(tape)
+        return _no_trainable_grad(tape)
 
     gradient_tapes = []
     shapes = []
@@ -769,18 +769,16 @@ def param_shift_cv(
             start += s
 
         # For expval param shift with multiple params
-        if qml.active_return():
-            if isinstance(grads[0], tuple):
-                grads = [qml.math.stack(g) for g in grads]
+        if isinstance(grads[0], tuple):
+            grads = [qml.math.stack(g) for g in grads]
 
         jacobian = sum(grads)
 
-        if qml.active_return():
-            if jacobian.shape != ():
-                if jacobian.shape[0] == 1:
-                    jacobian = jacobian[0]
-                if len(argnum) > 1:
-                    jacobian = tuple(j for j in jacobian)
+        if jacobian.shape != ():
+            if jacobian.shape[0] == 1:
+                jacobian = jacobian[0]
+            if len(argnum) > 1:
+                jacobian = tuple(j for j in jacobian)
         return jacobian
 
     return gradient_tapes, processing_fn

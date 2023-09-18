@@ -15,6 +15,8 @@
 Tests for the ``default.mixed`` device for the JAX interface
 """
 # pylint: disable=protected-access
+from functools import partial
+
 import pytest
 
 import numpy as np
@@ -618,14 +620,14 @@ class TestPassthruIntegration:
         assert np.allclose(res, expected_grad, atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
-        "dev_name,diff_method,mode",
+        "dev_name,diff_method,grad_on_execution",
         [
-            ["default.mixed", "finite-diff", "backward"],
-            ["default.mixed", "parameter-shift", "backward"],
-            ["default.mixed", "backprop", "forward"],
+            ["default.mixed", "finite-diff", False],
+            ["default.mixed", "parameter-shift", False],
+            ["default.mixed", "backprop", True],
         ],
     )
-    def test_ragged_differentiation(self, dev_name, diff_method, mode, tol):
+    def test_ragged_differentiation(self, dev_name, diff_method, grad_on_execution, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
 
@@ -636,7 +638,9 @@ class TestPassthruIntegration:
         x = jnp.array(0.543)
         y = jnp.array(-0.654)
 
-        @qml.qnode(dev, diff_method=diff_method, mode=mode, interface="jax")
+        @qml.qnode(
+            dev, diff_method=diff_method, grad_on_execution=grad_on_execution, interface="jax"
+        )
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -676,7 +680,7 @@ class TestPassthruIntegration:
             # TODO: https://github.com/PennyLaneAI/pennylane/issues/2762
             pytest.xfail("Parameter broadcasting currently not supported for JAX jit")
 
-        @qml.batch_params(all_operations=True)
+        @partial(qml.batch_params, all_operations=True)
         @qml.qnode(dev, diff_method="backprop", interface="jax")
         def circuit(a, b):
             qml.RX(a, wires=0)

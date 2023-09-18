@@ -16,6 +16,7 @@ Contains the Select template.
 """
 # pylint: disable=too-many-arguments
 
+import copy
 import itertools
 import pennylane as qml
 from pennylane.operation import Operation
@@ -35,7 +36,7 @@ class Select(Operation):
 
     Args:
         ops (list[Operator]): operations to apply
-        control_wires (Sequence[int]): the wires controlling which operation is applied
+        control (Sequence[int]): the wires controlling which operation is applied
         id (str or None): String representing the operation (optional)
 
     .. note::
@@ -51,7 +52,7 @@ class Select(Operation):
     >>> ops = [qml.PauliX(wires=2), qml.PauliX(wires=3), qml.PauliY(wires=2), qml.SWAP([2,3])]
     >>> @qml.qnode(dev)
     >>> def circuit():
-    >>>     qml.Select(ops, control_wires=[0,1])
+    >>>     qml.Select(ops, control=[0,1])
     >>>     return qml.state()
     ...
     >>> print(qml.draw(circuit, expansion_strategy='device')())
@@ -65,27 +66,27 @@ class Select(Operation):
     num_wires = qml.operation.AnyWires
 
     def _flatten(self):
-        return (self.ops), (self.control_wires)
+        return (self.ops), (self.control)
 
     @classmethod
     def _unflatten(cls, data, metadata) -> "Select":
         return cls(data, metadata)
 
-    def __init__(self, ops, control_wires, id=None):
-        control_wires = qml.wires.Wires(control_wires)
+    def __init__(self, ops, control, id=None):
+        control = qml.wires.Wires(control)
         self.hyperparameters["ops"] = ops
-        self.hyperparameters["control_wires"] = control_wires
+        self.hyperparameters["control"] = control
 
-        if 2 ** len(control_wires) < len(ops):
+        if 2 ** len(control) < len(ops):
             raise ValueError(
-                f"Not enough control wires ({len(control_wires)}) for the desired number of "
+                f"Not enough control wires ({len(control)}) for the desired number of "
                 + f"operations ({len(ops)}). At least {int(math.ceil(math.log2(len(ops))))} control "
                 + "wires required."
             )
 
         if any(
             control_wire in qml.wires.Wires.all_wires([op.wires for op in ops])
-            for control_wire in control_wires
+            for control_wire in control
         ):
             raise ValueError("Control wires should be different from operation wires.")
 
@@ -95,8 +96,37 @@ class Select(Operation):
         target_wires = qml.wires.Wires.all_wires([op.wires for op in ops])
         self.hyperparameters["target_wires"] = target_wires
 
-        all_wires = target_wires + control_wires
-        super().__init__(ops, wires=all_wires, id=id)
+        all_wires = target_wires + control
+        super().__init__(*self.data, wires=all_wires, id=id)
+
+    def __copy__(self):
+        """Copy this op"""
+        cls = self.__class__
+        copied_op = cls.__new__(cls)
+
+        new_data = copy.copy(self.data)
+
+        for attr, value in vars(self).items():
+            if attr != "data":
+                setattr(copied_op, attr, value)
+
+        copied_op.data = new_data
+
+        return copied_op
+
+    @property
+    def data(self):
+        """Create data property"""
+        return tuple(d for op in self.ops for d in op.data)
+
+    @data.setter
+    def data(self, new_data):
+        """Set the data property"""
+        for op in self.ops:
+            op_num_params = op.num_params
+            if op_num_params > 0:
+                op.data = new_data[:op_num_params]
+                new_data = new_data[op_num_params:]
 
     def decomposition(self):
         r"""Representation of the operator as a product of other operators.
@@ -113,19 +143,19 @@ class Select(Operation):
         **Example**
 
         >>> ops = [qml.PauliX(wires=2), qml.PauliX(wires=3), qml.PauliY(wires=2), qml.SWAP([2,3])]
-        >>> op = qml.Select(ops, control_wires=[0,1])
+        >>> op = qml.Select(ops, control=[0,1])
         >>> op.decomposition()
         [MultiControlledX(wires=[0, 1, 2], control_values="00"),
          MultiControlledX(wires=[0, 1, 3], control_values="01"),
          Controlled(PauliY(wires=[2]), control_wires=[0, 1], control_values=[True, False]),
          Controlled(SWAP(wires=[2, 3]), control_wires=[0, 1])]
         """
-        return self.compute_decomposition(self.ops, control_wires=self.control_wires)
+        return self.compute_decomposition(self.ops, control=self.control)
 
     @staticmethod
     def compute_decomposition(
         ops,
-        control_wires,
+        control,
     ):  # pylint: disable=arguments-differ, unused-argument
         r"""Representation of the operator as a product of other operators (static method).
 
@@ -140,7 +170,7 @@ class Select(Operation):
 
         Args:
             ops (list[Operator]): operations to apply
-            control_wires (Sequence[int]): the wires controlling which operation is applied
+            control (Sequence[int]): the wires controlling which operation is applied
 
         Returns:
             list[Operator]: decomposition of the operator
@@ -148,16 +178,15 @@ class Select(Operation):
         **Example**
 
         >>> ops = [qml.PauliX(wires=2), qml.PauliX(wires=3), qml.PauliY(wires=2), qml.SWAP([2,3])]
-        >>> qml.Select.compute_decomposition(ops, control_wires=[0,1])
+        >>> qml.Select.compute_decomposition(ops, control=[0,1])
         [MultiControlledX(wires=[0, 1, 2], control_values="00"),
          MultiControlledX(wires=[0, 1, 3], control_values="01"),
          Controlled(PauliY(wires=[2]), control_wires=[0, 1], control_values=[True, False]),
          Controlled(SWAP(wires=[2, 3]), control_wires=[0, 1])]
         """
-        states = list(itertools.product([0, 1], repeat=len(control_wires)))
+        states = list(itertools.product([0, 1], repeat=len(control)))
         decomp_ops = [
-            qml.ctrl(op, control_wires, control_values=states[index])
-            for index, op in enumerate(ops)
+            qml.ctrl(op, control, control_values=states[index]) for index, op in enumerate(ops)
         ]
         return decomp_ops
 
@@ -167,9 +196,9 @@ class Select(Operation):
         return self.hyperparameters["ops"]
 
     @property
-    def control_wires(self):
+    def control(self):
         """The control wires."""
-        return self.hyperparameters["control_wires"]
+        return self.hyperparameters["control"]
 
     @property
     def target_wires(self):
@@ -179,4 +208,4 @@ class Select(Operation):
     @property
     def wires(self):
         """All wires involved in the operation."""
-        return self.hyperparameters["control_wires"] + self.hyperparameters["target_wires"]
+        return self.hyperparameters["control"] + self.hyperparameters["target_wires"]

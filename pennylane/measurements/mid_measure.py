@@ -73,7 +73,7 @@ def measure(wires: Wires, reset: Optional[bool] = False):
     >>> func()
     tensor([1., 0.], requires_grad=True)
 
-    Mid circuit measurements can be manipulated using the following dunder methods
+    Mid circuit measurements can be manipulated using the following arithmetic operators:
     ``+``, ``-``, ``*``, ``/``, ``~`` (not), ``&`` (and), ``|`` (or), ``==``, ``<=``,
     ``>=``, ``<``, ``>`` with other mid-circuit measurements or scalars.
 
@@ -148,7 +148,7 @@ class MidMeasureMP(MeasurementProcess):
 
     @property
     def hash(self):
-        """int: returns an integer hash uniquely representing the measurement process"""
+        """int: Returns an integer hash uniquely representing the measurement process"""
         fingerprint = (
             self.__class__.__name__,
             tuple(self.wires.tolist()),
@@ -156,10 +156,6 @@ class MidMeasureMP(MeasurementProcess):
         )
 
         return hash(fingerprint)
-
-
-class MeasurementValueError(ValueError):
-    """Error raised when an unknown measurement value is being used."""
 
 
 class MeasurementValue(Generic[T]):
@@ -266,9 +262,9 @@ class MeasurementValue(Generic[T]):
         # create a new function that selects the correct indices for each sub function
         def merged_fn(*x):
             sub_args_1 = (x[i] for i in [merged_measurements.index(m) for m in self.measurements])
-            out_1 = self.processing_fn(*sub_args_1)
-
             sub_args_2 = (x[i] for i in [merged_measurements.index(m) for m in other.measurements])
+
+            out_1 = self.processing_fn(*sub_args_1)
             out_2 = other.processing_fn(*sub_args_2)
 
             return out_1, out_2

@@ -14,19 +14,19 @@
 """Provides transforms for mitigating quantum circuits."""
 from copy import copy
 
-from typing import Any, Dict, Optional, Sequence, Union
+from typing import Any, Dict, Optional, Sequence, Callable
 
-from pennylane import QNode, apply, adjoint
+from pennylane import apply, adjoint
 from pennylane.math import mean, shape, round
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumTape, QuantumScript
-from pennylane.transforms import batch_transform
+from pennylane.transforms.core import transform
 
 import pennylane as qml
 
 
-@batch_transform
-def fold_global(circuit, scale_factor):
+@transform
+def fold_global(tape: QuantumTape, scale_factor) -> (Sequence[QuantumTape], Callable):
     r"""Differentiable circuit folding of the global unitary ``circuit``.
 
     For a unitary circuit :math:`U = L_d .. L_1`, where :math:`L_i` can be either a gate or layer, ``fold_global`` constructs
@@ -37,7 +37,7 @@ def fold_global(circuit, scale_factor):
     The purpose of folding is to artificially increase the noise for zero noise extrapolation, see :func:`~.pennylane.transforms.mitigate_with_zne`.
 
     Args:
-        circuit (callable or QuantumTape): the circuit to be folded
+        tape (~.QuantumTape): the circuit to be folded
         scale_factor (float): Scale factor :math:`\lambda` determining :math:`n` and :math:`s`
 
     Returns:
@@ -183,7 +183,7 @@ def fold_global(circuit, scale_factor):
     # The main intention for providing ``fold_global`` was for it to be used in combination with ``mitigate_with_zne``, which also works with mitiq functions.
     # To preserve the mitiq functionality, ``mitigate_with_zne`` should get a tape transform.
     # To make ``fold_global`` also user-facing and work with qnodes, this function is batch_transformed instead, and therefore applicable on qnodes.
-    return [fold_global_tape(circuit, scale_factor)], lambda x: x[0]
+    return [fold_global_tape(tape, scale_factor)], lambda x: x[0]
 
 
 def _divmod(a, b):
@@ -328,16 +328,16 @@ def richardson_extrapolate(x, y):
 
 
 # pylint: disable=too-many-arguments, protected-access
-@batch_transform
+@transform
 def mitigate_with_zne(
-    circuit: Union[QNode, QuantumTape],
+    tape: QuantumTape,
     scale_factors: Sequence[float],
     folding: callable,
     extrapolate: callable,
     folding_kwargs: Optional[Dict[str, Any]] = None,
     extrapolate_kwargs: Optional[Dict[str, Any]] = None,
     reps_per_factor=1,
-) -> float:
+) -> (Sequence[QuantumTape], Callable):
     r"""Mitigate an input circuit using zero-noise extrapolation.
 
     Error mitigation is a precursor to error correction and is compatible with near-term quantum
@@ -354,7 +354,7 @@ def mitigate_with_zne(
     see the example and usage details for further information.
 
     Args:
-        circuit (callable or QuantumTape): the circuit to be error-mitigated
+        tape (~.QuantumTape): the circuit to be error-mitigated
         scale_factors (Sequence[float]): the range of noise scale factors used
         folding (callable): a function that returns a folded circuit for a specified scale factor
         extrapolate (callable): a function that returns an extrapolated result when provided a
@@ -508,10 +508,7 @@ def mitigate_with_zne(
     folding_kwargs = folding_kwargs or {}
     extrapolate_kwargs = extrapolate_kwargs or {}
 
-    if isinstance(folding, qml.batch_transform):
-        folding = fold_global_tape
-
-    tape = circuit.expand(stop_at=lambda op: not isinstance(op, QuantumScript))
+    tape = tape.expand(stop_at=lambda op: not isinstance(op, QuantumScript))
     script_removed = QuantumScript(tape.operations[tape.num_preps :])
 
     tapes = [
@@ -520,17 +517,21 @@ def mitigate_with_zne(
     ]
 
     tapes = [tape_ for tapes_ in tapes for tape_ in tapes_]  # flattens nested list
+
+    # if folding was a batch transform, ignore the processing function
+    if isinstance(tapes[0], tuple) and isinstance(tapes[0][0], list) and callable(tapes[0][1]):
+        tapes = [t[0] for t, _ in tapes]
+
     prep_ops = tape.operations[: tape.num_preps]
     out_tapes = [QuantumScript(prep_ops + tape_.operations, tape.measurements) for tape_ in tapes]
 
     def processing_fn(results):
         """Maps from input tape executions to an error-mitigated estimate"""
-        if qml.active_return():
-            for i, tape in enumerate(out_tapes):
-                # stack the results if there are multiple measurements
-                # this will not create ragged arrays since only expval measurements are allowed
-                if len(tape.observables) > 1:
-                    results[i] = qml.math.stack(results[i])
+        for i, tape in enumerate(out_tapes):
+            # stack the results if there are multiple measurements
+            # this will not create ragged arrays since only expval measurements are allowed
+            if len(tape.observables) > 1:
+                results[i] = qml.math.stack(results[i])
 
         # Averaging over reps_per_factor repetitions
         results_flattened = []
@@ -541,14 +542,9 @@ def mitigate_with_zne(
 
         extrapolated = extrapolate(scale_factors, results_flattened, **extrapolate_kwargs)
 
-        if qml.active_return():
-            extrapolated = extrapolated[0] if shape(extrapolated) == (1,) else extrapolated
+        extrapolated = extrapolated[0] if shape(extrapolated) == (1,) else extrapolated
 
-            # unstack the results in the case of multiple measurements
-            return (
-                extrapolated if shape(extrapolated) == () else tuple(qml.math.unstack(extrapolated))
-            )
-
-        return extrapolated[0] if shape(extrapolated) == (1,) else extrapolated
+        # unstack the results in the case of multiple measurements
+        return extrapolated if shape(extrapolated) == () else tuple(qml.math.unstack(extrapolated))
 
     return out_tapes, processing_fn

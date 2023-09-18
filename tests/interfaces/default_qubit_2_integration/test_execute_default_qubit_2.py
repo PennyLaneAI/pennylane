@@ -16,9 +16,9 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.interfaces.execution import _batch_transform, _preprocess_expand_fn
+from pennylane.interfaces.execution import _preprocess_expand_fn
 
-from pennylane.devices.experimental import DefaultQubit2
+from pennylane.devices import DefaultQubit
 
 
 class TestPreprocessExpandFn:
@@ -27,7 +27,7 @@ class TestPreprocessExpandFn:
     def test_provided_is_callable(self):
         """Test that if the expand_fn is not "device", it is simply returned."""
 
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
 
         def f(tape):
             return tape
@@ -38,7 +38,7 @@ class TestPreprocessExpandFn:
     def test_new_device_blank_expand_fn(self):
         """Test that the expand_fn is blank if is new device."""
 
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
 
         out = _preprocess_expand_fn("device", dev, 10)
 
@@ -59,20 +59,12 @@ class TestBatchTransformHelper:
             def decomposition(self):
                 return [qml.PauliX(self.wires[0])]
 
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
 
         qs = qml.tape.QuantumScript([CustomOp(0)], [qml.expval(qml.PauliZ(0))])
 
-        config = qml.devices.experimental.ExecutionConfig()
-
         with pytest.warns(UserWarning, match="device batch transforms cannot be turned off"):
-            new_batch, post_procesing_fn, _ = _batch_transform(
-                (qs, qs), dev, config, device_batch_transform=False
-            )
-
-        assert len(new_batch) == 2
-
-        assert post_procesing_fn((1, 1)) == [1, 1]
+            qml.execute((qs, qs), device=dev, device_batch_transform=False)
 
     def test_split_and_expand_performed(self):
         """Test that preprocess returns the correct tapes when splitting and expanding
@@ -100,10 +92,11 @@ class TestBatchTransformHelper:
             qml.tape.QuantumScript(ops=ops, measurements=[measurements[1]]),
         ]
 
-        dev = DefaultQubit2()
-        config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
+        dev = DefaultQubit()
+        config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 
-        res_tapes, batch_fn, new_config = _batch_transform(tapes, dev, config)
+        program, new_config = dev.preprocess(config)
+        res_tapes, batch_fn = program(tapes)
         expected_ops = [
             [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RX(np.pi, wires=1)],
             [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RX(np.pi / 2, wires=1)],
@@ -126,49 +119,32 @@ class TestBatchTransformHelper:
         assert new_config.use_device_gradient
 
 
-class TestNewDeviceIntegration:
-    """Localized tests for specific warnings, errors, and edge behaviour."""
+def test_warning_if_not_device_batch_transform():
+    """Test that a warning is raised if the users requests to not run device batch transform."""
 
-    def test_warning_if_not_device_batch_transform(self):
-        """Test that a warning is raised if the users requests to not run device batch transform."""
+    # pylint: disable=too-few-public-methods
+    class CustomOp(qml.operation.Operator):
+        """Dummy operator."""
 
-        # pylint: disable=too-few-public-methods
-        class CustomOp(qml.operation.Operator):
-            """Dummy operator."""
+        def decomposition(self):
+            return [qml.PauliX(self.wires[0])]
 
-            def decomposition(self):
-                return [qml.PauliX(self.wires[0])]
+    dev = DefaultQubit()
 
-        dev = DefaultQubit2()
+    qs = qml.tape.QuantumScript([CustomOp(0)], [qml.expval(qml.PauliZ(0))])
 
-        qs = qml.tape.QuantumScript([CustomOp(0)], [qml.expval(qml.PauliZ(0))])
+    with pytest.warns(UserWarning, match="device batch transforms cannot be turned off"):
+        results = qml.execute([qs], dev, device_batch_transform=False)
 
-        with pytest.warns(UserWarning, match="device batch transforms cannot be turned off"):
-            results = qml.execute([qs], dev, device_batch_transform=False)
-
-        assert len(results) == 1
-        assert qml.math.allclose(results[0], -1)
-
-    def test_error_if_return_types_not_enabled(self):
-        """Check that an error is raised if return types is not enabled."""
-        qml.disable_return()
-
-        dev = DefaultQubit2()
-
-        qs = qml.tape.QuantumScript([], [qml.state()])
-        with pytest.raises(
-            ValueError, match="New device interface only works with return types enabled"
-        ):
-            qml.execute([qs], dev)
-
-        qml.enable_return()
+    assert len(results) == 1
+    assert qml.math.allclose(results[0], -1)
 
 
 @pytest.mark.parametrize("gradient_fn", (None, "backprop", qml.gradients.param_shift))
 def test_caching(gradient_fn):
     """Test that cache execute returns the cached result if the same script is executed
     multiple times, both in multiple times in a batch and in separate batches."""
-    dev = DefaultQubit2()
+    dev = DefaultQubit()
 
     qs = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliZ(0))])
 
@@ -181,8 +157,8 @@ def test_caching(gradient_fn):
     assert len(cache) == 1
     assert cache[qs.hash] == -1.0
 
-    assert results == [-1.0, -1.0]
-    assert results2 == [-1.0, -1.0]
+    assert results == (-1.0, -1.0)
+    assert results2 == (-1.0, -1.0)
 
     assert tracker.totals["batches"] == 1
     assert tracker.totals["executions"] == 1

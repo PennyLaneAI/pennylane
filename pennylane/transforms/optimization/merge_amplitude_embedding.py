@@ -12,23 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Transform for merging AmplitudeEmbedding gates in a quantum circuit."""
-from pennylane import apply
-from pennylane.transforms import qfunc_transform
+from typing import Sequence, Callable
 
+from pennylane.transforms.core import transform
+from pennylane.tape import QuantumTape
 from pennylane import AmplitudeEmbedding
 from pennylane._device import DeviceError
 from pennylane.math import flatten, reshape
 
 
-@qfunc_transform
-def merge_amplitude_embedding(tape):
+@transform
+def merge_amplitude_embedding(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
     r"""Quantum function transform to combine amplitude embedding templates that act on different qubits.
 
     Args:
-        qfunc (function): A quantum function.
+        tape (QuantumTape): A quantum tape.
 
     Returns:
-        function: the transformed quantum function
+        pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
+        it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of
+        quantum tapes to be evaluated, and a function to be applied to these
+        tape executions.
 
     **Example**
 
@@ -103,9 +108,17 @@ def merge_amplitude_embedding(tape):
 
         AmplitudeEmbedding(final_vector, wires=final_wires)
 
+    new_operations = []
     for gate in not_amplitude_embedding:
-        apply(gate)
+        new_operations.append(gate)
 
-    # Queue the measurements normally
-    for m in tape.measurements:
-        apply(m)
+    new_tape = QuantumTape(new_operations, tape.measurements, shots=tape.shots)
+    new_tape._qfunc_output = tape._qfunc_output  # pylint: disable=protected-access
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [new_tape], null_postprocessing
