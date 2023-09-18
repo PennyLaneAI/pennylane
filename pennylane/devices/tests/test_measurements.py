@@ -43,7 +43,7 @@ obs = {
     "PauliZ": qml.PauliZ(wires=[0]),
     "Projector": [
         qml.Projector(np.array([1]), wires=[0]),
-        qml.Projector(np.array([0, 1]), wires=[0]),
+        qml.Projector(np.array([0.0, 1.0]), wires=[0]),
     ],
     "SparseHamiltonian": qml.SparseHamiltonian(csr_matrix(np.eye(8)), wires=[0, 1, 2]),
     "Hamiltonian": qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliX(0)]),
@@ -342,22 +342,22 @@ class TestExpval:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.Projector(state, wires=[0, 1]))
 
-        basis_state, state_vector = [0, 0], [1, 0, 0, 0]
+        basis_state, state_vector = [0, 0], [1.0, 0.0, 0.0, 0.0]
         expected = (np.cos(phi / 2) * np.cos(theta / 2)) ** 2
         assert np.allclose(circuit(basis_state), expected, atol=tol(dev.shots))
         assert np.allclose(circuit(state_vector), expected, atol=tol(dev.shots))
 
-        basis_state, state_vector = [0, 1], [0, 1, 0, 0]
+        basis_state, state_vector = [0, 1], [0.0, 1.0, 0.0, 0.0]
         expected = (np.sin(phi / 2) * np.cos(theta / 2)) ** 2
         assert np.allclose(circuit(basis_state), expected, atol=tol(dev.shots))
         assert np.allclose(circuit(state_vector), expected, atol=tol(dev.shots))
 
-        basis_state, state_vector = [1, 0], [0, 0, 1, 0]
+        basis_state, state_vector = [1, 0], [0.0, 0.0, 1.0, 0.0]
         expected = (np.sin(phi / 2) * np.sin(theta / 2)) ** 2
         assert np.allclose(circuit(basis_state), expected, atol=tol(dev.shots))
         assert np.allclose(circuit(state_vector), expected, atol=tol(dev.shots))
 
-        basis_state, state_vector = [1, 1], [0, 0, 0, 1]
+        basis_state, state_vector = [1, 1], [0.0, 0.0, 0.0, 1.0]
         expected = (np.cos(phi / 2) * np.sin(theta / 2)) ** 2
         assert np.allclose(circuit(basis_state), expected, atol=tol(dev.shots))
         assert np.allclose(circuit(state_vector), expected, atol=tol(dev.shots))
@@ -727,8 +727,8 @@ class TestSample:
             return qml.sample(qml.Projector(state, wires=0))
 
         expected = np.cos(theta / 2) ** 2
-        res_basis = circuit([0]).flatten()
-        res_state = circuit([1, 0]).flatten()
+        res_basis = circuit([0.0]).flatten()
+        res_state = circuit([1.0, 0.0]).flatten()
         # res should only contain 0 or 1, the eigenvalues of the projector
         assert np.allclose(sorted(list(set(res_basis.tolist()))), [0, 1], atol=tol(dev.shots))
         assert np.allclose(sorted(list(set(res_state.tolist()))), [0, 1], atol=tol(dev.shots))
@@ -826,8 +826,8 @@ class TestSample:
             return qml.sample(qml.Projector(state, wires=[0, 1]))
 
         expected = (np.cos(theta / 2) * np.cos(theta)) ** 2
-        res_basis = circuit([0, 0]).flatten()
-        res_state = circuit([1, 0, 0, 0]).flatten()
+        res_basis = circuit([0.0, 0.0]).flatten()
+        res_state = circuit([1.0, 0.0, 0.0, 0.0]).flatten()
         # res should only contain 0 or 1, the eigenvalues of the projector
         assert np.allclose(sorted(list(set(res_basis.tolist()))), [0, 1], atol=tol(dev.shots))
         assert np.allclose(sorted(list(set(res_state.tolist()))), [0, 1], atol=tol(dev.shots))
@@ -1257,7 +1257,7 @@ class TestVar:
             return qml.var(qml.Projector(state, wires=[0, 1]))
 
         res_basis = circuit([0, 0])
-        res_state = circuit([1, 0, 0, 0])
+        res_state = circuit([1.0, 0.0, 0.0, 0.0])
         expected = (np.cos(phi / 2) * np.cos(theta / 2)) ** 2 - (
             (np.cos(phi / 2) * np.cos(theta / 2)) ** 2
         ) ** 2
@@ -1265,7 +1265,7 @@ class TestVar:
         assert np.allclose(res_state, expected, atol=tol(dev.shots))
 
         res_basis = circuit([0, 1])
-        res_state = circuit([0, 1, 0, 0])
+        res_state = circuit([0.0, 1.0, 0.0, 0.0])
         expected = (np.cos(phi / 2) * np.sin(theta / 2)) ** 2 - (
             (np.cos(phi / 2) * np.sin(theta / 2)) ** 2
         ) ** 2
@@ -1273,7 +1273,7 @@ class TestVar:
         assert np.allclose(res_state, expected, atol=tol(dev.shots))
 
         res_basis = circuit([1, 0])
-        res_state = circuit([0, 0, 1, 0])
+        res_state = circuit([0.0, 0.0, 1.0, 0.0])
         expected = (np.sin(phi / 2) * np.sin(theta / 2)) ** 2 - (
             (np.sin(phi / 2) * np.sin(theta / 2)) ** 2
         ) ** 2
@@ -1281,7 +1281,7 @@ class TestVar:
         assert np.allclose(res_state, expected, atol=tol(dev.shots))
 
         res_basis = circuit([1, 1])
-        res_state = circuit([0, 0, 0, 1])
+        res_state = circuit([0.0, 0.0, 0.0, 1.0])
         expected = (np.sin(phi / 2) * np.cos(theta / 2)) ** 2 - (
             (np.sin(phi / 2) * np.cos(theta / 2)) ** 2
         ) ** 2
