@@ -407,7 +407,7 @@ def _sample_state_jax(
     Args:
         state (array[complex]): A state vector to be sampled
         shots (int): The number of samples to take
-        prng_key (Union[int, jax.random.PRNGKey]): A``jax.random.PRNGKey``. This is
+        prng_key (jax.random.PRNGKey): A``jax.random.PRNGKey``. This is
             the key to the JAX pseudo random number generator.
         is_state_batched (bool): whether the state is batched or not
         wires (Sequence[int]): The wires to sample
@@ -420,8 +420,6 @@ def _sample_state_jax(
     import jax.numpy as jnp
 
     key = prng_key
-    if isinstance(prng_key, int):
-        key = jax.random.PRNGKey(prng_key)
 
     total_indices = len(state.shape) - is_state_batched
     state_wires = qml.wires.Wires(range(total_indices))

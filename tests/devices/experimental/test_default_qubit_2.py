@@ -1638,62 +1638,55 @@ class TestRandomSeed:
 
 
 @pytest.mark.jax
-class TestPRNGKey:
+class TestPRNGKeySeed:
     """Test that the device behaves correctly when provided with a PRNG key and using the JAX interface"""
 
     @pytest.mark.parametrize("max_workers", [None, 1, 2])
     def test_same_prng_key(self, max_workers):
-        """Test that different devices given the same random prng_key will produce
+        """Test that different devices given the same random jax.random.PRNGKey as a seed will produce
         the same results for sample, even with different seeds"""
+        import jax
+
         qs = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.sample(wires=0)], shots=1000)
         config = ExecutionConfig(interface="jax")
 
-        dev1 = DefaultQubit(seed=25, max_workers=max_workers, prng_key=123)
+        dev1 = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(123))
         result1 = dev1.execute(qs, config)
 
-        dev2 = DefaultQubit(seed=17, max_workers=max_workers, prng_key=123)
+        dev2 = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(123))
         result2 = dev2.execute(qs, config)
 
         assert np.all(result1 == result2)
 
     @pytest.mark.parametrize("max_workers", [None, 1, 2])
     def test_different_prng_key(self, max_workers):
-        """Test that different devices given different random seeds and prng_keys will produce
-        different results (with almost certainty)"""
+        """Test that different devices given different jax.random.PRNGKey values will produce
+        different results"""
+        import jax
+
         qs = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.sample(wires=0)], shots=1000)
         config = ExecutionConfig(interface="jax")
 
-        dev1 = DefaultQubit(seed=25, max_workers=max_workers, prng_key=246)
+        dev1 = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(246))
         result1 = dev1.execute(qs, config)
 
-        dev2 = DefaultQubit(seed=17, max_workers=max_workers, prng_key=123)
+        dev2 = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(123))
         result2 = dev2.execute(qs, config)
 
         assert np.any(result1 != result2)
 
     @pytest.mark.parametrize("max_workers", [None, 1, 2])
     def test_different_executions_same_prng_key(self, max_workers):
-        """Test that the same device will produce the same results every execution if prng_key is set"""
+        """Test that the same device will produce the same results every execution if
+        the seed is a jax.random.PRNGKey"""
+        import jax
+
         qs = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.sample(wires=0)], shots=1000)
         config = ExecutionConfig(interface="jax")
 
-        dev = DefaultQubit(seed=123, max_workers=max_workers, prng_key=77)
+        dev = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(77))
         result1 = dev.execute(qs, config)
         result2 = dev.execute(qs, config)
-
-        assert np.all(result1 == result2)
-
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
-    def test_no_prng_key_uses_seed(self, max_workers):
-        """Test that if no prng_key is set, the seed will be used for the JAX interface"""
-        qs = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.sample(wires=0)], shots=1000)
-        config = ExecutionConfig(interface="jax")
-
-        dev1 = DefaultQubit(seed=123, max_workers=max_workers)
-        result1 = dev1.execute(qs, config)
-
-        dev2 = DefaultQubit(seed=123, max_workers=max_workers)
-        result2 = dev2.execute(qs, config)
 
         assert np.all(result1 == result2)
 

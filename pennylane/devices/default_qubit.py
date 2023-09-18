@@ -21,6 +21,7 @@ from typing import Union, Callable, Tuple, Optional, Sequence
 import concurrent.futures
 import numpy as np
 
+import pennylane as qml
 from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.typing import Result, ResultBatch
 from pennylane.transforms import convert_to_numpy_parameters
@@ -50,19 +51,18 @@ class DefaultQubit(Device):
     Args:
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots to use in executions involving
             this device.
-        seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
-            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng`` or
+        seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator, jax.random.PRNGKey]): A
+            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``, or
             a request to seed from numpy's global random number generator.
             The default, ``seed="global"`` pulls a seed from NumPy's global generator. ``seed=None``
             will pull a seed from the OS entropy.
+            If a ``jax.random.PRNGKey`` is passed as the seed, a JAX-specific sampling function using
+            ``jax.random.choice`` and the ``PRNGKey`` will be used for sampling rather than
+            ``numpy.random.default_rng``.
         max_workers (int): A ``ProcessPoolExecutor`` executes tapes asynchronously
             using a pool of at most ``max_workers`` processes. If ``max_workers`` is ``None``,
             only the current process executes tapes. If you experience any
             issue, say using JAX, TensorFlow, Torch, try setting ``max_workers`` to ``None``.
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. Defaults to None.
-            This is the key to the JAX pseudo random number generator. Only for simulation using JAX.
-            When using JAX, if no PRNG key is provided, ``np.random.default_rng(seed).choice`` will be
-            used rather than ``jax.random.choice`` to generate results.
 
     **Example:**
 
@@ -150,13 +150,21 @@ class DefaultQubit(Device):
 
     # pylint:disable = too-many-arguments
     def __init__(
-        self, wires=None, shots=None, seed="global", max_workers=None, prng_key=None
+        self,
+        wires=None,
+        shots=None,
+        seed="global",
+        max_workers=None,
     ) -> None:
         super().__init__(wires=wires, shots=shots)
         self._max_workers = max_workers
         seed = np.random.randint(0, high=10000000) if seed == "global" else seed
-        self._rng = np.random.default_rng(seed)
-        self._prng_key = prng_key
+        if qml.math.get_interface(seed) == "jax":
+            self._prng_key = seed
+            self._rng = np.random.default_rng(None)
+        else:
+            self._prng_key = None
+            self._rng = np.random.default_rng(seed)
         self._debugger = None
 
     def supports_derivatives(
