@@ -162,6 +162,10 @@
   been removed. Please use ``QuantumScript.bind_new_parameters`` instead.
   [(#4548)](https://github.com/PennyLaneAI/pennylane/pull/4548)
 
+* `ProbabilityMP.marginal_prob` has been removed. Its contents have been moved into `process_state`,
+  which effectively just called `marginal_prob` with `np.abs(state) ** 2`.
+  [(#4602)](https://github.com/PennyLaneAI/pennylane/pull/4602)
+
 <h3>Deprecations 👋</h3>
 
 * The ``prep`` keyword argument in ``QuantumScript`` is deprecated and will be removed from `QuantumScript`.
