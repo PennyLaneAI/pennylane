@@ -594,6 +594,54 @@ class TestIntegration:
             jax.grad(jitted_circuit)(params), jax.grad(true_circuit)(params), atol=5e-3
         )
 
+    @pytest.mark.slow
+    def test_map_wires_with_time_independent_hamiltonian(self):
+        """Test the wire mapping for custom wire labels works as expected with DefaultQubit"""
+        import jax
+        from jax import numpy as jnp
+
+        def f1(params, t):
+            return params  # constant
+
+        def f2(params, t):
+            return params  # constant
+
+        ops = [qml.PauliX("a"), qml.PauliZ("b"), qml.PauliY("a"), qml.PauliX("b")]
+        coeffs = [f1, f2, 4, 9]
+        H = ParametrizedHamiltonian(coeffs, ops)
+
+        dev = DefaultQubit()
+
+        t = 4
+
+        @qml.qnode(dev)
+        def circuit(params):
+            ParametrizedEvolution(H=H, params=params, t=t)
+            return qml.expval(qml.PauliX("a") @ qml.PauliX("b"))
+
+        @jax.jit
+        @qml.qnode(dev)
+        def jitted_circuit(params):
+            ParametrizedEvolution(H=H, params=params, t=t)
+            return qml.expval(qml.PauliX("a") @ qml.PauliX("b"))
+
+        @qml.qnode(dev)
+        def true_circuit(params):
+            true_mat = qml.math.expm(-1j * qml.matrix(H(params, t=t)) * t)
+            QubitUnitary(U=true_mat, wires=[0, 1])
+            return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
+
+        params = jnp.array([1.0, 2.0])
+
+        assert qml.math.allclose(circuit(params), true_circuit(params), atol=1e-3)
+        assert qml.math.allclose(jitted_circuit(params), true_circuit(params), atol=1e-3)
+        assert qml.math.allclose(
+            jax.grad(circuit)(params), jax.grad(true_circuit)(params), atol=1e-3
+        )
+        assert qml.math.allclose(
+            jax.grad(jitted_circuit)(params), jax.grad(true_circuit)(params), atol=1e-3
+        )
+
     @pytest.mark.parametrize("device_class", [DefaultQubit, DefaultQubitLegacy])
     def test_two_commuting_parametrized_hamiltonians(self, device_class):
         """Test that the evolution of two parametrized hamiltonians that commute with each other
@@ -709,3 +757,28 @@ class TestIntegration:
         jac_jit = jax.jacobian(jax.jit(U), holomorphic=True)(params)
 
         assert qml.math.allclose(jac, jac_jit)
+
+
+@pytest.mark.jax
+def test_map_wires():
+    """Test that map wires returns a new ParameterizedEvolution, with wires updated on
+    both the operator and the corresponding Hamiltonian"""
+
+    def f1(p, t):
+        return p * t
+
+    coeffs = [2, 4, f1]
+    ops = [qml.PauliX("a"), qml.PauliX("b"), qml.PauliX("c")]
+
+    H = qml.dot(coeffs, ops)
+
+    op = qml.evolve(H)([3], 2)
+
+    wire_map = {"a": 3, "b": 5, "c": 7}
+    new_op = op.map_wires(wire_map)
+
+    assert op.wires == qml.wires.Wires(["a", "b", "c"])
+    assert op.H.wires == qml.wires.Wires(["a", "b", "c"])
+
+    assert new_op.wires == qml.wires.Wires([3, 5, 7])
+    assert new_op.H.wires == qml.wires.Wires([3, 5, 7])
