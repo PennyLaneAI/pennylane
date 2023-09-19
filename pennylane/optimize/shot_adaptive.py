@@ -242,7 +242,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
                 continue
 
             # set the QNode device shots
-            h.device.shots = 1 if s == 1 else [(1, int(s))]
+            new_shots = 1 if s == 1 else [(1, int(s))]
 
             jacs = []
             for i in argnums:
@@ -255,7 +255,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
                 else:
                     cost = h
 
-                j = qml.jacobian(cost, argnum=i)(*args, **kwargs)
+                j = qml.jacobian(cost, argnum=i)(*args, **kwargs, shots=new_shots)
 
                 if s == 1:
                     j = np.expand_dims(j, 0)
@@ -277,7 +277,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         Raises:
             ValueError: if the device is analytic
         """
-        if dev.analytic:
+        if not dev.shots:
             raise ValueError(
                 "The Rosalin optimizer can only be used with devices "
                 "that estimate expectation values with a finite number of shots."
@@ -303,58 +303,47 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         """Compute the single shot gradients of an ExpvalCost object"""
         qnodes = expval_cost.qnodes
         coeffs = expval_cost.hamiltonian.coeffs
-        device = qnodes[0].device
 
-        self.check_device(device)
-        original_shots = device.shots
+        self.check_device(qnodes[0].device)
 
         if self.lipschitz is None:
             self.check_learning_rate(coeffs)
 
-        try:
-            if self.term_sampling == "weighted_random_sampling":
-                grads = self.weighted_random_sampling(
-                    qnodes, coeffs, self.max_shots, self.trainable_args, *args, **kwargs
-                )
-            elif self.term_sampling is None:
-                device.shots = [(1, int(self.max_shots))]
-                # We iterate over each trainable argument, rather than using
-                # qml.jacobian(expval_cost), to take into account the edge case where
-                # different arguments have different shapes and cannot be stacked.
-                grads = [
-                    qml.jacobian(expval_cost, argnum=i)(*args, **kwargs)
-                    for i in self.trainable_args
-                ]
-            else:
-                raise ValueError(
-                    f"Unknown Hamiltonian term sampling method {self.term_sampling}. "
-                    "Only term_sampling='weighted_random_sampling' and "
-                    "term_sampling=None currently supported."
-                )
-        finally:
-            device.shots = original_shots
+        if self.term_sampling == "weighted_random_sampling":
+            grads = self.weighted_random_sampling(
+                qnodes, coeffs, self.max_shots, self.trainable_args, *args, **kwargs
+            )
+        elif self.term_sampling is None:
+            new_shots = [(1, int(self.max_shots))]
+            # We iterate over each trainable argument, rather than using
+            # qml.jacobian(expval_cost), to take into account the edge case where
+            # different arguments have different shapes and cannot be stacked.
+            grads = [
+                qml.jacobian(expval_cost, argnum=i)(*args, **kwargs, shots=new_shots)
+                for i in self.trainable_args
+            ]
+        else:
+            raise ValueError(
+                f"Unknown Hamiltonian term sampling method {self.term_sampling}. "
+                "Only term_sampling='weighted_random_sampling' and "
+                "term_sampling=None currently supported."
+            )
 
         return grads
 
     def _single_shot_qnode_gradients(self, qnode, args, kwargs):
         """Compute the single shot gradients of a QNode."""
-        device = qnode.device
-
         self.check_device(qnode.device)
-        original_shots = device.shots
 
         if self.lipschitz is None:
             self.check_learning_rate(1)
 
-        try:
-            device.shots = [(1, int(self.max_shots))]
+        new_shots = [(1, int(self.max_shots))]
 
-            def cost(*args, **kwargs):
-                return qml.math.stack(qnode(*args, **kwargs))
+        def cost(*args, **kwargs):
+            return qml.math.stack(qnode(*args, **kwargs, shots=new_shots))
 
-            grads = [qml.jacobian(cost, argnum=i)(*args, **kwargs) for i in self.trainable_args]
-        finally:
-            device.shots = original_shots
+        grads = [qml.jacobian(cost, argnum=i)(*args, **kwargs) for i in self.trainable_args]
 
         return grads
 
@@ -509,18 +498,5 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             If single arg is provided, list [array] is replaced by array.
         """
         new_args = self.step(objective_fn, *args, **kwargs)
-
-        if isinstance(objective_fn, qml.ExpvalCost):
-            device = objective_fn.qnodes[0].device
-        elif isinstance(objective_fn, qml.QNode) or hasattr(objective_fn, "device"):
-            device = objective_fn.device
-
-        original_shots = device.shots
-
-        try:
-            device.shots = int(self.max_shots)
-            forward = objective_fn(*args, **kwargs)
-        finally:
-            device.shots = original_shots
-
+        forward = objective_fn(*args, **kwargs, shots=int(self.max_shots))
         return new_args, forward
