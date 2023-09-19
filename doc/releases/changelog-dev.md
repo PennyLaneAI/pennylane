@@ -59,6 +59,7 @@
   method will re-order the given state to go from the inputted wire-order to the process's wire-order.
   If the process's wire-order contains extra wires, it will assume those are in the zero-state.
   [(#4570)](https://github.com/PennyLaneAI/pennylane/pull/4570)
+  [(#4602)](https://github.com/PennyLaneAI/pennylane/pull/4602)
 
 * Improve builtin types support with `qml.pauli_decompose`.
   [(#4577)](https://github.com/PennyLaneAI/pennylane/pull/4577)
@@ -79,8 +80,28 @@
   when at the beginning of a circuit, thus behaving like `StatePrep`.
   [(#4583)](https://github.com/PennyLaneAI/pennylane/pull/4583)
 
+* `DefaultQubit2` can now accept a `jax.random.PRNGKey` as a `seed`, to set the key for the JAX pseudo random 
+  number generator when using the JAX interface. This corresponds to the `prng_key` on 
+  `DefaultQubitJax` in the old API.
+  [(#4596)](https://github.com/PennyLaneAI/pennylane/pull/4596)
+
+* DefaultQubit2 dispatches to a faster implementation for applying `ParameterizedEvolution` to a state
+  when it is more efficient to evolve the state than the operation matrix.
+  [(#4598)](https://github.com/PennyLaneAI/pennylane/pull/4598)
+
+* `ShotAdaptiveOptimizer` has been updated to pass shots to QNode executions instead of overriding
+  device shots before execution. This makes it compatible with the new device API.
+  [(#4599)](https://github.com/PennyLaneAI/pennylane/pull/4599)
+
+* `StateMeasurement.process_state` now assumes the input is flat. `ProbabilityMP.process_state` has
+  been updated to reflect this assumption and avoid redundant reshaping.
+  [(#4602)](https://github.com/PennyLaneAI/pennylane/pull/4602)
+
 * Added `qml.math.get_deep_interface` to get the interface of a scalar hidden deep in lists or tuples.
-  Updated `qml.math.ndim` and `qml.math.shape` to use this to better compute the ndim and shape.
+  [(#4603)](https://github.com/PennyLaneAI/pennylane/pull/4603)
+
+* Updated `qml.math.ndim` and `qml.math.shape` to work with built-in lists/tuples that contain
+  interface-specific scalar data, eg `[(tf.Variable(1.1), tf.Variable(2.2))]`.
   [(#4603)](https://github.com/PennyLaneAI/pennylane/pull/4603)
 
 <h3>Breaking changes 💔</h3>
@@ -160,6 +181,14 @@
 * The ``QuantumScript.set_parameters`` method and the ``QuantumScript.data`` setter have
   been removed. Please use ``QuantumScript.bind_new_parameters`` instead.
   [(#4548)](https://github.com/PennyLaneAI/pennylane/pull/4548)
+
+* The private `TmpPauliRot` operator used for `SpecialUnitary` no longer decomposes to nothing
+  when the theta value is trainable.
+  [(#4585)](https://github.com/PennyLaneAI/pennylane/pull/4585)
+
+* `ProbabilityMP.marginal_prob` has been removed. Its contents have been moved into `process_state`,
+  which effectively just called `marginal_prob` with `np.abs(state) ** 2`.
+  [(#4602)](https://github.com/PennyLaneAI/pennylane/pull/4602)
 
 <h3>Deprecations 👋</h3>
 
