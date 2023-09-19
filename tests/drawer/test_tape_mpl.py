@@ -521,7 +521,7 @@ class TestControlledGates:
 
     def check_tape_controlled_qubit_unitary(self, tape):
         """Checks the control symbols for a tape with some version of a controlled qubit unitary."""
-        _, ax = tape_mpl(tape, style=None)  # set style to None to use plt.rcParams values
+        _, ax = tape_mpl(tape, style="rcParams")  # use plt.rcParams values
         layer = 0
 
         # 5 wires -> 4 control, 1 target
