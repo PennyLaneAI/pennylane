@@ -449,7 +449,7 @@ class TorchLayer(Module):
         self.qnode.construct((), kwargs)
 
     def __getattr__(self, item):
-        """If the given attribute does not exist in the class, look for it in the wrapped QNode."""
+        """If the qnode is initialized, first check to see if the attribute is on the qnode."""
         if self._initialized:
             with contextlib.suppress(AttributeError):
                 return getattr(self.qnode, item)
@@ -457,7 +457,8 @@ class TorchLayer(Module):
         return super().__getattr__(item)
 
     def __setattr__(self, item, val):
-        """If the given attribute does not exist in the class, try to set it in the wrapped QNode."""
+        """If the qnode is initialized and item is already a qnode property, update it on the qnode, else
+        just update the torch layer itself."""
         if self._initialized and item in self.qnode.__dict__:
             setattr(self.qnode, item, val)
         else:
