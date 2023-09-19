@@ -304,7 +304,7 @@ def _evolve_state_vector_under_parametrized_evolution(
             not defined.
 
     Returns:
-        _type_: _description_
+        array[complex]: output_state
     """
 
     try:
