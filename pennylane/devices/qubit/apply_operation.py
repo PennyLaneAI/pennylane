@@ -328,12 +328,11 @@ def _evolve_state_vector_under_parametrized_evolution(
     state = state.flatten()
 
     with jax.ensure_compile_time_eval():
-        H_jax = ParametrizedHamiltonianPytree.from_hamiltonian(
+        H_jax = ParametrizedHamiltonianPytree.from_hamiltonian(  # pragma: no cover
             operation.H,
             dense=operation.dense,
             wire_order=list(np.arange(num_wires)),
         )
-        raise RuntimeError()
 
     def fun(y, t):
         """dy/dt = -i H(t) y"""
