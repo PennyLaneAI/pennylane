@@ -18,6 +18,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.measurements import ProbabilityMP, Shots
+from pennylane.devices.qubit.measure import flatten_state
 
 
 # TODO: Remove this when new CustomMP are the default
@@ -25,7 +26,7 @@ def custom_measurement_process(device, spy):
     assert len(spy.call_args_list) > 0  # make sure method is mocked properly
 
     samples = device._samples  # pylint: disable=protected-access
-    state = device._state  # pylint: disable=protected-access
+    state = flatten_state(device._state, device.num_wires)  # pylint: disable=protected-access
     call_args_list = list(spy.call_args_list)
     for call_args in call_args_list:
         wires, shot_range, bin_size = (
