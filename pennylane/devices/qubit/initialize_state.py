@@ -21,7 +21,7 @@ import pennylane as qml
 
 def create_initial_state(
     wires: Union[qml.wires.Wires, Iterable],
-    prep_operation: qml.operation.StatePrep = None,
+    prep_operation: qml.operation.StatePrepBase = None,
     like: str = None,
 ):
     r"""
@@ -29,7 +29,7 @@ def create_initial_state(
 
     Args:
         wires (Union[Wires, Iterable]): The wires to be present in the initial state
-        prep_operation (Optional[StatePrep]): An operation to prepare the initial state
+        prep_operation (Optional[StatePrepBase]): An operation to prepare the initial state
         like (Optional[str]): The machine learning interface used to create the initial state.
             Defaults to None
 
@@ -40,6 +40,6 @@ def create_initial_state(
         num_wires = len(wires)
         state = np.zeros((2,) * num_wires)
         state[(0,) * num_wires] = 1
-        return qml.math.array(state, like=like)
+        return qml.math.asarray(state, like=like)
 
-    return prep_operation.state_vector(wire_order=list(wires))
+    return qml.math.asarray(prep_operation.state_vector(wire_order=list(wires)), like=like)

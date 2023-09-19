@@ -19,11 +19,12 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.devices import DefaultQubit
+from pennylane.devices import DefaultQubitLegacy
 from pennylane.gradients import spsa_grad
-from pennylane.gradients.spsa_gradient import _spsa_grad_legacy
 from pennylane.gradients.spsa_gradient import _rademacher_sampler
 from pennylane.operation import AnyWires, Observable
+
+# pylint:disable = use-implicit-booleaness-not-comparison
 
 
 def coordinate_sampler(indices, num_params, idx, rng=None):
@@ -80,7 +81,7 @@ class TestRademacherSampler:
         num = 5
         rng = np.random.default_rng(42)
         first_direction = _rademacher_sampler(ids, num, rng=rng)
-        np.random.seed = 0  # Setting the global seed should have no effect.
+        np.random.seed(0)  # Setting the global seed should have no effect.
         rng = np.random.default_rng(42)
         second_direction = _rademacher_sampler(ids, num, rng=rng)
         assert np.allclose(first_direction, second_direction)
@@ -156,37 +157,6 @@ class TestSpsaGradient:
                 tape, sampler=sampler_required_arg, num_directions=100, sampler_rng=sampler_rng
             )
 
-    def test_sampler_seed_deprecation(self):
-        """
-        Ensure that passing the sampler_seed kwarg results in a deprecation warning
-        and cannot be combined with the new sampler_rng kwarg.
-        """
-        dev = qml.device("default.qubit", wires=1)
-
-        @qml.qnode(dev, diff_method="spsa", sampler_seed=3)
-        def circuit_warn(param):
-            qml.RX(param, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        warning = "The sampler_seed argument is deprecated."
-        with pytest.warns(UserWarning, match=warning):
-            qml.grad(circuit_warn)(np.array(1.0))
-
-        with pytest.warns(UserWarning, match=warning):
-            _spsa_grad_legacy(circuit_warn, sampler_seed=3)(np.array(1.0))
-
-        @qml.qnode(dev, diff_method="spsa", sampler_rng=2, sampler_seed=3)
-        def circuit_raise(param):
-            qml.RX(param, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        err = "Both sampler_rng and sampler_seed were specified."
-        with pytest.raises(ValueError, match=err):
-            qml.grad(circuit_raise)(np.array(1.0))
-
-        with pytest.raises(ValueError, match=err):
-            _spsa_grad_legacy(circuit_raise, sampler_rng=2, sampler_seed=3)(np.array(1.0))
-
     def test_invalid_sampler_rng(self):
         """Tests that if sampler_rng has an unexpected type, an error is raised."""
         dev = qml.device("default.qubit", wires=1)
@@ -200,13 +170,20 @@ class TestSpsaGradient:
         with pytest.raises(ValueError, match=expected_message):
             qml.grad(circuit)(np.array(1.0))
 
+    def test_batched_tape_raises(self):
+        """Test that an error is raised for a broadcasted/batched tape."""
+        tape = qml.tape.QuantumScript([qml.RX([0.4, 0.2], 0)], [qml.expval(qml.PauliZ(0))])
+        _match = "Computing the gradient of broadcasted tapes with the SPSA gradient transform"
+        with pytest.raises(NotImplementedError, match=_match):
+            spsa_grad(tape)
+
     def test_non_differentiable_error(self):
         """Test error raised if attempting to differentiate with
         respect to a non-differentiable argument"""
         psi = np.array([1, 0, 1, 0], requires_grad=False) / np.sqrt(2)
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.QubitStateVector(psi, wires=[0, 1])
+            qml.StatePrep(psi, wires=[0, 1])
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])
             qml.CNOT(wires=[0, 1])
@@ -611,13 +588,13 @@ class TestSpsaGradient:
                 """Diagonalizing gates"""
                 return []
 
-        class DeviceSupportingSpecialObservable(DefaultQubit):
+        class DeviceSupportingSpecialObservable(DefaultQubitLegacy):
             """A device class supporting SpecialObservable."""
 
             # pylint:disable=too-few-public-methods
             name = "Device supporting SpecialObservable"
             short_name = "default.qubit.specialobservable"
-            observables = DefaultQubit.observables.union({"SpecialObservable"})
+            observables = DefaultQubitLegacy.observables.union({"SpecialObservable"})
 
             @staticmethod
             def _asarray(arr, dtype=None):

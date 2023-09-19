@@ -21,7 +21,7 @@ from pennylane import numpy as np
 
 import pennylane as qml
 from pennylane.gradients import finite_diff
-from pennylane.devices import DefaultQubit
+from pennylane.devices import DefaultQubitLegacy
 from pennylane.measurements import Shots
 from pennylane.operation import Observable, AnyWires
 
@@ -42,7 +42,7 @@ class TestFiniteDiff:
         psi = np.array([1, 0, 1, 0], requires_grad=False) / np.sqrt(2)
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.QubitStateVector(psi, wires=[0, 1])
+            qml.StatePrep(psi, wires=[0, 1])
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])
             qml.CNOT(wires=[0, 1])
@@ -451,12 +451,12 @@ class TestFiniteDiff:
                 return []
 
         # pylint: disable=too-few-public-methods
-        class DeviceSupportingSpecialObservable(DefaultQubit):
+        class DeviceSupportingSpecialObservable(DefaultQubitLegacy):
             """A device that supports the above SpecialObservable as a return type."""
 
             name = "Device supporting SpecialObservable"
             short_name = "default.qubit.specialobservable"
-            observables = DefaultQubit.observables.union({"SpecialObservable"})
+            observables = DefaultQubitLegacy.observables.union({"SpecialObservable"})
 
             # pylint: disable=unused-argument
             @staticmethod

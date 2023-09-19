@@ -306,3 +306,30 @@ def reduce_matrices(
     reduced_mat, final_wires = reduce(expand_and_reduce, mats_and_wires_gen)
 
     return reduced_mat, final_wires
+
+
+def get_batch_size(tensor, expected_shape, expected_size):
+    """
+    Determine whether a tensor has an additional batch dimension for broadcasting,
+    compared to an expected_shape. Has support for abstract TF tensors.
+
+    Args:
+        tensor (TensorLike): A tensor to inspect for batching
+        expected_shape (Tuple[int]): The expected shape of the tensor if not batched
+        expected_size (int): The expected size of the tensor if not batched
+
+    Returns:
+        Optional[int]: The batch size of the tensor if there is one, otherwise None
+    """
+    try:
+        size = qml.math.size(tensor)
+        ndim = qml.math.ndim(tensor)
+        if ndim > len(expected_shape) or size > expected_size:
+            return size // expected_size
+
+    except Exception as err:  # pragma: no cover, pylint:disable=broad-except
+        # This except clause covers the usage of tf.function
+        if not qml.math.is_abstract(tensor):
+            raise err
+
+    return None

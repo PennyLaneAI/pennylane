@@ -15,18 +15,17 @@
 Contains the tape transform that splits non-commuting terms
 """
 # pylint: disable=protected-access
+from typing import Sequence, Callable
 from functools import reduce
-
-import numpy as np
 
 import pennylane as qml
 from pennylane.measurements import ProbabilityMP, SampleMP
 
-from .batch_transform import batch_transform
+from pennylane.transforms.core import transform
 
 
-@batch_transform
-def split_non_commuting(tape):
+@transform
+def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""
     Splits a qnode measuring non-commuting observables into groups of commuting observables.
 
@@ -166,52 +165,41 @@ def split_non_commuting(tape):
         tapes = []
         for group, indices in zip(groups, group_coeffs):
             new_tape = tape.__class__(
-                tape._ops,
+                tape.operations,
                 (tape.measurements[i].__class__(obs=o) for o, i in zip(group, indices)),
-                tape._prep,
             )
 
             tapes.append(new_tape)
 
         def reorder_fn(res):
             """re-order the output to the original shape and order"""
-            if qml.active_return():
-                # determine if shot vector is used
-                if len(tapes[0].measurements) == 1:
-                    shot_vector_defined = isinstance(res[0], tuple)
-                else:
-                    shot_vector_defined = isinstance(res[0][0], tuple)
+            # determine if shot vector is used
+            if len(tapes[0].measurements) == 1:
+                shot_vector_defined = isinstance(res[0], tuple)
+            else:
+                shot_vector_defined = isinstance(res[0][0], tuple)
 
-                res = list(zip(*res)) if shot_vector_defined else [res]
+            res = list(zip(*res)) if shot_vector_defined else [res]
 
-                reorder_indxs = qml.math.concatenate(group_coeffs)
-
-                res_ordered = []
-                for shot_res in res:
-                    # flatten the results
-                    shot_res = reduce(
-                        lambda x, y: x + list(y) if isinstance(y, (tuple, list)) else x + [y],
-                        shot_res,
-                        [],
-                    )
-
-                    # reorder the tape results to match the user-provided order
-                    shot_res = list(zip(range(len(shot_res)), shot_res))
-                    shot_res = sorted(shot_res, key=lambda r: reorder_indxs[r[0]])
-                    shot_res = [r[1] for r in shot_res]
-
-                    res_ordered.append(tuple(shot_res))
-
-                return tuple(res_ordered) if shot_vector_defined else res_ordered[0]
-
-            new_res = qml.math.concatenate(res)
             reorder_indxs = qml.math.concatenate(group_coeffs)
 
-            # in order not to mess with the outputs I am just permuting them with a simple matrix multiplication
-            permutation_matrix = np.zeros((len(new_res), len(new_res)))
-            for column, indx in enumerate(reorder_indxs):
-                permutation_matrix[indx, column] = 1
-            return qml.math.dot(permutation_matrix, new_res)
+            res_ordered = []
+            for shot_res in res:
+                # flatten the results
+                shot_res = reduce(
+                    lambda x, y: x + list(y) if isinstance(y, (tuple, list)) else x + [y],
+                    shot_res,
+                    [],
+                )
+
+                # reorder the tape results to match the user-provided order
+                shot_res = list(zip(range(len(shot_res)), shot_res))
+                shot_res = sorted(shot_res, key=lambda r: reorder_indxs[r[0]])
+                shot_res = [r[1] for r in shot_res]
+
+                res_ordered.append(tuple(shot_res))
+
+            return tuple(res_ordered) if shot_vector_defined else res_ordered[0]
 
         return tapes, reorder_fn
 

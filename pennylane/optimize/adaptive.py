@@ -13,32 +13,49 @@
 # limitations under the License.
 """Adaptive optimizer"""
 import copy
+from typing import Sequence, Callable
 
 # pylint: disable= no-value-for-parameter, protected-access, not-callable
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.tape import QuantumTape
+from pennylane.transforms.core import transform
 
 
-@qml.qfunc_transform
-def append_gate(tape, params, gates):
+@transform
+def append_gate(tape: QuantumTape, params, gates) -> (Sequence[QuantumTape], Callable):
     """Append parameterized gates to an existing tape.
 
     Args:
         tape (QuantumTape): quantum tape to transform by adding gates
         params (array[float]): parameters of the gates to be added
         gates (list[Operator]): list of the gates to be added
+
+    Returns:
+        pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
+        it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of
+        quantum tapes to be evaluated, and a function to be applied to these
+        tape executions.
     """
-    for o in tape.operations:
-        qml.apply(o)
+    new_operations = []
 
     for i, g in enumerate(gates):
         g = copy.copy(g)
         new_params = (params[i], *g.data[1:])
         g.data = new_params
-        qml.apply(g)
+        new_operations.append(g)
 
-    for m in tape.measurements:
-        qml.apply(m)
+    new_tape = QuantumTape(tape.operations + new_operations, tape.measurements, shots=tape.shots)
+    new_tape._qfunc_output = tape._qfunc_output
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]  # pragma: no cover
+
+    return [new_tape], null_postprocessing
 
 
 class AdaptiveOptimizer:
@@ -153,7 +170,7 @@ class AdaptiveOptimizer:
         Returns:
             function: user-defined circuit with appended gates
         """
-        final_circuit = append_gate(params, gates)(initial_circuit)
+        final_circuit = append_gate(initial_circuit, params, gates)
 
         return final_circuit()
 
@@ -188,14 +205,14 @@ class AdaptiveOptimizer:
         qnode = copy.copy(circuit)
 
         if drain_pool:
-            repeated_gates = [
+            operator_pool = [
                 gate
                 for gate in operator_pool
-                for operation in circuit.tape.operations
-                if (gate.name == operation.name and gate.wires == operation.wires)
+                if all(
+                    gate.name != operation.name or gate.wires != operation.wires
+                    for operation in circuit.tape.operations
+                )
             ]
-            for gate in repeated_gates:
-                operator_pool.remove(gate)
 
         params = np.array([gate.parameters[0] for gate in operator_pool], requires_grad=True)
         qnode.func = self._circuit
@@ -214,6 +231,6 @@ class AdaptiveOptimizer:
                 qnode, params, gates=selected_gates, initial_circuit=circuit.func
             )
 
-        qnode.func = append_gate(params, selected_gates)(circuit.func)
+        qnode.func = append_gate(circuit.func, params, selected_gates)
 
         return qnode, cost, max(abs(qml.math.toarray(grads)))

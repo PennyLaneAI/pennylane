@@ -240,15 +240,21 @@ def _draw_qnode(
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-        original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
+        if expansion_strategy == "device" and isinstance(qnode.device, qml.devices.Device):
+            qnode.construct(args, kwargs)
+            program, _ = qnode.device.preprocess()
+            tapes = program([qnode.tape])
+            _wire_order = wire_order or qnode.tape.wires
+        else:
+            original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
 
-        try:
-            qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
-            tapes = qnode.construct(args, kwargs)
-        finally:
-            qnode.expansion_strategy = original_expansion_strategy
+            try:
+                qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
+                tapes = qnode.construct(args, kwargs)
+            finally:
+                qnode.expansion_strategy = original_expansion_strategy
 
-        _wire_order = wire_order or getattr(qnode.device, "wires", None)
+            _wire_order = wire_order or qnode.device.wires
 
         if tapes is not None:
             cache = {"tape_offset": 0, "matrices": []}
@@ -304,7 +310,7 @@ def draw_mpl(
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
         decimals (int): How many decimal points to include when formatting operation parameters.
             Default ``None`` will omit parameters from operation labels.
-        style (str): visual style of plot. Valid strings are ``{'black_white', 'black_white_dark', 'sketch',
+        style (str): visual style of plot. Valid strings are ``{'black_white', 'black_white_dark', 'sketch', 'pennylane',
             'sketch_dark', 'solarized_light', 'solarized_dark', 'default'}``. If no style is specified, the
             global style set with :func:`~.use_style` will be used, and the initial default is 'black_white'.
             If you would like to use your environment's current rcParams, set `style` to "rcParams".
@@ -535,18 +541,26 @@ def _draw_mpl_qnode(
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs_qnode):
-        original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
+        if expansion_strategy == "device" and isinstance(qnode.device, qml.devices.Device):
+            qnode.construct(args, kwargs)
+            program, _ = qnode.device.preprocess()
+            tapes, _ = program([qnode.tape])
+            tape = tapes[0]
+            _wire_order = wire_order or qnode.tape.wires
+        else:
+            original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
 
-        try:
-            qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
-            qnode.construct(args, kwargs_qnode)
-        finally:
-            qnode.expansion_strategy = original_expansion_strategy
+            try:
+                qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
+                qnode.construct(args, kwargs_qnode)
+            finally:
+                qnode.expansion_strategy = original_expansion_strategy
 
-        _wire_order = wire_order or getattr(qnode.device, "wires", None)
+            tape = qnode.tape
+            _wire_order = wire_order or qnode.device.wires
 
         return tape_mpl(
-            qnode.qtape,
+            tape,
             wire_order=_wire_order,
             show_all_wires=show_all_wires,
             decimals=decimals,

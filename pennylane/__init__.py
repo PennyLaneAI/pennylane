@@ -44,7 +44,6 @@ from pennylane.qchem import (
     paulix_ops,
     taper_operation,
     import_operator,
-    import_state,
 )
 from pennylane._device import Device, DeviceError
 from pennylane._grad import grad, jacobian
@@ -83,7 +82,6 @@ from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane import qaoa
 from pennylane.qnode import QNode, qnode
-from pennylane.return_types import enable_return, disable_return, active_return
 from pennylane.transforms import (
     adjoint_metric_tensor,
     batch_params,
@@ -336,7 +334,9 @@ def device(name, *args, **kwargs):
         # loads the device class
         plugin_device_class = plugin_devices[name].load()
 
-        if Version(version()) not in SimpleSpec(plugin_device_class.pennylane_requires):
+        if hasattr(plugin_device_class, "pennylane_requires") and Version(
+            version()
+        ) not in SimpleSpec(plugin_device_class.pennylane_requires):
             raise DeviceError(
                 f"The {name} plugin requires PennyLane versions {plugin_device_class.pennylane_requires}, "
                 f"however PennyLane version {__version__} is installed."

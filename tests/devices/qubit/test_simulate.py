@@ -49,7 +49,7 @@ def test_custom_operation():
 
 
 # pylint: disable=too-few-public-methods
-class TestStatePrep:
+class TestStatePrepBase:
     """Tests integration with various state prep methods."""
 
     def test_basis_state(self):
@@ -180,6 +180,15 @@ class TestBasicCircuit:
         assert qml.math.allclose(grad0[0], -tf.cos(phi))
         assert qml.math.allclose(grad1[0], -tf.sin(phi))
 
+    @pytest.mark.jax
+    @pytest.mark.parametrize("op", [qml.RX(np.pi, 0), qml.BasisState([1], 0)])
+    def test_result_has_correct_interface(self, op):
+        """Test that even if no interface parameters are given, result is correct."""
+        qs = qml.tape.QuantumScript([op], [qml.expval(qml.PauliZ(0))])
+        res = simulate(qs, interface="jax")
+        assert qml.math.get_interface(res) == "jax"
+        assert qml.math.allclose(res, -1)
+
 
 class TestBroadcasting:
     """Test that simulate works with broadcasted parameters"""
@@ -191,7 +200,7 @@ class TestBroadcasting:
 
         ops = [qml.RY(x, wires=0), qml.CNOT(wires=[0, 1])]
         measurements = [qml.expval(qml.PauliZ(i)) for i in range(2)]
-        prep = [qml.QubitStateVector(np.eye(4), wires=[0, 1])]
+        prep = [qml.StatePrep(np.eye(4), wires=[0, 1])]
 
         qs = qml.tape.QuantumScript(ops, measurements, prep)
         res = simulate(qs)
@@ -256,7 +265,7 @@ class TestBroadcasting:
 
         ops = [qml.RY(x, wires=0), qml.CNOT(wires=[0, 1])]
         measurements = [qml.expval(qml.PauliZ(i)) for i in range(2)]
-        prep = [qml.QubitStateVector(np.eye(4), wires=[0, 1])]
+        prep = [qml.StatePrep(np.eye(4), wires=[0, 1])]
 
         qs = qml.tape.QuantumScript(ops, measurements, prep, shots=qml.measurements.Shots(10000))
         res = simulate(qs, rng=123)
@@ -321,6 +330,25 @@ class TestBroadcasting:
         assert len(res) == 2
         assert np.allclose(res[0], np.cos(x), atol=0.05)
         assert np.allclose(res[1], -np.cos(x), atol=0.05)
+
+    def test_broadcasting_with_extra_measurement_wires(self, mocker):
+        """Test that broadcasting works when the operations don't act on all wires."""
+        # I can't mock anything in `simulate` because the module name is the function name
+        spy = mocker.spy(qml, "map_wires")
+        x = np.array([0.8, 1.0, 1.2, 1.4])
+
+        ops = [qml.PauliX(wires=2), qml.RY(x, wires=1), qml.CNOT(wires=[1, 2])]
+        measurements = [qml.expval(qml.PauliZ(i)) for i in range(3)]
+
+        qs = qml.tape.QuantumScript(ops, measurements)
+        res = simulate(qs)
+
+        assert isinstance(res, tuple)
+        assert len(res) == 3
+        assert np.allclose(res[0], 1.0)
+        assert np.allclose(res[1], np.cos(x))
+        assert np.allclose(res[2], -np.cos(x))
+        assert spy.call_args_list[0].args == (qs, {2: 0, 1: 1, 0: 2})
 
 
 class TestDebugger:

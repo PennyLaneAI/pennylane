@@ -21,33 +21,33 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qnode
-from pennylane.devices.experimental import DefaultQubit2
+from pennylane.devices import DefaultQubit
 
 qubit_device_and_diff_method = [
-    [DefaultQubit2(), "finite-diff", False],
-    [DefaultQubit2(), "parameter-shift", False],
-    [DefaultQubit2(), "backprop", True],
-    [DefaultQubit2(), "adjoint", True],
-    [DefaultQubit2(), "adjoint", False],
-    [DefaultQubit2(), "spsa", False],
-    [DefaultQubit2(), "hadamard", False],
+    [DefaultQubit(), "finite-diff", False],
+    [DefaultQubit(), "parameter-shift", False],
+    [DefaultQubit(), "backprop", True],
+    [DefaultQubit(), "adjoint", True],
+    [DefaultQubit(), "adjoint", False],
+    [DefaultQubit(), "spsa", False],
+    [DefaultQubit(), "hadamard", False],
 ]
 
 interface_qubit_device_and_diff_method = [
-    ["autograd", DefaultQubit2(), "finite-diff", False],
-    ["autograd", DefaultQubit2(), "parameter-shift", False],
-    ["autograd", DefaultQubit2(), "backprop", True],
-    ["autograd", DefaultQubit2(), "adjoint", True],
-    ["autograd", DefaultQubit2(), "adjoint", False],
-    ["autograd", DefaultQubit2(), "spsa", False],
-    ["autograd", DefaultQubit2(), "hadamard", False],
-    ["auto", DefaultQubit2(), "finite-diff", False],
-    ["auto", DefaultQubit2(), "parameter-shift", False],
-    ["auto", DefaultQubit2(), "backprop", True],
-    ["auto", DefaultQubit2(), "adjoint", True],
-    ["auto", DefaultQubit2(), "adjoint", False],
-    ["auto", DefaultQubit2(), "spsa", False],
-    ["auto", DefaultQubit2(), "hadamard", False],
+    ["autograd", DefaultQubit(), "finite-diff", False],
+    ["autograd", DefaultQubit(), "parameter-shift", False],
+    ["autograd", DefaultQubit(), "backprop", True],
+    ["autograd", DefaultQubit(), "adjoint", True],
+    ["autograd", DefaultQubit(), "adjoint", False],
+    ["autograd", DefaultQubit(), "spsa", False],
+    ["autograd", DefaultQubit(), "hadamard", False],
+    ["auto", DefaultQubit(), "finite-diff", False],
+    ["auto", DefaultQubit(), "parameter-shift", False],
+    ["auto", DefaultQubit(), "backprop", True],
+    ["auto", DefaultQubit(), "adjoint", True],
+    ["auto", DefaultQubit(), "adjoint", False],
+    ["auto", DefaultQubit(), "spsa", False],
+    ["auto", DefaultQubit(), "hadamard", False],
 ]
 
 pytestmark = pytest.mark.autograd
@@ -459,7 +459,7 @@ class TestShotsIntegration:
 
     def test_changing_shots(self):
         """Test that changing shots works on execution"""
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
         a, b = np.array([0.543, -0.654], requires_grad=True)
 
         @qnode(dev, diff_method=qml.gradients.param_shift)
@@ -481,7 +481,7 @@ class TestShotsIntegration:
     def test_gradient_integration(self):
         """Test that temporarily setting the shots works
         for gradient computations"""
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
         a, b = np.array([0.543, -0.654], requires_grad=True)
 
         @qnode(dev, diff_method=qml.gradients.param_shift)
@@ -508,7 +508,7 @@ class TestShotsIntegration:
 
         spy = mocker.spy(qml, "execute")
 
-        @qnode(DefaultQubit2())
+        @qnode(DefaultQubit())
         def cost_fn(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -1296,7 +1296,8 @@ class TestQubitIntegration:
         assert res[1].shape == ()
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_projector(self, interface, dev, diff_method, grad_on_execution, tol):
+    @pytest.mark.parametrize("state", [[1], [0, 1]])  # Basis state and state vector
+    def test_projector(self, state, interface, dev, diff_method, grad_on_execution, tol):
         """Test that the variance of a projector is correctly returned"""
         kwargs = dict(
             diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
@@ -1310,7 +1311,7 @@ class TestQubitIntegration:
         elif diff_method == "hadamard":
             pytest.skip("Hadamard gradient does not support variances.")
 
-        P = np.array([1], requires_grad=False)
+        P = np.array(state, requires_grad=False)
         x, y = np.array([0.765, -0.654], requires_grad=True)
 
         @qnode(dev, **kwargs)
@@ -1535,7 +1536,7 @@ class TestSample:
     @pytest.mark.xfail
     def test_backprop_error(self):
         """Test that sampling in backpropagation grad_on_execution raises an error"""
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
 
         @qnode(dev, diff_method="backprop")
         def circuit():
@@ -1549,7 +1550,7 @@ class TestSample:
         """Test that the sample function outputs samples of the right size"""
         n_sample = 10
 
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
 
         @qnode(dev, diff_method=None)
         def circuit():
@@ -1572,7 +1573,7 @@ class TestSample:
 
         n_sample = 10
 
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
 
         @qnode(dev, diff_method="parameter-shift")
         def circuit():
@@ -1594,7 +1595,7 @@ class TestSample:
         """Test the return type and shape of sampling a single wire"""
         n_sample = 10
 
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
 
         @qnode(dev, diff_method=None)
         def circuit():
@@ -1612,7 +1613,7 @@ class TestSample:
         where a rectangular array is expected"""
         n_sample = 10
 
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
 
         @qnode(dev, diff_method=None)
         def circuit():
@@ -1653,14 +1654,7 @@ class TestReturn:
 
         grad = qml.grad(circuit)(a)
 
-        import sys  # pylint: disable=import-outside-toplevel
-
-        python_version = sys.version_info.minor
-        if diff_method == "backprop" and python_version > 7:
-            # Since numpy 1.23.0
-            assert isinstance(grad, np.ndarray)
-        else:
-            assert isinstance(grad, float)
+        assert isinstance(grad, np.tensor if diff_method == "backprop" else float)
 
     def test_grad_single_measurement_multiple_param(self, dev, diff_method, grad_on_execution):
         """For one measurement and multiple param, the gradient is a tuple of arrays."""
@@ -2129,7 +2123,7 @@ def test_no_ops():
     """Test that the return value of the QNode matches in the interface
     even if there are no ops"""
 
-    dev = DefaultQubit2()
+    dev = DefaultQubit()
 
     @qml.qnode(dev, interface="autograd")
     def circuit():

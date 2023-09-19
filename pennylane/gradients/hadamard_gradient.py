@@ -22,8 +22,8 @@ from pennylane.transforms.tape_expand import expand_invalid_trainable_hadamard_g
 
 from .gradient_transform import (
     _all_zero_grad,
-    assert_active_return,
     assert_no_state_returns,
+    assert_no_tape_batching,
     assert_no_variance,
     choose_grad_methods,
     gradient_analysis_and_validation,
@@ -175,9 +175,9 @@ def _hadamard_grad(
 
     """
     transform_name = "Hadamard test"
-    assert_active_return(transform_name)
     assert_no_state_returns(tape.measurements, transform_name)
     assert_no_variance(tape.measurements, transform_name)
+    assert_no_tape_batching(tape, transform_name)
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
@@ -280,7 +280,7 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
 
             _rotations, _measurements = qml.tape.tape.rotations_and_diagonal_measurements(new_tape)
             # pylint: disable=protected-access
-            new_tape._ops = new_tape._ops + _rotations
+            new_tape._ops = new_tape.operations + _rotations
             new_tape._measurements = _measurements
             new_tape._update()
 
@@ -328,8 +328,13 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
                 grads.append(final_res[idx])
                 idx += 1
             else:
-                axis = None if not multi_measurements else 0
-                grads.append(qml.math.sum(final_res[idx : idx + num_tape], axis=axis))
+                result = final_res[idx : idx + num_tape]
+                if multi_measurements:
+                    grads.append(
+                        [qml.math.array(qml.math.sum(res, axis=0)) for res in zip(*result)]
+                    )
+                else:
+                    grads.append(qml.math.array(qml.math.sum(result)))
                 idx += num_tape
 
         if not multi_measurements and not multi_params:

@@ -18,15 +18,14 @@ Contains the AmplitudeEmbedding template.
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
-from pennylane.ops import QubitStateVector
+from pennylane.ops import StatePrep
 from pennylane.wires import Wires
 
 # tolerance for normalization
 TOLERANCE = 1e-10
 
 
-class AmplitudeEmbedding(Operation):
+class AmplitudeEmbedding(StatePrep):
     r"""Encodes :math:`2^n` features into the amplitude vector of :math:`n` qubits.
 
     By setting ``pad_with`` to a real or complex number, ``features`` is automatically padded to dimension
@@ -120,26 +119,18 @@ class AmplitudeEmbedding(Operation):
 
     """
 
-    num_wires = AnyWires
-    grad_method = None
-
     def __init__(self, features, wires, pad_with=None, normalize=False, id=None):
+        # pylint:disable=bad-super-call
         wires = Wires(wires)
         self.pad_with = pad_with
         self.normalize = normalize
         features = self._preprocess(features, wires, pad_with, normalize)
-        super().__init__(features, wires=wires, id=id)
-
-    @property
-    def num_params(self):
-        return 1
-
-    @property
-    def ndim_params(self):
-        return (1,)
+        super(StatePrep, self).__init__(features, wires=wires, id=id)
 
     @staticmethod
-    def compute_decomposition(features, wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        features, wires
+    ):  # pylint: disable=arguments-differ,arguments-renamed
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -159,9 +150,9 @@ class AmplitudeEmbedding(Operation):
 
         >>> features = torch.tensor([1., 0., 0., 0.])
         >>> qml.AmplitudeEmbedding.compute_decomposition(features, wires=["a", "b"])
-        [QubitStateVector(tensor([1., 0., 0., 0.]), wires=['a', 'b'])]
+        [StatePrep(tensor([1., 0., 0., 0.]), wires=['a', 'b'])]
         """
-        return [QubitStateVector(features, wires=wires)]
+        return [StatePrep(features, wires=wires)]
 
     @staticmethod
     def _preprocess(features, wires, pad_with, normalize):

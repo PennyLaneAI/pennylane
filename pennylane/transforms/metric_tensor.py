@@ -17,10 +17,11 @@ methods of computing the metric tensor.
 """
 import functools
 import warnings
+import numpy as np
 
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.circuit_graph import LayerData
+from pennylane.queuing import WrappedObj
 
 from .batch_transform import batch_transform
 
@@ -608,7 +609,8 @@ def _get_gen_op(op, allow_nonunitary, aux_wire):
     r"""Get the controlled-generator operation for a given operation.
 
     Args:
-        op (pennylane.operation.Operation): Operation from which to extract the generator
+        op (WrappedObj[Operation]): Wrapped Operation from which to extract the generator. The
+            Operation needs to be wrapped for hashability in order to use the lru-cache.
         allow_nonunitary (bool): Whether non-unitary gates are allowed in the circuit
         aux_wire (int or pennylane.wires.Wires): Auxiliary wire on which to control the operation
 
@@ -632,6 +634,7 @@ def _get_gen_op(op, allow_nonunitary, aux_wire):
         qml.PhaseShift: qml.CZ,  # PhaseShift is the same as RZ up to a global phase
     }
 
+    op = op.obj
     try:
         cgen = op_to_cgen[op.__class__]
         return cgen(wires=[aux_wire, *op.wires])
@@ -677,12 +680,12 @@ def _get_first_term_tapes(layer_i, layer_j, allow_nonunitary, aux_wire):
 
     # Iterate over differentiated operation in first layer
     for diffed_op_i, par_idx_i in zip(layer_i.ops, layer_i.param_inds):
-        gen_op_i = _get_gen_op(diffed_op_i, allow_nonunitary, aux_wire)
+        gen_op_i = _get_gen_op(WrappedObj(diffed_op_i), allow_nonunitary, aux_wire)
 
         # Iterate over differentiated operation in second layer
         # There will be one tape per pair of differentiated operations
         for diffed_op_j, par_idx_j in zip(layer_j.ops, layer_j.param_inds):
-            gen_op_j = _get_gen_op(diffed_op_j, allow_nonunitary, aux_wire)
+            gen_op_j = _get_gen_op(WrappedObj(diffed_op_j), allow_nonunitary, aux_wire)
 
             with qml.queuing.AnnotatedQueue() as q:
                 # Initialize auxiliary wire
@@ -805,9 +808,8 @@ def _metric_tensor_hadamard(
         # Get full block-diagonal tensor
         diag_mt = diag_proc_fn(diag_res)
 
-        if qml.active_return():
-            # the off diag tapes only have a single expval measurement
-            off_diag_res = [qml.math.expand_dims(res, 0) for res in off_diag_res]
+        # the off diag tapes only have a single expval measurement
+        off_diag_res = [qml.math.expand_dims(res, 0) for res in off_diag_res]
 
         # Prepare the mask to match the used interface
         mask = qml.math.convert_like(mask, diag_mt)
@@ -841,14 +843,15 @@ def _metric_tensor_hadamard(
         # Rescale first and second term
         coeffs_gen = (c for c in qml.math.hstack(coeffs_list))
         # flattened coeffs_list but also with 0s where parameters are not in argnum
-        extended_coeffs_list = [
-            next(coeffs_gen) if param_in_argnum else 0.0
-            for param_in_argnum in qml.math.hstack(in_argnum_list)
-        ]
-
-        scale = qml.math.convert_like(
-            qml.math.tensordot(extended_coeffs_list, extended_coeffs_list, axes=0), results[0]
+        interface = qml.math.get_interface(*results)
+        extended_coeffs_list = qml.math.asarray(
+            [
+                next(coeffs_gen) if param_in_argnum else 0.0
+                for param_in_argnum in qml.math.hstack(in_argnum_list)
+            ],
+            like=interface,
         )
+        scale = qml.math.tensordot(extended_coeffs_list, extended_coeffs_list, axes=0)
         off_diag_mt = scale * off_diag_mt
 
         # Combine block-diagonal and off block-diagonal

@@ -14,10 +14,7 @@
 """
 This module contains the functions needed for creating fermionic and qubit observables.
 """
-import warnings
-
 # pylint: disable= too-many-branches, too-many-return-statements
-
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.fermi import FermiSentence, FermiWord
@@ -25,7 +22,7 @@ from pennylane.operation import active_new_opmath
 from pennylane.pauli.utils import simplify
 
 
-def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12, fs=False):
+def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
     r"""Create a fermionic observable from molecular orbital integrals.
 
     Args:
@@ -33,24 +30,15 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12, fs=False)
         one (array[float]): the one-particle molecular orbital integrals
         two (array[float]): the two-particle molecular orbital integrals
         cutoff (float): cutoff value for discarding the negligible integrals
-        fs (bool): if True, a fermi sentence will be returned
 
     Returns:
-        Union[FermiSentence, tuple(array[float], list[list[int]])]: fermionic Hamiltonian
+        FermiSentence: fermionic observable
 
     **Example**
 
     >>> constant = np.array([1.0])
     >>> integral = np.array([[0.5, -0.8270995], [-0.8270995, 0.5]])
-    >>> coeffs, ops = fermionic_observable(constant, integral)
-    >>> ops
-    [[], [0, 0], [0, 2], [1, 1], [1, 3], [2, 0], [2, 2], [3, 1], [3, 3]]
-
-    If the `fs` kwarg is `True`, a fermionic operator is returned.
-
-    >>> constant = np.array([1.0])
-    >>> integral = np.array([[0.5, -0.8270995], [-0.8270995, 0.5]])
-    >>> fermionic_observable(constant, integral, fs=True)
+    >>> fermionic_observable(constant, integral)
     1.0 * I
     + 0.5 * a⁺(0) a(0)
     + -0.8270995 * a⁺(0) a(2)
@@ -96,53 +84,30 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12, fs=False)
     if indices_sort:
         indices_sort = qml.math.array(indices_sort)
 
-    if fs:
-        sentence = FermiSentence({FermiWord({}): constant[0]})
-        for c, o in zip(coeffs[indices_sort], sorted(operators)):
-            if len(o) == 2:
-                sentence.update({FermiWord({(0, o[0]): "+", (1, o[1]): "-"}): c})
-            if len(o) == 4:
-                sentence.update(
-                    {FermiWord({(0, o[0]): "+", (1, o[1]): "+", (2, o[2]): "-", (3, o[3]): "-"}): c}
-                )
-        sentence.simplify()
+    sentence = FermiSentence({FermiWord({}): constant[0]})
+    for c, o in zip(coeffs[indices_sort], sorted(operators)):
+        if len(o) == 2:
+            sentence.update({FermiWord({(0, o[0]): "+", (1, o[1]): "-"}): c})
+        if len(o) == 4:
+            sentence.update(
+                {FermiWord({(0, o[0]): "+", (1, o[1]): "+", (2, o[2]): "-", (3, o[3]): "-"}): c}
+            )
+    sentence.simplify()
 
-        return sentence
-
-    warnings.warn(
-        "This function will return a fermionic operator by default in the next release. For details,"
-        " see the Fermionic Operators tutorial:"
-        " https://pennylane.ai/qml/demos/tutorial_fermionic_operators."
-        " Currently, a fermionic operator can be returned by setting the `fs` kwarg to `True`."
-    )
-
-    return coeffs[indices_sort], sorted(operators)
+    return sentence
 
 
 def qubit_observable(o_ferm, cutoff=1.0e-12):
     r"""Convert a fermionic observable to a PennyLane qubit observable.
 
-    The fermionic operator is a tuple containing the fermionic coefficients and operators. For
-    instance, the one-body fermionic operator :math:`a_2^\dagger a_0` is specified as [2, 0] and the
-    two-body operator :math:`a_4^\dagger a_3^\dagger a_2 a_1` is specified as [4, 3, 2, 1].
-
     Args:
-        o_ferm Union[FermiSentence, tuple(array[float], list[list[int]])]: fermionic operator
+        o_ferm (Union[FermiWord, FermiSentence]): fermionic operator
         cutoff (float): cutoff value for discarding the negligible terms
 
     Returns:
-        (Operator): Simplified PennyLane Hamiltonian
+        Operator: Simplified PennyLane Hamiltonian
 
     **Example**
-
-    >>> coeffs = np.array([1.0, 1.0])
-    >>> ops = [[0, 0], [0, 0]]
-    >>> f = (coeffs, ops)
-    >>> print(qubit_observable(f))
-    ((-1+0j)) [Z0]
-    + ((1+0j)) [I0]
-
-    The input can also be a fermionic operator.
 
     >>> w1 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> w2 = qml.fermi.FermiWord({(0, 1) : '+', (1, 2) : '-'})
@@ -160,97 +125,31 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
     If the new op-math is active, an arithmetic operator is returned.
 
     >>> qml.operation.enable_new_opmath()
-    >>> coeffs = np.array([1.0, 1.0])
-    >>> ops = [[0, 0], [0, 0]]
-    >>> f = (coeffs, ops)
-    >>> print(qubit_observable(f))
-    Identity(wires=[0]) + ((-1+0j)*(PauliZ(wires=[0])))
+    >>> w1 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w2 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> s = qml.fermi.FermiSentence({w1 : 1.2, w2: 3.1})
+    >>> print(qubit_observable(s))
+    (-0.775j*(PauliY(wires=[0]) @ PauliX(wires=[1])))
+    + ((0.775+0j)*(PauliY(wires=[0]) @ PauliY(wires=[1])))
+    + ((0.775+0j)*(PauliX(wires=[0]) @ PauliX(wires=[1])))
+    + (0.775j*(PauliX(wires=[0]) @ PauliY(wires=[1])))
     """
-    if isinstance(o_ferm, (FermiWord, FermiSentence)):
-        h = qml.jordan_wigner(o_ferm, ps=True)
-        h.simplify(tol=cutoff)
-
-        if active_new_opmath():
-            if not h.wires:
-                return h.operation(wire_order=[0])
-            return h.operation()
-
-        if not h.wires:
-            h = h.hamiltonian(wire_order=[0])
-            return qml.Hamiltonian(
-                h.coeffs, [qml.Identity(0) if o.name == "Identity" else o for o in h.ops]
-            )
-
-        h = h.hamiltonian()
-
-        return simplify(
-            qml.Hamiltonian(
-                h.coeffs, [qml.Identity(0) if o.name == "Identity" else o for o in h.ops]
-            )
-        )
-
-    warnings.warn(
-        "Tuple input for the qubit_observable function is deprecated; please use the fermionic"
-        " operators format. For details, see the Fermionic Operators tutorial:"
-        " https://pennylane.ai/qml/demos/tutorial_fermionic_operators"
-    )
-
-    ops = []
-    coeffs = qml.math.array([])
-
-    for n, t in enumerate(o_ferm[1]):
-        if len(t) == 0:
-            ops = ops + [qml.Identity(0)]
-            coeffs = qml.math.array([0.0])
-            coeffs = coeffs + o_ferm[0][n]
-        else:
-            op = jordan_wigner(t)
-            if op != 0:
-                ops = ops + op[1]
-                coeffs = qml.math.concatenate([coeffs, qml.math.array(op[0]) * o_ferm[0][n]])
+    h = qml.jordan_wigner(o_ferm, ps=True)
+    h.simplify(tol=cutoff)
 
     if active_new_opmath():
-        ps = qml.dot(coeffs, ops, pauli=True)
-        ps.simplify(tol=cutoff)
+        if not h.wires:
+            return h.operation(wire_order=[0])
+        return h.operation()
 
-        if len(ps) == 0:
-            return qml.s_prod(
-                0, qml.Identity(ops[0].wires[0])
-            )  # use any op and any wire to represent the null op
-        if (len(ps) == 1) and ((identity := qml.pauli.PauliWord({})) in ps):
-            return qml.s_prod(
-                ps[identity], qml.Identity(ops[0].wires[0])
-            )  # use any op and any wire to represent the null op
-        return ps.operation()
+    if not h.wires:
+        h = h.hamiltonian(wire_order=[0])
+        return qml.Hamiltonian(
+            h.coeffs, [qml.Identity(0) if o.name == "Identity" else o for o in h.ops]
+        )
 
-    return simplify(qml.Hamiltonian(coeffs, ops), cutoff=cutoff)
+    h = h.hamiltonian()
 
-
-def jordan_wigner(op: list, notation="physicist"):  # pylint:disable=too-many-branches
-    r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
-
-    For instance, the one-body fermionic operator :math:`a_2^\dagger a_0` should be constructed as
-    [2, 0]. The two-body operator :math:`a_4^\dagger a_3^\dagger a_2 a_1` should be constructed
-    as [4, 3, 2, 1] with ``notation='physicist'``. If ``notation`` is set to ``'chemist'``, the
-    two-body operator [4, 3, 2, 1] is constructed as :math:`a_4^\dagger a_3 a_2^\dagger a_1`.
-
-    Args:
-        op (list[int]): the fermionic operator
-        notation (str): notation specifying the order of the two-body fermionic operators
-
-    Returns:
-        tuple(list[complex], list[Operation]): list of coefficients and qubit operators
-
-    **Example**
-
-    >>> f  = [0, 0]
-    >>> q = jordan_wigner(f)
-    >>> q # corresponds to :math:`\frac{1}{2}(I_0 - Z_0)`
-    ([(0.5+0j), (-0.5+0j)], [Identity(wires=[0]), PauliZ(wires=[0])])
-    """
-
-    warnings.warn(
-        "Use of qml.qchem.jordan_wigner is deprecated; please use qml.jordan_wigner instead."
+    return simplify(
+        qml.Hamiltonian(h.coeffs, [qml.Identity(0) if o.name == "Identity" else o for o in h.ops])
     )
-
-    return qml.fermi.jordan_wigner(op, notation=notation)

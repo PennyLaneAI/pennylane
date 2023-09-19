@@ -86,7 +86,7 @@ class batch_transform:
             ops2 = []
 
             # loop through all operations on the input tape
-            for op in tape._ops:
+            for op in tape.operations:
                 if op.name == "RX":
                     wires = op.wires
                     param = op.parameters[0]
@@ -97,8 +97,8 @@ class batch_transform:
                     ops1.append(op)
                     ops2.append(op)
 
-            tape1 = qml.tape.QuantumTape(ops1, tape.measurements, tape._prep)
-            tape2 = qml.tape.QuantumTape(ops2, tape.measurements, tape._prep)
+            tape1 = qml.tape.QuantumTape(ops1, tape.measurements)
+            tape2 = qml.tape.QuantumTape(ops2, tape.measurements)
 
             def processing_fn(results):
                 return qml.math.sum(qml.math.stack(results))
@@ -315,17 +315,6 @@ class batch_transform:
 
             if old_interface == "auto":
                 qnode.interface = "auto"
-
-            if "mode" in execute_kwargs:
-                mode = execute_kwargs.pop("mode")
-                if not qml.active_return():
-                    if mode == "forward":  # pragma: no cover
-                        grad_on_execution = True
-                    elif mode == "backward":  # pragma: no cover
-                        grad_on_execution = False
-                    else:
-                        grad_on_execution = "best"
-                    execute_kwargs["grad_on_execution"] = grad_on_execution
 
             res = qml.execute(
                 tapes,

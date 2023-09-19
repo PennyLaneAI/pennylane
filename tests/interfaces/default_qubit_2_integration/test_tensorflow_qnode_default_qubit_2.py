@@ -18,20 +18,20 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import qnode
-from pennylane.devices.experimental import DefaultQubit2
+from pennylane.devices import DefaultQubit
 
 pytestmark = pytest.mark.tf
 tf = pytest.importorskip("tensorflow")
 
 
 qubit_device_and_diff_method = [
-    [DefaultQubit2(), "finite-diff", False],
-    [DefaultQubit2(), "parameter-shift", False],
-    [DefaultQubit2(), "backprop", True],
-    [DefaultQubit2(), "adjoint", True],
-    [DefaultQubit2(), "adjoint", False],
-    [DefaultQubit2(), "spsa", False],
-    [DefaultQubit2(), "hadamard", False],
+    [DefaultQubit(), "finite-diff", False],
+    [DefaultQubit(), "parameter-shift", False],
+    [DefaultQubit(), "backprop", True],
+    [DefaultQubit(), "adjoint", True],
+    [DefaultQubit(), "adjoint", False],
+    [DefaultQubit(), "spsa", False],
+    [DefaultQubit(), "hadamard", False],
 ]
 
 TOL_FOR_SPSA = 1.0
@@ -435,7 +435,7 @@ class TestShotsIntegration:
 
     def test_changing_shots(self, interface):
         """Test that changing shots works on execution"""
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
         a, b = [0.543, -0.654]
         weights = tf.Variable([a, b], dtype=tf.float64)
 
@@ -459,7 +459,7 @@ class TestShotsIntegration:
         """Test that temporarily setting the shots works
         for gradient computations"""
         # pylint: disable=unexpected-keyword-arg
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
         a, b = [0.543, -0.654]
         weights = tf.Variable([a, b], dtype=tf.float64)
 
@@ -484,7 +484,7 @@ class TestShotsIntegration:
         """Test that temporarily setting the shots works
         for gradient computations, even if the QNode has been re-evaluated
         with a different number of shots in the meantime."""
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
         a, b = [0.543, -0.654]
         weights = tf.Variable([a, b], dtype=tf.float64)
 
@@ -509,7 +509,7 @@ class TestShotsIntegration:
 
     def test_update_diff_method(self, mocker, interface):
         """Test that temporarily setting the shots updates the diff method"""
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
         weights = tf.Variable([0.543, -0.654], dtype=tf.float64)
 
         spy = mocker.spy(qml, "execute")
@@ -908,7 +908,8 @@ class TestQubitIntegration:
         expected = [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2]
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
-    def test_projector(self, dev, diff_method, grad_on_execution, tol, interface):
+    @pytest.mark.parametrize("state", [[1], [0, 1]])  # Basis state and state vector
+    def test_projector(self, state, dev, diff_method, grad_on_execution, tol, interface):
         """Test that the variance of a projector is correctly returned"""
         kwargs = dict(
             diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
@@ -922,7 +923,7 @@ class TestQubitIntegration:
             kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
 
-        P = tf.constant([1])
+        P = tf.constant(state)
 
         x, y = 0.765, -0.654
         weights = tf.Variable([x, y], dtype=tf.float64)
@@ -1206,7 +1207,7 @@ class TestSample:
     def test_sample_dimension(self):
         """Test sampling works as expected"""
 
-        @qnode(DefaultQubit2(), diff_method="parameter-shift", interface="tf")
+        @qnode(DefaultQubit(), diff_method="parameter-shift", interface="tf")
         def circuit():
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
@@ -1225,7 +1226,7 @@ class TestSample:
     def test_sampling_expval(self):
         """Test sampling works as expected if combined with expectation values"""
 
-        @qnode(DefaultQubit2(), diff_method="parameter-shift", interface="tf")
+        @qnode(DefaultQubit(), diff_method="parameter-shift", interface="tf")
         def circuit():
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
@@ -1243,7 +1244,7 @@ class TestSample:
     def test_sample_combination(self):
         """Test the output of combining expval, var and sample"""
 
-        @qnode(DefaultQubit2(), diff_method="parameter-shift", interface="tf")
+        @qnode(DefaultQubit(), diff_method="parameter-shift", interface="tf")
         def circuit():
             qml.RX(0.54, wires=0)
 
@@ -1265,7 +1266,7 @@ class TestSample:
     def test_single_wire_sample(self):
         """Test the return type and shape of sampling a single wire"""
 
-        @qnode(DefaultQubit2(), diff_method="parameter-shift", interface="tf")
+        @qnode(DefaultQubit(), diff_method="parameter-shift", interface="tf")
         def circuit():
             qml.RX(0.54, wires=0)
 
@@ -1280,7 +1281,7 @@ class TestSample:
         """Test the return type and shape of sampling multiple wires
         where a rectangular array is expected"""
 
-        @qnode(DefaultQubit2(), diff_method="parameter-shift", interface="tf")
+        @qnode(DefaultQubit(), diff_method="parameter-shift", interface="tf")
         def circuit():
             return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))
 
@@ -1296,7 +1297,7 @@ class TestSample:
         """Test counts works as expected for TF"""
 
         # pylint:disable=unsubscriptable-object,no-member
-        @qnode(DefaultQubit2(), interface="tf")
+        @qnode(DefaultQubit(), interface="tf")
         def circuit():
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
@@ -1336,7 +1337,7 @@ class TestAutograph:
         y = tf.Variable(-0.654, dtype=tf.float64)
 
         @decorator
-        @qnode(DefaultQubit2(), diff_method="parameter-shift", interface=interface)
+        @qnode(DefaultQubit(), diff_method="parameter-shift", interface=interface)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -1361,7 +1362,7 @@ class TestAutograph:
         y = tf.Variable(-0.654, dtype=tf.float64)
 
         @decorator
-        @qnode(DefaultQubit2(), diff_method="parameter-shift", max_diff=1, interface=interface)
+        @qnode(DefaultQubit(), diff_method="parameter-shift", max_diff=1, interface=interface)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -1402,7 +1403,7 @@ class TestAutograph:
 
         @decorator
         @qnode(
-            DefaultQubit2(),
+            DefaultQubit(),
             diff_method="adjoint",
             interface=interface,
             grad_on_execution=grad_on_execution,
@@ -1430,7 +1431,7 @@ class TestAutograph:
 
         @decorator
         @qnode(
-            DefaultQubit2(),
+            DefaultQubit(),
             diff_method="adjoint",
             interface=interface,
             grad_on_execution=grad_on_execution,
@@ -1460,7 +1461,7 @@ class TestAutograph:
         y = tf.Variable(-0.654, dtype=tf.float64)
 
         @decorator
-        @qnode(DefaultQubit2(), diff_method="parameter-shift", max_diff=1, interface=interface)
+        @qnode(DefaultQubit(), diff_method="parameter-shift", max_diff=1, interface=interface)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -1496,7 +1497,7 @@ class TestAutograph:
         b = tf.Variable(-0.654, dtype=tf.float64)
 
         @decorator
-        @qnode(DefaultQubit2(), diff_method="parameter-shift", max_diff=2, interface=interface)
+        @qnode(DefaultQubit(), diff_method="parameter-shift", max_diff=2, interface=interface)
         def circuit(x, y):
             qml.RY(x, wires=0)
             qml.RX(y, wires=0)
@@ -1530,7 +1531,7 @@ class TestAutograph:
 
         # TODO: fix this for diff_method=None
         @decorator
-        @qnode(DefaultQubit2(), diff_method="parameter-shift", interface=interface)
+        @qnode(DefaultQubit(), diff_method="parameter-shift", interface=interface)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -1549,7 +1550,7 @@ class TestAutograph:
         """Test sampling works as expected"""
 
         @decorator
-        @qnode(DefaultQubit2(), diff_method="parameter-shift", interface=interface)
+        @qnode(DefaultQubit(), diff_method="parameter-shift", interface=interface)
         def circuit(**_):
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
@@ -2123,7 +2124,7 @@ def test_no_ops():
     """Test that the return value of the QNode matches in the interface
     even if there are no ops"""
 
-    @qml.qnode(DefaultQubit2(), interface="tf")
+    @qml.qnode(DefaultQubit(), interface="tf")
     def circuit():
         qml.Hadamard(wires=0)
         return qml.state()

@@ -13,20 +13,20 @@
 """
 Batch transformation for multiple (non-trainable) input examples following issue #2037
 """
-from typing import Callable, Sequence, Tuple, Union
+from typing import Callable, Sequence, Union
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.tape import QuantumTape
-from pennylane.transforms.batch_transform import batch_transform
+from pennylane.transforms.core import transform
 from pennylane.transforms.batch_params import _nested_stack, _split_operations
 
 
-@batch_transform
+@transform
 def batch_input(
-    tape: Union[QuantumTape, qml.QNode],
+    tape: QuantumTape,
     argnum: Union[Sequence[int], int],
-) -> Tuple[Sequence[QuantumTape], Callable]:
+) -> (Sequence[QuantumTape], Callable):
     """
     Transform a QNode to support an initial batch dimension for gate inputs.
 
@@ -96,20 +96,13 @@ def batch_input(
 
     batch_size = batch_dims[0]
 
-    idx = 0
-    new_preps, idx = _split_operations(tape._prep, all_parameters, argnum, idx, batch_size)
-    new_ops, _ = _split_operations(tape._ops, all_parameters, argnum, idx, batch_size)
-
     output_tapes = []
-    for prep, ops in zip(new_preps, new_ops):
-        new_tape = qml.tape.QuantumScript(ops, tape.measurements, prep, shots=tape.shots)
+    for ops in _split_operations(tape.operations, all_parameters, argnum, batch_size):
+        new_tape = qml.tape.QuantumScript(ops, tape.measurements, shots=tape.shots)
         new_tape.trainable_params = tape.trainable_params
         output_tapes.append(new_tape)
 
     def processing_fn(res):
-        if qml.active_return():
-            return _nested_stack(res)
-
-        return qml.math.squeeze(qml.math.stack(res))
+        return _nested_stack(res)
 
     return output_tapes, processing_fn

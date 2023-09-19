@@ -15,34 +15,32 @@
 This file contains preprocessings steps that may be called internally
 during execution.
 """
-import copy
-
 import pennylane as qml
 from pennylane import math
 from pennylane.tape import QuantumScript
 
 
+# pylint: disable=no-member
 def _convert_op_to_numpy_data(op: qml.operation.Operator) -> qml.operation.Operator:
     if math.get_interface(*op.data) == "numpy":
         return op
     # Use operator method to change parameters when it become available
-    copied_op = copy.copy(op)
-    copied_op.data = math.unwrap(op.data)
-    return copied_op
+    return qml.ops.functions.bind_new_parameters(op, math.unwrap(op.data))
 
 
+# pylint: disable=no-member
 def _convert_measurement_to_numpy_data(
     m: qml.measurements.MeasurementProcess,
 ) -> qml.measurements.MeasurementProcess:
-    if m.obs is None or math.get_interface(*m.obs.data) == "numpy":
+    if m.obs is None:
+        if m.eigvals() is None or math.get_interface(m.eigvals()) == "numpy":
+            return m
+        return type(m)(wires=m.wires, eigvals=math.unwrap(m.eigvals()))
+
+    if math.get_interface(*m.obs.data) == "numpy":
         return m
-    # Use measurement method to change parameters when it becomes available
-    copied_m = copy.copy(m)
-    if isinstance(copied_m.obs, qml.operation.Tensor):
-        copied_m.obs.data = math.unwrap([o.data for o in m.obs.obs])
-    else:
-        copied_m.obs.data = math.unwrap(m.obs.data)
-    return copied_m
+    new_obs = qml.ops.functions.bind_new_parameters(m.obs, math.unwrap(m.obs.data))
+    return type(m)(obs=new_obs)
 
 
 # pylint: disable=protected-access
@@ -83,10 +81,9 @@ def convert_to_numpy_parameters(circuit: QuantumScript) -> QuantumScript:
     False
 
     """
-    new_prep = (_convert_op_to_numpy_data(op) for op in circuit._prep)
-    new_ops = (_convert_op_to_numpy_data(op) for op in circuit._ops)
+    new_ops = (_convert_op_to_numpy_data(op) for op in circuit.operations)
     new_measurements = (_convert_measurement_to_numpy_data(m) for m in circuit.measurements)
-    new_circuit = circuit.__class__(new_ops, new_measurements, new_prep, shots=circuit.shots)
+    new_circuit = circuit.__class__(new_ops, new_measurements, shots=circuit.shots)
     # must preserve trainable params as we lose information about the machine learning interface
     new_circuit.trainable_params = circuit.trainable_params
     new_circuit._qfunc_output = circuit._qfunc_output

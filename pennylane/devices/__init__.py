@@ -25,7 +25,7 @@ to verify and test quantum gradient computations.
     :toctree: api
 
 
-    default_qubit
+    default_qubit_legacy
     default_qubit_jax
     default_qubit_torch
     default_qubit_tf
@@ -38,29 +38,36 @@ to verify and test quantum gradient computations.
 Next generation devices
 -----------------------
 
-:class:`pennylane.devices.experimental.Device` in an experimental interface for the next generation of devices that
-will eventually replace :class:`pennylane.Device` and :class:`pennylane.QubitDevice`.
+:class:`pennylane.devices.Device` is the latest interface for the next generation of devices that
+replaces :class:`pennylane.Device` and :class:`pennylane.QubitDevice`.
 
-While the current interface :class:`pennylane.Device` is imported top level, the new :class:`pennylane.devices.experimental.Device` is
-accessible from the ``pennylane.devices.experimental`` submodule.
+While the previous interface :class:`pennylane.Device` is imported top level, the new :class:`pennylane.devices.Device` is
+accessible from the ``pennylane.devices`` submodule.
 
-.. currentmodule:: pennylane.devices.experimental
+.. currentmodule:: pennylane.devices
 .. autosummary::
     :toctree: api
 
     ExecutionConfig
     Device
-    DefaultQubit2
+    DefaultQubit
+
+Qubit Simulation Tools
+----------------------
+
+.. currentmodule:: pennylane.devices.qubit
+.. automodule:: pennylane.devices.qubit
 
 """
 
-from . import experimental
-from .experimental import ExecutionConfig
+from .execution_config import ExecutionConfig, DefaultExecutionConfig
+from .device_api import Device
+from .default_qubit import DefaultQubit
 
 # DefaultQubitTF and DefaultQubitAutograd not imported here since this
 # would lead to an automatic import of tensorflow and autograd, which are
 # not PennyLane core dependencies
-from .default_qubit import DefaultQubit
+from .default_qubit_legacy import DefaultQubitLegacy
 from .default_gaussian import DefaultGaussian
 from .default_mixed import DefaultMixed
 from .null_qubit import NullQubit

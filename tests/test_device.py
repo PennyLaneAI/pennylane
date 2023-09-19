@@ -445,7 +445,7 @@ class TestInternalFunctions:
         expanded_tape = dev.default_expand_fn(circuit, max_expansion=depth)
 
         for op, expected_op in zip(
-            expanded_tape._ops,  # pylint: disable=protected-access
+            expanded_tape.operations[expanded_tape.num_preps :],
             expanded_ops,
         ):
             assert qml.equal(op, expected_op)
@@ -542,7 +542,7 @@ class TestInternalFunctions:
         zip(
             [
                 qml.BasisState([0, 0], wires=[0, 1]),
-                qml.QubitStateVector([0, 1, 0, 0], wires=[0, 1]),
+                qml.StatePrep([0, 1, 0, 0], wires=[0, 1]),
             ],
             [
                 [],
@@ -555,13 +555,13 @@ class TestInternalFunctions:
             ],
         ),
     )
-    def test_default_expand_with_stateprep(self, op, decomp):
-        """Test the default expand function with StatePrep operations
+    def test_default_expand_with_initial_state(self, op, decomp):
+        """Test the default expand function with StatePrepBase operations
         integrates well."""
         prep = [op]
         ops = [qml.AngleEmbedding(features=[0.1], wires=[0], rotation="Z"), op, qml.PauliZ(wires=2)]
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit.legacy", wires=3)
         tape = qml.tape.QuantumTape(ops=ops, measurements=[], prep=prep, shots=100)
         new_tape = dev.default_expand_fn(tape)
 
@@ -918,7 +918,7 @@ class TestDeviceInit:
         with monkeypatch.context() as m:
             m.setattr(qml, "version", lambda: "0.0.1")
             with pytest.raises(DeviceError, match="plugin requires PennyLane versions"):
-                qml.device("default.qubit", wires=0)
+                qml.device("default.qubit.legacy", wires=0)
 
     @pytest.mark.skip(reason="Reloading PennyLane messes with tape mode")
     def test_refresh_entrypoints(self, monkeypatch):
@@ -975,7 +975,7 @@ class TestDeviceInit:
 
     def test_shot_vector_property(self):
         """Tests shot vector initialization."""
-        dev = qml.device("default.qubit", wires=1, shots=[1, 3, 3, 4, 4, 4, 3])
+        dev = qml.device("default.qubit.legacy", wires=1, shots=[1, 3, 3, 4, 4, 4, 3])
         shot_vector = dev.shot_vector
         assert len(shot_vector) == 4
         assert shot_vector[0].shots == 1

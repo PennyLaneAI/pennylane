@@ -26,13 +26,13 @@ jacobian = torch.autograd.functional.jacobian
 hessian = torch.autograd.functional.hessian
 
 qubit_device_and_diff_method = [
-    ["default.qubit", "finite-diff", False],
-    ["default.qubit", "parameter-shift", False],
-    ["default.qubit", "backprop", True],
-    ["default.qubit", "adjoint", True],
-    ["default.qubit", "adjoint", False],
-    ["default.qubit", "spsa", False],
-    ["default.qubit", "hadamard", False],
+    ["default.qubit.legacy", "finite-diff", False],
+    ["default.qubit.legacy", "parameter-shift", False],
+    ["default.qubit.legacy", "backprop", True],
+    ["default.qubit.legacy", "adjoint", True],
+    ["default.qubit.legacy", "adjoint", False],
+    ["default.qubit.legacy", "spsa", False],
+    ["default.qubit.legacy", "hadamard", False],
 ]
 
 interface_and_qubit_device_and_diff_method = [
@@ -554,7 +554,7 @@ class TestShotsIntegration:
 
     def test_changing_shots(self, mocker, tol):
         """Test that changing shots works on execution"""
-        dev = qml.device("default.qubit", wires=2, shots=None)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=None)
         a, b = torch.tensor([0.543, -0.654], requires_grad=True, dtype=torch.float64)
 
         @qnode(dev, interface="torch", diff_method=qml.gradients.param_shift)
@@ -588,7 +588,7 @@ class TestShotsIntegration:
         """Test that temporarily setting the shots works
         for gradient computations"""
         # pylint: disable=unexpected-keyword-arg
-        dev = qml.device("default.qubit", wires=2, shots=None)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=None)
         a, b = torch.tensor([0.543, -0.654], requires_grad=True)
 
         @qnode(dev, interface="torch", diff_method=qml.gradients.param_shift)
@@ -610,7 +610,7 @@ class TestShotsIntegration:
         """Test that temporarily setting the shots works
         for gradient computations, even if the QNode has been re-evaluated
         with a different number of shots in the meantime."""
-        dev = qml.device("default.qubit", wires=2, shots=None)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=None)
         weights = torch.tensor([0.543, -0.654], requires_grad=True)
         a, b = weights
 
@@ -634,7 +634,7 @@ class TestShotsIntegration:
 
     def test_update_diff_method(self, mocker):
         """Test that temporarily setting the shots updates the diff method"""
-        dev = qml.device("default.qubit", wires=2, shots=100)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=100)
         a, b = torch.tensor([0.543, -0.654], requires_grad=True)
 
         spy = mocker.spy(qml, "execute")
@@ -668,7 +668,7 @@ class TestAdjoint:
 
     def test_reuse_state(self, mocker):
         """Tests that the Torch interface reuses the device state for adjoint differentiation"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qnode(dev, diff_method="adjoint", interface="torch")
         def circ(x):
@@ -692,7 +692,7 @@ class TestAdjoint:
     def test_resuse_state_multiple_evals(self, mocker, tol):
         """Tests that the Torch interface reuses the device state for adjoint differentiation,
         even where there are intermediate evaluations."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         x_val = 0.543
         y_val = -0.654
@@ -732,10 +732,11 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-
+        kwargs = {}
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not currently support returning probabilities")
         elif diff_method == "spsa":
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
         num_wires = 2
@@ -751,7 +752,11 @@ class TestQubitIntegration:
         y = torch.tensor(y_val, requires_grad=True, dtype=torch.float64)
 
         @qnode(
-            dev, diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
+            dev,
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            interface=interface,
+            **kwargs,
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -1198,7 +1203,8 @@ class TestQubitIntegration:
         )
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_projector(self, interface, dev_name, diff_method, grad_on_execution, tol):
+    @pytest.mark.parametrize("state", [[1], [0, 1]])  # Basis state and state vector
+    def test_projector(self, state, interface, dev_name, diff_method, grad_on_execution, tol):
         """Test that the variance of a projector is correctly returned"""
         kwargs = dict(
             diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
@@ -1212,7 +1218,7 @@ class TestQubitIntegration:
             pytest.skip("Hadamard does not support variances.")
 
         dev = qml.device(dev_name, wires=2)
-        P = torch.tensor([1], requires_grad=False)
+        P = torch.tensor(state, requires_grad=False)
 
         x, y = 0.765, -0.654
         weights = torch.tensor([x, y], requires_grad=True, dtype=torch.float64)
@@ -1256,6 +1262,7 @@ class TestCV:
         """Test variance of a first order CV observable"""
         dev = qml.device("default.gaussian", wires=1)
         if diff_method == "spsa":
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
         r = torch.tensor(0.543, dtype=torch.float64, requires_grad=True)
@@ -1289,6 +1296,7 @@ class TestCV:
         """Test variance of a second order CV expectation value"""
         dev = qml.device("default.gaussian", wires=1)
         if diff_method == "spsa":
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
         n = torch.tensor(0.12, dtype=torch.float64, requires_grad=True)
@@ -1608,7 +1616,7 @@ class TestSample:
 
     def test_sample_dimension(self):
         """Test sampling works as expected"""
-        dev = qml.device("default.qubit", wires=2, shots=10)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=10)
 
         @qnode(dev, diff_method="parameter-shift", interface="torch")
         def circuit():
@@ -1630,7 +1638,7 @@ class TestSample:
     def test_sampling_expval(self):
         """Test sampling works as expected if combined with expectation values"""
         shots = 10
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=shots)
 
         @qnode(dev, diff_method="parameter-shift", interface="torch")
         def circuit():
@@ -1651,7 +1659,7 @@ class TestSample:
     def test_counts_expval(self):
         """Test counts works as expected if combined with expectation values"""
         shots = 10
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=shots)
 
         @qnode(dev, diff_method="parameter-shift", interface="torch")
         def circuit():
@@ -1672,7 +1680,7 @@ class TestSample:
         """Test the output of combining expval, var and sample"""
         n_sample = 10
 
-        dev = qml.device("default.qubit", wires=3, shots=n_sample)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=n_sample)
 
         @qnode(dev, diff_method="parameter-shift", interface="torch")
         def circuit():
@@ -1696,7 +1704,7 @@ class TestSample:
         """Test the return type and shape of sampling a single wire"""
         n_sample = 10
 
-        dev = qml.device("default.qubit", wires=1, shots=n_sample)
+        dev = qml.device("default.qubit.legacy", wires=1, shots=n_sample)
 
         @qnode(dev, diff_method="parameter-shift", interface="torch")
         def circuit():
@@ -1713,7 +1721,7 @@ class TestSample:
         where a rectangular array is expected"""
         n_sample = 10
 
-        dev = qml.device("default.qubit", wires=3, shots=n_sample)
+        dev = qml.device("default.qubit.legacy", wires=3, shots=n_sample)
 
         @qnode(dev, diff_method="parameter-shift", interface="torch")
         def circuit():
@@ -1732,12 +1740,12 @@ class TestSample:
 
 
 qubit_device_and_diff_method_and_grad_on_execution = [
-    ["default.qubit", "backprop", True],
-    ["default.qubit", "finite-diff", False],
-    ["default.qubit", "parameter-shift", False],
-    ["default.qubit", "adjoint", True],
-    ["default.qubit", "adjoint", False],
-    ["default.qubit", "hadamard", False],
+    ["default.qubit.legacy", "backprop", True],
+    ["default.qubit.legacy", "finite-diff", False],
+    ["default.qubit.legacy", "parameter-shift", False],
+    ["default.qubit.legacy", "adjoint", True],
+    ["default.qubit.legacy", "adjoint", False],
+    ["default.qubit.legacy", "hadamard", False],
 ]
 
 
@@ -2573,7 +2581,7 @@ class TestReturn:
         assert tuple(hess.shape) == (3, 2, 2)
 
 
-@pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+@pytest.mark.parametrize("dev_name", ["default.qubit.legacy", "default.mixed"])
 def test_no_ops(dev_name):
     """Test that the return value of the QNode matches in the interface
     even if there are no ops"""

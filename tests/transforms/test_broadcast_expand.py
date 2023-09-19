@@ -43,7 +43,7 @@ def make_tape(x, y, z, obs):
     """Construct a tape with three parametrized, two unparametrized
     operations and expvals of provided observables."""
     with qml.queuing.AnnotatedQueue() as q:
-        qml.QubitStateVector(np.array([1, 0, 0, 0]), wires=[0, 1])
+        qml.StatePrep(np.array([1, 0, 0, 0]), wires=[0, 1])
         RX_broadcasted(x, wires=0)
         qml.PauliY(0)
         RX_broadcasted(y, wires=1)
@@ -112,16 +112,35 @@ class TestBroadcastExpand:
 
         assert qml.math.allclose(result, expected)
 
-    def test_without_broadcasting(self):
-        tape = make_tape(0.2, 0.1, 0.5, [qml.PauliZ(0)])
-        with pytest.raises(ValueError, match="The provided tape is not broadcasted."):
-            qml.transforms.broadcast_expand(tape)
+    @pytest.mark.parametrize("params, size", parameters_and_size)
+    @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
+    def test_expansion_qnode(self, params, size, obs, exp_fn):
+        """Test that the transform integrates correctly with the transform program"""
+
+        @qml.transforms.broadcast_expand
+        @qml.qnode(dev)
+        def circuit(x, y, z, obs):
+            qml.StatePrep(np.array([1, 0, 0, 0]), wires=[0, 1])
+            RX_broadcasted(x, wires=0)
+            qml.PauliY(0)
+            RX_broadcasted(y, wires=1)
+            RZ_broadcasted(z, wires=1)
+            qml.Hadamard(1)
+            return [qml.expval(ob) for ob in obs]
+
+        result = circuit(*params, obs)
+        expected = exp_fn(*params)
+
+        if len(obs) > 1 and size == 1:
+            expected = expected.T
+
+        assert qml.math.allclose(result, expected)
 
     def test_state_prep(self):
         """Test that expansion works for state preparations"""
         ops = [qml.CNOT([0, 1])]
         meas = [qml.expval(qml.PauliZ(1))]
-        prep = [qml.QubitStateVector(np.eye(4), wires=[0, 1])]
+        prep = [qml.StatePrep(np.eye(4), wires=[0, 1])]
         tape = qml.tape.QuantumScript(ops, meas, prep)
 
         tapes, fn = qml.transforms.broadcast_expand(tape)

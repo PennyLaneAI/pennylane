@@ -54,7 +54,7 @@ class TestDecomposition:
         tape = op.expand()
 
         assert len(tape.operations) == 1
-        assert tape.operations[0].name == "QubitStateVector"
+        assert tape.operations[0].name == "StatePrep"
         assert tape.batch_size is None
 
     def test_expansion_broadcasted(self):
@@ -65,7 +65,7 @@ class TestDecomposition:
         tape = op.expand()
 
         assert len(tape.operations) == 1
-        assert tape.operations[0].name == "QubitStateVector"
+        assert tape.operations[0].name == "StatePrep"
         assert tape.batch_size == 3
 
     @pytest.mark.parametrize("normalize", (True, False))
@@ -294,7 +294,7 @@ def circuit_template(features):
 
 def circuit_decomposed(features):
     # need to cast to complex tensor, which is implicitly done in the template
-    qml.QubitStateVector(qml.math.cast(features, np.complex128), wires=range(3))
+    qml.StatePrep(qml.math.cast(features, np.complex128), wires=range(3))
     return qml.state()
 
 
@@ -360,7 +360,7 @@ class TestInterfaces:
             state = qml.math.cast(
                 qml.math.hstack([features, qml.math.zeros_like(features)]), np.complex128
             )
-            qml.QubitStateVector(state, wires=range(4))
+            qml.StatePrep(state, wires=range(4))
             return qml.state()
 
         @qml.qnode(dev)
@@ -431,7 +431,7 @@ class TestInterfaces:
             state = qml.math.cast(
                 qml.math.hstack([features, qml.math.zeros_like(features)]), np.complex128
             )
-            qml.QubitStateVector(state, wires=range(4))
+            qml.StatePrep(state, wires=range(4))
             return qml.state()
 
         @jax.jit
@@ -479,7 +479,7 @@ class TestInterfaces:
             state = qml.math.cast(
                 qml.math.hstack([features, qml.math.zeros_like(features)]), tf.complex128
             )
-            qml.QubitStateVector(state, wires=range(4))
+            qml.StatePrep(state, wires=range(4))
             return qml.state()
 
         @qml.qnode(dev)
@@ -560,7 +560,7 @@ class TestInterfaces:
             state = qml.math.cast(
                 qml.math.hstack([features, qml.math.zeros_like(features)]), torch.complex128
             )
-            qml.QubitStateVector(state, wires=range(4))
+            qml.StatePrep(state, wires=range(4))
             return qml.state()
 
         @qml.qnode(dev)

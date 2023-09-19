@@ -16,7 +16,6 @@ This module contains functionality for debugging quantum programs on simulator d
 """
 import pennylane as qml
 from pennylane import DeviceError
-from pennylane.devices import experimental
 
 
 class _Debugger:
@@ -35,7 +34,7 @@ class _Debugger:
             raise DeviceError("Device does not support snapshots.")
 
         # new device API: check if it's the simulator device
-        if isinstance(dev, experimental.Device) and not isinstance(dev, experimental.DefaultQubit2):
+        if isinstance(dev, qml.devices.Device) and not isinstance(dev, qml.devices.DefaultQubit):
             raise DeviceError("Device does not support snapshots.")
 
         self.snapshots = {}

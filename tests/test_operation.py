@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ from numpy.linalg import multi_dot
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.operation import Operation, Operator, StatePrep, Tensor, operation_derivative
+from pennylane.operation import Operation, Operator, StatePrepBase, Tensor, operation_derivative
 from pennylane.ops import Prod, SProd, Sum, cv
 from pennylane.wires import Wires
 
@@ -272,22 +272,9 @@ class TestOperatorConstruction:
         state = [0, 1, 0]
         assert MyOp(wires=1, basis_state=state).hyperparameters["basis_state"] == state
 
-    def test_eq_warning(self):
-        """Test that a warning is raised when two operators are compared for equality
-        using `==`."""
-
-        class DummyOp(qml.operation.Operator):
-            num_wires = 1
-
-        op1 = DummyOp(0)
-        op2 = DummyOp(0)
-
-        with pytest.warns(UserWarning, match="The behaviour of operator equality"):
-            _ = op1 == op2
-
     def test_eq_correctness(self):
-        """Test that using `==` on two equivalent operators is True when both operators
-        are the same object and False otherwise."""
+        """Test that using `==` on operators behaves the same as
+        `qml.equal`."""
 
         class DummyOp(qml.operation.Operator):
             num_wires = 1
@@ -295,24 +282,11 @@ class TestOperatorConstruction:
         op1 = DummyOp(0)
         op2 = DummyOp(0)
 
-        with pytest.warns(UserWarning, match="The behaviour of operator equality"):
-            assert op1 == op1  # pylint: disable=comparison-with-itself
-            assert op1 != op2
-
-    def test_hash_warning(self):
-        """Test that a warning is raised when an operator's hash is used."""
-
-        class DummyOp(qml.operation.Operator):
-            num_wires = 1
-
-        op = DummyOp(0)
-
-        with pytest.warns(UserWarning, match="The behaviour of operator hashing"):
-            _ = hash(op)
+        assert op1 == op1  # pylint: disable=comparison-with-itself
+        assert op1 == op2
 
     def test_hash_correctness(self):
-        """Test that the hash of two equivalent operators is the same when both operators
-        are the same object and different otherwise."""
+        """Test that the hash of two equivalent operators is the same."""
 
         class DummyOp(qml.operation.Operator):
             num_wires = 1
@@ -320,9 +294,10 @@ class TestOperatorConstruction:
         op1 = DummyOp(0)
         op2 = DummyOp(0)
 
-        with pytest.warns(UserWarning, match="The behaviour of operator hash"):
-            assert len({op1, op1}) == 1
-            assert len({op1, op2}) == 2
+        assert len({op1, op2}) == 1
+        assert hash(op1) == op1.hash
+        assert hash(op2) == op2.hash
+        assert hash(op1) == hash(op2)
 
 
 class TestPytreeMethods:
@@ -450,15 +425,6 @@ class TestBroadcasting:
         op = DummyOp(*params, wires=0)
         assert op.ndim_params == (0, 2)
         assert op._batch_size == exp_batch_size
-
-    @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested sequences")
-    def test_error_broadcasted_params_not_silenced(self):
-        """Handling tf.function properly requires us to catch a specific
-        error and to silence it. Here we test it does not silence others."""
-
-        x = [qml.math.ones((2, 2)), qml.math.ones((2, 3))]
-        with pytest.raises(ValueError, match="could not broadcast input array"):
-            qml.RX(x, 0)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("jit_compile", [True, False])
@@ -1035,7 +1001,7 @@ class TestOperatorIntegration:
         """Test that an exception is raised if the class is defined with ALL wires,
         but then instantiated with only one"""
 
-        dev1 = qml.device("default.qubit", wires=2)
+        dev1 = qml.device("default.qubit.legacy", wires=2)
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operator"""
@@ -1989,8 +1955,8 @@ add_zero_obs = [
     qml.Identity(1),
     cv.NumberOperator(wires=[1]),
     cv.TensorN(wires=[1]),
-    cv.X(wires=[1]),
-    cv.P(wires=[1]),
+    cv.QuadX(wires=[1]),
+    cv.QuadP(wires=[1]),
     # cv.QuadOperator(1.234, wires=0),
     # cv.FockStateProjector([1,2,3], wires=[0, 1, 2]),
     cv.PolyXP(np.array([1.0, 2.0, 3.0]), wires=[0]),
@@ -2385,10 +2351,10 @@ class TestCVOperation:
             op.heisenberg_expand(U_high_order, op.wires)
 
 
-class TestStatePrep:
-    """Test the StatePrep interface."""
+class TestStatePrepBase:
+    """Test the StatePrepBase interface."""
 
-    class DefaultPrep(StatePrep):
+    class DefaultPrep(StatePrepBase):
         """A dummy class that assumes it was given a state vector."""
 
         # pylint:disable=unused-argument,too-few-public-methods
@@ -2396,15 +2362,15 @@ class TestStatePrep:
             return self.parameters[0]
 
     # pylint:disable=unused-argument,too-few-public-methods
-    def test_basic_stateprep(self):
-        """Tests a basic implementation of the StatePrep interface."""
+    def test_basic_initial_state(self):
+        """Tests a basic implementation of the StatePrepBase interface."""
         prep_op = self.DefaultPrep([1, 0], wires=[0])
         assert np.array_equal(prep_op.state_vector(), [1, 0])
 
     def test_child_must_implement_state_vector(self):
         """Tests that a child class that does not implement state_vector fails."""
 
-        class NoStatePrepOp(StatePrep):
+        class NoStatePrepOp(StatePrepBase):
             """A class that is missing the state_vector implementation."""
 
             # pylint:disable=abstract-class-instantiated
@@ -2412,8 +2378,8 @@ class TestStatePrep:
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
             NoStatePrepOp(wires=[0])
 
-    def test_StatePrep_label(self):
-        """Tests that StatePrep classes by default have a psi ket label"""
+    def test_StatePrepBase_label(self):
+        """Tests that StatePrepBase classes by default have a psi ket label"""
         assert self.DefaultPrep([1], 0).label() == "|Ψ⟩"
 
 
@@ -2692,3 +2658,42 @@ def test_docstring_example_of_operator_class(tol):
     res = circuit(a)
     expected = -0.9999987318946099
     assert np.allclose(res, expected, atol=tol)
+
+
+@pytest.mark.jax
+def test_custom_operator_is_jax_pytree():
+    """Test that a custom operator is registered as a jax pytree."""
+
+    import jax
+
+    class CustomOperator(qml.operation.Operator):
+        pass
+
+    op = CustomOperator(1.2, wires=0)
+    data, structure = jax.tree_util.tree_flatten(op)
+    assert data == [1.2]
+
+    new_op = jax.tree_util.tree_unflatten(structure, [2.3])
+    assert qml.equal(new_op, CustomOperator(2.3, wires=0))
+
+
+# pylint: disable=unused-import,no-name-in-module
+def test_get_attr():
+    """Test that importing attributes of operation work as expected"""
+
+    attr_name = "non_existent_attr"
+    with pytest.raises(
+        AttributeError, match=f"module 'pennylane.operation' has no attribute '{attr_name}'"
+    ):
+        _ = qml.operation.non_existent_attr  # error is raised if non-existent attribute accessed
+
+    with pytest.raises(ImportError, match=f"cannot import name '{attr_name}'"):
+        from pennylane.operation import (
+            non_existent_attr,
+        )  # error is raised if non-existent attribute imported
+
+    from pennylane.operation import StatePrep
+
+    assert (
+        StatePrep is qml.operation.StatePrepBase
+    )  # StatePrep imported from operation.py is an alias for StatePrepBase

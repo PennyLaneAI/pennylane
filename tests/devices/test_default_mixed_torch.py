@@ -582,7 +582,7 @@ class TestPassthruIntegration:
         def circuit(x, weights, w):
             """In this example, a mixture of scalar
             arguments, array arguments, and keyword arguments are used."""
-            qml.QubitStateVector(state, wires=w)
+            qml.StatePrep(state, wires=w)
             operation(x, weights[0], weights[1], wires=w)
             return qml.expval(qml.PauliX(w))
 
@@ -625,14 +625,14 @@ class TestPassthruIntegration:
         assert torch.allclose(res, torch.tensor(expected_grad), atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
-        "dev_name,diff_method,mode",
+        "dev_name,diff_method,grad_on_execution",
         [
-            ["default.mixed", "finite-diff", "backward"],
-            ["default.mixed", "parameter-shift", "backward"],
-            ["default.mixed", "backprop", "forward"],
+            ["default.mixed", "finite-diff", False],
+            ["default.mixed", "parameter-shift", False],
+            ["default.mixed", "backprop", True],
         ],
     )
-    def test_ragged_differentiation(self, dev_name, diff_method, mode, tol):
+    def test_ragged_differentiation(self, dev_name, diff_method, grad_on_execution, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
 
@@ -640,7 +640,9 @@ class TestPassthruIntegration:
         x = torch.tensor(0.543, dtype=torch.float64)
         y = torch.tensor(-0.654, dtype=torch.float64)
 
-        @qml.qnode(dev, diff_method=diff_method, mode=mode, interface="torch")
+        @qml.qnode(
+            dev, diff_method=diff_method, grad_on_execution=grad_on_execution, interface="torch"
+        )
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])

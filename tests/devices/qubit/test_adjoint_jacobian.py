@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit and integration tests for the adjoint_jacobian function for DefaultQubit2"""
+"""Unit and integration tests for the adjoint_jacobian function for DefaultQubit"""
 import pytest
 import pennylane as qml
 from pennylane.devices.qubit import adjoint_jacobian, adjoint_jvp, adjoint_vjp
@@ -30,7 +30,8 @@ class TestAdjointJacobian:
         )
         qs.trainable_params = {0, 1}
 
-        qs_valid = validate_and_expand_adjoint(qs)
+        qs_valid, _ = validate_and_expand_adjoint(qs)
+        qs_valid = qs_valid[0]
 
         calculated_val = adjoint_jacobian(qs_valid)
 
@@ -45,15 +46,15 @@ class TestAdjointJacobian:
     def test_pauli_rotation_gradient(self, G, theta, tol):
         """Tests that the automatic gradients of Pauli rotations are correct."""
 
-        prep_op = qml.QubitStateVector(
-            np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0
-        )
+        prep_op = qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
         qs = QuantumScript(
             ops=[G(theta, wires=[0])], measurements=[qml.expval(qml.PauliZ(0))], prep=[prep_op]
         )
 
         qs.trainable_params = {1}
-        qs_valid = validate_and_expand_adjoint(qs)
+        qs_valid, _ = validate_and_expand_adjoint(qs)
+        qs_valid = qs_valid[0]
+
         qs_valid.trainable_params = {1}
 
         calculated_val = adjoint_jacobian(qs_valid)
@@ -71,9 +72,7 @@ class TestAdjointJacobian:
         """Tests that the device gradient of an arbitrary Euler-angle-parameterized gate is
         correct."""
         params = np.array([theta, theta**3, np.sqrt(2) * theta])
-        prep_op = qml.QubitStateVector(
-            np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0
-        )
+        prep_op = qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
 
         qs = QuantumScript(
             ops=[qml.Rot(*params, wires=[0])],
@@ -82,7 +81,9 @@ class TestAdjointJacobian:
         )
 
         qs.trainable_params = {1, 2, 3}
-        qs_valid = validate_and_expand_adjoint(qs)
+        qs_valid, _ = validate_and_expand_adjoint(qs)
+        qs_valid = qs_valid[0]
+
         qs_valid.trainable_params = {1, 2, 3}
 
         calculated_val = adjoint_jacobian(qs_valid)
@@ -118,7 +119,10 @@ class TestAdjointJacobian:
 
         qs = QuantumScript(ops, measurements)
         qs.trainable_params = set(range(1, 1 + op.num_params))
-        qs_valid = validate_and_expand_adjoint(qs)
+
+        qs_valid, _ = validate_and_expand_adjoint(qs)
+        qs_valid = qs_valid[0]
+
         qs_valid.trainable_params = set(range(1, 1 + op.num_params))
 
         tapes, fn = qml.gradients.finite_diff(qs)
@@ -139,7 +143,8 @@ class TestAdjointJacobian:
             [qml.RX(params[0], wires=0), qml.RX(params[1], wires=1), qml.RX(params[2], wires=2)],
             [qml.expval(qml.PauliZ(idx)) for idx in range(3)],
         )
-        qs_valid = validate_and_expand_adjoint(qs)
+        qs_valid, _ = validate_and_expand_adjoint(qs)
+        qs_valid = qs_valid[0]
 
         # circuit jacobians
         jacobian = adjoint_jacobian(qs_valid)
@@ -172,7 +177,8 @@ class TestAdjointJacobian:
             [MyOp(p, w) for p, w in zip(params, [0, 1, 2])],
             [qml.expval(qml.PauliZ(idx)) for idx in range(3)],
         )
-        qs_valid = validate_and_expand_adjoint(qs)
+        qs_valid, _ = validate_and_expand_adjoint(qs)
+        qs_valid = qs_valid[0]
 
         # circuit jacobians
         jacobian = adjoint_jacobian(qs_valid)
@@ -192,7 +198,9 @@ class TestAdjointJacobian:
         )
 
         qs.trainable_params = {1, 2, 3}
-        qs_valid = validate_and_expand_adjoint(qs)
+        qs_valid, _ = validate_and_expand_adjoint(qs)
+        qs_valid = qs_valid[0]
+
         qs_valid.trainable_params = {1, 2, 3}
 
         grad_D = adjoint_jacobian(qs_valid)
@@ -208,7 +216,7 @@ class TestAdjointJacobian:
         assert np.allclose(grad_D, grad_F, atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
-        "prep_op", [qml.BasisState([1], wires=0), qml.QubitStateVector([0, 1], wires=0)]
+        "prep_op", [qml.BasisState([1], wires=0), qml.StatePrep([0, 1], wires=0)]
     )
     def test_state_prep(self, prep_op, tol):
         """Tests provides correct answer when provided state preparation operation."""
@@ -221,7 +229,9 @@ class TestAdjointJacobian:
         )
 
         qs.trainable_params = {2, 3, 4}
-        qs_valid = validate_and_expand_adjoint(qs)
+        qs_valid, _ = validate_and_expand_adjoint(qs)
+        qs_valid = qs_valid[0]
+
         qs_valid.trainable_params = {2, 3, 4}
 
         grad_D = adjoint_jacobian(qs_valid)
@@ -249,7 +259,9 @@ class TestAdjointJacobian:
         )
 
         qs.trainable_params = {0, 1, 2}
-        qs_valid = validate_and_expand_adjoint(qs)
+        qs_valid, _ = validate_and_expand_adjoint(qs)
+        qs_valid = qs_valid[0]
+
         qs_valid.trainable_params = {0, 1, 2}
 
         res = adjoint_jacobian(qs_valid)
@@ -278,7 +290,8 @@ class TestAdjointJacobian:
         )
 
         qs.trainable_params = {0, 1, 2}
-        qs_valid = validate_and_expand_adjoint(qs)
+        qs_valid, _ = validate_and_expand_adjoint(qs)
+        qs_valid = qs_valid[0]
 
         res = adjoint_jacobian(qs_valid)
 

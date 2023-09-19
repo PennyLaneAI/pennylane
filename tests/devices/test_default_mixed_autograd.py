@@ -530,7 +530,7 @@ class TestPassthruIntegration:
         def circuit(x, weights, w):
             """In this example, a mixture of scalar
             arguments, array arguments, and keyword arguments are used."""
-            qml.QubitStateVector(state, wires=w)
+            qml.StatePrep(state, wires=w)
             operation(x, weights[0], weights[1], wires=w)
             return qml.expval(qml.PauliX(w))
 
@@ -573,9 +573,9 @@ class TestPassthruIntegration:
     @pytest.mark.parametrize(
         "dev_name,diff_method,mode",
         [
-            ["default.mixed", "finite-diff", "backward"],
-            ["default.mixed", "parameter-shift", "backward"],
-            ["default.mixed", "backprop", "forward"],
+            ["default.mixed", "finite-diff", False],
+            ["default.mixed", "parameter-shift", False],
+            ["default.mixed", "backprop", True],
         ],
     )
     def test_multiple_measurements_differentiation(self, dev_name, diff_method, mode, tol):
@@ -585,7 +585,7 @@ class TestPassthruIntegration:
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)
 
-        @qml.qnode(dev, diff_method=diff_method, interface="autograd", mode=mode)
+        @qml.qnode(dev, diff_method=diff_method, interface="autograd", grad_on_execution=mode)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])

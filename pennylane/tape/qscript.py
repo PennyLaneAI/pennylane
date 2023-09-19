@@ -27,20 +27,19 @@ import pennylane as qml
 from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
-    ExpectationMP,
     MeasurementProcess,
     ProbabilityMP,
     SampleMP,
     ShadowExpvalMP,
     StateMP,
-    VarianceMP,
     Shots,
 )
 from pennylane.typing import TensorLike
 from pennylane.operation import Observable, Operator, Operation
 from pennylane.queuing import AnnotatedQueue, process_queue
+from pennylane.wires import Wires
 
-_empty_wires = qml.wires.Wires([])
+_empty_wires = Wires([])
 
 
 OPENQASM_GATES = {
@@ -83,13 +82,15 @@ https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
 
 
 class QuantumScript:
-    """The state preparation, operations, and measurements that represent instructions for
+    """The operations and measurements that represent instructions for
     execution on a quantum device.
 
     Args:
         ops (Iterable[Operator]): An iterable of the operations to be performed
         measurements (Iterable[MeasurementProcess]): All the measurements to be performed
-        prep (Iterable[Operator]): Any state preparations to perform at the start of the circuit
+        prep (Iterable[Operator]): Argument to specify state preparations to
+            perform at the start of the circuit. These should go at the beginning of ``ops``
+            instead.
 
     Keyword Args:
         shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
@@ -105,14 +106,13 @@ class QuantumScript:
 
         from pennylane.tape import QuantumScript
 
-        prep = [qml.BasisState(np.array([1,1]), wires=(0,"a"))]
-
-        ops = [qml.RX(0.432, 0),
+        ops = [qml.BasisState(np.array([1,1]), wires=(0,"a")),
+               qml.RX(0.432, 0),
                qml.RY(0.543, 0),
                qml.CNOT((0,"a")),
                qml.RX(0.133, "a")]
 
-        qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))], prep)
+        qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
 
     >>> list(qscript)
     [BasisState(array([1, 1]), wires=[0, "a"]),
@@ -164,7 +164,7 @@ class QuantumScript:
     >>> qscript.shots.shot_vector
     (ShotCopies(1 shots x 2), ShotCopies(2 shots x 3))
 
-    ``ops``, ``measurements``, and ``prep`` are converted to lists upon initialization,
+    ``ops`` and ``measurements`` are converted to lists upon initialization,
     so those arguments accept any iterable object:
 
     >>> qscript = QuantumScript((qml.PauliX(i) for i in range(3)))
@@ -181,8 +181,15 @@ class QuantumScript:
         shots: Optional[Union[int, Sequence, Shots]] = None,
         _update=True,
     ):  # pylint: disable=too-many-arguments
-        self._prep = [] if prep is None else list(prep)
         self._ops = [] if ops is None else list(ops)
+        if prep is not None:
+            warnings.warn(
+                "The `prep` keyword argument is being removed from `QuantumScript`, and "
+                "`StatePrepBase` operations should be placed at the beginning of the `ops` list "
+                "instead.",
+                UserWarning,
+            )
+            self._ops = list(prep) + self._ops
         self._measurements = [] if measurements is None else list(measurements)
         self._shots = Shots(shots)
 
@@ -275,12 +282,12 @@ class QuantumScript:
         Returns:
             list[.Operator]: quantum operations
 
-        >>> ops = [qml.QubitStateVector([0, 1], 0), qml.RX(0.432, 0)]
+        >>> ops = [qml.StatePrep([0, 1], 0), qml.RX(0.432, 0)]
         >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
         >>> qscript.operations
-        [QubitStateVector([0, 1], wires=[0]), RX(0.432, wires=[0])]
+        [StatePrep([0, 1], wires=[0]), RX(0.432, wires=[0])]
         """
-        return self._prep + self._ops
+        return self._ops
 
     @property
     def observables(self) -> List[Union[MeasurementProcess, Observable]]:
@@ -291,7 +298,7 @@ class QuantumScript:
 
         **Example**
 
-        >>> ops = [qml.QubitStateVector([0, 1], 0), qml.RX(0.432, 0)]
+        >>> ops = [qml.StatePrep([0, 1], 0), qml.RX(0.432, 0)]
         >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
         >>> qscript.observables
         [expval(PauliZ(wires=[0]))]
@@ -319,7 +326,7 @@ class QuantumScript:
 
         **Example**
 
-        >>> ops = [qml.QubitStateVector([0, 1], 0), qml.RX(0.432, 0)]
+        >>> ops = [qml.StatePrep([0, 1], 0), qml.RX(0.432, 0)]
         >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
         >>> qscript.measurements
         [expval(PauliZ(wires=[0]))]
@@ -381,6 +388,20 @@ class QuantumScript:
         """
         return self._shots
 
+    @property
+    def num_preps(self) -> int:
+        """Returns the index of the first operator that is not an StatePrepBase operator."""
+        idx = 0
+        num_ops = len(self.operations)
+        while idx < num_ops and isinstance(self.operations[idx], qml.operation.StatePrepBase):
+            idx += 1
+        return idx
+
+    @property
+    def op_wires(self) -> Wires:
+        """Returns the wires that the tape operations act on."""
+        return Wires.all_wires(op.wires for op in self.operations)
+
     ##### Update METHODS ###############
 
     def _update(self):
@@ -408,7 +429,7 @@ class QuantumScript:
             is_sampled (bool): Whether any measurement is of type ``Sample`` or ``Counts``
             all_sampled (bool): Whether all measurements are of type ``Sample`` or ``Counts``
         """
-        self.wires = qml.wires.Wires.all_wires(dict.fromkeys(op.wires for op in self))
+        self.wires = Wires.all_wires(dict.fromkeys(op.wires for op in self))
         self.num_wires = len(self.wires)
 
         is_sample_type = [
@@ -526,15 +547,6 @@ class QuantumScript:
         """Alias to :meth:`~.get_parameters` and :meth:`~.set_parameters`
         for backwards compatibilities with operations."""
         return self.get_parameters(trainable_only=False)
-
-    @data.setter
-    def data(self, params):
-        warnings.warn(
-            "The tape.data setter is deprecated and will be removed in v0.33. "
-            "Please use tape.bind_new_parameters instead.",
-            UserWarning,
-        )
-        self.set_parameters(params, trainable_only=False)
 
     @property
     def trainable_params(self):
@@ -662,81 +674,11 @@ class QuantumScript:
                 params.extend(m.obs.data)
         return params
 
-    def set_parameters(self, params, trainable_only=True):
-        """Set the parameters incident on the quantum script operations.
-
-        Args:
-            params (list[float]): A list of real numbers representing the
-                parameters of the quantum operations. The parameters should be
-                provided in order of appearance in the quantum script.
-            trainable_only (bool): if True, set only trainable parameters
-
-        **Example**
-
-        >>> ops = [qml.RX(0.432, 0), qml.RY(0.543, 0),
-        ...        qml.CNOT((0,"a")), qml.RX(0.133, "a")]
-        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
-
-        By default, all parameters are trainable and can be modified:
-
-        >>> qscript.set_parameters([0.1, 0.2, 0.3])
-        >>> qscript.get_parameters()
-        [0.1, 0.2, 0.3]
-
-        Setting the trainable parameter indices will result in only the specified
-        parameters being modifiable. Note that this only modifies the number of
-        parameters that must be passed.
-
-        >>> qscript.trainable_params = [0, 2] # set the first and third parameter as trainable
-        >>> qscript.set_parameters([-0.1, 0.5])
-        >>> qscript.get_parameters(trainable_only=False)
-        [-0.1, 0.2, 0.5]
-
-        The ``trainable_only`` argument can be set to ``False`` to instead set
-        all parameters:
-
-        >>> qscript.set_parameters([4, 1, 6], trainable_only=False)
-        >>> qscript.get_parameters(trainable_only=False)
-        [4, 1, 6]
-        """
-        warnings.warn(
-            "The method tape.set_parameters is deprecated and will be removed in v0.33. "
-            "Please use tape.bind_new_parameters instead.",
-            UserWarning,
-        )
-
-        if trainable_only:
-            iterator = zip(self.trainable_params, params)
-            required_length = self.num_params
-        else:
-            iterator = enumerate(params)
-            required_length = len(self._par_info)
-
-        if len(params) != required_length:
-            raise ValueError("Number of provided parameters does not match.")
-
-        op_data = []
-        for pinfo in self._par_info:
-            if pinfo["p_idx"] == 0:
-                op_data.append((pinfo["op"], list(pinfo["op"].data)))
-            else:
-                op_data.append(op_data[-1])
-
-        for idx, p in iterator:
-            op_data[idx][1][self._par_info[idx]["p_idx"]] = p
-
-        for op, d in op_data:
-            op.data = tuple(d)
-            op._check_batching(op.data)
-
-        self._update_batch_size()
-        self._update_output_dim()
-
     def bind_new_parameters(self, params: Sequence[TensorLike], indices: Sequence[int]):
         """Create a new tape with updated parameters.
 
-        This function takes a :class:`~.tape.QuantumScript` as input, and returns
-        a new ``QuantumScript`` containing the new parameters at the provided indices,
+        This function takes a list of new parameters as input, and returns
+        a new :class:`~.tape.QuantumScript` containing the new parameters at the provided indices,
         with the parameters at all other indices remaining the same.
 
         Args:
@@ -747,6 +689,30 @@ class QuantumScript:
 
         Returns:
             .tape.QuantumScript: New tape with updated parameters
+
+        **Example**
+
+        >>> ops = [qml.RX(0.432, 0), qml.RY(0.543, 0),
+        ...        qml.CNOT((0,"a")), qml.RX(0.133, "a")]
+        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+
+        A new tape can be created by passing new parameters along with the indices
+        to be updated. To modify all parameters in the above qscript:
+
+        >>> new_qscript = qscript.bind_new_parameters([0.1, 0.2, 0.3], [0, 1, 2])
+        >>> new_qscript.get_parameters()
+        [0.1, 0.2, 0.3]
+
+        The original ``qscript`` remains unchanged:
+
+        >>> qscript.get_parameters()
+        [0.432, 0.543, 0.133]
+
+        A subset of parameters can be modified as well, defined by the parameter indices:
+
+        >>> newer_qscript = new_qscript.bind_new_parameters([-0.1, 0.5], [0, 2])
+        >>> newer_qscript.get_parameters()
+        [-0.1, 0.2, 0.5]
         """
         # pylint: disable=no-member
 
@@ -780,11 +746,10 @@ class QuantumScript:
 
             new_ops[op_idx] = new_op
 
-        new_prep = new_ops[: len(self._prep)]
-        new_operations = new_ops[len(self._prep) : len(self.operations)]
+        new_operations = new_ops[: len(self.operations)]
         new_measurements = new_ops[len(self.operations) :]
 
-        new_tape = self.__class__(new_operations, new_measurements, new_prep, shots=self.shots)
+        new_tape = self.__class__(new_operations, new_measurements, shots=self.shots)
         new_tape.trainable_params = self.trainable_params
         new_tape._qfunc_output = self._qfunc_output
 
@@ -795,186 +760,6 @@ class QuantumScript:
     #
     # We can extract the private static methods to a new class later
     # ========================================================
-
-    @staticmethod
-    def _single_measurement_shape(measurement_process, device, shots):
-        """Auxiliary function of shape that determines the output
-        shape of a quantum script with a single measurement.
-
-        Args:
-            measurement_process (MeasurementProcess): the measurement process
-                associated with the single measurement
-            device (pennylane.Device): a PennyLane device
-            shots (~.Shots): object defining number and batches of shots
-
-        Returns:
-            tuple: output shape
-        """
-        return measurement_process.shape(device, shots)
-
-    @staticmethod
-    def _multi_homogenous_measurement_shape(mps, device, shots):
-        """Auxiliary function of shape that determines the output
-        shape of a quantum script with multiple homogenous measurements.
-
-        .. note::
-
-            Assuming multiple probability measurements where not all
-            probability measurements have the same number of wires specified,
-            the output shape of the quantum script is a sum of the output shapes produced
-            by each probability measurement.
-
-            Consider the `qml.probs(wires=[0]), qml.probs(wires=[1,2])`
-            multiple probability measurement with an analytic device as an
-            example.
-
-            The output shape will be a one element tuple `(6,)`, where the
-            element `6` is equal to `2 ** 1 + 2 ** 2 = 6`. The base of each
-            term is determined by the number of basis states and the exponent
-            of each term comes from the length of the wires specified for the
-            probability measurements: `1 == len([0]) and 2 == len([1, 2])`.
-        """
-        shape = tuple()
-
-        # We know that there's one type of measurement, gather it from the first one
-        if isinstance(mps[0], StateMP):
-            raise ValueError(
-                "Getting the output shape of a quantum script with multiple state measurements is not supported."
-            )
-
-        shot_vector = shots.shot_vector
-        if len(shot_vector) <= 1:
-            if isinstance(mps[0], (ExpectationMP, VarianceMP)):
-                shape = (len(mps),)
-
-            elif isinstance(mps[0], ProbabilityMP):
-                wires_num_set = {len(meas.wires) for meas in mps}
-                same_num_wires = len(wires_num_set) == 1
-                if same_num_wires:
-                    # All probability measurements have the same number of
-                    # wires, gather the length from the first one
-
-                    len_wires = len(mps[0].wires)
-                    dim = mps[0]._get_num_basis_states(len_wires, device)
-                    shape = (len(mps), dim)
-
-                else:
-                    # There are a varying number of wires that the probability
-                    # measurement processes act on
-                    shape = (sum(2 ** len(m.wires) for m in mps),)
-
-            elif isinstance(mps[0], SampleMP):
-                dim = mps[0].shape(device, shots)
-                shape = (len(mps),) + dim[1:]
-
-            # No other measurement type to check
-
-        else:
-            shape = QuantumScript._shape_shot_vector_multi_homogenous(mps, device, shots)
-
-        return shape
-
-    @staticmethod
-    def _shape_shot_vector_multi_homogenous(mps, device, shots):
-        """Auxiliary function for determining the output shape of the quantum script for
-        multiple homogenous measurements for a device with a shot vector.
-
-        Note: it is assumed that getting the output shape of a script with
-        multiple state measurements is not supported.
-        """
-        shape = tuple()
-
-        shot_vector = shots.shot_vector
-
-        # Shot vector was defined
-        if isinstance(mps[0], (ExpectationMP, VarianceMP)):
-            num = sum(shottup.copies for shottup in shot_vector)
-            shape = (num, len(mps))
-
-        elif isinstance(mps[0], ProbabilityMP):
-            wires_num_set = {len(meas.wires) for meas in mps}
-            same_num_wires = len(wires_num_set) == 1
-            if not same_num_wires:
-                # There is a varying number of wires that the probability
-                # measurement processes act on
-                # TODO: revisit when issues with this case are resolved
-                raise ValueError(
-                    "Getting the output shape of a quantum script with multiple probability measurements "
-                    "along with a device that defines a shot vector is not supported."
-                )
-
-            # All probability measurements have the same number of
-            # wires, gather the length from the first one
-
-            len_wires = len(mps[0].wires)
-            dim = mps[0]._get_num_basis_states(len_wires, device)
-            shape = sum(s.copies for s in shot_vector), len(mps), dim
-
-        elif isinstance(mps[0], SampleMP):
-            shape = []
-            for shot_val in shot_vector:
-                num_shots = shot_val.shots
-                if num_shots != 1:
-                    shape.extend((num_shots, len(mps)) for _ in range(shot_val.copies))
-                else:
-                    shape.extend((len(mps),) for _ in range(shot_val.copies))
-            shape = tuple(shape)
-        return shape
-
-    def _shape_legacy(self, device):
-        """Produces the output shape of the quantum script by inspecting its measurements
-        and the device used for execution.
-
-        .. note::
-
-            The computed shape is not stored because the output shape may be dependent on the device
-                used for execution.
-
-        Args:
-            device (pennylane.Device): the device that will be used for the script execution
-
-        Raises:
-            ValueError: raised for unsupported cases for example when the script contains
-                heterogeneous measurements
-
-        Returns:
-            Union[tuple[int], list[tuple[int]]]: the output shape(s) of the quantum script result
-
-        **Example:**
-
-        .. code-block:: pycon
-
-            >>> dev = qml.device('default.qubit', wires=2)
-            >>> qs = QuantumScript(measurements=[qml.state()])
-            >>> qs.shape(dev)
-            (1, 4)
-        """
-        output_shape = tuple()
-        shots = (
-            Shots(device._raw_shot_sequence)
-            if device.shot_vector is not None
-            else Shots(device.shots)
-        )
-
-        if len(self.measurements) == 1:
-            output_shape = self._single_measurement_shape(self.measurements[0], device, shots)
-        else:
-            num_measurements = len({type(meas) for meas in self.measurements})
-            if num_measurements == 1:
-                output_shape = self._multi_homogenous_measurement_shape(
-                    self.measurements, device, shots
-                )
-            else:
-                raise ValueError(
-                    "Getting the output shape of a quantum script that contains multiple types of "
-                    "measurements is unsupported."
-                )
-
-        if len(shots.shot_vector) <= 1 and self.batch_size is not None:
-            # insert the batch dimension
-            output_shape = output_shape[:1] + (self.batch_size,) + output_shape[1:]
-
-        return output_shape
 
     def shape(self, device):
         """Produces the output shape of the quantum script by inspecting its measurements
@@ -1004,17 +789,13 @@ class QuantumScript:
             >>> qs.shape(dev)
             ((4,), (), (4,))
         """
-        if not qml.active_return():
-            return self._shape_legacy(device)
 
-        if isinstance(device, qml.devices.experimental.Device):
+        if isinstance(device, qml.devices.Device):
             # MP.shape (called below) takes 2 arguments: `device` and `shots`.
             # With the new device interface, shots are stored on tapes rather than the device
-            # As well, MP.shape needs the device largely to see the device wires, and this is
-            # also stored on tapes in the new device interface. TODO: refactor MP.shape to accept
-            # `wires` instead of device (not currently done because probs.shape uses device.cutoff)
+            # TODO: refactor MP.shape to accept `wires` instead of device (not currently done
+            # because probs.shape uses device.cutoff)
             shots = self.shots
-            device = self
         else:
             shots = (
                 Shots(device._raw_shot_sequence)
@@ -1042,38 +823,6 @@ class QuantumScript:
         return shapes
 
     @property
-    def _numeric_type_legacy(self):
-        """Returns the expected numeric type of the script result by inspecting
-        its measurements.
-
-        Raises:
-            ValueError: raised for unsupported cases for
-                example when the script contains heterogeneous measurements
-
-        Returns:
-            type: the numeric type corresponding to the result type of the
-            script
-
-        **Example:**
-
-        >>> qscript = QuantumScript(measurements=[qml.state()])
-        >>> qscript.numeric_type
-        complex
-        """
-        measurement_types = {type(meas) for meas in self.measurements}
-        if len(measurement_types) > 1:
-            raise ValueError(
-                "Getting the numeric type of a quantum script that contains multiple types of measurements is unsupported."
-            )
-
-        # Note: if one of the sample measurements contains outputs that
-        # are real, then the entire result will be real
-        if measurement_types.pop() is SampleMP:
-            return next((float for mp in self.measurements if mp.numeric_type is float), int)
-
-        return self.measurements[0].numeric_type
-
-    @property
     def numeric_type(self):
         """Returns the expected numeric type of the quantum script result by inspecting
         its measurements.
@@ -1091,8 +840,6 @@ class QuantumScript:
             >>> qs.numeric_type
             complex
         """
-        if not qml.active_return():
-            return self._numeric_type_legacy
         types = tuple(observable.numeric_type for observable in self.measurements)
 
         return types[0] if len(types) == 1 else types
@@ -1114,23 +861,19 @@ class QuantumScript:
             QuantumScript : a shallow copy of the quantum script
         """
         if copy_operations:
-            # Perform a shallow copy of all operations in the state prep, operation, and measurement
+            # Perform a shallow copy of all operations in the operation and measurement
             # queues. The operations will continue to share data with the original script operations
             # unless modified.
-            _prep = [copy.copy(op) for op in self._prep]
-            _ops = [copy.copy(op) for op in self._ops]
+            _ops = [copy.copy(op) for op in self.operations]
             _measurements = [copy.copy(op) for op in self.measurements]
         else:
-            # Perform a shallow copy of the state prep, operation, and measurement queues. The
+            # Perform a shallow copy of the operation and measurement queues. The
             # operations within the queues will be references to the original script operations;
             # changing the original operations will always alter the operations on the copied script.
-            _prep = self._prep.copy()
-            _ops = self._ops.copy()
+            _ops = self.operations.copy()
             _measurements = self.measurements.copy()
 
-        new_qscript = self.__class__(
-            ops=_ops, measurements=_measurements, prep=_prep, shots=self.shots
-        )
+        new_qscript = self.__class__(ops=_ops, measurements=_measurements, shots=self.shots)
         new_qscript._graph = None if copy_operations else self._graph
         new_qscript._specs = None
         new_qscript.wires = copy.copy(self.wires)
@@ -1165,11 +908,14 @@ class QuantumScript:
 
         Consider the following nested quantum script:
 
-        >>> prep = [qml.BasisState(np.array([1, 1]), wires=[0, 'a'])]
         >>> nested_script = QuantumScript([qml.Rot(0.543, 0.1, 0.4, wires=0)])
-        >>> ops = [nested_script, qml.CNOT(wires=[0, 'a']), qml.RY(0.2, wires='a')]
+        >>> ops = [
+                qml.BasisState(np.array([1, 1]), wires=[0, 'a']),
+                nested_script,
+                qml.CNOT(wires=[0, 'a']), qml.RY(0.2, wires='a'),
+            ]
         >>> measurements = [qml.probs(wires=0), qml.probs(wires='a')]
-        >>> qscript = QuantumScript(ops, measurements, prep)
+        >>> qscript = QuantumScript(ops, measurements)
 
         The nested structure is preserved:
 
@@ -1208,42 +954,11 @@ class QuantumScript:
         Returns:
             ~.QuantumScript: the adjointed script
         """
+        ops = self.operations[self.num_preps :]
+        prep = self.operations[: self.num_preps]
         with qml.QueuingManager.stop_recording():
-            ops_adj = [qml.adjoint(op, lazy=False) for op in reversed(self._ops)]
-        return self.__class__(
-            ops=ops_adj, measurements=self.measurements, prep=self._prep, shots=self.shots
-        )
-
-    def unwrap(self):
-        """A context manager that unwraps a quantum script with tensor-like parameters
-        to NumPy arrays.
-
-        Returns:
-            ~.QuantumScript: the unwrapped quantum script
-
-        **Example**
-
-        >>> with tf.GradientTape():
-        ...     qscript = QuantumScript([qml.RX(tf.Variable(0.1), 0),
-        ...                             qml.RY(tf.constant(0.2), 0),
-        ...                             qml.RZ(tf.Variable(0.3), 0)])
-        ...     with qscript.unwrap():
-        ...         print("Trainable params:", qscript.trainable_params)
-        ...         print("Unwrapped params:", qscript.get_parameters())
-        Trainable params: [0, 2]
-        Unwrapped params: [0.1, 0.3]
-        >>> qscript.get_parameters()
-        [<tf.Variable 'Variable:0' shape=() dtype=float32, numpy=0.1>,
-        <tf.Tensor: shape=(), dtype=float32, numpy=0.2>,
-        <tf.Variable 'Variable:0' shape=() dtype=float32, numpy=0.3>]
-        """
-
-        warnings.warn(
-            "The method tape.unwrap is deprecated and will be removed in PennyLane v0.33. "
-            "Please use qml.transforms.convert_to_numpy_parameters instead."
-        )
-
-        return qml.tape.UnwrapTape(self)
+            ops_adj = [qml.adjoint(op, lazy=False) for op in reversed(ops)]
+        return self.__class__(ops=prep + ops_adj, measurements=self.measurements, shots=self.shots)
 
     # ========================================================
     # Transforms: QuantumScript to Information
@@ -1254,7 +969,7 @@ class QuantumScript:
         """Returns a directed acyclic graph representation of the recorded
         quantum circuit:
 
-        >>> ops = [qml.QubitStateVector([0, 1], 0), qml.RX(0.432, 0)]
+        >>> ops = [qml.StatePrep([0, 1], 0), qml.RX(0.432, 0)]
         >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
         >>> qscript.graph
         <pennylane.circuit_graph.CircuitGraph object at 0x7fcc0433a690>
@@ -1385,7 +1100,7 @@ class QuantumScript:
         qasm_str += f"creg c[{len(wires)}];\n"
 
         # get the user applied circuit operations
-        operations = self.operations
+        operations = self.operations.copy()
 
         if rotations:
             # if requested, append diagonalizing gates corresponding
@@ -1429,7 +1144,7 @@ class QuantumScript:
             for wire in range(len(wires)):
                 qasm_str += f"measure q[{wire}] -> c[{wire}];\n"
         else:
-            measured_wires = qml.wires.Wires.all_wires([m.wires for m in self.measurements])
+            measured_wires = Wires.all_wires([m.wires for m in self.measurements])
 
             for w in measured_wires:
                 wire_indx = self.wires.index(w)
@@ -1441,6 +1156,50 @@ class QuantumScript:
     def from_queue(cls, queue, shots: Optional[Union[int, Sequence, Shots]] = None):
         """Construct a QuantumScript from an AnnotatedQueue."""
         return cls(*process_queue(queue), shots=shots)
+
+    def map_to_standard_wires(self):
+        """
+        Map a circuit's wires such that they are in a standard order. If no
+        mapping is required, the unmodified circuit is returned.
+
+        Returns:
+            QuantumScript: The circuit with wires in the standard order
+
+        The standard order is defined by the operator wires being increasing
+        integers starting at zero, to match array indices. If there are any
+        measurement wires that are not in any operations, those will be mapped
+        to higher values.
+
+        **Example:**
+
+        >>> circuit = qml.tape.QuantumScript([qml.PauliX("a")], [qml.expval(qml.PauliZ("b"))])
+        >>> map_circuit_to_standard_wires(circuit).circuit
+        [PauliX(wires=[0]), expval(PauliZ(wires=[1]))]
+
+        If any measured wires are not in any operations, they will be mapped last:
+
+        >>> circuit = qml.tape.QuantumScript([qml.PauliX(1)], [qml.probs(wires=[0, 1])])
+        >>> qml.devices.qubit.map_circuit_to_standard_wires(circuit).circuit
+        [PauliX(wires=[0]), probs(wires=[1, 0])]
+
+        If no wire-mapping is needed, then the returned circuit *is* the inputted circuit:
+
+        >>> circuit = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliZ(1))])
+        >>> qml.devices.qubit.map_circuit_to_standard_wires(circuit) is circuit
+        True
+
+        """
+        op_wires = Wires.all_wires(op.wires for op in self.operations)
+        meas_wires = Wires.all_wires(mp.wires for mp in self.measurements)
+        num_op_wires = len(op_wires)
+        meas_only_wires = set(meas_wires) - set(op_wires)
+        if set(op_wires) == set(range(num_op_wires)) and meas_only_wires == set(
+            range(num_op_wires, num_op_wires + len(meas_only_wires))
+        ):
+            return self
+
+        wire_map = {w: i for i, w in enumerate(op_wires + meas_only_wires)}
+        return qml.map_wires(self, wire_map)
 
 
 def make_qscript(fn, shots: Optional[Union[int, Sequence, Shots]] = None):

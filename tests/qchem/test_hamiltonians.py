@@ -108,123 +108,6 @@ def test_electron_integrals(symbols, geometry, core, active, e_core, one_ref, tw
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "alpha", "coeffs_h_ref", "ops_h_ref"),
-    [
-        (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
-            np.array(
-                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-                requires_grad=True,
-            ),
-            # Hamiltonian coefficients and operators computed with OpenFermion using
-            # openfermion.transforms.get_fermion_operator(molecule.get_molecular_hamiltonian())
-            # The "^" symbols in the operators are removed and "," is added for consistency
-            np.array(
-                [
-                    1.0000000000321256,
-                    -1.3902192706002598,
-                    0.35721953951840535,
-                    0.08512072192002007,
-                    0.35721953951840535,
-                    0.08512072192002007,
-                    0.08512072192002007,
-                    0.35092657803574406,
-                    0.08512072192002007,
-                    0.35092657803574406,
-                    0.35721953951840535,
-                    0.08512072192002007,
-                    -1.3902192706002598,
-                    0.35721953951840535,
-                    0.08512072192002007,
-                    0.08512072192002007,
-                    0.35092657803574406,
-                    0.08512072192002007,
-                    0.35092657803574406,
-                    0.35092657803574495,
-                    0.08512072192002007,
-                    0.35092657803574495,
-                    0.08512072192002007,
-                    -0.2916533049477536,
-                    0.08512072192002007,
-                    0.3694183466586136,
-                    0.08512072192002007,
-                    0.3694183466586136,
-                    0.35092657803574495,
-                    0.08512072192002007,
-                    0.35092657803574495,
-                    0.08512072192002007,
-                    0.08512072192002007,
-                    0.3694183466586136,
-                    -0.2916533049477536,
-                    0.08512072192002007,
-                    0.3694183466586136,
-                ]
-            ),
-            [
-                [],
-                [0, 0],
-                [0, 0, 0, 0],
-                [0, 0, 2, 2],
-                [0, 1, 1, 0],
-                [0, 1, 3, 2],
-                [0, 2, 0, 2],
-                [0, 2, 2, 0],
-                [0, 3, 1, 2],
-                [0, 3, 3, 0],
-                [1, 0, 0, 1],
-                [1, 0, 2, 3],
-                [1, 1],
-                [1, 1, 1, 1],
-                [1, 1, 3, 3],
-                [1, 2, 0, 3],
-                [1, 2, 2, 1],
-                [1, 3, 1, 3],
-                [1, 3, 3, 1],
-                [2, 0, 0, 2],
-                [2, 0, 2, 0],
-                [2, 1, 1, 2],
-                [2, 1, 3, 0],
-                [2, 2],
-                [2, 2, 0, 0],
-                [2, 2, 2, 2],
-                [2, 3, 1, 0],
-                [2, 3, 3, 2],
-                [3, 0, 0, 3],
-                [3, 0, 2, 1],
-                [3, 1, 1, 3],
-                [3, 1, 3, 1],
-                [3, 2, 0, 1],
-                [3, 2, 2, 3],
-                [3, 3],
-                [3, 3, 1, 1],
-                [3, 3, 3, 3],
-            ],
-        )
-    ],
-)
-def test_fermionic_hamiltonian_fs_False(symbols, geometry, alpha, coeffs_h_ref, ops_h_ref):
-    r"""Test that fermionic_hamiltonian returns the correct Hamiltonian."""
-    # TODO: remove this test when supporting tuple output by fermionic_hamiltonian is deprecated.
-    mol = qchem.Molecule(symbols, geometry, alpha=alpha)
-    args = [alpha]
-    h = qchem.fermionic_hamiltonian(mol, fs=False)(*args)
-
-    assert np.allclose(h[0], coeffs_h_ref)
-    assert h[1] == ops_h_ref
-
-
-def test_fermionic_hamiltonian_warning():
-    r"""Test that a warning is raised if `fs = False` in fermionic_hamiltonian."""
-    # TODO: remove this test when supporting tuple output by fermionic_hamiltonian is deprecated.
-    symbols = ["H", "H"]
-    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False)
-    mol = qml.qchem.Molecule(symbols, geometry)
-    with pytest.warns(UserWarning, match="This function will return a fermionic operator"):
-        qchem.fermionic_hamiltonian(mol, fs=False)()
-
-
-@pytest.mark.parametrize(
     ("symbols", "geometry", "alpha", "h_ref"),
     [
         (
@@ -283,7 +166,7 @@ def test_fermionic_hamiltonian(symbols, geometry, alpha, h_ref):
     r"""Test that fermionic_hamiltonian returns the correct Hamiltonian."""
     mol = qchem.Molecule(symbols, geometry, alpha=alpha)
     args = [alpha]
-    h = qchem.fermionic_hamiltonian(mol, fs=True)(*args)
+    h = qchem.fermionic_hamiltonian(mol)(*args)
 
     assert np.allclose(list(h.values()), list(h_ref.values()))
     assert h.keys() == h_ref.keys()
@@ -341,13 +224,12 @@ def test_fermionic_hamiltonian(symbols, geometry, alpha, h_ref):
         )
     ],
 )
-@pytest.mark.parametrize("fs", [True, False])
-def test_diff_hamiltonian(symbols, geometry, h_ref_data, fs):
+def test_diff_hamiltonian(symbols, geometry, h_ref_data):
     r"""Test that diff_hamiltonian returns the correct Hamiltonian."""
 
     mol = qchem.Molecule(symbols, geometry)
     args = []
-    h = qchem.diff_hamiltonian(mol, fs=fs)(*args)
+    h = qchem.diff_hamiltonian(mol)(*args)
     h_ref = qml.Hamiltonian(h_ref_data[0], h_ref_data[1])
 
     assert np.allclose(np.sort(h.terms()[0]), np.sort(h_ref.terms()[0]))
@@ -387,8 +269,7 @@ def test_diff_hamiltonian_active_space():
     assert not isinstance(h_op, qml.Hamiltonian)
 
 
-@pytest.mark.parametrize("fs", [True, False])
-def test_gradient_expvalH(fs):
+def test_gradient_expvalH():
     r"""Test that the gradient of expval(H) computed with ``qml.grad`` is equal to the value
     obtained with the finite difference method."""
     symbols = ["H", "H"]
@@ -411,7 +292,7 @@ def test_gradient_expvalH(fs):
             qml.PauliX(0)
             qml.PauliX(1)
             qml.DoubleExcitation(0.22350048111151138, wires=[0, 1, 2, 3])
-            h_qubit = qchem.diff_hamiltonian(mol, fs=fs)(*args)
+            h_qubit = qchem.diff_hamiltonian(mol)(*args)
             return qml.expval(h_qubit)
 
         return circuit
@@ -463,7 +344,9 @@ class TestJax:
                 qml.PauliX(0)
                 qml.PauliX(1)
                 qml.DoubleExcitation(0.22350048111151138, wires=[0, 1, 2, 3])
-                h_qubit = qchem.diff_hamiltonian(mol, fs=False)(*args)
+                enable_new_opmath()
+                h_qubit = qchem.diff_hamiltonian(mol)(*args)
+                disable_new_opmath()
                 return qml.expval(h_qubit)
 
             return circuit
@@ -471,16 +354,16 @@ class TestJax:
         grad_jax = jax.grad(energy(mol), argnums=0)(*args)
 
         alpha_1 = np.array(
-            [[3.42515091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-        )  # alpha[0][0] -= 0.0001
+            [[3.42425091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+        )  # alpha[0][0] -= 0.001
 
         alpha_2 = np.array(
-            [[3.42535091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-        )  # alpha[0][0] += 0.0001
+            [[3.42625091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+        )  # alpha[0][0] += 0.001
 
         e_1 = energy(mol)(*[alpha_1])
         e_2 = energy(mol)(*[alpha_2])
 
-        grad_finitediff = (e_2 - e_1) / 0.0002
+        grad_finitediff = (e_2 - e_1) / 0.002
 
         assert np.allclose(grad_jax[0][0], grad_finitediff, rtol=1e-02)

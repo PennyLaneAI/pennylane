@@ -116,6 +116,15 @@ ar.register_function("autograd", "gather", lambda x, indices: x[np.array(indices
 ar.register_function("autograd", "unstack", list)
 
 
+def autograd_get_dtype_name(x):
+    """A autograd version of get_dtype_name that can handle array boxes."""
+    # this function seems to only get called with x is an arraybox.
+    return ar.get_dtype_name(x._value)
+
+
+ar.register_function("autograd", "get_dtype_name", autograd_get_dtype_name)
+
+
 def _block_diag_autograd(tensors):
     """Autograd implementation of scipy.linalg.block_diag"""
     _np = _i("qml").numpy
@@ -295,7 +304,10 @@ ar.register_function("tensorflow", "round", _round_tf)
 
 def _ndim_tf(tensor):
     try:
-        return _i("tf").experimental.numpy.ndim(tensor)
+        ndim = _i("tf").experimental.numpy.ndim(tensor)
+        if ndim is None:
+            return len(tensor.shape)
+        return ndim
     except AttributeError:
         return len(tensor.shape)
 

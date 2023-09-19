@@ -205,6 +205,41 @@ class TestTwoQubitStateSpecialCases:
         assert qml.math.allclose(initial1[1], new1[0])
         assert qml.math.allclose(initial1[0], new1[1])
 
+    def test_identity(self, method, wire, ml_framework):
+        """Test the application of a GlobalPhase gate on a two qubit state."""
+
+        initial_state = np.array(
+            [
+                [0.04624539 + 0.3895457j, 0.22399401 + 0.53870339j],
+                [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
+            ]
+        )
+        initial_state = qml.math.asarray(initial_state, like=ml_framework)
+
+        new_state = method(qml.Identity(wire), initial_state)
+
+        assert qml.math.allclose(initial_state, new_state)
+
+    def test_globalphase(self, method, wire, ml_framework):
+        """Test the application of a GlobalPhase gate on a two qubit state."""
+
+        initial_state = np.array(
+            [
+                [0.04624539 + 0.3895457j, 0.22399401 + 0.53870339j],
+                [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
+            ]
+        )
+        initial_state = qml.math.asarray(initial_state, like=ml_framework)
+
+        phase = qml.math.asarray(-2.3, like=ml_framework)
+        shift = qml.math.exp(-1j * qml.math.cast(phase, np.complex128))
+
+        new_state_with_wire = method(qml.GlobalPhase(phase, wire), initial_state)
+        new_state_no_wire = method(qml.GlobalPhase(phase), initial_state)
+
+        assert qml.math.allclose(shift * initial_state, new_state_with_wire)
+        assert qml.math.allclose(shift * initial_state, new_state_no_wire)
+
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 class TestSnapshot:
@@ -466,6 +501,17 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
 
         assert qml.math.get_interface(res) == ml_framework
         assert qml.math.allclose(res, expected)
+
+    def test_batch_size_set_if_missing(self, method, ml_framework):
+        """Tests that the batch_size is set on an operator if it was missing before.
+        Mostly useful for TF-autograph since it may have batch size set to None."""
+        param = qml.math.asarray([0.1, 0.2, 0.3], like=ml_framework)
+        state = np.ones((2, 2)) / 2
+        op = qml.RX(param, 0)
+        op._batch_size = None  # pylint:disable=protected-access
+        state = method(op, state)
+        assert state.shape == (3, 2, 2)
+        assert op.batch_size == 3
 
 
 @pytest.mark.parametrize("method", methods)

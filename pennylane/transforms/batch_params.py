@@ -15,10 +15,12 @@
 Contains the batch dimension transform.
 """
 # pylint: disable=import-outside-toplevel
+from typing import Callable, Sequence
+
 import pennylane as qml
 
 
-from .batch_transform import batch_transform
+from .core import transform
 
 
 def _nested_stack(res):
@@ -37,7 +39,7 @@ def _nested_stack(res):
     return tuple(stacked_results)
 
 
-def _split_operations(ops, params, split_indices, first_op_index, num_tapes):
+def _split_operations(ops, params, split_indices, num_tapes):
     """
     Given a list of operators, return a list (with length ``num_tapes``) containing lists
     of new operators with the parameters at the given indices unbatched.
@@ -51,14 +53,12 @@ def _split_operations(ops, params, split_indices, first_op_index, num_tapes):
             ``[p for op in ops for p in op.data]``. If any parameter of an operator has an index
             contained in ``split_indices``, then a new operator is created using the corresponding
             entry of ``params``. Otherwise, the original operator is used.
-        first_op_idx (int): the parameter index corresponding to the first parameter of the first
-            operator in ``ops``.
         num_tapes (int): the number of new tapes to create, which is also equal to the batch size.
     """
     # for some reason pylint thinks "qml.ops" is a set
     # pylint: disable=no-member
     new_ops = [[] for _ in range(num_tapes)]
-    idx = first_op_index
+    idx = 0
 
     for op in ops:
         # determine if any parameters of the operator are batched
@@ -77,11 +77,13 @@ def _split_operations(ops, params, split_indices, first_op_index, num_tapes):
 
         idx += len(op.data)
 
-    return new_ops, idx
+    return new_ops
 
 
-@batch_transform
-def batch_params(tape, all_operations=False):
+@transform
+def batch_params(
+    tape: qml.tape.QuantumTape, all_operations=False
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Transform a QNode to support an initial batch dimension
     for operation parameters.
 
@@ -191,20 +193,13 @@ def batch_params(tape, all_operations=False):
                 f"first dimension of length {batch_dim}."
             )
 
-    idx = 0
-    new_preps, idx = _split_operations(tape._prep, params, indices, idx, batch_dim)
-    new_ops, _ = _split_operations(tape._ops, params, indices, idx, batch_dim)
-
     output_tapes = []
-    for prep, ops in zip(new_preps, new_ops):
-        new_tape = qml.tape.QuantumScript(ops, tape.measurements, prep, shots=tape.shots)
+    for ops in _split_operations(tape.operations, params, indices, batch_dim):
+        new_tape = qml.tape.QuantumScript(ops, tape.measurements, shots=tape.shots)
         new_tape.trainable_params = tape.trainable_params
         output_tapes.append(new_tape)
 
     def processing_fn(res):
-        if qml.active_return():
-            return _nested_stack(res)
-
-        return qml.math.squeeze(qml.math.stack(res))
+        return _nested_stack(res)
 
     return output_tapes, processing_fn
