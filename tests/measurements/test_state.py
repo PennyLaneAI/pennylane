@@ -251,20 +251,18 @@ class TestState:
     """Tests for the state function"""
 
     @pytest.mark.parametrize("wires", range(2, 5))
-    @pytest.mark.parametrize("op,dtype", [(qml.PauliX, np.float64), (qml.PauliY, np.complex128)])
-    def test_state_shape_and_dtype(self, op, dtype, wires):
+    def test_state_shape_and_dtype(self, wires):
         """Test that the state is of correct size and dtype for a trivial circuit"""
 
         dev = qml.device("default.qubit", wires=wires)
 
         @qml.qnode(dev)
         def func():
-            op(0)
             return state()
 
         state_val = func()
         assert state_val.shape == (2**wires,)
-        assert state_val.dtype == dtype
+        assert state_val.dtype == np.complex128
 
     def test_return_type_is_state(self):
         """Test that the return type of the observable is State"""
@@ -589,8 +587,7 @@ class TestDensityMatrix:
 
     @pytest.mark.parametrize("wires", range(2, 5))
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
-    @pytest.mark.parametrize("op,dtype", [(qml.PauliX, np.float64), (qml.PauliY, np.complex128)])
-    def test_density_matrix_shape_and_dtype(self, dev_name, op, dtype, wires):
+    def test_density_matrix_shape_and_dtype(self, dev_name, wires):
         """Test that the density matrix is of correct size and dtype for a
         trivial circuit"""
 
@@ -598,13 +595,12 @@ class TestDensityMatrix:
 
         @qml.qnode(dev)
         def circuit():
-            op(0)
             return density_matrix([0])
 
         state_val = circuit()
 
         assert state_val.shape == (2, 2)
-        assert state_val.dtype == dtype if dev_name == "default.qubit" else np.complex128
+        assert state_val.dtype == np.complex128
 
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
     def test_return_type_is_state(self, dev_name):
