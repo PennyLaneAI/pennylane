@@ -1692,6 +1692,60 @@ class TestRandomSeed:
         assert qml.math.allclose(first_num, second_num)
 
 
+@pytest.mark.jax
+class TestPRNGKeySeed:
+    """Test that the device behaves correctly when provided with a PRNG key and using the JAX interface"""
+
+    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    def test_same_prng_key(self, max_workers):
+        """Test that different devices given the same random jax.random.PRNGKey as a seed will produce
+        the same results for sample, even with different seeds"""
+        import jax
+
+        qs = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.sample(wires=0)], shots=1000)
+        config = ExecutionConfig(interface="jax")
+
+        dev1 = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(123))
+        result1 = dev1.execute(qs, config)
+
+        dev2 = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(123))
+        result2 = dev2.execute(qs, config)
+
+        assert np.all(result1 == result2)
+
+    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    def test_different_prng_key(self, max_workers):
+        """Test that different devices given different jax.random.PRNGKey values will produce
+        different results"""
+        import jax
+
+        qs = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.sample(wires=0)], shots=1000)
+        config = ExecutionConfig(interface="jax")
+
+        dev1 = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(246))
+        result1 = dev1.execute(qs, config)
+
+        dev2 = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(123))
+        result2 = dev2.execute(qs, config)
+
+        assert np.any(result1 != result2)
+
+    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    def test_different_executions_same_prng_key(self, max_workers):
+        """Test that the same device will produce the same results every execution if
+        the seed is a jax.random.PRNGKey"""
+        import jax
+
+        qs = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.sample(wires=0)], shots=1000)
+        config = ExecutionConfig(interface="jax")
+
+        dev = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(77))
+        result1 = dev.execute(qs, config)
+        result2 = dev.execute(qs, config)
+
+        assert np.all(result1 == result2)
+
+
 class TestHamiltonianSamples:
     """Test that the measure_with_samples function works as expected for
     Hamiltonian and Sum observables
