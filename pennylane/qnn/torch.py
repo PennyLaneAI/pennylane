@@ -450,8 +450,8 @@ class TorchLayer(Module):
 
     def __getattr__(self, item):
         """If the given attribute does not exist in the class, look for it in the wrapped QNode."""
-        with contextlib.suppress(AttributeError):
-            if self._initialized:
+        if self._initialized:
+            with contextlib.suppress(AttributeError):
                 return getattr(self.qnode, item)
 
         return super().__getattr__(item)
