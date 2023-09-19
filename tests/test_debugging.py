@@ -58,8 +58,6 @@ class TestSnapshot:
     def test_default_qubit2(self, method):
         """Test that multiple snapshots are returned correctly on the new
         state-vector simulator."""
-        if method == "adjoint":
-            pytest.xfail(reason="New Default Qubit does not yet support Snapshot with adjoint.")
         dev = qml.device("default.qubit")
 
         # TODO: add additional QNode test once the new device supports it
