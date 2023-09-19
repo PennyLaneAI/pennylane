@@ -152,7 +152,7 @@ def get_final_state(circuit, debugger=None, interface=None):
     return state, is_state_batched
 
 
-def measure_final_state(circuit, state, is_state_batched, rng=None) -> Result:
+def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=None) -> Result:
     """
     Perform the measurements required by the circuit on the provided state.
 
@@ -165,6 +165,10 @@ def measure_final_state(circuit, state, is_state_batched, rng=None) -> Result:
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+            If None, the default ``sample_state`` function and a ``numpy.random.default_rng``
+            will be for sampling.
 
     Returns:
         Tuple[TensorLike]: The measurement results
@@ -188,7 +192,12 @@ def measure_final_state(circuit, state, is_state_batched, rng=None) -> Result:
 
     rng = default_rng(rng)
     results = measure_with_samples(
-        circuit.measurements, state, shots=circuit.shots, is_state_batched=is_state_batched, rng=rng
+        circuit.measurements,
+        state,
+        shots=circuit.shots,
+        is_state_batched=is_state_batched,
+        rng=rng,
+        prng_key=prng_key,
     )
 
     if len(circuit.measurements) == 1:
@@ -200,7 +209,9 @@ def measure_final_state(circuit, state, is_state_batched, rng=None) -> Result:
     return results
 
 
-def simulate(circuit: qml.tape.QuantumScript, rng=None, debugger=None, interface=None) -> Result:
+def simulate(
+    circuit: qml.tape.QuantumScript, rng=None, prng_key=None, debugger=None, interface=None
+) -> Result:
     """Simulate a single quantum script.
 
     This is an internal function that will be called by the successor to ``default.qubit``.
@@ -210,6 +221,9 @@ def simulate(circuit: qml.tape.QuantumScript, rng=None, debugger=None, interface
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. If None, a random key will be
+            generated. Only for simulation using JAX.
         debugger (_Debugger): The debugger to use
         interface (str): The machine learning interface to create the initial state with
 
@@ -227,4 +241,4 @@ def simulate(circuit: qml.tape.QuantumScript, rng=None, debugger=None, interface
 
     """
     state, is_state_batched = get_final_state(circuit, debugger=debugger, interface=interface)
-    return measure_final_state(circuit, state, is_state_batched, rng=rng)
+    return measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key)
