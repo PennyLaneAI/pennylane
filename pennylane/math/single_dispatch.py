@@ -550,6 +550,8 @@ def _take_torch(tensor, indices, axis=None, **_):
 
         return torch.index_select(tensor, dim=axis, index=indices)
 
+    if axis == -1:
+        return tensor[..., indices]
     fancy_indices = [slice(None)] * axis + [indices]
     return tensor[fancy_indices]
 

@@ -83,6 +83,11 @@
   when it is more efficient to evolve the state than the operation matrix.
   [(#4598)](https://github.com/PennyLaneAI/pennylane/pull/4598)
 
+* `ShotAdaptiveOptimizer` has been updated to pass shots to QNode executions instead of overriding
+  device shots before execution. This makes it compatible with the new device API.
+  [(#4599)](https://github.com/PennyLaneAI/pennylane/pull/4599)
+
+
 <h3>Breaking changes 💔</h3>
 
 * The `__eq__` and `__hash__` methods of `Operator` and `MeasurementProcess` no longer rely on the
@@ -161,6 +166,10 @@
   been removed. Please use ``QuantumScript.bind_new_parameters`` instead.
   [(#4548)](https://github.com/PennyLaneAI/pennylane/pull/4548)
 
+* The private `TmpPauliRot` operator used for `SpecialUnitary` no longer decomposes to nothing
+  when the theta value is trainable.
+  [(#4585)](https://github.com/PennyLaneAI/pennylane/pull/4585)
+
 <h3>Deprecations 👋</h3>
 
 * The ``prep`` keyword argument in ``QuantumScript`` is deprecated and will be removed from `QuantumScript`.
@@ -216,6 +225,10 @@
   decorating a QNode that returns an `expval` with `tf.function` would fail when computing the
   expectation.
   [(#4590)](https://github.com/PennyLaneAI/pennylane/pull/4590)
+
+* `qml.math.take` with torch now returns `tensor[..., indices]` when the user requests
+  the last axis (`axis=-1`). Without the fix, it would wrongly return `tensor[indices]`.
+  [(#4605)](https://github.com/PennyLaneAI/pennylane/pull/4605)
 
 <h3>Contributors ✍️</h3>
 
