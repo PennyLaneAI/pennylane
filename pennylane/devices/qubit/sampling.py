@@ -430,7 +430,8 @@ def _sample_state_jax(
     num_wires = len(wires_to_sample)
     basis_states = np.arange(2**num_wires)
 
-    probs = qml.probs(wires=wires_to_sample).process_state(state, state_wires)
+    flat_state = flatten_state(state, total_indices)
+    probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)
 
     if is_state_batched:
         # Produce separate keys for each of the probabilities along the broadcasted axis
