@@ -58,7 +58,9 @@ class TestStateMP:
     def test_state_returns_itself_if_wires_match(self, interface):
         """Test that when wire_order matches the StateMP, the state is returned."""
         ket = qml.math.array([0.48j, 0.48, -0.64j, 0.36], like=interface)
-        assert StateMP(wires=[1, 0]).process_state(ket, wire_order=Wires([1, 0])) is ket
+        assert np.array_equal(
+            StateMP(wires=[1, 0]).process_state(ket, wire_order=Wires([1, 0])), ket
+        )
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch", "tensorflow"])
@@ -91,6 +93,7 @@ class TestStateMP:
         mp = StateMP(wires=mp_wires)
         ket = np.arange(1, 5)
         result = mp.process_state(ket, wire_order=Wires(wire_order))
+        assert qml.math.get_dtype_name(result) == "complex128"
         assert np.array_equal(result, expected_state)
 
     @pytest.mark.all_interfaces
@@ -121,6 +124,7 @@ class TestStateMP:
             like=interface,
         )
         result = mp.process_state(ket, wire_order=Wires([1, 2]))
+        assert qml.math.shape(result) == (3, 16)
         reshaped = qml.math.reshape(result, (3, 2, 2, 2, 2))
         assert qml.math.all(reshaped[:, 1, :, 1, :] == 0)
         assert qml.math.allclose(
@@ -156,6 +160,26 @@ class TestStateMP:
         result = get_state(jax.numpy.array([0.48j, 0.48, -0.64j, 0.36]))
         assert qml.math.allclose(result, expected)
         assert isinstance(result, jax.Array)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize(
+        "wires,expected",
+        [
+            ([1, 0], np.array([0.48j, -0.64j, 0.48, 0.36])),
+            ([2, 1, 0], np.array([0.48j, -0.64j, 0.48, 0.36, 0.0, 0.0, 0.0, 0.0])),
+        ],
+    )
+    def test_state_tf_function(self, wires, expected):
+        """Test that re-ordering and expanding works with tf.function."""
+        import tensorflow as tf
+
+        @tf.function
+        def get_state(ket):
+            return StateMP(wires=wires).process_state(ket, wire_order=Wires([0, 1]))
+
+        result = get_state(tf.Variable([0.48j, 0.48, -0.64j, 0.36]))
+        assert qml.math.allclose(result, expected)
+        assert isinstance(result, tf.Tensor)
 
     def test_wire_ordering_error(self):
         """Test that a wire order error is raised when unknown wires are given."""
@@ -533,6 +557,19 @@ class TestState:
         state_val = func()
 
         assert np.allclose(state_expected, state_val)
+
+    def test_return_type_is_complex(self):
+        """Test that state always returns a complex value."""
+        dev = qml.devices.DefaultQubit()
+
+        @qml.qnode(dev)
+        def func():
+            qml.StatePrep([1, 0, 0, 0], wires=[0, 1])
+            return state()
+
+        state_val = func()
+        assert state_val.dtype == np.complex128
+        assert np.array_equal(state_val, [1, 0, 0, 0])
 
     @pytest.mark.parametrize("shots", [None, 1, 10])
     def test_shape(self, shots):

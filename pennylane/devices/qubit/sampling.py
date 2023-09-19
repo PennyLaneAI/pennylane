@@ -27,6 +27,7 @@ from pennylane.measurements import (
 )
 from pennylane.typing import TensorLike
 from .apply_operation import apply_operation
+from .measure import flatten_state
 
 
 def _group_measurements(mps: List[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]]):
@@ -342,7 +343,8 @@ def sample_state(
     num_wires = len(wires_to_sample)
     basis_states = np.arange(2**num_wires)
 
-    probs = qml.probs(wires=wires_to_sample).process_state(state, state_wires)
+    flat_state = flatten_state(state, total_indices)
+    probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)
 
     if is_state_batched:
         # rng.choice doesn't support broadcasting
