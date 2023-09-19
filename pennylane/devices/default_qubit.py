@@ -142,7 +142,7 @@ class DefaultQubit(Device):
     @property
     def name(self):
         """The name of the device."""
-        return "default.qubit.2"
+        return "default.qubit"
 
     def __init__(self, wires=None, shots=None, seed="global", max_workers=None) -> None:
         super().__init__(wires=wires, shots=shots)

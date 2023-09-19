@@ -918,4 +918,4 @@ def test_specs():
     assert info["num_device_wires"] == 2
     assert info["num_trainable_params"] == 2
     assert info["interface"] == "tf"
-    assert info["device_name"] == "default.qubit.2"
+    assert info["device_name"] == "default.qubit"

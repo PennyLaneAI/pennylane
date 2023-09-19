@@ -264,7 +264,7 @@ class TestSupportedConfs:
     def test_all_device(self, interface, return_type, shots, wire_specs):
         """Test diff_method=device raises an error for all interfaces for default.qubit"""
         msg = (
-            "The default.qubit.2 device does not provide a native "
+            "The default.qubit device does not provide a native "
             "method for computing the jacobian."
         )
 
@@ -277,7 +277,7 @@ class TestSupportedConfs:
         """Test interface=None and diff_method=backprop raises an error"""
         with pytest.raises(
             QuantumFunctionError,
-            match=r"Device default\.qubit\.2 does not support backprop with .*gradient_method='backprop'.*interface=None",
+            match=r"Device default\.qubit does not support backprop with .*gradient_method='backprop'.*interface=None",
         ):
             get_qnode(None, "backprop", return_type, None, wire_specs)
 

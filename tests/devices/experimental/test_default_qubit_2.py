@@ -27,7 +27,7 @@ from pennylane.devices.qubit.preprocess import validate_and_expand_adjoint
 
 def test_name():
     """Tests the name of DefaultQubit."""
-    assert DefaultQubit().name == "default.qubit.2"
+    assert DefaultQubit().name == "default.qubit"
 
 
 def test_shots():

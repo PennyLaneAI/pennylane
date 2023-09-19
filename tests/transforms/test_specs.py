@@ -160,7 +160,7 @@ class TestSpecsTransform:
         assert info["resources"] == expected_resources
         assert info["num_observables"] == 1
         assert info["num_device_wires"] == 5
-        assert info["device_name"] == "default.qubit.2"
+        assert info["device_name"] == "default.qubit"
         assert info["diff_method"] == "best"
         assert info["gradient_fn"] == "backprop"
 
