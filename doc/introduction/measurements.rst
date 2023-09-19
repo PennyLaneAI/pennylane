@@ -329,6 +329,36 @@ Executing this QNode:
 >>> func()
 tensor([0., 1.], requires_grad=True)
 
+PennyLane also supports postselecting on mid-circuit measurement outcomes such that only states matching the
+postselection are considered in the remaining execution by specifying the ``postselect`` keyword argument of
+:func:`~.pennylane.measure`:
+
+.. code-block:: python3
+
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.qnode(dev)
+    def func(x):
+        qml.RX(x, wires=0)
+        m0 = qml.measure(0, postselect=1)
+        qml.cond(m0, qml.PauliX)(wires=1)
+        return qml.sample(wires=1)
+
+By postselecting on ``1``, we only consider the ``1`` measurement outcome. So, the probability of measuring 1
+on wire 1 should be 100%. Executing this QNode with 10 shots:
+
+>>> func(np.pi / 2, shots=10)
+array([1, 1, 1, 1, 1, 1, 1])
+
+Note that only 7 samples are returned. This is because samples that do not meet the postselection criteria are
+thrown away.
+
+.. note::
+
+    Currently, postselection support is only available on ``"default.qubit"``. Requesting postselection on other
+    devices will not do anything.
+
+
 The deferred measurement principle provides a natural method to simulate the
 application of mid-circuit measurements and conditional operations in a
 differentiable and device-independent way. Performing true mid-circuit

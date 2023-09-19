@@ -121,13 +121,13 @@ def get_final_state(circuit, debugger=None, interface=None):
                 for i, _ in enumerate(state):
                     norm = qml.math.norm(state[i])
                     if qml.math.isclose(norm, 0.0):
-                        raise ValueError("Requested postselection on value with zero probability.")
+                        return qml.numpy.NaN, is_state_batched
 
                     state[i] = state[i] / qml.math.norm(state[i])
             else:
                 norm = qml.math.norm(state)
                 if qml.math.isclose(norm, 0.0):
-                    raise ValueError("Requested postselection on value with zero probability.")
+                    return qml.numpy.NaN, is_state_batched
 
                 state = state / norm
 
@@ -137,6 +137,8 @@ def get_final_state(circuit, debugger=None, interface=None):
                     # Clip the number of shots using a binomial distribution using the probability of
                     # measuring the postselected state.
                     postselected_shots = binomial(circuit.shots.total_shots, norm)
+                    if postselected_shots == 0:
+                        raise RuntimeError("None of the samples meet the postselection criteria")
                     circuit._shots = qml.measurements.Shots(postselected_shots)
 
     if set(circuit.op_wires) < set(circuit.wires):
@@ -167,6 +169,9 @@ def measure_final_state(circuit, state, is_state_batched, rng=None) -> Result:
     Returns:
         Tuple[TensorLike]: The measurement results
     """
+    if state is qml.numpy.NaN:
+        return state
+
     circuit = circuit.map_to_standard_wires()
 
     if not circuit.shots:
