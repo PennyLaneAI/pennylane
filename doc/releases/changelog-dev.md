@@ -17,9 +17,10 @@
 * Quantum information transforms are updated to the new transform program system.
   [(#4569)](https://github.com/PennyLaneAI/pennylane/pull/4569)
 
-* `qml.devices.DefaultQubit` now implements the new device API. The old version of `default.qubit`
-  is still accessible via `qml.devices.DefaultQubitLegacy`, or via short name `default.qubit.legacy`.
+* `default.qubit` now implements the new device API. The old version of the device is still
+  accessible by the short name `default.qubit.legacy`, or directly via `qml.devices.DefaultQubitLegacy`.
   [(#4594)](https://github.com/PennyLaneAI/pennylane/pull/4594)
+  [(#4436)](https://github.com/PennyLaneAI/pennylane/pull/4436)
 
 <h3>Improvements 🛠</h3>
 
