@@ -2216,7 +2216,7 @@ class TestMCPostprocessing:
                 assert np.allclose(arg, expected_arg)
 
         assert np.isclose(postprocessed, expected)
-        assert isinstance(convert_fixed_samples[0], type(postprocessed))
+        assert isinstance(convert_fixed_samples[0], autograd.numpy.ndarray)
 
     @pytest.mark.tf
     def test_mc_sample_postprocess_tf(self, mocker):
@@ -2873,7 +2873,8 @@ class TestCutCircuitMCTransform:
         assert isinstance(res, type(convert_input))
 
     @pytest.mark.jax
-    def test_samples_jax(self, dev_fn):
+    @pytest.mark.parametrize("use_jit", [False, True])
+    def test_samples_jax(self, dev_fn, use_jit):
         """
         Tests that `cut_circuit_mc` returns the correct type of sample
         output value in Jax
@@ -2901,6 +2902,8 @@ class TestCutCircuitMCTransform:
 
         v = 0.319
         convert_input = qml.math.convert_like(v, jax.numpy.ones(1))
+        if use_jit:
+            cut_circuit = jax.jit(cut_circuit)
 
         res = cut_circuit(convert_input)
 
@@ -2938,7 +2941,7 @@ class TestCutCircuitMCTransform:
         convert_input = qml.math.convert_like(v, autograd.numpy.ones(1))
         res = cut_circuit(convert_input)
 
-        assert isinstance(res, type(convert_input))
+        assert isinstance(res, np.float64)
 
     @pytest.mark.tf
     def test_mc_tf(self, dev_fn):

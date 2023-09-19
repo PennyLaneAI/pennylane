@@ -19,8 +19,8 @@ import string
 from typing import List, Sequence
 from networkx import MultiDiGraph
 
+import numpy as np
 import pennylane as qml
-from pennylane import numpy as np
 
 from .qcut import MeasureNode, PrepareNode
 
@@ -106,12 +106,15 @@ def qcut_processing_fn_sample(
     res0 = results[0][0]
     out_degrees = [d for _, d in communication_graph.out_degree]
 
-    samples = []
-    for result in results:
-        sample = []
-        for fragment_result, out_degree in zip(result, out_degrees):
-            sample.append(fragment_result[: -out_degree or None])
-        samples.append(np.hstack(sample))
+    samples = [
+        qml.math.hstack(
+            [
+                fragment_result[: -out_degree or None]
+                for fragment_result, out_degree in zip(result, out_degrees)
+            ]
+        )
+        for result in results
+    ]
     return [qml.math.convert_like(np.array(samples), res0)]
 
 
@@ -163,11 +166,11 @@ def qcut_processing_fn_mc(
             sample_terminal.append(fragment_result[: -out_degree or None])
             sample_mid.append(fragment_result[-out_degree or len(fragment_result) :])
 
-        sample_terminal = np.hstack(sample_terminal)
-        sample_mid = np.hstack(sample_mid)
+        sample_terminal = qml.math.hstack(sample_terminal)
+        sample_mid = qml.math.hstack(sample_mid)
 
-        assert set(sample_terminal).issubset({np.array(0), np.array(1)})
-        assert set(sample_mid).issubset({np.array(-1), np.array(1)})
+        assert set(qml.math.unwrap(sample_terminal)).issubset({0, 1})
+        assert set(qml.math.unwrap(sample_mid)).issubset({-1, 1})
         # following Eq.(35) of Peng et.al: https://arxiv.org/abs/1904.00102
         f = classical_processing_fn(sample_terminal)
         if not -1 <= f <= 1:
@@ -175,13 +178,14 @@ def qcut_processing_fn_mc(
                 "The classical processing function supplied must "
                 "give output in the interval [-1, 1]"
             )
-        sigma_s = np.prod(sample_mid)
+        sigma_s = qml.math.prod(sample_mid)
         t_s = f * sigma_s
-        c_s = np.prod([evals[s] for s in setting])
+        c_s = qml.math.prod([evals[s] for s in setting])
         K = len(sample_mid)
         expvals.append(8**K * c_s * t_s)
 
-    return qml.math.convert_like(np.mean(expvals), res0)
+    interface = qml.math.get_interface(res0)
+    return qml.math.mean(qml.math.asarray(expvals, like=interface))
 
 
 def _reshape_results(results: Sequence, shots: int) -> List[List]:
