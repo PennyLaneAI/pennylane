@@ -217,6 +217,10 @@
   expectation.
   [(#4590)](https://github.com/PennyLaneAI/pennylane/pull/4590)
 
+* `qml.math.take` with torch now returns `tensor[..., indices]` when the user requests
+  the last axis (`axis=-1`). Without the fix, it would wrongly return `tensor[indices]`.
+  [(#4605)](https://github.com/PennyLaneAI/pennylane/pull/4605)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
