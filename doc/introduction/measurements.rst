@@ -334,7 +334,7 @@ Currently, ``qml.probs``, ``qml.sample``, ``qml.expval``, ``qml.var``, and ``qml
 and can be requested along with other measurements. The devices that currently support collecting such
 statistics are ``"default.qubit"``, ``"default.mixed"``, and ``"default.qubit.legacy"``.
 
-..code-block:: python3
+.. code-block:: python3
 
     dev = qml.devices.DefaultQubit()
 
