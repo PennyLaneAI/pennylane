@@ -118,7 +118,7 @@ def get_final_state(circuit, debugger=None, interface=None):
         if isinstance(op, qml.Projector):
             # Handle postselection on mid-circuit measurements
             if is_state_batched:
-                for i, _ in state:
+                for i, _ in enumerate(state):
                     norm = qml.math.norm(state[i])
                     if qml.math.isclose(norm, 0.0):
                         raise ValueError("Requested postselection on value with zero probability.")
