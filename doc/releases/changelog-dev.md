@@ -79,6 +79,10 @@
   when at the beginning of a circuit, thus behaving like `StatePrep`.
   [(#4583)](https://github.com/PennyLaneAI/pennylane/pull/4583)
 
+* `ShotAdaptiveOptimizer` has been updated to pass shots to QNode executions instead of overriding
+  device shots before execution. This makes it compatible with the new device API.
+  [(#4599)](https://github.com/PennyLaneAI/pennylane/pull/4599)
+
 <h3>Breaking changes 💔</h3>
 
 * The `__eq__` and `__hash__` methods of `Operator` and `MeasurementProcess` no longer rely on the
@@ -156,6 +160,10 @@
 * The ``QuantumScript.set_parameters`` method and the ``QuantumScript.data`` setter have
   been removed. Please use ``QuantumScript.bind_new_parameters`` instead.
   [(#4548)](https://github.com/PennyLaneAI/pennylane/pull/4548)
+
+* The private `TmpPauliRot` operator used for `SpecialUnitary` no longer decomposes to nothing
+  when the theta value is trainable.
+  [(#4585)](https://github.com/PennyLaneAI/pennylane/pull/4585)
 
 <h3>Deprecations 👋</h3>
 
