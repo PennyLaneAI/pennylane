@@ -449,6 +449,37 @@ class TestApplyParameterizedEvolution:
         # einsum twice, and the default apply_operation only once
         assert spy.call_count == 2
 
+    def test_parametrized_evolution_raises_error(self):
+        """Test applying a ParametrizedEvolution without params or t specified raises an error."""
+        import jax.numpy as jnp
+
+        state = jnp.array([[[1.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]], dtype=complex)
+        ev = qml.evolve(qml.pulse.ParametrizedHamiltonian([1], [qml.PauliX("a")]))
+        with pytest.raises(
+            ValueError,
+            match="The parameters and the time window are required to compute the matrix",
+        ):
+            apply_operation(ev, state)
+
+    def test_parametrized_evolution_state_vector_return_intermediate(self, mocker):
+        """Test that when executing a ParametrizedEvolution with ``num_wires >= device.num_wires/2``
+        and ``return_intermediate=True``, the ``_evolve_state_vector_under_parametrized_evolution``
+        method is used."""
+        import jax.numpy as jnp
+
+        H = qml.pulse.ParametrizedHamiltonian([1], [qml.PauliX(0)])
+        spy = mocker.spy(qml.math, "einsum")
+
+        phi = jnp.linspace(0.3, 0.7, 7)
+        phi_for_RX = phi - phi[0]
+        state = jnp.array([[[1.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]], dtype=complex)
+        ev = qml.evolve(H, return_intermediate=True)(params=[], t=phi / 2)
+        state_ev = apply_operation(ev, state)
+        state_rx = apply_operation(qml.RX(phi_for_RX, 0), state)
+
+        assert spy.call_count == 2
+        assert qml.math.allclose(state_ev, state_rx, atol=1e-6)
+
     def test_batched_state_raises_an_error(self):
         """Test that if is_state_batche=True, an error is raised"""
         H = time_independent_hamiltonian()
