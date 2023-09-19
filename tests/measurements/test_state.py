@@ -338,8 +338,7 @@ class TestState:
         assert np.allclose(state_val, expected_state.flatten())
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("op", [qml.PauliX, qml.PauliY])
-    def test_interface_tf(self, op):
+    def test_interface_tf(self):
         """Test that the state correctly outputs in the tensorflow interface"""
         import tensorflow as tf
 
@@ -347,8 +346,6 @@ class TestState:
 
         @qml.qnode(dev, interface="tf")
         def func():
-            op(0)
-            op(0)
             for i in range(4):
                 qml.Hadamard(i)
             return state()
@@ -357,13 +354,12 @@ class TestState:
         state_val = func()
 
         assert isinstance(state_val, tf.Tensor)
-        assert state_val.dtype == tf.complex128 if op is qml.PauliY else tf.float64
+        assert state_val.dtype == tf.complex128
         assert np.allclose(state_expected, state_val.numpy())
         assert state_val.shape == (16,)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("op", [qml.PauliX, qml.PauliY])
-    def test_interface_torch(self, op):
+    def test_interface_torch(self):
         """Test that the state correctly outputs in the torch interface"""
         import torch
 
@@ -371,13 +367,11 @@ class TestState:
 
         @qml.qnode(dev, interface="torch")
         def func():
-            op(0)
-            op(0)
             for i in range(4):
                 qml.Hadamard(i)
             return state()
 
-        dtype = torch.complex128 if op is qml.PauliY else torch.float64
+        dtype = torch.complex128
         state_expected = 0.25 * torch.ones(16, dtype=dtype)
         state_val = func()
 
