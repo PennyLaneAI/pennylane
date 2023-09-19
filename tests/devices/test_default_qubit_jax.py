@@ -97,6 +97,7 @@ class TestQNodeIntegration:
         dev = qml.device("default.qubit.jax", wires=2)
         assert dev.state.dtype == c_dtype
         assert dev.state.real.dtype == r_dtype
+        jax.config.update("jax_enable_x64", True)
 
     def test_qubit_circuit(self, tol):
         """Test that the device provides the correct
