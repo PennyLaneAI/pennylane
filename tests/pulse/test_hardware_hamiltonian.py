@@ -641,7 +641,7 @@ class TestIntegration:
 
         Ht = drive(amplitude=fa, phase=0, wires=1)
 
-        dev = qml.device("default.qubit.legacy", wires=wires)
+        dev = qml.device("default.qubit", wires=wires)
 
         ts = jnp.array([0.0, 3.0])
         H_obj = sum(qml.PauliZ(i) for i in range(2))
@@ -662,7 +662,7 @@ class TestIntegration:
         res_jit = qnode_jit(params)
 
         assert isinstance(res, jax.Array)
-        assert res == res_jit
+        assert qml.math.allclose(res, res_jit)
 
     @pytest.mark.jax
     def test_jitted_qnode_multidrive(self):
@@ -683,7 +683,7 @@ class TestIntegration:
         H2 = drive(amplitude=fc, phase=3 * jnp.pi, wires=4)
         H3 = drive(amplitude=1.0, phase=0, wires=[3, 0])
 
-        dev = qml.device("default.qubit.legacy", wires=wires)
+        dev = qml.device("default.qubit", wires=wires)
 
         ts = jnp.array([0.0, 3.0])
         H_obj = sum(qml.PauliZ(i) for i in range(2))
@@ -726,7 +726,7 @@ class TestIntegration:
 
         H_drive = drive(amplitude=fa, phase=fb, wires=1)
 
-        dev = qml.device("default.qubit.legacy", wires=wires)
+        dev = qml.device("default.qubit", wires=wires)
 
         ts = jnp.array([0.0, 3.0])
         H_obj = sum(qml.PauliZ(i) for i in range(2))
@@ -747,4 +747,4 @@ class TestIntegration:
         res_jit = qnode_jit(params)
 
         assert isinstance(res, jax.Array)
-        assert res == res_jit
+        assert qml.math.allclose(res, res_jit)
