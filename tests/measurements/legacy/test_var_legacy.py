@@ -17,6 +17,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.measurements import Variance, Shots
+from pennylane.devices.qubit.measure import flatten_state
 
 
 # TODO: Remove this when new CustomMP are the default
@@ -25,7 +26,7 @@ def custom_measurement_process(device, spy):
 
     # pylint: disable=protected-access
     samples = device._samples
-    state = device._state
+    state = flatten_state(device._state, device.num_wires)
     call_args_list = list(spy.call_args_list)
     for call_args in call_args_list:
         obs = call_args.args[1]
