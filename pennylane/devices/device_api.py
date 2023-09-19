@@ -22,10 +22,11 @@ from numbers import Number
 from typing import Callable, Union, Sequence, Tuple, Optional
 
 from pennylane.measurements import Shots
-from pennylane.tape import QuantumTape, QuantumScript
+from pennylane.tape import QuantumTape
 from pennylane.typing import Result, ResultBatch
 from pennylane.wires import Wires
 from pennylane import Tracker
+from pennylane.transforms.core import TransformProgram
 
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
 
@@ -95,7 +96,7 @@ class Device(abc.ABC):
 
         >>> op = qml.Permute(["c", 3,"a",2,0], wires=[3,2,"a",0,"c"])
         >>> circuit = qml.tape.QuantumScript([op], [qml.state()])
-        >>> dev = DefaultQubit2()
+        >>> dev = DefaultQubit()
         >>> dev.execute(circuit)
         MatrixUndefinedError
         >>> circuit = qml.tape.QuantumScript([qml.Rot(1.2, 2.3, 3.4, 0)], [qml.expval(qml.PauliZ(0))])
@@ -168,6 +169,16 @@ class Device(abc.ABC):
 
         self._wires = wires
 
+    def __repr__(self):
+        """String representation."""
+        details = []
+        if self.wires:
+            details.append(f"wires={len(self.wires)}")
+        if self.shots:
+            details.append(f"shots={self.shots.total_shots}")
+        details = f"({', '.join(details)}) " if details else ""
+        return f"<{self.name} device {details}at {hex(id(self))}>"
+
     @property
     def shots(self) -> Shots:
         """Default shots for execution workflows containing this device.
@@ -193,9 +204,8 @@ class Device(abc.ABC):
 
     def preprocess(
         self,
-        circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Tuple[QuantumTapeBatch, PostprocessingFn, ExecutionConfig]:
+    ) -> Tuple[TransformProgram, ExecutionConfig]:
         """Device preprocessing function.
 
         .. warning::
@@ -207,18 +217,17 @@ class Device(abc.ABC):
             the :meth:`~.execute` method.
 
         Args:
-            circuits (Union[QuantumTape, Sequence[QuantumTape]]): The circuit or a batch of circuits to preprocess
-                before execution on the device
             execution_config (ExecutionConfig): A datastructure describing the parameters needed to fully describe
                 the execution.
 
-            Tuple[QuantumTape], Callable, ExecutionConfig: QuantumTapes that the device can natively execute,
-            a postprocessing function to be called after execution, and a configuration with unset specifications filled in.
+        Returns:
+            TransformProgram, ExecutionConfig: A transform program that is called before execution, and a configuration
+                with unset specifications filled in.
 
         Raises:
-            Exception: An exception is raised if the input cannot be converted into a form supported by the device.
+            Exception: An exception can be raised if the input cannot be converted into a form supported by the device.
 
-        Preprocessing steps may include:
+        Preprocessing program may include:
 
         * expansion to :class:`~.Operator`'s and :class:`~.MeasurementProcess` objects supported by the device.
         * splitting a circuit with the measurement of non-commuting observables or Hamiltonians into multiple executions
@@ -226,6 +235,34 @@ class Device(abc.ABC):
         * gradient specific preprocessing, such as making sure trainable operators have generators
         * validation of configuration parameters
         * choosing a best gradient method and ``grad_on_execution`` value.
+
+        **Example**
+
+        All the transforms that are part of the preprocessing need to respect the transform contract defined in
+        :func:`pennylane.transforms.core.transform`.
+
+        .. code-block:: python
+
+                @transform
+                def my_preprocessing_transform(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], callable):
+                    # e.g. valid the measurements, expand the tape for the hardware execution, ...
+
+                    def blank_processing_fn(results):
+                        return results[0]
+
+                    return [tape], processing_fn
+
+        Then we can define the preprocess method on the custom device. The program can accept an arbitrary number of
+        transforms.
+
+        .. code-block:: python
+
+                def preprocess(config):
+                    program = TransformProgram()
+                    program.add_transform(my_preprocessing_transform)
+                    return program, config
+
+        .. seealso:: :func:`~.pennylane.transform.core.transform` and :class:`~.pennylane.transform.core.TransformProgram`
 
         .. details::
             :title: Post processing function and derivatives
@@ -241,7 +278,8 @@ class Device(abc.ABC):
                 def f(x):
                     circuit = qml.tape.QuantumScript([qml.Rot(*x, wires=0)], [qml.expval(qml.PauliZ(0))])
                     config = ExecutionConfig(gradient_method="adjoint")
-                    circuit_batch, postprocessing, new_config = dev.preprocess(circuit, config)
+                    program, config = dev.preprocess(config)
+                    circuit_batch, postprocessing = program((circuit, ))
 
                     def execute_fn(tapes):
                         return dev.execute_and_compute_derivatives(tapes, config)
@@ -257,21 +295,7 @@ class Device(abc.ABC):
             Only then is the classical postprocessing called on the result object.
 
         """
-
-        def blank_postprocessing_fn(res: ResultBatch) -> ResultBatch:
-            """Identity postprocessing function created in Device preprocessing.
-
-            Args:
-                res (tensor-like): A result object
-
-            Returns:
-                tensor-like: The function input.
-
-            """
-            return res
-
-        circuit_batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
-        return circuit_batch, blank_postprocessing_fn, execution_config
+        return TransformProgram(), execution_config
 
     @abc.abstractmethod
     def execute(
@@ -290,11 +314,9 @@ class Device(abc.ABC):
 
         **Interface parameters:**
 
-        Note that the parameters contained within the quantum script may contain interface-specific data types, such as
-        ``torch.Tensor`` or ``jax.Array``. If the device does not wish to handle interface-specific parameters, they
-        can implement an optional "internal preprocessing" step that converts all parameters to vanilla numpy. A convenience
-        transform implementing this will be provided. This step allows device to be transparent to things like jitting if they
-        so choose.
+        The provided ``circuits`` may contain interface specific data-types like ``torch.Tensor`` or ``jax.Array`` when
+        :attr:`~.ExecutionConfig.gradient_method` of ``"backprop"`` is requested. If the gradient method is not backpropagation,
+        then only vanilla numpy parameters or builtins will be present in the circuits.
 
         .. details::
             :title: Return Shape
@@ -383,13 +405,17 @@ class Device(abc.ABC):
         For example, the Python device will support device differentiation via the adjoint differentiation algorithm
         if the order is ``1`` and the execution occurs with no shots (``shots=None``).
 
-        >>> config = ExecutionConfig(derivative_order=1, shots=None, gradient_method="adjoint")
+        >>> config = ExecutionConfig(derivative_order=1, gradient_method="adjoint")
         >>> dev.supports_derivatives(config)
         True
-        >>> config = ExecutionConfig(derivative_order=1, shots=10, gradient_method="adjoint")
-        >>> dev.supports_derivatives(config)
+        >>> circuit_analytic = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))], shots=None)
+        >>> dev.supports_derivatives(config, circuit=circuit_analytic)
+        True
+        >>> circuit_finite_shots = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))], shots=10)
+        >>> dev.supports_derivatives(config, circuit = circuit_fintite_shots)
         False
-        >>> config = ExecutionConfig(derivative_order=2, shots=None, gradient_method="adjoint")
+
+        >>> config = ExecutionConfig(derivative_order=2, gradient_method="adjoint")
         >>> dev.supports_derivatives(config)
         False
 
@@ -418,7 +444,7 @@ class Device(abc.ABC):
         This method is also used be to validate support for backpropagation derivatives. Backpropagation
         is only supported if the device is transparent to the machine learning framework from start to finish.
 
-        >>> config = ExecutionConfig(gradient_method="backprop", framework="torch")
+        >>> config = ExecutionConfig(gradient_method="backprop")
         >>> python_device.supports_derivatives(config)
         True
         >>> cpp_device.supports_derivatives(config)

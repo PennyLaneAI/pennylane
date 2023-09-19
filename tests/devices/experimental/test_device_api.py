@@ -18,7 +18,7 @@ Tests for the basic default behavior of the Device API.
 import pytest
 
 import pennylane as qml
-from pennylane.devices.experimental import Device, ExecutionConfig, DefaultExecutionConfig
+from pennylane.devices import Device, ExecutionConfig, DefaultExecutionConfig
 from pennylane.wires import Wires
 
 
@@ -50,6 +50,19 @@ class TestMinimalDevice:
         """Test the default name is the name of the class"""
         assert self.dev.name == "MinimalDevice"
 
+    @pytest.mark.parametrize(
+        "wires,shots,expected",
+        [
+            (None, None, "<MinimalDevice device at 0x"),
+            ([1, 3], None, "<MinimalDevice device (wires=2) at 0x"),
+            (None, [10, 20], "<MinimalDevice device (shots=30) at 0x"),
+            ([1, 3], [10, 20], "<MinimalDevice device (wires=2, shots=30) at 0x"),
+        ],
+    )
+    def test_repr(self, wires, shots, expected):
+        """Tests the repr of the device API"""
+        assert repr(self.MinimalDevice(wires=wires, shots=shots)).startswith(expected)
+
     def test_shots(self):
         """Test default behavior for shots."""
 
@@ -70,15 +83,16 @@ class TestMinimalDevice:
         """Test that preprocessing wraps a circuit into a batch."""
 
         circuit1 = qml.tape.QuantumScript()
-        batch, fn, config = self.dev.preprocess(circuit1)
+        program, config = self.dev.preprocess()
+        batch, fn = program((circuit1,))
         assert isinstance(batch, tuple)
         assert len(batch) == 1
         assert batch[0] is circuit1
         assert callable(fn)
 
-        a = (1, 2)
-        assert fn(a) is a
-        assert config is qml.devices.experimental.DefaultExecutionConfig
+        a = (1,)
+        assert fn(a) == (1,)
+        assert config is qml.devices.DefaultExecutionConfig
 
     def test_preprocess_batch_circuits(self):
         """Test that preprocessing a batch doesn't do anything."""
@@ -86,7 +100,8 @@ class TestMinimalDevice:
         circuit = qml.tape.QuantumScript()
         in_config = ExecutionConfig()
         in_batch = (circuit, circuit)
-        batch, fn, config = self.dev.preprocess(in_batch, in_config)
+        program, config = self.dev.preprocess(in_config)
+        batch, fn = program(in_batch)
         assert batch is in_batch
         assert config is in_config
         a = (1, 2)
