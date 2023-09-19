@@ -127,6 +127,10 @@
   when at the beginning of a circuit, thus behaving like `StatePrep`.
   [(#4583)](https://github.com/PennyLaneAI/pennylane/pull/4583)
 
+* DefaultQubit2 dispatches to a faster implementation for applying `ParameterizedEvolution` to a state
+  when it is more efficient to evolve the state than the operation matrix.
+  [(#4598)](https://github.com/PennyLaneAI/pennylane/pull/4598)
+
 * `ShotAdaptiveOptimizer` has been updated to pass shots to QNode executions instead of overriding
   device shots before execution. This makes it compatible with the new device API.
   [(#4599)](https://github.com/PennyLaneAI/pennylane/pull/4599)
