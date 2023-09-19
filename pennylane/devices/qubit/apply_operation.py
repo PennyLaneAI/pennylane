@@ -333,6 +333,7 @@ def _evolve_state_vector_under_parametrized_evolution(
             dense=operation.dense,
             wire_order=list(np.arange(num_wires)),
         )
+        raise RuntimeError()
 
     def fun(y, t):
         """dy/dt = -i H(t) y"""
