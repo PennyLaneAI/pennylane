@@ -458,9 +458,9 @@ class TorchLayer(Module):
 
     def __setattr__(self, item, val):
         """If the given attribute does not exist in the class, try to set it in the wrapped QNode."""
-        if self._initialized:
+        if self._initialized and item in self.qnode.__dict__:
             setattr(self.qnode, item, val)
-        self.__dict__[item] = val
+        return super().__setattr__(item, val)
 
     def _init_weights(
         self,
