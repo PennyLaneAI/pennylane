@@ -80,6 +80,10 @@
   when at the beginning of a circuit, thus behaving like `StatePrep`.
   [(#4583)](https://github.com/PennyLaneAI/pennylane/pull/4583)
 
+* `ShotAdaptiveOptimizer` has been updated to pass shots to QNode executions instead of overriding
+  device shots before execution. This makes it compatible with the new device API.
+  [(#4599)](https://github.com/PennyLaneAI/pennylane/pull/4599)
+
 * `StateMeasurement.process_state` now assumes the input is flat. `ProbabilityMP.process_state` has
   been updated to reflect this assumption and avoid redundant reshaping.
   [(#4602)](https://github.com/PennyLaneAI/pennylane/pull/4602)
@@ -162,6 +166,10 @@
   been removed. Please use ``QuantumScript.bind_new_parameters`` instead.
   [(#4548)](https://github.com/PennyLaneAI/pennylane/pull/4548)
 
+* The private `TmpPauliRot` operator used for `SpecialUnitary` no longer decomposes to nothing
+  when the theta value is trainable.
+  [(#4585)](https://github.com/PennyLaneAI/pennylane/pull/4585)
+
 * `ProbabilityMP.marginal_prob` has been removed. Its contents have been moved into `process_state`,
   which effectively just called `marginal_prob` with `np.abs(state) ** 2`.
   [(#4602)](https://github.com/PennyLaneAI/pennylane/pull/4602)
@@ -221,6 +229,10 @@
   decorating a QNode that returns an `expval` with `tf.function` would fail when computing the
   expectation.
   [(#4590)](https://github.com/PennyLaneAI/pennylane/pull/4590)
+
+* `qml.math.take` with torch now returns `tensor[..., indices]` when the user requests
+  the last axis (`axis=-1`). Without the fix, it would wrongly return `tensor[indices]`.
+  [(#4605)](https://github.com/PennyLaneAI/pennylane/pull/4605)
 
 <h3>Contributors ✍️</h3>
 
