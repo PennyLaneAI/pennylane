@@ -221,7 +221,8 @@ except ImportError as e:
     jax_available = False
 
 
-def pytest_generate_tests(_):
+# pylint: disable=unused-argument
+def pytest_generate_tests(metafunc):
     if jax_available:
         jax.config.update("jax_enable_x64", True)
 
