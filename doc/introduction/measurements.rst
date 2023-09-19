@@ -353,6 +353,23 @@ array([1, 1, 1, 1, 1, 1, 1])
 Note that only 7 samples are returned. This is because samples that do not meet the postselection criteria are
 thrown away.
 
+If postselection is requested on a state with zero probability of being measured, ``NaN`` will be returned regardless
+of what and how many measurements are made:
+
+.. code-block:: python3
+
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.qnode(dev)
+    def func(x):
+        qml.RX(x, wires=0)
+        m0 = qml.measure(0, postselect=1)
+        qml.cond(m0, qml.PauliX)(wires=1)
+        return qml.probs(wires=1)
+
+>>> func(0.0)
+nan
+
 .. note::
 
     Currently, postselection support is only available on ``"default.qubit"``. Requesting postselection on other
