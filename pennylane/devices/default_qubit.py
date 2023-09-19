@@ -282,7 +282,7 @@ class DefaultQubit(Device):
                     vanilla_circuits,
                     seeds,
                     [self._prng_key] * len(vanilla_circuits),
-                )  # does this not need interface and debugger for this part?
+                )
                 results = tuple(exec_map)
 
             # reset _rng to mimic serial behavior
