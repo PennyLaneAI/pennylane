@@ -312,7 +312,7 @@ def _evolve_state_vector_under_parametrized_evolution(
             not defined.
 
     Returns:
-        array[complex]: output_state
+        TensorLike[complex]: output state
     """
 
     try:
