@@ -79,6 +79,10 @@
   when at the beginning of a circuit, thus behaving like `StatePrep`.
   [(#4583)](https://github.com/PennyLaneAI/pennylane/pull/4583)
 
+* `ShotAdaptiveOptimizer` has been updated to pass shots to QNode executions instead of overriding
+  device shots before execution. This makes it compatible with the new device API.
+  [(#4599)](https://github.com/PennyLaneAI/pennylane/pull/4599)
+
 <h3>Breaking changes 💔</h3>
 
 * The `__eq__` and `__hash__` methods of `Operator` and `MeasurementProcess` no longer rely on the
