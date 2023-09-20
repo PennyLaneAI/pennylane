@@ -185,6 +185,12 @@
   which effectively just called `marginal_prob` with `np.abs(state) ** 2`.
   [(#4602)](https://github.com/PennyLaneAI/pennylane/pull/4602)
 
+* `default.qubit` now implements the new device API. If you initialize a device
+  with `qml.device("default.qubit")`, all functions and properties that were tied to the old
+  device API will no longer be on the device. The legacy version can still be accessed with
+  `qml.device("default.qubit.legacy", wires=n_wires)`.
+  [(#4436)](https://github.com/PennyLaneAI/pennylane/pull/4436)
+
 <h3>Deprecations 👋</h3>
 
 * The ``prep`` keyword argument in ``QuantumScript`` is deprecated and will be removed from `QuantumScript`.
