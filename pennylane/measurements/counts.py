@@ -182,6 +182,10 @@ class CountsMP(SampleMeasurement):
         self.all_outcomes = all_outcomes
         super().__init__(obs, wires, eigvals, id)
 
+    def _flatten(self):
+        metadata = (("wires", self.raw_wires), ("all_outcomes", self.all_outcomes))
+        return (self.obs, self._eigvals), metadata
+
     def __repr__(self):
         if self.obs is None:
             if self._eigvals is None:
