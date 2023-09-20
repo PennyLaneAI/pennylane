@@ -1100,6 +1100,14 @@ def test_sitevec_to_fock(sitevec, format, state_ref):
             ),
             {(2, 2): np.array([-0.10660077]), (1, 1): np.array([0.9943019])},
         ),
+        (
+            (["02", "ab", "20"], np.array([0.69958765, 0.70211014, 0.1327346])),
+            {
+                (2, 2): np.array([0.69958765]),
+                (1, 2): np.array([0.70211014]),
+                (1, 1): np.array([0.1327346]),
+            },
+        ),
     ],
 )
 def test_shci_state(wavefunction, state_ref):
