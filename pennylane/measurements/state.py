@@ -222,4 +222,4 @@ class DensityMatrixMP(StateMP):
         # pylint:disable=redefined-outer-name
         wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]
-        return qml.math.reduce_statevector(state, indices=mapped_wires, c_dtype=state.dtype)
+        return qml.math.reduce_statevector(state, indices=mapped_wires)
