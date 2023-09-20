@@ -3,8 +3,8 @@ pip
 appdirs
 autograd
 autoray
-jax==0.4.10
-jaxlib==0.4.10
+jax==0.4.16
+jaxlib==0.4.16
 mistune==0.8.4
 m2r2
 numpy
