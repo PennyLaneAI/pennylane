@@ -977,7 +977,10 @@ class QNode:
 
         # convert result to the interface in case the qfunc has no parameters
 
-        if len(self.tape.get_parameters(trainable_only=False)) == 0:
+        if (
+            len(self.tape.get_parameters(trainable_only=False)) == 0
+            and not self.transform_program.is_informative
+        ):
             res = _convert_to_interface(res, self.interface)
 
         if old_interface == "auto":
