@@ -1430,3 +1430,25 @@ class TestNumericType:
         assert np.issubdtype(result[0].dtype, float)
         assert np.issubdtype(result[1].dtype, np.int64)
         assert qs.numeric_type == (float, int)
+
+
+def test_flatten_unflatten():
+    """Test the flatten and unflatten methods."""
+    ops = [qml.RX(0.1, wires=0), qml.U3(0.2, 0.3, 0.4, wires=0)]
+    mps = [qml.expval(qml.PauliZ(0)), qml.state()]
+
+    tape = QuantumScript(ops, mps, shots=100)
+    tape.trainable_params = {0}
+
+    data, metadata = tape._flatten()
+    assert all(o1 is o2 for o1, o2 in zip(ops, data[0]))
+    assert all(o1 is o2 for o1, o2 in zip(mps, data[1]))
+    assert metadata[0] == qml.measurements.Shots(100)
+    assert metadata[1] == (0,)
+    assert hash(metadata)
+
+    new_tape = QuantumScript._unflatten(data, metadata)
+    assert all(o1 is o2 for o1, o2 in zip(new_tape.operations, tape.operations))
+    assert all(o1 is o2 for o1, o2 in zip(new_tape.measurements, tape.measurements))
+    assert new_tape.shots == qml.measurements.Shots(100)
+    assert new_tape.trainable_params == [0]

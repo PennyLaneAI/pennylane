@@ -175,7 +175,7 @@ class QuantumScript:
     """
 
     def _flatten(self):
-        return (self._ops, self.measurements), (self.shots, self.trainable_params)
+        return (self._ops, self.measurements), (self.shots, tuple(self.trainable_params))
 
     @classmethod
     def _unflatten(cls, data, metadata):
