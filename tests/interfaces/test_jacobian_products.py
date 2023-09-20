@@ -25,7 +25,7 @@ from pennylane.interfaces.jacobian_products import (
     TransformJacobianProducts,
 )
 
-dev = qml.devices.experimental.DefaultQubit2()
+dev = qml.devices.DefaultQubit()
 
 
 def inner_execute_numpy(tapes):
