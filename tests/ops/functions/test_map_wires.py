@@ -54,7 +54,7 @@ class TestMapWiresOperators:
         op = build_op()
 
         m_op = qml.map_wires(op, wire_map=wire_map)
-        assert isinstance(m_op, qml.ops.Prod)
+        assert isinstance(m_op, qml.ops.Prod)  # pylint:disable=no-member
         assert m_op.data == mapped_op.data
         assert m_op.wires == mapped_op.wires
         assert m_op.arithmetic_depth == mapped_op.arithmetic_depth
@@ -112,13 +112,13 @@ class TestMapWiresTapes:
         assert len(s_tape) == 1
         assert s_tape.trainable_params == [0, 2]
         s_op = s_tape[0]
-        assert isinstance(s_op, qml.ops.Prod)
+        assert isinstance(s_op, qml.ops.Prod)  # pylint:disable=no-member
         assert s_op.data == mapped_op.data
         assert s_op.wires == mapped_op.wires
         assert s_op.arithmetic_depth == mapped_op.arithmetic_depth
         assert tape.shots == s_tape.shots
 
-    @pytest.mark.parametrize("shots", [None, 100])
+    @pytest.mark.parametrize("shots", [None, 5000])
     def test_execute_mapped_tape(self, shots):
         """Test the execution of a mapped tape."""
         dev = qml.device("default.qubit", wires=5)
@@ -134,13 +134,10 @@ class TestMapWiresTapes:
         assert m_tape._qfunc_output is tape._qfunc_output  # pylint: disable=protected-access
         m_op = m_tape.operations[0]
         m_obs = m_tape.observables[0]
-        assert isinstance(m_op, qml.ops.Prod)
-        assert m_op.data == mapped_op.data
-        assert m_op.wires == mapped_op.wires
-        assert m_op.arithmetic_depth == mapped_op.arithmetic_depth
+        assert qml.equal(m_op, mapped_op)
         assert tape.shots == m_tape.shots
         assert m_obs.wires == Wires(wire_map[1])
-        assert qml.math.allclose(dev.execute(tape), dev.execute(m_tape))
+        assert qml.math.allclose(dev.execute(tape), dev.execute(m_tape), atol=0.05)
 
 
 class TestMapWiresQNodes:
@@ -153,23 +150,18 @@ class TestMapWiresQNodes:
         @qml.qnode(dev)
         def qnode():
             build_op()
-            return qml.expval(op=build_op())
+            return qml.expval(qml.prod(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)))
 
         # TODO: Use qml.equal when supported
+        mapped_obs = qml.prod(qml.PauliX(4), qml.PauliY(3), qml.PauliZ(2))
 
         m_qnode = qml.map_wires(qnode, wire_map=wire_map)
         assert m_qnode() == qnode()
         assert len(m_qnode.tape) == 2
         m_op = m_qnode.tape.operations[0]
         m_obs = m_qnode.tape.observables[0]
-        assert isinstance(m_op, qml.ops.Prod)
-        assert m_op.data == mapped_op.data
-        assert m_op.wires == mapped_op.wires
-        assert m_op.arithmetic_depth == mapped_op.arithmetic_depth
-        assert isinstance(m_obs, qml.ops.Prod)
-        assert m_obs.data == mapped_op.data
-        assert m_obs.wires == mapped_op.wires
-        assert m_obs.arithmetic_depth == mapped_op.arithmetic_depth
+        assert qml.equal(m_op, mapped_op)
+        assert qml.equal(m_obs, mapped_obs)
 
 
 class TestMapWiresCallables:

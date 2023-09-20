@@ -643,7 +643,7 @@ class TestApply:
         with pytest.raises(
             DeviceError,
             match="Operation StatePrep cannot be used after other Operations have already been applied "
-            "on a default.qubit device.",
+            "on a default.qubit.legacy device.",
         ):
             qubit_device_2_wires.reset()
             qubit_device_2_wires.apply(
@@ -664,7 +664,7 @@ class TestApply:
         with pytest.raises(
             DeviceError,
             match="Operation BasisState cannot be used after other Operations have already been applied "
-            "on a default.qubit device.",
+            "on a default.qubit.legacy device.",
         ):
             qubit_device_2_wires.reset()
             qubit_device_2_wires.apply(
@@ -2091,7 +2091,7 @@ class TestApplyOps:
         param_ev = qml.evolve(ParametrizedHamiltonian([1], [qml.PauliX(0)]))
         with pytest.raises(
             NotImplementedError,
-            match="The device default.qubit cannot execute a ParametrizedEvolution operation",
+            match="The device default.qubit.legacy cannot execute a ParametrizedEvolution operation",
         ):
             self.dev._apply_parametrized_evolution(state=self.state, operation=param_ev)
 
