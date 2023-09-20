@@ -664,3 +664,18 @@ class TestConvertersZX:
         g = circuit(params)
 
         assert isinstance(g, pyzx.graph.graph_s.GraphS)
+
+    def test_qnode_decorator_no_params(self):
+        """Test the QNode decorator."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @partial(qml.transforms.to_zx, expand_measurements=True)
+        @qml.qnode(device=dev)
+        def circuit():
+            qml.PauliZ(wires=0)
+            qml.PauliX(wires=1)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        g = circuit()
+
+        assert isinstance(g, pyzx.graph.graph_s.GraphS)
