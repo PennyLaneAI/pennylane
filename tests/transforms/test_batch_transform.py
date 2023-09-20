@@ -428,7 +428,7 @@ class TestBatchTransform:
         assert tapes[1].operations[1].name == "RZ"
         assert tapes[1].operations[1].parameters == [b * np.sin(x)]
 
-        expected = fn(dev.batch_execute(tapes))
+        expected = fn(dev.execute(tapes))
         assert res == expected
         assert circuit.interface == "auto"
 
@@ -464,7 +464,7 @@ class TestBatchTransform:
         assert tapes[1].operations[1].name == "RZ"
         assert tapes[1].operations[1].parameters == [b * np.sin(x)]
 
-        expected = fn(dev.batch_execute(tapes))
+        expected = fn(dev.execute(tapes))
         assert res == expected
 
     def test_custom_qnode_wrapper(self):
@@ -667,7 +667,7 @@ class TestBatchTransformGradients:
             qml.CNOT(wires=[0, 1])
             return qml.expval(H)
 
-        spy = mocker.spy(dev, "batch_transform")
+        spy = mocker.spy(dev, "preprocess")
 
         res = circuit(weights)
         spy.assert_called()
