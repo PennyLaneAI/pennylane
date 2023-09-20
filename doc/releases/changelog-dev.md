@@ -80,6 +80,11 @@
   when at the beginning of a circuit, thus behaving like `StatePrep`.
   [(#4583)](https://github.com/PennyLaneAI/pennylane/pull/4583)
 
+* `DefaultQubit2` can now accept a `jax.random.PRNGKey` as a `seed`, to set the key for the JAX pseudo random 
+  number generator when using the JAX interface. This corresponds to the `prng_key` on 
+  `DefaultQubitJax` in the old API.
+  [(#4596)](https://github.com/PennyLaneAI/pennylane/pull/4596)
+
 * DefaultQubit2 dispatches to a faster implementation for applying `ParameterizedEvolution` to a state
   when it is more efficient to evolve the state than the operation matrix.
   [(#4598)](https://github.com/PennyLaneAI/pennylane/pull/4598)
@@ -91,6 +96,7 @@
 * `StateMeasurement.process_state` now assumes the input is flat. `ProbabilityMP.process_state` has
   been updated to reflect this assumption and avoid redundant reshaping.
   [(#4602)](https://github.com/PennyLaneAI/pennylane/pull/4602)
+
 
 <h3>Breaking changes 💔</h3>
 
@@ -234,6 +240,9 @@
   expectation.
   [(#4590)](https://github.com/PennyLaneAI/pennylane/pull/4590)
 
+* The `torch.nn.Module` properties are now accessible on a `pennylane.qnn.TorchLayer`.
+  [(#4611)](https://github.com/PennyLaneAI/pennylane/pull/4611)
+
 * `qml.math.take` with torch now returns `tensor[..., indices]` when the user requests
   the last axis (`axis=-1`). Without the fix, it would wrongly return `tensor[indices]`.
   [(#4605)](https://github.com/PennyLaneAI/pennylane/pull/4605)
@@ -245,6 +254,7 @@ This release contains contributions from (in alphabetical order):
 Utkarsh Azad,
 Diego Guala,
 Soran Jahangiri,
+Christina Lee,
 Lillian M. A. Frederiksen,
 Vincent Michaud-Rioux,
 Romain Moyard,
