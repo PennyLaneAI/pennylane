@@ -137,7 +137,7 @@ class TestDecomposition:
                 delta_sz=0,
                 init_state=np.array([0, 1, 0, 1]),
             )
-            return qml.expval(qml.Identity(0))
+            return qml.expval(qml.Identity(0)), qml.state()
 
         @qml.qnode(dev2)
         def circuit2():
@@ -148,12 +148,13 @@ class TestDecomposition:
                 delta_sz=0,
                 init_state=np.array([0, 1, 0, 1]),
             )
-            return qml.expval(qml.Identity("z"))
+            return qml.expval(qml.Identity("z")), qml.state()
 
-        circuit()
-        circuit2()
+        res1, state1 = circuit()
+        res2, state2 = circuit2()
 
-        assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
         ("num_qubits", "k", "exp_state"),
@@ -256,9 +257,9 @@ class TestDecomposition:
             qml.kUpCCGSD(weight, wires=wires, k=k, delta_sz=0, init_state=init_state)
             return qml.state()
 
-        circuit(weight)
+        res = circuit(weight)
 
-        assert qml.math.allclose(circuit.device.state, exp_state, atol=tol)
+        assert qml.math.allclose(res, exp_state, atol=tol)
 
     @pytest.mark.parametrize(
         ("wires", "delta_sz", "generalized_singles_wires", "generalized_pair_doubles_wires"),

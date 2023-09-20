@@ -166,17 +166,18 @@ class TestDecomposition:
         @qml.qnode(dev)
         def circuit():
             qml.ApproxTimeEvolution(hamiltonian, 0.5, 2)
-            return qml.expval(qml.Identity(0))
+            return qml.expval(qml.Identity(0)), qml.state()
 
         @qml.qnode(dev2)
         def circuit2():
             qml.ApproxTimeEvolution(hamiltonian2, 0.5, 2)
-            return qml.expval(qml.Identity("z"))
+            return qml.expval(qml.Identity("z")), qml.state()
 
-        circuit()
-        circuit2()
+        res1, state1 = circuit()
+        res2, state2 = circuit2()
 
-        assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
 
 class TestInputs:
@@ -410,7 +411,7 @@ def test_trainable_hamiltonian(dev_name, diff_method):
     def cost(coeffs, t):
         tape = create_tape(coeffs, t)
 
-        if diff_method is qml.gradients.param_shift:
+        if diff_method is qml.gradients.param_shift and dev_name != "default.qubit":
             tape = dev.expand_fn(tape)
 
         return qml.execute([tape], dev, diff_method)[0]

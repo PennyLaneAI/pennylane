@@ -644,7 +644,6 @@ class TestProbs:
 
         assert np.allclose(res, expected)
 
-    @pytest.mark.xfail(reason="until DQ2 port")
     def test_non_commuting_probs_does_not_raises_error(self):
         """Tests that non-commuting probs with expval does not raise an error."""
         dev = qml.device("default.qubit", wires=5)
