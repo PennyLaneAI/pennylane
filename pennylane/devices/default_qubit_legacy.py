@@ -195,7 +195,6 @@ class DefaultQubitLegacy(QubitDevice):
         "Prod",
         "Exp",
         "Evolution",
-        "MeasurementValue",
     }
 
     def __init__(
