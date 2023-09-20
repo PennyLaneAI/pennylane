@@ -25,7 +25,9 @@ from pennylane.measurements import (
     MeasurementProcess,
     MeasurementTransform,
     MidMeasure,
+    MidMeasureMP,
     MutualInfoMP,
+    PurityMP,
     Probability,
     ProbabilityMP,
     Sample,
@@ -45,6 +47,7 @@ from pennylane.measurements import (
 )
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.queuing import AnnotatedQueue
+from pennylane.wires import Wires
 
 # pylint: disable=too-few-public-methods, unused-argument
 
@@ -151,6 +154,50 @@ def test_hash_correctness():
     assert hash(mp1) == mp1.hash
     assert hash(mp2) == mp2.hash
     assert hash(mp1) == hash(mp2)
+
+
+valid_meausurements = [
+    ClassicalShadowMP(wires=Wires(0), seed=42),
+    ShadowExpvalMP(qml.s_prod(3.0, qml.PauliX(0)), seed=97, k=2),
+    ShadowExpvalMP([qml.PauliZ(0), 4.0 * qml.PauliX(0)], seed=86, k=4),
+    CountsMP(obs=2.0 * qml.PauliX(0), all_outcomes=True),
+    CountsMP(eigvals=[0.5, 0.6], wires=Wires(0), all_outcomes=False),
+    ExpectationMP(obs=qml.s_prod(2.0, qml.PauliX(0))),
+    ExpectationMP(eigvals=[0.5, 0.6], wires=Wires("a")),
+    MidMeasureMP(wires=Wires("a"), reset=True, id="abcd"),
+    MutualInfoMP(wires=(Wires("a"), Wires("b")), log_base=3),
+    ProbabilityMP(wires=Wires("a"), eigvals=[0.5, 0.6]),
+    ProbabilityMP(obs=3.0 * qml.PauliX(0)),
+    PurityMP(wires=Wires("a")),
+    SampleMP(obs=3.0 * qml.PauliY(0)),
+    SampleMP(wires=Wires("a"), eigvals=[0.5, 0.6]),
+    StateMP(),
+    StateMP(wires=("a", "b")),
+    VarianceMP(obs=qml.s_prod(0.5, qml.PauliX(0))),
+    VarianceMP(eigvals=[0.6, 0.7], wires=Wires(0)),
+    VnEntropyMP(wires=Wires("a"), log_base=3),
+]
+
+
+# pylint: disable=protected-access
+@pytest.mark.parametrize("mp", valid_meausurements)
+def test_flatten_unflatten(mp):
+    """Test flatten and unflatten methods."""
+
+    data, metadata = mp._flatten()
+    assert hash(metadata)
+
+    new_mp = type(mp)._unflatten(data, metadata)
+    assert qml.equal(new_mp, mp)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("mp", valid_meausurements)
+def test_jax_pytree_integration(mp):
+    """Test that measurement processes are jax pytrees."""
+    import jax
+
+    jax.tree_util.tree_flatten(mp)
 
 
 @pytest.mark.parametrize(
