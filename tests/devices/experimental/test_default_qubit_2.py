@@ -27,7 +27,7 @@ from pennylane.devices.qubit.preprocess import validate_and_expand_adjoint
 
 def test_name():
     """Tests the name of DefaultQubit."""
-    assert DefaultQubit().name == "default.qubit.2"
+    assert DefaultQubit().name == "default.qubit"
 
 
 def test_shots():
@@ -200,6 +200,56 @@ class TestTracking:
         assert len(tracker.history["resources"]) == 1
         assert tracker.history["resources"][0] == expected_resources
 
+    def test_tracking_batched_execution(self):
+        """Test the number of times the device is executed over a QNode's
+        lifetime is tracked by the device's tracker."""
+
+        dev_1 = qml.device("default.qubit", wires=2)
+
+        def circuit_1(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        node_1 = qml.QNode(circuit_1, dev_1)
+        num_evals_1 = 10
+
+        with qml.Tracker(dev_1, persistent=True) as tracker1:
+            for _ in range(num_evals_1):
+                node_1(0.432, np.array([0.12, 0.5, 3.2]))
+        assert tracker1.totals["executions"] == num_evals_1
+
+        # test a second instance of a default qubit device
+        dev_2 = qml.device("default.qubit", wires=2)
+
+        def circuit_2(x):
+            qml.RX(x, wires=[0])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        node_2 = qml.QNode(circuit_2, dev_2)
+        num_evals_2 = 5
+
+        with qml.Tracker(dev_2) as tracker2:
+            for _ in range(num_evals_2):
+                node_2(np.array([0.432, 0.61, 8.2]))
+        assert tracker2.totals["executions"] == num_evals_2
+
+        # test a new circuit on an existing instance of a qubit device
+        def circuit_3(y):
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        node_3 = qml.QNode(circuit_3, dev_1)
+        num_evals_3 = 7
+
+        with tracker1:
+            for _ in range(num_evals_3):
+                node_3(np.array([0.12, 1.214]))
+        assert tracker1.totals["executions"] == num_evals_1 + num_evals_3
+
 
 # pylint: disable=too-few-public-methods
 class TestPreprocessing:
@@ -302,7 +352,7 @@ class TestSupportsDerivatives:
         assert dev.supports_jvp() is True
         assert dev.supports_vjp() is True
 
-        config = ExecutionConfig(gradient_method="backprop")
+        config = ExecutionConfig(gradient_method="backprop", interface="auto")
         assert dev.supports_derivatives(config) is True
         assert dev.supports_jvp(config) is True
         assert dev.supports_vjp(config) is True
@@ -313,6 +363,11 @@ class TestSupportsDerivatives:
         assert dev.supports_vjp(config, qs) is True
 
         config = ExecutionConfig(gradient_method="backprop", device_options={"max_workers": 1})
+        assert dev.supports_derivatives(config) is False
+        assert dev.supports_jvp(config) is False
+        assert dev.supports_vjp(config) is False
+
+        config = ExecutionConfig(gradient_method="backprop", interface=None)
         assert dev.supports_derivatives(config) is False
         assert dev.supports_jvp(config) is False
         assert dev.supports_vjp(config) is False
@@ -1635,6 +1690,60 @@ class TestRandomSeed:
         second_num = dev._rng.random()  # pylint: disable=protected-access
 
         assert qml.math.allclose(first_num, second_num)
+
+
+@pytest.mark.jax
+class TestPRNGKeySeed:
+    """Test that the device behaves correctly when provided with a PRNG key and using the JAX interface"""
+
+    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    def test_same_prng_key(self, max_workers):
+        """Test that different devices given the same random jax.random.PRNGKey as a seed will produce
+        the same results for sample, even with different seeds"""
+        import jax
+
+        qs = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.sample(wires=0)], shots=1000)
+        config = ExecutionConfig(interface="jax")
+
+        dev1 = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(123))
+        result1 = dev1.execute(qs, config)
+
+        dev2 = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(123))
+        result2 = dev2.execute(qs, config)
+
+        assert np.all(result1 == result2)
+
+    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    def test_different_prng_key(self, max_workers):
+        """Test that different devices given different jax.random.PRNGKey values will produce
+        different results"""
+        import jax
+
+        qs = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.sample(wires=0)], shots=1000)
+        config = ExecutionConfig(interface="jax")
+
+        dev1 = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(246))
+        result1 = dev1.execute(qs, config)
+
+        dev2 = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(123))
+        result2 = dev2.execute(qs, config)
+
+        assert np.any(result1 != result2)
+
+    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    def test_different_executions_same_prng_key(self, max_workers):
+        """Test that the same device will produce the same results every execution if
+        the seed is a jax.random.PRNGKey"""
+        import jax
+
+        qs = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.sample(wires=0)], shots=1000)
+        config = ExecutionConfig(interface="jax")
+
+        dev = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(77))
+        result1 = dev.execute(qs, config)
+        result2 = dev.execute(qs, config)
+
+        assert np.all(result1 == result2)
 
 
 class TestHamiltonianSamples:

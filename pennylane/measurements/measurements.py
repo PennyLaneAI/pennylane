@@ -25,6 +25,8 @@ from typing import Sequence, Tuple, Optional
 
 import pennylane as qml
 from pennylane.operation import Operator
+from pennylane.pytrees import register_pytree
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .shots import Shots
@@ -126,12 +128,27 @@ class MeasurementProcess(ABC):
             where the instance has to be identified
     """
 
+    def __init_subclass__(cls, **_):
+        register_pytree(cls, cls._flatten, cls._unflatten)
+
+    def _flatten(self):
+        metadata = (("wires", self.raw_wires),)
+        return (self.obs, self._eigvals), metadata
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        if data[0] is not None:
+            return cls(obs=data[0], **dict(metadata))
+        if data[1] is not None:
+            return cls(eigvals=data[1], **dict(metadata))
+        return cls(**dict(metadata))
+
     # pylint: disable=too-many-arguments
     def __init__(
         self,
         obs: Optional[Operator] = None,
         wires: Optional[Wires] = None,
-        eigvals=None,
+        eigvals: Optional[TensorLike] = None,
         id: Optional[str] = None,
     ):
         self.obs = obs
@@ -297,7 +314,7 @@ class MeasurementProcess(ABC):
 
         return (
             Wires.all_wires(self._wires)
-            if isinstance(self._wires, list)
+            if isinstance(self._wires, (tuple, list))
             else self._wires or Wires([])
         )
 
@@ -510,7 +527,8 @@ class StateMeasurement(MeasurementProcess):
     Any class inheriting from ``StateMeasurement`` should define its own ``process_state`` method,
     which should have the following arguments:
 
-    * state (Sequence[complex]): quantum state
+    * state (Sequence[complex]): quantum state with a flat shape. It may also have an
+        optional batch dimension
     * wire_order (Wires): wires determining the subspace that ``state`` acts on; a matrix of
         dimension :math:`2^n` acts on a subspace of :math:`n` wires
 
@@ -542,7 +560,8 @@ class StateMeasurement(MeasurementProcess):
         """Process the given quantum state.
 
         Args:
-            state (Sequence[complex]): quantum state
+            state (Sequence[complex]): quantum state with a flat shape. It may also have an
+                optional batch dimension
             wire_order (Wires): wires determining the subspace that ``state`` acts on; a matrix of
                 dimension :math:`2^n` acts on a subspace of :math:`n` wires
         """
