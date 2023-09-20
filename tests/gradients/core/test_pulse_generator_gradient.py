@@ -965,9 +965,8 @@ class TestPulseGeneratorEdgeCases:
         assert np.allclose(res_pulse_gen[1][2], 0)
 
 
-# TODO: add default.qubit once it supports PRNG key
 @pytest.mark.jax
-@pytest.mark.parametrize("dev_name", ["default.qubit.jax"])
+@pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
 class TestPulseGeneratorTape:
     """Test that differentiating tapes with ``pulse_generator`` works."""
 
@@ -979,7 +978,8 @@ class TestPulseGeneratorTape:
         import jax.numpy as jnp
 
         prng_key = jax.random.PRNGKey(8251)
-        dev = qml.device(dev_name, wires=1, shots=shots, prng_key=prng_key)
+        key = "prng_key" if dev_name == "default.qubit.jax" else "seed"
+        dev = qml.device(dev_name, wires=1, shots=shots, **{key: prng_key})
 
         H = jnp.polyval * X(0)
         x = jnp.array([0.4, 0.2, 0.1])
@@ -1015,7 +1015,8 @@ class TestPulseGeneratorTape:
 
         prng_key = jax.random.PRNGKey(8251)
         dev = qml.device(dev_name, wires=1, shots=None)
-        dev_shots = qml.device(dev_name, wires=1, shots=shots, prng_key=prng_key)
+        key = "prng_key" if dev_name == "default.qubit.jax" else "seed"
+        dev_shots = qml.device(dev_name, wires=1, shots=shots, **{key: prng_key})
 
         H = 0.1 * Z(0) + jnp.polyval * X(0) + qml.pulse.constant * Y(0)
         x = jnp.array([0.4, 0.2, 0.1])
@@ -1095,7 +1096,8 @@ class TestPulseGeneratorTape:
 
         prng_key = jax.random.PRNGKey(8251)
         dev = qml.device(dev_name, wires=1, shots=None)
-        dev_shots = qml.device(dev_name, wires=1, shots=shots, prng_key=prng_key)
+        key = "prng_key" if dev_name == "default.qubit.jax" else "seed"
+        dev_shots = qml.device(dev_name, wires=1, shots=shots, **{key: prng_key})
 
         H0 = 0.1 * Z(0) + jnp.polyval * X(0)
         H1 = 0.2 * Y(0) + qml.pulse.constant * Y(0) + jnp.polyval * Z(0)
@@ -1447,9 +1449,8 @@ class TestPulseGeneratorIntegration:
             assert tracker.totals["executions"] == 1 + 2  # one forward pass, two shifted tapes
 
 
-# TODO: port ParametrizedEvolution to new default.qubit
 @pytest.mark.jax
-@pytest.mark.parametrize("dev_name", ["default.qubit.jax"])
+@pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
 class TestPulseGeneratorDiff:
     """Test that pulse_generator is differentiable, i.e. that computing
     the derivative with pulse_generator is differentiable a second time,
@@ -1473,7 +1474,7 @@ class TestPulseGeneratorDiff:
             tape = qml.tape.QuantumScript([op], [qml.expval(Z(0))])
             tape.trainable_params = [0]
             _tapes, fn = pulse_generator(tape)
-            return fn(qml.execute(_tapes, dev, None))
+            return fn(qml.execute(_tapes, dev, "backprop"))
 
         params = [jnp.array(0.4)]
         p = params[0] * T
