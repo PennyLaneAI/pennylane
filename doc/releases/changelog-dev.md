@@ -10,7 +10,7 @@
   [(#4544)](https://github.com/PennyLaneAI/pennylane/pull/4544)
 
   ```python
-  dev = qml.device("default.qubit", wires=3)
+  dev = qml.device("default.qubit", wires=2)
 
   @qml.qnode(dev)
   def circ(x, y):
