@@ -1111,5 +1111,5 @@ def test_dmrg_state(wavefunction, state_ref):
     r"""Test that _dmrg_state returns the correct state."""
 
     state = qml.qchem.convert._dmrg_state(wavefunction)
-    print(state)
+
     assert state == state_ref
