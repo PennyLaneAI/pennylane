@@ -14,7 +14,7 @@
 """Code for the tape transform implementing the deferred measurement principle."""
 from typing import Sequence, Callable
 import pennylane as qml
-from pennylane.measurements import MidMeasureMP, MeasurementValue
+from pennylane.measurements import MidMeasureMP
 from pennylane.ops.op_math import ctrl
 
 from pennylane.tape import QuantumTape
@@ -208,8 +208,9 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
     new_measurements = []
 
     for mp in tape.measurements:
-        if isinstance(mp.obs, MeasurementValue):
-            mp.obs._wires = Wires([control_wires[mp.obs.measurements[0].id]])
+        if mp.mv is not None:
+            wire_map = {m.wires[0]: control_wires[m.id] for m in mp.mv.measurements}
+            mp = qml.map_wires(mp, wire_map=wire_map)
         new_measurements.append(mp)
 
     new_tape = QuantumTape(new_operations, new_measurements, shots=tape.shots)
