@@ -28,6 +28,9 @@
   performed with the Block2 library. 
   [#4523](https://github.com/PennyLaneAI/pennylane/pull/4523)
 
+* `MeasurementProcess` objects are now registered as jax pytrees.
+  [(#4607)](https://github.com/PennyLaneAI/pennylane/pull/4607)
+
 * Tensor-network template `qml.MPS` now supports changing `offset` between subsequent blocks for more flexibility.
  [(#4531)](https://github.com/PennyLaneAI/pennylane/pull/4531)
 
