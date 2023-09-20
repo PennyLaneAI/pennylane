@@ -1122,3 +1122,74 @@ def _sitevec_to_fock(det, format):
     intb = int(strb[::-1], 2)
 
     return inta, intb
+
+
+def _shci_state(wavefunction, tol=1e-15):
+    r"""Construct a wavefunction from the SHCI wavefunction obtained from the Dice library.
+
+    The generated wavefunction is a dictionary where the keys represent a configuration, which
+    corresponds to a Slater determinant, and the values are the CI coefficients of the Slater
+    determinant. Each dictionary key is a tuple of two integers. The binary representation of these
+    integers correspond to a specific configuration: the first number represents the
+    configuration of the alpha electrons and the second number represents the configuration of the
+    beta electrons. For instance, the Hartree-Fock state :math:`|1 1 0 0 \rangle` will be
+    represented by the flipped binary string ``0011`` which is split to ``01`` and ``01`` for
+    the alpha and beta electrons. The integer corresponding to ``01`` is ``1`` and the dictionary
+    representation of the Hartree-Fock state will be ``{(1, 1): 1.0}``. The dictionary
+    representation of a state with ``0.99`` contribution from the Hartree-Fock state and ``0.01``
+    contribution from the doubly-excited state, i.e., :math:`|0 0 1 1 \rangle`, will be
+    ``{(1, 1): 0.99, (2, 2): 0.01}``.
+
+    The determinants and coefficients should be supplied externally. They are typically stored under
+    SHCI.outputfile.
+
+    Args:
+        wavefunction tuple(array[int], array[str]): determinants and coefficients in physicist notation
+        tol (float): the tolerance for discarding Slater determinants with small coefficients
+    Returns:
+        dict: dictionary of the form `{(int_a, int_b) :coeff}`, with integers `int_a, int_b`
+        having binary representation corresponding to the Fock occupation vector in alpha and beta
+        spin sectors, respectively, and coeff being the CI coefficients of those configurations
+
+    **Example**
+
+    >>> from pyscf import gto, scf, mcscf
+    >>> from pyscf.shciscf import shci
+    >>> import numpy as np
+    >>> mol = gto.M(atom=[['Li', (0, 0, 0)], ['Li', (0,0,0.71)]], basis='sto6g', symmetry="d2h")
+    >>> myhf = scf.RHF(mol).run()
+    >>> ncas, nelecas_a, nelecas_b = mol.nao, mol.nelectron // 2, mol.nelectron // 2
+    >>> myshci = mcscf.CASCI(myhf, ncas, (nelecas_a, nelecas_b))
+    >>> initialStates = myshci.getinitialStateSHCI(myhf, (nelecas_a, nelecas_b))
+    >>> output_file = f"shci_output.out"
+    >>> myshci.fcisolver = shci.SHCI(myhf.mol)
+    >>> myshci.internal_rotation = False
+    >>> myshci.fcisolver.initialStates = initialStates
+    >>> myshci.fcisolver.outputFile = output_file
+    >>> e_shci = np.atleast_1d(myshci.kernel(verbose=5))
+    >>> wf_shci = _shci_state(myshci, tol=1e-1)
+    >>> print(wf_shci)
+    {(7, 7): 0.8874167069, (11, 11): -0.3075774156, (19, 19): -0.3075774156, (35, 35): -0.1450474361}
+    """
+
+    dets, coefs = wavefunction
+
+    xa = []
+    xb = []
+    dat = []
+
+    for coef, det in zip(coefs, dets):
+        if abs(coef) > tol:
+            bin_a, bin_b = _sitevec_to_fock(list(det), "shci")
+
+            xa.append(bin_a)
+            xb.append(bin_b)
+            dat.append(coef)
+
+    ## create the FCI matrix as a dict
+    dict_fcimatr = dict(zip(list(zip(xa, xb)), dat))
+
+    # filter based on tolerance cutoff
+    dict_fcimatr = {key: value for key, value in dict_fcimatr.items() if abs(value) > tol}
+
+    return dict_fcimatr
