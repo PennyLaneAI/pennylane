@@ -28,7 +28,6 @@ from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
     MeasurementProcess,
-    MeasurementValue,
     ProbabilityMP,
     SampleMP,
     ShadowExpvalMP,
