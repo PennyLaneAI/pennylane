@@ -24,9 +24,13 @@
 
 <h3>Improvements 🛠</h3>
 
-* Extended ``qml.qchem.import_state`` to import wavefunctions from SHCI classical calculations
-  performed with the Dice library.
+* Extended ``qml.qchem.import_state`` to import wavefunctions from MPS DMRG and SHCI classical
+  calculations performed with the Block2 and Dice libraries.
+  [#4523](https://github.com/PennyLaneAI/pennylane/pull/4523)
   [#4524](https://github.com/PennyLaneAI/pennylane/pull/4524)
+
+* `MeasurementProcess` objects are now registered as jax pytrees.
+  [(#4607)](https://github.com/PennyLaneAI/pennylane/pull/4607)
 
 * Tensor-network template `qml.MPS` now supports changing `offset` between subsequent blocks for more flexibility.
   [(#4531)](https://github.com/PennyLaneAI/pennylane/pull/4531)
