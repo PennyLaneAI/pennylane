@@ -310,7 +310,7 @@ class QuantumScript:
         obs = []
 
         for m in self.measurements:
-            if m.obs is not None and not isinstance(m.obs, MeasurementValue):
+            if m.obs is not None:
                 m.obs.return_type = m.return_type
                 obs.append(m.obs)
             else:
