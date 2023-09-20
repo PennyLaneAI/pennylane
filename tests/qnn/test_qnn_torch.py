@@ -350,6 +350,9 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
             )
             assert weight.requires_grad
 
+        assert layer.w1 is layer._parameters["w1"]  # pylint: disable=protected-access
+        assert layer.w2 is layer._parameters["w2"]  # pylint: disable=protected-access
+
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     def test_evaluate_qnode(self, get_circuit, n_qubits):  # pylint: disable=no-self-use
         """Test if the _evaluate_qnode() method works correctly, i.e., that it gives the same
