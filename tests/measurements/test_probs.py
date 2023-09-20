@@ -242,7 +242,7 @@ class TestProbs:
     def test_observable_is_measurement_value(
         self, shots, phi, tol, tol_stochastic
     ):  # pylint: disable=too-many-arguments
-        """Test that expectation values for mid-circuit measurement values
+        """Test that probs for mid-circuit measurement values
         are correct for a single measurement value."""
         dev = qml.device("default.qubit", wires=2, shots=shots)
 

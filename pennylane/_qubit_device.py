@@ -1442,7 +1442,11 @@ class QubitDevice(Device):
             if obs.all_outcomes:
                 outcomes = list(map(_sample_to_str, self.generate_basis_states(num_wires)))
         elif obs.return_type is AllCounts:
-            outcomes = qml.eigvals(obs)
+            outcomes = (
+                qml.eigvals(obs)
+                if not isinstance(obs, MeasurementValue)
+                else np.arange(0, 2 ** len(obs.wires), 1)
+            )
 
         batched = len(shape) == batched_ndims
         if not batched:

@@ -156,7 +156,7 @@ class TestSample:
     @pytest.mark.parametrize("shots", [5, [5, 5]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 2))
     def test_observable_is_measurement_value(self, shots, phi):
-        """Test that expectation values for mid-circuit measurement values
+        """Test that samples for mid-circuit measurement values
         are correct for a single measurement value."""
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
