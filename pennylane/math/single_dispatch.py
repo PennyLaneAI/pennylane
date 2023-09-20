@@ -454,6 +454,7 @@ ar.register_function(
     "vander",
     lambda *args, **kwargs: _i("tf").experimental.numpy.vander(*args, **kwargs),
 )
+ar.register_function("tensorflow", "size", lambda x: _i("tf").size(x))
 
 
 # -------------------------------- Torch --------------------------------- #
