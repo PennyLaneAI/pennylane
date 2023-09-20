@@ -354,7 +354,7 @@ def _equal_measurements(
 
         return op1.eigvals() is None and op2.eigvals() is None
 
-    return op1.id == op2.id
+    return False
 
 
 @_equal.register
