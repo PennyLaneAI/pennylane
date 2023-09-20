@@ -111,7 +111,8 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
             return probs[idx]
 
         # estimate the ev
-        samples = qml.sample(op=self.obs).process_samples(
+        op = self.mv if self.mv is not None else self.obs
+        samples = qml.sample(op=op).process_samples(
             samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
         )
 

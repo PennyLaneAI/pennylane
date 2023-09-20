@@ -150,7 +150,7 @@ def get_measurement_function(
         Callable: function that returns the measurement result
     """
     if isinstance(measurementprocess, StateMeasurement):
-        if isinstance(measurementprocess.obs, MeasurementValue):
+        if isinstance(measurementprocess.mv, MeasurementValue):
             return state_diagonalizing_gates
 
         if isinstance(measurementprocess, ExpectationMP):

@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import MeasurementShapeError, Sample, Shots
+from pennylane.measurements import MeasurementShapeError, Sample, Shots, MeasurementValue
 from pennylane.operation import Operator
 
 # pylint: disable=protected-access, no-member
@@ -31,7 +31,7 @@ def custom_measurement_process(device, spy):
     for call_args in call_args_list:
         meas = call_args.args[1]
         shot_range, bin_size = (call_args.kwargs["shot_range"], call_args.kwargs["bin_size"])
-        if isinstance(meas, Operator):
+        if isinstance(meas, (Operator, MeasurementValue)):
             meas = qml.sample(op=meas)
         assert qml.math.allequal(
             device.sample(call_args.args[1], **call_args.kwargs),
@@ -94,6 +94,31 @@ class TestSample:
         assert isinstance(result[2], np.ndarray)
 
         custom_measurement_process(dev, spy)
+
+    @pytest.mark.parametrize("shots", [5, [5, 5]])
+    @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 2))
+    def test_observable_is_measurement_value(self, shots, phi, mocker):
+        """Test that expectation values for mid-circuit measurement values
+        are correct for a single measurement value."""
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            return qml.sample(m0)
+
+        new_dev = circuit.device
+        spy = mocker.spy(qml.QubitDevice, "sample")
+
+        res = circuit(phi)
+
+        if isinstance(shots, list):
+            assert len(res) == len(shots)
+            assert all(r.shape == (s,) for r, s in zip(res, shots))
+        else:
+            assert res.shape == (shots,)
+        custom_measurement_process(new_dev, spy)
 
     def test_single_wire_sample(self, mocker):
         """Test the return type and shape of sampling a single wire"""

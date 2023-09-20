@@ -616,6 +616,9 @@ class QubitDevice(Device):
             if m.obs is not None:
                 obs = m.obs
                 obs.return_type = m.return_type
+            elif m.mv is not None:
+                obs = m.mv
+                obs.return_type = m.return_type
             else:
                 obs = m
             # Check if there is an overriden version of the measurement process

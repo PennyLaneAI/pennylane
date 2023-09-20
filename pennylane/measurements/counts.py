@@ -214,12 +214,12 @@ class CountsMP(SampleMeasurement):
         shot_range: Tuple[int] = None,
         bin_size: int = None,
     ):
-        if not isinstance(self.obs, MeasurementValue):
-            samples = qml.sample(op=self.obs, wires=self._wires).process_samples(
+        if self.mv is not None:
+            samples = qml.sample(wires=self.mv.wires).process_samples(
                 samples, wire_order, shot_range, bin_size
             )
         else:
-            samples = qml.sample(wires=self.obs.wires).process_samples(
+            samples = qml.sample(op=self.obs, wires=self._wires).process_samples(
                 samples, wire_order, shot_range, bin_size
             )
 
@@ -229,7 +229,7 @@ class CountsMP(SampleMeasurement):
         num_wires = len(self.wires) if self.wires else len(wire_order)
         samples = (
             samples.reshape((num_wires, -1)).T.reshape(-1, bin_size, num_wires)
-            if self.obs is None or isinstance(self.obs, MeasurementValue)
+            if self.obs is None
             else samples.reshape((-1, bin_size))
         )
 
@@ -287,7 +287,7 @@ class CountsMP(SampleMeasurement):
         batched_ndims = 2
         shape = qml.math.shape(samples)
 
-        if self.obs is None or isinstance(self.obs, MeasurementValue):
+        if self.obs is None:
             # convert samples and outcomes (if using) from arrays to str for dict keys
             samples = qml.math.cast_like(samples, qml.math.int8(0))
             samples = qml.math.apply_along_axis(_sample_to_str, -1, samples)
