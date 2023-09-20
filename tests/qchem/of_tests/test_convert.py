@@ -1114,6 +1114,5 @@ def test_shci_state(wavefunction, state_ref):
     r"""Test that _shci_state returns the correct state."""
 
     state = qml.qchem.convert._shci_state(wavefunction)
-    print(state)
 
     assert state == state_ref
