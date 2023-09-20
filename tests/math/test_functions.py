@@ -1596,6 +1596,12 @@ class TestTake:
         expected = np.array([[[3, 3], [1, 1], [0, 0]], [[3, 3], [1, 1], [0, 0]]])
         assert fn.allclose(grad, expected)
 
+    @pytest.mark.torch
+    def test_last_axis_support_torch(self):
+        """Test that _torch_take correctly sets the last axis"""
+        x = fn.arange(8, like="torch").reshape((2, 4))
+        assert np.array_equal(fn.take(x, indices=3, axis=-1), [3, 7])
+
 
 where_data = [
     np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
@@ -2563,11 +2569,17 @@ class TestSize:
         ([[0], [1], [2], [3], [4], [5]], 6),
     ]
 
-    @pytest.mark.torch
+    @pytest.mark.parametrize(
+        "interface",
+        [
+            pytest.param("torch", marks=pytest.mark.torch),
+            pytest.param("tensorflow", marks=pytest.mark.tf),
+        ],
+    )
     @pytest.mark.parametrize(("array", "size"), array_and_size)
-    def test_size_torch(self, array, size):
-        """Test size function with the torch interface."""
-        r = fn.size(torch.tensor(array))
+    def test_size_torch_and_tf(self, array, size, interface):
+        """Test size function with the torch and tf interfaces."""
+        r = fn.size(fn.asarray(array, like=interface))
         assert r == size
 
 

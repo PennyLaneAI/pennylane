@@ -14,7 +14,7 @@
 """
 Unit tests for the metric tensor transform.
 """
-# pylint: disable=too-many-arguments,too-many-public-methods,too-few-public-methods
+# pylint: disable=too-many-arguments,too-many-public-methods,too-few-public-methods,not-callable
 import pytest
 from scipy.linalg import block_diag
 
@@ -93,6 +93,7 @@ class TestMetricTensor:
 
         circuit = qml.QNode(circuit, dev, diff_method=diff_method)
         params = np.array([0.1], requires_grad=True)
+        # pylint:disable=unexpected-keyword-arg
         result = qml.metric_tensor(circuit, hybrid=False, approx="block-diag")(*params)
         assert result.shape == (2, 2)
 
@@ -1192,6 +1193,7 @@ class TestFullMetricTensor:
             return qml.expval(qml.PauliZ(0))
 
         if len(params) > 1:
+            # pylint:disable=unexpected-keyword-arg
             mt = qml.metric_tensor(circuit, argnums=range(0, len(params)), approx=None)(*params)
         else:
             mt = qml.metric_tensor(circuit, approx=None)(*params)
@@ -1760,7 +1762,7 @@ def test_raises_circuit_that_uses_missing_wire():
         return qml.expval(qml.PauliZ(0))
 
     x = np.array([1.3, 0.2])
-    with pytest.raises(qml.wires.WireError, match=r"Did not find some of the wires \(0, 1\)"):
+    with pytest.raises(qml.wires.WireError, match=r"contain wires not found on the device: \{1\}"):
         qml.transforms.metric_tensor(circuit)(x)
 
 

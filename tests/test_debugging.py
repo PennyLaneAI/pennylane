@@ -54,30 +54,29 @@ class TestSnapshot:
         assert all(np.allclose(v1, v2) for v1, v2 in zip(result.values(), expected.values()))
 
     # pylint: disable=protected-access
-    def test_default_qubit2(self):
+    @pytest.mark.parametrize("method", [None, "backprop", "parameter-shift", "adjoint"])
+    def test_default_qubit2(self, method):
         """Test that multiple snapshots are returned correctly on the new
         state-vector simulator."""
-        dev = qml.devices.DefaultQubit()
+        dev = qml.device("default.qubit")
 
         # TODO: add additional QNode test once the new device supports it
 
-        ops = [
-            qml.Snapshot(),
-            qml.Hadamard(wires=0),
-            qml.Snapshot("very_important_state"),
-            qml.CNOT(wires=[0, 1]),
-            qml.Snapshot(),
-        ]
-        qs = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliX(0))])
+        @qml.qnode(dev, diff_method=method)
+        def circuit():
+            qml.Snapshot()
+            qml.Hadamard(wires=0)
+            qml.Snapshot("very_important_state")
+            qml.CNOT(wires=[0, 1])
+            qml.Snapshot()
+            return qml.expval(qml.PauliX(0))
 
-        dev.execute(qs)
+        circuit()
         assert dev._debugger is None
+        if method is not None:
+            assert circuit.interface == "auto"
 
-        with qml.debugging._Debugger(dev) as dbg:
-            dev.execute(qs)
-
-        result = dbg.snapshots
-
+        result = qml.snapshots(circuit)()
         expected = {
             0: np.array([1, 0, 0, 0]),
             "very_important_state": np.array([1 / np.sqrt(2), 0, 1 / np.sqrt(2), 0]),

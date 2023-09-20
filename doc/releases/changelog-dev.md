@@ -17,11 +17,15 @@
 * Quantum information transforms are updated to the new transform program system.
   [(#4569)](https://github.com/PennyLaneAI/pennylane/pull/4569)
 
-* `qml.devices.DefaultQubit` now implements the new device API. The old version of `default.qubit`
-  is still accessible via `qml.devices.DefaultQubitLegacy`, or via short name `default.qubit.legacy`.
+* `default.qubit` now implements the new device API. The old version of the device is still
+  accessible by the short name `default.qubit.legacy`, or directly via `qml.devices.DefaultQubitLegacy`.
   [(#4594)](https://github.com/PennyLaneAI/pennylane/pull/4594)
+  [(#4436)](https://github.com/PennyLaneAI/pennylane/pull/4436)
 
 <h3>Improvements 🛠</h3>
+
+* `MeasurementProcess` objects are now registered as jax pytrees.
+  [(#4607)](https://github.com/PennyLaneAI/pennylane/pull/4607)
 
 * Tensor-network template `qml.MPS` now supports changing `offset` between subsequent blocks for more flexibility.
  [(#4531)](https://github.com/PennyLaneAI/pennylane/pull/4531)
@@ -59,6 +63,7 @@
   method will re-order the given state to go from the inputted wire-order to the process's wire-order.
   If the process's wire-order contains extra wires, it will assume those are in the zero-state.
   [(#4570)](https://github.com/PennyLaneAI/pennylane/pull/4570)
+  [(#4602)](https://github.com/PennyLaneAI/pennylane/pull/4602)
 
 * Improve builtin types support with `qml.pauli_decompose`.
   [(#4577)](https://github.com/PennyLaneAI/pennylane/pull/4577)
@@ -78,6 +83,24 @@
 * `AmplitudeEmbedding` now inherits from `StatePrep`, allowing for it to not be decomposed
   when at the beginning of a circuit, thus behaving like `StatePrep`.
   [(#4583)](https://github.com/PennyLaneAI/pennylane/pull/4583)
+
+* `DefaultQubit2` can now accept a `jax.random.PRNGKey` as a `seed`, to set the key for the JAX pseudo random 
+  number generator when using the JAX interface. This corresponds to the `prng_key` on 
+  `DefaultQubitJax` in the old API.
+  [(#4596)](https://github.com/PennyLaneAI/pennylane/pull/4596)
+
+* DefaultQubit2 dispatches to a faster implementation for applying `ParameterizedEvolution` to a state
+  when it is more efficient to evolve the state than the operation matrix.
+  [(#4598)](https://github.com/PennyLaneAI/pennylane/pull/4598)
+
+* `ShotAdaptiveOptimizer` has been updated to pass shots to QNode executions instead of overriding
+  device shots before execution. This makes it compatible with the new device API.
+  [(#4599)](https://github.com/PennyLaneAI/pennylane/pull/4599)
+
+* `StateMeasurement.process_state` now assumes the input is flat. `ProbabilityMP.process_state` has
+  been updated to reflect this assumption and avoid redundant reshaping.
+  [(#4602)](https://github.com/PennyLaneAI/pennylane/pull/4602)
+
 
 <h3>Breaking changes 💔</h3>
 
@@ -157,6 +180,20 @@
   been removed. Please use ``QuantumScript.bind_new_parameters`` instead.
   [(#4548)](https://github.com/PennyLaneAI/pennylane/pull/4548)
 
+* The private `TmpPauliRot` operator used for `SpecialUnitary` no longer decomposes to nothing
+  when the theta value is trainable.
+  [(#4585)](https://github.com/PennyLaneAI/pennylane/pull/4585)
+
+* `ProbabilityMP.marginal_prob` has been removed. Its contents have been moved into `process_state`,
+  which effectively just called `marginal_prob` with `np.abs(state) ** 2`.
+  [(#4602)](https://github.com/PennyLaneAI/pennylane/pull/4602)
+
+* `default.qubit` now implements the new device API. If you initialize a device
+  with `qml.device("default.qubit")`, all functions and properties that were tied to the old
+  device API will no longer be on the device. The legacy version can still be accessed with
+  `qml.device("default.qubit.legacy", wires=n_wires)`.
+  [(#4436)](https://github.com/PennyLaneAI/pennylane/pull/4436)
+
 <h3>Deprecations 👋</h3>
 
 * The ``prep`` keyword argument in ``QuantumScript`` is deprecated and will be removed from `QuantumScript`.
@@ -213,6 +250,13 @@
   expectation.
   [(#4590)](https://github.com/PennyLaneAI/pennylane/pull/4590)
 
+* The `torch.nn.Module` properties are now accessible on a `pennylane.qnn.TorchLayer`.
+  [(#4611)](https://github.com/PennyLaneAI/pennylane/pull/4611)
+
+* `qml.math.take` with torch now returns `tensor[..., indices]` when the user requests
+  the last axis (`axis=-1`). Without the fix, it would wrongly return `tensor[indices]`.
+  [(#4605)](https://github.com/PennyLaneAI/pennylane/pull/4605)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -220,6 +264,7 @@ This release contains contributions from (in alphabetical order):
 Utkarsh Azad,
 Diego Guala,
 Soran Jahangiri,
+Christina Lee,
 Lillian M. A. Frederiksen,
 Vincent Michaud-Rioux,
 Romain Moyard,

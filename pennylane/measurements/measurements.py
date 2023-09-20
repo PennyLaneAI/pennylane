@@ -527,7 +527,8 @@ class StateMeasurement(MeasurementProcess):
     Any class inheriting from ``StateMeasurement`` should define its own ``process_state`` method,
     which should have the following arguments:
 
-    * state (Sequence[complex]): quantum state
+    * state (Sequence[complex]): quantum state with a flat shape. It may also have an
+        optional batch dimension
     * wire_order (Wires): wires determining the subspace that ``state`` acts on; a matrix of
         dimension :math:`2^n` acts on a subspace of :math:`n` wires
 
@@ -559,7 +560,8 @@ class StateMeasurement(MeasurementProcess):
         """Process the given quantum state.
 
         Args:
-            state (Sequence[complex]): quantum state
+            state (Sequence[complex]): quantum state with a flat shape. It may also have an
+                optional batch dimension
             wire_order (Wires): wires determining the subspace that ``state`` acts on; a matrix of
                 dimension :math:`2^n` acts on a subspace of :math:`n` wires
         """
