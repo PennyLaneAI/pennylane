@@ -336,7 +336,7 @@ statistics are ``"default.qubit"``, ``"default.mixed"``, and ``"default.qubit.le
 
 .. code-block:: python3
 
-    dev = qml.devices.DefaultQubit()
+    dev = qml.device("default.qubit", wires=2)
 
     @qml.qnode(dev)
     def func(x, y):
