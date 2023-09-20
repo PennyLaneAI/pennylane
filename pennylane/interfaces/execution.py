@@ -604,8 +604,8 @@ def execute(
                 "device batch transforms cannot be turned off with the new device interface.",
                 UserWarning,
             )
-        device_transform_program, config = device.preprocess(config)
-        full_transform_program = transform_program + device_transform_program
+        config = device.setup_execution_config(tapes, config)
+        full_transform_program = transform_program + device.preprocess(config)
         tapes, post_processing = full_transform_program(tapes)
     else:
         # TODO: Remove once old device are removed

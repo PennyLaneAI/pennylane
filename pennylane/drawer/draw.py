@@ -242,7 +242,7 @@ def _draw_qnode(
     def wrapper(*args, **kwargs):
         if expansion_strategy == "device" and isinstance(qnode.device, qml.devices.Device):
             qnode.construct(args, kwargs)
-            program, _ = qnode.device.preprocess()
+            program = qnode.device.preprocess()
             tapes = program([qnode.tape])
             _wire_order = wire_order or qnode.tape.wires
         else:
@@ -543,7 +543,7 @@ def _draw_mpl_qnode(
     def wrapper(*args, **kwargs_qnode):
         if expansion_strategy == "device" and isinstance(qnode.device, qml.devices.Device):
             qnode.construct(args, kwargs)
-            program, _ = qnode.device.preprocess()
+            program = qnode.device.preprocess()
             tapes, _ = program([qnode.tape])
             tape = tapes[0]
             _wire_order = wire_order or qnode.tape.wires

@@ -390,7 +390,7 @@ class TestBatchTransform:
 
         device = qml.devices.DefaultQubit()
 
-        program, _ = device.preprocess()
+        program = device.preprocess()
         tapes, _ = program([tape])
 
         assert len(tapes) == 1
@@ -405,7 +405,7 @@ class TestBatchTransform:
         tape = QuantumScript(ops=ops, measurements=measurements)
         device = qml.devices.DefaultQubit()
 
-        program, _ = device.preprocess()
+        program = device.preprocess()
         tapes, _ = program([tape])
 
         assert len(tapes) == 1
@@ -424,7 +424,7 @@ class TestBatchTransform:
 
         device = qml.devices.DefaultQubit()
 
-        program, _ = device.preprocess(execution_config=execution_config)
+        program = device.preprocess(execution_config=execution_config)
         tapes, _ = program([tape])
         expected_ops = [
             [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX(np.pi, wires=1)],
@@ -594,24 +594,6 @@ class TestAdjointDiffTapeValidation:
 class TestPreprocess:
     """Unit tests for ``qml.devices.qubit.preprocess``."""
 
-    def test_choose_best_gradient_method(self):
-        """Test that preprocessing chooses backprop as the best gradient method."""
-        config = qml.devices.ExecutionConfig(gradient_method="best")
-        _, config = preprocess(config)
-        assert config.gradient_method == "backprop"
-        assert config.use_device_gradient
-        assert not config.grad_on_execution
-
-    def test_config_choices_for_adjoint(self):
-        """Test that preprocessing request grad on execution and says to use the device gradient if adjoint is requested."""
-        config = qml.devices.ExecutionConfig(
-            gradient_method="adjoint", use_device_gradient=None, grad_on_execution=None
-        )
-        _, new_config = preprocess(config)
-
-        assert new_config.use_device_gradient
-        assert new_config.grad_on_execution
-
     def test_preprocess_batch_transform_not_adjoint(self):
         """Test that preprocess returns the correct tapes when a batch transform
         is needed."""
@@ -623,7 +605,7 @@ class TestPreprocess:
             QuantumScript(ops=ops, measurements=[measurements[1]]),
         ]
 
-        program, _ = preprocess()
+        program = preprocess()
         res_tapes, batch_fn = program(tapes)
 
         assert len(res_tapes) == 2
@@ -653,7 +635,7 @@ class TestPreprocess:
         execution_config = ExecutionConfig()
         execution_config.gradient_method = "adjoint"
 
-        program, _ = preprocess(execution_config=execution_config)
+        program = preprocess(execution_config=execution_config)
         res_tapes, batch_fn = program(tapes)
 
         expected_ops = [
@@ -683,7 +665,7 @@ class TestPreprocess:
             QuantumScript(ops=ops, measurements=measurements[1]),
         ]
 
-        program, _ = preprocess()
+        program = preprocess()
         res_tapes, batch_fn = program(tapes)
 
         expected = [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RZ(0.123, wires=1)]
@@ -707,7 +689,7 @@ class TestPreprocess:
             QuantumScript(ops=ops, measurements=[measurements[1]]),
         ]
 
-        program, _ = preprocess()
+        program = preprocess()
         res_tapes, batch_fn = program(tapes)
         expected_ops = [
             qml.Hadamard(0),
@@ -743,7 +725,7 @@ class TestPreprocess:
         execution_config = ExecutionConfig()
         execution_config.gradient_method = "adjoint"
 
-        program, _ = preprocess(execution_config=execution_config)
+        program = preprocess(execution_config=execution_config)
         res_tapes, batch_fn = program(tapes)
 
         expected_ops = [
@@ -775,7 +757,7 @@ class TestPreprocess:
         ]
 
         with pytest.raises(qml.DeviceError, match="Operator NoMatNoDecompOp"):
-            program, _ = preprocess()
+            program = preprocess()
             program(tapes)
 
     @pytest.mark.parametrize(
@@ -801,7 +783,7 @@ class TestPreprocess:
         execution_config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 
         with pytest.raises(DeviceError, match=message):
-            program, _ = preprocess(execution_config)
+            program = preprocess(execution_config)
             program([qs])
 
     def test_preprocess_tape_for_adjoint(self):
@@ -812,7 +794,7 @@ class TestPreprocess:
         )
         execution_config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 
-        program, _ = preprocess(execution_config)
+        program = preprocess(execution_config)
         expanded_tapes, _ = program([qs])
 
         assert len(expanded_tapes) == 1

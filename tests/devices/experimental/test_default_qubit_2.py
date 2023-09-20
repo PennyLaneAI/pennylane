@@ -76,7 +76,7 @@ class TestSnapshotMulti:
         with pytest.raises(
             RuntimeError, match="ProcessPoolExecutor cannot execute a QuantumScript"
         ):
-            program, _ = dev.preprocess()
+            program = dev.preprocess()
             program([tape])
 
     def test_snapshot_multiprocessing_qnode(self):
@@ -201,10 +201,7 @@ class TestTracking:
         assert tracker.history["resources"][0] == expected_resources
 
 
-# pylint: disable=too-few-public-methods
-class TestPreprocessing:
-    """Unit tests for the preprocessing method."""
-
+class TestConfigSetup:
     def test_chooses_best_gradient_method(self):
         """Test that preprocessing chooses backprop as the best gradient method."""
         dev = DefaultQubit()
@@ -213,7 +210,7 @@ class TestPreprocessing:
             gradient_method="best", use_device_gradient=None, grad_on_execution=None
         )
 
-        _, new_config = dev.preprocess(config)
+        new_config = dev.setup_execution_config(qml.tape.QuantumScript(), config)
 
         assert new_config.gradient_method == "backprop"
         assert new_config.use_device_gradient
@@ -227,7 +224,7 @@ class TestPreprocessing:
             gradient_method="adjoint", use_device_gradient=None, grad_on_execution=None
         )
 
-        _, new_config = dev.preprocess(config)
+        new_config = dev.setup_execution_config(qml.tape.QuantumScript(), config)
 
         assert new_config.use_device_gradient
         assert new_config.grad_on_execution
@@ -238,26 +235,31 @@ class TestPreprocessing:
         dev = DefaultQubit()
 
         config = ExecutionConfig(device_options={"max_workers": max_workers})
-        _, new_config = dev.preprocess(config)
+        new_config = dev.setup_execution_config(qml.tape.QuantumScript(), config)
 
         assert new_config.device_options["max_workers"] == max_workers
+
+
+# pylint: disable=too-few-public-methods
+class TestPreprocessing:
+    """Unit tests for the preprocessing method."""
 
     def test_circuit_wire_validation(self):
         """Test that preprocessing validates wires on the circuits being executed."""
         dev = DefaultQubit(wires=3)
         circuit_valid_0 = qml.tape.QuantumScript([qml.PauliX(0)])
-        program, _ = dev.preprocess()
+        program = dev.preprocess()
         circuits, _ = program([circuit_valid_0])
         assert circuits == (circuit_valid_0,)
 
         circuit_valid_1 = qml.tape.QuantumScript([qml.PauliX(1)])
-        program, _ = dev.preprocess()
+        program = dev.preprocess()
         circuits, _ = program([circuit_valid_0, circuit_valid_1])
         assert circuits == tuple([circuit_valid_0, circuit_valid_1])
 
         invalid_circuit = qml.tape.QuantumScript([qml.PauliX(4)])
         with pytest.raises(qml.wires.WireError, match=r"Cannot run circuit\(s\) on"):
-            program, _ = dev.preprocess()
+            program = dev.preprocess()
             program(
                 [
                     invalid_circuit,
@@ -265,7 +267,7 @@ class TestPreprocessing:
             )
 
         with pytest.raises(qml.wires.WireError, match=r"Cannot run circuit\(s\) on"):
-            program, _ = dev.preprocess()
+            program = dev.preprocess()
             program([circuit_valid_0, invalid_circuit])
 
     @pytest.mark.parametrize(
@@ -282,7 +284,7 @@ class TestPreprocessing:
         original_mp = mp_fn()
         exp_z = qml.expval(qml.PauliZ(0))
         qs = qml.tape.QuantumScript([qml.Hadamard(0)], [original_mp, exp_z], shots=shots)
-        program, _ = dev.preprocess()
+        program = dev.preprocess()
         tapes, _ = program([qs])
         assert len(tapes) == 1
         tape = tapes[0]
@@ -1162,7 +1164,8 @@ class TestAdjointDifferentiation:
             [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
         )
 
-        program, new_ec = dev.preprocess(self.ec)
+        new_ec = dev.setup_execution_config([single_meas, multi_meas], self.ec)
+        program = dev.preprocess(new_ec)
         circuits, _ = program([single_meas, multi_meas])
         actual_grad = dev.compute_derivatives(circuits, self.ec)
 
@@ -1256,7 +1259,8 @@ class TestAdjointDifferentiation:
         )
         tangents = [(0.456,), (0.789,)]
         circuits = [single_meas, multi_meas]
-        program, new_ec = dev.preprocess(self.ec)
+        new_ec = dev.setup_execution_config(circuits, self.ec)
+        program = dev.preprocess(new_ec)
         circuits, _ = program(circuits)
         actual_grad = dev.compute_jvp(circuits, tangents, self.ec)
         expected_grad = (
@@ -1351,7 +1355,8 @@ class TestAdjointDifferentiation:
         )
         cotangents = [(0.456,), (0.789, 0.123)]
         circuits = [single_meas, multi_meas]
-        program, new_ec = dev.preprocess(self.ec)
+        new_ec = dev.setup_execution_config(circuits, self.ec)
+        program = dev.preprocess(new_ec)
         circuits, _ = program(circuits)
 
         actual_grad = dev.compute_vjp(circuits, cotangents, self.ec)
@@ -1397,7 +1402,8 @@ class TestPreprocessingIntegration:
 
         dev = DefaultQubit(max_workers=max_workers)
         tapes = tuple([qscript])
-        program, config = dev.preprocess()
+        config = dev.setup_execution_config(tapes)
+        program = dev.preprocess(config)
         tapes, pre_processing_fn = program(tapes)
 
         assert len(tapes) == 1
@@ -1453,7 +1459,8 @@ class TestPreprocessingIntegration:
 
         dev = DefaultQubit(max_workers=max_workers)
 
-        program, config = dev.preprocess()
+        config = dev.setup_execution_config(initial_batch)
+        program = dev.preprocess()
         batch, pre_processing_fn = program(initial_batch)
 
         results = dev.execute(batch, config)
@@ -1487,7 +1494,7 @@ class TestPreprocessingIntegration:
         )
         spy = mocker.spy(qml, "defer_measurements")
 
-        program, _ = dev.preprocess()
+        program = dev.preprocess()
         program([tape])
         spy.assert_called_once()
 
@@ -2059,7 +2066,7 @@ def test_broadcasted_parameter(max_workers):
 
     config = ExecutionConfig()
     config.gradient_method = "adjoint"
-    program, config = dev.preprocess(config)
+    program = dev.preprocess(config)
     batch, pre_processing_fn = program([qs])
     assert len(batch) == 2
     results = dev.execute(batch, config)

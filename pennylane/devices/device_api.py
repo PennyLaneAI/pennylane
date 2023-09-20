@@ -21,6 +21,8 @@ from collections.abc import Iterable
 from numbers import Number
 from typing import Callable, Union, Sequence, Tuple, Optional
 
+from dataclasses import replace
+
 from pennylane.measurements import Shots
 from pennylane.tape import QuantumTape
 from pennylane.typing import Result, ResultBatch
@@ -103,7 +105,7 @@ class Device(abc.ABC):
         >>> config = ExecutionConfig(gradient_method="adjoint")
         >>> dev.compute_derivatives(circuit, config)
         ValueError: Operation Rot is not written in terms of a single parameter
-        >>> new_circuit, postprocessing, new_config = dev.preprocess(circuit, config)
+        >>> new_circuit, postprocessing = dev.preprocess(config)((circuit, ))
         >>> dev.compute_derivatives(new_circuit, new_config)
         ((array(0.), array(-0.74570521), array(0.)),)
 
@@ -202,10 +204,72 @@ class Device(abc.ABC):
         """
         return self._wires
 
+    def setup_execution_config(
+        self,
+        circuits: QuantumTape_or_Batch,
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ) -> ExecutionConfig:
+        """Fill in ambiguous entries for the execution config.
+
+        Args:
+            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the quantum circuits to be executed
+            execution_config (ExecutionConfig): a datastructure with additional information required for execution
+
+        Returns:
+            ExecutionConfig: a new execution config with fully specified choices.
+
+        The execution config serves to communicate both how the device wants to be used by PennyLane, and
+        how the device will perform its computation. This method gives the device an opportunity to specify how
+        it wants to be used and add information on its configuration.
+
+        If the device is capable of handling the derivative, it should set ``use_device_gradient`` to be ``True``.
+
+        >>> config = ExecutionConfig(use_device_gradient=None, gradient_method="device")
+        >>> new_config = dev.setup_execution_config(circuit, config)
+        >>> new_config.use_device_gradient
+        True
+
+        For example, the initial ``execution_config`` may have a ``gradient_method`` of ``"best"``.
+        The device can then specify what is its preferred gradient method.
+
+        >>> config = ExecutionConfig(gradient_method="best", grad_on_execution=None)
+        >>> circuit = qml.tape.QuantumScript([], [qml.state()])
+        >>> new_config = dev.setup_execution_config(circuit, config)
+        >>> new_config.gradient_method
+        'backprop'
+
+        Or for a device that prefers adjoint:
+
+        >>> new_config = adjoint_dev.setup_execution_config(circuit, config)
+        >>> new_config.gradient_method
+        'adjoint'
+        >>> new_config.grad_on_execution
+        True
+
+        The device should also fill in ``device_options`` with any device specific defaults:
+
+        >>> new_config.device_options
+        {'max_workers': None, 'rng': Generator(PCG64) at 0x17D9C67A0, 'prng_key': None}
+
+        """
+        updated_values = {}
+        if (
+            execution_config.gradient_method in {"best", "device"}
+            and type(self).compute_derivatives != Device.compute_derivatives
+        ):
+            updated_values["use_device_gradient"] = True
+            if execution_config.gradient_method == "best":
+                updated_values["gradient_method"] = "device"
+            if execution_config.grad_on_execution is None:
+                updated_values["grad_on_execution"] = True
+        else:
+            updated_values["use_device_gradient"] = False
+        return replace(execution_config, **updated_values)
+
     def preprocess(
         self,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Tuple[TransformProgram, ExecutionConfig]:
+    ) -> TransformProgram:
         """Device preprocessing function.
 
         .. warning::
@@ -221,9 +285,7 @@ class Device(abc.ABC):
                 the execution.
 
         Returns:
-            TransformProgram, ExecutionConfig: A transform program that is called before execution, and a configuration
-                with unset specifications filled in.
-
+            TransformProgram: A transform program that is called before execution.
         Raises:
             Exception: An exception can be raised if the input cannot be converted into a form supported by the device.
 
@@ -260,7 +322,7 @@ class Device(abc.ABC):
                 def preprocess(config):
                     program = TransformProgram()
                     program.add_transform(my_preprocessing_transform)
-                    return program, config
+                    return program
 
         .. seealso:: :func:`~.pennylane.transform.core.transform` and :class:`~.pennylane.transform.core.TransformProgram`
 
@@ -278,7 +340,7 @@ class Device(abc.ABC):
                 def f(x):
                     circuit = qml.tape.QuantumScript([qml.Rot(*x, wires=0)], [qml.expval(qml.PauliZ(0))])
                     config = ExecutionConfig(gradient_method="adjoint")
-                    program, config = dev.preprocess(config)
+                    program = dev.preprocess(config)
                     circuit_batch, postprocessing = program((circuit, ))
 
                     def execute_fn(tapes):
@@ -295,7 +357,7 @@ class Device(abc.ABC):
             Only then is the classical postprocessing called on the result object.
 
         """
-        return TransformProgram(), execution_config
+        return TransformProgram()
 
     @abc.abstractmethod
     def execute(

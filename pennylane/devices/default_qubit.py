@@ -15,11 +15,13 @@
 This module contains the next generation successor to default qubit
 """
 
+from dataclasses import replace
 from functools import partial
 from numbers import Number
 from typing import Union, Callable, Tuple, Optional, Sequence
 import concurrent.futures
 import numpy as np
+
 
 import pennylane as qml
 from pennylane.tape import QuantumTape, QuantumScript
@@ -204,10 +206,39 @@ class DefaultQubit(Device):
 
         return False
 
+    def setup_execution_config(
+        self,
+        circuits: QuantumTape_or_Batch,
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ) -> ExecutionConfig:
+        updated_values = {}
+        if execution_config.gradient_method == "best":
+            updated_values["gradient_method"] = "backprop"
+        if execution_config.use_device_gradient is None:
+            updated_values["use_device_gradient"] = execution_config.gradient_method in {
+                "best",
+                "adjoint",
+                "backprop",
+            }
+        if execution_config.grad_on_execution is None:
+            updated_values["grad_on_execution"] = execution_config.gradient_method == "adjoint"
+
+        updated_values["device_options"] = dict(execution_config.device_options)  # copy
+        if "max_workers" not in updated_values["device_options"]:
+            updated_values["device_options"]["max_workers"] = self._max_workers
+        if "rng" not in updated_values["device_options"]:
+            updated_values["device_options"]["rng"] = self._rng
+        if "prng_key" not in updated_values["device_options"]:
+            updated_values["device_options"]["prng_key"] = self._prng_key
+
+        print(updated_values)
+
+        return replace(execution_config, **updated_values)
+
     def preprocess(
         self,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Tuple[QuantumTapeBatch, PostprocessingFn, ExecutionConfig]:
+    ) -> TransformProgram:
         """This function defines the device transform program to be applied and an updated device configuration.
 
         Args:
@@ -215,7 +246,7 @@ class DefaultQubit(Device):
                 parameters needed to fully describe the execution.
 
         Returns:
-            TransformProgram, ExecutionConfig: A transform program that when called returns QuantumTapes that the device
+            TransformProgram: A transform program that when called returns QuantumTapes that the device
             can natively execute as well as a postprocessing function to be called after execution, and a configuration with
             unset specifications filled in.
 
@@ -235,9 +266,8 @@ class DefaultQubit(Device):
         transform_program.add_transform(validate_multiprocessing_workers, max_workers, self)
 
         # General preprocessing (Validate measurement, expand, adjoint expand, broadcast expand)
-        transform_program_preprocess, config = preprocess(execution_config=execution_config)
-        transform_program = transform_program + transform_program_preprocess
-        return transform_program, config
+        transform_program_preprocess = preprocess(execution_config=execution_config)
+        return transform_program + transform_program_preprocess
 
     def execute(
         self,

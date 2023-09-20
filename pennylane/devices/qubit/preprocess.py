@@ -15,9 +15,8 @@
 """This module contains functions for preprocessing `QuantumTape` objects to ensure
 that they are supported for execution by a device."""
 # pylint: disable=protected-access
-from dataclasses import replace
 import os
-from typing import Generator, Callable, Tuple, Union, Sequence
+from typing import Generator, Callable, Union, Sequence
 from copy import copy
 import warnings
 
@@ -393,32 +392,9 @@ def expand_fn(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Ca
     return [tape], null_postprocessing
 
 
-def _update_config(config: ExecutionConfig) -> ExecutionConfig:
-    """Choose the "best" options for the configuration if they are left unspecified.
-
-    Args:
-        config (ExecutionConfig): the initial execution config
-
-    Returns:
-        ExecutionConfig: a new config with the best choices selected.
-    """
-    updated_values = {}
-    if config.gradient_method == "best":
-        updated_values["gradient_method"] = "backprop"
-    if config.use_device_gradient is None:
-        updated_values["use_device_gradient"] = config.gradient_method in {
-            "best",
-            "adjoint",
-            "backprop",
-        }
-    if config.grad_on_execution is None:
-        updated_values["grad_on_execution"] = config.gradient_method == "adjoint"
-    return replace(config, **updated_values)
-
-
 def preprocess(
     execution_config: ExecutionConfig = DefaultExecutionConfig,
-) -> Tuple[Tuple[qml.tape.QuantumScript], PostprocessingFn, ExecutionConfig]:
+) -> TransformProgram:
     """Preprocess a batch of :class:`~.QuantumTape` objects to make them ready for execution.
 
     This function validates a batch of :class:`~.QuantumTape` objects by transforming and expanding
@@ -429,8 +405,7 @@ def preprocess(
             options for the execution.
 
     Returns:
-        TransformProgram, ExecutionConfig: A transform program and a configuration with originally unset specifications
-        filled in.
+        TransformProgram: A transform program that performs the preprocessing.
     """
     transform_program = TransformProgram()
 
@@ -446,4 +421,4 @@ def preprocess(
         ### Broadcast expand
         transform_program.add_transform(qml.transforms.broadcast_expand)
 
-    return transform_program, _update_config(execution_config)
+    return transform_program
