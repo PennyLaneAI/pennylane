@@ -197,9 +197,8 @@ class TestStateForward:
             qml.CNOT(wires=[0, 1])
             return qml.classical_shadow(wires=[0, 1]), qml.expval(qml.PauliZ(0))
 
-        msg = "Classical shadows cannot be returned in combination with other return types"
-        with pytest.raises(qml.QuantumFunctionError, match=msg):
-            circuit_shadow()
+        res = circuit_shadow()
+        assert isinstance(res, tuple) and len(res) == 2
 
         @qml.qnode(dev)
         def circuit_expval():
@@ -207,8 +206,8 @@ class TestStateForward:
             qml.CNOT(wires=[0, 1])
             return qml.shadow_expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(qml.QuantumFunctionError, match=msg):
-            circuit_expval()
+        res = circuit_expval()
+        assert isinstance(res, tuple) and len(res) == 2
 
 
 @pytest.mark.all_interfaces

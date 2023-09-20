@@ -85,7 +85,7 @@ def get_unitary(circ, n_wires):
         return qml.state()
 
     bitstrings = list(itertools.product([0, 1], repeat=n_wires))
-    u = [unitary_z(np.array(bitstring)).numpy() for bitstring in bitstrings]
+    u = [unitary_z(np.array(bitstring)) for bitstring in bitstrings]
     u = np.array(u).T
     return u
 
