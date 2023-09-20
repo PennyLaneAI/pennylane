@@ -17,7 +17,6 @@ during execution.
 """
 import pennylane as qml
 from pennylane import math
-from pennylane.measurements import MeasurementValue
 from pennylane.tape import QuantumScript
 
 
