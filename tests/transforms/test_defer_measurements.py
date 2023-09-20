@@ -1089,9 +1089,7 @@ class TestQubitReuseAndReset:
             qml.RZ(3.0, 1),
         ]
 
-        assert len(circ.qtape.operations) == 5
-        for op, exp in zip(circ.qtape.operations, expected):
-            assert qml.equal(op, exp)
+        assert circ.qtape.operations == expected
 
     def test_correct_cnot_for_reset(self):
         """Test that a CNOT is applied from the wire that stores the measurement
