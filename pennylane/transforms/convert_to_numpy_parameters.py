@@ -33,7 +33,7 @@ def _convert_op_to_numpy_data(op: qml.operation.Operator) -> qml.operation.Opera
 def _convert_measurement_to_numpy_data(
     m: qml.measurements.MeasurementProcess,
 ) -> qml.measurements.MeasurementProcess:
-    if m.obs is None or isinstance(m.obs, MeasurementValue):
+    if m.obs is None:
         if m.eigvals() is None or math.get_interface(m.eigvals()) == "numpy":
             return m
         return type(m)(wires=m.wires, eigvals=math.unwrap(m.eigvals()))

@@ -455,7 +455,7 @@ class QuantumScript:
 
         n_ops = len(self.operations)
         for idx, m in enumerate(self.measurements):
-            if m.obs is not None and not isinstance(m.obs, MeasurementValue):
+            if m.obs is not None:
                 self._par_info.extend(
                     {"op": m.obs, "op_idx": idx + n_ops, "p_idx": i}
                     for i, d in enumerate(m.obs.data)
@@ -481,12 +481,7 @@ class QuantumScript:
             _obs_sharing_wires_id (list[int]): Indices of the measurements that contain
                 the observables in _obs_sharing_wires
         """
-        obs_wires = [
-            wire
-            for m in self.measurements
-            for wire in m.wires
-            if m.obs is not None and not isinstance(m.obs, MeasurementValue)
-        ]
+        obs_wires = [wire for m in self.measurements for wire in m.wires if m.obs is not None]
         self._obs_sharing_wires = []
         self._obs_sharing_wires_id = []
 
@@ -676,7 +671,7 @@ class QuantumScript:
         if operations_only:
             return params
         for m in self.measurements:
-            if m.obs is not None and not isinstance(m.obs, MeasurementValue):
+            if m.obs is not None:
                 params.extend(m.obs.data)
         return params
 
