@@ -169,7 +169,6 @@ class MeasurementValue(Generic[T]):
     def __init__(self, measurements, processing_fn):
         self.measurements = measurements
         self.processing_fn = processing_fn
-        self._wires = Wires([m.wires[0] for m in self.measurements])
 
     def _items(self):
         """A generator representing all the possible outcomes of the MeasurementValue."""
@@ -180,7 +179,7 @@ class MeasurementValue(Generic[T]):
     @property
     def wires(self):
         """Returns a list of wires corresponding to the mid-circuit measurements."""
-        return self._wires
+        return Wires([m.wires[0] for m in self.measurements])
 
     @property
     def branches(self):

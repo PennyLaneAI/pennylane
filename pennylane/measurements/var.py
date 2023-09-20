@@ -117,12 +117,6 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         samples = qml.sample(op=op).process_samples(
             samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
         )
-        # if self.mv is not None:
-        #     num_wires = samples.shape[-1]
-        #     powers_of_two = 2 ** qml.math.arange(num_wires)[::-1]
-        #     indices = samples @ powers_of_two
-        #     indices = qml.math.array(indices)  # Add np.array here for Jax support.
-        #     samples = self.eigvals()[indices]
 
         # With broadcasting, we want to take the variance over axis 1, which is the -1st/-2nd with/
         # without bin_size. Without broadcasting, axis 0 is the -1st/-2nd with/without bin_size

@@ -26,9 +26,7 @@ from .measurements import MeasurementShapeError, Sample, SampleMeasurement
 from .mid_measure import MeasurementValue
 
 
-def sample(
-    op: Optional[Union[Operator, Sequence[MeasurementValue]]] = None, wires=None
-) -> "SampleMP":
+def sample(op: Optional[Union[Operator, MeasurementValue]] = None, wires=None) -> "SampleMP":
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device,
     returning raw samples. If no observable is provided then basis state samples are returned
