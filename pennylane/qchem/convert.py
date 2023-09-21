@@ -1033,7 +1033,7 @@ def _dmrg_state(wavefunction, tol=1e-15):
         tol (float): the tolerance for discarding Slater determinants with small coefficients
 
     Returns:
-        dict: dictionary of the form `{(int_a, int_b) :coeff}`, with integers `int_a, int_b`
+        dict: dictionary of the form `{(int_a, int_b) : coeff}`, with integers `int_a, int_b`
         having binary representation corresponding to the Fock occupation vector in alpha and beta
         spin sectors, respectively, and coeff being the CI coefficients of those configurations
 
@@ -1144,10 +1144,10 @@ def _shci_state(wavefunction, tol=1e-15):
     SHCI.outputfile.
 
     Args:
-        wavefunction tuple(array[int], array[str]): determinants and coefficients in physicist notation
+        wavefunction tuple(array[str], array[float]): determinants and coefficients in chemist notation
         tol (float): the tolerance for discarding Slater determinants with small coefficients
     Returns:
-        dict: dictionary of the form `{(int_a, int_b) :coeff}`, with integers `int_a, int_b`
+        dict: dictionary of the form `{(int_a, int_b) : coeff}`, with integers `int_a, int_b`
         having binary representation corresponding to the Fock occupation vector in alpha and beta
         spin sectors, respectively, and coeff being the CI coefficients of those configurations
 
@@ -1160,14 +1160,13 @@ def _shci_state(wavefunction, tol=1e-15):
     >>> myhf = scf.RHF(mol).run()
     >>> ncas, nelecas_a, nelecas_b = mol.nao, mol.nelectron // 2, mol.nelectron // 2
     >>> myshci = mcscf.CASCI(myhf, ncas, (nelecas_a, nelecas_b))
-    >>> initialStates = myshci.getinitialStateSHCI(myhf, (nelecas_a, nelecas_b))
     >>> output_file = f"shci_output.out"
     >>> myshci.fcisolver = shci.SHCI(myhf.mol)
-    >>> myshci.internal_rotation = False
-    >>> myshci.fcisolver.initialStates = initialStates
     >>> myshci.fcisolver.outputFile = output_file
-    >>> e_shci = np.atleast_1d(myshci.kernel(verbose=5))
-    >>> wf_shci = _shci_state(myshci, tol=1e-1)
+    >>> e_tot, e_ci, ss, mo_coeff, mo_energies = myshci.kernel(verbose=5)
+    >>> (dets, coeffs) = [post-process shci_output.out to get tuple of 
+        dets (list of strs) and coeffs (list of floats)]
+    >>> wf_shci = _shci_state((dets, coeffs), tol=1e-1)
     >>> print(wf_shci)
     {(7, 7): 0.8874167069, (11, 11): -0.3075774156, (19, 19): -0.3075774156, (35, 35): -0.1450474361}
     """
