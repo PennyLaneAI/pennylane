@@ -178,6 +178,7 @@ valid_meausurements = [
     VnEntropyMP(wires=Wires("a"), log_base=3),
 ]
 
+
 # pylint: disable=protected-access
 @pytest.mark.parametrize("mp", valid_meausurements)
 def test_flatten_unflatten(mp):
