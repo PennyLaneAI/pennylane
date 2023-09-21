@@ -1808,7 +1808,7 @@ class TestPassthruIntegration:
             return qml.expval(qml.PauliZ(0))
 
         res = circuit([x, y, z])
-        res.backward()
+        res.backward()  # pylint:disable=no-member
 
         expected = torch.cos(3 * x) * torch.cos(y) * torch.cos(z / 2) - torch.sin(
             3 * x
@@ -1895,7 +1895,7 @@ class TestPassthruIntegration:
             return qml.expval(qml.PauliZ(0))
 
         res = circuit(p)
-        res.backward()
+        res.backward()  # pylint:disable=no-member
 
         expected = torch.cos(y) ** 2 - torch.sin(x) * torch.sin(y) ** 2
 
@@ -1962,7 +1962,7 @@ class TestPassthruIntegration:
             return qml.expval(qml.PauliZ(0))  # , qml.var(qml.PauliZ(1))
 
         dev1 = qml.device("default.qubit.torch", wires=3, torch_device=torch_device)
-        dev2 = qml.device("default.qubit", wires=3)
+        dev2 = qml.device("default.qubit.legacy", wires=3)
 
         circuit1 = qml.QNode(circuit, dev1, diff_method="backprop", interface="torch")
         circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift")
@@ -2033,7 +2033,7 @@ class TestPassthruIntegration:
         # get the probability of wire 1
         prob_wire_1 = circuit(a, b)
         # compute Prob(|1>_1) - Prob(|0>_1)
-        res = prob_wire_1[1] - prob_wire_1[0]
+        res = prob_wire_1[1] - prob_wire_1[0]  # pylint:disable=unsubscriptable-object
         res.backward()
 
         expected = -torch.cos(a) * torch.cos(b)
@@ -2062,7 +2062,7 @@ class TestPassthruIntegration:
             # get the probability of wire 1
             prob_wire_1 = circuit(a, b)
             # compute Prob(|1>_1) - Prob(|0>_1)
-            res = prob_wire_1[:, 1] - prob_wire_1[:, 0]
+            res = prob_wire_1[:, 1] - prob_wire_1[:, 0]  # pylint:disable=unsubscriptable-object
             return res
 
         res = cost(a, b)
@@ -2087,7 +2087,7 @@ class TestPassthruIntegration:
         b = torch.tensor(0.654, dtype=torch.float64, requires_grad=True, device=torch_device)
 
         res = circuit(a, b)
-        res.backward()
+        res.backward()  # pylint:disable=no-member
 
         # the analytic result of evaluating circuit(a, b)
         expected_cost = 0.5 * (torch.cos(a) * torch.cos(b) + torch.cos(a) - torch.cos(b) + 1)
@@ -2242,7 +2242,7 @@ class TestSamples:
         res = circuit(a)
 
         assert torch.is_tensor(res)
-        assert res.shape == (shots,)
+        assert res.shape == (shots,)  # pylint:disable=comparison-with-callable
         assert torch.allclose(
             torch.unique(res), torch.tensor([-1, 1], dtype=torch.int64, device=torch_device)
         )
@@ -2326,7 +2326,7 @@ class TestSamplesBroadcasted:
         res = circuit(a)
 
         assert torch.is_tensor(res)
-        assert res.shape == (batch_size, shots)
+        assert res.shape == (batch_size, shots)  # pylint:disable=comparison-with-callable
         assert torch.allclose(
             torch.unique(res), torch.tensor([-1, 1], dtype=torch.int64, device=torch_device)
         )

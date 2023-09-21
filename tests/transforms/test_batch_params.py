@@ -14,6 +14,7 @@
 """
 Unit tests for the batch params transform.
 """
+# pylint:disable=comparison-with-callable
 import functools
 import pytest
 
@@ -39,7 +40,7 @@ def test_simple_circuit(mocker):
     x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
     weights = np.ones((batch_size, 10, 3, 3), requires_grad=True)
 
-    spy = mocker.spy(circuit.device, "batch_execute")
+    spy = mocker.spy(circuit.device, "execute")
     res = circuit(data, x, weights)
     assert res.shape == (batch_size, 4)
     assert len(spy.call_args[0][0]) == batch_size
@@ -63,7 +64,7 @@ def test_simple_circuit_one_batch(mocker):
     x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
     weights = np.ones((batch_size, 10, 3, 3), requires_grad=True)
 
-    spy = mocker.spy(circuit.device, "batch_execute")
+    spy = mocker.spy(circuit.device, "execute")
     res = circuit(data, x, weights)
     assert res.shape == (batch_size, 4)
     assert len(spy.call_args[0][0]) == batch_size
@@ -90,7 +91,7 @@ def test_simple_circuit_with_prep(mocker):
     x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
     weights = np.ones((batch_size, 10, 3, 3), requires_grad=True)
 
-    spy = mocker.spy(circuit.device, "batch_execute")
+    spy = mocker.spy(circuit.device, "execute")
     res = circuit(data, x, weights)
     assert res.shape == (batch_size, 4)
     assert len(spy.call_args[0][0]) == batch_size
@@ -110,7 +111,7 @@ def test_basic_entangler_layers(mocker):
     batch_size = 5
     weights = np.random.random((batch_size, 2, 2))
 
-    spy = mocker.spy(circuit.device, "batch_execute")
+    spy = mocker.spy(circuit.device, "execute")
     res = circuit(weights)
     assert res.shape == (batch_size, 4)
     assert len(spy.call_args[0][0]) == batch_size
@@ -130,7 +131,7 @@ def test_angle_embedding(mocker):
     batch_size = 5
     data = np.random.random((batch_size, 3))
 
-    spy = mocker.spy(circuit.device, "batch_execute")
+    spy = mocker.spy(circuit.device, "execute")
     res = circuit(data)
     assert res.shape == (batch_size, 4)
     assert len(spy.call_args[0][0]) == batch_size
@@ -154,7 +155,7 @@ def test_mottonenstate_preparation(mocker):
     data /= np.linalg.norm(data, axis=1).reshape(-1, 1)  # normalize
     weights = np.random.random((batch_size, 10, 3, 3))
 
-    spy = mocker.spy(circuit.device, "batch_execute")
+    spy = mocker.spy(circuit.device, "execute")
     res = circuit(data, weights)
     assert res.shape == (batch_size, 2**3)
     assert len(spy.call_args[0][0]) == batch_size
@@ -189,7 +190,7 @@ def test_basis_state_preparation(mocker):
     data = np.random.randint(2, size=(batch_size, 4))
     weights = np.random.random((batch_size, 10, 4, 3))
 
-    spy = mocker.spy(circuit.device, "batch_execute")
+    spy = mocker.spy(circuit.device, "execute")
     res = circuit(data, weights)
     assert res.shape == (batch_size, 2**4)
     assert len(spy.call_args[0][0]) == batch_size
@@ -225,7 +226,7 @@ def test_qubit_state_prep(mocker):
     data /= np.linalg.norm(data, axis=1).reshape(-1, 1)  # normalize
     weights = np.random.random((batch_size, 10, 3, 3))
 
-    spy = mocker.spy(circuit.device, "batch_execute")
+    spy = mocker.spy(circuit.device, "execute")
     res = circuit(data, weights)
     assert res.shape == (batch_size, 2**3)
     assert len(spy.call_args[0][0]) == batch_size
@@ -272,6 +273,7 @@ def test_multi_returns():
 
 def test_shot_vector():
     """Test that batching works for a simple circuit with a shot vector"""
+    # pylint:disable=not-an-iterable
     dev = qml.device("default.qubit", wires=3, shots=(100, (200, 3), 300))
 
     @qml.batch_params
@@ -557,7 +559,7 @@ class TestDiffMulti:
         jax.config.update("jax_enable_x64", True)
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.batch_params(all_operations=True)
+        @functools.partial(qml.batch_params, all_operations=True)
         @qml.qnode(dev, diff_method=diff_method, interface=interface)
         def circuit(x):
             qml.RY(x, wires=0)
@@ -607,7 +609,7 @@ class TestDiffMulti:
         dev = qml.device("default.qubit", wires=2)
 
         @jax.jit
-        @qml.batch_params(all_operations=True)
+        @functools.partial(qml.batch_params, all_operations=True)
         @qml.qnode(dev, diff_method=diff_method, interface=interface)
         def circuit(x):
             qml.RY(x, wires=0)
@@ -801,7 +803,7 @@ def test_all_operations(mocker):
     x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
     weights = np.ones((batch_size, 10, 3, 3), requires_grad=False)
 
-    spy = mocker.spy(circuit.device, "batch_execute")
+    spy = mocker.spy(circuit.device, "execute")
     res = circuit(x, weights)
     assert res.shape == (batch_size, 4)
     assert len(spy.call_args[0][0]) == batch_size

@@ -20,7 +20,7 @@ from typing import Callable, List, Tuple, Optional, Sequence
 from pennylane.typing import Result, ResultBatch
 from pennylane.tape import QuantumTape
 
-from .transform_dispatcher import TransformContainer, TransformError
+from .transform_dispatcher import TransformContainer, TransformError, TransformDispatcher
 
 PostProcessingFn = Callable[[ResultBatch], Result]
 BatchPostProcessingFn = Callable[[ResultBatch], ResultBatch]
@@ -131,10 +131,14 @@ class TransformProgram:
         return bool(self._transform_program)
 
     def __add__(self, other):
-        program = TransformProgram(self._transform_program)
-        for container in other:
-            program.push_back(container)
-        return program
+        if self.has_final_transform and other.has_final_transform:
+            raise TransformError("The transform program already has a terminal transform.")
+
+        transforms = self._transform_program + other._transform_program
+        if self.has_final_transform:
+            transforms.append(transforms.pop(len(self) - 1))
+
+        return TransformProgram(transforms)
 
     def __repr__(self):
         """The string representation of the transform program class."""
@@ -151,8 +155,8 @@ class TransformProgram:
             raise TransformError("Only transform container can be added to the transform program.")
 
         # Program can only contain one informative transform and at the end of the program
-        if self.is_informative:
-            raise TransformError("The transform program already has an informative transform.")
+        if self.has_final_transform:
+            raise TransformError("The transform program already has a terminal transform.")
         self._transform_program.append(transform_container)
 
     def insert_front(self, transform_container: TransformContainer):
@@ -161,11 +165,71 @@ class TransformProgram:
         Args:
             transform_container(TransformContainer): A transform represented by its container.
         """
-        if transform_container.is_informative and not self.is_empty():
+        if (transform_container.final_transform) and not self.is_empty():
             raise TransformError(
                 "Informative transforms can only be added at the end of the program."
             )
         self._transform_program.insert(0, transform_container)
+
+    def add_transform(self, transform: TransformDispatcher, *targs, **tkwargs):
+        """Add a transform (dispatcher) to the end of the program.
+
+        Note that this should be a function decorated with/called by
+        `qml.transforms.transform`, and not a `TransformContainer`.
+
+        Args:
+            transform (TransformDispatcher): The transform to add to the transform program.
+            *targs: Any additional arguments that are passed to the transform.
+
+        Keyword Args:
+            **tkwargs: Any additional keyword arguments that are passed to the transform.
+
+        """
+        if not isinstance(transform, TransformDispatcher):
+            raise TransformError("Only transform dispatcher can be added to the transform program.")
+
+        if transform.expand_transform:
+            self.push_back(TransformContainer(transform.expand_transform, targs, tkwargs))
+        self.push_back(
+            TransformContainer(
+                transform.transform,
+                targs,
+                tkwargs,
+                transform.classical_cotransform,
+                transform.is_informative,
+                transform.final_transform,
+            )
+        )
+
+    def insert_front_transform(self, transform: TransformDispatcher, *targs, **tkwargs):
+        """Add a transform (dispatcher) to the beginning of the program.
+
+        Args:
+            transform(TransformDispatcher): The transform to add to the front of the transform program.
+            *targs: Any additional arguments that are passed to the transform.
+
+        Keyword Args:
+            **tkwargs: Any additional keyword arguments that are passed to the transform.
+
+        """
+        if transform.final_transform and not self.is_empty():
+            raise TransformError(
+                "Informative transforms can only be added at the end of the program."
+            )
+
+        self.insert_front(
+            TransformContainer(
+                transform.transform,
+                targs,
+                tkwargs,
+                transform.classical_cotransform,
+                transform.is_informative,
+                transform.final_transform,
+            )
+        )
+
+        if transform.expand_transform:
+            self.insert_front(TransformContainer(transform.expand_transform, targs, tkwargs))
 
     def pop_front(self):
         """Pop the transform container at the beginning of the program.
@@ -207,16 +271,20 @@ class TransformProgram:
         """
         return self[-1].is_informative if self else False
 
-    def __call__(self, tapes: Tuple[QuantumTape]) -> Tuple[ResultBatch, BatchPostProcessingFn]:
-        if self.is_informative:
-            raise NotImplementedError("Informative transforms are not yet supported.")
+    @property
+    def has_final_transform(self) -> bool:
+        """Check if the transform program has a terminal transform or not."""
+        return self[-1].final_transform if self else False
 
+    def __call__(self, tapes: Tuple[QuantumTape]) -> Tuple[ResultBatch, BatchPostProcessingFn]:
         if not self:
             return tapes, null_postprocessing
+
         processing_fns_stack = []
 
         for transform_container in self:
-            transform, args, kwargs, cotransform, _ = transform_container
+            transform, args, kwargs, cotransform, _, _ = transform_container
+
             if cotransform:
                 raise NotImplementedError(
                     "cotransforms are not yet integrated with TransformProgram"
@@ -247,6 +315,7 @@ class TransformProgram:
             _apply_postprocessing_stack,
             postprocessing_stack=processing_fns_stack,
         )
+
         postprocessing_fn.__doc__ = _apply_postprocessing_stack.__doc__
 
         return tuple(tapes), postprocessing_fn

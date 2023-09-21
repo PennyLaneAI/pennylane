@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for the ``Exp`` class"""
 import copy
+import re
 
 import pytest
 
@@ -20,6 +21,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import (
     AnyWires,
+    AllWires,
     DecompositionUndefinedError,
     GeneratorUndefinedError,
     ParameterFrequenciesUndefinedError,
@@ -399,19 +401,28 @@ class TestDecomposition:
         """Tests that the decomposition doesn't exist if the coefficient has a real component."""
         op = Exp(qml.PauliX(0), coeff)
         assert not op.has_decomposition
-        with pytest.raises(DecompositionUndefinedError):
+        with pytest.raises(
+            DecompositionUndefinedError,
+            match="Decomposition is not defined for real coefficients of hermitian operators.",
+        ):
             op.decomposition()
 
     def test_non_pauli_word_base_no_decomposition(self):
         """Tests that the decomposition doesn't exist if the base is not a pauli word."""
         op = Exp(qml.S(0), -0.5j, num_steps=100)
         assert not op.has_decomposition
-        with pytest.raises(DecompositionUndefinedError):
+        with pytest.raises(
+            DecompositionUndefinedError,
+            match=re.escape(f"The decomposition of the {op} operator is not defined. "),
+        ):
             op.decomposition()
 
         op = Exp(2 * qml.S(0) + qml.PauliZ(1), -0.5j, num_steps=100)
         assert not op.has_decomposition
-        with pytest.raises(DecompositionUndefinedError):
+        with pytest.raises(
+            DecompositionUndefinedError,
+            match=re.escape(f"The decomposition of the {op} operator is not defined. "),
+        ):
             op.decomposition()
 
     def test_nontensor_tensor_no_decomposition(self):
@@ -458,7 +469,11 @@ class TestDecomposition:
 
         phi = 1.23
 
-        wires = [0, 1, 2] if op_class.num_wires is AnyWires else list(range(op_class.num_wires))
+        wires = (
+            [0, 1, 2]
+            if op_class.num_wires in {AnyWires, AllWires}
+            else list(range(op_class.num_wires))
+        )
 
         # PauliRot and PCPhase each have an extra required arg
         if op_class is qml.PauliRot:
@@ -477,6 +492,10 @@ class TestDecomposition:
                 and qml.math.isclose(dec[0].data[0], phi)
                 and dec[0].wires == op.wires
             )
+        elif op_class is qml.GlobalPhase:
+            # exp(qml.GlobalPhase.generator(), phi) decomposes to PauliRot
+            # cannot compare GlobalPhase and PauliRot with qml.equal
+            assert np.allclose(op.matrix(wire_order=op.wires), dec[0].matrix(wire_order=op.wires))
         else:
             assert qml.equal(op, dec[0])
 
@@ -559,6 +578,18 @@ class TestDecomposition:
         ):
             op.decomposition()
 
+    def test_real_coeff_and_none_num_steps_error(self):
+        """Test that the decomposition raises an error if ``num_steps`` is None and
+        the coefficient has non-zero real part"""
+        op = qml.exp(qml.sum(qml.PauliX(0), qml.PauliY(1)), 1.23 + 0.5j)
+        msg = (
+            "Please set a value to ``num_steps`` when instantiating the ``Exp`` operator "
+            "if a Suzuki-Trotter decomposition is required. "
+            "Decomposition is not defined for real coefficients of hermitian operators."
+        )
+        with pytest.raises(DecompositionUndefinedError, match=msg):
+            op.decomposition()
+
     @pytest.mark.parametrize(
         "coeff, hamiltonian",
         [
@@ -616,7 +647,7 @@ class TestMiscMethods:
     def test_repr_deep_operator(self):
         """Test the __repr__ method when the base is any operator with arithmetic depth > 0."""
         base = qml.S(0) @ qml.PauliX(0)
-        op = qml.ops.Exp(base, 3)
+        op = qml.ops.Exp(base, 3)  # pylint:disable=no-member
 
         assert repr(op) == "Exp(3 S(wires=[0]) @ PauliX(wires=[0]))"
 
@@ -766,7 +797,7 @@ class TestIntegration:
         res = circuit(phi)
         assert qml.math.allclose(res, torch.cos(phi))
 
-        res.backward()
+        res.backward()  # pylint:disable=no-member
         assert qml.math.allclose(phi.grad, -torch.sin(phi))
 
     @pytest.mark.autograd
@@ -841,7 +872,7 @@ class TestIntegration:
         expected = 0.5 * (torch.exp(x) + torch.exp(-x))
         assert qml.math.allclose(res, expected)
 
-        res.backward()
+        res.backward()  # pylint:disable=no-member
         expected_grad = 0.5 * (torch.exp(x) - torch.exp(-x))
         assert qml.math.allclose(x.grad, expected_grad)
 
@@ -870,9 +901,10 @@ class TestIntegration:
     @pytest.mark.tf
     def test_tf_measurement(self):
         """Test Exp in a measurement with gradient and tensorflow."""
+        # pylint:disable=invalid-unary-operand-type
         import tensorflow as tf
 
-        x = tf.Variable(2.0)
+        x = tf.Variable(2.0, dtype=tf.float64)
 
         @qml.qnode(qml.device("default.qubit", wires=1))
         def circuit(x):
@@ -980,7 +1012,7 @@ class TestDifferentiation:
         op2 = Evolution(base_op, 1)
 
         with pytest.raises(ParameterFrequenciesUndefinedError):
-            op1.parameter_frequencies()
+            _ = op1.parameter_frequencies
 
         assert op2.parameter_frequencies == [(4.0,)]
 

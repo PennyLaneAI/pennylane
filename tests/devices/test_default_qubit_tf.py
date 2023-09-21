@@ -1795,8 +1795,8 @@ class TestPassthruIntegration:
                 qml.CNOT(wires=[i, i + 1])
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))
 
-        dev1 = qml.device("default.qubit", wires=3)
-        dev2 = qml.device("default.qubit", wires=3)
+        dev1 = qml.device("default.qubit.legacy", wires=3)
+        dev2 = qml.device("default.qubit.legacy", wires=3)
 
         def cost(x):
             return qml.math.stack(circuit(x))
@@ -1873,7 +1873,7 @@ class TestPassthruIntegration:
             # get the probability of wire 1
             prob_wire_1 = circuit(a, b)
             # compute Prob(|1>_1) - Prob(|0>_1)
-            res = prob_wire_1[1] - prob_wire_1[0]
+            res = prob_wire_1[1] - prob_wire_1[0]  # pylint:disable=unsubscriptable-object
 
         expected = -tf.cos(a) * tf.cos(b)
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -1900,7 +1900,7 @@ class TestPassthruIntegration:
             # get the probability of wire 1
             prob_wire_1 = circuit(a, b)
             # compute Prob(|1>_1) - Prob(|0>_1)
-            res = prob_wire_1[:, 1] - prob_wire_1[:, 0]
+            res = prob_wire_1[:, 1] - prob_wire_1[:, 0]  # pylint:disable=unsubscriptable-object
 
         expected = -tf.cos(a) * tf.cos(b)
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -1938,6 +1938,7 @@ class TestPassthruIntegration:
             [-0.5 * np.sin(a) * (np.cos(b) + 1), 0.5 * np.sin(b) * (1 - np.cos(a))]
         )
 
+        # pylint:disable=no-member
         assert np.allclose(res.numpy(), expected_cost, atol=tol, rtol=0)
 
         res = tape.gradient(res, [a_tf, b_tf])
@@ -1971,6 +1972,7 @@ class TestPassthruIntegration:
             [-0.5 * np.sin(a) * (np.cos(b) + 1), 0.5 * np.sin(b) * (1 - np.cos(a))]
         )
 
+        # pylint:disable=no-member
         assert np.allclose(res.numpy(), expected_cost, atol=tol, rtol=0)
 
         jac = tape.jacobian(res, [a_tf, b_tf])
@@ -2112,8 +2114,8 @@ class TestSamples:
         res = circuit(a)
 
         assert isinstance(res, tf.Tensor)
-        assert res.shape == (shots,)
-        assert set(res.numpy()) == {-1, 1}
+        assert res.shape == (shots,)  # pylint:disable=comparison-with-callable
+        assert set(res.numpy()) == {-1, 1}  # pylint:disable=no-member
 
     def test_estimating_marginal_probability(self, tol):
         """Test that the probability of a subset of wires is accurately estimated."""
@@ -2190,8 +2192,8 @@ class TestSamplesBroadcasted:
         res = circuit(a)
 
         assert isinstance(res, tf.Tensor)
-        assert res.shape == (3, shots)
-        assert set(res.numpy().flat) == {-1, 1}
+        assert res.shape == (3, shots)  # pylint:disable=comparison-with-callable
+        assert set(res.numpy().flat) == {-1, 1}  # pylint:disable=no-member
 
     @pytest.mark.parametrize("batch_size", [2, 3])
     def test_estimating_marginal_probability_broadcasted(self, batch_size, tol):

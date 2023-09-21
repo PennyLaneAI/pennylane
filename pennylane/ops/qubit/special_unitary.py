@@ -718,7 +718,7 @@ class TmpPauliRot(PauliRot):
             This operation is used in a differentiation pipeline of :class:`~.SpecialUnitary`
             and most likely should not be created manually by users.
         """
-        if qml.math.isclose(theta, theta * 0):
+        if qml.math.isclose(theta, theta * 0) and not qml.math.requires_grad(theta):
             return []
         return [PauliRot(theta, pauli_word, wires)]
 

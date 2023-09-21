@@ -22,10 +22,11 @@ import functools
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Sequence, Tuple, Optional
-import warnings
 
 import pennylane as qml
 from pennylane.operation import Operator
+from pennylane.pytrees import register_pytree
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .shots import Shots
@@ -127,12 +128,27 @@ class MeasurementProcess(ABC):
             where the instance has to be identified
     """
 
+    def __init_subclass__(cls, **_):
+        register_pytree(cls, cls._flatten, cls._unflatten)
+
+    def _flatten(self):
+        metadata = (("wires", self.raw_wires),)
+        return (self.obs, self._eigvals), metadata
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        if data[0] is not None:
+            return cls(obs=data[0], **dict(metadata))
+        if data[1] is not None:
+            return cls(eigvals=data[1], **dict(metadata))
+        return cls(**dict(metadata))
+
     # pylint: disable=too-many-arguments
     def __init__(
         self,
         obs: Optional[Operator] = None,
         wires: Optional[Wires] = None,
-        eigvals=None,
+        eigvals: Optional[TensorLike] = None,
         id: Optional[str] = None,
     ):
         self.obs = obs
@@ -256,31 +272,11 @@ class MeasurementProcess(ABC):
         except qml.operation.DecompositionUndefinedError:
             return []
 
-    # pylint: disable=useless-super-delegation
     def __eq__(self, other):
-        warnings.warn(
-            "The behaviour of measurement process equality will be updated soon. Currently, "
-            "mp1 == mp2 is True if mp1 and mp2 are the same object. Soon, mp1 == mp2 will be "
-            "equivalent to qml.equal(mp1, mp2). To continue using measurement process equality "
-            "in its current state, use 'mp1 is mp2'.",
-            UserWarning,
-        )
+        return qml.equal(self, other)
 
-        return super().__eq__(other)
-
-    # pylint: disable=useless-super-delegation
     def __hash__(self):
-        warnings.warn(
-            "The behaviour of measurement process hashing will be updated soon. Currently, each "
-            "measurement process instance has a unique hash. Soon, a measurement process's hash "
-            "will be determined by the combined hash of the name, wires, observable and/or "
-            "eigenvalues of the measurement process. To continue using measurement process hashing "
-            "in its current state, wrap the measurement process inside a qml.queuing.WrappedObj "
-            "instance.",
-            UserWarning,
-        )
-
-        return super().__hash__()
+        return self.hash
 
     def __repr__(self):
         """Representation of this class."""
@@ -318,7 +314,7 @@ class MeasurementProcess(ABC):
 
         return (
             Wires.all_wires(self._wires)
-            if isinstance(self._wires, list)
+            if isinstance(self._wires, (tuple, list))
             else self._wires or Wires([])
         )
 
@@ -466,7 +462,7 @@ class MeasurementProcess(ABC):
         new_measurement = copy.copy(self)
         if self.obs is not None:
             new_measurement.obs = self.obs.map_wires(wire_map=wire_map)
-        else:
+        elif self._wires is not None:
             new_measurement._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         return new_measurement
 
@@ -531,7 +527,8 @@ class StateMeasurement(MeasurementProcess):
     Any class inheriting from ``StateMeasurement`` should define its own ``process_state`` method,
     which should have the following arguments:
 
-    * state (Sequence[complex]): quantum state
+    * state (Sequence[complex]): quantum state with a flat shape. It may also have an
+        optional batch dimension
     * wire_order (Wires): wires determining the subspace that ``state`` acts on; a matrix of
         dimension :math:`2^n` acts on a subspace of :math:`n` wires
 
@@ -563,7 +560,8 @@ class StateMeasurement(MeasurementProcess):
         """Process the given quantum state.
 
         Args:
-            state (Sequence[complex]): quantum state
+            state (Sequence[complex]): quantum state with a flat shape. It may also have an
+                optional batch dimension
             wire_order (Wires): wires determining the subspace that ``state`` acts on; a matrix of
                 dimension :math:`2^n` acts on a subspace of :math:`n` wires
         """

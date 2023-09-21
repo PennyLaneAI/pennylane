@@ -15,6 +15,7 @@
 """
 This module contains the qml.mutual_info measurement.
 """
+from copy import copy
 from typing import Sequence, Optional
 
 import pennylane as qml
@@ -82,7 +83,7 @@ def mutual_info(wires0, wires1, log_base=None):
         raise qml.QuantumFunctionError(
             "Subsystems for computing mutual information must not overlap."
         )
-    return MutualInfoMP(wires=[wires0, wires1], log_base=log_base)
+    return MutualInfoMP(wires=(wires0, wires1), log_base=log_base)
 
 
 class MutualInfoMP(StateMeasurement):
@@ -97,6 +98,10 @@ class MutualInfoMP(StateMeasurement):
         log_base (float): base for the logarithm
 
     """
+
+    def _flatten(self):
+        metadata = (("wires", tuple(self.raw_wires)), ("log_base", self.log_base))
+        return (None, None), metadata
 
     # pylint: disable=too-many-arguments
     def __init__(
@@ -130,6 +135,13 @@ class MutualInfoMP(StateMeasurement):
     @property
     def numeric_type(self):
         return float
+
+    def map_wires(self, wire_map: dict):
+        new_measurement = copy(self)
+        new_measurement._wires = [
+            Wires([wire_map.get(wire, wire) for wire in wires]) for wires in self.raw_wires
+        ]
+        return new_measurement
 
     def shape(self, device, shots):
         if not shots.has_partitioned_shots:

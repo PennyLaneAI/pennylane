@@ -25,7 +25,9 @@ from pennylane.measurements import (
     MeasurementProcess,
     MeasurementTransform,
     MidMeasure,
+    MidMeasureMP,
     MutualInfoMP,
+    PurityMP,
     Probability,
     ProbabilityMP,
     Sample,
@@ -45,6 +47,7 @@ from pennylane.measurements import (
 )
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.queuing import AnnotatedQueue
+from pennylane.wires import Wires
 
 # pylint: disable=too-few-public-methods, unused-argument
 
@@ -125,33 +128,76 @@ def test_none_return_type():
 
 
 def test_eq_correctness():
-    """Test that using `==` on two equivalent operators is True when both measurement
-    processes are the same object and False otherwise."""
+    """Test that using `==` on measurement processes behaves the same as
+    `qml.equal`."""
 
     class DummyMP(MeasurementProcess):
         """Dummy measurement process with no return type."""
 
-    mp1 = DummyMP(0)
-    mp2 = DummyMP(0)
+    mp1 = DummyMP(wires=qml.wires.Wires(0))
+    mp2 = DummyMP(wires=qml.wires.Wires(0))
 
-    with pytest.warns(UserWarning, match="The behaviour of measurement process equality"):
-        assert mp1 == mp1  # pylint: disable=comparison-with-itself
-        assert mp1 != mp2
+    assert mp1 == mp1  # pylint: disable=comparison-with-itself
+    assert mp1 == mp2
 
 
 def test_hash_correctness():
-    """Test that the hash of two equivalent measurement processes is the same when
-    both are the same object and different otherwise."""
+    """Test that the hash of two equivalent measurement processes is the same."""
 
     class DummyMP(MeasurementProcess):
         """Dummy measurement process with no return type."""
 
-    mp1 = DummyMP(0)
-    mp2 = DummyMP(0)
+    mp1 = DummyMP(wires=qml.wires.Wires(0))
+    mp2 = DummyMP(wires=qml.wires.Wires(0))
 
-    with pytest.warns(UserWarning, match="The behaviour of measurement process hashing"):
-        assert len({mp1, mp1}) == 1
-        assert len({mp1, mp2}) == 2
+    assert len({mp1, mp2}) == 1
+    assert hash(mp1) == mp1.hash
+    assert hash(mp2) == mp2.hash
+    assert hash(mp1) == hash(mp2)
+
+
+valid_meausurements = [
+    ClassicalShadowMP(wires=Wires(0), seed=42),
+    ShadowExpvalMP(qml.s_prod(3.0, qml.PauliX(0)), seed=97, k=2),
+    ShadowExpvalMP([qml.PauliZ(0), 4.0 * qml.PauliX(0)], seed=86, k=4),
+    CountsMP(obs=2.0 * qml.PauliX(0), all_outcomes=True),
+    CountsMP(eigvals=[0.5, 0.6], wires=Wires(0), all_outcomes=False),
+    ExpectationMP(obs=qml.s_prod(2.0, qml.PauliX(0))),
+    ExpectationMP(eigvals=[0.5, 0.6], wires=Wires("a")),
+    MidMeasureMP(wires=Wires("a"), reset=True, id="abcd"),
+    MutualInfoMP(wires=(Wires("a"), Wires("b")), log_base=3),
+    ProbabilityMP(wires=Wires("a"), eigvals=[0.5, 0.6]),
+    ProbabilityMP(obs=3.0 * qml.PauliX(0)),
+    PurityMP(wires=Wires("a")),
+    SampleMP(obs=3.0 * qml.PauliY(0)),
+    SampleMP(wires=Wires("a"), eigvals=[0.5, 0.6]),
+    StateMP(),
+    StateMP(wires=("a", "b")),
+    VarianceMP(obs=qml.s_prod(0.5, qml.PauliX(0))),
+    VarianceMP(eigvals=[0.6, 0.7], wires=Wires(0)),
+    VnEntropyMP(wires=Wires("a"), log_base=3),
+]
+
+
+# pylint: disable=protected-access
+@pytest.mark.parametrize("mp", valid_meausurements)
+def test_flatten_unflatten(mp):
+    """Test flatten and unflatten methods."""
+
+    data, metadata = mp._flatten()
+    assert hash(metadata)
+
+    new_mp = type(mp)._unflatten(data, metadata)
+    assert qml.equal(new_mp, mp)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("mp", valid_meausurements)
+def test_jax_pytree_integration(mp):
+    """Test that measurement processes are jax pytrees."""
+    import jax
+
+    jax.tree_util.tree_flatten(mp)
 
 
 @pytest.mark.parametrize(
@@ -481,7 +527,7 @@ class TestSampleMeasurement:
 
         class MyMeasurement(SampleMeasurement):
             # pylint: disable=signature-differs
-            def process_samples(self, samples, wire_order, shot_range, bin_size):
+            def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
                 return qml.math.sum(samples[..., self.wires])
 
         dev = qml.device("default.qubit", wires=2, shots=1000)
@@ -501,6 +547,10 @@ class TestSampleMeasurement:
             def process_samples(self, samples, wire_order, shot_range, bin_size):
                 return qml.math.sum(samples[..., self.wires])
 
+            @property
+            def return_type(self):
+                return Sample
+
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
@@ -509,24 +559,10 @@ class TestSampleMeasurement:
             return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
 
         with pytest.raises(
-            ValueError, match="Shots must be specified in the device to compute the measurement "
+            qml.DeviceError,
+            match="Analytic circuits must only contain StateMeasurements; got sample",
         ):
             circuit()
-
-    def test_method_overriden_by_device(self):
-        """Test that the device can override a measurement process."""
-
-        dev = qml.device("default.qubit", wires=2, shots=1000)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.PauliX(0)
-            return qml.sample(wires=[0]), qml.sample(wires=[1])
-
-        circuit.device.measurement_map[SampleMP] = "test_method"
-        circuit.device.test_method = lambda obs, shot_range=None, bin_size=None: 2
-
-        assert qml.math.allequal(circuit(), [2, 2])
 
 
 class TestStateMeasurement:
@@ -547,12 +583,16 @@ class TestStateMeasurement:
 
         assert circuit() == 1
 
-    def test_sample_measurement_with_shots(self):
-        """Test that executing a state measurement with shots raises a warning."""
+    def test_state_measurement_with_shots(self):
+        """Test that executing a state measurement with shots raises an error."""
 
         class MyMeasurement(StateMeasurement):
             def process_state(self, state, wire_order):
                 return qml.math.sum(state)
+
+            @property
+            def return_type(self):
+                return State
 
         dev = qml.device("default.qubit", wires=2, shots=1000)
 
@@ -560,25 +600,8 @@ class TestStateMeasurement:
         def circuit():
             return MyMeasurement()
 
-        with pytest.warns(
-            UserWarning,
-            match="Requested measurement MyMeasurement with finite shots",
-        ):
+        with pytest.raises(qml.DeviceError, match="Circuits with finite shots must only contain"):
             circuit()
-
-    def test_method_overriden_by_device(self):
-        """Test that the device can override a measurement process."""
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev, interface="autograd")
-        def circuit():
-            return qml.state()
-
-        circuit.device.measurement_map[StateMP] = "test_method"
-        circuit.device.test_method = lambda obs, shot_range=None, bin_size=None: 2
-
-        assert circuit() == 2
 
 
 class TestMeasurementTransform:
@@ -587,28 +610,19 @@ class TestMeasurementTransform:
     def test_custom_measurement(self):
         """Test the execution of a custom measurement."""
 
-        class MyMeasurement(MeasurementTransform):
+        class CountTapesMP(MeasurementTransform, SampleMeasurement):
             def process(self, tape, device):
-                return {device.shots: len(tape)}
+                program, _ = device.preprocess()
+                tapes, _ = program([tape])
+                return len(tapes)
+
+            def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
+                return [True]
 
         dev = qml.device("default.qubit", wires=2, shots=1000)
 
         @qml.qnode(dev)
         def circuit():
-            return MyMeasurement()
+            return CountTapesMP(wires=[0])
 
-        assert circuit() == {dev.shots: len(circuit.tape)}
-
-    def test_method_overriden_by_device(self):
-        """Test that the device can override a measurement process."""
-
-        dev = qml.device("default.qubit", wires=2, shots=1000)
-
-        @qml.qnode(dev)
-        def circuit():
-            return qml.classical_shadow(wires=0)
-
-        circuit.device.measurement_map[ClassicalShadowMP] = "test_method"
-        circuit.device.test_method = lambda tape: 2
-
-        assert circuit() == 2
+        assert circuit() == 1
