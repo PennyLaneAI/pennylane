@@ -852,6 +852,25 @@ def norm(tensor, like=None, **kwargs):
     return norm(tensor, **kwargs)
 
 
+@multi_dispatch()
+def isnan(tensor, like=None, **kwargs):
+    """Check a tensor element-wise for ``NaN`` values and return the result
+    as a boolean tensor with the same interface."""
+    if like == "jax":
+        from jax.numpy import isnan
+
+    elif like == "tensorflow":
+        from tensorflow.math import is_nan as isnan
+
+    elif like == "torch":
+        from torch import isnan
+
+    else:
+        from numpy import isnan
+
+    return isnan(tensor, **kwargs)
+
+
 @multi_dispatch(argnum=[1])
 def gammainc(m, t, like=None):
     r"""Return the lower incomplete Gamma function.

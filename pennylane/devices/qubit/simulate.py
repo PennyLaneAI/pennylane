@@ -116,30 +116,36 @@ def get_final_state(circuit, debugger=None, interface=None):
         is_state_batched = is_state_batched or op.batch_size is not None
 
         if isinstance(op, qml.Projector):
-            # Handle postselection on mid-circuit measurements
-            if is_state_batched:
-                for i, _ in enumerate(state):
-                    norm = qml.math.norm(state[i])
-                    if qml.math.isclose(norm, 0.0):
-                        return qml.numpy.NaN, is_state_batched
+            # # Handle postselection on mid-circuit measurements
+            # if is_state_batched:
+            #     for i, _ in enumerate(state):
+            #         norm = qml.math.norm(state[i])
+            #         if qml.math.isclose(norm, 0.0):
+            #             state[i] = qml.math.asarray(
+            #                 [qml.numpy.NaN] * qml.math.size(state[i]),
+            #                 like=qml.math.get_interface(state),
+            #             )
+            #         else:
+            #             state[i] = state[i] / qml.math.norm(state[i])
+            norm = qml.math.norm(state)
+            if qml.math.isclose(norm, 0.0):
+                state = qml.math.asarray(
+                    [qml.numpy.NaN] * qml.math.size(state),
+                    like=qml.math.get_interface(state),
+                )
+                return state, is_state_batched
 
-                    state[i] = state[i] / qml.math.norm(state[i])
-            else:
-                norm = qml.math.norm(state)
-                if qml.math.isclose(norm, 0.0):
-                    return qml.numpy.NaN, is_state_batched
+            state = state / norm
 
-                state = state / norm
-
-                # defer_measurements will raise an error with batched shots or broadcasting so we can
-                # assume that both the state and shots are unbatched.
-                if circuit.shots:
-                    # Clip the number of shots using a binomial distribution using the probability of
-                    # measuring the postselected state.
-                    postselected_shots = binomial(circuit.shots.total_shots, norm)
-                    if postselected_shots == 0:
-                        raise RuntimeError("None of the samples meet the postselection criteria")
-                    circuit._shots = qml.measurements.Shots(postselected_shots)
+            # defer_measurements will raise an error with batched shots or broadcasting so we can
+            # assume that both the state and shots are unbatched.
+            if circuit.shots:
+                # Clip the number of shots using a binomial distribution using the probability of
+                # measuring the postselected state.
+                postselected_shots = binomial(circuit.shots.total_shots, norm)
+                if postselected_shots == 0:
+                    raise RuntimeError("None of the samples meet the postselection criteria")
+                circuit._shots = qml.measurements.Shots(postselected_shots)
 
     if set(circuit.op_wires) < set(circuit.wires):
         state = expand_state_over_wires(
@@ -173,8 +179,9 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
     Returns:
         Tuple[TensorLike]: The measurement results
     """
-    if state is qml.numpy.NaN:
-        return state
+    if any(qml.math.isnan(state)):
+        # do something
+        state = 1
 
     circuit = circuit.map_to_standard_wires()
 

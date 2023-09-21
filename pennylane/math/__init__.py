@@ -50,6 +50,7 @@ from .multi_dispatch import (
     gammainc,
     get_trainable_indices,
     iscomplex,
+    isnan,
     jax_argnums_to_tape_trainable,
     kron,
     matmul,
