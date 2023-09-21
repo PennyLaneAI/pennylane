@@ -25,11 +25,12 @@ from pennylane.interfaces.jacobian_products import (
     JacobianProductCalculator,
     TransformJacobianProducts,
     DeviceJacobians,
+    DeviceJacobianProducts,
 )
 
 dev = qml.devices.DefaultQubit()
 dev_old = qml.devices.DefaultQubitLegacy(wires=5)
-adjoint_config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
+adjoint_config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 
 
 def inner_execute_numpy(tapes):
@@ -41,11 +42,18 @@ hadamard_grad_jpc = TransformJacobianProducts(
     inner_execute_numpy, qml.gradients.hadamard_grad, {"aux_wire": "aux"}
 )
 device_jacs = DeviceJacobians(dev, {}, adjoint_config)
+device_native_jps = DeviceJacobianProducts(dev, adjoint_config)
 legacy_device_jacs = DeviceJacobians(dev_old, {"method": "adjoint_jacobian"})
 
 transform_jpc_matrix = [param_shift_jpc, hadamard_grad_jpc]
 dev_jpc_matrix = [device_jacs, legacy_device_jacs]
-jpc_matrix = [param_shift_jpc, hadamard_grad_jpc, device_jacs, legacy_device_jacs]
+jpc_matrix = [
+    param_shift_jpc,
+    hadamard_grad_jpc,
+    device_jacs,
+    legacy_device_jacs,
+    device_native_jps,
+]
 
 
 # pylint: disable=too-few-public-methods
@@ -73,8 +81,8 @@ class TestBasics:
     def test_device_jacobians_initialization_new_dev(self):
         """Tests the private attributes are set during initialization of a DeviceJacobians class."""
 
-        device = qml.devices.experimental.DefaultQubit2()
-        config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
+        device = qml.devices.DefaultQubit()
+        config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 
         jpc = DeviceJacobians(device, {}, config)
 
@@ -106,8 +114,8 @@ class TestBasics:
 
     def test_device_jacobians_repr(self):
         """Test the repr method for device jacobians."""
-        device = qml.devices.experimental.DefaultQubit2()
-        config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
+        device = qml.devices.DefaultQubit()
+        config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 
         jpc = DeviceJacobians(device, {}, config)
 
