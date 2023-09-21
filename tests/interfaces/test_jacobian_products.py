@@ -29,7 +29,7 @@ from pennylane.interfaces.jacobian_products import (
 
 dev = qml.devices.DefaultQubit()
 dev_old = qml.devices.DefaultQubitLegacy(wires=5)
-adjoint_config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
+adjoint_config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 
 
 def inner_execute_numpy(tapes):
@@ -73,8 +73,8 @@ class TestBasics:
     def test_device_jacobians_initialization_new_dev(self):
         """Tests the private attributes are set during initialization of a DeviceJacobians class."""
 
-        device = qml.devices.experimental.DefaultQubit2()
-        config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
+        device = qml.devices("default.qubit")
+        config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 
         jpc = DeviceJacobians(device, {}, config)
 
@@ -106,8 +106,8 @@ class TestBasics:
 
     def test_device_jacobians_repr(self):
         """Test the repr method for device jacobians."""
-        device = qml.devices.experimental.DefaultQubit2()
-        config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
+        device = qml.device("default.qubit")
+        config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 
         jpc = DeviceJacobians(device, {}, config)
 
