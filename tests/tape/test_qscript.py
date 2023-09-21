@@ -1432,12 +1432,13 @@ class TestNumericType:
         assert qs.numeric_type == (float, int)
 
 
-def test_flatten_unflatten():
+@pytest.mark.parametrize("qscript_type", (QuantumScript, qml.tape.QuantumTape))
+def test_flatten_unflatten(qscript_type):
     """Test the flatten and unflatten methods."""
     ops = [qml.RX(0.1, wires=0), qml.U3(0.2, 0.3, 0.4, wires=0)]
     mps = [qml.expval(qml.PauliZ(0)), qml.state()]
 
-    tape = QuantumScript(ops, mps, shots=100)
+    tape = qscript_type(ops, mps, shots=100)
     tape.trainable_params = {0}
 
     data, metadata = tape._flatten()
@@ -1447,8 +1448,34 @@ def test_flatten_unflatten():
     assert metadata[1] == (0,)
     assert hash(metadata)
 
-    new_tape = QuantumScript._unflatten(data, metadata)
+    new_tape = qscript_type._unflatten(data, metadata)
     assert all(o1 is o2 for o1, o2 in zip(new_tape.operations, tape.operations))
     assert all(o1 is o2 for o1, o2 in zip(new_tape.measurements, tape.measurements))
     assert new_tape.shots == qml.measurements.Shots(100)
     assert new_tape.trainable_params == [0]
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("qscript_type", (QuantumScript, qml.tape.QuantumTape))
+def test_jax_pytree_integration(qscript_type):
+    """Test that QuantumScripts are integrated with jax pytress."""
+
+    eye_mat = np.eye(4)
+    ops = [qml.adjoint(qml.RY(0.5, wires=0)), qml.Rot(1.2, 2.3, 3.4, wires=0)]
+    mps = [
+        qml.var(qml.s_prod(2.0, qml.PauliX(0))),
+        qml.expval(qml.Hermitian(eye_mat, wires=(0, 1))),
+    ]
+
+    tape = qscript_type(ops, mps, shots=100)
+    tape.trainable_params = [2]
+
+    import jax
+
+    data, _ = jax.tree_util.tree_flatten(tape)
+    assert data[0] == 0.5
+    assert data[1] == 1.2
+    assert data[2] == 2.3
+    assert data[3] == 3.4
+    assert data[4] == 2.0
+    assert qml.math.allclose(data[5], eye_mat)
