@@ -116,17 +116,15 @@ def get_final_state(circuit, debugger=None, interface=None):
         is_state_batched = is_state_batched or op.batch_size is not None
 
         if isinstance(op, qml.Projector):
-            # # Handle postselection on mid-circuit measurements
-            # if is_state_batched:
-            #     for i, _ in enumerate(state):
-            #         norm = qml.math.norm(state[i])
-            #         if qml.math.isclose(norm, 0.0):
-            #             state[i] = qml.math.asarray(
-            #                 [qml.numpy.NaN] * qml.math.size(state[i]),
-            #                 like=qml.math.get_interface(state),
-            #             )
-            #         else:
-            #             state[i] = state[i] / qml.math.norm(state[i])
+            # Handle postselection on mid-circuit measurements
+            if is_state_batched:
+                raise ValueError(
+                    "Cannot postselect on circuits with broadcasting. Use the "
+                    "qml.transforms.broadcast_expand transform to split a broadcasted "
+                    "tape into multiple non-broadcasted tapes before executing if "
+                    "postselection is used."
+                )
+
             norm = qml.math.norm(state)
             if qml.math.isclose(norm, 0.0):
                 state = qml.math.asarray(
@@ -179,10 +177,6 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
     Returns:
         Tuple[TensorLike]: The measurement results
     """
-    if any(qml.math.isnan(state)):
-        # do something
-        state = 1
-
     circuit = circuit.map_to_standard_wires()
 
     if not circuit.shots:
