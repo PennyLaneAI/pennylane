@@ -1113,3 +1113,31 @@ def test_dmrg_state(wavefunction, state_ref):
     state = qml.qchem.convert._dmrg_state(wavefunction)
 
     assert state == state_ref
+
+
+@pytest.mark.parametrize(
+    ("wavefunction", "state_ref"),
+    [
+        (
+            (
+                ["02", "20"],
+                np.array([-0.10660077, 0.9943019]),
+            ),
+            {(2, 2): np.array([-0.10660077]), (1, 1): np.array([0.9943019])},
+        ),
+        (
+            (["02", "ab", "20"], np.array([0.69958765, 0.70211014, 0.1327346])),
+            {
+                (2, 2): np.array([0.69958765]),
+                (1, 2): np.array([0.70211014]),
+                (1, 1): np.array([0.1327346]),
+            },
+        ),
+    ],
+)
+def test_shci_state(wavefunction, state_ref):
+    r"""Test that _shci_state returns the correct state."""
+
+    state = qml.qchem.convert._shci_state(wavefunction)
+
+    assert state == state_ref
