@@ -213,6 +213,7 @@ Parametrized gates
     ~pennylane.IsingYY
     ~pennylane.IsingZZ
     ~pennylane.PSWAP
+    ~pennylane.GlobalPhase
 
 :html:`</div>`
 

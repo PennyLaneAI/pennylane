@@ -254,7 +254,7 @@ class DeviceJacobians(JacobianProductCalculator):
     >>> gradient_kwargs = {"method": "adjoint_jacobian"}
     >>> jpc_lightning = DeviceJacobians(device, gradient_kwargs)
 
-    **Technical comments on caching and ``grad_on_execution=True``:**
+    **Technical comments on caching and calculating the gradients on execution:**
 
     In order to store results and jacobian for the backward pass during the forward pass,
     the ``_jacs_cache`` and ``_results_cache`` properties are ``LRUCache`` objects with a maximum size of 10.
@@ -381,8 +381,8 @@ class DeviceJacobians(JacobianProductCalculator):
         Args:
             tapes (tuple[`~.QuantumScript`]): The batch of tapes to take the derivatives of
             tangents (Sequence[Sequence[TensorLike]]): the tangents for the parameters of the tape.
-                The ``i``th tangent corresponds to the ``i``th tape, and the ``j``th entry into a
-                tangent entry corresponds to the ``j``th trainable parameter of the tape.
+                The ``i`` th tangent corresponds to the ``i`` th tape, and the ``j`` th entry into a
+                tangent entry corresponds to the ``j`` th trainable parameter of the tape.
 
         Returns:
             ResultBatch, TensorLike: the results of the execution and the jacobian vector product
@@ -450,8 +450,8 @@ class DeviceJacobians(JacobianProductCalculator):
         Args:
             tapes (tuple[`~.QuantumScript`]): the batch of tapes to take the derivatives of
             dy (tuple[tuple[TensorLike]]): the derivatives of the results of an execution.
-                The ``i``th entry (cotangent) corresponds to the ``i``th tape, and the ``j``th entry of the ``i``th
-                cotangent corresponds to the ``j``th return value of the ``i``th tape.
+                The ``i`` th entry (cotangent) corresponds to the ``i`` th tape, and the ``j`` th entry of the ``i`` th
+                cotangent corresponds to the ``j`` th return value of the ``i`` th tape.
 
         Returns:
             TensorLike: the vector jacobian product.

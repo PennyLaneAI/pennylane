@@ -15,11 +15,13 @@
 Unit tests for the `pennylane.transforms.zx` folder.
 """
 import sys
+from functools import partial
 
 import numpy as np
 import pytest
 import pennylane as qml
 from pennylane.tape import QuantumScript
+from pennylane.transforms.op_transforms import OperationTransformError
 
 pyzx = pytest.importorskip("pyzx")
 
@@ -66,6 +68,14 @@ def test_import_pyzx(monkeypatch):
 
 class TestConvertersZX:
     """Test converters to_zx and from_zx."""
+
+    def test_invalid_argument(self):
+        """Assert error raised when input is neither a tape, QNode, nor quantum function"""
+        with pytest.raises(
+            OperationTransformError,
+            match="Input is not an Operator, tape, QNode, or quantum function",
+        ):
+            _ = qml.transforms.to_zx(None)
 
     @pytest.mark.parametrize("script", qscript)
     @pytest.mark.parametrize("operation", supported_operations)
@@ -636,7 +646,7 @@ class TestConvertersZX:
         """Test the QNode decorator."""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.transforms.to_zx(expand_measurements=True)
+        @partial(qml.transforms.to_zx, expand_measurements=True)
         @qml.qnode(device=dev)
         def circuit(p):
             qml.RZ(p[0], wires=1)
@@ -652,5 +662,20 @@ class TestConvertersZX:
 
         params = [5 / 4 * np.pi, 3 / 4 * np.pi, 0.1, 0.3]
         g = circuit(params)
+
+        assert isinstance(g, pyzx.graph.graph_s.GraphS)
+
+    def test_qnode_decorator_no_params(self):
+        """Test the QNode decorator."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @partial(qml.transforms.to_zx, expand_measurements=True)
+        @qml.qnode(device=dev)
+        def circuit():
+            qml.PauliZ(wires=0)
+            qml.PauliX(wires=1)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        g = circuit()
 
         assert isinstance(g, pyzx.graph.graph_s.GraphS)

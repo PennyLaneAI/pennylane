@@ -16,6 +16,7 @@
 
 from functools import singledispatch
 from string import ascii_letters as alphabet
+import numpy as np
 
 import pennylane as qml
 
@@ -87,9 +88,13 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
     )
 
     new_mat_shape = [2] * (num_indices * 2)
-    if op.batch_size is not None:
+    dim = 2**num_indices
+    batch_size = math.get_batch_size(mat, (dim, dim), dim**2)
+    if batch_size is not None:
         # Add broadcasting dimension to shape
-        new_mat_shape = [mat.shape[0]] + new_mat_shape
+        new_mat_shape = [batch_size] + new_mat_shape
+        if op.batch_size is None:
+            op._batch_size = batch_size  # pylint:disable=protected-access
     reshaped_mat = math.reshape(mat, new_mat_shape)
 
     return math.einsum(einsum_indices, reshaped_mat, state)
@@ -112,9 +117,13 @@ def apply_operation_tensordot(op: qml.operation.Operator, state, is_state_batche
     num_indices = len(op.wires)
 
     new_mat_shape = [2] * (num_indices * 2)
-    if is_mat_batched := op.batch_size is not None:
+    dim = 2**num_indices
+    batch_size = math.get_batch_size(mat, (dim, dim), dim**2)
+    if is_mat_batched := batch_size is not None:
         # Add broadcasting dimension to shape
-        new_mat_shape = [mat.shape[0]] + new_mat_shape
+        new_mat_shape = [batch_size] + new_mat_shape
+        if op.batch_size is None:
+            op._batch_size = batch_size  # pylint:disable=protected-access
     reshaped_mat = math.reshape(mat, new_mat_shape)
 
     mat_axes = list(range(-num_indices, 0))
@@ -186,12 +195,30 @@ def apply_operation(
         [1., 0.]], requires_grad=True)
 
     """
+    return _apply_operation_default(op, state, is_state_batched, debugger)
+
+
+def _apply_operation_default(op, state, is_state_batched, debugger):
+    """The default behaviour of apply_operation, accessed through the standard dispatch
+    of apply_operation, as well as conditionally in other dispatches."""
     if (
         len(op.wires) < EINSUM_OP_WIRECOUNT_PERF_THRESHOLD
         and math.ndim(state) < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD
     ) or (op.batch_size and is_state_batched):
         return apply_operation_einsum(op, state, is_state_batched=is_state_batched)
     return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
+
+@apply_operation.register
+def apply_identity(op: qml.Identity, state, is_state_batched: bool = False, debugger=None):
+    """Applies a :class:`~.Identity` operation by just returning the input state."""
+    return state
+
+
+@apply_operation.register
+def apply_global_phase(op: qml.GlobalPhase, state, is_state_batched: bool = False, debugger=None):
+    """Applies a :class:`~.GlobalPhase` operation by multiplying the state by ``exp(1j * op.data[0])``"""
+    return qml.math.exp(-1j * qml.math.cast(op.data[0], complex)) * state
 
 
 @apply_operation.register
@@ -246,3 +273,81 @@ def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debu
         else:
             debugger.snapshots[len(debugger.snapshots)] = flat_state
     return state
+
+
+# pylint:disable = no-value-for-parameter, import-outside-toplevel
+@apply_operation.register
+def apply_parametrized_evolution(
+    op: qml.pulse.ParametrizedEvolution, state, is_state_batched: bool = False, debugger=None
+):
+    """Apply ParametrizedEvolution by evolving the state rather than the operator matrix
+    if we are operating on more than half of the subsystem"""
+    if is_state_batched:
+        raise RuntimeError(
+            "ParameterizedEvolution does not support batching, but received a batched state"
+        )
+
+    # shape(state) is static (not a tracer), we can use an if statement
+    num_wires = len(qml.math.shape(state))
+    state = qml.math.cast(state, complex)
+    if 2 * len(op.wires) > num_wires and not op.hyperparameters["complementary"]:
+        # the subsystem operated is more than half of the system based on the state vector --> evolve state
+        return _evolve_state_vector_under_parametrized_evolution(op, state, num_wires)
+    # otherwise --> evolve matrix
+    return _apply_operation_default(op, state, is_state_batched, debugger)
+
+
+def _evolve_state_vector_under_parametrized_evolution(
+    operation: qml.pulse.ParametrizedEvolution, state, num_wires
+):
+    """Uses an odeint solver to compute the evolution of the input ``state`` under the given
+    ``ParametrizedEvolution`` operation.
+
+    Args:
+        state (array[complex]): input state
+        operation (ParametrizedEvolution): operation to apply on the state
+
+    Raises:
+        ValueError: If the parameters and time windows of the ``ParametrizedEvolution`` are
+            not defined.
+
+    Returns:
+        TensorLike[complex]: output state
+    """
+
+    try:
+        import jax
+        from jax.experimental.ode import odeint
+
+        from pennylane.pulse.parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
+
+    except ImportError as e:  # pragma: no cover
+        raise ImportError(
+            "Module jax is required for the ``ParametrizedEvolution`` class. "
+            "You can install jax via: pip install jax"
+        ) from e
+
+    if operation.data is None or operation.t is None:
+        raise ValueError(
+            "The parameters and the time window are required to execute a ParametrizedEvolution "
+            "You can update these values by calling the ParametrizedEvolution class: EV(params, t)."
+        )
+
+    state = state.flatten()
+
+    with jax.ensure_compile_time_eval():
+        H_jax = ParametrizedHamiltonianPytree.from_hamiltonian(  # pragma: no cover
+            operation.H,
+            dense=operation.dense,
+            wire_order=list(np.arange(num_wires)),
+        )
+
+    def fun(y, t):
+        """dy/dt = -i H(t) y"""
+        return (-1j * H_jax(operation.data, t=t)) @ y
+
+    result = odeint(fun, state, operation.t, **operation.odeint_kwargs)
+    out_shape = [2] * num_wires
+    if operation.hyperparameters["return_intermediate"]:
+        return qml.math.reshape(result, [-1] + out_shape)
+    return qml.math.reshape(result[-1], out_shape)

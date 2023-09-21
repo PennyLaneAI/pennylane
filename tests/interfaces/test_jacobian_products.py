@@ -27,8 +27,8 @@ from pennylane.interfaces.jacobian_products import (
     DeviceJacobians,
 )
 
-dev = qml.devices.experimental.DefaultQubit2()
-dev_old = qml.devices.DefaultQubit(wires=5)
+dev = qml.devices.DefaultQubit()
+dev_old = qml.devices.DefaultQubitLegacy(wires=5)
 adjoint_config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
 
 

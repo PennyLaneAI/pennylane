@@ -34,7 +34,7 @@ class TestTensorFlowExecuteUnitTests:
 
         a = tf.Variable([0.1, 0.2], dtype=tf.float64)
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
 
         with tf.GradientTape() as t:
             with qml.queuing.AnnotatedQueue() as q:
@@ -61,7 +61,7 @@ class TestTensorFlowExecuteUnitTests:
         is used with grad_on_execution"""
         a = tf.Variable([0.1, 0.2])
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
 
         with tf.GradientTape():
             with qml.queuing.AnnotatedQueue() as q:
@@ -77,7 +77,7 @@ class TestTensorFlowExecuteUnitTests:
 
     def test_grad_on_execution(self, mocker):
         """Test that grad on execution uses the `device.execute_and_gradients` pathway"""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         a = tf.Variable([0.1, 0.2])
         spy = mocker.spy(dev, "execute_and_gradients")
 
@@ -102,9 +102,9 @@ class TestTensorFlowExecuteUnitTests:
 
     def test_no_grad_execution(self, mocker):
         """Test that no grad on execution uses the `device.batch_execute` and `device.gradients` pathway"""
-        dev = qml.device("default.qubit", wires=1)
-        spy_execute = mocker.spy(qml.devices.DefaultQubit, "batch_execute")
-        spy_gradients = mocker.spy(qml.devices.DefaultQubit, "gradients")
+        dev = qml.device("default.qubit.legacy", wires=1)
+        spy_execute = mocker.spy(qml.devices.DefaultQubitLegacy, "batch_execute")
+        spy_gradients = mocker.spy(qml.devices.DefaultQubitLegacy, "gradients")
         a = tf.Variable([0.1, 0.2])
 
         with tf.GradientTape() as t:
@@ -136,7 +136,7 @@ class TestCaching:
 
     def test_cache_maxsize(self, mocker):
         """Test the cachesize property of the cache"""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         spy = mocker.spy(qml.interfaces, "cache_execute")
         a = tf.Variable([0.1, 0.2])
 
@@ -158,7 +158,7 @@ class TestCaching:
 
     def test_custom_cache(self, mocker):
         """Test the use of a custom cache object"""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         spy = mocker.spy(qml.interfaces, "cache_execute")
         a = tf.Variable([0.1, 0.2])
         custom_cache = {}
@@ -188,7 +188,7 @@ class TestCaching:
     def test_caching_param_shift(self):
         """Test that, when using parameter-shift transform,
         caching reduces the number of evaluations to their optimum."""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         a = tf.Variable([0.1, 0.2], dtype=tf.float64)
 
         def cost(a, cache):
@@ -228,7 +228,7 @@ class TestCaching:
         """Test that, when using parameter-shift transform,
         caching reduces the number of evaluations to their optimum
         when computing Hessians."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
         params = tf.Variable(np.arange(1, num_params + 1) / 10, dtype=tf.float64)
 
         N = params.shape[0]
@@ -324,7 +324,7 @@ class TestTensorFlowExecuteIntegration:
 
     def test_execution(self, execute_kwargs):
         """Test execution"""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         a = tf.Variable(0.1)
         b = tf.Variable(0.2)
 
@@ -352,7 +352,7 @@ class TestTensorFlowExecuteIntegration:
     def test_scalar_jacobian(self, execute_kwargs, tol):
         """Test scalar jacobian calculation"""
         a = tf.Variable(0.1, dtype=tf.float64)
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         with tf.GradientTape() as t:
             with qml.queuing.AnnotatedQueue() as q:
@@ -381,7 +381,7 @@ class TestTensorFlowExecuteIntegration:
         """Test jacobian calculation"""
         a = tf.Variable(0.1, dtype=tf.float64)
         b = tf.Variable(0.2, dtype=tf.float64)
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         with tf.GradientTape() as t:
             with qml.queuing.AnnotatedQueue() as q:
@@ -407,7 +407,7 @@ class TestTensorFlowExecuteIntegration:
     def test_tape_no_parameters(self, execute_kwargs, tol):
         """Test that a tape with no parameters is correctly
         ignored during the gradient computation"""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         params = tf.Variable([0.1, 0.2], dtype=tf.float64)
         x, y = 1.0 * params
 
@@ -443,7 +443,7 @@ class TestTensorFlowExecuteIntegration:
         a = tf.Variable(0.1, dtype=tf.float64)
         b = tf.Variable(0.2, dtype=tf.float64)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         with tf.GradientTape() as t:
             with qml.queuing.AnnotatedQueue() as q:
@@ -486,7 +486,7 @@ class TestTensorFlowExecuteIntegration:
         a = tf.Variable(0.1, dtype=tf.float64)
         b = tf.Variable(0.2, dtype=tf.float64)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a, wires=0)
@@ -528,7 +528,7 @@ class TestTensorFlowExecuteIntegration:
         b = tf.constant(0.2, dtype=tf.float64)
         c = tf.Variable(0.3, dtype=tf.float64)
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
 
         with tf.GradientTape() as t:
             with qml.queuing.AnnotatedQueue() as q:
@@ -550,7 +550,7 @@ class TestTensorFlowExecuteIntegration:
     def test_no_trainable_parameters(self, execute_kwargs):
         """Test evaluation and Jacobian if there are no trainable parameters"""
         b = tf.constant(0.2, dtype=tf.float64)
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         with tf.GradientTape() as t:
             with qml.queuing.AnnotatedQueue() as q:
@@ -576,7 +576,7 @@ class TestTensorFlowExecuteIntegration:
         with a matrix parameter"""
         a = tf.Variable(0.1, dtype=tf.float64)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         with tf.GradientTape() as t:
             with qml.queuing.AnnotatedQueue() as q:
@@ -606,7 +606,7 @@ class TestTensorFlowExecuteIntegration:
                     qml.PhaseShift(phi + lam, wires=wires),
                 ]
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         a = np.array(0.1)
         p = tf.Variable([0.1, 0.2, 0.3], dtype=tf.float64)
 
@@ -644,7 +644,7 @@ class TestTensorFlowExecuteIntegration:
         if execute_kwargs["gradient_fn"] == "device":
             pytest.skip("Adjoint differentiation does not yet support probabilities")
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
 
@@ -689,7 +689,7 @@ class TestTensorFlowExecuteIntegration:
         if execute_kwargs["gradient_fn"] == "device":
             pytest.skip("Adjoint differentiation does not yet support probabilities")
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
 
@@ -727,7 +727,7 @@ class TestTensorFlowExecuteIntegration:
         ):
             pytest.skip("Adjoint differentiation does not support samples")
 
-        dev = qml.device("default.qubit", wires=2, shots=10)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=10)
 
         with tf.GradientTape():
             with qml.queuing.AnnotatedQueue() as q:
@@ -855,7 +855,7 @@ class TestHigherOrderDerivatives:
     def test_adjoint_hessian(self, interface):
         """Since the adjoint hessian is not a differentiable transform,
         higher-order derivatives are not supported."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
         params = tf.Variable([0.543, -0.654])
 
         with tf.GradientTape() as t2:
@@ -994,7 +994,7 @@ class TestHamiltonianWorkflows:
         weights = tf.Variable([0.4, 0.5], dtype=tf.float64)
         coeffs1 = tf.constant([0.1, 0.2, 0.3], dtype=tf.float64)
         coeffs2 = tf.constant([0.7], dtype=tf.float64)
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         with tf.GradientTape() as tape:
             res = cost_fn(weights, coeffs1, coeffs2, dev=dev)
@@ -1013,7 +1013,7 @@ class TestHamiltonianWorkflows:
         weights = tf.Variable([0.4, 0.5], dtype=tf.float64)
         coeffs1 = tf.Variable([0.1, 0.2, 0.3], dtype=tf.float64)
         coeffs2 = tf.Variable([0.7], dtype=tf.float64)
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         with tf.GradientTape() as tape:
             res = cost_fn(weights, coeffs1, coeffs2, dev=dev)

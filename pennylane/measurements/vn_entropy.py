@@ -83,6 +83,10 @@ class VnEntropyMP(StateMeasurement):
         log_base (float): Base for the logarithm.
     """
 
+    def _flatten(self):
+        metadata = (("wires", self.raw_wires), ("log_base", self.log_base))
+        return (None, None), metadata
+
     # pylint: disable=too-many-arguments, unused-argument
     def __init__(
         self,

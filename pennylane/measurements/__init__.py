@@ -157,6 +157,23 @@ When :math:`\theta = 1.23`, :math:`\frac{\partial r}{\partial \theta} = 4712.444
     functions will return an instance of the corresponding measurement process
     (e.g. :class:`CountsMP`). This decision is just for design purposes.
 
+.. details::
+    :title: Serialization and Pytree format
+    :href: serialization
+
+    PennyLane measurements are automatically registered as `Pytrees <https://jax.readthedocs.io/en/latest/pytrees.html>`_ .
+
+    The :class:`~.MeasurementProcess` definitions are sufficient for all PL measurements.
+
+    >>> H = 2.0 * qml.PauliX(0)
+    >>> mp = qml.expval(H)
+    >>> mp._flatten()
+    ((<Hamiltonian: terms=1, wires=[0]>, None), ())
+    >>> type(mp)._unflatten(*mp._flatten())
+    expval(  (2) [X0])
+    >>> jax.tree_util.tree_leaves(mp)
+    [2]
+
 Adding your new measurement to PennyLane
 ----------------------------------------
 
@@ -219,6 +236,6 @@ from .purity import PurityMP, purity
 from .probs import ProbabilityMP, probs
 from .sample import SampleMP, sample
 from .shots import Shots, ShotCopies
-from .state import StateMP, density_matrix, state
+from .state import StateMP, DensityMatrixMP, density_matrix, state
 from .var import VarianceMP, var
 from .vn_entropy import VnEntropyMP, vn_entropy

@@ -41,7 +41,7 @@ from .jacobian_products import TransformJacobianProducts, DeviceJacobians
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-device_type = Union[qml.Device, "qml.devices.experimental.Device"]
+device_type = Union[qml.Device, "qml.devices.Device"]
 
 jpc_interfaces = {"autograd"}
 
@@ -129,7 +129,7 @@ def _get_ml_boundary_execute(interface: str, grad_on_execution: bool) -> Callabl
 
         elif interface == "jax-jit":
             from .jax_jit import execute as ml_boundary
-        else:  #  interface in {"jax", "jax-python", "JAX"}:
+        else:  # interface in {"jax", "jax-python", "JAX"}:
             from .jax import execute as ml_boundary
 
     except ImportError as e:  # pragma: no-cover
@@ -143,16 +143,16 @@ def _get_ml_boundary_execute(interface: str, grad_on_execution: bool) -> Callabl
 def _batch_transform(
     tapes: Sequence[QuantumTape],
     device: device_type,
-    config: "qml.devices.experimental.ExecutionConfig",
+    config: "qml.devices.ExecutionConfig",
     override_shots: Union[bool, int, Sequence[int]] = False,
     device_batch_transform: bool = True,
-) -> Tuple[Sequence[QuantumTape], Callable, "qml.devices.experimental.ExecutionConfig"]:
+) -> Tuple[Sequence[QuantumTape], Callable, "qml.devices.ExecutionConfig"]:
     """Apply the device batch transform unless requested not to.
 
     Args:
         tapes (Tuple[.QuantumTape]): batch of tapes to preprocess
-        device (Device, devices.experimental.Device): the device that defines the required batch transformation
-        config (qml.devices.experimental.ExecutionConfig): the config that characterizes the requested computation
+        device (Device, devices.Device): the device that defines the required batch transformation
+        config (qml.devices.ExecutionConfig): the config that characterizes the requested computation
         override_shots (int): The number of shots to use for the execution. If ``False``, then the
             number of shots on the device is used.
         device_batch_transform (bool): Whether to apply any batch transforms defined by the device
@@ -164,13 +164,7 @@ def _batch_transform(
         Sequence[QuantumTape], Callable: The new batch of quantum scripts and the post processing
 
     """
-    if isinstance(device, qml.devices.experimental.Device):
-        if not device_batch_transform:
-            warnings.warn(
-                "device batch transforms cannot be turned off with the new device interface.",
-                UserWarning,
-            )
-        return device.preprocess(tapes, config)
+    # TODO: Remove once old device are removed
     if device_batch_transform:
         dev_batch_transform = set_shots(device, override_shots)(device.batch_transform)
         return *qml.transforms.map_batch_transform(dev_batch_transform, tapes), config
@@ -190,7 +184,7 @@ def _preprocess_expand_fn(
     Args:
         expand_fn (str, Callable): If string, then it must be "device".  Otherwise, it should be a map
             from one tape to a new tape. The final tape must be natively executable by the device.
-        device (Device, devices.experimental.Device): The device that we will be executing on.
+        device (Device, devices.Device): The device that we will be executing on.
         max_expansion (int): The number of times the internal circuit should be expanded when
             executed on a device. Expansion occurs when an operation or measurement is not
             supported, and results in a gate decomposition. If any operations in the decomposition
@@ -202,7 +196,7 @@ def _preprocess_expand_fn(
     """
     if expand_fn != "device":
         return expand_fn
-    if isinstance(device, qml.devices.experimental.Device):
+    if isinstance(device, qml.devices.Device):
 
         def blank_expansion_function(tape):  # pylint: disable=function-redefined
             """A blank expansion function since the new device handles expansion in preprocessing."""
@@ -568,7 +562,7 @@ def execute(
         _gradient_method = gradient_fn
     else:
         _gradient_method = "gradient-transform"
-    config = qml.devices.experimental.ExecutionConfig(
+    config = qml.devices.ExecutionConfig(
         interface=interface,
         gradient_method=_gradient_method,
         grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
@@ -610,16 +604,32 @@ def execute(
         execute_fn = inner_execute_with_empty_jac
     #### Executing the configured setup #####
 
-    tapes, program_post_processing = transform_program(tapes)
-    tapes, batch_fn, config = _batch_transform(
-        tapes, device, config, override_shots, device_batch_transform
-    )
+    if isinstance(device, qml.devices.Device):
+        if not device_batch_transform:
+            warnings.warn(
+                "device batch transforms cannot be turned off with the new device interface.",
+                UserWarning,
+            )
+        device_transform_program, config = device.preprocess(config)
+        full_transform_program = transform_program + device_transform_program
+        tapes, post_processing = full_transform_program(tapes)
+    else:
+        # TODO: Remove once old device are removed
+        tapes, program_post_processing = transform_program(tapes)
+        tapes, program_pre_processing, config = _batch_transform(
+            tapes, device, config, override_shots, device_batch_transform
+        )
+
+        def post_processing(results):
+            return program_post_processing(program_pre_processing(results))
+
+    if transform_program.is_informative:
+        return post_processing(tapes)
 
     # Exiting early if we do not need to deal with an interface boundary
     if no_interface_boundary_required:
         results = inner_execute(tapes)
-        results = batch_fn(results)
-        return program_post_processing(results)
+        return post_processing(results)
 
     _grad_on_execution = False
 
@@ -763,5 +773,4 @@ def execute(
             tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
         )
 
-    results = batch_fn(results)
-    return program_post_processing(results)
+    return post_processing(results)
