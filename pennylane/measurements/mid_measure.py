@@ -124,6 +124,10 @@ class MidMeasureMP(MeasurementProcess):
         id (str): Custom label given to a measurement instance.
     """
 
+    def _flatten(self):
+        metadata = (("wires", self.raw_wires), ("reset", self.reset), ("id", self.id))
+        return (None, None), metadata
+
     def __init__(
         self, wires: Optional[Wires] = None, reset: Optional[bool] = False, id: Optional[str] = None
     ):
