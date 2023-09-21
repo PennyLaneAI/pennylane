@@ -29,9 +29,7 @@ def catalyst_qjit(qnode):
     """The ``catalyst.while`` wrapper method"""
     try:
         pkg_resources.get_distribution("pennylane_catalyst")
-        import catalyst  # pylint: disable=import-outside-toplevel
-
-        return isinstance(qnode, catalyst.QJIT)
+        return qnode.__class__.__name__ == "QJIT"
     except pkg_resources.DistributionNotFound:
         return False
 
