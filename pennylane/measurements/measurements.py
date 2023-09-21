@@ -132,7 +132,7 @@ class MeasurementProcess(ABC):
 
     def _flatten(self):
         metadata = (("wires", self.raw_wires),)
-        return (self.obs, self._eigvals), metadata
+        return (self.obs or self.mv, self._eigvals), metadata
 
     @classmethod
     def _unflatten(cls, data, metadata):

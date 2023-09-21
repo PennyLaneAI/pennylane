@@ -156,25 +156,32 @@ def test_hash_correctness():
     assert hash(mp1) == hash(mp2)
 
 
+mv = qml.measure(0)
+
 valid_meausurements = [
     ClassicalShadowMP(wires=Wires(0), seed=42),
     ShadowExpvalMP(qml.s_prod(3.0, qml.PauliX(0)), seed=97, k=2),
     ShadowExpvalMP([qml.PauliZ(0), 4.0 * qml.PauliX(0)], seed=86, k=4),
     CountsMP(obs=2.0 * qml.PauliX(0), all_outcomes=True),
     CountsMP(eigvals=[0.5, 0.6], wires=Wires(0), all_outcomes=False),
+    CountsMP(obs=mv, all_outcomes=True),
     ExpectationMP(obs=qml.s_prod(2.0, qml.PauliX(0))),
     ExpectationMP(eigvals=[0.5, 0.6], wires=Wires("a")),
+    ExpectationMP(obs=mv),
     MidMeasureMP(wires=Wires("a"), reset=True, id="abcd"),
     MutualInfoMP(wires=(Wires("a"), Wires("b")), log_base=3),
     ProbabilityMP(wires=Wires("a"), eigvals=[0.5, 0.6]),
     ProbabilityMP(obs=3.0 * qml.PauliX(0)),
+    ProbabilityMP(obs=mv),
     PurityMP(wires=Wires("a")),
     SampleMP(obs=3.0 * qml.PauliY(0)),
     SampleMP(wires=Wires("a"), eigvals=[0.5, 0.6]),
+    SampleMP(obs=mv),
     StateMP(),
     StateMP(wires=("a", "b")),
     VarianceMP(obs=qml.s_prod(0.5, qml.PauliX(0))),
     VarianceMP(eigvals=[0.6, 0.7], wires=Wires(0)),
+    VarianceMP(obs=mv),
     VnEntropyMP(wires=Wires("a"), log_base=3),
 ]
 
