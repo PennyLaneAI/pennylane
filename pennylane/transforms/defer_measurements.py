@@ -27,7 +27,7 @@ from pennylane.queuing import QueuingManager
 
 
 @transform
-def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
+def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], Callable):
     """Quantum function transform that substitutes operations conditioned on
     measurement outcomes to controlled operations.
 
@@ -51,8 +51,14 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
         Devices that inherit from :class:`~pennylane.QubitDevice` **must** be initialized
         with an additional wire for each mid-circuit measurement after which the measured
         wire is reused or reset for ``defer_measurements`` to transform the quantum tape
-        correctly. Hence, devices and quantum tapes must also be initialized without custom
-        wire labels for correct behaviour.
+        correctly. Devices that inherit from :class:`~pennylane.devices.Device` must be
+        initialized with the same number of wires, or with ``wires=None``.
+
+    .. note::
+
+        If using custom wire labels, do not use ``"mv{i}"`` as labels, where ``{i}`` is an
+        integer. These labels are reserved for wires that store mid-circuit measurement results
+        if transforming a tape or executing on a device that has ``wires=None``.
 
     .. note::
 
@@ -136,6 +142,7 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
     if ops_cv or obs_cv:
         raise ValueError("Continuous variable operations and observables are not supported.")
 
+    device_wires = kwargs.get("device_wires", None)
     new_operations = []
 
     # Find wires that are reused after measurement
@@ -153,16 +160,29 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
                 measured_wires.intersection(op.wires.toset())
             )
 
+    # Create list of wires that can be used to store mid-circuit measurement results of
+    # wires that are reused or reset
+    if device_wires is not None:
+        unused_wires = Wires.unique_wires([device_wires, tape.wires])
+        if len(reused_measurement_wires) > unused_wires:
+            raise ValueError(
+                "Device does not have enough free wires to store mid-circuit measurement "
+                f"results. Got {len(unused_wires)} free wires, but need "
+                f"{len(reused_measurement_wires)} free wires."
+            )
+    else:
+        unused_wires = [f"mv{i}" for i in range(len(reused_measurement_wires))]
+
     # Apply controlled operations to store measurement outcomes and replace
     # classically controlled operations
     control_wires = {}
-    cur_wire = max(tape.wires) + 1 if reused_measurement_wires else None
+    cur_wire = 0 if reused_measurement_wires else None
 
     for op in tape:
         if isinstance(op, MidMeasureMP):
             # Only store measurement outcome in new wire if wire gets reused
             if op.wires[0] in reused_measurement_wires:
-                control_wires[op.id] = cur_wire
+                control_wires[op.id] = unused_wires[cur_wire]
                 with QueuingManager.stop_recording():
                     new_operations.append(qml.CNOT([op.wires[0], cur_wire]))
                 if op.reset:
@@ -193,6 +213,19 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
         return results[0]
 
     return [new_tape], null_postprocessing
+
+
+@defer_measurements.custom_qnode_transform
+def _defer_measurements_qnode(self, qnode, targs, tkwargs):
+    """Custom QNode transform for defer_measurements."""
+    if tkwargs.get("device_wires", None):
+        raise ValueError(
+            "Cannot provide a 'device_wires' value directly to the defer_measurements decorator "
+            "when transforming a QNode."
+        )
+
+    tkwargs.setdefault("device_wires", qnode.device.wires)
+    return self.default_qnode_transform(qnode, targs, tkwargs)
 
 
 def _add_control_gate(op, control_wires):
