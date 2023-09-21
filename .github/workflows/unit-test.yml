@@ -153,6 +153,7 @@ jobs:
         run: |
           for f in ${{ inputs.pytest_test_directory }}/*
           do
+            echo "$f"
             python -m pytest $f ${{ inputs.pytest_coverage_flags }} ${{ inputs.pytest_additional_args }} ${{ env.PYTEST_MARKER }} -n auto
           done
 
