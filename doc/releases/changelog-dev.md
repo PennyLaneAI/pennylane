@@ -24,12 +24,17 @@
 
 <h3>Improvements 🛠</h3>
 
+* Extended ``qml.qchem.import_state`` to import wavefunctions from MPS DMRG and SHCI classical
+  calculations performed with the Block2 and Dice libraries.
+  [#4523](https://github.com/PennyLaneAI/pennylane/pull/4523)
+  [#4524](https://github.com/PennyLaneAI/pennylane/pull/4524)
+
 * `MeasurementProcess` and `QuantumScript` objects are now registered as jax pytrees.
   [(#4607)](https://github.com/PennyLaneAI/pennylane/pull/4607)
   [(#4608)](https://github.com/PennyLaneAI/pennylane/pull/4608)
 
 * Tensor-network template `qml.MPS` now supports changing `offset` between subsequent blocks for more flexibility.
- [(#4531)](https://github.com/PennyLaneAI/pennylane/pull/4531)
+  [(#4531)](https://github.com/PennyLaneAI/pennylane/pull/4531)
 
 * The qchem ``fermionic_dipole`` and ``particle_number`` functions are updated to use a
   ``FermiSentence``. The deprecated features for using tuples to represent fermionic operations are
@@ -263,6 +268,7 @@
 This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad,
+Stepan Fomichev,
 Diego Guala,
 Soran Jahangiri,
 Christina Lee,
