@@ -143,15 +143,12 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
     measured_wires = []
     reused_measurement_wires = set()
     repeated_measurement_wire = False
+    is_postselecting = False
 
     for op in tape.operations:
         if isinstance(op, MidMeasureMP):
             if op.postselect is not None:
-                if tape.shots and (tape.shots.has_partitioned_shots or tape.batch_size):
-                    raise ValueError(
-                        "Cannot postselect on mid-circuit measurements when the circuit has finite "
-                        "shots if the circuit is batched or the shots are partitioned."
-                    )
+                is_postselecting = True
             if op.reset:
                 reused_measurement_wires.add(op.wires[0])
 
@@ -188,12 +185,13 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
 
                 if op.reset:
                     with QueuingManager.stop_recording():
-                        if op.postselect == 1:
+                        # No need to manually reset if postselecting on |0>
+                        if op.postselect is None:
+                            new_operations.append(qml.CNOT([cur_wire, op.wires[0]]))
+                        elif op.postselect == 1:
                             # We know that the measured wire will be in the |1> state if postselected
                             # |1>. So we can just apply a PauliX instead of a CNOT to reset
                             new_operations.append(qml.PauliX(op.wires[0]))
-                        else:
-                            new_operations.append(qml.CNOT([cur_wire, op.wires[0]]))
 
                 cur_wire += 1
             else:
@@ -209,6 +207,7 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
 
     for mp in tape.measurements:
         if mp.mv is not None:
+            # Update measurement value wires
             wire_map = {m.wires[0]: control_wires[m.id] for m in mp.mv.measurements}
             mp = qml.map_wires(mp, wire_map=wire_map)
         new_measurements.append(mp)
@@ -216,10 +215,13 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
     new_tape = type(tape)(new_operations, new_measurements, shots=tape.shots)
     new_tape._qfunc_output = tape._qfunc_output  # pylint: disable=protected-access
 
+    if is_postselecting and new_tape.batch_size is not None:
+        # Split tapes if broadcasting with postselection
+        return qml.transforms.broadcast_expand(new_tape)
+
     def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
-        into a result for a single ``QuantumTape``.
-        """
+        """A postprocessing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``."""
         return results[0]
 
     return [new_tape], null_postprocessing

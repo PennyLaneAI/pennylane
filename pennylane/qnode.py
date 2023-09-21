@@ -899,11 +899,13 @@ class QNode:
 
         # Apply the deferred measurement principle if the device doesn't
         # support mid-circuit measurements natively
-        expand_mid_measure = any(isinstance(op, MidMeasureMP) for op in self.tape.operations) and (
-            isinstance(self.device, qml.devices.Device)
-            or not self.device.capabilities().get("supports_mid_measure", False)
+        expand_mid_measure = (
+            any(isinstance(op, MidMeasureMP) for op in self.tape.operations)
+            and not isinstance(self.device, qml.devices.Device)
+            and not self.device.capabilities().get("supports_mid_measure", False)
         )
         if expand_mid_measure:
+            # Assume that tapes are not split if old device is used since postselection is not supported
             tapes, _ = qml.defer_measurements(self._tape)
             self._tape = tapes[0]
 
