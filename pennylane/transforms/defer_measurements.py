@@ -198,7 +198,7 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
             mp = qml.map_wires(mp, wire_map=wire_map)
         new_measurements.append(mp)
 
-    new_tape = QuantumTape(new_operations, new_measurements, shots=tape.shots)
+    new_tape = type(tape)(new_operations, new_measurements, shots=tape.shots)
     new_tape._qfunc_output = tape._qfunc_output  # pylint: disable=protected-access
 
     def null_postprocessing(results):
