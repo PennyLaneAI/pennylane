@@ -209,8 +209,8 @@ When :math:`\theta = 1.23`, :math:`\frac{\partial r}{\partial \theta} = 4712.444
     :href: serialization
 
     PennyLane measurements are automatically registered as `Pytrees <https://jax.readthedocs.io/en/latest/pytrees.html>`_ .
-
-    The :class:`~.MeasurementProcess` definitions are sufficient for all PL measurements.
+    ``MeasurementProcess._flatten`` and ``MeasurementProcess._unflatten`` need to be overwritten if the measurement has additional
+    metadata, such as ``seed`` or ``all_outcomes``.
 
     >>> H = 2.0 * qml.PauliX(0)
     >>> mp = qml.expval(H)
