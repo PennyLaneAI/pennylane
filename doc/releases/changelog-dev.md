@@ -21,6 +21,7 @@
   accessible by the short name `default.qubit.legacy`, or directly via `qml.devices.DefaultQubitLegacy`.
   [(#4594)](https://github.com/PennyLaneAI/pennylane/pull/4594)
   [(#4436)](https://github.com/PennyLaneAI/pennylane/pull/4436)
+  [(#4620)](https://github.com/PennyLaneAI/pennylane/pull/4620)
 
 <h3>Improvements 🛠</h3>
 
@@ -95,9 +96,10 @@
   `DefaultQubitJax` in the old API.
   [(#4596)](https://github.com/PennyLaneAI/pennylane/pull/4596)
 
-* DefaultQubit2 dispatches to a faster implementation for applying `ParameterizedEvolution` to a state
+* DefaultQubit2 dispatches to a faster implementation for applying `ParametrizedEvolution` to a state
   when it is more efficient to evolve the state than the operation matrix.
   [(#4598)](https://github.com/PennyLaneAI/pennylane/pull/4598)
+  [(#4620)](https://github.com/PennyLaneAI/pennylane/pull/4620)
 
 * `ShotAdaptiveOptimizer` has been updated to pass shots to QNode executions instead of overriding
   device shots before execution. This makes it compatible with the new device API.
