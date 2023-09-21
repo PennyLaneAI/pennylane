@@ -27,15 +27,10 @@ from .tape_text import tape_text
 def catalyst_qjit(qnode):
     """The ``catalyst.while`` wrapper method"""
     try:
-        import catalyst  # pylint: disable=import-outside-toplevel
-
-        pl_qjit_available = True
-    except ImportError:
-        pl_qjit_available = False
-
-    if pl_qjit_available:
+        pkg_resources.get_distribution("pennylane_catalyst")
         return isinstance(qnode, catalyst.QJIT)
-    return False
+    except pkg_resources.DistributionNotFound:
+        return False
 
 
 def draw(
