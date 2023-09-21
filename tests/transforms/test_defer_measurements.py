@@ -298,6 +298,39 @@ class TestQNode:
         assert np.allclose(circ1(param, shots=shots), circ2(param, shots=shots))
 
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 1000]])
+    def test_measured_value_wires_mapped(self, shots, tol, tol_stochastic):
+        """Test that collecting statistics on a measurement value works correctly
+        when the measured wire is reused."""
+        dev = DefaultQubit()
+
+        @qml.qnode(dev)
+        def circ1(x):
+            qml.RX(x, 0)
+            m0 = qml.measure(0)
+            qml.PauliX(0)
+            return qml.probs(op=m0)
+
+        dev = DefaultQubit()
+
+        @qml.qnode(dev)
+        def circ2(x):
+            qml.RX(x, 0)
+            return qml.probs(wires=[0])
+
+        param = 1.5
+        atol = tol if shots is None else tol_stochastic
+        assert np.allclose(circ1(param, shots=shots), circ2(param, shots=shots), atol=atol, rtol=0)
+
+        expected_ops = [qml.RX(param, 0), qml.CNOT([0, 1]), qml.PauliX(0)]
+        assert circ1.qtape.operations == expected_ops
+
+        assert len(circ1.qtape.measurements) == 1
+        mp = circ1.qtape.measurements[0]
+        assert isinstance(mp, qml.measurements.ProbabilityMP)
+        assert mp.mv is not None
+        assert mp.mv.wires == qml.wires.Wires([1])
+
+    @pytest.mark.parametrize("shots", [None, 1000, [1000, 1000]])
     def test_terminal_measurements(self, shots):
         """Test that mid-circuit measurement statistics and terminal measurements
         can be made together."""
