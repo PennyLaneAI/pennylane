@@ -77,8 +77,9 @@
   [#4523](https://github.com/PennyLaneAI/pennylane/pull/4523)
   [#4524](https://github.com/PennyLaneAI/pennylane/pull/4524)
 
-* `MeasurementProcess` objects are now registered as jax pytrees.
+* `MeasurementProcess` and `QuantumScript` objects are now registered as jax pytrees.
   [(#4607)](https://github.com/PennyLaneAI/pennylane/pull/4607)
+  [(#4608)](https://github.com/PennyLaneAI/pennylane/pull/4608)
 
 * Tensor-network template `qml.MPS` now supports changing `offset` between subsequent blocks for more flexibility.
   [(#4531)](https://github.com/PennyLaneAI/pennylane/pull/4531)
