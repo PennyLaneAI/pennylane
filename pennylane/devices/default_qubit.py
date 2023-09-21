@@ -128,7 +128,7 @@ class DefaultQubit(Device):
 
         which can be changed with ``multiprocessing.set_start_method()``. For example,
         if multiprocessing fails on macOS in your Jupyter notebook environment, try
-        restarting the session and before doing anything else, type
+        restarting the session and adding the following at the beginning of the file:
 
         .. code-block:: python
 
