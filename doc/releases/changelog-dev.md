@@ -4,6 +4,29 @@
 
 <h3>New features since last release</h3>
 
+* Measurement statistics can now be collected for mid-circuit measurements. Currently,
+  `qml.expval`, `qml.var`, `qml.probs`, `qml.sample`, and `qml.counts` are supported on
+  `default.qubit`, `default.mixed`, and the new `DefaultQubit2` device.
+  [(#4544)](https://github.com/PennyLaneAI/pennylane/pull/4544)
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circ(x, y):
+      qml.RX(x, wires=0)
+      qml.RY(y, wires=1)
+      m0 = qml.measure(1)
+      return qml.expval(qml.PauliZ(0)), qml.sample(m0)
+  ```
+
+  QNodes can be executed as usual when collecting mid-circuit measurement statistics:
+
+  ```pycon
+  >>> circ(1.0, 2.0, shots=5)
+  (array(0.6), array([1, 1, 1, 0, 1]))
+  ```
+
 * Operator transforms `qml.matrix`, `qml.eigvals`, `qml.generator`, and `qml.transforms.to_zx` are updated
   to the new transform program system.
   [(#4573)](https://github.com/PennyLaneAI/pennylane/pull/4573)
@@ -110,6 +133,10 @@
 
 
 <h3>Breaking changes 💔</h3>
+
+* `MeasurementProcess.eigvals()` now raises an `EigvalsUndefinedError` if the measurement observable
+  does not have eigenvalues.
+  [(#4544)](https://github.com/PennyLaneAI/pennylane/pull/4544)
 
 * The `__eq__` and `__hash__` methods of `Operator` and `MeasurementProcess` no longer rely on the
   object's address is memory. Using `==` with operators and measurement processes will now behave the
