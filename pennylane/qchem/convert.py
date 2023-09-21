@@ -565,11 +565,13 @@ def _ucisd_state(cisd_solver, tol=1e-15):
 def import_state(solver, tol=1e-15):
     r"""Convert an external wavefunction to a state vector.
 
-    Currently, the only accepted source of wavefunctions is the PySCF library.
-    The restricted and unrestricted CISD/CCSD methods are supported.
+    Currently, the only accepted sources of wavefunctions are a) the PySCF library (the 
+    restricted and unrestricted CISD/CCSD methods are supported), b) the library Dice 
+    implementing the SHCI method, c) the library Block2 implementing the DMRG method.
 
     Args:
-        solver: external wavefunction object (e.g. PySCF Solver object) that will be converted
+        solver: external wavefunction object (e.g. PySCF Solver object) or tuple of 
+        determinants and coefficients that will be converted
         tol (float): the tolerance for discarding Slater determinants based on their coefficients
 
     Raises:
@@ -602,10 +604,23 @@ def import_state(solver, tol=1e-15):
         wf_dict = _rccsd_state(solver, tol=tol)
     elif "UCCSD" in method:
         wf_dict = _uccsd_state(solver, tol=tol)
+    elif "tuple" in method:
+        if type(solver[0][0]) is str:
+            wf_dict = _shci_state(solver, tol=tol)
+        elif type(solver[0][0]) is int:
+            wf_dict = _dmrg_state(solver, tol=tol)
+        else:
+            raise ValueError(
+                "for tuple input, the supported objects are"
+                " tuple(array[str], array[float]) for SHCI calculations with Dice library and "
+                "tuple(array[int], array[float]) for DMRG calculations with the Block2 library."
+            )
     else:
         raise ValueError(
             "The supported objects are RCISD, UCISD, RCCSD, and UCCSD for restricted and"
-            " unrestricted configuration interaction and coupled cluster calculations."
+            " unrestricted configuration interaction and coupled cluster calculations, and"
+            " tuple(array[str], array[float]) for SHCI calculations with Dice library and "
+            "tuple(array[int], array[float]) for DMRG calculations with the Block2 library."
         )
     wf = _wfdict_to_statevector(wf_dict, solver.mol.nao)
 
