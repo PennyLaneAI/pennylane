@@ -148,7 +148,7 @@ class DefaultQubit(Device):
     @property
     def name(self):
         """The name of the device."""
-        return "default.qubit.2"
+        return "default.qubit"
 
     # pylint:disable = too-many-arguments
     def __init__(
@@ -195,6 +195,7 @@ class DefaultQubit(Device):
         if (
             execution_config.gradient_method == "backprop"
             and execution_config.device_options.get("max_workers", self._max_workers) is None
+            and execution_config.interface is not None
         ):
             return True
 

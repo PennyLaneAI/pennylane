@@ -43,9 +43,6 @@ class Device(abc.ABC):
     """A device driver that can control one or more backends. A backend can be either a physical
     Quantum Processing Unit or a virtual one such as a simulator.
 
-    Device drivers should be configured to run under :func:`~.enable_return`, the newer
-    return shape specification, as the old return shape specification is deprecated.
-
     Only the ``execute`` method must be defined to construct a device driver.
 
     .. details::

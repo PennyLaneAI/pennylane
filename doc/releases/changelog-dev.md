@@ -17,14 +17,23 @@
 * Quantum information transforms are updated to the new transform program system.
   [(#4569)](https://github.com/PennyLaneAI/pennylane/pull/4569)
 
-* `qml.devices.DefaultQubit` now implements the new device API. The old version of `default.qubit`
-  is still accessible via `qml.devices.DefaultQubitLegacy`, or via short name `default.qubit.legacy`.
+* `default.qubit` now implements the new device API. The old version of the device is still
+  accessible by the short name `default.qubit.legacy`, or directly via `qml.devices.DefaultQubitLegacy`.
   [(#4594)](https://github.com/PennyLaneAI/pennylane/pull/4594)
+  [(#4436)](https://github.com/PennyLaneAI/pennylane/pull/4436)
 
 <h3>Improvements 🛠</h3>
 
+* Extended ``qml.qchem.import_state`` to import wavefunctions from MPS DMRG and SHCI classical
+  calculations performed with the Block2 and Dice libraries.
+  [#4523](https://github.com/PennyLaneAI/pennylane/pull/4523)
+  [#4524](https://github.com/PennyLaneAI/pennylane/pull/4524)
+
+* `MeasurementProcess` objects are now registered as jax pytrees.
+  [(#4607)](https://github.com/PennyLaneAI/pennylane/pull/4607)
+
 * Tensor-network template `qml.MPS` now supports changing `offset` between subsequent blocks for more flexibility.
- [(#4531)](https://github.com/PennyLaneAI/pennylane/pull/4531)
+  [(#4531)](https://github.com/PennyLaneAI/pennylane/pull/4531)
 
 * The qchem ``fermionic_dipole`` and ``particle_number`` functions are updated to use a
   ``FermiSentence``. The deprecated features for using tuples to represent fermionic operations are
@@ -184,6 +193,12 @@
   which effectively just called `marginal_prob` with `np.abs(state) ** 2`.
   [(#4602)](https://github.com/PennyLaneAI/pennylane/pull/4602)
 
+* `default.qubit` now implements the new device API. If you initialize a device
+  with `qml.device("default.qubit")`, all functions and properties that were tied to the old
+  device API will no longer be on the device. The legacy version can still be accessed with
+  `qml.device("default.qubit.legacy", wires=n_wires)`.
+  [(#4436)](https://github.com/PennyLaneAI/pennylane/pull/4436)
+
 <h3>Deprecations 👋</h3>
 
 * The ``prep`` keyword argument in ``QuantumScript`` is deprecated and will be removed from `QuantumScript`.
@@ -252,6 +267,7 @@
 This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad,
+Stepan Fomichev,
 Diego Guala,
 Soran Jahangiri,
 Christina Lee,
