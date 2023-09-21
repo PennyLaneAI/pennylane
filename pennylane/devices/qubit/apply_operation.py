@@ -282,9 +282,9 @@ def apply_parametrized_evolution(
 ):
     """Apply ParametrizedEvolution by evolving the state rather than the operator matrix
     if we are operating on more than half of the subsystem"""
-    if is_state_batched:
+    if is_state_batched and op.batch_size is None:
         raise RuntimeError(
-            "ParameterizedEvolution does not support batching, but received a batched state"
+            "ParameterizedEvolution does not support standard broadcasting, but received a batched state"
         )
 
     # shape(state) is static (not a tracer), we can use an if statement
