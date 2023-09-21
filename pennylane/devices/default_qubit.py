@@ -232,8 +232,6 @@ class DefaultQubit(Device):
         if "prng_key" not in updated_values["device_options"]:
             updated_values["device_options"]["prng_key"] = self._prng_key
 
-        print(updated_values)
-
         return replace(execution_config, **updated_values)
 
     def preprocess(
