@@ -225,6 +225,10 @@
 
 <h3>Documentation 📝</h3>
 
+* Add a warning section in DefaultQubit's docstring regarding the start method used in multiprocessing.
+  This may help users circumvent issues arising in Jupyter notebooks on macOS for example.
+  [(#4621)](https://github.com/PennyLaneAI/pennylane/pull/4621)
+
 * Minor documentation improvements to the new device API. The documentation now correctly states that interface-specific
   parameters are only passed to the device for backpropagation derivatives. 
   [(#4542)](https://github.com/PennyLaneAI/pennylane/pull/4542)

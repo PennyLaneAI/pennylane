@@ -116,6 +116,24 @@ class DefaultQubit(Device):
 
     where the last two are specific to the MKL and OpenBLAS libraries specifically.
 
+    .. warning::
+
+        Multiprocessing may fail depending on your platform and environment (Python shell,
+        script with a protected entry point, Jupyter notebook, etc.) This may be solved
+        changing the so-called start method. The supported start methods are the following:
+
+        * Windows (win32): spawn (default).
+        * macOS (darwin): spawn (default), fork, forkserver.
+        * Linux (unix): spawn, fork (default), forkserver.
+
+        which can be changed with ``multiprocessing.set_start_method()``. For example,
+        if multiprocessing fails on macOS in your Jupyter notebook environment, try
+        restarting the session, importing multiprocessing and running
+        ``multiprocessing.set_start_method("fork")`` before doing anything.
+        Additional information can be found in the
+        `multiprocessing doc <https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods>`_.
+
+
     This device currently supports backpropagation derivatives:
 
     >>> from pennylane.devices import ExecutionConfig
