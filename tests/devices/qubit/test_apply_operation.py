@@ -495,7 +495,7 @@ class TestApplyParameterizedEvolution:
             ]
         )
 
-        with pytest.raises(RuntimeError, match="does not support batching"):
+        with pytest.raises(RuntimeError, match="does not support standard broadcasting"):
             _ = apply_operation(op, initial_state, is_state_batched=True)
 
 
