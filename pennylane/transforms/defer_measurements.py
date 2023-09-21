@@ -153,6 +153,22 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
                 measured_wires.intersection(op.wires.toset())
             )
 
+    # for mp in tape.measurements:
+    #     if isinstance(mp, qml.measurements.DensityMatrixMP) and
+    #     if isinstance(mp, qml.measurements.StateMP):
+    if (
+        any(
+            isinstance(mp, qml.measurements.StateMP)
+            and not isinstance(mp, qml.measurements.DensityMatrixMP)
+            for mp in tape.measurements
+        )
+        and reused_measurement_wires
+    ):
+        raise ValueError(
+            "Cannot return qml.state() if any wires are reused or reset "
+            "after performing mid-circuit measurements on them."
+        )
+
     # Apply controlled operations to store measurement outcomes and replace
     # classically controlled operations
     control_wires = {}

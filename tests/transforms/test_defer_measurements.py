@@ -22,6 +22,55 @@ import pennylane as qml
 import pennylane.numpy as np
 
 
+def test_state_measurement_fails_with_reuse_reset():
+    """Test that measuring qml.state() fails if wires are reused or reset
+    after mid-circuit measurements."""
+
+    # Qubit reuse
+    tape = qml.tape.QuantumScript(
+        [qml.PauliX(0), qml.measurements.MidMeasureMP(0), qml.PauliX(0)], [qml.state()]
+    )
+
+    with pytest.raises(ValueError, match="Cannot return qml.state()"):
+        _, _ = qml.defer_measurements(tape)
+
+    # Qubit reset
+    tape = qml.tape.QuantumScript(
+        [qml.PauliX(0), qml.measurements.MidMeasureMP(0, reset=True)], [qml.state()]
+    )
+
+    with pytest.raises(ValueError, match="Cannot return qml.state()"):
+        _, _ = qml.defer_measurements(tape)
+
+
+def test_density_matrix_measurement_success_with_reset_reuse():
+    """Test that measuring the density matrix does not raise an error if the measured
+    wires are reset or reused"""
+    # Qubit reuse
+    tape = qml.tape.QuantumScript(
+        [qml.PauliX(0), qml.measurements.MidMeasureMP(0), qml.PauliX(0)], [qml.density_matrix()]
+    )
+
+    _, _ = qml.defer_measurements(tape)
+
+    # Qubit reset
+    tape = qml.tape.QuantumScript(
+        [qml.PauliX(0), qml.measurements.MidMeasureMP(0, reset=True)], [qml.density_matrix()]
+    )
+
+    _, _ = qml.defer_measurements(tape)
+
+
+def test_state_measurement_success_without_reuse_reset():
+    """Test that measuring qml.state() without reusing or resetting qubits after
+    mid-circuit measurements."""
+    tape = qml.tape.QuantumScript(
+        [qml.PauliX(0), qml.measurements.MidMeasureMP(0), qml.PauliX(1)], [qml.state()]
+    )
+
+    _, _ = qml.defer_measurements(tape)
+
+
 class TestQNode:
     """Test that the transform integrates well with QNodes."""
 
@@ -1197,7 +1246,7 @@ def test_custom_wire_labels_fails_with_reset():
         qml.Hadamard("a")
         ma = qml.measure("a", reset=True)
         qml.cond(ma, qml.PauliX)("b")
-        qml.state()
+        qml.probs()
 
     tape = qml.tape.QuantumScript.from_queue(q)
     with pytest.raises(TypeError, match="can only concatenate str"):
