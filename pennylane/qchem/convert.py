@@ -565,12 +565,12 @@ def _ucisd_state(cisd_solver, tol=1e-15):
 def import_state(solver, tol=1e-15):
     r"""Convert an external wavefunction to a state vector.
 
-    Currently, the only accepted sources of wavefunctions are a) the PySCF library (the 
-    restricted and unrestricted CISD/CCSD methods are supported), b) the library Dice 
+    Currently, the only accepted sources of wavefunctions are a) the PySCF library (the
+    restricted and unrestricted CISD/CCSD methods are supported), b) the library Dice
     implementing the SHCI method, c) the library Block2 implementing the DMRG method.
 
     Args:
-        solver: external wavefunction object (e.g. PySCF Solver object) or tuple of 
+        solver: external wavefunction object (e.g. PySCF Solver object) or tuple of
         determinants and coefficients that will be converted
         tol (float): the tolerance for discarding Slater determinants based on their coefficients
 
@@ -1182,7 +1182,7 @@ def _shci_state(wavefunction, tol=1e-15):
     >>> myshci.fcisolver = shci.SHCI(myhf.mol)
     >>> myshci.fcisolver.outputFile = output_file
     >>> e_tot, e_ci, ss, mo_coeff, mo_energies = myshci.kernel(verbose=5)
-    >>> (dets, coeffs) = [post-process shci_output.out to get tuple of 
+    >>> (dets, coeffs) = [post-process shci_output.out to get tuple of
         dets (list of strs) and coeffs (list of floats)]
     >>> wf_shci = _shci_state((dets, coeffs), tol=1e-1)
     >>> print(wf_shci)
