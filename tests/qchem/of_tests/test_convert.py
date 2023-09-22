@@ -918,7 +918,7 @@ def test_wfdict_to_statevector(wf_dict, n_orbitals, string_ref, coeff_ref):
     ],
 )
 @pytest.mark.parametrize("method", ["rcisd", "ucisd", "rccsd", "uccsd"])
-def test_import_state(molecule, basis, symm, method, wf_ref):
+def test_import_state_pyscf(molecule, basis, symm, method, wf_ref):
     r"""Test that import_state returns the correct state vector."""
 
     mol = pyscf.gto.M(atom=molecule, basis=basis, symmetry=symm)
@@ -935,9 +935,67 @@ def test_import_state(molecule, basis, symm, method, wf_ref):
     elif method == "uccsd":
         myhf = pyscf.scf.UHF(mol).run()
         solver = pyscf.cc.uccsd.UCCSD(myhf).run()
-    # elif method == 
 
     wf_comp = qchem.convert.import_state(solver)
+
+    # overall sign could be different in each PySCF run
+    assert np.allclose(wf_comp, wf_ref) or np.allclose(wf_comp, -wf_ref)
+
+@pytest.mark.parametrize(
+    ("detscoeffs", "wf_ref"),
+    [
+        (
+            # dmrg
+            (np.array([[0, 3], [3, 0]]).numpy(), np.array([-0.10660077, 0.9943019]).numpy()),
+            np.array(
+                [
+                    0.0,
+                    0.0,
+                    0.0,
+                    -0.10660077,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.9943019,
+                    0.0,
+                    0.0,
+                    0.0,
+                ]).numpy(),
+        ),
+        (
+            # shci
+            (np.array(["02", "20"]).numpy(), np.array([-0.1066467,  0.99429698]).numpy()),
+            np.array(
+                [
+                    0.0,
+                    0.0,
+                    0.0,
+                    -0.1066467,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.99429698,
+                    0.0,
+                    0.0,
+                    0.0,
+                ]).numpy(),
+        ),
+    ],
+)
+def test_import_state_nonpyscf(detscoeffs, wf_ref):
+    r"""Test that import_state returns the correct state vector."""
+
+    wf_comp = qchem.convert.import_state(detscoeffs)
 
     # overall sign could be different in each PySCF run
     assert np.allclose(wf_comp, wf_ref) or np.allclose(wf_comp, -wf_ref)
