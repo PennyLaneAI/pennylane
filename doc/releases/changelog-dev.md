@@ -31,6 +31,7 @@
   ```pycon
   >>>draw
   "0: ──RX──H──┤  <Z>\n1: ──H───RY─┤     \n2: ──RZ─────┤     "
+  ```
 
 * Measurement statistics can now be collected for mid-circuit measurements. Currently,
   `qml.expval`, `qml.var`, `qml.probs`, `qml.sample`, and `qml.counts` are supported on
