@@ -16,6 +16,7 @@ Tests for the transform implementing the deferred measurement principle.
 """
 # pylint: disable=too-few-public-methods
 import math
+from functools import partial
 import pytest
 
 import pennylane as qml
@@ -60,8 +61,8 @@ class TestQNode:
         """Test that wires can be reused after measurement."""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def qnode():
             qml.Hadamard(0)
             qml.measure(0)
@@ -69,6 +70,61 @@ class TestQNode:
             return qml.expval(qml.PauliX(0))
 
         _ = qnode()
+
+    def test_manual_device_wires_error(self):
+        """Test that manually passing device wires when transforming a qnode raises an error."""
+        dev = qml.device("default.qubit", wires=[0, 1, 2])
+
+        @partial(qml.defer_measurements, device_wires=dev.wires)
+        @qml.qnode(dev)
+        def circ():
+            qml.measure(0)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match="Cannot provide a 'device_wires'"):
+            _ = circ()
+
+    @pytest.mark.parametrize(
+        "dev", [qml.device("default.qubit", wires=2), qml.device("default.qubit.legacy", wires=2)]
+    )
+    def test_too_few_device_wires_error(self, dev):
+        """Test that an error is raised if the device does not have enough wires
+        to store mid-circuit measurement results."""
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(0)
+            qml.measure(0)
+            qml.CNOT([0, 1])
+            return qml.expval(qml.PauliZ(1))
+
+        deferred_circuit = qml.defer_measurements(circuit)
+
+        with pytest.raises(ValueError, match="Device does not have enough free wires"):
+            _ = deferred_circuit()
+
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
+    @pytest.mark.parametrize("dev_wires", ([0, 1, 2], ["b", "a", "c"]))
+    def test_correct_wires_used_qnode(self, dev_name, dev_wires):
+        dev = qml.device(dev_name, wires=dev_wires)
+
+        @qml.defer_measurements
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(dev_wires[0])
+            qml.measure(dev_wires[0])
+            qml.CNOT([dev_wires[0], dev_wires[1]])
+            return qml.expval(qml.PauliZ(dev_wires[1]))
+
+        _ = circuit()
+
+        expected_circuit = [
+            qml.PauliX(dev_wires[0]),
+            qml.CNOT([dev_wires[0], dev_wires[2]]),
+            qml.CNOT([dev_wires[0], dev_wires[1]]),
+            qml.expval(qml.PauliZ(dev_wires[1])),
+        ]
+        assert circuit.qtape.circuit == expected_circuit
 
     def test_no_new_wires_without_reuse(self, mocker):
         """Test that new wires are not added if a measured wire is not reused."""
@@ -199,14 +255,14 @@ class TestQNode:
         atol = tol if shots is None else tol_stochastic
         assert np.allclose(circ1(param, shots=shots), circ2(param, shots=shots), atol=atol, rtol=0)
 
-        expected_ops = [qml.RX(param, 0), qml.CNOT([0, 1]), qml.PauliX(0)]
+        expected_ops = [qml.RX(param, 0), qml.CNOT([0, "mv0"]), qml.PauliX(0)]
         assert circ1.qtape.operations == expected_ops
 
         assert len(circ1.qtape.measurements) == 1
         mp = circ1.qtape.measurements[0]
         assert isinstance(mp, qml.measurements.ProbabilityMP)
         assert mp.mv is not None
-        assert mp.mv.wires == qml.wires.Wires([1])
+        assert mp.mv.wires == qml.wires.Wires(["mv0"])
 
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 1000]])
     def test_terminal_measurements(self, shots):
@@ -496,17 +552,17 @@ class TestConditionalOperations:
         # Check the two underlying CNOTs for storing measurement state
         meas_op1 = tape.operations[5]
         assert isinstance(meas_op1, qml.CNOT)
-        assert meas_op1.wires == qml.wires.Wires([1, 3])
+        assert meas_op1.wires == qml.wires.Wires([1, "mv0"])
 
         meas_op2 = tape.operations[6]
         assert isinstance(meas_op2, qml.CNOT)
-        assert meas_op2.wires == qml.wires.Wires([3, 1])
+        assert meas_op2.wires == qml.wires.Wires(["mv0", 1])
 
         # Check the two underlying Controlled instances
         ctrl_op1 = tape.operations[7]
         assert isinstance(ctrl_op1, qml.ops.op_math.Controlled)
         assert qml.equal(ctrl_op1.base, qml.RX(math.pi, 2))
-        assert ctrl_op1.wires == qml.wires.Wires([3, 2])
+        assert ctrl_op1.wires == qml.wires.Wires(["mv0", 2])
 
         ctrl_op2 = tape.operations[8]
         assert isinstance(ctrl_op2, qml.ops.op_math.Controlled)
@@ -568,12 +624,12 @@ class TestConditionalOperations:
         # Check the underlying CNOT for storing measurement state
         meas_op1 = tape.operations[0]
         assert isinstance(meas_op1, qml.CNOT)
-        assert meas_op1.wires == qml.wires.Wires([0, 5])
+        assert meas_op1.wires == qml.wires.Wires([0, "mv0"])
 
         # Check the underlying CNOT for reseting measured wire
         meas_op1 = tape.operations[1]
         assert isinstance(meas_op1, qml.CNOT)
-        assert meas_op1.wires == qml.wires.Wires([5, 0])
+        assert meas_op1.wires == qml.wires.Wires(["mv0", 0])
 
         # Check the underlying Controlled instances
         first_ctrl_op = tape.operations[2]
@@ -793,8 +849,8 @@ class TestConditionalOperations:
         that is measured works as expected."""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def qnode():
             qml.Hadamard(0)
             m = qml.measure(0)
@@ -1135,8 +1191,8 @@ class TestQubitReuseAndReset:
             qml.CRX(x, [0, 1])
             return qml.expval(qml.PauliZ(1))
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def qnode2(x):
             qml.Hadamard(0)
             m0 = qml.measure(0, reset=True)
@@ -1164,8 +1220,8 @@ class TestQubitReuseAndReset:
         after measurement if reset is requested."""
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
         @qml.defer_measurements
+        @qml.qnode(dev)
         def qnode(x):
             qml.Hadamard(0)
             qml.PhaseShift(np.pi / 4, 0)
@@ -1228,6 +1284,24 @@ class TestQubitReuseAndReset:
             for actual, expected in zip(deferred_tape.circuit, expected_circuit)
         )
 
+    def test_reserved_wires_error(self):
+        """Test that an error is raised if the tape contains wire labels that are reserved
+        for mid-circuit measurements only when there are reused wires."""
+        # Reused wire
+        tape1 = qml.tape.QuantumScript(
+            [qml.PauliX(0), qml.measurements.MidMeasureMP(0), qml.PauliZ(0), qml.PauliX("mv0")]
+        )
+
+        with pytest.raises(ValueError, match="Found reserved wires"):
+            _, _ = qml.defer_measurements(tape1)
+
+        # No reuse
+        tape2 = qml.tape.QuantumScript(
+            [qml.PauliX(0), qml.measurements.MidMeasureMP(0), qml.PauliX("mv0")]
+        )
+
+        _, _ = qml.defer_measurements(tape2)
+
 
 class TestDrawing:
     """Tests drawing circuits with mid-circuit measurements and conditional
@@ -1267,6 +1341,9 @@ class TestDrawing:
 
         # TODO: Update after drawing for mid-circuit measurements is updated.
 
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
         def qfunc():
             m_0 = qml.measure(0, reset=True)
             qml.cond(m_0, qml.RY)(0.312, wires=1)
@@ -1275,10 +1352,7 @@ class TestDrawing:
             qml.cond(m_2, qml.RY)(0.312, wires=1)
             return qml.expval(qml.PauliZ(1))
 
-        dev = qml.device("default.qubit", wires=4)
-
-        transformed_qfunc = qml.transforms.defer_measurements(qfunc)
-        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+        transformed_qnode = qml.defer_measurements(qfunc)
 
         expected = (
             "0: ─╭●─╭X─────────────────────┤     \n"
@@ -1289,32 +1363,23 @@ class TestDrawing:
         assert qml.draw(transformed_qnode)() == expected
 
 
-def test_custom_wire_labels_allowed_without_reset():
-    """Test that custom wire labels work if no qubits are re-used."""
+def test_custom_wire_labels_allowed():
+    """Test that custom wire labels work with defer_measurements."""
     with qml.queuing.AnnotatedQueue() as q:
         qml.Hadamard("a")
-        ma = qml.measure("a", reset=False)
+        ma = qml.measure("a", reset=True)
         qml.cond(ma, qml.PauliX)("b")
-        qml.state()
+        qml.expval(qml.PauliZ("b"))
 
     tape = qml.tape.QuantumScript.from_queue(q)
     tapes, _ = qml.defer_measurements(tape)
     tape = tapes[0]
 
-    assert len(tape) == 3
-    assert qml.equal(tape[0], qml.Hadamard("a"))
-    assert qml.equal(tape[1], qml.CNOT(["a", "b"]))
-    assert qml.equal(tape[2], qml.state())
-
-
-def test_custom_wire_labels_fails_with_reset():
-    """Test that custom wire labels do not work if any qubits are re-used."""
-    with qml.queuing.AnnotatedQueue() as q:
-        qml.Hadamard("a")
-        ma = qml.measure("a", reset=True)
-        qml.cond(ma, qml.PauliX)("b")
-        qml.state()
-
-    tape = qml.tape.QuantumScript.from_queue(q)
-    with pytest.raises(TypeError, match="can only concatenate str"):
-        qml.defer_measurements(tape)
+    expected_circuit = [
+        qml.Hadamard("a"),
+        qml.CNOT(["a", "mv0"]),
+        qml.CNOT(["mv0", "a"]),
+        qml.CNOT(["mv0", "b"]),
+        qml.expval(qml.PauliZ("b")),
+    ]
+    assert tape.circuit == expected_circuit

@@ -904,7 +904,7 @@ class QNode:
             or not self.device.capabilities().get("supports_mid_measure", False)
         )
         if expand_mid_measure:
-            tapes, _ = qml.defer_measurements(self._tape)
+            tapes, _ = qml.defer_measurements(self._tape, device_wires=self.device.wires)
             self._tape = tapes[0]
 
         if self.expansion_strategy == "device" and not isinstance(self.device, qml.devices.Device):

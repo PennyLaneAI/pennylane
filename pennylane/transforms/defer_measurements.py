@@ -23,7 +23,7 @@ from pennylane.transforms.core import transform
 from pennylane.wires import Wires
 from pennylane.queuing import QueuingManager
 
-# pylint: disable=too-many-branches
+# pylint: disable=too-many-branches, too-many-statements
 
 
 @transform
@@ -48,11 +48,12 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
 
     .. note::
 
-        Devices that inherit from :class:`~pennylane.QubitDevice` **must** be initialized
-        with an additional wire for each mid-circuit measurement after which the measured
-        wire is reused or reset for ``defer_measurements`` to transform the quantum tape
-        correctly. Devices that inherit from :class:`~pennylane.devices.Device` must be
-        initialized with the same number of wires, or with ``wires=None``.
+        Devices that inherit from :class:`~pennylane.QubitDevice` such as
+        ``default.qubit.legacy`` **must** be initialized with an additional wire for
+        each mid-circuit measurement after which the measured wire is reused or reset
+        for ``defer_measurements`` to transform the quantum tape correctly. Devices
+        that inherit from :class:`~pennylane.devices.Device` such as ``default.qubit``
+        must be initialized with the same number of wires, or with ``wires=None``.
 
     .. note::
 
@@ -169,7 +170,7 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
     # wires that are reused or reset
     if device_wires is not None:
         unused_wires = Wires.unique_wires([device_wires, tape.wires])
-        if len(reused_measurement_wires) > unused_wires:
+        if len(reused_measurement_wires) > len(unused_wires):
             raise ValueError(
                 "Device does not have enough free wires to store mid-circuit measurement "
                 f"results. Got {len(unused_wires)} free wires, but need "
@@ -177,11 +178,16 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
             )
     else:
         unused_wires = [f"mv{i}" for i in range(len(reused_measurement_wires))]
+        if len(reserved_wires := Wires.shared_wires([tape.wires, Wires(unused_wires)])) != 0:
+            raise ValueError(
+                f"Found reserved wires {reserved_wires}. Wires labels of the format 'mv{{i}}', "
+                "where {{i}} is an integer, are reserved for defer_measurements to use."
+            )
 
     # Apply controlled operations to store measurement outcomes and replace
     # classically controlled operations
     control_wires = {}
-    cur_wire = 0 if reused_measurement_wires else None
+    cur_wire = 0 if reused_measurement_wires or repeated_measurement_wire else None
 
     for op in tape.operations:
         if isinstance(op, MidMeasureMP):
@@ -192,11 +198,11 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
                 control_wires[op.id] = unused_wires[cur_wire]
 
                 with QueuingManager.stop_recording():
-                    new_operations.append(qml.CNOT([op.wires[0], cur_wire]))
+                    new_operations.append(qml.CNOT([op.wires[0], unused_wires[cur_wire]]))
 
                 if op.reset:
                     with QueuingManager.stop_recording():
-                        new_operations.append(qml.CNOT([cur_wire, op.wires[0]]))
+                        new_operations.append(qml.CNOT([unused_wires[cur_wire], op.wires[0]]))
 
                 cur_wire += 1
             else:
@@ -210,6 +216,7 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
 
     new_measurements = []
 
+    # Map any mid-circuit measurements to the correct wires that store them
     for mp in tape.measurements:
         if mp.mv is not None:
             wire_map = {m.wires[0]: control_wires[m.id] for m in mp.mv.measurements}
