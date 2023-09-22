@@ -878,9 +878,7 @@ class QNode:
                 "All measurements must be returned in the order they are measured."
             )
 
-        num_wires = (
-            self.device.num_wires if isinstance(self.device, qml.Device) else len(self.tape.wires)
-        )
+        num_wires = len(self.tape.wires) if not self.device.wires else len(self.device.wires)
         for obj in self.tape.operations + self.tape.observables:
             if (
                 getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires
