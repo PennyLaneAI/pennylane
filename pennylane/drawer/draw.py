@@ -18,10 +18,20 @@ Contains the drawing function.
 """
 from functools import wraps
 import warnings
+import pkg_resources
 
 import pennylane as qml
 from .tape_mpl import tape_mpl
 from .tape_text import tape_text
+
+
+def catalyst_qjit(qnode):
+    """The ``catalyst.while`` wrapper method"""
+    try:
+        pkg_resources.get_distribution("pennylane_catalyst")
+        return qnode.__class__.__name__ == "QJIT"
+    except pkg_resources.DistributionNotFound:
+        return False
 
 
 def draw(
@@ -195,6 +205,9 @@ def draw(
     1: ───────────╰X─┤
 
     """
+    if catalyst_qjit(qnode):
+        qnode = qnode.user_function
+
     if hasattr(qnode, "construct"):
         return _draw_qnode(
             qnode,
