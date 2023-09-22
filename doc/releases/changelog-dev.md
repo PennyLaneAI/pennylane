@@ -31,6 +31,28 @@
   ```pycon
   >>>draw
   "0: ──RX──H──┤  <Z>\n1: ──H───RY─┤     \n2: ──RZ─────┤     "
+
+* Measurement statistics can now be collected for mid-circuit measurements. Currently,
+  `qml.expval`, `qml.var`, `qml.probs`, `qml.sample`, and `qml.counts` are supported on
+  `default.qubit`, `default.mixed`, and the new `DefaultQubit2` device.
+  [(#4544)](https://github.com/PennyLaneAI/pennylane/pull/4544)
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circ(x, y):
+      qml.RX(x, wires=0)
+      qml.RY(y, wires=1)
+      m0 = qml.measure(1)
+      return qml.expval(qml.PauliZ(0)), qml.sample(m0)
+  ```
+
+  QNodes can be executed as usual when collecting mid-circuit measurement statistics:
+
+  ```pycon
+  >>> circ(1.0, 2.0, shots=5)
+  (array(0.6), array([1, 1, 1, 0, 1]))
   ```
 
 * Operator transforms `qml.matrix`, `qml.eigvals`, `qml.generator`, and `qml.transforms.to_zx` are updated
@@ -50,6 +72,7 @@
   accessible by the short name `default.qubit.legacy`, or directly via `qml.devices.DefaultQubitLegacy`.
   [(#4594)](https://github.com/PennyLaneAI/pennylane/pull/4594)
   [(#4436)](https://github.com/PennyLaneAI/pennylane/pull/4436)
+  [(#4620)](https://github.com/PennyLaneAI/pennylane/pull/4620)
 
 <h3>Improvements 🛠</h3>
 
@@ -58,8 +81,9 @@
   [#4523](https://github.com/PennyLaneAI/pennylane/pull/4523)
   [#4524](https://github.com/PennyLaneAI/pennylane/pull/4524)
 
-* `MeasurementProcess` objects are now registered as jax pytrees.
+* `MeasurementProcess` and `QuantumScript` objects are now registered as jax pytrees.
   [(#4607)](https://github.com/PennyLaneAI/pennylane/pull/4607)
+  [(#4608)](https://github.com/PennyLaneAI/pennylane/pull/4608)
 
 * Tensor-network template `qml.MPS` now supports changing `offset` between subsequent blocks for more flexibility.
   [(#4531)](https://github.com/PennyLaneAI/pennylane/pull/4531)
@@ -123,9 +147,10 @@
   `DefaultQubitJax` in the old API.
   [(#4596)](https://github.com/PennyLaneAI/pennylane/pull/4596)
 
-* DefaultQubit2 dispatches to a faster implementation for applying `ParameterizedEvolution` to a state
+* DefaultQubit2 dispatches to a faster implementation for applying `ParametrizedEvolution` to a state
   when it is more efficient to evolve the state than the operation matrix.
   [(#4598)](https://github.com/PennyLaneAI/pennylane/pull/4598)
+  [(#4620)](https://github.com/PennyLaneAI/pennylane/pull/4620)
 
 * `ShotAdaptiveOptimizer` has been updated to pass shots to QNode executions instead of overriding
   device shots before execution. This makes it compatible with the new device API.
@@ -137,6 +162,10 @@
 
 
 <h3>Breaking changes 💔</h3>
+
+* `MeasurementProcess.eigvals()` now raises an `EigvalsUndefinedError` if the measurement observable
+  does not have eigenvalues.
+  [(#4544)](https://github.com/PennyLaneAI/pennylane/pull/4544)
 
 * The `__eq__` and `__hash__` methods of `Operator` and `MeasurementProcess` no longer rely on the
   object's address is memory. Using `==` with operators and measurement processes will now behave the
