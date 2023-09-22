@@ -565,10 +565,10 @@ def _ucisd_state(cisd_solver, tol=1e-15):
 def import_state(solver, tol=1e-15):
     r"""Convert an external wavefunction to a state vector.
 
-    Currently, the only accepted sources of wavefunctions are 
-    
-        * the PySCF library (the restricted and unrestricted CISD/CCSD 
-          methods are supported), 
+    Currently, the only accepted sources of wavefunctions are
+
+        * the PySCF library (the restricted and unrestricted CISD/CCSD
+          methods are supported),
         * the library Dice implementing the SHCI method,
         * the library Block2 implementing the DMRG method.
 

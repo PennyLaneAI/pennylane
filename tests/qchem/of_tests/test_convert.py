@@ -1012,7 +1012,7 @@ def test_import_state_error():
     with pytest.raises(ValueError, match="The supported objects"):
         _ = qchem.convert.import_state(myci)
 
-    mytuple = (np.array([[3,0], [0,3]]), np.array([0]))
+    mytuple = (np.array([[3, 0], [0, 3]]), np.array([0]))
 
     with pytest.raises(ValueError, match="For tuple input"):
         _ = qchem.convert.import_state(mytuple)
