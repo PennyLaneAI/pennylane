@@ -16,7 +16,6 @@ This module contains the functions for computing different types of measurement
 outcomes from quantum observables - expectation values, variances of expectations,
 and measurement samples using AnnotatedQueues.
 """
-import contextlib
 import copy
 import functools
 from abc import ABC, abstractmethod
@@ -117,7 +116,7 @@ class MeasurementProcess(ABC):
     quantum variational circuit.
 
     Args:
-        obs (.Operator): The observable that is to be measured as part of the
+        obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured as part of the
             measurement process. Not all measurement processes require observables (for
             example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
@@ -133,7 +132,7 @@ class MeasurementProcess(ABC):
 
     def _flatten(self):
         metadata = (("wires", self.raw_wires),)
-        return (self.obs, self._eigvals), metadata
+        return (self.obs or self.mv, self._eigvals), metadata
 
     @classmethod
     def _unflatten(cls, data, metadata):
@@ -151,7 +150,13 @@ class MeasurementProcess(ABC):
         eigvals: Optional[TensorLike] = None,
         id: Optional[str] = None,
     ):
-        self.obs = obs
+        if obs is not None and obs.name == "MeasurementValue":
+            self.mv = obs
+            self.obs = None
+        else:
+            self.obs = obs
+            self.mv = None
+
         self.id = id
 
         if wires is not None:
@@ -309,6 +314,9 @@ class MeasurementProcess(ABC):
 
         This is the union of all the Wires objects of the measurement.
         """
+        if self.mv is not None:
+            return self.mv.wires
+
         if self.obs is not None:
             return self.obs.wires
 
@@ -348,9 +356,11 @@ class MeasurementProcess(ABC):
         Returns:
             array: eigvals representation
         """
+        if self.mv is not None:
+            return qml.math.arange(0, 2 ** len(self.wires), 1)
+
         if self.obs is not None:
-            with contextlib.suppress(qml.operation.EigvalsUndefinedError):
-                return self.obs.eigvals()
+            return self.obs.eigvals()
         return self._eigvals
 
     @property
@@ -361,7 +371,7 @@ class MeasurementProcess(ABC):
         # If self.obs is not None, `expand` queues the diagonalizing gates of self.obs,
         # which we have to check to be defined. The subsequent creation of the new
         # `MeasurementProcess` within `expand` should never fail with the given parameters.
-        return False if self.obs is None else self.obs.has_diagonalizing_gates
+        return self.obs.has_diagonalizing_gates if self.obs is not None else False
 
     @property
     def samples_computational_basis(self):
@@ -434,6 +444,7 @@ class MeasurementProcess(ABC):
         fingerprint = (
             self.__class__.__name__,
             getattr(self.obs, "hash", "None"),
+            getattr(self.mv, "hash", "None"),
             str(self._eigvals),  # eigvals() could be expensive to compute for large observables
             tuple(self.wires.tolist()),
         )
@@ -460,6 +471,10 @@ class MeasurementProcess(ABC):
             .MeasurementProcess: new measurement process
         """
         new_measurement = copy.copy(self)
+        if self.mv is not None:
+            mv = copy.copy(self.mv)
+            mv.measurements = [m.map_wires(wire_map=wire_map) for m in mv.measurements]
+            new_measurement.mv = mv
         if self.obs is not None:
             new_measurement.obs = self.obs.map_wires(wire_map=wire_map)
         elif self._wires is not None:
