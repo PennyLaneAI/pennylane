@@ -605,9 +605,9 @@ def import_state(solver, tol=1e-15):
     elif "UCCSD" in method:
         wf_dict = _uccsd_state(solver, tol=tol)
     elif "tuple" in method:
-        if type(solver[0][0]) is np.str_:
+        if isinstance(solver[0][0], np.str_):
             wf_dict = _shci_state(solver, tol=tol)
-        elif type(solver[0][0][0]) is type(np.array([0]).numpy()[0]):
+        elif isinstance(solver[0][0][0], type(np.array([0]).numpy()[0])):
             wf_dict = _dmrg_state(solver, tol=tol)
         else:
             raise ValueError(
