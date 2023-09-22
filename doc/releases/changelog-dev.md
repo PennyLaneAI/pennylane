@@ -26,7 +26,8 @@
 <h3>Improvements 🛠</h3>
 
 * Extended ``qml.qchem.import_state`` to import wavefunctions from MPS DMRG and SHCI classical
-  calculations performed with the Block2 and Dice libraries.
+  calculations performed with the Block2 and Dice libraries, incorporating new tests and wavefunction
+  input selection logic.
   [#4523](https://github.com/PennyLaneAI/pennylane/pull/4523)
   [#4524](https://github.com/PennyLaneAI/pennylane/pull/4524)
 
