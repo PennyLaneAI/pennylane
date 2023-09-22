@@ -25,9 +25,10 @@ from pennylane.devices import DefaultQubitLegacy
 from pennylane.measurements import Shots
 from pennylane.operation import Observable, AnyWires
 
+# pylint:disable = use-implicit-booleaness-not-comparison
 
 h_val = 0.1
-finite_diff_shot_vec_tol = 0.3
+finite_diff_shot_vec_tol = 0.15
 
 default_shot_vector = (1000, 2000, 3000)
 many_shots_shot_vector = tuple([1000000] * 3)
@@ -675,8 +676,6 @@ class TestFiniteDiffIntegration:
         This test relies on the fact that exactly one term of the estimated
         jacobian will match the expected analytical value.
         """
-        if approx_order == 4 and strategy != "center":
-            pytest.skip("The latest default.qubit is unreliable with an approx_order of 4")
 
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         x = 0.543
@@ -706,14 +705,15 @@ class TestFiniteDiffIntegration:
 
         cx, sx, cy, sy = np.cos(x / 2), np.sin(x / 2), np.cos(y / 2), np.sin(y / 2)
         # probability vector is [cx**2 * cy**2, cx**2 * sy**2, sx**2 * sy**2, sx**2 * cy**2]
-        exp_dprob = np.array([-(cx**2), cx**2, sx**2, -(sx**2)]) * (2 * sy * cy)
+        exp_dprob = np.array([-(cx**2), cx**2, sx**2, -(sx**2)]) * (sy * cy)
         exp_probs = [np.zeros(4), exp_dprob]
-        exp_expval = [0, -np.sin(y) * np.cos(x)]
+        # expval is np.sin(y) * np.cos(x)
+        exp_expval = [0, np.cos(y) * np.cos(x)]
 
         for res in all_res:
             assert isinstance(res, tuple)
             assert len(res) == 2  # two measurements
-            assert np.allclose(res[0], exp_probs, atol=finite_diff_shot_vec_tol)
+            assert np.allclose(res[0], exp_probs, atol=0.05)
             assert np.allclose(res[1], exp_expval, atol=finite_diff_shot_vec_tol)
 
     def test_multiple_expectation_values(self, approx_order, strategy, validate):
