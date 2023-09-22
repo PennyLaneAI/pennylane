@@ -226,9 +226,7 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
             mp,
             (qml.measurements.SampleMP, qml.measurements.ProbabilityMP, qml.measurements.CountsMP),
         ) and not (mp.obs or mp.wires):
-            mp._wires = (
-                Wires.unique_wires([device_wires, unused_wires]) if device_wires else tape.wires
-            )
+            mp._wires = tape.wires  # Original wires are always tape wires
 
         new_measurements.append(mp)
 
