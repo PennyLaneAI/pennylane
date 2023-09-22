@@ -5,7 +5,6 @@ from typing import List, Union, Sequence, Callable
 
 import networkx as nx
 
-import pennylane as qml
 from pennylane.transforms.core import transform
 from pennylane import Hamiltonian
 from pennylane.operation import Tensor
@@ -194,7 +193,7 @@ def _adjust_mmt_indices(_m, _map_wires):
 
     # change wires of observable
     if _m.obs is None:
-        return type(_m)(eigvals=qml.eigvals(_m), wires=_new_wires)
+        return type(_m)(eigvals=_m.eigvals, wires=_new_wires)
 
     _new_obs = type(_m.obs)(wires=_new_wires, id=_m.obs.id)
     return type(_m)(obs=_new_obs)

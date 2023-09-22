@@ -36,6 +36,7 @@ from pennylane.measurements import (
 )
 from pennylane.typing import TensorLike
 from pennylane.operation import Observable, Operator, Operation
+from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue, process_queue
 from pennylane.wires import Wires
 
@@ -172,6 +173,15 @@ class QuantumScript:
     [PauliX(wires=[0]), PauliX(wires=[1]), PauliX(wires=[2])]
 
     """
+
+    def _flatten(self):
+        return (self._ops, self.measurements), (self.shots, tuple(self.trainable_params))
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        new_tape = cls(*data, shots=metadata[0])
+        new_tape.trainable_params = metadata[1]
+        return new_tape
 
     def __init__(
         self,
@@ -790,14 +800,12 @@ class QuantumScript:
             ((4,), (), (4,))
         """
 
-        if isinstance(device, qml.devices.experimental.Device):
+        if isinstance(device, qml.devices.Device):
             # MP.shape (called below) takes 2 arguments: `device` and `shots`.
             # With the new device interface, shots are stored on tapes rather than the device
-            # As well, MP.shape needs the device largely to see the device wires, and this is
-            # also stored on tapes in the new device interface. TODO: refactor MP.shape to accept
-            # `wires` instead of device (not currently done because probs.shape uses device.cutoff)
+            # TODO: refactor MP.shape to accept `wires` instead of device (not currently done
+            # because probs.shape uses device.cutoff)
             shots = self.shots
-            device = self
         else:
             shots = (
                 Shots(device._raw_shot_sequence)
@@ -1258,3 +1266,6 @@ def make_qscript(fn, shots: Optional[Union[int, Sequence, Shots]] = None):
         return qscript
 
     return wrapper
+
+
+register_pytree(QuantumScript, QuantumScript._flatten, QuantumScript._unflatten)

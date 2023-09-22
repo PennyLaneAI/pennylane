@@ -79,10 +79,9 @@ class TestDecomposition:
         @qml.qnode(dev)
         def circuit(x=None):
             qml.AmplitudeEmbedding(features=x, wires=range(n_qubits), normalize=normalize)
-            return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
+            return qml.state()
 
-        circuit(x=inpt)
-        state = circuit.device.state.ravel()
+        state = circuit(x=inpt).ravel()
         assert np.allclose(state, inpt)
 
     @pytest.mark.parametrize("normalize", (True, False))
@@ -112,10 +111,9 @@ class TestDecomposition:
         @qml.qnode(dev)
         def circuit(x=None):
             qml.AmplitudeEmbedding(features=x, wires=range(n_qubits), pad_with=pad, normalize=False)
-            return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
+            return qml.state()
 
-        circuit(x=inpt)
-        state = circuit.device.state.ravel()
+        state = circuit(x=inpt).ravel()
         # Make sure all padded values are the same constant
         # by checking how many different values there are
         assert len(set(state[len(inpt) :])) == 1
@@ -148,17 +146,18 @@ class TestDecomposition:
         @qml.qnode(dev)
         def circuit():
             qml.AmplitudeEmbedding(features, wires=range(3))
-            return qml.expval(qml.Identity(0))
+            return qml.expval(qml.Identity(0)), qml.state()
 
         @qml.qnode(dev2)
         def circuit2():
             qml.AmplitudeEmbedding(features, wires=["z", "a", "k"])
-            return qml.expval(qml.Identity("z"))
+            return qml.expval(qml.Identity("z")), qml.state()
 
-        circuit()
-        circuit2()
+        res1, state1 = circuit()
+        res2, state2 = circuit2()
 
-        assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
 
 class TestInputs:

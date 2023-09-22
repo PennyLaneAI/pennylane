@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane.measurements import MeasurementShapeError, Sample, Shots
 from pennylane.operation import EigvalsUndefinedError, Operator
 
-# pylint: disable=protected-access, no-member
+# pylint: disable=protected-access, no-member, too-many-public-methods
 
 
 class TestSample:
@@ -46,7 +46,6 @@ class TestSample:
             (n_sample,) if not n_sample == 1 else ()
         )
 
-    @pytest.mark.xfail(reason="until DQ2 port")
     def test_sample_combination(self):
         """Test the output of combining expval, var and sample"""
         n_sample = 10
@@ -152,6 +151,27 @@ class TestSample:
             return res
 
         circuit()
+
+    @pytest.mark.parametrize("shots", [5, [5, 5]])
+    @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 2))
+    def test_observable_is_measurement_value(self, shots, phi):
+        """Test that samples for mid-circuit measurement values
+        are correct for a single measurement value."""
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            return qml.sample(m0)
+
+        res = circuit(phi)
+
+        if isinstance(shots, list):
+            assert len(res) == len(shots)
+            assert all(r.shape == (s,) for r, s in zip(res, shots))
+        else:
+            assert res.shape == (shots,)
 
     def test_providing_observable_and_wires(self):
         """Test that a ValueError is raised if both an observable is provided and wires are specified"""

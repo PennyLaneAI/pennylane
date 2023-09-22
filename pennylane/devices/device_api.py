@@ -41,9 +41,6 @@ class Device(abc.ABC):
     """A device driver that can control one or more backends. A backend can be either a physical
     Quantum Processing Unit or a virtual one such as a simulator.
 
-    Device drivers should be configured to run under :func:`~.enable_return`, the newer
-    return shape specification, as the old return shape specification is deprecated.
-
     Only the ``execute`` method must be defined to construct a device driver.
 
     .. details::
@@ -96,7 +93,7 @@ class Device(abc.ABC):
 
         >>> op = qml.Permute(["c", 3,"a",2,0], wires=[3,2,"a",0,"c"])
         >>> circuit = qml.tape.QuantumScript([op], [qml.state()])
-        >>> dev = DefaultQubit2()
+        >>> dev = DefaultQubit()
         >>> dev.execute(circuit)
         MatrixUndefinedError
         >>> circuit = qml.tape.QuantumScript([qml.Rot(1.2, 2.3, 3.4, 0)], [qml.expval(qml.PauliZ(0))])

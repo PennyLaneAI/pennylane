@@ -237,6 +237,32 @@ class TestProbs:
         expected = np.array([0, 0, 0, 0, 1, 0, 0, 0])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
+    @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
+    def test_observable_is_measurement_value(
+        self, shots, phi, tol, tol_stochastic
+    ):  # pylint: disable=too-many-arguments
+        """Test that probs for mid-circuit measurement values
+        are correct for a single measurement value."""
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            return qml.probs(op=m0)
+
+        res = circuit(phi)
+
+        atol = tol if shots is None else tol_stochastic
+        expected = np.array([np.cos(phi / 2) ** 2, np.sin(phi / 2) ** 2])
+
+        if not isinstance(shots, list):
+            assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
+        else:
+            for r in res:  # pylint: disable=not-an-iterable
+                assert np.allclose(r, expected, atol=atol, rtol=0)
+
     @pytest.mark.parametrize("shots", [None, 100])
     def test_batch_size(self, shots):
         """Test the probability is correct for a batched input."""
@@ -618,7 +644,6 @@ class TestProbs:
 
         assert np.allclose(res, expected)
 
-    @pytest.mark.xfail(reason="until DQ2 port")
     def test_non_commuting_probs_does_not_raises_error(self):
         """Tests that non-commuting probs with expval does not raise an error."""
         dev = qml.device("default.qubit", wires=5)

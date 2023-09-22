@@ -454,6 +454,7 @@ ar.register_function(
     "vander",
     lambda *args, **kwargs: _i("tf").experimental.numpy.vander(*args, **kwargs),
 )
+ar.register_function("tensorflow", "size", lambda x: _i("tf").size(x))
 
 
 # -------------------------------- Torch --------------------------------- #
@@ -550,6 +551,8 @@ def _take_torch(tensor, indices, axis=None, **_):
 
         return torch.index_select(tensor, dim=axis, index=indices)
 
+    if axis == -1:
+        return tensor[..., indices]
     fancy_indices = [slice(None)] * axis + [indices]
     return tensor[fancy_indices]
 

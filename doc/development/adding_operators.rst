@@ -212,11 +212,11 @@ FlipAndRotate(-0.1, wires=['q3', 'q1'])
 The new gate can be used with PennyLane devices. Device support for an operation can be checked via
 ``dev.stopping_condition(op)``.  If ``True``, then the device supports the operation.
 
-``DefaultQubit`` first checks if the operator has a matrix using the :attr:`~.Operator.has_matrix` property.
+``DefaultQubitLegacy`` first checks if the operator has a matrix using the :attr:`~.Operator.has_matrix` property.
 If the Operator doesn't have a matrix, the device then checks if the name of the Operator is explicitly specified in 
-:attr:`~DefaultQubit.operations` or :attr:`~DefaultQubit.observables`.
+:attr:`~DefaultQubitLegacy.operations` or :attr:`~DefaultQubitLegacy.observables`.
 
-Other devices that do not inherit from ``DefaultQubit`` only check if the name is explicitly specified in the ``operations``
+Other devices that do not inherit from ``DefaultQubitLegacy`` only check if the name is explicitly specified in the ``operations``
 property.
 
 - If the device registers support for an operation with the same name,

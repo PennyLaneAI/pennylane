@@ -174,7 +174,8 @@ def _insert_op(tape, ops, op_idx):
     ops_pre = tape.operations[:op_idx]
     ops_post = tape.operations[op_idx:]
     return [
-        qml.tape.QuantumScript(ops_pre + [insert] + ops_post, tape.measurements) for insert in ops
+        qml.tape.QuantumScript(ops_pre + [insert] + ops_post, tape.measurements, shots=tape.shots)
+        for insert in ops
     ]
 
 

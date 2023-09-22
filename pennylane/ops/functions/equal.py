@@ -24,6 +24,7 @@ from pennylane.measurements.classical_shadow import ShadowExpvalMP
 from pennylane.measurements.mid_measure import MidMeasureMP
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.measurements.vn_entropy import VnEntropyMP
+from pennylane.measurements.counts import CountsMP
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.operation import Observable, Operator, Tensor
 from pennylane.ops import Hamiltonian, Controlled, Pow, Adjoint, Exp, SProd, CompositeOp
@@ -389,7 +390,7 @@ def _(op1: MutualInfoMP, op2: MutualInfoMP, **kwargs):
 
 @_equal.register
 # pylint: disable=unused-argument
-def _equal_shadow_measurements(op1: ShadowExpvalMP, op2: ShadowExpvalMP, **kwargs):
+def _equal_shadow_measurements(op1: ShadowExpvalMP, op2: ShadowExpvalMP, **_):
     """Determine whether two ShadowExpvalMP objects are equal"""
 
     wires_match = op1.wires == op2.wires
@@ -404,3 +405,8 @@ def _equal_shadow_measurements(op1: ShadowExpvalMP, op2: ShadowExpvalMP, **kwarg
     k_match = op1.k == op2.k
 
     return wires_match and H_match and k_match
+
+
+@_equal.register
+def _equal_counts(op1: CountsMP, op2: CountsMP, **kwargs):
+    return _equal_measurements(op1, op2, **kwargs) and op1.all_outcomes == op2.all_outcomes

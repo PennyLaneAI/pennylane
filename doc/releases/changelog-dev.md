@@ -4,6 +4,33 @@
 
 <h3>New features since last release</h3>
 
+* Measurement statistics can now be collected for mid-circuit measurements. Currently,
+  `qml.expval`, `qml.var`, `qml.probs`, `qml.sample`, and `qml.counts` are supported on
+  `default.qubit`, `default.mixed`, and the new `DefaultQubit2` device.
+  [(#4544)](https://github.com/PennyLaneAI/pennylane/pull/4544)
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circ(x, y):
+      qml.RX(x, wires=0)
+      qml.RY(y, wires=1)
+      m0 = qml.measure(1)
+      return qml.expval(qml.PauliZ(0)), qml.sample(m0)
+  ```
+
+  QNodes can be executed as usual when collecting mid-circuit measurement statistics:
+
+  ```pycon
+  >>> circ(1.0, 2.0, shots=5)
+  (array(0.6), array([1, 1, 1, 0, 1]))
+  ```
+
+* Operator transforms `qml.matrix`, `qml.eigvals`, `qml.generator`, and `qml.transforms.to_zx` are updated
+  to the new transform program system.
+  [(#4573)](https://github.com/PennyLaneAI/pennylane/pull/4573)
+
 * All quantum functions transforms are update to the new transform program system.
  [(#4439)](https://github.com/PennyLaneAI/pennylane/pull/4439)
 
@@ -13,7 +40,25 @@
 * Quantum information transforms are updated to the new transform program system.
   [(#4569)](https://github.com/PennyLaneAI/pennylane/pull/4569)
 
+* `default.qubit` now implements the new device API. The old version of the device is still
+  accessible by the short name `default.qubit.legacy`, or directly via `qml.devices.DefaultQubitLegacy`.
+  [(#4594)](https://github.com/PennyLaneAI/pennylane/pull/4594)
+  [(#4436)](https://github.com/PennyLaneAI/pennylane/pull/4436)
+  [(#4620)](https://github.com/PennyLaneAI/pennylane/pull/4620)
+
 <h3>Improvements 🛠</h3>
+
+* Extended ``qml.qchem.import_state`` to import wavefunctions from MPS DMRG and SHCI classical
+  calculations performed with the Block2 and Dice libraries.
+  [#4523](https://github.com/PennyLaneAI/pennylane/pull/4523)
+  [#4524](https://github.com/PennyLaneAI/pennylane/pull/4524)
+
+* `MeasurementProcess` and `QuantumScript` objects are now registered as jax pytrees.
+  [(#4607)](https://github.com/PennyLaneAI/pennylane/pull/4607)
+  [(#4608)](https://github.com/PennyLaneAI/pennylane/pull/4608)
+
+* Tensor-network template `qml.MPS` now supports changing `offset` between subsequent blocks for more flexibility.
+  [(#4531)](https://github.com/PennyLaneAI/pennylane/pull/4531)
 
 * The qchem ``fermionic_dipole`` and ``particle_number`` functions are updated to use a
   ``FermiSentence``. The deprecated features for using tuples to represent fermionic operations are
@@ -48,6 +93,7 @@
   method will re-order the given state to go from the inputted wire-order to the process's wire-order.
   If the process's wire-order contains extra wires, it will assume those are in the zero-state.
   [(#4570)](https://github.com/PennyLaneAI/pennylane/pull/4570)
+  [(#4602)](https://github.com/PennyLaneAI/pennylane/pull/4602)
 
 * Improve builtin types support with `qml.pauli_decompose`.
   [(#4577)](https://github.com/PennyLaneAI/pennylane/pull/4577)
@@ -64,7 +110,34 @@
 * `DefaultQubit2` now works as expected with measurement processes that don't specify wires.
   [(#4580)](https://github.com/PennyLaneAI/pennylane/pull/4580)
 
+* `AmplitudeEmbedding` now inherits from `StatePrep`, allowing for it to not be decomposed
+  when at the beginning of a circuit, thus behaving like `StatePrep`.
+  [(#4583)](https://github.com/PennyLaneAI/pennylane/pull/4583)
+
+* `DefaultQubit2` can now accept a `jax.random.PRNGKey` as a `seed`, to set the key for the JAX pseudo random 
+  number generator when using the JAX interface. This corresponds to the `prng_key` on 
+  `DefaultQubitJax` in the old API.
+  [(#4596)](https://github.com/PennyLaneAI/pennylane/pull/4596)
+
+* DefaultQubit2 dispatches to a faster implementation for applying `ParametrizedEvolution` to a state
+  when it is more efficient to evolve the state than the operation matrix.
+  [(#4598)](https://github.com/PennyLaneAI/pennylane/pull/4598)
+  [(#4620)](https://github.com/PennyLaneAI/pennylane/pull/4620)
+
+* `ShotAdaptiveOptimizer` has been updated to pass shots to QNode executions instead of overriding
+  device shots before execution. This makes it compatible with the new device API.
+  [(#4599)](https://github.com/PennyLaneAI/pennylane/pull/4599)
+
+* `StateMeasurement.process_state` now assumes the input is flat. `ProbabilityMP.process_state` has
+  been updated to reflect this assumption and avoid redundant reshaping.
+  [(#4602)](https://github.com/PennyLaneAI/pennylane/pull/4602)
+
+
 <h3>Breaking changes 💔</h3>
+
+* `MeasurementProcess.eigvals()` now raises an `EigvalsUndefinedError` if the measurement observable
+  does not have eigenvalues.
+  [(#4544)](https://github.com/PennyLaneAI/pennylane/pull/4544)
 
 * The `__eq__` and `__hash__` methods of `Operator` and `MeasurementProcess` no longer rely on the
   object's address is memory. Using `==` with operators and measurement processes will now behave the
@@ -142,6 +215,20 @@
   been removed. Please use ``QuantumScript.bind_new_parameters`` instead.
   [(#4548)](https://github.com/PennyLaneAI/pennylane/pull/4548)
 
+* The private `TmpPauliRot` operator used for `SpecialUnitary` no longer decomposes to nothing
+  when the theta value is trainable.
+  [(#4585)](https://github.com/PennyLaneAI/pennylane/pull/4585)
+
+* `ProbabilityMP.marginal_prob` has been removed. Its contents have been moved into `process_state`,
+  which effectively just called `marginal_prob` with `np.abs(state) ** 2`.
+  [(#4602)](https://github.com/PennyLaneAI/pennylane/pull/4602)
+
+* `default.qubit` now implements the new device API. If you initialize a device
+  with `qml.device("default.qubit")`, all functions and properties that were tied to the old
+  device API will no longer be on the device. The legacy version can still be accessed with
+  `qml.device("default.qubit.legacy", wires=n_wires)`.
+  [(#4436)](https://github.com/PennyLaneAI/pennylane/pull/4436)
+
 <h3>Deprecations 👋</h3>
 
 * The ``prep`` keyword argument in ``QuantumScript`` is deprecated and will be removed from `QuantumScript`.
@@ -168,6 +255,10 @@
 
 <h3>Documentation 📝</h3>
 
+* Add a warning section in DefaultQubit's docstring regarding the start method used in multiprocessing.
+  This may help users circumvent issues arising in Jupyter notebooks on macOS for example.
+  [(#4622)](https://github.com/PennyLaneAI/pennylane/pull/4622)
+
 * Minor documentation improvements to the new device API. The documentation now correctly states that interface-specific
   parameters are only passed to the device for backpropagation derivatives. 
   [(#4542)](https://github.com/PennyLaneAI/pennylane/pull/4542)
@@ -179,6 +270,9 @@
 * Minor documentation improvement to the usage example in the `qml.QuantumMonteCarlo` page. Integral was missing the differential dx with respect to which the integration is being performed. [(#4593)](https://github.com/PennyLaneAI/pennylane/pull/4593)  
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed issue where `__copy__` method of the `qml.Select()` operator attempted to access un-initialized data.
+[(#4551)](https://github.com/PennyLaneAI/pennylane/pull/4551)
 
 * Fix `skip_first` option in `expand_tape_state_prep`.
   [(#4564)](https://github.com/PennyLaneAI/pennylane/pull/4564)
@@ -197,15 +291,22 @@
   expectation.
   [(#4590)](https://github.com/PennyLaneAI/pennylane/pull/4590)
 
+* The `torch.nn.Module` properties are now accessible on a `pennylane.qnn.TorchLayer`.
+  [(#4611)](https://github.com/PennyLaneAI/pennylane/pull/4611)
 
-
+* `qml.math.take` with torch now returns `tensor[..., indices]` when the user requests
+  the last axis (`axis=-1`). Without the fix, it would wrongly return `tensor[indices]`.
+  [(#4605)](https://github.com/PennyLaneAI/pennylane/pull/4605)
 
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Utkarsh Azad
+Utkarsh Azad,
+Stepan Fomichev,
+Diego Guala,
 Soran Jahangiri,
+Christina Lee,
 Lillian M. A. Frederiksen,
 Vincent Michaud-Rioux,
 Romain Moyard,
@@ -213,4 +314,3 @@ Daniel F. Nino,
 Mudit Pandey,
 Matthew Silverman,
 Jay Soni,
-
