@@ -218,7 +218,6 @@ shot_testing_combos = [
 
 @pytest.mark.parametrize("mps, expected_exec, expected_shots", shot_testing_combos)
 def test_single_expval(mps, expected_exec, expected_shots):
-
     dev = qml.device("default.qubit")
     tape = qml.tape.QuantumScript([], mps, shots=10)
 
@@ -231,7 +230,6 @@ def test_single_expval(mps, expected_exec, expected_shots):
     if not isinstance(
         tape.measurements[0], (qml.measurements.ShadowExpvalMP, qml.measurements.ClassicalShadowMP)
     ):
-
         tape = qml.tape.QuantumScript([qml.RX((1.2, 2.3, 3.4), wires=0)], mps, shots=10)
 
         with dev.tracker:
