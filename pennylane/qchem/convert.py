@@ -611,7 +611,7 @@ def import_state(solver, tol=1e-15):
             wf_dict = _dmrg_state(solver, tol=tol)
         else:
             raise ValueError(
-                "for tuple input, the supported objects are"
+                "For tuple input, the supported objects are"
                 " tuple(list[str], array[float]) for SHCI calculations with Dice library and "
                 "tuple(list[int], array[float]) for DMRG calculations with the Block2 library."
             )
