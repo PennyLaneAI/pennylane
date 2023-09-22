@@ -25,7 +25,7 @@ from pennylane.transforms.op_transforms import OperationTransformError
 
 pyzx = pytest.importorskip("pyzx")
 
-pytestmark = pytest.mark.zx
+pytestmark = pytest.mark.external
 
 supported_operations = [
     qml.PauliX(wires=0),
