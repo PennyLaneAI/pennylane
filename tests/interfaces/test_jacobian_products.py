@@ -27,9 +27,9 @@ from pennylane.interfaces.jacobian_products import (
     DeviceJacobians,
 )
 
-dev = qml.devices.DefaultQubit()
+dev = qml.device("default.qubit")
 dev_old = qml.devices.DefaultQubitLegacy(wires=5)
-adjoint_config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
+adjoint_config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 
 
 def inner_execute_numpy(tapes):
@@ -73,8 +73,8 @@ class TestBasics:
     def test_device_jacobians_initialization_new_dev(self):
         """Tests the private attributes are set during initialization of a DeviceJacobians class."""
 
-        device = qml.devices.experimental.DefaultQubit2()
-        config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
+        device = qml.device("default.qubit")
+        config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 
         jpc = DeviceJacobians(device, {}, config)
 
@@ -91,7 +91,7 @@ class TestBasics:
         """Test the private attributes are set during initialization of a DeviceJacobians class with the
         old device interface."""
 
-        device = qml.devices.DefaultQubit(wires=5)
+        device = qml.devices.DefaultQubitLegacy(wires=5)
         gradient_kwargs = {"method": "adjoint_jacobian"}
 
         jpc = DeviceJacobians(device, gradient_kwargs)
@@ -106,16 +106,16 @@ class TestBasics:
 
     def test_device_jacobians_repr(self):
         """Test the repr method for device jacobians."""
-        device = qml.devices.experimental.DefaultQubit2()
-        config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
+        device = qml.device("default.qubit")
+        config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 
         jpc = DeviceJacobians(device, {}, config)
 
         expected = (
-            r"<DeviceJacobians: default.qubit.2, {},"
+            r"<DeviceJacobians: default.qubit, {},"
             r" ExecutionConfig(grad_on_execution=None, use_device_gradient=None,"
             r" gradient_method='adjoint', gradient_keyword_arguments={},"
-            r" device_options={}, interface='autograd', derivative_order=1)>"
+            r" device_options={}, interface=None, derivative_order=1)>"
         )
 
         assert repr(jpc) == expected

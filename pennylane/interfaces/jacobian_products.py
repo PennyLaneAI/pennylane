@@ -232,20 +232,20 @@ class TransformJacobianProducts(JacobianProductCalculator):
 
 
 class DeviceJacobians(JacobianProductCalculator):
-    """Calculate jacobian products via an experimental device.
+    """Calculate jacobian products via a device.
 
     Args:
-        device (Union[pennylane.Device, pennylane.devices.experimental.Device]): the device for execution and derivatives.
+        device (Union[pennylane.Device, pennylane.devicesDevice]): the device for execution and derivatives.
             Must support supports first order gradients with the requested configuration.
         gradient_kwargs (dict): a dictionary of keyword options for the gradients. Only used with a :class:`~.pennylane.Device`
             old device interface.
-        execution_config (pennylane.devices.experimental.ExecutionConfig): a datastructure containing the parameters needed to fully
-           describe the execution. Only used with :class:`pennylane.devices.experimental.ExecutionConfig` new device interface.
+        execution_config (pennylane.devices.ExecutionConfig): a datastructure containing the parameters needed to fully
+           describe the execution. Only used with :class:`pennylane.devices.Device` new device interface.
 
     **Examples:**
 
-    >>> device = qml.devices.experimental.DefaultQubit2()
-    >>> config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
+    >>> device = qml.device('default.qubit')
+    >>> config = qml.devices.ExecutionConfig(gradient_method="adjoint")
     >>> jpc = DeviceJacobians(device, {}, config)
 
     This same class can also be used with the old device interface.
@@ -298,9 +298,9 @@ class DeviceJacobians(JacobianProductCalculator):
 
     def __init__(
         self,
-        device: Union[qml.devices.experimental.Device, qml.Device],
+        device: Union[qml.devices.Device, qml.Device],
         gradient_kwargs: dict,
-        execution_config: Optional["qml.devices.experimental.ExecutionConfig"] = None,
+        execution_config: Optional["qml.devices.ExecutionConfig"] = None,
     ):
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
