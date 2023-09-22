@@ -177,8 +177,8 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
                 f"{len(reused_measurement_wires)} free wires."
             )
     else:
-        unused_wires = [f"mv{i}" for i in range(len(reused_measurement_wires))]
-        if len(reserved_wires := Wires.shared_wires([tape.wires, Wires(unused_wires)])) != 0:
+        unused_wires = Wires([f"mv{i}" for i in range(len(reused_measurement_wires))])
+        if len(reserved_wires := Wires.shared_wires([tape.wires, unused_wires])) != 0:
             raise ValueError(
                 f"Found reserved wires {reserved_wires}. Wires labels of the format 'mv{{i}}', "
                 "where {{i}} is an integer, are reserved for defer_measurements to use."
@@ -221,6 +221,14 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
         if mp.mv is not None:
             wire_map = {m.wires[0]: control_wires[m.id] for m in mp.mv.measurements}
             mp = qml.map_wires(mp, wire_map=wire_map)
+
+        elif isinstance(mp, (qml.measurements.SampleMP, qml.measurements.ProbabilityMP)) and not (
+            mp.obs or mp.wires
+        ):
+            mp._wires = (
+                Wires.unique_wires([device_wires, unused_wires]) if device_wires else tape.wires
+            )
+
         new_measurements.append(mp)
 
     new_tape = type(tape)(new_operations, new_measurements, shots=tape.shots)

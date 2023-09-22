@@ -16,7 +16,6 @@ Tests for the transform implementing the deferred measurement principle.
 """
 # pylint: disable=too-few-public-methods
 import math
-from functools import partial
 import pytest
 
 import pennylane as qml
@@ -75,14 +74,13 @@ class TestQNode:
         """Test that manually passing device wires when transforming a qnode raises an error."""
         dev = qml.device("default.qubit", wires=[0, 1, 2])
 
-        @partial(qml.defer_measurements, device_wires=dev.wires)
         @qml.qnode(dev)
         def circ():
             qml.measure(0)
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Cannot provide a 'device_wires'"):
-            _ = circ()
+            _ = qml.defer_measurements(circ, device_wires=dev.wires)
 
     @pytest.mark.parametrize(
         "dev", [qml.device("default.qubit", wires=2), qml.device("default.qubit.legacy", wires=2)]
@@ -1179,6 +1177,39 @@ class TestQubitReuseAndReset:
         ]
 
         assert circ.qtape.operations == expected
+
+    @pytest.mark.parametrize("mp", [qml.probs(), qml.sample()])
+    def test_measurements_only_use_original_wires(self, mp):
+        """Test that measurement processes applying to all wires are updated to only
+        use the original wires."""
+        # With qubit reuse
+        tape1 = qml.tape.QuantumScript(
+            [
+                qml.PauliX(0),
+                qml.measurements.MidMeasureMP(0, reset=True),
+                qml.RX(0.123, 0),
+                qml.CNOT([0, 1]),
+            ],
+            [mp],
+        )
+
+        tapes1, _ = qml.defer_measurements(tape1)
+        transformed_tape1 = tapes1[0]
+        assert transformed_tape1.measurements == [type(mp)(wires=qml.wires.Wires([0, 1]))]
+
+        # Without qubit reuse
+        tape2 = qml.tape.QuantumScript(
+            [
+                qml.PauliX(0),
+                qml.measurements.MidMeasureMP(0),
+                qml.RX(0.123, 1),
+            ],
+            [mp],
+        )
+
+        tapes2, _ = qml.defer_measurements(tape2)
+        transformed_tape2 = tapes2[0]
+        assert transformed_tape2.measurements == [type(mp)(wires=qml.wires.Wires([0, 1]))]
 
     def test_correct_cnot_for_reset(self):
         """Test that a CNOT is applied from the wire that stores the measurement
