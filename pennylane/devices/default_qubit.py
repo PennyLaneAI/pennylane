@@ -30,6 +30,7 @@ from pennylane.transforms.core import TransformProgram
 from . import Device
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
 from .qubit.simulate import simulate, get_final_state, measure_final_state
+from .qubit.sampling import get_num_shots_and_executions
 from .qubit.preprocess import (
     preprocess,
     validate_and_expand_adjoint,
@@ -279,6 +280,10 @@ class DefaultQubit(Device):
         if self.tracker.active:
             for c in circuits:
                 self.tracker.update(resources=c.specs["resources"])
+                if c.shots:
+                    qpu_executions, shots = get_num_shots_and_executions(c)
+                    self.tracker.update(qpu_executions=qpu_executions, shots=shots)
+
             self.tracker.update(batches=1, executions=len(circuits))
             self.tracker.record()
 

@@ -48,6 +48,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* `default.qubit` now tracks the number of equivalent qpu executions and total shots
+  when the device is sampling. Note that `"executions"` denotes the number of simulation passes, where as
+  `"qpu_executions"` denotes how many different computational bases need to be sampled in.
+
 * Extended ``qml.qchem.import_state`` to import wavefunctions from MPS DMRG and SHCI classical
   calculations performed with the Block2 and Dice libraries.
   [#4523](https://github.com/PennyLaneAI/pennylane/pull/4523)
