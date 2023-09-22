@@ -135,6 +135,7 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
     >>> func(*pars)
     tensor([0.76960924, 0.13204407, 0.08394415, 0.01440254], requires_grad=True)
     """
+    # pylint: disable=protected-access
 
     cv_types = (qml.operation.CVOperation, qml.operation.CVObservable)
     ops_cv = any(isinstance(op, cv_types) for op in tape.operations)
@@ -146,18 +147,22 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
     new_operations = []
 
     # Find wires that are reused after measurement
-    measured_wires = set()
+    measured_wires = []
     reused_measurement_wires = set()
+    repeated_measurement_wire = False
 
     for op in tape.operations:
         if isinstance(op, MidMeasureMP):
-            if op.wires[0] in measured_wires or op.reset is True:
+            if op.reset is True:
                 reused_measurement_wires.add(op.wires[0])
-            measured_wires.add(op.wires[0])
+
+            if op.wires[0] in measured_wires:
+                repeated_measurement_wire = True
+            measured_wires.append(op.wires[0])
 
         else:
             reused_measurement_wires = reused_measurement_wires.union(
-                measured_wires.intersection(op.wires.toset())
+                set(measured_wires).intersection(op.wires.toset())
             )
 
     # Create list of wires that can be used to store mid-circuit measurement results of
@@ -178,13 +183,17 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
     control_wires = {}
     cur_wire = 0 if reused_measurement_wires else None
 
-    for op in tape:
+    for op in tape.operations:
         if isinstance(op, MidMeasureMP):
-            # Only store measurement outcome in new wire if wire gets reused
-            if op.wires[0] in reused_measurement_wires:
+            _ = measured_wires.pop(0)
+
+            # Store measurement outcome in new wire if wire gets reused
+            if op.wires[0] in reused_measurement_wires or op.wires[0] in measured_wires:
                 control_wires[op.id] = unused_wires[cur_wire]
+
                 with QueuingManager.stop_recording():
                     new_operations.append(qml.CNOT([op.wires[0], cur_wire]))
+
                 if op.reset:
                     with QueuingManager.stop_recording():
                         new_operations.append(qml.CNOT([cur_wire, op.wires[0]]))
@@ -199,11 +208,15 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
         else:
             new_operations.append(op)
 
-    new_tape = QuantumTape(
-        new_operations[: -len(tape.measurements)],
-        new_operations[-len(tape.measurements) :],
-        shots=tape.shots,
-    )
+    new_measurements = []
+
+    for mp in tape.measurements:
+        if mp.mv is not None:
+            wire_map = {m.wires[0]: control_wires[m.id] for m in mp.mv.measurements}
+            mp = qml.map_wires(mp, wire_map=wire_map)
+        new_measurements.append(mp)
+
+    new_tape = type(tape)(new_operations, new_measurements, shots=tape.shots)
     new_tape._qfunc_output = tape._qfunc_output  # pylint: disable=protected-access
 
     def null_postprocessing(results):
