@@ -4,6 +4,35 @@
 
 <h3>New features since last release</h3>
 
+* Support drawing QJIT QNode from Catalyst.
+  [(#4609)](https://github.com/PennyLaneAI/pennylane/pull/4609)
+
+  ```python
+  import catalyst
+
+  @catalyst.qjit
+  @qml.qnode(qml.device("lightning.qubit", wires=3))
+  def circuit(x, y, z, c):
+      """A quantum circuit on three wires."""
+
+      @catalyst.for_loop(0, c, 1)
+      def loop(i):
+          qml.Hadamard(wires=i)
+
+      qml.RX(x, wires=0)
+      loop()  # pylint: disable=no-value-for-parameter
+      qml.RY(y, wires=1)
+      qml.RZ(z, wires=2)
+      return qml.expval(qml.PauliZ(0))
+  
+  draw = qml.draw(circuit, decimals=None)(1.234, 2.345, 3.456, 1)
+  ```
+  
+  ```pycon
+  >>>draw
+  "0: ──RX──H──┤  <Z>\n1: ──H───RY─┤     \n2: ──RZ─────┤     "
+  ```
+
 * Measurement statistics can now be collected for mid-circuit measurements. Currently,
   `qml.expval`, `qml.var`, `qml.probs`, `qml.sample`, and `qml.counts` are supported on
   `default.qubit`, `default.mixed`, and the new `DefaultQubit2` device.
