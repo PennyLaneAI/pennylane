@@ -63,6 +63,34 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
 
     .. note::
 
+        When transforming a ``QNode`` which uses a device that has wires specified, any unused
+        wires will be discarded for measurements when no observable or wires are specified. This
+        includes :func:`~pennylane.probs`, :func:`~pennylane.sample`, and :func:`~pennylane.counts`.
+        For example:
+
+        .. code-block:: python3
+
+            dev = qml.device("default.qubit", wires=4)
+
+            @qml.defer_measurements
+            @qml.qnode(dev)
+            def circuit(x):
+                qml.RX(x, 0)
+                m = qml.measure(0)
+                qml.cond(m, qml.PauliX)(2)
+                return qml.probs()
+
+        Here, we only use wires ``0`` and ``2``, so the final result will only include those
+        wires:
+
+        >>> circuit(np.pi / 2)
+        tensor([0.5, 0. , 0. , 0.5], requires_grad=True)
+
+        Measurements for which observables or wires are specified will not be affected, although
+        the results for those wires may be unexpected or incorrect.
+
+    .. note::
+
         This transform does not change the list of terminal measurements returned by
         the quantum function.
 
