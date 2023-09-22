@@ -935,6 +935,7 @@ def test_import_state(molecule, basis, symm, method, wf_ref):
     elif method == "uccsd":
         myhf = pyscf.scf.UHF(mol).run()
         solver = pyscf.cc.uccsd.UCCSD(myhf).run()
+    # elif method == 
 
     wf_comp = qchem.convert.import_state(solver)
 
@@ -1105,6 +1106,20 @@ def test_sitevec_to_fock(sitevec, format, state_ref):
                 (1, 1): np.array([0.1327346]),
             },
         ),
+        (
+            (
+                np.array([ [3,3,3,0,0,0,0,0,0,0], [3,3,0,3,0,0,0,0,0,0], 
+                [3,3,0,0,3,0,0,0,0,0], [3,3,0,0,0,3,0,0,0,0] ]),
+                np.array([-0.887277400314367, 0.308001203411555, 
+                            0.307470727263604, 0.145118175734375])
+            ),
+            {
+                (35, 35): np.array([-0.145118175734375]), 
+                (19, 19): np.array([-0.307470727263604]), 
+                (11, 11): np.array([-0.308001203411555]), 
+                (7, 7): np.array([0.887277400314367])
+            }
+        ),
     ],
 )
 def test_dmrg_state(wavefunction, state_ref):
@@ -1131,6 +1146,22 @@ def test_dmrg_state(wavefunction, state_ref):
                 (2, 2): np.array([0.69958765]),
                 (1, 2): np.array([0.70211014]),
                 (1, 1): np.array([0.1327346]),
+            },
+        ),
+        (
+            (
+                ["2220000000", "2202000000", "2200200000", 
+                    "2200020000", "22b00000a0", "22a00000b0"], 
+            np.array([0.8874197325, -0.3075732772, -0.3075732772, 
+                    -0.1450493028, -0.0226602105, -0.0226602105])
+            ),
+            {
+                (7, 7): np.array([0.8874197325]), 
+                (11, 11): np.array([-0.3075732772]), 
+                (19, 19): np.array([-0.3075732772]), 
+                (35, 35): np.array([-0.1450493028]), 
+                (259, 7): np.array([-0.0226602105]), 
+                (7, 259): np.array([-0.0226602105])
             },
         ),
     ],
