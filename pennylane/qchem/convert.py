@@ -605,9 +605,9 @@ def import_state(solver, tol=1e-15):
     elif "UCCSD" in method:
         wf_dict = _uccsd_state(solver, tol=tol)
     elif "tuple" in method:
-        if type(solver[0][0]) is str:
+        if type(solver[0][0]) is np.str_:
             wf_dict = _shci_state(solver, tol=tol)
-        elif type(solver[0][0]) is int:
+        elif type(solver[0][0][0]) is type(np.array([0]).numpy()[0]):
             wf_dict = _dmrg_state(solver, tol=tol)
         else:
             raise ValueError(
@@ -622,7 +622,10 @@ def import_state(solver, tol=1e-15):
             " tuple(array[str], array[float]) for SHCI calculations with Dice library and "
             "tuple(array[int], array[float]) for DMRG calculations with the Block2 library."
         )
-    wf = _wfdict_to_statevector(wf_dict, solver.mol.nao)
+    if "tuple" in method:
+        wf = _wfdict_to_statevector(wf_dict, len(solver[0][0]))
+    else:
+        wf = _wfdict_to_statevector(wf_dict, solver.mol.nao)
 
     return wf
 
