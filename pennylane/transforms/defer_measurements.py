@@ -222,9 +222,10 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
             wire_map = {m.wires[0]: control_wires[m.id] for m in mp.mv.measurements}
             mp = qml.map_wires(mp, wire_map=wire_map)
 
-        elif isinstance(mp, (qml.measurements.SampleMP, qml.measurements.ProbabilityMP)) and not (
-            mp.obs or mp.wires
-        ):
+        elif isinstance(
+            mp,
+            (qml.measurements.SampleMP, qml.measurements.ProbabilityMP, qml.measurements.CountsMP),
+        ) and not (mp.obs or mp.wires):
             mp._wires = (
                 Wires.unique_wires([device_wires, unused_wires]) if device_wires else tape.wires
             )

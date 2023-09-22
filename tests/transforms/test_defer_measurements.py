@@ -1178,7 +1178,7 @@ class TestQubitReuseAndReset:
 
         assert circ.qtape.operations == expected
 
-    @pytest.mark.parametrize("mp", [qml.probs(), qml.sample()])
+    @pytest.mark.parametrize("mp", [qml.probs(), qml.sample(), qml.counts()])
     def test_measurements_only_use_original_wires(self, mp):
         """Test that measurement processes applying to all wires are updated to only
         use the original wires."""

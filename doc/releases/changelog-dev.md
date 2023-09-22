@@ -48,6 +48,14 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.defer_measurements` now supports custom wire labels. When transforming tapes or QNodes with devices
+  initialized with `wires=None`, wires with labels `mv{i}`, where `{i}` is an integer, will be used to
+  store mid-circuit measurement results. Thus, these labels are reserved when using the `qml.defer_measurements`
+  transform. Additionally, when using measuring `qml.probs`, `qml.sample`, or `qml.counts` without
+  specifying an observable or wires, `qml.defer_measurements` will correctly transform the measurements such
+  that only the original wires are used for the measurements.
+  [(#4625)](https://github.com/PennyLaneAI/pennylane/pull/4625)
+
 * Extended ``qml.qchem.import_state`` to import wavefunctions from MPS DMRG and SHCI classical
   calculations performed with the Block2 and Dice libraries.
   [#4523](https://github.com/PennyLaneAI/pennylane/pull/4523)
