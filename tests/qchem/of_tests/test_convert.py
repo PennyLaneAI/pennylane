@@ -947,7 +947,7 @@ def test_import_state_pyscf(molecule, basis, symm, method, wf_ref):
     [
         (
             # dmrg
-            (np.array([[0, 3], [3, 0]]).numpy(), np.array([-0.10660077, 0.9943019]).numpy()),
+            ([[0, 3], [3, 0]], np.array([-0.10660077, 0.9943019]).numpy()),
             np.array(
                 [
                     0.0,
@@ -971,7 +971,7 @@ def test_import_state_pyscf(molecule, basis, symm, method, wf_ref):
         ),
         (
             # shci
-            (np.array(["02", "20"]).numpy(), np.array([-0.1066467, 0.99429698]).numpy()),
+            (["02", "20"], np.array([-0.1066467, 0.99429698]).numpy()),
             np.array(
                 [
                     0.0,

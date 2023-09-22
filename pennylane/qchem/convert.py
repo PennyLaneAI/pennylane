@@ -605,22 +605,22 @@ def import_state(solver, tol=1e-15):
     elif "UCCSD" in method:
         wf_dict = _uccsd_state(solver, tol=tol)
     elif "tuple" in method:
-        if isinstance(solver[0][0], np.str_):
+        if isinstance(solver[0][0], str):
             wf_dict = _shci_state(solver, tol=tol)
-        elif isinstance(solver[0][0][0], type(np.array([0]).numpy()[0])):
+        elif isinstance(solver[0][0][0], int):
             wf_dict = _dmrg_state(solver, tol=tol)
         else:
             raise ValueError(
                 "for tuple input, the supported objects are"
-                " tuple(array[str], array[float]) for SHCI calculations with Dice library and "
-                "tuple(array[int], array[float]) for DMRG calculations with the Block2 library."
+                " tuple(list[str], array[float]) for SHCI calculations with Dice library and "
+                "tuple(list[int], array[float]) for DMRG calculations with the Block2 library."
             )
     else:
         raise ValueError(
             "The supported objects are RCISD, UCISD, RCCSD, and UCCSD for restricted and"
             " unrestricted configuration interaction and coupled cluster calculations, and"
-            " tuple(array[str], array[float]) for SHCI calculations with Dice library and "
-            "tuple(array[int], array[float]) for DMRG calculations with the Block2 library."
+            " tuple(list[str], array[float]) for SHCI calculations with Dice library and "
+            "tuple(list[int], array[float]) for DMRG calculations with the Block2 library."
         )
     if "tuple" in method:
         wf = _wfdict_to_statevector(wf_dict, len(solver[0][0]))
@@ -1047,7 +1047,7 @@ def _dmrg_state(wavefunction, tol=1e-15):
     using Block2 DMRGDriver's `get_csf_coefficients()` method.
 
     Args:
-        wavefunction tuple(array[int], array[float]): determinants and coefficients in physicist notation
+        wavefunction tuple(list[int], array[float]): determinants and coefficients in physicist notation
         tol (float): the tolerance for discarding Slater determinants with small coefficients
 
     Returns:
@@ -1078,7 +1078,7 @@ def _dmrg_state(wavefunction, tol=1e-15):
     row, col, dat = [], [], []
 
     for ii, det in enumerate(dets):
-        stra, strb = _sitevec_to_fock(det.tolist(), format="dmrg")
+        stra, strb = _sitevec_to_fock(det, format="dmrg")
         row.append(stra)
         col.append(strb)
 
@@ -1162,7 +1162,7 @@ def _shci_state(wavefunction, tol=1e-15):
     SHCI.outputfile.
 
     Args:
-        wavefunction tuple(array[str], array[float]): determinants and coefficients in chemist notation
+        wavefunction tuple(list[str], array[float]): determinants and coefficients in chemist notation
         tol (float): the tolerance for discarding Slater determinants with small coefficients
     Returns:
         dict: dictionary of the form `{(int_a, int_b) : coeff}`, with integers `int_a, int_b`
