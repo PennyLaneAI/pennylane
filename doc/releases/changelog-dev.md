@@ -8,7 +8,7 @@
   [(#4609)](https://github.com/PennyLaneAI/pennylane/pull/4609)
 
   ```python
-   import catalyst
+  import catalyst
 
   @catalyst.qjit
   @qml.qnode(qml.device("lightning.qubit", wires=3))
