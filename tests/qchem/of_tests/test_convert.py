@@ -1076,3 +1076,68 @@ def test_rccsd_state(molecule, basis, symm, tol, wf_ref):
 
     assert wf_ccsd.keys() == wf_ref.keys()
     assert np.allclose(abs(np.array(list(wf_ccsd.values()))), abs(np.array(list(wf_ref.values()))))
+
+
+@pytest.mark.parametrize(
+    ("sitevec", "format", "state_ref"),
+    [([1, 2, 1, 0, 0, 2], "dmrg", (5, 34)), (["a", "b", "a", "0", "0", "b"], "shci", (5, 34))],
+)
+def test_sitevec_to_fock(sitevec, format, state_ref):
+    r"""Test that _sitevec_to_fock returns the correct state."""
+
+    state = qml.qchem.convert._sitevec_to_fock(sitevec, format)
+
+    assert state == state_ref
+
+
+@pytest.mark.parametrize(
+    ("wavefunction", "state_ref"),
+    [
+        (
+            (np.array([[0, 3], [3, 0]]), np.array([-0.10660077, 0.9943019])),
+            {(2, 2): np.array([-0.10660077]), (1, 1): np.array([0.9943019])},
+        ),
+        (
+            (np.array([[0, 3], [1, 2], [3, 0]]), np.array([0.69958765, 0.70211014, 0.1327346])),
+            {
+                (2, 2): np.array([0.69958765]),
+                (1, 2): np.array([0.70211014]),
+                (1, 1): np.array([0.1327346]),
+            },
+        ),
+    ],
+)
+def test_dmrg_state(wavefunction, state_ref):
+    r"""Test that _dmrg_state returns the correct state."""
+
+    state = qml.qchem.convert._dmrg_state(wavefunction)
+
+    assert state == state_ref
+
+
+@pytest.mark.parametrize(
+    ("wavefunction", "state_ref"),
+    [
+        (
+            (
+                ["02", "20"],
+                np.array([-0.10660077, 0.9943019]),
+            ),
+            {(2, 2): np.array([-0.10660077]), (1, 1): np.array([0.9943019])},
+        ),
+        (
+            (["02", "ab", "20"], np.array([0.69958765, 0.70211014, 0.1327346])),
+            {
+                (2, 2): np.array([0.69958765]),
+                (1, 2): np.array([0.70211014]),
+                (1, 1): np.array([0.1327346]),
+            },
+        ),
+    ],
+)
+def test_shci_state(wavefunction, state_ref):
+    r"""Test that _shci_state returns the correct state."""
+
+    state = qml.qchem.convert._shci_state(wavefunction)
+
+    assert state == state_ref

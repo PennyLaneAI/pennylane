@@ -171,6 +171,66 @@ class TestCountsIntegration:
         circuit()
         assert circuit._qfunc_output.return_type is Counts  # pylint: disable=protected-access
 
+    @pytest.mark.parametrize("shots", [1000, [1000, 1000]])
+    @pytest.mark.parametrize("phi", np.arange(np.pi / 4, 2 * np.pi, np.pi / 2))
+    def test_observable_is_measurement_value(self, shots, phi):
+        """Test that counts for mid-circuit measurement values
+        are correct for a single measurement value."""
+        dev = qml.device("default.qubit.legacy", wires=2, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            return qml.counts(m0)
+
+        res = circuit(phi)
+        if isinstance(shots, list):
+            assert isinstance(res, tuple)
+            assert len(res) == 2
+
+            for r in res:
+                assert isinstance(r, dict)
+                assert len(r) == 2
+                assert set(r.keys()) == {0, 1}
+
+        else:
+            assert isinstance(res, dict)
+            assert len(res) == 2
+            assert set(res.keys()) == {0, 1}
+
+    @pytest.mark.parametrize("shots", [5, [5, 5]])
+    def test_observable_is_measurement_value_all_outcomes(self, shots):
+        """Test that counts for mid-circuit measurement values
+        are correct for a single measurement value."""
+        dev = qml.device("default.qubit.legacy", wires=2, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(0)
+            m0 = qml.measure(0)
+            return qml.counts(m0, all_outcomes=True)
+
+        res = circuit()
+        print(res)
+        if isinstance(shots, list):
+            assert isinstance(res, tuple)
+            assert len(res) == 2
+
+            for r in res:
+                assert isinstance(r, dict)
+                assert len(r) == 2
+                assert set(r.keys()) == {0, 1}
+                assert r[0] == 0
+                assert r[1] == 5
+
+        else:
+            assert isinstance(res, dict)
+            assert len(res) == 2
+            assert set(res.keys()) == {0, 1}
+            assert res[0] == 0
+            assert res[1] == 5
+
     def test_providing_no_observable_and_no_wires_counts(self, mocker):
         """Test that we can provide no observable and no wires to sample function"""
         dev = qml.device("default.qubit.legacy", wires=2, shots=1000)
