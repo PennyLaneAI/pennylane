@@ -1073,7 +1073,7 @@ class Operator(abc.ABC):
         if any(sympy_check):
             if not all(sympy_check):
                 raise ValueError("If using the SymPy interface, all parameters must be passed as "
-                                 "SymPy symbols.")
+                                 "SymPy objects.")
             return
 
         try:
