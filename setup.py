@@ -57,6 +57,7 @@ info = {
             "default.mixed = pennylane.devices.default_mixed:DefaultMixed",
             "null.qubit = pennylane.devices.null_qubit:NullQubit",
             "default.qutrit = pennylane.devices.default_qutrit:DefaultQutrit",
+            "default.sympy = pennylane.devices.default_sympy:DefaultSympy",
         ],
         "console_scripts": ["pl-device-test=pennylane.devices.tests:cli"],
     },
