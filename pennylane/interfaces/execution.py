@@ -58,6 +58,7 @@ INTERFACE_MAP = {
     "tensorflow": "tf",
     "tensorflow-autograph": "tf",
     "tf-autograph": "tf",
+    "sympy": "sympy",
 }
 """dict[str, str]: maps an allowed interface specification to its canonical name."""
 
