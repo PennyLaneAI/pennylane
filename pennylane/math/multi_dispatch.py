@@ -415,7 +415,13 @@ def get_trainable_indices(values, like=None):
     trainable_params = set()
 
     for idx, p in enumerate(values):
-        if requires_grad(p, interface=like):
+        if get_interface(p) == "sympy":
+            from sympy import Symbol
+            from sympy.tensor.array.expressions import ArraySymbol
+
+            if isinstance(p, (Symbol, ArraySymbol)):
+                trainable_params.add(idx)
+        elif requires_grad(p, interface=like):
             trainable_params.add(idx)
 
     return trainable_params
