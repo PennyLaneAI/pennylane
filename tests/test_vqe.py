@@ -628,7 +628,6 @@ class TestVQE:
         assert np.allclose(c1, c2)
 
     # pylint: disable=protected-access
-    @pytest.mark.skip("non-opt is less executions than opt with new device")
     @pytest.mark.autograd
     def test_optimize_grad(self):
         """Test that the gradient of ExpvalCost is accessible and correct when using observable
