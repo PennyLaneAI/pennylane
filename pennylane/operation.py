@@ -244,7 +244,7 @@ from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, eye, kron
 
 import pennylane as qml
-from pennylane.math import expand_matrix
+from pennylane.math import expand_matrix, get_interface
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
@@ -1067,6 +1067,14 @@ class Operator(abc.ABC):
         expected numbers of dimensions, allowing to infer a batch size.
         """
         self._batch_size = None
+
+        sympy_check = tuple(get_interface(p) == "sympy" for p in params)
+
+        if any(sympy_check):
+            if not all(sympy_check):
+                raise ValueError("If using the SymPy interface, all parameters must be passed as "
+                                 "SymPy symbols.")
+            return
 
         try:
             ndims = tuple(qml.math.ndim(p) for p in params)
