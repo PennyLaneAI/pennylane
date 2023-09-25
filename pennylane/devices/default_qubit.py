@@ -279,12 +279,15 @@ class DefaultQubit(Device):
 
         if self.tracker.active:
             for c in circuits:
-                self.tracker.update(resources=c.specs["resources"])
+                qpu_executions, shots = get_num_shots_and_executions(c)
                 if c.shots:
-                    qpu_executions, shots = get_num_shots_and_executions(c)
-                    self.tracker.update(qpu_executions=qpu_executions, shots=shots)
+                    self.tracker.update(
+                        executions=qpu_executions, shots=shots, resources=c.specs["resources"]
+                    )
+                else:
+                    self.tracker.update(executions=qpu_executions, resources=c.specs["resources"])
 
-            self.tracker.update(batches=1, executions=len(circuits))
+            self.tracker.update(batches=1, simulations=len(circuits))
             self.tracker.record()
 
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)

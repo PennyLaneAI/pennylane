@@ -112,20 +112,25 @@ def get_num_shots_and_executions(tape: qml.tape.QuantumTape) -> Tuple[int, int]:
             indices = group[0].obs.grouping_indices
             H_executions = len(indices) if indices else len(group[0].obs.ops)
             num_executions += H_executions
-            num_shots += tape.shots.total_shots * H_executions
+            if tape.shots:
+                num_shots += tape.shots.total_shots * H_executions
         elif isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, qml.ops.Sum):
             num_executions += len(group[0].obs)
-            num_shots += tape.shots.total_shots * len(group[0].obs)
+            if tape.shots:
+                num_shots += tape.shots.total_shots * len(group[0].obs)
         elif isinstance(group[0], (ClassicalShadowMP, ShadowExpvalMP)):
             num_executions += tape.shots.total_shots
-            num_shots += tape.shots.total_shots
+            if tape.shots:
+                num_shots += tape.shots.total_shots
         else:
             num_executions += 1
-            num_shots += tape.shots.total_shots
+            if tape.shots:
+                num_shots += tape.shots.total_shots
 
     if tape.batch_size:
         num_executions *= tape.batch_size
-        num_shots *= tape.batch_size
+        if tape.shots:
+            num_shots *= tape.batch_size
     return num_executions, num_shots
 
 

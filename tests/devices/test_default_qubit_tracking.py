@@ -53,7 +53,8 @@ class TestTracking:
 
         assert tracker.history == {
             "batches": [1, 1],
-            "executions": [1, 2],
+            "executions": [1, 1, 1],
+            "simulations": [1, 2],
             "resources": [Resources(num_wires=1), Resources(num_wires=1), Resources(num_wires=1)],
             "derivative_batches": [1],
             "derivatives": [1],
@@ -61,10 +62,11 @@ class TestTracking:
         assert tracker.totals == {
             "batches": 2,
             "executions": 3,
+            "simulations": 3,
             "derivative_batches": 1,
             "derivatives": 1,
         }
-        assert tracker.latest == {"batches": 1, "executions": 2}
+        assert tracker.latest == {"batches": 1, "simulations": 2}
 
     def test_tracking_execute_and_derivatives(self):
         """Test that the execute_and_compute_* calls are being tracked for the
@@ -143,7 +145,8 @@ class TestTracking:
         with qml.Tracker(dev_1, persistent=True) as tracker1:
             for _ in range(num_evals_1):
                 node_1(0.432, np.array([0.12, 0.5, 3.2]))
-        assert tracker1.totals["executions"] == num_evals_1
+        assert tracker1.totals["executions"] == 3 * num_evals_1
+        assert tracker1.totals["simulations"] == num_evals_1
 
         # test a second instance of a default qubit device
         dev_2 = qml.device("default.qubit", wires=2)
@@ -159,7 +162,8 @@ class TestTracking:
         with qml.Tracker(dev_2) as tracker2:
             for _ in range(num_evals_2):
                 node_2(np.array([0.432, 0.61, 8.2]))
-        assert tracker2.totals["executions"] == num_evals_2
+        assert tracker2.totals["simulations"] == num_evals_2
+        assert tracker2.totals["executions"] == 3 * num_evals_2
 
         # test a new circuit on an existing instance of a qubit device
         def circuit_3(y):
@@ -173,7 +177,8 @@ class TestTracking:
         with tracker1:
             for _ in range(num_evals_3):
                 node_3(np.array([0.12, 1.214]))
-        assert tracker1.totals["executions"] == num_evals_1 + num_evals_3
+        assert tracker1.totals["simulations"] == num_evals_1 + num_evals_3
+        assert tracker1.totals["executions"] == 3 * num_evals_1 + 2 * num_evals_3
 
 
 H0 = qml.Hamiltonian([1.0, 1.0], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
@@ -224,7 +229,8 @@ def test_single_expval(mps, expected_exec, expected_shots):
     with dev.tracker:
         dev.execute(tape)
 
-    assert dev.tracker.totals["qpu_executions"] == expected_exec
+    assert dev.tracker.totals["executions"] == expected_exec
+    assert dev.tracker.totals["simulations"] == 1
     assert dev.tracker.totals["shots"] == expected_shots
 
     if not isinstance(
@@ -235,5 +241,6 @@ def test_single_expval(mps, expected_exec, expected_shots):
         with dev.tracker:
             dev.execute(tape)
 
-        assert dev.tracker.totals["qpu_executions"] == 3 * expected_exec
+        assert dev.tracker.totals["executions"] == 3 * expected_exec
+        assert dev.tracker.totals["simulations"] == 1
         assert dev.tracker.totals["shots"] == 3 * expected_shots
