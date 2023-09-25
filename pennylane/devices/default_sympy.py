@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the SymPy device"""
-from typing import Sequence, Union
+from typing import Optional, Sequence, Union
 
 import pennylane as qml
 from pennylane.tape import QuantumTape
@@ -30,3 +30,11 @@ class DefaultSympy(Device):
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
         return 0.0 if isinstance(circuits, qml.tape.QuantumScript) else tuple(0.0 for c in circuits)
+
+    def supports_derivatives(
+        self,
+        execution_config: Optional[ExecutionConfig] = None,
+        circuit: Optional[QuantumTape] = None,
+    ) -> bool:
+        if execution_config.gradient_method == "backprop" and execution_config.interface == "sympy":
+            return True
