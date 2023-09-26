@@ -573,17 +573,16 @@ def import_state(solver, tol=1e-15):
         * the library Block2 implementing the DMRG method.
 
     Args:
-        solver: external wavefunction object
-            * For PySCF, this is the R/UCISD or R/UCCSD Solver object
-            * For SHCI via Dice, this is the tuple(list[str], array[float]) of Slater determinants and their coefficients
-            * For DMRG via Block2, this is the tuple(list[int], array[float]) of Slater determinants and their coefficients
+        solver: external wavefunction object. a) For PySCF, this is the R/UCISD or R/UCCSD Solver object;
+        b) for SHCI via Dice, this is the tuple(list[str], array[float]) of Slater determinants and their coefficients;
+        c) for DMRG via Block2, this is the tuple(list[int], array[float]) of Slater determinants and their coefficients
         tol (float): the tolerance for discarding Slater determinants based on their coefficients
 
     Raises:
         ValueError: if external object type is not supported
 
     Returns:
-        array: normalized state vector of length ``2**len(number_of_spinorbitals)``
+        array: normalized state vector of length $2^M$, where $M$ is the number_of_spinorbitals.
 
     **Example**
 
