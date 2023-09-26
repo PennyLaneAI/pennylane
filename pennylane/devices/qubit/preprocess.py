@@ -64,8 +64,15 @@ _observables = {
 ### UTILITY FUNCTIONS FOR EXPANDING UNSUPPORTED OPERATIONS ###
 
 
-def _accepted_operator(op: qml.operation.Operator) -> bool:
-    """Specify whether or not an Operator object is supported by the device."""
+def accepted_operator(op: qml.operation.Operator) -> bool:
+    """Specify whether an input operator is supported on :class:`~.DefaultQubit`.
+
+    Args:
+        op (Operator): the input operator
+
+    Returns:
+        bool: whether the operator is supported
+    """
     if op.name == "QFT" and len(op.wires) >= 6:
         return False
     if op.name == "GroverOperator" and len(op.wires) >= 13:
@@ -338,7 +345,7 @@ def validate_measurements(
 
 
 @transform
-def expand_fn(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
+def expand_fn(tape: qml.tape.QuantumTape, acceptance_function: Callable=accepted_operator) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Method for expanding or decomposing an input circuit.
 
     This method expands the tape if:
@@ -348,6 +355,8 @@ def expand_fn(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Ca
 
     Args:
         tape (.QuantumTape): the circuit to expand.
+        acceptance_function (callable): A function that returns a boolean indicating whether an
+            input operation is supported. Defaults to :func:`~.accepted_operator`.
 
     Returns:
         pennylane.QNode or qfunc or Tuple[List[.QuantumTape], Callable]: If a QNode is passed,
@@ -360,7 +369,7 @@ def expand_fn(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Ca
         tapes, _ = qml.defer_measurements(tape)
         tape = tapes[0]
 
-    if not all(_accepted_operator(op) for op in tape.operations):
+    if not all(acceptance_function(op) for op in tape.operations):
         try:
             # don't decompose initial operations if its StatePrepBase
             prep_op = [tape[0]] if isinstance(tape[0], StatePrepBase) else []
@@ -368,7 +377,7 @@ def expand_fn(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Ca
             new_ops = [
                 final_op
                 for op in tape.operations[bool(prep_op) :]
-                for final_op in _operator_decomposition_gen(op, _accepted_operator)
+                for final_op in _operator_decomposition_gen(op, acceptance_function)
             ]
         except RecursionError as e:
             raise DeviceError(
