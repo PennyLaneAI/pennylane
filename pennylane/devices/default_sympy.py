@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the SymPy device"""
-from functools import partial
 from typing import Callable, Optional, Sequence, Tuple, Union
 
 import pennylane as qml
@@ -33,7 +32,7 @@ class DefaultSympy(Device):
         circuits: Union[QuantumTape, Sequence[QuantumTape]],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        return 0.0 if isinstance(circuits, qml.tape.QuantumScript) else tuple(0.0 for c in circuits)
+        return _execute(circuits) if isinstance(circuits, qml.tape.QuantumScript) else tuple(_execute(c) for c in circuits)
 
     def preprocess(
         self,
@@ -63,6 +62,9 @@ class DefaultSympy(Device):
 def _accepted_operator(op: qml.operation.Operator) -> bool:
     """Indicates whether an operation is supported on default.sympy"""
     return True
+
+def _execute(circuit: QuantumTape):
+    return 0.0
 
 @transform
 def _validate_shots(tape: qml.tape.QuantumTape, execution_config: ExecutionConfig = DefaultExecutionConfig) -> (Sequence[qml.tape.QuantumTape], Callable):
