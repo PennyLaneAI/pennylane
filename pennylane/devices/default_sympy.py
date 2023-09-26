@@ -12,11 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the SymPy device"""
-from typing import Optional, Sequence, Union
+from typing import Callable, Optional, Sequence, Tuple, Union
 
 import pennylane as qml
+from pennylane import DeviceError
 from pennylane.tape import QuantumTape
 from pennylane.devices import Device, DefaultExecutionConfig, ExecutionConfig
+from pennylane.transforms.core import TransformProgram, transform
+from pennylane.devices.qubit.preprocess import validate_measurements
 
 
 class DefaultSympy(Device):
@@ -31,6 +34,18 @@ class DefaultSympy(Device):
     ):
         return 0.0 if isinstance(circuits, qml.tape.QuantumScript) else tuple(0.0 for c in circuits)
 
+    def preprocess(
+        self,
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ) -> Tuple[TransformProgram, ExecutionConfig]:
+        program = TransformProgram()
+
+        program.add_transform(_validate_shots)
+        program.add_transform(validate_measurements)
+
+        return program, execution_config
+
+
     def supports_derivatives(
         self,
         execution_config: Optional[ExecutionConfig] = None,
@@ -38,3 +53,18 @@ class DefaultSympy(Device):
     ) -> bool:
         if execution_config.gradient_method == "backprop" and execution_config.interface == "sympy":
             return True
+
+
+@transform
+def _validate_shots(tape: qml.tape.QuantumTape, execution_config: ExecutionConfig = DefaultExecutionConfig) -> (Sequence[qml.tape.QuantumTape], Callable):
+    """Validates that no shots are present in the input tape because this is not supported on the
+    device."""
+    if tape.shots:
+        raise DeviceError("The default.sympy device does not support finite-shot execution")
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [tape], null_postprocessing

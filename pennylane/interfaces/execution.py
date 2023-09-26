@@ -586,7 +586,7 @@ def execute(
     inner_execute = _make_inner_execute(
         device,
         override_shots,
-        cache,
+        None if interface == "sympy" else cache,
         expand_fn,
         config,
         numpy_only=not device_supports_interface_data,
