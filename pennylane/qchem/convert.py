@@ -574,11 +574,9 @@ def import_state(solver, tol=1e-15):
 
     Args:
         solver: external wavefunction object
-            * For PySCF, this is the R/UCISD or R/UCCSD Solver object
-            * For SHCI via Dice, this is the tuple(list[str], array[float])
-              of Slater determinants and their coefficients
-            * For DMRG via Block2, this is the tuple(list[int], array[float])
-              of Slater determinants and their coefficients
+           * For PySCF, this is the R/UCISD or R/UCCSD Solver object
+           * For SHCI via Dice, this is the tuple(list[str], array[float]) of Slater determinants and their coefficients
+           * For DMRG via Block2, this is the tuple(list[int], array[float]) of Slater determinants and their coefficients
         tol (float): the tolerance for discarding Slater determinants based on their coefficients
 
     Raises:
