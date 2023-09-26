@@ -74,6 +74,7 @@
   [(#4594)](https://github.com/PennyLaneAI/pennylane/pull/4594)
   [(#4436)](https://github.com/PennyLaneAI/pennylane/pull/4436)
   [(#4620)](https://github.com/PennyLaneAI/pennylane/pull/4620)
+  [(#4632)](https://github.com/PennyLaneAI/pennylane/pull/4632)
 
 <h3>Improvements 🛠</h3>
 
@@ -160,7 +161,6 @@
 * `StateMeasurement.process_state` now assumes the input is flat. `ProbabilityMP.process_state` has
   been updated to reflect this assumption and avoid redundant reshaping.
   [(#4602)](https://github.com/PennyLaneAI/pennylane/pull/4602)
-
 
 <h3>Breaking changes 💔</h3>
 
