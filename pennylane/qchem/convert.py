@@ -565,12 +565,12 @@ def _ucisd_state(cisd_solver, tol=1e-15):
 def import_state(solver, tol=1e-15):
     r"""Convert an external wavefunction to a state vector.
 
-    Currently, the only accepted sources of wavefunctions are
+    The sources of wavefunctions that are currently accepted are listed below.
 
-        * the PySCF library (the restricted and unrestricted CISD/CCSD
-          methods are supported). The `solver` argument is then the associated PySCF CISD/CCSD Solver object
-        * the library Dice implementing the SHCI method. The `solver` argument is then the tuple(list[str], array[float]) of Slater determinants and their coefficients
-        * the library Block2 implementing the DMRG method. The `solver` argument is then the tuple(list[int], array[float]) of Slater determinants and their coefficients
+        * The PySCF library (the restricted and unrestricted CISD/CCSD
+          methods are supported). The `solver` argument is then the associated PySCF CISD/CCSD Solver object.
+        * The library Dice implementing the SHCI method. The `solver` argument is then the tuple(list[str], array[float]) of Slater determinants and their coefficients.
+        * The library Block2 implementing the DMRG method. The `solver` argument is then the tuple(list[int], array[float]) of Slater determinants and their coefficients.
 
     Args:
         solver: external wavefunction object
@@ -580,7 +580,7 @@ def import_state(solver, tol=1e-15):
         ValueError: if external object type is not supported
 
     Returns:
-        array: normalized state vector of length :math:`2^M`, where :math:`M` is the number of spin orbitals.
+        array: normalized state vector of length :math:`2^M`, where :math:`M` is the number of spin orbitals
 
     **Example**
 
