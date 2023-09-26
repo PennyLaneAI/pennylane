@@ -582,7 +582,7 @@ def import_state(solver, tol=1e-15):
         ValueError: if external object type is not supported
 
     Returns:
-        array: normalized state vector of length :math:`2^M`, where :math:`M` is the number_of_spinorbitals.
+        array: normalized state vector of length :math:`2^M`, where :math:`M` is the number of spin orbitals.
 
     **Example**
 
