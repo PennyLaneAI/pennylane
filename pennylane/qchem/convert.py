@@ -17,7 +17,7 @@ This module contains the functions for converting an external operator to a Penn
 import warnings
 from itertools import product
 
-# pylint: disable=import-outside-toplevel
+# pylint: disable= too-many-branches, too-many-arguments, too-many-locals, too-many-nested-blocks
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import Tensor, active_new_opmath
@@ -584,7 +584,7 @@ def import_state(solver, tol=1e-15):
         ValueError: if external object type is not supported
 
     Returns:
-        array: normalized state vector of length $2^M$, where $M$ is the number_of_spinorbitals.
+        array: normalized state vector of length :math:`2^M`, where :math:`M` is the number_of_spinorbitals.
 
     **Example**
 
