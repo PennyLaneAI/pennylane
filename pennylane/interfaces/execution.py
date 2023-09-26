@@ -423,7 +423,8 @@ def execute(
             for the gradient (if supported).
         interface (str): The interface that will be used for classical autodifferentiation.
             This affects the types of parameters that can exist on the input tapes.
-            Available options include ``autograd``, ``torch``, ``tf``, ``jax`` and ``auto``.
+            Available options include ``autograd``, ``torch``, ``tf``, ``jax``, ``sympy`` and
+            ``auto``.
         grad_on_execution (bool, str): Whether the gradients should be computed on the execution or not. Only applies
             if the device is queried for the gradient; gradient transform
             functions available in ``qml.gradients`` are only supported on the backward
