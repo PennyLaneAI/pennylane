@@ -106,14 +106,14 @@ class BasisState(StatePrepBase):
             raise ValueError("BasisState parameter and wires must be of equal length.")
 
         if wire_order is None:
-            indices = prep_vals
+            indices = math.cast(prep_vals, int)
         else:
             if not Wires(wire_order).contains_wires(self.wires):
                 raise WireError("Custom wire_order must contain all BasisState wires")
             num_wires = len(wire_order)
             indices = [0] * num_wires
             for base_wire_label, value in zip(self.wires, prep_vals):
-                indices[wire_order.index(base_wire_label)] = value
+                indices[wire_order.index(base_wire_label)] = int(value)
 
         ket = np.zeros((2,) * num_wires)
         ket[tuple(indices)] = 1
