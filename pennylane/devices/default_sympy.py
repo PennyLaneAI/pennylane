@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the SymPy device"""
-from typing import Callable, Optional, Sequence, Tuple, Union
+from typing import Callable, Optional, Sequence, Tuple, Union, Iterable
 
 import pennylane as qml
 from pennylane import DeviceError
@@ -20,6 +20,7 @@ from pennylane.tape import QuantumTape
 from pennylane.devices import Device, DefaultExecutionConfig, ExecutionConfig
 from pennylane.transforms.core import TransformProgram, transform
 from pennylane.devices.qubit.preprocess import validate_measurements, expand_fn
+from pennylane.operation import StatePrep
 
 
 class DefaultSympy(Device):
@@ -32,7 +33,7 @@ class DefaultSympy(Device):
         circuits: Union[QuantumTape, Sequence[QuantumTape]],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        return _execute(circuits) if isinstance(circuits, qml.tape.QuantumScript) else tuple(_execute(c) for c in circuits)
+        return _simulate(circuits) if isinstance(circuits, qml.tape.QuantumScript) else tuple(_simulate(c) for c in circuits)
 
     def preprocess(
         self,
@@ -61,10 +62,36 @@ class DefaultSympy(Device):
 
 def _accepted_operator(op: qml.operation.Operator) -> bool:
     """Indicates whether an operation is supported on default.sympy"""
+    if isinstance(op, StatePrep) and not isinstance(op, qml.BasisState):
+        return False
     return True
 
-def _execute(circuit: QuantumTape):
+from sympy.physics.quantum.qubit import Qubit
+
+
+def _simulate(circuit: QuantumTape):
+    prep = None
+    if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
+        prep = circuit[0]
+
+    state = _create_initial_state(circuit.num_wires, prep)
+    print(state)
+
+
     return 0.0
+
+
+def _create_initial_state(
+    n_wires: int,
+    prep_operation: qml.operation.StatePrepBase = None,
+):
+    if not prep_operation:
+        return Qubit("0" * n_wires)
+
+    assert isinstance(prep_operation, qml.BasisState)
+    prep_vals = prep_operation.parameters[0]
+    return Qubit("".join(map(str, prep_vals)))
+
 
 @transform
 def _validate_shots(tape: qml.tape.QuantumTape, execution_config: ExecutionConfig = DefaultExecutionConfig) -> (Sequence[qml.tape.QuantumTape], Callable):
