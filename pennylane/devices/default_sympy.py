@@ -68,18 +68,20 @@ def _accepted_operator(op: qml.operation.Operator) -> bool:
 
 
 def _simulate(circuit: QuantumTape):
-    from sympy.physics.quantum.gate import X, Y, Z, CNOT, H, S, SWAP, T, IdentityGate
+    from sympy.physics.quantum.gate import X, Y, Z, CNOT, H, S, SWAP, T, IdentityGate, UGate
     from sympy.physics.quantum.qapply import qapply
+    from sympy import Matrix
 
     _directly_supported_gates = {
-        "PauliX": X,
-        "PauliY": Y,
-        "PauliZ": Z,
-        "CNOT": CNOT,
-        "Hadamard": H,
-        "S": S,
-        "SWAP": SWAP,
-        "T": T,
+        qml.PauliX: X,
+        qml.PauliY: Y,
+        qml.PauliZ: Z,
+        qml.CNOT: CNOT,
+        qml.Hadamard: H,
+        qml.S: S,
+        qml.SWAP: SWAP,
+        qml.T: T,
+        qml.Identity: IdentityGate,
     }
 
     prep = None
@@ -90,11 +92,15 @@ def _simulate(circuit: QuantumTape):
 
     for op in circuit.operations[bool(prep):]:
         wires = circuit.wires.indices(op.wires)
-        if op.name in _directly_supported_gates:
-            state = qapply(_directly_supported_gates[op.name](*wires) * state)
+        if (t := type(op)) in _directly_supported_gates:
+            state = qapply(_directly_supported_gates[t](*wires) * state)
+        else:
+            sympy_mat = Matrix(qml.matrix(op))
+            sympy_op = UGate(wires, sympy_mat)
+            state = qapply(sympy_op * state)
 
-    print(state)
-
+    from sympy import simplify
+    print(simplify(state))
 
     return 0.0
 
