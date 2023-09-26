@@ -573,7 +573,7 @@ def import_state(solver, tol=1e-15):
         * the library Block2 implementing the DMRG method. The `solver` argument is then the tuple(list[int], array[float]) of Slater determinants and their coefficients
 
     Args:
-        solver: external wavefunction object.
+        solver: external wavefunction object
         tol (float): the tolerance for discarding Slater determinants based on their coefficients
 
     Raises:
