@@ -569,10 +569,8 @@ def import_state(solver, tol=1e-15):
 
         * the PySCF library (the restricted and unrestricted CISD/CCSD
           methods are supported). The `solver` argument is then the associated PySCF CISD/CCSD Solver object
-        * the library Dice implementing the SHCI method. The `solver` argument is
-        then the tuple(list[str], array[float]) of Slater determinants and their coefficients
-        * the library Block2 implementing the DMRG method. The `solver` argument is
-        then the tuple(list[int], array[float]) of Slater determinants and their coefficients
+        * the library Dice implementing the SHCI method. The `solver` argument is then the tuple(list[str], array[float]) of Slater determinants and their coefficients
+        * the library Block2 implementing the DMRG method. The `solver` argument is then the tuple(list[int], array[float]) of Slater determinants and their coefficients
 
     Args:
         solver: external wavefunction object.
