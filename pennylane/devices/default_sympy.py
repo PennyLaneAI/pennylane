@@ -47,9 +47,8 @@ class DefaultSympy(Device):
         program.add_transform(_validate_shots)
         program.add_transform(validate_measurements)
 
-        _expand_fn = partial(expand_fn, acceptance_function=_accepted_operator)
-        print(type(_expand_fn), type(expand_fn))
-        program.add_transform(_expand_fn)
+        # _expand_fn = partial(expand_fn, acceptance_function=_accepted_operator)
+        # program.add_transform(_expand_fn)
 
         return program, execution_config
 
