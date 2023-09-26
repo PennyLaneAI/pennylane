@@ -573,8 +573,12 @@ def import_state(solver, tol=1e-15):
         * the library Block2 implementing the DMRG method.
 
     Args:
-        solver: external wavefunction object (e.g. PySCF Solver object) or tuple of
-        determinants and coefficients that will be converted
+        solver: external wavefunction object
+            * For PySCF, this is the R/UCISD or R/UCCSD Solver object
+            * For SHCI via Dice, this is the tuple(list[str], array[float]) 
+              of Slater determinants and their coefficients
+            * For DMRG via Block2, this is the tuple(list[int], array[float]) 
+              of Slater determinants and their coefficients
         tol (float): the tolerance for discarding Slater determinants based on their coefficients
 
     Raises:
@@ -608,16 +612,23 @@ def import_state(solver, tol=1e-15):
     elif "UCCSD" in method:
         wf_dict = _uccsd_state(solver, tol=tol)
     elif "tuple" in method:
-        if isinstance(solver[0][0], str):
-            wf_dict = _shci_state(solver, tol=tol)
-        elif isinstance(solver[0][0][0], int):
-            wf_dict = _dmrg_state(solver, tol=tol)
+        if len(solver) == 2:
+            if isinstance(solver[0][0], str):
+                wf_dict = _shci_state(solver, tol=tol)
+            elif isinstance(solver[0][0][0], int):
+                wf_dict = _dmrg_state(solver, tol=tol)
+            else:
+                raise ValueError(
+                    "For tuple input, the supported objects are"
+                    " tuple(list[str], array[float]) for SHCI calculations with Dice library and "
+                    "tuple(list[int], array[float]) for DMRG calculations with the Block2 library."
+                )
         else:
             raise ValueError(
-                "For tuple input, the supported objects are"
-                " tuple(list[str], array[float]) for SHCI calculations with Dice library and "
-                "tuple(list[int], array[float]) for DMRG calculations with the Block2 library."
-            )
+                    "For tuple input, the supported objects are"
+                    " tuple(list[str], array[float]) for SHCI calculations with Dice library and "
+                    "tuple(list[int], array[float]) for DMRG calculations with the Block2 library."
+                )
     else:
         raise ValueError(
             "The supported objects are RCISD, UCISD, RCCSD, and UCCSD for restricted and"

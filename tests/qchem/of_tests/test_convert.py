@@ -1017,6 +1017,11 @@ def test_import_state_error():
     with pytest.raises(ValueError, match="For tuple input"):
         _ = qchem.convert.import_state(mytuple)
 
+    mytuple = ([[3, 0], [0, 3]], [0], [0])
+
+    with pytest.raises(ValueError, match="For tuple input"):
+        _ = qchem.convert.import_state(mytuple)
+
 
 @pytest.mark.parametrize(("excitation"), [-1, 0, 3])
 def test_excited_configurations_error(excitation):
