@@ -575,9 +575,9 @@ def import_state(solver, tol=1e-15):
     Args:
         solver: external wavefunction object
             * For PySCF, this is the R/UCISD or R/UCCSD Solver object
-            * For SHCI via Dice, this is the tuple(list[str], array[float]) 
+            * For SHCI via Dice, this is the tuple(list[str], array[float])
               of Slater determinants and their coefficients
-            * For DMRG via Block2, this is the tuple(list[int], array[float]) 
+            * For DMRG via Block2, this is the tuple(list[int], array[float])
               of Slater determinants and their coefficients
         tol (float): the tolerance for discarding Slater determinants based on their coefficients
 
@@ -625,10 +625,10 @@ def import_state(solver, tol=1e-15):
                 )
         else:
             raise ValueError(
-                    "For tuple input, the supported objects are"
-                    " tuple(list[str], array[float]) for SHCI calculations with Dice library and "
-                    "tuple(list[int], array[float]) for DMRG calculations with the Block2 library."
-                )
+                "For tuple input, the supported objects are"
+                " tuple(list[str], array[float]) for SHCI calculations with Dice library and "
+                "tuple(list[int], array[float]) for DMRG calculations with the Block2 library."
+            )
     else:
         raise ValueError(
             "The supported objects are RCISD, UCISD, RCCSD, and UCCSD for restricted and"
