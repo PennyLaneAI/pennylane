@@ -66,15 +66,33 @@ def _accepted_operator(op: qml.operation.Operator) -> bool:
         return False
     return True
 
-from sympy.physics.quantum.qubit import Qubit
-
 
 def _simulate(circuit: QuantumTape):
+    from sympy.physics.quantum.gate import X, Y, Z, CNOT, H, S, SWAP, T, IdentityGate
+    from sympy.physics.quantum.qapply import qapply
+
+    _directly_supported_gates = {
+        "PauliX": X,
+        "PauliY": Y,
+        "PauliZ": Z,
+        "CNOT": CNOT,
+        "Hadamard": H,
+        "S": S,
+        "SWAP": SWAP,
+        "T": T,
+    }
+
     prep = None
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         prep = circuit[0]
 
     state = _create_initial_state(circuit.num_wires, prep)
+
+    for op in circuit.operations[bool(prep):]:
+        wires = circuit.wires.indices(op.wires)
+        if op.name in _directly_supported_gates:
+            state = qapply(_directly_supported_gates[op.name](*wires) * state)
+
     print(state)
 
 
@@ -85,6 +103,7 @@ def _create_initial_state(
     n_wires: int,
     prep_operation: qml.operation.StatePrepBase = None,
 ):
+    from sympy.physics.quantum.qubit import Qubit
     if not prep_operation:
         return Qubit("0" * n_wires)
 
