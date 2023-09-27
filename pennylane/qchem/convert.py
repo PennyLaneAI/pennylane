@@ -17,7 +17,7 @@ This module contains the functions for converting an external operator to a Penn
 import warnings
 from itertools import product
 
-# pylint: disable= too-many-branches, import-outside-toplevel
+# pylint: disable= import-outside-toplevel
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import Tensor, active_new_opmath
