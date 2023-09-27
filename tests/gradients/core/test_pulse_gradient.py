@@ -1306,7 +1306,7 @@ class TestStochPulseGrad:
 @pytest.mark.jax
 @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
 class TestStochPulseGradQNode:
-    """Test that pulse_generator integrates correctly with QNodes."""
+    """Test that pulse_odegen integrates correctly with QNodes."""
 
     def test_raises_for_application_to_qnodes(self, dev_name):
         """Test that an error is raised when applying ``stoch_pulse_grad``
@@ -1327,7 +1327,7 @@ class TestStochPulseGradQNode:
     @pytest.mark.skip("Applying this gradient transform to QNodes directly is not supported.")
     def test_qnode_expval_single_par(self, dev_name):
         """Test that a simple qnode that returns an expectation value
-        can be differentiated with pulse_generator."""
+        can be differentiated with pulse_odegen."""
         import jax
         import jax.numpy as jnp
 

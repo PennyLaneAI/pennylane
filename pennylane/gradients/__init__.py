@@ -49,7 +49,7 @@ Gradient transforms
     spsa_grad
     hadamard_grad
     stoch_pulse_grad
-    pulse_generator
+    pulse_odegen
 
 Custom gradients
 ^^^^^^^^^^^^^^^^
@@ -327,7 +327,7 @@ from . import finite_difference
 from . import spsa_gradient
 from . import hadamard_gradient
 from . import pulse_gradient
-from . import pulse_generator_gradient
+from . import pulse_odegen
 
 from .gradient_transform import gradient_transform, SUPPORTED_GRADIENT_KWARGS
 from .hessian_transform import hessian_transform
@@ -340,7 +340,7 @@ from .jvp import batch_jvp, jvp, compute_jvp_multi, compute_jvp_single
 from .spsa_gradient import spsa_grad
 from .hadamard_gradient import hadamard_grad
 from .pulse_gradient import stoch_pulse_grad
-from .pulse_generator_gradient import pulse_generator
+from .pulse_odegen import pulse_odegen
 
 from .hamiltonian_grad import hamiltonian_grad
 from .general_shift_rules import (

@@ -871,7 +871,7 @@ stoch_pulse_grad = gradient_transform(
 @stoch_pulse_grad.custom_qnode_wrapper
 def stoch_pulse_grad_qnode_wrapper(self, qnode, targs, tkwargs):
     """A custom QNode wrapper for the gradient transform :func:`~.stoch_pulse_grad`.
-    It raises an error, so that applying ``pulse_generator`` to a ``QNode`` directly
+    It raises an error, so that applying ``pulse_odegen`` to a ``QNode`` directly
     is not supported.
     """
     # pylint:disable=unused-argument
