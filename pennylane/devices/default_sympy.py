@@ -78,10 +78,14 @@ def _simulate(circuit: QuantumTape):
 
     print(state)
 
-    return (_measure_state(state, m) for m in circuit.measurements)
+    return _measure_state(state, circuit.measurements)
 
 
-def _measure_state(state, m: MeasurementProcess):
+def _measure_state(state, measurements: Sequence[MeasurementProcess]):
+    return __measure_state(state, measurements[0]) if len(measurements) == 1 else tuple(__measure_state(state, m) for m in measurements)
+
+
+def __measure_state(state, measurement: MeasurementProcess):
     return 0
 
 
