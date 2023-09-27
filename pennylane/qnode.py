@@ -38,7 +38,7 @@ def _convert_to_interface(res, interface):
     """
     interface = INTERFACE_MAP[interface]
 
-    if interface in ["Numpy"]:
+    if interface in ["Numpy", "sympy"]:
         return res
 
     if isinstance(res, (list, tuple)):
