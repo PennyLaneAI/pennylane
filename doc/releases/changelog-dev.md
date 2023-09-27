@@ -260,9 +260,6 @@
   `qml.device("default.qubit.legacy", wires=n_wires)`.
   [(#4436)](https://github.com/PennyLaneAI/pennylane/pull/4436)
 
-* `qml.gradients.pulse_generator` becomes `qml.gradients.pulse_odegen` to adhere to paper naming conventions.
-  [(#4633)](https://github.com/PennyLaneAI/pennylane/pull/4633)
-
 <h3>Deprecations 👋</h3>
 
 * The ``prep`` keyword argument in ``QuantumScript`` is deprecated and will be removed from `QuantumScript`.
@@ -286,6 +283,10 @@
       ...
   ```
   [(#4457)](https://github.com/PennyLaneAI/pennylane/pull/4457/)
+
+* `qml.gradients.pulse_generator` becomes `qml.gradients.pulse_odegen` to adhere to paper naming conventions. During v0.33, `pulse_generator`
+  is still available but raises a warning.
+  [(#4633)](https://github.com/PennyLaneAI/pennylane/pull/4633)
 
 <h3>Documentation 📝</h3>
 
