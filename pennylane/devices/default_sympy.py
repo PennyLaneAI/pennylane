@@ -76,11 +76,12 @@ def _simulate(circuit: QuantumTape):
     prep = None
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         prep = circuit[0]
+    wires = qml.wires.Wires(sorted(circuit.wires))
 
-    state = _create_initial_state(circuit.wires, prep)
-    state = _get_evolved_state(circuit.operations[bool(prep):], state, circuit.wires)
+    state = _create_initial_state(wires, prep)
+    state = _get_evolved_state(circuit.operations[bool(prep):], state, wires)
 
-    return _measure_state(state, circuit.measurements, circuit.wires)
+    return _measure_state(state, circuit.measurements, wires)
 
 
 def _measure_state(state, measurements: Sequence[MeasurementProcess], wires: qml.wires.Wires):
