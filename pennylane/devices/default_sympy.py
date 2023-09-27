@@ -29,9 +29,9 @@ class DefaultSympy(Device):
 
     name: str = "default.sympy"
 
-    def __init__(self, *args, expand_observables: bool = True, **kwargs):
-        self.expand_observables = expand_observables
-        super().__init__(*args, **kwargs)
+    # def __init__(self, *args, expand_observables: bool = True, **kwargs):
+    #     self.expand_observables = expand_observables
+    #     super().__init__(*args, **kwargs)
 
     def execute(
         self,
@@ -94,9 +94,13 @@ def __measure_state(state, measurement: MeasurementProcess, wires: qml.wires.Wir
     if isinstance(measurement, StateMP):
         return state
     if isinstance(measurement, ExpectationMP):
-        if
+        return _calculate_expectation(state, measurement, wires)
 
     return 0
+
+
+def _calculate_expectation(state, measurement: MeasurementProcess, wires: qml.wires.Wires):
+    return 1
 
 
 def _get_evolved_state(ops: Sequence[Operation], state, all_wires: qml.wires.Wires):
