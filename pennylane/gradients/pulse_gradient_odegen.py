@@ -214,7 +214,7 @@ def _generate_tapes_and_coeffs(tape, idx, atol, cache):
     if not isinstance(op, ParametrizedEvolution):
         # only ParametrizedEvolution can be treated with this gradient transform
         raise ValueError(
-            "pulse_godegen does not support differentiating parameters of "
+            "pulse_odegen does not support differentiating parameters of "
             f"other operations than pulses, but received operation {op}."
         )
 
