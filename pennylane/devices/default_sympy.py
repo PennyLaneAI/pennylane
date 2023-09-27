@@ -89,14 +89,16 @@ def _measure_state(state, measurements: Sequence[MeasurementProcess], wires: qml
 
 from pennylane.measurements import StateMP, DensityMatrixMP, ExpectationMP
 def __measure_state(state, measurement: MeasurementProcess, wires: qml.wires.Wires):
+    from sympy.physics.quantum.qapply import qapply
+
     if isinstance(measurement, DensityMatrixMP):
         raise NotImplementedError
-    if isinstance(measurement, StateMP):
-        return state
-    if isinstance(measurement, ExpectationMP):
-        return _calculate_expectation(state, measurement, wires)
+    elif isinstance(measurement, StateMP):
+        res = state
+    elif isinstance(measurement, ExpectationMP):
+        res = _calculate_expectation(state, measurement, wires)
 
-    return 0
+    return qapply(res)
 
 
 def _calculate_expectation(state, measurement: MeasurementProcess, wires: qml.wires.Wires):
