@@ -90,6 +90,7 @@ def _measure_state(state, measurements: Sequence[MeasurementProcess], wires: qml
 from pennylane.measurements import StateMP, DensityMatrixMP, ExpectationMP
 def __measure_state(state, measurement: MeasurementProcess, wires: qml.wires.Wires):
     from sympy.physics.quantum.qapply import qapply
+    from sympy import simplify
 
     if isinstance(measurement, DensityMatrixMP):
         raise NotImplementedError
@@ -98,13 +99,14 @@ def __measure_state(state, measurement: MeasurementProcess, wires: qml.wires.Wir
     elif isinstance(measurement, ExpectationMP):
         res = _calculate_expectation(state, measurement, wires)
 
-    return qapply(res)
+    return simplify(qapply(res).doit())
 
 
 def _calculate_expectation(state, measurement: MeasurementProcess, wires: qml.wires.Wires):
     from sympy import Matrix
     from sympy.physics.quantum.gate import UGate
     from sympy.physics.quantum.dagger import Dagger
+    from sympy.physics.quantum.qapply import qapply
 
     class O(UGate):
         gate_name = 'O'
@@ -114,7 +116,8 @@ def _calculate_expectation(state, measurement: MeasurementProcess, wires: qml.wi
 
     mat = Matrix(measurement.obs.matrix())
     o = O(wires, mat)
-    return Dagger(state) * o * state
+    st = qapply(state)
+    return Dagger(st) * o * st
 
 
 def _get_evolved_state(ops: Sequence[Operation], state, all_wires: qml.wires.Wires):
