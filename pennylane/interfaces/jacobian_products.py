@@ -435,8 +435,9 @@ class DeviceJacobians(JacobianProductCalculator):
                     logger.debug("Retrieving jacobian from cache.")
                 jacs = self._jacs_cache[id(tapes)]
             else:
-                jacs = self._dev_compute_derivatives(tapes)
-                self._jacs_cache[id(tapes)] = jacs
+                raise NotImplementedError(
+                    "No path to cache results without caching jac. This branch should not occur."
+                )
 
         multi_measurements = (len(t.measurements) > 1 for t in tapes)
         jvps = _compute_jvps(jacs, tangents, multi_measurements)

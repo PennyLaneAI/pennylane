@@ -349,6 +349,17 @@ class TestCaching:
         assert jpc._device.tracker.totals["executions"] == 1
         assert jpc._device.tracker.totals.get("derivatives", 0) == 0
 
+    def test_error_cant_cache_results_without_jac(self, jpc):
+        """Test that a not implemented error is raised if somehow the results are present
+        without the jac being cached and execute_and_compute_jvp is called."""
+
+        tape = qml.tape.QuantumScript([], [qml.state()])
+        batch = (tape,)
+        jpc._results_cache[id(batch)] = "value"
+
+        with pytest.raises(NotImplementedError):
+            jpc.execute_and_compute_jvp(batch, tuple())
+
 
 @pytest.mark.parametrize("jpc", transform_jpc_matrix)
 class TestProbsOut:
