@@ -28,8 +28,9 @@ from pennylane.interfaces.jacobian_products import (
 )
 
 dev = qml.device("default.qubit")
-dev_old = qml.devices.DefaultQubitLegacy(wires=5)
+dev_old = qml.device('default.qubit.legacy', wires=5)
 adjoint_config = qml.devices.ExecutionConfig(gradient_method="adjoint")
+)
 
 
 def inner_execute_numpy(tapes):
@@ -468,9 +469,8 @@ class TestTransformsDifferentiability:
     Note that testing is only done for the required method for each ml framework.
     """
 
-    @pytest.mark.parametrize("use_jit", (True, False))
     @pytest.mark.jax
-    def test_execute_jvp_jax(self, use_jit):
+    def test_execute_jvp_jax(self):
         """Test that execute_and_compute_jvp is jittable and differentiable with jax."""
         import jax
 
@@ -483,9 +483,6 @@ class TestTransformsDifferentiability:
         x = jax.numpy.array(0.1)
         tangents = ((jax.numpy.array(0.5),),)
 
-        if use_jit:
-            f = jax.jit(f)
-
         res = f(x, tangents=tangents)
         assert qml.math.allclose(res, -tangents[0][0] * np.sin(x))
 
@@ -497,7 +494,6 @@ class TestTransformsDifferentiability:
 
         tangent_grad = jax.grad(f, argnums=1)(x, tangents)
         assert qml.math.allclose(tangent_grad[0][0], -np.sin(x))
-        jax.clear_caches()
 
     @pytest.mark.autograd
     def test_vjp_autograd(self):

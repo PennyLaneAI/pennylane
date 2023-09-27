@@ -93,29 +93,6 @@ class DefaultQubit(Device):
     0.1339705146860149,
     -0.03780669772690448]
 
-    Suppose one has a processor with 5 cores or more, these scripts can be executed in
-    parallel as follows
-
-    >>> dev = DefaultQubit(max_workers=5)
-    >>> program, execution_config = dev.preprocess()
-    >>> new_batch, post_processing_fn = program(qscripts)
-    >>> results = dev.execute(new_batch, execution_config=execution_config)
-    >>> post_processing_fn(results)
-
-    If you monitor your CPU usage, you should see 5 new Python processes pop up to
-    crunch through those ``QuantumScript``'s. Beware not oversubscribing your machine.
-    This may happen if a single device already uses many cores, if NumPy uses a multi-
-    threaded BLAS library like MKL or OpenBLAS for example. The number of threads per
-    process times the number of processes should not exceed the number of cores on your
-    machine. You can control the number of threads per process with the environment
-    variables:
-
-    * OMP_NUM_THREADS
-    * MKL_NUM_THREADS
-    * OPENBLAS_NUM_THREADS
-
-    where the last two are specific to the MKL and OpenBLAS libraries specifically.
-
     This device currently supports backpropagation derivatives:
 
     >>> from pennylane.devices import ExecutionConfig
@@ -140,6 +117,55 @@ class DefaultQubit(Device):
     DeviceArray(0.36235774, dtype=float32)
     >>> jax.grad(f)(jax.numpy.array(1.2))
     DeviceArray(-0.93203914, dtype=float32, weak_type=True)
+
+    .. details::
+        :title: Accelerate calculations with multiprocessing
+
+        Suppose one has a processor with 5 cores or more, these scripts can be executed in
+        parallel as follows
+
+        >>> dev = DefaultQubit(max_workers=5)
+        >>> program, execution_config = dev.preprocess()
+        >>> new_batch, post_processing_fn = program(qscripts)
+        >>> results = dev.execute(new_batch, execution_config=execution_config)
+        >>> post_processing_fn(results)
+
+        If you monitor your CPU usage, you should see 5 new Python processes pop up to
+        crunch through those ``QuantumScript``'s. Beware not oversubscribing your machine.
+        This may happen if a single device already uses many cores, if NumPy uses a multi-
+        threaded BLAS library like MKL or OpenBLAS for example. The number of threads per
+        process times the number of processes should not exceed the number of cores on your
+        machine. You can control the number of threads per process with the environment
+        variables:
+
+        * OMP_NUM_THREADS
+        * MKL_NUM_THREADS
+        * OPENBLAS_NUM_THREADS
+
+        where the last two are specific to the MKL and OpenBLAS libraries specifically.
+
+        .. warning::
+
+            Multiprocessing may fail depending on your platform and environment (Python shell,
+            script with a protected entry point, Jupyter notebook, etc.) This may be solved
+            changing the so-called start method. The supported start methods are the following:
+
+            * Windows (win32): spawn (default).
+            * macOS (darwin): spawn (default), fork, forkserver.
+            * Linux (unix): spawn, fork (default), forkserver.
+
+            which can be changed with ``multiprocessing.set_start_method()``. For example,
+            if multiprocessing fails on macOS in your Jupyter notebook environment, try
+            restarting the session and adding the following at the beginning of the file:
+
+            .. code-block:: python
+
+                import multiprocessing
+                multiprocessing.set_start_method("fork")
+
+            Additional information can be found in the
+            `multiprocessing doc <https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods>`_.
+
 
     """
 
