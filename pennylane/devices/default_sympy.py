@@ -20,7 +20,7 @@ from pennylane.tape import QuantumTape
 from pennylane.devices import Device, DefaultExecutionConfig, ExecutionConfig
 from pennylane.transforms.core import TransformProgram, transform
 from pennylane.devices.qubit.preprocess import validate_measurements, expand_fn
-from pennylane.operation import StatePrep
+from pennylane.operation import StatePrep, Operation
 
 
 class DefaultSympy(Device):
@@ -68,8 +68,25 @@ def _accepted_operator(op: qml.operation.Operator) -> bool:
 
 
 def _simulate(circuit: QuantumTape):
+    prep = None
+    if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
+        prep = circuit[0]
+
+    state = _create_initial_state(circuit.num_wires, prep)
+    state = _get_evolved_state(circuit.operations[bool(prep):], state, circuit.wires)
+
+
+    from sympy import simplify
+    from sympy.physics.quantum.gate import gate_simp
+    print(state)
+    # print(gate_simp(ops))
+
+    #
+    return 0.0
+
+
+def _get_evolved_state(ops: Sequence[Operation], state, all_wires: qml.wires.Wires):
     from sympy.physics.quantum.gate import X, Y, Z, CNOT, H, S, SWAP, T, IdentityGate, UGate
-    from sympy.physics.quantum.qapply import qapply
     from sympy import Matrix
 
     _directly_supported_gates = {
@@ -84,32 +101,18 @@ def _simulate(circuit: QuantumTape):
         qml.Identity: IdentityGate,
     }
 
-    prep = None
-    if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
-        prep = circuit[0]
+    sympy_ops = None
 
-    state = _create_initial_state(circuit.num_wires, prep)
-
-    ops = None
-
-    for op in circuit.operations[bool(prep):]:
-        wires = circuit.wires.indices(op.wires)
+    for op in ops:
+        wires = all_wires.indices(op.wires)
         if (t := type(op)) in _directly_supported_gates:
             sympy_op = _directly_supported_gates[t](*wires)
         else:
             sympy_mat = Matrix(qml.matrix(op))
             sympy_op = UGate(wires, sympy_mat)
-        ops = _apply_op_to_ops(sympy_op, ops)
+        sympy_ops = _apply_op_to_ops(sympy_op, sympy_ops)
 
-    state = ops * state
-
-    from sympy import simplify
-    from sympy.physics.quantum.gate import gate_simp
-    print(state)
-    # print(gate_simp(ops))
-
-
-    return 0.0
+    return sympy_ops * state
 
 
 def _apply_op_to_ops(op, ops):
@@ -130,7 +133,7 @@ def _create_initial_state(
 
 
 @transform
-def _validate_shots(tape: qml.tape.QuantumTape, execution_config: ExecutionConfig = DefaultExecutionConfig) -> (Sequence[qml.tape.QuantumTape], Callable):
+def _validate_shots(tape: qml.tape.QuantumTape, _: ExecutionConfig = DefaultExecutionConfig) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Validates that no shots are present in the input tape because this is not supported on the
     device."""
     if tape.shots:
