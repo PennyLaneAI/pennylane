@@ -63,8 +63,8 @@ class DefaultSympy(Device):
 
 def _accepted_operator(op: qml.operation.Operator) -> bool:
     """Indicates whether an operation is supported on default.sympy"""
-    if isinstance(op, StatePrep) and not isinstance(op, qml.BasisState):
-        return False
+    # if isinstance(op, StatePrep) and not isinstance(op, qml.BasisState):
+    #     return False
     return True
 
 
@@ -73,7 +73,7 @@ def _simulate(circuit: QuantumTape):
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         prep = circuit[0]
 
-    state = _create_initial_state(circuit.num_wires, prep)
+    state = _create_initial_state(circuit.wires, prep)
     state = _get_evolved_state(circuit.operations[bool(prep):], state, circuit.wires)
 
     return _measure_state(state, circuit.measurements)
@@ -129,16 +129,18 @@ def _apply_op_to_ops(op, ops):
 
 
 def _create_initial_state(
-    n_wires: int,
+    wires: qml.wires.Wires,
     prep_operation: qml.operation.StatePrepBase = None,
 ):
-    from sympy.physics.quantum.qubit import Qubit
+    from sympy.physics.quantum.qubit import Qubit, matrix_to_qubit
     if not prep_operation:
-        return Qubit("0" * n_wires)
+        return Qubit("0" * len(wires))
 
-    assert isinstance(prep_operation, qml.BasisState)
-    prep_vals = prep_operation.parameters[0]
-    return Qubit("".join(map(str, prep_vals)))
+    if isinstance(prep_operation, qml.BasisState):
+        prep_vals = prep_operation.parameters[0]
+        return Qubit("".join(map(str, prep_vals)))
+
+    return matrix_to_qubit(qml.math.expand_dims(prep_operation.state_vector(), 0).toarray())
 
 
 @transform
