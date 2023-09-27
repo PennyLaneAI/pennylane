@@ -319,7 +319,7 @@ For more details, please see the :class:`~.gradient_transform`
 documentation.
 """
 import pennylane as qml
-from pennylane.pennylane.gradients.pulse_gradient_odegen import pulse_generator
+from pennylane.gradients.pulse_gradient_odegen import pulse_generator
 
 from . import parameter_shift
 from . import parameter_shift_cv
@@ -341,7 +341,7 @@ from .jvp import batch_jvp, jvp, compute_jvp_multi, compute_jvp_single
 from .spsa_gradient import spsa_grad
 from .hadamard_gradient import hadamard_grad
 from .pulse_gradient import stoch_pulse_grad
-from .pulse_gradient_odegen import pulse_odegen
+from .pulse_odegen import pulse_odegen
 
 from .hamiltonian_grad import hamiltonian_grad
 from .general_shift_rules import (
