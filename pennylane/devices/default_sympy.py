@@ -90,17 +90,24 @@ def _simulate(circuit: QuantumTape):
 
     state = _create_initial_state(circuit.num_wires, prep)
 
+    ops = IdentityGate(circuit.wires[0])
+
     for op in circuit.operations[bool(prep):]:
         wires = circuit.wires.indices(op.wires)
         if (t := type(op)) in _directly_supported_gates:
-            state = qapply(_directly_supported_gates[t](*wires) * state)
+            ops = _directly_supported_gates[t](*wires) * ops
         else:
             sympy_mat = Matrix(qml.matrix(op))
             sympy_op = UGate(wires, sympy_mat)
-            state = qapply(sympy_op * state)
+            ops = sympy_op * ops
+
+    state = qapply(ops * state)
 
     from sympy import simplify
-    print(simplify(state))
+    from sympy.physics.quantum.gate import gate_simp
+    # print(simplify(state))
+    # print(gate_simp(ops))
+
 
     return 0.0
 
