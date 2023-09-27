@@ -15,6 +15,7 @@
 This module contains functions for computing the pulse generator
 parameter-shift gradient of pulse sequences in a qubit-based quantum tape.
 """
+import warnings
 from functools import partial
 import numpy as np
 
@@ -708,6 +709,14 @@ def expand_invalid_trainable_pulse_odegen(x, *args, **kwargs):
 
 
 pulse_odegen = gradient_transform(_pulse_odegen, expand_fn=expand_invalid_trainable_pulse_odegen)
+
+def _legacy_pulse_generator_wrapper(*args, **kwargs):
+    warnings.warn(
+        "pulse_generator for gradient computation has been renamed to pulse_odegen and will not be available in pennylane v0.34 onwards"
+    )
+    return _pulse_odegen(*args, **kwargs)
+
+pulse_generator = gradient_transform(_legacy_pulse_generator_wrapper, expand_fn=expand_invalid_trainable_pulse_odegen)
 
 
 @pulse_odegen.custom_qnode_wrapper

@@ -34,6 +34,21 @@ from pennylane.gradients.pulse_odegen import (
     _parshift_and_contract,
 )
 
+@pytest.mark.jax
+def test_depcrecation_warning_pulse_generator():
+    """Test that the warning is raised when trying to use pulse_generator for gradient computation"""
+    import jax
+    dev = qml.device("default.qubit", wires=1)
+    @qml.qnode(dev, diff_method=qml.gradients.pulse_generator)
+    def qnode(x):
+        qml.evolve(qml.pulse.constant * qml.PauliZ(0))(x, 1.)
+        return qml.expval(qml.PauliX(0))
+
+    x = jax.numpy.array([0.5])
+    with pytest.warns(UserWarning, match="pulse_generator for gradient computation has been renamed"):
+        jax.grad(qnode)(x)
+
+
 X, Y, Z = qml.PauliX, qml.PauliY, qml.PauliZ
 
 
