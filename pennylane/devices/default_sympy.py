@@ -21,6 +21,7 @@ from pennylane.devices import Device, DefaultExecutionConfig, ExecutionConfig
 from pennylane.transforms.core import TransformProgram, transform
 from pennylane.devices.qubit.preprocess import validate_measurements, expand_fn
 from pennylane.operation import StatePrep, Operation
+from pennylane.measurements import MeasurementProcess
 
 
 class DefaultSympy(Device):
@@ -75,14 +76,13 @@ def _simulate(circuit: QuantumTape):
     state = _create_initial_state(circuit.num_wires, prep)
     state = _get_evolved_state(circuit.operations[bool(prep):], state, circuit.wires)
 
-
-    from sympy import simplify
-    from sympy.physics.quantum.gate import gate_simp
     print(state)
-    # print(gate_simp(ops))
 
-    #
-    return 0.0
+    return (_measure_state(state, m) for m in circuit.measurements)
+
+
+def _measure_state(state, m: MeasurementProcess):
+    return 0
 
 
 def _get_evolved_state(ops: Sequence[Operation], state, all_wires: qml.wires.Wires):
