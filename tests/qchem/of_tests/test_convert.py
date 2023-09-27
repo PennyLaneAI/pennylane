@@ -1019,7 +1019,7 @@ def test_import_state_error():
 
     mytuple = ([[3, 0], [0, 3]], [0], [0])
 
-    with pytest.raises(ValueError, match="For tuple input"):
+    with pytest.raises(ValueError, match="The supported objects"):
         qchem.convert.import_state(mytuple)
 
 
