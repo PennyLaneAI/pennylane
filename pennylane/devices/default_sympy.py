@@ -86,6 +86,8 @@ def _measure_state(state, measurements: Sequence[MeasurementProcess]):
 
 
 def __measure_state(state, measurement: MeasurementProcess):
+    # if isinstance(measurement, )
+    print(type(measurement), isinstance(measurement, MeasurementProcess))
     return 0
 
 
