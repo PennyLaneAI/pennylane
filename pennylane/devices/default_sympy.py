@@ -29,6 +29,10 @@ class DefaultSympy(Device):
 
     name: str = "default.sympy"
 
+    def __init__(self, *args, expand_observables: bool = True, **kwargs):
+        self.expand_observables = expand_observables
+        super().__init__(*args, **kwargs)
+
     def execute(
         self,
         circuits: Union[QuantumTape, Sequence[QuantumTape]],
@@ -83,13 +87,14 @@ def _measure_state(state, measurements: Sequence[MeasurementProcess], wires: qml
     return __measure_state(state, measurements[0], wires) if len(measurements) == 1 else tuple(__measure_state(state, m, wires) for m in measurements)
 
 
-from pennylane.measurements import StateMP, DensityMatrixMP
+from pennylane.measurements import StateMP, DensityMatrixMP, ExpectationMP
 def __measure_state(state, measurement: MeasurementProcess, wires: qml.wires.Wires):
     if isinstance(measurement, DensityMatrixMP):
         raise NotImplementedError
-
     if isinstance(measurement, StateMP):
         return state
+    if isinstance(measurement, ExpectationMP):
+        if
 
     return 0
 
