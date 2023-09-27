@@ -1327,7 +1327,7 @@ class TestStochPulseGradQNode:
     @pytest.mark.skip("Applying this gradient transform to QNodes directly is not supported.")
     def test_qnode_expval_single_par(self, dev_name):
         """Test that a simple qnode that returns an expectation value
-        can be differentiated with pulse_odegen."""
+        can be differentiated with stoch_pulse_grad."""
         import jax
         import jax.numpy as jnp
 
