@@ -707,9 +707,7 @@ def expand_invalid_trainable_pulse_odegen(x, *args, **kwargs):
     return x
 
 
-pulse_odegen = gradient_transform(
-    _pulse_odegen, expand_fn=expand_invalid_trainable_pulse_odegen
-)
+pulse_odegen = gradient_transform(_pulse_odegen, expand_fn=expand_invalid_trainable_pulse_odegen)
 
 
 @pulse_odegen.custom_qnode_wrapper
