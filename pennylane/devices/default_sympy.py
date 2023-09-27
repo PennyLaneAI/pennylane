@@ -76,7 +76,7 @@ def _simulate(circuit: QuantumTape):
     state = _create_initial_state(circuit.wires, prep)
     state = _get_evolved_state(circuit.operations[bool(prep):], state, circuit.wires)
 
-    return _measure_state(state, circuit.measurements)
+    return _measure_state(state, circuit.measurements, circuit.wires)
 
 
 def _measure_state(state, measurements: Sequence[MeasurementProcess]):
@@ -84,10 +84,13 @@ def _measure_state(state, measurements: Sequence[MeasurementProcess]):
 
 
 from pennylane.measurements import StateMP, DensityMatrixMP
-def __measure_state(state, measurement: MeasurementProcess):
+def __measure_state(state, measurement: MeasurementProcess, wires: qml.wires.Wires):
     if isinstance(measurement, DensityMatrixMP):
         from sympy.physics.quantum.dagger import Dagger
-        return state * Dagger(state)
+
+        if len(measurement.wires) == len(wires):
+            return state * Dagger(state)
+
     if isinstance(measurement, StateMP):
         return state
 
