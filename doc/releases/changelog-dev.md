@@ -77,6 +77,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `JacobianProductCalculator` abstract base class and implementation `TransformJacobianProducts`
+  have been added to `pennylane.interfaces.jacobian_products`.
+  [(#4435)](https://github.com/PennyLaneAI/pennylane/pull/4435)
+
 * Extended ``qml.qchem.import_state`` to import wavefunctions from MPS DMRG and SHCI classical
   calculations performed with the Block2 and Dice libraries, incorporating new tests and wavefunction
   input selection logic.
