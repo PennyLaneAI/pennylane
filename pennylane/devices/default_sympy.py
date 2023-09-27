@@ -98,7 +98,7 @@ def __measure_state(state, measurement: MeasurementProcess, wires: qml.wires.Wir
     elif isinstance(measurement, ExpectationMP):
         res = _calculate_expectation(state, measurement, wires)
 
-    return qapply(res)
+    return res
 
 
 def _calculate_expectation(state, measurement: MeasurementProcess, wires: qml.wires.Wires):
@@ -114,7 +114,7 @@ def _calculate_expectation(state, measurement: MeasurementProcess, wires: qml.wi
 
     mat = Matrix(measurement.obs.matrix())
     o = O(wires, mat)
-    return Dagger(state) * o * state
+    return Dagger(state) * state
 
 
 def _get_evolved_state(ops: Sequence[Operation], state, all_wires: qml.wires.Wires):
