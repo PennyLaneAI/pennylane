@@ -24,7 +24,7 @@ from pennylane import numpy as pnp
 
 from pennylane.ops.qubit.special_unitary import pauli_basis_matrices, pauli_basis_strings
 from pennylane.math import expand_matrix
-from pennylane.pennylane.gradients.pulse_odegen import (
+from pennylane.gradients.pulse_odegen import (
     _generate_tapes_and_coeffs,
     pulse_odegen,
     _insert_op,
