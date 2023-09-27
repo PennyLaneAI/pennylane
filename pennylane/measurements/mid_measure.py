@@ -168,6 +168,8 @@ class MeasurementValue(Generic[T]):
         processing_fn (callable): A lazily transformation applied to the measurement values.
     """
 
+    name = "MeasurementValue"
+
     def __init__(self, measurements, processing_fn):
         self.measurements = measurements
         self.processing_fn = processing_fn
@@ -177,6 +179,11 @@ class MeasurementValue(Generic[T]):
         for i in range(2 ** len(self.measurements)):
             branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurements)))
             yield branch, self.processing_fn(*branch)
+
+    @property
+    def wires(self):
+        """Returns a list of wires corresponding to the mid-circuit measurements."""
+        return Wires([m.wires[0] for m in self.measurements])
 
     @property
     def branches(self):

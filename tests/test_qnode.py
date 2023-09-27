@@ -1094,16 +1094,28 @@ class TestIntegration:
         assert len(circuit.tape.operations) == 2
         assert isinstance(circuit.tape.operations[1], qml.measurements.MidMeasureMP)
 
+    @pytest.mark.parametrize(
+        "dev", [qml.device("default.qubit", wires=3), qml.device("default.qubit.legacy", wires=3)]
+    )
     @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize("sec_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize(
         "return_type", [qml.expval(qml.PauliZ(1)), qml.var(qml.PauliZ(1)), qml.probs(wires=[1])]
     )
-    def test_defer_meas_if_mcm_unsupported(self, first_par, sec_par, return_type, mocker):
+    @pytest.mark.parametrize(
+        "mv_return, mv_res",
+        [
+            (qml.expval, lambda x: np.sin(x / 2) ** 2),
+            (qml.var, lambda x: np.sin(x / 2) ** 2 - np.sin(x / 2) ** 4),
+            (qml.probs, lambda x: [np.cos(x / 2) ** 2, np.sin(x / 2) ** 2]),
+        ],
+    )
+    def test_defer_meas_if_mcm_unsupported(
+        self, dev, first_par, sec_par, return_type, mv_return, mv_res, mocker
+    ):  # pylint: disable=too-many-arguments
         """Tests that the transform using the deferred measurement principle is
         applied if the device doesn't support mid-circuit measurements
         natively."""
-        dev = qml.device("default.qubit.legacy", wires=3)
 
         @qml.qnode(dev)
         def cry_qnode(x, y):
@@ -1121,12 +1133,14 @@ class TestIntegration:
             qml.RY(x, wires=0)
             m_0 = qml.measure(0)
             qml.cond(m_0, qml.RY)(y, wires=1)
-            return qml.apply(return_type)
+            return qml.apply(return_type), mv_return(op=m_0)
 
         spy = mocker.spy(qml, "defer_measurements")
         r1 = cry_qnode(first_par, sec_par)
         r2 = conditional_ry_qnode(first_par, sec_par)
-        assert np.allclose(r1, r2)
+
+        assert np.allclose(r1, r2[0])
+        assert np.allclose(r2[1], mv_res(first_par))
         spy.assert_called_once()
 
     def test_drawing_has_deferred_measurements(self):
