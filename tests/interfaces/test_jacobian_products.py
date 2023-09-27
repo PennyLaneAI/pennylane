@@ -28,9 +28,8 @@ from pennylane.interfaces.jacobian_products import (
 )
 
 dev = qml.device("default.qubit")
-dev_old = qml.device('default.qubit.legacy', wires=5)
+dev_old = qml.device("default.qubit.legacy", wires=5)
 adjoint_config = qml.devices.ExecutionConfig(gradient_method="adjoint")
-)
 
 
 def inner_execute_numpy(tapes):

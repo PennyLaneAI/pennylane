@@ -302,7 +302,7 @@ class DeviceJacobians(JacobianProductCalculator):
         gradient_kwargs: dict,
         execution_config: Optional["qml.devices.ExecutionConfig"] = None,
     ):
-        if logger.isEnabledFor(logging.DEBUG):
+        if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug(
                 "DeviceJacobians created with (%s, %s, %s)",
                 device,
@@ -363,10 +363,10 @@ class DeviceJacobians(JacobianProductCalculator):
             ResultBatch: the results of the execution.
 
         Side Effects:
-            Caches both the results and jacobian into ``_results_cache`` and ``jacs_cache``.
+            Caches both the results and jacobian into ``_results_cache`` and ``_jacs_cache``.
 
         """
-        if logger.isEnabledFor(logging.DEBUG):
+        if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("Forward pass called with %s", tapes)
         results, jac = self._dev_execute_and_compute_derivatives(tapes)
         self._results_cache[id(tapes)] = results
@@ -423,7 +423,7 @@ class DeviceJacobians(JacobianProductCalculator):
             self._jacs_cache[id(tapes)] = jacs
         else:
             if id(tapes) in self._results_cache:
-                if logger.isEnabledFor(logging.DEBUG):
+                if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
                     logger.debug("Retrieving results from cache.")
                 results = self._results_cache[id(tapes)]
             else:
@@ -431,7 +431,7 @@ class DeviceJacobians(JacobianProductCalculator):
                 self._results_cache[id(tapes)] = results
 
             if id(tapes) in self._jacs_cache:
-                if logger.isEnabledFor(logging.DEBUG):
+                if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
                     logger.debug("Retrieving jacobian from cache.")
                 jacs = self._jacs_cache[id(tapes)]
             else:
@@ -487,7 +487,7 @@ class DeviceJacobians(JacobianProductCalculator):
             # we currently do not have any examples for testing
             raise NotImplementedError("device derivatives with shot vectors not supported.")
         if id(tapes) in self._jacs_cache:
-            if logger.isEnabledFor(logging.DEBUG):
+            if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
                 logger.debug("Retrieving jacobian from cache.")
             jacs = self._jacs_cache[id(tapes)]
         else:
@@ -529,7 +529,7 @@ class DeviceJacobians(JacobianProductCalculator):
             # we currently do not have any examples for testing
             raise NotImplementedError("device derivatives with shot vectors not supported.")
         if id(tapes) in self._jacs_cache:
-            if logger.isEnabledFor(logging.DEBUG):
+            if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
                 logger.debug("Retrieving jacobian from cache.")
             return self._jacs_cache[id(tapes)]
 
