@@ -100,7 +100,19 @@ def __measure_state(state, measurement: MeasurementProcess, wires: qml.wires.Wir
 
 
 def _calculate_expectation(state, measurement: MeasurementProcess, wires: qml.wires.Wires):
-    return 1
+    from sympy import Matrix
+    from sympy.physics.quantum.gate import UGate
+    from sympy.physics.quantum.dagger import Dagger
+
+    class O(UGate):
+        gate_name = 'O'
+        gate_name_latex = 'O'
+
+    wires = wires.indices(measurement.wires)
+
+    mat = Matrix(measurement.obs.matrix())
+    o = O(wires, mat)
+    return Dagger(state) * o * state
 
 
 def _get_evolved_state(ops: Sequence[Operation], state, all_wires: qml.wires.Wires):
