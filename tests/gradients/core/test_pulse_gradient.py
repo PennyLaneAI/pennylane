@@ -1306,7 +1306,7 @@ class TestStochPulseGrad:
 @pytest.mark.jax
 @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
 class TestStochPulseGradQNode:
-    """Test that pulse_odegen integrates correctly with QNodes."""
+    """Test that stoch_pulse_grad integrates correctly with QNodes."""
 
     def test_raises_for_application_to_qnodes(self, dev_name):
         """Test that an error is raised when applying ``stoch_pulse_grad``
