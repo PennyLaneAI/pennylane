@@ -342,7 +342,7 @@ This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad,
 Stepan Fomichev,
-Joana Fraxanet
+Joana Fraxanet,
 Diego Guala,
 Soran Jahangiri,
 Korbinian Kottmann
