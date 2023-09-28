@@ -306,6 +306,8 @@
   Note that these functions are unstable while device upgrades are underway.
   [(#4555)](https://github.com/PennyLaneAI/pennylane/pull/4555)
 
+* Minor documentation improvement to the usage example in the `qml.QuantumMonteCarlo` page. Integral was missing the differential dx with respect to which the integration is being performed. [(#4593)](https://github.com/PennyLaneAI/pennylane/pull/4593)  
+
 <h3>Bug fixes 🐛</h3>
 
 * Fixed issue where `__copy__` method of the `qml.Select()` operator attempted to access un-initialized data.
@@ -348,6 +350,7 @@ Christina Lee,
 Lillian M. A. Frederiksen,
 Vincent Michaud-Rioux,
 Romain Moyard,
+Daniel F. Nino,
 Mudit Pandey,
 Matthew Silverman,
 Jay Soni,
