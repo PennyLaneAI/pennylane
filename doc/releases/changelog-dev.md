@@ -288,6 +288,10 @@
   ```
   [(#4457)](https://github.com/PennyLaneAI/pennylane/pull/4457/)
 
+* `qml.gradients.pulse_generator` becomes `qml.gradients.pulse_odegen` to adhere to paper naming conventions. During v0.33, `pulse_generator`
+  is still available but raises a warning.
+  [(#4633)](https://github.com/PennyLaneAI/pennylane/pull/4633)
+
 <h3>Documentation 📝</h3>
 
 * Add a warning section in DefaultQubit's docstring regarding the start method used in multiprocessing.
@@ -339,6 +343,7 @@ Utkarsh Azad,
 Stepan Fomichev,
 Diego Guala,
 Soran Jahangiri,
+Korbinian Kottmann
 Christina Lee,
 Lillian M. A. Frederiksen,
 Vincent Michaud-Rioux,
