@@ -77,6 +77,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `JacobianProductCalculator` abstract base class and implementation `TransformJacobianProducts`
+  have been added to `pennylane.interfaces.jacobian_products`.
+  [(#4435)](https://github.com/PennyLaneAI/pennylane/pull/4435)
+
 * Extended ``qml.qchem.import_state`` to import wavefunctions from MPS DMRG and SHCI classical
   calculations performed with the Block2 and Dice libraries, incorporating new tests and wavefunction
   input selection logic.
@@ -285,6 +289,10 @@
   ```
   [(#4457)](https://github.com/PennyLaneAI/pennylane/pull/4457/)
 
+* `qml.gradients.pulse_generator` becomes `qml.gradients.pulse_odegen` to adhere to paper naming conventions. During v0.33, `pulse_generator`
+  is still available but raises a warning.
+  [(#4633)](https://github.com/PennyLaneAI/pennylane/pull/4633)
+
 <h3>Documentation 📝</h3>
 
 * Add a warning section in DefaultQubit's docstring regarding the start method used in multiprocessing.
@@ -337,6 +345,7 @@ Stepan Fomichev,
 Joana Fraxanet
 Diego Guala,
 Soran Jahangiri,
+Korbinian Kottmann
 Christina Lee,
 Lillian M. A. Frederiksen,
 Vincent Michaud-Rioux,
