@@ -36,7 +36,7 @@ from pennylane.gradients.pulse_gradient_odegen import (
 
 
 @pytest.mark.jax
-def test_depcrecation_warning_pulse_generator():
+def test_deprecation_warning_pulse_generator():
     """Test that the warning is raised when trying to use pulse_generator for gradient computation"""
     import jax
 
@@ -819,7 +819,7 @@ class TestParshiftAndContract:
 
 
 @pytest.mark.jax
-class TestPulseGeneratorEdgeCases:
+class TestPulseOdegenEdgeCases:
     """Test that differentiating edge case tapes with ``pulse_odegen`` works."""
 
     def test_raises_with_state_return(self):
@@ -987,7 +987,7 @@ class TestPulseGeneratorEdgeCases:
 
 @pytest.mark.jax
 @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
-class TestPulseGeneratorTape:
+class TestPulseOdegenTape:
     """Test that differentiating tapes with ``pulse_odegen`` works."""
 
     @pytest.mark.parametrize("shots, tol", [(None, 1e-7), (1000, 0.05), ([1000, 100], 0.05)])
@@ -1154,7 +1154,7 @@ class TestPulseGeneratorTape:
 
 @pytest.mark.jax
 @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
-class TestPulseGeneratorQNode:
+class TestPulseOdegenQNode:
     """Test that pulse_odegen integrates correctly with QNodes."""
 
     def test_raises_for_application_to_qnodes(self, dev_name):
@@ -1274,7 +1274,7 @@ class TestPulseGeneratorQNode:
 
 @pytest.mark.jax
 @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
-class TestPulseGeneratorIntegration:
+class TestPulseOdegenIntegration:
     """Test that pulse_odegen integrates correctly with QNodes."""
 
     def test_simple_qnode_expval(self, dev_name):
@@ -1471,7 +1471,7 @@ class TestPulseGeneratorIntegration:
 
 @pytest.mark.jax
 @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
-class TestPulseGeneratorDiff:
+class TestPulseOdegenDiff:
     """Test that pulse_odegen is differentiable, i.e. that computing
     the derivative with pulse_odegen is differentiable a second time,
     yielding the Hessian."""
