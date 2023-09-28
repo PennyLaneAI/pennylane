@@ -106,6 +106,10 @@
   been updated to reflect this assumption and avoid redundant reshaping.
   [(#4602)](https://github.com/PennyLaneAI/pennylane/pull/4602)
 
+* The tests for `finite_diff` with shots is updated to correct an error in the analytic results, 
+  allowing test sensitivity when comparing simulation to analytic results to be increased.
+  [(#)]()
+
 
 <h3>Breaking changes 💔</h3>
 

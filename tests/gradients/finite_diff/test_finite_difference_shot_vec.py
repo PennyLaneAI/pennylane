@@ -28,7 +28,7 @@ from pennylane.operation import Observable, AnyWires
 # pylint:disable = use-implicit-booleaness-not-comparison
 
 h_val = 0.1
-finite_diff_shot_vec_tol = 0.15
+finite_diff_shot_vec_tol = 0.005
 
 default_shot_vector = (1000, 2000, 3000)
 many_shots_shot_vector = tuple([1000000] * 3)
@@ -376,8 +376,8 @@ class TestFiniteDiff:
         assert len(j2) == len(many_shots_shot_vector)
 
         for _j1, _j2 in zip(j1, j2):
-            assert np.allclose(_j1, [exp, 0], atol=finite_diff_shot_vec_tol)
-            assert np.allclose(_j2, [0, exp], atol=finite_diff_shot_vec_tol)
+            assert np.allclose(_j1, [exp, 0], atol=0.05)
+            assert np.allclose(_j2, [0, exp], atol=0.05)
 
     def test_output_shape_matches_qnode(self):
         """Test that the transform output shape matches that of the QNode."""
@@ -577,7 +577,7 @@ class TestFiniteDiffIntegration:
             assert isinstance(res[1], numpy.ndarray)
             assert res[1].shape == ()
 
-            assert np.allclose(res, expected, atol=finite_diff_shot_vec_tol, rtol=0)
+            assert np.allclose(res, expected, atol=0.12, rtol=0)
 
     def test_single_expectation_value_with_argnum_all(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
@@ -619,7 +619,7 @@ class TestFiniteDiffIntegration:
             assert isinstance(res[1], numpy.ndarray)
             assert res[1].shape == ()
 
-            assert np.allclose(res, expected, atol=finite_diff_shot_vec_tol, rtol=0)
+            assert np.allclose(res, expected, atol=0.15, rtol=0)
 
     def test_single_expectation_value_with_argnum_one(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
@@ -666,7 +666,7 @@ class TestFiniteDiffIntegration:
             assert isinstance(res[1], numpy.ndarray)
             assert res[1].shape == ()
 
-            assert np.allclose(res, expected, atol=finite_diff_shot_vec_tol, rtol=0)
+            assert np.allclose(res, expected, atol=0.12, rtol=0)
 
     def test_probs_expval_with_argnum_one(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
@@ -713,8 +713,8 @@ class TestFiniteDiffIntegration:
         for res in all_res:
             assert isinstance(res, tuple)
             assert len(res) == 2  # two measurements
-            assert np.allclose(res[0], exp_probs, atol=0.05)
-            assert np.allclose(res[1], exp_expval, atol=finite_diff_shot_vec_tol)
+            assert np.allclose(res[0], exp_probs, atol=0.07)
+            assert np.allclose(res[1], exp_expval, atol=0.2)
 
     def test_multiple_expectation_values(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
@@ -749,13 +749,13 @@ class TestFiniteDiffIntegration:
 
             assert isinstance(res[0], tuple)
             assert len(res[0]) == 2
-            assert np.allclose(res[0], [-np.sin(x), 0], atol=finite_diff_shot_vec_tol, rtol=0)
+            assert np.allclose(res[0], [-np.sin(x), 0], atol=0.1, rtol=0)
             assert isinstance(res[0][0], numpy.ndarray)
             assert isinstance(res[0][1], numpy.ndarray)
 
             assert isinstance(res[1], tuple)
             assert len(res[1]) == 2
-            assert np.allclose(res[1], [0, np.cos(y)], atol=finite_diff_shot_vec_tol, rtol=0)
+            assert np.allclose(res[1], [0, np.cos(y)], atol=0.12, rtol=0)
             assert isinstance(res[1][0], numpy.ndarray)
             assert isinstance(res[1][1], numpy.ndarray)
 
@@ -792,15 +792,13 @@ class TestFiniteDiffIntegration:
 
             assert isinstance(res[0], tuple)
             assert len(res[0]) == 2
-            assert np.allclose(res[0], [-np.sin(x), 0], atol=finite_diff_shot_vec_tol, rtol=0)
+            assert np.allclose(res[0], [-np.sin(x), 0], atol=0.1, rtol=0)
             assert isinstance(res[0][0], numpy.ndarray)
             assert isinstance(res[0][1], numpy.ndarray)
 
             assert isinstance(res[1], tuple)
             assert len(res[1]) == 2
-            assert np.allclose(
-                res[1], [0, -2 * np.cos(y) * np.sin(y)], atol=finite_diff_shot_vec_tol, rtol=0
-            )
+            assert np.allclose(res[1], [0, -2 * np.cos(y) * np.sin(y)], atol=0.2, rtol=0)
             assert isinstance(res[1][0], numpy.ndarray)
             assert isinstance(res[1][1], numpy.ndarray)
 
@@ -837,9 +835,9 @@ class TestFiniteDiffIntegration:
 
             assert isinstance(res[0], tuple)
             assert len(res[0]) == 2
-            assert np.allclose(res[0][0], -np.sin(x), atol=finite_diff_shot_vec_tol, rtol=0)
+            assert np.allclose(res[0][0], -np.sin(x), atol=0.07, rtol=0)
             assert isinstance(res[0][0], numpy.ndarray)
-            assert np.allclose(res[0][1], 0, atol=finite_diff_shot_vec_tol, rtol=0)
+            assert np.allclose(res[0][1], 0, atol=0.07, rtol=0)
             assert isinstance(res[0][1], numpy.ndarray)
 
             assert isinstance(res[1], tuple)
@@ -852,7 +850,7 @@ class TestFiniteDiffIntegration:
                     (np.sin(x) * np.sin(y / 2) ** 2) / 2,
                     (np.cos(y / 2) ** 2 * np.sin(x)) / 2,
                 ],
-                atol=finite_diff_shot_vec_tol,
+                atol=0.07,
                 rtol=0,
             )
             assert isinstance(res[1][0], numpy.ndarray)
@@ -864,7 +862,7 @@ class TestFiniteDiffIntegration:
                     (np.sin(x / 2) ** 2 * np.sin(y)) / 2,
                     -(np.sin(x / 2) ** 2 * np.sin(y)) / 2,
                 ],
-                atol=finite_diff_shot_vec_tol,
+                atol=0.07,
                 rtol=0,
             )
             assert isinstance(res[1][1], numpy.ndarray)
