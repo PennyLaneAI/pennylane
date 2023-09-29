@@ -48,7 +48,7 @@ info = {
         # This requires a rename in the setup file of all devices, and is best done during another refactor
         "pennylane.plugins": [
             "default.qubit = pennylane.devices:DefaultQubit",
-            "default.qubit.legacy = pennylane.devices:DefaultQubit",
+            "default.qubit.legacy = pennylane.devices:DefaultQubitLegacy",
             "default.gaussian = pennylane.devices:DefaultGaussian",
             "default.qubit.tf = pennylane.devices.default_qubit_tf:DefaultQubitTF",
             "default.qubit.torch = pennylane.devices.default_qubit_torch:DefaultQubitTorch",

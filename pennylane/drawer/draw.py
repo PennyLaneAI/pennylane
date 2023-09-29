@@ -18,10 +18,20 @@ Contains the drawing function.
 """
 from functools import wraps
 import warnings
+import pkg_resources
 
 import pennylane as qml
 from .tape_mpl import tape_mpl
 from .tape_text import tape_text
+
+
+def catalyst_qjit(qnode):
+    """The ``catalyst.while`` wrapper method"""
+    try:
+        pkg_resources.get_distribution("pennylane_catalyst")
+        return qnode.__class__.__name__ == "QJIT"
+    except pkg_resources.DistributionNotFound:
+        return False
 
 
 def draw(
@@ -195,6 +205,9 @@ def draw(
     1: ───────────╰X─┤
 
     """
+    if catalyst_qjit(qnode):
+        qnode = qnode.user_function
+
     if hasattr(qnode, "construct"):
         return _draw_qnode(
             qnode,
@@ -240,9 +253,7 @@ def _draw_qnode(
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-        if expansion_strategy == "device" and isinstance(
-            qnode.device, qml.devices.experimental.Device
-        ):
+        if expansion_strategy == "device" and isinstance(qnode.device, qml.devices.Device):
             qnode.construct(args, kwargs)
             program, _ = qnode.device.preprocess()
             tapes = program([qnode.tape])
@@ -543,9 +554,7 @@ def _draw_mpl_qnode(
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs_qnode):
-        if expansion_strategy == "device" and isinstance(
-            qnode.device, qml.devices.experimental.Device
-        ):
+        if expansion_strategy == "device" and isinstance(qnode.device, qml.devices.Device):
             qnode.construct(args, kwargs)
             program, _ = qnode.device.preprocess()
             tapes, _ = program([qnode.tape])

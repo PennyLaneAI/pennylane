@@ -331,7 +331,7 @@ def test_nested_tapes():
 
 @pytest.mark.parametrize(
     "device",
-    [qml.device("default.qubit.legacy", wires=2), qml.devices.experimental.DefaultQubit2(wires=2)],
+    [qml.device("default.qubit.legacy", wires=2), qml.devices.DefaultQubit(wires=2)],
 )
 def test_expansion_strategy(device):
     """Test expansion strategy keyword modifies tape expansion."""

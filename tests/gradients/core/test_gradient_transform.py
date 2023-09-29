@@ -23,6 +23,13 @@ from pennylane.gradients.gradient_transform import (
 )
 
 
+def test_repr():
+    """Test the repr method of gradient transforms."""
+    assert repr(qml.gradients.param_shift) == "<gradient_transform: param_shift>"
+    assert repr(qml.gradients.spsa_grad) == "<gradient_transform: spsa_grad>"
+    assert repr(qml.gradients.finite_diff) == "<gradient_transform: finite_diff>"
+
+
 class TestGradAnalysis:
     """Tests for parameter gradient methods"""
 
@@ -616,7 +623,7 @@ class TestGradientTransformIntegration:
         """Test that setting the number of shots works correctly for
         a gradient transform"""
 
-        dev = qml.device("default.qubit", wires=1, shots=1000)
+        dev = qml.device("default.qubit.legacy", wires=1, shots=1000)
 
         @qml.qnode(dev)
         def circuit(x):

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane.plugin.DefaultQubit` device.
+Unit tests for the :mod:`pennylane.devices.DefaultQubitLegacy` device.
 """
 # pylint: disable=too-many-arguments,too-few-public-methods
 # pylint: disable=protected-access,cell-var-from-loop
@@ -26,7 +26,7 @@ import pytest
 import pennylane as qml
 from pennylane import DeviceError
 from pennylane import numpy as np
-from pennylane.devices.default_qubit import DefaultQubit, _get_slice
+from pennylane.devices.default_qubit_legacy import DefaultQubitLegacy, _get_slice
 from pennylane.pulse import ParametrizedHamiltonian
 from pennylane.wires import WireError, Wires
 
@@ -643,7 +643,7 @@ class TestApply:
         with pytest.raises(
             DeviceError,
             match="Operation StatePrep cannot be used after other Operations have already been applied "
-            "on a default.qubit device.",
+            "on a default.qubit.legacy device.",
         ):
             qubit_device_2_wires.reset()
             qubit_device_2_wires.apply(
@@ -664,7 +664,7 @@ class TestApply:
         with pytest.raises(
             DeviceError,
             match="Operation BasisState cannot be used after other Operations have already been applied "
-            "on a default.qubit device.",
+            "on a default.qubit.legacy device.",
         ):
             qubit_device_2_wires.reset()
             qubit_device_2_wires.apply(
@@ -988,7 +988,7 @@ class TestSample:
         assert np.allclose(s1**2, 1, atol=tol, rtol=0)
 
 
-class TestDefaultQubitIntegration:
+class TestDefaultQubitLegacyIntegration:
     """Integration tests for default.qubit. This test ensures it integrates
     properly with the PennyLane interface, in particular QNode."""
 
@@ -1999,7 +1999,7 @@ class TestGetSlice:
 
 class TestApplyOps:
     """Tests for special methods listed in _apply_ops that use array manipulation tricks to apply
-    gates in DefaultQubit."""
+    gates in DefaultQubitLegacy."""
 
     state = np.arange(2**4, dtype=np.complex128).reshape((2, 2, 2, 2))
     dev = qml.device("default.qubit.legacy", wires=4)
@@ -2091,7 +2091,7 @@ class TestApplyOps:
         param_ev = qml.evolve(ParametrizedHamiltonian([1], [qml.PauliX(0)]))
         with pytest.raises(
             NotImplementedError,
-            match="The device default.qubit cannot execute a ParametrizedEvolution operation",
+            match="The device default.qubit.legacy cannot execute a ParametrizedEvolution operation",
         ):
             self.dev._apply_parametrized_evolution(state=self.state, operation=param_ev)
 
@@ -2119,7 +2119,7 @@ class TestStateVector:
 
     def test_full_subsystem(self, mocker):
         """Test applying a state vector to the full subsystem"""
-        dev = DefaultQubit(wires=["a", "b", "c"])
+        dev = DefaultQubitLegacy(wires=["a", "b", "c"])
         state = np.array([1, 0, 0, 0, 1, 0, 1, 1]) / 2.0
         state_wires = qml.wires.Wires(["a", "b", "c"])
 
@@ -2132,7 +2132,7 @@ class TestStateVector:
     def test_partial_subsystem(self, mocker):
         """Test applying a state vector to a subset of wires of the full subsystem"""
 
-        dev = DefaultQubit(wires=["a", "b", "c"])
+        dev = DefaultQubitLegacy(wires=["a", "b", "c"])
         state = np.array([1, 0, 1, 0]) / np.sqrt(2.0)
         state_wires = qml.wires.Wires(["a", "c"])
 
@@ -2389,7 +2389,7 @@ class TestHamiltonianSupport:
 
 @pytest.mark.parametrize("is_state_batched", [False, True])
 class TestSumSupport:
-    """Tests for custom Sum support in DefaultQubit."""
+    """Tests for custom Sum support in DefaultQubitLegacy."""
 
     @staticmethod
     def expected_grad(is_state_batched):
@@ -2504,4 +2504,4 @@ class TestDenseMatrixDecompositionThreshold:
         wires = np.linspace(0, n_wires - 1, n_wires, dtype=int)
         op = op(wires=wires)
         # pylint:disable=no-member
-        assert DefaultQubit.stopping_condition.__get__(op)(op) == condition
+        assert DefaultQubitLegacy.stopping_condition.__get__(op)(op) == condition

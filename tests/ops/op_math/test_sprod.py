@@ -790,7 +790,7 @@ class TestSimplify:
         sprod_op = SProd(
             2, SProd(2, qml.RZ(1.32, wires=0)) + qml.Identity(wires=0) + qml.RX(1.9, wires=1)
         )
-        final_op = qml.ops.Sum(
+        final_op = qml.ops.Sum(  # pylint:disable=no-member
             SProd(4, qml.RZ(1.32, wires=0)),
             SProd(2, qml.Identity(wires=0)),
             SProd(2, qml.RX(1.9, wires=1)),
@@ -799,7 +799,7 @@ class TestSimplify:
 
         # TODO: Use qml.equal when supported for nested operators
 
-        assert isinstance(simplified_op, qml.ops.Sum)
+        assert isinstance(simplified_op, qml.ops.Sum)  # pylint:disable=no-member
         for s1, s2 in zip(final_op.operands, simplified_op.operands):
             assert isinstance(s2, SProd)
             assert s1.name == s2.name
@@ -837,7 +837,7 @@ class TestSimplify:
         final_op = s_prod(0 - 6j, qml.PauliX(0))
         simplified_op = sprod_op.simplify()
 
-        assert isinstance(simplified_op, qml.ops.SProd)
+        assert isinstance(simplified_op, qml.ops.SProd)  # pylint:disable=no-member
         assert simplified_op.name == final_op.name
         assert repr(simplified_op) == repr(final_op)
         assert simplified_op.wires == final_op.wires
@@ -1045,7 +1045,7 @@ class TestIntegration:
         true_grad = 100 * -qnp.sqrt(2) * qnp.cos(weights[0] / 2) * qnp.sin(weights[0] / 2)
         assert qnp.allclose(grad, true_grad)
 
-    def test_non_hermitian_op_in_measurement_process(self):
+    def test_non_hermitian_obs_not_supported(self):
         """Test that non-hermitian ops in a measurement process will raise a warning."""
         wires = [0, 1]
         dev = qml.device("default.qubit", wires=wires)
@@ -1056,7 +1056,7 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.expval(sprod_op)
 
-        with pytest.warns(UserWarning, match="SProd might not be hermitian."):
+        with pytest.raises(NotImplementedError):
             my_circ()
 
     @pytest.mark.torch
@@ -1106,7 +1106,7 @@ class TestIntegration:
         def circuit(s):
             return qml.expval(qml.s_prod(s, qml.PauliZ(0)))
 
-        res = circuit(tf.Variable(2))
+        res = circuit(tf.Variable(2, dtype=tf.float64))
 
         assert qml.math.allclose(res, 2)
 

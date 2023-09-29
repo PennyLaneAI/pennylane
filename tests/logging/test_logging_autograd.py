@@ -21,9 +21,9 @@ import pennylane.logging as pl_logging
 
 
 _grad_log_map = {
-    "adjoint": "gradient_fn=device, interface=autograd, grad_on_execution=best, gradient_kwargs={'use_device_state': True, 'method': 'adjoint_jacobian'}",
+    "adjoint": "gradient_fn=adjoint, interface=autograd, grad_on_execution=best, gradient_kwargs={}",
     "backprop": "gradient_fn=backprop, interface=autograd, grad_on_execution=best, gradient_kwargs={}",
-    "parameter-shift": "gradient_fn=<pennylane.gradients.gradient_transform.gradient_transform object",
+    "parameter-shift": "gradient_fn=<gradient_transform: param_shift>",
 }
 
 
@@ -78,7 +78,7 @@ class TestLogging:
 
             circuit(params)
 
-        assert len(caplog.records) == 5
+        assert len(caplog.records) == 3
 
         log_records_expected = [
             (
@@ -88,21 +88,20 @@ class TestLogging:
             (
                 "pennylane.interfaces.execution",
                 [
-                    "device=<DefaultQubit device (wires=2, shots=None)",
+                    "device=<default.qubit device (wires=2)",
                     "gradient_fn=None, interface=None",
                 ],
             ),
         ]
 
-        for idx, r in enumerate(caplog.records[0:2]):
-            assert log_records_expected[idx][0] in r.name
-            for msg in log_records_expected[idx][1]:
-                assert msg in r.getMessage()
+        for expected, actual in zip(log_records_expected, caplog.records[:2]):
+            assert expected[0] in actual.name
+            assert all(msg in actual.getMessage() for msg in expected[1])
 
     @pytest.mark.parametrize(
-        "diff_method", [("parameter-shift", 12), ("backprop", 5), ("adjoint", 9)]
+        "diff_method,num_records", [("parameter-shift", 7), ("backprop", 3), ("adjoint", 7)]
     )
-    def test_dq_qnode_execution_grad(self, caplog, diff_method):
+    def test_dq_qnode_execution_grad(self, caplog, diff_method, num_records):
         "Test logging of QNode with parameterised gradients"
 
         enable_and_configure_logging()
@@ -115,34 +114,33 @@ class TestLogging:
             dev = qml.device("default.qubit", wires=2)
             params = qml.numpy.array(0.1234)
 
-            @qml.qnode(dev, diff_method=diff_method[0])
+            @qml.qnode(dev, diff_method=diff_method)
             def circuit(params):
                 qml.RX(params, wires=0)
                 return qml.expval(qml.PauliZ(0))
 
             qml.grad(circuit)(params)
 
-        assert len(caplog.records) == diff_method[1]
+        assert len(caplog.records) == num_records
 
         log_records_expected = [
             (
                 "pennylane.qnode",
                 [
                     "Creating QNode(func=<function TestLogging.test_dq_qnode_execution_grad",
-                    "device=<DefaultQubit device (wires=2, shots=None)",
-                    f"interface=auto, diff_method={diff_method[0]}, expansion_strategy=gradient, max_expansion=10, grad_on_execution=best,",
+                    "device=<default.qubit device (wires=2)",
+                    f"interface=auto, diff_method={diff_method}, expansion_strategy=gradient, max_expansion=10, grad_on_execution=best,",
                 ],
             ),
             (
                 "pennylane.interfaces.execution",
                 [
                     "Entry with args=(tapes=(<QuantumScript: wires=[0], params=1>,)",
-                    _grad_log_map[diff_method[0]],
+                    _grad_log_map[diff_method],
                 ],
             ),
         ]
 
-        for idx, r in enumerate(caplog.records[0:2]):
-            assert log_records_expected[idx][0] in r.name
-            for msg in log_records_expected[idx][1]:
-                assert msg in r.getMessage()
+        for expected, actual in zip(log_records_expected, caplog.records[:2]):
+            assert expected[0] in actual.name
+            assert all(msg in actual.getMessage() for msg in expected[1])

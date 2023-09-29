@@ -2554,6 +2554,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(x):
+            qml.Identity(0)
             qml.Hadamard(1)
             qml.ctrl(qml.GlobalPhase(x), 1)
             qml.Hadamard(1)
@@ -2899,6 +2900,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(x):
+            qml.Identity(0)
             qml.Hadamard(1)
             qml.ctrl(qml.GlobalPhase(x), 1)
             qml.Hadamard(1)
@@ -3055,6 +3057,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(x):
+            qml.Identity(0)
             qml.Hadamard(1)
             qml.ctrl(qml.GlobalPhase(x), 1)
             qml.Hadamard(1)
@@ -3078,6 +3081,7 @@ class TestGrad:
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(x):
+            qml.Identity(0)
             qml.Hadamard(1)
             qml.ctrl(qml.GlobalPhase(x), 1)
             qml.Hadamard(1)
