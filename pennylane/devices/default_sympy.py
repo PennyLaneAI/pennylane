@@ -25,13 +25,8 @@ from pennylane.measurements import MeasurementProcess
 
 
 class DefaultSympy(Device):
-    """TODO."""
 
     name: str = "default.sympy"
-
-    # def __init__(self, *args, expand_observables: bool = True, **kwargs):
-    #     self.expand_observables = expand_observables
-    #     super().__init__(*args, **kwargs)
 
     def execute(
         self,

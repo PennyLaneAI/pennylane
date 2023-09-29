@@ -912,8 +912,8 @@ class QNode:
 
         # If the gradient function is a transform, expand the tape so that
         # all operations are supported by the transform.
-        if isinstance(self.gradient_fn, qml.gradients.gradient_transform):
-            self._tape = self.gradient_fn.expand_fn(self._tape)
+        # if isinstance(self.gradient_fn, qml.gradients.gradient_transform):
+        #     self._tape = self.gradient_fn.expand_fn(self._tape)
 
         if old_interface == "auto":
             self.interface = "auto"
