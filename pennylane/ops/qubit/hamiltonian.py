@@ -16,7 +16,6 @@ This submodule contains the discrete-variable quantum operations that perform
 arithmetic operations on their input states.
 """
 # pylint: disable=too-many-arguments,too-many-instance-attributes
-from ast import Continue
 from fcntl import F_SEAL_SEAL
 import itertools
 import numbers
