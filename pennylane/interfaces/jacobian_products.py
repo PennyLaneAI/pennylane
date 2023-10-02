@@ -539,7 +539,19 @@ class DeviceJacobians(JacobianProductCalculator):
 
 
 class DeviceJacobianProducts(JacobianProductCalculator):
-    """Compute the jacobian products using the native device methods."""
+    """Compute the jacobian products using the native device methods.
+
+    Args:
+        device (pennylane.devices.Device): the device for execution and derivatives.
+            Must define both the vjp and jvp.
+        execution_config (pennylane.devices.ExecutionConfig): a datastructure containing the parameters needed to fully
+           describe the execution.
+
+    >>> dev = qml.device('default.qubit')
+    >>> config = qml.devices.ExecutionConfig(gradient_method="adjoint")
+    >>> jpc = DeviceJacobianProducts(dev, config)
+
+    """
 
     def __repr__(self):
         return f"<DeviceJacobianProducts: {self._device}, {self._execution_config}>"
@@ -547,7 +559,7 @@ class DeviceJacobianProducts(JacobianProductCalculator):
     def __init__(
         self, device: qml.devices.Device, execution_config=qml.devices.DefaultExecutionConfig
     ):
-        if logger.isEnabledFor(logging.DEBUG):
+        if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("DeviceJacobianProducts created with (%s, %s)", device, execution_config)
         self._device = device
         self._execution_config = execution_config
@@ -555,21 +567,21 @@ class DeviceJacobianProducts(JacobianProductCalculator):
     def execute_and_compute_jvp(
         self, tapes: Batch, tangents: Tuple[Tuple[TensorLike]]
     ) -> Tuple[ResultBatch, Tuple]:
-        if logger.isEnabledFor(logging.DEBUG):
+        if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("execute_and_compute_jvp called with (%s, %s)", tapes, tangents)
         numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
         tangents = qml.math.unwrap(tangents)
         return self._device.execute_and_compute_jvp(numpy_tapes, tangents, self._execution_config)
 
     def compute_vjp(self, tapes: Batch, dy: Tuple[Tuple[TensorLike]]) -> Tuple:
-        if logger.isEnabledFor(logging.DEBUG):  # pragma: no-cover
+        if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("compute_vjp called with (%s, %s)", tapes, dy)
         numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
         dy = qml.math.unwrap(dy)
         return self._device.compute_vjp(numpy_tapes, dy, self._execution_config)
 
     def compute_jacobian(self, tapes: Batch):
-        if logger.isEnabledFor(logging.DEBUG):  # pragma: no-cover
+        if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("compute_jacobian called with %s", tapes)
         numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
         return self._device.compute_derivatives(numpy_tapes, self._execution_config)
