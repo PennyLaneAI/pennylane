@@ -54,24 +54,29 @@ jobs:
 
       - name: Setup Job to Skip
         id: jobs_to_skip
+        env:
+          JOBS_TO_SKIP: qcut-tests, zx-tests, data-tests
         run: |
           if [ "${{ inputs.run_lightened_ci }}" == "true" ]; 
           then
-            echo 'jobs_to_skip=["qcut-tests", "zx-tests", "data-tests"]' >> $GITHUB_OUTPUT
+            skipped_jobs=$(echo -n "$JOBS_TO_SKIP" | python -c 'import json, sys; print(json.dumps(list(map(lambda job: job.strip(), filter(None, sys.stdin.read().split(","))))))')
+            echo "The following jobs will be skipped: $skipped_jobs"
+            echo "jobs_to_skip=$skipped_jobs" >> $GITHUB_OUTPUT
           else
             echo 'jobs_to_skip=[]' >> $GITHUB_OUTPUT
           fi
 
     outputs:
       python-version: ${{ steps.python_versions.outputs.python_versions }}
-      jobs_to_skip: ${{ steps.jobs_to_skip.outputs.jobs_to_skip }}
+      jobs-to-skip: ${{ steps.jobs_to_skip.outputs.jobs_to_skip }}
 
   torch-tests:
+    needs:
+      - setup-lightened-ci
     strategy:
       matrix:
-        python-version:
-          - '3.9'
-          - '3.11'
+        python-version: ${{ fromJSON(needs.setup-lightened-ci.outputs.python-version) }}
+    if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'torch-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: torch-tests (${{ matrix.python-version }})
@@ -88,12 +93,12 @@ jobs:
 
 
   autograd-tests:
+    needs:
+      - setup-lightened-ci
     strategy:
       matrix:
-        python-version:
-          - '3.9'
-          - '3.10'
-          - '3.11'
+        python-version: ${{ fromJSON(needs.setup-lightened-ci.outputs.python-version) }}
+    if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'autograd-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: autograd-tests (${{ matrix.python-version }})
@@ -109,14 +114,15 @@ jobs:
 
 
   tf-tests:
+    needs:
+      - setup-lightened-ci
     strategy:
       matrix:
         group:
           - '1'
           - '2'
-        python-version:
-          - '3.9'
-          - '3.10'
+        python-version: ${{ fromJSON(needs.setup-lightened-ci.outputs.python-version) }}
+    if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'tf-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: tf-tests (${{ matrix.group }}, ${{ matrix.python-version }})
@@ -136,14 +142,15 @@ jobs:
 
 
   jax-tests:
+    needs:
+      - setup-lightened-ci
     strategy:
       matrix:
         group:
           - '1'
           - '2'
-        python-version:
-          - '3.9'
-          - '3.11'
+        python-version: ${{ fromJSON(needs.setup-lightened-ci.outputs.python-version) }}
+    if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'jax-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: jax-tests (${{ matrix.group }}, ${{ matrix.python-version }})
@@ -162,15 +169,15 @@ jobs:
 
 
   core-tests:
+    needs:
+      - setup-lightened-ci
     strategy:
       matrix:
         group:
           - '1'
           - '2'
-        python-version:
-          - '3.9'
-          - '3.10'
-          - '3.11'
+        python-version: ${{ fromJSON(needs.setup-lightened-ci.outputs.python-version) }}
+    if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'core-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: core-tests (${{ matrix.group }}, ${{ matrix.python-version }})
@@ -188,6 +195,9 @@ jobs:
 
 
   all-interfaces-tests:
+    needs:
+      - setup-lightened-ci
+    if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'core-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: all-interfaces-tests
@@ -207,6 +217,9 @@ jobs:
 
 
   external-libraries-tests:
+    needs:
+      - setup-lightened-ci
+    if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'external-libraries-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: external-libraries-tests
@@ -223,6 +236,9 @@ jobs:
 
 
   qcut-tests:
+    needs:
+      - setup-lightened-ci
+    if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'qcut-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: qcut-tests
@@ -243,6 +259,9 @@ jobs:
 
 
   qchem-tests:
+    needs:
+      - setup-lightened-ci
+    if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'qchem-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: qchem-tests
@@ -258,11 +277,14 @@ jobs:
       additional_pip_packages: openfermionpyscf basis-set-exchange
 
   gradients-tests:
+    needs:
+      - setup-lightened-ci
     strategy:
       matrix:
         config:
           - suite: finite-diff
           - suite: param-shift
+    if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'gradients-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: gradients-tests (${{ matrix.config.suite }})
@@ -282,6 +304,9 @@ jobs:
 
 
   data-tests:
+    needs:
+      - setup-lightened-ci
+    if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'data-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: data-tests
@@ -298,6 +323,8 @@ jobs:
 
 
   device-tests:
+    needs:
+      - setup-lightened-ci
     strategy:
       matrix:
         config:
@@ -311,6 +338,7 @@ jobs:
             shots: None
           - device: default.mixed
             shots: None
+    if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'device-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: device-tests (${{ matrix.config.device }}, ${{ matrix.config.shots }})
@@ -346,6 +374,14 @@ jobs:
       - gradients-tests
       - data-tests
       - device-tests
+
+    # Run this even if any of the above jobs are skipped but not if any of the jobs failed
+    if: >-
+      ${{
+        always() &&
+        !contains(needs.*.result, 'failure') &&
+        !contains(needs.*.result, 'cancelled')
+       }}
 
     steps:
       # Checkout repo so Codecov action is able to resolve git HEAD reference
