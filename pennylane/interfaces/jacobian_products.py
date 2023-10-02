@@ -179,7 +179,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
         gradient_transform: "qml.gradients.gradient_transform",
         gradient_kwargs: Optional[dict] = None,
     ):
-        if logger.isEnabledFor(logging.DEBUG):  # pragma: no-cover
+        if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug(
                 "TransformJacobianProduct being created with (%s, %s, %s)",
                 inspect.getsource(inner_execute)
@@ -193,7 +193,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
         self._gradient_kwargs = gradient_kwargs or {}
 
     def execute_and_compute_jvp(self, tapes: Batch, tangents: Tuple[Tuple[TensorLike]]):
-        if logger.isEnabledFor(logging.DEBUG):  # pragma: no-cover
+        if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("execute_and_compute_jvp called with (%s, %s)", tapes, tangents)
         num_result_tapes = len(tapes)
 
@@ -211,7 +211,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
         return tuple(results), tuple(jvps)
 
     def compute_vjp(self, tapes: Batch, dy: Tuple[Tuple[TensorLike]]):
-        if logger.isEnabledFor(logging.DEBUG):  # pragma: no-cover
+        if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("compute_vjp called with (%s, %s)", tapes, dy)
         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
             tapes, dy, self._gradient_transform, gradient_kwargs=self._gradient_kwargs
@@ -221,7 +221,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
         return tuple(processing_fn(vjp_results))
 
     def compute_jacobian(self, tapes: Batch):
-        if logger.isEnabledFor(logging.DEBUG):  # pragma: no-cover
+        if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("compute_jacobian called with %s", tapes)
         partial_gradient_fn = partial(self._gradient_transform, **self._gradient_kwargs)
         jac_tapes, batch_post_processing = qml.transforms.map_batch_transform(
@@ -232,20 +232,20 @@ class TransformJacobianProducts(JacobianProductCalculator):
 
 
 class DeviceJacobians(JacobianProductCalculator):
-    """Calculate jacobian products via an experimental device.
+    """Calculate jacobian products via a device.
 
     Args:
-        device (Union[pennylane.Device, pennylane.devices.experimental.Device]): the device for execution and derivatives.
+        device (Union[pennylane.Device, pennylane.devicesDevice]): the device for execution and derivatives.
             Must support supports first order gradients with the requested configuration.
         gradient_kwargs (dict): a dictionary of keyword options for the gradients. Only used with a :class:`~.pennylane.Device`
             old device interface.
-        execution_config (pennylane.devices.experimental.ExecutionConfig): a datastructure containing the parameters needed to fully
-           describe the execution. Only used with :class:`pennylane.devices.experimental.ExecutionConfig` new device interface.
+        execution_config (pennylane.devices.ExecutionConfig): a datastructure containing the parameters needed to fully
+           describe the execution. Only used with :class:`pennylane.devices.Device` new device interface.
 
     **Examples:**
 
-    >>> device = qml.devices.experimental.DefaultQubit2()
-    >>> config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
+    >>> device = qml.device('default.qubit')
+    >>> config = qml.devices.ExecutionConfig(gradient_method="adjoint")
     >>> jpc = DeviceJacobians(device, {}, config)
 
     This same class can also be used with the old device interface.
@@ -259,8 +259,9 @@ class DeviceJacobians(JacobianProductCalculator):
     In order to store results and jacobian for the backward pass during the forward pass,
     the ``_jacs_cache`` and ``_results_cache`` properties are ``LRUCache`` objects with a maximum size of 10.
 
-    Note that the the results and jacobains are cached based on the ``id`` of the tapes. This is done to separate the key
-    from potentially expensive ``QuantumScript.hash``. This means that the batch of tapes must be the
+    Note that since the hash and equality of :class:`~.QuantumScript` is based on object location, not contents, the
+    caching and retrieval should be more performant than a lookup based on the potentially expensive ``QuantumScript.hash``.
+    This means that the batch of tapes must be the
     same instance, not just something that looks the same but has a different location in memory.
 
     When a forward pass with :meth:`~.execute` is called, both the results and the jacobian for the object are stored.
@@ -298,11 +299,11 @@ class DeviceJacobians(JacobianProductCalculator):
 
     def __init__(
         self,
-        device: Union["qml.devices.experimental.Device", "qml.Device"],
+        device: Union["qml.devices.Device", "qml.Device"],
         gradient_kwargs: dict,
-        execution_config: Optional["qml.devices.experimental.ExecutionConfig"] = None,
+        execution_config: Optional["qml.devices.ExecutionConfig"] = None,
     ):
-        if logger.isEnabledFor(logging.DEBUG):
+        if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug(
                 "DeviceJacobians created with (%s, %s, %s)",
                 device,
@@ -363,14 +364,14 @@ class DeviceJacobians(JacobianProductCalculator):
             ResultBatch: the results of the execution.
 
         Side Effects:
-            Caches both the results and jacobian into ``_results_cache`` and ``jacs_cache``.
+            Caches both the results and jacobian into ``_results_cache`` and ``_jacs_cache``.
 
         """
-        if logger.isEnabledFor(logging.DEBUG):
+        if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("Forward pass called with %s", tapes)
         results, jac = self._dev_execute_and_compute_derivatives(tapes)
-        self._results_cache[id(tapes)] = results
-        self._jacs_cache[id(tapes)] = jac
+        self._results_cache[tapes] = results
+        self._jacs_cache[tapes] = jac
         return results
 
     def execute_and_compute_jvp(self, tapes: Batch, tangents):
@@ -417,26 +418,27 @@ class DeviceJacobians(JacobianProductCalculator):
         if any(t.shots.has_partitioned_shots for t in tapes):
             # we currently do not have any examples for testing
             raise NotImplementedError("device derivatives with shot vectors not supported.")
-        if id(tapes) not in self._results_cache and id(tapes) not in self._jacs_cache:
+        if tapes not in self._results_cache and tapes not in self._jacs_cache:
             results, jacs = self._dev_execute_and_compute_derivatives(tapes)
-            self._results_cache[id(tapes)] = results
-            self._jacs_cache[id(tapes)] = jacs
+            self._results_cache[tapes] = results
+            self._jacs_cache[tapes] = jacs
         else:
-            if id(tapes) in self._results_cache:
-                if logger.isEnabledFor(logging.DEBUG):
+            if tapes in self._results_cache:
+                if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
                     logger.debug("Retrieving results from cache.")
-                results = self._results_cache[id(tapes)]
+                results = self._results_cache[tapes]
             else:
                 results = self._dev_execute(tapes)
-                self._results_cache[id(tapes)] = results
+                self._results_cache[tapes] = results
 
-            if id(tapes) in self._jacs_cache:
-                if logger.isEnabledFor(logging.DEBUG):
+            if tapes in self._jacs_cache:
+                if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
                     logger.debug("Retrieving jacobian from cache.")
-                jacs = self._jacs_cache[id(tapes)]
+                jacs = self._jacs_cache[tapes]
             else:
-                jacs = self._dev_compute_derivatives(tapes)
-                self._jacs_cache[id(tapes)] = jacs
+                raise NotImplementedError(
+                    "No path to cache results without caching jac. This branch should not occur."
+                )
 
         multi_measurements = (len(t.measurements) > 1 for t in tapes)
         jvps = _compute_jvps(jacs, tangents, multi_measurements)
@@ -486,13 +488,13 @@ class DeviceJacobians(JacobianProductCalculator):
         if any(t.shots.has_partitioned_shots for t in tapes):
             # we currently do not have any examples for testing
             raise NotImplementedError("device derivatives with shot vectors not supported.")
-        if id(tapes) in self._jacs_cache:
-            if logger.isEnabledFor(logging.DEBUG):
+        if tapes in self._jacs_cache:
+            if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
                 logger.debug("Retrieving jacobian from cache.")
-            jacs = self._jacs_cache[id(tapes)]
+            jacs = self._jacs_cache[tapes]
         else:
             jacs = self._dev_compute_derivatives(tapes)
-            self._jacs_cache[id(tapes)] = jacs
+            self._jacs_cache[tapes] = jacs
 
         multi_measurements = (len(t.measurements) > 1 for t in tapes)
         return _compute_vjps(jacs, dy, multi_measurements)
@@ -528,11 +530,60 @@ class DeviceJacobians(JacobianProductCalculator):
         if any(t.shots.has_partitioned_shots for t in tapes):
             # we currently do not have any examples for testing
             raise NotImplementedError("device derivatives with shot vectors not supported.")
-        if id(tapes) in self._jacs_cache:
-            if logger.isEnabledFor(logging.DEBUG):
+        if tapes in self._jacs_cache:
+            if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
                 logger.debug("Retrieving jacobian from cache.")
-            return self._jacs_cache[id(tapes)]
+            return self._jacs_cache[tapes]
 
         jacs = self._dev_compute_derivatives(tapes)
-        self._jacs_cache[id(tapes)] = jacs
+        self._jacs_cache[tapes] = jacs
         return jacs
+
+
+class DeviceJacobianProducts(JacobianProductCalculator):
+    """Compute the jacobian products using the native device methods.
+
+    Args:
+        device (pennylane.devices.Device): the device for execution and derivatives.
+            Must define both the vjp and jvp.
+        execution_config (pennylane.devices.ExecutionConfig): a datastructure containing the parameters needed to fully
+           describe the execution.
+
+    >>> dev = qml.device('default.qubit')
+    >>> config = qml.devices.ExecutionConfig(gradient_method="adjoint")
+    >>> jpc = DeviceJacobianProducts(dev, config)
+
+    """
+
+    def __repr__(self):
+        return f"<DeviceJacobianProducts: {self._device.name}, {self._execution_config}>"
+
+    def __init__(
+        self, device: qml.devices.Device, execution_config=qml.devices.DefaultExecutionConfig
+    ):
+        if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
+            logger.debug("DeviceJacobianProducts created with (%s, %s)", device, execution_config)
+        self._device = device
+        self._execution_config = execution_config
+
+    def execute_and_compute_jvp(
+        self, tapes: Batch, tangents: Tuple[Tuple[TensorLike]]
+    ) -> Tuple[ResultBatch, Tuple]:
+        if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
+            logger.debug("execute_and_compute_jvp called with (%s, %s)", tapes, tangents)
+        numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        tangents = qml.math.unwrap(tangents)
+        return self._device.execute_and_compute_jvp(numpy_tapes, tangents, self._execution_config)
+
+    def compute_vjp(self, tapes: Batch, dy: Tuple[Tuple[TensorLike]]) -> Tuple:
+        if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
+            logger.debug("compute_vjp called with (%s, %s)", tapes, dy)
+        numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        dy = qml.math.unwrap(dy)
+        return self._device.compute_vjp(numpy_tapes, dy, self._execution_config)
+
+    def compute_jacobian(self, tapes: Batch):
+        if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
+            logger.debug("compute_jacobian called with %s", tapes)
+        numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        return self._device.compute_derivatives(numpy_tapes, self._execution_config)
