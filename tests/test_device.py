@@ -209,7 +209,7 @@ def mock_device_arbitrary_wires(monkeypatch):
 def test_gradients_record():
     """Test that execute_and_gradients and gradient both track the number of gradients requested."""
 
-    dev = qml.device("default.qubit", wires=1)
+    dev = qml.device("default.qubit.legacy", wires=1)
 
     tape = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
 

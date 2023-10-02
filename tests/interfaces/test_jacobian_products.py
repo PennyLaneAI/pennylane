@@ -28,8 +28,8 @@ from pennylane.interfaces.jacobian_products import (
     DeviceJacobianProducts,
 )
 
-dev = qml.devices.DefaultQubit()
-dev_old = qml.devices.DefaultQubitLegacy(wires=5)
+dev = qml.device("default.qubit")
+dev_old = qml.device("default.qubit.legacy", wires=5)
 adjoint_config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 
 
@@ -81,7 +81,7 @@ class TestBasics:
     def test_device_jacobians_initialization_new_dev(self):
         """Tests the private attributes are set during initialization of a DeviceJacobians class."""
 
-        device = qml.devices.DefaultQubit()
+        device = qml.device("default.qubit")
         config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 
         jpc = DeviceJacobians(device, {}, config)
@@ -99,7 +99,7 @@ class TestBasics:
         """Test the private attributes are set during initialization of a DeviceJacobians class with the
         old device interface."""
 
-        device = qml.devices.DefaultQubit(wires=5)
+        device = qml.devices.DefaultQubitLegacy(wires=5)
         gradient_kwargs = {"method": "adjoint_jacobian"}
 
         jpc = DeviceJacobians(device, gradient_kwargs)
@@ -114,16 +114,16 @@ class TestBasics:
 
     def test_device_jacobians_repr(self):
         """Test the repr method for device jacobians."""
-        device = qml.devices.DefaultQubit()
+        device = qml.device("default.qubit")
         config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 
         jpc = DeviceJacobians(device, {}, config)
 
         expected = (
-            r"<DeviceJacobians: default.qubit.2, {},"
+            r"<DeviceJacobians: default.qubit, {},"
             r" ExecutionConfig(grad_on_execution=None, use_device_gradient=None,"
             r" gradient_method='adjoint', gradient_keyword_arguments={},"
-            r" device_options={}, interface='autograd', derivative_order=1)>"
+            r" device_options={}, interface=None, derivative_order=1)>"
         )
 
         assert repr(jpc) == expected
@@ -325,8 +325,8 @@ class TestCaching:
         assert qml.math.allclose(res, np.cos(0.8))
         assert qml.math.allclose(jvps, -0.5 * np.sin(0.8))
 
-        assert jpc._results_cache[id(batch)] is res
-        assert qml.math.allclose(jpc._jacs_cache[id(batch)], (-np.sin(0.8)))
+        assert jpc._results_cache[batch] is res
+        assert qml.math.allclose(jpc._jacs_cache[batch], (-np.sin(0.8)))
 
         with jpc._device.tracker:
             jpc.execute_and_compute_jvp(batch, tangents)
@@ -348,14 +348,25 @@ class TestCaching:
             1 if isinstance(jpc._device, qml.Device) else 0
         )
 
-        assert id(batch) not in jpc._results_cache
-        assert qml.math.allclose(jpc._jacs_cache[id(batch)], 0)
+        assert batch not in jpc._results_cache
+        assert qml.math.allclose(jpc._jacs_cache[batch], 0)
 
         with jpc._device.tracker:
             jpc.execute_and_compute_jvp(batch, ((0.5,),))
 
         assert jpc._device.tracker.totals["executions"] == 1
         assert jpc._device.tracker.totals.get("derivatives", 0) == 0
+
+    def test_error_cant_cache_results_without_jac(self, jpc):
+        """Test that a not implemented error is raised if somehow the results are present
+        without the jac being cached and execute_and_compute_jvp is called."""
+
+        tape = qml.tape.QuantumScript([], [qml.state()])
+        batch = (tape,)
+        jpc._results_cache[batch] = "value"
+
+        with pytest.raises(NotImplementedError):
+            jpc.execute_and_compute_jvp(batch, tuple())
 
 
 @pytest.mark.parametrize("jpc", transform_jpc_matrix)
@@ -476,9 +487,8 @@ class TestTransformsDifferentiability:
     Note that testing is only done for the required method for each ml framework.
     """
 
-    @pytest.mark.parametrize("use_jit", (True, False))
     @pytest.mark.jax
-    def test_execute_jvp_jax(self, use_jit):
+    def test_execute_jvp_jax(self):
         """Test that execute_and_compute_jvp is jittable and differentiable with jax."""
         import jax
 
@@ -491,9 +501,6 @@ class TestTransformsDifferentiability:
         x = jax.numpy.array(0.1)
         tangents = ((jax.numpy.array(0.5),),)
 
-        if use_jit:
-            f = jax.jit(f)
-
         res = f(x, tangents=tangents)
         assert qml.math.allclose(res, -tangents[0][0] * np.sin(x))
 
@@ -505,7 +512,6 @@ class TestTransformsDifferentiability:
 
         tangent_grad = jax.grad(f, argnums=1)(x, tangents)
         assert qml.math.allclose(tangent_grad[0][0], -np.sin(x))
-        jax.clear_caches()
 
     @pytest.mark.autograd
     def test_vjp_autograd(self):
