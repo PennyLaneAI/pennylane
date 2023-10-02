@@ -411,6 +411,8 @@ def _update_config(config: ExecutionConfig) -> ExecutionConfig:
             "adjoint",
             "backprop",
         }
+    if config.use_device_jacobian_product is None:
+        updated_values["use_device_jacobian_product"] = config.gradient_method == "adjoint"
     if config.grad_on_execution is None:
         updated_values["grad_on_execution"] = config.gradient_method == "adjoint"
     return replace(config, **updated_values)

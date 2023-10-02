@@ -36,7 +36,7 @@ from pennylane.tape import QuantumTape
 from pennylane.typing import ResultBatch
 
 from .set_shots import set_shots
-from .jacobian_products import TransformJacobianProducts, DeviceJacobians
+from .jacobian_products import TransformJacobianProducts, DeviceJacobians, DeviceJacobianProducts
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -411,6 +411,7 @@ def execute(
     expand_fn="device",  # type: ignore
     max_expansion=10,
     device_batch_transform=True,
+    use_device_jacobian_product=False,
 ) -> ResultBatch:
     """New function to execute a batch of tapes on a device in an autodifferentiable-compatible manner. More cases will be added,
     during the project. The current version is supporting forward execution for Numpy and does not support shot vectors.
@@ -453,6 +454,8 @@ def execute(
             (within :meth:`Device.batch_transform`) to each tape to be executed. The default behaviour
             of the device batch transform is to expand out Hamiltonian measurements into
             constituent terms if not supported on the device.
+        use_device_jacobian_product (Optional[bool]): whether or not to use the device provided jacobian
+            product if it is available.
 
     Returns:
         list[tensor_like[float]]: A nested list of tape results. Each element in
@@ -566,6 +569,7 @@ def execute(
         interface=interface,
         gradient_method=_gradient_method,
         grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
+        use_device_jacobian_product=use_device_jacobian_product,
     )
     gradient_kwargs = gradient_kwargs or {}
 
@@ -633,7 +637,10 @@ def execute(
 
     _grad_on_execution = False
 
-    if config.use_device_gradient:
+    if config.use_device_jacobian_product:
+        jpc = DeviceJacobianProducts(device, config)
+
+    elif config.use_device_gradient:
 
         jpc = DeviceJacobians(device, {}, config)
 

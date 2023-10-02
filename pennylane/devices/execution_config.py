@@ -54,6 +54,14 @@ class ExecutionConfig:
     True indicates a request to either use the device gradient or fail.
     """
 
+    use_device_jacobian_product: Optional[bool] = None
+    """Whether or not to use the device provided vjp or jvp to compute gradients.
+
+    ``None`` indicates to use the device if possible, but to fall back to device jacobian or pennylane behavior if it isn't.
+
+    True indicates a request to either use the device jacobian products fail.
+    """
+
     gradient_method: Optional[str] = None
     """The method used to compute the gradient of the quantum circuit being executed"""
 
