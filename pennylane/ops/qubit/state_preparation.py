@@ -105,6 +105,7 @@ class BasisState(StatePrepBase):
         if (num_wires := len(self.wires)) != len(prep_vals):
             raise ValueError("BasisState parameter and wires must be of equal length.")
 
+        prep_vals = math.cast(prep_vals, int)
         if wire_order is None:
             indices = prep_vals
         else:

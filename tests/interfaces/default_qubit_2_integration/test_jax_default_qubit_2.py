@@ -29,6 +29,21 @@ config.config.update("jax_enable_x64", True)
 pytestmark = pytest.mark.jax
 
 
+def test_jit_execution():
+    """Test that qml.execute can be directly jitted."""
+    dev = qml.device("default.qubit")
+
+    tape = qml.tape.QuantumScript(
+        [qml.RX(jax.numpy.array(0.1), 0)], [qml.expval(qml.s_prod(2.0, qml.PauliZ(0)))]
+    )
+
+    out = jax.jit(qml.execute, static_argnames=("device", "gradient_fn"))(
+        (tape,), device=dev, gradient_fn=qml.gradients.param_shift
+    )
+    expected = 2.0 * jax.numpy.cos(jax.numpy.array(0.1))
+    assert qml.math.allclose(out[0], expected)
+
+
 # pylint: disable=too-few-public-methods
 class TestCaching:
     """Tests for caching behaviour"""
