@@ -303,10 +303,10 @@ def pytest_runtest_setup(item):
                     f"\nTest {item.nodeid} only runs with {allowed_interfaces} interfaces(s) but {b} interface provided",
                 )
 
-@pytest.hookimpl(trylast=True)
-def pytest_sessionfinish(session, exitstatus):
-    no_tests_collected = pytest.ExitCode.NO_TESTS_COLLECTED
-    ok = pytest.ExitCode.OK
-
-    if exitstatus == no_tests_collected:
-        session.exitstatus = ok
+# @pytest.hookimpl(trylast=True)
+# def pytest_sessionfinish(session, exitstatus):
+#     no_tests_collected = pytest.ExitCode.NO_TESTS_COLLECTED
+#     ok = pytest.ExitCode.OK
+#
+#     if exitstatus == no_tests_collected:
+#         session.exitstatus = ok

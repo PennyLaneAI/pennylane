@@ -38,11 +38,23 @@ on:
         default: false
 
 jobs:
-#  set-python-version:
-#    runs-on: ubuntu-latest
-#
-#    steps:
-#      -
+  setup-lightened-ci:
+    runs-on: ubuntu-latest
+
+    outputs:
+      python-version: >-
+        ${{
+          inputs.run_lightened_ci == true
+          && '["3.9"]'
+          || '["3.9", "3.10", "3.11"]'
+         }}
+      jobs_to_skip: >-
+        ${{
+          inputs.run_lightened_ci == true
+          && '["qcut-test", "zx-test", "data-test"]'
+          || '[]'
+         }}
+
   torch-tests:
     strategy:
       matrix:
