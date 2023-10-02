@@ -54,7 +54,7 @@ class TestTracking:
         assert tracker.history == {
             "batches": [1, 1],
             "executions": [1, 1, 1],
-            "simulations": [1, 2],
+            "simulations": [1, 1, 1],
             "resources": [Resources(num_wires=1), Resources(num_wires=1), Resources(num_wires=1)],
             "derivative_batches": [1],
             "derivatives": [1],
@@ -66,7 +66,11 @@ class TestTracking:
             "derivative_batches": 1,
             "derivatives": 1,
         }
-        assert tracker.latest == {"batches": 1, "simulations": 2}
+        assert tracker.latest == {
+            "executions": 1,
+            "simulations": 1,
+            "resources": Resources(num_wires=1),
+        }
 
     def test_tracking_execute_and_derivatives(self):
         """Test that the execute_and_compute_* calls are being tracked for the
