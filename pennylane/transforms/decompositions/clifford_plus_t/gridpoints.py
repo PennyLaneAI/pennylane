@@ -15,8 +15,6 @@
 
 import numpy as np
 
-import pennylane as qml
-
 from .conversion import (
     action,
     adj2,
@@ -26,11 +24,11 @@ from .conversion import (
     from_z_root_two,
     operator_to_bl2z,
 )
-from .rings import RootTwo, DRootTwo, SQRT2
+from .rings import Matrix, RootTwo, Dyadic, SQRT2
 from .shapes import ConvexSet, Ellipse, Point
 
-LAMBDA = 1 + SQRT2
-LAMBDA_INV = SQRT2 - 1
+LAMBDA = RootTwo(1, 1)
+LAMBDA_INV = RootTwo(-1, 1)
 log_lambda = lambda x: np.emath.logn(LAMBDA, x)
 
 
@@ -40,7 +38,7 @@ def gridpoints2_increasing(region: ConvexSet):
     matA = region.ellipse.operator
     matA = matA / np.sqrt(np.linalg.det(matA))
     opG = reduction(matA, unitdisk.ellipse.operator)
-    opG_inv = np.linalg.inv(opG)
+    opG_inv = opG.inverse()
     setA = region.transform(opG_inv)
     setB = unitdisk.transform(adj2(opG_inv))
     (x0A, x1A), (y0A, y1A) = setA.ellipse.bounding_box()
@@ -185,45 +183,52 @@ def floorlog(b, x):
     return 2 * n + 1, r / b
 
 
-def step_lemma(matA: np.ndarray, matB: np.ndarray) -> DRootTwo:
+def step_lemma(matA: np.ndarray, matB: np.ndarray) -> Matrix:
     """The Step Lemma from the paper."""
     # pylint:disable=too-many-return-statements
     b, l2z = operator_to_bl2z(matA)
     beta, l2zeta = operator_to_bl2z(matB)
 
     if beta < -1e-16:
-        return wlog_using(matA, matB, qml.PauliZ.compute_matrix())
+        return wlog_using(matA, matB, Matrix([[1, 0], [0, -1]]))
 
     if l2z * l2zeta < 1:
-        return wlog_using(matA, matB, qml.PauliX.compute_matrix())
+        return wlog_using(matA, matB, Matrix([[0, 1], [1, 0]]))
 
     l2z_minus_zeta = l2z / l2zeta
     if l2z_minus_zeta > 33.971 or l2z_minus_zeta < 0.029437:
         s_power = np.round(log_lambda(l2z_minus_zeta / 4))
-        s_mat = np.array([[LAMBDA**s_power, 0], [0, LAMBDA_INV**s_power]])
+        s_mat = Matrix([[LAMBDA**s_power, 0], [0, LAMBDA_INV**s_power]])
+        print("s_mat:", s_mat)
         return wlog_using(matA, matB, s_mat)
 
-    if matA[0, 1] * matA[1, 0] + matB[0, 1] * matB[1, 0] <= 15:
+    if matA[0][1] * matA[1][0] + matB[0][1] * matB[1][0] <= 15:
         return None
 
     if l2z_minus_zeta > 5.8285 or l2z_minus_zeta < 0.17157:
         return with_shift(matA, matB, int(np.round(log_lambda(l2z_minus_zeta / 4))))
 
     if 0.24410 <= l2z <= 4.0968 and 0.24410 <= l2zeta <= 4.0968:
-        return np.array([[1, -1], [1, 1]]) / np.sqrt(2)
+        one_over_root2 = RootTwo(0, Dyadic(1, 1))
+        return Matrix(
+            [
+                [one_over_root2, RootTwo(0, Dyadic(-1, 1))],
+                [one_over_root2, one_over_root2],
+            ],
+        )
 
     if b >= 0:
         if l2z <= 1.6969:
-            return np.array([[1 - np.sqrt(2), -1], [LAMBDA, 1]]) / np.sqrt(2)
+            return Matrix([[RootTwo(1, -1), -1], [LAMBDA, 1]]) / np.sqrt(2)
         if l2zeta <= 1.6969:
-            return adj2(np.array([[1 - np.sqrt(2), -1], [LAMBDA, 1]]) / np.sqrt(2))
+            return adj2(Matrix([[RootTwo(1, -1), -1], [LAMBDA, 1]]) / np.sqrt(2))
         l2c = min(l2z, l2zeta)
         power = max(1, int(np.sqrt(l2c // 4)))
-        return np.array([[1, 2 * power], [0, 1]])
+        return Matrix([[1, 2 * power], [0, 1]])
 
     l2c = min(l2z, l2zeta)
     power = max(1, int(np.sqrt(l2c // 2)))
-    return np.array([[1, np.sqrt(2) * power], [0, 1]])
+    return Matrix([[1, RootTwo(0, power)], [0, 1]])
 
 
 def wlog_using(matA, matB, op):
@@ -246,7 +251,7 @@ def shift_sigma(k, op):
     (a, b), (c, d) = op
     a *= LAMBDA**k
     d *= LAMBDA**-k
-    return np.array([[a, b], [c, d]])
+    return Matrix([[a, b], [c, d]])
 
 
 def shift_tau(k, op):
@@ -257,10 +262,10 @@ def shift_tau(k, op):
     if k % 2:
         b *= -1
         c *= -1
-    return np.array([[a, b], [c, d]])
+    return Matrix([[a, b], [c, d]])
 
 
-def reduction(matA, matB):
+def reduction(matA, matB) -> Matrix:
     """Applies the Step Lemma until the skew is 15 or less"""
     if (opG := step_lemma(matA, matB)) is None:
         return np.eye(2)

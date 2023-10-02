@@ -49,7 +49,7 @@ class Ellipse:
 
     def transform(self, opG):
         """Apply an operator to an ellipse."""
-        opG_inv = np.linalg.inv(opG)
+        opG_inv = opG.inverse()
         mat = np.conj(opG_inv).T @ self.operator @ opG_inv
         return Ellipse(mat, self.point.transform(opG))
 
@@ -74,7 +74,7 @@ class ConvexSet:
 
     def characteristic_transform(self, opG):
         """Returns a new characteristic function that first applies an operator to the point."""
-        opG_inv = np.linalg.inv(opG)
+        opG_inv = opG.inverse()
 
         def char_fn(point: Point):
             """The transformed characteristic function."""
@@ -84,7 +84,7 @@ class ConvexSet:
 
     def intersector_transform(self, opG):
         """Returns a new line intersector that first applies an operator to the point."""
-        opG_inv = np.linalg.inv(opG)
+        opG_inv = opG.inverse()
 
         def intersector(v: Point, w: Point):
             """The transformed line intersector."""

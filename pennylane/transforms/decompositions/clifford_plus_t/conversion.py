@@ -14,11 +14,18 @@
 """Various conversion functions for the gridsynth implementation."""
 # pylint:disable=missing-function-docstring
 
-import numpy as np
+from .rings import RootTwo, Matrix
 
 
 def adj2(x):
     """Map from ``a + b√2`` to ``a - b√2``."""
+    if isinstance(x, Matrix):
+        (a, b), (c, d) = x
+        return Matrix([[adj2(a), adj2(b)], [adj2(c), adj2(d)]])
+
+    if isinstance(x, RootTwo):
+        return x.adj2()
+
     return x
 
 
@@ -40,7 +47,7 @@ def from_z_root_two(x):
 
 
 def operator_to_bl2z(m):
-    return m[0, 1], m[1, 1] / m[0, 0]
+    return m[0][1], m[1][1] / m[0][0]
 
 
 def point_from_d_root_two(point):
@@ -48,10 +55,10 @@ def point_from_d_root_two(point):
 
 
 def action(a, b, g):
-    g4 = op_from_d_root_two(adj2(g))
-    g3 = np.conj(g4).T
-    g2 = op_from_d_root_two(g)
-    g1 = np.conj(g2).T
+    g4 = adj2(g)
+    g3 = g4.adjoint()
+    g2 = g
+    g1 = g2.adjoint()
     return g1 @ a @ g2, g3 @ b @ g4
 
 
