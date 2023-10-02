@@ -15,10 +15,12 @@
 
 from functools import singledispatch
 from typing import Union
-from pennylane.operation import Operator
-from pennylane.pauli import PauliWord, PauliSentence
-from .fermionic import FermiWord, FermiSentence
+
 import pennylane as qml
+from pennylane.operation import Operator
+from pennylane.pauli import PauliSentence, PauliWord
+
+from .fermionic import FermiSentence, FermiWord
 
 
 # pylint: disable=unexpected-keyword-arg
@@ -26,7 +28,7 @@ def jordan_wigner(
     fermi_operator: (Union[FermiWord, FermiSentence]),
     ps: bool = False,
     wire_map: dict = None,
-    tol: float = 1e-8,
+    tol: float = None,
 ) -> Union[Operator, PauliSentence]:
     r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
 
@@ -77,7 +79,7 @@ def jordan_wigner(
     + (0.25+0j) * X(2) @ X(3)
     + 0.25j * X(2) @ Y(3)
     """
-    return _jordan_wigner_dispatch(fermi_operator, ps, wire_map)
+    return _jordan_wigner_dispatch(fermi_operator, ps, wire_map, tol)
 
 
 @singledispatch
@@ -87,7 +89,7 @@ def _jordan_wigner_dispatch(fermi_operator, ps, wire_map, tol):
 
 
 @_jordan_wigner_dispatch.register
-def _(fermi_operator: FermiWord, ps=False, wire_map=None):
+def _(fermi_operator: FermiWord, ps=False, wire_map=None, tol=None):
     wires = list(fermi_operator.wires) or [0]
     identity_wire = wires[0]
 
@@ -109,6 +111,10 @@ def _(fermi_operator: FermiWord, ps=False, wire_map=None):
                 }
             )
 
+    for pw in qubit_operator:
+        if tol and abs(qml.math.imag(qubit_operator[pw])) <= tol:
+            qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+
     if not ps:
         # wire_order specifies wires to use for Identity (PauliWord({}))
         qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
@@ -120,7 +126,7 @@ def _(fermi_operator: FermiWord, ps=False, wire_map=None):
 
 
 @_jordan_wigner_dispatch.register
-def _(fermi_operator: FermiSentence, ps=False, wire_map=None, tol=1e-8):
+def _(fermi_operator: FermiSentence, ps=False, wire_map=None, tol=None):
     wires = list(fermi_operator.wires) or [0]
     identity_wire = wires[0]
 
@@ -132,7 +138,7 @@ def _(fermi_operator: FermiSentence, ps=False, wire_map=None, tol=1e-8):
         for pw in fermi_word_as_ps:
             qubit_operator[pw] = qubit_operator[pw] + fermi_word_as_ps[pw] * coeff
 
-            if abs(qml.math.imag(qubit_operator[pw])) <= tol:
+            if tol and abs(qml.math.imag(qubit_operator[pw])) <= tol:
                 qubit_operator[pw] = qml.math.real(qubit_operator[pw])
 
     if not ps:
