@@ -120,6 +120,28 @@ class DefaultQubit(Device):
     DeviceArray(-0.93203914, dtype=float32, weak_type=True)
 
     .. details::
+        :title: Tracking
+
+        ``DefaultQubit`` tracks:
+
+        * ``executions``: the number of unique circuits that would be required on quantum hardware
+        * ``shots``: the number of shots
+        * ``resources``: the :class:`~.resource.Resources` for the executed circuit.
+        * ``simulations``: the number of simulations performed. One simulation cover multiple QPU
+           executions, such as for non commuting measurements and batched parameters.
+        * ``batches``: The number of times :meth:`~.execute` is called.
+        * ``derivative_batches``: How many times :meth:`~.compute_derivatives` is called.
+        * ``execute_and_derivative_batches``: How many times :meth:`~.execute_and_compute_derivatives` is called
+        * ``vjp_batches``: How many times :meth:`~.compute_vjp` is called
+        * ``execute_and_vjp_batches``: How many times :meth:`~.execute_and_compute_vjp` is called
+        * ``jvp_batches``: How many times :meth:`~.compute_jvp` is called
+        * ``execute_and_jvp_batches``: How many times :meth:`~.execute_and_compute_jvp` is called
+        * ``derivatives``: How many circuits are submitted to :meth:`~.compute_derivatives` or :meth:`~.execute_and_compute_derivatives`.
+        * ``vjps``: How many circuits are submitted to :meth:`~.compute_vjp` or :meth:`~.execute_and_compute_vjp`
+        * ``jvps``: How many circuits are submitted to :meth:`~.compute_jvp` or :meth:`~.execute_and_compute_jvp`
+
+
+    .. details::
         :title: Accelerate calculations with multiprocessing
 
         Suppose one has a processor with 5 cores or more, these scripts can be executed in
