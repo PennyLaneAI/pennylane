@@ -150,7 +150,8 @@ class StoreDictKeyPair(argparse.Action):
     >>> args.my_dict
     {"v1": "k1", "v2": "5"}
 
-    Note that strings will be converted to ints and floats is possible.
+    Note that strings will be converted to ints and floats if possible.
+
     """
 
     # pylint: disable=too-few-public-methods
