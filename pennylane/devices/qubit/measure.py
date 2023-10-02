@@ -19,7 +19,6 @@ from typing import Callable
 from scipy.sparse import csr_matrix
 
 from pennylane import math
-from pennylane.numpy import NaN
 from pennylane.ops import Sum, Hamiltonian
 from pennylane.measurements import (
     StateMeasurement,
@@ -63,14 +62,12 @@ def state_diagonalizing_gates(
     Returns:
         TensorLike: the result of the measurement
     """
-    if not any(math.isnan(state)):
-        for op in measurementprocess.diagonalizing_gates():
-            state = apply_operation(op, state, is_state_batched=is_state_batched)
+    for op in measurementprocess.diagonalizing_gates():
+        state = apply_operation(op, state, is_state_batched=is_state_batched)
 
     total_indices = len(state.shape) - is_state_batched
     wires = Wires(range(total_indices))
     flattened_state = flatten_state(state, total_indices)
-
     return measurementprocess.process_state(flattened_state, wires)
 
 
@@ -90,12 +87,6 @@ def csr_dot_products(
     """
     total_wires = len(state.shape) - is_state_batched
     Hmat = measurementprocess.obs.sparse_matrix(wire_order=list(range(total_wires)))
-
-    if any(math.isnan(state)):
-        if is_state_batched:
-            return math.asarray([NaN] * math.shape(state)[0], like=math.get_interface(state))
-
-        return math.asarry(NaN, like=math.get_interface(state))
 
     if is_state_batched:
         state = math.toarray(state).reshape(math.shape(state)[0], -1)
