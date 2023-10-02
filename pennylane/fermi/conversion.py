@@ -18,11 +18,15 @@ from typing import Union
 from pennylane.operation import Operator
 from pennylane.pauli import PauliWord, PauliSentence
 from .fermionic import FermiWord, FermiSentence
+import pennylane as qml
 
 
 # pylint: disable=unexpected-keyword-arg
 def jordan_wigner(
-    fermi_operator: (Union[FermiWord, FermiSentence]), ps: bool = False, wire_map: dict = None
+    fermi_operator: (Union[FermiWord, FermiSentence]),
+    ps: bool = False,
+    wire_map: dict = None,
+    tol: float = 1e-8,
 ) -> Union[Operator, PauliSentence]:
     r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
 
@@ -49,6 +53,7 @@ def jordan_wigner(
         wire_map (dict): a dictionary defining how to map the oribitals of
             the Fermi operator to qubit wires. If None, the integers used to
             order the orbitals will be used as wire labels. Defaults to None.
+        tol (float): tolerance for discarding the imaginary part of the coefficients
 
     Returns:
         Union[PauliSentence, Operator]: a linear combination of qubit operators
@@ -76,7 +81,7 @@ def jordan_wigner(
 
 
 @singledispatch
-def _jordan_wigner_dispatch(fermi_operator, ps, wire_map):
+def _jordan_wigner_dispatch(fermi_operator, ps, wire_map, tol):
     """Dispatches to appropriate function if fermi_operator is a FermiWord or FermiSentence."""
     raise ValueError(f"fermi_operator must be a FermiWord or FermiSentence, got: {fermi_operator}")
 
@@ -115,7 +120,7 @@ def _(fermi_operator: FermiWord, ps=False, wire_map=None):
 
 
 @_jordan_wigner_dispatch.register
-def _(fermi_operator: FermiSentence, ps=False, wire_map=None):
+def _(fermi_operator: FermiSentence, ps=False, wire_map=None, tol=1e-8):
     wires = list(fermi_operator.wires) or [0]
     identity_wire = wires[0]
 
@@ -126,6 +131,9 @@ def _(fermi_operator: FermiSentence, ps=False, wire_map=None):
 
         for pw in fermi_word_as_ps:
             qubit_operator[pw] = qubit_operator[pw] + fermi_word_as_ps[pw] * coeff
+
+            if abs(qml.math.imag(qubit_operator[pw])) <= tol:
+                qubit_operator[pw] = qml.math.real(qubit_operator[pw])
 
     if not ps:
         qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
