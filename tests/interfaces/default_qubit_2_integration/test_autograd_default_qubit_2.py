@@ -115,7 +115,7 @@ class TestCaching:
             out = qml.jacobian(f)(x)
 
         assert dev.tracker.totals["batches"] == 2
-        assert dev.tracker.history["simulations"] == [2, 4]
+        assert dev.tracker.history["simulations"] == [1, 1, 1, 1, 1, 1]
         expected = [-2 * np.cos(x / 2) * np.sin(x / 2), 2 * np.sin(x / 2) * np.cos(x / 2)]
         assert qml.math.allclose(out, expected)
 
