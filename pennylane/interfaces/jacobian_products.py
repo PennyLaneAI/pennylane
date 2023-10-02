@@ -259,8 +259,9 @@ class DeviceJacobians(JacobianProductCalculator):
     In order to store results and jacobian for the backward pass during the forward pass,
     the ``_jacs_cache`` and ``_results_cache`` properties are ``LRUCache`` objects with a maximum size of 10.
 
-    Note that the the results and jacobains are cached based on the ``id`` of the tapes. This is done to separate the key
-    from potentially expensive ``QuantumScript.hash``. This means that the batch of tapes must be the
+    Note that since the hash and equality of :class:`~.QuantumScript` is based on object location, not contents, the
+    caching and retrieval should be more performant than a lookup based on the potentially expensive ``QuantumScript.hash``.
+    This means that the batch of tapes must be the
     same instance, not just something that looks the same but has a different location in memory.
 
     When a forward pass with :meth:`~.execute` is called, both the results and the jacobian for the object are stored.
@@ -369,8 +370,8 @@ class DeviceJacobians(JacobianProductCalculator):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("Forward pass called with %s", tapes)
         results, jac = self._dev_execute_and_compute_derivatives(tapes)
-        self._results_cache[id(tapes)] = results
-        self._jacs_cache[id(tapes)] = jac
+        self._results_cache[tapes] = results
+        self._jacs_cache[tapes] = jac
         return results
 
     def execute_and_compute_jvp(self, tapes: Batch, tangents):
@@ -417,23 +418,23 @@ class DeviceJacobians(JacobianProductCalculator):
         if any(t.shots.has_partitioned_shots for t in tapes):
             # we currently do not have any examples for testing
             raise NotImplementedError("device derivatives with shot vectors not supported.")
-        if id(tapes) not in self._results_cache and id(tapes) not in self._jacs_cache:
+        if tapes not in self._results_cache and tapes not in self._jacs_cache:
             results, jacs = self._dev_execute_and_compute_derivatives(tapes)
-            self._results_cache[id(tapes)] = results
-            self._jacs_cache[id(tapes)] = jacs
+            self._results_cache[tapes] = results
+            self._jacs_cache[tapes] = jacs
         else:
-            if id(tapes) in self._results_cache:
+            if tapes in self._results_cache:
                 if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
                     logger.debug("Retrieving results from cache.")
-                results = self._results_cache[id(tapes)]
+                results = self._results_cache[tapes]
             else:
                 results = self._dev_execute(tapes)
-                self._results_cache[id(tapes)] = results
+                self._results_cache[tapes] = results
 
-            if id(tapes) in self._jacs_cache:
+            if tapes in self._jacs_cache:
                 if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
                     logger.debug("Retrieving jacobian from cache.")
-                jacs = self._jacs_cache[id(tapes)]
+                jacs = self._jacs_cache[tapes]
             else:
                 raise NotImplementedError(
                     "No path to cache results without caching jac. This branch should not occur."
@@ -487,13 +488,13 @@ class DeviceJacobians(JacobianProductCalculator):
         if any(t.shots.has_partitioned_shots for t in tapes):
             # we currently do not have any examples for testing
             raise NotImplementedError("device derivatives with shot vectors not supported.")
-        if id(tapes) in self._jacs_cache:
+        if tapes in self._jacs_cache:
             if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
                 logger.debug("Retrieving jacobian from cache.")
-            jacs = self._jacs_cache[id(tapes)]
+            jacs = self._jacs_cache[tapes]
         else:
             jacs = self._dev_compute_derivatives(tapes)
-            self._jacs_cache[id(tapes)] = jacs
+            self._jacs_cache[tapes] = jacs
 
         multi_measurements = (len(t.measurements) > 1 for t in tapes)
         return _compute_vjps(jacs, dy, multi_measurements)
@@ -529,11 +530,11 @@ class DeviceJacobians(JacobianProductCalculator):
         if any(t.shots.has_partitioned_shots for t in tapes):
             # we currently do not have any examples for testing
             raise NotImplementedError("device derivatives with shot vectors not supported.")
-        if id(tapes) in self._jacs_cache:
+        if tapes in self._jacs_cache:
             if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
                 logger.debug("Retrieving jacobian from cache.")
-            return self._jacs_cache[id(tapes)]
+            return self._jacs_cache[tapes]
 
         jacs = self._dev_compute_derivatives(tapes)
-        self._jacs_cache[id(tapes)] = jacs
+        self._jacs_cache[tapes] = jacs
         return jacs

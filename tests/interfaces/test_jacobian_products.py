@@ -317,8 +317,8 @@ class TestCaching:
         assert qml.math.allclose(res, np.cos(0.8))
         assert qml.math.allclose(jvps, -0.5 * np.sin(0.8))
 
-        assert jpc._results_cache[id(batch)] is res
-        assert qml.math.allclose(jpc._jacs_cache[id(batch)], (-np.sin(0.8)))
+        assert jpc._results_cache[batch] is res
+        assert qml.math.allclose(jpc._jacs_cache[batch], (-np.sin(0.8)))
 
         with jpc._device.tracker:
             jpc.execute_and_compute_jvp(batch, tangents)
@@ -340,8 +340,8 @@ class TestCaching:
             1 if isinstance(jpc._device, qml.Device) else 0
         )
 
-        assert id(batch) not in jpc._results_cache
-        assert qml.math.allclose(jpc._jacs_cache[id(batch)], 0)
+        assert batch not in jpc._results_cache
+        assert qml.math.allclose(jpc._jacs_cache[batch], 0)
 
         with jpc._device.tracker:
             jpc.execute_and_compute_jvp(batch, ((0.5,),))
@@ -355,7 +355,7 @@ class TestCaching:
 
         tape = qml.tape.QuantumScript([], [qml.state()])
         batch = (tape,)
-        jpc._results_cache[id(batch)] = "value"
+        jpc._results_cache[batch] = "value"
 
         with pytest.raises(NotImplementedError):
             jpc.execute_and_compute_jvp(batch, tuple())
