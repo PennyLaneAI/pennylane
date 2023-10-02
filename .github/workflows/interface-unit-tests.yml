@@ -41,19 +41,30 @@ jobs:
   setup-lightened-ci:
     runs-on: ubuntu-latest
 
+    steps:
+      - name: Setup Python Versions
+        id: python_versions
+        run: |
+          if [ "${{ inputs.run_lightened_ci" == "true" ]; 
+          then
+            echo 'python_versions=["3.9"]' >> $GITHUB_OUTPUT
+          else
+            echo 'python_versions=["3.9", "3.10", "3.11"]' >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup Job to Skip
+        id: jobs_to_skip
+        run: |
+          if [ "${{ inputs.run_lightened_ci" == "true" ]; 
+          then
+            echo 'jobs_to_skip=["qcut-tests", "zx-tests", "data-tests"]' >> $GITHUB_OUTPUT
+          else
+            echo 'jobs_to_skip=[]' >> $GITHUB_OUTPUT
+          fi
+
     outputs:
-      python-version: >-
-        ${{
-          inputs.run_lightened_ci == true
-          && '["3.9"]'
-          || '["3.9", "3.10", "3.11"]'
-         }}
-      jobs_to_skip: >-
-        ${{
-          inputs.run_lightened_ci == true
-          && '["qcut-test", "zx-test", "data-test"]'
-          || '[]'
-         }}
+      python-version: ${{ steps.python_versions.outputs.python_versions }}
+      jobs_to_skip: ${{ steps.jobs_to_skip.outputs.jobs_to_skip }}
 
   torch-tests:
     strategy:
