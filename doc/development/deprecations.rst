@@ -69,6 +69,12 @@ Pending deprecations
   - Deprecated in v0.33
   - Will be removed in v0.34
 
+* `qml.gradients.pulse_generator` becomes `qml.gradients.pulse_odegen` to adhere to paper naming conventions. During v0.33, `pulse_generator`
+  is still available but raises a warning.
+  
+  - Deprecated in v0.33
+  - Will be removed in v0.34
+
 
 Completed deprecation cycles
 ----------------------------
