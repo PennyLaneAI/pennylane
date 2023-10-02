@@ -26,8 +26,23 @@ on:
         required: false
         type: string
         default: --cov=pennylane --cov-report=term-missing --cov-report=xml --no-flaky-report -p no:warnings --tb=native
+      run_lightened_ci:
+        description: |
+          Indicate if a lightened version of the CI should be run instead of the entire suite.
+          
+          The lightened version of the CI includes the following changes:
+          - Only Python 3.9 is tested against, instead of 3.9, 3.10, 3.11
+          - The jobs 'qcut-tests', 'zx-tests', 'data-tests' are skipped
+        required: false
+        type: boolean
+        default: false
 
 jobs:
+#  set-python-version:
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#      -
   torch-tests:
     strategy:
       matrix:
