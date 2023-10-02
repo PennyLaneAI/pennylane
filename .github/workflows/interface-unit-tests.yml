@@ -45,7 +45,7 @@ jobs:
       - name: Setup Python Versions
         id: python_versions
         run: |
-          if [ "${{ inputs.run_lightened_ci" == "true" ]; 
+          if [ "${{ inputs.run_lightened_ci }}" == "true" ]; 
           then
             echo 'python_versions=["3.9"]' >> $GITHUB_OUTPUT
           else
@@ -55,7 +55,7 @@ jobs:
       - name: Setup Job to Skip
         id: jobs_to_skip
         run: |
-          if [ "${{ inputs.run_lightened_ci" == "true" ]; 
+          if [ "${{ inputs.run_lightened_ci }}" == "true" ]; 
           then
             echo 'jobs_to_skip=["qcut-tests", "zx-tests", "data-tests"]' >> $GITHUB_OUTPUT
           else
