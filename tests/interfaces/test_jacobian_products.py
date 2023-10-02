@@ -128,6 +128,23 @@ class TestBasics:
 
         assert repr(jpc) == expected
 
+    def test_device_jacobian_products_repr(self):
+        """Test the repr method for device jacobian products."""
+
+        device = qml.device("default.qubit")
+        config = qml.devices.ExecutionConfig(gradient_method="adjoint")
+
+        jpc = DeviceJacobianProducts(device, config)
+
+        expected = (
+            r"<DeviceJacobianProducts: default.qubit,"
+            r" ExecutionConfig(grad_on_execution=None, use_device_gradient=None, "
+            r"gradient_method='adjoint', gradient_keyword_arguments={}, device_options={},"
+            r" interface=None, derivative_order=1)>"
+        )
+
+        assert repr(jpc) == expected
+
     @pytest.mark.parametrize("jpc", dev_jpc_matrix)
     def test_no_shot_vector_with_dev_jacs(self, jpc):
         """Test that device derivatives with shot vectors raise a not implemented error."""

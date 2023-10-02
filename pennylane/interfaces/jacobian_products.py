@@ -556,7 +556,7 @@ class DeviceJacobianProducts(JacobianProductCalculator):
     """
 
     def __repr__(self):
-        return f"<DeviceJacobianProducts: {self._device}, {self._execution_config}>"
+        return f"<DeviceJacobianProducts: {self._device.name}, {self._execution_config}>"
 
     def __init__(
         self, device: qml.devices.Device, execution_config=qml.devices.DefaultExecutionConfig
