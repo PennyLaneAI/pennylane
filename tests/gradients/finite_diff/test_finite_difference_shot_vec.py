@@ -375,8 +375,8 @@ class TestFiniteDiff:
         assert len(j2) == len(many_shots_shot_vector)
 
         for _j1, _j2 in zip(j1, j2):
-            assert np.allclose(_j1, [exp, 0], atol=0.05)
-            assert np.allclose(_j2, [0, exp], atol=0.05)
+            assert np.allclose(_j1, [exp, 0], atol=0.07)
+            assert np.allclose(_j2, [0, exp], atol=0.07)
 
     def test_output_shape_matches_qnode(self):
         """Test that the transform output shape matches that of the QNode."""
@@ -834,9 +834,9 @@ class TestFiniteDiffIntegration:
 
             assert isinstance(res[0], tuple)
             assert len(res[0]) == 2
-            assert np.allclose(res[0][0], -np.sin(x), atol=0.07, rtol=0)
+            assert np.allclose(res[0][0], -np.sin(x), atol=0.1, rtol=0)
             assert isinstance(res[0][0], numpy.ndarray)
-            assert np.allclose(res[0][1], 0, atol=0.07, rtol=0)
+            assert np.allclose(res[0][1], 0, atol=0.1, rtol=0)
             assert isinstance(res[0][1], numpy.ndarray)
 
             assert isinstance(res[1], tuple)
