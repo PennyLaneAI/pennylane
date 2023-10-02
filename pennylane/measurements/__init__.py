@@ -73,6 +73,53 @@ In general, a :class:`MeasurementProcess` is differentiable with respect to a pa
 that parameter is continuous. When using the analytic method of differentiation the output of the
 measurement process must be a real scalar value for it to be differentiable.
 
+Working with mid-circuit measurements
+-------------------------------------
+Mid-circuit measurements can be made using :func:`qml.measure`. The measurement value is returned by ``qml.measure``
+and can be used as a condition for classical control. Moreover, multiple measurement values can be combined
+using arithmetic operators for more complex conditioning:
+
+.. code-block:: python
+
+    import pennylane as qml
+
+    dev = qml.device("default.qubit", wires=3)
+
+    @qml.qnode(dev)
+    def circ(x, y):
+        qml.RX(x, wires=0)
+        qml.RY(y, wires=1)
+
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+        qml.cond(~m0 & m1 == 0, qml.PauliX)(wires=2)
+        return qml.expval(qml.PauliZ(wires=2))
+
+Wires can be reused as normal after making mid-circuit measurements. Moreover, a measured wire can also be
+reset to the :math:`|0 \rangle` state by setting the ``reset`` keyword argument of ``qml.measure`` to ``True``.
+
+Users can also collect statistics on mid-circuit measurements along with other terminal measurements. Currently,
+``qml.expval``, ``qml.probs``, ``qml.sample``, ``qml.counts``, and ``qml.var`` are supported. Users have the
+ability to collect statistics on single measurement values.
+
+.. code-block:: python
+
+    import pennylane as qml
+
+    dev = qml.device("default.qubit", wires=3)
+
+    @qml.qnode(dev)
+    def circ(x, y):
+        qml.RX(x, wires=0)
+        qml.RY(y, wires=1)
+        m0 = qml.measure(1)
+        return qml.expval(qml.PauliZ(0)), qml.sample(m0)
+
+QNodes can be executed as usual when collecting mid-circuit measurement statistics:
+
+>>> circ(1.0, 2.0, shots=5)
+(array(0.6), array([1, 1, 1, 0, 1]))
+
 Creating custom measurements
 ----------------------------
 A custom measurement process can be created by inheriting from any of the classes mentioned above.
@@ -162,8 +209,8 @@ When :math:`\theta = 1.23`, :math:`\frac{\partial r}{\partial \theta} = 4712.444
     :href: serialization
 
     PennyLane measurements are automatically registered as `Pytrees <https://jax.readthedocs.io/en/latest/pytrees.html>`_ .
-
-    The :class:`~.MeasurementProcess` definitions are sufficient for all PL measurements.
+    ``MeasurementProcess._flatten`` and ``MeasurementProcess._unflatten`` need to be overwritten if the measurement has additional
+    metadata, such as ``seed`` or ``all_outcomes``.
 
     >>> H = 2.0 * qml.PauliX(0)
     >>> mp = qml.expval(H)

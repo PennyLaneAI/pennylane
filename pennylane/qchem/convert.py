@@ -17,7 +17,7 @@ This module contains the functions for converting an external operator to a Penn
 import warnings
 from itertools import product
 
-# pylint: disable=import-outside-toplevel
+# pylint: disable= import-outside-toplevel
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import Tensor, active_new_opmath
@@ -565,18 +565,22 @@ def _ucisd_state(cisd_solver, tol=1e-15):
 def import_state(solver, tol=1e-15):
     r"""Convert an external wavefunction to a state vector.
 
-    Currently, the only accepted source of wavefunctions is the PySCF library.
-    The restricted and unrestricted CISD/CCSD methods are supported.
+    The sources of wavefunctions that are currently accepted are listed below.
+
+        * The PySCF library (the restricted and unrestricted CISD/CCSD
+          methods are supported). The `solver` argument is then the associated PySCF CISD/CCSD Solver object.
+        * The library Dice implementing the SHCI method. The `solver` argument is then the tuple(list[str], array[float]) of Slater determinants and their coefficients.
+        * The library Block2 implementing the DMRG method. The `solver` argument is then the tuple(list[int], array[float]) of Slater determinants and their coefficients.
 
     Args:
-        solver: external wavefunction object (e.g. PySCF Solver object) that will be converted
+        solver: external wavefunction object
         tol (float): the tolerance for discarding Slater determinants based on their coefficients
 
     Raises:
         ValueError: if external object type is not supported
 
     Returns:
-        array: normalized state vector of length ``2**len(number_of_spinorbitals)``
+        array: normalized state vector of length :math:`2^M`, where :math:`M` is the number of spin orbitals
 
     **Example**
 
@@ -602,12 +606,28 @@ def import_state(solver, tol=1e-15):
         wf_dict = _rccsd_state(solver, tol=tol)
     elif "UCCSD" in method:
         wf_dict = _uccsd_state(solver, tol=tol)
+    elif "tuple" in method and len(solver) == 2:
+        if isinstance(solver[0][0], str):
+            wf_dict = _shci_state(solver, tol=tol)
+        elif isinstance(solver[0][0][0], int):
+            wf_dict = _dmrg_state(solver, tol=tol)
+        else:
+            raise ValueError(
+                "For tuple input, the supported objects are"
+                " tuple(list[str], array[float]) for SHCI calculations with Dice library and "
+                "tuple(list[int], array[float]) for DMRG calculations with the Block2 library."
+            )
     else:
         raise ValueError(
             "The supported objects are RCISD, UCISD, RCCSD, and UCCSD for restricted and"
-            " unrestricted configuration interaction and coupled cluster calculations."
+            " unrestricted configuration interaction and coupled cluster calculations, and"
+            " tuple(list[str], array[float]) for SHCI calculations with Dice library and "
+            "tuple(list[int], array[float]) for DMRG calculations with the Block2 library."
         )
-    wf = _wfdict_to_statevector(wf_dict, solver.mol.nao)
+    if "tuple" in method:
+        wf = _wfdict_to_statevector(wf_dict, len(solver[0][0]))
+    else:
+        wf = _wfdict_to_statevector(wf_dict, solver.mol.nao)
 
     return wf
 
@@ -1029,11 +1049,11 @@ def _dmrg_state(wavefunction, tol=1e-15):
     using Block2 DMRGDriver's `get_csf_coefficients()` method.
 
     Args:
-        wavefunction tuple(array[int], array[float]): determinants and coefficients in physicist notation
+        wavefunction tuple(list[int], array[float]): determinants and coefficients in physicist notation
         tol (float): the tolerance for discarding Slater determinants with small coefficients
 
     Returns:
-        dict: dictionary of the form `{(int_a, int_b) :coeff}`, with integers `int_a, int_b`
+        dict: dictionary of the form `{(int_a, int_b) : coeff}`, with integers `int_a, int_b`
         having binary representation corresponding to the Fock occupation vector in alpha and beta
         spin sectors, respectively, and coeff being the CI coefficients of those configurations
 
@@ -1060,7 +1080,7 @@ def _dmrg_state(wavefunction, tol=1e-15):
     row, col, dat = [], [], []
 
     for ii, det in enumerate(dets):
-        stra, strb = _sitevec_to_fock(det.tolist(), format="dmrg")
+        stra, strb = _sitevec_to_fock(det, format="dmrg")
         row.append(stra)
         col.append(strb)
 
@@ -1144,10 +1164,10 @@ def _shci_state(wavefunction, tol=1e-15):
     SHCI.outputfile.
 
     Args:
-        wavefunction tuple(array[int], array[str]): determinants and coefficients in physicist notation
+        wavefunction tuple(list[str], array[float]): determinants and coefficients in chemist notation
         tol (float): the tolerance for discarding Slater determinants with small coefficients
     Returns:
-        dict: dictionary of the form `{(int_a, int_b) :coeff}`, with integers `int_a, int_b`
+        dict: dictionary of the form `{(int_a, int_b) : coeff}`, with integers `int_a, int_b`
         having binary representation corresponding to the Fock occupation vector in alpha and beta
         spin sectors, respectively, and coeff being the CI coefficients of those configurations
 
@@ -1160,14 +1180,13 @@ def _shci_state(wavefunction, tol=1e-15):
     >>> myhf = scf.RHF(mol).run()
     >>> ncas, nelecas_a, nelecas_b = mol.nao, mol.nelectron // 2, mol.nelectron // 2
     >>> myshci = mcscf.CASCI(myhf, ncas, (nelecas_a, nelecas_b))
-    >>> initialStates = myshci.getinitialStateSHCI(myhf, (nelecas_a, nelecas_b))
     >>> output_file = f"shci_output.out"
     >>> myshci.fcisolver = shci.SHCI(myhf.mol)
-    >>> myshci.internal_rotation = False
-    >>> myshci.fcisolver.initialStates = initialStates
     >>> myshci.fcisolver.outputFile = output_file
-    >>> e_shci = np.atleast_1d(myshci.kernel(verbose=5))
-    >>> wf_shci = _shci_state(myshci, tol=1e-1)
+    >>> e_tot, e_ci, ss, mo_coeff, mo_energies = myshci.kernel(verbose=5)
+    >>> (dets, coeffs) = [post-process shci_output.out to get tuple of
+        dets (list of strs) and coeffs (list of floats)]
+    >>> wf_shci = _shci_state((dets, coeffs), tol=1e-1)
     >>> print(wf_shci)
     {(7, 7): 0.8874167069, (11, 11): -0.3075774156, (19, 19): -0.3075774156, (35, 35): -0.1450474361}
     """

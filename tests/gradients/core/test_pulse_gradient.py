@@ -1306,7 +1306,7 @@ class TestStochPulseGrad:
 @pytest.mark.jax
 @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
 class TestStochPulseGradQNode:
-    """Test that pulse_generator integrates correctly with QNodes."""
+    """Test that stoch_pulse_grad integrates correctly with QNodes."""
 
     def test_raises_for_application_to_qnodes(self, dev_name):
         """Test that an error is raised when applying ``stoch_pulse_grad``
@@ -1327,7 +1327,7 @@ class TestStochPulseGradQNode:
     @pytest.mark.skip("Applying this gradient transform to QNodes directly is not supported.")
     def test_qnode_expval_single_par(self, dev_name):
         """Test that a simple qnode that returns an expectation value
-        can be differentiated with pulse_generator."""
+        can be differentiated with stoch_pulse_grad."""
         import jax
         import jax.numpy as jnp
 
@@ -1352,9 +1352,8 @@ class TestStochPulseGradQNode:
         assert tracker.totals["executions"] == 4  # two shifted tapes, two splitting times
 
 
-# TODO: add default.qubit once it supports PRNG key
 @pytest.mark.jax
-@pytest.mark.parametrize("dev_name", ["default.qubit.jax"])
+@pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
 class TestStochPulseGradIntegration:
     """Test that stoch_pulse_grad integrates correctly with QNodes and ML interfaces."""
 
@@ -1367,7 +1366,8 @@ class TestStochPulseGradIntegration:
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device(dev_name, wires=1, shots=shots, prng_key=jax.random.PRNGKey(74))
+        key = "prng_key" if dev_name == "default.qubit.jax" else "seed"
+        dev = qml.device(dev_name, wires=1, shots=shots, **{key: jax.random.PRNGKey(74)})
         T = 0.2
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
@@ -1394,7 +1394,8 @@ class TestStochPulseGradIntegration:
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device(dev_name, wires=1, shots=shots, prng_key=jax.random.PRNGKey(74))
+        key = "prng_key" if dev_name == "default.qubit.jax" else "seed"
+        dev = qml.device(dev_name, wires=1, shots=shots, **{key: jax.random.PRNGKey(74)})
         T_x = 0.1
         T_y = 0.2
         ham_x = qml.pulse.constant * qml.PauliX(0)
@@ -1425,7 +1426,8 @@ class TestStochPulseGradIntegration:
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device(dev_name, wires=1, shots=shots, prng_key=jax.random.PRNGKey(74))
+        key = "prng_key" if dev_name == "default.qubit.jax" else "seed"
+        dev = qml.device(dev_name, wires=1, shots=shots, **{key: jax.random.PRNGKey(74)})
         T = 0.2
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
@@ -1452,7 +1454,8 @@ class TestStochPulseGradIntegration:
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device(dev_name, wires=1, shots=shots, prng_key=jax.random.PRNGKey(74))
+        key = "prng_key" if dev_name == "default.qubit.jax" else "seed"
+        dev = qml.device(dev_name, wires=1, shots=shots, **{key: jax.random.PRNGKey(74)})
         T = 0.2
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
@@ -1535,8 +1538,13 @@ class TestStochPulseGradIntegration:
         )
         qnode_backprop = qml.QNode(ansatz, dev, interface="jax")
 
-        grad_pulse_grad = jax.grad(qnode_pulse_grad)(params)
-        assert dev.num_executions == 1 + 2 * 3 * num_split_times
+        with qml.Tracker(dev) as tracker:
+            grad_pulse_grad = jax.grad(qnode_pulse_grad)(params)
+        assert (
+            tracker.totals["executions"] == (1 + 2 * 3 * num_split_times)
+            if dev_name == "default.qubit.jax"
+            else 1
+        )
         grad_backprop = jax.grad(qnode_backprop)(params)
 
         assert all(
@@ -1552,7 +1560,8 @@ class TestStochPulseGradIntegration:
 
         jax.config.update("jax_enable_x64", True)
         shots = [100, 100]
-        dev = qml.device(dev_name, wires=1, shots=shots, prng_key=jax.random.PRNGKey(74))
+        key = "prng_key" if dev_name == "default.qubit.jax" else "seed"
+        dev = qml.device(dev_name, wires=1, shots=shots, **{key: jax.random.PRNGKey(74)})
         T = 0.2
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
@@ -1582,7 +1591,8 @@ class TestStochPulseGradIntegration:
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device(dev_name, wires=1, shots=shots, prng_key=jax.random.PRNGKey(74))
+        key = "prng_key" if dev_name == "default.qubit.jax" else "seed"
+        dev = qml.device(dev_name, wires=1, shots=shots, **{key: jax.random.PRNGKey(74)})
         T = 0.2
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
@@ -1757,9 +1767,8 @@ class TestStochPulseGradIntegration:
         jax.clear_caches()
 
 
-# TODO: port ParametrizedEvolution to new default.qubit
 @pytest.mark.jax
-@pytest.mark.parametrize("dev_name", ["default.qubit.jax"])
+@pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
 class TestStochPulseGradDiff:
     """Test that stoch_pulse_grad is differentiable."""
 
@@ -1780,7 +1789,7 @@ class TestStochPulseGradDiff:
             tape = qml.tape.QuantumScript([op], [qml.expval(qml.PauliZ(0))])
             tape.trainable_params = [0]
             tapes, fn = stoch_pulse_grad(tape)
-            return fn(qml.execute(tapes, dev, None))
+            return fn(qml.execute(tapes, dev, "backprop"))
 
         params = [jnp.array(0.4)]
         p = params[0] * T
