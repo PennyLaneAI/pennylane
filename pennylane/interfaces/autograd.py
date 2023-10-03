@@ -86,6 +86,7 @@ def autograd_execute(
         TensorLike: A nested tuple of tape results. Each element in
         the returned tuple corresponds in order to the provided tapes.
     """
+    tapes = tuple(tapes)
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug("Entry with (tapes=%s, execute_fn=%s, jpc=%s)", tapes, execute_fn, jpc)
     # pylint: disable=unused-argument
