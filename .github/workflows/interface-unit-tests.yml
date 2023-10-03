@@ -36,6 +36,13 @@ on:
         required: false
         type: boolean
         default: false
+      lightened_ci_skip_additional_jobs:
+        description: |
+          Names of jobs (comma separated) that should be skipped on a lightened CI run.
+          These jobs are additional ones outside of qcut, zx, data.
+        required: false
+        type: string
+        default: ''
 
 jobs:
   setup-lightened-ci:
@@ -44,13 +51,38 @@ jobs:
     steps:
       - name: Setup Python Versions
         id: python_versions
+
+        # All jobs will use the 'default' python versions listed in the dictionary below.
+        # Unless the job name exists as a key as well, in which the default will be overriden and the ones
+        # listed for the job itself will be used instead.
         run: |
           if [ "${{ inputs.run_lightened_ci }}" == "true" ]; 
           then
-            echo 'python_versions=["3.9"]' >> $GITHUB_OUTPUT
+            cat >python_versions.json <<EOF
+            {
+              "default": ["3.9"],
+            }
+            EOF
           else
-            echo 'python_versions=["3.9", "3.10", "3.11"]' >> $GITHUB_OUTPUT
+            cat >python_versions.json <<EOF
+            {
+              "default": ["3.9", "3.10", "3.11"],
+              "torch-test": ["3.9", "3.11"],
+              "tf-tests": ["3.9", "3.10"],
+              "jax-tests": ["3.9", "3.11"],
+              "all-interfaces-tests": ["3.9"],
+              "external-libraries-tests": ["3.9"],
+              "qcut-tests": ["3.9"],
+              "qchem-tests": ["3.9"],
+              "gradients-tests": ["3.9"],
+              "data-tests": ["3.10"],
+              "device-tests": ["3.9"]
+            }
+            EOF
           fi
+
+          jq . python_versions.json
+          echo "python_versions=$(jq -r tostring python_versions.json)" >> $GITHUB_OUTPUT
 
       - name: Setup Job to Skip
         id: jobs_to_skip
@@ -75,7 +107,11 @@ jobs:
       - setup-lightened-ci
     strategy:
       matrix:
-        python-version: ${{ fromJSON(needs.setup-lightened-ci.outputs.python-version) }}
+        python-version: >-
+          ${{
+            fromJSON(needs.setup-lightened-ci.outputs.python-version)["torch-tests"]
+            || fromJSON(needs.setup-lightened-ci.outputs.python-version)["default"]
+           }}
     if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'torch-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -327,6 +363,7 @@ jobs:
       - setup-lightened-ci
     strategy:
       matrix:
+        max-parallel: 1
         config:
           - device: default.qubit.legacy
             shots: None
