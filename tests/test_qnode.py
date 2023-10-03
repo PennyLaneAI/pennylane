@@ -37,6 +37,7 @@ def dummyfunc():
     return None
 
 
+# ToDo: fix almost all of these
 # pylint: disable=too-many-public-methods
 class TestValidation:
     """Tests for QNode creation and validation"""
@@ -926,6 +927,7 @@ def test_decorator(tol):
     assert func.qtape is not old_tape
 
 
+# ToDo: fix test_no_defer_measurements_if_supported, test_qnode_does_not_support_nested_queuing
 class TestIntegration:
     """Integration tests."""
 
@@ -1329,7 +1331,7 @@ class TestShots:
         # check that the circuit is analytic
         res1 = [circuit() for _ in range(100)]
         assert np.std(res1) == 0.0
-        assert circuit.device._shots is None
+        assert circuit.device._shots.total_shots is None
 
         # check that the circuit is temporary non-analytic
         res1 = [circuit(shots=1) for _ in range(100)]
@@ -1338,7 +1340,7 @@ class TestShots:
         # check that the circuit is analytic again
         res1 = [circuit() for _ in range(100)]
         assert np.std(res1) == 0.0
-        assert circuit.device._shots is None
+        assert circuit.device._shots.total_shots is None
 
     # pylint: disable=unexpected-keyword-arg
     def test_no_shots_per_call_if_user_has_shots_qfunc_kwarg(self):
@@ -1409,10 +1411,10 @@ class TestShots:
             qml.RX(a, wires=0)
             return qml.sample(qml.PauliZ(wires=0))
 
-        assert dev.shots == 3
+        assert dev.shots.total_shots == 3
         res = circuit(0.8, shots=2)
         assert len(res) == 2
-        assert dev.shots == 3
+        assert dev.shots.total_shots == 3
 
     def test_warning_finite_shots_dev(self):
         """Tests that a warning is raised when caching is used with finite shots."""
@@ -1848,6 +1850,7 @@ class TestNewDeviceIntegration:
         assert qml.math.allclose(results, np.zeros((20, 2)))
 
 
+# ToDo: fix almost all of these also
 class TestTapeExpansion:
     """Test that tape expansion within the QNode works correctly"""
 
