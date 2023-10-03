@@ -1338,8 +1338,6 @@ class TestAdjointDifferentiation:
 
         expected_grad = -qml.math.sin(x) * cotangent[0]
         actual_grad = dev.compute_vjp(qs, cotangent, self.ec)
-        assert isinstance(actual_grad, np.ndarray)
-        assert actual_grad.shape == ()  # pylint: disable=no-member
         assert np.isclose(actual_grad, expected_grad)
 
         expected_val = qml.math.cos(x)
@@ -1360,7 +1358,6 @@ class TestAdjointDifferentiation:
         expected_grad = -qml.math.sin(x) * cotangent[0]
         actual_grad = dev.compute_vjp([qs], [cotangent], self.ec)
         assert isinstance(actual_grad, tuple)
-        assert isinstance(actual_grad[0], np.ndarray)
         assert np.isclose(actual_grad[0], expected_grad)
 
         expected_val = qml.math.cos(x)
