@@ -268,12 +268,11 @@ ar.register_function(
 ar.register_function(
     "tensorflow",
     "isnan",
-    lambda tensor, **kwargs: _i("tf").math.is_nan(
-        _i("tf").cast(tensor, "float64")
-        if tensor.dtype.name in ("int64", "int32", "complex128")
-        else tensor,
-        **kwargs,
-    ),
+    lambda tensor, **kwargs: _i("tf").math.is_nan(_i("tf").math.real(tensor), **kwargs)
+    | _i("tf").math.is_nan(_i("tf").math.imag(tensor), **kwargs),
+)
+ar.register_function(
+    "tensorflow", "any", lambda tensor, **kwargs: _i("tf").reduce_any(tensor, **kwargs)
 )
 ar.register_function(
     "tensorflow",

@@ -13,6 +13,7 @@
 # limitations under the License.
 """Simulate a quantum script."""
 # pylint: disable=protected-access
+from typing import Sequence
 from numpy.random import default_rng, binomial
 
 import pennylane as qml
@@ -44,6 +45,59 @@ INTERFACE_TO_LIKE = {
     "tensorflow-autograph": "tensorflow",
     "tf-autograph": "tensorflow",
 }
+
+
+def _valid_flex_int(s):
+    """Returns True if s is a non-negative integer."""
+    return isinstance(s, int) and s >= 0
+
+
+def _valid_flex_tuple(s):
+    """Returns True if s is a tuple of the form (shots, copies)."""
+    return (
+        isinstance(s, tuple)
+        and len(s) == 2
+        and _valid_flex_int(s[0])
+        and isinstance(s[1], int)
+        and s[1] > 0
+    )
+
+
+class _FlexShots(qml.measurements.Shots):
+    """Shots class that allows zero shots."""
+
+    total_shots = None
+    """The total number of shots to be executed."""
+
+    shot_vector = None
+    """The tuple of :class:`~ShotCopies` to be executed. Each element is of the form ``(shots, copies)``."""
+
+    _SHOT_ERROR = ValueError(
+        "Shots must be a single positive integer, a tuple pair of the form (shots, copies), or a sequence of these types."
+    )
+
+    _frozen = False
+
+    # pylint: disable=super-init-not-called
+    def __init__(self, shots=None):
+        if shots is None:
+            self.total_shots = None
+            self.shot_vector = ()
+        elif isinstance(shots, int):
+            if shots < 0:
+                raise self._SHOT_ERROR
+            self.total_shots = shots
+            self.shot_vector = (qml.measurements.ShotCopies(shots, 1),)
+        elif isinstance(shots, Sequence):
+            if not all(_valid_flex_int(s) or _valid_flex_tuple(s) for s in shots):
+                raise self._SHOT_ERROR
+            self.__all_tuple_init__([s if isinstance(s, tuple) else (s, 1) for s in shots])
+        elif isinstance(shots, self.__class__):
+            return  # self already _is_ shots as defined by __new__
+        else:
+            raise self._SHOT_ERROR
+
+        self._frozen = True
 
 
 def expand_state_over_wires(state, state_wires, all_wires, is_state_batched):
@@ -83,6 +137,49 @@ def expand_state_over_wires(state, state_wires, all_wires, is_state_batched):
     return qml.math.transpose(state, desired_axes)
 
 
+def _postselection_postprocess(state, is_state_batched, shots):
+    """Update state after projector is applied."""
+    if is_state_batched:
+        raise ValueError(
+            "Cannot postselect on circuits with broadcasting. Use the "
+            "qml.transforms.broadcast_expand transform to split a broadcasted "
+            "tape into multiple non-broadcasted tapes before executing if "
+            "postselection is used."
+        )
+
+    if qml.math.is_abstract(state):
+        return state, shots, False
+
+    norm = qml.math.norm(state)
+    if not qml.math.is_abstract(norm) and qml.math.isclose(float(norm), 0.0):
+        new_state = qml.math.cast_like(
+            qml.math.full(qml.math.shape(state), qml.numpy.NaN, like=qml.math.get_interface(state)),
+            state,
+        )
+        is_nan = True
+
+    else:
+        new_state = state / norm
+        is_nan = False
+
+        # defer_measurements will raise an error with batched shots or broadcasting so we can
+        # assume that both the state and shots are unbatched.
+        if shots:
+            # Clip the number of shots using a binomial distribution using the probability of
+            # measuring the postselected state.
+            postselected_shots = (
+                [binomial(s, float(norm)) for s in shots]
+                if not qml.math.is_abstract(norm)
+                else shots
+            )
+
+            # _FlexShots is used here since the binomial distribution could result in zero
+            # valid samples
+            shots = _FlexShots(postselected_shots)
+
+    return new_state, shots, is_nan
+
+
 def get_final_state(circuit, debugger=None, interface=None):
     """
     Get the final state that results from executing the given quantum script.
@@ -112,40 +209,16 @@ def get_final_state(circuit, debugger=None, interface=None):
     for op in circuit.operations[bool(prep) :]:
         state = apply_operation(op, state, is_state_batched=is_state_batched, debugger=debugger)
 
+        # Handle postselection on mid-circuit measurements
+        if isinstance(op, qml.Projector):
+            state, circuit._shots, state_nan = _postselection_postprocess(
+                state, is_state_batched, circuit.shots
+            )
+            if state_nan:
+                return state, is_state_batched
+
         # new state is batched if i) the old state is batched, or ii) the new op adds a batch dim
         is_state_batched = is_state_batched or op.batch_size is not None
-
-        if isinstance(op, qml.Projector):
-            # Handle postselection on mid-circuit measurements
-            if is_state_batched:
-                raise ValueError(
-                    "Cannot postselect on circuits with broadcasting. Use the "
-                    "qml.transforms.broadcast_expand transform to split a broadcasted "
-                    "tape into multiple non-broadcasted tapes before executing if "
-                    "postselection is used."
-                )
-
-            norm = qml.math.norm(state)
-            if qml.math.isclose(float(norm), 0.0):
-                new_state = qml.math.cast_like(
-                    qml.math.full(
-                        qml.math.shape(state), qml.numpy.NaN, like=qml.math.get_interface(state)
-                    ),
-                    state,
-                )
-                return new_state, is_state_batched
-
-            state = state / norm
-
-            # defer_measurements will raise an error with batched shots or broadcasting so we can
-            # assume that both the state and shots are unbatched.
-            if circuit.shots:
-                # Clip the number of shots using a binomial distribution using the probability of
-                # measuring the postselected state.
-                postselected_shots = [binomial(s, float(norm)) for s in circuit.shots]
-                # _FlexShots is used here since the binomial distribution could result in zero
-                # valid samples
-                circuit._shots = qml.measurements._FlexShots(postselected_shots)
 
     if set(circuit.op_wires) < set(circuit.wires):
         state = expand_state_over_wires(
@@ -156,6 +229,56 @@ def get_final_state(circuit, debugger=None, interface=None):
         )
 
     return state, is_state_batched
+
+
+def _get_single_nan_res(measurements, batch_size, interface, shots):
+    """Helper to get NaN results for one item in a shot vector."""
+
+    res = []
+
+    for m in measurements:
+        if isinstance(m, qml.measurements.SampleMP):
+            res.append(qml.math.asarray([], like=interface))
+            continue
+        if isinstance(m, qml.measurements.CountsMP):
+            res.append({})
+            continue
+
+        shape = m.shape(qml.device("default.qubit", wires=m.wires), qml.measurements.Shots(shots))
+        if batch_size is not None:
+            shape = (batch_size,) + shape
+
+        if shape == ():
+            out = qml.math.asarray(qml.numpy.NaN, like=interface)
+        else:
+            out = qml.math.full(shape, qml.numpy.NaN, like=interface)
+
+        res.append(out)
+
+    res = tuple(res)
+
+    if len(res) == 1:
+        res = res[0]
+
+    return res
+
+
+def _measure_nan_state(circuit, state, is_state_batched):
+    """Helper function for creating NaN results with the expected shape."""
+    batch_size = qml.math.shape(state)[0] if is_state_batched else None
+    interface = qml.math.get_interface(state)
+
+    if circuit.shots.has_partitioned_shots:
+        res = tuple(
+            _get_single_nan_res(circuit.measurements, batch_size, interface, s)
+            for s in circuit.shots
+        )
+    else:
+        res = _get_single_nan_res(
+            circuit.measurements, batch_size, interface, circuit.shots.total_shots
+        )
+
+    return res
 
 
 def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=None) -> Result:
@@ -179,9 +302,10 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
     Returns:
         Tuple[TensorLike]: The measurement results
     """
+
     circuit = circuit.map_to_standard_wires()
 
-    if any(nan_value for nan_value in qml.math.flatten(qml.math.isnan(state))):
+    if qml.math.any(qml.math.isnan(state)):
         return _measure_nan_state(circuit, state, is_state_batched)
 
     if not circuit.shots:
@@ -213,56 +337,6 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
         return results[0]
 
     return results
-
-
-def _measure_nan_state(circuit, state, is_state_batched):
-    """Helper function for creating NaN results with the expected shape."""
-    batch_size = qml.math.shape(state)[0] if is_state_batched else None
-    interface = qml.math.get_interface(state)
-
-    if circuit.shots.has_partitioned_shots:
-        res = tuple(
-            _get_single_nan_res(circuit.measurements, batch_size, interface, s)
-            for s in circuit.shots
-        )
-    else:
-        res = _get_single_nan_res(
-            circuit.measurements, batch_size, interface, circuit.shots.total_shots
-        )
-
-    return res
-
-
-def _get_single_nan_res(measurements, batch_size, interface, shots):
-    """Helper to get NaN results for one item in a shot vector."""
-
-    res = []
-
-    for m in measurements:
-        if isinstance(m, qml.measurements.SampleMP):
-            res.append(qml.math.asarray([], like=interface))
-            continue
-        if isinstance(m, qml.measurements.CountsMP):
-            res.append({})
-            continue
-
-        shape = m.shape(None, qml.measurements.Shots(shots))
-        if batch_size is not None:
-            shape = (batch_size,) + shape
-
-        if shape == ():
-            out = qml.math.asarray(qml.numpy.NaN, like=interface)
-        else:
-            out = qml.math.full(shape, qml.numpy.NaN, like=interface)
-
-        res.append(out)
-
-    res = tuple(res)
-
-    if len(res) == 1:
-        res = res[0]
-
-    return res
 
 
 def simulate(
