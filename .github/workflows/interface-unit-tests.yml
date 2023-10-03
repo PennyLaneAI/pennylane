@@ -59,26 +59,26 @@ jobs:
           if [ "${{ inputs.run_lightened_ci }}" == "true" ]; 
           then
             cat >python_versions.json <<-EOF
-            {
-              "default": ["3.9"],
-            }
-            EOF
+          {
+            "default": ["3.9"],
+          }
+          EOF
           else
             cat >python_versions.json <<-EOF
-            {
-              "default": ["3.9", "3.10", "3.11"],
-              "torch-test": ["3.9", "3.11"],
-              "tf-tests": ["3.9", "3.10"],
-              "jax-tests": ["3.9", "3.11"],
-              "all-interfaces-tests": ["3.9"],
-              "external-libraries-tests": ["3.9"],
-              "qcut-tests": ["3.9"],
-              "qchem-tests": ["3.9"],
-              "gradients-tests": ["3.9"],
-              "data-tests": ["3.10"],
-              "device-tests": ["3.9"]
-            }
-            EOF
+          {
+            "default": ["3.9", "3.10", "3.11"],
+            "torch-test": ["3.9", "3.11"],
+            "tf-tests": ["3.9", "3.10"],
+            "jax-tests": ["3.9", "3.11"],
+            "all-interfaces-tests": ["3.9"],
+            "external-libraries-tests": ["3.9"],
+            "qcut-tests": ["3.9"],
+            "qchem-tests": ["3.9"],
+            "gradients-tests": ["3.9"],
+            "data-tests": ["3.10"],
+            "device-tests": ["3.9"]
+          }
+          EOF
           fi
 
           jq . python_versions.json
