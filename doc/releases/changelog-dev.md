@@ -74,13 +74,21 @@
   [(#4594)](https://github.com/PennyLaneAI/pennylane/pull/4594)
   [(#4436)](https://github.com/PennyLaneAI/pennylane/pull/4436)
   [(#4620)](https://github.com/PennyLaneAI/pennylane/pull/4620)
+  [(#4632)](https://github.com/PennyLaneAI/pennylane/pull/4632)
 
 <h3>Improvements 🛠</h3>
 
+* The `JacobianProductCalculator` abstract base class and implementation `TransformJacobianProducts`
+  have been added to `pennylane.interfaces.jacobian_products`.
+  [(#4435)](https://github.com/PennyLaneAI/pennylane/pull/4435)
+
 * Extended ``qml.qchem.import_state`` to import wavefunctions from MPS DMRG and SHCI classical
-  calculations performed with the Block2 and Dice libraries.
+  calculations performed with the Block2 and Dice libraries, incorporating new tests and wavefunction
+  input selection logic.
   [#4523](https://github.com/PennyLaneAI/pennylane/pull/4523)
   [#4524](https://github.com/PennyLaneAI/pennylane/pull/4524)
+  [#4626](https://github.com/PennyLaneAI/pennylane/pull/4626)
+  [#4634](https://github.com/PennyLaneAI/pennylane/pull/4634)
 
 * `MeasurementProcess` and `QuantumScript` objects are now registered as jax pytrees.
   [(#4607)](https://github.com/PennyLaneAI/pennylane/pull/4607)
@@ -288,6 +296,10 @@
   ```
   [(#4457)](https://github.com/PennyLaneAI/pennylane/pull/4457/)
 
+* `qml.gradients.pulse_generator` becomes `qml.gradients.pulse_odegen` to adhere to paper naming conventions. During v0.33, `pulse_generator`
+  is still available but raises a warning.
+  [(#4633)](https://github.com/PennyLaneAI/pennylane/pull/4633)
+
 <h3>Documentation 📝</h3>
 
 * Add a warning section in DefaultQubit's docstring regarding the start method used in multiprocessing.
@@ -301,6 +313,8 @@
 * Add functions for qubit-simulation to the `qml.devices` sub-page of the "Internal" section.
   Note that these functions are unstable while device upgrades are underway.
   [(#4555)](https://github.com/PennyLaneAI/pennylane/pull/4555)
+
+* Minor documentation improvement to the usage example in the `qml.QuantumMonteCarlo` page. Integral was missing the differential dx with respect to which the integration is being performed. [(#4593)](https://github.com/PennyLaneAI/pennylane/pull/4593)  
 
 <h3>Bug fixes 🐛</h3>
 
@@ -337,12 +351,15 @@ This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad,
 Stepan Fomichev,
+Joana Fraxanet,
 Diego Guala,
 Soran Jahangiri,
+Korbinian Kottmann
 Christina Lee,
 Lillian M. A. Frederiksen,
 Vincent Michaud-Rioux,
 Romain Moyard,
+Daniel F. Nino,
 Mudit Pandey,
 Matthew Silverman,
 Jay Soni,

@@ -240,9 +240,11 @@ class TestStateVector:
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
-    def test_BasisState_state_vector_preserves_parameter_type(self, interface):
+    @pytest.mark.parametrize("dtype_like", [0, 0.0])
+    def test_BasisState_state_vector_preserves_parameter_type(self, interface, dtype_like):
         """Tests that given an array of some type, the resulting state_vector is also that type."""
-        basis_op = qml.BasisState(qml.math.array([0, 1], like=interface), wires=[1, 2])
+        basis_state = qml.math.cast_like(qml.math.asarray([0, 1], like=interface), dtype_like)
+        basis_op = qml.BasisState(basis_state, wires=[1, 2])
         assert qml.math.get_interface(basis_op.state_vector()) == interface
         assert qml.math.get_interface(basis_op.state_vector(wire_order=[0, 1, 2])) == interface
 
