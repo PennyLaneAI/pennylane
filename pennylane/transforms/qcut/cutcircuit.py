@@ -365,43 +365,59 @@ def cut_circuit(
                 "installed using:\npip install opt_einsum"
             ) from e
 
-    g = tape_to_graph(tape)
+    tapes, tapes_fn = [tape], lambda x: x[0],
+    if isinstance(tape.measurements[0].obs, qml.Hamiltonian):
+        tapes, tapes_fn = qml.transforms.hamiltonian_expand(tape, group=False)
 
-    if auto_cutter is True or callable(auto_cutter):
-        cut_strategy = kwargs.pop("cut_strategy", None) or CutStrategy(
-            max_free_wires=len(device_wires)
-        )
+    def res_tapes_fn(results, cut_func=None, indices=None):
+        for idx in range(1, len(indices)):
+            print(cut_func[idx-1], results[indices[idx-1]:indices[idx]])
+        exp_res = [cut_func[idx-1](results[indices[idx-1]:indices[idx]]) for idx in range(1, len(indices))]
+        return tapes_fn(exp_res),
 
-        g = find_and_place_cuts(
-            graph=g,
-            cut_method=auto_cutter if callable(auto_cutter) else kahypar_cut,
-            cut_strategy=cut_strategy,
-            **kwargs,
-        )
+    res_tapes, res_funcs, res_index  = [], [], [0]
+    for tape in tapes:
+        g = tape_to_graph(tape)
 
-    replace_wire_cut_nodes(g)
-    fragments, communication_graph = fragment_graph(g)
-    fragment_tapes = [graph_to_tape(f) for f in fragments]
-    fragment_tapes = [qml.map_wires(t, dict(zip(t.wires, device_wires))) for t in fragment_tapes]
-    expanded = [expand_fragment_tape(t) for t in fragment_tapes]
+        if auto_cutter is True or callable(auto_cutter):
+            cut_strategy = kwargs.pop("cut_strategy", None) or CutStrategy(
+                max_free_wires=len(device_wires)
+            )
 
-    configurations = []
-    prepare_nodes = []
-    measure_nodes = []
-    for tapes, p, m in expanded:
-        configurations.append(tapes)
-        prepare_nodes.append(p)
-        measure_nodes.append(m)
+            g = find_and_place_cuts(
+                graph=g,
+                cut_method=auto_cutter if callable(auto_cutter) else kahypar_cut,
+                cut_strategy=cut_strategy,
+                **kwargs,
+            )
 
-    tapes = tuple(tape for c in configurations for tape in c)
+        replace_wire_cut_nodes(g)
+        fragments, communication_graph = fragment_graph(g)
+        fragment_tapes = [graph_to_tape(f) for f in fragments]
+        fragment_tapes = [qml.map_wires(t, dict(zip(t.wires, device_wires))) for t in fragment_tapes]
+        expanded = [expand_fragment_tape(t) for t in fragment_tapes]
 
-    return tapes, partial(
-        qcut_processing_fn,
-        communication_graph=communication_graph,
-        prepare_nodes=prepare_nodes,
-        measure_nodes=measure_nodes,
-        use_opt_einsum=use_opt_einsum,
-    )
+        configurations = []
+        prepare_nodes = []
+        measure_nodes = []
+        for tapes, p, m in expanded:
+            configurations.append(tapes)
+            prepare_nodes.append(p)
+            measure_nodes.append(m)
+
+        res_tapes.append(tuple(tape for c in configurations for tape in c))
+        res_funcs.append(partial(
+                        qcut_processing_fn,
+                        communication_graph=communication_graph,
+                        prepare_nodes=prepare_nodes,
+                        measure_nodes=measure_nodes,
+                        use_opt_einsum=use_opt_einsum,
+        ))
+        print(tuple(tape for c in configurations for tape in c))
+        res_index.append(res_index[-1] + len(res_tapes[-1]))
+
+    res_tapes = [tape for res_tape in res_tapes for tape in res_tape]
+    return res_tapes, partial(res_tapes_fn, cut_func=res_funcs, indices=res_index)
 
 
 @cut_circuit.custom_qnode_transform
