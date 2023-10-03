@@ -109,8 +109,8 @@ jobs:
       matrix:
         python-version: >-
           ${{
-            fromJSON(needs.setup-lightened-ci.outputs.python-version)["torch-tests"]
-            || fromJSON(needs.setup-lightened-ci.outputs.python-version)["default"]
+            fromJSON(needs.setup-lightened-ci.outputs.python-version).torch-tests
+            || fromJSON(needs.setup-lightened-ci.outputs.python-version).default
            }}
     if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'torch-tests') }}
     uses: ./.github/workflows/unit-test.yml
