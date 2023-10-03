@@ -365,17 +365,23 @@ def cut_circuit(
                 "installed using:\npip install opt_einsum"
             ) from e
 
-    tapes, tapes_fn = [tape], lambda x: x[0],
+    tapes, tapes_fn = (
+        [tape],
+        lambda x: x[0],
+    )
     if isinstance(tape.measurements[0].obs, qml.Hamiltonian):
         tapes, tapes_fn = qml.transforms.hamiltonian_expand(tape, group=False)
 
     def res_tapes_fn(results, cut_func=None, indices=None):
         for idx in range(1, len(indices)):
-            print(cut_func[idx-1], results[indices[idx-1]:indices[idx]])
-        exp_res = [cut_func[idx-1](results[indices[idx-1]:indices[idx]]) for idx in range(1, len(indices))]
-        return tapes_fn(exp_res),
+            print(cut_func[idx - 1], results[indices[idx - 1] : indices[idx]])
+        exp_res = [
+            cut_func[idx - 1](results[indices[idx - 1] : indices[idx]])
+            for idx in range(1, len(indices))
+        ]
+        return (tapes_fn(exp_res),)
 
-    res_tapes, res_funcs, res_index  = [], [], [0]
+    res_tapes, res_funcs, res_index = [], [], [0]
     for tape in tapes:
         g = tape_to_graph(tape)
 
@@ -394,7 +400,9 @@ def cut_circuit(
         replace_wire_cut_nodes(g)
         fragments, communication_graph = fragment_graph(g)
         fragment_tapes = [graph_to_tape(f) for f in fragments]
-        fragment_tapes = [qml.map_wires(t, dict(zip(t.wires, device_wires))) for t in fragment_tapes]
+        fragment_tapes = [
+            qml.map_wires(t, dict(zip(t.wires, device_wires))) for t in fragment_tapes
+        ]
         expanded = [expand_fragment_tape(t) for t in fragment_tapes]
 
         configurations = []
@@ -406,13 +414,15 @@ def cut_circuit(
             measure_nodes.append(m)
 
         res_tapes.append(tuple(tape for c in configurations for tape in c))
-        res_funcs.append(partial(
-                        qcut_processing_fn,
-                        communication_graph=communication_graph,
-                        prepare_nodes=prepare_nodes,
-                        measure_nodes=measure_nodes,
-                        use_opt_einsum=use_opt_einsum,
-        ))
+        res_funcs.append(
+            partial(
+                qcut_processing_fn,
+                communication_graph=communication_graph,
+                prepare_nodes=prepare_nodes,
+                measure_nodes=measure_nodes,
+                use_opt_einsum=use_opt_einsum,
+            )
+        )
         print(tuple(tape for c in configurations for tape in c))
         res_index.append(res_index[-1] + len(res_tapes[-1]))
 
