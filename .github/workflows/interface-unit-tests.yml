@@ -58,13 +58,13 @@ jobs:
         run: |
           if [ "${{ inputs.run_lightened_ci }}" == "true" ]; 
           then
-            cat >python_versions.json <<EOF
+            cat >python_versions.json <<-EOF
             {
               "default": ["3.9"],
             }
             EOF
           else
-            cat >python_versions.json <<EOF
+            cat >python_versions.json <<-EOF
             {
               "default": ["3.9", "3.10", "3.11"],
               "torch-test": ["3.9", "3.11"],
