@@ -48,39 +48,6 @@ def test_custom_operation():
     assert qml.math.allclose(result, -1.0)
 
 
-def test_projector_probability_error():
-    """Test that an error is raised if a Projector is applied in the operation queue
-    and the resulting state is null."""
-    tape = qml.tape.QuantumScript([qml.PauliX(0), qml.Projector([0], wires=0)], [qml.state()])
-    with pytest.raises(ValueError, match="Requested postselection on value with zero probability"):
-        _ = simulate(tape)
-
-    # Test with broadcasting
-    tape = qml.tape.QuantumScript(
-        [qml.RX([0.0, 0.0], wires=0), qml.Projector([1], 0)], [qml.state()]
-    )
-    with pytest.raises(ValueError, match="Requested postselection on value with zero probability"):
-        _ = simulate(tape)
-
-
-def test_projector_norm():
-    """Test that the norm of the state is maintained after applying a projector"""
-    tape = qml.tape.QuantumScript(
-        [qml.PauliX(0), qml.RX(0.123, 1), qml.Projector([0], wires=1)], [qml.state()]
-    )
-    res = simulate(tape)
-    assert np.isclose(np.linalg.norm(res), 1.0)
-
-    # Test with broadcasting
-    tape = qml.tape.QuantumScript(
-        [qml.PauliX(0), qml.RX([0.123, 0.456], 1), qml.Projector([0], wires=1)], [qml.state()]
-    )
-    res = simulate(tape)
-    assert len(res) == 2
-    for r in res:
-        assert np.isclose(np.linalg.norm(r), 1.0)
-
-
 # pylint: disable=too-few-public-methods
 class TestStatePrepBase:
     """Tests integration with various state prep methods."""
@@ -383,20 +350,163 @@ class TestBroadcasting:
         assert np.allclose(res[2], -np.cos(x))
         assert spy.call_args_list[0].args == (qs, {2: 0, 1: 1, 0: 2})
 
-    def test_broadcasting_with_projector(self):
-        """Test that postselecting a broadcasted state works correctly"""
+
+class TestPostselection:
+    """Tests for applying projectors as operations."""
+
+    def test_projector_norm(self):
+        """Test that the norm of the state is maintained after applying a projector"""
+        tape = qml.tape.QuantumScript(
+            [qml.PauliX(0), qml.RX(0.123, 1), qml.Projector([0], wires=1)], [qml.state()]
+        )
+        res = simulate(tape)
+        assert np.isclose(np.linalg.norm(res), 1.0)
+
+    @pytest.mark.parametrize("shots", [None, 10, [10, 10]])
+    def test_broadcasting_with_projector(self, shots):
+        """Test that postselecting a broadcasted state raises an error"""
         tape = qml.tape.QuantumScript(
             [
                 qml.RX([0.1, 0.2], 0),
                 qml.Projector([0], wires=0),
             ],
             [qml.state()],
+            shots=shots,
+        )
+
+        with pytest.raises(ValueError, match="Cannot postselect on circuits with broadcasting"):
+            _ = simulate(tape)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("mp", [qml.expval, qml.var])
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow", "jax"])
+    @pytest.mark.parametrize("shots", [None, 10, [10, 10]])
+    def test_nan_float_result(self, mp, interface, shots):
+        """Test that the result of circuits with 0 probability postselections is NaN with the
+        expected shape."""
+
+        tape = qml.tape.QuantumScript(
+            [
+                qml.RX(qml.math.asarray(np.pi, like=interface, dtype="float64"), 0),
+                qml.Projector([0], wires=0),
+            ],
+            [mp(qml.PauliZ(0))],
+            shots=shots,
         )
 
         res = simulate(tape)
-        assert len(res) == 2
-        for r in res:
-            assert np.allclose(r, [1, 0])
+
+        if not isinstance(shots, list):
+            assert qml.math.ndim(res) == 0
+            assert qml.math.isnan(res)
+            assert qml.math.get_interface(res) == interface
+
+        else:
+            assert isinstance(res, tuple)
+            assert len(res) == 2
+            for r in res:
+                assert qml.math.ndim(r) == 0
+                assert qml.math.isnan(r)
+                assert qml.math.get_interface(r) == interface
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize(
+        "mp", [qml.probs(wires=0), qml.probs(op=qml.PauliZ(0)), qml.probs(wires=[0, 1])]
+    )
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow", "jax"])
+    @pytest.mark.parametrize("shots", [None, 10, [10, 10]])
+    def test_nan_probs(self, mp, interface, shots):
+        """Test that the result of circuits with 0 probability postselections is NaN with the
+        expected shape."""
+
+        tape = qml.tape.QuantumScript(
+            [
+                qml.RX(qml.math.asarray(np.pi, like=interface, dtype="float64"), 0),
+                qml.CNOT([0, 1]),
+                qml.Projector([0], wires=0),
+            ],
+            [mp],
+            shots=shots,
+        )
+
+        res = simulate(tape)
+
+        if not isinstance(shots, list):
+            assert qml.math.shape(res) == (2 ** len(mp.wires),)
+            assert all(nan_value for nan_value in qml.math.isnan(res))
+            assert qml.math.get_interface(res) == interface
+
+        else:
+            assert isinstance(res, tuple)
+            assert len(res) == 2
+            for r in res:
+                assert qml.math.shape(r) == (2 ** len(mp.wires),)
+                assert all(nan_value for nan_value in qml.math.isnan(r))
+                assert qml.math.get_interface(r) == interface
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize(
+        "mp", [qml.sample(wires=0), qml.sample(op=qml.PauliZ(0)), qml.sample(wires=[0, 1])]
+    )
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow", "jax"])
+    @pytest.mark.parametrize("shots", [None, 10, [10, 10]])
+    def test_nan_samples(self, mp, interface, shots):
+        """Test that the result of circuits with 0 probability postselections is NaN with the
+        expected shape."""
+
+        tape = qml.tape.QuantumScript(
+            [
+                qml.RX(qml.math.asarray(np.pi, like=interface, dtype="float64"), 0),
+                qml.CNOT([0, 1]),
+                qml.Projector([0], wires=0),
+            ],
+            [mp],
+            shots=shots,
+        )
+
+        res = simulate(tape)
+
+        if not isinstance(shots, list):
+            assert qml.math.shape(res) == (0,)
+            assert qml.math.get_interface(res) == interface
+
+        else:
+            assert isinstance(res, tuple)
+            assert len(res) == 2
+            for r in res:
+                assert qml.math.shape(r) == (0,)
+                assert qml.math.get_interface(r) == interface
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize(
+        "mp", [qml.counts(wires=0), qml.counts(op=qml.PauliZ(0)), qml.counts()]
+    )
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow", "jax"])
+    @pytest.mark.parametrize("shots", [None, 10, [10, 10]])
+    def test_nan_counts(self, mp, interface, shots):
+        """Test that the result of circuits with 0 probability postselections is NaN with the
+        expected shape."""
+
+        tape = qml.tape.QuantumScript(
+            [
+                qml.RX(qml.math.asarray(np.pi, like=interface, dtype="float64"), 0),
+                qml.CNOT([0, 1]),
+                qml.Projector([0], wires=0),
+            ],
+            [mp],
+            shots=shots,
+        )
+
+        res = simulate(tape)
+
+        if not isinstance(shots, list):
+            assert res == {}
+
+        else:
+            assert isinstance(res, tuple)
+            assert len(res) == 2
+            for r in res:
+                assert r == {}
 
 
 class TestDebugger:

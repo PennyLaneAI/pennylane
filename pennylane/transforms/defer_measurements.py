@@ -174,7 +174,7 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
 
             if op.postselect is not None:
                 with QueuingManager.stop_recording():
-                    new_operations.append(qml.Projector([op.postselect], wires=op.wires[0]))
+                    new_operations.append(qml.Projector([float(op.postselect)], wires=op.wires[0]))
 
             # Store measurement outcome in new wire if wire gets reused
             if op.wires[0] in reused_measurement_wires or op.wires[0] in measured_wires:

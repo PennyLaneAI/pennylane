@@ -126,12 +126,13 @@ def get_final_state(circuit, debugger=None, interface=None):
                 )
 
             norm = qml.math.norm(state)
-            if qml.math.isclose(norm, 0.0):
-                new_state = qml.math.asarray(
-                    [qml.numpy.NaN] * qml.math.size(state),
-                    like=qml.math.get_interface(state),
+            if qml.math.isclose(float(norm), 0.0):
+                new_state = qml.math.cast_like(
+                    qml.math.full(
+                        qml.math.shape(state), qml.numpy.NaN, like=qml.math.get_interface(state)
+                    ),
+                    state,
                 )
-                new_state = qml.math.reshape(new_state, qml.math.shape(state))
                 return new_state, is_state_batched
 
             state = state / norm
@@ -141,10 +142,10 @@ def get_final_state(circuit, debugger=None, interface=None):
             if circuit.shots:
                 # Clip the number of shots using a binomial distribution using the probability of
                 # measuring the postselected state.
-                postselected_shots = binomial(circuit.shots.total_shots, norm)
-                if postselected_shots == 0:
-                    raise RuntimeError("None of the samples meet the postselection criteria")
-                circuit._shots = qml.measurements.Shots(postselected_shots)
+                postselected_shots = [binomial(s, float(norm)) for s in circuit.shots]
+                # _FlexShots is used here since the binomial distribution could result in zero
+                # valid samples
+                circuit._shots = qml.measurements._FlexShots(postselected_shots)
 
     if set(circuit.op_wires) < set(circuit.wires):
         state = expand_state_over_wires(
@@ -180,7 +181,7 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
     """
     circuit = circuit.map_to_standard_wires()
 
-    if any(nan_value is True for nan_value in qml.math.flatten(qml.math.isnan(state))):
+    if any(nan_value for nan_value in qml.math.flatten(qml.math.isnan(state))):
         return _measure_nan_state(circuit, state, is_state_batched)
 
     if not circuit.shots:
@@ -220,7 +221,7 @@ def _measure_nan_state(circuit, state, is_state_batched):
     interface = qml.math.get_interface(state)
 
     if circuit.shots.has_partitioned_shots:
-        res = (
+        res = tuple(
             _get_single_nan_res(circuit.measurements, batch_size, interface, s)
             for s in circuit.shots
         )
@@ -238,6 +239,13 @@ def _get_single_nan_res(measurements, batch_size, interface, shots):
     res = []
 
     for m in measurements:
+        if isinstance(m, qml.measurements.SampleMP):
+            res.append(qml.math.asarray([], like=interface))
+            continue
+        if isinstance(m, qml.measurements.CountsMP):
+            res.append({})
+            continue
+
         shape = m.shape(None, qml.measurements.Shots(shots))
         if batch_size is not None:
             shape = (batch_size,) + shape

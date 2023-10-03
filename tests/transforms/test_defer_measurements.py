@@ -248,33 +248,6 @@ class TestQNode:
         for op, expected_op in zip(circ1.qtape, expected_circuit):
             assert qml.equal(op, expected_op)
 
-    def test_postselection_error(self):
-        """Test that an error is raised if the circuit being transformed has batched dimensions
-        or partitioned shots."""
-        dev = DefaultQubit()
-
-        @qml.qnode(dev)
-        def circ1():
-            qml.RX([0.1, 0.2], wires=0)
-            _ = qml.measure(0, postselect=1)
-            return qml.probs()
-
-        # Test that no error is raised if broadcasting with analytic execution
-        _ = circ1()
-
-        with pytest.raises(ValueError, match="Cannot postselect on mid-circuit measurements"):
-            # Error with finite shots and broadcasting
-            _ = circ1(shots=10)
-
-        @qml.qnode(dev)
-        def circ2():
-            qml.measure(0, postselect=1)
-            return qml.probs()
-
-        with pytest.raises(ValueError, match="Cannot postselect on mid-circuit measurements"):
-            # Error with shot vector
-            _ = circ2(shots=[10, 10])
-
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 1000]])
     def test_measurement_statistics_single_wire(self, shots):
         """Test that users can collect measurement statistics on

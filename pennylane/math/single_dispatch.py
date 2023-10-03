@@ -266,7 +266,14 @@ ar.register_function(
     ),
 )
 ar.register_function(
-    "tensorflow", "isnan", lambda tensor, **kwargs: _i("tf").math.is_nan(tensor, **kwargs)
+    "tensorflow",
+    "isnan",
+    lambda tensor, **kwargs: _i("tf").math.is_nan(
+        _i("tf").cast(tensor, "float64")
+        if tensor.dtype.name in ("int64", "int32", "complex128")
+        else tensor,
+        **kwargs,
+    ),
 )
 ar.register_function(
     "tensorflow",
