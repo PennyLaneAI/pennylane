@@ -4655,7 +4655,9 @@ class TestJaxArgnums:
         x = jax.numpy.array([0.543, -0.654])
         y = jax.numpy.array(-0.123)
 
-        res = jax.jacobian(qml.gradients.param_shift(circuit, argnums=argnums), argnums=argnums)(x, y)
+        res = jax.jacobian(qml.gradients.param_shift(circuit, argnums=argnums), argnums=argnums)(
+            x, y
+        )
         res_expected = jax.hessian(circuit, argnums=argnums)(x, y)
 
         if argnums == [0]:

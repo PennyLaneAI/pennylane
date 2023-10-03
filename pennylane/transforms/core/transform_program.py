@@ -28,7 +28,7 @@ BatchPostProcessingFn = Callable[[ResultBatch], ResultBatch]
 
 
 def _batch_postprocessing(
-        results: ResultBatch, individual_fns: List[PostProcessingFn], slices: List[slice]
+    results: ResultBatch, individual_fns: List[PostProcessingFn], slices: List[slice]
 ) -> ResultBatch:
     """Broadcast individual post processing functions onto their respective tapes.
 
@@ -57,8 +57,8 @@ def _batch_postprocessing(
 
 
 def _apply_postprocessing_stack(
-        results: ResultBatch,
-        postprocessing_stack: List[BatchPostProcessingFn],
+    results: ResultBatch,
+    postprocessing_stack: List[BatchPostProcessingFn],
 ) -> ResultBatch:
     """Applies the postprocessing and cotransform postprocessing functions in a Last-In-First-Out LIFO manner.
 
@@ -160,9 +160,6 @@ class TransformProgram:
         # Program can only contain one informative transform and at the end of the program
         if self.is_informative:
             raise TransformError("The transform program already has an informative transform.")
-        if self.has_classical_cotransform:
-            raise TransformError("The transform program already has an gradient based transform. For higher order"
-                                 " derivatives use the QNode kwarg with max diff directly.")
         if self.has_final_transform:
             raise TransformError("The transform program already has a terminal transform.")
         self._transform_program.append(transform_container)
@@ -283,7 +280,7 @@ class TransformProgram:
     def has_final_transform(self) -> bool:
         """Check if the transform program has a terminal transform or not."""
         return self[-1].final_transform if self else False
- 
+
     def has_classical_cotransform(self) -> bool:
         """Check if the transform program has some classical cotransforms.
 
@@ -301,7 +298,9 @@ class TransformProgram:
             tape = qnode.qtape
             if not program.is_empty:
                 tapes, _ = program((tape,))
-                return tuple(qml.math.stack(tape.get_parameters(trainable_only=True)) for tape in tapes)
+                return tuple(
+                    qml.math.stack(tape.get_parameters(trainable_only=True)) for tape in tapes
+                )
             else:
                 return qml.math.stack(tape.get_parameters(trainable_only=True))
 
@@ -319,7 +318,6 @@ class TransformProgram:
                 import tensorflow as tf
 
                 def _jacobian(*args, **kwargs):
-
                     with tf.GradientTape() as tape:
                         gate_params = classical_function(*args, **kwargs)
 
@@ -351,20 +349,22 @@ class TransformProgram:
                 qnode.interface = "auto"
 
             return jac
-        if len(self) > 1 and qnode.interface in ["autograd", "tensorflow", "tf"]:
-            raise qml.transforms.TransformError("Taking the gradient of a qnode is only support when there is a single transform")
+
         classical_jacobians = []
         for index, transform in enumerate(self):
             if transform.classical_cotransform:
                 argnums = transform._kwargs.get("argnums", None)
                 sub_program = TransformProgram(self[0:index])
-                classical_jacobian = jacobian(classical_preprocessing, sub_program, argnums, *args, **kwargs)
-                classical_jacobian = [classical_jacobian] if sub_program.is_empty else classical_jacobian
+                classical_jacobian = jacobian(
+                    classical_preprocessing, sub_program, argnums, *args, **kwargs
+                )
+                classical_jacobian = (
+                    [classical_jacobian] if sub_program.is_empty else classical_jacobian
+                )
                 classical_jacobians.append(classical_jacobian)
             else:
                 classical_jacobians.append(None)
         self._classical_jacobians = classical_jacobians
-        print(self._classical_jacobians)
         # QNode reset the tape
         qnode.construct(args, kwargs)
 
@@ -391,9 +391,13 @@ class TransformProgram:
         argnums = []
         for index, transform in enumerate(self):
             argnums_ = transform.kwargs.get("argnums", None)
-            argnums_ = [0] if qnode.interface in ["jax", "jax-jit"] and argnums_ is None else argnums_
+            argnums_ = (
+                [0] if qnode.interface in ["jax", "jax-jit"] and argnums_ is None else argnums_
+            )
             if transform.classical_cotransform and argnums_:
-                params = jax_argnums_to_tape_trainable(TransformProgram(self[0:index]), argnums_, args, kwargs)
+                params = jax_argnums_to_tape_trainable(
+                    TransformProgram(self[0:index]), argnums_, args, kwargs
+                )
                 argnums_ = [qml.math.get_trainable_indices(param) for param in params]
                 argnums.append(argnums_)
             else:
@@ -409,7 +413,7 @@ class TransformProgram:
         processing_fns_stack = []
 
         for i, transform_container in enumerate(self):
-            transform, targs, tkwargs, cotransform, _ = transform_container
+            transform, targs, tkwargs, cotransform, _, _ = transform_container
 
             execution_tapes = []
             fns = []
@@ -421,7 +425,7 @@ class TransformProgram:
             start = 0
             start_classical = 0
             for j, tape in enumerate(tapes):
-                if self._argnums and not all(item is None for item in self._argnums):
+                if self._argnums is not None and self._argnums[i] is not None:
                     tkwargs["argnums"] = self._argnums[i][j]
                 new_tapes, fn = transform(tape, *targs, **tkwargs)
                 execution_tapes.extend(new_tapes)
@@ -432,13 +436,16 @@ class TransformProgram:
                 start = end
 
                 if cotransform and self._classical_jacobians:
-                    print(self._classical_jacobians)
-                    classical_fns.append(partial(cotransform, cjac=self._classical_jacobians[i][j], tape=tape))
-                    slices_classical.append(slice(start_classical, start_classical+1))
+                    classical_fns.append(
+                        partial(cotransform, cjac=self._classical_jacobians[i][j], tape=tape)
+                    )
+                    slices_classical.append(slice(start_classical, start_classical + 1))
                     start_classical += 1
 
             if cotransform:
-                batch_postprocessing_classical = partial(_batch_postprocessing, individual_fns=classical_fns, slices=slices_classical)
+                batch_postprocessing_classical = partial(
+                    _batch_postprocessing, individual_fns=classical_fns, slices=slices_classical
+                )
                 batch_postprocessing_classical.__doc__ = _batch_postprocessing.__doc__
                 processing_fns_stack.append(batch_postprocessing_classical)
 

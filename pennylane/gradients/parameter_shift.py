@@ -24,6 +24,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.measurements import VarianceMP
 from pennylane.transforms.core import transform
+from pennylane.transforms.tape_expand import expand_invalid_trainable
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 
 from .finite_difference import finite_diff
@@ -722,7 +723,34 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
     return gradient_tapes, processing_fn
 
 
-@partial(transform, classical_cotransform=_contract_qjac_with_cjac)
+def expand_transform_param_shift(
+    tape: qml.tape.QuantumTape,
+    argnum=None,
+    argnums=None,
+    shifts=None,
+    gradient_recipes=None,
+    fallback_fn=finite_diff,
+    f0=None,
+    broadcast=False,
+) -> (Sequence[qml.tape.QuantumTape], Callable):
+    expanded_tape = expand_invalid_trainable(tape)
+    print(expanded_tape)
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [expanded_tape], null_postprocessing
+
+
+@partial(
+    transform,
+    expand_transform=expand_transform_param_shift,
+    classical_cotransform=_contract_qjac_with_cjac,
+    final_transform=True,
+)
 def param_shift(
     tape: qml.tape.QuantumTape,
     argnum=None,

@@ -961,10 +961,16 @@ class QNode:
         )
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
-        # Calculcate the classical jacobians if needed
-        if self.transform_program.has_classical_cotransform:
-            self.transform_program.set_all_classical_jacobians(self, args, kwargs)
-            self.transform_program.set_all_argnums(self, args, kwargs)
+        # Add the device program to the QNode program
+        if isinstance(self.device, qml.devices.Device):
+            device_transform_program, _ = self.device.preprocess()
+            full_transform_program = self.transform_program + device_transform_program
+        else:
+            full_transform_program = self.transform_program
+        # Calculate the classical jacobians if needed
+        if full_transform_program.has_classical_cotransform:
+            full_transform_program.set_all_classical_jacobians(self, args, kwargs)
+            full_transform_program.set_all_argnums(self, args, kwargs)
 
         # pylint: disable=unexpected-keyword-arg
         res = qml.execute(
@@ -972,7 +978,7 @@ class QNode:
             device=self.device,
             gradient_fn=self.gradient_fn,
             interface=self.interface,
-            transform_program=self.transform_program,
+            transform_program=full_transform_program,
             gradient_kwargs=self.gradient_kwargs,
             override_shots=override_shots,
             **self.execute_kwargs,

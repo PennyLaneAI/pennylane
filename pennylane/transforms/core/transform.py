@@ -131,7 +131,7 @@ def transform(
     # 3: CHeck the classical co-transform
     if classical_cotransform is not None:
         if not callable(classical_cotransform):
-           raise TransformError("The classical co-transform must be a valid Python function.")
+            raise TransformError("The classical co-transform must be a valid Python function.")
 
     return TransformDispatcher(
         quantum_transform,
