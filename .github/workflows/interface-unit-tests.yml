@@ -212,7 +212,7 @@ jobs:
       install_pennylane_lightning_master: true
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: jax and not qcut and not finite-diff and not param-shift
-      pytest_additional_args: --splits 5 --group ${{ matrix.group }}
+      pytest_additional_args: --splits 5 --group ${{ matrix.group }} --duration=60
       additional_pip_packages: pytest-split
 
 
