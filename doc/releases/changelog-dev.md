@@ -78,6 +78,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* `default.qubit` now tracks the number of equivalent qpu executions and total shots
+  when the device is sampling. Note that `"simulations"` denotes the number of simulation passes, where as
+  `"executions"` denotes how many different computational bases need to be sampled in.
+  [(#4628)](https://github.com/PennyLaneAI/pennylane/pull/4628)
+
 * The `JacobianProductCalculator` abstract base class and implementation `TransformJacobianProducts`
   have been added to `pennylane.interfaces.jacobian_products`.
   [(#4435)](https://github.com/PennyLaneAI/pennylane/pull/4435)

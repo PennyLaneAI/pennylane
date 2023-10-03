@@ -101,7 +101,7 @@ class TestCaching:
         """Tests that the backward pass is one single batch, not a bunch of batches, when parameter shift
         is requested for multiple tapes."""
 
-        dev = DefaultQubit()
+        dev = qml.device("default.qubit")
 
         def f(x):
             tape1 = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.probs(wires=0)])
@@ -115,7 +115,7 @@ class TestCaching:
             out = qml.jacobian(f)(x)
 
         assert dev.tracker.totals["batches"] == 2
-        assert dev.tracker.history["executions"] == [2, 4]
+        assert dev.tracker.history["simulations"] == [1, 1, 1, 1, 1, 1]
         expected = [-2 * np.cos(x / 2) * np.sin(x / 2), 2 * np.sin(x / 2) * np.cos(x / 2)]
         assert qml.math.allclose(out, expected)
 

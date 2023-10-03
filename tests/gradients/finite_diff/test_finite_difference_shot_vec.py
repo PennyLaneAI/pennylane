@@ -362,7 +362,7 @@ class TestFiniteDiff:
             j1 = fn(dev.execute(tapes))
 
         # We should only be executing the device to differentiate 1 parameter (2 executions)
-        assert tracker.latest["executions"] == 2
+        assert tracker.totals["executions"] == 2
 
         tapes, fn = finite_diff(tape2, approx_order=1, h=h_val)
         j2 = fn(dev.execute(tapes))
