@@ -174,6 +174,13 @@
   been updated to reflect this assumption and avoid redundant reshaping.
   [(#4602)](https://github.com/PennyLaneAI/pennylane/pull/4602)
 
+* Added `qml.math.get_deep_interface` to get the interface of a scalar hidden deep in lists or tuples.
+  [(#4603)](https://github.com/PennyLaneAI/pennylane/pull/4603)
+
+* Updated `qml.math.ndim` and `qml.math.shape` to work with built-in lists/tuples that contain
+  interface-specific scalar data, eg `[(tf.Variable(1.1), tf.Variable(2.2))]`.
+  [(#4603)](https://github.com/PennyLaneAI/pennylane/pull/4603)
+
 <h3>Breaking changes 💔</h3>
 
 * The device test suite now converts device kwargs to integers or floats if they can be converted to integers or floats.
