@@ -67,7 +67,7 @@ jobs:
             cat >python_versions.json <<-EOF
           {
             "default": ["3.9", "3.10", "3.11"],
-            "torch-test": ["3.9", "3.11"],
+            "torch-tests": ["3.9", "3.11"],
             "tf-tests": ["3.9", "3.10"],
             "jax-tests": ["3.9", "3.11"],
             "all-interfaces-tests": ["3.9"],
