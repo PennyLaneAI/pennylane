@@ -132,6 +132,7 @@ jobs:
     needs:
       - setup-lightened-ci
     strategy:
+      max-parallel: 1
       matrix:
         python-version: >-
           ${{
@@ -157,6 +158,7 @@ jobs:
     needs:
       - setup-lightened-ci
     strategy:
+      max-parallel: 2
       matrix:
         group:
           - '1'
@@ -190,11 +192,7 @@ jobs:
       - setup-lightened-ci
     strategy:
       matrix:
-        group:
-          - '1'
-          - '2'
-          - '3'
-          - '4'
+        group: [1, 2, 3, 4, 5]
         python-version: >-
           ${{
             fromJSON(needs.setup-lightened-ci.outputs.python-version).jax-tests
@@ -214,7 +212,7 @@ jobs:
       install_pennylane_lightning_master: true
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: jax and not qcut and not finite-diff and not param-shift
-      pytest_additional_args: --splits 4 --group ${{ matrix.group }}
+      pytest_additional_args: --splits 5 --group ${{ matrix.group }}
       additional_pip_packages: pytest-split
 
 
