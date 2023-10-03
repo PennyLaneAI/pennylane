@@ -19,6 +19,9 @@ from importlib import import_module
 import autoray as ar
 import numpy as np
 import semantic_version
+from scipy.linalg import block_diag as _scipy_block_diag
+
+from .utils import get_deep_interface
 
 
 def _i(name):
@@ -35,8 +38,22 @@ def _i(name):
 
 # ------------------------------- Builtins -------------------------------- #
 
-ar.register_function("builtins", "ndim", lambda x: np.ndim(np.array(x)))
-ar.register_function("builtins", "shape", lambda x: np.array(x).shape)
+
+def _builtins_ndim(x):
+    interface = get_deep_interface(x)
+    x = ar.numpy.asarray(x, like=interface)
+    return ar.ndim(x)
+
+
+def _builtins_shape(x):
+    interface = get_deep_interface(x)
+    x = ar.numpy.asarray(x, like=interface)
+    return ar.shape(x)
+
+
+ar.register_function("builtins", "ndim", _builtins_ndim)
+ar.register_function("builtins", "shape", _builtins_shape)
+
 
 # -------------------------------- SciPy --------------------------------- #
 # the following is required to ensure that SciPy sparse Hamiltonians passed to
@@ -50,7 +67,6 @@ ar.register_function("scipy", "ndim", np.ndim)
 
 
 # -------------------------------- NumPy --------------------------------- #
-from scipy.linalg import block_diag as _scipy_block_diag
 
 ar.register_function("numpy", "flatten", lambda x: x.flatten())
 ar.register_function("numpy", "coerce", lambda x: x)
@@ -454,6 +470,7 @@ ar.register_function(
     "vander",
     lambda *args, **kwargs: _i("tf").experimental.numpy.vander(*args, **kwargs),
 )
+ar.register_function("tensorflow", "size", lambda x: _i("tf").size(x))
 
 
 # -------------------------------- Torch --------------------------------- #
@@ -550,6 +567,8 @@ def _take_torch(tensor, indices, axis=None, **_):
 
         return torch.index_select(tensor, dim=axis, index=indices)
 
+    if axis == -1:
+        return tensor[..., indices]
     fancy_indices = [slice(None)] * axis + [indices]
     return tensor[fancy_indices]
 
