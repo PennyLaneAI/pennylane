@@ -362,8 +362,8 @@ jobs:
     needs:
       - setup-lightened-ci
     strategy:
+      max-parallel: 1
       matrix:
-        max-parallel: 1
         config:
           - device: default.qubit.legacy
             shots: None
