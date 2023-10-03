@@ -382,7 +382,8 @@ def sample_state(
     basis_states = np.arange(2**num_wires)
 
     flat_state = flatten_state(state, total_indices)
-    probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)
+    with qml.queuing.QueuingManager.stop_recording():
+        probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)
 
     if is_state_batched:
         # rng.choice doesn't support broadcasting
@@ -431,7 +432,8 @@ def _sample_state_jax(
     basis_states = np.arange(2**num_wires)
 
     flat_state = flatten_state(state, total_indices)
-    probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)
+    with qml.queuing.QueuingManager.stop_recording():
+        probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)
 
     if is_state_batched:
         # Produce separate keys for each of the probabilities along the broadcasted axis

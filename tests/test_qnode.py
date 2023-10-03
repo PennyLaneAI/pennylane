@@ -1051,25 +1051,6 @@ class TestIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_no_defer_measurements_if_supported(self, mocker):
-        """Test that the defer_measurements transform is not used during
-        QNode construction if the device supports mid-circuit measurements."""
-        dev = qml.device("default.qubit", wires=3)
-        mocker.patch.object(qml.Device, "_capabilities", {"supports_mid_measure": True})
-        spy = mocker.spy(qml, "defer_measurements")
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.PauliX(0)
-            qml.measure(0)
-            return qml.expval(qml.PauliZ(1))
-
-        circuit.construct(tuple(), {})
-
-        spy.assert_not_called()
-        assert len(circuit.tape.operations) == 2
-        assert isinstance(circuit.tape.operations[1], qml.measurements.MidMeasureMP)
-
     @pytest.mark.parametrize(
         "dev", [qml.device("default.qubit", wires=3), qml.device("default.qubit", wires=3)]
     )
