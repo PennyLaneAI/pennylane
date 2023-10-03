@@ -171,6 +171,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The device test suite now converts device kwargs to integers or floats if they can be converted to integers or floats.
+  [(#4640)](https://github.com/PennyLaneAI/pennylane/pull/4640)
+
 * `MeasurementProcess.eigvals()` now raises an `EigvalsUndefinedError` if the measurement observable
   does not have eigenvalues.
   [(#4544)](https://github.com/PennyLaneAI/pennylane/pull/4544)
