@@ -117,8 +117,21 @@ test_matrix = [
     ({"gradient_fn": param_shift}, 100000, DefaultQubit(seed=42)),
     ({"gradient_fn": param_shift}, None, DefaultQubit()),
     ({"gradient_fn": "backprop"}, None, DefaultQubit()),
-    ({"gradient_fn": "adjoint", "grad_on_execution": True}, None, DefaultQubit()),
-    ({"gradient_fn": "adjoint", "grad_on_execution": False}, None, DefaultQubit()),
+    (
+        {"gradient_fn": "adjoint", "grad_on_execution": True, "use_device_jacobian_product": False},
+        None,
+        DefaultQubit(),
+    ),
+    (
+        {
+            "gradient_fn": "adjoint",
+            "grad_on_execution": False,
+            "use_device_jacobian_product": False,
+        },
+        None,
+        DefaultQubit(),
+    ),
+    ({"gradient_fn": "adjoint", "use_device_jacobian_product": True}, None, DefaultQubit()),
 ]
 
 

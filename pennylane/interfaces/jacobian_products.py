@@ -558,9 +558,9 @@ class DeviceJacobianProducts(JacobianProductCalculator):
     def __repr__(self):
         return f"<DeviceJacobianProducts: {self._device.name}, {self._execution_config}>"
 
-    def __init__(
-        self, device: qml.devices.Device, execution_config=qml.devices.DefaultExecutionConfig
-    ):
+    def __init__(self, device: "qml.devices.Device", execution_config=None):
+        if execution_config is None:
+            execution_config = qml.devices.DefaultExecutionConfig
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("DeviceJacobianProducts created with (%s, %s)", device, execution_config)
         self._device = device
