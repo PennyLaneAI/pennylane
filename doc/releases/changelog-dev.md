@@ -181,7 +181,6 @@
   interface-specific scalar data, eg `[(tf.Variable(1.1), tf.Variable(2.2))]`.
   [(#4603)](https://github.com/PennyLaneAI/pennylane/pull/4603)
 
-
 <h3>Breaking changes 💔</h3>
 
 * The device test suite now converts device kwargs to integers or floats if they can be converted to integers or floats.
