@@ -53,8 +53,7 @@ jobs:
         id: python_versions
 
         # All jobs will use the 'default' python versions listed in the dictionary below.
-        # Unless the job name exists as a key as well, in which the default will be overriden and the ones
-        # listed for the job itself will be used instead.
+        # Unless the job name exists as a key as well, in which case the python versions listed for the job itself will be used instead.
         run: |
           if [ "${{ inputs.run_lightened_ci }}" == "true" ]; 
           then
@@ -133,7 +132,11 @@ jobs:
       - setup-lightened-ci
     strategy:
       matrix:
-        python-version: ${{ fromJSON(needs.setup-lightened-ci.outputs.python-version) }}
+        python-version: >-
+          ${{
+            fromJSON(needs.setup-lightened-ci.outputs.python-version).autograd-tests
+            || fromJSON(needs.setup-lightened-ci.outputs.python-version).default
+           }}
     if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'autograd-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -157,7 +160,11 @@ jobs:
         group:
           - '1'
           - '2'
-        python-version: ${{ fromJSON(needs.setup-lightened-ci.outputs.python-version) }}
+        python-version: >-
+          ${{
+            fromJSON(needs.setup-lightened-ci.outputs.python-version).tf-tests
+            || fromJSON(needs.setup-lightened-ci.outputs.python-version).default
+           }}
     if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'tf-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -185,7 +192,11 @@ jobs:
         group:
           - '1'
           - '2'
-        python-version: ${{ fromJSON(needs.setup-lightened-ci.outputs.python-version) }}
+        python-version: >-
+          ${{
+            fromJSON(needs.setup-lightened-ci.outputs.python-version).jax-tests
+            || fromJSON(needs.setup-lightened-ci.outputs.python-version).default
+           }}
     if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'jax-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -212,7 +223,11 @@ jobs:
         group:
           - '1'
           - '2'
-        python-version: ${{ fromJSON(needs.setup-lightened-ci.outputs.python-version) }}
+        python-version: >-
+          ${{
+            fromJSON(needs.setup-lightened-ci.outputs.python-version).core-tests
+            || fromJSON(needs.setup-lightened-ci.outputs.python-version).default
+           }}
     if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'core-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -233,13 +248,20 @@ jobs:
   all-interfaces-tests:
     needs:
       - setup-lightened-ci
-    if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'core-tests') }}
+    strategy:
+      matrix:
+        python-version: >-
+          ${{
+            fromJSON(needs.setup-lightened-ci.outputs.python-version).all-interfaces-tests
+            || fromJSON(needs.setup-lightened-ci.outputs.python-version).default
+           }}
+    if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'all-interfaces-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
-      job_name: all-interfaces-tests
+      job_name: all-interfaces-tests (${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: all-interfaces-coverage
-      python_version: 3.9
+      python_version: ${{ matrix.python-version }}
       install_jax: true
       jax_version: ${{ inputs.jax_version }}
       install_tensorflow: true
@@ -255,13 +277,20 @@ jobs:
   external-libraries-tests:
     needs:
       - setup-lightened-ci
+    strategy:
+      matrix:
+        python-version: >-
+          ${{
+            fromJSON(needs.setup-lightened-ci.outputs.python-version).external-libraries-tests
+            || fromJSON(needs.setup-lightened-ci.outputs.python-version).default
+           }}
     if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'external-libraries-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
-      job_name: external-libraries-tests
+      job_name: external-libraries-tests (${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: external-libraries-tests-coverage
-      python_version: 3.9
+      python_version: ${{ matrix.python-version }}
       install_jax: True
       install_tensorflow: True
       install_pytorch: false
@@ -274,13 +303,20 @@ jobs:
   qcut-tests:
     needs:
       - setup-lightened-ci
+    strategy:
+      matrix:
+        python-version: >-
+          ${{
+            fromJSON(needs.setup-lightened-ci.outputs.python-version).qcut-tests
+            || fromJSON(needs.setup-lightened-ci.outputs.python-version).default
+           }}
     if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'qcut-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
-      job_name: qcut-tests
+      job_name: qcut-tests (${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: qcut-coverage
-      python_version: 3.9
+      python_version: ${{ matrix.python-version }}
       install_jax: true
       jax_version: ${{ inputs.jax_version }}
       install_tensorflow: true
@@ -297,13 +333,20 @@ jobs:
   qchem-tests:
     needs:
       - setup-lightened-ci
+    strategy:
+      matrix:
+        python-version: >-
+          ${{
+            fromJSON(needs.setup-lightened-ci.outputs.python-version).qchem-tests
+            || fromJSON(needs.setup-lightened-ci.outputs.python-version).default
+           }}
     if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'qchem-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
-      job_name: qchem-tests
+      job_name: qchem-tests (${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: qchem-coverage
-      python_version: 3.9
+      python_version: ${{ matrix.python-version }}
       install_jax: false
       install_tensorflow: false
       install_pytorch: false
@@ -316,17 +359,23 @@ jobs:
     needs:
       - setup-lightened-ci
     strategy:
+      max-parallel: 1
       matrix:
         config:
           - suite: finite-diff
           - suite: param-shift
+        python-version: >-
+          ${{
+            fromJSON(needs.setup-lightened-ci.outputs.python-version).gradients-tests
+            || fromJSON(needs.setup-lightened-ci.outputs.python-version).default
+           }}
     if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'gradients-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
-      job_name: gradients-tests (${{ matrix.config.suite }})
+      job_name: gradients-tests (${{ matrix.config.suite }}, ${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: gradients-${{ matrix.config.suite }}-coverage
-      python_version: 3.9
+      python_version: ${{ matrix.python-version }}
       install_jax: true
       jax_version: ${{ inputs.jax_version }}
       install_tensorflow: true
@@ -342,13 +391,20 @@ jobs:
   data-tests:
     needs:
       - setup-lightened-ci
+    strategy:
+      matrix:
+        python-version: >-
+          ${{
+            fromJSON(needs.setup-lightened-ci.outputs.python-version).data-tests
+            || fromJSON(needs.setup-lightened-ci.outputs.python-version).default
+           }}
     if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'data-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
-      job_name: data-tests
+      job_name: data-tests (${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: data-coverage
-      python_version: '3.10'
+      python_version: ${{ matrix.python-version }}
       install_jax: false
       install_tensorflow: false
       install_pytorch: false
@@ -375,13 +431,18 @@ jobs:
             shots: None
           - device: default.mixed
             shots: None
+        python-version: >-
+          ${{
+            fromJSON(needs.setup-lightened-ci.outputs.python-version).device-tests
+            || fromJSON(needs.setup-lightened-ci.outputs.python-version).default
+           }}
     if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'device-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
-      job_name: device-tests (${{ matrix.config.device }}, ${{ matrix.config.shots }})
+      job_name: device-tests (${{ matrix.config.device }}, ${{ matrix.config.shots }}, ${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: devices-coverage-${{ matrix.config.device }}-${{ matrix.config.shots }}
-      python_version: 3.9
+      python_version: ${{ matrix.python-version }}
       install_jax: ${{ contains(matrix.config.device, 'jax') }}
       jax_version: ${{ inputs.jax_version }}
       install_tensorflow: ${{ contains(matrix.config.device, 'tf') }}
