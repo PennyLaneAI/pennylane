@@ -5432,9 +5432,9 @@ class TestCutCircuitWithHamiltonians:
         uncut version of the circuit in ``TestCutCircuitTransform.test_complicated_circuit``.
 
         0: ──BasisState(M0)─╭C───RX─╭C──╭C────────────────────┤
-        1: ─────────────────╰X──────╰X──╰Z────────────────╭RX─┤ ╭<Z@Z@Z>
-        2: ──H──────────────╭C─────────────╭RY────────╭RY─│───┤ ├<Z@Z@Z>
-        3: ─────────────────╰RY──H──╭C───H─╰C──╭RY──H─╰C──│───┤ ╰<Z@Z@Z>
+        1: ─────────────────╰X──────╰X──╰Z────────────────╭RX─┤ ╭<H>
+        2: ──H──────────────╭C─────────────╭RY────────╭RY─│───┤ ├<H>
+        3: ─────────────────╰RY──H──╭C───H─╰C──╭RY──H─╰C──│───┤ ╰<H>
         4: ─────────────────────────╰RY──H─────╰C─────────╰C──┤
         """
 
@@ -5527,7 +5527,7 @@ class TestCutCircuitWithHamiltonians:
         tape = tape0.expand()
         tapes, _ = qml.transforms.hamiltonian_expand(tape, group=False)
 
-        frag_lens = [5, 6]
+        frag_lens = [5, 7]
         frag_ords = [[1, 6], [3, 6]]
         for idx, tape in enumerate(tapes):
             graph = qcut.tape_to_graph(tape)
