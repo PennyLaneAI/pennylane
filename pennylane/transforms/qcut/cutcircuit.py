@@ -370,9 +370,7 @@ def cut_circuit(
         tapes, tapes_fn = qml.transforms.hamiltonian_expand(tape, group=False)
 
     def res_tapes_fn(results, cut_func=None, indices=None):
-        print(results, indices, len(results))
-        for idx in range(1, len(indices)):
-            print(idx, cut_func[idx - 1], results[indices[idx - 1] : indices[idx]])
+        """Modified post-processing function"""
         exp_res = [
             cut_func[idx - 1](results[indices[idx - 1] : indices[idx]])
             for idx in range(1, len(indices))
