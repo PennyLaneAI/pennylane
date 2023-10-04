@@ -304,27 +304,30 @@
 
 <h3>Deprecations 👋</h3>
 
-* The ``prep`` keyword argument in ``QuantumScript`` is deprecated and will be removed from `QuantumScript`.
-  ``StatePrepBase`` operations should be placed at the beginning of the `ops` list instead.
-  [(#4554)](https://github.com/PennyLaneAI/pennylane/pull/4554)
-
 * The following decorator syntax for transforms has been deprecated and will raise a warning:
+  [(#4457)](https://github.com/PennyLaneAI/pennylane/pull/4457/)
+
   ```python
   @transform_fn(**transform_kwargs)
   @qml.qnode(dev)
   def circuit():
       ...
   ```
+  
   If you are using a transform that has supporting `transform_kwargs`, please call the
   transform directly using `circuit = transform_fn(circuit, **transform_kwargs)`,
   or use `functools.partial`:
+
   ```python
   @functools.partial(transform_fn, **transform_kwargs)
   @qml.qnode(dev)
   def circuit():
       ...
   ```
-  [(#4457)](https://github.com/PennyLaneAI/pennylane/pull/4457/)
+
+* The ``prep`` keyword argument in ``QuantumScript`` is deprecated and will be removed from `QuantumScript`.
+  ``StatePrepBase`` operations should be placed at the beginning of the `ops` list instead.
+  [(#4554)](https://github.com/PennyLaneAI/pennylane/pull/4554)
 
 * `qml.gradients.pulse_generator` becomes `qml.gradients.pulse_odegen` to adhere to paper naming conventions. During v0.33, `pulse_generator`
   is still available but raises a warning.
@@ -380,6 +383,8 @@
 This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad,
+Thomas Bromley,
+Isaac De Vlugt,
 Stepan Fomichev,
 Joana Fraxanet,
 Diego Guala,
