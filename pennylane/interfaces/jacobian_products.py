@@ -541,12 +541,12 @@ class DeviceJacobians(JacobianProductCalculator):
 
 
 class DeviceJacobianProducts(JacobianProductCalculator):
-    """Compute the jacobian products using the native device methods.
+    """Compute jacobian products using the native device methods.
 
     Args:
         device (pennylane.devices.Device): the device for execution and derivatives.
             Must define both the vjp and jvp.
-        execution_config (pennylane.devices.ExecutionConfig): a datastructure containing the parameters needed to fully
+        execution_config (pennylane.devices.ExecutionConfig): a datastructure containing the options needed to fully
            describe the execution.
 
     >>> dev = qml.device('default.qubit')
