@@ -49,7 +49,12 @@ def _cut_circuit_expand(
     tapes, tapes_fn = [tape], processing_fn
 
     # Expand the tapes for handling Hamiltonian with two or more terms
-    if isinstance(tape.measurements[0].obs, qml.Hamiltonian):
+    tape_meas_op = tape.measurements[0]
+    if isinstance(tape_meas_op.obs, qml.Hamiltonian):
+        # fixes issue with grouping_indices
+        # if tape_meas_op.obs.grouping_indices is not None:
+        #     setattr(tape_meas_op, "obs", qml.Hamiltonian(*tape_meas_op.obs.terms()))
+
         tapes, tapes_fn = qml.transforms.hamiltonian_expand(tape, group=False)
 
     return [_qcut_expand_fn(tape, max_depth, auto_cutter) for tape in tapes], tapes_fn
