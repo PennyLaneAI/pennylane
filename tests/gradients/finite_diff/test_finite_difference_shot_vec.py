@@ -25,9 +25,9 @@ from pennylane.devices import DefaultQubitLegacy
 from pennylane.measurements import Shots
 from pennylane.operation import Observable, AnyWires
 
+# pylint:disable = use-implicit-booleaness-not-comparison
 
 h_val = 0.1
-finite_diff_shot_vec_tol = 0.3
 
 default_shot_vector = (1000, 2000, 3000)
 many_shots_shot_vector = tuple([1000000] * 3)
@@ -375,8 +375,8 @@ class TestFiniteDiff:
         assert len(j2) == len(many_shots_shot_vector)
 
         for _j1, _j2 in zip(j1, j2):
-            assert np.allclose(_j1, [exp, 0], atol=finite_diff_shot_vec_tol)
-            assert np.allclose(_j2, [0, exp], atol=finite_diff_shot_vec_tol)
+            assert np.allclose(_j1, [exp, 0], atol=0.07)
+            assert np.allclose(_j2, [0, exp], atol=0.07)
 
     def test_output_shape_matches_qnode(self):
         """Test that the transform output shape matches that of the QNode."""
@@ -576,7 +576,7 @@ class TestFiniteDiffIntegration:
             assert isinstance(res[1], numpy.ndarray)
             assert res[1].shape == ()
 
-            assert np.allclose(res, expected, atol=finite_diff_shot_vec_tol, rtol=0)
+            assert np.allclose(res, expected, atol=0.15, rtol=0)
 
     def test_single_expectation_value_with_argnum_all(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
@@ -618,7 +618,7 @@ class TestFiniteDiffIntegration:
             assert isinstance(res[1], numpy.ndarray)
             assert res[1].shape == ()
 
-            assert np.allclose(res, expected, atol=finite_diff_shot_vec_tol, rtol=0)
+            assert np.allclose(res, expected, atol=0.15, rtol=0)
 
     def test_single_expectation_value_with_argnum_one(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
@@ -665,7 +665,7 @@ class TestFiniteDiffIntegration:
             assert isinstance(res[1], numpy.ndarray)
             assert res[1].shape == ()
 
-            assert np.allclose(res, expected, atol=finite_diff_shot_vec_tol, rtol=0)
+            assert np.allclose(res, expected, atol=0.12, rtol=0)
 
     def test_probs_expval_with_argnum_one(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
@@ -675,8 +675,6 @@ class TestFiniteDiffIntegration:
         This test relies on the fact that exactly one term of the estimated
         jacobian will match the expected analytical value.
         """
-        if approx_order == 4 and strategy != "center":
-            pytest.skip("The latest default.qubit is unreliable with an approx_order of 4")
 
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         x = 0.543
@@ -706,15 +704,16 @@ class TestFiniteDiffIntegration:
 
         cx, sx, cy, sy = np.cos(x / 2), np.sin(x / 2), np.cos(y / 2), np.sin(y / 2)
         # probability vector is [cx**2 * cy**2, cx**2 * sy**2, sx**2 * sy**2, sx**2 * cy**2]
-        exp_dprob = np.array([-(cx**2), cx**2, sx**2, -(sx**2)]) * (2 * sy * cy)
+        exp_dprob = np.array([-(cx**2), cx**2, sx**2, -(sx**2)]) * (sy * cy)
         exp_probs = [np.zeros(4), exp_dprob]
-        exp_expval = [0, -np.sin(y) * np.cos(x)]
+        # expval is np.sin(y) * np.cos(x)
+        exp_expval = [0, np.cos(y) * np.cos(x)]
 
         for res in all_res:
             assert isinstance(res, tuple)
             assert len(res) == 2  # two measurements
-            assert np.allclose(res[0], exp_probs, atol=finite_diff_shot_vec_tol)
-            assert np.allclose(res[1], exp_expval, atol=finite_diff_shot_vec_tol)
+            assert np.allclose(res[0], exp_probs, atol=0.07)
+            assert np.allclose(res[1], exp_expval, atol=0.2)
 
     def test_multiple_expectation_values(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
@@ -749,13 +748,13 @@ class TestFiniteDiffIntegration:
 
             assert isinstance(res[0], tuple)
             assert len(res[0]) == 2
-            assert np.allclose(res[0], [-np.sin(x), 0], atol=finite_diff_shot_vec_tol, rtol=0)
+            assert np.allclose(res[0], [-np.sin(x), 0], atol=0.1, rtol=0)
             assert isinstance(res[0][0], numpy.ndarray)
             assert isinstance(res[0][1], numpy.ndarray)
 
             assert isinstance(res[1], tuple)
             assert len(res[1]) == 2
-            assert np.allclose(res[1], [0, np.cos(y)], atol=finite_diff_shot_vec_tol, rtol=0)
+            assert np.allclose(res[1], [0, np.cos(y)], atol=0.15, rtol=0)
             assert isinstance(res[1][0], numpy.ndarray)
             assert isinstance(res[1][1], numpy.ndarray)
 
@@ -792,15 +791,13 @@ class TestFiniteDiffIntegration:
 
             assert isinstance(res[0], tuple)
             assert len(res[0]) == 2
-            assert np.allclose(res[0], [-np.sin(x), 0], atol=finite_diff_shot_vec_tol, rtol=0)
+            assert np.allclose(res[0], [-np.sin(x), 0], atol=0.1, rtol=0)
             assert isinstance(res[0][0], numpy.ndarray)
             assert isinstance(res[0][1], numpy.ndarray)
 
             assert isinstance(res[1], tuple)
             assert len(res[1]) == 2
-            assert np.allclose(
-                res[1], [0, -2 * np.cos(y) * np.sin(y)], atol=finite_diff_shot_vec_tol, rtol=0
-            )
+            assert np.allclose(res[1], [0, -2 * np.cos(y) * np.sin(y)], atol=0.2, rtol=0)
             assert isinstance(res[1][0], numpy.ndarray)
             assert isinstance(res[1][1], numpy.ndarray)
 
@@ -837,9 +834,9 @@ class TestFiniteDiffIntegration:
 
             assert isinstance(res[0], tuple)
             assert len(res[0]) == 2
-            assert np.allclose(res[0][0], -np.sin(x), atol=finite_diff_shot_vec_tol, rtol=0)
+            assert np.allclose(res[0][0], -np.sin(x), atol=0.1, rtol=0)
             assert isinstance(res[0][0], numpy.ndarray)
-            assert np.allclose(res[0][1], 0, atol=finite_diff_shot_vec_tol, rtol=0)
+            assert np.allclose(res[0][1], 0, atol=0.1, rtol=0)
             assert isinstance(res[0][1], numpy.ndarray)
 
             assert isinstance(res[1], tuple)
@@ -852,7 +849,7 @@ class TestFiniteDiffIntegration:
                     (np.sin(x) * np.sin(y / 2) ** 2) / 2,
                     (np.cos(y / 2) ** 2 * np.sin(x)) / 2,
                 ],
-                atol=finite_diff_shot_vec_tol,
+                atol=0.07,
                 rtol=0,
             )
             assert isinstance(res[1][0], numpy.ndarray)
@@ -864,7 +861,7 @@ class TestFiniteDiffIntegration:
                     (np.sin(x / 2) ** 2 * np.sin(y)) / 2,
                     -(np.sin(x / 2) ** 2 * np.sin(y)) / 2,
                 ],
-                atol=finite_diff_shot_vec_tol,
+                atol=0.07,
                 rtol=0,
             )
             assert isinstance(res[1][1], numpy.ndarray)
@@ -918,7 +915,7 @@ class TestFiniteDiffGradients:
                 ]
             )
 
-            assert np.allclose(res, expected, atol=finite_diff_shot_vec_tol, rtol=0)
+            assert np.allclose(res, expected, atol=0.3, rtol=0)
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
@@ -957,7 +954,7 @@ class TestFiniteDiffGradients:
 
         for res in all_res:
             expected = np.array([-np.cos(x) * np.cos(y) / 2, np.sin(x) * np.sin(y) / 2])
-            assert np.allclose(res, expected, atol=finite_diff_shot_vec_tol, rtol=0)
+            assert np.allclose(res, expected, atol=0.3, rtol=0)
 
     @pytest.mark.tf
     @pytest.mark.slow
@@ -1000,7 +997,7 @@ class TestFiniteDiffGradients:
                 [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)],
             ]
         )
-        assert np.allclose([res_0, res_1], expected, atol=finite_diff_shot_vec_tol, rtol=0)
+        assert np.allclose([res_0, res_1], expected, atol=0.3, rtol=0)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.tf"])
@@ -1039,7 +1036,7 @@ class TestFiniteDiffGradients:
 
         expected = np.array([-np.cos(x) * np.cos(y) / 2, np.sin(x) * np.sin(y) / 2])
 
-        assert np.allclose(res_01[0], expected, atol=finite_diff_shot_vec_tol, rtol=0)
+        assert np.allclose(res_01[0], expected, atol=0.3, rtol=0)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.torch"])
@@ -1081,12 +1078,8 @@ class TestFiniteDiffGradients:
             ]
         )
 
-        assert np.allclose(
-            hess[0].detach().numpy(), expected[0], atol=finite_diff_shot_vec_tol, rtol=0
-        )
-        assert np.allclose(
-            hess[1].detach().numpy(), expected[1], atol=finite_diff_shot_vec_tol, rtol=0
-        )
+        assert np.allclose(hess[0].detach().numpy(), expected[0], atol=0.3, rtol=0)
+        assert np.allclose(hess[1].detach().numpy(), expected[1], atol=0.3, rtol=0)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
@@ -1136,7 +1129,7 @@ class TestFiniteDiffGradients:
         )
         for res in all_res:
             assert isinstance(res, tuple)
-            assert np.allclose(res, expected, atol=finite_diff_shot_vec_tol, rtol=0)
+            assert np.allclose(res, expected, atol=0.3, rtol=0)
 
 
 pauliz = qml.PauliZ(wires=0)
