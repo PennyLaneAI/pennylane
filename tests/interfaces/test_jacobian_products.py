@@ -17,7 +17,7 @@ Tests for the jacobian product calculator classes.
 # pylint: disable=protected-access
 import pytest
 from cachetools import LRUCache
-from conftest import ParamShiftDerivativesDevice
+from param_shift_device_dev import ParamShiftDerivativesDevice
 
 import numpy as np
 
@@ -48,16 +48,25 @@ device_jacs = DeviceDerivatives(dev, adjoint_config)
 legacy_device_jacs = DeviceDerivatives(dev_old, gradient_kwargs={"method": "adjoint_jacobian"})
 device_ps_jacs = DeviceDerivatives(dev_ps, ps_config)
 device_native_jps = DeviceJacobianProducts(dev, adjoint_config)
+device_ps_native_jps = DeviceJacobianProducts(dev_ps, ps_config)
 
 transform_jpc_matrix = [param_shift_jpc, hadamard_grad_jpc]
 dev_jpc_matrix = [device_jacs, legacy_device_jacs, device_ps_jacs]
-jpc_matrix = [param_shift_jpc, hadamard_grad_jpc, device_jacs, legacy_device_jacs, device_ps_jacs, device_native_jps]
+jpc_matrix = [
+    param_shift_jpc,
+    hadamard_grad_jpc,
+    device_jacs,
+    legacy_device_jacs,
+    device_ps_jacs,
+    device_native_jps,
+    device_ps_native_jps,
+]
 
 
 def _accepts_finite_shots(jpc):
     if isinstance(jpc, TransformJacobianProducts):
         return True
-    if isinstance(jpc, DeviceDerivatives):
+    if isinstance(jpc, (DeviceDerivatives, DeviceJacobianProducts)):
         return isinstance(jpc._device, ParamShiftDerivativesDevice)
     return False
 
@@ -154,20 +163,6 @@ class TestBasics:
         )
 
         assert repr(jpc) == expected
-
-    @pytest.mark.parametrize("jpc", dev_jpc_matrix)
-    def test_no_shot_vector_with_dev_jacs(self, jpc):
-        """Test that device derivatives with shot vectors raise a not implemented error."""
-
-        tape = qml.tape.QuantumScript(shots=(10, 10))
-        with pytest.raises(NotImplementedError):
-            jpc.execute_and_compute_jvp((tape,), ((0.5,),))
-
-        with pytest.raises(NotImplementedError):
-            jpc.compute_vjp((tape,), ((1.0,),))
-
-        with pytest.raises(NotImplementedError):
-            jpc.compute_jacobian((tape,))
 
 
 @pytest.mark.parametrize("jpc", jpc_matrix)
