@@ -237,32 +237,32 @@ class DeviceJacobians(JacobianProductCalculator):
     Args:
         device (Union[pennylane.Device, pennylane.devicesDevice]): the device for execution and derivatives.
             Must support supports first order gradients with the requested configuration.
-        gradient_kwargs (dict): a dictionary of keyword options for the gradients. Only used with a :class:`~.pennylane.Device`
-            old device interface.
         execution_config (pennylane.devices.ExecutionConfig): a datastructure containing the parameters needed to fully
            describe the execution. Only used with :class:`pennylane.devices.Device` new device interface.
+        gradient_kwargs (dict): a dictionary of keyword options for the gradients. Only used with a :class:`~.pennylane.Device`
+            old device interface.
 
     **Examples:**
 
     >>> device = qml.device('default.qubit')
     >>> config = qml.devices.ExecutionConfig(gradient_method="adjoint")
-    >>> jpc = DeviceJacobians(device, {}, config)
+    >>> jpc = DeviceJacobians(device, config, {})
 
     This same class can also be used with the old device interface.
 
     >>> device = qml.device('lightning.qubit', wires=5)
     >>> gradient_kwargs = {"method": "adjoint_jacobian"}
-    >>> jpc_lightning = DeviceJacobians(device, gradient_kwargs)
+    >>> jpc_lightning = DeviceJacobians(device, gradient_kwargs=gradient_kwargs)
 
     **Technical comments on caching and calculating the gradients on execution:**
 
     In order to store results and jacobian for the backward pass during the forward pass,
     the ``_jacs_cache`` and ``_results_cache`` properties are ``LRUCache`` objects with a maximum size of 10.
+    In the current execution pipeline, only one batch will be used per instance, but a size of 10 adds some extra
+    flexibility for future uses.
 
-    Note that since the hash and equality of :class:`~.QuantumScript` is based on object location, not contents, the
-    caching and retrieval should be more performant than a lookup based on the potentially expensive ``QuantumScript.hash``.
-    This means that the batch of tapes must be the
-    same instance, not just something that looks the same but has a different location in memory.
+    Note that since the hash and equality of :class:`~.QuantumScript` is based on object location, not contents. So batches
+    with identically looking :class:`~.QuantumScript` s that are different instances will be cached separately.
 
     When a forward pass with :meth:`~.execute` is called, both the results and the jacobian for the object are stored.
 
@@ -300,9 +300,11 @@ class DeviceJacobians(JacobianProductCalculator):
     def __init__(
         self,
         device: Union[qml.devices.Device, qml.Device],
-        gradient_kwargs: dict,
         execution_config: Optional["qml.devices.ExecutionConfig"] = None,
+        gradient_kwargs: dict = None,
     ):
+        if gradient_kwargs is None:
+            gradient_kwargs = {}
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug(
                 "DeviceJacobians created with (%s, %s, %s)",
@@ -315,7 +317,7 @@ class DeviceJacobians(JacobianProductCalculator):
         self._execution_config = execution_config
         self._gradient_kwargs = gradient_kwargs
 
-        self._is_new_device = not isinstance(device, qml.Device)
+        self._uses_new_device = not isinstance(device, qml.Device)
 
         # only really need to keep most recent entry, but keeping 10 around just in case
         self._results_cache = LRUCache(maxsize=10)
@@ -328,7 +330,7 @@ class DeviceJacobians(JacobianProductCalculator):
         Dispatches between the two different device interfaces.
         """
         numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
-        if self._is_new_device:
+        if self._uses_new_device:
             return self._device.execute_and_compute_derivatives(numpy_tapes, self._execution_config)
         return self._device.execute_and_gradients(numpy_tapes, **self._gradient_kwargs)
 
@@ -339,7 +341,7 @@ class DeviceJacobians(JacobianProductCalculator):
         Dispatches between the two different device interfaces.
         """
         numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
-        if self._is_new_device:
+        if self._uses_new_device:
             return self._device.execute(numpy_tapes, self._execution_config)
         return self._device.batch_execute(numpy_tapes)
 
@@ -350,7 +352,7 @@ class DeviceJacobians(JacobianProductCalculator):
         Dispatches between the two different device interfaces.
         """
         numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
-        if self._is_new_device:
+        if self._uses_new_device:
             return self._device.compute_derivatives(numpy_tapes, self._execution_config)
         return self._device.gradients(numpy_tapes, **self._gradient_kwargs)
 

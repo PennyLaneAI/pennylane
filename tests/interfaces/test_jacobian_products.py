@@ -40,8 +40,8 @@ param_shift_jpc = TransformJacobianProducts(inner_execute_numpy, qml.gradients.p
 hadamard_grad_jpc = TransformJacobianProducts(
     inner_execute_numpy, qml.gradients.hadamard_grad, {"aux_wire": "aux"}
 )
-device_jacs = DeviceJacobians(dev, {}, adjoint_config)
-legacy_device_jacs = DeviceJacobians(dev_old, {"method": "adjoint_jacobian"})
+device_jacs = DeviceJacobians(dev, adjoint_config)
+legacy_device_jacs = DeviceJacobians(dev_old, gradient_kwargs={"method": "adjoint_jacobian"})
 
 transform_jpc_matrix = [param_shift_jpc, hadamard_grad_jpc]
 dev_jpc_matrix = [device_jacs, legacy_device_jacs]
@@ -76,12 +76,12 @@ class TestBasics:
         device = qml.device("default.qubit")
         config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 
-        jpc = DeviceJacobians(device, {}, config)
+        jpc = DeviceJacobians(device, config)
 
         assert jpc._device is device
         assert jpc._execution_config is config
         assert jpc._gradient_kwargs == {}
-        assert jpc._is_new_device
+        assert jpc._uses_new_device
         assert isinstance(jpc._results_cache, LRUCache)
         assert len(jpc._results_cache) == 0
         assert isinstance(jpc._jacs_cache, LRUCache)
@@ -94,11 +94,11 @@ class TestBasics:
         device = qml.devices.DefaultQubitLegacy(wires=5)
         gradient_kwargs = {"method": "adjoint_jacobian"}
 
-        jpc = DeviceJacobians(device, gradient_kwargs)
+        jpc = DeviceJacobians(device, gradient_kwargs=gradient_kwargs)
 
         assert jpc._device is device
         assert jpc._gradient_kwargs == gradient_kwargs
-        assert not jpc._is_new_device
+        assert not jpc._uses_new_device
         assert isinstance(jpc._results_cache, LRUCache)
         assert len(jpc._results_cache) == 0
         assert isinstance(jpc._jacs_cache, LRUCache)
@@ -109,7 +109,7 @@ class TestBasics:
         device = qml.device("default.qubit")
         config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 
-        jpc = DeviceJacobians(device, {}, config)
+        jpc = DeviceJacobians(device, config)
 
         expected = (
             r"<DeviceJacobians: default.qubit, {},"
