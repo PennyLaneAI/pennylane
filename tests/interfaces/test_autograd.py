@@ -15,6 +15,7 @@
 # pylint: disable=protected-access,too-few-public-methods
 import sys
 
+
 import autograd
 import pytest
 from pennylane import numpy as np

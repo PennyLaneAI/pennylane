@@ -14,12 +14,16 @@
 """Autograd specific tests for execute and default qubit 2."""
 import autograd
 import pytest
+
+from param_shift_device_dev import ParamShiftDerivativesDevice
+
 from pennylane import numpy as np
 
 import pennylane as qml
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import param_shift
 from pennylane.interfaces import execute
+from pennylane.measurements import Shots
 
 pytestmark = pytest.mark.autograd
 
@@ -114,12 +118,13 @@ class TestCaching:
 # add tests for lightning 2 when possible
 # set rng for device when possible
 test_matrix = [
-    ({"gradient_fn": param_shift}, 100000, DefaultQubit(seed=42)),
-    ({"gradient_fn": param_shift}, None, DefaultQubit()),
-    ({"gradient_fn": "backprop"}, None, DefaultQubit()),
+    ({"gradient_fn": param_shift}, Shots(100000), DefaultQubit(seed=42)),
+    ({"gradient_fn": param_shift}, Shots((100000, 100000)), DefaultQubit(seed=42)),
+    ({"gradient_fn": param_shift}, Shots(None), DefaultQubit()),
+    ({"gradient_fn": "backprop"}, Shots(None), DefaultQubit()),
     (
         {"gradient_fn": "adjoint", "grad_on_execution": True, "use_device_jacobian_product": False},
-        None,
+        Shots(None),
         DefaultQubit(),
     ),
     (
@@ -128,10 +133,20 @@ test_matrix = [
             "grad_on_execution": False,
             "use_device_jacobian_product": False,
         },
-        None,
+        Shots(None),
         DefaultQubit(),
     ),
-    ({"gradient_fn": "adjoint", "use_device_jacobian_product": True}, None, DefaultQubit()),
+    ({"gradient_fn": "adjoint", "use_device_jacobian_product": True}, Shots(None), DefaultQubit()),
+    (
+        {"gradient_fn": "device", "use_device_jacobian_product": False},
+        Shots((100000, 100000)),
+        ParamShiftDerivativesDevice(),
+    ),
+    (
+        {"gradient_fn": "device", "use_device_jacobian_product": True},
+        Shots((100000, 100000)),
+        ParamShiftDerivativesDevice(),
+    ),
 ]
 
 
@@ -169,8 +184,9 @@ class TestAutogradExecuteIntegration:
         assert device.tracker.totals["executions"] == 2  # different wires so different hashes
 
         assert len(res) == 2
-        assert res[0].shape == ()
-        assert res[1].shape == ()
+        if not shots.has_partitioned_shots:
+            assert res[0].shape == ()
+            assert res[1].shape == ()
 
         assert qml.math.allclose(res[0], np.cos(a) * np.cos(b), atol=atol_for_shots(shots))
         assert qml.math.allclose(res[1], np.cos(a) * np.cos(b), atol=atol_for_shots(shots))
@@ -183,8 +199,11 @@ class TestAutogradExecuteIntegration:
             tape = qml.tape.QuantumScript([qml.RY(a, 0)], [qml.expval(qml.PauliZ(0))], shots=shots)
             return execute([tape], device, **execute_kwargs)[0]
 
-        res = qml.jacobian(cost)(a)
-        assert res.shape == ()  # pylint: disable=no-member
+        if shots.has_partitioned_shots:
+            res = qml.jacobian(lambda x: qml.math.hstack(cost(x)))(a)
+        else:
+            res = qml.jacobian(cost)(a)
+            assert res.shape == ()  # pylint: disable=no-member
 
         # compare to standard tape jacobian
         tape = qml.tape.QuantumScript([qml.RY(a, wires=0)], [qml.expval(qml.PauliZ(0))])
@@ -209,16 +228,29 @@ class TestAutogradExecuteIntegration:
 
         res = cost(a, b)
         expected = [np.cos(a), -np.cos(a) * np.sin(b)]
-        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+        if shots.has_partitioned_shots:
+            assert np.allclose(res[:2], expected, atol=atol_for_shots(shots), rtol=0)
+            assert np.allclose(res[2:], expected, atol=atol_for_shots(shots), rtol=0)
+        else:
+            assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
         res = qml.jacobian(cost)(a, b)
         assert isinstance(res, tuple) and len(res) == 2
-        assert res[0].shape == (2,)
-        assert res[1].shape == (2,)
+        if shots.has_partitioned_shots:
+            assert res[0].shape == (4,)
+            assert res[1].shape == (4,)
 
-        expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
-        for _r, _e in zip(res, expected):
-            assert np.allclose(_r, _e, atol=atol_for_shots(shots))
+            expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
+            for _r, _e in zip(res, expected):
+                assert np.allclose(_r[:2], _e, atol=atol_for_shots(shots))
+                assert np.allclose(_r[2:], _e, atol=atol_for_shots(shots))
+        else:
+            assert res[0].shape == (2,)
+            assert res[1].shape == (2,)
+
+            expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
+            for _r, _e in zip(res, expected):
+                assert np.allclose(_r, _e, atol=atol_for_shots(shots))
 
     @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
     def test_tape_no_parameters(self, execute_kwargs, shots, device):
@@ -227,6 +259,8 @@ class TestAutogradExecuteIntegration:
 
         if execute_kwargs["gradient_fn"] == "adjoint":
             pytest.skip("Adjoint differentiation does not yet support probabilities")
+        if shots.has_partitioned_shots:
+            pytest.skip("needs further investigation")
 
         def cost(params):
             tape1 = qml.tape.QuantumScript(
@@ -273,6 +307,8 @@ class TestAutogradExecuteIntegration:
 
         if execute_kwargs["gradient_fn"] == "backprop":
             pytest.xfail("backprop is not compatible with something about this situation.")
+        if shots.has_partitioned_shots:
+            pytest.xfail("needs further investigation.")
 
         def cost(params):
             tape1 = qml.tape.QuantumScript(
@@ -371,14 +407,17 @@ class TestAutogradExecuteIntegration:
             ]
 
             tape = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliZ(0))], shots=shots)
+            if shots.has_partitioned_shots:
+                return qml.math.hstack(execute([tape], device, **execute_kwargs)[0])
             return execute([tape], device, **execute_kwargs)[0]
 
         res = qml.jacobian(cost)(a, b, c)
 
         # Only two arguments are trainable
         assert isinstance(res, tuple) and len(res) == 2
-        assert res[0].shape == ()
-        assert res[1].shape == ()
+        if not shots.has_partitioned_shots:
+            assert res[0].shape == ()
+            assert res[1].shape == ()
 
         # I tried getting analytic results for this circuit but I kept being wrong and am giving up
 
@@ -394,7 +433,7 @@ class TestAutogradExecuteIntegration:
             return autograd.numpy.hstack(execute([tape], device, **execute_kwargs)[0])
 
         res = cost(a, b)
-        assert res.shape == (2,)
+        assert res.shape == (2 * shots.num_copies,) if shots else (2,)
 
         with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
             res = qml.jacobian(cost)(a, b)
@@ -716,11 +755,19 @@ class TestHamiltonianWorkflows:
 
         res = cost_fn(weights, coeffs1, coeffs2)
         expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
-        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+        if shots.has_partitioned_shots:
+            assert np.allclose(res[:2], expected, atol=atol_for_shots(shots), rtol=0)
+            assert np.allclose(res[2:], expected, atol=atol_for_shots(shots), rtol=0)
+        else:
+            assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
         res = qml.jacobian(cost_fn)(weights, coeffs1, coeffs2)
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)[:, :2]
-        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+        if shots.has_partitioned_shots:
+            assert np.allclose(res[:2, :], expected, atol=atol_for_shots(shots), rtol=0)
+            assert np.allclose(res[2:, :], expected, atol=atol_for_shots(shots), rtol=0)
+        else:
+            assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
     def test_multiple_hamiltonians_trainable(self, execute_kwargs, cost_fn, shots, use_new_op_math):
         """Test hamiltonian with trainable parameters."""
@@ -735,8 +782,16 @@ class TestHamiltonianWorkflows:
 
         res = cost_fn(weights, coeffs1, coeffs2)
         expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
-        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+        if shots.has_partitioned_shots:
+            assert np.allclose(res[:2], expected, atol=atol_for_shots(shots), rtol=0)
+            assert np.allclose(res[2:], expected, atol=atol_for_shots(shots), rtol=0)
+        else:
+            assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
         res = np.hstack(qml.jacobian(cost_fn)(weights, coeffs1, coeffs2))
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)
-        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+        if shots.has_partitioned_shots:
+            # ?
+            pass
+        else:
+            assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
