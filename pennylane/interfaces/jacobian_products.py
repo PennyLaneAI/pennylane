@@ -32,14 +32,30 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-def _compute_vjps(jacs, dys, multi_measurements):
+def _compute_vjps(jacs, dys, multi_measurements, has_partitioned_shots):
     """Compute the vjps of multiple tapes, directly for a Jacobian and co-tangents dys."""
-    f = {True: qml.gradients.compute_vjp_multi, False: qml.gradients.compute_vjp_single}
-    return tuple(f[multi](dy, jac) for jac, dy, multi in zip(jacs, dys, multi_measurements))
+    if not has_partitioned_shots:
+        f = {True: qml.gradients.compute_vjp_multi, False: qml.gradients.compute_vjp_single}
+        return tuple(f[multi](dy, jac) for jac, dy, multi in zip(jacs, dys, multi_measurements))
+
+    vjps = []
+    for i, multi in enumerate(multi_measurements):
+        shot_vjps = []
+        for d, j in zip(dys[i], jacs[i]):
+            if multi:
+                shot_vjps.append(qml.gradients.compute_vjp_multi(d, j))
+            else:
+                shot_vjps.append(qml.gradients.compute_vjp_single(d, j))
+
+        vjps.append(qml.math.sum(qml.math.stack(shot_vjps), axis=0))
+
+    return tuple(vjps)
 
 
-def _compute_jvps(jacs, tangents, multi_measurements):
+def _compute_jvps(jacs, tangents, multi_measurements, has_partitioned_shots):
     """Compute the jvps of multiple tapes, directly for a Jacobian and tangents."""
+    if has_partitioned_shots:
+        raise NotImplementedError("not sure how to make this work yet.")
     f = {True: qml.gradients.compute_jvp_multi, False: qml.gradients.compute_jvp_single}
     return tuple(f[multi](dx, jac) for jac, dx, multi in zip(jacs, tangents, multi_measurements))
 
@@ -289,11 +305,6 @@ class DeviceDerivatives(JacobianProductCalculator):
     >>> device.tracker.totals
     {}
 
-    **Lack of shot vector support:**
-
-    Given we currently do not have any examples of device derivatives with shots vectors (or even finite shots),
-    we are bypassing support for partitioned shots.
-
     """
 
     def __repr__(self):
@@ -419,9 +430,6 @@ class DeviceDerivatives(JacobianProductCalculator):
         jacobians with non-scalar parameters.
 
         """
-        if any(t.shots.has_partitioned_shots for t in tapes):
-            # we currently do not have any examples for testing
-            raise NotImplementedError("device derivatives with shot vectors not supported.")
         if tapes not in self._results_cache and tapes not in self._jacs_cache:
             results, jacs = self._dev_execute_and_compute_derivatives(tapes)
             self._results_cache[tapes] = results
@@ -447,7 +455,12 @@ class DeviceDerivatives(JacobianProductCalculator):
                 )
 
         multi_measurements = (len(t.measurements) > 1 for t in tapes)
-        jvps = _compute_jvps(jacs, tangents, multi_measurements)
+        jvps = _compute_jvps(
+            jacs,
+            tangents,
+            multi_measurements,
+            has_partitioned_shots=tapes[0].shots.has_partitioned_shots,
+        )
         return results, jvps
 
     def compute_vjp(self, tapes, dy):
@@ -491,9 +504,6 @@ class DeviceDerivatives(JacobianProductCalculator):
         jacobians with non-scalar parameters.
 
         """
-        if any(t.shots.has_partitioned_shots for t in tapes):
-            # we currently do not have any examples for testing
-            raise NotImplementedError("device derivatives with shot vectors not supported.")
         if tapes in self._jacs_cache:
             if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
                 logger.debug(" %s : Retrieving jacobian from cache.", self)
@@ -503,7 +513,7 @@ class DeviceDerivatives(JacobianProductCalculator):
             self._jacs_cache[tapes] = jacs
 
         multi_measurements = (len(t.measurements) > 1 for t in tapes)
-        return _compute_vjps(jacs, dy, multi_measurements)
+        return _compute_vjps(jacs, dy, multi_measurements, tapes[0].shots.has_partitioned_shots)
 
     def compute_jacobian(self, tapes):
         """Compute the full Jacobian for a batch of tapes.
@@ -533,9 +543,6 @@ class DeviceDerivatives(JacobianProductCalculator):
         jacobians with non-scalar parameters.
 
         """
-        if any(t.shots.has_partitioned_shots for t in tapes):
-            # we currently do not have any examples for testing
-            raise NotImplementedError("device derivatives with shot vectors not supported.")
         if tapes in self._jacs_cache:
             if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
                 logger.debug("%s : Retrieving jacobian from cache.", self)

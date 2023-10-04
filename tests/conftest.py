@@ -17,6 +17,7 @@ Pytest configuration file for PennyLane test suite.
 # pylint: disable=unused-import
 import os
 import pathlib
+import dataclasses
 
 import numpy as np
 import pytest
@@ -36,6 +37,60 @@ class DummyDevice(DefaultGaussian):
 
     _operation_map = DefaultGaussian._operation_map.copy()
     _operation_map["Kerr"] = lambda *x, **y: np.identity(2)
+
+
+class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
+    """This device provides derivatives via parameter shift."""
+
+    name = "param_shift.qubit"
+
+    def preprocess(self, execution_config=qml.devices.DefaultExecutionConfig):
+        if config.gradient_method in {"device", "parameter-shift"}:
+            config = dataclasses.replace(config, use_device_gradient=True)
+        return super().preprocess(config)
+
+    def supports_derivatives(self, execution_config=None, circuit=None):
+        if execution_config is None:
+            return True
+        return execution_config.gradient_method in {"device", "parameter-shift"}
+
+    def compute_derivatives(self, circuits, execution_config=None):
+        is_single_circuit = False
+        if isinstance(circuits, qml.tape.QuantumScript):
+            is_single_circuit = True
+            circuits = (circuits,)
+
+        if self.tracker.active:
+            self.tracker.update(derivative_batches=1, derivatives=len(circuits))
+            self.tracker.record()
+
+        diff_batch, fn = qml.transforms.map_batch_transform(qml.gradients.param_shift, circuits)
+        diff_results = self.execute(diff_batch)
+
+        jacs = fn(diff_results)
+        return jacs[0] if is_single_circuit else jacs
+
+    def execute_and_compute_derivatives(self, circuits, execution_config=None):
+        is_single_circuit = False
+        if isinstance(circuits, qml.tape.QuantumScript):
+            is_single_circuit = True
+            circuits = (circuits,)
+
+        if self.tracker.active:
+            for c in circuits:
+                self.tracker.update(resources=c.specs["resources"])
+            self.tracker.update(
+                execute_and_derivative_batches=1,
+                derivatives=len(circuits),
+            )
+            self.tracker.record()
+
+        diff_batch, fn = qml.transforms.map_batch_transform(qml.gradients.param_shift, circuits)
+        combined_batch = tuple(circuits) + tuple(diff_batch)
+        all_results = self.execute(combined_batch)
+        results = all_results[: len(circuits)]
+        jacs = fn(all_results[len(circuits) :])
+        return (results[0], jacs[0]) if is_single_circuit else (results, jacs)
 
 
 @pytest.fixture(scope="session")
