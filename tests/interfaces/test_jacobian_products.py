@@ -24,7 +24,7 @@ import pennylane as qml
 from pennylane.interfaces.jacobian_products import (
     JacobianProductCalculator,
     TransformJacobianProducts,
-    DeviceJacobians,
+    DeviceDerivatives,
 )
 
 dev = qml.device("default.qubit")
@@ -40,8 +40,8 @@ param_shift_jpc = TransformJacobianProducts(inner_execute_numpy, qml.gradients.p
 hadamard_grad_jpc = TransformJacobianProducts(
     inner_execute_numpy, qml.gradients.hadamard_grad, {"aux_wire": "aux"}
 )
-device_jacs = DeviceJacobians(dev, adjoint_config)
-legacy_device_jacs = DeviceJacobians(dev_old, gradient_kwargs={"method": "adjoint_jacobian"})
+device_jacs = DeviceDerivatives(dev, adjoint_config)
+legacy_device_jacs = DeviceDerivatives(dev_old, gradient_kwargs={"method": "adjoint_jacobian"})
 
 transform_jpc_matrix = [param_shift_jpc, hadamard_grad_jpc]
 dev_jpc_matrix = [device_jacs, legacy_device_jacs]
@@ -71,12 +71,12 @@ class TestBasics:
         assert repr(jpc) == expected_repr
 
     def test_device_jacobians_initialization_new_dev(self):
-        """Tests the private attributes are set during initialization of a DeviceJacobians class."""
+        """Tests the private attributes are set during initialization of a DeviceDerivatives class."""
 
         device = qml.device("default.qubit")
         config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 
-        jpc = DeviceJacobians(device, config)
+        jpc = DeviceDerivatives(device, config)
 
         assert jpc._device is device
         assert jpc._execution_config is config
@@ -88,13 +88,13 @@ class TestBasics:
         assert len(jpc._jacs_cache) == 0
 
     def test_device_jacobians_initialization_old_dev(self):
-        """Test the private attributes are set during initialization of a DeviceJacobians class with the
+        """Test the private attributes are set during initialization of a DeviceDerivatives class with the
         old device interface."""
 
         device = qml.devices.DefaultQubitLegacy(wires=5)
         gradient_kwargs = {"method": "adjoint_jacobian"}
 
-        jpc = DeviceJacobians(device, gradient_kwargs=gradient_kwargs)
+        jpc = DeviceDerivatives(device, gradient_kwargs=gradient_kwargs)
 
         assert jpc._device is device
         assert jpc._gradient_kwargs == gradient_kwargs
@@ -109,10 +109,10 @@ class TestBasics:
         device = qml.device("default.qubit")
         config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 
-        jpc = DeviceJacobians(device, config)
+        jpc = DeviceDerivatives(device, config)
 
         expected = (
-            r"<DeviceJacobians: default.qubit, {},"
+            r"<DeviceDerivatives: default.qubit, {},"
             r" ExecutionConfig(grad_on_execution=None, use_device_gradient=None,"
             r" gradient_method='adjoint', gradient_keyword_arguments={},"
             r" device_options={}, interface=None, derivative_order=1)>"
@@ -241,7 +241,7 @@ class TestJacobianProductResults:
 
 
 @pytest.mark.parametrize("jpc", dev_jpc_matrix)
-class TestCachingDeviceJacobians:
+class TestCachingDeviceDerivatives:
     """Test caching for device jacobians."""
 
     def test_execution_caching(self, jpc):

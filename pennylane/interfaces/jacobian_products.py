@@ -231,8 +231,9 @@ class TransformJacobianProducts(JacobianProductCalculator):
         return tuple(batch_post_processing(results))
 
 
-class DeviceJacobians(JacobianProductCalculator):
-    """Calculate jacobian products via a device.
+class DeviceDerivatives(JacobianProductCalculator):
+    """Calculate jacobian products via a device provided jacobian.  This class relies on either ``qml.Device.gradients`` or
+    ``qml.devices.Device.compute_derivatives``.
 
     Args:
 
@@ -247,13 +248,13 @@ class DeviceJacobians(JacobianProductCalculator):
 
     >>> device = qml.device('default.qubit')
     >>> config = qml.devices.ExecutionConfig(gradient_method="adjoint")
-    >>> jpc = DeviceJacobians(device, config, {})
+    >>> jpc = DeviceDerivatives(device, config, {})
 
     This same class can also be used with the old device interface.
 
     >>> device = qml.device('lightning.qubit', wires=5)
     >>> gradient_kwargs = {"method": "adjoint_jacobian"}
-    >>> jpc_lightning = DeviceJacobians(device, gradient_kwargs=gradient_kwargs)
+    >>> jpc_lightning = DeviceDerivatives(device, gradient_kwargs=gradient_kwargs)
 
     **Technical comments on caching and calculating the gradients on execution:**
 
@@ -296,7 +297,7 @@ class DeviceJacobians(JacobianProductCalculator):
     """
 
     def __repr__(self):
-        return f"<DeviceJacobians: {self._device.name}, {self._gradient_kwargs}, {self._execution_config}>"
+        return f"<DeviceDerivatives: {self._device.name}, {self._gradient_kwargs}, {self._execution_config}>"
 
     def __init__(
         self,
@@ -308,7 +309,7 @@ class DeviceJacobians(JacobianProductCalculator):
             gradient_kwargs = {}
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug(
-                "DeviceJacobians created with (%s, %s, %s)",
+                "DeviceDerivatives created with (%s, %s, %s)",
                 device,
                 execution_config,
                 gradient_kwargs,
@@ -396,7 +397,7 @@ class DeviceJacobians(JacobianProductCalculator):
 
         **Examples:**
 
-        For an instance of :class:`~.DeviceJacobians` ``jpc``, we have:
+        For an instance of :class:`~.DeviceDerivatives` ``jpc``, we have:
 
         >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
         >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0))])
@@ -428,7 +429,7 @@ class DeviceJacobians(JacobianProductCalculator):
         else:
             if tapes in self._results_cache:
                 if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
-                    logger.debug("Retrieving results from cache.")
+                    logger.debug("%s : Retrieving results from cache.", self)
                 results = self._results_cache[tapes]
             else:
                 results = self._dev_execute(tapes)
@@ -436,7 +437,7 @@ class DeviceJacobians(JacobianProductCalculator):
 
             if tapes in self._jacs_cache:
                 if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
-                    logger.debug("Retrieving jacobian from cache.")
+                    logger.debug("%s : Retrieving jacobian from cache.", self)
                 jacs = self._jacs_cache[tapes]
             else:
                 # Here the jac was not cached but the results were. This can not happen because results are never
@@ -468,7 +469,7 @@ class DeviceJacobians(JacobianProductCalculator):
 
         **Examples:**
 
-        For an instance of :class:`~.DeviceJacobians` ``jpc``, we have:
+        For an instance of :class:`~.DeviceDerivatives` ``jpc``, we have:
 
         >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
         >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))])
@@ -495,7 +496,7 @@ class DeviceJacobians(JacobianProductCalculator):
             raise NotImplementedError("device derivatives with shot vectors not supported.")
         if tapes in self._jacs_cache:
             if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
-                logger.debug("Retrieving jacobian from cache.")
+                logger.debug(" %s : Retrieving jacobian from cache.", self)
             jacs = self._jacs_cache[tapes]
         else:
             jacs = self._dev_compute_derivatives(tapes)
@@ -520,7 +521,7 @@ class DeviceJacobians(JacobianProductCalculator):
 
         **Examples:**
 
-        For an instance of :class:`~.DeviceJacobians` ``jpc``, we have:
+        For an instance of :class:`~.DeviceDerivatives` ``jpc``, we have:
 
         >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
         >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))])
@@ -537,7 +538,7 @@ class DeviceJacobians(JacobianProductCalculator):
             raise NotImplementedError("device derivatives with shot vectors not supported.")
         if tapes in self._jacs_cache:
             if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
-                logger.debug("Retrieving jacobian from cache.")
+                logger.debug("%s : Retrieving jacobian from cache.", self)
             return self._jacs_cache[tapes]
 
         jacs = self._dev_compute_derivatives(tapes)
