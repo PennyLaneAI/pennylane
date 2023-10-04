@@ -48,6 +48,7 @@ class TransformDispatcher:
         is_informative=False,
         final_transform=False,
     ):  # pylint:disable=redefined-outer-name
+        self.__doc__ = transform.__doc__
         self._transform = transform
         self._expand_transform = expand_transform
         self._classical_cotransform = classical_cotransform
