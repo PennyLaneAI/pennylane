@@ -84,6 +84,8 @@
     True
     ```
 
+    * TODO
+
 * Support drawing QJIT QNode from Catalyst.
   [(#4609)](https://github.com/PennyLaneAI/pennylane/pull/4609)
 
