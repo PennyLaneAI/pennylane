@@ -5495,6 +5495,53 @@ class TestCutCircuitWithHamiltonians:
         assert np.isclose(res, res_expected)
         assert np.allclose(grad, grad_expected)
 
+    def test_autoscale_with_hamiltonian(self, mocker):
+        """
+        Tests that the full circuit cutting pipeline returns the correct value for a typical
+        scenario with auto-scaling. The circuit is the uncut version of the circuit in
+        ``TestCutCircuitTransform.test_standard_circuit``:
+
+        0: ─╭U(M1)───────────────────╭U(M4)─┤ ╭<Z@X>
+        1: ─╰U(M1)─────╭U(M2)────────╰U(M4)─┤ │
+        2: ─╭U(M0)─────╰U(M2)─╭U(M3)────────┤ │
+        3: ─╰U(M0)────────────╰U(M3)────────┤ ╰<Z@X>
+        """
+        pytest.importorskip("kahypar")
+
+        dev_original = qml.device("default.qubit")
+
+        hamiltonian = qml.Hamiltonian(
+            [1.0, 1.0],
+            [qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliZ(3), qml.PauliY(0) @ qml.PauliX(1)],
+        )
+
+        # We need a 3-qubit device
+        dev_cut = qml.device("default.qubit")
+        us = [unitary_group.rvs(2**2, random_state=i) for i in range(5)]
+
+        def f():
+            qml.QubitUnitary(us[0], wires=[0, 1])
+            qml.QubitUnitary(us[1], wires=[2, 3])
+
+            qml.QubitUnitary(us[2], wires=[1, 2])
+
+            qml.QubitUnitary(us[3], wires=[0, 1])
+            qml.QubitUnitary(us[4], wires=[2, 3])
+            return qml.expval(hamiltonian)
+
+        circuit = qml.QNode(f, dev_original)
+        cut_circuit = qcut.cut_circuit(
+            qml.QNode(f, dev_cut), auto_cutter=True, device_wires=qml.wires.Wires(range(3))
+        )
+
+        res_expected = circuit()
+
+        spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
+        res = cut_circuit()
+        assert spy.call_count == len(hamiltonian.ops)
+
+        assert np.isclose(res, res_expected, atol=1e-8)
+
     def test_template_with_hamiltonian(self):
         """Test cut with MPS Template"""
 
