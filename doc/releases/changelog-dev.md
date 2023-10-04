@@ -35,6 +35,25 @@
 
 <h4>New device capabilities, integration with Catalyst, and more! ⚗️</h4>
 
+* `default.qubit` now uses the new `qml.devices.Device` API and supporting functionality in
+  `qml.devices.qubit`. If you experience any issues with the updated `default.qubit`, please let us
+  know by [posting an issue](https://github.com/PennyLaneAI/pennylane/issues/new/choose). 
+  The old version of the device is still
+  accessible by the short name `default.qubit.legacy`, or directly via `qml.devices.DefaultQubitLegacy`.
+  [(#4594)](https://github.com/PennyLaneAI/pennylane/pull/4594)
+  [(#4436)](https://github.com/PennyLaneAI/pennylane/pull/4436)
+  [(#4620)](https://github.com/PennyLaneAI/pennylane/pull/4620)
+  [(#4632)](https://github.com/PennyLaneAI/pennylane/pull/4632)
+
+  This changeover has a number of benefits for `default.qubit`, including:
+
+  * The number of wires is now optional - simply having `qml.device("default.qubit")` is valid! If
+    wires are not provided at instantiation, the device automatically infers the required number of
+    wires for each circuit provided for execution.
+
+  * `default.qubit` is no longer silently swapped out with an interface-appropriate device when the
+    backpropagation differentiation method is requested.
+
 * Support drawing QJIT QNode from Catalyst.
   [(#4609)](https://github.com/PennyLaneAI/pennylane/pull/4609)
 
@@ -63,15 +82,6 @@
   >>>draw
   "0: ──RX──H──┤  <Z>\n1: ──H───RY─┤     \n2: ──RZ─────┤     "
   ```
-
-* `default.qubit` now implements the new device API. The old version of the device is still
-  accessible by the short name `default.qubit.legacy`, or directly via `qml.devices.DefaultQubitLegacy`.
-  [(#4594)](https://github.com/PennyLaneAI/pennylane/pull/4594)
-  [(#4436)](https://github.com/PennyLaneAI/pennylane/pull/4436)
-  [(#4620)](https://github.com/PennyLaneAI/pennylane/pull/4620)
-  [(#4632)](https://github.com/PennyLaneAI/pennylane/pull/4632)
-
-  TODO
 
 * Extended ``qml.qchem.import_state`` to import wavefunctions from MPS DMRG and SHCI classical
   calculations performed with the Block2 and Dice libraries, incorporating new tests and wavefunction
