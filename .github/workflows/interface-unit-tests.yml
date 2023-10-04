@@ -83,6 +83,26 @@ jobs:
           jq . python_versions.json
           echo "python_versions=$(jq -r tostring python_versions.json)" >> $GITHUB_OUTPUT
 
+      - name: Setup Matrix Max Parallel
+        id: max_parallel
+        run: |
+          if [ "${{ inputs.run_lightened_ci }}" == "true" ];
+          then
+            cat >matrix_max_parallel.json <<-EOF
+          {
+            "default": 1
+          }
+          EOF
+          else
+            cat >matrix_max_parallel.json <<-EOF
+          {
+            "default": 1
+          }
+          fi
+          
+          jq . matrix_max_parallel.json
+          echo "matrix_max_parallel=$(jq -r tostring matrix_max_parallel.json)" >> $GITHUB_OUTPUT
+
       - name: Setup Job to Skip
         id: jobs_to_skip
         env:
@@ -98,6 +118,7 @@ jobs:
           fi
 
     outputs:
+      matrix-max-parallel: ${{ steps.max_parallel.outputs.matrix_max_parallel }}
       python-version: ${{ steps.python_versions.outputs.python_versions }}
       jobs-to-skip: ${{ steps.jobs_to_skip.outputs.jobs_to_skip }}
 
@@ -105,7 +126,11 @@ jobs:
     needs:
       - setup-lightened-ci
     strategy:
-      max-parallel: 1
+      max-parallel: >-
+        ${{
+           fromJSON(needs.setup-lightened-ci.outputs.matrix-max-parallel).torch-tests
+           || fromJSON(needs.setup-lightened-ci.outputs.matrix-max-parallel).default
+         }}
       matrix:
         python-version: >-
           ${{
