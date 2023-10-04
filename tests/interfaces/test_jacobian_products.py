@@ -81,7 +81,7 @@ class TestBasics:
         assert jpc._device is device
         assert jpc._execution_config is config
         assert jpc._gradient_kwargs == {}
-        assert jpc._is_new_device
+        assert jpc._is_new_device is True
         assert isinstance(jpc._results_cache, LRUCache)
         assert len(jpc._results_cache) == 0
         assert isinstance(jpc._jacs_cache, LRUCache)
@@ -98,7 +98,7 @@ class TestBasics:
 
         assert jpc._device is device
         assert jpc._gradient_kwargs == gradient_kwargs
-        assert not jpc._is_new_device
+        assert jpc._is_new_device is False
         assert isinstance(jpc._results_cache, LRUCache)
         assert len(jpc._results_cache) == 0
         assert isinstance(jpc._jacs_cache, LRUCache)
@@ -122,7 +122,7 @@ class TestBasics:
 
     @pytest.mark.parametrize("jpc", dev_jpc_matrix)
     def test_no_shot_vector_with_dev_jacs(self, jpc):
-        """Test that device derivatives with shot vectors raise a not implemented error."""
+        """Test that device derivatives with shot vectors raise a NotImplementedError."""
 
         tape = qml.tape.QuantumScript(shots=(10, 10))
         with pytest.raises(NotImplementedError):
@@ -241,7 +241,7 @@ class TestJacobianProductResults:
 
 
 @pytest.mark.parametrize("jpc", dev_jpc_matrix)
-class TestCaching:
+class TestCachingDeviceJacobians:
     """Test caching for device jacobians."""
 
     def test_execution_caching(self, jpc):
@@ -257,11 +257,8 @@ class TestCaching:
         assert jpc._device.tracker.totals["derivatives"] == 1
 
         # extra execution since needs to do the forward pass again.
-        assert (
-            jpc._device.tracker.totals["executions"] == 2
-            if isinstance(jpc._device, qml.Device)
-            else 1
-        )
+        expected_execs = 1 if jpc._is_new_device else 2
+        assert jpc._device.tracker.totals["executions"] == expected_execs
 
         # Test reuse with jacobian
         with jpc._device.tracker:
@@ -297,12 +294,10 @@ class TestCaching:
 
         assert qml.math.allclose(jac, jac2)
         assert jpc._device.tracker.totals["derivatives"] == 1
-        assert jpc._device.tracker.totals.get("executions", 0) == (
-            1 if isinstance(jpc._device, qml.Device) else 0
-        )
+        assert jpc._device.tracker.totals.get("executions", 0) == int(jpc._is_new_device)
 
     def test_cached_on_execute_and_compute_jvps(self, jpc):
-        """Test that execute and compute jvp will cache results and jacobians is they are not precalculated."""
+        """Test that execute_and_compute_jvp caches results and Jacobians if they are not precalculated."""
         tape1 = qml.tape.QuantumScript(
             [qml.Hadamard(0), qml.IsingXX(0.8, wires=(0, 1))], [qml.expval(qml.PauliZ(1))]
         )
@@ -325,6 +320,9 @@ class TestCaching:
 
         assert jpc._device.tracker.totals.get("derivatives", 0) == 0
         assert jpc._device.tracker.totals.get("executions", 0) == 0
+        with jpc._device.tracker:
+            jpc.execute(batch)
+        assert jpc._device.tracker.totals.get("executions", 0) == 0
 
     def test_cached_on_vjps(self, jpc):
         """test that only jacs are cached on calls to compute_vjp."""
@@ -336,9 +334,7 @@ class TestCaching:
         with jpc._device.tracker:
             jpc.compute_vjp(batch, dy)
 
-        assert jpc._device.tracker.totals.get("executions", 0) == (
-            1 if isinstance(jpc._device, qml.Device) else 0
-        )
+        assert jpc._device.tracker.totals.get("executions", 0) == int(not jpc._is_new_device)
 
         assert batch not in jpc._results_cache
         assert qml.math.allclose(jpc._jacs_cache[batch], 0)
@@ -348,9 +344,10 @@ class TestCaching:
 
         assert jpc._device.tracker.totals["executions"] == 1
         assert jpc._device.tracker.totals.get("derivatives", 0) == 0
+        assert qml.math.allclose(jpc._results_cache[batch], 0)
 
     def test_error_cant_cache_results_without_jac(self, jpc):
-        """Test that a not implemented error is raised if somehow the results are present
+        """Test that a NotImplementedError is raised if somehow the results are cached
         without the jac being cached and execute_and_compute_jvp is called."""
 
         tape = qml.tape.QuantumScript([], [qml.state()])
@@ -362,7 +359,7 @@ class TestCaching:
 
 
 @pytest.mark.parametrize("jpc", transform_jpc_matrix)
-class TestProbsOut:
+class TestProbsTransformJacobians:
     """Testing results when probabilities are returned. This only works with gradient transforms."""
 
     def test_execute_jvp_multi_params_multi_out(self, jpc):

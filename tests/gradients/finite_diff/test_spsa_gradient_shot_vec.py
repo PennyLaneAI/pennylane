@@ -30,7 +30,6 @@ spsa_shot_vec_tol = 0.31
 
 default_shot_vector = (1000, 2000, 3000)
 many_shots_shot_vector = tuple([100000] * 3)
-np.random.seed(42)
 
 
 def coordinate_sampler(indices, num_params, idx, rng=None):
