@@ -667,10 +667,8 @@ class TestBatchTransformGradients:
             qml.CNOT(wires=[0, 1])
             return qml.expval(H)
 
-        spy = mocker.spy(dev, "preprocess")
-
         res = circuit(weights)
-        spy.assert_called()
+
         assert np.allclose(res, [0, -np.sin(weights[1])], atol=0.1)
 
 

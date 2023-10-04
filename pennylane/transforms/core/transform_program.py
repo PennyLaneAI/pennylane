@@ -308,6 +308,17 @@ class TransformProgram:
                 return qml.math.stack(tape.get_parameters(trainable_only=True))
 
         def jacobian(classical_function, program, argnums, *args, **kwargs):
+            indices = qml.math.get_trainable_indices(args)
+
+            if qnode.interface in ["jax", "jax-jit"]:
+                import jax
+
+                if isinstance(args[0], jax.numpy.ndarray):
+                    argnums = 0 if argnums is None else argnums
+
+            if not indices and argnums is None:
+                raise qml.QuantumFunctionError("No trainable parameters.")
+
             classical_function = partial(classical_function, program)
             old_interface = qnode.interface
 
@@ -316,7 +327,6 @@ class TransformProgram:
 
             if qnode.interface == "autograd":
                 jac = qml.jacobian(classical_function, argnum=argnums)(*args, **kwargs)
-                print(jac.shape)
 
             if qnode.interface == "tf":
                 import tensorflow as tf
@@ -357,6 +367,10 @@ class TransformProgram:
         classical_jacobians = []
         for index, transform in enumerate(self):
             if transform.classical_cotransform:
+                if qnode.interface == "jax" and transform._kwargs.get("argnum", None):
+                    raise qml.QuantumFunctionError(
+                        "argnum does not work with the Jax interface. You should use argnums instead."
+                    )
                 argnums = transform._kwargs.get("argnums", None)
                 sub_program = TransformProgram(self[0:index])
                 classical_jacobian = jacobian(

@@ -909,11 +909,6 @@ class QNode:
 
         if self.expansion_strategy == "device" and not isinstance(self.device, qml.devices.Device):
             self._tape = self.device.expand_fn(self.tape, max_expansion=self.max_expansion)
-        #
-        # # If the gradient function is a transform, expand the tape so that
-        # # all operations are supported by the transform.
-        # if isinstance(self.gradient_fn, qml.transforms.core.TransformDispatcher):
-        #     self._tape = self.gradient_fn.expand_fn(self._tape)
 
         if old_interface == "auto":
             self.interface = "auto"
@@ -968,7 +963,7 @@ class QNode:
         else:
             full_transform_program = self.transform_program
         # Calculate the classical jacobians if needed
-        if full_transform_program.has_classical_cotransform:
+        if full_transform_program.has_classical_cotransform():
             full_transform_program.set_all_classical_jacobians(self, args, kwargs)
             full_transform_program.set_all_argnums(self, args, kwargs)
 

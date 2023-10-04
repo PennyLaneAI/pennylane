@@ -60,7 +60,9 @@ def _group_operations(tape):
     classical_cotransform=_contract_metric_tensor_with_cjac,
     is_informative=True,
 )
-def adjoint_metric_tensor(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
+def adjoint_metric_tensor(
+    tape: qml.tape.QuantumTape, argnums=None
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Implements the adjoint method outlined in
     `Jones <https://arxiv.org/abs/2011.02991>`__ to compute the metric tensor.
 
@@ -230,23 +232,3 @@ def adjoint_metric_tensor(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quan
         return metric_tensor
 
     return [tape], processing_fn
-
-
-@adjoint_metric_tensor.custom_qnode_transform
-def qnode_execution_wrapper(self, qnode, targs, tkwargs):
-    """Here, we overwrite the QNode execution wrapper in order
-    to take into account that classical processing may be present
-    inside the QNode."""
-
-    if isinstance(qnode, qml.ExpvalCost):
-        if qnode._multiple_devices:  # pylint: disable=protected-access
-            warnings.warn(
-                "ExpvalCost was instantiated with multiple devices. Only the first device "
-                "will be used to evaluate the metric tensor with the adjoint method.",
-                UserWarning,
-            )
-        qnode = qnode.qnodes[0]
-
-    mt_fn = self.default_qnode_transform(qnode, targs, tkwargs)
-
-    return mt_fn
