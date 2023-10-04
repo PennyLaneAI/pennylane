@@ -52,7 +52,25 @@
     wires for each circuit provided for execution.
 
   * `default.qubit` is no longer silently swapped out with an interface-appropriate device when the
-    backpropagation differentiation method is requested.
+    backpropagation differentiation method is requested. For example, consider:
+
+    ```python
+    dev = qml.device("default.qubit", wires=1)
+
+    @qml.qnode(dev, diff_method="backprop")
+    def f(x):
+        qml.RX(x, wires=0)
+        return qml.expval(qml.PauliX(0))
+    ```
+    
+    In previous versions of PennyLane, the device will be swapped
+
+    ```pycon
+    >>> f.device
+    <DefaultQubit device (wires=1, shots=None) at 0x7fdacc4948e0>
+    >>> f.device == dev
+    False
+    ```
 
 * Support drawing QJIT QNode from Catalyst.
   [(#4609)](https://github.com/PennyLaneAI/pennylane/pull/4609)
