@@ -296,11 +296,14 @@ class TransformProgram:
             kwargs.pop("argnums", None)
             qnode.construct(args, kwargs)
             tape = qnode.qtape
-            if not program.is_empty:
+            if not program.is_empty():
                 tapes, _ = program((tape,))
-                return tuple(
+                res = tuple(
                     qml.math.stack(tape.get_parameters(trainable_only=True)) for tape in tapes
                 )
+                if len(tapes) == 1:
+                    return res[0]
+                return res
             else:
                 return qml.math.stack(tape.get_parameters(trainable_only=True))
 
@@ -313,6 +316,7 @@ class TransformProgram:
 
             if qnode.interface == "autograd":
                 jac = qml.jacobian(classical_function, argnum=argnums)(*args, **kwargs)
+                print(jac.shape)
 
             if qnode.interface == "tf":
                 import tensorflow as tf

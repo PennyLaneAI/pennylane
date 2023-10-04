@@ -60,8 +60,7 @@ def _contract_metric_tensor_with_cjac(mt, cjac, tape):
         # Classical Jacobian is the identity. No classical processing
         # is present inside the QNode.
         return mt
-    print(mt.shape, cjac.shape)
-    mt_cjac = qml.math.tensordot(mt, cjac, axes=[[-1], [0]]),
+    mt_cjac = (qml.math.tensordot(mt, cjac, axes=[[-1], [0]]),)
     mt = qml.math.tensordot(cjac, mt_cjac, axes=[[0], [0]])
 
     return mt
@@ -386,7 +385,9 @@ def metric_tensor(
         return tapes, processing_fn
 
     if approx is None:
-        tapes, processing_fn = _metric_tensor_hadamard(tape, argnum, allow_nonunitary, aux_wire, device_wires)
+        tapes, processing_fn = _metric_tensor_hadamard(
+            tape, argnum, allow_nonunitary, aux_wire, device_wires
+        )
         return tapes, processing_fn
 
     raise ValueError(

@@ -393,7 +393,9 @@ class RiemannianGradientOptimizer:
         )
         program, _ = self.circuit.device.preprocess()
 
-        circuits = qml.execute(circuits, self.circuit.device, transform_program=program, gradient_fn=None)
+        circuits = qml.execute(
+            circuits, self.circuit.device, transform_program=program, gradient_fn=None
+        )
         circuits_plus = np.array(circuits[: len(circuits) // 2]).reshape(
             len(self.coeffs), len(self.lie_algebra_basis_names)
         )
