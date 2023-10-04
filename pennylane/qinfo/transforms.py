@@ -203,7 +203,7 @@ def _purity_qnode(self, qnode, targs, tkwargs):
 
 @partial(transform, final_transform=True)
 def vn_entropy(
-    tape: QuantumTape, wires: Sequence[int], base: float = None, **kwargs
+        tape: QuantumTape, wires: Sequence[int], base: float = None, **kwargs
 ) -> (Sequence[QuantumTape], Callable):
     r"""Compute the Von Neumann entropy from a :class:`.QuantumTape` returning a :func:`~pennylane.state`.
 
@@ -260,7 +260,7 @@ def vn_entropy(
 
         # determine if the measurement is a state vector or a density matrix
         if not isinstance(measurements[0], DensityMatrixMP) and not isinstance(
-            device, DefaultMixed
+                device, DefaultMixed
         ):  # Compute entropy from state vector
             if len(wires) == len(all_wires):
                 # The subsystem has all wires, so the entropy is 0
@@ -297,7 +297,7 @@ def _vn_entropy_qnode(self, qnode, targs, tkwargs):
 
 @partial(transform, final_transform=True)
 def mutual_info(
-    tape: QuantumTape, wires0: Sequence[int], wires1: Sequence[int], base: float = None, **kwargs
+        tape: QuantumTape, wires0: Sequence[int], wires1: Sequence[int], base: float = None, **kwargs
 ) -> (Sequence[QuantumTape], Callable):
     r"""Compute the mutual information from a :class:`.QuantumTape` returning a :func:`~pennylane.state`:
 
@@ -646,7 +646,8 @@ def classical_fisher(qnode, argnums=0):
     return wrapper
 
 
-def quantum_fisher(qnode, *args, **kwargs):
+@partial(transform, is_informative=True)
+def quantum_fisher(tape: qml.tape.QuantumTape, device, *args, **kwargs) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Returns a function that computes the quantum fisher information matrix (QFIM) of a given :class:`.QNode`.
 
     Given a parametrized quantum state :math:`|\psi(\bm{\theta})\rangle`, the quantum fisher information matrix (QFIM) quantifies how changes to the parameters :math:`\bm{\theta}`
@@ -731,17 +732,36 @@ def quantum_fisher(qnode, *args, **kwargs):
 
     """
 
-    if qnode.device.shots and isinstance(qnode.device, (DefaultQubitLegacy, DefaultQubit)):
+    if device.shots and isinstance(device, (DefaultQubitLegacy, DefaultQubit)):
+        tapes, processing_fn = metric_tensor(tape, *args, **kwargs)
 
-        def wrapper(*args0, **kwargs0):
-            return 4 * metric_tensor(qnode, *args, **kwargs)(*args0, **kwargs0)
+        def processing_fn_multiply(res):
+            res = qml.execute(res, device=device)
+            return 4 * processing_fn(res)
+
+        return tapes, processing_fn_multiply
 
     else:
+        res = adjoint_metric_tensor(tape, *args, **kwargs)
 
-        def wrapper(*args0, **kwargs0):
-            return 4 * adjoint_metric_tensor(qnode, *args, **kwargs)(*args0, **kwargs0)
+        def processing_fn_multiply(r):
+            r = qml.math.stack(r)
+            return 4 * r
+
+        return res, processing_fn_multiply
 
     return wrapper
+
+
+@quantum_fisher.custom_qnode_transform
+def qnode_execution_wrapper(self, qnode, targs, tkwargs):
+    """Here, we overwrite the QNode execution wrapper in order
+    to take into account that classical processing may be present
+    inside the QNode."""
+
+    tkwargs["device"] = qnode.device
+
+    return self.default_qnode_transform(qnode, targs, tkwargs)
 
 
 def fidelity(qnode0, qnode1, wires0, wires1):
