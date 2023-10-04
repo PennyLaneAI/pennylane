@@ -46,7 +46,11 @@ def _cut_circuit_expand(
     def processing_fn(res):
         return res[0]
 
-    return [_qcut_expand_fn(tape, max_depth, auto_cutter)], processing_fn
+    tapes, tapes_fn = [tape], processing_fn
+    if isinstance(tape.measurements[0].obs, qml.Hamiltonian):
+        tapes, tapes_fn = qml.transforms.hamiltonian_expand(tape, group=False)
+
+    return [_qcut_expand_fn(tape, max_depth, auto_cutter) for tape in tapes], tapes_fn
 
 
 @partial(transform, expand_transform=_cut_circuit_expand)
@@ -365,63 +369,43 @@ def cut_circuit(
                 "installed using:\npip install opt_einsum"
             ) from e
 
-    tapes, tapes_fn = ([tape], lambda x: x[0])  # pylint: disable=unnecessary-lambda-assignment
-    if isinstance(tape.measurements[0].obs, qml.Hamiltonian):
-        tapes, tapes_fn = qml.transforms.hamiltonian_expand(tape, group=False)
+    g = tape_to_graph(tape)
 
-    def res_tapes_fn(results, cut_func=None, indices=None):
-        """Modified post-processing function"""
-        exp_res = [
-            cut_func[idx - 1](results[indices[idx - 1] : indices[idx]])
-            for idx in range(1, len(indices))
-        ]
-        return tapes_fn(exp_res)
-
-    res_tapes, res_funcs, res_index = (), [], [0]
-    for tape in tapes:  # pylint: disable=redefined-argument-from-local
-        g = tape_to_graph(tape)
-
-        if auto_cutter is True or callable(auto_cutter):
-            cut_strategy = kwargs.pop("cut_strategy", None) or CutStrategy(
-                max_free_wires=len(device_wires)
-            )
-
-            g = find_and_place_cuts(
-                graph=g,
-                cut_method=auto_cutter if callable(auto_cutter) else kahypar_cut,
-                cut_strategy=cut_strategy,
-                **kwargs,
-            )
-
-        replace_wire_cut_nodes(g)
-        fragments, communication_graph = fragment_graph(g)
-        fragment_tapes = [graph_to_tape(f) for f in fragments]
-        fragment_tapes = [
-            qml.map_wires(t, dict(zip(t.wires, device_wires))) for t in fragment_tapes
-        ]
-        expanded = [expand_fragment_tape(t) for t in fragment_tapes]
-
-        configurations = []
-        prepare_nodes = []
-        measure_nodes = []
-        for tapes, p, m in expanded:
-            configurations.append(tapes)
-            prepare_nodes.append(p)
-            measure_nodes.append(m)
-
-        res_tapes += tuple(tape for c in configurations for tape in c)
-        res_funcs.append(
-            partial(
-                qcut_processing_fn,
-                communication_graph=communication_graph,
-                prepare_nodes=prepare_nodes,
-                measure_nodes=measure_nodes,
-                use_opt_einsum=use_opt_einsum,
-            )
+    if auto_cutter is True or callable(auto_cutter):
+        cut_strategy = kwargs.pop("cut_strategy", None) or CutStrategy(
+            max_free_wires=len(device_wires)
         )
-        res_index.append(res_index[-1] + len(res_tapes))
 
-    return res_tapes, partial(res_tapes_fn, cut_func=res_funcs, indices=res_index)
+        g = find_and_place_cuts(
+            graph=g,
+            cut_method=auto_cutter if callable(auto_cutter) else kahypar_cut,
+            cut_strategy=cut_strategy,
+            **kwargs,
+        )
+
+    replace_wire_cut_nodes(g)
+    fragments, communication_graph = fragment_graph(g)
+    fragment_tapes = [graph_to_tape(f) for f in fragments]
+    fragment_tapes = [qml.map_wires(t, dict(zip(t.wires, device_wires))) for t in fragment_tapes]
+    expanded = [expand_fragment_tape(t) for t in fragment_tapes]
+
+    configurations = []
+    prepare_nodes = []
+    measure_nodes = []
+    for tapes, p, m in expanded:
+        configurations.append(tapes)
+        prepare_nodes.append(p)
+        measure_nodes.append(m)
+
+    tapes = tuple(tape for c in configurations for tape in c)
+
+    return tapes, partial(
+        qcut_processing_fn,
+        communication_graph=communication_graph,
+        prepare_nodes=prepare_nodes,
+        measure_nodes=measure_nodes,
+        use_opt_einsum=use_opt_einsum,
+    )
 
 
 @cut_circuit.custom_qnode_transform
