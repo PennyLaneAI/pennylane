@@ -4,6 +4,12 @@
 
 <h3>New features since last release</h3>
 
+<h4>Decompose circuits into the Clifford+T gateset 🧩</h4>
+
+<h4>Postselection on results of mid-circuit measurement 📌</h4>
+
+<h4>Exponentiate Hamiltonians with flexible Trotter products 🤩</h4>
+
 * Support drawing QJIT QNode from Catalyst.
   [(#4609)](https://github.com/PennyLaneAI/pennylane/pull/4609)
 
