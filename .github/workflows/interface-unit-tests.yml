@@ -20,7 +20,7 @@ on:
         description: The version of PyTorch to install for any job that requires PyTorch
         required: false
         type: string
-        default: 2.0.0
+        default: 2.1.0
       pytest_coverage_flags:
         description: PyTest Coverage flags to pass to all jobs
         required: false
