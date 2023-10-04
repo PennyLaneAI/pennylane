@@ -405,7 +405,7 @@ class TestAdjointJVP:
 class TestAdjointVJP:
     """Test for adjoint_vjp"""
 
-    @pytest.mark.parametrize("cotangents", [(0,), (1.232,)])
+    @pytest.mark.parametrize("cotangents", [(0,), (1.232,), 5.2])
     def test_single_param_single_obs(self, cotangents, tol):
         """Test VJP is correct for a single parameter and observable"""
         x = np.array(0.654)
@@ -415,7 +415,8 @@ class TestAdjointVJP:
         actual = adjoint_vjp(qs, cotangents)
         assert isinstance(actual, np.ndarray)
 
-        expected = -cotangents[0] * np.sin(x)
+        iterable_cotangent = cotangents if isinstance(cotangents, tuple) else (cotangents,)
+        expected = -iterable_cotangent[0] * np.sin(x)
         assert np.allclose(actual, expected, atol=tol)
 
     @pytest.mark.parametrize("cotangents", [(0, 0), (0, 0.653), (1.232, 2.963)])
