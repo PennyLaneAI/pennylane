@@ -253,7 +253,9 @@ def _draw_qnode(
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-        if expansion_strategy == "device" and isinstance(qnode.device, qml.devices.Device):
+        if isinstance(qnode.device, qml.devices.Device) and (
+            expansion_strategy == "device" or getattr(qnode, "expansion_strategy", None) == "device"
+        ):
             qnode.construct(args, kwargs)
             program, _ = qnode.device.preprocess()
             tapes = program([qnode.tape])

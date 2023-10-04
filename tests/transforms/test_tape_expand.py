@@ -748,7 +748,7 @@ class TestCreateCustomDecompExpandFn:
             assert isinstance(op, qml.ops.op_math.Controlled)
             assert qml.equal(op.base, qml.T(0))
 
-    def test_custom_decomp_in_separate_context(self):
+    def test_custom_decomp_in_separate_context_legacy(self):
         """Test that the set_decomposition context manager works."""
 
         dev = qml.device("default.qubit.legacy", wires=2)
@@ -783,6 +783,58 @@ class TestCreateCustomDecompExpandFn:
         assert len(circuit.qtape.operations) == 1
         assert circuit.qtape.operations[0].name == "CNOT"
         assert dev.custom_expand_fn is None
+
+    def test_custom_decomp_in_separate_context(self, mocker):
+        """Test that the set_decomposition context manager works."""
+
+        # pylint:disable=protected-access
+
+        dev = qml.device("default.qubit", wires=2)
+        spy = mocker.spy(dev, "execute")
+
+        @qml.qnode(dev, expansion_strategy="device")
+        def circuit():
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(wires=0))
+
+        # Initial test
+        _ = circuit()
+
+        tape = spy.call_args_list[0][0][0][0]
+        assert len(tape.operations) == 1
+        assert tape.operations[0].name == "CNOT"
+        assert (
+            dev.preprocess()[0][0]._transform
+            != qml.transforms.tape_expand.decomp_transform._transform
+        )
+
+        # Test within the context manager
+        with qml.transforms.set_decomposition({qml.CNOT: custom_cnot}, dev):
+            _ = circuit()
+
+            assert (
+                dev.preprocess()[0][0]._transform
+                == qml.transforms.tape_expand.decomp_transform._transform
+            )
+
+        tape = spy.call_args_list[1][0][0][0]
+        ops_in_context = tape.operations
+        assert len(ops_in_context) == 3
+        assert ops_in_context[0].name == "Hadamard"
+        assert ops_in_context[1].name == "CZ"
+        assert ops_in_context[2].name == "Hadamard"
+
+        # Check that afterwards, the device has gone back to normal
+        _ = circuit()
+
+        tape = spy.call_args_list[2][0][0][0]
+        ops_in_context = tape.operations
+        assert len(tape.operations) == 1
+        assert tape.operations[0].name == "CNOT"
+        assert (
+            dev.preprocess()[0][0]._transform
+            != qml.transforms.tape_expand.decomp_transform._transform
+        )
 
     # pylint: disable=cell-var-from-loop
     def test_custom_decomp_used_twice(self):

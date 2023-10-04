@@ -15,6 +15,7 @@
 generate such functions from."""
 # pylint: disable=unused-argument,invalid-unary-operand-type, unsupported-binary-operation
 import contextlib
+from typing import Sequence, Callable
 
 import pennylane as qml
 from pennylane.operation import (
@@ -27,6 +28,8 @@ from pennylane.operation import (
     is_trainable,
     not_tape,
 )
+from pennylane.tape import QuantumTape
+from .core import transform
 
 
 def _update_trainable_params(tape):
@@ -350,6 +353,33 @@ def create_decomp_expand_fn(custom_decomps, dev, decomp_depth=10):
     return custom_decomp_expand
 
 
+@transform
+def decomp_transform(tape: QuantumTape, custom_decomps: dict) -> (Sequence[QuantumTape], Callable):
+    """Transform for setting custom decompositions.
+
+    Args:
+        tape (QuantumTape): a quantum circuit.
+        custom_decomps (Dict[Union(str, qml.operation.Operation), Callable]): Custom
+            decompositions to be applied by the device at runtime.
+
+    Returns:
+        pennylane.QNode or qfunc or Tuple[List[.QuantumTape], Callable]: If a QNode is passed,
+        it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of
+        quantum tapes to be evaluated, and a function to be applied to these
+        tape executions.
+    """
+    new_ops = []
+    for op in tape.operations:
+        if (decomp_fn := custom_decomps.get(type(op))) is None:
+            new_ops.append(op)
+        else:
+            new_ops.extend(decomp_fn(op.wires))
+    new_tape = type(tape)(new_ops, tape.measurements, shots=tape.shots)
+    new_tape._qfunc_output = tape._qfunc_output  # pylint:disable=protected-access
+    return [new_tape], lambda results: results[0]
+
+
 @contextlib.contextmanager
 def set_decomposition(custom_decomps, dev, decomp_depth=10):
     """Context manager for setting custom decompositions.
@@ -398,18 +428,33 @@ def set_decomposition(custom_decomps, dev, decomp_depth=10):
     1: ──H─╰Z──H─┤
 
     """
-    original_custom_expand_fn = dev.custom_expand_fn
+    if isinstance(dev, qml.Device):
+        original_custom_expand_fn = dev.custom_expand_fn
 
-    # Create a new expansion function; stop at things that do not have
-    # custom decompositions, or that satisfy the regular device stopping criteria
-    new_custom_expand_fn = qml.transforms.create_decomp_expand_fn(
-        custom_decomps, dev, decomp_depth=decomp_depth
-    )
+        # Create a new expansion function; stop at things that do not have
+        # custom decompositions, or that satisfy the regular device stopping criteria
+        new_custom_expand_fn = qml.transforms.create_decomp_expand_fn(
+            custom_decomps, dev, decomp_depth=decomp_depth
+        )
 
-    # Set the custom expand function within this context only
-    try:
-        dev.custom_expand(new_custom_expand_fn)
-        yield
+        # Set the custom expand function within this context only
+        try:
+            dev.custom_expand(new_custom_expand_fn)
+            yield
 
-    finally:
-        dev.custom_expand_fn = original_custom_expand_fn
+        finally:
+            dev.custom_expand_fn = original_custom_expand_fn
+    else:
+        original_preprocess = dev.preprocess
+
+        def new_preprocess(execution_config=qml.devices.DefaultExecutionConfig):
+            program, config = original_preprocess(execution_config)
+            program.insert_front_transform(decomp_transform, custom_decomps)
+            return program, config
+
+        try:
+            dev.preprocess = new_preprocess
+            yield
+
+        finally:
+            dev.preprocess = original_preprocess
