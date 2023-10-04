@@ -27,6 +27,6 @@ jobs:
       skip_ci_test_jobs: >-
         ${{
            github.event_name == 'pull_request' 
-           && 'qcut-tests, data-tests, jax-tests'
+           && 'qcut-tests, data-tests'
            || ''
          }}
