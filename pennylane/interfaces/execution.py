@@ -36,7 +36,7 @@ from pennylane.tape import QuantumTape
 from pennylane.typing import ResultBatch
 
 from .set_shots import set_shots
-from .jacobian_products import TransformJacobianProducts, DeviceJacobians, DeviceJacobianProducts
+from .jacobian_products import TransformJacobianProducts, DeviceDerivatives, DeviceJacobianProducts
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -642,7 +642,7 @@ def execute(
 
     elif config.use_device_gradient:
 
-        jpc = DeviceJacobians(device, {}, config)
+        jpc = DeviceDerivatives(device, config)
 
         # must be new device if this is specified as true
         _grad_on_execution = config.grad_on_execution
@@ -701,7 +701,7 @@ def execute(
         # autodiff frameworks.
         tapes = [expand_fn(t) for t in tapes]
 
-        jpc = DeviceJacobians(device, gradient_kwargs, config)
+        jpc = DeviceDerivatives(device, config, gradient_kwargs=gradient_kwargs)
 
         if gradient_kwargs.get("method", "") == "adjoint_jacobian":
             tapes = _adjoint_jacobian_expansion(tapes, grad_on_execution, interface, max_expansion)
