@@ -139,9 +139,9 @@ class TestBasics:
 
         expected = (
             r"<DeviceJacobianProducts: default.qubit,"
-            r" ExecutionConfig(grad_on_execution=None, use_device_gradient=None, "
+            r" ExecutionConfig(grad_on_execution=None, use_device_gradient=None,"
             r" use_device_jacobian_product=None,"
-            r"gradient_method='adjoint', gradient_keyword_arguments={}, device_options={},"
+            r" gradient_method='adjoint', gradient_keyword_arguments={}, device_options={},"
             r" interface=None, derivative_order=1)>"
         )
 
