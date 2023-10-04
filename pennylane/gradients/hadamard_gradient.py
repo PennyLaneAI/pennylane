@@ -15,9 +15,13 @@
 This module contains functions for computing the Hadamard-test gradient
 of a qubit-based quantum tape.
 """
+from typing import Sequence, Callable
+from functools import partial
 import pennylane as qml
 import pennylane.numpy as np
 from pennylane.transforms.metric_tensor import _get_aux_wire
+from pennylane.transforms.core import transform
+from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 from pennylane.transforms.tape_expand import expand_invalid_trainable_hadamard_gradient
 
 from .gradient_transform import (
@@ -27,22 +31,49 @@ from .gradient_transform import (
     assert_no_variance,
     choose_grad_methods,
     gradient_analysis_and_validation,
-    gradient_transform,
     _no_trainable_grad,
 )
 
 
-def _hadamard_grad(
-    tape,
+def expand_transform_hadamard(
+    tape: qml.tape.QuantumTape,
     argnum=None,
+    argnums=None,
     aux_wire=None,
     device_wires=None,
-):
+) -> (Sequence[qml.tape.QuantumTape], Callable):
+    expanded_tape = expand_invalid_trainable_hadamard_gradient(tape)
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [expanded_tape], null_postprocessing
+
+
+@partial(
+    transform,
+    expand_transform=expand_transform_hadamard,
+    classical_cotransform=_contract_qjac_with_cjac,
+    final_transform=True,
+)
+def hadamard_grad(
+    tape: qml.tape.QuantumTape,
+    argnum=None,
+    argnums=None,
+    aux_wire=None,
+    device_wires=None,
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Transform a QNode to compute the Hadamard test gradient of all gates with respect to their inputs.
 
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
+            with respect to. If not provided, the derivatives with respect to all
+            trainable parameters are returned.
+        argnums (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
         aux_wire (pennylane.wires.Wires): Auxiliary wire to be used for the Hadamard tests. If ``None`` (the default),
@@ -174,6 +205,9 @@ def _hadamard_grad(
         The number of trainable parameters may increase due to the decomposition.
 
     """
+    if argnums:
+        tape.trainable_params = argnums
+
     transform_name = "Hadamard test"
     assert_no_state_returns(tape.measurements, transform_name)
     assert_no_variance(tape.measurements, transform_name)
@@ -421,8 +455,3 @@ def _get_generators(trainable_op):
         coeffs = trainable_op.generator().coeffs
 
     return coeffs, generators
-
-
-hadamard_grad = gradient_transform(
-    _hadamard_grad, expand_fn=expand_invalid_trainable_hadamard_gradient
-)

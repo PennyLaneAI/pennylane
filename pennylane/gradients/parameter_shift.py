@@ -734,7 +734,6 @@ def expand_transform_param_shift(
     broadcast=False,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     expanded_tape = expand_invalid_trainable(tape)
-    print(expanded_tape)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
@@ -1041,6 +1040,7 @@ def param_shift(
     """
     if argnums:
         tape.trainable_params = argnums
+
     transform_name = "parameter-shift rule"
     assert_no_state_returns(tape.measurements, transform_name)
     assert_multimeasure_not_broadcasted(tape.measurements, broadcast)
