@@ -1534,7 +1534,6 @@ class TestStochPulseGradIntegration:
             diff_method=stoch_pulse_grad,
             num_split_times=num_split_times,
             sampler_seed=7123,
-            cache=False,  # remove once 3870 is merged
         )
         qnode_backprop = qml.QNode(ansatz, dev, interface="jax")
 
