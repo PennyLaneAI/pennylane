@@ -5556,8 +5556,12 @@ class TestCutCircuitWithHamiltonians:
 
         hamiltonian = qml.Hamiltonian(
             [1.0, 1.0, 1.0],
-            [qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliZ(3), qml.PauliZ(1) @ qml.PauliZ(2), qml.PauliZ(0) @ qml.PauliZ(1)],
-            grouping_type="qwc"
+            [
+                qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliZ(3),
+                qml.PauliZ(1) @ qml.PauliZ(2),
+                qml.PauliZ(0) @ qml.PauliZ(1),
+            ],
+            grouping_type="qwc",
         )
 
         # We need a 3-qubit device
