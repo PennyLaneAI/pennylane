@@ -32,14 +32,14 @@ on:
           
           The lightened version of the CI includes the following changes:
           - Only Python 3.9 is tested against, instead of 3.9, 3.10, 3.11
-          - The jobs 'qcut-tests', 'zx-tests', 'data-tests' are skipped
         required: false
         type: boolean
         default: false
-      lightened_ci_skip_additional_jobs:
+      skip_ci_test_jobs:
         description: |
           Names of jobs (comma separated) that should be skipped on a lightened CI run.
-          These jobs are additional ones outside of qcut, zx, data.
+          The value of this variable is only used IF 'run_lightened_ci' is `true`.
+          For a full test-suite run, all jobs are triggered.
         required: false
         type: string
         default: ''
@@ -86,7 +86,7 @@ jobs:
       - name: Setup Job to Skip
         id: jobs_to_skip
         env:
-          JOBS_TO_SKIP: qcut-tests, zx-tests, data-tests
+          JOBS_TO_SKIP: ${{ inputs.skip_ci_test_jobs }}
         run: |
           if [ "${{ inputs.run_lightened_ci }}" == "true" ]; 
           then
