@@ -83,14 +83,18 @@
 
 <h3>Improvements 🛠</h3>
 
+<h4>More PyTrees!</h4>
+
+* `MeasurementProcess` and `QuantumScript` objects are now registered as JAX PyTrees.
+  [(#4607)](https://github.com/PennyLaneAI/pennylane/pull/4607)
+  [(#4608)](https://github.com/PennyLaneAI/pennylane/pull/4608)
+
+  TODO
+
 <h4>Transforms</h4>
 
-* Operator transforms `qml.matrix`, `qml.eigvals`, `qml.generator`, and `qml.transforms.to_zx` are updated
-  to the new transform program system.
-  [(#4573)](https://github.com/PennyLaneAI/pennylane/pull/4573)
-
 * All quantum functions transforms are update to the new transform program system.
- [(#4439)](https://github.com/PennyLaneAI/pennylane/pull/4439)
+  [(#4439)](https://github.com/PennyLaneAI/pennylane/pull/4439)
 
 * All batch transforms are updated to the new transform program system.
   [(#4440)](https://github.com/PennyLaneAI/pennylane/pull/4440)
@@ -98,66 +102,15 @@
 * Quantum information transforms are updated to the new transform program system.
   [(#4569)](https://github.com/PennyLaneAI/pennylane/pull/4569)
 
+* Operator transforms `qml.matrix`, `qml.eigvals`, `qml.generator`, and `qml.transforms.to_zx` are updated
+  to the new transform program system.
+  [(#4573)](https://github.com/PennyLaneAI/pennylane/pull/4573)
+
 * Add the method ``add_transform`` and ``insert_front_transform`` transform in the ``TransformProgram``.
   [(#4559)](https://github.com/PennyLaneAI/pennylane/pull/4559)
 
 * Dunder ``__add__`` method is added to the ``TransformProgram`` class, therefore two programs can be added using ``+`` .
   [(#4549)](https://github.com/PennyLaneAI/pennylane/pull/4549)
-
-<h4>Next-generation device API</h4>
-
-* `default.qubit` now tracks the number of equivalent qpu executions and total shots
-  when the device is sampling. Note that `"simulations"` denotes the number of simulation passes, where as
-  `"executions"` denotes how many different computational bases need to be sampled in.
-  [(#4628)](https://github.com/PennyLaneAI/pennylane/pull/4628)
-
-* The `JacobianProductCalculator` abstract base class and implementation `TransformJacobianProducts`
-  have been added to `pennylane.interfaces.jacobian_products`.
-  [(#4435)](https://github.com/PennyLaneAI/pennylane/pull/4435)
-
-* `qml.sample()` in the new device API now returns a `np.int64` array instead of `np.bool8`.
-  [(#4539)](https://github.com/PennyLaneAI/pennylane/pull/4539)
-
-* The new device API now has a `repr()`
-  [(#4562)](https://github.com/PennyLaneAI/pennylane/pull/4562)
-
-* Wires can be provided to the new device API.
-  [(#4538)](https://github.com/PennyLaneAI/pennylane/pull/4538)
-  [(#4562)](https://github.com/PennyLaneAI/pennylane/pull/4562)
-
-* `DefaultQubit2` can now accept a `jax.random.PRNGKey` as a `seed`, to set the key for the JAX pseudo random 
-  number generator when using the JAX interface. This corresponds to the `prng_key` on 
-  `DefaultQubitJax` in the old API.
-  [(#4596)](https://github.com/PennyLaneAI/pennylane/pull/4596)
-
-* DefaultQubit2 dispatches to a faster implementation for applying `ParametrizedEvolution` to a state
-  when it is more efficient to evolve the state than the operation matrix.
-  [(#4598)](https://github.com/PennyLaneAI/pennylane/pull/4598)
-  [(#4620)](https://github.com/PennyLaneAI/pennylane/pull/4620)
-
-* `DefaultQubit2` now works as expected with measurement processes that don't specify wires.
-  [(#4580)](https://github.com/PennyLaneAI/pennylane/pull/4580)
-
-* Various changes to measurements to improve feature parity between the legacy `default.qubit` and
-  the new `DefaultQubit2`. This includes not trying to squeeze batched `CountsMP` results and implementing
-  `MutualInfoMP.map_wires`.
-  [(#4574)](https://github.com/PennyLaneAI/pennylane/pull/4574)
-
-* `devices.qubit.simulate` now accepts an interface keyword argument. If a QNode with `DefaultQubit2`
-  specifies an interface, the result will be computed with that interface.
-  [(#4582)](https://github.com/PennyLaneAI/pennylane/pull/4582)
-
-* `ShotAdaptiveOptimizer` has been updated to pass shots to QNode executions instead of overriding
-  device shots before execution. This makes it compatible with the new device API.
-  [(#4599)](https://github.com/PennyLaneAI/pennylane/pull/4599)
-
-<h4>More PyTrees!</h4>
-
-* `MeasurementProcess` and `QuantumScript` objects are now registered as jax pytrees.
-  [(#4607)](https://github.com/PennyLaneAI/pennylane/pull/4607)
-  [(#4608)](https://github.com/PennyLaneAI/pennylane/pull/4608)
-
-  TODO
 
 <h4>Improving QChem and existing algorithms</h4>
 
@@ -177,13 +130,60 @@
   when at the beginning of a circuit, thus behaving like `StatePrep`.
   [(#4583)](https://github.com/PennyLaneAI/pennylane/pull/4583)
 
+<h4>Next-generation device API</h4>
+
+* `default.qubit` now tracks the number of equivalent QPU executions and total shots
+  when the device is sampling. Note that `"simulations"` denotes the number of simulation passes, where as
+  `"executions"` denotes how many different computational bases need to be sampled in.
+  [(#4628)](https://github.com/PennyLaneAI/pennylane/pull/4628)
+
+* `DefaultQubit2` can now accept a `jax.random.PRNGKey` as a `seed`, to set the key for the JAX pseudo random 
+  number generator when using the JAX interface. This corresponds to the `prng_key` on 
+  `DefaultQubitJax` in the old API.
+  [(#4596)](https://github.com/PennyLaneAI/pennylane/pull/4596)
+
+* `DefaultQubit2` dispatches to a faster implementation for applying `ParametrizedEvolution` to a state
+  when it is more efficient to evolve the state than the operation matrix.
+  [(#4598)](https://github.com/PennyLaneAI/pennylane/pull/4598)
+  [(#4620)](https://github.com/PennyLaneAI/pennylane/pull/4620)
+
+* Wires can be provided to the new device API.
+  [(#4538)](https://github.com/PennyLaneAI/pennylane/pull/4538)
+  [(#4562)](https://github.com/PennyLaneAI/pennylane/pull/4562)
+
+* `qml.sample()` in the new device API now returns a `np.int64` array instead of `np.bool8`.
+  [(#4539)](https://github.com/PennyLaneAI/pennylane/pull/4539)
+
+* The new device API now has a `repr()`
+  [(#4562)](https://github.com/PennyLaneAI/pennylane/pull/4562)
+
+* `DefaultQubit2` now works as expected with measurement processes that don't specify wires.
+  [(#4580)](https://github.com/PennyLaneAI/pennylane/pull/4580)
+
+* Various changes to measurements to improve feature parity between the legacy `default.qubit` and
+  the new `DefaultQubit2`. This includes not trying to squeeze batched `CountsMP` results and implementing
+  `MutualInfoMP.map_wires`.
+  [(#4574)](https://github.com/PennyLaneAI/pennylane/pull/4574)
+
+* `devices.qubit.simulate` now accepts an interface keyword argument. If a QNode with `DefaultQubit2`
+  specifies an interface, the result will be computed with that interface.
+  [(#4582)](https://github.com/PennyLaneAI/pennylane/pull/4582)
+
+* `ShotAdaptiveOptimizer` has been updated to pass shots to QNode executions instead of overriding
+  device shots before execution. This makes it compatible with the new device API.
+  [(#4599)](https://github.com/PennyLaneAI/pennylane/pull/4599)
+
 <h4>Other improvements</h4>
+
+* The `JacobianProductCalculator` abstract base class and implementation `TransformJacobianProducts`
+  have been added to `pennylane.interfaces.jacobian_products`.
+  [(#4435)](https://github.com/PennyLaneAI/pennylane/pull/4435)
 
 * The density matrix aspects of `StateMP` have been split into their own measurement
   process, `DensityMatrixMP`.
   [(#4558)](https://github.com/PennyLaneAI/pennylane/pull/4558)
 
-* The `StateMP` measurement now accepts a wire order (eg. a device wire order). The `process_state`
+* The `StateMP` measurement now accepts a wire order (e.g., a device wire order). The `process_state`
   method will re-order the given state to go from the inputted wire-order to the process's wire-order.
   If the process's wire-order contains extra wires, it will assume those are in the zero-state.
   [(#4570)](https://github.com/PennyLaneAI/pennylane/pull/4570)
