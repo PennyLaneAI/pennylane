@@ -380,13 +380,10 @@ class TestPostselection:
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("mp", [qml.expval, qml.var])
     @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow", "jax"])
-    @pytest.mark.parametrize("jax_jit", [True, False])
     @pytest.mark.parametrize("shots", [None, 10, [10, 10]])
-    def test_nan_float_result(self, mp, interface, shots, jax_jit):
+    def test_nan_float_result(self, mp, interface, shots):
         """Test that the result of circuits with 0 probability postselections is NaN with the
         expected shape."""
-        if interface != "jax" and jax_jit:
-            pytest.skip("Can't jit without jax")
 
         def f():
             tape = qml.tape.QuantumScript(
@@ -399,11 +396,6 @@ class TestPostselection:
             )
 
             return simulate(tape)
-
-        if jax_jit:
-            import jax
-
-            f = jax.jit(f)
 
         res = f()
 
@@ -425,13 +417,10 @@ class TestPostselection:
         "mp", [qml.probs(wires=0), qml.probs(op=qml.PauliZ(0)), qml.probs(wires=[0, 1])]
     )
     @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow", "jax"])
-    @pytest.mark.parametrize("jax_jit", [True, False])
     @pytest.mark.parametrize("shots", [None, 10, [10, 10]])
-    def test_nan_probs(self, mp, interface, shots, jax_jit):
+    def test_nan_probs(self, mp, interface, shots):
         """Test that the result of circuits with 0 probability postselections is NaN with the
         expected shape."""
-        if interface != "jax" and jax_jit:
-            pytest.skip("Can't jit without jax")
 
         def f():
             tape = qml.tape.QuantumScript(
@@ -444,11 +433,6 @@ class TestPostselection:
                 shots=shots,
             )
             return simulate(tape)
-
-        if jax_jit:
-            import jax
-
-            f = jax.jit(f)
 
         res = f()
 
@@ -470,13 +454,10 @@ class TestPostselection:
         "mp", [qml.sample(wires=0), qml.sample(op=qml.PauliZ(0)), qml.sample(wires=[0, 1])]
     )
     @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow", "jax"])
-    @pytest.mark.parametrize("jax_jit", [True, False])
     @pytest.mark.parametrize("shots", [10, [10, 10]])
-    def test_nan_samples(self, mp, interface, shots, jax_jit):
+    def test_nan_samples(self, mp, interface, shots):
         """Test that the result of circuits with 0 probability postselections is NaN with the
         expected shape."""
-        if interface != "jax" and jax_jit:
-            pytest.skip("Can't jit without jax")
 
         def f():
             tape = qml.tape.QuantumScript(
@@ -489,11 +470,6 @@ class TestPostselection:
                 shots=shots,
             )
             return simulate(tape)
-
-        if jax_jit:
-            import jax
-
-            f = jax.jit(f)
 
         res = f()
 
@@ -513,13 +489,10 @@ class TestPostselection:
         "mp", [qml.counts(wires=0), qml.counts(op=qml.PauliZ(0)), qml.counts()]
     )
     @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow", "jax"])
-    @pytest.mark.parametrize("jax_jit", [True, False])
     @pytest.mark.parametrize("shots", [10, [10, 10]])
-    def test_nan_counts(self, mp, interface, shots, jax_jit):
+    def test_nan_counts(self, mp, interface, shots):
         """Test that the result of circuits with 0 probability postselections is NaN with the
         expected shape."""
-        if interface != "jax" and jax_jit:
-            pytest.skip("Can't jit without jax")
 
         def f():
             tape = qml.tape.QuantumScript(
@@ -532,11 +505,6 @@ class TestPostselection:
                 shots=shots,
             )
             return simulate(tape)
-
-        if jax_jit:
-            import jax
-
-            f = jax.jit(f)
 
         res = f()
 

@@ -23,6 +23,7 @@ from pennylane.measurements import (
     ExpectationMP,
     ClassicalShadowMP,
     ShadowExpvalMP,
+    SampleMP,
     CountsMP,
 )
 from pennylane.typing import TensorLike
@@ -137,6 +138,9 @@ def measure_with_samples(
     Returns:
         List[TensorLike[Any]]: Sample measurement results
     """
+    if not qml.math.is_abstract(state) and qml.math.any(qml.math.isnan(state)):
+        return _measure_with_samples_nan(mps, state, shots, is_state_batched)
+
     groups, indices = _group_measurements(mps)
 
     all_res = []
@@ -169,6 +173,97 @@ def measure_with_samples(
         sorted_res = tuple(zip(*sorted_res))
 
     return sorted_res
+
+
+def _measure_with_samples_nan(
+    mps: List[SampleMeasurement], state: np.ndarray, shots: Shots, is_state_batched: bool = False
+) -> TensorLike:
+    batch_size = qml.math.shape(state)[0] if is_state_batched else None
+    interface = qml.math.get_interface(state)
+
+    if shots.has_partitioned_shots:
+        # res = []
+        # for s in shots:
+        #     res.extend(_get_single_shot_nan_res(mps, batch_size, interface, s))
+        # res = tuple(res)
+        res = tuple(_get_single_shot_nan_res(mps, batch_size, interface, s) for s in shots)
+    else:
+        res = _get_single_shot_nan_res(mps, batch_size, interface, shots.total_shots)
+
+    return res
+
+
+def _get_single_shot_nan_res(mps, batch_size, interface, shots):
+    """Helper to get NaN results for one item in a shot vector."""
+
+    res = []
+
+    for m in mps:
+        if isinstance(m, SampleMP):
+            out = [] if batch_size is None else [[]] * batch_size
+            res.append(qml.math.asarray(out, like=interface))
+            continue
+
+        if isinstance(m, CountsMP):
+            if m.all_outcomes:
+                if (eigs := m.eigvals()) is not None:
+                    keys = [str(e) for e in eigs]
+                    vals = [0] * len(eigs)
+                else:
+                    bits = len(m.wires)
+                    keys = [format(i, f"{bits}b") for i in range(2**bits)]
+                    vals = [0] * 2**bits
+                    res.append(
+                        dict(zip(keys, vals))
+                        if batch_size is None
+                        else [dict(zip(keys, vals)) for _ in range(batch_size)]
+                    )
+            else:
+                res.append({} if batch_size is None else [{} for _ in range(batch_size)])
+
+            continue
+
+        shape = m.shape(qml.device("default.qubit", wires=m.wires), Shots(shots))
+        if batch_size is not None:
+            shape = (batch_size,) + shape
+
+        nan_val = m.numeric_type(qml.numpy.NaN) if m.numeric_type is not int else qml.numpy.NaN
+        res.append(qml.math.full(shape, nan_val, like=interface))
+
+    return res
+
+
+def _get_zero_shot_res(mp, batch_size, interface):
+    """Helper to get measurement outcome when there are zero shots."""
+    if isinstance(mp, SampleMP):
+        out = [] if batch_size is None else [[]] * batch_size
+        return qml.math.asarray(out, like=interface)
+
+    if isinstance(mp, CountsMP):
+        if mp.all_outcomes:
+            if (eigs := mp.eigvals()) is not None:
+                keys = [str(e) for e in eigs]
+                vals = [0] * len(eigs)
+            else:
+                bits = len(mp.wires)
+                keys = [format(i, f"{bits}b") for i in range(2**bits)]
+                vals = [0] * 2**bits
+            return (
+                dict(zip(keys, vals))
+                if batch_size is None
+                else [dict(zip(keys, vals)) for _ in range(batch_size)]
+            )
+
+        return {} if batch_size is None else [{} for _ in range(batch_size)]
+
+    # Shots can be set to any positive integer to get the correct shape
+    # from the measurement process
+    shape = mp.shape(qml.device("default.qubit", wires=mp.wires), Shots(1))
+    if batch_size is not None:
+        shape = (batch_size,) + shape
+
+    nan_val = mp.numeric_type(qml.numpy.NaN) if mp.numeric_type is not int else qml.numpy.NaN
+    return qml.math.full(shape, nan_val, like=interface)
 
 
 def _measure_with_samples_diagonalizing_gates(
@@ -207,9 +302,14 @@ def _measure_with_samples_diagonalizing_gates(
     def _process_single_shot(samples):
         processed = []
         for mp in mps:
-            res = mp.process_samples(samples, wires)
-            if not isinstance(mp, CountsMP):
-                res = qml.math.squeeze(res)
+            if len(samples) == 0:
+                batch_size = qml.math.shape(state)[0] if is_state_batched else None
+                interface = qml.math.get_interface(state)
+                res = _get_zero_shot_res(mp, batch_size, interface)
+            else:
+                res = mp.process_samples(samples, wires)
+                if not isinstance(mp, CountsMP):
+                    res = qml.math.squeeze(res)
 
             processed.append(res)
 

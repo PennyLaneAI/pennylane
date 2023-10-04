@@ -231,56 +231,6 @@ def get_final_state(circuit, debugger=None, interface=None):
     return state, is_state_batched
 
 
-def _get_single_nan_res(measurements, batch_size, interface, shots):
-    """Helper to get NaN results for one item in a shot vector."""
-
-    res = []
-
-    for m in measurements:
-        if isinstance(m, qml.measurements.SampleMP):
-            res.append(qml.math.asarray([], like=interface))
-            continue
-        if isinstance(m, qml.measurements.CountsMP):
-            res.append({})
-            continue
-
-        shape = m.shape(qml.device("default.qubit", wires=m.wires), qml.measurements.Shots(shots))
-        if batch_size is not None:
-            shape = (batch_size,) + shape
-
-        if shape == ():
-            out = qml.math.asarray(qml.numpy.NaN, like=interface)
-        else:
-            out = qml.math.full(shape, qml.numpy.NaN, like=interface)
-
-        res.append(out)
-
-    res = tuple(res)
-
-    if len(res) == 1:
-        res = res[0]
-
-    return res
-
-
-def _measure_nan_state(circuit, state, is_state_batched):
-    """Helper function for creating NaN results with the expected shape."""
-    batch_size = qml.math.shape(state)[0] if is_state_batched else None
-    interface = qml.math.get_interface(state)
-
-    if circuit.shots.has_partitioned_shots:
-        res = tuple(
-            _get_single_nan_res(circuit.measurements, batch_size, interface, s)
-            for s in circuit.shots
-        )
-    else:
-        res = _get_single_nan_res(
-            circuit.measurements, batch_size, interface, circuit.shots.total_shots
-        )
-
-    return res
-
-
 def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=None) -> Result:
     """
     Perform the measurements required by the circuit on the provided state.
@@ -304,9 +254,6 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
     """
 
     circuit = circuit.map_to_standard_wires()
-
-    if qml.math.any(qml.math.isnan(state)):
-        return _measure_nan_state(circuit, state, is_state_batched)
 
     if not circuit.shots:
         # analytic case
