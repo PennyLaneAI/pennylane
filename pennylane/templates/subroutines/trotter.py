@@ -27,9 +27,10 @@ from pennylane.ops import Sum
 def _scalar(order):
     """Assumes that order is an even integer > 2"""
     root = 1 / (order - 1)
-    return (4 - 4**root) ** -1
+    return (4 - 4 ** root) ** -1
 
 
+@qml.QueuingManager.stop_recording()
 def _recursive_op(x, order, ops):
     """Generate a list of operators."""
     if order == 1:
@@ -45,32 +46,94 @@ def _recursive_op(x, order, ops):
         ops_lst_1 = _recursive_op(scalar_1 * x, order - 2, ops)
         ops_lst_2 = _recursive_op(scalar_2 * x, order - 2, ops)
 
-        return (
-            copy.deepcopy(ops_lst_1)
-            + copy.deepcopy(ops_lst_1)
-            + ops_lst_2
-            + copy.deepcopy(ops_lst_1)
-            + ops_lst_1
-        )
+        return (2 * ops_lst_1) + ops_lst_2 + (2 * ops_lst_1)
 
-    raise ValueError(f"The order of a Trotter Product must be 1 or an even integer, got {order}.")
+    raise ValueError(f"The order of a Trotter Product must be 1 or a positive even integer, got {order}.")
 
 
 class TrotterProduct(Operation):
-    """Representing the Suzuki-Trotter product approximation"""
+    """An operation representing the Suzuki-Trotter product approximation for the complex matrix exponential
+    of a given hamiltonian.
+
+    The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of hamiltonian
+    expressed as a linear combination of terms which in general do not commute. Consider the hamiltonian
+    :math:`H = \Sigma^{N}_{j=0} O_{j}`, the product formula is constructed using symmetrized products of the terms
+    in the hamiltonian. The symmetrized products of order :math: `m \in [1, 2, 4, ..., 2k] | k \in \mathbb{N}`
+    are given by:
+
+    .. math::
+
+        \begin{align}
+            S_{m=1}(t) &= \Pi_{j=0}^{N} \ exp(i t O_{j}) \\
+            S_{m=2}(t) &= \Pi_{j=0}^{N} \ exp(i \frac{t}{2} O_{j}) \cdot \Pi_{j=N}^{0} \ exp(i \frac{t}{2} O_{j}) \\
+            &\vdots
+            S_{m=2k}(t) &= S_{2k-2}(p_{2k}t)^{2} \cdot S_{2k-2}((1-4p_{2k})t) \cdot S_{2k-2}(p_{2k}t)^{2}
+        \end{align}
+
+    Where the coefficient is :math:`p_{2k} = \frac{1}{4 - \sqrt[2k - 1]{4}}`.
+
+    The :math:`2k`th order, :math:`n`-step Suzuki-Trotter approximation is then defined as:
+
+    .. math:: exp(iHt) \approx (S_{2k}(\frac{t}{n}))^{n}
+
+    Args:
+        hamiltonian (Union[~.Hamiltonian, ~.Sum]):
+        time (Union[float, complex]):
+
+    Keyword Args:
+        n (int): An integer representing the number of Trotter steps to perform.
+        order (int): An integer representing the order of the approximation (must be 1 or even).
+        check_hermitian (bool): A flag to enable the validation check to ensure this is a valid unitary operator.
+
+    Raises:
+        ValueError: The 'hamiltonian' is not of type ~.Hamiltonian, or ~.Sum.
+        ValueError: One or more of the terms in 'hamiltonian' are not Hermitian. 
+        ValueError: The 'order' is not one or a positive even integer.
+
+    **Example**
+
+    .. code-block:: python3
+
+        coeffs = [0.25, 0.75]
+        ops = [qml.PauliX(0), qml.PauliZ(0)]
+        H = qml.dot(coeffs, ops)
+
+        dev = qml.device("default.qubit", wires=2)
+        @qml.qnode(dev)
+        def my_circ():
+            # Prepare some state
+            qml.Hadamard(0)
+            qml.Hadamard(1)
+
+            # Evolve according to H
+            qml.TrotterProduct(H, time=0.5, order=2)
+
+            # Measure some quantity
+            return qml.state()
+
+    .. details::
+        :title: Usage Details
+
+        //
+
+    """
 
     def __init__(self, hamiltonian, time, n=1, order=1, check_hermitian=True, id=None):
-        """Init method for the TrotterProduct class"""
+        """Initialize the TrotterProduct class"""
 
         if isinstance(hamiltonian, qml.Hamiltonian):
             coeffs, ops = hamiltonian.terms()
             hamiltonian = qml.dot(coeffs, ops)
 
         if not isinstance(hamiltonian, Sum):
-            raise ValueError(f"The given operator must be a PennyLane ~.Hamiltonian or ~.Sum got {hamiltonian}")
+            raise ValueError(
+                f"The given operator must be a PennyLane ~.Hamiltonian or ~.Sum got {hamiltonian}"
+            )
 
         if check_hermitian:
-            pass
+            for op in hamiltonian.operands:
+                if not op.is_hermitian:
+                    raise ValueError(f"One or more of the terms in the Hamiltonian may not be hermitian")
 
         self._hyperparameters = {"num_steps": n, "order": order, "base": hamiltonian}
         wires = hamiltonian.wires
@@ -78,12 +141,34 @@ class TrotterProduct(Operation):
 
     @staticmethod
     def compute_decomposition(*args, **kwargs):
+        r"""Representation of the operator as a product of other operators (static method).
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        .. note::
+
+            Operations making up the decomposition should be queued within the
+            ``compute_decomposition`` method.
+
+        .. seealso:: :meth:`~.Operator.decomposition`.
+
+        Args:
+            *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
+            wires (Iterable[Any], Wires): wires that the operator acts on
+            **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
+
+        Returns:
+            list[Operator]: decomposition of the operator
+        """
         time = args[0]
         n = kwargs["num_steps"]
         order = kwargs["order"]
         ops = kwargs["base"].operands
 
-        with qml.QueuingManager.stop_recording():
-            decomp = _recursive_op(time, order, ops)
+        decomp = _recursive_op(time / n, order, ops) * n
+
+        if qml.QueuingManager.recording():
+            for op in decomp:
+                qml.apply(op)
 
         return decomp
