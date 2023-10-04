@@ -93,7 +93,7 @@ jobs:
             "default": 1,
             "tf-tests": 2,
             "core-tests": 2,
-            "jax-tests": 5
+            "jax-tests": 10
           }
           EOF
           else
@@ -101,11 +101,9 @@ jobs:
           {
             "default": 1,
             "torch-tests": 2,
-            "autograd-tests": 3,
             "tf-tests": 4,
-            "jax-tests": 5,
-            "core-tests": 3,
-            "gradient-tests": 2
+            "jax-tests": 10,
+            "core-tests": 2
           }
           EOF
           fi
@@ -435,7 +433,7 @@ jobs:
     strategy:
       max-parallel: >-
         ${{
-           fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).gradient-tests
+           fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).gradients-tests
            || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
          }}
       matrix:
