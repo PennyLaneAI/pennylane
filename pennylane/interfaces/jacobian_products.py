@@ -235,12 +235,13 @@ class DeviceJacobians(JacobianProductCalculator):
     """Calculate jacobian products via a device.
 
     Args:
-        device (Union[pennylane.Device, pennylane.devicesDevice]): the device for execution and derivatives.
-            Must support supports first order gradients with the requested configuration.
-        execution_config (pennylane.devices.ExecutionConfig): a datastructure containing the parameters needed to fully
-           describe the execution. Only used with :class:`pennylane.devices.Device` new device interface.
-        gradient_kwargs (dict): a dictionary of keyword options for the gradients. Only used with a :class:`~.pennylane.Device`
-            old device interface.
+
+        device (Union[pennylane.Device, pennylane.devices.Device]): the device for execution and derivatives.
+            Must support first order gradients with the requested configuration.
+        execution_config (pennylane.devices.ExecutionConfig): a datastructure containing the options needed to fully
+           describe the execution. Only used with :class:`pennylane.devices.Device` from the new device interface.
+        gradient_kwargs (dict): a dictionary of keyword arguments for the gradients. Only used with a :class:`~.pennylane.Device`
+            from the old device interface.
 
     **Examples:**
 
@@ -256,7 +257,7 @@ class DeviceJacobians(JacobianProductCalculator):
 
     **Technical comments on caching and calculating the gradients on execution:**
 
-    In order to store results and jacobian for the backward pass during the forward pass,
+    In order to store results and Jacobians for the backward pass during the forward pass,
     the ``_jacs_cache`` and ``_results_cache`` properties are ``LRUCache`` objects with a maximum size of 10.
     In the current execution pipeline, only one batch will be used per instance, but a size of 10 adds some extra
     flexibility for future uses.
@@ -287,7 +288,7 @@ class DeviceJacobians(JacobianProductCalculator):
     >>> device.tracker.totals
     {}
 
-    **Lack of shot vector suppoprt:**
+    **Lack of shot vector support:**
 
     Given we currently do not have any examples of device derivatives with shots vectors (or even finite shots),
     we are bypassing support for partitioned shots.
@@ -395,7 +396,7 @@ class DeviceJacobians(JacobianProductCalculator):
 
         **Examples:**
 
-        For an instance of :class:`~.JacobianProductCalculator` ``jpc``, we have:
+        For an instance of :class:`~.DeviceJacobians` ``jpc``, we have:
 
         >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
         >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0))])
@@ -438,6 +439,8 @@ class DeviceJacobians(JacobianProductCalculator):
                     logger.debug("Retrieving jacobian from cache.")
                 jacs = self._jacs_cache[tapes]
             else:
+                # Here the jac was not cached but the results were. This can not happen because results are never
+                # cached alone (note that in the else clause above computing only results, jac must already be present)
                 raise NotImplementedError(
                     "No path to cache results without caching jac. This branch should not occur."
                 )
@@ -465,7 +468,7 @@ class DeviceJacobians(JacobianProductCalculator):
 
         **Examples:**
 
-        For an instance of :class:`~.JacobianProductCalculator` ``jpc``, we have:
+        For an instance of :class:`~.DeviceJacobians` ``jpc``, we have:
 
         >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
         >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))])
@@ -517,7 +520,7 @@ class DeviceJacobians(JacobianProductCalculator):
 
         **Examples:**
 
-        For an instance of :class:`~.JacobianProductCalculator` ``jpc``, we have:
+        For an instance of :class:`~.DeviceJacobians` ``jpc``, we have:
 
         >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
         >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))])
