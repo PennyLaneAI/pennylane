@@ -24,12 +24,12 @@ from .conversion import (
     from_z_root_two,
     operator_to_bl2z,
 )
-from .rings import Matrix, RootTwo, Dyadic, SQRT2
+from .rings import Matrix, RootTwo, ZRootTwo, SQRT2
 from .shapes import ConvexSet, Ellipse, Point
 
-LAMBDA = RootTwo(1, 1)
-LAMBDA_INV = RootTwo(-1, 1)
-log_lambda = lambda x: np.emath.logn(LAMBDA, x)
+LAMBDA = ZRootTwo(1, 1)
+LAMBDA_INV = ZRootTwo(-1, 1)
+log_lambda = lambda x: np.emath.logn(1 + SQRT2, float(x))
 
 
 def gridpoints2_increasing(region: ConvexSet):
@@ -109,7 +109,7 @@ def gridpoints_scaled(x, y, k):
     y = (-scale_inv * y[1], -scale_inv * y[0]) if k % 2 else (scale_inv * y[0], scale_inv * y[1])
     a = (x[0] + y[0]) // 2
     b = (SQRT2 * (x[0] - y[0])) // 4
-    alpha = RootTwo(a, b)
+    alpha = ZRootTwo(a, b)
     xoff = a + SQRT2 * b
     yoff = a - SQRT2 * b
     x_ = (x[0] - xoff, x[1] - xoff)
@@ -166,7 +166,7 @@ def gridpoints_internal(x, y):
     amax = (x[1] + y[1]) // 2
     bmin = lambda a: np.ceil((a - y[1]) / SQRT2)
     bmax = lambda a: (a - y[0]) // SQRT2
-    return [RootTwo(a, b) for a in range(amin, amax + 1) for b in range(bmin(a), bmax(a) + 1)]
+    return [ZRootTwo(a, b) for a in range(amin, amax + 1) for b in range(bmin(a), bmax(a) + 1)]
 
 
 def floorlog(b, x):
@@ -184,51 +184,48 @@ def floorlog(b, x):
 
 
 def step_lemma(matA: np.ndarray, matB: np.ndarray) -> Matrix:
-    """The Step Lemma from the paper."""
+    """The Step Lemma from the paper.
+
+    Returns:
+        Matrix[DRootTwo]: the result of the Step Lemma
+    """
     # pylint:disable=too-many-return-statements
     b, l2z = operator_to_bl2z(matA)
     beta, l2zeta = operator_to_bl2z(matB)
 
     if beta < -1e-16:
-        return wlog_using(matA, matB, Matrix([[1, 0], [0, -1]]))
+        return wlog_using(matA, matB, Matrix.array([[1, 0], [0, -1]]))
 
     if l2z * l2zeta < 1:
-        return wlog_using(matA, matB, Matrix([[0, 1], [1, 0]]))
+        return wlog_using(matA, matB, Matrix.array([[0, 1], [1, 0]]))
 
     l2z_minus_zeta = l2z / l2zeta
     if l2z_minus_zeta > 33.971 or l2z_minus_zeta < 0.029437:
-        s_power = np.round(log_lambda(l2z_minus_zeta / 4))
-        s_mat = Matrix([[LAMBDA**s_power, 0], [0, LAMBDA_INV**s_power]])
-        print("s_mat:", s_mat)
+        s_power = int(np.round(log_lambda(l2z_minus_zeta) / 8))
+        s_mat = Matrix.array([[LAMBDA**s_power, 0], [0, LAMBDA_INV**s_power]])
         return wlog_using(matA, matB, s_mat)
 
     if matA[0][1] * matA[1][0] + matB[0][1] * matB[1][0] <= 15:
         return None
 
     if l2z_minus_zeta > 5.8285 or l2z_minus_zeta < 0.17157:
-        return with_shift(matA, matB, int(np.round(log_lambda(l2z_minus_zeta / 4))))
+        return with_shift(matA, matB, int(np.round(log_lambda(l2z_minus_zeta) / 4)))
 
     if 0.24410 <= l2z <= 4.0968 and 0.24410 <= l2zeta <= 4.0968:
-        one_over_root2 = RootTwo(0, Dyadic(1, 1))
-        return Matrix(
-            [
-                [one_over_root2, RootTwo(0, Dyadic(-1, 1))],
-                [one_over_root2, one_over_root2],
-            ],
-        )
+        return Matrix.array([[1, -1], [1, 1]]) / RootTwo(0, 1)
 
     if b >= 0:
         if l2z <= 1.6969:
-            return Matrix([[RootTwo(1, -1), -1], [LAMBDA, 1]]) / np.sqrt(2)
+            return Matrix.array([[-LAMBDA_INV, -1], [LAMBDA, 1]]) / RootTwo(0, 1)
         if l2zeta <= 1.6969:
-            return adj2(Matrix([[RootTwo(1, -1), -1], [LAMBDA, 1]]) / np.sqrt(2))
+            return adj2(Matrix.array([[-LAMBDA_INV, -1], [LAMBDA, 1]]) / RootTwo(0, 1))
         l2c = min(l2z, l2zeta)
         power = max(1, int(np.sqrt(l2c // 4)))
-        return Matrix([[1, 2 * power], [0, 1]])
+        return Matrix.array([[1, -2 * power], [0, 1]])
 
     l2c = min(l2z, l2zeta)
     power = max(1, int(np.sqrt(l2c // 2)))
-    return Matrix([[1, RootTwo(0, power)], [0, 1]])
+    return Matrix.array([[1, ZRootTwo(0, power)], [0, 1]])
 
 
 def wlog_using(matA, matB, op):
@@ -249,20 +246,18 @@ def with_shift(matA, matB, k):
 def shift_sigma(k, op):
     """Shift helper for Step Lemma."""
     (a, b), (c, d) = op
-    a *= LAMBDA**k
-    d *= LAMBDA**-k
-    return Matrix([[a, b], [c, d]])
+    lambda_k = LAMBDA**k
+    return Matrix.array([[a * lambda_k, b], [c, d / lambda_k]])
 
 
 def shift_tau(k, op):
     """Shift helper for Step Lemma."""
     (a, b), (c, d) = op
-    a *= LAMBDA**-k
-    d *= LAMBDA**k
+    lambda_k = LAMBDA**k
     if k % 2:
-        b *= -1
-        c *= -1
-    return Matrix([[a, b], [c, d]])
+        b = -b
+        c = -c
+    return Matrix.array([[a / lambda_k, b], [c, d * lambda_k]])
 
 
 def reduction(matA, matB) -> Matrix:

@@ -21,7 +21,7 @@ def adj2(x):
     """Map from ``a + b√2`` to ``a - b√2``."""
     if isinstance(x, Matrix):
         (a, b), (c, d) = x
-        return Matrix([[adj2(a), adj2(b)], [adj2(c), adj2(d)]])
+        return Matrix.array([[adj2(a), adj2(b)], [adj2(c), adj2(d)]])
 
     if isinstance(x, RootTwo):
         return x.adj2()
@@ -55,6 +55,7 @@ def point_from_d_root_two(point):
 
 
 def action(a, b, g):
+    print(g)
     g4 = adj2(g)
     g3 = g4.adjoint()
     g2 = g
