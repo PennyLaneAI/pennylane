@@ -365,10 +365,7 @@ def cut_circuit(
                 "installed using:\npip install opt_einsum"
             ) from e
 
-    tapes, tapes_fn = (
-        [tape],
-        lambda x: x[0] # pylint: disable=unnecessary-lambda-assignment
-    )
+    tapes, tapes_fn = ([tape], lambda x: x[0])  # pylint: disable=unnecessary-lambda-assignment
     if isinstance(tape.measurements[0].obs, qml.Hamiltonian):
         tapes, tapes_fn = qml.transforms.hamiltonian_expand(tape, group=False)
 
@@ -383,7 +380,7 @@ def cut_circuit(
         return tapes_fn(exp_res)
 
     res_tapes, res_funcs, res_index = (), [], [0]
-    for tape in tapes: # pylint: disable=redefined-argument-from-local
+    for tape in tapes:  # pylint: disable=redefined-argument-from-local
         g = tape_to_graph(tape)
 
         if auto_cutter is True or callable(auto_cutter):
