@@ -411,14 +411,6 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         ):
             transform(first_valid_transform, expand_transform=non_valid_expand_transform)
 
-    def test_cotransform_not_implemented(self):
-        """Test that a co-transform must be a callable."""
-
-        with pytest.raises(
-            NotImplementedError, match="Classical cotransforms are not yet integrated."
-        ):
-            transform(first_valid_transform, classical_cotransform=non_callable)
-
     def test_qfunc_transform_multiple_tapes(self):
         """Test that quantum function is not compatible with multiple tapes."""
         dispatched_transform = transform(second_valid_transform)

@@ -203,7 +203,7 @@ def _purity_qnode(self, qnode, targs, tkwargs):
 
 @partial(transform, final_transform=True)
 def vn_entropy(
-        tape: QuantumTape, wires: Sequence[int], base: float = None, **kwargs
+    tape: QuantumTape, wires: Sequence[int], base: float = None, **kwargs
 ) -> (Sequence[QuantumTape], Callable):
     r"""Compute the Von Neumann entropy from a :class:`.QuantumTape` returning a :func:`~pennylane.state`.
 
@@ -260,7 +260,7 @@ def vn_entropy(
 
         # determine if the measurement is a state vector or a density matrix
         if not isinstance(measurements[0], DensityMatrixMP) and not isinstance(
-                device, DefaultMixed
+            device, DefaultMixed
         ):  # Compute entropy from state vector
             if len(wires) == len(all_wires):
                 # The subsystem has all wires, so the entropy is 0
@@ -297,7 +297,7 @@ def _vn_entropy_qnode(self, qnode, targs, tkwargs):
 
 @partial(transform, final_transform=True)
 def mutual_info(
-        tape: QuantumTape, wires0: Sequence[int], wires1: Sequence[int], base: float = None, **kwargs
+    tape: QuantumTape, wires0: Sequence[int], wires1: Sequence[int], base: float = None, **kwargs
 ) -> (Sequence[QuantumTape], Callable):
     r"""Compute the mutual information from a :class:`.QuantumTape` returning a :func:`~pennylane.state`:
 
@@ -647,7 +647,9 @@ def classical_fisher(qnode, argnums=0):
 
 
 @partial(transform, is_informative=True)
-def quantum_fisher(tape: qml.tape.QuantumTape, device, *args, **kwargs) -> (Sequence[qml.tape.QuantumTape], Callable):
+def quantum_fisher(
+    tape: qml.tape.QuantumTape, device, *args, **kwargs
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Returns a function that computes the quantum fisher information matrix (QFIM) of a given :class:`.QNode`.
 
     Given a parametrized quantum state :math:`|\psi(\bm{\theta})\rangle`, the quantum fisher information matrix (QFIM) quantifies how changes to the parameters :math:`\bm{\theta}`

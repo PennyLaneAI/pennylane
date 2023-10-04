@@ -60,13 +60,14 @@ def _contract_metric_tensor_with_cjac(mt, cjac, tape):
         # Classical Jacobian is the identity. No classical processing
         # is present inside the QNode.
         return mt
-
-    mt = qml.math.tensordot(cjac, qml.math.tensordot(mt, cjac, axes=[[-1], [0]]), axes=[[0], [0]])
+    print(mt.shape, cjac.shape)
+    mt_cjac = qml.math.tensordot(mt, cjac, axes=[[-1], [0]]),
+    mt = qml.math.tensordot(cjac, mt_cjac, axes=[[0], [0]])
 
     return mt
 
 
-def expand_fn(
+def expand_metric_tensor(
     tape: qml.tape.QuantumTape,
     argnum=None,
     argnums=None,
@@ -84,7 +85,7 @@ def expand_fn(
 
 @partial(
     transform,
-    expand_transform=expand_fn,
+    expand_transform=expand_metric_tensor,
     classical_cotransform=_contract_metric_tensor_with_cjac,
     final_transform=True,
 )
@@ -381,10 +382,12 @@ def metric_tensor(
     if approx in {"diag", "block-diag"}:
         # Only require covariance matrix based transform
         diag_approx = approx == "diag"
-        return _metric_tensor_cov_matrix(tape, argnum, diag_approx)[:2]
+        tapes, processing_fn = _metric_tensor_cov_matrix(tape, argnum, diag_approx)[:2]
+        return tapes, processing_fn
 
     if approx is None:
-        return _metric_tensor_hadamard(tape, argnum, allow_nonunitary, aux_wire, device_wires)
+        tapes, processing_fn = _metric_tensor_hadamard(tape, argnum, allow_nonunitary, aux_wire, device_wires)
+        return tapes, processing_fn
 
     raise ValueError(
         f"Unknown value {approx} for keyword argument approx. "

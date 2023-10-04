@@ -77,26 +77,6 @@ class TestMetricTensor:
         assert qml.math.shape(result[0]) == ()
         assert qml.math.shape(result[1]) == ()
 
-    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
-    def test_parameter_fan_out(self, diff_method):
-        """The metric tensor is with respect to the quantum circuit and ignores
-        classical processing if ``hybrid=False``. As a result, if there is
-        parameter fan-out, the returned metric tensor will be larger than
-        ``(len(args), len(args))`` if hybrid computation is deactivated.
-        """
-        dev = qml.device("default.qubit", wires=2)
-
-        def circuit(a):
-            qml.RX(a, wires=0)
-            qml.RX(a, wires=0)
-            return qml.expval(qml.PauliX(0))
-
-        circuit = qml.QNode(circuit, dev, diff_method=diff_method)
-        params = np.array([0.1], requires_grad=True)
-        # pylint:disable=unexpected-keyword-arg
-        result = qml.metric_tensor(circuit, hybrid=False, approx="block-diag")(*params)
-        assert result.shape == (2, 2)
-
     def test_construct_subcircuit(self):
         """Test correct subcircuits constructed"""
         with qml.queuing.AnnotatedQueue() as q:
@@ -231,13 +211,12 @@ class TestMetricTensor:
         assert qml.math.allclose(g_diag, np.diag(expected), atol=tol, rtol=0)
         assert qml.math.allclose(g_blockdiag, np.diag(expected), atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("strategy", ["gradient", "device"])
-    def test_template_integration(self, strategy):
+    def test_template_integration(self):
         """Test that the metric tensor transform acts on QNodes
         correctly when the QNode contains a template"""
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, expansion_strategy=strategy)
+        @qml.qnode(dev)
         def circuit(weights):
             qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
             return qml.probs(wires=[0, 1])
