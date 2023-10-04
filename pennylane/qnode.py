@@ -905,8 +905,16 @@ class QNode:
             tapes, _ = qml.defer_measurements(self._tape)
             self._tape = tapes[0]
 
-        if self.expansion_strategy == "device" and not isinstance(self.device, qml.devices.Device):
-            self._tape = self.device.expand_fn(self.tape, max_expansion=self.max_expansion)
+        if self.expansion_strategy == "device":
+            if isinstance(self.device, qml.devices.Device):
+                tape, _ = self.device.preprocess()[0]([self.tape])
+                if len(tape) != 1:
+                    raise ValueError(
+                        "Using 'device' for the `expansion_strategy` is not supported with batching"
+                    )
+                self._tape = tape[0]
+            else:
+                self._tape = self.device.expand_fn(self.tape, max_expansion=self.max_expansion)
 
         # If the gradient function is a transform, expand the tape so that
         # all operations are supported by the transform.
