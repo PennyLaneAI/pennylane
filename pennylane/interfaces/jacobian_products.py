@@ -32,14 +32,30 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-def _compute_vjps(jacs, dys, multi_measurements):
+def _compute_vjps(jacs, dys, multi_measurements, has_partitioned_shots):
     """Compute the vjps of multiple tapes, directly for a Jacobian and co-tangents dys."""
-    f = {True: qml.gradients.compute_vjp_multi, False: qml.gradients.compute_vjp_single}
-    return tuple(f[multi](dy, jac) for jac, dy, multi in zip(jacs, dys, multi_measurements))
+    if not has_partitioned_shots:
+        f = {True: qml.gradients.compute_vjp_multi, False: qml.gradients.compute_vjp_single}
+        return tuple(f[multi](dy, jac) for jac, dy, multi in zip(jacs, dys, multi_measurements))
+
+    vjps = []
+    for i, multi in enumerate(multi_measurements):
+        shot_vjps = []
+        for d, j in zip(dys[i], jacs[i]):
+            if multi:
+                shot_vjps.append(qml.gradients.compute_vjp_multi(d, j))
+            else:
+                shot_vjps.append(qml.gradients.compute_vjp_single(d, j))
+
+        vjps.append(qml.math.sum(qml.math.stack(shot_vjps), axis=0))
+
+    return tuple(vjps)
 
 
-def _compute_jvps(jacs, tangents, multi_measurements):
+def _compute_jvps(jacs, tangents, multi_measurements, has_partitioned_shots):
     """Compute the jvps of multiple tapes, directly for a Jacobian and tangents."""
+    if has_partitioned_shots:
+        raise NotImplementedError("not sure how to make this work yet.")
     f = {True: qml.gradients.compute_jvp_multi, False: qml.gradients.compute_jvp_single}
     return tuple(f[multi](dx, jac) for jac, dx, multi in zip(jacs, tangents, multi_measurements))
 
@@ -231,38 +247,40 @@ class TransformJacobianProducts(JacobianProductCalculator):
         return tuple(batch_post_processing(results))
 
 
-class DeviceJacobians(JacobianProductCalculator):
-    """Calculate jacobian products via a device.
+class DeviceDerivatives(JacobianProductCalculator):
+    """Calculate jacobian products via a device provided jacobian.  This class relies on either ``qml.Device.gradients`` or
+    ``qml.devices.Device.compute_derivatives``.
 
     Args:
-        device (Union[pennylane.Device, pennylane.devicesDevice]): the device for execution and derivatives.
-            Must support supports first order gradients with the requested configuration.
-        gradient_kwargs (dict): a dictionary of keyword options for the gradients. Only used with a :class:`~.pennylane.Device`
-            old device interface.
-        execution_config (pennylane.devices.ExecutionConfig): a datastructure containing the parameters needed to fully
-           describe the execution. Only used with :class:`pennylane.devices.Device` new device interface.
+
+        device (Union[pennylane.Device, pennylane.devices.Device]): the device for execution and derivatives.
+            Must support first order gradients with the requested configuration.
+        execution_config (pennylane.devices.ExecutionConfig): a datastructure containing the options needed to fully
+           describe the execution. Only used with :class:`pennylane.devices.Device` from the new device interface.
+        gradient_kwargs (dict): a dictionary of keyword arguments for the gradients. Only used with a :class:`~.pennylane.Device`
+            from the old device interface.
 
     **Examples:**
 
     >>> device = qml.device('default.qubit')
     >>> config = qml.devices.ExecutionConfig(gradient_method="adjoint")
-    >>> jpc = DeviceJacobians(device, {}, config)
+    >>> jpc = DeviceDerivatives(device, config, {})
 
     This same class can also be used with the old device interface.
 
     >>> device = qml.device('lightning.qubit', wires=5)
     >>> gradient_kwargs = {"method": "adjoint_jacobian"}
-    >>> jpc_lightning = DeviceJacobians(device, gradient_kwargs)
+    >>> jpc_lightning = DeviceDerivatives(device, gradient_kwargs=gradient_kwargs)
 
     **Technical comments on caching and calculating the gradients on execution:**
 
-    In order to store results and jacobian for the backward pass during the forward pass,
+    In order to store results and Jacobians for the backward pass during the forward pass,
     the ``_jacs_cache`` and ``_results_cache`` properties are ``LRUCache`` objects with a maximum size of 10.
+    In the current execution pipeline, only one batch will be used per instance, but a size of 10 adds some extra
+    flexibility for future uses.
 
-    Note that since the hash and equality of :class:`~.QuantumScript` is based on object location, not contents, the
-    caching and retrieval should be more performant than a lookup based on the potentially expensive ``QuantumScript.hash``.
-    This means that the batch of tapes must be the
-    same instance, not just something that looks the same but has a different location in memory.
+    Note that since the hash and equality of :class:`~.QuantumScript` is based on object location, not contents. So batches
+    with identically looking :class:`~.QuantumScript` s that are different instances will be cached separately.
 
     When a forward pass with :meth:`~.execute` is called, both the results and the jacobian for the object are stored.
 
@@ -287,25 +305,22 @@ class DeviceJacobians(JacobianProductCalculator):
     >>> device.tracker.totals
     {}
 
-    **Lack of shot vector suppoprt:**
-
-    Given we currently do not have any examples of device derivatives with shots vectors (or even finite shots),
-    we are bypassing support for partitioned shots.
-
     """
 
     def __repr__(self):
-        return f"<DeviceJacobians: {self._device.name}, {self._gradient_kwargs}, {self._execution_config}>"
+        return f"<DeviceDerivatives: {self._device.name}, {self._gradient_kwargs}, {self._execution_config}>"
 
     def __init__(
         self,
         device: Union["qml.devices.Device", "qml.Device"],
-        gradient_kwargs: dict,
         execution_config: Optional["qml.devices.ExecutionConfig"] = None,
+        gradient_kwargs: dict = None,
     ):
+        if gradient_kwargs is None:
+            gradient_kwargs = {}
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug(
-                "DeviceJacobians created with (%s, %s, %s)",
+                "DeviceDerivatives created with (%s, %s, %s)",
                 device,
                 execution_config,
                 gradient_kwargs,
@@ -315,7 +330,7 @@ class DeviceJacobians(JacobianProductCalculator):
         self._execution_config = execution_config
         self._gradient_kwargs = gradient_kwargs
 
-        self._is_new_device = not isinstance(device, qml.Device)
+        self._uses_new_device = not isinstance(device, qml.Device)
 
         # only really need to keep most recent entry, but keeping 10 around just in case
         self._results_cache = LRUCache(maxsize=10)
@@ -328,7 +343,7 @@ class DeviceJacobians(JacobianProductCalculator):
         Dispatches between the two different device interfaces.
         """
         numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
-        if self._is_new_device:
+        if self._uses_new_device:
             return self._device.execute_and_compute_derivatives(numpy_tapes, self._execution_config)
         return self._device.execute_and_gradients(numpy_tapes, **self._gradient_kwargs)
 
@@ -339,7 +354,7 @@ class DeviceJacobians(JacobianProductCalculator):
         Dispatches between the two different device interfaces.
         """
         numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
-        if self._is_new_device:
+        if self._uses_new_device:
             return self._device.execute(numpy_tapes, self._execution_config)
         return self._device.batch_execute(numpy_tapes)
 
@@ -350,7 +365,7 @@ class DeviceJacobians(JacobianProductCalculator):
         Dispatches between the two different device interfaces.
         """
         numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
-        if self._is_new_device:
+        if self._uses_new_device:
             return self._device.compute_derivatives(numpy_tapes, self._execution_config)
         return self._device.gradients(numpy_tapes, **self._gradient_kwargs)
 
@@ -393,7 +408,7 @@ class DeviceJacobians(JacobianProductCalculator):
 
         **Examples:**
 
-        For an instance of :class:`~.JacobianProductCalculator` ``jpc``, we have:
+        For an instance of :class:`~.DeviceDerivatives` ``jpc``, we have:
 
         >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
         >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0))])
@@ -415,9 +430,6 @@ class DeviceJacobians(JacobianProductCalculator):
         jacobians with non-scalar parameters.
 
         """
-        if any(t.shots.has_partitioned_shots for t in tapes):
-            # we currently do not have any examples for testing
-            raise NotImplementedError("device derivatives with shot vectors not supported.")
         if tapes not in self._results_cache and tapes not in self._jacs_cache:
             results, jacs = self._dev_execute_and_compute_derivatives(tapes)
             self._results_cache[tapes] = results
@@ -425,7 +437,7 @@ class DeviceJacobians(JacobianProductCalculator):
         else:
             if tapes in self._results_cache:
                 if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
-                    logger.debug("Retrieving results from cache.")
+                    logger.debug("%s : Retrieving results from cache.", self)
                 results = self._results_cache[tapes]
             else:
                 results = self._dev_execute(tapes)
@@ -433,15 +445,22 @@ class DeviceJacobians(JacobianProductCalculator):
 
             if tapes in self._jacs_cache:
                 if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
-                    logger.debug("Retrieving jacobian from cache.")
+                    logger.debug("%s : Retrieving jacobian from cache.", self)
                 jacs = self._jacs_cache[tapes]
             else:
+                # Here the jac was not cached but the results were. This can not happen because results are never
+                # cached alone (note that in the else clause above computing only results, jac must already be present)
                 raise NotImplementedError(
                     "No path to cache results without caching jac. This branch should not occur."
                 )
 
         multi_measurements = (len(t.measurements) > 1 for t in tapes)
-        jvps = _compute_jvps(jacs, tangents, multi_measurements)
+        jvps = _compute_jvps(
+            jacs,
+            tangents,
+            multi_measurements,
+            has_partitioned_shots=tapes[0].shots.has_partitioned_shots,
+        )
         return results, jvps
 
     def compute_vjp(self, tapes, dy):
@@ -463,7 +482,7 @@ class DeviceJacobians(JacobianProductCalculator):
 
         **Examples:**
 
-        For an instance of :class:`~.JacobianProductCalculator` ``jpc``, we have:
+        For an instance of :class:`~.DeviceDerivatives` ``jpc``, we have:
 
         >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
         >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))])
@@ -485,19 +504,16 @@ class DeviceJacobians(JacobianProductCalculator):
         jacobians with non-scalar parameters.
 
         """
-        if any(t.shots.has_partitioned_shots for t in tapes):
-            # we currently do not have any examples for testing
-            raise NotImplementedError("device derivatives with shot vectors not supported.")
         if tapes in self._jacs_cache:
             if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
-                logger.debug("Retrieving jacobian from cache.")
+                logger.debug(" %s : Retrieving jacobian from cache.", self)
             jacs = self._jacs_cache[tapes]
         else:
             jacs = self._dev_compute_derivatives(tapes)
             self._jacs_cache[tapes] = jacs
 
         multi_measurements = (len(t.measurements) > 1 for t in tapes)
-        return _compute_vjps(jacs, dy, multi_measurements)
+        return _compute_vjps(jacs, dy, multi_measurements, tapes[0].shots.has_partitioned_shots)
 
     def compute_jacobian(self, tapes):
         """Compute the full Jacobian for a batch of tapes.
@@ -515,7 +531,7 @@ class DeviceJacobians(JacobianProductCalculator):
 
         **Examples:**
 
-        For an instance of :class:`~.JacobianProductCalculator` ``jpc``, we have:
+        For an instance of :class:`~.DeviceDerivatives` ``jpc``, we have:
 
         >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
         >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))])
@@ -527,12 +543,9 @@ class DeviceJacobians(JacobianProductCalculator):
         jacobians with non-scalar parameters.
 
         """
-        if any(t.shots.has_partitioned_shots for t in tapes):
-            # we currently do not have any examples for testing
-            raise NotImplementedError("device derivatives with shot vectors not supported.")
         if tapes in self._jacs_cache:
             if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
-                logger.debug("Retrieving jacobian from cache.")
+                logger.debug("%s : Retrieving jacobian from cache.", self)
             return self._jacs_cache[tapes]
 
         jacs = self._dev_compute_derivatives(tapes)
@@ -541,12 +554,12 @@ class DeviceJacobians(JacobianProductCalculator):
 
 
 class DeviceJacobianProducts(JacobianProductCalculator):
-    """Compute the jacobian products using the native device methods.
+    """Compute jacobian products using the native device methods.
 
     Args:
         device (pennylane.devices.Device): the device for execution and derivatives.
             Must define both the vjp and jvp.
-        execution_config (pennylane.devices.ExecutionConfig): a datastructure containing the parameters needed to fully
+        execution_config (pennylane.devices.ExecutionConfig): a datastructure containing the options needed to fully
            describe the execution.
 
     >>> dev = qml.device('default.qubit')

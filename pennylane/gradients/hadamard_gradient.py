@@ -178,6 +178,10 @@ def _hadamard_grad(
     assert_no_state_returns(tape.measurements, transform_name)
     assert_no_variance(tape.measurements, transform_name)
     assert_no_tape_batching(tape, transform_name)
+    if len(tape.measurements) > 1 and tape.shots.has_partitioned_shots:
+        raise NotImplementedError(
+            "hadamard gradient does not support multiple measurements with partitioned shots."
+        )
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
@@ -294,12 +298,15 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
     multi_params = len(tape.trainable_params) > 1
 
     def processing_fn(results):  # pylint: disable=too-many-branches
-        final_res = [
-            [qml.math.convert_like(2 * coeff * r, r) for r in res]
-            if isinstance(res, tuple)
-            else qml.math.convert_like(2 * coeff * res, res)
-            for coeff, res in zip(coeffs, results)
-        ]
+        """Post processing function for computing a hadamard gradient."""
+        final_res = []
+        for coeff, res in zip(coeffs, results):
+
+            if isinstance(res, tuple):
+                new_val = [qml.math.convert_like(2 * coeff * r, r) for r in res]
+            else:
+                new_val = qml.math.convert_like(2 * coeff * res, res)
+            final_res.append(new_val)
 
         # Post process for probs
         if measurements_probs:

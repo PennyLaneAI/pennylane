@@ -74,6 +74,16 @@ class TestHadamardGrad:
         with pytest.raises(NotImplementedError, match=_match):
             qml.gradients.hadamard_grad(tape)
 
+    def test_tape_with_partitioned_shots_multiple_measurements_raises(self):
+        """Test that an error is raised with multiple measurements and partitioned shots."""
+        tape = qml.tape.QuantumScript(
+            [qml.RX(0.1, wires=0)],
+            [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(0))],
+            shots=(1000, 10000),
+        )
+        with pytest.raises(NotImplementedError):
+            qml.gradients.hadamard_grad(tape)
+
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ, qml.PhaseShift, qml.U1])
     def test_pauli_rotation_gradient(self, G, theta, tol):
