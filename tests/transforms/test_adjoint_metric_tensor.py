@@ -272,11 +272,11 @@ class TestAdjointMetricTensorTape:
             return qml.expval(qml.PauliZ(wires[0]))
 
         circuit(*params)
-        mt = qml.adjoint_metric_tensor(circuit.qtape, dev)
+        mt = qml.adjoint_metric_tensor(circuit.qtape)
         expected = qml.math.reshape(expected, qml.math.shape(mt))
         assert qml.math.allclose(mt, expected)
 
-        mt = qml.adjoint_metric_tensor(circuit, hybrid=False)(*params)
+        mt = qml.adjoint_metric_tensor(circuit)(*params)
         assert qml.math.allclose(mt, expected)
 
     @pytest.mark.jax
@@ -302,11 +302,11 @@ class TestAdjointMetricTensorTape:
             return qml.expval(qml.PauliZ(0))
 
         circuit(*j_params)
-        mt = qml.adjoint_metric_tensor(circuit.qtape, dev)
+        mt = qml.adjoint_metric_tensor(circuit.qtape)
         expected = qml.math.reshape(expected, qml.math.shape(mt))
         assert qml.math.allclose(mt, expected)
 
-        mt = qml.adjoint_metric_tensor(circuit, hybrid=False)(*j_params)
+        mt = qml.adjoint_metric_tensor(circuit)(*j_params)
         assert qml.math.allclose(mt, expected)
 
     interfaces = ["auto", "torch"]
@@ -331,11 +331,11 @@ class TestAdjointMetricTensorTape:
             return qml.expval(qml.PauliZ(0))
 
         circuit(*t_params)
-        mt = qml.adjoint_metric_tensor(circuit.qtape, dev)
+        mt = qml.adjoint_metric_tensor(circuit.qtape)
         expected = qml.math.reshape(expected, qml.math.shape(mt))
         assert qml.math.allclose(mt.detach().numpy(), expected)
 
-        mt = qml.adjoint_metric_tensor(circuit, hybrid=False)(*t_params)
+        mt = qml.adjoint_metric_tensor(circuit)(*t_params)
         assert qml.math.allclose(mt, expected)
 
     interfaces = ["auto", "tf"]
@@ -361,13 +361,13 @@ class TestAdjointMetricTensorTape:
 
         with tf.GradientTape():
             circuit(*t_params)
-            mt = qml.adjoint_metric_tensor(circuit.qtape, dev)
+            mt = qml.adjoint_metric_tensor(circuit.qtape)
 
         expected = qml.math.reshape(expected, qml.math.shape(mt))
         assert qml.math.allclose(mt, expected)
 
         with tf.GradientTape():
-            mt = qml.adjoint_metric_tensor(circuit, hybrid=False)(*t_params)
+            mt = qml.adjoint_metric_tensor(circuit)(*t_params)
         assert qml.math.allclose(mt, expected)
 
 
@@ -576,7 +576,7 @@ class TestAdjointMetricTensorDifferentiability:
             ansatz(*params, dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        mt_fn = qml.adjoint_metric_tensor(circuit, hybrid=True)
+        mt_fn = qml.adjoint_metric_tensor(circuit)
         argnums = list(range(len(params)))
         mt_jac = jax.jacobian(mt_fn, argnums=argnums)(*j_params)
 
@@ -654,7 +654,7 @@ class TestErrors:
         dev = qml.device("default.qubit", wires=2)
 
         with pytest.raises(qml.QuantumFunctionError, match="The passed object is not a "):
-            qml.adjoint_metric_tensor(ansatz, device=dev)
+            qml.adjoint_metric_tensor(ansatz)
 
     def test_error_finite_shots(self):
         """Test that an error is raised if the device has a finite number of shots set."""
@@ -665,7 +665,7 @@ class TestErrors:
         dev = qml.device("default.qubit", wires=2, shots=1)
 
         with pytest.raises(ValueError, match="The adjoint method for the metric tensor"):
-            qml.adjoint_metric_tensor(tape, device=dev)
+            qml.adjoint_metric_tensor(tape)
 
     def test_warning_multiple_devices(self):
         """Test that a warning is issued if an ExpvalCost with multiple
