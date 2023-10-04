@@ -15,36 +15,88 @@
 Contains the metric_tensor batch_transform which wraps multiple
 methods of computing the metric tensor.
 """
+from typing import Sequence, Callable
 import functools
+from functools import partial
 import warnings
 import numpy as np
 
 import pennylane as qml
 from pennylane.circuit_graph import LayerData
 from pennylane.queuing import WrappedObj
+from pennylane.transforms.core import transform
 
-from .batch_transform import batch_transform
+
+def _contract_metric_tensor_with_cjac(mt, cjac, tape):
+    """Execute the contraction of pre-computed classical Jacobian(s)
+    and the metric tensor of a tape in order to obtain the hybrid
+    metric tensor of a QNode.
+
+    Args:
+        mt (array): Metric tensor of a tape (2-dimensional)
+        cjac (array or tuple[array]): The classical Jacobian of a QNode
+
+    Returns:
+        array or tuple[array]: Hybrid metric tensor(s) of the QNode.
+        The number of metric tensors depends on the number of QNode arguments
+        for which the classical Jacobian was computed, the tensor shape(s)
+        depend on the shape of these QNode arguments.
+    """
+    if isinstance(mt, tuple) and len(mt) == 1:
+        mt = mt[0]
+    if isinstance(cjac, tuple):
+        # Classical processing of multiple arguments is present. Return cjac.T @ mt @ cjac
+        # as a tuple of contractions.
+        metric_tensors = tuple(
+            qml.math.tensordot(c, qml.math.tensordot(mt, c, axes=[[-1], [0]]), axes=[[0], [0]])
+            for c in cjac
+            if c is not None
+        )
+        return metric_tensors[0] if len(metric_tensors) == 1 else metric_tensors
+
+    is_square = cjac.shape == (1,) or (cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1])
+
+    if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
+        # Classical Jacobian is the identity. No classical processing
+        # is present inside the QNode.
+        return mt
+
+    mt = qml.math.tensordot(cjac, qml.math.tensordot(mt, cjac, axes=[[-1], [0]]), axes=[[0], [0]])
+
+    return mt
 
 
 def expand_fn(
-    tape, argnum=None, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None
-):
-    """Set the metric tensor based on whether non-unitary gates are allowed."""
-    # pylint: disable=unused-argument,too-many-arguments
-    if not allow_nonunitary and approx is None:  # pragma: no cover
-        return qml.transforms.expand_nonunitary_gen(tape)
-    return qml.transforms.expand_multipar(tape)
-
-
-@functools.partial(batch_transform, expand_fn=expand_fn)
-def metric_tensor(
-    tape,
+    tape: qml.tape.QuantumTape,
     argnum=None,
+    argnums=None,
     approx=None,
     allow_nonunitary=True,
     aux_wire=None,
     device_wires=None,
-):  # pylint: disable=too-many-arguments
+) -> (Sequence[qml.tape.QuantumTape], Callable):
+    """Set the metric tensor based on whether non-unitary gates are allowed."""
+    # pylint: disable=unused-argument,too-many-arguments
+    if not allow_nonunitary and approx is None:  # pragma: no cover
+        return [qml.transforms.expand_nonunitary_gen(tape)], lambda x: x[0]
+    return [qml.transforms.expand_multipar(tape)], lambda x: x[0]
+
+
+@partial(
+    transform,
+    expand_transform=expand_fn,
+    classical_cotransform=_contract_metric_tensor_with_cjac,
+    final_transform=True,
+)
+def metric_tensor(
+    tape: qml.tape.QuantumTape,
+    argnum=None,
+    argnums=None,
+    approx=None,
+    allow_nonunitary=True,
+    aux_wire=None,
+    device_wires=None,
+) -> (Sequence[qml.tape.QuantumTape], Callable):  # pylint: disable=too-many-arguments
     r"""Returns a function that computes the metric tensor of a given QNode or quantum tape.
 
     The metric tensor convention we employ here has the following form:
@@ -67,8 +119,12 @@ def metric_tensor(
         This is the case for unitary single-parameter operations.
 
     Args:
-        tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to find the metric tensor of
+        tape (QuantumTape): quantum tape to find the metric tensor of
         argnum (int or Sequence[int] or None): Trainable tape-parameter indices with respect to which
+            the metric tensor is computed. If ``argnum=None``, the metric tensor with respect to all
+            trainable parameters is returned. Excluding tape-parameter indices from this list reduces
+            the computational cost and the corresponding metric-tensor elements will be set to 0.
+        argnums (int or Sequence[int] or None): Trainable tape-parameter indices with respect to which
             the metric tensor is computed. If ``argnum=None``, the metric tensor with respect to all
             trainable parameters is returned. Excluding tape-parameter indices from this list reduces
             the computational cost and the corresponding metric-tensor elements will be set to 0.
@@ -298,6 +354,8 @@ def metric_tensor(
         By setting ``argnum = (0, 2, 3)`` we exclude the 0-th element of ``weights`` from the computation
         of the metric tensor and not the 1st element, as one might expect.
     """
+    if argnums:
+        tape.trainable_params = argnums
     if not tape.trainable_params:
         warnings.warn(
             "Attempted to compute the metric tensor of a tape with no trainable parameters. "
@@ -334,49 +392,12 @@ def metric_tensor(
     )
 
 
-def _contract_metric_tensor_with_cjac(mt, cjac):
-    """Execute the contraction of pre-computed classical Jacobian(s)
-    and the metric tensor of a tape in order to obtain the hybrid
-    metric tensor of a QNode.
-
-    Args:
-        mt (array): Metric tensor of a tape (2-dimensional)
-        cjac (array or tuple[array]): The classical Jacobian of a QNode
-
-    Returns:
-        array or tuple[array]: Hybrid metric tensor(s) of the QNode.
-        The number of metric tensors depends on the number of QNode arguments
-        for which the classical Jacobian was computed, the tensor shape(s)
-        depend on the shape of these QNode arguments.
-    """
-    if isinstance(cjac, tuple):
-        # Classical processing of multiple arguments is present. Return cjac.T @ mt @ cjac
-        # as a tuple of contractions.
-        metric_tensors = tuple(
-            qml.math.tensordot(c, qml.math.tensordot(mt, c, axes=[[-1], [0]]), axes=[[0], [0]])
-            for c in cjac
-            if c is not None
-        )
-        return metric_tensors[0] if len(metric_tensors) == 1 else metric_tensors
-
-    is_square = cjac.shape == (1,) or (cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1])
-
-    if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
-        # Classical Jacobian is the identity. No classical processing
-        # is present inside the QNode.
-        return mt
-
-    mt = qml.math.tensordot(cjac, qml.math.tensordot(mt, cjac, axes=[[-1], [0]]), axes=[[0], [0]])
-
-    return mt
-
-
-@metric_tensor.custom_qnode_wrapper
+@metric_tensor.custom_qnode_transform
 def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     """Here, we overwrite the QNode execution wrapper in order
     to take into account that classical processing may be present
     inside the QNode."""
-    hybrid = tkwargs.pop("hybrid", True)
+    # hybrid = tkwargs.pop("hybrid", True)
 
     if isinstance(qnode, qml.ExpvalCost):
         if qnode._multiple_devices:  # pylint: disable=protected-access
@@ -389,87 +410,90 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
         qnode = qnode.qnodes[0]
 
     tkwargs.setdefault("device_wires", qnode.device.wires)
-    mt_fn = self.default_qnode_wrapper(qnode, targs, tkwargs)
 
-    def wrapper(*args, **kwargs):  # pylint: disable=too-many-branches
-        argnum = tkwargs.get("argnum", None)
-        argnums = tkwargs.get("argnums", None)
+    mt_fn = self.default_qnode_transform(qnode, targs, tkwargs)
 
-        interface = qml.math.get_interface(*args)
-        trainable_params = qml.math.get_trainable_indices(args)
-
-        if interface == "jax" and argnum is not None:
-            raise qml.QuantumFunctionError(
-                "argnum does not work with the Jax interface. You should use argnums instead."
-            )
-        if interface == "jax" and not trainable_params:
-            if argnums is None:
-                argnums_ = [0]
-
-            else:
-                argnums_ = [argnums] if isinstance(argnums, int) else argnums
-
-            params = qml.math.jax_argnums_to_tape_trainable(
-                qnode, argnums_, self.expand_fn, args, kwargs
-            )
-            argnums_ = qml.math.get_trainable_indices(params)
-            kwargs["argnums"] = argnums_
-
-        elif not trainable_params:
-            warnings.warn(
-                "Attempted to compute the metric tensor of a QNode with no trainable parameters. "
-                "If this is unintended, please add trainable parameters in accordance with the "
-                "chosen auto differentiation framework."
-            )
-            return ()
-
-        try:
-            mt = mt_fn(*args, **kwargs)
-        except qml.wires.WireError as e:
-            revert_text = (
-                "\n\nReverting to the block-diagonal approximation. It will often be "
-                "much more efficient to request the block-diagonal approximation directly!"
-            )
-            other_mt_errors = [
-                "The requested auxiliary wire is already in use by the circuit.",
-                "The requested auxiliary wire does not exist on the used device.",
-            ]
-
-            if str(e) == "The device has no free wire for the auxiliary wire.":
-                warnings.warn(
-                    "The device does not have a wire that is not used by the circuit." + revert_text
-                )
-            elif str(e) in other_mt_errors:
-                warnings.warn(
-                    "An auxiliary wire is not available."
-                    "\n\nThis can occur when computing the full metric tensor via the "
-                    "Hadamard test, and the device does not provide an "
-                    "additional wire or the requested auxiliary wire does not exist "
-                    "on the device." + revert_text
-                )
-            else:
-                raise e
-            tkwargs["approx"] = "block-diag"
-            return self(qnode, *targs, **tkwargs)(*args, **kwargs)
-
-        if not hybrid:
-            return mt
-
-        kwargs.pop("shots", False)
-        # Special case where we apply a Jax transform (jacobian e.g.) on the gradient transform and argnums are
-        # defined on the outer transform and therefore on the args.
-        if interface == "jax":
-            argnum_cjac = trainable_params or argnums
-        else:
-            argnum_cjac = None
-
-        cjac = qml.transforms.classical_jacobian(
-            qnode, argnum=argnum_cjac, expand_fn=self.expand_fn
-        )(*args, **kwargs)
-
-        return _contract_metric_tensor_with_cjac(mt, cjac)
-
-    return wrapper
+    return mt_fn
+    #
+    # def wrapper(*args, **kwargs):  # pylint: disable=too-many-branches
+    #     argnum = tkwargs.get("argnum", None)
+    #     argnums = tkwargs.get("argnums", None)
+    #
+    #     interface = qml.math.get_interface(*args)
+    #     trainable_params = qml.math.get_trainable_indices(args)
+    #
+    #     if interface == "jax" and argnum is not None:
+    #         raise qml.QuantumFunctionError(
+    #             "argnum does not work with the Jax interface. You should use argnums instead."
+    #         )
+    #     if interface == "jax" and not trainable_params:
+    #         if argnums is None:
+    #             argnums_ = [0]
+    #
+    #         else:
+    #             argnums_ = [argnums] if isinstance(argnums, int) else argnums
+    #
+    #         params = qml.math.jax_argnums_to_tape_trainable(
+    #             qnode, argnums_, self.expand_fn, args, kwargs
+    #         )
+    #         argnums_ = qml.math.get_trainable_indices(params)
+    #         kwargs["argnums"] = argnums_
+    #
+    #     elif not trainable_params:
+    #         warnings.warn(
+    #             "Attempted to compute the metric tensor of a QNode with no trainable parameters. "
+    #             "If this is unintended, please add trainable parameters in accordance with the "
+    #             "chosen auto differentiation framework."
+    #         )
+    #         return ()
+    #
+    #     try:
+    #         mt = mt_fn(*args, **kwargs)
+    #     except qml.wires.WireError as e:
+    #         revert_text = (
+    #             "\n\nReverting to the block-diagonal approximation. It will often be "
+    #             "much more efficient to request the block-diagonal approximation directly!"
+    #         )
+    #         other_mt_errors = [
+    #             "The requested auxiliary wire is already in use by the circuit.",
+    #             "The requested auxiliary wire does not exist on the used device.",
+    #         ]
+    #
+    #         if str(e) == "The device has no free wire for the auxiliary wire.":
+    #             warnings.warn(
+    #                 "The device does not have a wire that is not used by the circuit." + revert_text
+    #             )
+    #         elif str(e) in other_mt_errors:
+    #             warnings.warn(
+    #                 "An auxiliary wire is not available."
+    #                 "\n\nThis can occur when computing the full metric tensor via the "
+    #                 "Hadamard test, and the device does not provide an "
+    #                 "additional wire or the requested auxiliary wire does not exist "
+    #                 "on the device." + revert_text
+    #             )
+    #         else:
+    #             raise e
+    #         tkwargs["approx"] = "block-diag"
+    #         return self(qnode, *targs, **tkwargs)(*args, **kwargs)
+    #
+    #     if not hybrid:
+    #         return mt
+    #
+    #     kwargs.pop("shots", False)
+    #     # Special case where we apply a Jax transform (jacobian e.g.) on the gradient transform and argnums are
+    #     # defined on the outer transform and therefore on the args.
+    #     if interface == "jax":
+    #         argnum_cjac = trainable_params or argnums
+    #     else:
+    #         argnum_cjac = None
+    #
+    #     cjac = qml.transforms.classical_jacobian(
+    #         qnode, argnum=argnum_cjac, expand_fn=self.expand_fn
+    #     )(*args, **kwargs)
+    #
+    #     return _contract_metric_tensor_with_cjac(mt, cjac)
+    #
+    # return wrapper
 
 
 def _metric_tensor_cov_matrix(tape, argnum, diag_approx):  # pylint: disable=too-many-statements

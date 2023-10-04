@@ -286,7 +286,11 @@ def _parshift_and_integrate(
 # pylint: disable=too-many-arguments
 @partial(transform, final_transform=True)
 def stoch_pulse_grad(
-    tape: qml.tape.QuantumTape, argnum=None, num_split_times=1, sampler_seed=None, use_broadcasting=False
+    tape: qml.tape.QuantumTape,
+    argnum=None,
+    num_split_times=1,
+    sampler_seed=None,
+    use_broadcasting=False,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Compute the gradient of a quantum circuit composed of pulse sequences by applying the
     stochastic parameter shift rule.
