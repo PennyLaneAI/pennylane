@@ -55,7 +55,6 @@ def point_from_d_root_two(point):
 
 
 def action(a, b, g):
-    print(g)
     g4 = adj2(g)
     g3 = g4.adjoint()
     g2 = g

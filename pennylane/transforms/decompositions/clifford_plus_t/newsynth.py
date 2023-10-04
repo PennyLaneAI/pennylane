@@ -68,9 +68,9 @@ def epsilon_region(epsilon, theta):
     ev1 = 4 * (epsilon**-4)
     ev2 = epsilon**-2
     ctr = Point(d * zx, d * zy)
-    mmat = Matrix.array([[ev1, 0], [0, ev2]])
-    bmat = Matrix.array([[zx, -zy], [zy, zx]])
-    mat = bmat @ mmat @ bmat.inverse()  # pylint:disable=no-member
+    mmat = np.array([[ev1, 0], [0, ev2]])
+    bmat = np.array([[zx, -zy], [zy, zx]])
+    mat = bmat @ mmat @ np.linalg.inv(bmat)
     ell = Ellipse(mat, ctr)
 
     def characteristic_fn(x, y):

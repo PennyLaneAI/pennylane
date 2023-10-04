@@ -24,11 +24,11 @@ from .conversion import (
     from_z_root_two,
     operator_to_bl2z,
 )
-from .rings import Matrix, RootTwo, ZRootTwo, SQRT2
+from .rings import Matrix, root_two, SQRT2
 from .shapes import ConvexSet, Ellipse, Point
 
-LAMBDA = ZRootTwo(1, 1)
-LAMBDA_INV = ZRootTwo(-1, 1)
+LAMBDA = root_two(1, 1)
+LAMBDA_INV = root_two(-1, 1)
 log_lambda = lambda x: np.emath.logn(1 + SQRT2, float(x))
 
 
@@ -109,7 +109,7 @@ def gridpoints_scaled(x, y, k):
     y = (-scale_inv * y[1], -scale_inv * y[0]) if k % 2 else (scale_inv * y[0], scale_inv * y[1])
     a = (x[0] + y[0]) // 2
     b = (SQRT2 * (x[0] - y[0])) // 4
-    alpha = ZRootTwo(a, b)
+    alpha = root_two(a, b)
     xoff = a + SQRT2 * b
     yoff = a - SQRT2 * b
     x_ = (x[0] - xoff, x[1] - xoff)
@@ -166,7 +166,7 @@ def gridpoints_internal(x, y):
     amax = (x[1] + y[1]) // 2
     bmin = lambda a: np.ceil((a - y[1]) / SQRT2)
     bmax = lambda a: (a - y[0]) // SQRT2
-    return [ZRootTwo(a, b) for a in range(amin, amax + 1) for b in range(bmin(a), bmax(a) + 1)]
+    return [root_two(a, b) for a in range(amin, amax + 1) for b in range(bmin(a), bmax(a) + 1)]
 
 
 def floorlog(b, x):
@@ -212,20 +212,20 @@ def step_lemma(matA: np.ndarray, matB: np.ndarray) -> Matrix:
         return with_shift(matA, matB, int(np.round(log_lambda(l2z_minus_zeta) / 4)))
 
     if 0.24410 <= l2z <= 4.0968 and 0.24410 <= l2zeta <= 4.0968:
-        return Matrix.array([[1, -1], [1, 1]]) / RootTwo(0, 1)
+        return Matrix.array([[1, -1], [1, 1]]) / root_two(0, 1)
 
     if b >= 0:
         if l2z <= 1.6969:
-            return Matrix.array([[-LAMBDA_INV, -1], [LAMBDA, 1]]) / RootTwo(0, 1)
+            return Matrix.array([[-LAMBDA_INV, -1], [LAMBDA, 1]]) / root_two(0, 1)
         if l2zeta <= 1.6969:
-            return adj2(Matrix.array([[-LAMBDA_INV, -1], [LAMBDA, 1]]) / RootTwo(0, 1))
+            return adj2(Matrix.array([[-LAMBDA_INV, -1], [LAMBDA, 1]]) / root_two(0, 1))
         l2c = min(l2z, l2zeta)
         power = max(1, int(np.sqrt(l2c // 4)))
         return Matrix.array([[1, -2 * power], [0, 1]])
 
     l2c = min(l2z, l2zeta)
     power = max(1, int(np.sqrt(l2c // 2)))
-    return Matrix.array([[1, ZRootTwo(0, power)], [0, 1]])
+    return Matrix.array([[1, root_two(0, power)], [0, 1]])
 
 
 def wlog_using(matA, matB, op):
@@ -263,5 +263,5 @@ def shift_tau(k, op):
 def reduction(matA, matB) -> Matrix:
     """Applies the Step Lemma until the skew is 15 or less"""
     if (opG := step_lemma(matA, matB)) is None:
-        return np.eye(2)
+        return Matrix.array([[1, 0], [0, 1]])
     return opG @ reduction(*action(matA, matB, opG))

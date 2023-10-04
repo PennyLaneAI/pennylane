@@ -16,6 +16,7 @@
 import numpy as np
 
 from .conversion import op_from_d_root_two
+from .rings import Matrix
 
 
 class Point:
@@ -47,10 +48,10 @@ class Ellipse:
         self.operator = operator
         self.point = point
 
-    def transform(self, opG):
+    def transform(self, opG: Matrix):
         """Apply an operator to an ellipse."""
         opG_inv = opG.inverse()
-        mat = np.conj(opG_inv).T @ self.operator @ opG_inv
+        mat = opG_inv.adjoint() @ self.operator @ opG_inv
         return Ellipse(mat, self.point.transform(opG))
 
     def bounding_box(self):
@@ -72,7 +73,7 @@ class ConvexSet:
         self.characteristic_fn = characteristic_fn
         self.line_intersector = line_intersector
 
-    def characteristic_transform(self, opG):
+    def characteristic_transform(self, opG: Matrix):
         """Returns a new characteristic function that first applies an operator to the point."""
         opG_inv = opG.inverse()
 

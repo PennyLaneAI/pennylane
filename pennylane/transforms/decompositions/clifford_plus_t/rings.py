@@ -14,7 +14,8 @@
 """Various ring definitions for the gridsynth implementation."""
 # pylint:disable=too-few-public-methods
 
-from fractions import Fraction
+from abc import ABC, abstractclassmethod
+from fractions import Fraction as _Fraction
 import numpy as np
 
 SQRT2 = float(np.sqrt(2))
@@ -36,9 +37,9 @@ class Dyadic:
 
     def __mul__(self, other):
         if isinstance(other, Dyadic):
-            return Dyadic(self.x * other.x, self.k + other.k)
+            return Fraction(self.x * other.x, 2 ** (self.k + other.k))
         if isinstance(other, int):
-            return Dyadic(self.x * other, self.k)
+            return Fraction(self.x * other, 2**self.k)
         if isinstance(other, RootTwo):
             return other * self
         return float(self) * other
@@ -46,12 +47,12 @@ class Dyadic:
     def __add__(self, other):
         if isinstance(other, Dyadic):
             if self.k == other.k:
-                return Dyadic(self.x + other.x, self.k)
+                return Fraction(self.x + other.x, 2**self.k)
             a, b = (self, other) if self.k < other.k else (other, self)
             k_delta = b.k - a.k
-            return Dyadic(a.x * int(2**k_delta) + b.x, b.k)
+            return Fraction(a.x * int(2**k_delta) + b.x, 2**b.k)
         if isinstance(other, int):
-            return Dyadic(self.x + other * 2**self.k, self.k)
+            return Fraction(self.x + other * 2**self.k, 2**self.k)
         if isinstance(other, RootTwo):
             return other + self
         return float(self) + other
@@ -60,7 +61,7 @@ class Dyadic:
         if isinstance(other, Dyadic):
             return self + (-other)
         if isinstance(other, int):
-            return Dyadic(self.x - other * 2**self.k, self.k)
+            return Fraction(self.x - other * 2**self.k, 2**self.k)
         if isinstance(other, RootTwo):
             return -other + self
         return float(self) - other
@@ -87,13 +88,33 @@ class Dyadic:
         return self
 
 
+class Fraction(_Fraction):
+    """An override of fractions.Fraction to returns ints or Dyadics when appropriate."""
+
+    def __new__(cls, numerator=0, denominator=None, *, _normalize=True):
+        self = super().__new__(
+            Fraction, numerator=numerator, denominator=denominator, _normalize=_normalize
+        )
+        if self.denominator == 1:
+            return self.numerator
+        if (log_d := np.log2(self.denominator)).is_integer():
+            return Dyadic(self.numerator, int(log_d))
+        return self
+
+
 class Matrix(np.ndarray):
     """Assumes input is a 2x2 matrix."""
 
     @classmethod
     def array(cls, value) -> "Matrix":
-        """The ndarray constructor is messy, it's easier to provide this (like np.array)."""
-        return np.array(value).view(cls)
+        """
+        Constructor to build a 2x2 matrix.
+
+        The ndarray constructor is messy, it's easier to provide this (like np.array). Also, we
+        set the type to "object" explicitly to ensure numpy does not convert ints to np.int64,
+        as that would break the type-checking in the ``root_two`` function.
+        """
+        return np.array(value).astype("object").view(cls)
 
     def inverse(self):
         """Return the inverse of the matrix, assuming |det M| = 1."""
@@ -111,24 +132,33 @@ class Matrix(np.ndarray):
         return np.conj(self).T
 
 
-class RootTwo:
+def root_two(a, b):
+    """Determine the RootTwo ring (if any) that should be used, and return that type."""
+    if b == 0:
+        return a
+
+    types = {type(a), type(b)} - {int}
+
+    if not types.issubset({Fraction, Dyadic}):
+        return float(a + b * SQRT2)
+    if types == {Dyadic}:
+        return DRootTwo(a, b)
+    if types:  # at least one is a Fraction
+        return QRootTwo(a, b)
+    return ZRootTwo(a, b)
+
+
+class RootTwo(ABC):
     """Any object that can be represented as a + b√2"""
 
-    def __new__(cls, a, b):
-        types = {type(a), type(b)} - {int}
-        if not types:
-            return object.__new__(ZRootTwo)
-        if types == {Dyadic}:
-            return object.__new__(DRootTwo)
-        if types == {Fraction}:
-            return object.__new__(QRootTwo)
-        return float.__new__(float, a + b * SQRT2)
-
     def __init__(self, a, b):
-        """Default constructor."""
-        dtype = self.dtype  # pylint:disable=no-member
-        self.a = a if isinstance(a, dtype) else dtype(a)
-        self.b = b if isinstance(b, dtype) else dtype(b)
+        """Cast inputs to the correct type before saving to the ring."""
+        self.a = self.cast(a)
+        self.b = self.cast(b)
+
+    @abstractclassmethod
+    def cast(cls, value):
+        """Cast a value to the type for this ring."""
 
     def conjugate(self):
         """The complex conjugate. Defaults to itself, needed for Matrix.adjoint()."""
@@ -153,21 +183,21 @@ class RootTwo:
 
     def __add__(self, other):
         if isinstance(other, RootTwo):
-            return RootTwo(self.a + other.a, self.b + other.b)
-        return RootTwo(self.a + other, self.b)
+            return root_two(self.a + other.a, self.b + other.b)
+        return root_two(self.a + other, self.b)
 
     def __sub__(self, other):
         if isinstance(other, RootTwo):
-            return RootTwo(self.a - other.a, self.b - other.b)
-        return RootTwo(self.a - other, self.b)
+            return root_two(self.a - other.a, self.b - other.b)
+        return root_two(self.a - other, self.b)
 
     def __mul__(self, other):
         if isinstance(other, RootTwo):
-            return RootTwo(
+            return root_two(
                 self.a * other.a + 2 * self.b * other.b,
                 self.a * other.b + self.b * other.a,
             )
-        return RootTwo(self.a * other, self.b * other)
+        return root_two(self.a * other, self.b * other)
 
     def __eq__(self, other):
         if isinstance(other, RootTwo):
@@ -214,27 +244,52 @@ class RootTwo:
 class ZRootTwo(RootTwo):
     """Z√2"""
 
-    dtype = int
+    @classmethod
+    def cast(cls, value):
+        t = type(value)
+        if t is int:
+            return value
+        if t is float and value.is_integer():
+            return int(value)
+        raise TypeError(f"Cannot cast {value} of unknown type {type(value)} to int")
 
     def __truediv__(self, other):
         if isinstance(other, int):
-            return QRootTwo(Fraction(self.a, other), Fraction(self.b, other))
+            return root_two(Fraction(self.a, other), Fraction(self.b, other))
         return super().__truediv__(other)
 
     def __rtruediv__(self, other):
         if isinstance(other, int):
             k = self.a**2 - 2 * self.b**2
-            return QRootTwo(Fraction(other * self.a, k), Fraction(-other * self.b, k))
+            return root_two(Fraction(other * self.a, k), Fraction(-other * self.b, k))
         return super().__rtruediv__(other)
 
 
 class DRootTwo(RootTwo):
     """D√2"""
 
-    dtype = Dyadic
+    @classmethod
+    def cast(cls, value):
+        t = type(value)
+        if t is Dyadic:
+            return value
+        if t is int:
+            return Dyadic(value)
+        if t is float and value.is_integer():
+            return Dyadic(int(value))
+        raise TypeError(f"Cannot cast {value} of unknown type {type(value)} to Dyadic")
 
 
 class QRootTwo(RootTwo):
     """Q√2"""
 
-    dtype = Fraction
+    @classmethod
+    def cast(cls, value):
+        t = type(value)
+        if t in {Dyadic, Fraction}:
+            return value
+        if t is int:
+            return Dyadic(value)
+        if t is float and value.is_integer():
+            return Dyadic(int(value))
+        raise TypeError(f"Cannot cast {value} of unknown type {type(value)} to Fraction")
