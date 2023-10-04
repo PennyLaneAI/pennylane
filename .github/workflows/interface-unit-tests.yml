@@ -45,7 +45,7 @@ on:
         default: ''
 
 jobs:
-  setup-lightened-ci:
+  setup-ci-load:
     runs-on: ubuntu-latest
 
     steps:
@@ -105,8 +105,7 @@ jobs:
             "tf-tests": 4,
             "jax-tests": 5,
             "core-tests": 3,
-            "gradient-tests": 2,
-            "device-tests": 4
+            "gradient-tests": 2
           }
           EOF
           fi
@@ -135,20 +134,20 @@ jobs:
 
   torch-tests:
     needs:
-      - setup-lightened-ci
+      - setup-ci-load
     strategy:
       max-parallel: >-
         ${{
-           fromJSON(needs.setup-lightened-ci.outputs.matrix-max-parallel).torch-tests
-           || fromJSON(needs.setup-lightened-ci.outputs.matrix-max-parallel).default
+           fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).torch-tests
+           || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
          }}
       matrix:
         python-version: >-
           ${{
-            fromJSON(needs.setup-lightened-ci.outputs.python-version).torch-tests
-            || fromJSON(needs.setup-lightened-ci.outputs.python-version).default
+            fromJSON(needs.setup-ci-load.outputs.python-version).torch-tests
+            || fromJSON(needs.setup-ci-load.outputs.python-version).default
            }}
-    if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'torch-tests') }}
+    if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'torch-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: torch-tests (${{ matrix.python-version }})
@@ -166,20 +165,20 @@ jobs:
 
   autograd-tests:
     needs:
-      - setup-lightened-ci
+      - setup-ci-load
     strategy:
       max-parallel: >-
         ${{
-           fromJSON(needs.setup-lightened-ci.outputs.matrix-max-parallel).autograd-tests
-           || fromJSON(needs.setup-lightened-ci.outputs.matrix-max-parallel).default
+           fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).autograd-tests
+           || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
          }}
       matrix:
         python-version: >-
           ${{
-            fromJSON(needs.setup-lightened-ci.outputs.python-version).autograd-tests
-            || fromJSON(needs.setup-lightened-ci.outputs.python-version).default
+            fromJSON(needs.setup-ci-load.outputs.python-version).autograd-tests
+            || fromJSON(needs.setup-ci-load.outputs.python-version).default
            }}
-    if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'autograd-tests') }}
+    if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'autograd-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: autograd-tests (${{ matrix.python-version }})
@@ -196,12 +195,12 @@ jobs:
 
   tf-tests:
     needs:
-      - setup-lightened-ci
+      - setup-ci-load
     strategy:
       max-parallel: >-
         ${{
-           fromJSON(needs.setup-lightened-ci.outputs.matrix-max-parallel).tf-tests
-           || fromJSON(needs.setup-lightened-ci.outputs.matrix-max-parallel).default
+           fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).tf-tests
+           || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
          }}
       matrix:
         group:
@@ -209,10 +208,10 @@ jobs:
           - '2'
         python-version: >-
           ${{
-            fromJSON(needs.setup-lightened-ci.outputs.python-version).tf-tests
-            || fromJSON(needs.setup-lightened-ci.outputs.python-version).default
+            fromJSON(needs.setup-ci-load.outputs.python-version).tf-tests
+            || fromJSON(needs.setup-ci-load.outputs.python-version).default
            }}
-    if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'tf-tests') }}
+    if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'tf-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: tf-tests (${{ matrix.group }}, ${{ matrix.python-version }})
@@ -233,21 +232,21 @@ jobs:
 
   jax-tests:
     needs:
-      - setup-lightened-ci
+      - setup-ci-load
     strategy:
       max-parallel: >-
         ${{
-           fromJSON(needs.setup-lightened-ci.outputs.matrix-max-parallel).jax-tests
-           || fromJSON(needs.setup-lightened-ci.outputs.matrix-max-parallel).default
+           fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).jax-tests
+           || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
          }}
       matrix:
         group: [1, 2, 3, 4, 5]
         python-version: >-
           ${{
-            fromJSON(needs.setup-lightened-ci.outputs.python-version).jax-tests
-            || fromJSON(needs.setup-lightened-ci.outputs.python-version).default
+            fromJSON(needs.setup-ci-load.outputs.python-version).jax-tests
+            || fromJSON(needs.setup-ci-load.outputs.python-version).default
            }}
-    if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'jax-tests') }}
+    if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'jax-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: jax-tests (${{ matrix.group }}, ${{ matrix.python-version }})
@@ -267,12 +266,12 @@ jobs:
 
   core-tests:
     needs:
-      - setup-lightened-ci
+      - setup-ci-load
     strategy:
       max-parallel: >-
         ${{
-           fromJSON(needs.setup-lightened-ci.outputs.matrix-max-parallel).core-tests
-           || fromJSON(needs.setup-lightened-ci.outputs.matrix-max-parallel).default
+           fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).core-tests
+           || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
          }}
       matrix:
         group:
@@ -280,10 +279,10 @@ jobs:
           - '2'
         python-version: >-
           ${{
-            fromJSON(needs.setup-lightened-ci.outputs.python-version).core-tests
-            || fromJSON(needs.setup-lightened-ci.outputs.python-version).default
+            fromJSON(needs.setup-ci-load.outputs.python-version).core-tests
+            || fromJSON(needs.setup-ci-load.outputs.python-version).default
            }}
-    if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'core-tests') }}
+    if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'core-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: core-tests (${{ matrix.group }}, ${{ matrix.python-version }})
@@ -302,20 +301,20 @@ jobs:
 
   all-interfaces-tests:
     needs:
-      - setup-lightened-ci
+      - setup-ci-load
     strategy:
       max-parallel: >-
         ${{
-           fromJSON(needs.setup-lightened-ci.outputs.matrix-max-parallel).all-interfaces-tests
-           || fromJSON(needs.setup-lightened-ci.outputs.matrix-max-parallel).default
+           fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).all-interfaces-tests
+           || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
          }}
       matrix:
         python-version: >-
           ${{
-            fromJSON(needs.setup-lightened-ci.outputs.python-version).all-interfaces-tests
-            || fromJSON(needs.setup-lightened-ci.outputs.python-version).default
+            fromJSON(needs.setup-ci-load.outputs.python-version).all-interfaces-tests
+            || fromJSON(needs.setup-ci-load.outputs.python-version).default
            }}
-    if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'all-interfaces-tests') }}
+    if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'all-interfaces-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: all-interfaces-tests (${{ matrix.python-version }})
@@ -336,20 +335,20 @@ jobs:
 
   external-libraries-tests:
     needs:
-      - setup-lightened-ci
+      - setup-ci-load
     strategy:
       max-parallel: >-
         ${{
-           fromJSON(needs.setup-lightened-ci.outputs.matrix-max-parallel).external-libraries-tests
-           || fromJSON(needs.setup-lightened-ci.outputs.matrix-max-parallel).default
+           fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).external-libraries-tests
+           || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
          }}
       matrix:
         python-version: >-
           ${{
-            fromJSON(needs.setup-lightened-ci.outputs.python-version).external-libraries-tests
-            || fromJSON(needs.setup-lightened-ci.outputs.python-version).default
+            fromJSON(needs.setup-ci-load.outputs.python-version).external-libraries-tests
+            || fromJSON(needs.setup-ci-load.outputs.python-version).default
            }}
-    if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'external-libraries-tests') }}
+    if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'external-libraries-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: external-libraries-tests (${{ matrix.python-version }})
@@ -367,20 +366,20 @@ jobs:
 
   qcut-tests:
     needs:
-      - setup-lightened-ci
+      - setup-ci-load
     strategy:
       max-parallel: >-
         ${{
-           fromJSON(needs.setup-lightened-ci.outputs.matrix-max-parallel).qcut-tests
-           || fromJSON(needs.setup-lightened-ci.outputs.matrix-max-parallel).default
+           fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).qcut-tests
+           || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
          }}
       matrix:
         python-version: >-
           ${{
-            fromJSON(needs.setup-lightened-ci.outputs.python-version).qcut-tests
-            || fromJSON(needs.setup-lightened-ci.outputs.python-version).default
+            fromJSON(needs.setup-ci-load.outputs.python-version).qcut-tests
+            || fromJSON(needs.setup-ci-load.outputs.python-version).default
            }}
-    if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'qcut-tests') }}
+    if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'qcut-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: qcut-tests (${{ matrix.python-version }})
@@ -402,20 +401,20 @@ jobs:
 
   qchem-tests:
     needs:
-      - setup-lightened-ci
+      - setup-ci-load
     strategy:
       max-parallel: >-
         ${{
-           fromJSON(needs.setup-lightened-ci.outputs.matrix-max-parallel).qchem-tests
-           || fromJSON(needs.setup-lightened-ci.outputs.matrix-max-parallel).default
+           fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).qchem-tests
+           || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
          }}
       matrix:
         python-version: >-
           ${{
-            fromJSON(needs.setup-lightened-ci.outputs.python-version).qchem-tests
-            || fromJSON(needs.setup-lightened-ci.outputs.python-version).default
+            fromJSON(needs.setup-ci-load.outputs.python-version).qchem-tests
+            || fromJSON(needs.setup-ci-load.outputs.python-version).default
            }}
-    if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'qchem-tests') }}
+    if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'qchem-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: qchem-tests (${{ matrix.python-version }})
@@ -432,12 +431,12 @@ jobs:
 
   gradients-tests:
     needs:
-      - setup-lightened-ci
+      - setup-ci-load
     strategy:
       max-parallel: >-
         ${{
-           fromJSON(needs.setup-lightened-ci.outputs.matrix-max-parallel).gradient-tests
-           || fromJSON(needs.setup-lightened-ci.outputs.matrix-max-parallel).default
+           fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).gradient-tests
+           || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
          }}
       matrix:
         config:
@@ -445,10 +444,10 @@ jobs:
           - suite: param-shift
         python-version: >-
           ${{
-            fromJSON(needs.setup-lightened-ci.outputs.python-version).gradients-tests
-            || fromJSON(needs.setup-lightened-ci.outputs.python-version).default
+            fromJSON(needs.setup-ci-load.outputs.python-version).gradients-tests
+            || fromJSON(needs.setup-ci-load.outputs.python-version).default
            }}
-    if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'gradients-tests') }}
+    if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'gradients-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: gradients-tests (${{ matrix.config.suite }}, ${{ matrix.python-version }})
@@ -469,20 +468,20 @@ jobs:
 
   data-tests:
     needs:
-      - setup-lightened-ci
+      - setup-ci-load
     strategy:
       max-parallel: >-
         ${{
-           fromJSON(needs.setup-lightened-ci.outputs.matrix-max-parallel).data-tests
-           || fromJSON(needs.setup-lightened-ci.outputs.matrix-max-parallel).default
+           fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).data-tests
+           || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
          }}
       matrix:
         python-version: >-
           ${{
-            fromJSON(needs.setup-lightened-ci.outputs.python-version).data-tests
-            || fromJSON(needs.setup-lightened-ci.outputs.python-version).default
+            fromJSON(needs.setup-ci-load.outputs.python-version).data-tests
+            || fromJSON(needs.setup-ci-load.outputs.python-version).default
            }}
-    if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'data-tests') }}
+    if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'data-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: data-tests (${{ matrix.python-version }})
@@ -500,12 +499,12 @@ jobs:
 
   device-tests:
     needs:
-      - setup-lightened-ci
+      - setup-ci-load
     strategy:
       max-parallel: >-
         ${{
-           fromJSON(needs.setup-lightened-ci.outputs.matrix-max-parallel).device-tests
-           || fromJSON(needs.setup-lightened-ci.outputs.matrix-max-parallel).default
+           fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).device-tests
+           || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
          }}
       matrix:
         config:
@@ -521,10 +520,10 @@ jobs:
             shots: None
         python-version: >-
           ${{
-            fromJSON(needs.setup-lightened-ci.outputs.python-version).device-tests
-            || fromJSON(needs.setup-lightened-ci.outputs.python-version).default
+            fromJSON(needs.setup-ci-load.outputs.python-version).device-tests
+            || fromJSON(needs.setup-ci-load.outputs.python-version).default
            }}
-    if: ${{ !contains(fromJSON(needs.setup-lightened-ci.outputs.jobs-to-skip), 'device-tests') }}
+    if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'device-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: device-tests (${{ matrix.config.device }}, ${{ matrix.config.shots }}, ${{ matrix.python-version }})
