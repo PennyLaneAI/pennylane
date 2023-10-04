@@ -367,22 +367,23 @@ def cut_circuit(
 
     tapes, tapes_fn = (
         [tape],
-        lambda x: x[0],
+        lambda x: x[0] # pylint: disable=unnecessary-lambda-assignment
     )
     if isinstance(tape.measurements[0].obs, qml.Hamiltonian):
         tapes, tapes_fn = qml.transforms.hamiltonian_expand(tape, group=False)
 
     def res_tapes_fn(results, cut_func=None, indices=None):
+        print(results, indices, len(results))
         for idx in range(1, len(indices)):
-            print(cut_func[idx - 1], results[indices[idx - 1] : indices[idx]])
+            print(idx, cut_func[idx - 1], results[indices[idx - 1] : indices[idx]])
         exp_res = [
             cut_func[idx - 1](results[indices[idx - 1] : indices[idx]])
             for idx in range(1, len(indices))
         ]
-        return (tapes_fn(exp_res),)
+        return tapes_fn(exp_res)
 
-    res_tapes, res_funcs, res_index = [], [], [0]
-    for tape in tapes:
+    res_tapes, res_funcs, res_index = (), [], [0]
+    for tape in tapes: # pylint: disable=redefined-argument-from-local
         g = tape_to_graph(tape)
 
         if auto_cutter is True or callable(auto_cutter):
@@ -413,7 +414,7 @@ def cut_circuit(
             prepare_nodes.append(p)
             measure_nodes.append(m)
 
-        res_tapes.append(tuple(tape for c in configurations for tape in c))
+        res_tapes += tuple(tape for c in configurations for tape in c)
         res_funcs.append(
             partial(
                 qcut_processing_fn,
@@ -423,10 +424,8 @@ def cut_circuit(
                 use_opt_einsum=use_opt_einsum,
             )
         )
-        print(tuple(tape for c in configurations for tape in c))
-        res_index.append(res_index[-1] + len(res_tapes[-1]))
+        res_index.append(res_index[-1] + len(res_tapes))
 
-    res_tapes = [tape for res_tape in res_tapes for tape in res_tape]
     return res_tapes, partial(res_tapes_fn, cut_func=res_funcs, indices=res_index)
 
 
