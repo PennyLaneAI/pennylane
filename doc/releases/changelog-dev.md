@@ -205,12 +205,11 @@
 
 <h3>Breaking changes 💔</h3>
 
-* The device test suite now converts device kwargs to integers or floats if they can be converted to integers or floats.
-  [(#4640)](https://github.com/PennyLaneAI/pennylane/pull/4640)
-
-* `MeasurementProcess.eigvals()` now raises an `EigvalsUndefinedError` if the measurement observable
-  does not have eigenvalues.
-  [(#4544)](https://github.com/PennyLaneAI/pennylane/pull/4544)
+* `default.qubit` now implements the new device API. If you initialize a device
+  with `qml.device("default.qubit")`, all methods and properties that were tied to the old
+  device API will no longer be on the device. The legacy version can still be accessed with
+  `qml.device("default.qubit.legacy", wires=n_wires)`.
+  [(#4436)](https://github.com/PennyLaneAI/pennylane/pull/4436)
 
 * The `__eq__` and `__hash__` methods of `Operator` and `MeasurementProcess` no longer rely on the
   object's address is memory. Using `==` with operators and measurement processes will now behave the
@@ -270,14 +269,6 @@
 * The CV observables ``qml.X`` and ``qml.P`` are removed. Please use ``qml.QuadX`` and ``qml.QuadP`` instead.
   [(#4533)](https://github.com/PennyLaneAI/pennylane/pull/4533)
 
-* The method ``tape.unwrap()`` and corresponding ``UnwrapTape`` and ``Unwrap`` classes are removed.
-  Instead of ``tape.unwrap()``, use :func:`~.transforms.convert_to_numpy_parameters`.
-  [(#4535)](https://github.com/PennyLaneAI/pennylane/pull/4535)
-
-* The ``RandomLayers.compute_decomposition`` keyword argument ``ratio_imprivitive`` has been changed to
-  ``ratio_imprim`` to match the call signature of the operation.
-  [(#4552)](https://github.com/PennyLaneAI/pennylane/pull/4552)
-
 * The ``sampler_seed`` argument of ``qml.gradients.spsa_grad`` has been removed.
   Instead, the ``sampler_rng`` argument should be set, either to an integer value, which will be used
   to create a PRNG internally, or to a NumPy pseudo-random number generator (PRNG) created via
@@ -288,6 +279,21 @@
   been removed. Please use ``QuantumScript.bind_new_parameters`` instead.
   [(#4548)](https://github.com/PennyLaneAI/pennylane/pull/4548)
 
+* The method ``tape.unwrap()`` and corresponding ``UnwrapTape`` and ``Unwrap`` classes are removed.
+  Instead of ``tape.unwrap()``, use ``qml.transforms.convert_to_numpy_parameters``.
+  [(#4535)](https://github.com/PennyLaneAI/pennylane/pull/4535)
+
+* `MeasurementProcess.eigvals()` now raises an `EigvalsUndefinedError` if the measurement observable
+  does not have eigenvalues.
+  [(#4544)](https://github.com/PennyLaneAI/pennylane/pull/4544)
+
+* The device test suite now converts device kwargs to integers or floats if they can be converted to integers or floats.
+  [(#4640)](https://github.com/PennyLaneAI/pennylane/pull/4640)
+
+* The ``RandomLayers.compute_decomposition`` keyword argument ``ratio_imprivitive`` has been changed to
+  ``ratio_imprim`` to match the call signature of the operation.
+  [(#4552)](https://github.com/PennyLaneAI/pennylane/pull/4552)
+
 * The private `TmpPauliRot` operator used for `SpecialUnitary` no longer decomposes to nothing
   when the theta value is trainable.
   [(#4585)](https://github.com/PennyLaneAI/pennylane/pull/4585)
@@ -295,12 +301,6 @@
 * `ProbabilityMP.marginal_prob` has been removed. Its contents have been moved into `process_state`,
   which effectively just called `marginal_prob` with `np.abs(state) ** 2`.
   [(#4602)](https://github.com/PennyLaneAI/pennylane/pull/4602)
-
-* `default.qubit` now implements the new device API. If you initialize a device
-  with `qml.device("default.qubit")`, all functions and properties that were tied to the old
-  device API will no longer be on the device. The legacy version can still be accessed with
-  `qml.device("default.qubit.legacy", wires=n_wires)`.
-  [(#4436)](https://github.com/PennyLaneAI/pennylane/pull/4436)
 
 <h3>Deprecations 👋</h3>
 
