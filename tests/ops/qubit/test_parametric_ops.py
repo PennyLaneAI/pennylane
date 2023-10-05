@@ -1247,6 +1247,23 @@ class TestMatrix:
         evs_expected = [1, 1, -qml.math.exp(1j * phi), qml.math.exp(1j * phi)]
         assert qml.math.allclose(evs, evs_expected)
 
+    @pytest.mark.tf
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    def test_pcphase_eigvals_tf(self, phi):
+        """Test eigenvalues computation for PCPhase using Tensorflow interface"""
+        import tensorflow as tf
+
+        phi = 0.5432
+        param_tf = tf.Variable(phi)
+
+        op = qml.PCPhase(param_tf, dim=2, wires=[0, 1])
+        evs = qml.PCPhase.compute_eigvals(*op.parameters, **op.hyperparameters)
+        evs_expected = np.array(
+            [np.exp(1j * phi), np.exp(1j * phi), np.exp(-1j * phi), np.exp(-1j * phi)]
+        )
+
+        assert qml.math.allclose(evs, evs_expected)
+
     def test_isingxy(self, tol):
         """Test that the IsingXY operation is correct"""
         assert np.allclose(qml.IsingXY.compute_matrix(0), np.identity(4), atol=tol, rtol=0)
@@ -1519,6 +1536,25 @@ class TestMatrix:
         assert np.allclose(
             qml.IsingZZ.compute_eigvals(param), np.diagonal(get_expected(param)), atol=tol, rtol=0
         )
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    def test_isingzz_eigvals_tf(self, phi):
+        """Test eigenvalues computation for IsingXY using Tensorflow interface"""
+        import tensorflow as tf
+
+        param_tf = tf.Variable(phi)
+        evs = qml.IsingZZ.compute_eigvals(param_tf)
+
+        def get_expected(theta):
+            neg_imag = np.exp(-1j * theta / 2)
+            plus_imag = np.exp(1j * theta / 2)
+            expected = np.array(
+                np.diag([neg_imag, plus_imag, plus_imag, neg_imag]), dtype=np.complex128
+            )
+            return expected
+
+        assert qml.math.allclose(evs, np.diagonal(get_expected(phi)))
 
     def test_isingzz_broadcasted(self, tol):
         """Test that the broadcasted IsingZZ operation is correct"""
