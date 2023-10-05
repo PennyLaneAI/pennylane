@@ -615,7 +615,7 @@ class QNode:
                 "'device', 'adjoint', 'spsa', 'hadamard')."
             )
 
-        if isinstance(diff_method, qml.gradients.gradient_transform):
+        if isinstance(diff_method, qml.transforms.core.TransformDispatcher):
             return diff_method, {}, device
 
         raise qml.QuantumFunctionError(
@@ -958,7 +958,19 @@ class QNode:
 
         # Add the device program to the QNode program
         if isinstance(self.device, qml.devices.Device):
-            device_transform_program, _ = self.device.preprocess()
+            if self.gradient_fn is None:
+                _gradient_method = None
+            elif isinstance(self.gradient_fn, str):
+                _gradient_method = self.gradient_fn
+            else:
+                _gradient_method = "gradient-transform"
+            grad_on_execution = self.gradient_kwargs.get("grad_on_execution")
+            config = qml.devices.ExecutionConfig(
+                interface=self.interface,
+                gradient_method=_gradient_method,
+                grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
+            )
+            device_transform_program, _ = self.device.preprocess(execution_config=config)
             full_transform_program = self.transform_program + device_transform_program
         else:
             full_transform_program = self.transform_program
