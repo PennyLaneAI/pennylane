@@ -213,16 +213,19 @@ class TransformDispatcher:
             for op in transformed_tape.circuit:
                 qml.apply(op)
 
+            mps = transformed_tape.measurements
+
+            if not mps:
+                return qfunc_output
+
             if isinstance(qfunc_output, qml.measurements.MeasurementProcess):
-                if len(transformed_tape.measurements) > 1:
-                    return tuple(transformed_tape.measurements)
-                return transformed_tape.measurements[0]
+                return tuple(mps) if len(mps) > 1 else mps[0]
 
             if isinstance(qfunc_output, (tuple, list)):
-                return type(qfunc_output)(transformed_tape.measurements)
+                return type(qfunc_output)(mps)
 
             interface = qml.math.get_interface(qfunc_output)
-            return qml.math.asarray(transformed_tape.measurements, like=interface)
+            return qml.math.asarray(mps, like=interface)
 
         return qfunc_transformed
 
