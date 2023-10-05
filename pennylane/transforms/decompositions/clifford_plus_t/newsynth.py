@@ -68,9 +68,9 @@ def epsilon_region(epsilon, theta):
     ev1 = 4 * (epsilon**-4)
     ev2 = epsilon**-2
     ctr = Point(d * zx, d * zy)
-    mmat = Matrix([[ev1, 0], [0, ev2]])
-    bmat = Matrix([[zx, -zy], [zy, zx]])
-    mat = bmat @ mmat @ bmat.inverse()
+    mmat = np.array([[ev1, 0], [0, ev2]])
+    bmat = np.array([[zx, -zy], [zy, zx]])
+    mat = bmat @ mmat @ np.linalg.inv(bmat)
     ell = Ellipse(mat, ctr)
 
     def characteristic_fn(x, y):
@@ -127,7 +127,7 @@ def with_succesful_candidate(u, t, theta):
     """Validate a successful candidate and return the matrix."""
     if denomexp(u + t) < denomexp(u + OMEGA * t):
         t *= OMEGA
-    uU = Matrix([[u, -np.conj(t)], [t, np.conj(u)]])
+    uU = Matrix.array([[u, -np.conj(t)], [t, np.conj(u)]])
     uU_fixed = op_from_d_omega(uU)
     zrot_fixed = qml.RZ.compute_matrix(theta)
     err = np.sqrt(np.real(hs_sqnorm(uU_fixed - zrot_fixed)) / 2)

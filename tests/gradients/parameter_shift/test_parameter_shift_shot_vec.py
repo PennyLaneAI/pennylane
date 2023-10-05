@@ -490,7 +490,7 @@ class TestParamShift:
         # We should only be executing the device twice: Two shifted evaluations to differentiate
         # one parameter overall, as the other parameter does not impact the returned measurement.
 
-        assert tracker.latest["executions"] == 2
+        assert tracker.totals["executions"] == 2
 
         tapes, fn = qml.gradients.param_shift(tape2)
         j2 = fn(dev.execute(tapes))
