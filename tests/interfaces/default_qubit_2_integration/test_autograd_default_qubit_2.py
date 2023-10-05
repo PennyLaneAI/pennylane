@@ -442,7 +442,8 @@ class TestAutogradExecuteIntegration:
             tape = qml.tape.QuantumScript(
                 [qml.RX(a, wires=0), U3(*p, wires=0)], [qml.expval(qml.PauliX(0))]
             )
-            return execute([tape], device, **execute_kwargs)[0]
+            program, _ = device.preprocess()
+            return execute([tape], device, **execute_kwargs, transform_program=program)[0]
 
         a = np.array(0.1, requires_grad=False)
         p = np.array([0.1, 0.2, 0.3], requires_grad=True)

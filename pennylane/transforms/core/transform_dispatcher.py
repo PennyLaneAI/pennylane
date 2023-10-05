@@ -113,6 +113,11 @@ class TransformDispatcher:
         return wrapper
 
     @property
+    def __name__(self):
+        """Return the quantum transform name."""
+        return self._transform.__name__
+
+    @property
     def transform(self):
         """Return the quantum transform."""
         return self._transform
