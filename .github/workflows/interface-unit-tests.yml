@@ -92,8 +92,8 @@ jobs:
           {
             "default": 1,
             "tf-tests": 2,
-            "core-tests": 2,
-            "jax-tests": 10
+            "core-tests": 3,
+            "jax-tests": 5
           }
           EOF
           else
@@ -103,7 +103,7 @@ jobs:
             "torch-tests": 2,
             "tf-tests": 4,
             "jax-tests": 10,
-            "core-tests": 2
+            "core-tests": 3
           }
           EOF
           fi
