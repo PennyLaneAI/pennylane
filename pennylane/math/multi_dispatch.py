@@ -754,7 +754,7 @@ def unwrap(values, max_depth=None):
     """
 
     def convert(val):
-        if isinstance(val, list):
+        if isinstance(val, (tuple, list)):
             return unwrap(val)
         new_val = (
             np.to_numpy(val, max_depth=max_depth) if isinstance(val, ArrayBox) else np.to_numpy(val)
