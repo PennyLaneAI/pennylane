@@ -1805,3 +1805,30 @@ class TestTapeExpansion:
 
         qml.grad(circuit)(x)
         assert spy_expand.call_count == 5
+
+    def test_device_expansion_strategy_raises_error(self, monkeypatch):
+        """Test that an error is raised if the preprocessing function returns
+        a batch of tapes and the expansion strategy is 'device'"""
+
+        def preprocess_with_batchtransform(execution_config=None):
+            def transform_program(tapes):
+                new_tape = qml.transforms.broadcast_expand(tapes[0])
+                return new_tape, None
+
+            config = qml.devices.execution_config.DefaultExecutionConfig
+            return transform_program, config
+
+        dev = qml.device("default.qubit", wires=2)
+        monkeypatch.setattr(dev, "preprocess", preprocess_with_batchtransform)
+
+        @qnode(dev, diff_method="parameter-shift", expansion_strategy="device")
+        def circuit(x):
+            qml.SingleExcitation(x, wires=[0, 1])
+            return qml.expval(qml.PauliX(0))
+
+        with pytest.raises(
+            ValueError,
+            match="Using 'device' for the `expansion_strategy` is not supported for batches of tapes",
+        ):
+            x = pnp.array([0.5, 0.4, 0.3], requires_grad=True)
+            circuit.construct([x], {})

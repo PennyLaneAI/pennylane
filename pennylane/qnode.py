@@ -910,7 +910,7 @@ class QNode:
                 tape, _ = self.device.preprocess()[0]([self.tape])
                 if len(tape) != 1:
                     raise ValueError(
-                        "Using 'device' for the `expansion_strategy` is not supported with batching"
+                        "Using 'device' for the `expansion_strategy` is not supported for batches of tapes"
                     )
                 self._tape = tape[0]
             else:
