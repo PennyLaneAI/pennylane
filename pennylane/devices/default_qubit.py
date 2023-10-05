@@ -335,12 +335,13 @@ class DefaultQubit(Device):
         if self.tracker.active:
             self.tracker.update(batches=1)
             self.tracker.record()
-            for c in circuits:
+            for i, c in enumerate(circuits):
                 qpu_executions, shots = get_num_shots_and_executions(c)
                 if c.shots:
                     self.tracker.update(
                         simulations=1,
                         executions=qpu_executions,
+                        results=results[i],
                         shots=shots,
                         resources=c.specs["resources"],
                     )
@@ -348,7 +349,7 @@ class DefaultQubit(Device):
                     self.tracker.update(
                         simulations=1,
                         executions=qpu_executions,
-                        results=results,
+                        results=results[i],
                         resources=c.specs["resources"],
                     )
                 self.tracker.record()
