@@ -51,9 +51,9 @@ def _cut_circuit_expand(
     # Expand the tapes for handling Hamiltonian with two or more terms
     tape_meas_op = tape.measurements[0]
     if isinstance(tape_meas_op.obs, qml.Hamiltonian):
-        # fixes issue with grouping_indices
-        # if tape_meas_op.obs.grouping_indices is not None:
-        #     setattr(tape_meas_op, "obs", qml.Hamiltonian(*tape_meas_op.obs.terms()))
+        # TODO: fix the issue with grouping_indices w/o this in-place manipulation
+        if tape_meas_op.obs.grouping_indices is not None:
+            setattr(tape_meas_op, "obs", qml.Hamiltonian(*tape_meas_op.obs.terms()))
 
         tapes, tapes_fn = qml.transforms.hamiltonian_expand(tape, group=False)
 
