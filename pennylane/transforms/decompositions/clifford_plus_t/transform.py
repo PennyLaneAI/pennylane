@@ -4,9 +4,21 @@ from pennylane.transforms.core import transform
 
 from itertools import product
 
-def check_clifford_op(op, num_qubits):
-    """ Check if an operator is Clifford or not Clifford. """
+def check_clifford_op(op):
+    """ Check if an operator is Clifford or not. 
 
+    For a given unitary operator :math:`U` acting on :math:`N` qubits, this method checks that the
+    transformation :math:`UPU^{\dagger}` maps the Pauli tensor products :math:`P = {I, X, Y, Z}^{\otimes N}`
+    to Pauli tensor products with O(N * 8^N) time complexity when using naive matrix multiplication.
+
+    Args:
+        op: the operator that needs to be tested
+
+    Returns:
+        Bool that represents whether the provided operator is Clifford or not.
+    """
+
+    num_qubits = len(op.wires)
     pauli_terms = qml.pauli_decompose(qml.matrix(op), check_hermitian=False)
     pauli_group = lambda x: [qml.Identity(x), qml.PauliX(x), qml.PauliY(x), qml.PauliZ(x)]
 
@@ -33,114 +45,115 @@ def check_clifford_op(op, num_qubits):
 
     return all(pauli_coves)
 
-def check_clifford_op_2():
-    for op in tape:
-        if isinstance(op, qml.QubitUnitary):
-            # Single-qubit unitary operations
-            if qml.math.shape(op.parameters[0]) == (2, 2):
-                one_qubit_decomposition(op.parameters[0], op.wires[0])
-            # Two-qubit unitary operations
-            elif qml.math.shape(op.parameters[0]) == (4, 4):
-                two_qubit_decomposition(op.parameters[0], op.wires)
-            else:
-                qml.apply(op)
-        else:
-            qml.apply(op)
 
-def _compute_decomposition(op):
-    if check_clifford_op(op, len(op.wires)) or isinstance(op, qml.T) or isinstance(getattr(op, "base", None), qml.T):
-        return  op
+def _check_t_op(op):
+    """Check whether the gate is a T gate or not"""
+    return isinstance(op, qml.T) or isinstance(getattr(op, "base", None), qml.T)
+
+
+def _rot_decompose(op):
+    """Decompose a rotation operation using combination of RZ, S and Hadamard"""
+    d_ops = []
+    if isinstance(op, qml.Rot):
+        (phi, theta, omega), wires = op.data, op.wires
+        d_ops.extend([qml.RZ(phi, wires), qml.S(wires), qml.Hadamard(wires), qml.RZ(theta, wires), qml.Hadamard(wires), qml.adjoint(qml.S(wires)), qml.RZ(omega, wires)])
+    elif isinstance(op, qml.RX):
+        (theta, ), wires = op.data, op.wires
+        d_ops.extend([qml.Hadamard(wires), qml.RZ(theta, wires), qml.Hadamard(wires)])
+    elif isinstance(op, qml.RY):
+        (theta, ), wires = op.data, op.wires
+        d_ops.extend([qml.S(wires), qml.Hadamard(wires), qml.RZ(theta, wires), qml.Hadamard(wires), qml.adjoint(qml.S(wires))])
     else:
-        decomp = 
-    try:
-        decop.decomposition()
-    except:
+        d_ops.append(op)
+    return d_ops
 
-    if check_clifford_op(op, len(op.wires)) or isinstance(op, qml.T) or isinstance(getattr(op, "base", None), qml.T):
-        return op
+
+def _one_qubit_decompose(op):
+    """Decomposition for single qubit operations using combination of RZ and Hadamard"""
+
+    sd_ops = qml.transforms.one_qubit_decomposition(qml.matrix(op), op.wires, "ZXZ", return_global_phase=True)
+
+    d_ops = []
+    for sd_op in sd_ops[:-1]:
+        d_ops.extend(_rot_decompose(sd_op))
+
+    return d_ops[:-1], d_ops[-1]
+
+
+def _two_qubit_decompose(op):
+    """Decomposition for two qubit operations using combination of RZ, Hadamard, S and CNOT"""
+
+    td_ops = qml.transforms.two_qubit_decomposition(qml.matrix(op), op.wires)
+
+    d_ops = []
+    for td_op in td_ops:
+        d_ops.extend(_rot_decompose(td_op))
+
+    return d_ops
 
 
 @transform
-def clifford_plus_t(tape: qml.tape.QuantumScript, epsilon=1e-8) -> (Sequence[qml.tape.QuantumTape], callable):
-    new_ops = []
+def clifford_t_decomposition(tape: qml.tape.QuantumScript, epsilon=1e-8) -> (Sequence[qml.tape.QuantumTape], callable):
+
+    decomp_ops, gphase_ops = [], []
     for op in tape.operations:
-        if check_clifford_op(op, len(op.wires)) or isinstance(op, qml.T) or isinstance(getattr(op, "base", None), qml.T):
-            new_ops.append(op)
+        
+        # Check whether operation is to be skipped
+        if any([isinstance(op, skip_op) for skip_op in [qml.Barrier, qml.Snapshot, qml.WireCut]]):
+            decomp_ops.append(op)
+        
+        # Check whether the operation is Clifford or T agte
+        elif check_clifford_op(op) or _check_t_op(op):
+            decomp_ops.append(op)
+        
+        # Decompose and go deeper 
         else:
             if isinstance(op, qml.Operation):
-                try:
-                    decomp_ops = op.decomposition()
-                except:
-                    decomp_ops = [qml.QubitUnitary(qml.matrix(op), wires=op.wires)]
 
+                # Do an ZXZ decomposition and then use RX = H @ RZ @ H
+                if len(op.wires) == 1:
+                    d_ops, g_ops = _one_qubit_decompose(op)
+                    decomp_ops.extend(d_ops)
+                    gphase_ops.append(g_ops)
 
-            for decomp_op in decomp_ops:
-                if check_clifford_op(decomp_op, len(op.wires)) or isinstance(op, qml.T) or isinstance(getattr(op, "base", None), qml.T):
-                    new_ops.append(op)
+                # Do an SU4 decomposition and then use RY = S @ H @ RZ @ H @ S.dag() and RX = H @ RZ @ H
                 elif len(op.wires) == 2:
-                    d_ops = one_qubit_decomposition(qml.matrix(decomp_op), decomp_op.wires, "ZXZ", return_global_phase=True)
-                elif len(op.wires) == 4:
-                    d_ops = two_qubit_decomposition(qml.matrix(decomp_op), decomp_op.wires)
+                    d_ops = _two_qubit_decompose(op)
+                    decomp_ops.extend(d_ops)
+
                 else:
-                    raise ValueError("Operation not supported :(")
-                
-                for d_op in d_ops:
-                    if check_clifford_op(decomp_op, len(op.wires)) or isinstance(op, qml.T) or isinstance(getattr(op, "base", None), qml.T):
-                        new_ops.append(op)
-                    elif isinstance(d_op, qml.RZ):
-                        clifford_ops, err = rz_to_clifford_plus_t(epsilon, op.data[0])
-                        new_ops.extend(clifford_ops)
-                    elif isinstance(d_op, qml.RX):
-                        clifford_ops, err = rz_to_clifford_plus_t(epsilon, op.data[0])
-                        new_ops.extend([qml.Hadamard(wires=d_op.wires), *clifford_ops, qml.Hadamard(wires=d_op.wires)])
-                    elif isinstance(d_op, qml.RY):
-                        clifford_ops, err = rz_to_clifford_plus_t(epsilon, op.data[0])
-                        new_ops.extend([qml.S(wires=d_op.wires), qml.Hadamard(wires=d_op.wires), *clifford_ops, 
-                        qml.Hadamard(wires=d_op.wires), qml.adjoint(qml.S(wires=d_op.wires))])
-                    else:
-                        clifford_ops, err = 
+                    try:
+                        # Attempt decomposing the operation
+                        md_ops = op.decomposition()
 
-                if check_clifford_op(op, len(op.wires)) or isinstance(op, qml.T):
-                    new_ops.append(op)
-                elif isinstance(op, qml.QubitUnitary): 
+                        idx = 0 # this might not be fast but at least is not recursive
+                        while idx < len(md_ops):
+                            md_op = md_ops[idx]
+                            if md_op.wires > 2:
+                                md_ops[idx:idx] = md_op.decomposition()
+                            elif md_op.wires == 2 and not isinstance(md_op, qml.CNOT):
+                                md_ops[idx:idx] = _two_qubit_decompose(op)
+                            elif md_op.wires == 1 and not (check_clifford_op(op) or _check_t_op(op)):
+                                d_ops, g_ops = _one_qubit_decompose(op)
+                                md_ops[idx:idx] = d_ops
+                                gphase_ops.append(g_ops)
+                        decomp_ops.extend(md_ops)
 
-                if isinstance(op, qml.QubitUnitary):
-                    if qml.math.shape(op.parameters[0]) == (2, 2):
-                        decomp_ops = one_qubit_decomposition(op, 0, "ZXZ", return_global_phase=True)
-                    elif qml.math.shape(op.parameters[0]) == (4, 4):
-                        decomp_ops = two_qubit_decomposition(op.parameters[0], op.wires)
-                elif check_clifford_op(op, len(op.wires)) or isinstance(op, qml.T):
-                    new_ops.append(op)                
+                    except:
+                        raise ValueError(f"Cannot unroll {op} into the Clifford+T basis as no rule exists for its decomposition")
 
-            
+    # Squeeze global phases into a single global phase
+    # g_phase = reduce(lambda x, y: x@y, [gphase_op])
 
-
-            if len(op.wires)
-            if isinstance(op, qml.QubitUnitary):
-                # Single-qubit unitary operations
-                if qml.math.shape(op.parameters[0]) == (2, 2):
-                    one_qubit_decomposition(op.parameters[0], op.wires[0])
-                # Two-qubit unitary operations
-                elif qml.math.shape(op.parameters[0]) == (4, 4):
-                    two_qubit_decomposition(op.parameters[0], op.wires)
-                else:
-                    qml.apply(op)
-
-
-    tape = convert_to_single_qubit_and_cnot(tape)
-    new_ops = []
-    total_error = 0
-    for op in tape.operations:
-        if op in clifford_basis:
-            new_ops.append(op)
-            continue
-        for op_ in convert_to_rz_and_hadamard(op):
-            if isinstance(op_, qml.Hadamard):
-                new_ops.append(op_)
-                continue
+    new_ops, error = [], 0
+    for op in decomp_ops:
+        if isinstance(op, qml.RZ):
             clifford_ops, err = rz_to_clifford_plus_t(epsilon, op.data[0])
             new_ops.extend(clifford_ops)
-            total_error += err
+            error += err
+        else:
+            new_ops.append(op)
+
     qs = qml.tape.QuantumScript(new_ops, tape.measurements, shots=tape.shots)
     qs._qfunc_output = tape._qfunc_output
     return [qs], lambda x: x
