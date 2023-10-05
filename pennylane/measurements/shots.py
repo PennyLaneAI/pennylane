@@ -154,7 +154,7 @@ class Shots:
             self.total_shots = None
             self.shot_vector = ()
         elif isinstance(shots, int):
-            if shots < 1:
+            if shots < 0:
                 raise self._SHOT_ERROR
             self.total_shots = shots
             self.shot_vector = (ShotCopies(shots, 1),)

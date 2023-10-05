@@ -92,6 +92,17 @@ class ExecuteTapes(torch.autograd.Function):
     @staticmethod
     def forward(ctx, kwargs, *parameters):  # pylint: disable=arguments-differ
         """Implements the forward pass batch tape evaluation."""
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                "Entry with args=(ctx=%s, kwargs=%s, parameters=%s) called by=%s",
+                ctx,
+                kwargs,
+                parameters,
+                "::L".join(
+                    str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
+                ),
+            )
+
         ctx.tapes = kwargs["tapes"]
         ctx.execute_fn = kwargs["execute_fn"]
         ctx.jpc = kwargs["jpc"]
@@ -112,6 +123,15 @@ class ExecuteTapes(torch.autograd.Function):
     def backward(ctx, *dy):
         """Returns the vector-Jacobian product with given
         parameter values p and output gradient dy"""
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                "Entry with args=(ctx=%s, dy=%s) called by=%s",
+                ctx,
+                dy,
+                "::L".join(
+                    str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
+                ),
+            )
 
         vjps = ctx.jpc.compute_vjp(ctx.tapes, dy)
 
@@ -140,6 +160,15 @@ def execute(tapes, execute_fn, jpc):
         TensorLike: A nested tuple of tape results. Each element in
         the returned tuple corresponds in order to the provided tapes.
     """
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(
+            "Entry with args=(tapes=%s, execute-fn=%s, jpc=%s",
+            tapes,
+            f"\n{inspect.getsource(execute_fn)}\n"
+            if logger.isEnabledFor(qml.logging.TRACE)
+            else execute_fn,
+            jpc,
+        )
 
     # pylint: disable=unused-argument
     parameters = []
@@ -163,16 +192,5 @@ def _res_to_torch(r, ctx):
     if isinstance(r, dict):
         return r
     if isinstance(r, (list, tuple)):
-        res = []
-        for t in r:
-            if isinstance(t, dict) or isinstance(t, list) and all(isinstance(i, dict) for i in t):
-                # count result, single or broadcasted
-                res.append(t)
-            elif isinstance(t, tuple):
-                res.append(tuple(torch.as_tensor(el, device=ctx.torch_device) for el in t))
-            else:
-                res.append(torch.as_tensor(t, device=ctx.torch_device))
-        if isinstance(r, tuple):
-            res = tuple(res)
-        return res
+        return type(r)(_res_to_torch(t, ctx) for t in r)
     return torch.as_tensor(r, device=ctx.torch_device)
