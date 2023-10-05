@@ -17,7 +17,7 @@ Tests for the jacobian product calculator classes.
 # pylint: disable=protected-access
 import pytest
 from cachetools import LRUCache
-from conftest import ParamShiftDerivativesDevice
+from param_shift_dev import ParamShiftDerivativesDevice
 
 import numpy as np
 
@@ -146,8 +146,6 @@ class TestJacobianProductResults:
         """Test execute_and_compute_jvp for a simple single input single output."""
         if shots and not _accepts_finite_shots(jpc):
             pytest.skip("jpc does not work with finite shots.")
-        if qml.measurements.Shots(shots).has_partitioned_shots:
-            pytest.skip("have not yet figured out jvp and partitioned shots.")
 
         x = 0.92
         tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], shots=shots)
@@ -448,7 +446,7 @@ class TestCachingDeviceDerivatives:
             jpc.execute_and_compute_jvp(batch, tuple())
 
 
-@pytest.mark.parametrize("jpc", transform_jpc_matrix)
+@pytest.mark.parametrize("jpc", transform_jpc_matrix + [device_ps_jacs])
 class TestProbsTransformJacobians:
     """Testing results when probabilities are returned. This only works with gradient transforms."""
 
