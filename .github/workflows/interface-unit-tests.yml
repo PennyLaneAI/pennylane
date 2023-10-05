@@ -93,7 +93,8 @@ jobs:
             "default": 1,
             "tf-tests": 2,
             "core-tests": 3,
-            "jax-tests": 5
+            "jax-tests": 5,
+            "gradients-tests": 2
           }
           EOF
           else
