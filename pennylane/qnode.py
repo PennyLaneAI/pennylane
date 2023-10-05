@@ -984,8 +984,12 @@ class QNode:
             )
         # Calculate the classical jacobians if needed
         if full_transform_program.has_classical_cotransform():
-            full_transform_program.set_all_classical_jacobians(self, args, kwargs)
-            full_transform_program.set_all_argnums(self, args, kwargs)
+            full_transform_program._set_all_classical_jacobians(
+                self, args, kwargs
+            )  # pylint: disable=protected-access
+            full_transform_program._set_all_argnums(
+                self, args, kwargs
+            )  # pylint: disable=protected-access
 
         # pylint: disable=unexpected-keyword-arg
         res = qml.execute(

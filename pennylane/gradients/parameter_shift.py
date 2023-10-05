@@ -15,7 +15,7 @@
 This module contains functions for computing the parameter-shift gradient
 of a qubit-based quantum tape.
 """
-# pylint: disable=protected-access,too-many-arguments,too-many-statements
+# pylint: disable=protected-access,too-many-arguments,too-many-statements,unused-argument
 from typing import Sequence, Callable
 from functools import partial
 
@@ -723,7 +723,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
     return gradient_tapes, processing_fn
 
 
-def expand_transform_param_shift(
+def _expand_transform_param_shift(
     tape: qml.tape.QuantumTape,
     argnum=None,
     argnums=None,
@@ -733,6 +733,7 @@ def expand_transform_param_shift(
     f0=None,
     broadcast=False,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
+    """Expand function to be applied before parameter shift."""
     expanded_tape = expand_invalid_trainable(tape)
 
     def null_postprocessing(results):
@@ -746,7 +747,7 @@ def expand_transform_param_shift(
 
 @partial(
     transform,
-    expand_transform=expand_transform_param_shift,
+    expand_transform=_expand_transform_param_shift,
     classical_cotransform=_contract_qjac_with_cjac,
     final_transform=True,
 )

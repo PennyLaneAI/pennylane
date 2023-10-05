@@ -15,7 +15,7 @@
 This module contains functions for computing the finite-difference gradient
 of a quantum tape.
 """
-# pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements
+# pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements,unused-argument
 from typing import Sequence, Callable
 import functools
 from functools import partial
@@ -172,7 +172,7 @@ def _processing_fn(results, shots, single_shot_batch_fn):
     return tuple(grads_tuple)
 
 
-def expand_transform_finite_diff(
+def _expand_transform_finite_diff(
     tape: qml.tape.QuantumTape,
     argnum=None,
     argnums=None,
@@ -183,6 +183,7 @@ def expand_transform_finite_diff(
     f0=None,
     validate_params=True,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
+    """Expand function to be applied before finite difference."""
     expanded_tape = expand_invalid_trainable(tape)
 
     def null_postprocessing(results):
@@ -196,7 +197,7 @@ def expand_transform_finite_diff(
 
 @partial(
     transform,
-    expand_transform=expand_transform_finite_diff,
+    expand_transform=_expand_transform_finite_diff,
     classical_cotransform=_contract_qjac_with_cjac,
     final_transform=True,
 )

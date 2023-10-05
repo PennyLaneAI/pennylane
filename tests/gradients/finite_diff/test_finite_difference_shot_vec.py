@@ -53,7 +53,7 @@ class TestFiniteDiff:
         with pytest.raises(
             ValueError, match=r"Cannot differentiate with respect to parameter\(s\) {0}"
         ):
-            finite_diff(tape, _expand=False)
+            finite_diff(tape)
 
         # setting trainable parameters avoids this
         tape.trainable_params = {1, 2}

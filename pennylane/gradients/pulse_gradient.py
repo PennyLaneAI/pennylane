@@ -33,7 +33,6 @@ from .gradient_transform import (
     assert_no_variance,
     choose_grad_methods,
     gradient_analysis_and_validation,
-    gradient_transform,
     _no_trainable_grad,
     reorder_grads,
 )

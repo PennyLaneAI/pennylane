@@ -27,7 +27,7 @@ from pennylane.queuing import WrappedObj
 from pennylane.transforms.core import transform
 
 
-def _contract_metric_tensor_with_cjac(mt, cjac, tape):
+def _contract_metric_tensor_with_cjac(mt, cjac, tape):  # pylint: disable=unused-argument
     """Execute the contraction of pre-computed classical Jacobian(s)
     and the metric tensor of a tape in order to obtain the hybrid
     metric tensor of a QNode.
@@ -74,7 +74,7 @@ def expand_metric_tensor(
     allow_nonunitary=True,
     aux_wire=None,
     device_wires=None,
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> (Sequence[qml.tape.QuantumTape], Callable):  # pylint: disable=too-many-arguments
     """Set the metric tensor based on whether non-unitary gates are allowed."""
     # pylint: disable=unused-argument,too-many-arguments
 
@@ -89,7 +89,7 @@ def expand_metric_tensor(
     classical_cotransform=_contract_metric_tensor_with_cjac,
     final_transform=True,
 )
-def metric_tensor(
+def metric_tensor(  # pylint:disable=too-many-arguments
     tape: qml.tape.QuantumTape,
     argnum=None,
     argnums=None,
@@ -97,7 +97,7 @@ def metric_tensor(
     allow_nonunitary=True,
     aux_wire=None,
     device_wires=None,
-) -> (Sequence[qml.tape.QuantumTape], Callable):  # pylint: disable=too-many-arguments
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Returns a function that computes the metric tensor of a given QNode or quantum tape.
 
     The metric tensor convention we employ here has the following form:

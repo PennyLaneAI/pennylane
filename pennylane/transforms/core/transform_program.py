@@ -287,9 +287,13 @@ class TransformProgram:
         Returns:
             bool: Boolean
         """
-        return any([t.classical_cotransform is not None for t in self])
+        return any(t.classical_cotransform is not None for t in self)
 
-    def set_all_classical_jacobians(self, qnode, args, kwargs):
+    def _set_all_classical_jacobians(
+        self, qnode, args, kwargs
+    ):  # pylint: disable=too-many-statements
+        """It can be called inside the QNode to get all the classical Jacobians for a gradient transform."""
+
         def classical_preprocessing(program, *args, **kwargs):
             """Returns the trainable gate parameters for a given QNode input."""
             kwargs.pop("shots", None)
@@ -304,14 +308,13 @@ class TransformProgram:
                 if len(tapes) == 1:
                     return res[0]
                 return res
-            else:
-                return qml.math.stack(tape.get_parameters(trainable_only=True))
+            return qml.math.stack(tape.get_parameters(trainable_only=True))
 
         def jacobian(classical_function, program, argnums, *args, **kwargs):
             indices = qml.math.get_trainable_indices(args)
 
             if qnode.interface in ["jax", "jax-jit"]:
-                import jax
+                import jax  # pylint: disable=import-outside-toplevel
 
                 if isinstance(args[0], jax.numpy.ndarray):
                     argnums = 0 if argnums is None else argnums
@@ -329,7 +332,7 @@ class TransformProgram:
                 jac = qml.jacobian(classical_function, argnum=argnums)(*args, **kwargs)
 
             if qnode.interface == "tf":
-                import tensorflow as tf
+                import tensorflow as tf  # pylint: disable=import-outside-toplevel
 
                 def _jacobian(*args, **kwargs):
                     with tf.GradientTape() as tape:
@@ -341,7 +344,7 @@ class TransformProgram:
                 jac = _jacobian(*args, **kwargs)
 
             if qnode.interface == "torch":
-                import torch
+                import torch  # pylint: disable=import-outside-toplevel
 
                 def _jacobian(*args, **kwargs):  # pylint: disable=unused-argument
                     jac = torch.autograd.functional.jacobian(classical_function, args)
@@ -350,7 +353,7 @@ class TransformProgram:
                 jac = _jacobian(*args, **kwargs)
 
             if qnode.interface in ["jax", "jax-jit"]:
-                import jax
+                import jax  # pylint: disable=import-outside-toplevel
 
                 argnums = 0 if argnums is None else argnums
 
@@ -367,28 +370,34 @@ class TransformProgram:
         classical_jacobians = []
         for index, transform in enumerate(self):
             if transform.classical_cotransform:
-                if qnode.interface == "jax" and transform._kwargs.get("argnum", None):
+                if qnode.interface == "jax" and transform._kwargs.get(
+                    "argnum", None
+                ):  # pylint: disable=protected-access
                     raise qml.QuantumFunctionError(
                         "argnum does not work with the Jax interface. You should use argnums instead."
                     )
-                argnums = transform._kwargs.get("argnums", None)
+                argnums = transform._kwargs.get("argnums", None)  # pylint: disable=protected-access
                 sub_program = TransformProgram(self[0:index])
                 classical_jacobian = jacobian(
                     classical_preprocessing, sub_program, argnums, *args, **kwargs
                 )
                 classical_jacobian = (
-                    [classical_jacobian] if sub_program.is_empty else classical_jacobian
+                    [classical_jacobian] if sub_program.is_empty() else classical_jacobian
                 )
                 classical_jacobians.append(classical_jacobian)
             else:
                 classical_jacobians.append(None)
         self._classical_jacobians = classical_jacobians
-        # QNode reset the tape
+        # Reset the initial tape
         qnode.construct(args, kwargs)
 
-    def set_all_argnums(self, qnode, args, kwargs):
+    def _set_all_argnums(self, qnode, args, kwargs):
+        """It can be used inside the QNode to set all argnums (tape level) using argnums from the argnums at the QNode
+        level.
+        """
+
         def jax_argnums_to_tape_trainable(program, argnums, args, kwargs):
-            import jax
+            import jax  # pylint: disable=import-outside-toplevel
 
             with jax.core.new_main(jax.interpreters.ad.JVPTrace) as main:
                 trace = jax.interpreters.ad.JVPTrace(main, 0)

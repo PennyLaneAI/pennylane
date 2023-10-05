@@ -15,7 +15,7 @@
 This module contains functions for computing the SPSA gradient
 of a quantum tape.
 """
-# pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements
+# pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements,unused-argument
 from typing import Sequence, Callable
 from functools import partial
 
@@ -59,7 +59,7 @@ def _rademacher_sampler(indices, num_params, *args, rng):
     return direction
 
 
-def expand_transform_spsa(
+def _expand_transform_spsa(
     tape: qml.tape.QuantumTape,
     argnum=None,
     argnums=None,
@@ -73,6 +73,7 @@ def expand_transform_spsa(
     sampler=_rademacher_sampler,
     sampler_rng=None,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
+    """Expand function to be applied before spsa gradient."""
     expanded_tape = expand_invalid_trainable(tape)
 
     def null_postprocessing(results):
@@ -86,7 +87,7 @@ def expand_transform_spsa(
 
 @partial(
     transform,
-    expand_transform=expand_transform_spsa,
+    expand_transform=_expand_transform_spsa,
     classical_cotransform=_contract_qjac_with_cjac,
     final_transform=True,
 )

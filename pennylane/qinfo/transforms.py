@@ -743,16 +743,13 @@ def quantum_fisher(
 
         return tapes, processing_fn_multiply
 
-    else:
-        res = adjoint_metric_tensor(tape, *args, **kwargs)
+    res = adjoint_metric_tensor(tape, *args, **kwargs)
 
-        def processing_fn_multiply(r):
-            r = qml.math.stack(r)
-            return 4 * r
+    def processing_fn_multiply(r):  # pylint: disable=function-redefined
+        r = qml.math.stack(r)
+        return 4 * r
 
-        return res, processing_fn_multiply
-
-    return wrapper
+    return res, processing_fn_multiply
 
 
 @quantum_fisher.custom_qnode_transform
