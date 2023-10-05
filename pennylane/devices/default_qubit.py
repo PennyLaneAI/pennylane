@@ -337,11 +337,12 @@ class DefaultQubit(Device):
             self.tracker.record()
             for i, c in enumerate(circuits):
                 qpu_executions, shots = get_num_shots_and_executions(c)
+                res = np.array(results[i]) if isinstance(results[i], Number) else results[i]
                 if c.shots:
                     self.tracker.update(
                         simulations=1,
                         executions=qpu_executions,
-                        results=results[i],
+                        results=res,
                         shots=shots,
                         resources=c.specs["resources"],
                     )
@@ -349,7 +350,7 @@ class DefaultQubit(Device):
                     self.tracker.update(
                         simulations=1,
                         executions=qpu_executions,
-                        results=results[i],
+                        results=res,
                         resources=c.specs["resources"],
                     )
                 self.tracker.record()
