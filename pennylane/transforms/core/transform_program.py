@@ -381,9 +381,7 @@ class TransformProgram:
                 classical_jacobian = jacobian(
                     classical_preprocessing, sub_program, argnums, *args, **kwargs
                 )
-                classical_jacobian = (
-                    [classical_jacobian] if sub_program.is_empty() else classical_jacobian
-                )
+                classical_jacobian = [classical_jacobian]
                 classical_jacobians.append(classical_jacobian)
             else:
                 classical_jacobians.append(None)
