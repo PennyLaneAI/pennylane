@@ -15,7 +15,7 @@
 operations into elementary gates.
 """
 
-import numpy
+import numpy as np
 
 import pennylane as qml
 from pennylane import math
@@ -40,7 +40,6 @@ def _convert_to_su2(U, return_global_phase=False):
     # Compute the determinants
     U = qml.math.cast(U, "complex128")
     dets = math.linalg.det(U)
-
     exp_angles = math.cast_like(math.angle(dets), 1j) / 2
     U_SU2 = math.cast_like(U, dets) * math.exp(-1j * exp_angles)[:, None, None]
     return (U_SU2, exp_angles) if return_global_phase else U_SU2
@@ -186,12 +185,14 @@ def _zyz_decomposition(U, wire, return_global_phase=False):
 
     phis, thetas, omegas, alphas = map(math.squeeze, [phis, thetas, omegas, alphas])
 
-    phis = phis % (4 * numpy.pi)
-    thetas = thetas % (4 * numpy.pi)
-    omegas = omegas % (4 * numpy.pi)
+    phis = phis % (4 * np.pi)
+    thetas = thetas % (4 * np.pi)
+    omegas = omegas % (4 * np.pi)
 
     operations = [qml.RZ(phis, wire), qml.RY(thetas, wire), qml.RZ(omegas, wire)]
     if return_global_phase:
+        if qml.math.all(np.imag(alphas) < 1e15):
+            alphas = np.real(alphas)
         operations.append(qml.GlobalPhase(-alphas))
 
     return operations
@@ -250,12 +251,14 @@ def _xyx_decomposition(U, wire, return_global_phase=False):
 
     phis, thetas, lams, gammas = map(math.squeeze, [phis, thetas, lams, gammas])
 
-    phis = phis % (4 * numpy.pi)
-    thetas = thetas % (4 * numpy.pi)
-    lams = lams % (4 * numpy.pi)
+    phis = phis % (4 * np.pi)
+    thetas = thetas % (4 * np.pi)
+    lams = lams % (4 * np.pi)
 
     operations = [qml.RX(lams, wire), qml.RY(thetas, wire), qml.RX(phis, wire)]
     if return_global_phase:
+        if qml.math.all(np.imag(gammas) < 1e15):
+            gammas = np.real(gammas)
         operations.append(qml.GlobalPhase(-gammas))
 
     return operations
@@ -316,13 +319,15 @@ def _zxz_decomposition(U, wire, return_global_phase=False):
 
     phis, thetas, psis, alphas = map(math.squeeze, [phis, thetas, psis, alphas])
 
-    phis = phis % (4 * numpy.pi)
-    thetas = thetas % (4 * numpy.pi)
-    psis = psis % (4 * numpy.pi)
+    phis = phis % (4 * np.pi)
+    thetas = thetas % (4 * np.pi)
+    psis = psis % (4 * np.pi)
 
     # Return gates in the order they will be applied on the qubit
     operations = [qml.RZ(psis, wire), qml.RX(thetas, wire), qml.RZ(phis, wire)]
     if return_global_phase:
+        if qml.math.all(np.imag(alphas) < 1e15):
+            alphas = np.real(alphas)
         operations.append(qml.GlobalPhase(-alphas))
 
     return operations
