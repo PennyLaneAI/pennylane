@@ -279,8 +279,9 @@ class DeviceDerivatives(JacobianProductCalculator):
     In the current execution pipeline, only one batch will be used per instance, but a size of 10 adds some extra
     flexibility for future uses.
 
-    Note that since the hash and equality of :class:`~.QuantumScript` is based on object location, not contents. So batches
-    with identically looking :class:`~.QuantumScript` s that are different instances will be cached separately.
+    Note that batches of identically looking :class:`~.QuantumScript` s that are different instances will be cached separately.
+    This is because the `hash` of  :class:`~.QuantumScript` is expensive, as it requires inspecting all its constituents,
+    which is not worth the effort in this case.
 
     When a forward pass with :meth:`~.execute` is called, both the results and the jacobian for the object are stored.
 
