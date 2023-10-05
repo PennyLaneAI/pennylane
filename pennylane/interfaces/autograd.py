@@ -229,7 +229,7 @@ def vjp(
         # assumes all tapes have the same shot vector
         has_partitioned_shots = tapes[0].shots.has_partitioned_shots
 
-        if gradient_fn and gradient_fn.transform.__name__ == "param_shift" and computing_jacobian:
+        if gradient_fn and gradient_fn.__name__ == "param_shift" and computing_jacobian:
             jacs = _get_jac_with_caching()
         else:
             jacs = ans[1]

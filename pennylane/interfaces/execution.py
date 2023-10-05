@@ -605,6 +605,7 @@ def execute(
                 UserWarning,
             )
         _, config = device.preprocess(config)
+        print(config)
         tapes, post_processing = transform_program(tapes)
     else:
         # TODO: Remove once old device are removed
