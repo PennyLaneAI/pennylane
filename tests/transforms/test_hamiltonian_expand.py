@@ -292,6 +292,22 @@ class TestHamiltonianExpand:
             g = gtape.gradient(res, var)
             assert np.allclose(list(g[0]) + list(g[1]), output2)
 
+    def test_processing_function_conditional_clause(self):
+        """Test the conditional logic for `len(c_group) == 1` and `len(r_group) != 1`
+        in the processing function returned by hamiltonian_expand."""
+
+        # hamiltonian with a single c_group of `len(c_group) == 1`
+        H = qml.Hamiltonian([1], [qml.PauliX(0)])
+        tape = qml.tape.QuantumTape([], [qml.expval(H)])
+
+        tape, processing_fn = qml.transforms.hamiltonian_expand(tape)
+
+        # get dimensions of execution result
+        r = len(dev.execute(tape))
+
+        # create a "result" whose dimensions force the condition len(r_group) != 1)
+        processing_fn([np.ones(r + 1)])
+
 
 with AnnotatedQueue() as s_tape1:
     qml.PauliX(0)
