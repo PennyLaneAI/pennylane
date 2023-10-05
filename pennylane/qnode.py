@@ -974,6 +974,14 @@ class QNode:
             full_transform_program = self.transform_program + device_transform_program
         else:
             full_transform_program = self.transform_program
+        if (
+            isinstance(self.gradient_fn, qml.transforms.core.TransformDispatcher)
+            and self.gradient_fn.expand_transform
+        ):
+            full_transform_program.insert_front_transform(
+                qml.transforms.core.TransformDispatcher(self.gradient_fn.expand_transform),
+                **self.gradient_kwargs,
+            )
         # Calculate the classical jacobians if needed
         if full_transform_program.has_classical_cotransform():
             full_transform_program.set_all_classical_jacobians(self, args, kwargs)

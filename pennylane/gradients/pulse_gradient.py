@@ -288,6 +288,7 @@ def _parshift_and_integrate(
 def stoch_pulse_grad(
     tape: qml.tape.QuantumTape,
     argnum=None,
+    argnums=None,
     num_split_times=1,
     sampler_seed=None,
     use_broadcasting=False,
@@ -337,6 +338,9 @@ def stoch_pulse_grad(
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
+            with respect to. If not provided, the derivatives with respect to all
+            trainable parameters are returned.
+        argnums (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
         num_split_times (int): number of time samples to use in the stochastic parameter-shift
@@ -610,6 +614,8 @@ def stoch_pulse_grad(
         Therefore, it is important to implement pulses in the simplest way possible.
     """
     # pylint:disable=unused-argument
+    if argnums:
+        tape.trainable_params = argnums
     transform_name = "stochastic pulse parameter-shift"
     _assert_has_jax(transform_name)
     assert_no_state_returns(tape.measurements, transform_name)

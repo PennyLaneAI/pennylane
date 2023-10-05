@@ -265,7 +265,7 @@ class TestCVGradient:
 
         q = qml.QNode(qf, gaussian_dev)
         q(*par)
-        grad_F = qml.gradients.finite_diff(q, hybrid=False)(*par)
+        grad_F = qml.gradients.finite_diff(q)(*par)
         grad_A2 = qml.gradients.param_shift_cv(
             q, dev=gaussian_dev, force_order2=True, hybrid=False
         )(*par)
