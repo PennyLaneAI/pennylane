@@ -193,7 +193,10 @@ class TransformDispatcher:
         """Apply the transform on a quantum function."""
 
         def qfunc_transformed(*args, **kwargs):
-            tape = qml.tape.make_qscript(qfunc)(*args, **kwargs)
+            with qml.queuing.AnnotatedQueue() as q:
+                qfunc_output = qfunc(*args, **kwargs)
+
+            tape = qml.tape.QuantumScript.from_queue(q)
             transformed_tapes, processing_fn = self._transform(tape, *targs, **tkwargs)
 
             if len(transformed_tapes) != 1:
@@ -210,7 +213,7 @@ class TransformDispatcher:
             for op in transformed_tape.circuit:
                 qml.apply(op)
 
-            return transformed_tape._qfunc_output  # pylint:disable=protected-access
+            return qfunc_output
 
         return qfunc_transformed
 
