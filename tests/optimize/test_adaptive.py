@@ -186,7 +186,7 @@ def test_qubit_rotation(circuit):
 @pytest.mark.parametrize(
     "interface, diff_method",
     [
-        ("autograd", "parameter-shift"),
+        ("autograd", "backprop"),
     ],
 )
 def test_circuit_args(interface, diff_method):

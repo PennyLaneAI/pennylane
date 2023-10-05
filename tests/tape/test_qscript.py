@@ -1052,9 +1052,9 @@ class TestOutputShape:
 
         ops = [qml.RY(a, 0), qml.RX(b, 0)]
         qs = QuantumScript(ops, [measurement], shots=shots)
-
+        program, _ = dev.preprocess()
         # TODO: test gradient_fn is not None when the interface `execute` functions are implemented
-        res = qml.execute([qs], dev, gradient_fn=None)[0]
+        res = qml.execute([qs], dev, gradient_fn=None, transform_program=program)[0]
 
         if isinstance(shots, tuple):
             res_shape = tuple(r.shape for r in res)
@@ -1216,7 +1216,10 @@ class TestOutputShape:
             qml.apply(measurement)
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
-        expected_shape = qml.execute([tape], dev, gradient_fn=None)[0].shape
+        program, _ = dev.preprocess()
+        expected_shape = qml.execute([tape], dev, gradient_fn=None, transform_program=program)[
+            0
+        ].shape
 
         assert tape.shape(dev) == expected_shape
 
@@ -1244,7 +1247,8 @@ class TestOutputShape:
                 qml.apply(measurement)
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
-        expected = qml.execute([tape], dev, gradient_fn=None)[0]
+        program, _ = dev.preprocess()
+        expected = qml.execute([tape], dev, gradient_fn=None, transform_program=program)[0]
         actual = tape.shape(dev)
 
         for exp, act in zip(expected, actual):
@@ -1294,7 +1298,8 @@ class TestOutputShape:
         res = qs.shape(dev)
         assert res == expected
 
-        expected = qml.execute([qs], dev, gradient_fn=None)[0]
+        program, _ = dev.preprocess()
+        expected = qml.execute([qs], dev, gradient_fn=None, transform_program=program)[0]
         expected_shape = tuple(tuple(e_.shape for e_ in e) for e in expected)
 
         assert res == expected_shape
