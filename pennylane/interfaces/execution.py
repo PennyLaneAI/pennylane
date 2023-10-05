@@ -605,6 +605,11 @@ def execute(
                 UserWarning,
             )
         _, config = device.preprocess(config)
+        if isinstance(gradient_fn, qml.transforms.core.TransformDispatcher):
+            transform_program.add_transform(
+                qml.transforms.core.TransformDispatcher(gradient_fn.expand_transform),
+                **gradient_kwargs,
+            )
         tapes, post_processing = transform_program(tapes)
     else:
         # TODO: Remove once old device are removed
