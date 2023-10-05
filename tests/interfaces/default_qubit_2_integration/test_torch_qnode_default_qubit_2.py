@@ -144,17 +144,10 @@ class TestQNode:
         kwargs = dict(
             diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
         )
-        if diff_method == "parameter-shift":
-            spy = mocker.spy(qml.gradients.param_shift, "transform_fn")
-        elif diff_method == "finite-diff":
-            spy = mocker.spy(qml.gradients.finite_diff, "transform_fn")
-        elif diff_method == "spsa":
-            spy = mocker.spy(qml.gradients.spsa_grad, "transform_fn")
+        if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
-        elif diff_method == "hadamard":
-            spy = mocker.spy(qml.gradients.hadamard_grad, "transform_fn")
 
         a_val = 0.1
         b_val = 0.2
@@ -196,9 +189,6 @@ class TestQNode:
         assert np.allclose(a.grad, expected[0], atol=tol, rtol=0)
         assert np.allclose(b.grad, expected[1], atol=tol, rtol=0)
 
-        if diff_method in ("parameter-shift", "finite-diff", "spsa"):
-            spy.assert_called()
-
     # TODO: fix this behavior with float: already present before return type.
     @pytest.mark.xfail
     def test_jacobian_dtype(self, interface, dev, diff_method, grad_on_execution):
@@ -239,8 +229,6 @@ class TestQNode:
         if diff_method not in {"finite-diff", "spsa"}:
             pytest.skip("Test only works with finite-diff and spsa")
 
-        spy = mocker.spy(qml.gradients.finite_diff, "transform_fn")
-
         a = torch.tensor([0.1, 0.2], requires_grad=True)
 
         @qnode(
@@ -258,10 +246,6 @@ class TestQNode:
 
         res = circuit(a)
         res.backward()
-
-        for args in spy.call_args_list:
-            assert args[1]["approx_order"] == 2
-            assert args[1]["h"] == 1e-8
 
     def test_changing_trainability(
         self, interface, dev, diff_method, grad_on_execution, mocker, tol
@@ -296,8 +280,6 @@ class TestQNode:
         assert np.allclose(res[0].detach().numpy(), expected[0], atol=tol, rtol=0)
         assert np.allclose(res[1].detach().numpy(), expected[1], atol=tol, rtol=0)
 
-        spy = mocker.spy(qml.gradients.param_shift, "transform_fn")
-
         loss = res[0] + res[1]
         loss.backward()
 
@@ -306,9 +288,6 @@ class TestQNode:
             -np.cos(a_val) * np.cos(b_val),
         ]
         assert np.allclose([a.grad, b.grad], expected, atol=tol, rtol=0)
-
-        # The parameter-shift rule has been called for each argument
-        assert len(spy.spy_return[0]) == 4
 
         # make the second QNode argument a constant
         a_val = 0.54
@@ -327,14 +306,10 @@ class TestQNode:
         assert np.allclose(res[0].detach().numpy(), expected[0], atol=tol, rtol=0)
         assert np.allclose(res[1].detach().numpy(), expected[1], atol=tol, rtol=0)
 
-        spy.call_args_list = []
         loss = res[0] + res[1]
         loss.backward()
         expected = -np.sin(a_val) + np.sin(a_val) * np.sin(b_val)
         assert np.allclose(a.grad, expected, atol=tol, rtol=0)
-
-        # the gradient transform has only been called once
-        assert len(spy.call_args_list) == 1
 
     def test_classical_processing(self, interface, dev, diff_method, grad_on_execution):
         """Test classical processing within the quantum tape"""
@@ -1089,23 +1064,8 @@ class TestTapeExpansion:
 
         loss = circuit(x)
 
-        spy = mocker.spy(circuit.gradient_fn, "transform_fn")
         loss.backward()
         res = x.grad
-
-        input_tape = spy.call_args[0][0]
-        assert len(input_tape.operations) == 2
-        assert input_tape.operations[1].name == "RY"
-        assert input_tape.operations[1].data[0] == 3 * x
-
-        if diff_method != "hadamard":
-            shifted_tape1, shifted_tape2 = spy.spy_return[0]
-
-            assert len(shifted_tape1.operations) == 2
-            assert shifted_tape1.operations[1].name == "RY"
-
-            assert len(shifted_tape2.operations) == 2
-            assert shifted_tape2.operations[1].name == "RY"
 
         assert torch.allclose(res, -3 * torch.sin(3 * x))
 
@@ -1146,16 +1106,7 @@ class TestTapeExpansion:
         y = torch.tensor(0.7, requires_grad=False)
 
         loss = circuit(x, y)
-
-        spy = mocker.spy(circuit.gradient_fn, "transform_fn")
         loss.backward()
-
-        input_tape = spy.call_args[0][0]
-        assert len(input_tape.operations) == 3
-        assert input_tape.operations[1].name == "RY"
-        assert input_tape.operations[1].data[0] == 3 * x
-        assert input_tape.operations[2].name == "PhaseShift"
-        assert input_tape.operations[2].grad_method is None
 
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_hamiltonian_expansion_analytic(

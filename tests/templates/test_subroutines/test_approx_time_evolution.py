@@ -389,7 +389,7 @@ class TestInterfaces:
 @pytest.mark.autograd
 @pytest.mark.parametrize(
     "dev_name,diff_method",
-    [["default.qubit.autograd", "backprop"], ["default.qubit", qml.gradients.param_shift]],
+    [["default.qubit", "backprop"], ["default.qubit", qml.gradients.param_shift]],
 )
 def test_trainable_hamiltonian(dev_name, diff_method):
     """Test that the ApproxTimeEvolution template
@@ -413,8 +413,10 @@ def test_trainable_hamiltonian(dev_name, diff_method):
 
         if diff_method is qml.gradients.param_shift and dev_name != "default.qubit":
             tape = dev.expand_fn(tape)
-
-        return qml.execute([tape], dev, diff_method)[0]
+            return qml.execute([tape], dev, diff_method)[0]
+        else:
+            program, _ = dev.preprocess()
+            return qml.execute([tape], dev, gradient_fn=diff_method, transform_program=program)[0]
 
     t = pnp.array(0.54, requires_grad=True)
     coeffs = pnp.array([-0.6, 2.0], requires_grad=True)
@@ -431,7 +433,22 @@ def test_trainable_hamiltonian(dev_name, diff_method):
     assert grad[1].shape == tuple()
 
     # compare to finite-differences
-    tape = create_tape(coeffs, t)
-    g_tapes, fn = finite_diff(tape, _expand=False, validate_params=False)
-    expected = fn(qml.execute(g_tapes, dev, None))
-    assert np.allclose(qml.math.hstack(grad), qml.math.stack(expected))
+
+    def create_tape(coeffs, t):
+        H = qml.Hamiltonian(coeffs, obs)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.templates.ApproxTimeEvolution(H, t, 2)
+            qml.expval(qml.PauliZ(0))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        return tape
+
+    @qml.qnode(dev, diff_method="finite-diff")
+    def circuit(coeffs, t):
+        H = qml.Hamiltonian(coeffs, obs)
+        qml.ApproxTimeEvolution(H, t, 2)
+        return qml.expval(qml.PauliZ(0))
+
+    expected = qml.grad(circuit)(coeffs, t)
+    assert np.allclose(qml.math.hstack(grad), qml.math.hstack(expected))

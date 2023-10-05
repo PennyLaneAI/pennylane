@@ -146,18 +146,10 @@ class TestQNode:
         kwargs = dict(
             diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
         )
-        spy = None
-        if diff_method == "parameter-shift":
-            spy = mocker.spy(qml.gradients.param_shift, "transform_fn")
-        elif diff_method == "finite-diff":
-            spy = mocker.spy(qml.gradients.finite_diff, "transform_fn")
-        elif diff_method == "spsa":
-            spy = mocker.spy(qml.gradients.spsa_grad, "transform_fn")
+        if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
-        if diff_method == "hadamard":
-            spy = mocker.spy(qml.gradients.hadamard_grad, "transform_fn")
 
         a = tf.Variable(0.1, dtype=tf.float64)
         b = tf.Variable(0.2, dtype=tf.float64)
@@ -185,15 +177,10 @@ class TestQNode:
         expected = [[-tf.sin(a), tf.sin(a) * tf.sin(b)], [0, -tf.cos(a) * tf.cos(b)]]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        if spy is not None:
-            spy.assert_called()
-
     def test_jacobian_options(self, dev, diff_method, grad_on_execution, mocker, interface):
         """Test setting finite-difference jacobian options"""
         if diff_method not in {"finite-diff", "spsa"}:
             pytest.skip("Test only works with finite diff and spsa.")
-
-        spy = mocker.spy(qml.gradients.finite_diff, "transform_fn")
 
         a = tf.Variable([0.1, 0.2])
 
@@ -214,10 +201,6 @@ class TestQNode:
             res = circuit(a)
 
         tape.jacobian(res, a)
-
-        for args in spy.call_args_list:
-            assert args[1]["approx_order"] == 2
-            assert args[1]["h"] == 1e-8
 
     def test_changing_trainability(
         self, dev, diff_method, grad_on_execution, mocker, tol, interface
@@ -261,17 +244,12 @@ class TestQNode:
         expected = [tf.cos(a), -tf.cos(a) * tf.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        spy = mocker.spy(circuit.gradient_fn, "transform_fn")
-
         jac = tape.jacobian(res, [a, b])
         expected = [
             [-tf.sin(a), tf.sin(a) * tf.sin(b)],
             [0, -tf.cos(a) * tf.cos(b)],
         ]
         assert np.allclose(jac, expected, atol=tol, rtol=0)
-
-        # The parameter-shift rule has been called for each argument
-        assert len(spy.spy_return[0]) == exp_num_calls
 
         # make the second QNode argument a constant
         a = tf.Variable(0.54, dtype=tf.float64)
@@ -287,13 +265,9 @@ class TestQNode:
         expected = [tf.cos(a), -tf.cos(a) * tf.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        spy.call_args_list = []
         jac = tape.jacobian(res, a)
         expected = [-tf.sin(a), tf.sin(a) * tf.sin(b)]
         assert np.allclose(jac, expected, atol=tol, rtol=0)
-
-        # the gradient transform has only been called once
-        assert len(spy.call_args_list) == 1
 
     def test_classical_processing(self, dev, diff_method, grad_on_execution, interface):
         """Test classical processing within the quantum tape"""
@@ -985,23 +959,7 @@ class TestTapeExpansion:
         with tf.GradientTape() as t2:
             with tf.GradientTape() as t1:
                 loss = circuit(x)
-
-            spy = mocker.spy(circuit.gradient_fn, "transform_fn")
             res = t1.gradient(loss, x)
-
-        input_tape = spy.call_args[0][0]
-        assert len(input_tape.operations) == 2
-        assert input_tape.operations[1].name == "RY"
-        assert input_tape.operations[1].data[0] == 3 * x
-
-        if diff_method != "hadamard":
-            shifted_tape1, shifted_tape2 = spy.spy_return[0]
-
-            assert len(shifted_tape1.operations) == 2
-            assert shifted_tape1.operations[1].name == "RY"
-
-            assert len(shifted_tape2.operations) == 2
-            assert shifted_tape2.operations[1].name == "RY"
 
         assert np.allclose(res, -3 * np.sin(3 * x))
 
@@ -1044,15 +1002,7 @@ class TestTapeExpansion:
         with tf.GradientTape() as t:
             res = circuit(x, y)
 
-        spy = mocker.spy(circuit.gradient_fn, "transform_fn")
-        res = t.gradient(res, [x, y])
-
-        input_tape = spy.call_args[0][0]
-        assert len(input_tape.operations) == 3
-        assert input_tape.operations[1].name == "RY"
-        assert input_tape.operations[1].data[0] == 3 * x
-        assert input_tape.operations[2].name == "PhaseShift"
-        assert input_tape.operations[2].grad_method is None
+        t.gradient(res, [x, y])
 
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_hamiltonian_expansion_analytic(

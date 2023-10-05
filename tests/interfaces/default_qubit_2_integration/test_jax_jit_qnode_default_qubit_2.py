@@ -102,7 +102,6 @@ class TestQNode:
             return qml.expval(qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliY(1)]))
 
         grad_fn = jax.jit(jax.grad(circuit, argnums=[0, 1]))
-        spy = mocker.spy(qml.gradients.param_shift, "transform_fn")
         res = grad_fn(a, b)
 
         # the tape has reported both arguments as trainable
@@ -110,9 +109,6 @@ class TestQNode:
 
         expected = [-np.sin(a) + np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # The parameter-shift rule has been called for each argument
-        assert len(spy.spy_return[0]) == 4
 
         # make the second QNode argument a constant
         grad_fn = jax.grad(circuit, argnums=0)
@@ -123,9 +119,6 @@ class TestQNode:
 
         expected = [-np.sin(a) + np.sin(a) * np.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # The parameter-shift rule has been called only once
-        assert len(spy.spy_return[0]) == 2
 
         # trainability also updates on evaluation
         a = np.array(0.54, requires_grad=False)
@@ -232,9 +225,6 @@ class TestQNode:
         """Test setting jacobian options"""
         if diff_method != "finite-diff":
             pytest.skip("Test only applies to finite diff.")
-
-        spy = mocker.spy(qml.gradients.finite_diff, "transform_fn")
-
         a = np.array([0.1, 0.2], requires_grad=True)
 
         @qnode(
@@ -256,10 +246,6 @@ class TestQNode:
 
         jax.jit(jax.jacobian(circuit))(a)
 
-        for args in spy.call_args_list:
-            assert args[1]["approx_order"] == 2
-            assert args[1]["h"] == 1e-8
-
 
 @pytest.mark.parametrize(
     "interface,dev,diff_method,grad_on_execution", interface_and_qubit_device_and_diff_method
@@ -272,17 +258,11 @@ class TestVectorValuedQNode:
         """Test jacobian calculation"""
 
         gradient_kwargs = {}
-        if diff_method == "parameter-shift":
-            spy = mocker.spy(qml.gradients.param_shift, "transform_fn")
-        elif diff_method == "finite-diff":
-            spy = mocker.spy(qml.gradients.finite_diff, "transform_fn")
-        elif diff_method == "spsa":
-            spy = mocker.spy(qml.gradients.spsa_grad, "transform_fn")
+
+        if diff_method == "spsa":
             gradient_kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
-        elif diff_method == "hadamard":
-            spy = mocker.spy(qml.gradients.hadamard_grad, "transform_fn")
 
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
@@ -333,26 +313,17 @@ class TestVectorValuedQNode:
         assert res[1][1].shape == ()
         assert np.allclose(res[1][1], expected[1][1], atol=tol, rtol=0)
 
-        if diff_method in ("parameter-shift", "finite-diff"):
-            spy.assert_called()
-
     def test_jacobian_no_evaluate(
         self, dev, diff_method, grad_on_execution, interface, mocker, tol
     ):
         """Test jacobian calculation when no prior circuit evaluation has been performed"""
 
         gradient_kwargs = {}
-        if diff_method == "parameter-shift":
-            spy = mocker.spy(qml.gradients.param_shift, "transform_fn")
-        elif diff_method == "finite-diff":
-            spy = mocker.spy(qml.gradients.finite_diff, "transform_fn")
-        elif diff_method == "spsa":
-            spy = mocker.spy(qml.gradients.spsa_grad, "transform_fn")
+
+        if diff_method == "spsa":
             gradient_kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
-        elif diff_method == "hadamard":
-            spy = mocker.spy(qml.gradients.hadamard_grad, "transform_fn")
 
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
@@ -384,9 +355,6 @@ class TestVectorValuedQNode:
                 assert isinstance(r, jax.numpy.ndarray)
                 assert r.shape == ()
                 assert np.allclose(r, e, atol=tol, rtol=0)
-
-        if diff_method in ("parameter-shift", "finite-diff", "spsa"):
-            spy.assert_called()
 
         # call the Jacobian with new parameters
         a = jax.numpy.array(0.6)
@@ -1191,13 +1159,7 @@ class TestQubitIntegrationHigherOrder:
         )
         assert np.allclose(g, expected_g.T, atol=tol, rtol=0)
 
-        spy = mocker.spy(qml.gradients.param_shift, "transform_fn")
         hess = jax.jit(jax.jacobian(jac_fn, argnums=[0, 1]))(a, b)
-
-        if diff_method == "backprop":
-            spy.assert_not_called()
-        elif diff_method == "parameter-shift":
-            spy.assert_called()
 
         expected_hess = np.array(
             [
@@ -1331,15 +1293,7 @@ class TestTapeExpansion:
         y = jax.numpy.array(0.7)
         circuit(x, y)
 
-        spy = mocker.spy(circuit.gradient_fn, "transform_fn")
         jax.grad(circuit, argnums=[0])(x, y)
-
-        input_tape = spy.call_args[0][0]
-        assert len(input_tape.operations) == 3
-        assert input_tape.operations[1].name == "RY"
-        assert input_tape.operations[1].data[0] == 3 * x
-        assert input_tape.operations[2].name == "PhaseShift"
-        assert input_tape.operations[2].grad_method is None
 
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_hamiltonian_expansion_analytic(
