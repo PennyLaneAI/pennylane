@@ -37,8 +37,8 @@ class TestQNode:
         def qnode1():
             return qml.expval(qml.PauliZ(0))
 
-        @qml.defer_measurements
         @qml.qnode(dev)
+        @qml.defer_measurements
         def qnode2():
             qml.measure(1)
             return qml.expval(qml.PauliZ(0))
@@ -162,6 +162,7 @@ class TestQNode:
         dev = DefaultQubit()
 
         @qml.qnode(dev)
+        @qml.defer_measurements
         def circ1(phi):
             qml.RX(phi, wires=0)
             # Postselecting on |1> on wire 0 means that the probability of measuring
@@ -201,6 +202,7 @@ class TestQNode:
         mv2 = MeasurementValue([mp2], lambda v: v)
 
         @qml.qnode(dev)
+        @qml.defer_measurements
         def circ1(phi, theta):
             qml.RX(phi, 0)
             qml.apply(mp0)
@@ -270,13 +272,14 @@ class TestQNode:
         param = 1.5
         assert np.allclose(circ1(param, shots=shots), circ2(param, shots=shots))
 
-    @pytest.mark.parametrize("shots", [None, 1000, [1000, 1000]])
+    @pytest.mark.parametrize("shots", [None, 2000, [2000, 2000]])
     def test_measured_value_wires_mapped(self, shots, tol, tol_stochastic):
         """Test that collecting statistics on a measurement value works correctly
         when the measured wire is reused."""
         dev = DefaultQubit()
 
         @qml.qnode(dev)
+        @qml.defer_measurements
         def circ1(x):
             qml.RX(x, 0)
             m0 = qml.measure(0)
@@ -1198,6 +1201,7 @@ class TestQubitReuseAndReset:
         dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev)
+        @qml.defer_measurements
         def circ(x, y):
             qml.RX(x, 0)
             qml.measure(0)

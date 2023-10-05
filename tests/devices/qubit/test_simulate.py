@@ -378,20 +378,42 @@ class TestPostselection:
             _ = simulate(tape)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("mp", [qml.expval, qml.var])
+    @pytest.mark.parametrize(
+        "mp",
+        [
+            qml.expval(qml.PauliZ(0)),
+            qml.var(qml.PauliZ(0)),
+            qml.purity(0),
+            qml.vn_entropy(0),
+            qml.mutual_info(0, 1),
+        ],
+    )
     @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow", "jax"])
     @pytest.mark.parametrize("shots", [None, 10, [10, 10]])
     def test_nan_float_result(self, mp, interface, shots):
         """Test that the result of circuits with 0 probability postselections is NaN with the
         expected shape."""
+        if (
+            isinstance(
+                mp,
+                (
+                    qml.measurements.VnEntropyMP,
+                    qml.measurements.MutualInfoMP,
+                    qml.measurements.PurityMP,
+                ),
+            )
+            and shots is not None
+        ):
+            pytest.skip("QInfo measurements should be done with analytic execution.")
 
         def f():
             tape = qml.tape.QuantumScript(
                 [
                     qml.RX(qml.math.asarray(np.pi, like=interface, dtype="float64"), 0),
+                    qml.CNOT([0, 1]),
                     qml.Projector([0], wires=0),
                 ],
-                [mp(qml.PauliZ(0))],
+                [mp],
                 shots=shots,
             )
 

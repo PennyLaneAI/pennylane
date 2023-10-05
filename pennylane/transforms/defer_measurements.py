@@ -213,7 +213,12 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
         new_measurements.append(mp)
 
     new_tape = type(tape)(new_operations, new_measurements, shots=tape.shots)
-    new_tape._qfunc_output = tape._qfunc_output  # pylint: disable=protected-access
+
+    # pylint: disable=protected-access
+    if not isinstance(tape._qfunc_output, Sequence):
+        new_tape._qfunc_output = new_measurements[0]
+    else:
+        new_tape._qfunc_output = type(tape._qfunc_output)(new_measurements)
 
     if is_postselecting and new_tape.batch_size is not None:
         # Split tapes if broadcasting with postselection
