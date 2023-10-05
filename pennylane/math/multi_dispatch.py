@@ -761,7 +761,7 @@ def unwrap(values, max_depth=None):
         )
         return new_val.tolist() if isinstance(new_val, ndarray) and not new_val.shape else new_val
 
-    return [convert(val) for val in values]
+    return type(values)(convert(val) for val in values)
 
 
 @multi_dispatch(argnum=[0, 1])
