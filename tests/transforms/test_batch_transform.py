@@ -203,9 +203,11 @@ class TestBatchTransform:
         spy_expand.assert_called()
 
         input_tape = spy_transform.call_args[0][1]
-        assert len(input_tape.operations) == 1
+        assert len(input_tape.operations) == 2
         assert input_tape.operations[0].name == "RZ"
+        assert input_tape.operations[1].name == "GlobalPhase"
         assert input_tape.operations[0].parameters == [0.5]
+        assert input_tape.operations[1].parameters == [0.25]
 
     @pytest.mark.parametrize("perform_expansion", [True, False])
     def test_expand_fn_with_kwarg(self, mocker, perform_expansion):
@@ -238,9 +240,13 @@ class TestBatchTransform:
         spy_expand.assert_called()  # The expand_fn of transform_fn always is called
 
         input_tape = spy_transform.call_args[0][1]
-        assert len(input_tape.operations) == 1
-        assert input_tape.operations[0].name == ("RZ" if perform_expansion else "PhaseShift")
+
+        assert len(input_tape.operations) == 2 if perform_expansion else 1
+        assert input_tape.operations[0].name == "RZ" if perform_expansion else "PhaseShift"
         assert input_tape.operations[0].parameters == [0.5]
+        if perform_expansion:
+            assert input_tape.operations[1].name == "GlobalPhase"
+            assert input_tape.operations[1].parameters == [0.25]            
 
     @pytest.mark.parametrize("perform_expansion", [True, False])
     def test_expand_qnode_with_kwarg(self, mocker, perform_expansion):
@@ -276,9 +282,14 @@ class TestBatchTransform:
         spy_transform.assert_called()
         spy_expand.assert_called()  # The expand_fn of transform_fn always is called
         input_tape = spy_transform.call_args[0][1]
-        assert len(input_tape.operations) == 1
-        assert input_tape.operations[0].name == ("RZ" if perform_expansion else "PhaseShift")
+
+        assert len(input_tape.operations) == 2 if perform_expansion else 1
+        assert input_tape.operations[0].name == "RZ" if perform_expansion else "PhaseShift"
         assert input_tape.operations[0].parameters == [0.5]
+
+        if perform_expansion:
+            assert input_tape.operations[1].name == "GlobalPhase"
+            assert input_tape.operations[1].parameters == [0.25]
 
     def test_parametrized_transform_tape(self):
         """Test that a parametrized transform can be applied
