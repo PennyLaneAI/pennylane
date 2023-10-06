@@ -36,7 +36,6 @@ def _compute_vjps(jacs, dys, multi_measurements, has_partitioned_shots):
     """Compute the vjps of multiple tapes, directly for a Jacobian and co-tangents dys."""
     f = {True: qml.gradients.compute_vjp_multi, False: qml.gradients.compute_vjp_single}
     if not has_partitioned_shots:
-
         return tuple(f[multi](dy, jac) for jac, dy, multi in zip(jacs, dys, multi_measurements))
 
     vjps = []
