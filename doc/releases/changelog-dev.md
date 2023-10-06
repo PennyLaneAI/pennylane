@@ -181,6 +181,11 @@
   interface-specific scalar data, eg `[(tf.Variable(1.1), tf.Variable(2.2))]`.
   [(#4603)](https://github.com/PennyLaneAI/pennylane/pull/4603)
 
+* When decomposing a unitary matrix with `one_qubit_decomposition`, and opting to include the `GlobalPhase` 
+  in the decomposition, the phase no longer has `dtype=complex` for phases with an imaginary component of 0.
+  To account for rounding errors in calculating the phase, any complex component less than `1e-15` is discarded.
+  [(#4653)](https://github.com/PennyLaneAI/pennylane/pull/4653)
+
 <h3>Breaking changes 💔</h3>
 
 * The device test suite now converts device kwargs to integers or floats if they can be converted to integers or floats.
