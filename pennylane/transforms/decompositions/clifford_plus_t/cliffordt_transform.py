@@ -13,7 +13,6 @@
 # limitations under the License.
 """Transform function for the Clifford+T decomposition."""
 
-from functools import partial
 from itertools import product
 from typing import Sequence, Callable
 import pennylane as qml
@@ -79,8 +78,7 @@ def check_clifford_op(op):
     pauli_coves = []
     try:
         pauli_qubit = [
-            qml.ops.op_math.prod(*pauli)
-            for pauli in product(*(pauli_group(idx) for idx in range(num_qubits)))
+            qml.prod(*pauli) for pauli in product(*(pauli_group(idx) for idx in range(num_qubits)))
         ]
     except:
         pauli_qubit = [qml.Identity(0)]
@@ -90,12 +88,12 @@ def check_clifford_op(op):
 
     for idx, prod in enumerate(product([pauli_terms], pauli_qubit, [pauli_terms])):
         # hopefully op_math.prod scales better than matrix multiplication, i.e., O((2^N)^3)
-        upu = qml.pauli.pauli_sentence(qml.ops.op_math.prod(*prod))
+        upu = qml.pauli.pauli_sentence(qml.prod(*prod))
         upu.simplify()
         upu2 = upu.hamiltonian(wire_order=range(num_qubits))
         if len(upu2.ops) == 1:
             if not isinstance(upu2.ops[0], qml.Identity):
-                pauli_coves.append(any([qml.equal(upu2.ops[0], tm) for tm in pauli_qubit]))
+                pauli_coves.append(any((qml.equal(upu2.ops[0], tm) for tm in pauli_qubit)))
         else:
             pauli_coves.append(False)
 
@@ -106,10 +104,10 @@ def _check_clifford_t(op):
     """Checks whether the gate is in the standard Clifford+T basis"""
     # Save time and check from the pre-computed list
     if any(
-        [
+        (
             isinstance(op, gate) or isinstance(getattr(op, "base", None), gate)
             for gate in _CLIFFORD_T_GATES
-        ]
+        )
     ):
         return True
     return check_clifford_op(op)
@@ -182,6 +180,7 @@ def _two_qubit_decompose(op):
     return d_ops
 
 
+# pylint: disable= too-many-nested-blocks, too-many-branches
 @transform
 def clifford_t_decomposition(tape: QuantumTape, epsilon=1e-8) -> (Sequence[QuantumTape], Callable):
     r"""Unrolls the tape into Clifford+T basis"""
@@ -195,7 +194,7 @@ def clifford_t_decomposition(tape: QuantumTape, epsilon=1e-8) -> (Sequence[Quant
     decomp_ops, gphase_ops = [], []
     for op in tape.operations:
         # Check whether operation is to be skipped
-        if any([isinstance(op, skip_op) for skip_op in [qml.Barrier, qml.Snapshot, qml.WireCut]]):
+        if any((isinstance(op, skip_op) for skip_op in [qml.Barrier, qml.Snapshot, qml.WireCut])):
             decomp_ops.append(op)
 
         # Check whether the operation is a global phase

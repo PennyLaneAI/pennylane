@@ -266,11 +266,9 @@ class TestDecompositions:
 
         assert len(res) == 2
 
-        assert res[0].name == "GlobalPhase"
-        assert res[1].name == "RZ"
-
-        assert res[1].wires == Wires([0])
-        assert np.allclose(res[1].data[0], phi)
+        assert res[0].name == "RZ"
+        assert res[0].wires == Wires([0])
+        assert np.allclose(res[0].data[0], phi)
 
         decomposed_matrix = res[1].matrix()
         global_phase = np.exp(-1j * phi / 2)[..., np.newaxis, np.newaxis]
@@ -288,11 +286,9 @@ class TestDecompositions:
 
         assert len(res) == 2
 
-        assert res[0].name == "GlobalPhase"
-        assert res[1].name == "RZ"
-
-        assert res[1].wires == Wires([0])
-        assert qml.math.allclose(res[1].data[0], np.array([0.3, 2.1, 0.2]))
+        assert res[0].name == "RZ"
+        assert res[0].wires == Wires([0])
+        assert qml.math.allclose(res[0].data[0], np.array([0.3, 2.1, 0.2]))
 
         decomposed_matrix = res[1].matrix()
         global_phase = np.exp(-1j * phi / 2)[..., np.newaxis, np.newaxis]
