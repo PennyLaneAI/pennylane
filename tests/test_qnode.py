@@ -615,26 +615,11 @@ class TestTapeConstruction:
         qn = QNode(circuit, dev)
         assert np.allclose(qn(0.5), np.cos(0.5), atol=tol, rtol=0)
 
-    def test_operator_all_tape_wires(self, monkeypatch):
-        """Test that an operator that must act on all wires raises an error
-        if the operator wires are not the tape wires (when no device wires
-        are defined)."""
-        monkeypatch.setattr(qml.RX, "num_wires", qml.operation.AllWires)
-
-        def circuit(x):
-            qml.Identity(1)
-            qml.RX(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        dev = qml.device("default.qubit")
-        qn = QNode(circuit, dev)
-
-        with pytest.raises(qml.QuantumFunctionError, match="Operator RX must act on all wires"):
-            qn(0.5)
-
     def test_all_wires_new_device(self):
-        """Test that an operator must act on all deivce wires if they are specified,
-        and otherwise all tape wires, with the new device API."""
+        """Test that an operator on AllWires must act on all device wires if they
+        are specified, and otherwise all tape wires, with the new device API."""
+
+        assert qml.GlobalPhase.num_wires == qml.operation.AllWires
 
         dev = qml.device("default.qubit")
         dev_with_wires = qml.device("default.qubit", wires=3)
