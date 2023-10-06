@@ -496,7 +496,7 @@ class TestGradientTransformIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_classical_processing_arguments(self, mocker, tol):
+    def test_classical_processing_arguments(self, tol):
         """Test that a gradient transform acts on QNodes
         correctly when the QNode arguments are classically processed"""
         dev = qml.device("default.qubit", wires=2)
@@ -515,7 +515,7 @@ class TestGradientTransformIntegration:
         expected = [-2 * x * np.sin(x**2), 0]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_classical_processing_multiple_arguments(self, mocker, tol):
+    def test_classical_processing_multiple_arguments(self, tol):
         """Test that a gradient transform acts on QNodes
         correctly when multiple QNode arguments are classically processed"""
         dev = qml.device("default.qubit", wires=2)

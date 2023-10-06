@@ -19,7 +19,6 @@ import pytest
 import pennylane as qml
 from pennylane.transforms.core import transform, TransformError
 
-# TODO: Replace with default qubit 2
 dev = qml.device("default.qubit", wires=2)
 
 with qml.tape.QuantumTape() as tape_circuit:

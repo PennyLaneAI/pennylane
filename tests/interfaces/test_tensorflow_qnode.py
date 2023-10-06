@@ -287,7 +287,6 @@ class TestQNode:
         diff_kwargs = {}
         if diff_method == "hadamard":
             num_wires = 3
-            exp_num_calls = 2  # only one circuit per parameter
         elif diff_method == "finite-diff":
             diff_kwargs = {"approx_order": 2, "strategy": "center"}
 
