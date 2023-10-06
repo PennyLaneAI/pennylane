@@ -14,7 +14,7 @@
 """Various conversion functions for the gridsynth implementation."""
 # pylint:disable=missing-function-docstring
 
-from .rings import RootTwo, Matrix
+from .rings import DRootTwo, ZRootTwo, RootTwo, Matrix
 
 
 def adj2(x):
@@ -34,7 +34,7 @@ def fatten_interval(x, y):
     return x - epsilon, y + epsilon
 
 
-def action(a, b, g):
+def action(a, b, g: Matrix):
     g4 = adj2(g)
     g3 = g4.adjoint()
     g2 = g
@@ -42,9 +42,13 @@ def action(a, b, g):
     return g1 @ a @ g2, g3 @ b @ g4
 
 
-def denomexp(x):
+def denomexp(v):
     """Return the smallest denominator exponent of ``x``."""
-    return x
+    if isinstance(v, DRootTwo):
+        return max(2 * v.a.k, 2 * v.b.k - 1)
+    if isinstance(v, ZRootTwo):
+        return 0
+    raise ValueError(f"denomexp not defined for {type(v).__name__}: {v}")
 
 
 def operator_to_bl2z(m):

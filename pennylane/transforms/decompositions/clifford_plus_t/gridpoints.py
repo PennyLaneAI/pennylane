@@ -21,14 +21,14 @@ from .conversion import (
     adj2,
     denomexp,
     fatten_interval,
-    from_d_root_two,
     operator_to_bl2z,
 )
-from .rings import Matrix, DRootTwo, ZRootTwo, SQRT2
+from .rings import Matrix, DRootTwo, ZRootTwo, DOmega, SQRT2
 from .shapes import ConvexSet, Ellipse, Point
 
 LAMBDA = ZRootTwo(1, 1)
 LAMBDA_INV = ZRootTwo(-1, 1)
+ROOT_NEG1 = DOmega(0, 1, 0, 0)
 log_lambda = lambda x: np.emath.logn(1 + SQRT2, float(x))
 
 
@@ -72,7 +72,7 @@ def gridpoints2_increasing_gen(region: ConvexSet) -> Callable:
                     if region.characteristic_fn(alpha, beta) and unitdisk.characteristic_fn(
                         alpha.adj2(), beta.adj2()
                     ):
-                        yield from_d_root_two(alpha) + 1j * from_d_root_two(beta)
+                        yield DOmega.from_root_two(alpha) + ROOT_NEG1 * DOmega.from_root_two(beta)
 
     return solutions_fn
 

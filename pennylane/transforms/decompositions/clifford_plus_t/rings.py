@@ -19,6 +19,7 @@ from fractions import Fraction as _Fraction
 import numpy as np
 
 SQRT2 = float(np.sqrt(2))
+OMEGA = np.exp(np.pi * 0.25j)
 
 
 class Dyadic:
@@ -68,6 +69,11 @@ class Dyadic:
 
     def __rsub__(self, other):
         return -self + other
+
+    def __truediv__(self, other):
+        if isinstance(other, int):
+            return Fraction(self.x, other * 2**self.k)
+        return float(self) / other
 
     def __eq__(self, other):
         if isinstance(other, Dyadic):
@@ -144,7 +150,8 @@ def root_two(a, b):
     if types == {Dyadic}:
         return DRootTwo(a, b)
     if types:  # at least one is a Fraction
-        return QRootTwo(a, b)
+        # return QRootTwo(a, b)
+        raise ValueError("No code should produce non-Dyadic fraction")
     return ZRootTwo(a, b)
 
 
@@ -251,7 +258,7 @@ class RootTwo(ABC):
 
 
 class ZRootTwo(RootTwo):
-    """Z√2"""
+    """Z[√2]"""
 
     @classmethod
     def cast(cls, value):
@@ -275,7 +282,7 @@ class ZRootTwo(RootTwo):
 
 
 class DRootTwo(RootTwo):
-    """D√2"""
+    """D[√2]"""
 
     @classmethod
     def cast(cls, value):
@@ -297,7 +304,7 @@ class DRootTwo(RootTwo):
 
 
 class QRootTwo(RootTwo):
-    """Q√2"""
+    """Q[√2]"""
 
     @classmethod
     def cast(cls, value):
@@ -309,3 +316,90 @@ class QRootTwo(RootTwo):
         if t is float and value.is_integer():
             return Dyadic(int(value))
         raise TypeError(f"Cannot cast {value} of unknown type {type(value)} to Fraction")
+
+
+class DOmega:
+    """D[ω]"""
+
+    def __init__(self, a: Dyadic, b: Dyadic, c: Dyadic, d: Dyadic):
+        self.a = DRootTwo.cast(a)
+        self.b = DRootTwo.cast(b)
+        self.c = DRootTwo.cast(c)
+        self.d = DRootTwo.cast(d)
+
+    @classmethod
+    def from_root_two(cls, v: RootTwo):
+        """Convert a real RootTwo ring value to a DOmega value."""
+        return cls(-v.b, 0, v.b, v.a)
+
+    def __repr__(self):
+        vals = [self.a, self.b, self.c, self.d]
+        max_k = max(v.k for v in vals)
+        vals = [v.x * 2 ** (max_k - v.k) for v in vals]
+        coeffs = ["ω**3", "ω**2", "ω", ""]
+        res = [f"{val}{coeff}" for val, coeff in zip(vals, coeffs) if val != 0]
+        if len(res) == 0:
+            return 0
+        if len(res) == 1:
+            return f"{res[0]}/{2**max_k}"
+        return f"({' + '.join(res)})/{2**max_k}"
+        # res = []
+        # if self.a != 0:
+        #     res.append(f"{self.a}ω**3")
+        # if self.b != 0:
+        #     res.append(f"{self.b}ω**2")
+        # if self.c != 0:
+        #     res.append(f"{self.c}ω")
+        # if self.d != 0:
+        #     res.append(repr(self.d))
+        # return " + ".join(res) or "0"
+
+    def __complex__(self):
+        return self.a * OMEGA**3 + self.b * 1j + self.c * OMEGA + self.d
+
+    def __float__(self):
+        if self.b == 0 and self.a == -self.c:
+            return self.real
+        raise ValueError("Requested float for complex-valued DOmega instance:", self)
+
+    @property
+    def real(self):
+        """The real component of a DOmega value."""
+        return root_two(self.d, (self.c - self.a) / 2)
+
+    @property
+    def imag(self):
+        """The imaginary component of a DOmega value."""
+        return root_two(self.b, (self.a + self.c) / 2)
+
+    def __mul__(self, other):
+        # if isinstance(other, (Dyadic, int)):
+        #     return DOmega(self.a * other, self.b * other, self.c * other, self.d * other)
+        # if isinstance(other, RootTwo):
+        #     other = self.from_root_two(other)
+        if isinstance(other, DOmega):
+            a, b, c, d = (self.a, self.b, self.c, self.d)
+            _a, _b, _c, _d = (other.a, other.b, other.c, other.d)
+            new_a = a * _d + b * _c + c * _b + d * _a
+            new_b = b * _d + c * _c + d * _b - a * _a
+            new_c = c * _d + d * _c - a * _b - b * _a
+            new_d = d * _d - a * _c - b * _b - c * _a
+            return DOmega(new_a, new_b, new_c, new_d)
+        raise TypeError(
+            f"cannot multiply DOmega value by value `{other}` of unknown type {type(other).__name__}"
+        )
+
+    def __add__(self, other):
+        # if isinstance(other, (Dyadic, int)):
+        #     return DOmega(self.a + other, self.b + other, self.c + other, self.d + other)
+        if isinstance(other, DOmega):
+            return DOmega(self.a + other.a, self.b + other.b, self.c + other.c, self.d + other.d)
+        raise TypeError(
+            f"cannot add DOmega value to value `{other}` of unknown type {type(other).__name__}"
+        )
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __neg__(self):
+        return DOmega(-self.a, -self.b, -self.c, -self.d)

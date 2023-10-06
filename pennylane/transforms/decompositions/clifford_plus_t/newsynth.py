@@ -25,9 +25,7 @@ from .conversion import (
 )
 from .gridpoints import gridpoints2_increasing_gen
 from .shapes import ConvexSet, Ellipse, Point
-from .rings import Matrix
-
-OMEGA = np.exp(np.pi * 0.25j)
+from .rings import Matrix, OMEGA
 
 
 def gridsynth(g, prec, theta, effort):
