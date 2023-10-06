@@ -294,21 +294,22 @@ class TestHamiltonianExpand:
 
     def test_processing_function_conditional_clause(self):
         """Test the conditional logic for `len(c_group) == 1` and `len(r_group) != 1`
-        in the processing function returned by hamiltonian_expand."""
+        in the processing function returned by hamiltonian_expand, accessed when
+        using a shot vector and grouping if the terms don't commute with each other."""
 
-        # hamiltonian with a single c_group of `len(c_group) == 1`
-        H = qml.Hamiltonian([1], [qml.PauliX(0)])
-        tape = qml.tape.QuantumTape([], [qml.expval(H)])
+        dev_with_shot_vector = qml.device("default.qubit", shots=(10, 10, 10))
 
-        tape, processing_fn = qml.transforms.hamiltonian_expand(tape)
+        H = qml.Hamiltonian([1, 2.0], [qml.PauliZ(0), qml.PauliX(0)])
+        H.compute_grouping()
 
-        # get dimensions of execution result
-        r = len(dev.execute(tape))
+        @qml.transforms.hamiltonian_expand
+        @qml.qnode(dev_with_shot_vector)
+        def circuit():
+            return qml.expval(H)
 
-        # create a "result" whose dimensions force the condition len(r_group) != 1)
-        processed_res = processing_fn([np.ones(r + 1)])
+        res = circuit()
 
-        assert np.all(processed_res == [1, 1])
+        assert res.shape == (3,)
 
 
 with AnnotatedQueue() as s_tape1:
