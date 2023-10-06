@@ -139,7 +139,7 @@ class TestQNode:
 
         assert result == expected
 
-    def test_jacobian(self, interface, dev, diff_method, grad_on_execution, mocker, tol):
+    def test_jacobian(self, interface, dev, diff_method, grad_on_execution, tol):
         """Test jacobian calculation"""
         kwargs = dict(
             diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
@@ -224,7 +224,7 @@ class TestQNode:
         assert a.grad.dtype is torch.float32
         assert b.grad.dtype is torch.float32
 
-    def test_jacobian_options(self, interface, dev, diff_method, grad_on_execution, mocker):
+    def test_jacobian_options(self, interface, dev, diff_method, grad_on_execution):
         """Test setting jacobian options"""
         if diff_method not in {"finite-diff", "spsa"}:
             pytest.skip("Test only works with finite-diff and spsa")
@@ -247,9 +247,7 @@ class TestQNode:
         res = circuit(a)
         res.backward()
 
-    def test_changing_trainability(
-        self, interface, dev, diff_method, grad_on_execution, mocker, tol
-    ):
+    def test_changing_trainability(self, interface, dev, diff_method, grad_on_execution, tol):
         """Test that changing the trainability of parameters changes the
         number of differentiation requests made"""
         if diff_method != "parameter-shift":
@@ -1036,7 +1034,7 @@ class TestTapeExpansion:
     """Test that tape expansion within the QNode integrates correctly
     with the Torch interface"""
 
-    def test_gradient_expansion(self, dev, diff_method, grad_on_execution, mocker):
+    def test_gradient_expansion(self, dev, diff_method, grad_on_execution):
         """Test that a *supported* operation with no gradient recipe is
         expanded for both parameter-shift and finite-differences, but not for execution."""
         if diff_method not in ("parameter-shift", "finite-diff", "spsa", "hadamard"):
@@ -1076,7 +1074,11 @@ class TestTapeExpansion:
 
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_gradient_expansion_trainable_only(
-        self, dev, diff_method, grad_on_execution, max_diff, mocker
+        self,
+        dev,
+        diff_method,
+        grad_on_execution,
+        max_diff,
     ):
         """Test that a *supported* operation with no gradient recipe is only
         expanded for parameter-shift and finite-differences when it is trainable."""

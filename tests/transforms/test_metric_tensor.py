@@ -1617,7 +1617,7 @@ def test_error_not_available_aux_wire():
 
 
 @pytest.mark.parametrize("allow_nonunitary", [True, False])
-def test_error_generator_not_registered(allow_nonunitary, monkeypatch):
+def test_error_generator_not_registered(allow_nonunitary):
     """Tests that an error is raised if an operation doe not have a
     controlled-generator operation registered."""
     dev = qml.device("default.qubit", wires=qml.wires.Wires(["wire1", "wire2", "wire3"]))

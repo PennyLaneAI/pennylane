@@ -18,7 +18,6 @@ import pytest
 import numpy as np
 from pennylane import numpy as pnp
 import pennylane as qml
-from pennylane.gradients.finite_difference import finite_diff
 
 
 # pylint: disable=protected-access
@@ -414,9 +413,8 @@ def test_trainable_hamiltonian(dev_name, diff_method):
         if diff_method is qml.gradients.param_shift and dev_name != "default.qubit":
             tape = dev.expand_fn(tape)
             return qml.execute([tape], dev, diff_method)[0]
-        else:
-            program, _ = dev.preprocess()
-            return qml.execute([tape], dev, gradient_fn=diff_method, transform_program=program)[0]
+        program, _ = dev.preprocess()
+        return qml.execute([tape], dev, gradient_fn=diff_method, transform_program=program)[0]
 
     t = pnp.array(0.54, requires_grad=True)
     coeffs = pnp.array([-0.6, 2.0], requires_grad=True)
@@ -433,16 +431,6 @@ def test_trainable_hamiltonian(dev_name, diff_method):
     assert grad[1].shape == tuple()
 
     # compare to finite-differences
-
-    def create_tape(coeffs, t):
-        H = qml.Hamiltonian(coeffs, obs)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.templates.ApproxTimeEvolution(H, t, 2)
-            qml.expval(qml.PauliZ(0))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        return tape
 
     @qml.qnode(dev, diff_method="finite-diff")
     def circuit(coeffs, t):

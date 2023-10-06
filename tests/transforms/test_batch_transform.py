@@ -648,7 +648,7 @@ class TestBatchTransformGradients:
         for g, e in zip(grad, expected):
             assert qml.math.allclose(g, e)
 
-    def test_batch_transforms_qnode(self, diff_method, mocker):
+    def test_batch_transforms_qnode(self, diff_method):
         """Test that batch transforms can be applied to a QNode
         without affecting device batch transforms"""
         if diff_method == "backprop":

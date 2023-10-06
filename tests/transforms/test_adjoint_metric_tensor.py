@@ -623,7 +623,6 @@ def test_error_finite_shots():
         qml.RX(0.2, wires=0)
         qml.RY(1.9, wires=1)
     tape = qml.tape.QuantumScript.from_queue(q, shots=1)
-    dev = qml.device("default.qubit", wires=2, shots=1)
 
     with pytest.raises(ValueError, match="The adjoint method for the metric tensor"):
         qml.adjoint_metric_tensor(tape)

@@ -78,9 +78,7 @@ class TestQNode:
         assert isinstance(grad, jax.Array)
         assert grad.shape == ()
 
-    def test_changing_trainability(
-        self, dev, diff_method, grad_on_execution, interface, mocker, tol
-    ):
+    def test_changing_trainability(self, dev, diff_method, grad_on_execution, interface, tol):
         """Test changing the trainability of parameters changes the
         number of differentiation requests made"""
         if diff_method != "parameter-shift":
@@ -221,7 +219,7 @@ class TestQNode:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_jacobian_options(self, dev, diff_method, grad_on_execution, interface, mocker):
+    def test_jacobian_options(self, dev, diff_method, grad_on_execution, interface):
         """Test setting jacobian options"""
         if diff_method != "finite-diff":
             pytest.skip("Test only applies to finite diff.")
@@ -254,7 +252,7 @@ class TestVectorValuedQNode:
     """Test that using vector-valued QNodes with JAX integrate with the
     PennyLane stack"""
 
-    def test_diff_expval_expval(self, dev, diff_method, grad_on_execution, interface, mocker, tol):
+    def test_diff_expval_expval(self, dev, diff_method, grad_on_execution, interface, tol):
         """Test jacobian calculation"""
 
         gradient_kwargs = {}
@@ -313,9 +311,7 @@ class TestVectorValuedQNode:
         assert res[1][1].shape == ()
         assert np.allclose(res[1][1], expected[1][1], atol=tol, rtol=0)
 
-    def test_jacobian_no_evaluate(
-        self, dev, diff_method, grad_on_execution, interface, mocker, tol
-    ):
+    def test_jacobian_no_evaluate(self, dev, diff_method, grad_on_execution, interface, tol):
         """Test jacobian calculation when no prior circuit evaluation has been performed"""
 
         gradient_kwargs = {}
@@ -1114,7 +1110,7 @@ class TestQubitIntegrationHigherOrder:
             assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
     def test_hessian_vector_valued_separate_args(
-        self, dev, diff_method, grad_on_execution, interface, mocker, tol
+        self, dev, diff_method, grad_on_execution, interface, tol
     ):
         """Test hessian calculation of a vector valued QNode that has separate input arguments"""
         gradient_kwargs = {}
@@ -1263,7 +1259,7 @@ class TestTapeExpansion:
 
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_gradient_expansion_trainable_only(
-        self, dev, diff_method, grad_on_execution, max_diff, interface, mocker
+        self, dev, diff_method, grad_on_execution, max_diff, interface
     ):
         """Test that a *supported* operation with no gradient recipe is only
         expanded for parameter-shift and finite-differences when it is trainable."""

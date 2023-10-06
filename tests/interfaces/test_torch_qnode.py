@@ -158,7 +158,7 @@ class TestQNode:
 
         assert result == expected
 
-    def test_jacobian(self, interface, dev_name, diff_method, grad_on_execution, mocker, tol):
+    def test_jacobian(self, interface, dev_name, diff_method, grad_on_execution, tol):
         """Test jacobian calculation"""
         kwargs = dict(
             diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
@@ -252,7 +252,7 @@ class TestQNode:
         assert a.grad.dtype is torch.float32
         assert b.grad.dtype is torch.float32
 
-    def test_jacobian_options(self, interface, dev_name, diff_method, grad_on_execution, mocker):
+    def test_jacobian_options(self, interface, dev_name, diff_method, grad_on_execution):
         """Test setting jacobian options"""
         if diff_method not in {"finite-diff", "spsa"}:
             pytest.skip("Test only works with finite-diff and spsa")
@@ -277,9 +277,7 @@ class TestQNode:
         res = circuit(a)
         res.backward()
 
-    def test_changing_trainability(
-        self, interface, dev_name, diff_method, grad_on_execution, mocker, tol
-    ):
+    def test_changing_trainability(self, interface, dev_name, diff_method, grad_on_execution, tol):
         """Test that changing the trainability of parameters changes the
         number of differentiation requests made"""
         if diff_method != "parameter-shift":
@@ -1379,7 +1377,6 @@ class TestTapeExpansion:
             PhaseShift(2 * y, wires=0)
             return qml.expval(qml.PauliX(0))
 
-        spy = mocker.spy(circuit.device, "batch_execute")
         x = torch.tensor(0.5, requires_grad=True)
         y = torch.tensor(0.7, requires_grad=False)
 

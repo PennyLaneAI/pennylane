@@ -268,7 +268,7 @@ class TestCVGradient:
         grad_F = jax.grad(qf)(*par)
 
         @qml.qnode(device=gaussian_dev, diff_method="parameter-shift", force_order2=True)
-        def qf(x, y):
+        def qf2(x, y):
             qml.Displacement(0.5, 0, wires=[0])
             qml.Squeezing(x, 0, wires=[0])
             M = np.zeros((5, 5))
@@ -277,7 +277,7 @@ class TestCVGradient:
             M[2, 1] = 1.0
             return qml.expval(qml.PolyXP(M, [0, 1]))
 
-        grad_A2 = jax.grad(qf)(*par)
+        grad_A2 = jax.grad(qf2)(*par)
 
         # the different methods agree
         assert grad_A2 == pytest.approx(grad_F, abs=tol)

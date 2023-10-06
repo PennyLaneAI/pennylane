@@ -195,7 +195,7 @@ class TestFiniteDiff:
 
         weights = [0.1, 0.2]
         with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
-            res = qml.gradients.finite_diff(circuit, h=h_val)(weights)
+            qml.gradients.finite_diff(circuit, h=h_val)(weights)
 
     @pytest.mark.jax
     def test_no_trainable_params_qnode_jax(self):
