@@ -66,6 +66,9 @@ class Dyadic:
             return -other + self
         return float(self) - other
 
+    def __rsub__(self, other):
+        return -self + other
+
     def __eq__(self, other):
         if isinstance(other, Dyadic):
             return self.x == other.x and self.k == other.k
@@ -134,13 +137,10 @@ class Matrix(np.ndarray):
 
 def root_two(a, b):
     """Determine the RootTwo ring (if any) that should be used, and return that type."""
-    if b == 0:
-        return a
-
     types = {type(a), type(b)} - {int}
 
     if not types.issubset({Fraction, Dyadic}):
-        return float(a + b * SQRT2)
+        return a + b * SQRT2
     if types == {Dyadic}:
         return DRootTwo(a, b)
     if types:  # at least one is a Fraction
@@ -169,10 +169,10 @@ class RootTwo(ABC):
         return type(self)(self.a, -self.b)
 
     def __repr__(self):
-        if self.a == 0:
-            return f"{self.b}√2"
         if self.b == 0:
             return repr(self.a)
+        if self.a == 0:
+            return f"{self.b}√2"
         if self.b > 0:
             return f"{self.a}+{self.b}√2"
         return f"{self.a}{self.b}√2"
@@ -190,6 +190,9 @@ class RootTwo(ABC):
         if isinstance(other, RootTwo):
             return root_two(self.a - other.a, self.b - other.b)
         return root_two(self.a - other, self.b)
+
+    def __rsub__(self, other):
+        return -self + other
 
     def __mul__(self, other):
         if isinstance(other, RootTwo):
@@ -210,6 +213,12 @@ class RootTwo(ABC):
     def __lt__(self, other):
         return float(self) < float(other)
 
+    def __ge__(self, other):
+        return float(self) >= float(other)
+
+    def __le__(self, other):
+        return float(self) <= float(other)
+
     def __neg__(self):
         return type(self)(-self.a, -self.b)
 
@@ -217,7 +226,7 @@ class RootTwo(ABC):
         if not isinstance(power, int):
             raise ValueError(f"Cannot raise RootTwo to non-int power {power}")
         if power == 0:
-            return 1
+            return type(self)(1, 0)
         if power < 0:
             return 1 / (self**-power)
         result = self
@@ -278,6 +287,13 @@ class DRootTwo(RootTwo):
         if t is float and value.is_integer():
             return Dyadic(int(value))
         raise TypeError(f"Cannot cast {value} of unknown type {type(value)} to Dyadic")
+
+    def __truediv__(self, other):
+        if isinstance(other, int):
+            a = Fraction(self.a.x, other * 2**self.a.k)
+            b = Fraction(self.b.x, other * 2**self.b.k)
+            return root_two(a, b)
+        return super().__truediv__(other)
 
 
 class QRootTwo(RootTwo):

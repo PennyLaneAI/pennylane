@@ -34,6 +34,23 @@ def fatten_interval(x, y):
     return x - epsilon, y + epsilon
 
 
+def action(a, b, g):
+    g4 = adj2(g)
+    g3 = g4.adjoint()
+    g2 = g
+    g1 = g2.adjoint()
+    return g1 @ a @ g2, g3 @ b @ g4
+
+
+def denomexp(x):
+    """Return the smallest denominator exponent of ``x``."""
+    return x
+
+
+def operator_to_bl2z(m):
+    return m[0][1], m[1][1] / m[0][0]
+
+
 def from_d_root_two(x):
     return x
 
@@ -46,25 +63,8 @@ def from_z_root_two(x):
     return x
 
 
-def operator_to_bl2z(m):
-    return m[0][1], m[1][1] / m[0][0]
-
-
 def point_from_d_root_two(point):
     return point
-
-
-def action(a, b, g):
-    g4 = adj2(g)
-    g3 = g4.adjoint()
-    g2 = g
-    g1 = g2.adjoint()
-    return g1 @ a @ g2, g3 @ b @ g4
-
-
-def denomexp(x):
-    """Return the smallest denominator exponent of ``x``."""
-    return x
 
 
 def op_from_d_root_two(op):

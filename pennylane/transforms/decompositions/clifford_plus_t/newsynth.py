@@ -23,7 +23,7 @@ from .conversion import (
     op_from_d_omega,
     point_from_d_root_two,
 )
-from .gridpoints import gridpoints2_increasing
+from .gridpoints import gridpoints2_increasing_gen
 from .shapes import ConvexSet, Ellipse, Point
 from .rings import Matrix
 
@@ -48,8 +48,11 @@ def gridsynth(g, prec, theta, effort):
 
     epsilon = 2**-prec
     region = epsilon_region(epsilon, theta)
-    raw_candidates = gridpoints2_increasing(region)
-    candidates = [(u, tcount_for(k)) for (k, us) in raw_candidates for u in us]
+    candidates_gen = gridpoints2_increasing_gen(region)
+    candidates = ((u, 0) for u in candidates_gen(0))
+    # candidates = (
+    #     (u, tcount_for(k)) for k in range(10) for u in candidates_gen(k) if denomexp(u) == k
+    # )
     candidate_info = first_solvable(g, candidates, effort)
     u, _, t = candidate_info[0]
     if not t:
@@ -79,9 +82,10 @@ def epsilon_region(epsilon, theta):
     def intersector(p, v):
         # TODO: p and v are strongly-typed in Haskell
         # check QuadraticEquation.hs for implementations
+        p, v = (list(p), list(v))
         a = np.inner(v, v)
         b = 2 * np.inner(v, p)
-        c = np.inner(p, p - 1)
+        c = np.inner(p, p) - 1
         q = [r for r in np.roots((a, b, c)) if np.isclose(np.imag(r), 0)]
         if len(q) != 2:
             return None

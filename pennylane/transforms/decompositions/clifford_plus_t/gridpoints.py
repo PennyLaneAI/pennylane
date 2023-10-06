@@ -13,6 +13,7 @@
 # limitations under the License.
 """The gridsynth method, adapted from the ``newsynth`` Haskell package."""
 
+from typing import Callable, Generator
 import numpy as np
 
 from .conversion import (
@@ -21,18 +22,17 @@ from .conversion import (
     denomexp,
     fatten_interval,
     from_d_root_two,
-    from_z_root_two,
     operator_to_bl2z,
 )
-from .rings import Matrix, root_two, SQRT2
+from .rings import Matrix, DRootTwo, ZRootTwo, SQRT2
 from .shapes import ConvexSet, Ellipse, Point
 
-LAMBDA = root_two(1, 1)
-LAMBDA_INV = root_two(-1, 1)
+LAMBDA = ZRootTwo(1, 1)
+LAMBDA_INV = ZRootTwo(-1, 1)
 log_lambda = lambda x: np.emath.logn(1 + SQRT2, float(x))
 
 
-def gridpoints2_increasing(region: ConvexSet):
+def gridpoints2_increasing_gen(region: ConvexSet) -> Callable:
     """Returns a list of candidates."""
     unitdisk = create_unitdisk()
     matA = region.ellipse.operator
@@ -46,44 +46,35 @@ def gridpoints2_increasing(region: ConvexSet):
 
     def solutions_fn(k):
         """Given a k value, produce results."""
-        results = []
         for beta in gridpoints_scaled(fatten_interval(y0A, y1A), fatten_interval(y0B, y1B), k + 1):
-            beta_bul = adj2(beta)
+            beta_bul = beta.adj2()
             xs = gridpoints_scaled((x0A, x1A + LAMBDA), (x0B, x1B + LAMBDA), k + 1)
-            x0 = xs[0]
-            dx = SQRT2**-k
-            x0_bul = adj2(x0)
-            dx_bul = adj2(dx)
-            iA = setA.line_intersector((x0, beta), (dx, 0))
-            iB = setB.line_intersector((x0_bul, beta_bul), (dx_bul, 0))
-            if iA is None or iB is None:
-                continue
-            t0A, t1A = iA
-            t0B, t1B = iB
-            dtA = 10 / np.max(10, 2**k * (t1B - t0B))
-            dtB = 10 / np.max(10, 2**k * (t1A - t0A))
-            alpha_offs = gridpoints_scaled_parity(
-                (beta - x0) * SQRT2**k, (t0A - dtA, t1A + dtA), (t0B - dtB, t1B + dtB), 1
-            )
-            alphas = [dx * a + x0 for a in alpha_offs]
-            for alpha_ in alphas:
-                alpha, beta = Point(alpha_, beta).transform(opG)
-                if region.characteristic_fn(alpha, beta) and unitdisk.characteristic_fn(
-                    adj2(alpha), adj2(beta)
-                ):
-                    results.append(from_d_root_two(alpha) + 1j * from_d_root_two(beta))
-        return results
+            # x0 = next(xs)
+            for x0 in xs:
+                dx_inv = ZRootTwo(0, 1) ** k
+                dx = 1 / dx_inv
+                x0_bul = x0.adj2()
+                dx_bul = dx.adj2()
+                iA = setA.line_intersector(Point(x0, beta), Point(dx, 0))
+                iB = setB.line_intersector(Point(x0_bul, beta_bul), Point(dx_bul, 0))
+                if iA is None or iB is None:
+                    continue
+                t0A, t1A = iA
+                t0B, t1B = iB
+                dtA = 10 / max(10, 2**k * (t1B - t0B))
+                dtB = 10 / max(10, 2**k * (t1A - t0A))
+                alpha_offs = gridpoints_scaled_parity(
+                    (beta - x0) * dx_inv, (t0A - dtA, t1A + dtA), (t0B - dtB, t1B + dtB), 1
+                )
+                alphas = [dx * a + x0 for a in alpha_offs]
+                for alpha_ in alphas:
+                    alpha, beta = Point(alpha_, beta).transform(opG)
+                    if region.characteristic_fn(alpha, beta) and unitdisk.characteristic_fn(
+                        alpha.adj2(), beta.adj2()
+                    ):
+                        yield from_d_root_two(alpha) + 1j * from_d_root_two(beta)
 
-    def exact_solutions(k):
-        """Solutions where the SDE is k."""
-        return [z for z in solutions_fn(k) if denomexp(z) == k]
-
-    def additional_solutions(k):
-        """Recursive generation of all exact solutions."""
-        return [(k, exact_solutions(k))] + additional_solutions(k + 1)
-
-    first_solutions = (0, solutions_fn(0))
-    return [first_solutions]  # + additional_solutions(1)  # TODO: fix infinite recursion
+    return solutions_fn
 
 
 def create_unitdisk():
@@ -92,46 +83,46 @@ def create_unitdisk():
 
     def intersector(p, v):
         """The line intersector of the unitdisk."""
+        p, v = (list(p), list(v))
         a = np.inner(v, v)
         b = 2 * np.inner(v, p)
-        c = np.inner(p, p - 1)
+        c = np.inner(p, p) - 1
         q = tuple(r for r in np.roots((a, b, c)) if np.isclose(np.imag(r), 0))
         return q if len(q) == 2 else None
 
     return ConvexSet(ell, lambda x, y: x**2 + y**2 <= 1, intersector)
 
 
-def gridpoints_scaled(x, y, k):
+def gridpoints_scaled(x, y, k) -> Generator[DRootTwo, None, None]:
     """Gridpoints satisfying the scaling criteria so they are in D[omega]"""
-    scale = SQRT2**-k
-    scale_inv = SQRT2**k
+    scale_inv = ZRootTwo(0, 1) ** k
+    scale = 1 / scale_inv
     x = (scale_inv * x[0], scale_inv * x[1])
     y = (-scale_inv * y[1], -scale_inv * y[0]) if k % 2 else (scale_inv * y[0], scale_inv * y[1])
-    a = (x[0] + y[0]) // 2
-    b = (SQRT2 * (x[0] - y[0])) // 4
-    alpha = root_two(a, b)
+    a = int(x[0] + y[0]) // 2
+    b = int(SQRT2 * (x[0] - y[0])) // 4
+    alpha = ZRootTwo(a, b)
     xoff = a + SQRT2 * b
     yoff = a - SQRT2 * b
     x_ = (x[0] - xoff, x[1] - xoff)
     y_ = (y[0] - yoff, y[1] - yoff)
-    test = lambda v: x[0] <= v <= x and y[0] <= from_z_root_two(adj2(v)) <= y[1]
-    beta = [b + alpha for b in gridpoints_internal(x_, y_)]
-    return [scale * from_z_root_two(b) for b in beta if test(b)]
+    test = lambda v: x[0] <= v <= x[1] and y[0] <= v.adj2() <= y[1]
+    beta = (b + alpha for b in gridpoints_internal(x_, y_))
+    return (scale * b for b in beta if test(b))
 
 
 def gridpoints_scaled_parity(beta, x, y, k):
     """Like gridpoints_scaled, but with k >= 1"""
     if denomexp(beta) <= k - 1:
         return gridpoints_scaled(x, y, k - 1)
-    offs = SQRT2**-k
-    offs_bul = from_d_root_two(adj2(offs))
-    offs_ = from_d_root_two(offs)
-    return [
+    offs = 1 / ZRootTwo(0, 1) ** k
+    offs_bul = offs.adj2()
+    return (
         z - offs
         for z in gridpoints_scaled(
-            (x[0] + offs_, x[1] + offs_), (y[0] + offs_bul, y[1] + offs_bul), k - 1
+            (x[0] + offs, x[1] + offs), (y[0] + offs_bul, y[1] + offs_bul), k - 1
         )
-    ]
+    )
 
 
 def gridpoints_internal(x, y):
@@ -140,18 +131,21 @@ def gridpoints_internal(x, y):
     dy = y[1] - y[0]
 
     if dy <= 0 < dx:
-        return list(map(adj2, gridpoints_internal(x=y, y=x)))
+        return (gp.adj2() for gp in gridpoints_internal(x=y, y=x))
+
+    if dy <= 0:
+        return iter(())
 
     n, _ = floorlog(LAMBDA, dy)
-    y1, y0 = y if n % 2 else y[1], y[0]  # swap order if odd
+    y1, y0 = y if n % 2 else (y[1], y[0])  # swap order if odd
 
-    if dy >= LAMBDA:
+    if dy >= float(LAMBDA):
         lambda_n = LAMBDA**n
         lambda_inv_n = LAMBDA_INV**n
         lambda_bul_n = (-LAMBDA_INV) ** n
         new_x = (lambda_n * x[0], lambda_n * x[1])
         new_y = (lambda_bul_n * y0, lambda_bul_n * y1)
-        return [lambda_inv_n * g for g in gridpoints_internal(new_x, new_y)]
+        return (lambda_inv_n * g for g in gridpoints_internal(new_x, new_y))
 
     if 0 < dy < 1:
         m = -n
@@ -160,13 +154,13 @@ def gridpoints_internal(x, y):
         lambda_bul_inv_m = (-LAMBDA) ** m
         new_x = (lambda_inv_m * x[0], lambda_inv_m * x[1])
         new_y = (lambda_bul_inv_m * y0, lambda_bul_inv_m * y1)
-        return [lambda_m * g for g in gridpoints_internal(new_x, new_y)]
+        return (lambda_m * g for g in gridpoints_internal(new_x, new_y))
 
-    amin = np.ceil((x[0] + y[0]) / 2)
-    amax = (x[1] + y[1]) // 2
-    bmin = lambda a: np.ceil((a - y[1]) / SQRT2)
-    bmax = lambda a: (a - y[0]) // SQRT2
-    return [root_two(a, b) for a in range(amin, amax + 1) for b in range(bmin(a), bmax(a) + 1)]
+    amin = int(np.ceil((x[0] + y[0]) / 2))
+    amax = int(x[1] + y[1]) // 2
+    bmin = lambda a: int(np.ceil((a - y[1]) / SQRT2))
+    bmax = lambda a: int((a - y[0]) // SQRT2)
+    return [ZRootTwo(a, b) for a in range(amin, amax + 1) for b in range(bmin(a), bmax(a) + 1)]
 
 
 def floorlog(b, x):
@@ -212,20 +206,20 @@ def step_lemma(matA: np.ndarray, matB: np.ndarray) -> Matrix:
         return with_shift(matA, matB, int(np.round(log_lambda(l2z_minus_zeta) / 4)))
 
     if 0.24410 <= l2z <= 4.0968 and 0.24410 <= l2zeta <= 4.0968:
-        return Matrix.array([[1, -1], [1, 1]]) / root_two(0, 1)
+        return Matrix.array([[1, -1], [1, 1]]) / ZRootTwo(0, 1)
 
     if b >= 0:
         if l2z <= 1.6969:
-            return Matrix.array([[-LAMBDA_INV, -1], [LAMBDA, 1]]) / root_two(0, 1)
+            return Matrix.array([[-LAMBDA_INV, -1], [LAMBDA, 1]]) / ZRootTwo(0, 1)
         if l2zeta <= 1.6969:
-            return adj2(Matrix.array([[-LAMBDA_INV, -1], [LAMBDA, 1]]) / root_two(0, 1))
+            return adj2(Matrix.array([[-LAMBDA_INV, -1], [LAMBDA, 1]]) / ZRootTwo(0, 1))
         l2c = min(l2z, l2zeta)
         power = max(1, int(np.sqrt(l2c // 4)))
         return Matrix.array([[1, -2 * power], [0, 1]])
 
     l2c = min(l2z, l2zeta)
     power = max(1, int(np.sqrt(l2c // 2)))
-    return Matrix.array([[1, root_two(0, power)], [0, 1]])
+    return Matrix.array([[1, ZRootTwo(0, power)], [0, 1]])
 
 
 def wlog_using(matA, matB, op):

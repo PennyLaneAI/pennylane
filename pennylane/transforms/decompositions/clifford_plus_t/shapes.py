@@ -15,7 +15,6 @@
 
 import numpy as np
 
-from .conversion import op_from_d_root_two
 from .rings import Matrix
 
 
@@ -27,17 +26,16 @@ class Point:
         self.x = x
         self.y = y
 
+    def __repr__(self):
+        return f"({self.x},{self.y})"
+
     def __iter__(self):
         """So that we can unpack the x and y values."""
         return iter((self.x, self.y))
 
-    def transform(self, opG):
+    def transform(self, opG: Matrix):
         """Apply an operator to a point."""
-        (a, b), (c, d) = opG
-        x1, y1 = self
-        x2 = a * x1 + b * y1
-        y2 = c * x1 + d * y1
-        return Point(x2, y2)
+        return Point(*(opG @ list(self)))
 
 
 class Ellipse:
@@ -52,7 +50,7 @@ class Ellipse:
         """Apply an operator to an ellipse."""
         opG_inv = opG.inverse()
         mat = opG_inv.adjoint() @ self.operator @ opG_inv
-        return Ellipse(mat, self.point.transform(opG))
+        return Ellipse(mat.astype(float), self.point.transform(opG))
 
     def bounding_box(self):
         """Construct the bounding box corners around the ellipse."""
@@ -93,10 +91,9 @@ class ConvexSet:
 
         return intersector
 
-    def transform(self, opG) -> "ConvexSet":
+    def transform(self, opG: Matrix) -> "ConvexSet":
         """Returns a new convex set with transforms applied to all components."""
-        opG_from_d_root_two = op_from_d_root_two(opG)
-        ell = self.ellipse.transform(opG_from_d_root_two)
+        ell = self.ellipse.transform(opG)
         char_fn = self.characteristic_transform(opG)
-        intersector = self.intersector_transform(opG_from_d_root_two)
+        intersector = self.intersector_transform(opG)
         return ConvexSet(ell, char_fn, intersector)
