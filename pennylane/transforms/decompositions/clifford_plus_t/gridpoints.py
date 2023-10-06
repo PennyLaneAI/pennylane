@@ -68,11 +68,11 @@ def gridpoints2_increasing_gen(region: ConvexSet) -> Callable:
                 )
                 alphas = [dx * a + x0 for a in alpha_offs]
                 for alpha_ in alphas:
-                    alpha, beta = Point(alpha_, beta).transform(opG)
-                    if region.characteristic_fn(alpha, beta) and unitdisk.characteristic_fn(
-                        alpha.adj2(), beta.adj2()
+                    alpha, beta_ = Point(alpha_, beta).transform(opG)
+                    if region.characteristic_fn(alpha, beta_) and unitdisk.characteristic_fn(
+                        alpha.adj2(), beta_.adj2()
                     ):
-                        yield DOmega.from_root_two(alpha) + ROOT_NEG1 * DOmega.from_root_two(beta)
+                        yield DOmega.from_root_two(alpha) + ROOT_NEG1 * DOmega.from_root_two(beta_)
 
     return solutions_fn
 
