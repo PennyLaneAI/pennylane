@@ -186,6 +186,11 @@
   To account for rounding errors in calculating the phase, any complex component less than `1e-15` is discarded.
   [(#4653)](https://github.com/PennyLaneAI/pennylane/pull/4653)
 
+* `_qfunc_output` has been removed from `QuantumScript`, as it is no longer necessary. There is
+  still a `_qfunc_output` property on `QNode` instances.
+  [(#4651)](https://github.com/PennyLaneAI/pennylane/pull/4651)
+
+
 <h3>Breaking changes 💔</h3>
 
 * The device test suite now converts device kwargs to integers or floats if they can be converted to integers or floats.

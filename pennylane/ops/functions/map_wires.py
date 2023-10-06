@@ -104,7 +104,6 @@ def map_wires(
 
         out = input.__class__(ops=ops, measurements=measurements, shots=input.shots)
         out.trainable_params = input.trainable_params
-        out._qfunc_output = input._qfunc_output  # pylint: disable=protected-access
         return out
 
     if callable(input):
