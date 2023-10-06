@@ -295,6 +295,9 @@ class TestDecompositions:
         decomposed_matrix = res[0].matrix()
         global_phase = np.exp(-1j * phi / 2)[..., np.newaxis, np.newaxis]
 
+        assert res[1].name == "GlobalPhase"
+        assert np.allclose(qml.matrix(res[1]), np.exp(-1j * phi / 2))
+
         assert np.allclose(decomposed_matrix, global_phase * op.matrix(), atol=tol, rtol=0)
 
     def test_Rot_decomposition(self):
