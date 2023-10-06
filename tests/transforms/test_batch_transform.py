@@ -246,7 +246,7 @@ class TestBatchTransform:
         assert input_tape.operations[0].parameters == [0.5]
         if perform_expansion:
             assert input_tape.operations[1].name == "GlobalPhase"
-            assert input_tape.operations[1].parameters == [0.25]            
+            assert input_tape.operations[1].parameters == [0.25]
 
     @pytest.mark.parametrize("perform_expansion", [True, False])
     def test_expand_qnode_with_kwarg(self, mocker, perform_expansion):
