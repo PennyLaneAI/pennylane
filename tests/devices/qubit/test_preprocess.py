@@ -19,16 +19,7 @@ import numpy as np
 import pennylane.numpy as pnp
 import pennylane as qml
 from pennylane.operation import Operation
-from pennylane.devices.qubit.preprocess import (
-    _accepted_operator,
-    _accepted_adjoint_operator,
-    _operator_decomposition_gen,
-    expand_fn,
-    preprocess,
-    validate_and_expand_adjoint,
-    validate_measurements,
-    validate_multiprocessing_workers,
-)
+from pennylane.devices.preprocess import *
 from pennylane.devices import ExecutionConfig
 from pennylane.measurements import MidMeasureMP, MeasurementValue
 from pennylane.tape import QuantumScript

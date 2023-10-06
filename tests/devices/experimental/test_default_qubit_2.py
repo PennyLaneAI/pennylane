@@ -22,7 +22,6 @@ import pennylane as qml
 from pennylane.measurements import SampleMP, StateMP, ProbabilityMP
 
 from pennylane.devices import DefaultQubit, ExecutionConfig
-from pennylane.devices.qubit.preprocess import validate_and_expand_adjoint
 
 
 def test_name():
@@ -1009,8 +1008,10 @@ class TestAdjointDifferentiation:
         dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-        qs, _ = validate_and_expand_adjoint(qs)
-        qs = qs[0]
+
+        config = ExecutionConfig(gradient_method="adjoint")
+        batch, _ = dev.preprocess(config)[0]((qs,))[0]
+        qs = batch[0]
         expected_grad = -qml.math.sin(x)
         actual_grad = dev.compute_derivatives(qs, self.ec)
         assert isinstance(actual_grad, np.ndarray)

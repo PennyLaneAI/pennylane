@@ -52,6 +52,22 @@ accessible from the ``pennylane.devices`` submodule.
     Device
     DefaultQubit
 
+Preprocessing Transforms
+------------------------
+
+The ``preprocess`` module offers several transforms that can be used in constructing the :meth:`~.devices.Device.preprocess`
+method for devices.
+
+.. currentmodule:: pennylane.devices.preprocess
+.. autosummary::
+    :toctree: api
+
+    decompose
+    validate_measurements
+    validate_device_wires
+    validate_multiprocesssing_workers
+    warn_about_trainable_observables
+
 Qubit Simulation Tools
 ----------------------
 

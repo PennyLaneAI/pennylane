@@ -17,7 +17,6 @@ import pennylane as qml
 from pennylane.devices.qubit import adjoint_jacobian, adjoint_jvp, adjoint_vjp
 from pennylane.tape import QuantumScript
 import pennylane.numpy as np
-from pennylane.devices.qubit.preprocess import validate_and_expand_adjoint
 
 
 class TestAdjointJacobian:
@@ -30,10 +29,7 @@ class TestAdjointJacobian:
         )
         qs.trainable_params = {0, 1}
 
-        qs_valid, _ = validate_and_expand_adjoint(qs)
-        qs_valid = qs_valid[0]
-
-        calculated_val = adjoint_jacobian(qs_valid)
+        calculated_val = adjoint_jacobian(qs)
 
         tapes, fn = qml.gradients.finite_diff(qs)
         results = tuple(qml.devices.qubit.simulate(t) for t in tapes)
@@ -52,13 +48,8 @@ class TestAdjointJacobian:
         )
 
         qs.trainable_params = {1}
-        qs_valid, _ = validate_and_expand_adjoint(qs)
-        qs_valid = qs_valid[0]
 
-        qs_valid.trainable_params = {1}
-
-        calculated_val = adjoint_jacobian(qs_valid)
-
+        calculated_val = adjoint_jacobian(qs)
         # compare to finite differences
         tapes, fn = qml.gradients.finite_diff(qs)
         results = tuple(qml.devices.qubit.simulate(t) for t in tapes)
@@ -81,12 +72,14 @@ class TestAdjointJacobian:
         )
 
         qs.trainable_params = {1, 2, 3}
-        qs_valid, _ = validate_and_expand_adjoint(qs)
+        qs_valid, _ = qml.devices.preprocess.decompose(
+            qs, qml.devices.default_qubit.adjoint_stopping_condition
+        )
         qs_valid = qs_valid[0]
 
-        qs_valid.trainable_params = {1, 2, 3}
+        qs.trainable_params = {1, 2, 3}
 
-        calculated_val = adjoint_jacobian(qs_valid)
+        calculated_val = adjoint_jacobian(qs)
 
         # compare to finite differences
         tapes, fn = qml.gradients.finite_diff(qs)
@@ -120,7 +113,9 @@ class TestAdjointJacobian:
         qs = QuantumScript(ops, measurements)
         qs.trainable_params = set(range(1, 1 + op.num_params))
 
-        qs_valid, _ = validate_and_expand_adjoint(qs)
+        qs_valid, _ = qml.devices.preprocess.decompose(
+            qs, qml.devices.default_qubit.adjoint_stopping_condition
+        )
         qs_valid = qs_valid[0]
 
         qs_valid.trainable_params = set(range(1, 1 + op.num_params))
@@ -143,7 +138,9 @@ class TestAdjointJacobian:
             [qml.RX(params[0], wires=0), qml.RX(params[1], wires=1), qml.RX(params[2], wires=2)],
             [qml.expval(qml.PauliZ(idx)) for idx in range(3)],
         )
-        qs_valid, _ = validate_and_expand_adjoint(qs)
+        qs_valid, _ = qml.devices.preprocess.decompose(
+            qs, qml.devices.default_qubit.adjoint_stopping_condition
+        )
         qs_valid = qs_valid[0]
 
         # circuit jacobians
@@ -177,7 +174,9 @@ class TestAdjointJacobian:
             [MyOp(p, w) for p, w in zip(params, [0, 1, 2])],
             [qml.expval(qml.PauliZ(idx)) for idx in range(3)],
         )
-        qs_valid, _ = validate_and_expand_adjoint(qs)
+        qs_valid, _ = qml.devices.preprocess.decompose(
+            qs, qml.devices.default_qubit.adjoint_stopping_condition
+        )
         qs_valid = qs_valid[0]
 
         # circuit jacobians
@@ -198,7 +197,9 @@ class TestAdjointJacobian:
         )
 
         qs.trainable_params = {1, 2, 3}
-        qs_valid, _ = validate_and_expand_adjoint(qs)
+        qs_valid, _ = qml.devices.preprocess.decompose(
+            qs, qml.devices.default_qubit.adjoint_stopping_condition
+        )
         qs_valid = qs_valid[0]
 
         qs_valid.trainable_params = {1, 2, 3}
@@ -229,7 +230,9 @@ class TestAdjointJacobian:
         )
 
         qs.trainable_params = {2, 3, 4}
-        qs_valid, _ = validate_and_expand_adjoint(qs)
+        qs_valid, _ = qml.devices.preprocess.decompose(
+            qs, qml.devices.default_qubit.adjoint_stopping_condition
+        )
         qs_valid = qs_valid[0]
 
         qs_valid.trainable_params = {2, 3, 4}
@@ -259,7 +262,9 @@ class TestAdjointJacobian:
         )
 
         qs.trainable_params = {0, 1, 2}
-        qs_valid, _ = validate_and_expand_adjoint(qs)
+        qs_valid, _ = qml.devices.preprocess.decompose(
+            qs, qml.devices.default_qubit.adjoint_stopping_condition
+        )
         qs_valid = qs_valid[0]
 
         qs_valid.trainable_params = {0, 1, 2}
@@ -290,7 +295,9 @@ class TestAdjointJacobian:
         )
 
         qs.trainable_params = {0, 1, 2}
-        qs_valid, _ = validate_and_expand_adjoint(qs)
+        qs_valid, _ = qml.devices.preprocess.decompose(
+            qs, qml.devices.default_qubit.adjoint_stopping_condition
+        )
         qs_valid = qs_valid[0]
 
         res = adjoint_jacobian(qs_valid)
