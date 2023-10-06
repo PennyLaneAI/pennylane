@@ -86,7 +86,7 @@ def check_clifford_op(op):
         qml.pauli.pauli_sentence(op).hamiltonian(wire_order=range(num_qubits)) for op in pauli_qubit
     ]
 
-    for idx, prod in enumerate(product([pauli_terms], pauli_qubit, [pauli_terms])):
+    for prod in product([pauli_terms], pauli_qubit, [pauli_terms]):
         # hopefully op_math.prod scales better than matrix multiplication, i.e., O((2^N)^3)
         upu = qml.pauli.pauli_sentence(qml.prod(*prod))
         upu.simplify()
