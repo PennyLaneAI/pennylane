@@ -264,15 +264,18 @@ class TestDecompositions:
         op = qml.PhaseShift(phi, wires=0)
         res = op.decomposition()
 
-        assert len(res) == 1
+        assert len(res) == 2
 
-        assert res[0].name == "RZ"
+        assert res[0].name == "GlobalPhase"
+        assert res[1].name == "RZ"
 
-        assert res[0].wires == Wires([0])
-        assert np.allclose(res[0].data[0], phi)
+        assert res[1].wires == Wires([0])
+        assert np.allclose(res[1].data[0], phi)
 
-        decomposed_matrix = res[0].matrix()
+        decomposed_matrix = res[1].matrix()
         global_phase = np.exp(-1j * phi / 2)[..., np.newaxis, np.newaxis]
+
+        assert np.allclose(qml.matrix(res[0]), np.exp(-1j * phi / 2))
         assert np.allclose(decomposed_matrix, global_phase * op.matrix(), atol=tol, rtol=0)
 
     def test_phase_decomposition_broadcasted(self, tol):
@@ -281,16 +284,18 @@ class TestDecompositions:
         op = qml.PhaseShift(phi, wires=0)
         res = op.decomposition()
 
-        assert len(res) == 1
+        assert len(res) == 2
 
-        assert res[0].name == "RZ"
+        assert res[0].name == "GlobalPhase"
+        assert res[1].name == "RZ"
 
-        assert res[0].wires == Wires([0])
-        assert qml.math.allclose(res[0].data[0], np.array([0.3, 2.1, 0.2]))
+        assert res[1].wires == Wires([0])
+        assert qml.math.allclose(res[1].data[0], np.array([0.3, 2.1, 0.2]))
 
-        decomposed_matrix = res[0].matrix()
+        decomposed_matrix = res[1].matrix()
         global_phase = np.exp(-1j * phi / 2)[..., np.newaxis, np.newaxis]
 
+        assert np.allclose(qml.matrix(res[0]), np.exp(-1j * phi / 2))
         assert np.allclose(decomposed_matrix, global_phase * op.matrix(), atol=tol, rtol=0)
 
     def test_Rot_decomposition(self):

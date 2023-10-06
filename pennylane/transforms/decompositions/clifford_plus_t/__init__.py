@@ -16,3 +16,4 @@ the helper functions needed to compute it.
 """
 
 from .newsynth import gridsynth
+from .cliffordt_transform import clifford_t_decomposition

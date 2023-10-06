@@ -499,7 +499,7 @@ class PhaseShift(Operation):
         [RZ(1.234, wires=[0])]
 
         """
-        return [RZ(phi, wires=wires)]
+        return [qml.GlobalPhase(phi / 2), RZ(phi, wires=wires)]
 
     def adjoint(self):
         return PhaseShift(-self.data[0], wires=self.wires)
