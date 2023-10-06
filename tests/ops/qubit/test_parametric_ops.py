@@ -285,7 +285,7 @@ class TestDecompositions:
         op = qml.PhaseShift(phi, wires=0)
         res = op.decomposition()
 
-        assert len(res) == 1
+        assert len(res) == 2
 
         assert res[0].name == "RZ"
 
