@@ -27,7 +27,7 @@ from pennylane.queuing import QueuingManager
 
 
 @transform
-def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
+def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], Callable):
     """Quantum function transform that substitutes operations conditioned on
     measurement outcomes to controlled operations.
 
@@ -137,6 +137,8 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
     if ops_cv or obs_cv:
         raise ValueError("Continuous variable operations and observables are not supported.")
 
+    device = kwargs.get("device", None)
+
     new_operations = []
 
     # Find wires that are reused after measurement
@@ -160,6 +162,9 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
             reused_measurement_wires = reused_measurement_wires.union(
                 set(measured_wires).intersection(op.wires.toset())
             )
+
+    if is_postselecting and device is not None and not isinstance(device, qml.devices.DefaultQubit):
+        raise ValueError(f"Postselection is not supported on the {device} device.")
 
     # Apply controlled operations to store measurement outcomes and replace
     # classically controlled operations
@@ -230,6 +235,19 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
         return results[0]
 
     return [new_tape], null_postprocessing
+
+
+@defer_measurements.custom_qnode_transform
+def _defer_measurements_qnode(self, qnode, targs, tkwargs):
+    """Custom qnode transform for ``defer_measurements``."""
+    if tkwargs.get("device", None):
+        raise ValueError(
+            "Cannot provide a 'device' value directly to the defer_measurements decorator "
+            "when transforming a QNode."
+        )
+
+    tkwargs.setdefault("device", qnode.device)
+    return self.default_qnode_transform(qnode, targs, tkwargs)
 
 
 def _add_control_gate(op, control_wires):

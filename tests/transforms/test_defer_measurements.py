@@ -24,6 +24,47 @@ import pennylane.numpy as np
 from pennylane.devices import DefaultQubit
 
 
+def test_broadcasted_postselection(mocker):
+    """Test that broadcast_expand is used iff broadcasting with postselection."""
+    spy = mocker.spy(qml.transforms, "broadcast_expand")
+
+    # Broadcasting with postselection
+    tape1 = qml.tape.QuantumScript(
+        [qml.RX([0.1, 0.2], 0), MidMeasureMP(0, postselect=1), qml.CNOT([0, 1])],
+        [qml.probs(wires=[0])],
+    )
+    _, _ = qml.defer_measurements(tape1)
+
+    assert spy.call_count == 1
+
+    # Broadcasting without postselection
+    tape2 = qml.tape.QuantumScript(
+        [qml.RX([0.1, 0.2], 0), MidMeasureMP(0), qml.CNOT([0, 1])],
+        [qml.probs(wires=[0])],
+    )
+    _, _ = qml.defer_measurements(tape2)
+
+    assert spy.call_count == 1
+
+    # Postselection without broadcasting
+    tape3 = qml.tape.QuantumScript(
+        [qml.RX(0.1, 0), MidMeasureMP(0, postselect=1), qml.CNOT([0, 1])],
+        [qml.probs(wires=[0])],
+    )
+    _, _ = qml.defer_measurements(tape3)
+
+    assert spy.call_count == 1
+
+    # No postselection, no broadcasting
+    tape4 = qml.tape.QuantumScript(
+        [qml.RX(0.1, 0), MidMeasureMP(0), qml.CNOT([0, 1])],
+        [qml.probs(wires=[0])],
+    )
+    _, _ = qml.defer_measurements(tape4)
+
+    assert spy.call_count == 1
+
+
 class TestQNode:
     """Test that the transform integrates well with QNodes."""
 

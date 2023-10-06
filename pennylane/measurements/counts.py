@@ -218,19 +218,6 @@ class CountsMP(SampleMeasurement):
         shot_range: Tuple[int] = None,
         bin_size: int = None,
     ):
-        if qml.math.any(qml.math.isnan(samples)) or len(samples) == 0:
-            if self.all_outcomes:
-                if (eigs := self.eigvals()) is not None:
-                    keys = [str(e) for e in eigs]
-                    vals = [0] * len(eigs)
-                else:
-                    bits = len(wire_order)
-                    keys = [format(i, f"{bits}b") for i in range(2**bits)]
-                    vals = [0] * 2**bits
-                return dict(zip(keys, vals))
-
-            return {}
-
         if self.mv is not None:
             samples = qml.sample(wires=self.mv.wires).process_samples(
                 samples, wire_order, shot_range, bin_size

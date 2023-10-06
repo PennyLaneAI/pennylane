@@ -159,9 +159,6 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         shot_range: Tuple[int] = None,
         bin_size: int = None,
     ):
-        if qml.math.any(qml.math.isnan(samples)) or len(samples) == 0:
-            return qml.math.asarray([0.0] * 2 ** len(wire_order), dtype="float64")
-
         wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]
         if shot_range is not None:

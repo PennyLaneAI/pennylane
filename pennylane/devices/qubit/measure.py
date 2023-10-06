@@ -18,7 +18,6 @@ from typing import Callable
 
 from scipy.sparse import csr_matrix
 
-import pennylane as qml
 from pennylane import math
 from pennylane.ops import Sum, Hamiltonian
 from pennylane.measurements import (
@@ -26,7 +25,6 @@ from pennylane.measurements import (
     MeasurementProcess,
     MeasurementValue,
     ExpectationMP,
-    Shots,
 )
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
@@ -138,35 +136,6 @@ def sum_of_terms_method(
     )
 
 
-def state_measure_nan(
-    measurement: StateMeasurement, state: TensorLike, is_state_batched: bool = False
-) -> TensorLike:
-    """Return measurement outcomes when the state contains NaN values.
-
-    Args:
-        measurementprocess (ExpectationMP): measurement process to apply to the state
-        state (TensorLike): the state to measure
-        is_state_batched (bool): whether the state is batched or not
-
-    Returns:
-        TensorLike: the result of the measurement
-    """
-
-    interface = math.get_interface(state)
-    batch_size = math.shape(state)[0] if is_state_batched else None
-
-    shape = measurement.shape(qml.device("default.qubit", wires=measurement.wires), Shots(None))
-    if batch_size is not None:
-        shape = (batch_size,) + shape
-
-    nan_val = (
-        measurement.numeric_type(qml.numpy.NaN)
-        if measurement.numeric_type is not int
-        else qml.numpy.NaN
-    )
-    return math.full(shape, measurement.numeric_type(nan_val), like=interface)
-
-
 # pylint: disable=too-many-return-statements
 def get_measurement_function(
     measurementprocess: MeasurementProcess, state: TensorLike
@@ -183,9 +152,6 @@ def get_measurement_function(
     """
 
     if isinstance(measurementprocess, StateMeasurement):
-        if not math.is_abstract(state) and math.any(math.isnan(state)):
-            return state_measure_nan
-
         if isinstance(measurementprocess.mv, MeasurementValue):
             return state_diagonalizing_gates
 

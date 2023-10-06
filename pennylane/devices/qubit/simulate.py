@@ -66,18 +66,6 @@ def _valid_flex_tuple(s):
 class _FlexShots(qml.measurements.Shots):
     """Shots class that allows zero shots."""
 
-    total_shots = None
-    """The total number of shots to be executed."""
-
-    shot_vector = None
-    """The tuple of :class:`~ShotCopies` to be executed. Each element is of the form ``(shots, copies)``."""
-
-    _SHOT_ERROR = ValueError(
-        "Shots must be a single positive integer, a tuple pair of the form (shots, copies), or a sequence of these types."
-    )
-
-    _frozen = False
-
     # pylint: disable=super-init-not-called
     def __init__(self, shots=None):
         if shots is None:
@@ -147,37 +135,22 @@ def _postselection_postprocess(state, is_state_batched, shots):
             "postselection is used."
         )
 
-    if qml.math.is_abstract(state):
-        return state, shots, False
+    # if qml.math.is_abstract(state):
+    norm = qml.math.floor(qml.math.real(qml.math.norm(state)) * 1e8) * 1e-8
 
-    norm = qml.math.norm(state)
-    if not qml.math.is_abstract(norm) and qml.math.isclose(float(norm), 0.0):
-        new_state = qml.math.cast_like(
-            qml.math.full(qml.math.shape(state), qml.numpy.NaN, like=qml.math.get_interface(state)),
-            state,
+    if shots:
+        # Clip the number of shots using a binomial distribution using the probability of
+        # measuring the postselected state.
+        postselected_shots = (
+            [binomial(s, float(norm)) for s in shots] if not qml.math.is_abstract(norm) else shots
         )
-        is_nan = True
 
-    else:
-        new_state = state / norm
-        is_nan = False
+        # _FlexShots is used here since the binomial distribution could result in zero
+        # valid samples
+        shots = _FlexShots(postselected_shots)
 
-        # defer_measurements will raise an error with batched shots or broadcasting so we can
-        # assume that both the state and shots are unbatched.
-        if shots:
-            # Clip the number of shots using a binomial distribution using the probability of
-            # measuring the postselected state.
-            postselected_shots = (
-                [binomial(s, float(norm)) for s in shots]
-                if not qml.math.is_abstract(norm)
-                else shots
-            )
-
-            # _FlexShots is used here since the binomial distribution could result in zero
-            # valid samples
-            shots = _FlexShots(postselected_shots)
-
-    return new_state, shots, is_nan
+    state = state / qml.math.cast_like(norm, state)
+    return state, shots
 
 
 def get_final_state(circuit, debugger=None, interface=None):
@@ -211,11 +184,9 @@ def get_final_state(circuit, debugger=None, interface=None):
 
         # Handle postselection on mid-circuit measurements
         if isinstance(op, qml.Projector):
-            state, circuit._shots, state_nan = _postselection_postprocess(
+            state, circuit._shots = _postselection_postprocess(
                 state, is_state_batched, circuit.shots
             )
-            if state_nan:
-                return state, is_state_batched
 
         # new state is batched if i) the old state is batched, or ii) the new op adds a batch dim
         is_state_batched = is_state_batched or op.batch_size is not None
