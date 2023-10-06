@@ -220,6 +220,7 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
     new_tape = type(tape)(new_operations, new_measurements, shots=tape.shots)
 
     # pylint: disable=protected-access
+    # We can remove this once _qfunc_output is removed from tape
     if not isinstance(tape._qfunc_output, Sequence):
         new_tape._qfunc_output = new_measurements[0]
     else:
