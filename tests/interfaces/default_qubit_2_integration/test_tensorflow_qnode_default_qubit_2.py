@@ -212,9 +212,7 @@ class TestQNode:
         b = tf.Variable(0.2, dtype=tf.float64)
 
         diff_kwargs = {}
-        if diff_method == "hadamard":
-            exp_num_calls = 2  # only one circuit per parameter
-        elif diff_method == "finite-diff":
+        if diff_method == "finite-diff":
             diff_kwargs = {"approx_order": 2, "strategy": "center"}
 
         @qnode(

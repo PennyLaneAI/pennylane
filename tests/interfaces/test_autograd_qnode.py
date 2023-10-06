@@ -172,7 +172,7 @@ class TestQNode:
         assert isinstance(grad, float)
         assert grad.shape == tuple()
 
-    def test_jacobian(self, interface, dev_name, diff_method, grad_on_execution, mocker, tol):
+    def test_jacobian(self, interface, dev_name, diff_method, grad_on_execution, tol):
         """Test jacobian calculation"""
         num_wires = 2
         kwargs = dict(
@@ -220,9 +220,7 @@ class TestQNode:
         assert res[1].shape == (2,)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
-    def test_jacobian_no_evaluate(
-        self, interface, dev_name, diff_method, grad_on_execution, mocker, tol
-    ):
+    def test_jacobian_no_evaluate(self, interface, dev_name, diff_method, grad_on_execution, tol):
         """Test jacobian calculation when no prior circuit evaluation has been performed"""
         num_wires = 2
         kwargs = dict(
@@ -265,7 +263,7 @@ class TestQNode:
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
-    def test_jacobian_options(self, interface, dev_name, diff_method, grad_on_execution, mocker):
+    def test_jacobian_options(self, interface, dev_name, diff_method, grad_on_execution):
         """Test setting jacobian options"""
         wires = [0]
         if diff_method in ["backprop", "adjoint"]:
@@ -294,9 +292,7 @@ class TestQNode:
 
         qml.jacobian(circuit)(a)
 
-    def test_changing_trainability(
-        self, interface, dev_name, diff_method, grad_on_execution, mocker, tol
-    ):
+    def test_changing_trainability(self, interface, dev_name, diff_method, grad_on_execution, tol):
         """Test changing the trainability of parameters changes the
         number of differentiation requests made"""
         if diff_method != "parameter-shift":
@@ -1233,7 +1229,7 @@ class TestQubitIntegration:
         assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
     def test_hessian_vector_valued_separate_args(
-        self, interface, dev_name, diff_method, grad_on_execution, mocker, tol
+        self, interface, dev_name, diff_method, grad_on_execution, tol
     ):
         """Test hessian calculation of a vector valued QNode that has separate input arguments"""
         if diff_method not in {"parameter-shift", "backprop"}:
@@ -1547,7 +1543,7 @@ class TestTapeExpansion:
 
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_gradient_expansion_trainable_only(
-        self, dev_name, diff_method, grad_on_execution, max_diff, mocker
+        self, dev_name, diff_method, grad_on_execution, max_diff
     ):
         """Test that a *supported* operation with no gradient recipe is only
         expanded for parameter-shift and finite-differences when it is trainable."""

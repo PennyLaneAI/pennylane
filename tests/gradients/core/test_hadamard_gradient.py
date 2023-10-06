@@ -853,7 +853,7 @@ class TestHadamardGradEdgeCases:
 
         weights = [0.1, 0.2]
         with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
-            res_hadamard = qml.gradients.hadamard_grad(circuit)(weights)
+            qml.gradients.hadamard_grad(circuit)(weights)
 
     def test_no_trainable_params_tape(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable

@@ -161,7 +161,7 @@ class TestQNode:
         expected = "0: ──RX(0.10)──RX(0.40)─╭●─┤  State\n1: ──RY(0.06)───────────╰X─┤  State"
         assert result == expected
 
-    def test_jacobian(self, dev_name, diff_method, grad_on_execution, mocker, tol, interface):
+    def test_jacobian(self, dev_name, diff_method, grad_on_execution, tol, interface):
         """Test jacobian calculation"""
         kwargs = dict(
             diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
@@ -241,7 +241,7 @@ class TestQNode:
         res = tape.jacobian(res, [a, b])
         assert [r.dtype is tf.float32 for r in res]
 
-    def test_jacobian_options(self, dev_name, diff_method, grad_on_execution, mocker, interface):
+    def test_jacobian_options(self, dev_name, diff_method, grad_on_execution, interface):
         """Test setting finite-difference jacobian options"""
         if diff_method not in {"finite-diff", "spsa"}:
             pytest.skip("Test only works with finite diff and spsa.")
@@ -273,9 +273,7 @@ class TestQNode:
 
         tape.jacobian(res, a)
 
-    def test_changing_trainability(
-        self, dev_name, diff_method, grad_on_execution, mocker, tol, interface
-    ):
+    def test_changing_trainability(self, dev_name, diff_method, grad_on_execution, tol, interface):
         """Test changing the trainability of parameters changes the
         number of differentiation requests made"""
         if diff_method in ["backprop", "adjoint", "spsa"]:
@@ -285,7 +283,6 @@ class TestQNode:
         b = tf.Variable(0.2, dtype=tf.float64)
 
         num_wires = 2
-        exp_num_calls = 4  # typically two shifted circuits per parameter
 
         diff_kwargs = {}
         if diff_method == "hadamard":
@@ -530,7 +527,7 @@ class TestShotsIntegration:
         spy.assert_not_called()
 
         # execute with shots=100
-        res = circuit(weights, shots=100)  # pylint: disable=unexpected-keyword-arg
+        circuit(weights, shots=100)  # pylint: disable=unexpected-keyword-arg
         spy.assert_called()
         assert spy.spy_return.shape == (100,)
 
@@ -1242,7 +1239,7 @@ class TestTapeExpansion:
     """Test that tape expansion within the QNode integrates correctly
     with the TF interface"""
 
-    def test_gradient_expansion(self, dev_name, diff_method, grad_on_execution, mocker, interface):
+    def test_gradient_expansion(self, dev_name, diff_method, grad_on_execution, interface):
         """Test that a *supported* operation with no gradient recipe is
         expanded for both parameter-shift and finite-differences, but not for execution."""
         if diff_method not in ("parameter-shift", "finite-diff", "spsa", "hadamard"):
@@ -1289,7 +1286,7 @@ class TestTapeExpansion:
 
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_gradient_expansion_trainable_only(
-        self, dev_name, diff_method, grad_on_execution, max_diff, mocker, interface
+        self, dev_name, diff_method, grad_on_execution, max_diff, interface
     ):
         """Test that a *supported* operation with no gradient recipe is only
         expanded for parameter-shift and finite-differences when it is trainable."""
