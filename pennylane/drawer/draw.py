@@ -268,7 +268,8 @@ def _draw_qnode(
                         program, _ = qnode.device.preprocess()
                     else:
                         program = qnode.transform_program
-                    tapes = program([qnode.tape])
+                    tapes, _ = program([qnode.tape])
+
             finally:
                 qnode.expansion_strategy = original_expansion_strategy
 
