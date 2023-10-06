@@ -35,3 +35,4 @@ from .flip_sign import FlipSign
 from .basis_rotation import BasisRotation
 from .qsvt import QSVT, qsvt
 from .select import Select
+from .aqft import AQFT
