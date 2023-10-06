@@ -154,7 +154,6 @@ class TestJacobianProductResults:
 
         if tape.shots.has_partitioned_shots:
             assert len(res[0]) == 2
-            print(jvp[0])
             assert len(jvp[0]) == 2
         else:
             assert qml.math.shape(res[0]) == tuple()
