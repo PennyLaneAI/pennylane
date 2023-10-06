@@ -306,7 +306,9 @@ class TestHamiltonianExpand:
         r = len(dev.execute(tape))
 
         # create a "result" whose dimensions force the condition len(r_group) != 1)
-        processing_fn([np.ones(r + 1)])
+        processed_res = processing_fn([np.ones(r + 1)])
+
+        assert np.all(processed_res == [1, 1])
 
 
 with AnnotatedQueue() as s_tape1:
