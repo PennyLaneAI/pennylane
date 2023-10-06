@@ -66,7 +66,7 @@ observables = {
 }
 
 
-def observable_stopping_coindition(obs: qml.operation.Operator) -> bool:
+def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
     """Specifies whether or not an observable is accepted by DefaultQubit."""
     return obs.name in observables
 
@@ -91,7 +91,7 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
 
 
 def adjoint_stopping_condition(op: qml.operation.Operator) -> bool:
-    """Specify whether or not an Oeprator is supported by adjoint differentiation."""
+    """Specify whether or not an Operator is supported by adjoint differentiation."""
     return op.num_params == 0 or op.num_params == 1 and op.has_generator
 
 
@@ -332,7 +332,7 @@ class DefaultQubit(Device):
 
         transform_program.add_transform(decompose, stopping_condition=stopping_condition)
         transform_program.add_transform(
-            validate_measurements, observable_stopping_condition=observable_stopping_coindition
+            validate_measurements, observable_stopping_condition=observable_stopping_condition
         )
 
         # Validate device wires
