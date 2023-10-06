@@ -370,9 +370,8 @@ class TransformProgram:
         classical_jacobians = []
         for index, transform in enumerate(self):
             if transform.classical_cotransform:
-                if qnode.interface == "jax" and transform._kwargs.get(
-                    "argnum", None
-                ):  # pylint: disable=protected-access
+                argnum = transform._kwargs.get("argnum", None)  # pylint: disable=protected-access
+                if qnode.interface == "jax" and argnum:
                     raise qml.QuantumFunctionError(
                         "argnum does not work with the Jax interface. You should use argnums instead."
                     )

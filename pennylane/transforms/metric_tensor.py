@@ -15,7 +15,6 @@
 Contains the metric_tensor batch_transform which wraps multiple
 methods of computing the metric tensor.
 """
-# pylint:disable=too-many-arguments
 from typing import Sequence, Callable
 import functools
 from functools import partial
@@ -90,7 +89,7 @@ def _expand_metric_tensor(
     classical_cotransform=_contract_metric_tensor_with_cjac,
     final_transform=True,
 )
-def metric_tensor(
+def metric_tensor(  # pylint:disable=too-many-arguments
     tape: qml.tape.QuantumTape,
     argnum=None,
     argnums=None,
