@@ -78,8 +78,6 @@ def epsilon_region(epsilon, theta):
         return x**2 + y**2 <= 1 and from_d_root_two(x) + zy * from_d_root_two(y) >= d
 
     def intersector(p, v):
-        # TODO: p and v are strongly-typed in Haskell
-        # check QuadraticEquation.hs for implementations
         p, v = (list(p), list(v))
         a = np.inner(v, v)
         b = 2 * np.inner(v, p)
@@ -87,7 +85,7 @@ def epsilon_region(epsilon, theta):
         q = [r for r in np.roots((a, b, c)) if np.isclose(np.imag(r), 0)]
         if len(q) != 2:
             return None
-        t0, t1 = q
+        t0, t1 = sorted(q)
         vz = np.inner(point_from_d_root_two(v), z)
         rhs = d - np.inner(point_from_d_root_two(p), z)
         t2 = rhs / vz

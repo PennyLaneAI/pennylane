@@ -46,33 +46,32 @@ def gridpoints2_increasing_gen(region: ConvexSet) -> Callable:
 
     def solutions_fn(k):
         """Given a k value, produce results."""
-        for beta in gridpoints_scaled(fatten_interval(y0A, y1A), fatten_interval(y0B, y1B), k + 1):
-            beta_bul = beta.adj2()
+        for beta_ in gridpoints_scaled(fatten_interval(y0A, y1A), fatten_interval(y0B, y1B), k + 1):
+            beta_bul = beta_.adj2()
             xs = gridpoints_scaled((x0A, x1A + LAMBDA), (x0B, x1B + LAMBDA), k + 1)
-            # x0 = next(xs)
-            for x0 in xs:
-                dx_inv = ZRootTwo(0, 1) ** k
-                dx = 1 / dx_inv
-                x0_bul = x0.adj2()
-                dx_bul = dx.adj2()
-                iA = setA.line_intersector(Point(x0, beta), Point(dx, 0))
-                iB = setB.line_intersector(Point(x0_bul, beta_bul), Point(dx_bul, 0))
-                if iA is None or iB is None:
-                    continue
-                t0A, t1A = iA
-                t0B, t1B = iB
-                dtA = 10 / max(10, 2**k * (t1B - t0B))
-                dtB = 10 / max(10, 2**k * (t1A - t0A))
-                alpha_offs = gridpoints_scaled_parity(
-                    (beta - x0) * dx_inv, (t0A - dtA, t1A + dtA), (t0B - dtB, t1B + dtB), 1
-                )
-                alphas = [dx * a + x0 for a in alpha_offs]
-                for alpha_ in alphas:
-                    alpha, beta_ = Point(alpha_, beta).transform(opG)
-                    if region.characteristic_fn(alpha, beta_) and unitdisk.characteristic_fn(
-                        alpha.adj2(), beta_.adj2()
-                    ):
-                        yield DOmega.from_root_two(alpha) + ROOT_NEG1 * DOmega.from_root_two(beta_)
+            x0 = next(xs)  # pylint:disable=stop-iteration-return
+            dx_inv = ZRootTwo(0, 1) ** k
+            dx = 1 / dx_inv
+            x0_bul = x0.adj2()
+            dx_bul = dx.adj2()
+            iA = setA.line_intersector(Point(x0, beta_), Point(dx, 0))
+            iB = setB.line_intersector(Point(x0_bul, beta_bul), Point(dx_bul, 0))
+            if iA is None or iB is None:
+                continue
+            t0A, t1A = iA
+            t0B, t1B = iB
+            dtA = 10 / max(10, 2**k * (t1B - t0B))
+            dtB = 10 / max(10, 2**k * (t1A - t0A))
+            alpha_offs = gridpoints_scaled_parity(
+                (beta_ - x0) * dx_inv, (t0A - dtA, t1A + dtA), (t0B - dtB, t1B + dtB), 1
+            )
+            alphas = [dx * a + x0 for a in alpha_offs]
+            for alpha_ in alphas:
+                alpha, beta = Point(alpha_, beta_).transform(opG)
+                if region.characteristic_fn(alpha, beta) and unitdisk.characteristic_fn(
+                    alpha.adj2(), beta.adj2()
+                ):
+                    yield DOmega.from_root_two(alpha) + ROOT_NEG1 * DOmega.from_root_two(beta)
 
     return solutions_fn
 
@@ -88,7 +87,7 @@ def create_unitdisk():
         b = 2 * np.inner(v, p)
         c = np.inner(p, p) - 1
         q = tuple(r for r in np.roots((a, b, c)) if np.isclose(np.imag(r), 0))
-        return q if len(q) == 2 else None
+        return sorted(q) if len(q) == 2 else None
 
     return ConvexSet(ell, lambda x, y: x**2 + y**2 <= 1, intersector)
 
