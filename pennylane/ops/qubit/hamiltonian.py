@@ -619,7 +619,7 @@ class Hamiltonian(Observable):
 
             for self_data in self._obs_data():
                 is_equal = False
-                for other_data in other._obs_data():
+                for other_data in other._obs_data():    # pylint: disable=protected-access
                     if np.isclose(self_data[0], other_data[0]):
                         is_equal = True
                         continue
