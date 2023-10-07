@@ -46,14 +46,16 @@ def gridpoints2_increasing_gen(region: ConvexSet) -> Callable:
 
     def solutions_fn(k):
         """Given a k value, produce results."""
+        xs = gridpoints_scaled((x0A, x1A + LAMBDA), (x0B, x1B + LAMBDA), k + 1)
+        x0 = next(xs, None)
+        if x0 is None:
+            return
+        dx_inv = ZRootTwo(0, 1) ** k
+        dx = 1 / dx_inv
+        x0_bul = x0.adj2()
+        dx_bul = dx.adj2()
         for beta_ in gridpoints_scaled(fatten_interval(y0A, y1A), fatten_interval(y0B, y1B), k + 1):
             beta_bul = beta_.adj2()
-            xs = gridpoints_scaled((x0A, x1A + LAMBDA), (x0B, x1B + LAMBDA), k + 1)
-            x0 = next(xs)  # pylint:disable=stop-iteration-return
-            dx_inv = ZRootTwo(0, 1) ** k
-            dx = 1 / dx_inv
-            x0_bul = x0.adj2()
-            dx_bul = dx.adj2()
             iA = setA.line_intersector(Point(x0, beta_), Point(dx, 0))
             iB = setB.line_intersector(Point(x0_bul, beta_bul), Point(dx_bul, 0))
             if iA is None or iB is None:
@@ -159,7 +161,7 @@ def gridpoints_internal(x, y):
     amax = int(x[1] + y[1]) // 2
     bmin = lambda a: int(np.ceil((a - y[1]) / SQRT2))
     bmax = lambda a: int((a - y[0]) // SQRT2)
-    return [ZRootTwo(a, b) for a in range(amin, amax + 1) for b in range(bmin(a), bmax(a) + 1)]
+    return (ZRootTwo(a, b) for a in range(amin, amax + 1) for b in range(bmin(a), bmax(a) + 1))
 
 
 def floorlog(b, x):
