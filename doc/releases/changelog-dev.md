@@ -4,6 +4,35 @@
 
 <h3>New features since last release</h3>
 
+* Support drawing QJIT QNode from Catalyst.
+  [(#4609)](https://github.com/PennyLaneAI/pennylane/pull/4609)
+
+  ```python
+  import catalyst
+
+  @catalyst.qjit
+  @qml.qnode(qml.device("lightning.qubit", wires=3))
+  def circuit(x, y, z, c):
+      """A quantum circuit on three wires."""
+
+      @catalyst.for_loop(0, c, 1)
+      def loop(i):
+          qml.Hadamard(wires=i)
+
+      qml.RX(x, wires=0)
+      loop()  # pylint: disable=no-value-for-parameter
+      qml.RY(y, wires=1)
+      qml.RZ(z, wires=2)
+      return qml.expval(qml.PauliZ(0))
+  
+  draw = qml.draw(circuit, decimals=None)(1.234, 2.345, 3.456, 1)
+  ```
+  
+  ```pycon
+  >>>draw
+  "0: ──RX──H──┤  <Z>\n1: ──H───RY─┤     \n2: ──RZ─────┤     "
+  ```
+
 * Measurement statistics can now be collected for mid-circuit measurements. Currently,
   `qml.expval`, `qml.var`, `qml.probs`, `qml.sample`, and `qml.counts` are supported on
   `default.qubit`, `default.mixed`, and the new `DefaultQubit2` device.
@@ -45,13 +74,28 @@
   [(#4594)](https://github.com/PennyLaneAI/pennylane/pull/4594)
   [(#4436)](https://github.com/PennyLaneAI/pennylane/pull/4436)
   [(#4620)](https://github.com/PennyLaneAI/pennylane/pull/4620)
+  [(#4632)](https://github.com/PennyLaneAI/pennylane/pull/4632)
 
 <h3>Improvements 🛠</h3>
 
+* `default.qubit` now tracks the number of equivalent qpu executions and total shots
+  when the device is sampling. Note that `"simulations"` denotes the number of simulation passes, where as
+  `"executions"` denotes how many different computational bases need to be sampled in. Additionally, the
+  new `default.qubit` also tracks the results of `device.execute`.
+  [(#4628)](https://github.com/PennyLaneAI/pennylane/pull/4628)
+  [(#4649)](https://github.com/PennyLaneAI/pennylane/pull/4649)
+
+* The `JacobianProductCalculator` abstract base class and implementation `TransformJacobianProducts`
+  have been added to `pennylane.interfaces.jacobian_products`.
+  [(#4435)](https://github.com/PennyLaneAI/pennylane/pull/4435)
+
 * Extended ``qml.qchem.import_state`` to import wavefunctions from MPS DMRG and SHCI classical
-  calculations performed with the Block2 and Dice libraries.
+  calculations performed with the Block2 and Dice libraries, incorporating new tests and wavefunction
+  input selection logic.
   [#4523](https://github.com/PennyLaneAI/pennylane/pull/4523)
   [#4524](https://github.com/PennyLaneAI/pennylane/pull/4524)
+  [#4626](https://github.com/PennyLaneAI/pennylane/pull/4626)
+  [#4634](https://github.com/PennyLaneAI/pennylane/pull/4634)
 
 * `MeasurementProcess` and `QuantumScript` objects are now registered as jax pytrees.
   [(#4607)](https://github.com/PennyLaneAI/pennylane/pull/4607)
@@ -132,8 +176,21 @@
   been updated to reflect this assumption and avoid redundant reshaping.
   [(#4602)](https://github.com/PennyLaneAI/pennylane/pull/4602)
 
+* Added `qml.math.get_deep_interface` to get the interface of a scalar hidden deep in lists or tuples.
+  [(#4603)](https://github.com/PennyLaneAI/pennylane/pull/4603)
+
+* Updated `qml.math.ndim` and `qml.math.shape` to work with built-in lists/tuples that contain
+  interface-specific scalar data, eg `[(tf.Variable(1.1), tf.Variable(2.2))]`.
+  [(#4603)](https://github.com/PennyLaneAI/pennylane/pull/4603)
+
+* `_qfunc_output` has been removed from `QuantumScript`, as it is no longer necessary. There is
+  still a `_qfunc_output` property on `QNode` instances.
+  [(#4651)](https://github.com/PennyLaneAI/pennylane/pull/4651)
 
 <h3>Breaking changes 💔</h3>
+
+* The device test suite now converts device kwargs to integers or floats if they can be converted to integers or floats.
+  [(#4640)](https://github.com/PennyLaneAI/pennylane/pull/4640)
 
 * `MeasurementProcess.eigvals()` now raises an `EigvalsUndefinedError` if the measurement observable
   does not have eigenvalues.
@@ -253,6 +310,10 @@
   ```
   [(#4457)](https://github.com/PennyLaneAI/pennylane/pull/4457/)
 
+* `qml.gradients.pulse_generator` becomes `qml.gradients.pulse_odegen` to adhere to paper naming conventions. During v0.33, `pulse_generator`
+  is still available but raises a warning.
+  [(#4633)](https://github.com/PennyLaneAI/pennylane/pull/4633)
+
 <h3>Documentation 📝</h3>
 
 * Add a warning section in DefaultQubit's docstring regarding the start method used in multiprocessing.
@@ -266,6 +327,8 @@
 * Add functions for qubit-simulation to the `qml.devices` sub-page of the "Internal" section.
   Note that these functions are unstable while device upgrades are underway.
   [(#4555)](https://github.com/PennyLaneAI/pennylane/pull/4555)
+
+* Minor documentation improvement to the usage example in the `qml.QuantumMonteCarlo` page. Integral was missing the differential dx with respect to which the integration is being performed. [(#4593)](https://github.com/PennyLaneAI/pennylane/pull/4593)  
 
 <h3>Bug fixes 🐛</h3>
 
@@ -302,12 +365,15 @@ This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad,
 Stepan Fomichev,
+Joana Fraxanet,
 Diego Guala,
 Soran Jahangiri,
+Korbinian Kottmann
 Christina Lee,
 Lillian M. A. Frederiksen,
 Vincent Michaud-Rioux,
 Romain Moyard,
+Daniel F. Nino,
 Mudit Pandey,
 Matthew Silverman,
 Jay Soni,

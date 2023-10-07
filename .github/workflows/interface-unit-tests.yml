@@ -10,7 +10,7 @@ on:
         description: The version of JAX to install for any job that requires JAX
         required: false
         type: string
-        default: 0.4.16
+        default: 0.4.17
       tensorflow_version:
         description: The version of TensorFlow to install for any job that requires TensorFlow
         required: false
@@ -168,20 +168,20 @@ jobs:
       pytest_markers: all_interfaces
 
 
-  zx-tests:
+  external-libraries-tests:
     uses: ./.github/workflows/unit-test.yml
     with:
-      job_name: zx-tests
+      job_name: external-libraries-tests
       branch: ${{ inputs.branch }}
-      coverage_artifact_name: zx-coverage
+      coverage_artifact_name: external-libraries-tests-coverage
       python_version: 3.9
-      install_jax: false
-      install_tensorflow: false
+      install_jax: True
+      install_tensorflow: True
       install_pytorch: false
       install_pennylane_lightning_master: false
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
-      pytest_markers: zx
-      additional_pip_packages: git+https://github.com/Quantomatic/pyzx.git@master
+      pytest_markers: external
+      additional_pip_packages: git+https://github.com/Quantomatic/pyzx.git@master pennylane-catalyst
 
 
   qcut-tests:
@@ -302,7 +302,7 @@ jobs:
       - jax-tests
       - core-tests
       - all-interfaces-tests
-      - zx-tests
+      - external-libraries-tests
       - qcut-tests
       - qchem-tests
       - gradients-tests
