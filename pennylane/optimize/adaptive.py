@@ -46,8 +46,7 @@ def append_gate(tape: QuantumTape, params, gates) -> (Sequence[QuantumTape], Cal
         g.data = new_params
         new_operations.append(g)
 
-    new_tape = QuantumTape(tape.operations + new_operations, tape.measurements, shots=tape.shots)
-    new_tape._qfunc_output = tape._qfunc_output
+    new_tape = type(tape)(tape.operations + new_operations, tape.measurements, shots=tape.shots)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results

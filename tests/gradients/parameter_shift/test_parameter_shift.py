@@ -831,7 +831,7 @@ class TestParamShift:
         # We should only be executing the device twice: Two shifted evaluations to differentiate
         # one parameter overall, as the other parameter does not impact the returned measurement.
 
-        assert tracker.latest["executions"] == 2
+        assert tracker.totals["executions"] == 2
 
         tapes, fn = qml.gradients.param_shift(tape2)
         j2 = fn(dev.execute(tapes))
@@ -1066,7 +1066,7 @@ class TestParamShiftUsingBroadcasting:
     def test_independent_parameters_analytic(self):
         """Test the case where expectation values are independent of some parameters. For those
         parameters, the gradient should be evaluated to zero without executing the device."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit")
 
         with qml.queuing.AnnotatedQueue() as q1:
             qml.RX(1.0, wires=[0])
@@ -1087,7 +1087,8 @@ class TestParamShiftUsingBroadcasting:
         # We should only be executing the device to differentiate 1 parameter
         # (1 broadcasted execution)
 
-        assert tracker.latest["executions"] == 1
+        assert tracker.totals["executions"] == 2
+        assert tracker.totals["simulations"] == 1
 
         tapes, fn = qml.gradients.param_shift(tape2, broadcast=True)
         j2 = fn(dev.execute(tapes))

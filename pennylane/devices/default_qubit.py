@@ -30,6 +30,7 @@ from pennylane.transforms.core import TransformProgram
 from . import Device
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
 from .qubit.simulate import simulate, get_final_state, measure_final_state
+from .qubit.sampling import get_num_shots_and_executions
 from .qubit.preprocess import (
     preprocess,
     validate_and_expand_adjoint,
@@ -117,6 +118,28 @@ class DefaultQubit(Device):
     DeviceArray(0.36235774, dtype=float32)
     >>> jax.grad(f)(jax.numpy.array(1.2))
     DeviceArray(-0.93203914, dtype=float32, weak_type=True)
+
+    .. details::
+        :title: Tracking
+
+        ``DefaultQubit`` tracks:
+
+        * ``executions``: the number of unique circuits that would be required on quantum hardware
+        * ``shots``: the number of shots
+        * ``resources``: the :class:`~.resource.Resources` for the executed circuit.
+        * ``simulations``: the number of simulations performed. One simulation can cover multiple QPU executions, such as for non-commuting measurements and batched parameters.
+        * ``batches``: The number of times :meth:`~.execute` is called.
+        * ``results``: The results of each call of :meth:`~.execute`
+        * ``derivative_batches``: How many times :meth:`~.compute_derivatives` is called.
+        * ``execute_and_derivative_batches``: How many times :meth:`~.execute_and_compute_derivatives` is called
+        * ``vjp_batches``: How many times :meth:`~.compute_vjp` is called
+        * ``execute_and_vjp_batches``: How many times :meth:`~.execute_and_compute_vjp` is called
+        * ``jvp_batches``: How many times :meth:`~.compute_jvp` is called
+        * ``execute_and_jvp_batches``: How many times :meth:`~.execute_and_compute_jvp` is called
+        * ``derivatives``: How many circuits are submitted to :meth:`~.compute_derivatives` or :meth:`~.execute_and_compute_derivatives`.
+        * ``vjps``: How many circuits are submitted to :meth:`~.compute_vjp` or :meth:`~.execute_and_compute_vjp`
+        * ``jvps``: How many circuits are submitted to :meth:`~.compute_jvp` or :meth:`~.execute_and_compute_jvp`
+
 
     .. details::
         :title: Accelerate calculations with multiprocessing
@@ -276,12 +299,6 @@ class DefaultQubit(Device):
             is_single_circuit = True
             circuits = [circuits]
 
-        if self.tracker.active:
-            for c in circuits:
-                self.tracker.update(resources=c.specs["resources"])
-            self.tracker.update(batches=1, executions=len(circuits))
-            self.tracker.record()
-
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         interface = (
             execution_config.interface
@@ -314,6 +331,29 @@ class DefaultQubit(Device):
 
             # reset _rng to mimic serial behavior
             self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
+
+        if self.tracker.active:
+            self.tracker.update(batches=1)
+            self.tracker.record()
+            for i, c in enumerate(circuits):
+                qpu_executions, shots = get_num_shots_and_executions(c)
+                res = np.array(results[i]) if isinstance(results[i], Number) else results[i]
+                if c.shots:
+                    self.tracker.update(
+                        simulations=1,
+                        executions=qpu_executions,
+                        results=res,
+                        shots=shots,
+                        resources=c.specs["resources"],
+                    )
+                else:
+                    self.tracker.update(
+                        simulations=1,
+                        executions=qpu_executions,
+                        results=res,
+                        resources=c.specs["resources"],
+                    )
+                self.tracker.record()
 
         return results[0] if is_single_circuit else results
 
