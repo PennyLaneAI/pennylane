@@ -617,9 +617,9 @@ class Hamiltonian(Observable):
             self.simplify()
             other.simplify()
 
-            for self_data in self._obs_data():# pylint: disable=protected-access
+            for self_data in self._obs_data():  # pylint: disable=protected-access
                 is_equal = False
-                for other_data in other._obs_data():# pylint: disable=protected-access
+                for other_data in other._obs_data():  # pylint: disable=protected-access
                     if np.isclose(self_data[0], other_data[0]) and self_data[1] == other_data[1]:
                         is_equal = True
                         continue
@@ -629,9 +629,9 @@ class Hamiltonian(Observable):
 
         if isinstance(other, (Tensor, Observable)):
             self.simplify()
-            for self_data in self._obs_data(): # pylint: disable=protected-access
+            for self_data in self._obs_data():  # pylint: disable=protected-access
                 is_equal = False
-                for other_data in other._obs_data():# pylint: disable=protected-access
+                for other_data in other._obs_data():  # pylint: disable=protected-access
                     if np.isclose(self_data[0], 1) and self_data[1] == frozenset({other_data}):
                         is_equal = True
                         continue
