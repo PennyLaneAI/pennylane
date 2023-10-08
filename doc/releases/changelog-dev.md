@@ -333,7 +333,7 @@
 <h3>Bug fixes 🐛</h3>
 
 * Fixed floating point comparison while comparing two Hamiltonians in `Hamiltonian.compare`.
-  [(#4567)](https://github.com/PennyLaneAI/pennylane/issues/4567)
+  [(#4567)](https://github.com/PennyLaneAI/pennylane/pull/4600)
 
 * Fixed issue where `__copy__` method of the `qml.Select()` operator attempted to access un-initialized data.
 [(#4551)](https://github.com/PennyLaneAI/pennylane/pull/4551)
