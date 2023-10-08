@@ -825,7 +825,7 @@ class TestHamiltonian:
         assert H2.compare(qml.GellMann(wires=2, index=2) @ qml.GellMann(wires=1, index=2)) is False
         assert H2.compare(H4) is False
 
-    def test_hamiltonian_compare():
+    def test_hamiltonian_compare(self):
         """to test if hamiltonian comapre function has float point error"""
         H1 = qml.Hamiltonian([0.1, 0.2, 0.3], [qml.PauliZ(0), qml.PauliZ(0), qml.PauliZ(0)])
         H2 = qml.Hamiltonian([0.3, 0.3], [qml.PauliZ(0), qml.PauliZ(0)])
@@ -837,7 +837,7 @@ class TestHamiltonian:
         assert H4.compare(H5) is False
         assert H5.compare(H4) is False
 
-    def test_hamiltonian_compare_tensor_observables():
+    def test_hamiltonian_compare_tensor_observables(self):
         """to test if hamiltonian comapre function has float point error while comparing with Tensors/Observables"""
         H1 = qml.Hamiltonian([0.2, 0.7, 0.1], [qml.PauliZ(0), qml.PauliZ(0), qml.PauliZ(0)])
         H2 = qml.Hamiltonian([0.3, 0.3], [qml.PauliZ(0), qml.PauliZ(0)])
