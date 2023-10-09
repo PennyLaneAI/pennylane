@@ -76,6 +76,9 @@
   [(#4620)](https://github.com/PennyLaneAI/pennylane/pull/4620)
   [(#4632)](https://github.com/PennyLaneAI/pennylane/pull/4632)
 
+* Approximate Quantum Fourier Transform (AQFT) is now available from `qml.AQFT`.
+  [(#4656)](https://github.com/PennyLaneAI/pennylane/pull/4656)
+
 <h3>Improvements 🛠</h3>
 
 * `default.qubit` now tracks the number of equivalent qpu executions and total shots
@@ -368,6 +371,7 @@ Stepan Fomichev,
 Joana Fraxanet,
 Diego Guala,
 Soran Jahangiri,
+Ankit Khandelwal,
 Korbinian Kottmann
 Christina Lee,
 Lillian M. A. Frederiksen,
