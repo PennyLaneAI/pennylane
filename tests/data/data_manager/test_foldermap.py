@@ -160,7 +160,7 @@ class TestFolderMapView:
         does not exist."""
 
         with pytest.raises(
-            ValueError, match=r"molname 'Z3' is not available. Available values are: \['O2', 'H2'\]"
+            ValueError, match=r"molname value\(s\) 'Z3' is not available. Available values are: \['O2', 'H2'\]"
         ):
             FolderMapView(FOLDERMAP).find("qchem", molname="Z3")
 
