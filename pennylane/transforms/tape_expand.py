@@ -434,9 +434,6 @@ def custom_decomposition(
                 new_ops.append(op)
             else:
                 args = op.parameters + [op.wires]
-                print(op)
-                print(decomp_fn)
-                print(decomp_fn(*args))
                 new_ops.extend(decomp_fn(*args))
         ops = new_ops
 
