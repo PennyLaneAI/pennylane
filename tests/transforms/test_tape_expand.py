@@ -16,10 +16,14 @@ Unit tests for tape expansion stopping criteria and expansion functions.
 """
 # pylint: disable=too-few-public-methods, invalid-unary-operand-type, no-member,
 # pylint: disable=arguments-differ, arguments-renamed,
+from functools import partial
+
 import pytest
 import numpy as np
+
 import pennylane as qml
 from pennylane.wires import Wires
+from pennylane.transforms.tape_expand import custom_decomposition
 
 
 class TestCreateExpandFn:
@@ -421,8 +425,8 @@ def custom_basic_entangler_layers(weights, wires, **kwargs):
     ]
 
 
-class TestCreateCustomDecompExpandFn:
-    """Tests for the gradient expand function"""
+class TestCreateCustomDecompDeviceExpandFn:
+    """Tests for the custom_decomps argument for the old device interface"""
 
     def test_no_custom_decomp(self):
         """Test that sending an empty dictionary results in no decompositions."""
@@ -785,7 +789,7 @@ class TestCreateCustomDecompExpandFn:
         assert dev.custom_expand_fn is None
 
     def test_custom_decomp_in_separate_context(self, mocker):
-        """Test that the set_decomposition context manager works."""
+        """Test that the set_decomposition context manager works for the new device API."""
 
         # pylint:disable=protected-access
 
@@ -856,3 +860,419 @@ class TestCreateCustomDecompExpandFn:
             res.append(cost(x))
 
         assert res[0] == res[1]
+
+
+class TestCustomDecompositionTransform:
+    """Tests the custom_decomposition transform"""
+
+    def test_no_custom_decomp(self, mocker):
+        """Test that sending an empty dictionary results in no decompositions."""
+
+        dev = qml.device("default.qubit")
+        spy = mocker.spy(dev, "execute")
+
+        @qml.qnode(dev)
+        def original_circuit():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        decomp_circuit = custom_decomposition(original_circuit, custom_decomps={})
+
+        original_res = original_circuit()
+        decomp_res = decomp_circuit()
+        assert np.isclose(original_res, decomp_res)
+
+        decomp_tape = spy.call_args_list[1][0][0][0]
+
+        # ops are not decomposed
+        decomp_ops = decomp_tape.operations
+        assert len(decomp_ops) == 2
+        assert decomp_ops[0].name == "Hadamard"
+        assert decomp_ops[1].name == "CNOT"
+
+    def test_one_custom_decomp(self, mocker):
+        """Test that specifying a single custom decomposition works as expected."""
+
+        dev = qml.device("default.qubit")
+        spy = mocker.spy(dev, "execute")
+
+        @partial(custom_decomposition, custom_decomps={qml.Hadamard: custom_hadamard})
+        @qml.qnode(dev)
+        def decomp_circuit():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        _ = decomp_circuit()
+
+        decomp_tape = spy.call_args_list[0][0][0][0]
+        decomp_ops = decomp_tape.operations
+
+        assert len(decomp_ops) == 3
+
+        assert decomp_ops[0].name == "RZ"
+        assert np.isclose(decomp_ops[0].parameters[0], np.pi)
+
+        assert decomp_ops[1].name == "RY"
+        assert np.isclose(decomp_ops[1].parameters[0], np.pi / 2)
+
+        assert decomp_ops[2].name == "CNOT"
+
+    def test_one_custom_decomp_gradient(self, mocker):
+        """Test that gradients are still correctly computed after a decomposition
+        that performs transpilation."""
+
+        dev = qml.device("default.qubit")
+        spy = mocker.spy(dev, "execute")
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.Hadamard(wires=0)
+            qml.Rot(x[0], x[1], x[2], wires=0)
+            qml.Hadamard(wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        decomp_circuit = custom_decomposition(circuit, custom_decomps={qml.Rot: custom_rot})
+
+        x = qml.numpy.array([0.2, 0.3, 0.4], requires_grad=True)
+
+        original_res = circuit(x)
+        decomp_res = decomp_circuit(x)
+        assert np.isclose(original_res, decomp_res)
+
+        original_grad = qml.grad(circuit)(x)
+        decomp_grad = qml.grad(decomp_circuit)(x)
+        assert np.allclose(original_grad, decomp_grad)
+
+        decomp_tape = spy.call_args_list[1][0][0][0]
+
+        expected_ops = ["Hadamard", "RZ", "PauliX", "RY", "PauliX", "RZ", "Hadamard"]
+        assert all(op.name == name for op, name in zip(decomp_tape.operations, expected_ops))
+
+    def test_nested_custom_decomp(self, mocker):
+        """Test that specifying two custom decompositions that have interdependence
+        works as expected."""
+
+        dev = qml.device("default.qubit")
+        spy = mocker.spy(dev, "execute")
+
+        custom_decomps = {qml.Hadamard: custom_hadamard, qml.CNOT: custom_cnot}
+
+        @partial(custom_decomposition, custom_decomps=custom_decomps)
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        _ = circuit()
+
+        decomp_tape = spy.call_args_list[0][0][0][0]
+        decomp_ops = decomp_tape.operations
+
+        assert len(decomp_ops) == 7
+
+        # Check the RZ gates are in the correct place
+        for idx in [0, 2, 5]:
+            assert decomp_ops[idx].name == "RZ"
+            assert np.isclose(decomp_ops[idx].parameters[0], np.pi)
+
+        assert decomp_ops[0].wires == Wires(0)
+        assert decomp_ops[2].wires == Wires(1)
+        assert decomp_ops[5].wires == Wires(1)
+
+        # Check RY are in the correct place
+        for idx in [1, 3, 6]:
+            assert decomp_ops[idx].name == "RY"
+            assert np.isclose(decomp_ops[idx].parameters[0], np.pi / 2)
+
+        assert decomp_ops[1].wires == Wires(0)
+        assert decomp_ops[3].wires == Wires(1)
+        assert decomp_ops[6].wires == Wires(1)
+
+        assert decomp_ops[4].name == "CZ"
+
+    def test_nested_custom_decomp_with_template(self, mocker):
+        """Test that specifying two custom decompositions that have interdependence
+        works as expected even when there is a template."""
+
+        dev = qml.device("default.qubit")
+        spy = mocker.spy(dev, "execute")
+
+        custom_decomps = {qml.Hadamard: custom_hadamard, qml.CNOT: custom_cnot}
+
+        @partial(custom_decomposition, custom_decomps=custom_decomps)
+        @qml.qnode(dev)
+        def circuit():
+            # -RX(0.1)-C- -> -RX(0.1)---C--- -> -RX(0.1)-----------------C----------------
+            # -RX(0.2)-X- -> -RX(0.2)-H-Z-H- -> -RX(0.2)-RZ(pi)-RY(pi/2)-Z-RY(pi/2)-RZ(pi)-
+            qml.BasicEntanglerLayers([[0.1, 0.2]], wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        _ = circuit()
+
+        decomp_tape = spy.call_args_list[0][0][0][0]
+        decomp_ops = decomp_tape.operations
+
+        assert len(decomp_ops) == 7
+
+        assert decomp_ops[0].name == "RX"
+        assert decomp_ops[0].parameters[0] == 0.1
+        assert decomp_ops[0].wires == Wires(0)
+
+        assert decomp_ops[1].name == "RX"
+        assert decomp_ops[1].parameters[0] == 0.2
+        assert decomp_ops[1].wires == Wires(1)
+
+        assert decomp_ops[2].name == "RZ"
+        assert np.isclose(decomp_ops[2].parameters[0], np.pi)
+        assert decomp_ops[2].wires == Wires(1)
+
+        assert decomp_ops[3].name == "RY"
+        assert np.isclose(decomp_ops[3].parameters[0], np.pi / 2)
+        assert decomp_ops[3].wires == Wires(1)
+
+        assert decomp_ops[4].name == "CZ"
+        assert decomp_ops[4].wires == Wires([0, 1])
+
+        assert decomp_ops[5].name == "RZ"
+        assert np.isclose(decomp_ops[5].parameters[0], np.pi)
+        assert decomp_ops[5].wires == Wires(1)
+
+        assert decomp_ops[6].name == "RY"
+        assert np.isclose(decomp_ops[6].parameters[0], np.pi / 2)
+        assert decomp_ops[6].wires == Wires(1)
+
+    def test_custom_decomp_template_to_template(self, mocker):
+        """Test that decomposing a template into another template and some
+        gates yields the correct results."""
+
+        dev = qml.device("default.qubit")
+        spy = mocker.spy(dev, "execute")
+
+        # BasicEntanglerLayers custom decomposition involves AngleEmbedding
+        custom_decomps = {
+            qml.BasicEntanglerLayers: custom_basic_entangler_layers,
+            qml.RX: custom_rx,
+        }
+
+        @partial(custom_decomposition, custom_decomps=custom_decomps)
+        @qml.qnode(dev)
+        def circuit():
+            qml.BasicEntanglerLayers([[0.1, 0.2]], wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        _ = circuit()
+
+        decomp_tape = spy.call_args_list[0][0][0][0]
+        decomp_ops = decomp_tape.operations
+
+        assert len(decomp_ops) == 5
+
+        assert decomp_ops[0].name == "RY"
+        assert decomp_ops[0].parameters[0] == 0.1
+        assert decomp_ops[0].wires == Wires(0)
+
+        assert decomp_ops[1].name == "Hadamard"
+        assert decomp_ops[1].wires == Wires(0)
+
+        assert decomp_ops[2].name == "RY"
+        assert np.isclose(decomp_ops[2].parameters[0], 0.2)
+        assert decomp_ops[2].wires == Wires(1)
+
+        assert decomp_ops[3].name == "Hadamard"
+        assert decomp_ops[3].wires == Wires(1)
+
+        assert decomp_ops[4].name == "CNOT"
+        assert decomp_ops[4].wires == Wires([0, 1])
+
+    def test_custom_decomp_different_depth(self, mocker):
+        """Test that alternative expansion depths can be specified."""
+
+        dev = qml.device("default.qubit")
+        spy = mocker.spy(dev, "execute")
+
+        # CNOT decomposition includes Hadamard - decomp_depth=1 should leave these intact,
+        # while decomp_depth=2 should further decompose.
+        custom_decomps = {qml.Hadamard: custom_hadamard, qml.CNOT: custom_cnot}
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(0)
+            qml.CNOT([0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        circuit_depth_2 = custom_decomposition(
+            circuit, custom_decomps=custom_decomps, decomp_depth=1
+        )
+        circuit_depth_3 = custom_decomposition(
+            circuit, custom_decomps=custom_decomps, decomp_depth=2
+        )
+
+        _ = circuit_depth_2()
+        _ = circuit_depth_3()
+
+        # depth 1 decomposition
+        decomp_tape = spy.call_args_list[0][0][0][0]
+        decomp_ops = decomp_tape.operations
+
+        assert len(decomp_ops) == 5
+
+        assert decomp_ops[0].name == "RZ"
+        assert np.isclose(decomp_ops[0].parameters[0], np.pi)
+        assert decomp_ops[0].wires == Wires(0)
+
+        assert decomp_ops[1].name == "RY"
+        assert np.isclose(decomp_ops[1].parameters[0], np.pi / 2)
+        assert decomp_ops[1].wires == Wires(0)
+
+        assert decomp_ops[2].name == "Hadamard"
+        assert decomp_ops[2].wires == Wires([1])
+
+        assert decomp_ops[3].name == "CZ"
+        assert decomp_ops[3].wires == Wires([0, 1])
+
+        assert decomp_ops[4].name == "Hadamard"
+        assert decomp_ops[4].wires == Wires([1])
+
+        # depth 2 decomposition
+        decomp_tape = spy.call_args_list[1][0][0][0]
+        decomp_ops = decomp_tape.operations
+
+        assert len(decomp_ops) == 7
+
+        assert decomp_ops[0].name == "RZ"
+        assert np.isclose(decomp_ops[0].parameters[0], np.pi)
+        assert decomp_ops[0].wires == Wires(0)
+
+        assert decomp_ops[1].name == "RY"
+        assert np.isclose(decomp_ops[1].parameters[0], np.pi / 2)
+        assert decomp_ops[1].wires == Wires(0)
+
+        assert decomp_ops[2] == decomp_ops[5]
+        assert decomp_ops[2].name == "RZ"
+        assert np.isclose(decomp_ops[2].parameters[0], np.pi)
+        assert decomp_ops[2].wires == Wires([1])
+
+        assert decomp_ops[3] == decomp_ops[6]
+        assert decomp_ops[3].name == "RY"
+        assert np.isclose(decomp_ops[3].parameters[0], np.pi / 2)
+        assert decomp_ops[3].wires == Wires([1])
+
+        assert decomp_ops[4].name == "CZ"
+        assert decomp_ops[4].wires == Wires([0, 1])
+
+    def test_custom_decomp_different_depth_with_template(self, mocker):
+        """Test that alternative expansion depths can be specified."""
+
+        dev = qml.device("default.qubit")
+        spy = mocker.spy(dev, "execute")
+
+        # BasicEntanglerLayers custom decomposition involves AngleEmbedding. If
+        # expansion depth is 2, the AngleEmbedding will still be decomposed into
+        # RX (since it's not a supported operation on the device), but the RX will
+        # not be further decomposed even though the custom decomposition is specified.
+        custom_decomps = {"BasicEntanglerLayers": custom_basic_entangler_layers, "RX": custom_rx}
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(0)
+            qml.CNOT([0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        circuit_depth_2 = custom_decomposition(
+            circuit, custom_decomps=custom_decomps, decomp_depth=2
+        )
+        circuit_depth_3 = custom_decomposition(
+            circuit, custom_decomps=custom_decomps, decomp_depth=3
+        )
+
+        _ = circuit_depth_2()
+        _ = circuit_depth_3()
+
+        # depth 2 decomposition
+        decomp_tape = spy.call_args_list[0][0][0][0]
+        decomp_ops = decomp_tape.operations
+
+        assert len(decomp_ops) == 3
+
+        assert decomp_ops[0].name == "RX"
+        assert np.isclose(decomp_ops[0].parameters[0], 0.1)
+        assert decomp_ops[0].wires == Wires(0)
+
+        assert decomp_ops[1].name == "RX"
+        assert np.isclose(decomp_ops[1].parameters[0], 0.2)
+        assert decomp_ops[1].wires == Wires(1)
+
+        assert decomp_ops[2].name == "CNOT"
+        assert decomp_ops[2].wires == Wires([0, 1])
+
+        # depth 3 decomposition
+        decomp_tape = spy.call_args_list[1][0][0][0]
+        decomp_ops = decomp_tape.operations
+
+        assert len(decomp_ops) == 5
+
+    def test_custom_decomp_with_adjoint(self, mocker):
+        """Test that applying an adjoint in the circuit results in the adjoint
+        undergoing the custom decomposition."""
+
+        dev = qml.device("default.qubit")
+        spy = mocker.spy(dev, "execute")
+
+        custom_decomps = {qml.RX: custom_rx}
+
+        @partial(custom_decomposition, custom_decomps=custom_decomps)
+        @qml.qnode(dev)
+        def circuit():
+            # Adjoint is RX(-0.2), so expect RY(-0.2) H
+            qml.adjoint(qml.RX, lazy=False)(0.2, wires="a")
+            return qml.expval(qml.PauliZ("a"))
+
+        _ = circuit()
+
+        decomp_tape = spy.call_args_list[0][0][0][0]
+        decomp_ops = decomp_tape.operations
+
+        assert len(decomp_ops) == 2
+
+        assert decomp_ops[0].name == "RY"
+        assert decomp_ops[0].parameters[0] == -0.2
+        assert decomp_ops[0].wires == Wires("a")
+
+        assert decomp_ops[1].name == "Hadamard"
+        assert decomp_ops[1].wires == Wires("a")
+
+    def test_custom_decomp_with_control(self, mocker):
+        """Test that decomposing a controlled version of a gate uses the custom decomposition
+        for the base gate."""
+
+        class CustomOp(qml.operation.Operation):
+            num_wires = 1
+
+            @staticmethod
+            def compute_decomposition(wires):
+                return [qml.S(wires)]
+
+        dev = qml.device("default.qubit")
+        spy = mocker.spy(dev, "execute")
+
+        custom_decomps = {CustomOp: lambda wires: [qml.T(wires), qml.T(wires)]}
+
+        @partial(custom_decomposition, custom_decomps=custom_decomps)
+        @qml.qnode(dev)
+        def circuit():
+            qml.ctrl(CustomOp, control=1)(0)
+            return qml.expval(qml.PauliZ(0))
+
+        _ = circuit()
+
+        decomp_tape = spy.call_args_list[0][0][0][0]
+        decomp_ops = decomp_tape.operations
+
+        assert len(decomp_ops) == 2
+
+        for op in decomp_ops:
+            assert isinstance(op, qml.ops.op_math.Controlled)
+            assert qml.equal(op.base, qml.T(0))
