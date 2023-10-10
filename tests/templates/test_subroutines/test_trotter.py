@@ -305,7 +305,9 @@ class TestPrivateFunctions:
             decomp = _recursive_decomposition(1.23, order, ops)
 
         assert tape.operations == []  # No queuing!
-        assert decomp == expected_expansion  # Expected decomposition
+        assert all(
+            qml.equal(op1, op2) for op1, op2 in zip(decomp, expected_expansion)
+        )  # Expected decomp
 
 
 class TestDecomposition:
@@ -322,8 +324,10 @@ class TestDecomposition:
         assert decomp == tape.operations  # queue matches decomp
 
         decomp = [qml.simplify(op) for op in decomp]
-        true_decomp = test_decompositions[(hamiltonian_index, order)]
-        assert decomp == true_decomp  # decomp is correct
+        true_decomp = [qml.simplify(op) for op in test_decompositions[(hamiltonian_index, order)]]
+        assert all(
+            qml.equal(op1, op2) for op1, op2 in zip(decomp, true_decomp)
+        )  # decomp is correct
 
 
 class TestIntegration:

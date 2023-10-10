@@ -25,16 +25,16 @@ from pennylane.ops import Sum
 
 
 def _scalar(order):
-    """Compute the scalar used in the recursive expression. 
+    """Compute the scalar used in the recursive expression.
 
     Args:
         order (int): order of trotter product (assume order is an even integer > 2).
 
     Returns:
-        float: scalar to be used in the recursive expression. 
+        float: scalar to be used in the recursive expression.
     """
     root = 1 / (order - 1)
-    return (4 - 4 ** root) ** -1
+    return (4 - 4**root) ** -1
 
 
 @qml.QueuingManager.stop_recording()
@@ -48,7 +48,7 @@ def _recursive_decomposition(x, order, ops):
         ops (Iterable(~.Operators)): a list of terms in the Hamiltonian
 
     Returns:
-        List: the decomposition as product of exponentials of the hamiltonian terms 
+        List: the decomposition as product of exponentials of the hamiltonian terms
     """
     if order == 1:
         return [qml.exp(op, x * 1j) for op in ops]
@@ -66,7 +66,7 @@ def _recursive_decomposition(x, order, ops):
 
 
 class TrotterProduct(Operation):
-    f"""An operation representing the Suzuki-Trotter product approximation for the complex matrix exponential
+    r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix exponential
     of a given hamiltonian.
 
     The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of hamiltonian
@@ -151,14 +151,15 @@ class TrotterProduct(Operation):
         >>> args = qnp.array([1.23, 4.5, 0.1])
         >>> qml.grad(my_circ)(*tuple(args))
         (tensor(0.00961064, requires_grad=True), tensor(-0.12338274, requires_grad=True), tensor(-5.43401259, requires_grad=True))
-
     """
 
     def __init__(self, hamiltonian, time, n=1, order=1, check_hermitian=True, id=None):
         r"""Initialize the TrotterProduct class"""
 
-        if not (order > 0 and (order == 1 or order % 2 == 0)): 
-            raise ValueError(f"The order of a TrotterProduct must be 1 or a positive even integer, got {order}.")
+        if order <= 0 or order != 1 and order % 2 != 0:
+            raise ValueError(
+                f"The order of a TrotterProduct must be 1 or a positive even integer, got {order}."
+            )
 
         if isinstance(hamiltonian, qml.Hamiltonian):
             coeffs, ops = hamiltonian.terms()
@@ -172,7 +173,9 @@ class TrotterProduct(Operation):
         if check_hermitian:
             for op in hamiltonian.operands:
                 if not op.is_hermitian:
-                    raise ValueError("One or more of the terms in the Hamiltonian may not be hermitian")
+                    raise ValueError(
+                        "One or more of the terms in the Hamiltonian may not be hermitian"
+                    )
 
         self._hyperparameters = {"num_steps": n, "order": order, "base": hamiltonian}
         wires = hamiltonian.wires
