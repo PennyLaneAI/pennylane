@@ -1755,10 +1755,10 @@ class TestTapeExpansion:
         assert spy_expand.call_count == 1
 
         circuit(x)
-        assert spy_expand.call_count == 3
+        assert spy_expand.call_count == 4
 
         qml.grad(circuit)(x)
-        assert spy_expand.call_count == 5
+        assert spy_expand.call_count == 7
 
     def test_device_expansion_strategy_raises_error(self, monkeypatch):
         """Test that an error is raised if the preprocessing function returns
