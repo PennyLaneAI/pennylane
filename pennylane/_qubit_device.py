@@ -41,6 +41,7 @@ from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
     MeasurementTransform,
+    MeasurementValue,
     MutualInfoMP,
     ProbabilityMP,
     SampleMeasurement,
@@ -177,13 +178,13 @@ class QubitDevice(Device):
 
     **Example:**
 
-    Let's create device that inherits from :class:`~pennylane.devices.DefaultQubit` and overrides the
+    Let's create a device that inherits from :class:`~pennylane.devices.DefaultQubitLegacy` and overrides the
     logic of the `qml.sample` measurement. To do so we will need to update the ``measurement_map``
     dictionary:
 
     .. code-block:: python
 
-        class NewDevice(DefaultQubit):
+        class NewDevice(DefaultQubitLegacy):
             def __init__(self, wires, shots):
                 super().__init__(wires=wires, shots=shots)
                 self.measurement_map[SampleMP] = "sample_measurement"
@@ -614,6 +615,9 @@ class QubitDevice(Device):
             # TODO: Remove this when all overriden measurements support the `MeasurementProcess` class
             if m.obs is not None:
                 obs = m.obs
+                obs.return_type = m.return_type
+            elif m.mv is not None:
+                obs = m.mv
                 obs.return_type = m.return_type
             else:
                 obs = m
@@ -1316,7 +1320,12 @@ class QubitDevice(Device):
         # exact expectation value
         if self.shots is None:
             try:
-                eigvals = self._asarray(observable.eigvals(), dtype=self.R_DTYPE)
+                eigvals = self._asarray(
+                    observable.eigvals()
+                    if not isinstance(observable, MeasurementValue)
+                    else np.arange(2 ** len(observable.wires)),
+                    dtype=self.R_DTYPE,
+                )
             except qml.operation.EigvalsUndefinedError as e:
                 raise qml.operation.EigvalsUndefinedError(
                     f"Cannot compute analytic expectations of {observable.name}."
@@ -1346,7 +1355,12 @@ class QubitDevice(Device):
         # exact variance value
         if self.shots is None:
             try:
-                eigvals = self._asarray(observable.eigvals(), dtype=self.R_DTYPE)
+                eigvals = self._asarray(
+                    observable.eigvals()
+                    if not isinstance(observable, MeasurementValue)
+                    else np.arange(2 ** len(observable.wires)),
+                    dtype=self.R_DTYPE,
+                )
             except qml.operation.EigvalsUndefinedError as e:
                 # if observable has no info on eigenvalues, we cannot return this measurement
                 raise qml.operation.EigvalsUndefinedError(
@@ -1428,7 +1442,11 @@ class QubitDevice(Device):
             if obs.all_outcomes:
                 outcomes = list(map(_sample_to_str, self.generate_basis_states(num_wires)))
         elif obs.return_type is AllCounts:
-            outcomes = qml.eigvals(obs)
+            outcomes = (
+                qml.eigvals(obs)
+                if not isinstance(obs, MeasurementValue)
+                else np.arange(0, 2 ** len(obs.wires), 1)
+            )
 
         batched = len(shape) == batched_ndims
         if not batched:
@@ -1500,13 +1518,16 @@ class QubitDevice(Device):
             powers_of_two = 2 ** np.arange(samples.shape[-1])[::-1]
             indices = samples @ powers_of_two
             indices = np.array(indices)  # Add np.array here for Jax support.
-            try:
-                samples = observable.eigvals()[indices]
-            except qml.operation.EigvalsUndefinedError as e:
-                # if observable has no info on eigenvalues, we cannot return this measurement
-                raise qml.operation.EigvalsUndefinedError(
-                    f"Cannot compute samples of {observable.name}."
-                ) from e
+            if isinstance(observable, MeasurementValue):
+                samples = np.arange(0, 2 ** len(observable.wires), 1)[indices]
+            else:
+                try:
+                    samples = observable.eigvals()[indices]
+                except qml.operation.EigvalsUndefinedError as e:
+                    # if observable has no info on eigenvalues, we cannot return this measurement
+                    raise qml.operation.EigvalsUndefinedError(
+                        f"Cannot compute samples of {observable.name}."
+                    ) from e
 
         num_wires = len(device_wires) if len(device_wires) > 0 else self.num_wires
         if bin_size is None:

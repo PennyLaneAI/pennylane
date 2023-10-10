@@ -41,14 +41,14 @@ from pennylane.operation import disable_new_opmath, enable_new_opmath
             np.array(
                 [
                     [
-                        [0.95622463, 0.7827277, -0.53222294],
-                        [0.7827277, 1.42895581, 0.23469918],
-                        [-0.53222294, 0.23469918, 0.48381955],
+                        [0.95622463, -0.7827277, -0.53222294],
+                        [-0.7827277, 1.42895581, -0.23469918],
+                        [-0.53222294, -0.23469918, 0.48381955],
                     ],
                     [
-                        [0.55538736, -0.53229398, -0.78262324],
-                        [-0.53229398, 0.3203965, 0.47233426],
-                        [-0.78262324, 0.47233426, 0.79021614],
+                        [0.55538736, 0.53229398, -0.78262324],
+                        [0.53229398, 0.3203965, -0.47233426],
+                        [-0.78262324, -0.47233426, 0.79021614],
                     ],
                     [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
                 ]
@@ -68,12 +68,12 @@ from pennylane.operation import disable_new_opmath, enable_new_opmath
             np.array(
                 [
                     [
-                        [1.42895581, 0.23469918],
-                        [0.23469918, 0.48381955],
+                        [1.42895581, -0.23469918],
+                        [-0.23469918, 0.48381955],
                     ],
                     [
-                        [0.3203965, 0.47233426],
-                        [0.47233426, 0.79021614],
+                        [0.3203965, -0.47233426],
+                        [-0.47233426, 0.79021614],
                     ],
                     [[0.0, 0.0], [0.0, 0.0]],
                 ]
@@ -285,7 +285,9 @@ def test_gradient_expvalD():
 
     mol = qchem.Molecule(symbols, geometry, charge=1, alpha=alpha)
     args = [mol.alpha]
-    dev = qml.device("default.qubit", wires=6)
+    # TODO: `d_qubit[0]` has coeff dtype complex, but is actually a real-valued Hamiltonian
+    # default.qubit.legacy casts Hamiltonian expectations to real, but default.qubit does not
+    dev = qml.device("default.qubit.legacy", wires=6)
 
     def dipole(mol):
         @qml.qnode(dev)

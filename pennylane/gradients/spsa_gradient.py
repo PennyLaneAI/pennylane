@@ -314,7 +314,7 @@ def spsa_grad(
         if num_measurements == 1:
             grads = 0
             for rep, _coeffs in enumerate(all_coeffs):
-                res = results[rep * tapes_per_grad : (rep + 1) * tapes_per_grad]
+                res = list(results[rep * tapes_per_grad : (rep + 1) * tapes_per_grad])
                 if r0 is not None:
                     res.insert(0, r0)
                 res = qml.math.stack(res)

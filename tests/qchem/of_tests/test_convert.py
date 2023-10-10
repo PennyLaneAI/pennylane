@@ -918,7 +918,7 @@ def test_wfdict_to_statevector(wf_dict, n_orbitals, string_ref, coeff_ref):
     ],
 )
 @pytest.mark.parametrize("method", ["rcisd", "ucisd", "rccsd", "uccsd"])
-def test_import_state(molecule, basis, symm, method, wf_ref):
+def test_import_state_pyscf(molecule, basis, symm, method, wf_ref):
     r"""Test that import_state returns the correct state vector."""
 
     mol = pyscf.gto.M(atom=molecule, basis=basis, symmetry=symm)
@@ -942,13 +942,85 @@ def test_import_state(molecule, basis, symm, method, wf_ref):
     assert np.allclose(wf_comp, wf_ref) or np.allclose(wf_comp, -wf_ref)
 
 
+@pytest.mark.parametrize(
+    ("detscoeffs", "wf_ref"),
+    [
+        (
+            # dmrg
+            ([[0, 3], [3, 0]], np.array([-0.10660077, 0.9943019]).numpy()),
+            np.array(
+                [
+                    0.0,
+                    0.0,
+                    0.0,
+                    -0.10660077,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.9943019,
+                    0.0,
+                    0.0,
+                    0.0,
+                ]
+            ).numpy(),
+        ),
+        (
+            # shci
+            (["02", "20"], np.array([-0.1066467, 0.99429698]).numpy()),
+            np.array(
+                [
+                    0.0,
+                    0.0,
+                    0.0,
+                    -0.1066467,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.99429698,
+                    0.0,
+                    0.0,
+                    0.0,
+                ]
+            ).numpy(),
+        ),
+    ],
+)
+def test_import_state_nonpyscf(detscoeffs, wf_ref):
+    r"""Test that import_state returns the correct state vector."""
+
+    wf_comp = qchem.convert.import_state(detscoeffs)
+
+    # overall sign could be different in each PySCF run
+    assert np.allclose(wf_comp, wf_ref) or np.allclose(wf_comp, -wf_ref)
+
+
 def test_import_state_error():
     r"""Test that an error is raised by import_state if a wrong object is entered."""
 
     myci = "wrongobject"
 
     with pytest.raises(ValueError, match="The supported objects"):
-        _ = qchem.convert.import_state(myci)
+        qchem.convert.import_state(myci)
+
+    mytuple = (np.array([[3, 0], [0, 3]]), np.array([0]))
+
+    with pytest.raises(ValueError, match="For tuple input"):
+        qchem.convert.import_state(mytuple)
+
+    mytuple = ([[3, 0], [0, 3]], [0], [0])
+
+    with pytest.raises(ValueError, match="The supported objects"):
+        qchem.convert.import_state(mytuple)
 
 
 @pytest.mark.parametrize(("excitation"), [-1, 0, 3])
@@ -1076,3 +1148,117 @@ def test_rccsd_state(molecule, basis, symm, tol, wf_ref):
 
     assert wf_ccsd.keys() == wf_ref.keys()
     assert np.allclose(abs(np.array(list(wf_ccsd.values()))), abs(np.array(list(wf_ref.values()))))
+
+
+@pytest.mark.parametrize(
+    ("sitevec", "format", "state_ref"),
+    [([1, 2, 1, 0, 0, 2], "dmrg", (5, 34)), (["a", "b", "a", "0", "0", "b"], "shci", (5, 34))],
+)
+def test_sitevec_to_fock(sitevec, format, state_ref):
+    r"""Test that _sitevec_to_fock returns the correct state."""
+
+    state = qml.qchem.convert._sitevec_to_fock(sitevec, format)
+
+    assert state == state_ref
+
+
+@pytest.mark.parametrize(
+    ("wavefunction", "state_ref"),
+    [
+        (
+            ([[0, 3], [3, 0]], np.array([-0.10660077, 0.9943019])),
+            {(2, 2): np.array([-0.10660077]), (1, 1): np.array([0.9943019])},
+        ),
+        (
+            ([[0, 3], [1, 2], [3, 0]], np.array([0.69958765, 0.70211014, 0.1327346])),
+            {
+                (2, 2): np.array([0.69958765]),
+                (1, 2): np.array([0.70211014]),
+                (1, 1): np.array([0.1327346]),
+            },
+        ),
+        (
+            (
+                [
+                    [3, 3, 3, 0, 0, 0, 0, 0, 0, 0],
+                    [3, 3, 0, 3, 0, 0, 0, 0, 0, 0],
+                    [3, 3, 0, 0, 3, 0, 0, 0, 0, 0],
+                    [3, 3, 0, 0, 0, 3, 0, 0, 0, 0],
+                ],
+                np.array(
+                    [-0.887277400314367, 0.308001203411555, 0.307470727263604, 0.145118175734375]
+                ),
+            ),
+            {
+                (35, 35): np.array([-0.145118175734375]),
+                (19, 19): np.array([-0.307470727263604]),
+                (11, 11): np.array([-0.308001203411555]),
+                (7, 7): np.array([0.887277400314367]),
+            },
+        ),
+    ],
+)
+def test_dmrg_state(wavefunction, state_ref):
+    r"""Test that _dmrg_state returns the correct state."""
+
+    state = qml.qchem.convert._dmrg_state(wavefunction)
+
+    assert state == state_ref
+
+
+@pytest.mark.parametrize(
+    ("wavefunction", "state_ref"),
+    [
+        (
+            (
+                ["02", "20"],
+                np.array([-0.10660077, 0.9943019]),
+            ),
+            {(2, 2): np.array([-0.10660077]), (1, 1): np.array([0.9943019])},
+        ),
+        (
+            (["02", "ab", "20"], np.array([0.69958765, 0.70211014, 0.1327346])),
+            {
+                (2, 2): np.array([0.69958765]),
+                (1, 2): np.array([0.70211014]),
+                (1, 1): np.array([0.1327346]),
+            },
+        ),
+        (
+            (
+                [
+                    "2220000000",
+                    "2202000000",
+                    "2200200000",
+                    "2200020000",
+                    "22b00000a0",
+                    "22a00000b0",
+                ],
+                np.array(
+                    [
+                        0.8874197325,
+                        -0.3075732772,
+                        -0.3075732772,
+                        -0.1450493028,
+                        -0.0226602105,
+                        -0.0226602105,
+                    ]
+                ),
+            ),
+            {
+                (7, 7): np.array([0.8874197325]),
+                (11, 11): np.array([-0.3075732772]),
+                (19, 19): np.array([-0.3075732772]),
+                (35, 35): np.array([-0.1450493028]),
+                (259, 7): np.array([-0.0226602105]),
+                (7, 259): np.array([-0.0226602105]),
+            },
+        ),
+    ],
+)
+def test_shci_state(wavefunction, state_ref):
+    r"""Test that _shci_state returns the correct state."""
+
+    state = qml.qchem.convert._shci_state(wavefunction)
+
+    assert state == state_ref

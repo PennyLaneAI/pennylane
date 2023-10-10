@@ -22,6 +22,7 @@ import pennylane as qml
 from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
 from pennylane.operation import DecompositionUndefinedError, Operator, StatePrepBase
 from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
+from pennylane.pytrees import register_pytree
 
 from .qscript import QuantumScript
 
@@ -230,7 +231,6 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     new_tape.all_sampled = tape.all_sampled
     new_tape._batch_size = tape.batch_size
     new_tape._output_dim = tape.output_dim
-    new_tape._qfunc_output = tape._qfunc_output
     return new_tape
 
 
@@ -284,7 +284,6 @@ def expand_tape_state_prep(tape, skip_first=True):
     new_tape.all_sampled = tape.all_sampled
     new_tape._batch_size = tape.batch_size
     new_tape._output_dim = tape.output_dim
-    new_tape._qfunc_output = tape._qfunc_output
     return new_tape
 
 
@@ -483,3 +482,6 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
 
     def __hash__(self):
         return QuantumScript.__hash__(self)
+
+
+register_pytree(QuantumTape, QuantumTape._flatten, QuantumTape._unflatten)

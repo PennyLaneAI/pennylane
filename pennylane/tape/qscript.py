@@ -36,6 +36,7 @@ from pennylane.measurements import (
 )
 from pennylane.typing import TensorLike
 from pennylane.operation import Observable, Operator, Operation
+from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue, process_queue
 from pennylane.wires import Wires
 
@@ -173,6 +174,15 @@ class QuantumScript:
 
     """
 
+    def _flatten(self):
+        return (self._ops, self.measurements), (self.shots, tuple(self.trainable_params))
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        new_tape = cls(*data, shots=metadata[0])
+        new_tape.trainable_params = metadata[1]
+        return new_tape
+
     def __init__(
         self,
         ops=None,
@@ -202,7 +212,6 @@ class QuantumScript:
         self._specs = None
         self._output_dim = 0
         self._batch_size = None
-        self._qfunc_output = None
 
         self.wires = _empty_wires
         self.num_wires = 0
@@ -751,7 +760,6 @@ class QuantumScript:
 
         new_tape = self.__class__(new_operations, new_measurements, shots=self.shots)
         new_tape.trainable_params = self.trainable_params
-        new_tape._qfunc_output = self._qfunc_output
 
         return new_tape
 
@@ -790,14 +798,12 @@ class QuantumScript:
             ((4,), (), (4,))
         """
 
-        if isinstance(device, qml.devices.experimental.Device):
+        if isinstance(device, qml.devices.Device):
             # MP.shape (called below) takes 2 arguments: `device` and `shots`.
             # With the new device interface, shots are stored on tapes rather than the device
-            # As well, MP.shape needs the device largely to see the device wires, and this is
-            # also stored on tapes in the new device interface. TODO: refactor MP.shape to accept
-            # `wires` instead of device (not currently done because probs.shape uses device.cutoff)
+            # TODO: refactor MP.shape to accept `wires` instead of device (not currently done
+            # because probs.shape uses device.cutoff)
             shots = self.shots
-            device = self
         else:
             shots = (
                 Shots(device._raw_shot_sequence)
@@ -888,7 +894,6 @@ class QuantumScript:
         new_qscript._obs_sharing_wires_id = self._obs_sharing_wires_id
         new_qscript._batch_size = self.batch_size
         new_qscript._output_dim = self.output_dim
-        new_qscript._qfunc_output = copy.copy(self._qfunc_output)
 
         return new_qscript
 
@@ -1250,11 +1255,11 @@ def make_qscript(fn, shots: Optional[Union[int, Sequence, Shots]] = None):
 
     def wrapper(*args, **kwargs):
         with AnnotatedQueue() as q:
-            result = fn(*args, **kwargs)
+            fn(*args, **kwargs)
 
-        qscript = QuantumScript.from_queue(q, shots)
-        qscript._qfunc_output = result
-
-        return qscript
+        return QuantumScript.from_queue(q, shots)
 
     return wrapper
+
+
+register_pytree(QuantumScript, QuantumScript._flatten, QuantumScript._unflatten)

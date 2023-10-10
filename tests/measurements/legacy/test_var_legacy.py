@@ -17,6 +17,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.measurements import Variance, Shots
+from pennylane.devices.qubit.measure import flatten_state
 
 
 # TODO: Remove this when new CustomMP are the default
@@ -25,7 +26,7 @@ def custom_measurement_process(device, spy):
 
     # pylint: disable=protected-access
     samples = device._samples
-    state = device._state
+    state = flatten_state(device._state, device.num_wires)
     call_args_list = list(spy.call_args_list)
     for call_args in call_args_list:
         obs = call_args.args[1]
@@ -106,6 +107,31 @@ class TestVar:
         circuit()
 
         custom_measurement_process(dev, spy)
+
+    @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
+    @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
+    def test_observable_is_measurement_value(
+        self, shots, phi, mocker, tol, tol_stochastic
+    ):  # pylint: disable=too-many-arguments
+        """Test that variances for mid-circuit measurement values
+        are correct for a single measurement value."""
+        dev = qml.device("default.qubit.legacy", wires=2, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            return qml.var(m0)
+
+        new_dev = circuit.device
+        spy = mocker.spy(qml.QubitDevice, "var")
+
+        res = circuit(phi)
+
+        atol = tol if shots is None else tol_stochastic
+        expected = np.sin(phi / 2) ** 2 - np.sin(phi / 2) ** 4
+        assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
+        custom_measurement_process(new_dev, spy)
 
     @pytest.mark.parametrize(
         "obs",

@@ -20,181 +20,82 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.measurements import SampleMP, StateMP, ProbabilityMP
-from pennylane.resource import Resources
-from pennylane.devices.experimental import DefaultQubit2, ExecutionConfig
+
+from pennylane.devices import DefaultQubit, ExecutionConfig
 from pennylane.devices.qubit.preprocess import validate_and_expand_adjoint
 
 
 def test_name():
-    """Tests the name of DefaultQubit2."""
-    assert DefaultQubit2().name == "default.qubit.2"
+    """Tests the name of DefaultQubit."""
+    assert DefaultQubit().name == "default.qubit"
 
 
 def test_shots():
-    """Test the shots property of DefaultQubit2."""
-    assert DefaultQubit2().shots == qml.measurements.Shots(None)
-    assert DefaultQubit2(shots=100).shots == qml.measurements.Shots(100)
+    """Test the shots property of DefaultQubit."""
+    assert DefaultQubit().shots == qml.measurements.Shots(None)
+    assert DefaultQubit(shots=100).shots == qml.measurements.Shots(100)
 
     with pytest.raises(AttributeError):
-        DefaultQubit2().shots = 10
+        DefaultQubit().shots = 10
 
 
 def test_wires():
     """Test that a device can be created with wires."""
-    assert DefaultQubit2().wires is None
-    assert DefaultQubit2(wires=2).wires == qml.wires.Wires([0, 1])
-    assert DefaultQubit2(wires=[0, 2]).wires == qml.wires.Wires([0, 2])
+    assert DefaultQubit().wires is None
+    assert DefaultQubit(wires=2).wires == qml.wires.Wires([0, 1])
+    assert DefaultQubit(wires=[0, 2]).wires == qml.wires.Wires([0, 2])
 
     with pytest.raises(AttributeError):
-        DefaultQubit2().wires = [0, 1]
+        DefaultQubit().wires = [0, 1]
 
 
 def test_debugger_attribute():
-    """Test that DefaultQubit2 has a debugger attribute and that it is `None`"""
+    """Test that DefaultQubit has a debugger attribute and that it is `None`"""
     # pylint: disable=protected-access
-    dev = DefaultQubit2()
+    dev = DefaultQubit()
 
     assert hasattr(dev, "_debugger")
     assert dev._debugger is None
 
 
-def test_snapshot_multiprocessing_execute():
-    """DefaultQubit2 cannot execute tapes with Snapshot if `max_workers` is not `None`"""
-    dev = DefaultQubit2(max_workers=2)
+class TestSnapshotMulti:
+    def test_snapshot_multiprocessing_execute(self):
+        """DefaultQubit cannot execute tapes with Snapshot if `max_workers` is not `None`"""
+        dev = DefaultQubit(max_workers=2)
 
-    tape = qml.tape.QuantumScript(
-        [
-            qml.Snapshot(),
-            qml.Hadamard(wires=0),
-            qml.Snapshot("very_important_state"),
-            qml.CNOT(wires=[0, 1]),
-            qml.Snapshot(),
-        ],
-        [qml.expval(qml.PauliX(0))],
-    )
-    with pytest.raises(RuntimeError, match="ProcessPoolExecutor cannot execute a QuantumScript"):
-        dev.preprocess(tape)
-
-
-def test_snapshot_multiprocessing_qnode():
-    """DefaultQubit2 cannot execute tapes with Snapshot if `max_workers` is not `None`"""
-    dev = DefaultQubit2(max_workers=2)
-
-    @qml.qnode(dev)
-    def circuit():
-        qml.Snapshot("tag")
-        qml.Hadamard(wires=0)
-        qml.CNOT(wires=[0, 1])
-        qml.Snapshot()
-        return qml.expval(qml.PauliX(0) + qml.PauliY(0))
-
-    with pytest.raises(
-        qml.DeviceError, match="Debugging with ``Snapshots`` is not available with multiprocessing."
-    ):
-        qml.snapshots(circuit)()
-
-
-class TestTracking:
-    """Testing the tracking capabilities of DefaultQubit2."""
-
-    def test_tracker_set_upon_initialization(self):
-        """Test that a new tracker is intialized with each device."""
-        assert DefaultQubit2().tracker is not DefaultQubit2().tracker
-
-    def test_tracker_not_updated_if_not_active(self):
-        """Test that the tracker is not updated if not active."""
-        dev = DefaultQubit2()
-        assert len(dev.tracker.totals) == 0
-
-        dev.execute(qml.tape.QuantumScript())
-        assert len(dev.tracker.totals) == 0
-        assert len(dev.tracker.history) == 0
-
-    def test_tracking_batch(self):
-        """Test that the experimental default qubit integrates with the tracker."""
-
-        qs = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
-
-        dev = DefaultQubit2()
-        config = ExecutionConfig(gradient_method="adjoint")
-        with qml.Tracker(dev) as tracker:
-            dev.execute(qs)
-            dev.compute_derivatives(qs, config)
-            dev.execute([qs, qs])  # and a second time
-
-        assert tracker.history == {
-            "batches": [1, 1],
-            "executions": [1, 2],
-            "resources": [Resources(num_wires=1), Resources(num_wires=1), Resources(num_wires=1)],
-            "derivative_batches": [1],
-            "derivatives": [1],
-        }
-        assert tracker.totals == {
-            "batches": 2,
-            "executions": 3,
-            "derivative_batches": 1,
-            "derivatives": 1,
-        }
-        assert tracker.latest == {"batches": 1, "executions": 2}
-
-    def test_tracking_execute_and_derivatives(self):
-        """Test that the execute_and_compute_* calls are being tracked for the
-        experimental default qubit device"""
-
-        qs = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
-        dev = DefaultQubit2()
-        config = ExecutionConfig(gradient_method="adjoint")
-
-        with qml.Tracker(dev) as tracker:
-            dev.compute_derivatives(qs, config)
-            dev.execute_and_compute_derivatives([qs] * 2, config)
-            dev.compute_jvp([qs] * 3, [(0,)] * 3, config)
-            dev.execute_and_compute_jvp([qs] * 4, [(0,)] * 4, config)
-            dev.compute_vjp([qs] * 5, [(0,)] * 5, config)
-            dev.execute_and_compute_vjp([qs] * 6, [(0,)] * 6, config)
-
-        assert tracker.history == {
-            "executions": [2, 4, 6],
-            "derivatives": [1, 2],
-            "derivative_batches": [1],
-            "execute_and_derivative_batches": [1],
-            "jvps": [3, 4],
-            "jvp_batches": [1],
-            "execute_and_jvp_batches": [1],
-            "vjps": [5, 6],
-            "vjp_batches": [1],
-            "execute_and_vjp_batches": [1],
-            "resources": [Resources(num_wires=1)] * 12,
-        }
-
-    def test_tracking_resources(self):
-        """Test that resources are tracked for the experimental default qubit device."""
-        qs = qml.tape.QuantumScript(
+        tape = qml.tape.QuantumScript(
             [
-                qml.Hadamard(0),
-                qml.Hadamard(1),
-                qml.CNOT(wires=[0, 2]),
-                qml.RZ(1.23, 1),
-                qml.CNOT(wires=[1, 2]),
-                qml.Hadamard(0),
+                qml.Snapshot(),
+                qml.Hadamard(wires=0),
+                qml.Snapshot("very_important_state"),
+                qml.CNOT(wires=[0, 1]),
+                qml.Snapshot(),
             ],
-            [qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliY(2))],
+            [qml.expval(qml.PauliX(0))],
         )
+        with pytest.raises(
+            RuntimeError, match="ProcessPoolExecutor cannot execute a QuantumScript"
+        ):
+            program, _ = dev.preprocess()
+            program([tape])
 
-        expected_resources = Resources(
-            num_wires=3,
-            num_gates=6,
-            gate_types={"Hadamard": 3, "CNOT": 2, "RZ": 1},
-            gate_sizes={1: 4, 2: 2},
-            depth=3,
-        )
+    def test_snapshot_multiprocessing_qnode(self):
+        """DefaultQubit cannot execute tapes with Snapshot if `max_workers` is not `None`"""
+        dev = DefaultQubit(max_workers=2)
 
-        dev = DefaultQubit2()
-        with qml.Tracker(dev) as tracker:
-            dev.execute(qs)
+        @qml.qnode(dev)
+        def circuit():
+            qml.Snapshot("tag")
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.Snapshot()
+            return qml.expval(qml.PauliX(0) + qml.PauliY(0))
 
-        assert len(tracker.history["resources"]) == 1
-        assert tracker.history["resources"][0] == expected_resources
+        with pytest.raises(
+            qml.DeviceError,
+            match="Debugging with ``Snapshots`` is not available with multiprocessing.",
+        ):
+            qml.snapshots(circuit)()
 
 
 # pylint: disable=too-few-public-methods
@@ -203,13 +104,13 @@ class TestPreprocessing:
 
     def test_chooses_best_gradient_method(self):
         """Test that preprocessing chooses backprop as the best gradient method."""
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
 
         config = ExecutionConfig(
             gradient_method="best", use_device_gradient=None, grad_on_execution=None
         )
-        circuit = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
-        _, _, new_config = dev.preprocess(circuit, config)
+
+        _, new_config = dev.preprocess(config)
 
         assert new_config.gradient_method == "backprop"
         assert new_config.use_device_gradient
@@ -217,13 +118,13 @@ class TestPreprocessing:
 
     def test_config_choices_for_adjoint(self):
         """Test that preprocessing request grad on execution and says to use the device gradient if adjoint is requested."""
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
 
         config = ExecutionConfig(
             gradient_method="adjoint", use_device_gradient=None, grad_on_execution=None
         )
-        circuit = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
-        _, _, new_config = dev.preprocess(circuit, config)
+
+        _, new_config = dev.preprocess(config)
 
         assert new_config.use_device_gradient
         assert new_config.grad_on_execution
@@ -231,31 +132,38 @@ class TestPreprocessing:
     @pytest.mark.parametrize("max_workers", [None, 1, 2, 3])
     def test_config_choices_for_threading(self, max_workers):
         """Test that preprocessing request grad on execution and says to use the device gradient if adjoint is requested."""
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
 
         config = ExecutionConfig(device_options={"max_workers": max_workers})
-        circuit = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
-        _, _, new_config = dev.preprocess(circuit, config)
+        _, new_config = dev.preprocess(config)
 
         assert new_config.device_options["max_workers"] == max_workers
 
     def test_circuit_wire_validation(self):
         """Test that preprocessing validates wires on the circuits being executed."""
-        dev = DefaultQubit2(wires=3)
+        dev = DefaultQubit(wires=3)
         circuit_valid_0 = qml.tape.QuantumScript([qml.PauliX(0)])
-        circuits, _, _ = dev.preprocess(circuit_valid_0)
-        assert circuits == [circuit_valid_0]
+        program, _ = dev.preprocess()
+        circuits, _ = program([circuit_valid_0])
+        assert circuits == (circuit_valid_0,)
 
         circuit_valid_1 = qml.tape.QuantumScript([qml.PauliX(1)])
-        circuits, _, _ = dev.preprocess([circuit_valid_0, circuit_valid_1])
-        assert circuits == [circuit_valid_0, circuit_valid_1]
+        program, _ = dev.preprocess()
+        circuits, _ = program([circuit_valid_0, circuit_valid_1])
+        assert circuits == tuple([circuit_valid_0, circuit_valid_1])
 
         invalid_circuit = qml.tape.QuantumScript([qml.PauliX(4)])
         with pytest.raises(qml.wires.WireError, match=r"Cannot run circuit\(s\) on"):
-            dev.preprocess(invalid_circuit)
+            program, _ = dev.preprocess()
+            program(
+                [
+                    invalid_circuit,
+                ]
+            )
 
         with pytest.raises(qml.wires.WireError, match=r"Cannot run circuit\(s\) on"):
-            dev.preprocess([circuit_valid_0, invalid_circuit])
+            program, _ = dev.preprocess()
+            program([circuit_valid_0, invalid_circuit])
 
     @pytest.mark.parametrize(
         "mp_fn,mp_cls,shots",
@@ -267,11 +175,12 @@ class TestPreprocessing:
     )
     def test_measurement_is_swapped_out(self, mp_fn, mp_cls, shots):
         """Test that preprocessing swaps out any MP with no wires or obs"""
-        dev = DefaultQubit2(wires=3)
+        dev = DefaultQubit(wires=3)
         original_mp = mp_fn()
         exp_z = qml.expval(qml.PauliZ(0))
         qs = qml.tape.QuantumScript([qml.Hadamard(0)], [original_mp, exp_z], shots=shots)
-        tapes, _, _ = dev.preprocess(qs)
+        program, _ = dev.preprocess()
+        tapes, _ = program([qs])
         assert len(tapes) == 1
         tape = tapes[0]
         assert tape.operations == qs.operations
@@ -281,16 +190,16 @@ class TestPreprocessing:
 
 
 class TestSupportsDerivatives:
-    """Test that DefaultQubit2 states what kind of derivatives it supports."""
+    """Test that DefaultQubit states what kind of derivatives it supports."""
 
     def test_supports_backprop(self):
-        """Test that DefaultQubit2 says that it supports backpropagation."""
-        dev = DefaultQubit2()
+        """Test that DefaultQubit says that it supports backpropagation."""
+        dev = DefaultQubit()
         assert dev.supports_derivatives() is True
         assert dev.supports_jvp() is True
         assert dev.supports_vjp() is True
 
-        config = ExecutionConfig(gradient_method="backprop")
+        config = ExecutionConfig(gradient_method="backprop", interface="auto")
         assert dev.supports_derivatives(config) is True
         assert dev.supports_jvp(config) is True
         assert dev.supports_vjp(config) is True
@@ -305,9 +214,14 @@ class TestSupportsDerivatives:
         assert dev.supports_jvp(config) is False
         assert dev.supports_vjp(config) is False
 
+        config = ExecutionConfig(gradient_method="backprop", interface=None)
+        assert dev.supports_derivatives(config) is False
+        assert dev.supports_jvp(config) is False
+        assert dev.supports_vjp(config) is False
+
     def test_supports_adjoint(self):
-        """Test that DefaultQubit2 says that it supports adjoint differentiation."""
-        dev = DefaultQubit2()
+        """Test that DefaultQubit says that it supports adjoint differentiation."""
+        dev = DefaultQubit()
         config = ExecutionConfig(gradient_method="adjoint", use_device_gradient=True)
         assert dev.supports_derivatives(config) is True
         assert dev.supports_jvp(config) is True
@@ -328,8 +242,8 @@ class TestSupportsDerivatives:
         assert dev.supports_vjp(config, qs) is False
 
     def test_doesnt_support_adjoint_with_invalid_tape(self):
-        """Tests that DefaultQubit2 does not support adjoint differentiation with invalid circuits."""
-        dev = DefaultQubit2()
+        """Tests that DefaultQubit does not support adjoint differentiation with invalid circuits."""
+        dev = DefaultQubit()
         config = ExecutionConfig(gradient_method="adjoint")
         circuit = qml.tape.QuantumScript([], [qml.probs()])
         assert dev.supports_derivatives(config, circuit=circuit) is False
@@ -338,8 +252,8 @@ class TestSupportsDerivatives:
 
     @pytest.mark.parametrize("gradient_method", ["parameter-shift", "finite-diff", "device"])
     def test_doesnt_support_other_gradient_methods(self, gradient_method):
-        """Test that DefaultQubit2 currently does not support other gradient methods natively."""
-        dev = DefaultQubit2()
+        """Test that DefaultQubit currently does not support other gradient methods natively."""
+        dev = DefaultQubit()
         config = ExecutionConfig(gradient_method=gradient_method)
         assert dev.supports_derivatives(config) is False
         assert dev.supports_jvp(config) is False
@@ -357,7 +271,7 @@ class TestBasicCircuit:
             [qml.RX(phi, wires=0)], [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))]
         )
 
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
         result = dev.execute(qs)
 
         assert isinstance(result, tuple)
@@ -374,7 +288,7 @@ class TestBasicCircuit:
             [qml.RX(phi, wires=0)], [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))]
         )
 
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
         config = ExecutionConfig(
             device_options={"max_workers": dev._max_workers}  # pylint: disable=protected-access
         )
@@ -392,7 +306,7 @@ class TestBasicCircuit:
         """Tests execution and gradients with autograd"""
         phi = qml.numpy.array(-0.52)
 
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
 
         def f(x):
             qs = qml.tape.QuantumScript(
@@ -420,7 +334,7 @@ class TestBasicCircuit:
 
         phi = jax.numpy.array(0.678)
 
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
 
         def f(x):
             qs = qml.tape.QuantumScript(
@@ -453,7 +367,7 @@ class TestBasicCircuit:
 
         phi = torch.tensor(-0.526, requires_grad=True)
 
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
 
         def f(x):
             qs = qml.tape.QuantumScript(
@@ -481,7 +395,7 @@ class TestBasicCircuit:
 
         phi = tf.Variable(4.873)
 
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
 
         with tf.GradientTape(persistent=True) as grad_tape:
             qs = qml.tape.QuantumScript(
@@ -505,7 +419,7 @@ class TestBasicCircuit:
     @pytest.mark.parametrize("op,param", [(qml.RX, np.pi), (qml.BasisState, [1])])
     def test_qnode_returns_correct_interface(self, op, param):
         """Test that even if no interface parameters are given, result is correct."""
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
 
         @qml.qnode(dev, interface="tf")
         def circuit(p):
@@ -526,7 +440,7 @@ class TestSampleMeasurements:
         x = np.array(0.732)
         qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.expval(qml.PauliZ(0))], shots=10000)
 
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
         result = dev.execute(qs)
 
         assert isinstance(result, (float, np.ndarray))
@@ -539,7 +453,7 @@ class TestSampleMeasurements:
         x = np.array(0.732)
         qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.probs(wires=0)], shots=10000)
 
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
         result = dev.execute(qs)
 
         assert isinstance(result, (float, np.ndarray))
@@ -552,7 +466,7 @@ class TestSampleMeasurements:
         x = np.array(0.732)
         qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.sample(wires=range(2))], shots=10000)
 
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
         result = dev.execute(qs)
 
         assert isinstance(result, (float, np.ndarray))
@@ -571,7 +485,7 @@ class TestSampleMeasurements:
             shots=10000,
         )
 
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
         result = dev.execute(qs)
 
         assert isinstance(result, tuple)
@@ -612,7 +526,7 @@ class TestSampleMeasurements:
         shots = qml.measurements.Shots(shots)
         qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.expval(qml.PauliZ(0))], shots=shots)
 
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
         result = dev.execute(qs)
 
         assert isinstance(result, tuple)
@@ -630,7 +544,7 @@ class TestSampleMeasurements:
         shots = qml.measurements.Shots(shots)
         qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.probs(wires=0)], shots=shots)
 
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
         result = dev.execute(qs)
 
         assert isinstance(result, tuple)
@@ -650,7 +564,7 @@ class TestSampleMeasurements:
         shots = qml.measurements.Shots(shots)
         qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.sample(wires=range(2))], shots=shots)
 
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
         result = dev.execute(qs)
 
         assert isinstance(result, tuple)
@@ -677,7 +591,7 @@ class TestSampleMeasurements:
             shots=shots,
         )
 
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
         result = dev.execute(qs)
 
         assert isinstance(result, tuple)
@@ -720,7 +634,7 @@ class TestSampleMeasurements:
             shots=10000,
         )
 
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
         result = dev.execute(qs)
 
         assert isinstance(result, tuple)
@@ -752,7 +666,7 @@ class TestSampleMeasurements:
         qs1 = qml.tape.QuantumScript([qml.RX(x, wires=0)], [qml.sample(wires=(0, 1))], shots=100)
         qs2 = qml.tape.QuantumScript([qml.RX(x, wires=0)], [qml.sample(wires=1)], shots=50)
 
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
         results = dev.execute((qs1, qs2))
 
         assert isinstance(results, tuple)
@@ -767,7 +681,7 @@ class TestSampleMeasurements:
         x = np.array(np.pi / 2)
         qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.counts(wires=[0, 1])], shots=10000)
 
-        dev = DefaultQubit2(seed=123, max_workers=max_workers)
+        dev = DefaultQubit(seed=123, max_workers=max_workers)
         result = dev.execute(qs)
 
         assert isinstance(result, dict)
@@ -788,7 +702,7 @@ class TestSampleMeasurements:
             shots=10000,
         )
 
-        dev = DefaultQubit2(seed=123, max_workers=max_workers)
+        dev = DefaultQubit(seed=123, max_workers=max_workers)
         result = dev.execute(qs)
 
         assert isinstance(result, dict)
@@ -804,7 +718,7 @@ class TestExecutingBatches:
 
     @staticmethod
     def f(dev, phi):
-        """A function that executes a batch of scripts on DefaultQubit2 without preprocessing."""
+        """A function that executes a batch of scripts on DefaultQubit without preprocessing."""
         ops = [
             qml.PauliX("a"),
             qml.PauliX("b"),
@@ -825,7 +739,7 @@ class TestExecutingBatches:
 
     @staticmethod
     def f_hashable(phi):
-        """A function that executes a batch of scripts on DefaultQubit2 without preprocessing."""
+        """A function that executes a batch of scripts on DefaultQubit without preprocessing."""
         ops = [
             qml.PauliX("a"),
             qml.PauliX("b"),
@@ -842,7 +756,7 @@ class TestExecutingBatches:
 
         ops = [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))]
         qs2 = qml.tape.QuantumScript(ops, [qml.probs(wires=(0, 1))])
-        return DefaultQubit2().execute((qs1, qs2))
+        return DefaultQubit().execute((qs1, qs2))
 
     @staticmethod
     def expected(phi):
@@ -866,7 +780,7 @@ class TestExecutingBatches:
     @pytest.mark.parametrize("max_workers", [None, 1, 2])
     def test_numpy(self, max_workers):
         """Test that results are expected when the parameter does not have a parameter."""
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
 
         phi = 0.892
         results = self.f(dev, phi)
@@ -878,7 +792,7 @@ class TestExecutingBatches:
     @pytest.mark.parametrize("max_workers", [None, 1, 2])
     def test_autograd(self, max_workers):
         """Test batches can be executed and have backprop derivatives in autograd."""
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
 
         phi = qml.numpy.array(-0.629)
         results = self.f(dev, phi)
@@ -922,7 +836,7 @@ class TestExecutingBatches:
         """Test batches can be executed and have backprop derivatives in torch."""
         import torch
 
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
 
         x = torch.tensor(9.6243)
 
@@ -950,7 +864,7 @@ class TestExecutingBatches:
 
         import tensorflow as tf
 
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
 
         x = tf.Variable(5.2281)
         with tf.GradientTape(persistent=True) as tape:
@@ -1000,7 +914,7 @@ class TestSumOfTermsDifferentiability:
         if convert_to_hamiltonian:
             H = H._pauli_rep.hamiltonian()  # pylint: disable=protected-access
         qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
-        return DefaultQubit2().execute(qs)
+        return DefaultQubit().execute(qs)
 
     @staticmethod
     def expected(scale, n_wires=10, offset=0.1, like="numpy"):
@@ -1014,7 +928,7 @@ class TestSumOfTermsDifferentiability:
     @pytest.mark.parametrize("convert_to_hamiltonian", (True, False))
     def test_autograd_backprop(self, convert_to_hamiltonian):
         """Test that backpropagation derivatives work in autograd with hamiltonians and large sums."""
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
         x = qml.numpy.array(0.52)
         out = self.f(dev, x, convert_to_hamiltonian=convert_to_hamiltonian)
         expected_out = self.expected(x)
@@ -1050,7 +964,7 @@ class TestSumOfTermsDifferentiability:
         """Test that backpropagation derivatives work with torch with hamiltonians and large sums."""
         import torch
 
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
 
         x = torch.tensor(-0.289, requires_grad=True)
         x2 = torch.tensor(-0.289, requires_grad=True)
@@ -1068,7 +982,7 @@ class TestSumOfTermsDifferentiability:
         """Test that backpropagation derivatives work with tensorflow with hamiltonians and large sums."""
         import tensorflow as tf
 
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
 
         x = tf.Variable(0.5)
 
@@ -1086,16 +1000,17 @@ class TestSumOfTermsDifferentiability:
 
 @pytest.mark.parametrize("max_workers", [None, 1, 2])
 class TestAdjointDifferentiation:
-    """Tests adjoint differentiation integration with DefaultQubit2."""
+    """Tests adjoint differentiation integration with DefaultQubit."""
 
     ec = ExecutionConfig(gradient_method="adjoint")
 
     def test_derivatives_single_circuit(self, max_workers):
         """Tests derivatives with a single circuit."""
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-        qs = validate_and_expand_adjoint(qs)
+        qs, _ = validate_and_expand_adjoint(qs)
+        qs = qs[0]
         expected_grad = -qml.math.sin(x)
         actual_grad = dev.compute_derivatives(qs, self.ec)
         assert isinstance(actual_grad, np.ndarray)
@@ -1109,10 +1024,11 @@ class TestAdjointDifferentiation:
 
     def test_derivatives_list_with_single_circuit(self, max_workers):
         """Tests a basic example with a batch containing a single circuit."""
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-        qs = validate_and_expand_adjoint(qs)
+        qs, _ = validate_and_expand_adjoint(qs)
+        qs = qs[0]
         expected_grad = -qml.math.sin(x)
         actual_grad = dev.compute_derivatives([qs], self.ec)
         assert isinstance(actual_grad, tuple)
@@ -1126,7 +1042,7 @@ class TestAdjointDifferentiation:
 
     def test_derivatives_many_tapes_many_results(self, max_workers):
         """Tests a basic example with a batch of circuits of varying return shapes."""
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
         single_meas = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
         multi_meas = qml.tape.QuantumScript(
@@ -1140,7 +1056,7 @@ class TestAdjointDifferentiation:
 
     def test_derivatives_integration(self, max_workers):
         """Tests the expected workflow done by a calling method."""
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
         expected_grad = (-qml.math.sin(x), (qml.math.cos(x), -qml.math.sin(x)))
         single_meas = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
@@ -1148,7 +1064,8 @@ class TestAdjointDifferentiation:
             [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
         )
 
-        circuits, _, new_ec = dev.preprocess([single_meas, multi_meas], self.ec)
+        program, new_ec = dev.preprocess(self.ec)
+        circuits, _ = program([single_meas, multi_meas])
         actual_grad = dev.compute_derivatives(circuits, self.ec)
 
         assert new_ec.use_device_gradient
@@ -1160,12 +1077,14 @@ class TestAdjointDifferentiation:
 
     def test_jvps_single_circuit(self, max_workers):
         """Tests jvps with a single circuit."""
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
         tangent = (0.456,)
 
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-        qs = validate_and_expand_adjoint(qs)
+
+        qs, _ = validate_and_expand_adjoint(qs)
+        qs = qs[0]
 
         expected_grad = -qml.math.sin(x) * tangent[0]
         actual_grad = dev.compute_jvp(qs, tangent, self.ec)
@@ -1180,12 +1099,14 @@ class TestAdjointDifferentiation:
 
     def test_jvps_list_with_single_circuit(self, max_workers):
         """Tests a basic example with a batch containing a single circuit."""
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
         tangent = (0.456,)
 
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-        qs = validate_and_expand_adjoint(qs)
+
+        qs, _ = validate_and_expand_adjoint(qs)
+        qs = qs[0]
 
         expected_grad = -qml.math.sin(x) * tangent[0]
         actual_grad = dev.compute_jvp([qs], [tangent], self.ec)
@@ -1200,7 +1121,7 @@ class TestAdjointDifferentiation:
 
     def test_jvps_many_tapes_many_results(self, max_workers):
         """Tests a basic example with a batch of circuits of varying return shapes."""
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
         single_meas = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
         multi_meas = qml.tape.QuantumScript(
@@ -1228,7 +1149,7 @@ class TestAdjointDifferentiation:
 
     def test_jvps_integration(self, max_workers):
         """Tests the expected workflow done by a calling method."""
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
 
         single_meas = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
@@ -1236,8 +1157,9 @@ class TestAdjointDifferentiation:
             [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
         )
         tangents = [(0.456,), (0.789,)]
-
-        circuits, _, new_ec = dev.preprocess([single_meas, multi_meas], self.ec)
+        circuits = [single_meas, multi_meas]
+        program, new_ec = dev.preprocess(self.ec)
+        circuits, _ = program(circuits)
         actual_grad = dev.compute_jvp(circuits, tangents, self.ec)
         expected_grad = (
             -qml.math.sin(x) * tangents[0][0],
@@ -1253,12 +1175,13 @@ class TestAdjointDifferentiation:
 
     def test_vjps_single_circuit(self, max_workers):
         """Tests vjps with a single circuit."""
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
         cotangent = (0.456,)
 
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-        qs = validate_and_expand_adjoint(qs)
+        qs, _ = validate_and_expand_adjoint(qs)
+        qs = qs[0]
 
         expected_grad = -qml.math.sin(x) * cotangent[0]
         actual_grad = dev.compute_vjp(qs, cotangent, self.ec)
@@ -1273,12 +1196,13 @@ class TestAdjointDifferentiation:
 
     def test_vjps_list_with_single_circuit(self, max_workers):
         """Tests a basic example with a batch containing a single circuit."""
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
         cotangent = (0.456,)
 
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-        qs = validate_and_expand_adjoint(qs)
+        qs, _ = validate_and_expand_adjoint(qs)
+        qs = qs[0]
 
         expected_grad = -qml.math.sin(x) * cotangent[0]
         actual_grad = dev.compute_vjp([qs], [cotangent], self.ec)
@@ -1293,7 +1217,7 @@ class TestAdjointDifferentiation:
 
     def test_vjps_many_tapes_many_results(self, max_workers):
         """Tests a basic example with a batch of circuits of varying return shapes."""
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
         single_meas = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
         multi_meas = qml.tape.QuantumScript(
@@ -1320,7 +1244,7 @@ class TestAdjointDifferentiation:
 
     def test_vjps_integration(self, max_workers):
         """Tests the expected workflow done by a calling method."""
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
 
         single_meas = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
@@ -1328,8 +1252,10 @@ class TestAdjointDifferentiation:
             [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
         )
         cotangents = [(0.456,), (0.789, 0.123)]
+        circuits = [single_meas, multi_meas]
+        program, new_ec = dev.preprocess(self.ec)
+        circuits, _ = program(circuits)
 
-        circuits, _, new_ec = dev.preprocess([single_meas, multi_meas], self.ec)
         actual_grad = dev.compute_vjp(circuits, cotangents, self.ec)
         expected_grad = (
             -qml.math.sin(x) * cotangents[0][0],
@@ -1371,12 +1297,13 @@ class TestPreprocessingIntegration:
             [qml.expval(qml.PauliY("a")), qml.expval(qml.PauliZ("a")), qml.expval(qml.PauliX("b"))],
         )
 
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
+        tapes = tuple([qscript])
+        program, config = dev.preprocess()
+        tapes, pre_processing_fn = program(tapes)
 
-        batch, post_procesing_fn, config = dev.preprocess(qscript)
-
-        assert len(batch) == 1
-        execute_circuit = batch[0]
+        assert len(tapes) == 1
+        execute_circuit = tapes[0]
         assert qml.equal(execute_circuit[0], qml.RX(x, "a"))
         assert qml.equal(execute_circuit[1], qml.RY(y, "b"))
         assert qml.equal(execute_circuit[2], qml.CNOT(("a", "b")))
@@ -1384,15 +1311,16 @@ class TestPreprocessingIntegration:
         assert qml.equal(execute_circuit[4], qml.expval(qml.PauliZ("a")))
         assert qml.equal(execute_circuit[5], qml.expval(qml.PauliX("b")))
 
-        results = dev.execute(batch, config)
+        results = dev.execute(tapes, config)
         assert len(results) == 1
         assert len(results[0]) == 3
 
-        processed_results = post_procesing_fn(results)
-        assert len(processed_results) == 3
-        assert qml.math.allclose(processed_results[0], -np.sin(x) * np.sin(y))
-        assert qml.math.allclose(processed_results[1], np.cos(x))
-        assert qml.math.allclose(processed_results[2], np.sin(y))
+        processed_results = pre_processing_fn(results)
+        processed_result = processed_results[0]
+        assert len(processed_result) == 3
+        assert qml.math.allclose(processed_result[0], -np.sin(x) * np.sin(y))
+        assert qml.math.allclose(processed_result[1], np.cos(x))
+        assert qml.math.allclose(processed_result[2], np.sin(y))
 
     @pytest.mark.parametrize("max_workers", [None, 1, 2])
     def test_preprocess_batch_circuit(self, max_workers):
@@ -1425,11 +1353,13 @@ class TestPreprocessingIntegration:
 
         initial_batch = [qs1, qs2]
 
-        dev = DefaultQubit2(max_workers=max_workers)
-        batch, post_processing_fn, config = dev.preprocess(initial_batch)
+        dev = DefaultQubit(max_workers=max_workers)
+
+        program, config = dev.preprocess()
+        batch, pre_processing_fn = program(initial_batch)
 
         results = dev.execute(batch, config)
-        processed_results = post_processing_fn(results)
+        processed_results = pre_processing_fn(results)
 
         assert len(processed_results) == 2
         assert len(processed_results[0]) == 2
@@ -1451,7 +1381,7 @@ class TestPreprocessingIntegration:
     def test_preprocess_defer_measurements(self, mocker):
         """Test that a QNode with mid-circuit measurements is transformed
         using defer_measurements."""
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
 
         tape = qml.tape.QuantumScript(
             [qml.PauliX(0), qml.measurements.MidMeasureMP(qml.wires.Wires(0))],
@@ -1459,7 +1389,8 @@ class TestPreprocessingIntegration:
         )
         spy = mocker.spy(qml, "defer_measurements")
 
-        _, _, _ = dev.preprocess(tape)
+        program, _ = dev.preprocess()
+        program([tape])
         spy.assert_called_once()
 
 
@@ -1481,10 +1412,10 @@ class TestRandomSeed:
         the same results"""
         qs = qml.tape.QuantumScript([qml.Hadamard(0)], measurements, shots=1000)
 
-        dev1 = DefaultQubit2(seed=123, max_workers=max_workers)
+        dev1 = DefaultQubit(seed=123, max_workers=max_workers)
         result1 = dev1.execute(qs)
 
-        dev2 = DefaultQubit2(seed=123, max_workers=max_workers)
+        dev2 = DefaultQubit(seed=123, max_workers=max_workers)
         result2 = dev2.execute(qs)
 
         if len(measurements) == 1:
@@ -1498,13 +1429,13 @@ class TestRandomSeed:
         different results (with almost certainty)"""
         qs = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.sample(wires=0)], shots=1000)
 
-        dev1 = DefaultQubit2(seed=None, max_workers=max_workers)
+        dev1 = DefaultQubit(seed=None, max_workers=max_workers)
         result1 = dev1.execute(qs)
 
-        dev2 = DefaultQubit2(seed=123, max_workers=max_workers)
+        dev2 = DefaultQubit(seed=123, max_workers=max_workers)
         result2 = dev2.execute(qs)
 
-        dev3 = DefaultQubit2(seed=456, max_workers=max_workers)
+        dev3 = DefaultQubit(seed=456, max_workers=max_workers)
         result3 = dev3.execute(qs)
 
         # assert results are pairwise different
@@ -1526,7 +1457,7 @@ class TestRandomSeed:
         """Test that the same device will produce different results every execution"""
         qs = qml.tape.QuantumScript([qml.Hadamard(0)], measurements, shots=1000)
 
-        dev = DefaultQubit2(seed=123, max_workers=max_workers)
+        dev = DefaultQubit(seed=123, max_workers=max_workers)
         result1 = dev.execute(qs)
         result2 = dev.execute(qs)
 
@@ -1551,13 +1482,13 @@ class TestRandomSeed:
         qs = qml.tape.QuantumScript([qml.Hadamard(0)], measurements, shots=1000)
 
         # expected result
-        dev1 = DefaultQubit2(seed=123, max_workers=max_workers)
+        dev1 = DefaultQubit(seed=123, max_workers=max_workers)
         result1 = dev1.execute(qs)
 
         # set a global seed both before initialization of the
         # device and before execution of the tape
         np.random.seed(456)
-        dev2 = DefaultQubit2(seed=123, max_workers=max_workers)
+        dev2 = DefaultQubit(seed=123, max_workers=max_workers)
         np.random.seed(789)
         result2 = dev2.execute(qs)
 
@@ -1569,17 +1500,17 @@ class TestRandomSeed:
     def test_global_seed_no_device_seed_by_default(self):
         """Test that the global numpy seed initializes the rng if device seed is none."""
         np.random.seed(42)
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
         first_num = dev._rng.random()  # pylint: disable=protected-access
 
         np.random.seed(42)
-        dev2 = DefaultQubit2()
+        dev2 = DefaultQubit()
         second_num = dev2._rng.random()  # pylint: disable=protected-access
 
         assert qml.math.allclose(first_num, second_num)
 
         np.random.seed(42)
-        dev2 = DefaultQubit2(seed="global")
+        dev2 = DefaultQubit(seed="global")
         third_num = dev2._rng.random()  # pylint: disable=protected-access
 
         assert qml.math.allclose(third_num, first_num)
@@ -1587,11 +1518,11 @@ class TestRandomSeed:
     def test_None_seed_not_using_global_rng(self):
         """Test that if the seed is None, it is uncorrelated with the global rng."""
         np.random.seed(42)
-        dev = DefaultQubit2(seed=None)
+        dev = DefaultQubit(seed=None)
         first_nums = dev._rng.random(10)  # pylint: disable=protected-access
 
         np.random.seed(42)
-        dev2 = DefaultQubit2(seed=None)
+        dev2 = DefaultQubit(seed=None)
         second_nums = dev2._rng.random(10)  # pylint: disable=protected-access
 
         assert not qml.math.allclose(first_nums, second_nums)
@@ -1602,10 +1533,64 @@ class TestRandomSeed:
         first_num = rng1.random()
 
         rng = np.random.default_rng(42)
-        dev = DefaultQubit2(seed=rng)
+        dev = DefaultQubit(seed=rng)
         second_num = dev._rng.random()  # pylint: disable=protected-access
 
         assert qml.math.allclose(first_num, second_num)
+
+
+@pytest.mark.jax
+class TestPRNGKeySeed:
+    """Test that the device behaves correctly when provided with a PRNG key and using the JAX interface"""
+
+    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    def test_same_prng_key(self, max_workers):
+        """Test that different devices given the same random jax.random.PRNGKey as a seed will produce
+        the same results for sample, even with different seeds"""
+        import jax
+
+        qs = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.sample(wires=0)], shots=1000)
+        config = ExecutionConfig(interface="jax")
+
+        dev1 = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(123))
+        result1 = dev1.execute(qs, config)
+
+        dev2 = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(123))
+        result2 = dev2.execute(qs, config)
+
+        assert np.all(result1 == result2)
+
+    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    def test_different_prng_key(self, max_workers):
+        """Test that different devices given different jax.random.PRNGKey values will produce
+        different results"""
+        import jax
+
+        qs = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.sample(wires=0)], shots=1000)
+        config = ExecutionConfig(interface="jax")
+
+        dev1 = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(246))
+        result1 = dev1.execute(qs, config)
+
+        dev2 = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(123))
+        result2 = dev2.execute(qs, config)
+
+        assert np.any(result1 != result2)
+
+    @pytest.mark.parametrize("max_workers", [None, 1, 2])
+    def test_different_executions_same_prng_key(self, max_workers):
+        """Test that the same device will produce the same results every execution if
+        the seed is a jax.random.PRNGKey"""
+        import jax
+
+        qs = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.sample(wires=0)], shots=1000)
+        config = ExecutionConfig(interface="jax")
+
+        dev = DefaultQubit(max_workers=max_workers, seed=jax.random.PRNGKey(77))
+        result1 = dev.execute(qs, config)
+        result2 = dev.execute(qs, config)
+
+        assert np.all(result1 == result2)
 
 
 class TestHamiltonianSamples:
@@ -1621,7 +1606,7 @@ class TestHamiltonianSamples:
         ops = [qml.RY(x, wires=0), qml.RZ(y, wires=0)]
         meas = [qml.expval(qml.Hamiltonian([0.8, 0.5], [qml.PauliZ(0), qml.PauliX(0)]))]
 
-        dev = DefaultQubit2(seed=100, max_workers=max_workers)
+        dev = DefaultQubit(seed=100, max_workers=max_workers)
         qs = qml.tape.QuantumScript(ops, meas, shots=10000)
         res = dev.execute(qs)
 
@@ -1635,7 +1620,7 @@ class TestHamiltonianSamples:
         ops = [qml.RY(x, wires=0), qml.RZ(y, wires=0)]
         meas = [qml.expval(qml.s_prod(0.8, qml.PauliZ(0)) + qml.s_prod(0.5, qml.PauliX(0)))]
 
-        dev = DefaultQubit2(seed=100, max_workers=max_workers)
+        dev = DefaultQubit(seed=100, max_workers=max_workers)
         qs = qml.tape.QuantumScript(ops, meas, shots=10000)
         res = dev.execute(qs)
 
@@ -1655,7 +1640,7 @@ class TestHamiltonianSamples:
         t2 = 6.2 * qml.prod(*(qml.PauliY(i) for i in range(n_wires)))
         H = t1 + t2
 
-        dev = DefaultQubit2(seed=100, max_workers=max_workers)
+        dev = DefaultQubit(seed=100, max_workers=max_workers)
         qs = qml.tape.QuantumScript(ops, [qml.expval(H)], shots=100000)
         res = dev.execute(qs)
 
@@ -1724,7 +1709,7 @@ class TestHamiltonianSamples:
             ],
         )
 
-        dev = DefaultQubit2(seed=100, max_workers=max_workers)
+        dev = DefaultQubit(seed=100, max_workers=max_workers)
         qs = qml.tape.QuantumScript(ops, [qml.expval(H)], shots=100000)
         res = dev.execute(qs)
 
@@ -1741,7 +1726,7 @@ class TestClassicalShadows:
     @pytest.mark.parametrize("max_workers", [None, 1, 2])
     def test_shape_and_dtype(self, max_workers, n_qubits):
         """Test that the shape and dtype of the measurement is correct"""
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
 
         ops = [qml.Hadamard(i) for i in range(n_qubits)]
         qs = qml.tape.QuantumScript(ops, [qml.classical_shadow(range(n_qubits))], shots=100)
@@ -1759,7 +1744,7 @@ class TestClassicalShadows:
     @pytest.mark.parametrize("max_workers", [None, 1, 2])
     def test_expval(self, max_workers):
         """Test that shadow expval measurements work as expected"""
-        dev = DefaultQubit2(seed=100, max_workers=max_workers)
+        dev = DefaultQubit(seed=100, max_workers=max_workers)
 
         ops = [qml.Hadamard(0), qml.Hadamard(1)]
         meas = [qml.shadow_expval(qml.PauliX(0) @ qml.PauliX(1), seed=200)]
@@ -1773,7 +1758,7 @@ class TestClassicalShadows:
     @pytest.mark.parametrize("max_workers", [None, 1, 2])
     def test_multiple_shadow_measurements(self, n_qubits, max_workers):
         """Test that multiple classical shadow measurements work as expected"""
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
 
         ops = [qml.Hadamard(i) for i in range(n_qubits)]
         mps = [qml.classical_shadow(range(n_qubits)), qml.classical_shadow(range(n_qubits))]
@@ -1799,7 +1784,7 @@ class TestClassicalShadows:
     @pytest.mark.parametrize("max_workers", [None, 1, 2])
     def test_reconstruct_bell_state(self, max_workers):
         """Test that a bell state can be faithfully reconstructed"""
-        dev = DefaultQubit2(seed=100, max_workers=max_workers)
+        dev = DefaultQubit(seed=100, max_workers=max_workers)
 
         ops = [qml.Hadamard(0), qml.CNOT([0, 1])]
         meas = [qml.classical_shadow(wires=[0, 1], seed=200)]
@@ -1846,7 +1831,7 @@ class TestClassicalShadows:
     @pytest.mark.parametrize("max_workers", [None, 1, 2])
     def test_shot_vectors(self, max_workers, n_qubits, shots):
         """Test that classical shadows works when given a shot vector"""
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
         shots = qml.measurements.Shots(shots)
 
         ops = [qml.Hadamard(i) for i in range(n_qubits)]
@@ -1875,7 +1860,7 @@ class TestDynamicType:
     def test_projector(self, max_workers, n_wires):
         """Test that qml.Projector yields the expected results for both of its subclasses."""
         wires = list(range(n_wires))
-        dev = DefaultQubit2(max_workers=max_workers)
+        dev = DefaultQubit(max_workers=max_workers)
         ops = [qml.adjoint(qml.Hadamard(q)) for q in wires]
         basis_state = np.zeros((n_wires,))
         state_vector = np.zeros((2**n_wires,))
@@ -1893,7 +1878,7 @@ class TestIntegration:
     @pytest.mark.parametrize("wires,expected", [(None, [1, 0]), (3, [0, 0, 1])])
     def test_sample_uses_device_wires(self, wires, expected):
         """Test that if device wires are given, then they are used by sample."""
-        dev = DefaultQubit2(wires=wires, shots=5)
+        dev = DefaultQubit(wires=wires, shots=5)
 
         @qml.qnode(dev)
         def circuit():
@@ -1912,7 +1897,7 @@ class TestIntegration:
     )
     def test_state_uses_device_wires(self, wires, expected):
         """Test that if device wires are given, then they are used by state."""
-        dev = DefaultQubit2(wires=wires)
+        dev = DefaultQubit(wires=wires)
 
         @qml.qnode(dev)
         def circuit():
@@ -1931,7 +1916,7 @@ class TestIntegration:
     )
     def test_probs_uses_device_wires(self, wires, expected):
         """Test that if device wires are given, then they are used by probs."""
-        dev = DefaultQubit2(wires=wires)
+        dev = DefaultQubit(wires=wires)
 
         @qml.qnode(dev)
         def circuit():
@@ -1956,7 +1941,7 @@ class TestIntegration:
     )
     def test_counts_uses_device_wires(self, wires, all_outcomes, expected):
         """Test that if device wires are given, then they are used by probs."""
-        dev = DefaultQubit2(wires=wires, shots=10)
+        dev = DefaultQubit(wires=wires, shots=10)
 
         @qml.qnode(dev, interface=None)
         def circuit():
@@ -1969,16 +1954,16 @@ class TestIntegration:
 
 @pytest.mark.parametrize("max_workers", [None, 1, 2])
 def test_broadcasted_parameter(max_workers):
-    """Test that DefaultQubit2 handles broadcasted parameters as expected."""
-    dev = DefaultQubit2(max_workers=max_workers)
+    """Test that DefaultQubit handles broadcasted parameters as expected."""
+    dev = DefaultQubit(max_workers=max_workers)
     x = np.array([0.536, 0.894])
     qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
 
     config = ExecutionConfig()
     config.gradient_method = "adjoint"
-    batch, post_processing_fn, config = dev.preprocess(qs, config)
-
+    program, config = dev.preprocess(config)
+    batch, pre_processing_fn = program([qs])
     assert len(batch) == 2
     results = dev.execute(batch, config)
-    processed_results = post_processing_fn(results)
+    processed_results = pre_processing_fn(results)
     assert qml.math.allclose(processed_results, np.cos(x))

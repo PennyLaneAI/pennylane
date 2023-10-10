@@ -17,7 +17,7 @@ import pytest
 from pennylane import numpy as np
 
 import pennylane as qml
-from pennylane.devices.experimental import DefaultQubit2
+from pennylane.devices import DefaultQubit
 from pennylane.gradients import param_shift
 from pennylane.interfaces import execute
 
@@ -33,7 +33,7 @@ class TestCaching:
         """Test that, when using parameter-shift transform,
         caching reduces the number of evaluations to their optimum
         when computing Hessians."""
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
         params = np.arange(1, num_params + 1) / 10
 
         N = len(params)
@@ -101,7 +101,7 @@ class TestCaching:
         """Tests that the backward pass is one single batch, not a bunch of batches, when parameter shift
         is requested for multiple tapes."""
 
-        dev = DefaultQubit2()
+        dev = qml.device("default.qubit")
 
         def f(x):
             tape1 = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.probs(wires=0)])
@@ -115,7 +115,7 @@ class TestCaching:
             out = qml.jacobian(f)(x)
 
         assert dev.tracker.totals["batches"] == 2
-        assert dev.tracker.history["executions"] == [2, 4]
+        assert dev.tracker.history["simulations"] == [1, 1, 1, 1, 1, 1]
         expected = [-2 * np.cos(x / 2) * np.sin(x / 2), 2 * np.sin(x / 2) * np.cos(x / 2)]
         assert qml.math.allclose(out, expected)
 
@@ -123,11 +123,11 @@ class TestCaching:
 # add tests for lightning 2 when possible
 # set rng for device when possible
 test_matrix = [
-    ({"gradient_fn": param_shift}, 100000, DefaultQubit2(seed=42)),
-    ({"gradient_fn": param_shift}, None, DefaultQubit2()),
-    ({"gradient_fn": "backprop"}, None, DefaultQubit2()),
-    ({"gradient_fn": "adjoint", "grad_on_execution": True}, None, DefaultQubit2()),
-    ({"gradient_fn": "adjoint", "grad_on_execution": False}, None, DefaultQubit2()),
+    ({"gradient_fn": param_shift}, 100000, DefaultQubit(seed=42)),
+    ({"gradient_fn": param_shift}, None, DefaultQubit()),
+    ({"gradient_fn": "backprop"}, None, DefaultQubit()),
+    ({"gradient_fn": "adjoint", "grad_on_execution": True}, None, DefaultQubit()),
+    ({"gradient_fn": "adjoint", "grad_on_execution": False}, None, DefaultQubit()),
 ]
 
 
@@ -572,7 +572,7 @@ class TestHigherOrderDerivatives:
     def test_parameter_shift_hessian(self, params, tol):
         """Tests that the output of the parameter-shift transform
         can be differentiated using autograd, yielding second derivatives."""
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
 
         def cost_fn(x):
             ops1 = [qml.RX(x[0], 0), qml.RY(x[1], 1), qml.CNOT((0, 1))]
@@ -606,7 +606,7 @@ class TestHigherOrderDerivatives:
     def test_max_diff(self, tol):
         """Test that setting the max_diff parameter blocks higher-order
         derivatives"""
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
         params = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x):

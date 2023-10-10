@@ -14,22 +14,29 @@
 
 """Transform that eliminates the swap operators by reordering the wires."""
 # pylint: disable=too-many-branches
-from pennylane import apply
-from pennylane.transforms import qfunc_transform
+from typing import Sequence, Callable
+
+from pennylane.transforms.core import transform
+
+from pennylane.tape import QuantumTape
 from pennylane.wires import Wires
 from pennylane.queuing import QueuingManager
 
 
-@qfunc_transform
-def undo_swaps(tape):
+@transform
+def undo_swaps(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
     """Quantum function transform to remove SWAP gates by running from right
     to left through the circuit changing the position of the qubits accordingly.
 
     Args:
-        qfunc (function): A quantum function.
+        tape (QuantumTape): A quantum tape.
 
     Returns:
-        function: the transformed quantum function
+        pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
+        it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of
+        quantum tapes to be evaluated, and a function to be applied to these
+        tape executions.
 
     **Example**
 
@@ -101,8 +108,12 @@ def undo_swaps(tape):
 
         gates.reverse()
 
-        for m in tape.measurements:
-            gates.append(m)
+    new_tape = type(tape)(gates, tape.measurements, shots=tape.shots)
 
-    for gate in gates:
-        apply(gate)
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [new_tape], null_postprocessing

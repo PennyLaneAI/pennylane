@@ -22,10 +22,11 @@ from numbers import Number
 from typing import Callable, Union, Sequence, Tuple, Optional
 
 from pennylane.measurements import Shots
-from pennylane.tape import QuantumTape, QuantumScript
+from pennylane.tape import QuantumTape
 from pennylane.typing import Result, ResultBatch
 from pennylane.wires import Wires
 from pennylane import Tracker
+from pennylane.transforms.core import TransformProgram
 
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
 
@@ -39,9 +40,6 @@ PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
 class Device(abc.ABC):
     """A device driver that can control one or more backends. A backend can be either a physical
     Quantum Processing Unit or a virtual one such as a simulator.
-
-    Device drivers should be configured to run under :func:`~.enable_return`, the newer
-    return shape specification, as the old return shape specification is deprecated.
 
     Only the ``execute`` method must be defined to construct a device driver.
 
@@ -95,7 +93,7 @@ class Device(abc.ABC):
 
         >>> op = qml.Permute(["c", 3,"a",2,0], wires=[3,2,"a",0,"c"])
         >>> circuit = qml.tape.QuantumScript([op], [qml.state()])
-        >>> dev = DefaultQubit2()
+        >>> dev = DefaultQubit()
         >>> dev.execute(circuit)
         MatrixUndefinedError
         >>> circuit = qml.tape.QuantumScript([qml.Rot(1.2, 2.3, 3.4, 0)], [qml.expval(qml.PauliZ(0))])
@@ -203,9 +201,8 @@ class Device(abc.ABC):
 
     def preprocess(
         self,
-        circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Tuple[QuantumTapeBatch, PostprocessingFn, ExecutionConfig]:
+    ) -> Tuple[TransformProgram, ExecutionConfig]:
         """Device preprocessing function.
 
         .. warning::
@@ -217,18 +214,17 @@ class Device(abc.ABC):
             the :meth:`~.execute` method.
 
         Args:
-            circuits (Union[QuantumTape, Sequence[QuantumTape]]): The circuit or a batch of circuits to preprocess
-                before execution on the device
             execution_config (ExecutionConfig): A datastructure describing the parameters needed to fully describe
                 the execution.
 
-            Tuple[QuantumTape], Callable, ExecutionConfig: QuantumTapes that the device can natively execute,
-            a postprocessing function to be called after execution, and a configuration with unset specifications filled in.
+        Returns:
+            TransformProgram, ExecutionConfig: A transform program that is called before execution, and a configuration
+                with unset specifications filled in.
 
         Raises:
-            Exception: An exception is raised if the input cannot be converted into a form supported by the device.
+            Exception: An exception can be raised if the input cannot be converted into a form supported by the device.
 
-        Preprocessing steps may include:
+        Preprocessing program may include:
 
         * expansion to :class:`~.Operator`'s and :class:`~.MeasurementProcess` objects supported by the device.
         * splitting a circuit with the measurement of non-commuting observables or Hamiltonians into multiple executions
@@ -236,6 +232,34 @@ class Device(abc.ABC):
         * gradient specific preprocessing, such as making sure trainable operators have generators
         * validation of configuration parameters
         * choosing a best gradient method and ``grad_on_execution`` value.
+
+        **Example**
+
+        All the transforms that are part of the preprocessing need to respect the transform contract defined in
+        :func:`pennylane.transforms.core.transform`.
+
+        .. code-block:: python
+
+                @transform
+                def my_preprocessing_transform(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], callable):
+                    # e.g. valid the measurements, expand the tape for the hardware execution, ...
+
+                    def blank_processing_fn(results):
+                        return results[0]
+
+                    return [tape], processing_fn
+
+        Then we can define the preprocess method on the custom device. The program can accept an arbitrary number of
+        transforms.
+
+        .. code-block:: python
+
+                def preprocess(config):
+                    program = TransformProgram()
+                    program.add_transform(my_preprocessing_transform)
+                    return program, config
+
+        .. seealso:: :func:`~.pennylane.transform.core.transform` and :class:`~.pennylane.transform.core.TransformProgram`
 
         .. details::
             :title: Post processing function and derivatives
@@ -251,7 +275,8 @@ class Device(abc.ABC):
                 def f(x):
                     circuit = qml.tape.QuantumScript([qml.Rot(*x, wires=0)], [qml.expval(qml.PauliZ(0))])
                     config = ExecutionConfig(gradient_method="adjoint")
-                    circuit_batch, postprocessing, new_config = dev.preprocess(circuit, config)
+                    program, config = dev.preprocess(config)
+                    circuit_batch, postprocessing = program((circuit, ))
 
                     def execute_fn(tapes):
                         return dev.execute_and_compute_derivatives(tapes, config)
@@ -267,21 +292,7 @@ class Device(abc.ABC):
             Only then is the classical postprocessing called on the result object.
 
         """
-
-        def blank_postprocessing_fn(res: ResultBatch) -> ResultBatch:
-            """Identity postprocessing function created in Device preprocessing.
-
-            Args:
-                res (tensor-like): A result object
-
-            Returns:
-                tensor-like: The function input.
-
-            """
-            return res[0] if isinstance(circuits, QuantumScript) else res
-
-        circuit_batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
-        return circuit_batch, blank_postprocessing_fn, execution_config
+        return TransformProgram(), execution_config
 
     @abc.abstractmethod
     def execute(

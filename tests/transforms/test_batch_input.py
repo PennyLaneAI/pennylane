@@ -14,7 +14,7 @@
 """
 Unit tests for the ``batch_inputs`` transform.
 """
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods,no-value-for-parameter,comparison-with-callable
 from functools import partial
 
 import pytest
@@ -183,7 +183,7 @@ def test_mottonenstate_preparation(mocker):
     # weights is not batched
     weights = np.random.random((10, 3, 3), requires_grad=True)
 
-    spy = mocker.spy(circuit.device, "batch_execute")
+    spy = mocker.spy(circuit.device, "execute")
     res = circuit(data, weights)
     assert res.shape == (batch_size, 2**3)
     assert len(spy.call_args[0][0]) == batch_size
@@ -222,7 +222,7 @@ def test_qubit_state_prep(mocker):
     # weights is not batched
     weights = np.random.random((10, 3, 3), requires_grad=True)
 
-    spy = mocker.spy(circuit.device, "batch_execute")
+    spy = mocker.spy(circuit.device, "execute")
     res = circuit(data, weights)
     assert res.shape == (batch_size, 2**3)
     assert len(spy.call_args[0][0]) == batch_size

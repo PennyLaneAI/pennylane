@@ -37,7 +37,7 @@ class TestDecomposition:
         identity_permutation()
 
         # expand the Permute operation
-        tape = spy.call_args[0][0]
+        tape = spy.call_args[0][0][0]
 
         assert len(tape.operations) == 0
 
@@ -76,7 +76,7 @@ class TestDecomposition:
         spy = mocker.spy(two_cycle.device, "execute")
         two_cycle()
 
-        tape = spy.call_args[0][0]
+        tape = spy.call_args[0][0][0]
 
         # Check that the Permute operation was expanded to SWAPs when the QNode
         # is evaluated, and that the wires are the same
@@ -130,7 +130,7 @@ class TestDecomposition:
         spy = mocker.spy(cycle.device, "execute")
         cycle()
 
-        tape = spy.call_args[0][0]
+        tape = spy.call_args[0][0][0]
 
         # Check that the Permute operation was expanded to SWAPs when the QNode
         # is evaluated, and that the wires are the same
@@ -180,7 +180,7 @@ class TestDecomposition:
         spy = mocker.spy(arbitrary_perm.device, "execute")
         arbitrary_perm()
 
-        tape = spy.call_args[0][0]
+        tape = spy.call_args[0][0][0]
 
         # Check that the Permute operation was expanded to SWAPs when the QNode
         # is evaluated, and that the wires are the same
@@ -240,7 +240,7 @@ class TestDecomposition:
         spy = mocker.spy(subset_perm.device, "execute")
         subset_perm()
 
-        tape = spy.call_args[0][0]
+        tape = spy.call_args[0][0][0]
 
         # Check that the Permute operation was expanded to SWAPs when the QNode
         # is evaluated, and that the wires are the same
@@ -290,17 +290,18 @@ class TestDecomposition:
         @qml.qnode(dev)
         def circuit():
             qml.Permute(permutation, wires=range(4))
-            return qml.expval(qml.Identity(0))
+            return qml.expval(qml.Identity(0)), qml.state()
 
         @qml.qnode(dev2)
         def circuit2():
             qml.Permute(permutation2, wires=["z", "a", "k", "o"])
-            return qml.expval(qml.Identity("z"))
+            return qml.expval(qml.Identity("z")), qml.state()
 
-        circuit()
-        circuit2()
+        res1, state1 = circuit()
+        res2, state2 = circuit2()
 
-        assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
 
 class TestInputs:

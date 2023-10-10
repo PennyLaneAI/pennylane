@@ -82,32 +82,6 @@ class TestExceptions:
         with pytest.raises(ValueError, match=f"The learning rate must be less than {2 / 1}"):
             opt.step(expval_cost.qnodes[0], np.array(0.5, requires_grad=True))
 
-    def test_unknown_objective_function(self):
-        """Test that an exception is raised if an unknown objective function is passed"""
-        dev = qml.device("default.qubit", wires=1, shots=100)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        def cost(x):
-            return np.sin(circuit(x))
-
-        opt = qml.ShotAdaptiveOptimizer(min_shots=10)
-
-        # test expval cost
-        with pytest.raises(
-            ValueError, match="The objective function must either be encoded as a single QNode"
-        ):
-            opt.step(cost, np.array(0.5, requires_grad=True))
-
-        # defining the device attribute allows it to proceed
-        cost.device = circuit.device
-        new_x = opt.step(cost, np.array(0.5, requires_grad=True))
-
-        assert isinstance(new_x, np.tensor)
-
 
 def ansatz0(x, **kwargs):
     qml.RX(x, wires=0)

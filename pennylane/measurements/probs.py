@@ -21,6 +21,7 @@ from pennylane import numpy as np
 from pennylane.wires import Wires
 
 from .measurements import Probability, SampleMeasurement, StateMeasurement
+from .mid_measure import MeasurementValue
 
 
 def probs(wires=None, op=None) -> "ProbabilityMP":
@@ -42,8 +43,9 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
-        op (Observable): Observable (with a ``diagonalizing_gates`` attribute) that rotates
-            the computational basis
+        op (Observable or MeasurementValue]): Observable (with a ``diagonalizing_gates``
+            attribute) that rotates the computational basis, or a  ``MeasurementValue``
+            corresponding to mid-circuit measurements.
 
     Returns:
         ProbabilityMP: Measurement process instance
@@ -90,6 +92,8 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
     Note that the output shape of this measurement process depends on whether
     the device simulates qubit or continuous variable quantum systems.
     """
+    if isinstance(op, MeasurementValue):
+        return ProbabilityMP(obs=op)
 
     if isinstance(op, qml.Hamiltonian):
         raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
@@ -120,9 +124,9 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
     Please refer to :func:`probs` for detailed documentation.
 
     Args:
-        obs (.Operator): The observable that is to be measured as part of the
-            measurement process. Not all measurement processes require observables (for
-            example ``Probability``); this argument is optional.
+        obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
+            as part of the measurement process. Not all measurement processes require observables
+            (for example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
@@ -184,32 +188,40 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         return qml.math.squeeze(prob) if bin_size is None else prob
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
-        num_wires = len(wire_order)
-        batch_size = self._compute_batch_size(state, num_wires)
-        shape = (2**num_wires,) if batch_size is None else (batch_size, 2**num_wires)
-        flat_state = qml.math.reshape(state, shape)
-        real_state = qml.math.real(flat_state)
-        imag_state = qml.math.imag(flat_state)
-        return self.marginal_prob(real_state**2 + imag_state**2, wire_order)
+        prob = qml.math.real(state) ** 2 + qml.math.imag(state) ** 2
+        if self.wires == Wires([]):
+            # no need to marginalize
+            return prob
 
-    @staticmethod
-    def _compute_batch_size(state, num_wires):
-        """This logic is isolated because tf.function cannot compile without the try-except
-        clause below (it raises a tf.errors.OperatorNotAllowedInGraphError because it can't
-        handle a function that sometimes returns a tuple, and other times returns None)."""
+        # determine which subsystems are to be summed over
+        inactive_wires = Wires.unique_wires([wire_order, self.wires])
 
-        expected_shape = [2] * num_wires
-        expected_size = 2**num_wires
-        size = qml.math.size(state)
+        # translate to wire labels used by device
+        wire_map = dict(zip(wire_order, range(len(wire_order))))
+        mapped_wires = [wire_map[w] for w in self.wires]
+        inactive_wires = [wire_map[w] for w in inactive_wires]
 
-        try:
-            if qml.math.ndim(state) > len(expected_shape) or size > expected_size:
-                return size // expected_size
-        except Exception as err:  # pylint:disable=broad-except
-            if not qml.math.is_abstract(state):
-                raise err
+        # reshape the probability so that each axis corresponds to a wire
+        num_device_wires = len(wire_order)
+        shape = [2] * num_device_wires
+        desired_axes = np.argsort(np.argsort(mapped_wires))
+        flat_shape = (-1,)
+        expected_size = 2**num_device_wires
+        batch_size = qml.math.get_batch_size(prob, (expected_size,), expected_size)
+        if batch_size is not None:
+            # prob now is reshaped to have self.num_wires+1 axes in the case of broadcasting
+            shape.insert(0, batch_size)
+            inactive_wires = [idx + 1 for idx in inactive_wires]
+            desired_axes = np.insert(desired_axes + 1, 0, 0)
+            flat_shape = (batch_size, -1)
 
-        return None
+        prob = qml.math.reshape(prob, shape)
+        # sum over all inactive wires
+        prob = qml.math.sum(prob, axis=tuple(inactive_wires))
+        # rearrange wires if necessary
+        prob = qml.math.transpose(prob, desired_axes)
+        # flatten and return probabilities
+        return qml.math.reshape(prob, flat_shape)
 
     @staticmethod
     def _count_samples(indices, batch_size, dim):
@@ -236,69 +248,3 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
                 prob[i, basis_states, b] = counts / bin_size
 
         return prob
-
-    def marginal_prob(self, prob, wire_order):
-        r"""Return the marginal probability of the computational basis
-        states by summing the probabilities on the non-specified wires.
-
-        If no wires are specified, then all the basis states representable by
-        the device are considered and no marginalization takes place.
-
-        .. note::
-
-            If the provided wires are not in the order as they appear on the device,
-            the returned marginal probabilities take this permutation into account.
-
-            For example, if the addressable wires on this device are ``Wires([0, 1, 2])`` and
-            this function gets passed ``wires=[2, 0]``, then the returned marginal
-            probability vector will take this 'reversal' of the two wires
-            into account:
-
-            .. math::
-
-                \mathbb{P}^{(2, 0)}
-                            = \left[
-                               |00\rangle, |10\rangle, |01\rangle, |11\rangle
-                              \right]
-
-        Args:
-            prob: The probabilities to return the marginal probabilities
-                for
-            wire_order (Iterable[Number, str], Number, str, Wires): wires to return
-                marginal probabilities for. Wires not provided
-                are traced out of the system.
-
-        Returns:
-            array[float]: array of the resulting marginal probabilities.
-        """
-        if self.wires == Wires([]):
-            # no need to marginalize
-            return prob
-
-        # determine which subsystems are to be summed over
-        inactive_wires = Wires.unique_wires([wire_order, self.wires])
-
-        # translate to wire labels used by device
-        wire_map = dict(zip(wire_order, range(len(wire_order))))
-        mapped_wires = [wire_map[w] for w in self.wires]
-        inactive_wires = [wire_map[w] for w in inactive_wires]
-
-        # reshape the probability so that each axis corresponds to a wire
-        num_device_wires = len(wire_order)
-        shape = [2] * num_device_wires
-        desired_axes = np.argsort(np.argsort(mapped_wires))
-        flat_shape = (-1,)
-        if (batch_size := self._compute_batch_size(prob, num_device_wires)) is not None:
-            # prob now is reshaped to have self.num_wires+1 axes in the case of broadcasting
-            shape.insert(0, batch_size)
-            inactive_wires = [idx + 1 for idx in inactive_wires]
-            desired_axes = np.insert(desired_axes + 1, 0, 0)
-            flat_shape = (batch_size, -1)
-
-        prob = qml.math.reshape(prob, shape)
-        # sum over all inactive wires
-        prob = qml.math.sum(prob, axis=tuple(inactive_wires))
-        # rearrange wires if necessary
-        prob = qml.math.transpose(prob, desired_axes)
-        # flatten and return probabilities
-        return qml.math.reshape(prob, flat_shape)

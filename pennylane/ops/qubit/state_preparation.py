@@ -105,6 +105,7 @@ class BasisState(StatePrepBase):
         if (num_wires := len(self.wires)) != len(prep_vals):
             raise ValueError("BasisState parameter and wires must be of equal length.")
 
+        prep_vals = math.cast(prep_vals, int)
         if wire_order is None:
             indices = prep_vals
         else:
@@ -214,7 +215,7 @@ class StatePrep(StatePrepBase):
 
         wire_order = Wires(wire_order)
         if not wire_order.contains_wires(self.wires):
-            raise WireError("Custom wire_order must contain all StatePrep wires")
+            raise WireError(f"Custom wire_order must contain all {self.name} wires")
 
         num_total_wires = len(wire_order)
         indices = tuple(

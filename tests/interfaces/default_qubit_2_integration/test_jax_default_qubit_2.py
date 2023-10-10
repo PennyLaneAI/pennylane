@@ -17,7 +17,7 @@ import numpy as np
 
 
 import pennylane as qml
-from pennylane.devices.experimental import DefaultQubit2
+from pennylane.devices import DefaultQubit
 from pennylane.gradients import param_shift
 from pennylane.interfaces import execute
 
@@ -27,6 +27,21 @@ config = pytest.importorskip("jax.config")
 config.config.update("jax_enable_x64", True)
 
 pytestmark = pytest.mark.jax
+
+
+def test_jit_execution():
+    """Test that qml.execute can be directly jitted."""
+    dev = qml.device("default.qubit")
+
+    tape = qml.tape.QuantumScript(
+        [qml.RX(jax.numpy.array(0.1), 0)], [qml.expval(qml.s_prod(2.0, qml.PauliZ(0)))]
+    )
+
+    out = jax.jit(qml.execute, static_argnames=("device", "gradient_fn"))(
+        (tape,), device=dev, gradient_fn=qml.gradients.param_shift
+    )
+    expected = 2.0 * jax.numpy.cos(jax.numpy.array(0.1))
+    assert qml.math.allclose(out[0], expected)
 
 
 # pylint: disable=too-few-public-methods
@@ -39,7 +54,7 @@ class TestCaching:
         """Test that, when using parameter-shift transform,
         caching reduces the number of evaluations to their optimum
         when computing Hessians."""
-        device = DefaultQubit2()
+        device = DefaultQubit()
         params = jnp.arange(1, num_params + 1) / 10
 
         N = len(params)
@@ -107,10 +122,10 @@ class TestCaching:
 # add tests for lightning 2 when possible
 # set rng for device when possible
 test_matrix = [
-    ({"gradient_fn": param_shift}, 100000, DefaultQubit2(seed=42)),
-    ({"gradient_fn": param_shift}, None, DefaultQubit2()),
-    ({"gradient_fn": "backprop"}, None, DefaultQubit2()),
-    ({"gradient_fn": "adjoint"}, None, DefaultQubit2()),
+    ({"gradient_fn": param_shift}, 100000, DefaultQubit(seed=42)),
+    ({"gradient_fn": param_shift}, None, DefaultQubit()),
+    ({"gradient_fn": "backprop"}, None, DefaultQubit()),
+    ({"gradient_fn": "adjoint"}, None, DefaultQubit()),
 ]
 
 
@@ -532,7 +547,7 @@ class TestHigherOrderDerivatives:
     def test_parameter_shift_hessian(self, params, tol):
         """Tests that the output of the parameter-shift transform
         can be differentiated using jax, yielding second derivatives."""
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
 
         def cost_fn(x):
             ops1 = [qml.RX(x[0], 0), qml.RY(x[1], 1), qml.CNOT((0, 1))]
@@ -566,7 +581,7 @@ class TestHigherOrderDerivatives:
     def test_max_diff(self, tol):
         """Test that setting the max_diff parameter blocks higher-order
         derivatives"""
-        dev = DefaultQubit2()
+        dev = DefaultQubit()
         params = jnp.array([0.543, -0.654])
 
         def cost_fn(x):

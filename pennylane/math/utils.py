@@ -138,6 +138,8 @@ def cast_like(tensor1, tensor2):
     >>> cast_like(x, y)
     tensor([1., 2.])
     """
+    if isinstance(tensor2, tuple) and len(tensor2) > 0:
+        tensor2 = tensor2[0]
     if isinstance(tensor2, ArrayBox):
         dtype = ar.to_numpy(tensor2._value).dtype.type  # pylint: disable=protected-access
     elif not is_abstract(tensor2):
@@ -275,6 +277,39 @@ def _get_interface_of_single_tensor(tensor):
         return "numpy"
 
     return res
+
+
+def get_deep_interface(value):
+    """
+    Given a deep data structure with interface-specific scalars at the bottom, return their
+    interface name.
+
+    Args:
+        value (list, tuple): A deep list-of-lists, tuple-of-tuples, or combination with
+            interface-specific data hidden within it
+
+    Returns:
+        str: The name of the interface deep within the value
+
+    **Example**
+
+    >>> x = [[jax.numpy.array(1), jax.numpy.array(2)], [jax.numpy.array(3), jax.numpy.array(4)]]
+    >>> get_deep_interface(x)
+    'jax'
+
+    This can be especially useful when converting to the appropriate interface:
+
+    >>> qml.math.asarray(x, like=qml.math.get_deep_interface(x))
+    Array([[1, 2],
+       [3, 4]], dtype=int64)
+
+    """
+    itr = value
+    while isinstance(itr, (list, tuple)):
+        if len(itr) == 0:
+            return "builtins"
+        itr = itr[0]
+    return ar.infer_backend(itr)
 
 
 def is_abstract(tensor, like=None):

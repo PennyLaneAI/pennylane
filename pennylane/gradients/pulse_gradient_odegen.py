@@ -15,6 +15,7 @@
 This module contains functions for computing the pulse generator
 parameter-shift gradient of pulse sequences in a qubit-based quantum tape.
 """
+import warnings
 from functools import partial
 import numpy as np
 
@@ -70,7 +71,7 @@ def _one_parameter_generators(op):
     Here :math:`U(\theta)` is the unitary matrix of the time evolution due to the pulse
     and :math:`\theta` are the variational parameters of the pulse.
 
-    See the documentation of pulse_generator for more details and a mathematical derivation.
+    See the documentation of pulse_odegen for more details and a mathematical derivation.
     """
 
     def _compute_matrix(op_data):
@@ -174,7 +175,8 @@ def _insert_op(tape, ops, op_idx):
     ops_pre = tape.operations[:op_idx]
     ops_post = tape.operations[op_idx:]
     return [
-        qml.tape.QuantumScript(ops_pre + [insert] + ops_post, tape.measurements) for insert in ops
+        qml.tape.QuantumScript(ops_pre + [insert] + ops_post, tape.measurements, shots=tape.shots)
+        for insert in ops
     ]
 
 
@@ -212,7 +214,7 @@ def _generate_tapes_and_coeffs(tape, idx, atol, cache):
     if not isinstance(op, ParametrizedEvolution):
         # only ParametrizedEvolution can be treated with this gradient transform
         raise ValueError(
-            "pulse_generator does not support differentiating parameters of "
+            "pulse_odegen does not support differentiating parameters of "
             f"other operations than pulses, but received operation {op}."
         )
 
@@ -278,7 +280,7 @@ def _parshift_and_contract(results, coeffs, single_measure, single_shot_entry):
     )
 
 
-def _expval_pulse_generator(tape, argnum, atol):
+def _expval_pulse_odegen(tape, argnum, atol):
     """Compute the pulse generator parameter-shift rule for a quantum circuit that returns expectation
     values of observables.
 
@@ -352,7 +354,7 @@ def _expval_pulse_generator(tape, argnum, atol):
 
     def processing_fn(results):
         """Post-process the results of the parameter-shifted tapes for
-        ``pulse_generator`` into the gradient."""
+        ``pulse_odegen`` into the gradient."""
         grads = []
         zero_parshapes = []
         # Iterate over gradient_data, which contains one entry for each of the trainable parameters in argnum
@@ -396,7 +398,7 @@ def _expval_pulse_generator(tape, argnum, atol):
     return gradient_tapes, processing_fn
 
 
-def _pulse_generator(tape, argnum=None, atol=1e-7):
+def _pulse_odegen(tape, argnum=None, atol=1e-7):
     r"""Transform a QNode to compute the pulse generator parameter-shift gradient of pulses
     in a pulse program with respect to their inputs.
     This method combines automatic differentiation of few-qubit operations with
@@ -484,12 +486,12 @@ def _pulse_generator(tape, argnum=None, atol=1e-7):
 
         dev = qml.device("default.qubit.jax", wires=2)
 
-        @qml.qnode(dev, interface="jax", diff_method=qml.gradients.pulse_generator)
+        @qml.qnode(dev, interface="jax", diff_method=qml.gradients.pulse_odegen)
         def circuit(params):
             op = qml.evolve(H)(params, t)
             return qml.expval(qml.PauliX(0))
 
-    We registered the ``QNode`` to be differentiated with the ``pulse_generator`` method.
+    We registered the ``QNode`` to be differentiated with the ``pulse_odegen`` method.
     This allows us to simply differentiate it with ``jax.grad``, which internally
     makes use of the pulse generator parameter-shift method.
 
@@ -502,7 +504,7 @@ def _pulse_generator(tape, argnum=None, atol=1e-7):
     the tapes with inserted ``PauliRot`` gates together with the post-processing function:
 
     >>> circuit.construct((params,), {}) # Build the tape of the circuit.
-    >>> tapes, fun = qml.gradients.pulse_generator(circuit.tape, argnums=[0, 1, 2])
+    >>> tapes, fun = qml.gradients.pulse_odegen(circuit.tape, argnums=[0, 1, 2])
     >>> len(tapes)
     12
 
@@ -685,7 +687,7 @@ def _pulse_generator(tape, argnum=None, atol=1e-7):
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
 
-    diff_methods = gradient_analysis_and_validation(tape, "analytic", grad_fn=pulse_generator)
+    diff_methods = gradient_analysis_and_validation(tape, "analytic", grad_fn=pulse_odegen)
 
     if all(g == "0" for g in diff_methods):
         return _all_zero_grad(tape)
@@ -694,11 +696,11 @@ def _pulse_generator(tape, argnum=None, atol=1e-7):
 
     argnum = [i for i, dm in method_map.items() if dm == "A"]
 
-    return _expval_pulse_generator(tape, argnum, atol)
+    return _expval_pulse_odegen(tape, argnum, atol)
 
 
-def expand_invalid_trainable_pulse_generator(x, *args, **kwargs):
-    r"""Do not expand any operation. We expect the ``pulse_generator`` to be used
+def expand_invalid_trainable_pulse_odegen(x, *args, **kwargs):
+    r"""Do not expand any operation. We expect the ``pulse_odegen`` to be used
     on pulse programs and we do not expect decomposition pipelines between pulses
     and gate-based circuits yet.
     """
@@ -706,15 +708,25 @@ def expand_invalid_trainable_pulse_generator(x, *args, **kwargs):
     return x
 
 
+pulse_odegen = gradient_transform(_pulse_odegen, expand_fn=expand_invalid_trainable_pulse_odegen)
+
+
+def _legacy_pulse_generator_wrapper(*args, **kwargs):
+    warnings.warn(
+        "pulse_generator for gradient computation has been renamed to pulse_odegen and will not be available in pennylane v0.34 onwards"
+    )
+    return _pulse_odegen(*args, **kwargs)
+
+
 pulse_generator = gradient_transform(
-    _pulse_generator, expand_fn=expand_invalid_trainable_pulse_generator
+    _legacy_pulse_generator_wrapper, expand_fn=expand_invalid_trainable_pulse_odegen
 )
 
 
-@pulse_generator.custom_qnode_wrapper
-def pulse_generator_qnode_wrapper(self, qnode, targs, tkwargs):
-    """A custom QNode wrapper for the gradient transform :func:`~.pulse_generator`.
-    It raises an error, so that applying ``pulse_generator`` to a ``QNode`` directly
+@pulse_odegen.custom_qnode_wrapper
+def pulse_odegen_qnode_wrapper(self, qnode, targs, tkwargs):
+    """A custom QNode wrapper for the gradient transform :func:`~.pulse_odegen`.
+    It raises an error, so that applying ``pulse_odegen`` to a ``QNode`` directly
     is not supported.
     """
     # pylint:disable=unused-argument

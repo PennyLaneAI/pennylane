@@ -43,7 +43,7 @@ def set_shots(device, shots):
     >>> set_shots(dev, shots=100)(lambda: dev.shots)()
     100
     """
-    if isinstance(device, qml.devices.experimental.Device):
+    if isinstance(device, qml.devices.Device):
         raise ValueError(
             "The new device interface is not compatible with `set_shots`. "
             "Set shots when calling the qnode or put the shots on the QuantumTape."
