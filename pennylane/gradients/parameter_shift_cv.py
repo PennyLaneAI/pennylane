@@ -266,11 +266,6 @@ def var_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient_recipes=
     gradient_tapes.extend(pdA2_tapes)
 
     def processing_fn(results):
-        # HOTFIX: Apply the same squeezing as in qml.QNode to make the transform output consistent.
-        # pylint: disable=protected-access
-        if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
-            results = [qml.math.squeeze(res) for res in results]
-
         mask = qml.math.convert_like(qml.math.reshape(var_mask, [-1, 1]), results[0])
         f0 = qml.math.expand_dims(results[0], -1)
 
@@ -438,11 +433,6 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
         gradient_values.append(None)
 
     def processing_fn(results):
-        # HOTFIX: Apply the same squeezing as in qml.QNode to make the transform output consistent.
-        # pylint: disable=protected-access
-        if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
-            results = [qml.math.squeeze(res) for res in results]
-
         grads = []
         start = 0
 
