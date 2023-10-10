@@ -27,11 +27,11 @@ from pennylane.ops import Sum
 def _scalar(order):
     """Assumes that order is an even integer > 2"""
     root = 1 / (order - 1)
-    return (4 - 4 ** root) ** -1
+    return (4 - 4**root) ** -1
 
 
 @qml.QueuingManager.stop_recording()
-def _recursive_op(x, order, ops):
+def _recursive_decomposition(x, order, ops):
     """Generate a list of operators."""
     if order == 1:
         return [qml.exp(op, x * 1j) for op in ops]
@@ -39,16 +39,13 @@ def _recursive_op(x, order, ops):
     if order == 2:
         return [qml.exp(op, x * 0.5j) for op in (ops + ops[::-1])]
 
-    if order > 2 and order % 2 == 0:
-        scalar_1 = _scalar(order)
-        scalar_2 = 1 - 4 * scalar_1
+    scalar_1 = _scalar(order)
+    scalar_2 = 1 - 4 * scalar_1
 
-        ops_lst_1 = _recursive_op(scalar_1 * x, order - 2, ops)
-        ops_lst_2 = _recursive_op(scalar_2 * x, order - 2, ops)
+    ops_lst_1 = _recursive_decomposition(scalar_1 * x, order - 2, ops)
+    ops_lst_2 = _recursive_decomposition(scalar_2 * x, order - 2, ops)
 
-        return (2 * ops_lst_1) + ops_lst_2 + (2 * ops_lst_1)
-
-    raise ValueError(f"The order of a Trotter Product must be 1 or a positive even integer, got {order}.")
+    return (2 * ops_lst_1) + ops_lst_2 + (2 * ops_lst_1)
 
 
 class TrotterProduct(Operation):
@@ -78,7 +75,6 @@ class TrotterProduct(Operation):
 
     Args:
         hamiltonian (Union[~.Hamiltonian, ~.Sum]):
-        time (Union[float, complex]):
 
     Keyword Args:
         n (int): An integer representing the number of Trotter steps to perform.
@@ -86,7 +82,7 @@ class TrotterProduct(Operation):
         check_hermitian (bool): A flag to enable the validation check to ensure this is a valid unitary operator.
 
     Raises:
-        ValueError: The 'hamiltonian' is not of type ~.Hamiltonian, or ~.Sum.
+        TypeError: The 'hamiltonian' is not of type ~.Hamiltonian, or ~.Sum.
         ValueError: One or more of the terms in 'hamiltonian' are not Hermitian. 
         ValueError: The 'order' is not one or a positive even integer.
 
@@ -103,37 +99,67 @@ class TrotterProduct(Operation):
         def my_circ():
             # Prepare some state
             qml.Hadamard(0)
-            qml.Hadamard(1)
 
             # Evolve according to H
-            qml.TrotterProduct(H, time=0.5, order=2)
+            qml.TrotterProduct(H, time=2.4, order=2)
 
             # Measure some quantity
             return qml.state()
 
+    >>> my_circ()
+    [-0.13259524+0.59790098j  0.        +0.j         -0.13259524-0.77932754j  0.        +0.j        ]
+
     .. details::
         :title: Usage Details
 
-        //
+        We can also compute the gradient with respect to the coefficients of the hamiltonian and the
+        evolution time: 
+
+        .. code-block:: python3
+
+            @qml.qnode(dev)
+            def my_circ(c1, c2, time): 
+                # Prepare H: 
+                H = qml.dot([c1, c2], [qml.PauliX(0), qml.PauliZ(1)])
+                    
+                # Prepare some state
+                qml.Hadamard(0)
+                
+                # Evolve according to H
+                qml.TrotterProduct(H, time, order=2)
+                
+                # Measure some quantity
+                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        >>> args = qnp.array([1.23, 4.5, 0.1])
+        >>> qml.grad(my_circ)(*tuple(args))
+        (tensor(0.00961064, requires_grad=True), tensor(-0.12338274, requires_grad=True), tensor(-5.43401259, requires_grad=True))
 
     """
 
     def __init__(self, hamiltonian, time, n=1, order=1, check_hermitian=True, id=None):
         """Initialize the TrotterProduct class"""
 
+        if not (order > 0 and (order == 1 or order % 2 == 0)):
+            raise ValueError(
+                f"The order of a TrotterProduct must be 1 or a positive even integer, got {order}."
+            )
+
         if isinstance(hamiltonian, qml.Hamiltonian):
             coeffs, ops = hamiltonian.terms()
             hamiltonian = qml.dot(coeffs, ops)
 
         if not isinstance(hamiltonian, Sum):
-            raise ValueError(
+            raise TypeError(
                 f"The given operator must be a PennyLane ~.Hamiltonian or ~.Sum got {hamiltonian}"
             )
 
         if check_hermitian:
             for op in hamiltonian.operands:
                 if not op.is_hermitian:
-                    raise ValueError(f"One or more of the terms in the Hamiltonian may not be hermitian")
+                    raise ValueError(
+                        "One or more of the terms in the Hamiltonian may not be hermitian"
+                    )
 
         self._hyperparameters = {"num_steps": n, "order": order, "base": hamiltonian}
         wires = hamiltonian.wires
@@ -165,7 +191,7 @@ class TrotterProduct(Operation):
         order = kwargs["order"]
         ops = kwargs["base"].operands
 
-        decomp = _recursive_op(time / n, order, ops) * n
+        decomp = _recursive_decomposition(time / n, order, ops) * n
 
         if qml.QueuingManager.recording():
             for op in decomp:
