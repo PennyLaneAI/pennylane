@@ -156,8 +156,7 @@ def unitary_to_rot(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
         else:
             operations.append(op)
 
-    new_tape = QuantumTape(operations, measurements=tape.measurements, shots=tape.shots)
-    new_tape._qfunc_output = tape._qfunc_output  # pylint: disable=protected-access
+    new_tape = type(tape)(operations, measurements=tape.measurements, shots=tape.shots)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
