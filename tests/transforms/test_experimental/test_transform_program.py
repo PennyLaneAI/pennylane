@@ -471,14 +471,14 @@ class TestTransformProgram:
         transform_program.push_back(transform1)
 
         with pytest.raises(
-            TransformError, match="The transform program already has an informative transform."
+            TransformError, match="The transform program already has a terminal transform."
         ):
             transform_program.push_back(transform1)
 
         transform2 = TransformContainer(transform=second_valid_transform, is_informative=False)
 
         with pytest.raises(
-            TransformError, match="The transform program already has an informative transform."
+            TransformError, match="The transform program already has a terminal transform."
         ):
             transform_program.push_back(transform2)
 
