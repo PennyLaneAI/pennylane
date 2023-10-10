@@ -343,16 +343,6 @@ class DOmega:
         if len(res) == 1:
             return f"{res[0]}/{2**max_k}"
         return f"({' + '.join(res)})/{2**max_k}"
-        # res = []
-        # if self.a != 0:
-        #     res.append(f"{self.a}ω**3")
-        # if self.b != 0:
-        #     res.append(f"{self.b}ω**2")
-        # if self.c != 0:
-        #     res.append(f"{self.c}ω")
-        # if self.d != 0:
-        #     res.append(repr(self.d))
-        # return " + ".join(res) or "0"
 
     def __complex__(self):
         return self.a * OMEGA**3 + self.b * 1j + self.c * OMEGA + self.d

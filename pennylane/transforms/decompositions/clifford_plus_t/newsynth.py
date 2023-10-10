@@ -23,7 +23,8 @@ from .conversion import (
     op_from_d_omega,
     point_from_d_root_two,
 )
-from .gridpoints import gridpoints2_increasing_gen
+from .diophantine import diophantine_dyadic
+from .gridpoints import gridpoints2_increasing
 from .shapes import ConvexSet, Ellipse, Point
 from .rings import Matrix, OMEGA
 
@@ -46,11 +47,7 @@ def gridsynth(g, prec, theta, effort):
 
     epsilon = 2**-prec
     region = epsilon_region(epsilon, theta)
-    candidates_gen = gridpoints2_increasing_gen(region)
-    candidates = ((u, 0) for u in candidates_gen(0))
-    # candidates = (
-    #     (u, tcount_for(k)) for k in range(10) for u in candidates_gen(k) if denomexp(u) == k
-    # )
+    candidates = gridpoints2_increasing(region)
     candidate_info = first_solvable(g, candidates, effort)
     u, _, t = candidate_info[0]
     if not t:
@@ -133,15 +130,6 @@ def with_succesful_candidate(u, t, theta):
     err = np.sqrt(np.real(hs_sqnorm(uU_fixed - zrot_fixed)) / 2)
     log_err = -np.log2(err)
     return uU, log_err
-
-
-def diophantine_dyadic(g, xi):
-    """
-    Given some randomness and a xi value, solve the Diophantine equation or fail.
-
-    TODO: figure out how this indicates that it failed.
-    """
-    return (_g + xi for _g in g)
 
 
 def hs_sqnorm(x):

@@ -14,7 +14,7 @@
 """Various conversion functions for the gridsynth implementation."""
 # pylint:disable=missing-function-docstring
 
-from .rings import DRootTwo, ZRootTwo, RootTwo, Matrix
+from .rings import DOmega, DRootTwo, ZRootTwo, RootTwo, Matrix
 
 
 def adj2(x):
@@ -48,6 +48,13 @@ def denomexp(v):
         return max(2 * v.a.k, 2 * v.b.k - 1)
     if isinstance(v, ZRootTwo):
         return 0
+    if isinstance(v, DOmega):
+        vals = (v.a, v.b, v.c, v.d)
+        k = max(val.k for val in vals)
+        a, b, c, d = [(val.x if val.k == k else 0) for val in vals]
+        if k > 0 and (a - c) % 2 == 0 and (b - d) % 2 == 0:
+            return 2 * k - 1
+        return 2 * k
     raise ValueError(f"denomexp not defined for {type(v).__name__}: {v}")
 
 
