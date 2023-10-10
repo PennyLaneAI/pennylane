@@ -114,9 +114,10 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
 
         # estimate the variance
         op = self.mv if self.mv is not None else self.obs
-        samples = qml.sample(op=op).process_samples(
-            samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
-        )
+        with qml.queuing.QueuingManager.stop_recording():
+            samples = qml.sample(op=op).process_samples(
+                samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
+            )
 
         # With broadcasting, we want to take the variance over axis 1, which is the -1st/-2nd with/
         # without bin_size. Without broadcasting, axis 0 is the -1st/-2nd with/without bin_size
@@ -130,13 +131,17 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
             idx = int("".join(str(i) for i in self.obs.parameters[0]), 2)
             # we use ``self.wires`` instead of ``self.obs`` because the observable was
             # already applied to the state
-            probs = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
+            with qml.queuing.QueuingManager.stop_recording():
+                probs = qml.probs(wires=self.wires).process_state(
+                    state=state, wire_order=wire_order
+                )
             return probs[idx] - probs[idx] ** 2
 
         eigvals = qml.math.asarray(self.eigvals(), dtype="float64")
 
         # we use ``wires`` instead of ``op`` because the observable was
         # already applied to the state
-        prob = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
+        with qml.queuing.QueuingManager.stop_recording():
+            prob = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
         # In case of broadcasting, `prob` has two axes and these are a matrix-vector products
         return qml.math.dot(prob, (eigvals**2)) - qml.math.dot(prob, eigvals) ** 2

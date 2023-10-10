@@ -26,7 +26,7 @@ import pennylane as qml
 from pennylane import Device
 from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
 from pennylane.measurements import CountsMP, MidMeasureMP, Shots
-from pennylane.tape import QuantumTape, make_qscript
+from pennylane.tape import QuantumTape, QuantumScript
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -843,8 +843,10 @@ class QNode:
         if old_interface == "auto":
             self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
-        self._tape = make_qscript(self.func, shots)(*args, **kwargs)
-        self._qfunc_output = self.tape._qfunc_output
+        with qml.queuing.AnnotatedQueue() as q:
+            self._qfunc_output = self.func(*args, **kwargs)
+
+        self._tape = QuantumScript.from_queue(q, shots)
 
         params = self.tape.get_parameters(trainable_only=False)
         self.tape.trainable_params = qml.math.get_trainable_indices(params)
@@ -878,9 +880,7 @@ class QNode:
                 "All measurements must be returned in the order they are measured."
             )
 
-        num_wires = (
-            self.device.num_wires if isinstance(self.device, qml.Device) else len(self.tape.wires)
-        )
+        num_wires = len(self.tape.wires) if not self.device.wires else len(self.device.wires)
         for obj in self.tape.operations + self.tape.observables:
             if (
                 getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires
@@ -907,8 +907,16 @@ class QNode:
             tapes, _ = qml.defer_measurements(self._tape)
             self._tape = tapes[0]
 
-        if self.expansion_strategy == "device" and not isinstance(self.device, qml.devices.Device):
-            self._tape = self.device.expand_fn(self.tape, max_expansion=self.max_expansion)
+        if self.expansion_strategy == "device":
+            if isinstance(self.device, qml.devices.Device):
+                tape, _ = self.device.preprocess()[0]([self.tape])
+                if len(tape) != 1:
+                    raise ValueError(
+                        "Using 'device' for the `expansion_strategy` is not supported for batches of tapes"
+                    )
+                self._tape = tape[0]
+            else:
+                self._tape = self.device.expand_fn(self.tape, max_expansion=self.max_expansion)
 
         # If the gradient function is a transform, expand the tape so that
         # all operations are supported by the transform.
@@ -998,10 +1006,10 @@ class QNode:
                 else self.device._shot_vector
             )
             if has_partitioned_shots:
-                res = [type(self.tape._qfunc_output)(r) for r in res]
+                res = [type(self._qfunc_output)(r) for r in res]
                 res = tuple(res)
             else:
-                res = type(self.tape._qfunc_output)(res)
+                res = type(self._qfunc_output)(res)
 
         if override_shots is not False:
             # restore the initialization gradient function
