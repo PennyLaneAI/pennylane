@@ -354,7 +354,9 @@ def create_decomp_expand_fn(custom_decomps, dev, decomp_depth=10):
 
 
 @transform
-def decomp_transform(tape: QuantumTape, custom_decomps: dict) -> (Sequence[QuantumTape], Callable):
+def custom_decomposition(
+    tape: QuantumTape, custom_decomps: dict
+) -> (Sequence[QuantumTape], Callable):
     """Transform for setting custom decompositions.
 
     Args:
@@ -449,7 +451,7 @@ def set_decomposition(custom_decomps, dev, decomp_depth=10):
 
         def new_preprocess(execution_config=qml.devices.DefaultExecutionConfig):
             program, config = original_preprocess(execution_config)
-            program.insert_front_transform(decomp_transform, custom_decomps)
+            program.insert_front_transform(custom_decomposition, custom_decomps)
             return program, config
 
         try:

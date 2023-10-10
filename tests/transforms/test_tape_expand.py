@@ -805,7 +805,7 @@ class TestCreateCustomDecompExpandFn:
         assert tape.operations[0].name == "CNOT"
         assert (
             dev.preprocess()[0][0]._transform
-            != qml.transforms.tape_expand.decomp_transform._transform
+            != qml.transforms.tape_expand.custom_decomposition._transform
         )
 
         # Test within the context manager
@@ -814,7 +814,7 @@ class TestCreateCustomDecompExpandFn:
 
             assert (
                 dev.preprocess()[0][0]._transform
-                == qml.transforms.tape_expand.decomp_transform._transform
+                == qml.transforms.tape_expand.custom_decomposition._transform
             )
 
         tape = spy.call_args_list[1][0][0][0]
@@ -833,7 +833,7 @@ class TestCreateCustomDecompExpandFn:
         assert tape.operations[0].name == "CNOT"
         assert (
             dev.preprocess()[0][0]._transform
-            != qml.transforms.tape_expand.decomp_transform._transform
+            != qml.transforms.tape_expand.custom_decomposition._transform
         )
 
     # pylint: disable=cell-var-from-loop
