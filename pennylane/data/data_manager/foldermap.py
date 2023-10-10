@@ -131,18 +131,29 @@ class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
                 else:
                     next_params = param_arg
 
-                try:
-                    todo.extend(
+                next_ = []
+                for next_param in next_params:
+                    try:
+                        fmap_next = curr_level[next_param]
+                    except KeyError:
+                        continue
+
+                    next_.append(
                         (
                             Description((*curr_description.items(), (param_name, next_param))),
-                            curr_level[next_param],
+                            fmap_next,
                         )
-                        for next_param in next_params
                     )
-                except KeyError as exc:
+
+                if len(next_) == 0:
+                    params_list_fmt = ", ".join(f"'{val}'" for val in next_params)
+                    param_value_slug = f"{param_name} value(s) {params_list_fmt} are not available"
+
                     raise ValueError(
-                        f"{param_name} '{exc.args[0]}' is not available. Available values are: {list(curr_level)}"
-                    ) from exc
+                        f"{param_value_slug}. Available values are: {list(curr_level)}"
+                    )
+
+                todo.extend(next_)
 
             curr, todo = todo, curr
 
