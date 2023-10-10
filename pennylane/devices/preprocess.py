@@ -77,7 +77,7 @@ def no_sampling(
 
 @transform
 def validate_device_wires(
-    tape: qml.tape.QuantumTape, wires: Optional[qml.wires.Wires], name: str = ""
+    tape: qml.tape.QuantumTape, wires: Optional[qml.wires.Wires] = None, name: str = ""
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Validates the device wires.
 
@@ -110,7 +110,7 @@ def validate_device_wires(
         if modified:
             tape = type(tape)(tape.operations, measurements, shots=tape.shots)
 
-    return [tape], null_postprocessing
+    return (tape,), null_postprocessing
 
 
 @transform
@@ -170,7 +170,7 @@ def validate_multiprocessing_workers(
                 to ``None`` or execute the QuantumScript separately."""
             )
 
-    return [tape], null_postprocessing
+    return (tape,), null_postprocessing
 
 
 @transform
@@ -271,12 +271,13 @@ def validate_observables(
         DeviceError: if an observable is not supported
 
     """
-    for observable in tape.observables:
-        if isinstance(observable, Tensor):
-            if any(not stopping_condition(o) for o in observable.obs):
-                raise DeviceError(f"Observable {observable} not supported on {name}")
-        elif not stopping_condition(observable):
-            raise DeviceError(f"Observable {observable} not supported on {name}")
+    for m in tape.measurements:
+        if m.obs is not None:
+            if isinstance(m.obs, Tensor):
+                if any(not stopping_condition(o) for o in m.obs.obs):
+                    raise DeviceError(f"Observable {m.obs} not supported on {name}")
+            elif not stopping_condition(m.obs):
+                raise DeviceError(f"Observable {m.obs} not supported on {name}")
 
     return (tape,), null_postprocessing
 

@@ -130,8 +130,9 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
     tensor([0.76960924, 0.13204407, 0.08394415, 0.01440254], requires_grad=True)
     """
     # pylint: disable=protected-access
+
     cv_types = (qml.operation.CVOperation, qml.operation.CVObservable)
-    ops_cv = any((isinstance(op, cv_types) and op.name != "Identity") for op in tape.operations)
+    ops_cv = any(isinstance(op, cv_types) for op in tape.operations)
     obs_cv = any(isinstance(getattr(op, "obs", None), cv_types) for op in tape.measurements)
     if ops_cv or obs_cv:
         raise ValueError("Continuous variable operations and observables are not supported.")
@@ -198,7 +199,6 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
         new_measurements.append(mp)
 
     new_tape = type(tape)(new_operations, new_measurements, shots=tape.shots)
-    new_tape._qfunc_output = tape._qfunc_output  # pylint: disable=protected-access
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results

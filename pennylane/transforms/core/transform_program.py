@@ -15,16 +15,12 @@
 This module contains the transform program class.
 """
 from functools import partial
-import logging
 from typing import Callable, List, Tuple, Optional, Sequence
 
 from pennylane.typing import Result, ResultBatch
 from pennylane.tape import QuantumTape
 
 from .transform_dispatcher import TransformContainer, TransformError, TransformDispatcher
-
-logger = logging.getLogger(__name__)
-logger.addHandler(logging.NullHandler())
 
 PostProcessingFn = Callable[[ResultBatch], Result]
 BatchPostProcessingFn = Callable[[ResultBatch], ResultBatch]
@@ -287,8 +283,6 @@ class TransformProgram:
         processing_fns_stack = []
 
         for transform_container in self:
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.debug("applying transform: %s", transform_container)
             transform, args, kwargs, cotransform, _, _ = transform_container
 
             if cotransform:

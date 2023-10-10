@@ -70,6 +70,18 @@ method for devices.
     warn_about_trainable_observables
     no_sampling
 
+Other transforms that may be relevant to device preprocessing include:
+
+.. cuurentmodule:: pennylane
+.. autosummary::
+    :toctree: api
+
+    defer_measurements
+    transforms.broadcast_expand
+    transforms.sum_expand
+    transforms.split_non_commuting
+    transforms.hamiltonian_expand
+
 Qubit Simulation Tools
 ----------------------
 
