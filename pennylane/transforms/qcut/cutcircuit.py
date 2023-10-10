@@ -52,10 +52,12 @@ def _cut_circuit_expand(
     tape_meas_op = tape.measurements[0]
     if isinstance(tape_meas_op.obs, qml.Hamiltonian):
         # TODO: fix the issue with grouping_indices w/o this in-place manipulation
-        if tape_meas_op.obs.grouping_indices is not None:
-            setattr(tape_meas_op, "obs", qml.Hamiltonian(*tape_meas_op.obs.terms()))
+        tape_ham_op = tape_meas_op.obs
+        if tape_ham_op.grouping_indices is not None:
+            setattr(tape_meas_op, "obs", qml.Hamiltonian(*tape_ham_op.terms()))
 
         tapes, tapes_fn = qml.transforms.hamiltonian_expand(tape, group=False)
+        setattr(tape_meas_op, "obs", tape_ham_op)
 
     return [_qcut_expand_fn(tape, max_depth, auto_cutter) for tape in tapes], tapes_fn
 
