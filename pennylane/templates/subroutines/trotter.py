@@ -38,7 +38,7 @@ def _scalar(order):
 
 
 @qml.QueuingManager.stop_recording()
-def _recursive_decomposition(x, order, ops):
+def _recursive_expression(x, order, ops):
     """Generate a list of operations using the
     recursive expression which defines the trotter product.
 
@@ -48,7 +48,7 @@ def _recursive_decomposition(x, order, ops):
         ops (Iterable(~.Operators)): a list of terms in the Hamiltonian
 
     Returns:
-        List: the decomposition as product of exponentials of the hamiltonian terms
+        List: the approximation as product of exponentials of the hamiltonian terms
     """
     if order == 1:
         return [qml.exp(op, x * 1j) for op in ops]
@@ -59,8 +59,8 @@ def _recursive_decomposition(x, order, ops):
     scalar_1 = _scalar(order)
     scalar_2 = 1 - 4 * scalar_1
 
-    ops_lst_1 = _recursive_decomposition(scalar_1 * x, order - 2, ops)
-    ops_lst_2 = _recursive_decomposition(scalar_2 * x, order - 2, ops)
+    ops_lst_1 = _recursive_expression(scalar_1 * x, order - 2, ops)
+    ops_lst_2 = _recursive_expression(scalar_2 * x, order - 2, ops)
 
     return (2 * ops_lst_1) + ops_lst_2 + (2 * ops_lst_1)
 
@@ -207,10 +207,10 @@ class TrotterProduct(Operation):
         order = kwargs["order"]
         ops = kwargs["base"].operands
 
-        decomp = _recursive_decomposition(time / n, order, ops) * n
+        decomp = _recursive_expression(time / n, order, ops)[-1::-1] * n
 
         if qml.QueuingManager.recording():
-            for op in decomp:
+            for op in decomp:  # apply operators in reverse order of expression
                 qml.apply(op)
 
         return decomp

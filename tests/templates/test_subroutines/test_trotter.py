@@ -15,9 +15,10 @@
 Tests for the TrotterProduct template and helper functions.
 """
 import pytest
+from functools import reduce
 import pennylane as qml
 from pennylane.templates.subroutines.trotter import (
-    _recursive_decomposition,
+    _recursive_expression,
     _scalar,
 )  # pylint: disable=private-access
 from pennylane import numpy as qnp
@@ -297,17 +298,17 @@ class TestPrivateFunctions:
     )
 
     @pytest.mark.parametrize("order, expected_expansion", zip((1, 2, 4), expected_expansions))
-    def test_recursive_decomposition_no_queue(self, order, expected_expansion):
-        """Test the _recursive_decomposition function correctly generates the decomposition"""
+    def test_recursive_expression_no_queue(self, order, expected_expansion):
+        """Test the _recursive_expression function correctly generates the decomposition"""
         ops = [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(1)]
 
         with qml.tape.QuantumTape() as tape:
-            decomp = _recursive_decomposition(1.23, order, ops)
+            decomp = _recursive_expression(1.23, order, ops)
 
         assert tape.operations == []  # No queuing!
         assert all(
             qml.equal(op1, op2) for op1, op2 in zip(decomp, expected_expansion)
-        )  # Expected decomp
+        )  # Expected expression
 
 
 class TestDecomposition:
@@ -321,10 +322,12 @@ class TestDecomposition:
         with qml.tape.QuantumTape() as tape:
             decomp = op.compute_decomposition(*op.parameters, **op.hyperparameters)
 
-        assert decomp == tape.operations  # queue matches decomp
+        assert decomp == tape.operations  # queue matches decomp with circuit ordering
 
         decomp = [qml.simplify(op) for op in decomp]
-        true_decomp = [qml.simplify(op) for op in test_decompositions[(hamiltonian_index, order)]]
+        true_decomp = [
+            qml.simplify(op) for op in test_decompositions[(hamiltonian_index, order)][-1::-1]
+        ]
         assert all(
             qml.equal(op1, op2) for op1, op2 in zip(decomp, true_decomp)
         )  # decomp is correct
@@ -334,6 +337,31 @@ class TestIntegration:
     """Test that the TrotterProduct can be executed and differentiated
     through all interfaces."""
 
-    def test_execute_circuit(self):
+    @pytest.mark.parametrize("order", (1, 2, 4))
+    @pytest.mark.parametrize("hamiltonian_index, hamiltonian", enumerate(test_hamiltonians))
+    def test_execute_circuit(self, hamiltonian, hamiltonian_index, order):
         """Test that the gate executes correctly in a circuit."""
-        pass
+        wires = hamiltonian.wires
+        dev = qml.device("default.qubit", wires=wires)
+
+        @qml.qnode(dev)
+        def circ():
+            qml.TrotterProduct(hamiltonian, time=4.2, order=order)
+            return qml.state()
+
+        initial_state = qnp.zeros(2 ** (len(wires)))
+        initial_state[0] = 1
+
+        expected_state = (
+            reduce(
+                lambda x, y: x @ y,
+                [
+                    qml.matrix(op, wire_order=wires)
+                    for op in test_decompositions[(hamiltonian_index, order)]
+                ],
+            )
+            @ initial_state
+        )
+        state = circ()
+
+        assert qnp.allclose(expected_state, state)

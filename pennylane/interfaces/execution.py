@@ -246,6 +246,9 @@ def _make_inner_execute(
             tapes = tuple(expand_fn(t) for t in tapes)
         if numpy_only:
             tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+
+        for tape in tapes:
+            print(f"t1: {tape.operations}, {tape.measurements}")
         return cached_device_execution(tapes)
 
     return inner_execute
