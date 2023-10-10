@@ -287,7 +287,6 @@ def _parshift_and_integrate(
 def stoch_pulse_grad(
     tape: qml.tape.QuantumTape,
     argnum=None,
-    argnums=None,
     num_split_times=1,
     sampler_seed=None,
     use_broadcasting=False,
@@ -613,8 +612,6 @@ def stoch_pulse_grad(
         Therefore, it is important to implement pulses in the simplest way possible.
     """
     # pylint:disable=unused-argument
-    if argnums:
-        tape.trainable_params = argnums
     transform_name = "stochastic pulse parameter-shift"
     _assert_has_jax(transform_name)
     assert_no_state_returns(tape.measurements, transform_name)

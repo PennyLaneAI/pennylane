@@ -60,7 +60,7 @@ def _group_operations(tape):
     is_informative=True,
 )
 def adjoint_metric_tensor(
-    tape: qml.tape.QuantumTape, argnums=None
+    tape: qml.tape.QuantumTape,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Implements the adjoint method outlined in
     `Jones <https://arxiv.org/abs/2011.02991>`__ to compute the metric tensor.

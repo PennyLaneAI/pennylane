@@ -62,7 +62,6 @@ def _rademacher_sampler(indices, num_params, *args, rng):
 def _expand_transform_spsa(
     tape: qml.tape.QuantumTape,
     argnum=None,
-    argnums=None,
     h=1e-5,
     approx_order=2,
     n=1,
@@ -94,7 +93,6 @@ def _expand_transform_spsa(
 def spsa_grad(
     tape: qml.tape.QuantumTape,
     argnum=None,
-    argnums=None,
     h=1e-5,
     approx_order=2,
     n=1,
@@ -113,9 +111,6 @@ def spsa_grad(
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
-            with respect to. If not provided, the derivatives with respect to all
-            trainable parameters are returned.
-        argnums (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
         h (float or tensor_like[float]): Step size for the finite-difference method
@@ -288,8 +283,6 @@ def spsa_grad(
         Note that the stochastic approximation and the fluctuations from the shot noise
         of the device accumulate, leading to a very coarse-grained estimate for the gradient.
     """
-    if argnums:
-        tape.trainable_params = argnums
 
     transform_name = "SPSA"
     assert_no_tape_batching(tape, transform_name)

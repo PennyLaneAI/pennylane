@@ -726,7 +726,6 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
 def _expand_transform_param_shift(
     tape: qml.tape.QuantumTape,
     argnum=None,
-    argnums=None,
     shifts=None,
     gradient_recipes=None,
     fallback_fn=finite_diff,
@@ -754,7 +753,6 @@ def _expand_transform_param_shift(
 def param_shift(
     tape: qml.tape.QuantumTape,
     argnum=None,
-    argnums=None,
     shifts=None,
     gradient_recipes=None,
     fallback_fn=finite_diff,
@@ -768,9 +766,6 @@ def param_shift(
         qnode (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivative with respect to all
-            trainable indices are returned.
-        argnums (int or list[int] or None): Trainable parameter indices to differentiate
-            with respect to. If not provided, the derivatives with respect to all
             trainable indices are returned.
         shifts (list[tuple[int or float]]): List containing tuples of shift values.
             If provided, one tuple of shifts should be given per trainable parameter
@@ -1039,8 +1034,6 @@ def param_shift(
         Note that ``broadcast=True`` requires additional memory by a factor of the largest
         batch_size of the created tapes.
     """
-    if argnums:
-        tape.trainable_params = argnums
 
     transform_name = "parameter-shift rule"
     assert_no_state_returns(tape.measurements, transform_name)

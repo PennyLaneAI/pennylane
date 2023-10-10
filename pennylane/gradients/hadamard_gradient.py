@@ -39,7 +39,6 @@ from .gradient_transform import (
 def _expand_transform_hadamard(
     tape: qml.tape.QuantumTape,
     argnum=None,
-    argnums=None,
     aux_wire=None,
     device_wires=None,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
@@ -64,7 +63,6 @@ def _expand_transform_hadamard(
 def hadamard_grad(
     tape: qml.tape.QuantumTape,
     argnum=None,
-    argnums=None,
     aux_wire=None,
     device_wires=None,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
@@ -207,8 +205,6 @@ def hadamard_grad(
         The number of trainable parameters may increase due to the decomposition.
 
     """
-    if argnums:
-        tape.trainable_params = argnums
 
     transform_name = "Hadamard test"
     assert_no_state_returns(tape.measurements, transform_name)

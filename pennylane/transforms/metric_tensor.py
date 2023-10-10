@@ -69,7 +69,6 @@ def _contract_metric_tensor_with_cjac(mt, cjac, tape):  # pylint: disable=unused
 def _expand_metric_tensor(
     tape: qml.tape.QuantumTape,
     argnum=None,
-    argnums=None,
     approx=None,
     allow_nonunitary=True,
     aux_wire=None,
@@ -92,7 +91,6 @@ def _expand_metric_tensor(
 def metric_tensor(  # pylint:disable=too-many-arguments
     tape: qml.tape.QuantumTape,
     argnum=None,
-    argnums=None,
     approx=None,
     allow_nonunitary=True,
     aux_wire=None,
@@ -122,10 +120,6 @@ def metric_tensor(  # pylint:disable=too-many-arguments
     Args:
         tape (QuantumTape): quantum tape to find the metric tensor of
         argnum (int or Sequence[int] or None): Trainable tape-parameter indices with respect to which
-            the metric tensor is computed. If ``argnum=None``, the metric tensor with respect to all
-            trainable parameters is returned. Excluding tape-parameter indices from this list reduces
-            the computational cost and the corresponding metric-tensor elements will be set to 0.
-        argnums (int or Sequence[int] or None): Trainable tape-parameter indices with respect to which
             the metric tensor is computed. If ``argnum=None``, the metric tensor with respect to all
             trainable parameters is returned. Excluding tape-parameter indices from this list reduces
             the computational cost and the corresponding metric-tensor elements will be set to 0.
@@ -355,8 +349,6 @@ def metric_tensor(  # pylint:disable=too-many-arguments
         By setting ``argnum = (0, 2, 3)`` we exclude the 0-th element of ``weights`` from the computation
         of the metric tensor and not the 1st element, as one might expect.
     """
-    if argnums:
-        tape.trainable_params = argnums
     if not tape.trainable_params:
         warnings.warn(
             "Attempted to compute the metric tensor of a tape with no trainable parameters. "

@@ -264,10 +264,7 @@ def _draw_qnode(
                 qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
                 tapes = qnode.construct(args, kwargs)
                 if isinstance(qnode.device, qml.devices.Device):
-                    if expansion_strategy == "device":
-                        program, _ = qnode.device.preprocess()
-                    else:
-                        program = qnode.transform_program
+                    program = qnode.transform_program
                     tapes = program([qnode.tape])
 
             finally:

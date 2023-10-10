@@ -175,7 +175,6 @@ def _processing_fn(results, shots, single_shot_batch_fn):
 def _expand_transform_finite_diff(
     tape: qml.tape.QuantumTape,
     argnum=None,
-    argnums=None,
     h=1e-7,
     approx_order=1,
     n=1,
@@ -204,7 +203,6 @@ def _expand_transform_finite_diff(
 def finite_diff(
     tape: qml.tape.QuantumTape,
     argnum=None,
-    argnums=None,
     h=1e-7,
     approx_order=1,
     n=1,
@@ -217,9 +215,6 @@ def finite_diff(
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
-            with respect to. If not provided, the derivatives with respect to all
-            trainable parameters are returned.
-        argnums (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
         h (float): finite difference method step size
@@ -355,8 +350,6 @@ def finite_diff(
 
         The outermost tuple contains results corresponding to each element of the shot vector.
     """
-    if argnums:
-        tape.trainable_params = argnums
 
     transform_name = "finite difference"
     assert_no_tape_batching(tape, transform_name)

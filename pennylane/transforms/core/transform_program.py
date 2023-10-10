@@ -158,8 +158,6 @@ class TransformProgram:
             raise TransformError("Only transform container can be added to the transform program.")
 
         # Program can only contain one informative transform and at the end of the program
-        if self.is_informative:
-            raise TransformError("The transform program already has an informative transform.")
         if self.has_final_transform:
             raise TransformError("The transform program already has a terminal transform.")
         self._transform_program.append(transform_container)
@@ -290,7 +288,7 @@ class TransformProgram:
         return any(t.classical_cotransform is not None for t in self)
 
     def _set_all_classical_jacobians(
-        self, qnode, args, kwargs
+        self, qnode, args, kwargs, argnums
     ):  # pylint: disable=too-many-statements
         """It can be called inside the QNode to get all the classical Jacobians for a gradient transform."""
 
@@ -375,7 +373,6 @@ class TransformProgram:
                     raise qml.QuantumFunctionError(
                         "argnum does not work with the Jax interface. You should use argnums instead."
                     )
-                argnums = transform._kwargs.get("argnums", None)  # pylint: disable=protected-access
                 sub_program = TransformProgram(self[0:index])
                 classical_jacobian = jacobian(
                     classical_preprocessing, sub_program, argnums, *args, **kwargs
@@ -388,7 +385,7 @@ class TransformProgram:
         # Reset the initial tape
         qnode.construct(args, kwargs)
 
-    def _set_all_argnums(self, qnode, args, kwargs):
+    def _set_all_argnums(self, qnode, args, kwargs, argnums):
         """It can be used inside the QNode to set all argnums (tape level) using argnums from the argnums at the QNode
         level.
         """
@@ -412,22 +409,19 @@ class TransformProgram:
             del trace
             return tuple(tape.get_parameters(trainable_only=False) for tape in tapes)
 
-        argnums = []
+        argnums_list = []
         for index, transform in enumerate(self):
-            argnums_ = transform.kwargs.get("argnums", None)
-            argnums_ = (
-                [0] if qnode.interface in ["jax", "jax-jit"] and argnums_ is None else argnums_
-            )
-            if transform.classical_cotransform and argnums_:
+            argnums = [0] if qnode.interface in ["jax", "jax-jit"] and argnums is None else argnums
+            if transform.classical_cotransform and argnums:
                 params = jax_argnums_to_tape_trainable(
-                    TransformProgram(self[0:index]), argnums_, args, kwargs
+                    TransformProgram(self[0:index]), argnums, args, kwargs
                 )
-                argnums_ = [qml.math.get_trainable_indices(param) for param in params]
-                argnums.append(argnums_)
+                argnums_list.append([qml.math.get_trainable_indices(param) for param in params])
             else:
-                argnums.append(None)
+                argnums_list.append(None)
 
-        self._argnums = argnums
+        self._argnums = argnums_list
+
         qnode.construct(args, kwargs)
 
     def __call__(self, tapes: Tuple[QuantumTape]) -> Tuple[ResultBatch, BatchPostProcessingFn]:
@@ -450,7 +444,7 @@ class TransformProgram:
             start_classical = 0
             for j, tape in enumerate(tapes):
                 if self._argnums is not None and self._argnums[i] is not None:
-                    tkwargs["argnums"] = self._argnums[i][j]
+                    tape.trainable_params = self._argnums[i][j]
                 new_tapes, fn = transform(tape, *targs, **tkwargs)
                 execution_tapes.extend(new_tapes)
 

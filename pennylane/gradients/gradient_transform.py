@@ -607,6 +607,6 @@ class gradient_transform(qml.batch_transform):
                 qnode, argnum=argnum_cjac, expand_fn=self.expand_fn
             )(*args, **kwargs)
 
-            return _contract_qjac_with_cjac(qjac, cjac, qnode.tape)
+            return _contract_qjac_with_cjac(qjac, cjac, qnode.tape)  # pragma: no cover
 
         return jacobian_wrapper
