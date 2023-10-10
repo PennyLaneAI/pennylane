@@ -16,6 +16,7 @@ generate such functions from."""
 # pylint: disable=unused-argument,invalid-unary-operand-type, unsupported-binary-operation
 import contextlib
 from typing import Sequence, Callable
+import numpy as np
 
 import pennylane as qml
 from pennylane.operation import (
@@ -355,7 +356,9 @@ def create_decomp_expand_fn(custom_decomps, dev, decomp_depth=10):
 
 @transform
 def custom_decomposition(
-    tape: QuantumTape, custom_decomps: dict
+    tape: QuantumTape,
+    custom_decomps: dict,
+    decomp_depth=10,
 ) -> (Sequence[QuantumTape], Callable):
     """Transform for setting custom decompositions.
 
@@ -363,6 +366,7 @@ def custom_decomposition(
         tape (QuantumTape): a quantum circuit.
         custom_decomps (Dict[Union(str, qml.operation.Operation), Callable]): Custom
             decompositions to be applied by the device at runtime.
+        decomp_depth: The maximum depth of the expansion.
 
     Returns:
         pennylane.QNode or qfunc or Tuple[List[.QuantumTape], Callable]: If a QNode is passed,
@@ -370,15 +374,74 @@ def custom_decomposition(
         If a tape is passed, returns a tuple containing a list of
         quantum tapes to be evaluated, and a function to be applied to these
         tape executions.
+
+    **Example**
+
+    Suppose we would like a custom expansion function that decomposes all CNOTs
+    into CZs. We first define a decomposition function:
+
+    .. code-block:: python
+
+        def custom_cnot(wires):
+            return [
+                qml.Hadamard(wires=wires[1]),
+                qml.CZ(wires=[wires[0], wires[1]]),
+                qml.Hadamard(wires=wires[1])
+            ]
+
+    We can set up a qnode to apply the custom decomposition before executing the tape:
+
+    .. code-block:: python
+
+        from functools import partial
+
+        dev = qml.device("default.qubit")
+
+        @partial(custom_decomposition, custom_decomps={qml.CNOT: custom_cnot})
+        @qml.qnode(dev)
+        def circuit():
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(wires=0))
+
+    The transform can also be applied to a tape directly:
+
+    .. code-block:: python
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(wires=0))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+
+        new_tape, fn = custom_decomposition(tape, custom_decomps={qml.CNOT: custom_cnot})
+        new_tape = fn(new_tape)
+
+    >>> new_tape.operations
+    [Hadamard(wires=[1]),
+    Controlled(PauliZ(wires=[1]), control_wires=[0]),
+    Hadamard(wires=[1])]
     """
-    new_ops = []
-    for op in tape.operations:
-        if (decomp_fn := custom_decomps.get(type(op))) is None:
-            new_ops.append(op)
-        else:
-            new_ops.extend(decomp_fn(op.wires))
-    new_tape = type(tape)(new_ops, tape.measurements, shots=tape.shots)
-    new_tape._qfunc_output = tape._qfunc_output  # pylint:disable=protected-access
+    ops = tape.operations
+    ops_with_decomps = set(custom_decomps.keys())
+
+    for _ in np.arange(decomp_depth):
+        if not set(type(op) for op in ops).intersection(ops_with_decomps):
+            break
+
+        new_ops = []
+        for op in ops:
+            if (decomp_fn := custom_decomps.get(type(op))) is None:
+                new_ops.append(op)
+            else:
+                args = op.parameters + [op.wires]
+                print(op)
+                print(decomp_fn)
+                print(decomp_fn(*args))
+                new_ops.extend(decomp_fn(*args))
+        ops = new_ops
+
+    new_tape = type(tape)(ops, tape.measurements, shots=tape.shots)
+
     return [new_tape], lambda results: results[0]
 
 
@@ -451,7 +514,7 @@ def set_decomposition(custom_decomps, dev, decomp_depth=10):
 
         def new_preprocess(execution_config=qml.devices.DefaultExecutionConfig):
             program, config = original_preprocess(execution_config)
-            program.insert_front_transform(custom_decomposition, custom_decomps)
+            program.insert_front_transform(custom_decomposition, custom_decomps, decomp_depth)
             return program, config
 
         try:
