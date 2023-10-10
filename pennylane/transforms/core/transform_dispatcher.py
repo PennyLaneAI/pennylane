@@ -254,6 +254,20 @@ class TransformContainer:
             )
         )
 
+    def __repr__(self):
+        values = []
+        if self.args:
+            values.append(f"args={self.args}")
+        if self.kwargs:
+            values.append(f"kwargs={self.kwargs}")
+        if self.classical_cotransform:
+            values.append(f"classical_cotransform={self.classical_cotransform}")
+        if self.is_informative:
+            values.append("is_informative=True")
+        elif self.final_transform:
+            values.append("final_transform=True")
+        return f"TransformContainer({self.transform}, {', '.join(values)})"
+
     @property
     def transform(self):
         """Return the stored quantum transform."""

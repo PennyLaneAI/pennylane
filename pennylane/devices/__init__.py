@@ -63,10 +63,12 @@ method for devices.
     :toctree: api
 
     decompose
+    validate_observables
     validate_measurements
     validate_device_wires
-    validate_multiprocesssing_workers
+    validate_multiprocessing_workers
     warn_about_trainable_observables
+    no_sampling
 
 Qubit Simulation Tools
 ----------------------

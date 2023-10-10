@@ -75,7 +75,7 @@ class TestAdjointJacobian:
         qs_valid, _ = qml.devices.preprocess.decompose(
             qs, qml.devices.default_qubit.adjoint_stopping_condition
         )
-        qs_valid = qs_valid[0]
+        qs = qs_valid[0]
 
         qs.trainable_params = {1, 2, 3}
 

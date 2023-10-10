@@ -16,7 +16,7 @@
 that they are supported for execution by a device."""
 # pylint: disable=protected-access
 import os
-from typing import Generator, Callable, Union, Sequence
+from typing import Generator, Callable, Union, Sequence, Optional
 from copy import copy
 import warnings
 
@@ -26,8 +26,6 @@ from pennylane.operation import Tensor, StatePrepBase
 from pennylane.measurements import (
     StateMeasurement,
     SampleMeasurement,
-    ClassicalShadowMP,
-    ShadowExpvalMP,
 )
 from pennylane.typing import ResultBatch, Result
 from pennylane import DeviceError
@@ -45,7 +43,9 @@ def null_postprocessing(results):
 
 
 def _operator_decomposition_gen(
-    op: qml.operation.Operator, acceptance_function: Callable[[qml.operation.Operator], bool]
+    op: qml.operation.Operator,
+    acceptance_function: Callable[[qml.operation.Operator], bool],
+    name: str = "device",
 ) -> Generator[qml.operation.Operator, None, None]:
     """A generator that yields the next operation that is accepted by DefaultQubit."""
     if acceptance_function(op):
@@ -55,25 +55,36 @@ def _operator_decomposition_gen(
             decomp = op.decomposition()
         except qml.operation.DecompositionUndefinedError as e:
             raise DeviceError(
-                f"Operator {op} not supported on DefaultQubit. Must provide either a matrix or a decomposition."
+                f"Operator {op} not supported on {name} and does not provide a decomposition."
             ) from e
 
         for sub_op in decomp:
-            yield from _operator_decomposition_gen(sub_op, acceptance_function)
+            yield from _operator_decomposition_gen(sub_op, acceptance_function, name)
 
 
 #######################
 
 
 @transform
+def no_sampling(
+    tape: qml.tape.QuantumTape, name="device"
+) -> (Sequence[qml.tape.QuantumTape], Callable):
+    """Raises an error if the tape has finite shots."""
+    if tape.shots:
+        raise qml.DeviceError(f"Finite shots are not supported with {name}")
+    return (tape,), null_postprocessing
+
+
+@transform
 def validate_device_wires(
-    tape: qml.tape.QuantumTape, device
+    tape: qml.tape.QuantumTape, wires: Optional[qml.wires.Wires], name: str = ""
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Validates the device wires.
 
     Args:
         tape (QuantumTape): a quantum circuit.
-        device (pennylane.devices.Device): The device to be checked.
+        wires (Wires): the allowed wires
+        name (str): the name of the device to use in error messages.
 
     Returns:
         pennylane.QNode or qfunc or Tuple[List[.QuantumTape], Callable]: If a QNode is passed,
@@ -82,10 +93,10 @@ def validate_device_wires(
         quantum tapes to be evaluated, and a function to be applied to these
         tape executions.
     """
-    if device.wires:
-        if extra_wires := set(tape.wires) - set(device.wires):
+    if wires:
+        if extra_wires := set(tape.wires) - set(wires):
             raise WireError(
-                f"Cannot run circuit(s) on {device.name} as they contain wires "
+                f"Cannot run circuit(s) on {name} as they contain wires "
                 f"not found on the device: {extra_wires}"
             )
         measurements = tape.measurements.copy()
@@ -94,7 +105,7 @@ def validate_device_wires(
             if not mp.obs and not mp.wires:
                 modified = True
                 new_mp = copy(mp)
-                new_mp._wires = device.wires  # pylint:disable=protected-access
+                new_mp._wires = wires  # pylint:disable=protected-access
                 measurements[m_idx] = new_mp
         if modified:
             tape = type(tape)(tape.operations, measurements, shots=tape.shots)
@@ -189,6 +200,7 @@ def decompose(
     tape: qml.tape.QuantumTape,
     stopping_condition: Callable[[qml.operation.Operator], bool],
     skip_initial_state_prep=True,
+    name: str = "device",
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Decompose operations until the stopping condition is met.
 
@@ -212,6 +224,7 @@ def decompose(
         DeviceError: If the decomposition enters and infinite loop and raises a ``RecursionError``.
     """
 
+    # TODO: check if this pre-check actually leads to any performance improvements
     if not all(stopping_condition(op) for op in tape.operations):
         try:
             # don't decompose initial operations if its StatePrepBase
@@ -222,7 +235,7 @@ def decompose(
             new_ops = [
                 final_op
                 for op in tape.operations[bool(prep_op) :]
-                for final_op in _operator_decomposition_gen(op, stopping_condition)
+                for final_op in _operator_decomposition_gen(op, stopping_condition, name)
             ]
         except RecursionError as e:
             raise DeviceError(
@@ -231,19 +244,21 @@ def decompose(
             ) from e
         tape = qml.tape.QuantumScript(prep_op + new_ops, tape.measurements, shots=tape.shots)
 
-    return [tape], null_postprocessing
+    return (tape,), null_postprocessing
 
 
 @transform
-def validate_measurements(
+def validate_observables(
     tape: qml.tape.QuantumTape,
-    observable_stopping_condition: Callable[[qml.operation.Operator], bool],
+    stopping_condition: Callable[[qml.operation.Operator], bool],
+    name: str = "device",
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Validates the observables and measurements for a circuit.
 
     Args:
         tape (QuantumTape): a quantum circuit.
         observable_stopping_condition (callable): a function that specifies whether or not an observable is accepted.
+        name (str): the name of the device to use in error messages.
 
     Returns:
         pennylane.QNode or qfunc or Tuple[List[.QuantumTape], Callable]: If a QNode is passed,
@@ -253,28 +268,64 @@ def validate_measurements(
         tape executions.
 
     Raises:
-        DeviceError: if an observable is not supported, if not all the measurements are sample based
-            when a finite shots is requested, or if not all measurements are state based when an analytic
-            simulation is requested.
+        DeviceError: if an observable is not supported
 
     """
     for observable in tape.observables:
         if isinstance(observable, Tensor):
-            if any(not observable_stopping_condition(o) for o in observable.obs):
-                raise DeviceError(f"Observable {observable} not supported on DefaultQubit")
-        elif not observable_stopping_condition(observable):
-            raise DeviceError(f"Observable {observable} not supported on DefaultQubit")
+            if any(not stopping_condition(o) for o in observable.obs):
+                raise DeviceError(f"Observable {observable} not supported on {name}")
+        elif not stopping_condition(observable):
+            raise DeviceError(f"Observable {observable} not supported on {name}")
 
-    if not tape.shots:
+    return (tape,), null_postprocessing
+
+
+@transform
+def validate_measurements(
+    tape: qml.tape.QuantumTape, analytic_measurements=None, sample_measurements=None, name="device"
+) -> (Sequence[qml.tape.QuantumTape], Callable):
+    """Valdiates the supported state and sample based measurement processes.
+
+    Args:
+        tape (QuantumTape): a quantum circuit.
+        analytic_measurements (Callable[[MeasurementProcess], bool]): a function from a measurement process
+            to whether or not it is accepted in analytic simulations.
+        sample_measurements (Callable[[MeasurementProcess], bool]): a function from a measurement process
+            to whetehr or not it accepted for finite shot siutations
+        name (str): the name to use in error messages.
+
+    Returns:
+        pennylane.QNode or qfunc or Tuple[List[.QuantumTape], Callable]: If a QNode is passed,
+        it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of
+        quantum tapes to be evaluated, and a function to be applied to these
+        tape executions.
+
+    Raises:
+        DeviceError: if a measurement process is not supported.
+
+    """
+    if analytic_measurements is None:
+
+        def analytic_measurements(m):
+            return isinstance(m, StateMeasurement)
+
+    if sample_measurements is None:
+
+        def sample_measurements(m):
+            return isinstance(m, SampleMeasurement)
+
+    if tape.shots:
         for m in tape.measurements:
-            if not isinstance(m, StateMeasurement):
-                raise DeviceError(f"Analytic circuits must only contain StateMeasurements; got {m}")
+            if not sample_measurements(m):
+                raise DeviceError(f"Measurement {m} not accepted with finite shots on {name}")
 
     else:
         for m in tape.measurements:
-            if not isinstance(m, (SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP)):
+            if not analytic_measurements(m):
                 raise DeviceError(
-                    f"Circuits with finite shots must only contain SampleMeasurements, ClassicalShadowMP, or ShadowExpvalMP; got {m}"
+                    f"Measurement {m} not accepted for analytic simulation on {name}."
                 )
 
     return (tape,), null_postprocessing

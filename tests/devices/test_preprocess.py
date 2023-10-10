@@ -27,6 +27,12 @@ from pennylane import DeviceError
 
 # pylint: disable=too-few-public-methods
 
+from pennylane.devices.preprocess import (
+    _operator_decomposition_gen,
+    decompose,
+    validate_measurements,
+)
+
 
 class NoMatOp(Operation):
     """Dummy operation for expanding circuit."""
@@ -53,59 +59,35 @@ class NoMatNoDecompOp(Operation):
 class TestPrivateHelpers:
     """Test the private helpers for preprocessing."""
 
-    @pytest.mark.parametrize(
-        "op, expected",
-        [
-            (qml.PauliX(0), True),
-            (qml.CRX(0.1, wires=[0, 1]), True),
-            (qml.Snapshot(), True),
-            (qml.Barrier(), False),
-            (qml.QFT(wires=range(5)), True),
-            (qml.QFT(wires=range(10)), False),
-            (qml.GroverOperator(wires=range(10)), True),
-            (qml.GroverOperator(wires=range(14)), False),
-            (qml.pow(qml.RX(1.1, 0), 3), True),
-            (qml.pow(qml.RX(pnp.array(1.1), 0), 3), False),
-        ],
-    )
-    def test_accepted_operator(self, op, expected):
-        """Test that _accepted_operator works correctly"""
-        res = _accepted_operator(op)
-        assert res == expected
-
-    def test_adjoint_accepted_operator_only_one_wire(self):
-        """Tests adjoint accepts operators with no parameters or a sinlge parameter and a generator."""
-
-        assert _accepted_adjoint_operator(NoMatOp(wires=0))
-        assert not _accepted_adjoint_operator(NoMatOp(1.2, wires=0))
-        assert not _accepted_adjoint_operator(NoMatOp(1.2, 2.3, wires=0))
-
-        class CustomOpWithGenerator(qml.operation.Operator):
-            """A custom operator with a generator."""
-
-            def generator(self):
-                return qml.PauliX(0)
-
-        assert _accepted_adjoint_operator(CustomOpWithGenerator(1.2, wires=0))
-
     @pytest.mark.parametrize("op", (qml.PauliX(0), qml.RX(1.2, wires=0), qml.QFT(wires=range(3))))
     def test_operator_decomposition_gen_accepted_operator(self, op):
         """Test the _operator_decomposition_gen function on an operator that is accepted."""
-        casted_to_list = list(_operator_decomposition_gen(op, _accepted_operator))
+
+        def stopping_condition(op):
+            return op.has_matrix
+
+        casted_to_list = list(_operator_decomposition_gen(op, stopping_condition))
         assert len(casted_to_list) == 1
         assert casted_to_list[0] is op
 
     def test_operator_decomposition_gen_decomposed_operators_single_nesting(self):
         """Assert _operator_decomposition_gen turns into a list with the operators decomposition
         when only a single layer of expansion is necessary."""
+
+        def stopping_condition(op):
+            return op.has_matrix
+
         op = NoMatOp("a")
-        casted_to_list = list(_operator_decomposition_gen(op, _accepted_operator))
+        casted_to_list = list(_operator_decomposition_gen(op, stopping_condition))
         assert len(casted_to_list) == 2
         assert qml.equal(casted_to_list[0], qml.PauliX("a"))
         assert qml.equal(casted_to_list[1], qml.PauliY("a"))
 
     def test_operator_decomposition_gen_decomposed_operator_ragged_nesting(self):
         """Test that _operator_decomposition_gen handles a decomposition that requires different depths of decomposition."""
+
+        def stopping_condition(op):
+            return op.has_matrix
 
         class RaggedDecompositionOp(Operation):
             """class with a ragged decomposition."""
@@ -116,7 +98,7 @@ class TestPrivateHelpers:
                 return [NoMatOp(self.wires), qml.S(self.wires), qml.adjoint(NoMatOp(self.wires))]
 
         op = RaggedDecompositionOp("a")
-        final_decomp = list(_operator_decomposition_gen(op, _accepted_operator))
+        final_decomp = list(_operator_decomposition_gen(op, stopping_condition))
         assert len(final_decomp) == 5
         assert qml.equal(final_decomp[0], qml.PauliX("a"))
         assert qml.equal(final_decomp[1], qml.PauliY("a"))
@@ -127,47 +109,31 @@ class TestPrivateHelpers:
     def test_error_from_unsupported_operation(self):
         """Test that a device error is raised if the operator cant be decomposed and doesn't have a matrix."""
         op = NoMatNoDecompOp("a")
-        with pytest.raises(DeviceError, match=r"Operator NoMatNoDecompOp"):
-            tuple(_operator_decomposition_gen(op, _accepted_operator))
+        with pytest.raises(
+            DeviceError,
+            match=r"Operator NoMatNoDecompOp(wires=['a']) not supported on abc and does",
+        ):
+            tuple(_operator_decomposition_gen(op, lambda op: op.has_matrix, name="abc"))
 
 
-class TestExpandFnValidation:
+class TestDecomposeValidation:
     """Unit tests for helper functions in qml.devices.qubit.preprocess"""
 
     def test_error_if_invalid_op(self):
         """Test that expand_fn throws an error when an operation is does not define a matrix or decomposition."""
+
         tape = QuantumScript(ops=[NoMatNoDecompOp(0)], measurements=[qml.expval(qml.Hadamard(0))])
-        with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
-            expand_fn(tape)
+        with pytest.raises(
+            DeviceError, match="Operator NoMatNoDecompOp(wires=[0]) not supported on abc"
+        ):
+            decompose(tape, lambda op: op.has_matrix, name="abc")
 
-    def test_expand_fn_invalid_observable(self):
-        """Test that expand_fn throws an error when an observable is invalid."""
-        tape = QuantumScript(
-            ops=[qml.PauliX(0)], measurements=[qml.expval(qml.GellMann(wires=0, index=1))]
-        )
-        with pytest.raises(DeviceError, match=r"Observable GellMann1"):
-            expand_fn(tape)
-
-    def test_expand_fn_invalid_tensor_observable(self):
-        """Test that expand_fn throws an error when a tensor includes invalid obserables"""
-        tape = QuantumScript(
-            ops=[qml.PauliX(0), qml.PauliY(1)],
-            measurements=[qml.expval(qml.PauliX(0) @ qml.GellMann(wires=1, index=2))],
-        )
-        with pytest.raises(DeviceError, match="Observable expval"):
-            expand_fn(tape)
-
-    def test_valid_tensor_observable(self):
-        """Test that a valid tensor ovservable passes without error."""
-        tape = QuantumScript([], [qml.expval(qml.PauliZ(0) @ qml.PauliY(1))])
-        assert expand_fn(tape)[0][0] is tape
-
-    def test_expand_fn_passes(self):
+    def test_decompose(self):
         """Test that expand_fn doesn't throw any errors for a valid circuit"""
         tape = QuantumScript(
             ops=[qml.PauliX(0), qml.RZ(0.123, wires=0)], measurements=[qml.state()]
         )
-        expand_fn(tape)
+        decompose(tape, lambda obj: obj.has_matrix)
 
     def test_infinite_decomposition_loop(self):
         """Test that a device error is raised if decomposition enters an infinite loop."""
@@ -182,23 +148,46 @@ class TestExpandFnValidation:
 
         qs = qml.tape.QuantumScript([InfiniteOp(1.23, 0)])
         with pytest.raises(DeviceError, match=r"Reached recursion limit trying to decompose"):
-            expand_fn(qs)
+            decompose(qs, lambda obj: obj.has_matrix)
 
-        with pytest.raises(DeviceError, match=r"Reached recursion limit trying to decompose"):
-            validate_and_expand_adjoint(qs)
+
+class TestValidateMeasurements:
+    def test_expand_fn_invalid_observable(self):
+        """Test that expand_fn throws an error when an observable is invalid."""
+        tape = QuantumScript(
+            ops=[qml.PauliX(0)], measurements=[qml.expval(qml.GellMann(wires=0, index=1))]
+        )
+        with pytest.raises(DeviceError, match=r"Observable GellMann1 not supported on abc"):
+            validate_measurements(tape, lambda obs: obs.name == "PauliX", name="abc")
+
+    def test_expand_fn_invalid_tensor_observable(self):
+        """Test that expand_fn throws an error when a tensor includes invalid obserables"""
+        tape = QuantumScript(
+            ops=[qml.PauliX(0), qml.PauliY(1)],
+            measurements=[qml.expval(qml.PauliX(0) @ qml.GellMann(wires=1, index=2))],
+        )
+        with pytest.raises(DeviceError, match="Observable expval"):
+            validate_measurements(tape, lambda obj: obj.name == "PauliX")
+
+    def test_valid_tensor_observable(self):
+        """Test that a valid tensor ovservable passes without error."""
+        tape = QuantumScript([], [qml.expval(qml.PauliZ(0) @ qml.PauliY(1))])
+        assert (
+            validate_measurements(tape, lambda obs: obs.name in {"PauliZ", "PauliY"})[0][0] is tape
+        )
 
 
 class TestExpandFnTransformations:
     """Tests for the behavior of the `expand_fn` helper."""
 
     @pytest.mark.parametrize("shots", [None, 100])
-    def test_expand_fn_expand_unsupported_op(self, shots):
+    def test_decompose_expand_unsupported_op(self, shots):
         """Test that expand_fn expands the tape when unsupported operators are present"""
         ops = [qml.Hadamard(0), NoMatOp(1), qml.RZ(0.123, wires=1)]
         measurements = [qml.expval(qml.PauliZ(0)), qml.probs()]
         tape = QuantumScript(ops=ops, measurements=measurements, shots=shots)
 
-        expanded_tapes, _ = expand_fn(tape)
+        expanded_tapes, _ = decompose(tape, lambda obj: obj.has_matrix)
         expanded_tape = expanded_tapes[0]
         expected = [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RZ(0.123, wires=1)]
 
@@ -207,49 +196,24 @@ class TestExpandFnTransformations:
 
         assert tape.shots == expanded_tape.shots
 
-    # pylint: disable=no-member
-    def test_expand_fn_defer_measurement(self):
-        """Test that expand_fn defers mid-circuit measurements."""
-        mp = MidMeasureMP(wires=[0], reset=True, id="test_id")
-        mv = MeasurementValue([mp], processing_fn=lambda v: v)
-        ops = [
-            qml.Hadamard(0),
-            mp,
-            qml.transforms.Conditional(mv, qml.RX(0.123, wires=1)),
-        ]
-        measurements = [qml.expval(qml.PauliZ(1))]
-        tape = QuantumScript(ops=ops, measurements=measurements)
-
-        expanded_tapes, _ = expand_fn(tape)
-        expanded_tape = expanded_tapes[0]
-        expected = [
-            qml.Hadamard(0),
-            qml.CNOT([0, 2]),
-            qml.CNOT([2, 0]),
-            qml.ops.Controlled(qml.RX(0.123, wires=1), 2),
-        ]
-
-        for op, exp in zip(expanded_tape, expected + measurements):
-            assert qml.equal(op, exp)
-
-    def test_expand_fn_no_expansion(self):
+    def test_decompose_no_expansion(self):
         """Test that expand_fn does nothing to a fully supported quantum script."""
         ops = [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RZ(0.123, wires=1)]
         measurements = [qml.expval(qml.PauliZ(0)), qml.probs()]
         tape = QuantumScript(ops=ops, measurements=measurements)
-        expanded_tapes, _ = expand_fn(tape)
+        expanded_tapes, _ = decompose(tape, lambda obj: obj.has_matrix)
         expanded_tape = expanded_tapes[0]
 
         for op, exp in zip(expanded_tape.circuit, ops + measurements):
             assert qml.equal(op, exp)
 
-    def test_expand_fn_non_commuting_measurements(self):
+    def test_valdiate_measurements_non_commuting_measurements(self):
         """Test that expand function can decompose operations even when non commuting measurements exist in the circuit."""
 
         qs = QuantumScript([NoMatOp("a")], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(0))])
-        new_qs, _ = expand_fn(qs)
+
+        new_qs, _ = validate_measurements(qs, lambda obj: obj.has_matrix)
         new_qs = new_qs[0]
-        print(new_qs.circuit)
         assert new_qs.measurements == qs.measurements
 
     @pytest.mark.parametrize(
@@ -260,8 +224,8 @@ class TestExpandFnTransformations:
             qml.AmplitudeEmbedding([0, 1], wires=1),
         ),
     )
-    def test_expand_fn_state_prep(self, prep_op):
-        """Test that the expand_fn only expands mid-circuit instances of StatePrepBase"""
+    def test_decompose_state_prep_skip_first(self, prep_op):
+        """Test that the decompose only expands mid-circuit instances of StatePrepBase if requested."""
         ops = [
             prep_op,
             qml.Hadamard(wires=0),
@@ -271,9 +235,9 @@ class TestExpandFnTransformations:
             qml.AmplitudeEmbedding([0, 1, 0, 0], wires=[0, 1]),
         ]
         measurements = [qml.expval(qml.PauliZ(0)), qml.probs()]
-        tape = QuantumScript(ops=ops, measurements=measurements)
+        tape = QuantumScript(ops=ops, measurements=measurements, skip_initial_state_prep=True)
 
-        expanded_tapes, _ = expand_fn(tape)
+        expanded_tapes, _ = decompose(tape)
         expanded_tape = expanded_tapes[0]
         expected = [
             prep_op,
@@ -288,6 +252,23 @@ class TestExpandFnTransformations:
         ]
 
         assert expanded_tape.circuit == expected + measurements
+
+    @pytest.mark.parametrize(
+        "prep_op",
+        (
+            qml.BasisState([1], wires=0),
+            qml.StatePrep([0, 1], wires=1),
+            qml.AmplitudeEmbedding([0, 1], wires=1),
+        ),
+    )
+    def test_decompose_initial_state_prep_if_requested(self, prep_op):
+        """Test that initial state prep operations are decomposed if skip_initial_state_prep is False."""
+
+        tape = qml.tape.QuantumScript([prep_op])
+        batch, _ = decompose(tape, skip_initial_staste_prep=False)
+        new_tape = batch[0]
+
+        assert new_tape[0] is not prep_op
 
 
 class TestValidateMeasurements:
@@ -305,7 +286,7 @@ class TestValidateMeasurements:
     def test_only_state_measurements(self, measurements):
         """Test that an analytic circuit containing only StateMeasurements works"""
         tape = QuantumScript([], measurements, shots=None)
-        validate_measurements(tape)
+        validate_measurements(tape, lambda obj: True)
 
     @pytest.mark.parametrize(
         "measurements",
@@ -320,7 +301,7 @@ class TestValidateMeasurements:
     def test_only_sample_measurements(self, measurements):
         """Test that a circuit with finite shots containing only SampleMeasurements works"""
         tape = QuantumScript([], measurements, shots=100)
-        validate_measurements(tape)
+        validate_measurements(tape, lambda obj: True)
 
     @pytest.mark.parametrize(
         "measurements",
@@ -338,7 +319,7 @@ class TestValidateMeasurements:
 
         msg = "Analytic circuits must only contain StateMeasurements"
         with pytest.raises(DeviceError, match=msg):
-            validate_measurements(tape)
+            validate_measurements(tape, lambda obj: True)
 
     @pytest.mark.parametrize(
         "measurements",
@@ -354,7 +335,7 @@ class TestValidateMeasurements:
 
         msg = "Circuits with finite shots must only contain SampleMeasurements"
         with pytest.raises(DeviceError, match=msg):
-            validate_measurements(tape)
+            validate_measurements(tape, lambda obj: True)
 
     @pytest.mark.parametrize("diff_method", ["adjoint", "backprop"])
     def test_finite_shots_analytic_diff_method(self, diff_method):
@@ -426,160 +407,6 @@ class TestBatchTransform:
         for i, t in enumerate(tapes):
             for op, expected in zip(t.circuit, expected_ops[i] + measurements):
                 assert qml.equal(op, expected)
-
-
-class TestAdjointDiffTapeValidation:
-    """Unit tests for validate_and_expand_adjoint"""
-
-    def test_not_expval(self):
-        """Test if a QuantumFunctionError is raised for a tape with measurements that are not
-        expectation values"""
-
-        measurements = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(3)), qml.sample()]
-        qs = QuantumScript(ops=[], measurements=measurements)
-
-        with pytest.raises(
-            DeviceError,
-            match="Adjoint differentiation method does not support measurement VarianceMP.",
-        ):
-            validate_and_expand_adjoint(qs)
-
-    def test_unsupported_op_decomposed(self):
-        """Test that an operation supported on the forward pass but not adjoint is decomposed when adjoint is requested."""
-
-        qs = QuantumScript([qml.U2(0.1, 0.2, wires=[0])], [qml.expval(qml.PauliZ(2))])
-        res, _ = validate_and_expand_adjoint(qs)
-        res = res[0]
-        assert isinstance(res, qml.tape.QuantumScript)
-        assert qml.equal(res[0], qml.RZ(0.2, wires=0))
-        assert qml.equal(res[1], qml.RY(np.pi / 2, wires=0))
-        assert qml.equal(res[2], qml.RZ(-0.2, wires=0))
-        assert qml.equal(res[3], qml.PhaseShift(0.2, wires=0))
-        assert qml.equal(res[4], qml.PhaseShift(0.1, wires=0))
-
-    def test_trainable_params_decomposed(self):
-        """Test that the trainable parameters of a tape are updated when it is expanded"""
-        ops = [
-            qml.QubitUnitary([[0, 1], [1, 0]], wires=0),
-            qml.CNOT([0, 1]),
-            qml.Rot(0.1, 0.2, 0.3, wires=0),
-        ]
-        qs = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
-
-        qs.trainable_params = [0]
-        res, _ = validate_and_expand_adjoint(qs)
-        res = res[0]
-
-        assert isinstance(res, QuantumScript)
-        assert len(res.operations) == 7
-        assert qml.equal(res[0], qml.RZ(np.pi / 2, 0))
-        assert qml.equal(res[1], qml.RY(np.pi, 0))
-        assert qml.equal(res[2], qml.RZ(7 * np.pi / 2, 0))
-        assert qml.equal(res[3], qml.CNOT([0, 1]))
-        assert qml.equal(res[4], qml.RZ(0.1, 0))
-        assert qml.equal(res[5], qml.RY(0.2, 0))
-        assert qml.equal(res[6], qml.RZ(0.3, 0))
-        assert res.trainable_params == [0, 1, 2, 3, 4, 5]
-
-        qs.trainable_params = [2, 3]
-        res, _ = validate_and_expand_adjoint(qs)
-        res = res[0]
-        assert isinstance(res, QuantumScript)
-        assert len(res.operations) == 7
-        assert qml.equal(res[0], qml.RZ(np.pi / 2, 0))
-        assert qml.equal(res[1], qml.RY(np.pi, 0))
-        assert qml.equal(res[2], qml.RZ(7 * np.pi / 2, 0))
-        assert qml.equal(res[3], qml.CNOT([0, 1]))
-        assert qml.equal(res[4], qml.RZ(0.1, 0))
-        assert qml.equal(res[5], qml.RY(0.2, 0))
-        assert qml.equal(res[6], qml.RZ(0.3, 0))
-        assert res.trainable_params == [0, 1, 2, 3, 4, 5]
-
-    def test_u3_non_trainable_params(self):
-        """Test that a warning is raised and all parameters are trainable in the expanded
-        tape when not all parameters in U3 are trainable"""
-        qs = QuantumScript([qml.U3(0.2, 0.4, 0.6, wires=0)], [qml.expval(qml.PauliZ(0))])
-        qs.trainable_params = [0, 2]
-
-        res, _ = validate_and_expand_adjoint(qs)
-        res = res[0]
-        assert isinstance(res, QuantumScript)
-
-        # U3 decomposes into 5 operators
-        assert len(res.operations) == 5
-        assert res.trainable_params == [0, 1, 2, 3, 4]
-
-    def test_unsupported_obs(self):
-        """Test that the correct error is raised if a Hamiltonian or Sum measurement is differentiated"""
-        obs = qml.Hamiltonian([2, 0.5], [qml.PauliZ(0), qml.PauliY(1)])
-        qs = QuantumScript([qml.RX(0.5, wires=1)], [qml.expval(obs)])
-        qs.trainable_params = {0}
-
-        with pytest.raises(
-            DeviceError,
-            match="Adjoint differentiation method does not support observable Hamiltonian.",
-        ):
-            validate_and_expand_adjoint(qs)
-
-    def test_trainable_hermitian_warns(self):
-        """Test attempting to compute the gradient of a tape that obtains the
-        expectation value of a Hermitian operator emits a warning if the
-        parameters to Hermitian are trainable."""
-
-        mx = qml.matrix(qml.PauliX(0) @ qml.PauliY(2))
-        qs = QuantumScript([], [qml.expval(qml.Hermitian(mx, wires=[0, 2]))])
-
-        qs.trainable_params = {0}
-
-        with pytest.warns(
-            UserWarning, match="Differentiating with respect to the input parameters of Hermitian"
-        ):
-            _ = validate_and_expand_adjoint(qs)
-
-    @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ])
-    def test_valid_tape_no_expand(self, G):
-        """Test that a tape that is valid doesn't raise errors and is not expanded"""
-        prep_op = qml.StatePrep(pnp.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
-        qs = QuantumScript(
-            ops=[G(np.pi, wires=[0])],
-            measurements=[qml.expval(qml.PauliZ(0))],
-            prep=[prep_op],
-        )
-
-        qs.trainable_params = {1}
-        qs_valid, _ = validate_and_expand_adjoint(qs)
-        qs_valid = qs_valid[0]
-        assert all(qml.equal(o1, o2) for o1, o2 in zip(qs.operations, qs_valid.operations))
-        assert all(qml.equal(o1, o2) for o1, o2 in zip(qs.measurements, qs_valid.measurements))
-        assert qs_valid.trainable_params == [0, 1]
-
-    @pytest.mark.parametrize("shots", [None, 100])
-    def test_valid_tape_with_expansion(self, shots):
-        """Test that a tape that is valid with operations that need to be expanded doesn't raise errors
-        and is expanded"""
-        prep_op = qml.StatePrep(pnp.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
-        qs = QuantumScript(
-            ops=[qml.Rot(0.1, 0.2, 0.3, wires=[0])],
-            measurements=[qml.expval(qml.PauliZ(0))],
-            prep=[prep_op],
-            shots=shots,
-        )
-
-        qs.trainable_params = {1, 2, 3}
-        qs_valid, _ = validate_and_expand_adjoint(qs)
-        qs_valid = qs_valid[0]
-
-        expected_ops = [
-            prep_op,
-            qml.RZ(0.1, wires=[0]),
-            qml.RY(0.2, wires=[0]),
-            qml.RZ(0.3, wires=[0]),
-        ]
-
-        assert all(qml.equal(o1, o2) for o1, o2 in zip(qs_valid.operations, expected_ops))
-        assert all(qml.equal(o1, o2) for o1, o2 in zip(qs.measurements, qs_valid.measurements))
-        assert qs_valid.trainable_params == [0, 1, 2, 3]
-        assert qs.shots == qs_valid.shots
 
 
 class TestPreprocess:

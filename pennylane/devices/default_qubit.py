@@ -31,10 +31,12 @@ from pennylane.transforms.core import TransformProgram
 from . import Device
 from .preprocess import (
     decompose,
+    validate_observables,
     validate_measurements,
     validate_multiprocessing_workers,
     validate_device_wires,
     warn_about_trainable_observables,
+    no_sampling,
 )
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
 from .qubit.simulate import simulate, get_final_state, measure_final_state
@@ -71,11 +73,6 @@ def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
     return obs.name in observables
 
 
-def adjoint_observable_stopping_condition(obs: qml.operation.Operator) -> bool:
-    """Specifies whether or not an observable is compatible with adjoint differentiation on DefaultQubit."""
-    return obs.has_matrix
-
-
 def stopping_condition(op: qml.operation.Operator) -> bool:
     """Specify whether or not an Operator object is supported by the device."""
     if op.name == "QFT" and len(op.wires) >= 6:
@@ -90,9 +87,16 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
     return op.has_matrix
 
 
-def adjoint_stopping_condition(op: qml.operation.Operator) -> bool:
-    """Specify whether or not an Operator is supported by adjoint differentiation."""
-    return op.num_params == 0 or op.num_params == 1 and op.has_generator
+def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
+    """Specifies whether or not a measurement is accepted when sampling."""
+    return isinstance(
+        m,
+        (
+            qml.measurements.SampleMeasurement,
+            qml.measurements.ClassicalShadowMP,
+            qml.measurements.ShadowExpvalMP,
+        ),
+    )
 
 
 class DefaultQubit(Device):
@@ -298,8 +302,12 @@ class DefaultQubit(Device):
             if circuit is None:
                 return True
 
+            def adjoint_ops(op: qml.operation.Operator) -> bool:
+                """Specify whether or not an Operator is supported by adjoint differentiation."""
+                return op.num_params == 0 or op.num_params == 1 and op.has_generator
+
             try:
-                decompose(circuit, stopping_condition=adjoint_stopping_condition)
+                decompose(circuit, stopping_condition=adjoint_ops)
             except (qml.operation.DecompositionUndefinedError, qml.DeviceError):
                 return False
             return True
@@ -309,7 +317,7 @@ class DefaultQubit(Device):
     def preprocess(
         self,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Tuple[QuantumTapeBatch, PostprocessingFn, ExecutionConfig]:
+    ) -> Tuple[TransformProgram, ExecutionConfig]:
         """This function defines the device transform program to be applied and an updated device configuration.
 
         Args:
@@ -328,31 +336,73 @@ class DefaultQubit(Device):
         * Currently does not intrinsically support parameter broadcasting
 
         """
+        config = self._setup_execution_config(execution_config)
         transform_program = TransformProgram()
 
-        transform_program.add_transform(decompose, stopping_condition=stopping_condition)
+        transform_program.add_transform(qml.defer_measurements)
+        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(
-            validate_measurements, observable_stopping_condition=observable_stopping_condition
+            decompose, stopping_condition=stopping_condition, name=self.name
+        )
+        transform_program.add_transform(
+            validate_measurements, sample_measurements=accepted_sample_measurement, name=self.name
+        )
+        transform_program.add_transform(
+            validate_observables, stopping_condition=observable_stopping_condition, name=self.name
         )
 
-        # Validate device wires
-        transform_program.add_transform(validate_device_wires, self)
-
         # Validate multi processing
-        max_workers = execution_config.device_options.get("max_workers", self._max_workers)
-        transform_program.add_transform(validate_multiprocessing_workers, max_workers, self)
+        max_workers = config.device_options.get("max_workers", self._max_workers)
+        if max_workers:
+            transform_program.add_transform(validate_multiprocessing_workers, max_workers, self)
 
-        if execution_config.gradient_method == "adjoint":
-            transform_program.add_transform(
-                decompose, stopping_condition=adjoint_stopping_condition
-            )
-            transform_program.add_transform(
-                validate_measurements, adjoint_observable_stopping_condition
-            )
-            transform_program.add_transform(qml.transforms.broadcast_expand)
-            transform_program.add_transform(warn_about_trainable_observables)
+        if config.gradient_method == "backprop":
+            transform_program.add_transform(no_sampling, name="backprop + default.qubit")
 
-        return transform_program, self._setup_execution_config(execution_config)
+        if config.gradient_method == "adjoint":
+            self._add_adjoint_transforms(transform_program)
+
+        return transform_program, config
+
+    @staticmethod
+    def _add_adjoint_transforms(program: TransformProgram) -> None:
+        """Private helper function for ``preprocess`` that adds the transforms specific
+        for adjoint differentiation.
+
+        Args:
+            program (TransformProgram): where we will add the adjoint differentiation transforms
+
+        Side Effects:
+            Adds transforms to the input program.
+
+        """
+
+        def adjoint_ops(op: qml.operation.Operator) -> bool:
+            """Specify whether or not an Operator is supported by adjoint differentiation."""
+            return op.num_params == 0 or op.num_params == 1 and op.has_generator
+
+        def adjoint_observables(obs: qml.operation.Operator) -> bool:
+            """Specifies whether or not an observable is compatible with adjoint differentiation on DefaultQubit."""
+            return obs.has_matrix
+
+        def accepted_adjoint_measurement(m: qml.measurements.MeasurementProcess) -> bool:
+            return isinstance(m, qml.measurements.ExpectationMP)
+
+        name = "adjoint + default.qubit"
+        program.add_transform(no_sampling, name=name)
+        program.add_transform(
+            decompose,
+            stopping_condition=adjoint_ops,
+            name=name,
+        )
+        program.add_transform(validate_observables, adjoint_observables, name=name)
+        program.add_transform(
+            validate_measurements,
+            analytic_measurements=accepted_adjoint_measurement,
+            name=name,
+        )
+        program.add_transform(qml.transforms.broadcast_expand)
+        program.add_transform(warn_about_trainable_observables)
 
     def _setup_execution_config(self, execution_config: ExecutionConfig) -> ExecutionConfig:
         """This is a private helper for ``preprocess`` that sets up the execution config.
