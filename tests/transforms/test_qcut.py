@@ -5594,3 +5594,28 @@ class TestCutCircuitWithHamiltonians:
 
             # each frag should have the device size constraint satisfied.
             assert all(len(set(e[2] for e in f.edges.data("wire"))) <= device_size for f in frags)
+
+    def test_raise_with_hamiltonian(self):
+        """Test that exception is correctly raise when caclulating expectation values of multiple Hamiltonians"""
+
+        dev_cut = qml.device("default.qubit", wires=4)
+
+        hamiltonian = qml.Hamiltonian(
+            [1.0, 1.0],
+            [qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliZ(3), qml.PauliY(0) @ qml.PauliX(1)],
+        )
+
+        def f():
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=0)
+            qml.RX(1.0, wires=0)
+            qml.CNOT(wires=[0, 1])
+
+            return [qml.expval(hamiltonian), qml.expval(hamiltonian)]
+
+        with pytest.raises(
+            NotImplementedError,
+            match="Hamiltonian expansion is supported only with a single Hamiltonian",
+        ):
+            cut_circuit = qcut.cut_circuit(qml.QNode(f, dev_cut))
+            cut_circuit()
