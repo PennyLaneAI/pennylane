@@ -15,5 +15,4 @@ r"""This module contains the Clifford+T decomposition transform as well as
 the helper functions needed to compute it.
 """
 
-from .newsynth import gridsynth
 from .cliffordt_transform import clifford_t_decomposition, check_clifford_t
