@@ -62,7 +62,7 @@ def _recursive_expression(x, order, ops):
 
 class TrotterProduct(Operation):
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix exponential
-    of a given hamiltonian.
+    of a given Hamiltonian.
 
     The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of hamiltonian
     expressed as a linear combination of terms which in general do not commute. Consider the hamiltonian
