@@ -158,11 +158,12 @@ def _rot_decompose(op):
     if isinstance(op, qml.Rot):
         for dec in op.decomposition():
             d_ops.extend(_rot_decompose(dec))
-
         return d_ops
 
     (theta,), wires = op.data, op.wires
-    if isinstance(op, qml.RX):
+    if isinstance(op, qml.ops.Adjoint):  # pylint: disable=no-member
+        ops_ = _rot_decompose(op.base.adjoint())
+    elif isinstance(op, qml.RX):
         ops_ = _simplify_param(theta, qml.PauliX(wires=wires))
         if ops_ is None:
             ops_ = [qml.Hadamard(wires), qml.RZ(theta, wires), qml.Hadamard(wires)]
