@@ -203,7 +203,7 @@ class TestValidateObservables:
         tape = QuantumScript(
             ops=[qml.PauliX(0)], measurements=[qml.expval(qml.GellMann(wires=0, index=1))]
         )
-        with pytest.raises(DeviceError, match=r"Observable GellMann1 not supported on abc"):
+        with pytest.raises(DeviceError, match=r"not supported on abc"):
             validate_observables(tape, lambda obs: obs.name == "PauliX", name="abc")
 
     def test_invalid_tensor_observable(self):
@@ -212,14 +212,14 @@ class TestValidateObservables:
             ops=[qml.PauliX(0), qml.PauliY(1)],
             measurements=[qml.expval(qml.PauliX(0) @ qml.GellMann(wires=1, index=2))],
         )
-        with pytest.raises(DeviceError, match="Observable expval"):
+        with pytest.raises(DeviceError, match="not supported on device"):
             validate_observables(tape, lambda obj: obj.name == "PauliX")
 
     def test_valid_tensor_observable(self):
         """Test that a valid tensor ovservable passes without error."""
         tape = QuantumScript([], [qml.expval(qml.PauliZ(0) @ qml.PauliY(1))])
         assert (
-            validate_measurements(tape, lambda obs: obs.name in {"PauliZ", "PauliY"})[0][0] is tape
+            validate_observables(tape, lambda obs: obs.name in {"PauliZ", "PauliY"})[0][0] is tape
         )
 
 

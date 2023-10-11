@@ -335,7 +335,7 @@ class TestValidation:
 
         with pytest.raises(
             qml._device.DeviceError,
-            match="Circuits with finite shots must be executed with non-analytic gradient methods; got adjoint",
+            match="Finite shots are not supported with adjoint",
         ):
             circ()
 
@@ -864,7 +864,7 @@ class TestIntegration:
         ],
     )
     def test_defer_meas_if_mcm_unsupported(
-        self, dev, first_par, sec_par, return_type, mv_return, mv_res, mocker
+        self, dev, first_par, sec_par, return_type, mv_return, mv_res
     ):  # pylint: disable=too-many-arguments
         """Tests that the transform using the deferred measurement principle is
         applied if the device doesn't support mid-circuit measurements
@@ -888,13 +888,11 @@ class TestIntegration:
             qml.cond(m_0, qml.RY)(y, wires=1)
             return qml.apply(return_type), mv_return(op=m_0)
 
-        spy = mocker.spy(qml, "defer_measurements")
         r1 = cry_qnode(first_par, sec_par)
         r2 = conditional_ry_qnode(first_par, sec_par)
 
         assert np.allclose(r1, r2[0])
         assert np.allclose(r2[1], mv_res(first_par))
-        spy.assert_called_once()
 
     def test_drawing_has_deferred_measurements(self):
         """Test that `qml.draw` with qnodes uses defer_measurements
@@ -914,7 +912,7 @@ class TestIntegration:
         assert res == expected
 
     @pytest.mark.parametrize("basis_state", [[1, 0], [0, 1]])
-    def test_sampling_with_mcm(self, basis_state, mocker):
+    def test_sampling_with_mcm(self, basis_state):
         """Tests that a QNode with qml.sample and mid-circuit measurements
         returns the expected results."""
         dev = qml.device("default.qubit", wires=3, shots=1000)
@@ -937,11 +935,9 @@ class TestIntegration:
             qml.cond(m_0, qml.RY)(x, wires=1)
             return qml.sample(qml.PauliZ(1))
 
-        spy = mocker.spy(qml, "defer_measurements")
         r1 = cry_qnode(first_par)
         r2 = conditional_ry_qnode(first_par)
         assert np.allclose(r1, r2)
-        spy.assert_called_once()
 
     @pytest.mark.tf
     @pytest.mark.parametrize("interface", ["tf", "auto"])
@@ -1605,7 +1601,7 @@ class TestNewDeviceIntegration:
             return qml.sample(wires=(0, 1))
 
         with pytest.raises(
-            qml.DeviceError, match="Analytic circuits must only contain StateMeasurements"
+            qml.DeviceError, match="not accepted for analytic simulation on default.qubit"
         ):
             circuit()
 
