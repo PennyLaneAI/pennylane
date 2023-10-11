@@ -175,7 +175,7 @@ def _rot_decompose(op):
                 qml.RZ(theta, wires),
                 qml.Hadamard(wires),
                 qml.adjoint(qml.S(wires)),
-            ]
+            ][::-1]
     elif isinstance(op, qml.RZ):
         ops_ = _simplify_param(theta, qml.PauliZ(wires=wires))
         if ops_ is None:
@@ -198,7 +198,8 @@ def _one_qubit_decompose(op):
 
     d_ops = []
     for sd_op in sd_ops[:-1]:
-        d_ops.extend(_rot_decompose(sd_op))
+        if sd_op.num_params:
+            d_ops.extend(_rot_decompose(sd_op) if sd_op.num_params else [sd_op])
 
     return d_ops, sd_ops[-1]
 
@@ -210,7 +211,9 @@ def _two_qubit_decompose(op):
 
     d_ops = []
     for td_op in td_ops:
-        d_ops.extend(_rot_decompose(td_op))
+        d_ops.extend(
+            _rot_decompose(td_op) if td_op.num_params and td_op.num_wires == 1 else [td_op]
+        )
 
     return d_ops
 
@@ -304,7 +307,7 @@ def clifford_t_decomposition(tape: QuantumTape, epsilon=1e-8) -> (Sequence[Quant
                 decomp_ops.extend(d_ops)
 
             # Final resort (should not enter in an ideal situtation)
-            else:
+            else:  # pragma: no cover
                 try:
                     # Attempt decomposing the operation
                     md_ops = op.decomposition()
