@@ -187,6 +187,9 @@
   still a `_qfunc_output` property on `QNode` instances.
   [(#4651)](https://github.com/PennyLaneAI/pennylane/pull/4651)
 
+* `qml.data.load` properly handles parameters that come after `'full'`
+  [(#4663)](https://github.com/PennyLaneAI/pennylane/pull/4663)
+
 <h3>Breaking changes 💔</h3>
 
 * The device test suite now converts device kwargs to integers or floats if they can be converted to integers or floats.
