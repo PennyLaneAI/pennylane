@@ -1827,7 +1827,6 @@ class TestTapeExpansion:
             PhaseShift(x, wires=0)
             return qml.expval(qml.PauliX(0))
 
-        spy = mocker.spy(circuit.device, "batch_execute")
         x = pnp.array(0.5, requires_grad=True)
         circuit(x)
 
