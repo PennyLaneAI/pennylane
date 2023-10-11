@@ -56,7 +56,6 @@ def _cut_circuit_expand(
                 "Hamiltonian expansion is supported only with a single Hamiltonian"
             )
 
-        # TODO: fix the issue with grouping_indices w/o this in-place manipulation
         new_meas_op = type(tape_meas_ops[0])(obs=qml.Hamiltonian(*tape_meas_ops[0].obs.terms()))
         new_tape = qml.tape.QuantumScript(tape.operations, [new_meas_op], shots=tape.shots)
         new_tape.trainable_params = tape.trainable_params
