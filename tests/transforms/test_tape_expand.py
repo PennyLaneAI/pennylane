@@ -226,10 +226,9 @@ class TestExpandNonunitaryGen:
         tape = qml.tape.QuantumScript.from_queue(q)
         new_tape = qml.transforms.expand_nonunitary_gen(tape)
         assert tape.operations[:2] == new_tape.operations[:2]
-        exp_op, gph_op = new_tape.operations[2:4]
+        exp_op = new_tape.operations[2]
         assert exp_op.name == "RZ" and exp_op.data == (2.1,) and exp_op.wires == qml.wires.Wires(1)
-        assert gph_op.name == "GlobalPhase" and gph_op.data == (2.1 * 0.5,)
-        assert tape.operations[3:] == new_tape.operations[4:]
+        assert tape.operations[3:] == new_tape.operations[3:]
 
     def test_expand_nonunitary_generator(self):
         """Test that a tape with single-parameter operations with
@@ -245,10 +244,9 @@ class TestExpandNonunitaryGen:
         new_tape = qml.transforms.expand_nonunitary_gen(tape)
 
         assert tape.operations[:2] == new_tape.operations[:2]
-        exp_op, gph_op = new_tape.operations[2:4]
+        exp_op = new_tape.operations[2]
         assert exp_op.name == "RZ" and exp_op.data == (2.1,) and exp_op.wires == qml.wires.Wires(1)
-        assert gph_op.name == "GlobalPhase" and gph_op.data == (2.1 * 0.5,)
-        assert tape.operations[3:] == new_tape.operations[4:]
+        assert tape.operations[3:] == new_tape.operations[3:]
 
     def test_decompose_all_nonunitary_generator(self):
         """Test that decompositions actually only contain unitarily
@@ -332,9 +330,8 @@ class TestExpandInvalidTrainable:
 
         assert new_tape.operations[0].name == "RZ"
         assert new_tape.operations[0].grad_method == "A"
-        assert new_tape.operations[1].name == "GlobalPhase"
-        assert new_tape.operations[2].name == "RY"
-        assert new_tape.operations[3].name == "CNOT"
+        assert new_tape.operations[1].name == "RY"
+        assert new_tape.operations[2].name == "CNOT"
 
     def test_nontrainable_nondiff(self, mocker):
         """Test that a circuit with non-differentiable
