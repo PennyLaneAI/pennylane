@@ -183,6 +183,10 @@
   interface-specific scalar data, eg `[(tf.Variable(1.1), tf.Variable(2.2))]`.
   [(#4603)](https://github.com/PennyLaneAI/pennylane/pull/4603)
 
+* `qml.cut_circuit` is now compatible with circuits that compute the expectation values of Hamiltonians 
+  with two or more terms.
+  [(#4642)](https://github.com/PennyLaneAI/pennylane/pull/4642)
+
 * `_qfunc_output` has been removed from `QuantumScript`, as it is no longer necessary. There is
   still a `_qfunc_output` property on `QNode` instances.
   [(#4651)](https://github.com/PennyLaneAI/pennylane/pull/4651)
