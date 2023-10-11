@@ -53,7 +53,6 @@ _PARAMETER_GATES = [qml.RX, qml.RY, qml.RZ, qml.Rot, qml.GlobalPhase]
 _CLIFFORD_T_GATES = _CLIFFORD_T_ONE_GATES + _CLIFFORD_T_TWO_GATES
 
 
-# pylint: disable= bare-except, unnecessary-lambda-assignment
 def check_clifford_op(op):
     r"""Check if an operator is Clifford or not.
 
