@@ -21,6 +21,7 @@ import pennylane as qml
 from pennylane.transforms.decompositions.clifford_plus_t.cliffordt_transform import (
     check_clifford_t,
     clifford_t_decomposition,
+    _rot_decompose,
     _one_qubit_decompose,
     _two_qubit_decompose,
     _CLIFFORD_T_GATES,
@@ -28,15 +29,17 @@ from pennylane.transforms.decompositions.clifford_plus_t.cliffordt_transform imp
 
 from pennylane.transforms.optimization.optimization_utils import _fuse_global_phases
 
-_CLIFFORD_PHASE_GATES = _CLIFFORD_T_GATES + [qml.GlobalPhase]
+_SKIP_GATES = [qml.Barrier, qml.Snapshot, qml.WireCut, qml.GlobalPhase]
+_CLIFFORD_PHASE_GATES = _CLIFFORD_T_GATES + _SKIP_GATES
 
 
 def circuit_1():
     """Circuit 1 with quantum chemistry gates"""
-    qml.RX(1.0, wires=[0])
+    qml.RZ(1.0, wires=[0])
     qml.PhaseShift(1.0, wires=[1])
     qml.SingleExcitation(2.0, wires=[1, 2])
     qml.DoubleExcitation(2.0, wires=[1, 2, 3, 4])
+    qml.Snapshot()
     return qml.expval(qml.PauliZ(0))
 
 
@@ -95,15 +98,18 @@ class TestCliffordCompile:
         """Test Clifford checker operation for gate"""
         assert check_clifford_t(op) == res
 
-    @pytest.mark.parametrize(("circuit"), [circuit_1, circuit_2, circuit_3, circuit_4, circuit_5])
-    def test_decomposition(self, circuit):
+    @pytest.mark.parametrize(
+        ("circuit, max_depth"),
+        [(circuit_1, 1), (circuit_2, 2), (circuit_3, 3), (circuit_4, 4), (circuit_5, 5)],
+    )
+    def test_decomposition(self, circuit, max_depth):
         """Test decomposition for the Clifford transform."""
 
         with qml.tape.QuantumTape() as tape:
             circuit()
 
-        [tape], _ = clifford_t_decomposition(tape)
-
+        [tape], _ = clifford_t_decomposition(tape, max_depth=max_depth)
+        print(tape.operations)
         assert all(
             any(
                 (
@@ -189,3 +195,54 @@ class TestCliffordCompile:
             where=matrix_op != 0,
         )[qml.math.nonzero(qml.math.round(matrix_op, 10))]
         assert qml.math.allclose(phase / phase[0], qml.math.ones(qml.math.shape(phase)[0]))
+
+    @pytest.mark.parametrize(
+        ("op"),
+        [
+            qml.adjoint(qml.RX(1.0, wires=["b"])),
+            qml.Rot(1, 2, 3, wires=[2]),
+        ],
+    )
+    def test_rot_decomposition(self, op):
+        """Test decomposition for the Clifford transform."""
+
+        decomp_ops = _fuse_global_phases(_rot_decompose(op))
+
+        assert all(
+            any(
+                (
+                    isinstance(op, gate) or isinstance(getattr(op, "base", None), gate)
+                    for gate in _CLIFFORD_PHASE_GATES + [qml.RZ]
+                )
+            )
+            for op in decomp_ops
+        )
+
+        decomp_ops, global_ops = decomp_ops[:-1], decomp_ops[-1]
+        matrix_op = reduce(
+            lambda x, y: x @ y, [qml.matrix(op) for op in decomp_ops][::-1]
+        ) * qml.matrix(global_ops)
+
+        # check for matrice equivalence up to global phase
+        phase = qml.math.divide(
+            matrix_op,
+            qml.matrix(op),
+            out=qml.math.zeros_like(matrix_op, dtype=complex),
+            where=matrix_op != 0,
+        )[qml.math.nonzero(qml.math.round(matrix_op, 10))]
+        assert qml.math.allclose(phase / phase[0], qml.math.ones(qml.math.shape(phase)[0]))
+
+    @pytest.mark.parametrize(
+        ("op"),
+        [
+            qml.U1(1.0, wires=["b"]),
+        ],
+    )
+    def test_raise_with_rot_decomposition(self, op):
+        """Test that exception is correctly raise when caclulating expectation values of multiple Hamiltonians"""
+
+        with pytest.raises(
+            ValueError,
+            match="qml.RX, qml.RY, qml.RZ and qml.Rot",
+        ):
+            _fuse_global_phases(_rot_decompose(op))

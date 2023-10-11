@@ -48,7 +48,7 @@ _CLIFFORD_T_TWO_GATES = [
     qml.ISWAP,
 ]
 
-_PARAMETER_GATES = [qml.RX, qml.RY, qml.RZ, qml.Rot, qml.GlobalPhase]
+_PARAMETER_GATES = [qml.RX, qml.RY, qml.RZ, qml.Rot, qml.PhaseShift, qml.GlobalPhase]
 
 _CLIFFORD_T_GATES = _CLIFFORD_T_ONE_GATES + _CLIFFORD_T_TWO_GATES
 
@@ -164,11 +164,11 @@ def _rot_decompose(op):
         ops_ = _rot_decompose(op.base.adjoint())
     elif isinstance(op, qml.RX):
         ops_ = _simplify_param(theta, qml.PauliX(wires=wires))
-        if ops_ is None:
+        if ops_ is None:  # Use Rx = H @ Rz @ H
             ops_ = [qml.Hadamard(wires), qml.RZ(theta, wires), qml.Hadamard(wires)]
     elif isinstance(op, qml.RY):
         ops_ = _simplify_param(theta, qml.PauliY(wires=wires))
-        if ops_ is None:
+        if ops_ is None:  # Use Ry = S @ H @ Rz @ H @ S.dag
             ops_ = [
                 qml.S(wires),
                 qml.Hadamard(wires),
@@ -180,6 +180,13 @@ def _rot_decompose(op):
         ops_ = _simplify_param(theta, qml.PauliZ(wires=wires))
         if ops_ is None:
             ops_ = [qml.RZ(theta, wires)]
+    elif isinstance(op, qml.PhaseShift):
+        ops_ = _simplify_param(theta, qml.PauliZ(wires=wires))
+        if ops_ is None:
+            ops_ = [qml.RZ(theta, wires), qml.GlobalPhase(theta / 2)]
+        else:
+            ops_.append(qml.GlobalPhase(-theta / 2))
+
     else:
         raise ValueError(
             f"Operation {op} is not a valid Pauli rotation: qml.RX, qml.RY, qml.RZ and qml.Rot"
@@ -262,14 +269,15 @@ def _merge_pauli_rotations(operations, merge_ops=None):
 
 # pylint: disable= too-many-nested-blocks, too-many-branches, too-many-statements, unnecessary-lambda-assignment
 @transform
-def clifford_t_decomposition(tape: QuantumTape, epsilon=1e-8) -> (Sequence[QuantumTape], Callable):
+def clifford_t_decomposition(
+    tape: QuantumTape, epsilon=1e-8, max_depth=6
+) -> (Sequence[QuantumTape], Callable):
     r"""Unrolls the tape into Clifford+T basis"""
 
     # Build the basis set and the pipeline for intial compilation pass
-    basis_set = [op.__name__ for op in _PARAMETER_GATES + _CLIFFORD_T_GATES]
+    basis_set = [op.name for op in _PARAMETER_GATES + _CLIFFORD_T_GATES]
     pipelines = [remove_barrier, commute_controlled, cancel_inverses, merge_rotations]
 
-    max_depth = 6  # can be tweaked
     expanded_tape = tape.expand(depth=max_depth, stop_at=lambda op: op.name in basis_set)
 
     for transf in pipelines:
@@ -287,8 +295,8 @@ def clifford_t_decomposition(tape: QuantumTape, epsilon=1e-8) -> (Sequence[Quant
             gphase_ops.append(op)
 
         # Check whether the operation is a Clifford or a T-gate
-        elif check_clifford_t(op) and len(op.parameters) < 2:
-            if len(op.parameters):
+        elif op.name in basis_set and check_clifford_t(op):
+            if op.num_params:
                 decomp_ops.extend(_rot_decompose(op))
             else:
                 decomp_ops.append(op)
