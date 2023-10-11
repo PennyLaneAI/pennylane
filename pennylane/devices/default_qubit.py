@@ -99,6 +99,46 @@ def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
     )
 
 
+def _add_adjoint_transforms(program: TransformProgram) -> None:
+    """Private helper function for ``preprocess`` that adds the transforms specific
+    for adjoint differentiation.
+
+    Args:
+        program (TransformProgram): where we will add the adjoint differentiation transforms
+
+    Side Effects:
+        Adds transforms to the input program.
+
+    """
+
+    def adjoint_ops(op: qml.operation.Operator) -> bool:
+        """Specify whether or not an Operator is supported by adjoint differentiation."""
+        return op.num_params == 0 or op.num_params == 1 and op.has_generator
+
+    def adjoint_observables(obs: qml.operation.Operator) -> bool:
+        """Specifies whether or not an observable is compatible with adjoint differentiation on DefaultQubit."""
+        return obs.has_matrix
+
+    def accepted_adjoint_measurement(m: qml.measurements.MeasurementProcess) -> bool:
+        return isinstance(m, qml.measurements.ExpectationMP)
+
+    name = "adjoint + default.qubit"
+    program.add_transform(no_sampling, name=name)
+    program.add_transform(
+        decompose,
+        stopping_condition=adjoint_ops,
+        name=name,
+    )
+    program.add_transform(validate_observables, adjoint_observables, name=name)
+    program.add_transform(
+        validate_measurements,
+        analytic_measurements=accepted_adjoint_measurement,
+        name=name,
+    )
+    program.add_transform(qml.transforms.broadcast_expand)
+    program.add_transform(warn_about_trainable_observables)
+
+
 class DefaultQubit(Device):
     """A PennyLane device written in Python and capable of backpropagation derivatives.
 
@@ -361,49 +401,9 @@ class DefaultQubit(Device):
             transform_program.add_transform(no_sampling, name="backprop + default.qubit")
 
         if config.gradient_method == "adjoint":
-            self._add_adjoint_transforms(transform_program)
+            _add_adjoint_transforms(transform_program)
 
         return transform_program, config
-
-    @staticmethod
-    def _add_adjoint_transforms(program: TransformProgram) -> None:
-        """Private helper function for ``preprocess`` that adds the transforms specific
-        for adjoint differentiation.
-
-        Args:
-            program (TransformProgram): where we will add the adjoint differentiation transforms
-
-        Side Effects:
-            Adds transforms to the input program.
-
-        """
-
-        def adjoint_ops(op: qml.operation.Operator) -> bool:
-            """Specify whether or not an Operator is supported by adjoint differentiation."""
-            return op.num_params == 0 or op.num_params == 1 and op.has_generator
-
-        def adjoint_observables(obs: qml.operation.Operator) -> bool:
-            """Specifies whether or not an observable is compatible with adjoint differentiation on DefaultQubit."""
-            return obs.has_matrix
-
-        def accepted_adjoint_measurement(m: qml.measurements.MeasurementProcess) -> bool:
-            return isinstance(m, qml.measurements.ExpectationMP)
-
-        name = "adjoint + default.qubit"
-        program.add_transform(no_sampling, name=name)
-        program.add_transform(
-            decompose,
-            stopping_condition=adjoint_ops,
-            name=name,
-        )
-        program.add_transform(validate_observables, adjoint_observables, name=name)
-        program.add_transform(
-            validate_measurements,
-            analytic_measurements=accepted_adjoint_measurement,
-            name=name,
-        )
-        program.add_transform(qml.transforms.broadcast_expand)
-        program.add_transform(warn_about_trainable_observables)
 
     def _setup_execution_config(self, execution_config: ExecutionConfig) -> ExecutionConfig:
         """This is a private helper for ``preprocess`` that sets up the execution config.
