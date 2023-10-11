@@ -156,7 +156,7 @@ def _rot_decompose(op):
     d_ops = []
     # Extend for Rot operation with RzRyRz decompositions
     if isinstance(op, qml.Rot):
-        for dec in op.decomposition():
+        for dec in op.compute_decomposition(*op.parameters, wires=op.wires):
             d_ops.extend(_rot_decompose(dec))
         return d_ops
 
@@ -319,7 +319,7 @@ def clifford_t_decomposition(
             else:  # pragma: no cover
                 try:
                     # Attempt decomposing the operation
-                    md_ops = op.decomposition()
+                    md_ops = op.compute_decomposition(*op.parameters, wires=op.wires)
 
                     idx = 0  # might not be fast but at least is not recursive
                     while idx < len(md_ops):
