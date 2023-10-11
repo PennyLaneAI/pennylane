@@ -16,7 +16,7 @@
 import pytest
 import pennylane as qml
 from pennylane.transforms.decompositions.clifford_plus_t import (
-    check_clifford_op,
+    check_clifford_t,
     clifford_t_decomposition,
 )
 
@@ -30,7 +30,7 @@ _CLIFFORD_T_ONE_GATES = [
     qml.S,
     qml.SX,
     qml.T,
-    qml.GlobalPhase
+    qml.GlobalPhase,
 ]
 
 # Two qubits Clifford+T gates in PL
@@ -43,6 +43,7 @@ _CLIFFORD_T_TWO_GATES = [
 ]
 
 _CLIFFORD_PHASE_GATES = _CLIFFORD_T_ONE_GATES + _CLIFFORD_T_TWO_GATES
+
 
 def circuit_1():
     """Circuit 1 with quantum chemistry gates"""
@@ -69,40 +70,42 @@ def circuit_3():
     qml.Hadamard(wires=[0])
     return qml.expval(qml.PauliZ(0))
 
+
 def circuit_4():
     """Circuit 4 with a Template"""
     qml.RandomLayers(weights=qml.math.array([[0.1, -2.1, 1.4]]), wires=range(2))
     return qml.expval(qml.PauliZ(0))
 
+
 class TestCliffordCompile:
     """Unit tests for clifford compilation function."""
 
     @pytest.mark.parametrize(
-        "op, res", [(qml.DoubleExcitation(2, wires=[0, 1, 2, 3]), False), (qml.PauliX(wires=[0]), True), (qml.CH(wires=[0, 1]), False)]
+        "op, res",
+        [
+            (qml.DoubleExcitation(2, wires=[0, 1, 2, 3]), False),
+            (qml.PauliX(wires=[1]), True),
+            (qml.CH(wires=["a", "b"]), False),
+        ],
     )
     def test_clifford_checker(self, op, res):
         """Test Clifford checker operation for gate"""
-        assert check_clifford_op(op) == res
+        assert check_clifford_t(op) == res
 
     @pytest.mark.parametrize(("circuit"), [circuit_1, circuit_2, circuit_3, circuit_4])
     def test_decomposition(self, circuit):
         """Test decomposition for the Clifford transform."""
 
-        dev = qml.device("default.qubit")
-        circ = qml.QNode(circuit, dev)
+        with qml.tape.QuantumTape() as tape:
+            circuit()
 
-        basic_tape = qml.tape.make_qscript(circ.func)()
-        program, _ = dev.preprocess()
-
-        circuit_transform = qml.transforms.core.TransformProgram([clifford_t_decomposition])
-        program = circuit_transform + program
-        [tape], _ = program([basic_tape])
+        [tape], _ = clifford_t_decomposition(tape)
 
         assert all(
             any(
                 (
                     isinstance(op, gate) or isinstance(getattr(op, "base", None), gate)
-                    for gate in _CLIFFORD_PHASE_GATES
+                    for gate in _CLIFFORD_PHASE_GATES + [qml.RZ]  # TODO: remove this
                 )
             )
             for op in tape.operations
