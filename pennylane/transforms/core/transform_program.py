@@ -298,15 +298,11 @@ class TransformProgram:
             kwargs.pop("argnums", None)
             qnode.construct(args, kwargs)
             tape = qnode.qtape
-            if not program.is_empty():
-                tapes, _ = program((tape,))
-                res = tuple(
-                    qml.math.stack(tape.get_parameters(trainable_only=True)) for tape in tapes
-                )
-                if len(tapes) == 1:
-                    return res[0]
-                return res
-            return qml.math.stack(tape.get_parameters(trainable_only=True))
+            tapes, _ = program((tape,))
+            res = tuple(qml.math.stack(tape.get_parameters(trainable_only=True)) for tape in tapes)
+            if len(tapes) == 1:
+                return res[0]
+            return res
 
         def jacobian(classical_function, program, argnums, *args, **kwargs):
             indices = qml.math.get_trainable_indices(args)
@@ -322,9 +318,6 @@ class TransformProgram:
 
             classical_function = partial(classical_function, program)
             old_interface = qnode.interface
-
-            if old_interface == "auto":
-                qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
             if qnode.interface == "autograd":
                 jac = qml.jacobian(classical_function, argnum=argnums)(*args, **kwargs)
@@ -359,9 +352,6 @@ class TransformProgram:
                     return jax.jacobian(classical_function, argnums=argnums)(*args, **kwargs)
 
                 jac = _jacobian(*args, **kwargs)
-
-            if old_interface == "auto":
-                qnode.interface = "auto"
 
             return jac
 

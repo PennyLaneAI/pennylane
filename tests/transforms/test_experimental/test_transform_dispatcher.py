@@ -351,6 +351,15 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         with pytest.raises(TransformError):
             transform(non_valid_transform)
 
+    @pytest.mark.parametrize("valid_transform", valid_transforms)
+    def test_dispatcher_signature_non_valid_transform(self, valid_transform):
+        """Test the valid transforms with non-valid co transform raises a Transform error."""
+
+        with pytest.raises(
+            TransformError, match="The classical co-transform must be a valid Python function."
+        ):
+            transform(valid_transform, classical_cotransform=3)
+
     def test_error_not_callable_transform(self):
         """Test that a non-callable is not a valid transforms."""
 
