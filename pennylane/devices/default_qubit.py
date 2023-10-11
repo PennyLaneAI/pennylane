@@ -339,16 +339,18 @@ class DefaultQubit(Device):
         ):
             return True
 
-        if execution_config.gradient_method == "adjoint" and execution_config.use_device_gradient:
+        if (
+            execution_config.gradient_method == "adjoint"
+            and execution_config.use_device_gradient is not False
+        ):
             if circuit is None:
                 return True
 
-            def adjoint_ops(op: qml.operation.Operator) -> bool:
-                """Specify whether or not an Operator is supported by adjoint differentiation."""
-                return op.num_params == 0 or op.num_params == 1 and op.has_generator
+            prog = TransformProgram()
+            _add_adjoint_transforms(prog)
 
             try:
-                decompose(circuit, stopping_condition=adjoint_ops)
+                prog((circuit,))
             except (qml.operation.DecompositionUndefinedError, qml.DeviceError):
                 return False
             return True
