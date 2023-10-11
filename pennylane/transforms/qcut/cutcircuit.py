@@ -53,7 +53,7 @@ def _cut_circuit_expand(
     if isinstance(tape_meas_ops[0].obs, qml.Hamiltonian):
         if len(tape_meas_ops) > 1:
             raise NotImplementedError(
-                "Hamiltonian expansion only supported with a single Hamiltonian"
+                "Hamiltonian expansion is supported only with a single Hamiltonian"
             )
 
         # TODO: fix the issue with grouping_indices w/o this in-place manipulation
