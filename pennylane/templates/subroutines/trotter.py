@@ -177,9 +177,80 @@ class TrotterProduct(Operation):
                         "One or more of the terms in the Hamiltonian may not be hermitian"
                     )
 
-        self._hyperparameters = {"num_steps": n, "order": order, "base": hamiltonian}
-        wires = hamiltonian.wires
-        super().__init__(time, wires=wires, id=id)
+        self._hyperparameters = {
+            "n": n,
+            "order": order,
+            "base": hamiltonian,
+            "check_hermitian": check_hermitian,
+        }
+        super().__init__(time, wires=hamiltonian.wires, id=id)
+
+    def _flatten(self):
+        """Serialize the operation into trainable and non-trainable components.
+
+        Returns:
+            data, metadata: The trainable and non-trainable components.
+
+        See ``Operator._unflatten``.
+
+        The data component can be recursive and include other operations. For example, the trainable component of ``Adjoint(RX(1, wires=0))``
+        will be the operator ``RX(1, wires=0)``.
+
+        The metadata **must** be hashable.  If the hyperparameters contain a non-hashable component, then this
+        method and ``Operator._unflatten`` should be overridden to provide a hashable version of the hyperparameters.
+
+        **Example:**
+
+        >>> op = qml.Rot(1.2, 2.3, 3.4, wires=0)
+        >>> qml.Rot._unflatten(*op._flatten())
+        Rot(1.2, 2.3, 3.4, wires=[0])
+        >>> op = qml.PauliRot(1.2, "XY", wires=(0,1))
+        >>> qml.PauliRot._unflatten(*op._flatten())
+        PauliRot(1.2, XY, wires=[0, 1])
+
+        Operators that have trainable components that differ from their ``Operator.data`` must implement their own
+        ``_flatten`` methods.
+
+        >>> op = qml.ctrl(qml.U2(3.4, 4.5, wires="a"), ("b", "c") )
+        >>> op._flatten()
+        ((U2(3.4, 4.5, wires=['a']),),
+        (<Wires = ['b', 'c']>, (True, True), <Wires = []>))
+        """
+        hamiltonian = self.hyperparameters["base"]
+        time = self.parameters[0]
+
+        hashable_hyperparameters = tuple(
+            (key, value) for key, value in self.hyperparameters.items() if key != "base"
+        )
+        return (hamiltonian, time), hashable_hyperparameters
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        """Recreate an operation from its serialized format.
+
+        Args:
+            data: the trainable component of the operation
+            metadata: the non-trainable component of the operation.
+
+        The output of ``Operator._flatten`` and the class type must be sufficient to reconstruct the original
+        operation with ``Operator._unflatten``.
+
+        **Example:**
+
+        >>> op = qml.Rot(1.2, 2.3, 3.4, wires=0)
+        >>> op._flatten()
+        ((1.2, 2.3, 3.4), (<Wires = [0]>, ()))
+        >>> qml.Rot._unflatten(*op._flatten())
+        >>> op = qml.PauliRot(1.2, "XY", wires=(0,1))
+        >>> op._flatten()
+        ((1.2,), (<Wires = [0, 1]>, (('pauli_word', 'XY'),)))
+        >>> op = qml.ctrl(qml.U2(3.4, 4.5, wires="a"), ("b", "c") )
+        >>> type(op)._unflatten(*op._flatten())
+        Controlled(U2(3.4, 4.5, wires=['a']), control_wires=['b', 'c'])
+
+        """
+        hyperparameters_dict = dict(metadata)
+        return cls(*data, **hyperparameters_dict)
 
     @staticmethod
     def compute_decomposition(*args, **kwargs):
@@ -203,7 +274,7 @@ class TrotterProduct(Operation):
             list[Operator]: decomposition of the operator
         """
         time = args[0]
-        n = kwargs["num_steps"]
+        n = kwargs["n"]
         order = kwargs["order"]
         ops = kwargs["base"].operands
 

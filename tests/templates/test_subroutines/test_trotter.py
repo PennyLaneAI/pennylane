@@ -14,8 +14,10 @@
 """
 Tests for the TrotterProduct template and helper functions.
 """
+import copy
 import pytest
 from functools import reduce
+
 import pennylane as qml
 from pennylane.templates.subroutines.trotter import (
     _recursive_expression,
@@ -220,17 +222,51 @@ class TestInitialization:
         ):
             qml.TrotterProduct(hamiltonian, time, order=order)
 
-    def test_init_correctly(self):
+    @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
+    def test_init_correctly(self, hamiltonian):
         """Test that all of the attributes are initalized correctly."""
-        pass
+        time, n, order = (4.2, 10, 4)
+        op = qml.TrotterProduct(hamiltonian, time, n=n, order=order, check_hermitian=False)
 
-    def test_copy(self):
+        assert op.wires == hamiltonian.wires
+        assert op.parameters == [time]
+        assert op.data == (time,)
+        assert op.hyperparameters == {
+            "base": hamiltonian,
+            "n": n,
+            "order": order,
+            "check_hermitian": False,
+        }
+
+    @pytest.mark.parametrize("n", (1, 2, 5, 10))
+    @pytest.mark.parametrize("time", (0.5, 1.2))
+    @pytest.mark.parametrize("order", (1, 2, 4))
+    @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
+    def test_copy(self, hamiltonian, time, n, order):
         """Test that we can make deep and shallow copies of TrotterProduct correctly."""
-        pass
+        op = qml.TrotterProduct(hamiltonian, time, n=n, order=order)
+        new_op = copy.copy(op)
 
-    def test_flatten_and_unflatten(self):
+        assert op.wires == new_op.wires
+        assert op.parameters == new_op.parameters
+        assert op.data == new_op.data
+        assert op.hyperparameters == new_op.hyperparameters
+        assert op is not new_op
+
+    @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
+    def test_flatten_and_unflatten(self, hamiltonian):
         """Test that the flatten and unflatten methods work correctly."""
-        pass
+        time, n, order = (4.2, 10, 4)
+        op = qml.TrotterProduct(hamiltonian, time, n=n, order=order)
+
+        data, metadata = op._flatten()
+        assert qml.equal(data[0], hamiltonian)
+        assert data[1] == time
+        assert dict(metadata) == {"n": n, "order": order, "check_hermitian": True}
+
+        new_op = type(op)._unflatten(data, metadata)
+        assert qml.equal(op, new_op)
+        assert new_op is not op
 
 
 class TestPrivateFunctions:
@@ -332,6 +368,32 @@ class TestDecomposition:
             qml.equal(op1, op2) for op1, op2 in zip(decomp, true_decomp)
         )  # decomp is correct
 
+    @pytest.mark.parametrize("order", (1, 2))
+    @pytest.mark.parametrize("num_steps", (1, 2, 3))
+    def test_compute_decomposition_n_steps(self, num_steps, order):
+        """Test the decomposition is correct when we set the number of trotter steps"""
+        time = 0.5
+        hamiltonian = qml.sum(qml.PauliX(0), qml.PauliZ(0))
+
+        if order == 1:
+            base_decomp = [
+                qml.exp(qml.PauliZ(0), 0.5j / num_steps),
+                qml.exp(qml.PauliX(0), 0.5j / num_steps),
+            ]
+        if order == 2:
+            base_decomp = [
+                qml.exp(qml.PauliX(0), 0.25j / num_steps),
+                qml.exp(qml.PauliZ(0), 0.25j / num_steps),
+                qml.exp(qml.PauliZ(0), 0.25j / num_steps),
+                qml.exp(qml.PauliX(0), 0.25j / num_steps),
+            ]
+
+        true_decomp = base_decomp * num_steps
+
+        op = qml.TrotterProduct(hamiltonian, time, n=num_steps, order=order)
+        decomp = op.compute_decomposition(*op.parameters, **op.hyperparameters)
+        assert all(qml.equal(op1, op2) for op1, op2 in zip(decomp, true_decomp))
+
 
 class TestIntegration:
     """Test that the TrotterProduct can be executed and differentiated
@@ -364,4 +426,46 @@ class TestIntegration:
         )
         state = circ()
 
+        assert qnp.allclose(expected_state, state)
+
+    @pytest.mark.parametrize("order", (1, 2))
+    @pytest.mark.parametrize("num_steps", (1, 2, 3))
+    def test_execute_circuit_n_steps(self, num_steps, order):
+        """Test that the circuit executes as expected when we set the number of trotter steps"""
+        time = 0.5
+        hamiltonian = qml.sum(qml.PauliX(0), qml.PauliZ(0))
+
+        if order == 1:
+            base_decomp = [
+                qml.exp(qml.PauliZ(0), 0.5j / num_steps),
+                qml.exp(qml.PauliX(0), 0.5j / num_steps),
+            ]
+        if order == 2:
+            base_decomp = [
+                qml.exp(qml.PauliX(0), 0.25j / num_steps),
+                qml.exp(qml.PauliZ(0), 0.25j / num_steps),
+                qml.exp(qml.PauliZ(0), 0.25j / num_steps),
+                qml.exp(qml.PauliX(0), 0.25j / num_steps),
+            ]
+
+        true_decomp = base_decomp * num_steps
+
+        wires = hamiltonian.wires
+        dev = qml.device("default.qubit", wires=wires)
+
+        @qml.qnode(dev)
+        def circ():
+            qml.TrotterProduct(hamiltonian, time, n=num_steps, order=order)
+            return qml.state()
+
+        initial_state = qnp.zeros(2 ** (len(wires)))
+        initial_state[0] = 1
+
+        expected_state = (
+            reduce(
+                lambda x, y: x @ y, [qml.matrix(op, wire_order=wires) for op in true_decomp[-1::-1]]
+            )
+            @ initial_state
+        )
+        state = circ()
         assert qnp.allclose(expected_state, state)
