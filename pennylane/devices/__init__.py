@@ -72,7 +72,7 @@ method for devices.
 
 Other transforms that may be relevant to device preprocessing include:
 
-.. cuurentmodule:: pennylane
+.. currentmodule:: pennylane
 .. autosummary::
     :toctree: api
 

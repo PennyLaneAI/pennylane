@@ -257,9 +257,7 @@ def _adjoint_metric_tensor_qnode(qnode, device, hybrid):
         )
 
         qnode.construct(args, kwargs)
-        program, _ = qml.device("default.qubit").preprocess(
-            qml.devices.ExecutionConfig(gradient_method="adjoint")
-        )
+        program, _ = qml.device("default.qubit").preprocess()
         tapes, _ = program((qnode.tape,))
         for tape in tapes:
             # set the trainable parameters

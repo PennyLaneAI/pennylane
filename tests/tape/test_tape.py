@@ -1456,14 +1456,14 @@ class TestExecution:
     def test_decomposition(self, tol):
         """Test decomposition onto a device's supported gate set"""
         dev = qml.device("default.qubit", wires=1)
-        from pennylane.devices.qubit.preprocess import _accepted_operator
+        from pennylane.devices.default_qubit import stopping_condition
 
         with QuantumTape() as tape:
             qml.U3(0.1, 0.2, 0.3, wires=[0])
             qml.expval(qml.PauliZ(0))
 
         def stop_fn(op):
-            return isinstance(op, qml.measurements.MeasurementProcess) or _accepted_operator(op)
+            return isinstance(op, qml.measurements.MeasurementProcess) or stopping_condition(op)
 
         tape = tape.expand(stop_at=stop_fn)
         res = dev.execute(tape)

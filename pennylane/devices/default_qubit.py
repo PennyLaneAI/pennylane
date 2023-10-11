@@ -426,6 +426,13 @@ class DefaultQubit(Device):
             }
         if execution_config.grad_on_execution is None:
             updated_values["grad_on_execution"] = execution_config.gradient_method == "adjoint"
+        updated_values["device_options"] = dict(execution_config.device_options)  # copy
+        if "max_workers" not in updated_values["device_options"]:
+            updated_values["device_options"]["max_workers"] = self._max_workers
+        if "rng" not in updated_values["device_options"]:
+            updated_values["device_options"]["rng"] = self._rng
+        if "prng_key" not in updated_values["device_options"]:
+            updated_values["device_options"]["prng_key"] = self._prng_key
         return replace(execution_config, **updated_values)
 
     def execute(
