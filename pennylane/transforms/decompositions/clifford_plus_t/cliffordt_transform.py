@@ -150,6 +150,7 @@ def _simplify_param(theta, gate):
     return None
 
 
+# pylint: disable= too-many-branches,
 def _rot_decompose(op):
     """Decompose a rotation operation using combination of RZ, S and Hadamard"""
     d_ops = []
