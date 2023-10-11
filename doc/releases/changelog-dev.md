@@ -78,6 +78,14 @@
 
 <h3>Improvements 🛠</h3>
 
+* `pennylane.devices.preprocess` now offers the transforms `decompose`, `validate_observables`, `validate_measurements`,
+  `validate_device_wires`, `validate_multiprocessing_workers`, `warn_about_trainable_observables`,
+  and `no_sampling` to assist in the construction of devices under the new `devices.Device` API.
+  [(#4659)](https://github.com/PennyLaneAI/pennylane/pull/4659)
+
+* `pennylane.defer_measurements` will now exit early if the input does not contain mid circuit measurements.
+  [(#4659)](https://github.com/PennyLaneAI/pennylane/pull/4659)
+
 * `default.qubit` now tracks the number of equivalent qpu executions and total shots
   when the device is sampling. Note that `"simulations"` denotes the number of simulation passes, where as
   `"executions"` denotes how many different computational bases need to be sampled in. Additionally, the

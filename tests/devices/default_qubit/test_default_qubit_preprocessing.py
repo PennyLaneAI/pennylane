@@ -35,6 +35,7 @@ class NoMatOp(qml.operation.Operation):
         return [qml.PauliX(self.wires), qml.PauliY(self.wires)]
 
 
+# pylint: disable=too-few-public-methods
 class NoMatNoDecompOp(qml.operation.Operation):
     """Dummy operation for checking check_validity throws error when
     expected."""
