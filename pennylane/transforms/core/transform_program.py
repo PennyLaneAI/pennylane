@@ -366,7 +366,11 @@ class TransformProgram:
                 classical_jacobian = jacobian(
                     classical_preprocessing, sub_program, argnums, *args, **kwargs
                 )
-                classical_jacobian = [classical_jacobian]
+                qnode.construct(args, kwargs)
+                tapes, _ = sub_program((qnode.tape,))
+                multi_tapes = len(tapes) > 1
+                if not multi_tapes:
+                    classical_jacobian = [classical_jacobian]
                 classical_jacobians.append(classical_jacobian)
             else:
                 classical_jacobians.append(None)
