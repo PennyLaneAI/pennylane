@@ -317,7 +317,6 @@ class TransformProgram:
                 raise qml.QuantumFunctionError("No trainable parameters.")
 
             classical_function = partial(classical_function, program)
-            old_interface = qnode.interface
 
             if qnode.interface == "autograd":
                 jac = qml.jacobian(classical_function, argnum=argnums)(*args, **kwargs)
