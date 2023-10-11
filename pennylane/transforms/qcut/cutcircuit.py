@@ -49,15 +49,19 @@ def _cut_circuit_expand(
     tapes, tapes_fn = [tape], processing_fn
 
     # Expand the tapes for handling Hamiltonian with two or more terms
-    tape_meas_op = tape.measurements[0]
-    if isinstance(tape_meas_op.obs, qml.Hamiltonian):
-        # TODO: fix the issue with grouping_indices w/o this in-place manipulation
-        tape_ham_op = tape_meas_op.obs
-        if tape_ham_op.grouping_indices is not None:
-            setattr(tape_meas_op, "obs", qml.Hamiltonian(*tape_ham_op.terms()))
+    tape_meas_ops = tape.measurements
+    if isinstance(tape_meas_ops[0].obs, qml.Hamiltonian):
+        if len(tape_meas_ops) > 1:
+            raise NotImplementedError(
+                "Hamiltonian expansion only supported with a single Hamiltonian"
+            )
 
-        tapes, tapes_fn = qml.transforms.hamiltonian_expand(tape, group=False)
-        setattr(tape_meas_op, "obs", tape_ham_op)
+        # TODO: fix the issue with grouping_indices w/o this in-place manipulation
+        new_meas_op = type(tape_meas_ops[0])(obs=qml.Hamiltonian(*tape_meas_ops[0].obs.terms()))
+        new_tape = qml.tape.QuantumScript(tape.operations, [new_meas_op], shots=tape.shots)
+        new_tape.trainable_params = tape.trainable_params
+
+        tapes, tapes_fn = qml.transforms.hamiltonian_expand(new_tape, group=False)
 
     return [_qcut_expand_fn(tape, max_depth, auto_cutter) for tape in tapes], tapes_fn
 
