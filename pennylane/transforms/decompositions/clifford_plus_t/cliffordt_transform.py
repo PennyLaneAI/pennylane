@@ -14,7 +14,6 @@
 """Transform function for the Clifford+T decomposition."""
 
 import math
-from functools import partial
 from itertools import product
 from typing import Sequence, Callable
 import pennylane as qml
@@ -258,7 +257,7 @@ def _merge_rotations(operations, merge_ops=None):
     return merged_ops
 
 
-# pylint: disable= too-many-nested-blocks, too-many-branches
+# pylint: disable= too-many-nested-blocks, too-many-branches, too-many-statements
 @transform
 def clifford_t_decomposition(tape: QuantumTape, epsilon=1e-8) -> (Sequence[QuantumTape], Callable):
     r"""Unrolls the tape into Clifford+T basis"""
