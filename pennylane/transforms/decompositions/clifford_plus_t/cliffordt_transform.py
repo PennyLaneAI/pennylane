@@ -215,7 +215,7 @@ def _two_qubit_decompose(op):
     return d_ops
 
 
-def _merge_rotations(operations, merge_ops=None):
+def _merge_pauli_rotations(operations, merge_ops=None):
     """Merge the provided single qubit rotations gates on the same wires that are adjacent to each other"""
 
     copied_ops = operations.copy()
@@ -257,7 +257,7 @@ def _merge_rotations(operations, merge_ops=None):
     return merged_ops
 
 
-# pylint: disable= too-many-nested-blocks, too-many-branches, too-many-statements
+# pylint: disable= too-many-nested-blocks, too-many-branches, too-many-statements, unnecessary-lambda-assignment
 @transform
 def clifford_t_decomposition(tape: QuantumTape, epsilon=1e-8) -> (Sequence[QuantumTape], Callable):
     r"""Unrolls the tape into Clifford+T basis"""
@@ -335,7 +335,7 @@ def clifford_t_decomposition(tape: QuantumTape, epsilon=1e-8) -> (Sequence[Quant
                     ) from exc
 
     # Merge RZ rotations together
-    merged_ops = _merge_rotations(decomp_ops, merge_ops=["RZ"])
+    merged_ops = _merge_pauli_rotations(decomp_ops, merge_ops=["RZ"])
 
     # Squeeze global phases into a single global phase
     new_operations = _fuse_global_phases(gphase_ops + merged_ops)
