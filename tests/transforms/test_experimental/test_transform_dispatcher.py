@@ -352,8 +352,8 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
             transform(non_valid_transform)
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
-    def test_dispatcher_signature_non_valid_transform(self, valid_transform):
-        """Test the valid transforms with non-valid co transform raises a Transform error."""
+    def test_dispatcher_signature_classical_cotransform(self, valid_transform):
+        """Test that  valid transforms with non-valid co transform raises a Transform error."""
 
         with pytest.raises(
             TransformError, match="The classical co-transform must be a valid Python function."
