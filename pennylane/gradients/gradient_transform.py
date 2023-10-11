@@ -459,7 +459,7 @@ def _contract_qjac_with_cjac(qjac, cjac, tape):
     return tuple(tuple(tdot(qml.math.stack(q), c) for c in cjac if c is not None) for q in qjac)
 
 
-class gradient_transform(qml.batch_transform):
+class gradient_transform(qml.batch_transform):  # pragma: no cover
     """Decorator for defining quantum gradient transforms.
 
     Quantum gradient transforms are a specific case of :class:`~.batch_transform`.
