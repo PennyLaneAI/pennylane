@@ -511,3 +511,22 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
 
         # check that the custom qnode transform was called
         assert history == [([], {"index": 0}), ([1], {})]
+
+    @pytest.mark.parametrize(
+        "fn, type_",
+        [(list, list), (tuple, tuple), (qml.numpy.array, qml.numpy.ndarray)],
+    )
+    def test_qfunc_transform_multiple_measurements(self, fn, type_):
+        """Ensure that return type is preserved with qfunc transforms."""
+
+        def qfunc():
+            qml.Hadamard(0)
+            qml.CNOT([0, 1])
+            qml.PauliZ(1)
+            return fn([qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))])
+
+        dispatched_transform = transform(first_valid_transform)
+        transformed_qfunc = dispatched_transform(qfunc, 2)
+        qnode = qml.QNode(transformed_qfunc, qml.device("default.qubit"))
+        result = qnode()
+        assert isinstance(result, type_)
