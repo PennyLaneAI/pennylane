@@ -200,7 +200,7 @@ def fuse_rot_angles(angles_1, angles_2):
 
 
 def _fuse_global_phases(operations):
-    """Fuse all the global phase operations into single one
+    """Fuse all the global phase operations into a single one.
 
     Args:
         operations (list[Operation]): list of operations to be iterated over

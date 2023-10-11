@@ -241,12 +241,16 @@ class TestBatchTransform:
 
         input_tape = spy_transform.call_args[0][1]
 
-        assert len(input_tape.operations) == 2 if perform_expansion else 1
-        assert input_tape.operations[0].name == "RZ" if perform_expansion else "PhaseShift"
-        assert input_tape.operations[0].parameters == [0.5]
         if perform_expansion:
+            assert len(input_tape.operations) == 2
+            assert input_tape.operations[0].name == "RZ"
+            assert input_tape.operations[0].parameters == [0.5]
             assert input_tape.operations[1].name == "GlobalPhase"
             assert input_tape.operations[1].parameters == [0.25]
+        else:
+            assert len(input_tape.operations) == 1
+            assert input_tape.operations[0].name == "PhaseShift"
+            assert input_tape.operations[0].parameters == [0.5]
 
     @pytest.mark.parametrize("perform_expansion", [True, False])
     def test_expand_qnode_with_kwarg(self, mocker, perform_expansion):
@@ -283,13 +287,16 @@ class TestBatchTransform:
         spy_expand.assert_called()  # The expand_fn of transform_fn always is called
         input_tape = spy_transform.call_args[0][1]
 
-        assert len(input_tape.operations) == 2 if perform_expansion else 1
-        assert input_tape.operations[0].name == "RZ" if perform_expansion else "PhaseShift"
-        assert input_tape.operations[0].parameters == [0.5]
-
         if perform_expansion:
+            assert len(input_tape.operations) == 2
+            assert input_tape.operations[0].name == "RZ"
+            assert input_tape.operations[0].parameters == [0.5]
             assert input_tape.operations[1].name == "GlobalPhase"
             assert input_tape.operations[1].parameters == [0.25]
+        else:
+            assert len(input_tape.operations) == 1
+            assert input_tape.operations[0].name == "PhaseShift"
+            assert input_tape.operations[0].parameters == [0.5]
 
     def test_parametrized_transform_tape(self):
         """Test that a parametrized transform can be applied
