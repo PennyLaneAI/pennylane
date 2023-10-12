@@ -70,7 +70,7 @@ class QDrift(Operation):
     .. details::
         :title: Usage Details
 
-        We can also compute the gradient with respect to the coefficients of the hamiltonian and the
+        We can also compute the gradient with respect to the
         evolution time:
 
         .. code-block:: python3
