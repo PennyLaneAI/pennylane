@@ -262,6 +262,17 @@ def apply_cnot(op: qml.CNOT, state, is_state_batched: bool = False, debugger=Non
     state_x = math.roll(state[sl_1], 1, target_axes)
     return math.stack([state[sl_0], state_x], axis=control_axes)
 
+@apply_operation.register
+def apply_grover(op: qml.templates.subroutines.GroverOperator, state, is_state_batched: bool = False, debugger=None):
+    """Apply GroverOperator to state."""
+    sum_axes = [w + is_state_batched for w in op.wires]
+    n_wires = len(sum_axes)
+    prefactor = 2 ** (1 - n_wires) # Normalization of the all-plus state
+    all_plus_state = math.cast_like(math.full([2] * n_wires, prefactor), state)
+
+    collapsed_state = math.sum(state, axis=tuple(sum_axes))
+    source_axes = list(range(math.ndim(collapsed_state), math.ndim(state)))
+    return math.moveaxis(math.kron(collapsed_state, all_plus_state), source_axes, sum_axes) - state
 
 @apply_operation.register
 def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None):
