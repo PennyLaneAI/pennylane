@@ -1253,7 +1253,6 @@ class TestMatrix:
         """Test eigenvalues computation for PCPhase using Tensorflow interface"""
         import tensorflow as tf
 
-        phi = 0.5432
         param_tf = tf.Variable(phi)
 
         op = qml.PCPhase(param_tf, dim=2, wires=[0, 1])
