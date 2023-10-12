@@ -347,7 +347,7 @@ def validate_observables(
 def validate_measurements(
     tape: qml.tape.QuantumTape, analytic_measurements=None, sample_measurements=None, name="device"
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
-    """Valdiates the supported state and sample based measurement processes.
+    """Validates the supported state and sample based measurement processes.
 
     Args:
         tape (QuantumTape): a quantum circuit.
