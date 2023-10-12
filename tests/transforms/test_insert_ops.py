@@ -316,7 +316,9 @@ class TestInsert:
     def test_end_with_state_prep(self):
         """Test if the expected tape is returned when the end position is requested in a tape
         that has state preparation"""
-        tapes, _ = insert(self.tape_with_prep, qml.GeneralizedAmplitudeDamping, [0.4, 0.5], position="end")
+        tapes, _ = insert(
+            self.tape_with_prep, qml.GeneralizedAmplitudeDamping, [0.4, 0.5], position="end"
+        )
         tape = tapes[0]
 
         with qml.queuing.AnnotatedQueue() as q_tape_exp:
@@ -516,7 +518,7 @@ def test_insert_decorator_causes_custom_insert_error_non_qwc_obs():
 
     # This tape's expansion fails, but shouldn't cause a downstream IndexError. See issue #3103
     with pytest.raises(
-            qml.QuantumFunctionError,
-            match="The insert transform cannot transform a circuit measuring non-commuting observables",
+        qml.QuantumFunctionError,
+        match="The insert transform cannot transform a circuit measuring non-commuting observables",
     ):
         noisy_circuit(0.4)
