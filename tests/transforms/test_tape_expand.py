@@ -1177,8 +1177,7 @@ class TestCustomDecompositionTransform:
 
         @qml.qnode(dev)
         def circuit():
-            qml.Hadamard(0)
-            qml.CNOT([0, 1])
+            qml.BasicEntanglerLayers([[0.1, 0.2]], wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
         circuit_depth_2 = custom_decomposition(
