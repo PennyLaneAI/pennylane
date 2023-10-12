@@ -277,8 +277,8 @@ def clifford_t_decomposition(
 ) -> (Sequence[QuantumTape], Callable):
     r"""Unrolls a circuit into Clifford+T basis using the optimal ancilla-free approximation of :class:`~.RZ` operations.
 
-    This method first decomposes the gate operations to a basis comprising of Clifford, :func:`~.RZ` and
-    :func:`~.pennylane.GlobalPhase` operations (or their adjoint), where the Clifford gates include the following PennyLane operations:
+    This method first decomposes the gate operations to a basis comprising of Clifford, :class:`~.RZ` and
+    :class:`~.GlobalPhase` operations (or their adjoint), where the Clifford gates include the following PennyLane operations:
 
     - Single qubit gates - :class:`~.Identity`, :class:`~.PauliX`, :class:`~.PauliY`, :class:`~.PauliZ`,
       :class:`~.SX`, :class:`~.S`, and :class:`~.Hadamard`.
@@ -290,7 +290,7 @@ def clifford_t_decomposition(
 
     Args:
         qfunc (function): A quantum function.
-        epsilon (float): Permissible error for approximation of z-rotations
+        epsilon (float): Permissible :math:`\epsilon`-error for approximation of z-rotations
         max_depth (int): The depth to use for tape expansion before manual decomposition to Clifford+T basis is applied.
 
     Returns:
