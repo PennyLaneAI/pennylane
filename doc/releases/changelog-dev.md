@@ -80,7 +80,7 @@
 
 * `default.qubit` now applies `GroverOperator` faster by not using its matrix representation but a
   custom rule for `apply_operation`. Also, the matrix representation of `GroverOperator` runs faster now.
-  [(#4xxx)](https://github.com/PennyLaneAI/pennylane/pull/4xxx)
+  [(#4666)](https://github.com/PennyLaneAI/pennylane/pull/4666)
 
 * `default.qubit` now tracks the number of equivalent qpu executions and total shots
   when the device is sampling. Note that `"simulations"` denotes the number of simulation passes, where as
@@ -341,7 +341,7 @@
 <h3>Bug fixes 🐛</h3>
 
 * The decomposition of `GroverOperator` now has the same global phase as its matrix.
-  [(#4xxx)](https://github.com/PennyLaneAI/pennylane/pull/4xxx)
+  [(#4666)](https://github.com/PennyLaneAI/pennylane/pull/4666)
 
 * Fixed issue where `__copy__` method of the `qml.Select()` operator attempted to access un-initialized data.
   [(#4551)](https://github.com/PennyLaneAI/pennylane/pull/4551)
