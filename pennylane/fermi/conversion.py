@@ -112,7 +112,7 @@ def _(fermi_operator: FermiWord, ps=False, wire_map=None, tol=None):
             )
 
     for pw in qubit_operator:
-        if tol and abs(qml.math.imag(qubit_operator[pw])) <= tol:
+        if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
             qubit_operator[pw] = qml.math.real(qubit_operator[pw])
 
     if not ps:
@@ -138,7 +138,7 @@ def _(fermi_operator: FermiSentence, ps=False, wire_map=None, tol=None):
         for pw in fermi_word_as_ps:
             qubit_operator[pw] = qubit_operator[pw] + fermi_word_as_ps[pw] * coeff
 
-            if tol and abs(qml.math.imag(qubit_operator[pw])) <= tol:
+            if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
                 qubit_operator[pw] = qml.math.real(qubit_operator[pw])
 
     if not ps:
