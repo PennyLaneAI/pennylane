@@ -412,7 +412,7 @@ class TestSpsaGradient:
         with qml.Tracker(dev) as tracker:
             j1 = fn(dev.execute(tapes))
 
-        assert len(tapes) == tracker.latest["executions"] == n1 + 1
+        assert len(tapes) == tracker.totals["executions"] == n1 + 1
 
         n2 = 3
         tapes, fn = spsa_grad(

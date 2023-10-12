@@ -398,7 +398,7 @@ class TestFiniteDiff:
     def test_independent_parameters(self):
         """Test the case where expectation values are independent of some parameters. For those
         parameters, the gradient should be evaluated to zero without executing the device."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit")
 
         with qml.queuing.AnnotatedQueue() as q1:
             qml.RX(1.0, wires=[0])
@@ -417,7 +417,7 @@ class TestFiniteDiff:
             j1 = fn(dev.execute(tapes))
 
         # We should only be executing the device to differentiate 1 parameter (2 executions)
-        assert tracker.latest["executions"] == 2
+        assert tracker.totals["executions"] == 2
 
         tapes, fn = finite_diff(tape2, approx_order=1)
         j2 = fn(dev.execute(tapes))
