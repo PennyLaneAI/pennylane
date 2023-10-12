@@ -292,13 +292,13 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
         logger.debug(
             "Entry with args=(fn=%s, cache=%s, pass_kwargs=%s, return_tuple=%s, expand_fn=%s) called by=%s",
             fn
-            if not (logger.isEnabledFor(qml.logging.TRACE) and fn and callable(fn))
+            if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(fn))
             else "\n" + inspect.getsource(fn),
             cache,
             pass_kwargs,
             return_tuple,
             expand_fn
-            if not (logger.isEnabledFor(qml.logging.TRACE) and expand_fn and callable(expand_fn))
+            if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(expand_fn))
             else "\n" + inspect.getsource(expand_fn) + "\n",
             "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
         )
@@ -516,9 +516,7 @@ def execute(
             tapes,
             repr(device),
             gradient_fn
-            if not (
-                logger.isEnabledFor(qml.logging.TRACE) and gradient_fn and callable(gradient_fn)
-            )
+            if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(gradient_fn))
             else "\n" + inspect.getsource(gradient_fn) + "\n",
             interface,
             grad_on_execution,
@@ -528,7 +526,7 @@ def execute(
             max_diff,
             override_shots,
             expand_fn
-            if not (logger.isEnabledFor(qml.logging.TRACE) and expand_fn and callable(expand_fn))
+            if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(expand_fn))
             else "\n" + inspect.getsource(expand_fn) + "\n",
             max_expansion,
             device_batch_transform,

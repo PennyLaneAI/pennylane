@@ -169,7 +169,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
             logger.debug(
                 "TransformJacobianProduct being created with (%s, %s, %s)",
                 inspect.getsource(inner_execute)
-                if logger.isEnabledFor(qml.logging.TRACE)
+                if (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(inner_execute))
                 else inner_execute,
                 gradient_transform,
                 gradient_kwargs,
