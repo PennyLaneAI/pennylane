@@ -535,7 +535,6 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
     def test_device_transform(self, valid_transform):
         """Test a device transform."""
         dispatched_transform = transform(valid_transform)
-        dev = qml.device("default.qubit", wires=2)
         new_dev = dispatched_transform(dev, index=0)
 
         assert new_dev.original_device is dev
