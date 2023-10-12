@@ -37,7 +37,7 @@ class QDrift(Operation):
 
     Keyword Args:
         n (int): The number of terms to be added to the product formula. Default is 1.
-        seed (int): The seed for the random number generator. Default is 42.
+        seed (int): The seed for the random number generator.
     Raises:
         TypeError: The 'hamiltonian' is not of type ~.Hamiltonian, or ~.Sum.
         ValueError: One or more of the terms in 'hamiltonian' are not Hermitian.
