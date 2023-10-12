@@ -265,7 +265,7 @@ def apply_cnot(op: qml.CNOT, state, is_state_batched: bool = False, debugger=Non
 
 @apply_operation.register
 def apply_grover(op: qml.GroverOperator, state, is_state_batched: bool = False, debugger=None):
-    """Apply GroverOperator to state. This method uses that this operator
+    r"""Apply GroverOperator to state. This method uses that this operator
     is :math:`2*P-\mathbb{I}`, where :math:`P` is the projector onto the
     all-plus state. This allows us to compute the new state by replacing summing
     over all axes on which the operation acts, and "filling in" the all-plus state
