@@ -41,7 +41,6 @@ class QDrift(Operation):
     Raises:
         TypeError: The 'hamiltonian' is not of type ~.Hamiltonian, or ~.Sum.
         ValueError: One or more of the terms in 'hamiltonian' are not Hermitian.
-        ValueError: The number of samples 'n' is not an integer.
 
     **Example**
 
