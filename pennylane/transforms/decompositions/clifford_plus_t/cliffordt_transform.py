@@ -305,13 +305,13 @@ def clifford_t_decomposition(
         # Decompose and then iteratively go deeper via DFS
         else:
             # Single qubit unitary decomposition with ZXZ rotations
-            if len(op.wires) == 1:
+            if op.num_wires == 1:
                 d_ops, g_ops = _one_qubit_decompose(op)
                 decomp_ops.extend(d_ops)
                 gphase_ops.append(g_ops)
 
             # Two qubit unitary decomposition with SU(4) rotations
-            elif len(op.wires) == 2:
+            elif op.num_wires == 2:
                 d_ops = _two_qubit_decompose(op)
                 decomp_ops.extend(d_ops)
 

@@ -200,7 +200,7 @@ class TestCliffordCompile:
         ("op"),
         [
             qml.adjoint(qml.RX(1.0, wires=["b"])),
-            qml.Rot(1, 2, 3, wires=[2]),
+            qml.Rot(1, 2, 3, wires=0),
         ],
     )
     def test_rot_decomposition(self, op):
