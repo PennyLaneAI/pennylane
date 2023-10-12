@@ -14,8 +14,6 @@
 """
 Contains the Grover Operation template.
 """
-import itertools
-import functools
 import numpy as np
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops import Hadamard, PauliZ, MultiControlledX, GlobalPhase
@@ -167,7 +165,6 @@ class GroverOperator(Operation):
         return op_list
 
     @staticmethod
-    @functools.lru_cache()
     def compute_matrix(n_wires, work_wires):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis
         (static method).
