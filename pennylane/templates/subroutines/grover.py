@@ -167,12 +167,6 @@ class GroverOperator(Operation):
     @staticmethod
     @functools.lru_cache()
     def compute_matrix(n_wires, work_wires):  # pylint: disable=arguments-differ,unused-argument
-        # s1 = H|0>, Hadamard on a single qubit in the ground state
-        s1 = np.array([1, 1]) / np.sqrt(2)
-
-        # uniform superposition state |s>
-        s = functools.reduce(np.kron, list(itertools.repeat(s1, n_wires)))
-
         # Grover diffusion operator
-        G = 2 * np.outer(s, s) - np.identity(2**n_wires)
-        return G
+        dim = 2**n_wires
+        return 2 / dim - np.eye(dim)
