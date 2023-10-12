@@ -276,11 +276,11 @@ class ZRootTwo(RootTwo):
         """Return the square root."""
         a = self.a
         d = self.norm()
-        r = int(np.sqrt(d)) if d > 0 else 0
-        x1 = int(np.sqrt((a + r) // 2))
-        x2 = int(np.sqrt((a - r) // 2))
-        y1 = int(np.sqrt((a - r) // 4))
-        y2 = int(np.sqrt((a + r) // 4))
+        r = intsqrt(d)
+        x1 = intsqrt((a + r) // 2)
+        x2 = intsqrt((a - r) // 2)
+        y1 = intsqrt((a - r) // 4)
+        y2 = intsqrt((a + r) // 4)
         for o in (ZRootTwo(x1, y1), ZRootTwo(x2, y2), ZRootTwo(x1, -y1), ZRootTwo(x2, -y2)):
             if o * o == self:
                 return o
@@ -496,3 +496,40 @@ class DOmega(Omega):
         if len(res) == 1:
             return f"{res[0]}/{2**max_k}"
         return f"({' + '.join(res)})/{2**max_k}"
+
+
+def hibit(n: int) -> int:
+    """Get the position of the left-most bit, plus one. O(nlogn) steps."""
+    if n == 0:
+        return 0
+
+    def aux2(upper, lower):
+        if (upper - lower) < 2:
+            return upper
+        middle = (upper + lower) // 2
+        if n >= 2**middle:
+            return aux2(upper, middle)
+        return aux2(middle, lower)
+
+    def aux(k):
+        if n >= 2**k:
+            return aux(2 * k)
+        return aux2(k, k // 2)
+
+    return aux(1)
+
+
+def intsqrt(n: int) -> int:
+    """Return the floor of the square root of n, using integer arithmetic to avoid errors."""
+    if n <= 0:
+        return 0
+
+    def iterate(m):
+        m_sq = m * m
+        if m_sq <= n < (m_sq + 2 * m + 1):
+            return m
+        return iterate((m + n // m) // 2)
+
+    b = hibit(n)
+    a = 2 ** (b // 2)
+    return iterate(a)
