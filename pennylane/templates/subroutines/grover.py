@@ -18,7 +18,7 @@ import itertools
 import functools
 import numpy as np
 from pennylane.operation import AnyWires, Operation
-from pennylane.ops import Hadamard, PauliZ, MultiControlledX
+from pennylane.ops import Hadamard, PauliZ, MultiControlledX, GlobalPhase
 from pennylane.wires import Wires
 
 
@@ -161,6 +161,8 @@ class GroverOperator(Operation):
 
         for wire in wires[:-1]:
             op_list.append(Hadamard(wire))
+
+        op_list.append(GlobalPhase(np.pi, wires))
 
         return op_list
 

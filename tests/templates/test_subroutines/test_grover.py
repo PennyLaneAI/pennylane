@@ -240,3 +240,13 @@ def test_matrix(tol):
     assert np.allclose(res_dynamic, expected, atol=tol, rtol=0)
     # reordering should not affect this particular matrix
     assert np.allclose(res_reordered, expected, atol=tol, rtol=0)
+
+
+@pytest.mark.parametrize("n_wires", [2, 3, 5])
+def test_decomposition_matrix(n_wires):
+    """Test that the decomposition and the matrix match."""
+    wires = list(range(n_wires))
+    op = qml.GroverOperator(wires)
+    mat1 = op.matrix()
+    mat2 = qml.matrix(qml.tape.QuantumScript(op.decomposition()))
+    assert np.allclose(mat1, mat2), f"{mat1}\n{mat2}"

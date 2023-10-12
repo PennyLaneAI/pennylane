@@ -206,6 +206,30 @@ class TestTwoQubitStateSpecialCases:
         assert qml.math.allclose(initial1[1], new1[0])
         assert qml.math.allclose(initial1[0], new1[1])
 
+    def test_grover(self, method, wire, ml_framework):
+        """Test the application of a cnot gate on a two qubit state."""
+
+        initial_state = np.array(
+            [
+                [0.04624539 + 0.3895457j, 0.22399401 + 0.53870339j],
+                [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
+            ]
+        )
+        initial_state = qml.math.asarray(initial_state, like=ml_framework)
+
+        wires = [wire, 1 - wire]
+        op = qml.GroverOperator(wires)
+        new_state = method(op, initial_state)
+
+        overlap = qml.math.sum(initial_state) / 2
+        ones_state = qml.math.ones_like(initial_state) / 2
+        expected_state = 2 * ones_state * overlap - initial_state
+        assert qml.math.allclose(new_state, expected_state)
+        state_via_mat = qml.math.tensordot(
+            op.matrix().reshape([2] * 4), initial_state, axes=[[2, 3], [0, 1]]
+        )
+        assert qml.math.allclose(new_state, state_via_mat)
+
     def test_identity(self, method, wire, ml_framework):
         """Test the application of a GlobalPhase gate on a two qubit state."""
 
@@ -824,6 +848,18 @@ class TestLargerOperations:
             state_v2 = method(d_op, state_v2)
 
         assert qml.math.allclose(state_v1, state_v2)
+
+    @pytest.mark.parametrize("apply_wires", ([0, 3], [1, 3, 2], [2, 1], [1, 3]))
+    def test_grover(self, method, apply_wires):
+        """Tests a four qubit GroverOperator."""
+        op = qml.GroverOperator(apply_wires)
+        new_state = method(op, self.state)
+
+        expected_state = np.copy(self.state)
+        for _op in op.decomposition():
+            expected_state = method(_op, expected_state)
+
+        assert qml.math.allclose(expected_state, new_state)
 
 
 @pytest.mark.tf
