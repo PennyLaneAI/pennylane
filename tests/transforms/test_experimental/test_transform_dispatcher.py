@@ -537,4 +537,34 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         dispatched_transform = transform(valid_transform)
         dev = qml.device("default.qubit", wires=2)
         new_dev = dispatched_transform(dev, index=0)
-        print(new_dev.wires)
+
+        assert new_dev.original_device is dev
+
+        program, _ = dev.preprocess()
+        new_program, _ = new_dev.preprocess()
+
+        assert isinstance(program, qml.transforms.core.TransformProgram)
+        assert isinstance(new_program, qml.transforms.core.TransformProgram)
+
+        assert len(program) == 4
+        assert len(new_program) == 5
+
+        assert new_program[-1].transform is valid_transform
+
+    @pytest.mark.parametrize("valid_transform", valid_transforms)
+    def test_device_transform_error(self, valid_transform):
+        """Test that the device transform returns errors."""
+        dev = qml.device("default.qubit", wires=2)
+
+        with pytest.raises(TransformError, match="Device transform does not support informative transforms."):
+            dispatched_transform = transform(valid_transform, is_informative=True)
+            dispatched_transform(dev, index=0)
+
+        with pytest.raises(TransformError, match="Device transform does not support final transforms."):
+            dispatched_transform = transform(valid_transform, final_transform=True)
+            dispatched_transform(dev, index=0)
+
+        with pytest.raises(TransformError, match="Device transform does not support expand transforms."):
+            dispatched_transform = transform(valid_transform, expand_transform=valid_transform)
+            dispatched_transform(dev, index=0)
+
