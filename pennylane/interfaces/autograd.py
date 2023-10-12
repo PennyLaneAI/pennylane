@@ -116,10 +116,12 @@ def _execute(
             tapes,
             repr(device),
             execute_fn
-            if not (logger.isEnabledFor(qml.logging.TRACE) and callable(execute_fn))
+            if not (logger.isEnabledFor(qml.logging.TRACE) and execute_fn and callable(execute_fn))
             else "\n" + inspect.getsource(execute_fn) + "\n",
             gradient_fn
-            if not (logger.isEnabledFor(qml.logging.TRACE) and callable(gradient_fn))
+            if not (
+                logger.isEnabledFor(qml.logging.TRACE) and gradient_fn and callable(gradient_fn)
+            )
             else "\n" + inspect.getsource(gradient_fn) + "\n",
             gradient_kwargs,
             _n,
@@ -179,10 +181,12 @@ def vjp(
             tapes,
             repr(device),
             execute_fn
-            if not (logger.isEnabledFor(qml.logging.TRACE) and callable(execute_fn))
+            if not (logger.isEnabledFor(qml.logging.TRACE) and execute_fn and callable(execute_fn))
             else "\n" + inspect.getsource(execute_fn) + "\n",
             gradient_fn
-            if not (logger.isEnabledFor(qml.logging.TRACE) and callable(gradient_fn))
+            if not (
+                logger.isEnabledFor(qml.logging.TRACE) and gradient_fn and callable(gradient_fn)
+            )
             else "\n" + inspect.getsource(gradient_fn) + "\n",
             gradient_kwargs,
             _n,
