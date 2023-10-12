@@ -58,7 +58,7 @@ class TransformDispatcher:
 
         self._qnode_transform = self.default_qnode_transform
 
-    def __call__(self, *targs, **tkwargs):
+    def __call__(self, *targs, **tkwargs):  # pylint: disable=too-many-return-statements
         obj = None
 
         if targs:
