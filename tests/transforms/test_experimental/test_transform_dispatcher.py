@@ -554,7 +554,6 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_device_transform_error(self, valid_transform):
         """Test that the device transform returns errors."""
-        dev = qml.device("default.qubit", wires=2)
 
         with pytest.raises(
             TransformError, match="Device transform does not support informative transforms."
