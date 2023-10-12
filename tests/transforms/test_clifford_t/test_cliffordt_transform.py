@@ -43,7 +43,7 @@ def circuit_1():
     qml.PhaseShift(1.0, wires=[1])
     qml.SingleExcitation(2.0, wires=[1, 2])
     qml.DoubleExcitation(2.0, wires=[1, 2, 3, 4])
-    return qml.expval(qml.PauliZ(0))
+    return qml.expval(qml.PauliZ(1))
 
 
 def circuit_2():

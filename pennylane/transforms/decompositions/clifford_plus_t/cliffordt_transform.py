@@ -186,7 +186,7 @@ def _rot_decompose(op):
     elif isinstance(op, qml.PhaseShift):
         ops_ = _simplify_param(theta, qml.PauliZ(wires=wires))
         if ops_ is None:
-            ops_ = [qml.RZ(theta, wires), qml.GlobalPhase(theta / 2)]
+            ops_ = [qml.RZ(theta, wires=wires), qml.GlobalPhase(theta / 2)]
         else:
             ops_.append(qml.GlobalPhase(-theta / 2))
 
@@ -310,9 +310,12 @@ def clifford_t_decomposition(
             else:
                 # Single qubit unitary decomposition with ZXZ rotations
                 if op.num_wires == 1:
-                    d_ops, g_ops = _one_qubit_decompose(op)
+                    if op.name in basis_set:
+                        d_ops = _rot_decompose(op)
+                    else:
+                        d_ops, g_ops = _one_qubit_decompose(op)
+                        gphase_ops.append(g_ops)
                     decomp_ops.extend(d_ops)
-                    gphase_ops.append(g_ops)
 
                 # Two qubit unitary decomposition with SU(4) rotations
                 elif op.num_wires == 2:
@@ -337,7 +340,7 @@ def clifford_t_decomposition(
                                         gphase_ops.append(g_ops)
                                 elif len(md_op.wires) == 2:
                                     d_ops = _two_qubit_decompose(md_op)
-                                else:
+                                else:  # pragma: no cover
                                     d_ops = md_op.decomposition()
 
                                 # Expand the list and iterate over
@@ -347,7 +350,7 @@ def clifford_t_decomposition(
 
                         decomp_ops.extend(md_ops)
 
-                    except Exception as exc:
+                    except Exception as exc:  # pragma: no cover
                         print(exc)
                         raise ValueError(
                             f"Cannot unroll {op} into the Clifford+T basis as no rule exists for its decomposition"
