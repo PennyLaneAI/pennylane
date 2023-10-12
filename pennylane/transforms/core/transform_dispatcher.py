@@ -75,7 +75,7 @@ class TransformDispatcher:
 
         if isinstance(obj, qml.QNode):
             return self._qnode_transform(obj, targs, tkwargs)
-        if isinstance(obj, qml.Device):
+        if isinstance(obj, qml.devices.Device):
             return self._device_transform(obj, targs, tkwargs)
         if callable(obj):
             return self._qfunc_transform(obj, targs, tkwargs)
@@ -233,25 +233,27 @@ class TransformDispatcher:
 
     def _device_transform(self, original_device, targs, tkwargs):
         """Apply the transform on a quantum function."""
+        if self.expand_transform:
+            raise TransformError("Not supported")
 
         class TransformedDevice(type(original_device)):
-
             def __init__(self, original_device, transform):
-                self.original_device = original_device
+                for key, value in original_device.__dict__.items():
+                    self.__setattr__(key, value)
                 self.transform = transform
 
             def __repr__(self):
-                return "Transformed Device()"
+                return f"Transformed Device({original_device.__repr__()} with the transform {self.transform})"
 
-            def pre_processing(self):
-                original_program = self.original_device.preprocessing()
-                updated_program = original_program + new_program
-                return updated_program
+            def preprocess(self):
+                program, config = self.original_device.preprocess()
+                program.push_back(TransformContainer(self.transform, targs, tkwargs))
+                return program, config
 
             def original_device(self):
                 return self.original_device
 
-        return TransformedDevice
+        return TransformedDevice(original_device, self._transform)
 
 
 class TransformContainer:

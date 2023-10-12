@@ -530,3 +530,11 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         qnode = qml.QNode(transformed_qfunc, qml.device("default.qubit"))
         result = qnode()
         assert isinstance(result, type_)
+
+    @pytest.mark.parametrize("valid_transform", valid_transforms)
+    def test_device_transform(self, valid_transform):
+        """Test a device transform."""
+        dispatched_transform = transform(valid_transform)
+        dev = qml.device("default.qubit", wires=2)
+        new_dev = dispatched_transform(dev, index=0)
+        print(new_dev.wires)
