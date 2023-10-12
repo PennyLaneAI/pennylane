@@ -156,7 +156,8 @@ def _rot_decompose(op):
     d_ops = []
     # Extend for Rot operation with RzRyRz decompositions
     if isinstance(op, qml.Rot):
-        for dec in op.compute_decomposition(*op.parameters, wires=op.wires):
+        (phi, theta, omega), wires = op.parameters, op.wires
+        for dec in [qml.RZ(phi, wires), qml.RY(theta, wires), qml.RZ(omega, wires)]:
             d_ops.extend(_rot_decompose(dec))
         return d_ops
 

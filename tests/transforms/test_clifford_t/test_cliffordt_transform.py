@@ -100,7 +100,7 @@ class TestCliffordCompile:
 
     @pytest.mark.parametrize(
         ("circuit, max_depth"),
-        [(circuit_1, 1), (circuit_2, 1), (circuit_3, 1), (circuit_4, 4), (circuit_5, 5)],
+        [(circuit_1, 1), (circuit_2, 1), (circuit_3, 0), (circuit_4, 4), (circuit_5, 5)],
     )
     def test_decomposition(self, circuit, max_depth):
         """Test decomposition for the Clifford transform."""
