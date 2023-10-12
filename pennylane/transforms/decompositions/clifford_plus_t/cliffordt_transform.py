@@ -17,6 +17,7 @@ import math
 from itertools import product
 from typing import Sequence, Callable
 import pennylane as qml
+from pennylane.queuing import QueuingManager
 from pennylane.transforms.core import transform
 from pennylane.tape import QuantumTape
 from pennylane.transforms.optimization import (
@@ -275,95 +276,97 @@ def clifford_t_decomposition(
     tape: QuantumTape, epsilon=1e-8, max_depth=6
 ) -> (Sequence[QuantumTape], Callable):
     r"""Unrolls the tape into Clifford+T basis"""
+    with QueuingManager.stop_recording():
+        # Build the basis set and the pipeline for intial compilation pass
+        basis_set = [op.__name__ for op in _PARAMETER_GATES + _CLIFFORD_T_GATES]
+        pipelines = [remove_barrier, commute_controlled, cancel_inverses, merge_rotations]
 
-    # Build the basis set and the pipeline for intial compilation pass
-    basis_set = [op.__name__ for op in _PARAMETER_GATES + _CLIFFORD_T_GATES]
-    pipelines = [remove_barrier, commute_controlled, cancel_inverses, merge_rotations]
+        expanded_tape = tape.expand(depth=max_depth, stop_at=lambda op: op.name in basis_set)
 
-    expanded_tape = tape.expand(depth=max_depth, stop_at=lambda op: op.name in basis_set)
+        for transf in pipelines:
+            [expanded_tape], _ = transf(expanded_tape)
 
-    for transf in pipelines:
-        [expanded_tape], _ = transf(expanded_tape)
-
-    # Now iterate over the compiled pipeline
-    decomp_ops, gphase_ops = [], []
-    for op in expanded_tape.operations:
-        # Check whether operation is to be skipped
-        if any((isinstance(op, skip_op) for skip_op in [qml.Barrier, qml.Snapshot, qml.WireCut])):
-            decomp_ops.append(op)
-
-        # Check whether the operation is a global phase
-        elif isinstance(op, qml.GlobalPhase):
-            gphase_ops.append(op)
-
-        # Check whether the operation is a Clifford or a T-gate
-        elif op.name in basis_set and check_clifford_t(op):
-            if op.num_params:
-                decomp_ops.extend(_rot_decompose(op))
-            else:
+        # Now iterate over the compiled pipeline
+        decomp_ops, gphase_ops = [], []
+        for op in expanded_tape.operations:
+            # Check whether operation is to be skipped
+            if any(
+                (isinstance(op, skip_op) for skip_op in [qml.Barrier, qml.Snapshot, qml.WireCut])
+            ):
                 decomp_ops.append(op)
 
-        # Decompose and then iteratively go deeper via DFS
-        else:
-            # Single qubit unitary decomposition with ZXZ rotations
-            if op.num_wires == 1:
-                d_ops, g_ops = _one_qubit_decompose(op)
-                decomp_ops.extend(d_ops)
-                gphase_ops.append(g_ops)
+            # Check whether the operation is a global phase
+            elif isinstance(op, qml.GlobalPhase):
+                gphase_ops.append(op)
 
-            # Two qubit unitary decomposition with SU(4) rotations
-            elif op.num_wires == 2:
-                d_ops = _two_qubit_decompose(op)
-                decomp_ops.extend(d_ops)
+            # Check whether the operation is a Clifford or a T-gate
+            elif op.name in basis_set and check_clifford_t(op):
+                if op.num_params:
+                    decomp_ops.extend(_rot_decompose(op))
+                else:
+                    decomp_ops.append(op)
 
-            # Final resort (should not enter in an ideal situtation)
-            else:  # pragma: no cover
-                try:
-                    # Attempt decomposing the operation
-                    md_ops = op.compute_decomposition(*op.parameters, wires=op.wires)
+            # Decompose and then iteratively go deeper via DFS
+            else:
+                # Single qubit unitary decomposition with ZXZ rotations
+                if op.num_wires == 1:
+                    d_ops, g_ops = _one_qubit_decompose(op)
+                    decomp_ops.extend(d_ops)
+                    gphase_ops.append(g_ops)
 
-                    idx = 0  # might not be fast but at least is not recursive
-                    while idx < len(md_ops):
-                        md_op = md_ops[idx]
+                # Two qubit unitary decomposition with SU(4) rotations
+                elif op.num_wires == 2:
+                    d_ops = _two_qubit_decompose(op)
+                    decomp_ops.extend(d_ops)
 
-                        if not check_clifford_t(md_op):
-                            if len(md_op.wires) == 1:
-                                d_ops, g_ops = _one_qubit_decompose(md_op)
-                                gphase_ops.append(g_ops)
-                            elif len(md_op.wires) == 2:
-                                d_ops = _two_qubit_decompose(md_op)
-                            else:
-                                d_ops = md_op.decomposition()
+                # Final resort (should not enter in an ideal situtation)
+                else:  # pragma: no cover
+                    try:
+                        # Attempt decomposing the operation
+                        md_ops = op.compute_decomposition(*op.parameters, wires=op.wires)
 
-                            # Expand the list and iterate over
-                            del md_ops[idx]
-                            md_ops[idx:idx] = d_ops
-                        idx += 1
+                        idx = 0  # might not be fast but at least is not recursive
+                        while idx < len(md_ops):
+                            md_op = md_ops[idx]
 
-                    decomp_ops.extend(md_ops)
+                            if not check_clifford_t(md_op):
+                                if len(md_op.wires) == 1:
+                                    d_ops, g_ops = _one_qubit_decompose(md_op)
+                                    gphase_ops.append(g_ops)
+                                elif len(md_op.wires) == 2:
+                                    d_ops = _two_qubit_decompose(md_op)
+                                else:
+                                    d_ops = md_op.decomposition()
 
-                except Exception as exc:
-                    raise ValueError(
-                        f"Cannot unroll {op} into the Clifford+T basis as no rule exists for its decomposition"
-                    ) from exc
+                                # Expand the list and iterate over
+                                del md_ops[idx]
+                                md_ops[idx:idx] = d_ops
+                            idx += 1
 
-    # Merge RZ rotations together
-    merged_ops = _merge_pauli_rotations(decomp_ops, merge_ops=["RZ"])
+                        decomp_ops.extend(md_ops)
 
-    # Squeeze global phases into a single global phase
-    new_operations = _fuse_global_phases(gphase_ops + merged_ops)
+                    except Exception as exc:
+                        raise ValueError(
+                            f"Cannot unroll {op} into the Clifford+T basis as no rule exists for its decomposition"
+                        ) from exc
 
-    # TODO: Replace it with the real newsynth routine
-    rz_to_clifford_plus_t = lambda op, epsilon: ([op], 0.0)
+        # Merge RZ rotations together
+        merged_ops = _merge_pauli_rotations(decomp_ops, merge_ops=["RZ"])
 
-    new_ops, error = [], 0
-    for op in new_operations:
-        if isinstance(op, qml.RZ):
-            clifford_ops, err = rz_to_clifford_plus_t(op, epsilon)
-            new_ops.extend(clifford_ops)
-            error += err
-        else:
-            new_ops.append(op)
+        # Squeeze global phases into a single global phase
+        new_operations = _fuse_global_phases(gphase_ops + merged_ops)
+
+        # TODO: Replace it with the real newsynth routine
+        rz_to_clifford_plus_t = lambda op, epsilon: ([op], 0.0)
+
+        new_ops, error = [], 0
+        for op in new_operations:
+            if isinstance(op, qml.RZ):
+                clifford_ops, err = rz_to_clifford_plus_t(op, epsilon)
+                new_ops.extend(clifford_ops)
+                error += err
+            else:
+                new_ops.append(op)
 
     new_tape = QuantumTape(new_ops, tape.measurements, shots=tape.shots)
     setattr(new_tape, "_qfunc_output", getattr(tape, "_qfunc_output", None))

@@ -123,6 +123,34 @@ class TestCliffordCompile:
             for op in tape.operations
         )
 
+    def test_qnode_decomposition(self):
+        """Test decomposition for the Clifford transform."""
+
+        dev = qml.device("default.qubit")
+
+        def qfunc():
+            qml.CRX(1, wires=[0, 1])
+            qml.IsingXY(2, wires=[1, 2])
+            qml.ISWAP(wires=[0, 1])
+            qml.Toffoli(wires=[1, 2, 3])
+            return qml.expval(qml.PauliZ(0))
+
+        original_qnode = qml.QNode(qfunc, dev)
+        transfmd_qnode = qml.QNode(clifford_t_decomposition(qfunc), dev)
+
+        res1, res2 = original_qnode(), transfmd_qnode()
+        assert qml.math.allclose(res1, res2)
+
+        assert all(
+            any(
+                (
+                    isinstance(op, gate) or isinstance(getattr(op, "base", None), gate)
+                    for gate in _CLIFFORD_PHASE_GATES + [qml.RZ]  # TODO: remove this
+                )
+            )
+            for op in transfmd_qnode.tape.operations
+        )
+
     @pytest.mark.parametrize(
         ("op"), [qml.RX(1.0, wires="a"), qml.U3(1, 2, 3, wires=[1]), qml.PhaseShift(1.0, wires=[2])]
     )
