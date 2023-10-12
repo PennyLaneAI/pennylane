@@ -212,7 +212,6 @@ class QuantumScript:
         self._specs = None
         self._output_dim = 0
         self._batch_size = None
-        self._qfunc_output = None
 
         self.wires = _empty_wires
         self.num_wires = 0
@@ -761,7 +760,6 @@ class QuantumScript:
 
         new_tape = self.__class__(new_operations, new_measurements, shots=self.shots)
         new_tape.trainable_params = self.trainable_params
-        new_tape._qfunc_output = self._qfunc_output
 
         return new_tape
 
@@ -896,7 +894,6 @@ class QuantumScript:
         new_qscript._obs_sharing_wires_id = self._obs_sharing_wires_id
         new_qscript._batch_size = self.batch_size
         new_qscript._output_dim = self.output_dim
-        new_qscript._qfunc_output = copy.copy(self._qfunc_output)
 
         return new_qscript
 
@@ -1258,12 +1255,9 @@ def make_qscript(fn, shots: Optional[Union[int, Sequence, Shots]] = None):
 
     def wrapper(*args, **kwargs):
         with AnnotatedQueue() as q:
-            result = fn(*args, **kwargs)
+            fn(*args, **kwargs)
 
-        qscript = QuantumScript.from_queue(q, shots)
-        qscript._qfunc_output = result
-
-        return qscript
+        return QuantumScript.from_queue(q, shots)
 
     return wrapper
 
