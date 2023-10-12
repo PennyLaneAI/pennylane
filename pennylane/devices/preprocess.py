@@ -45,6 +45,7 @@ def null_postprocessing(results):
 def _operator_decomposition_gen(
     op: qml.operation.Operator,
     acceptance_function: Callable[[qml.operation.Operator], bool],
+    decomposer: Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]],
     name: str = "device",
 ) -> Generator[qml.operation.Operator, None, None]:
     """A generator that yields the next operation that is accepted."""
@@ -52,7 +53,7 @@ def _operator_decomposition_gen(
         yield op
     else:
         try:
-            decomp = op.decomposition()
+            decomp = decomposer(op)
         except qml.operation.DecompositionUndefinedError as e:
             raise DeviceError(
                 f"Operator {op} not supported on {name} and does not provide a decomposition."
@@ -214,6 +215,9 @@ def decompose(
     tape: qml.tape.QuantumTape,
     stopping_condition: Callable[[qml.operation.Operator], bool],
     skip_initial_state_prep=True,
+    decomposer: Optional[
+        Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]]
+    ] = None,
     name: str = "device",
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Decompose operations until the stopping condition is met.
@@ -275,6 +279,11 @@ def decompose(
 
     """
 
+    if decomposer is None:
+
+        def decomposer(op):
+            return op.decomposition()
+
     if not all(stopping_condition(op) for op in tape.operations):
         try:
             # don't decompose initial operations if its StatePrepBase
@@ -285,7 +294,9 @@ def decompose(
             new_ops = [
                 final_op
                 for op in tape.operations[bool(prep_op) :]
-                for final_op in _operator_decomposition_gen(op, stopping_condition, name)
+                for final_op in _operator_decomposition_gen(
+                    op, stopping_condition, decomposer, name
+                )
             ]
         except RecursionError as e:
             raise DeviceError(

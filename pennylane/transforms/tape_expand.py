@@ -398,18 +398,55 @@ def set_decomposition(custom_decomps, dev, decomp_depth=10):
     1: ──H─╰Z──H─┤
 
     """
-    original_custom_expand_fn = dev.custom_expand_fn
+    if isinstance(dev, qml.Device):
+        original_custom_expand_fn = dev.custom_expand_fn
 
-    # Create a new expansion function; stop at things that do not have
-    # custom decompositions, or that satisfy the regular device stopping criteria
-    new_custom_expand_fn = qml.transforms.create_decomp_expand_fn(
-        custom_decomps, dev, decomp_depth=decomp_depth
-    )
+        # Create a new expansion function; stop at things that do not have
+        # custom decompositions, or that satisfy the regular device stopping criteria
+        new_custom_expand_fn = qml.transforms.create_decomp_expand_fn(
+            custom_decomps, dev, decomp_depth=decomp_depth
+        )
 
-    # Set the custom expand function within this context only
-    try:
-        dev.custom_expand(new_custom_expand_fn)
-        yield
+        # Set the custom expand function within this context only
+        try:
+            dev.custom_expand(new_custom_expand_fn)
+            yield
 
-    finally:
-        dev.custom_expand_fn = original_custom_expand_fn
+        finally:
+            dev.custom_expand_fn = original_custom_expand_fn
+
+    else:
+
+        def decomposer(op):
+            if op.name in custom_decomps:
+                return custom_decomps[op.name](*op.data, wires=op.wires, **op.hyperparameters)
+            if type(op) in custom_decomps:
+                return custom_decomps[type(op)](*op.data, wires=op.wires, **op.hyperparameters)
+            return op.decomposition()
+
+        original_preprocess = dev.preprocess
+
+        def new_preprocess(execution_config=qml.devices.DefaultExecutionConfig):
+            program, config = original_preprocess(execution_config)
+            for container in program:
+                if container.transform == qml.devices.preprocess.decompose.transform:
+                    container.kwargs["decomposer"] = decomposer
+
+                    original_stopping_condition = container.kwargs["stopping_condition"]
+
+                    def stopping_condition(obj):
+                        if obj.name in custom_decomps or type(obj) in custom_decomps:
+                            return False
+                        return original_stopping_condition(obj)
+
+                    container.kwargs["stopping_condition"] = stopping_condition
+
+                    break
+            return program, config
+
+        try:
+            dev.preprocess = new_preprocess
+            yield
+
+        finally:
+            dev.preprocess = original_preprocess
