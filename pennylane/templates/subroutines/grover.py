@@ -169,6 +169,28 @@ class GroverOperator(Operation):
     @staticmethod
     @functools.lru_cache()
     def compute_matrix(n_wires, work_wires):  # pylint: disable=arguments-differ,unused-argument
-        # Grover diffusion operator
+        r"""Representation of the operator as a canonical matrix in the computational basis
+        (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`.GroverOperator.matrix` and :func:`qml.matrix() <pennylane.matrix>`
+
+        Args:
+            n_wires (int): Number of wires the ``GroverOperator`` acts on
+            work_wires (Any or Iterable[Any]): optional auxiliary wires to assist decompositions.
+                *Unused argument*.
+
+        Returns:
+            tensor_like: matrix representation
+
+        The Grover diffusion operator is :math:`2|+\rangle\langle +| - \mathbb{I}`.
+        The first term is an all-ones matrix multiplied with two times the squared
+        normalization factor of the all-plus state, i.e. all entries of the first term are
+        :math:`2^{1-N}` for :math:`N` wires.
+        """
         dim = 2**n_wires
+        # Grover diffusion operator. Realize the all-ones entry via broadcasting when subtracting
+        # the second term.
         return 2 / dim - np.eye(dim)

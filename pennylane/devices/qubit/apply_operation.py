@@ -264,26 +264,27 @@ def apply_cnot(op: qml.CNOT, state, is_state_batched: bool = False, debugger=Non
 
 
 @apply_operation.register
-def apply_grover(
-    op: qml.templates.subroutines.GroverOperator,
-    state,
-    is_state_batched: bool = False,
-    debugger=None,
-):
-    """Apply GroverOperator to state."""
+def apply_grover(op: qml.GroverOperator, state, is_state_batched: bool = False, debugger=None):
+    """Apply GroverOperator to state. This method uses that this operator
+    is :math:`2*P-\mathbb{I}`, where :math:`P` is the projector onto the
+    all-plus state. This allows us to compute the new state by replacing summing
+    over all axes on which the operation acts, and "filling in" the all-plus state
+    in the resulting lower-dimensional state via a Kronecker product.
+    """
+    # The axes to sum over in order to obtain <+|\psi>, where <+| only acts on the op wires.
     sum_axes = [w + is_state_batched for w in op.wires]
     n_wires = len(sum_axes)
-    prefactor = 2 ** (1 - n_wires)  # Normalization of the all-plus state
-    all_plus_state = math.cast_like(math.full([2] * n_wires, prefactor), state)
+    collapsed = math.sum(state, axis=tuple(sum_axes))
 
-    collapsed_state = math.sum(state, axis=tuple(sum_axes))
-    source_axes = list(range(math.ndim(collapsed_state), math.ndim(state)))
-    return (
-        math.moveaxis(
-            math.tensordot(collapsed_state, all_plus_state, axes=0), source_axes, sum_axes
-        )
-        - state
-    )
+    # 2 * Squared normalization of the all-plus state on the op wires
+    # (squared, because we skipped the normalization when summing, 2* because of the def of Grover)
+    prefactor = 2 ** (1 - n_wires)
+    all_plus = math.cast_like(math.full([2] * n_wires, prefactor), state)
+
+    # After the Kronecker product (realized with tensordot with axes=0), we need to move
+    # the new axes to the summed-away axes' positions. Finally, subtract the original state.
+    source = list(range(math.ndim(collapsed), math.ndim(state)))
+    return math.moveaxis(math.tensordot(collapsed, all_plus, axes=0), source, sum_axes) - state
 
 
 @apply_operation.register
