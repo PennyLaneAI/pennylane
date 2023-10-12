@@ -363,6 +363,9 @@
   the last axis (`axis=-1`). Without the fix, it would wrongly return `tensor[indices]`.
   [(#4605)](https://github.com/PennyLaneAI/pennylane/pull/4605)
 
+* Ensure the logging `TRACE` level works with gradient-free execution.
+  [(#4669)](https://github.com/PennyLaneAI/pennylane/pull/4669)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
