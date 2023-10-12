@@ -260,6 +260,7 @@ class TransformDispatcher:
 
             @property
             def original_device(self):
+                """Return the original device."""
                 return self._original_device
 
         return TransformedDevice(original_device, self._transform)
