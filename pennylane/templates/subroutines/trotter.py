@@ -95,7 +95,7 @@ class TrotterProduct(Operation):
 
     Raises:
         TypeError: The 'hamiltonian' is not of type ~.Hamiltonian, or ~.Sum.
-        ValueError: One or more of the terms in 'hamiltonian' are not Hermitian. 
+        ValueError: One or more of the terms in 'hamiltonian' are not Hermitian.
         ValueError: The 'order' is not one or a positive even integer.
 
     **Example**
@@ -125,21 +125,21 @@ class TrotterProduct(Operation):
         :title: Usage Details
 
         We can also compute the gradient with respect to the coefficients of the hamiltonian and the
-        evolution time: 
+        evolution time:
 
         .. code-block:: python3
 
             @qml.qnode(dev)
-            def my_circ(c1, c2, time): 
-                # Prepare H: 
+            def my_circ(c1, c2, time):
+                # Prepare H:
                 H = qml.dot([c1, c2], [qml.PauliX(0), qml.PauliZ(1)])
-                    
+
                 # Prepare some state
                 qml.Hadamard(0)
-                
+
                 # Evolve according to H
                 qml.TrotterProduct(H, time, order=2)
-                
+
                 # Measure some quantity
                 return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
