@@ -75,6 +75,9 @@ class TransformDispatcher:
 
         if isinstance(obj, qml.QNode):
             return self._qnode_transform(obj, targs, tkwargs)
+        # TODO: Remove with the previous device generation
+        if isinstance(obj, qml.Device):
+            return self._old_device_transform(obj, targs, tkwargs)
         if isinstance(obj, qml.devices.Device):
             return self._device_transform(obj, targs, tkwargs)
         if callable(obj):
@@ -231,6 +234,19 @@ class TransformDispatcher:
 
         return qfunc_transformed
 
+    def _old_device_transform(self, original_device, targs, tkwargs):
+        """Apply the transform on a device"""
+        new_dev = copy.deepcopy(original_device)
+        transform = self._transform
+
+        @new_dev.custom_expand
+        def new_expand_fn(self, tape, *args, **kwargs):  # pylint: disable=unused-variable
+            tapes, _ = transform(tape, *targs, **tkwargs)
+            tape = tapes[0]
+            return self.default_expand_fn(tape, *args, **kwargs)
+
+        return new_dev
+
     def _device_transform(self, original_device, targs, tkwargs):
         """Apply the transform on a device"""
         if self._expand_transform:
@@ -252,9 +268,11 @@ class TransformDispatcher:
             def __repr__(self):
                 return f"Transformed Device({original_device.__repr__()} with additional preprocess transform {self.transform})"
 
-            def preprocess(self):
+            def preprocess(
+                self, config: qml.devices.ExecutionConfig = qml.devices.DefaultExecutionConfig
+            ):
                 """This function updates the original device transform program to be applied."""
-                program, config = self.original_device.preprocess()
+                program, config = self.original_device.preprocess(config)
                 program.push_back(TransformContainer(self.transform, targs, tkwargs))
                 return program, config
 

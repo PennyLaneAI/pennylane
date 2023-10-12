@@ -409,9 +409,66 @@ def test_insert_qnode():
     assert not np.isclose(f_noisy(*args), f(*args))
 
 
-@pytest.mark.xfail
 def test_insert_dev():
-    """Test if a device transformed by the insert function does successfully add noise to
+    """Test if an device transformed by the insert function does successfully add noise to
+    subsequent circuit executions"""
+    with qml.queuing.AnnotatedQueue() as q_in_tape:
+        qml.RX(0.9, wires=0)
+        qml.RY(0.4, wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.RY(0.5, wires=0)
+        qml.RX(0.6, wires=1)
+        qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+        qml.expval(qml.PauliZ(0))
+
+    in_tape = QuantumScript.from_queue(q_in_tape)
+    dev = qml.device("default.qubit", wires=2)
+    program, _ = dev.preprocess()
+    res_without_noise = qml.execute(
+        [in_tape], dev, qml.gradients.param_shift, transform_program=program
+    )
+
+    new_dev = insert(dev, qml.PhaseShift, 0.4)
+    new_program, _ = new_dev.preprocess()
+    tapes, _ = new_program([in_tape])
+    tape = tapes[0]
+    res_with_noise = qml.execute([in_tape], new_dev, qml.gradients, transform_program=new_program)
+
+    with qml.queuing.AnnotatedQueue() as q_tape_exp:
+        qml.RX(0.9, wires=0)
+        qml.PhaseShift(0.4, wires=0)
+        qml.RY(0.4, wires=1)
+        qml.PhaseShift(0.4, wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.PhaseShift(0.4, wires=0)
+        qml.PhaseShift(0.4, wires=1)
+        qml.RY(0.5, wires=0)
+        qml.PhaseShift(0.4, wires=0)
+        qml.RX(0.6, wires=1)
+        qml.PhaseShift(0.4, wires=1)
+        qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+        qml.expval(qml.PauliZ(0))
+
+    tape_exp = QuantumScript.from_queue(q_tape_exp)
+    assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
+    assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+    assert all(
+        np.allclose(o1.parameters, o2.parameters)
+        for o1, o2 in zip(tape.operations, tape_exp.operations)
+    )
+    assert len(tape.measurements) == 2
+    assert tape.observables[0].name == ["PauliZ", "PauliZ"]
+    assert tape.observables[0].wires.tolist() == [0, 1]
+    assert tape.measurements[0].return_type is Expectation
+    assert tape.observables[1].name == "PauliZ"
+    assert tape.observables[1].wires.tolist() == [0]
+    assert tape.measurements[1].return_type is Expectation
+
+    assert not np.allclose(res_without_noise, res_with_noise)
+
+
+def test_insert_old_dev(mocker):
+    """Test if a old device transformed by the insert function does successfully add noise to
     subsequent circuit executions"""
     with qml.queuing.AnnotatedQueue() as q_in_tape:
         qml.RX(0.9, wires=0)
@@ -426,12 +483,11 @@ def test_insert_dev():
     dev = qml.device("default.mixed", wires=2)
     res_without_noise = qml.execute([in_tape], dev, qml.gradients.param_shift)
 
-    new_dev = insert(dev, op=qml.PhaseDamping, op_args=0.4)
-    program, _ = new_dev.preprocess()
-    tapes, _ = program([in_tape])
-    tape = tapes[0]
+    new_dev = insert(dev, qml.PhaseDamping, 0.4)
+    spy = mocker.spy(new_dev, "default_expand_fn")
 
     res_with_noise = qml.execute([in_tape], new_dev, qml.gradients.param_shift)
+    tape = spy.call_args[0][0]
 
     with qml.queuing.AnnotatedQueue() as q_tape_exp:
         qml.RX(0.9, wires=0)
