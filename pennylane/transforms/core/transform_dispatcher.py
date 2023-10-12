@@ -232,7 +232,7 @@ class TransformDispatcher:
         return qfunc_transformed
 
     def _device_transform(self, original_device, targs, tkwargs):
-        """Apply the transform on a quantum function."""
+        """Apply the transform on a device"""
         if self._expand_transform:
             raise TransformError("Device transform does not support expand transforms.")
         if self._is_informative:
@@ -241,6 +241,8 @@ class TransformDispatcher:
             raise TransformError("Device transform does not support final transforms.")
 
         class TransformedDevice(type(original_device)):
+            """A transformed device with updated preprocess method."""
+
             def __init__(self, original_device, transform):
                 for key, value in original_device.__dict__.items():
                     self.__setattr__(key, value)
@@ -251,6 +253,7 @@ class TransformDispatcher:
                 return f"Transformed Device({original_device.__repr__()} with additional preprocess transform {self.transform})"
 
             def preprocess(self):
+                """This function updates the original device transform program to be applied."""
                 program, config = self.original_device.preprocess()
                 program.push_back(TransformContainer(self.transform, targs, tkwargs))
                 return program, config
