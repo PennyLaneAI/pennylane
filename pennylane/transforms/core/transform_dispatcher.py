@@ -231,10 +231,27 @@ class TransformDispatcher:
 
         return qfunc_transformed
 
-    def _device_transform(self, device, targs, tkwargs):
+    def _device_transform(self, original_device, targs, tkwargs):
         """Apply the transform on a quantum function."""
 
-        return device
+        class TransformedDevice(type(original_device)):
+
+            def __init__(self, original_device, transform):
+                self.original_device = original_device
+                self.transform = transform
+
+            def __repr__(self):
+                return "Transformed Device()"
+
+            def pre_processing(self):
+                original_program = self.original_device.preprocessing()
+                updated_program = original_program + new_program
+                return updated_program
+
+            def original_device(self):
+                return self.original_device
+
+        return TransformedDevice
 
 
 class TransformContainer:
