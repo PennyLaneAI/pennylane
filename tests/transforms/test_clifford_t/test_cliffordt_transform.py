@@ -280,13 +280,9 @@ class TestCliffordCompile:
 
         with qml.tape.QuantumTape() as tape:
             qml.QubitUnitary(qml.math.eye(8), wires=[0, 1, 2])
-            return qml.state()
 
-        with pytest.raises(
-            ValueError,
-            match="into the Clifford+T basis as no rule exists for its decomposition",
-        ):
-            clifford_t_decomposition(tape)
+        with pytest.raises(ValueError, match=f"Cannot unroll"):
+            clifford_t_decomposition(tape, max_depth=0)
 
     @pytest.mark.parametrize(
         ("op"),

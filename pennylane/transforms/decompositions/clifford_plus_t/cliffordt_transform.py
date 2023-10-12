@@ -275,12 +275,23 @@ def _merge_pauli_rotations(operations, merge_ops=None):
 def clifford_t_decomposition(
     tape: QuantumTape, epsilon=1e-8, max_depth=6
 ) -> (Sequence[QuantumTape], Callable):
-    r"""Decomposes a circuit into Clifford+T basis using the optimal ancilla-free approximation of z-rotations.
+    r"""Unrolls a circuit into Clifford+T basis using the optimal ancilla-free approximation of :func:`~.pennylane.RZ` operations.
+    
+    This method first decomposes the gate operations to a basis comprising of Clifford, :func:`~.pennylane.RZ` and
+    :func:`~.pennylane.GlobalPhase` operations (or their adjoint), where the Clifford gates include the following PennyLane operations:
+
+    - Single qubit gates - :func:`~pennylane.Identity`, :func:`~pennylane.PauliX`, :func:`~pennylane.PauliY`, :func:`~pennylane.PauliZ`,
+      :func:`~pennylane.SX`, :func:`~pennylane.S`, and :func:`~pennylane.Hadamard`.
+    - Two qubit gates - :func:`~pennylane.CNOT`, :func:`~pennylane.CY`, :func:`~pennylane.CZ`, :func:`~pennylane.SWAP`, and
+      :func:`~pennylane.ISWAP`.
+    
+    Then the leftover single qubit :func:`~.pennylane.RZ` operations are approximated in the Clifford+T basis using the optimal
+    ancilla-free approximation described in `Ross and Selinger (2016) <https://arxiv.org/abs/1403.2975>`_ with :math:`\epsilon`
+    error in :math:`O(\text{polylog}(1/\epsilon))` time complexity.
 
     Args:
         qfunc (function): A quantum function.
-        epsilon (float): Permissible error for approximation of z-rotations using recipe mentioned in
-            `Ross and Selinger (2016) <https://arxiv.org/abs/1403.2975>`_
+        epsilon (float): Permissible error for approximation of z-rotations
         max_depth (int): The depth to use for tape expansion before manual decomposition to Clifford+T basis is applied.
 
     Returns:
@@ -373,7 +384,6 @@ def clifford_t_decomposition(
 
                     # If we don't know how to decompose the operation
                     except Exception as exc:
-                        print(exc)
                         raise ValueError(
                             f"Cannot unroll {op} into the Clifford+T basis as no rule exists for its decomposition"
                         ) from exc
