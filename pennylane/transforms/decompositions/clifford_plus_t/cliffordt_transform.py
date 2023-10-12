@@ -275,19 +275,18 @@ def _merge_pauli_rotations(operations, merge_ops=None):
 def clifford_t_decomposition(
     tape: QuantumTape, epsilon=1e-8, max_depth=6
 ) -> (Sequence[QuantumTape], Callable):
-    r"""Unrolls a circuit into Clifford+T basis using the optimal ancilla-free approximation of :func:`~.pennylane.RZ` operations.
+    r"""Unrolls a circuit into Clifford+T basis using the optimal ancilla-free approximation of :class:`~.RZ` operations.
 
-    This method first decomposes the gate operations to a basis comprising of Clifford, :func:`~.pennylane.RZ` and
+    This method first decomposes the gate operations to a basis comprising of Clifford, :func:`~.RZ` and
     :func:`~.pennylane.GlobalPhase` operations (or their adjoint), where the Clifford gates include the following PennyLane operations:
 
-    - Single qubit gates - :func:`~pennylane.Identity`, :func:`~pennylane.PauliX`, :func:`~pennylane.PauliY`, :func:`~pennylane.PauliZ`,
-      :func:`~pennylane.SX`, :func:`~pennylane.S`, and :func:`~pennylane.Hadamard`.
-    - Two qubit gates - :func:`~pennylane.CNOT`, :func:`~pennylane.CY`, :func:`~pennylane.CZ`, :func:`~pennylane.SWAP`, and
-      :func:`~pennylane.ISWAP`.
+    - Single qubit gates - :class:`~.Identity`, :class:`~.PauliX`, :class:`~.PauliY`, :class:`~.PauliZ`,
+      :class:`~.SX`, :class:`~.S`, and :class:`~.Hadamard`.
+    - Two qubit gates - :class:`~.CNOT`, :class:`~.CY`, :class:`~.CZ`, :class:`~.SWAP`, and :class:`~.ISWAP`.
 
-    Then the leftover single qubit :func:`~.pennylane.RZ` operations are approximated in the Clifford+T basis using the optimal
-    ancilla-free method described in `Ross and Selinger (2016) <https://arxiv.org/abs/1403.2975>`_ with :math:`\epsilon`-error
-    in :math:`O(\text{polylog}(1/\epsilon))` time.
+    Then the leftover single qubit :class:`~.pennylane.RZ` operations are approximated in the Clifford+T basis - {H, S, CNOT, T}
+    using the optimal ancilla-free method described in `Ross and Selinger (2016) <https://arxiv.org/abs/1403.2975>`_ with
+    :math:`\epsilon`-error in :math:`O(\text{polylog}(1/\epsilon))` time.
 
     Args:
         qfunc (function): A quantum function.
