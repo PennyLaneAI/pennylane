@@ -124,7 +124,7 @@ def check_clifford_t(op):
     if any(
         (
             isinstance(op, gate) or isinstance(getattr(op, "base", None), gate)
-            for gate in _CLIFFORD_T_GATES
+            for gate in _CLIFFORD_T_GATES + [qml.GlobalPhase]
         )
     ):
         return True
@@ -320,19 +320,21 @@ def clifford_t_decomposition(
                     decomp_ops.extend(d_ops)
 
                 # Final resort (should not enter in an ideal situtation)
-                else:  # pragma: no cover
+                else:
                     try:
                         # Attempt decomposing the operation
-                        md_ops = op.compute_decomposition(*op.parameters, wires=op.wires)
+                        md_ops = op.decomposition()
 
                         idx = 0  # might not be fast but at least is not recursive
                         while idx < len(md_ops):
                             md_op = md_ops[idx]
-
-                            if not check_clifford_t(md_op):
+                            if md_op.name not in basis_set or not check_clifford_t(md_op):
                                 if len(md_op.wires) == 1:
-                                    d_ops, g_ops = _one_qubit_decompose(md_op)
-                                    gphase_ops.append(g_ops)
+                                    if md_op.name in basis_set:
+                                        d_ops = _rot_decompose(md_op)
+                                    else:
+                                        d_ops, g_ops = _one_qubit_decompose(md_op)
+                                        gphase_ops.append(g_ops)
                                 elif len(md_op.wires) == 2:
                                     d_ops = _two_qubit_decompose(md_op)
                                 else:
@@ -346,6 +348,7 @@ def clifford_t_decomposition(
                         decomp_ops.extend(md_ops)
 
                     except Exception as exc:
+                        print(exc)
                         raise ValueError(
                             f"Cannot unroll {op} into the Clifford+T basis as no rule exists for its decomposition"
                         ) from exc

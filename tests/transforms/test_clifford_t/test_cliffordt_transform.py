@@ -33,10 +33,12 @@ from pennylane.transforms.optimization.optimization_utils import _fuse_global_ph
 _SKIP_GATES = [qml.Barrier, qml.Snapshot, qml.WireCut, qml.GlobalPhase]
 _CLIFFORD_PHASE_GATES = _CLIFFORD_T_GATES + _SKIP_GATES
 
+INVSQ2 = 1 / math.sqrt(2)
+PI = math.pi
+
 
 def circuit_1():
     """Circuit 1 with quantum chemistry gates"""
-    qml.GlobalPhase(math.pi)
     qml.RZ(1.0, wires=[0])
     qml.PhaseShift(1.0, wires=[1])
     qml.SingleExcitation(2.0, wires=[1, 2])
@@ -55,12 +57,13 @@ def circuit_2():
 
 def circuit_3():
     """Circuit 3 with Clifford gates"""
+    qml.GlobalPhase(PI)
     qml.CNOT(wires=[0, 1])
     qml.PauliX(wires=[1])
     qml.ISWAP(wires=[0, 1])
     qml.Hadamard(wires=[0])
     qml.WireCut(wires=[1])
-    qml.RZ(math.pi, wires=[0])
+    qml.RZ(PI, wires=[0])
     return qml.expval(qml.PauliZ(0))
 
 
@@ -81,7 +84,10 @@ def circuit_5():
         ]
     )
     qml.QubitUnitary(matrix, wires=[0, 1])
-    qml.DiagonalQubitUnitary(qml.math.diag(matrix), wires=[0, 1])
+    qml.DiagonalQubitUnitary(
+        [qml.math.exp(1j * 0.1), qml.math.exp(1j * PI), INVSQ2 * (1 + 1j), INVSQ2 * (1 - 1j)],
+        wires=[0, 1],
+    )
 
 
 class TestCliffordCompile:
@@ -103,15 +109,15 @@ class TestCliffordCompile:
 
     @pytest.mark.parametrize(
         ("circuit, max_depth"),
-        [(circuit_1, 1), (circuit_2, 1), (circuit_3, 0), (circuit_4, 4), (circuit_5, 5)],
+        [(circuit_1, 1), (circuit_2, 0), (circuit_3, 0), (circuit_4, 1), (circuit_5, 0)],
     )
     def test_decomposition(self, circuit, max_depth):
         """Test decomposition for the Clifford transform."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.tape.QuantumTape() as old_tape:
             circuit()
 
-        [tape], _ = clifford_t_decomposition(tape, max_depth=max_depth)
+        [new_tape], tape_fn = clifford_t_decomposition(old_tape, max_depth=max_depth)
 
         assert all(
             any(
@@ -120,8 +126,12 @@ class TestCliffordCompile:
                     for gate in _CLIFFORD_PHASE_GATES + [qml.RZ]  # TODO: remove this
                 )
             )
-            for op in tape.operations
+            for op in new_tape.operations
         )
+
+        dev = qml.device("default.qubit")
+        res1, res2 = qml.execute([old_tape, new_tape], device=dev)
+        qml.math.allclose(res1, tape_fn([res2]))
 
     def test_qnode_decomposition(self):
         """Test decomposition for the Clifford transform."""
@@ -233,7 +243,7 @@ class TestCliffordCompile:
             qml.adjoint(qml.RX(1.0, wires=["b"])),
             qml.Rot(1, 2, 3, wires=[2]),
             qml.PhaseShift(1.0, wires=[0]),
-            qml.PhaseShift(3 * math.pi, wires=[0]),
+            qml.PhaseShift(3 * PI, wires=[0]),
         ],
     )
     def test_rot_decomposition(self, op):
