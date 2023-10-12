@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for the available built-in parametric qubit operations."""
 
+import math
 from functools import reduce
 
 import pytest
@@ -35,11 +36,11 @@ _CLIFFORD_PHASE_GATES = _CLIFFORD_T_GATES + _SKIP_GATES
 
 def circuit_1():
     """Circuit 1 with quantum chemistry gates"""
+    qml.GlobalPhase(math.pi)
     qml.RZ(1.0, wires=[0])
     qml.PhaseShift(1.0, wires=[1])
     qml.SingleExcitation(2.0, wires=[1, 2])
     qml.DoubleExcitation(2.0, wires=[1, 2, 3, 4])
-    qml.Snapshot()
     return qml.expval(qml.PauliZ(0))
 
 
@@ -58,6 +59,8 @@ def circuit_3():
     qml.PauliX(wires=[1])
     qml.ISWAP(wires=[0, 1])
     qml.Hadamard(wires=[0])
+    qml.WireCut(wires=[1])
+    qml.RZ(math.pi, wires=[0])
     return qml.expval(qml.PauliZ(0))
 
 
@@ -109,7 +112,7 @@ class TestCliffordCompile:
             circuit()
 
         [tape], _ = clifford_t_decomposition(tape, max_depth=max_depth)
-        print(tape.operations)
+
         assert all(
             any(
                 (
@@ -201,6 +204,8 @@ class TestCliffordCompile:
         [
             qml.adjoint(qml.RX(1.0, wires=["b"])),
             qml.Rot(1, 2, 3, wires=[2]),
+            qml.PhaseShift(1.0, wires=[0]),
+            qml.PhaseShift(3 * math.pi, wires=[0]),
         ],
     )
     def test_rot_decomposition(self, op):

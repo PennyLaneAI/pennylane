@@ -277,7 +277,7 @@ def clifford_t_decomposition(
     r"""Unrolls the tape into Clifford+T basis"""
 
     # Build the basis set and the pipeline for intial compilation pass
-    basis_set = [op.name for op in _PARAMETER_GATES + _CLIFFORD_T_GATES]
+    basis_set = [op.__name__ for op in _PARAMETER_GATES + _CLIFFORD_T_GATES]
     pipelines = [remove_barrier, commute_controlled, cancel_inverses, merge_rotations]
 
     expanded_tape = tape.expand(depth=max_depth, stop_at=lambda op: op.name in basis_set)
