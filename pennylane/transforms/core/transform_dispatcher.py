@@ -75,6 +75,8 @@ class TransformDispatcher:
 
         if isinstance(obj, qml.QNode):
             return self._qnode_transform(obj, targs, tkwargs)
+        if isinstance(obj, qml.Device):
+            return self._device_transform(obj, targs, tkwargs)
         if callable(obj):
             return self._qfunc_transform(obj, targs, tkwargs)
 
@@ -228,6 +230,11 @@ class TransformDispatcher:
             return qml.math.asarray(mps, like=interface)
 
         return qfunc_transformed
+
+    def _device_transform(self, device, targs, tkwargs):
+        """Apply the transform on a quantum function."""
+
+        return device
 
 
 class TransformContainer:
