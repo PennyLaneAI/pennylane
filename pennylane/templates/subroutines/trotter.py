@@ -49,7 +49,7 @@ def _recursive_expression(x, order, ops):
         return [qml.exp(op, x * 1j) for op in ops]
 
     if order == 2:
-        return [qml.exp(op, x * 0.5j) for op in (ops + ops[::-1])]
+        return [qml.exp(op, x * 0.5j) for op in ops + ops[::-1]]
 
     scalar_1 = _scalar(order)
     scalar_2 = 1 - 4 * scalar_1
@@ -148,9 +148,9 @@ class TrotterProduct(Operation):
         (tensor(0.00961064, requires_grad=True), tensor(-0.12338274, requires_grad=True), tensor(-5.43401259, requires_grad=True))
     """
 
-    def __init__(
+    def __init__(  # pylin: disable=too-many-arguments
         self, hamiltonian, time, n=1, order=1, check_hermitian=True, id=None
-    ):  # pylin: disable=too-many-arguments
+    ):
         r"""Initialize the TrotterProduct class"""
 
         if order <= 0 or order != 1 and order % 2 != 0:
