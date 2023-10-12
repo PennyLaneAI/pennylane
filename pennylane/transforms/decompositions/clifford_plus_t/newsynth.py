@@ -21,13 +21,14 @@ import pennylane as qml
 from .conversion import (
     denomexp,
     from_d_root_two,
-    op_from_d_omega,
     point_from_d_root_two,
 )
 from .diophantine import diophantine_dyadic
 from .gridpoints import gridpoints2_increasing
 from .shapes import ConvexSet, Ellipse, Point
-from .rings import Matrix, DOmega, OMEGA
+from .rings import Matrix, DOmega, omega
+
+OMEGA = omega(0, 0, 1, 0)
 
 
 def gridsynth(prec, theta, effort):
@@ -121,13 +122,13 @@ def with_succesful_candidate(u, t, theta):
     if denomexp(u + t) < denomexp(u + OMEGA * t):
         t *= OMEGA
     uU = Matrix.array([[u, -np.conj(t)], [t, np.conj(u)]])
-    uU_fixed = op_from_d_omega(uU)
-    zrot_fixed = qml.RZ.compute_matrix(theta)
+    uU_fixed = uU.astype(complex)
+    zrot_fixed = qml.RZ.compute_matrix(theta).view(Matrix)
     err = np.sqrt(np.real(hs_sqnorm(uU_fixed - zrot_fixed)) / 2)
     log_err = -np.log2(err)
     return uU, log_err
 
 
-def hs_sqnorm(x):
+def hs_sqnorm(m: Matrix):
     """Returns the Hilbert-Schmidt operator norm."""
-    return x
+    return np.trace(m @ m.adjoint())

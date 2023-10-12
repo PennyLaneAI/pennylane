@@ -32,7 +32,7 @@ def diophantine_dyadic(xi: DRootTwo, effort: int):  # pylint:disable=unused-argu
     if t is None:
         return None
     u = ZOmega(-1, 1, -1, 1) * DOmega(0, 0, 0, Dyadic(1, 1))
-    root_half = DRootTwo(0, Dyadic(1, 1))
+    root_half = DOmega.from_root_two(DRootTwo(0, Dyadic(1, 1)))
     return u**k__ * root_half**k_ * t
 
 

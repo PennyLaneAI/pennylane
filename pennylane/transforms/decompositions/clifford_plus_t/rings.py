@@ -136,8 +136,7 @@ class Matrix(np.ndarray):
         raise ValueError("can only get special inverse.")
 
     def adjoint(self):
-        """Returns the adjoint of the matrix.
-        TODO: not implemented."""
+        """Returns the adjoint of the matrix."""
         return np.conj(self).T
 
 
@@ -275,7 +274,17 @@ class ZRootTwo(RootTwo):
 
     def sqrt(self):
         """Return the square root."""
-        return self  # TODO: implement
+        a = self.a
+        d = self.norm()
+        r = int(np.sqrt(d)) if d > 0 else 0
+        x1 = int(np.sqrt((a + r) // 2))
+        x2 = int(np.sqrt((a - r) // 2))
+        y1 = int(np.sqrt((a - r) // 4))
+        y2 = int(np.sqrt((a + r) // 4))
+        for o in (ZRootTwo(x1, y1), ZRootTwo(x2, y2), ZRootTwo(x1, -y1), ZRootTwo(x2, -y2)):
+            if o * o == self:
+                return o
+        return None
 
     def __truediv__(self, other):
         if isinstance(other, int):
@@ -383,12 +392,12 @@ class Omega(ABC):
     @property
     def real(self):
         """The real component of a Omega value."""
-        return root_two(self.d, (self.c - self.a) / 2)  # TODO: fix
+        return root_two(self.d, (self.c - self.a) * Dyadic(1, 1))
 
     @property
     def imag(self):
         """The imaginary component of a Omega value."""
-        return root_two(self.b, (self.a + self.c) / 2)  # TODO: fix
+        return root_two(self.b, (self.a + self.c) * Dyadic(1, 1))
 
     def conjugate(self):
         """The complex conjugate."""
@@ -445,6 +454,20 @@ class Omega(ABC):
         if isinstance(other, (int, Dyadic)):
             return self.a == 0 and self.b == 0 and self.c == 0 and self.d == other
         raise TypeError(f"cannot compare Omega ring with {other} of type {type(other).__name__}")
+
+    def __pow__(self, power):
+        if not isinstance(power, int):
+            raise ValueError(f"Cannot raise Omage to non-int power {power}")
+        if power == 0:
+            return ZOmega(0, 0, 0, 1)
+        if power < 0:
+            raise ValueError("cannot raise Omega to negative power")
+        result = self
+        power -= 1
+        while power > 0:
+            result *= self
+            power -= 1
+        return result
 
 
 class ZOmega(Omega):

@@ -14,7 +14,7 @@
 """Various conversion functions for the gridsynth implementation."""
 # pylint:disable=missing-function-docstring
 
-from .rings import DOmega, DRootTwo, ZRootTwo, RootTwo, Matrix
+from .rings import DOmega, DRootTwo, ZRootTwo, RootTwo, Matrix, Omega
 
 
 def adj2(x):
@@ -23,7 +23,7 @@ def adj2(x):
         (a, b), (c, d) = x
         return Matrix.array([[adj2(a), adj2(b)], [adj2(c), adj2(d)]])
 
-    if isinstance(x, RootTwo):
+    if isinstance(x, (RootTwo, Omega)):
         return x.adj2()
 
     return x
