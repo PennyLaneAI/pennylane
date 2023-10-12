@@ -275,6 +275,19 @@ class TestCliffordCompile:
         )[qml.math.nonzero(qml.math.round(matrix_op, 10))]
         assert qml.math.allclose(phase / phase[0], qml.math.ones(qml.math.shape(phase)[0]))
 
+    def test_raise_with_cliffordt_decomposition(self):
+        """Test that exception is correctly raise when decomposing gates without any decomposition"""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.QubitUnitary(qml.math.eye(8), wires=[0, 1, 2])
+            return qml.state()
+
+        with pytest.raises(
+            ValueError,
+            match="into the Clifford+T basis as no rule exists for its decomposition",
+        ):
+            clifford_t_decomposition(tape)
+
     @pytest.mark.parametrize(
         ("op"),
         [
@@ -282,10 +295,10 @@ class TestCliffordCompile:
         ],
     )
     def test_raise_with_rot_decomposition(self, op):
-        """Test that exception is correctly raise when caclulating expectation values of multiple Hamiltonians"""
+        """Test that exception is correctly raise when decomposing parameterized gates for which we already don't have a recipie"""
 
         with pytest.raises(
             ValueError,
-            match="qml.RX, qml.RY, qml.RZ and qml.Rot",
+            match="qml.RX, qml.RY, qml.RZ, qml.Rot and qml.PhaseShift",
         ):
             _fuse_global_phases(_rot_decompose(op))

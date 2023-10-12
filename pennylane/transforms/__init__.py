@@ -95,6 +95,16 @@ There are also utility functions that take a circuit and return a DAG.
     ~transforms.CommutationDAG
     ~transforms.CommutationDAGNode
 
+Transforms for Clifford+T compilation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This set of transforms accept quantum functions, and perform decomposition to Clifford+T basis.
+
+.. autosummary::
+    :toctree: api
+
+    ~clifford_t_decomposition
+
 Transform for circuit cutting
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

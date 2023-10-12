@@ -192,7 +192,7 @@ def _rot_decompose(op):
 
     else:
         raise ValueError(
-            f"Operation {op} is not a valid Pauli rotation: qml.RX, qml.RY, qml.RZ and qml.Rot"
+            f"Operation {op} is not a valid Pauli rotation: qml.RX, qml.RY, qml.RZ, qml.Rot and qml.PhaseShift"
         )
 
     d_ops.extend(ops_)
@@ -275,18 +275,33 @@ def _merge_pauli_rotations(operations, merge_ops=None):
 def clifford_t_decomposition(
     tape: QuantumTape, epsilon=1e-8, max_depth=6
 ) -> (Sequence[QuantumTape], Callable):
-    r"""Unrolls the tape into Clifford+T basis"""
+    r"""Decomposes a circuit into Clifford+T basis using the optimal ancilla-free approximation of z-rotations.
+
+    Args:
+        qfunc (function): A quantum function.
+        epsilon (float): Permissible error for approximation of z-rotations using recipe mentioned in
+            `Ross and Selinger (2016) <https://arxiv.org/abs/1403.2975>`_
+        max_depth (int): The depth to use for tape expansion before manual decomposition to Clifford+T basis is applied.
+
+    Returns:
+        pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
+        it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of
+        quantum tapes to be evaluated, and a function to be applied to these
+        tape executions.
+
+    """
     with QueuingManager.stop_recording():
         # Build the basis set and the pipeline for intial compilation pass
         basis_set = [op.__name__ for op in _PARAMETER_GATES + _CLIFFORD_T_GATES]
         pipelines = [remove_barrier, commute_controlled, cancel_inverses, merge_rotations]
 
+        # Expand the tape according to depth provided by the user and try simplifying it
         expanded_tape = tape.expand(depth=max_depth, stop_at=lambda op: op.name in basis_set)
-
         for transf in pipelines:
             [expanded_tape], _ = transf(expanded_tape)
 
-        # Now iterate over the compiled pipeline
+        # Now iterate over the expanded tape operations
         decomp_ops, gphase_ops = [], []
         for op in expanded_tape.operations:
             # Check whether operation is to be skipped
@@ -322,7 +337,7 @@ def clifford_t_decomposition(
                     d_ops = _two_qubit_decompose(op)
                     decomp_ops.extend(d_ops)
 
-                # Final resort (should not enter in an ideal situtation)
+                # For special multi-qubit gates and ones constructed from matrix
                 else:
                     try:
                         # Attempt decomposing the operation
@@ -332,14 +347,20 @@ def clifford_t_decomposition(
                         while idx < len(md_ops):
                             md_op = md_ops[idx]
                             if md_op.name not in basis_set or not check_clifford_t(md_op):
+                                # For the gates acting on one qubit
                                 if len(md_op.wires) == 1:
-                                    if md_op.name in basis_set:
+                                    if md_op.name in basis_set:  # For known recipe
                                         d_ops = _rot_decompose(md_op)
-                                    else:
+                                    else:  # Resort to decomposing manually
                                         d_ops, g_ops = _one_qubit_decompose(md_op)
                                         gphase_ops.append(g_ops)
+
+                                # For the gates acting on two qubits
                                 elif len(md_op.wires) == 2:
+                                    # Resort to decomposing manually
                                     d_ops = _two_qubit_decompose(md_op)
+
+                                # Final resort (should not enter in an ideal situtation)
                                 else:  # pragma: no cover
                                     d_ops = md_op.decomposition()
 
@@ -350,7 +371,8 @@ def clifford_t_decomposition(
 
                         decomp_ops.extend(md_ops)
 
-                    except Exception as exc:  # pragma: no cover
+                    # If we don't know how to decompose the operation
+                    except Exception as exc:
                         print(exc)
                         raise ValueError(
                             f"Cannot unroll {op} into the Clifford+T basis as no rule exists for its decomposition"
@@ -374,9 +396,11 @@ def clifford_t_decomposition(
             else:
                 new_ops.append(op)
 
-    new_tape = QuantumTape(new_ops, tape.measurements, shots=tape.shots)
+    # Construct a new tape with the expanded set of operations
+    new_tape = QuantumTape(new_ops, expanded_tape.measurements, shots=tape.shots)
     setattr(new_tape, "_qfunc_output", getattr(tape, "_qfunc_output", None))
 
+    # Perform three final attempts of simplification before return
     for _ in range(3):
         for transf in [commute_controlled, cancel_inverses]:
             [new_tape], _ = transf(new_tape)
