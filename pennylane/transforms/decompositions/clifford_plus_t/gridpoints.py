@@ -13,7 +13,7 @@
 # limitations under the License.
 """The gridsynth method, adapted from the ``newsynth`` Haskell package."""
 
-from typing import Tuple, Generator
+from typing import Tuple, Iterator
 import numpy as np
 
 from .conversion import (
@@ -32,7 +32,7 @@ ROOT_NEG1 = DOmega(0, 1, 0, 0)
 log_lambda = lambda x: np.emath.logn(1 + SQRT2, float(x))
 
 
-def gridpoints2_increasing(region: ConvexSet) -> Generator[Tuple[DOmega, int], None, None]:
+def gridpoints2_increasing(region: ConvexSet) -> Iterator[Tuple[DOmega, int]]:
     """Returns a list of candidates."""
     unitdisk = create_unitdisk()
     matA = region.ellipse.operator
@@ -102,7 +102,7 @@ def create_unitdisk():
     return ConvexSet(ell, lambda x, y: x**2 + y**2 <= 1, intersector)
 
 
-def gridpoints_scaled(x, y, k) -> Generator[DRootTwo, None, None]:
+def gridpoints_scaled(x, y, k) -> Iterator[DRootTwo]:
     """Gridpoints satisfying the scaling criteria so they are in D[omega]"""
     scale_inv = ZRootTwo(0, 1) ** k
     scale = 1 / scale_inv

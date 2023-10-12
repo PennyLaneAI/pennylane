@@ -13,6 +13,7 @@
 # limitations under the License.
 """The gridsynth method, adapted from the ``newsynth`` Haskell package."""
 
+from typing import Tuple, Iterator
 import numpy as np
 
 import pennylane as qml
@@ -26,10 +27,10 @@ from .conversion import (
 from .diophantine import diophantine_dyadic
 from .gridpoints import gridpoints2_increasing
 from .shapes import ConvexSet, Ellipse, Point
-from .rings import Matrix, OMEGA
+from .rings import Matrix, DOmega, OMEGA
 
 
-def gridsynth(g, prec, theta, effort):
+def gridsynth(prec, theta, effort):
     """
     The gridsynth algorithm. Converts RZ(theta) into a sequence of Clifford+T gates.
 
@@ -48,7 +49,7 @@ def gridsynth(g, prec, theta, effort):
     epsilon = 2**-prec
     region = epsilon_region(epsilon, theta)
     candidates = gridpoints2_increasing(region)
-    candidate_info = first_solvable(g, candidates, effort)
+    candidate_info = first_solvable(candidates, effort)
     u, _, t = candidate_info[0]
     if not t:
         raise ValueError("could not find valid candidate.")
@@ -100,22 +101,17 @@ def tcount_for(k):
     return 2 * k - 2 if k > 0 else 0
 
 
-def first_solvable(g, candidates, effort):
+def first_solvable(candidates: Iterator[Tuple[DOmega, int]], effort: int):
     """Get the first solvable ``u`` from a list of candidates."""
     # TODO: do we need to track ``infos``?
     infos = []
     for u, tcount in candidates:
-        g1, g2 = g
-        xi = np.real(1 - np.conj(u) * u)
-        attempts = 0
-        for t in diophantine_dyadic(g1, xi):
-            if t:
-                infos.insert(0, (u, tcount, t))
-                return infos
-            if (attempts := attempts + 1) == effort:
-                infos.insert(0, (u, tcount, t))
-                break
-        g = g2
+        u_dagger_u = u.conjugate() * u
+        xi = 1 - u_dagger_u.real
+        t = diophantine_dyadic(xi, effort)
+        infos.append((u, tcount, t))
+        if t is not None:
+            return infos
 
     raise ValueError("no valid candidates")
 
