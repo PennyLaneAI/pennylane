@@ -23,12 +23,10 @@ from .conversion import (
     from_d_root_two,
     point_from_d_root_two,
 )
-from .diophantine import diophantine_dyadic
+from .diophantine import diophantine_dyadic, DiophantineError
 from .gridpoints import gridpoints2_increasing
 from .shapes import ConvexSet, Ellipse, Point
-from .rings import Matrix, DOmega, omega
-
-OMEGA = omega(0, 0, 1, 0)
+from .rings import Matrix, DOmega, ZOmega
 
 
 def gridsynth(prec, theta, effort):
@@ -51,9 +49,7 @@ def gridsynth(prec, theta, effort):
     region = epsilon_region(epsilon, theta)
     candidates = gridpoints2_increasing(region)
     candidate_info = first_solvable(candidates, effort)
-    u, _, t = candidate_info[0]
-    if not t:
-        raise ValueError("could not find valid candidate.")
+    u, _, t = candidate_info[-1]
     uU, log_err = with_succesful_candidate(u, t, theta)
     return uU, log_err, candidate_info
 
@@ -109,18 +105,21 @@ def first_solvable(candidates: Iterator[Tuple[DOmega, int]], effort: int):
     for u, tcount in candidates:
         u_dagger_u = u.conjugate() * u
         xi = 1 - u_dagger_u.real
-        t = diophantine_dyadic(xi, effort)
-        infos.append((u, tcount, t))
-        if t is not None:
+        try:
+            t = diophantine_dyadic(xi, effort)
+            infos.append((u, tcount, t))
             return infos
+        except DiophantineError:
+            infos.append((u, tcount, None))
 
     raise ValueError("no valid candidates")
 
 
 def with_succesful_candidate(u, t, theta):
     """Validate a successful candidate and return the matrix."""
-    if denomexp(u + t) < denomexp(u + OMEGA * t):
-        t *= OMEGA
+    t_omega = ZOmega(0, 0, 1, 0) * t
+    if denomexp(u + t) < denomexp(u + t_omega):
+        t = t_omega
     uU = Matrix.array([[u, -np.conj(t)], [t, np.conj(u)]])
     uU_fixed = uU.astype(complex)
     zrot_fixed = qml.RZ.compute_matrix(theta).view(Matrix)

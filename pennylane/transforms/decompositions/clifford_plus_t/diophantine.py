@@ -23,6 +23,11 @@ from .rings import ZRootTwo, DRootTwo, ZOmega, DOmega, Dyadic
 ZRing = Union[ZRootTwo, ZOmega]
 Factorable = Union[int, ZRootTwo]
 zero = ZRootTwo(0, 0)
+EFFORT = 1000
+
+
+class DiophantineError(Exception):
+    """A generic error meaning we failed to solve the Diophantine equation."""
 
 
 def diophantine_dyadic(xi: DRootTwo, effort: int) -> DOmega:
@@ -34,8 +39,6 @@ def diophantine_dyadic(xi: DRootTwo, effort: int) -> DOmega:
         raise TypeError(f"expected xi_ to be of type ZRootTwo, got {type(xi_).__name__}:{xi_}")
 
     t = diophantine(xi_)
-    if t is None:
-        return None
     u = ZOmega(-1, 1, -1, 1) * DOmega(0, 0, 0, Dyadic(1, 1))
     root_half = DOmega.from_root_two(DRootTwo(0, Dyadic(1, 1)))
     return u**k__ * root_half**k_ * t
@@ -46,15 +49,15 @@ def diophantine(xi: ZRootTwo) -> ZOmega:
     if xi == zero:
         return ZOmega(0, 0, 0, 0)
     if xi < 0 or xi.adj2() < 0:
-        return None
+        raise DiophantineError
 
     t = diophantine_associate(xi)
-    if t is None:
-        return None
     xi_associate = (t.conjugate() * t).to_root_two()
     u = euclid_div(xi, xi_associate)
     v = u.sqrt()
-    return None if v is None else ZOmega.from_root_two(v) * t
+    if v is None:
+        raise DiophantineError
+    return ZOmega.from_root_two(v) * t
 
 
 def diophantine_associate(xi: ZRootTwo) -> ZOmega:
@@ -63,12 +66,10 @@ def diophantine_associate(xi: ZRootTwo) -> ZOmega:
 
     d = euclid_gcd(xi, xi.adj2())
     t1 = dioph_zroottwo_selfassociate(d)
-    if t1 is None:
-        return None
 
     xi_ = euclid_div(xi, d)
     t2 = dioph_zroottwo_assoc(xi_)
-    return None if t2 is None else t1 * t2
+    return t1 * t2
 
 
 def dioph_zroottwo_selfassociate(xi: ZRootTwo) -> ZOmega:
@@ -78,9 +79,6 @@ def dioph_zroottwo_selfassociate(xi: ZRootTwo) -> ZOmega:
 
     n = int(np.gcd(xi.a, xi.b))
     res = dioph_int_assoc(n)
-    if res is None:
-        return None
-
     r = euclid_div(xi, ZRootTwo(n, 0))
     if euclid_divides(ZRootTwo(0, 1), r):
         res = ZOmega(0, 0, 1, 1) * res
@@ -111,8 +109,6 @@ def dioph_zroottwo_assoc_prime(xi: ZRootTwo) -> ZOmega:
     n_mod_8 = n % 8
     if n_mod_8 == 1:
         h = root_of_negative_one(n)
-        if h is None:
-            return None
         xi_omega = ZOmega.from_root_two(xi)
         t = euclid_gcd(ZOmega(0, 1, 0, h), xi_omega)
         if not euclid_associates(t.conjugate() * t, xi_omega):
@@ -120,7 +116,7 @@ def dioph_zroottwo_assoc_prime(xi: ZRootTwo) -> ZOmega:
         return t
     if n_mod_8 == 7:
         return None
-    raise ValueError(f"solution for {xi=} diverges")
+    raise DiophantineError
 
 
 def dioph_zroottwo_assoc_powers(facs: List[Tuple[ZRootTwo, int]]) -> ZOmega:
@@ -132,7 +128,7 @@ def dioph_zroottwo_assoc_powers(facs: List[Tuple[ZRootTwo, int]]) -> ZOmega:
             continue
         t = dioph_zroottwo_assoc(xi)
         if t is None:
-            return None
+            raise DiophantineError
         vals.append(t**k)
     return np.prod(vals)
 
@@ -166,8 +162,6 @@ def dioph_int_assoc_prime(n: int) -> ZOmega:
     n_omega = ZOmega(0, 0, 0, n)
     if n % 4 == 1:
         h = root_of_negative_one(n)
-        if h is None:
-            return None
         t = euclid_gcd(ZOmega(0, 1, 0, h), n_omega)
         if t.conjugate() * t != n_omega:
             raise ValueError(f"t†t should equal {n}, got {t=} and t†t={t.conjugate() * t}")
@@ -180,28 +174,34 @@ def dioph_int_assoc_prime(n: int) -> ZOmega:
             raise ValueError(f"t†t should equal {n}, got {t=} and t†t={t.conjugate() * t}")
         return t
     if n_mod_8 == 7:
-        # h = root_mod(n, 2)  # TODO is this monadic action necessary in newsynth?
+        root_mod(n, 2)  # if this fails, we should stop trying for this candidate
         return None
-    raise ValueError("Could not find the associate prime to solve the Diophantine equation.")
+
+    # in the Haskell, this is an error but dioph_int_assoc_prime just diverges. Not sure why.
+    raise ValueError("unexpected error: dioph_int_assoc_prime with n:", n)
 
 
 def find_factor(n: int) -> int:
-    """recursive factorization solver."""
+    """iterative factorization solver."""
     if n % 2 == 0 and n > 2:
         return 2
 
-    a = np.random.randint(1, n)
-    f = lambda x: (x**2 + a) % n
+    for _ in range(EFFORT):
+        a = np.random.randint(1, n)
+        f = lambda x: (x**2 + a) % n  # pylint:disable=cell-var-from-loop
+        x = 2
+        y = f(2)
+        for _ in range(EFFORT):
+            d = np.gcd(x - y, n)
+            if d == 1:
+                x = f(x)
+                y = f(f(y))
+            elif d == n:  # try again with another random number
+                break
+            else:
+                return int(d)
 
-    def aux(x, y):
-        d = int(np.gcd(x - y, n))
-        if d == 1:
-            return aux(f(x), f(f(y)))
-        if d == n:  # try again with another random number
-            return find_factor(n)
-        return d
-
-    return aux(2, f(2))
+    raise DiophantineError
 
 
 def relatively_prime_factors(
@@ -246,7 +246,7 @@ def dioph_int_assoc_powers(facs: List[Tuple[int, int]]) -> ZOmega:
             continue
         t = dioph_int_assoc(n)
         if t is None:
-            return None
+            raise DiophantineError
         vals.append(t**k)
     return np.prod(vals)
 
@@ -255,18 +255,16 @@ def root_of_negative_one(n: int):
     """Get the root of negative one in Z[n]."""
     if n == 1:
         return 1
-    for _ in range(1000):
+    for _ in range(EFFORT):
         b = np.random.randint(1, n)
         h = power_mod(b, (n - 1) // 4, n)
         r = (h * h) % n
         if r == n - 1:
             return h
-        # the Haskell source says to diverge here (aka spin forever), but it seems wrong.
-        # if r != 1:
-        #     raise ValueError(f"solution for {n=} diverges")
+        if r != 1:
+            raise DiophantineError
 
-    # could not find a root, try the next candidate
-    return None
+    raise DiophantineError
 
 
 def power_mod(a: int, k: int, n: int) -> int:
@@ -285,10 +283,7 @@ def power_mod(a: int, k: int, n: int) -> int:
 def root_mod(n: int, a: int) -> int:
     """Get the root mod."""
     if a % n == -1:
-        res = root_of_negative_one(n)
-        if res is not None:
-            return res
-        raise ValueError("root_of_negative_one should not fail in speical case.")
+        return root_of_negative_one(n)
 
     def _mul(ab, cd):
         a, b = ab
@@ -305,7 +300,7 @@ def root_mod(n: int, a: int) -> int:
         y = _pow(x, m // 2)
         return _mul(y, y)
 
-    for _ in range(100):
+    for _ in range(EFFORT):
         b = np.random.randint(n)
         r = (2 * b) % n
         s = (b**2 - a) % n
@@ -317,7 +312,7 @@ def root_mod(n: int, a: int) -> int:
             if (t1**2 - a) % n == 0:
                 return t1
 
-    raise ValueError(f"Could not find a root of negative one with {n=} in 100 attempts")
+    raise DiophantineError
 
 
 ### euclidean stuff ###
@@ -353,7 +348,7 @@ def euclid_associates(x, y) -> bool:
 def euclid_inverse(x):
     if x == 0:
         return None
-    q, r = _divmod(ZRootTwo(1, 0), x)
+    q, r = _divmod(1, x)
     return q if r == 0 else None
 
 
@@ -376,7 +371,10 @@ def inv_mod(p, a):
 
 
 def _divmod(x, y):
-    if isinstance(x, ZRootTwo) and isinstance(y, ZRootTwo):
+    if isinstance(x, int) and isinstance(y, int):
+        return divmod(x, y)
+
+    if isinstance(x, (int, ZRootTwo)) and isinstance(y, ZRootTwo):
         x_yadj = x * y.adj2()
         k = y.norm()
         q1 = rounddiv(x_yadj.a, k)
@@ -396,7 +394,7 @@ def _divmod(x, y):
         q = ZOmega(a, b, c, d)
         return q, x - y * q
 
-    raise TypeError("unexpected:", x, y)
+    raise TypeError("unexpected:", x, y, type(x), type(y))
 
 
 def rounddiv(x, y):
