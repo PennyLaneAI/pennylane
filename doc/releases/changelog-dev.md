@@ -60,6 +60,9 @@
   to the new transform program system.
   [(#4573)](https://github.com/PennyLaneAI/pennylane/pull/4573)
 
+* Transforms can be applied on devices following the new device API.
+ [(#4667)](https://github.com/PennyLaneAI/pennylane/pull/4667)
+
 * All quantum functions transforms are update to the new transform program system.
  [(#4439)](https://github.com/PennyLaneAI/pennylane/pull/4439)
 
@@ -190,6 +193,10 @@
 * `_qfunc_output` has been removed from `QuantumScript`, as it is no longer necessary. There is
   still a `_qfunc_output` property on `QNode` instances.
   [(#4651)](https://github.com/PennyLaneAI/pennylane/pull/4651)
+
+* The `qml.jordan_wigner` function has been modified to optionally remove the imaginary components
+  of the computed qubit operator, if imaginary components are smaller than a threshold. 
+  [(#4639)](https://github.com/PennyLaneAI/pennylane/pull/4639)
 
 <h3>Breaking changes 💔</h3>
 
@@ -335,6 +342,9 @@
 * Minor documentation improvement to the usage example in the `qml.QuantumMonteCarlo` page. Integral was missing the differential dx with respect to which the integration is being performed. [(#4593)](https://github.com/PennyLaneAI/pennylane/pull/4593)  
 
 <h3>Bug fixes 🐛</h3>
+
+* Providing `work_wires=None` to `qml.GroverOperator` no longer interprets `None` as a wire.
+  [(#4668)](https://github.com/PennyLaneAI/pennylane/pull/4668)
 
 * Fixed issue where `__copy__` method of the `qml.Select()` operator attempted to access un-initialized data.
 [(#4551)](https://github.com/PennyLaneAI/pennylane/pull/4551)
