@@ -831,6 +831,7 @@ class TestLargerOperations:
 
         assert qml.math.allclose(state_v1, state_v2)
 
+
 @pytest.mark.parametrize("num_wires, einsum_called", [(3, True), (8, False)])
 def test_multicontrolledx_dispatching(num_wires, einsum_called, mocker):
     """Test that apply_multicontrolledx dispatches to einsum for small numbers of wires."""
