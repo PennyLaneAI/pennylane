@@ -67,7 +67,7 @@ def _operator_decomposition_gen(
 
 @transform
 def no_sampling(
-    tape: qml.tape.QuantumTape, name="device"
+    tape: qml.tape.QuantumTape, name: str = "device"
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Raises an error if the tape has finite shots.
 
@@ -76,7 +76,7 @@ def no_sampling(
         name="device" (str): name to use in error message.
 
     This transform can be added to forbid finite shots. For example, ``default.qubit`` uses it for
-    adjoint and backprop valdiation.
+    adjoint and backprop validation.
     """
     if tape.shots:
         raise qml.DeviceError(f"Finite shots are not supported with {name}")
@@ -89,7 +89,7 @@ def validate_device_wires(
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Validates that all wires present in the tape are in the set of provided wires. Adds the
     device wires to measurement processes like :class:`~.measurements.StateMP` that are broadcasted
-    accross all available wires.
+    across all available wires.
 
     Args:
         tape (QuantumTape): a quantum circuit.
@@ -213,7 +213,7 @@ def warn_about_trainable_observables(
 def decompose(
     tape: qml.tape.QuantumTape,
     stopping_condition: Callable[[qml.operation.Operator], bool],
-    skip_initial_state_prep=True,
+    skip_initial_state_prep: bool = True,
     name: str = "device",
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Decompose operations until the stopping condition is met.
