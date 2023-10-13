@@ -25,11 +25,11 @@ class QDrift(Operation):
 
     The QDrift subroutine provides a method to approximate the matrix exponential of hamiltonian
     expressed as a linear combination of terms which in general do not commute. Consider the hamiltonian
-    :math:`H = \Sigma^{N}_{j=1} h_j H_{j}`, the product formula is constructed by random sampling over the terms
+    :math:`H = \Sigma_j h_j H_{j}`, the product formula is constructed by random sampling over the terms
     of the Hamiltonian. With probability :math:`p_j` we will add to the product the operator
-    :math:`\exp{(\frac{i \lambda H_j}{N})}`, where :math:`\lambda = \sum_{j=1}^{N} |h_j|`.
-    On the other hand, :math:`p_j` is calculated as :math:`p_j = \frac{|h_j|}{\lambda}`.
-    The number of terms to be added to the product will be entered in the class constructor.
+    :math:`\exp{(\frac{i \lambda H_j}{n})}`, where :math:`\lambda = \sum_{j=1}^{N} |h_j|` and :math:`n` is
+    the number of terms to be added to the product.
+    We calculate the probabilities :math:`p_j` as :math:`p_j = \frac{|h_j|}{\lambda}`.
 
     Args:
         hamiltonian (Union[~.Hamiltonian, ~.Sum]): The Hamiltonian of the system.
@@ -213,7 +213,7 @@ class QDrift(Operation):
             coeffs = [op.scalar for op in ops]
             lmbda = qml.math.sum(qml.math.abs(coeffs))
             probs = qml.math.abs(coeffs) / lmbda
-            exps = [qml.exp(op.base, lmbda * time * 1j / n) for op in ops]
+            exps = [qml.exp(op.base, qml.math.sign(op.scalar) * lmbda * time * 1j / n) for op in ops]
 
             choice_rng = np.random.default_rng(seed=seed)
             decomp = choice_rng.choice(exps, p=probs, size=n, replace=True)
