@@ -348,10 +348,18 @@ def device(name, *args, **kwargs):
         # Once the device is constructed, we set its custom expansion function if
         # any custom decompositions were specified.
         if custom_decomps is not None:
-            custom_decomp_expand_fn = pennylane.transforms.create_decomp_expand_fn(
-                custom_decomps, dev, decomp_depth=decomp_depth
-            )
-            dev.custom_expand(custom_decomp_expand_fn)
+            if isinstance(dev, pennylane.Device):
+                custom_decomp_expand_fn = pennylane.transforms.create_decomp_expand_fn(
+                    custom_decomps, dev, decomp_depth=decomp_depth
+                )
+                dev.custom_expand(custom_decomp_expand_fn)
+            else:
+                custom_decomp_preprocess = (
+                    pennylane.transforms.tape_expand.create_decomp_preprocessing(
+                        custom_decomps, dev, decomp_depth=decomp_depth
+                    )
+                )
+                dev.preprocess = custom_decomp_preprocess
 
         return dev
 

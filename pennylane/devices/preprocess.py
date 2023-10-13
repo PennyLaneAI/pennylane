@@ -60,7 +60,7 @@ def _operator_decomposition_gen(
             ) from e
 
         for sub_op in decomp:
-            yield from _operator_decomposition_gen(sub_op, acceptance_function, name)
+            yield from _operator_decomposition_gen(sub_op, acceptance_function, decomposer, name)
 
 
 #######################
