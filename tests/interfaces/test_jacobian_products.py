@@ -17,7 +17,7 @@ Tests for the jacobian product calculator classes.
 # pylint: disable=protected-access
 import pytest
 from cachetools import LRUCache
-from param_shift_device_dev import ParamShiftDerivativesDevice
+from param_shift_device import ParamShiftDerivativesDevice
 
 import numpy as np
 

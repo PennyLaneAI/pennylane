@@ -15,7 +15,7 @@
 import numpy as np
 import pytest
 
-from param_shift_device_dev import ParamShiftDerivativesDevice
+from param_shift_device import ParamShiftDerivativesDevice
 
 import pennylane as qml
 from pennylane.devices import DefaultQubit
