@@ -641,7 +641,6 @@ def execute(
         jpc = DeviceJacobianProducts(device, config)
 
     elif config.use_device_gradient:
-
         jpc = DeviceDerivatives(device, config)
 
         # must be new device if this is specified as true

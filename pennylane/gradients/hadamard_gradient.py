@@ -301,7 +301,6 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
         """Post processing function for computing a hadamard gradient."""
         final_res = []
         for coeff, res in zip(coeffs, results):
-
             if isinstance(res, tuple):
                 new_val = [qml.math.convert_like(2 * coeff * r, r) for r in res]
             else:
