@@ -194,7 +194,7 @@ class TestSpsaGradient:
         with pytest.raises(
             ValueError, match=r"Cannot differentiate with respect to parameter\(s\) {0}"
         ):
-            spsa_grad(tape, _expand=False)
+            spsa_grad(tape)
 
         # setting trainable parameters avoids this
         tape.trainable_params = {1, 2}
@@ -300,10 +300,8 @@ class TestSpsaGradient:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = spsa_grad(circuit)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            spsa_grad(circuit)(weights)
 
     @pytest.mark.torch
     def test_no_trainable_params_qnode_torch(self):
@@ -318,10 +316,8 @@ class TestSpsaGradient:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = spsa_grad(circuit)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            spsa_grad(circuit)(weights)
 
     @pytest.mark.tf
     def test_no_trainable_params_qnode_tf(self):
@@ -336,10 +332,8 @@ class TestSpsaGradient:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = spsa_grad(circuit)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            spsa_grad(circuit)(weights)
 
     @pytest.mark.jax
     def test_no_trainable_params_qnode_jax(self):
@@ -354,10 +348,8 @@ class TestSpsaGradient:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = spsa_grad(circuit)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            spsa_grad(circuit)(weights)
 
     def test_all_zero_diff_methods(self):
         """Test that the transform works correctly when the diff method for every parameter is
@@ -388,9 +380,6 @@ class TestSpsaGradient:
         assert isinstance(result[2], numpy.ndarray)
         assert result[2].shape == (4,)
         assert np.allclose(result[2], 0)
-
-        tapes, _ = spsa_grad(circuit.tape)
-        assert tapes == []
 
     def test_all_zero_diff_methods_multiple_returns(self):
         """Test that the transform works correctly when the diff method for every parameter is
@@ -440,9 +429,6 @@ class TestSpsaGradient:
         assert isinstance(result[1][2], numpy.ndarray)
         assert result[1][2].shape == (4,)
         assert np.allclose(result[1][2], 0)
-
-        tapes, _ = spsa_grad(circuit.tape)
-        assert tapes == []
 
     def test_y0(self):
         """Test that if first order finite differences is underlying the SPSA, then
@@ -549,7 +535,17 @@ class TestSpsaGradient:
 
         transform = [qml.math.shape(spsa_grad(c)(x)) for c in circuits]
 
-        expected = [(3,), (3,), (2, 3), (3, 4), (3, 4), (2, 3, 4)]
+        expected = [
+            (3,),
+            (
+                1,
+                3,
+            ),
+            (2, 3),
+            (3, 4),
+            (1, 3, 4),
+            (2, 3, 4),
+        ]
 
         assert all(t == q for t, q in zip(transform, expected))
 

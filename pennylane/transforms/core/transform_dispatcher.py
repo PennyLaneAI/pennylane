@@ -67,7 +67,17 @@ class TransformDispatcher:
             obj, *targs = targs
 
         if isinstance(obj, qml.tape.QuantumScript):
-            transformed_tapes, processing_fn = self._transform(obj, *targs, **tkwargs)
+            if self._expand_transform:
+                transformed_tapes, _ = self._expand_transform(obj, *targs, **tkwargs)
+                transformed_tapes, transform_processing_fn = self._transform(
+                    transformed_tapes[0], *targs, **tkwargs
+                )
+
+                def processing_fn(results):
+                    return transform_processing_fn(results)
+
+            else:
+                transformed_tapes, processing_fn = self._transform(obj, *targs, **tkwargs)
 
             if self.is_informative:
                 return processing_fn(transformed_tapes)
@@ -107,6 +117,14 @@ class TransformDispatcher:
         )
 
         return wrapper
+
+    def __repr__(self):
+        return f"<transform: {self.__name__}>"
+
+    @property
+    def __name__(self):
+        """Return the quantum transform name."""
+        return self._transform.__name__
 
     @property
     def transform(self):

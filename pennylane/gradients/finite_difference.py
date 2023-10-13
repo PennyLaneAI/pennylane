@@ -15,8 +15,10 @@
 This module contains functions for computing the finite-difference gradient
 of a quantum tape.
 """
-# pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements
+# pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements,unused-argument
+from typing import Sequence, Callable
 import functools
+from functools import partial
 from warnings import warn
 
 import numpy as np
@@ -24,6 +26,10 @@ from scipy.special import factorial
 
 import pennylane as qml
 from pennylane.measurements import ProbabilityMP
+from pennylane.transforms.core import transform
+from pennylane.transforms.tape_expand import expand_invalid_trainable
+from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
+
 
 from .general_shift_rules import generate_shifted_tapes
 from .gradient_transform import (
@@ -31,7 +37,6 @@ from .gradient_transform import (
     assert_no_tape_batching,
     choose_grad_methods,
     gradient_analysis_and_validation,
-    gradient_transform,
     _no_trainable_grad,
 )
 
@@ -167,9 +172,8 @@ def _processing_fn(results, shots, single_shot_batch_fn):
     return tuple(grads_tuple)
 
 
-@gradient_transform
-def finite_diff(
-    tape,
+def _expand_transform_finite_diff(
+    tape: qml.tape.QuantumTape,
     argnum=None,
     h=1e-7,
     approx_order=1,
@@ -177,7 +181,35 @@ def finite_diff(
     strategy="forward",
     f0=None,
     validate_params=True,
-):
+) -> (Sequence[qml.tape.QuantumTape], Callable):
+    """Expand function to be applied before finite difference."""
+    expanded_tape = expand_invalid_trainable(tape)
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [expanded_tape], null_postprocessing
+
+
+@partial(
+    transform,
+    expand_transform=_expand_transform_finite_diff,
+    classical_cotransform=_contract_qjac_with_cjac,
+    final_transform=True,
+)
+def finite_diff(
+    tape: qml.tape.QuantumTape,
+    argnum=None,
+    h=1e-7,
+    approx_order=1,
+    n=1,
+    strategy="forward",
+    f0=None,
+    validate_params=True,
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Transform a QNode to compute the finite-difference gradient of all gate parameters with respect to its inputs.
 
     Args:
@@ -318,6 +350,7 @@ def finite_diff(
 
         The outermost tuple contains results corresponding to each element of the shot vector.
     """
+
     transform_name = "finite difference"
     assert_no_tape_batching(tape, transform_name)
 
