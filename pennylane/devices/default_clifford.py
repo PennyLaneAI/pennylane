@@ -26,11 +26,14 @@ from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.typing import Result, ResultBatch
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
+from pennylane.devices.qubit.sampling import get_num_shots_and_executions
 
 from . import Device
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
-from .clifford.simulate import simulate, get_final_state, measure_final_state
-from .clifford.sampling import get_num_shots_and_executions
+from .clifford.simulate import simulate  # get_final_state, measure_final_state
+
+# from .clifford.sampling import get_num_shots_and_executions
+
 from .clifford.adjoint_jacobian import adjoint_jacobian, adjoint_vjp, adjoint_jvp
 from .clifford.preprocess import (
     preprocess,
@@ -233,7 +236,7 @@ class DefaultClifford(Device):
 
         """
 
-        return True  # return False
+        return False  # return False
 
     def preprocess(
         self,

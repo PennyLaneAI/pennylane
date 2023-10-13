@@ -30,9 +30,8 @@ at your own discretion.
     simulate
 """
 
-from .apply_operation import apply_operation
-from .initialize_state import create_initial_state
-from .measure import measure
 from .preprocess import preprocess
-from .sampling import sample_state, measure_with_samples
-from .simulate import simulate, get_final_state, measure_final_state
+
+# from .sampling import sample_state, measure_with_samples
+from .simulate import simulate
+from .adjoint_jacobian import adjoint_jacobian, adjoint_jvp, adjoint_vjp

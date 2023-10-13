@@ -51,7 +51,6 @@ _observables = {
     "Hermitian",
     "Identity",
     "Projector",
-    "SparseHamiltonian",
     "Hamiltonian",
     "Sum",
     "SProd",
@@ -74,10 +73,13 @@ _operations = {
     "MultiRZ",
     "Hadamard",
     "S",
+    "Adjoint(S)",
     "SX",
+    "Adjoint(SX)",
     "CNOT",
     "SWAP",
     "ISWAP",
+    "Adjoint(ISWAP)",
     "CY",
     "CZ",
     "GlobalPhase",
@@ -105,7 +107,7 @@ def _operator_decomposition_gen(
             decomp = op.decomposition()
         except qml.operation.DecompositionUndefinedError as e:
             raise DeviceError(
-                f"Operator {op} not supported on DefaultQubit. Must provide either a matrix or a decomposition."
+                f"Operator {op} not supported on DefaultClifford. Must provide either a matrix or a decomposition."
             ) from e
 
         for sub_op in decomp:
