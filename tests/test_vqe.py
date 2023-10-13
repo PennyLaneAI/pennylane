@@ -348,16 +348,15 @@ class TestVQE:
         with qml.Tracker(dev) as tracker:
             c1 = cost(w)
 
-        exec_opt = tracker.latest["executions"]
+        exec_opt = tracker.totals["executions"]
 
         with tracker:
             c2 = cost2(w)
 
-        exec_no_opt = tracker.latest["executions"]
+        exec_no_opt = tracker.totals["executions"]
 
-        # was 5, 15 on old device
-        assert exec_opt == 1  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 1
+        assert exec_opt == 5  # Number of groups in the Hamiltonian
+        assert exec_no_opt == 15
 
         assert np.allclose(c1, c2, atol=1e-1)
 
@@ -397,15 +396,14 @@ class TestVQE:
 
         with qml.Tracker(dev) as tracker:
             c1 = cost(w)
-        exec_opt = tracker.latest["executions"]
+        exec_opt = tracker.totals["executions"]
 
         with tracker:
             c2 = cost2(w)
-        exec_no_opt = tracker.latest["executions"]
+        exec_no_opt = tracker.totals["executions"]
 
-        # was 5, 15 on old device
-        assert exec_opt == 1  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 1
+        assert exec_opt == 5  # Number of groups in the Hamiltonian
+        assert exec_no_opt == 15
 
         assert np.allclose(c1, c2, atol=1e-1)
 
@@ -445,15 +443,14 @@ class TestVQE:
 
         with qml.Tracker(dev) as tracker:
             c1 = cost(w)
-        exec_opt = tracker.latest["executions"]
+        exec_opt = tracker.totals["executions"]
 
         with tracker:
             c2 = cost2(w)
-        exec_no_opt = tracker.latest["executions"]
+        exec_no_opt = tracker.totals["executions"]
 
-        # was 5, 15 on old device
-        assert exec_opt == 1  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 1
+        assert exec_opt == 5  # Number of groups in the Hamiltonian
+        assert exec_no_opt == 15
 
         assert np.allclose(c1, c2, atol=1e-1)
 
@@ -503,15 +500,14 @@ class TestVQE:
 
         with qml.Tracker(dev) as tracker:
             c1 = cost(w)
-        exec_opt = tracker.latest["executions"]
+        exec_opt = tracker.totals["executions"]
 
         with tracker:
             c2 = cost2(w)
-        exec_no_opt = tracker.latest["executions"]
+        exec_no_opt = tracker.totals["executions"]
 
-        # was 1, 8 on old device
         assert exec_opt == 1  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 1
+        assert exec_no_opt == 8
 
         assert np.allclose(c1, c2)
 
@@ -561,15 +557,15 @@ class TestVQE:
 
         with qml.Tracker(dev) as tracker:
             c1 = cost(w)
-        exec_opt = tracker.latest["executions"]
+        exec_opt = tracker.totals["executions"]
 
         with tracker:
             c2 = cost2(w)
-        exec_no_opt = tracker.latest["executions"]
+        exec_no_opt = tracker.totals["executions"]
 
         # was 1, 8 on old device
         assert exec_opt == 1  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 1
+        assert exec_no_opt == 8
 
         assert np.allclose(c1, c2)
 
@@ -619,20 +615,19 @@ class TestVQE:
 
         with qml.Tracker(dev) as tracker:
             c1 = cost(w)
-        exec_opt = tracker.latest["executions"]
+        exec_opt = tracker.totals["executions"]
 
         with tracker:
             c2 = cost2(w)
-        exec_no_opt = tracker.latest["executions"]
+        exec_no_opt = tracker.totals["executions"]
 
         # was 1, 8 on old device
         assert exec_opt == 1  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 1
+        assert exec_no_opt == 8
 
         assert np.allclose(c1, c2)
 
     # pylint: disable=protected-access
-    @pytest.mark.skip("non-opt is less executions than opt with new device")
     @pytest.mark.autograd
     def test_optimize_grad(self):
         """Test that the gradient of ExpvalCost is accessible and correct when using observable
@@ -663,11 +658,11 @@ class TestVQE:
 
         with qml.Tracker(dev) as tracker:
             dc = qml.grad(cost)(w)
-        exec_opt = tracker.latest["executions"]
+        exec_opt = tracker.totals["executions"]
 
         with tracker:
             dc2 = qml.grad(cost2)(w)
-        exec_no_opt = tracker.latest["executions"]
+        exec_no_opt = tracker.totals["executions"]
 
         assert exec_no_opt > exec_opt
         assert np.allclose(dc, big_hamiltonian_grad)

@@ -34,19 +34,13 @@ logger.addHandler(logging.NullHandler())
 
 def _compute_vjps(jacs, dys, multi_measurements, has_partitioned_shots):
     """Compute the vjps of multiple tapes, directly for a Jacobian and co-tangents dys."""
+    f = {True: qml.gradients.compute_vjp_multi, False: qml.gradients.compute_vjp_single}
     if not has_partitioned_shots:
-        f = {True: qml.gradients.compute_vjp_multi, False: qml.gradients.compute_vjp_single}
         return tuple(f[multi](dy, jac) for jac, dy, multi in zip(jacs, dys, multi_measurements))
 
     vjps = []
     for i, multi in enumerate(multi_measurements):
-        shot_vjps = []
-        for d, j in zip(dys[i], jacs[i]):
-            if multi:
-                shot_vjps.append(qml.gradients.compute_vjp_multi(d, j))
-            else:
-                shot_vjps.append(qml.gradients.compute_vjp_single(d, j))
-
+        shot_vjps = [f[multi](d, j) for d, j in zip(dys[i], jacs[i])]
         vjps.append(qml.math.sum(qml.math.stack(shot_vjps), axis=0))
 
     return tuple(vjps)
@@ -54,9 +48,12 @@ def _compute_vjps(jacs, dys, multi_measurements, has_partitioned_shots):
 
 def _compute_jvps(jacs, tangents, multi_measurements, has_partitioned_shots):
     """Compute the jvps of multiple tapes, directly for a Jacobian and tangents."""
-    if has_partitioned_shots:
-        raise NotImplementedError("not sure how to make this work yet.")
     f = {True: qml.gradients.compute_jvp_multi, False: qml.gradients.compute_jvp_single}
+    if has_partitioned_shots:
+        return tuple(
+            tuple(f[multi](dx, j) for j in jac)
+            for jac, dx, multi in zip(jacs, tangents, multi_measurements)
+        )
     return tuple(f[multi](dx, jac) for jac, dx, multi in zip(jacs, tangents, multi_measurements))
 
 
@@ -279,8 +276,9 @@ class DeviceDerivatives(JacobianProductCalculator):
     In the current execution pipeline, only one batch will be used per instance, but a size of 10 adds some extra
     flexibility for future uses.
 
-    Note that since the hash and equality of :class:`~.QuantumScript` is based on object location, not contents. So batches
-    with identically looking :class:`~.QuantumScript` s that are different instances will be cached separately.
+    Note that batches of identically looking :class:`~.QuantumScript` s that are different instances will be cached separately.
+    This is because the `hash` of  :class:`~.QuantumScript` is expensive, as it requires inspecting all its constituents,
+    which is not worth the effort in this case.
 
     When a forward pass with :meth:`~.execute` is called, both the results and the jacobian for the object are stored.
 
@@ -565,6 +563,10 @@ class DeviceJacobianProducts(JacobianProductCalculator):
     >>> dev = qml.device('default.qubit')
     >>> config = qml.devices.ExecutionConfig(gradient_method="adjoint")
     >>> jpc = DeviceJacobianProducts(dev, config)
+
+    This class relies on :meth:`~.devices.Device.compute_vjp` and :meth:`~.devices.Device.execute_and_compute_jvp`,
+    and works strictly for the newer device interface :class:`~.devices.Device`.  This contrasts :class:`~.DeviceDerivatives`
+    which works for both device interfaces and requests the full jacobian from the device.
 
     """
 

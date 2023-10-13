@@ -763,7 +763,11 @@ def unwrap(values, max_depth=None):
 
     if isinstance(values, (tuple, list)):
         return type(values)(convert(val) for val in values)
-    return np.to_numpy(values)
+    return (
+        np.to_numpy(values, max_depth=max_depth)
+        if isinstance(values, ArrayBox)
+        else np.to_numpy(values)
+    )
 
 
 @multi_dispatch(argnum=[0, 1])

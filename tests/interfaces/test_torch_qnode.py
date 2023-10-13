@@ -1540,6 +1540,8 @@ class TestTapeExpansion:
         elif diff_method == "hadamard":
             pytest.skip("The hadamard method does not yet support Hamiltonians")
 
+        np.random.seed(1235)
+
         dev = qml.device(dev_name, wires=3, shots=50000)
         spy = mocker.spy(qml.transforms, "hamiltonian_expand")
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
@@ -1587,6 +1589,7 @@ class TestTapeExpansion:
             [0, -torch.sin(d[0] + w[0]) * torch.sin(d[1] + w[1]), torch.cos(d[1] + w[1])]
         )
 
+        print(grad[0], expected_w)
         assert torch.allclose(grad[0], expected_w, atol=tol)
         assert torch.allclose(grad[1], expected_c, atol=tol)
 
