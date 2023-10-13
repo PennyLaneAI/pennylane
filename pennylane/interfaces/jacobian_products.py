@@ -564,6 +564,10 @@ class DeviceJacobianProducts(JacobianProductCalculator):
     >>> config = qml.devices.ExecutionConfig(gradient_method="adjoint")
     >>> jpc = DeviceJacobianProducts(dev, config)
 
+    This class relies on :meth:`~.devices.Device.compute_vjp` and :meth:`~.devices.Device.execute_and_compute_jvp`,
+    and works strictly for the newer device interface :class:`~.devices.Device`.  This contrasts :class:`~.DeviceDerivatives`
+    which works for both device interfaces and requests the full jacobian from the device.
+
     """
 
     def __repr__(self):
