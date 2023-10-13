@@ -191,6 +191,10 @@
   still a `_qfunc_output` property on `QNode` instances.
   [(#4651)](https://github.com/PennyLaneAI/pennylane/pull/4651)
 
+* The `qml.jordan_wigner` function has been modified to optionally remove the imaginary components
+  of the computed qubit operator, if imaginary components are smaller than a threshold. 
+  [(#4639)](https://github.com/PennyLaneAI/pennylane/pull/4639)
+
 <h3>Breaking changes 💔</h3>
 
 * The device test suite now converts device kwargs to integers or floats if they can be converted to integers or floats.
