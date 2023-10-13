@@ -115,7 +115,7 @@ class GroverOperator(Operation):
 
         self._hyperparameters = {
             "n_wires": len(wires),
-            "work_wires": Wires(work_wires) if work_wires else Wires([]),
+            "work_wires": Wires(work_wires) if work_wires is not None else Wires([]),
         }
 
         super().__init__(wires=wires, id=id)
