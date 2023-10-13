@@ -15,7 +15,7 @@
 import autograd
 import pytest
 
-from param_shift_device_dev import ParamShiftDerivativesDevice
+from param_shift_device import ParamShiftDerivativesDevice
 
 from pennylane import numpy as np
 
