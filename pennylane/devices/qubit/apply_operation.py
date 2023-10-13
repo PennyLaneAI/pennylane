@@ -264,6 +264,67 @@ def apply_cnot(op: qml.CNOT, state, is_state_batched: bool = False, debugger=Non
 
 
 @apply_operation.register
+def apply_multicontrolledx(op: qml.MultiControlledX, state, is_state_batched: bool = False, debugger=None):
+    r"""Apply MultiControlledX to state by composing transpositions, rolling of control axes
+    and the CNOT logic above."""
+    if len(op.wires) < 8:
+        return apply_operation_einsum(op, state, is_state_batched)
+
+    ctrl_wires = [w + is_state_batched for w in op.hyperparameters["control_wires"]]
+    # apply x on all "wrong" controls
+    roll_axes = [w for val, w in zip(op.hyperparameters["control_values"], ctrl_wires) if val=="0"]
+    state = math.roll(state, 1, roll_axes)
+
+    orig_shape = math.shape(state)
+    # Move the axes into the order [(batch), other, target, controls]
+    transpose_axes = np.array([w for w in range(len(orig_shape)) if w not in op.wires] + [op.total_wires[-1]] + op.total_wires[:-1].tolist()) + is_state_batched
+    #transpose_axes =  + is_state_batched for w in transpose_axes]
+    state = math.transpose(state, transpose_axes)
+
+    # Reshape the state into 3-dimensional array with axes [batch+other, target, controls]
+    state = state.reshape((-1, 2, 2**(len(op.wires)-1)))
+
+    # The part of the state to which we want to apply PauliX is now in the last entry along
+    # the third axis. Extract it, apply the PauliX along the target axis, and append a dummy axis
+    state_x = math.roll(state[:, :, -1], 1, 1)[:, :, np.newaxis]
+    
+    # Stack the transformed part of the state with the unmodified rest of the state
+    state = math.concatenate([state[:, :, :-1], state_x], axis=2)
+
+    # Reshape into original shape and undo the transposition
+    state = math.transpose(state.reshape(orig_shape), np.argsort(transpose_axes))
+
+    # revert x on all "wrong" controls
+    return math.roll(state, 1, roll_axes)
+
+@apply_operation.register
+def apply_grover(op: qml.GroverOperator, state, is_state_batched: bool = False, debugger=None):
+    r"""Apply GroverOperator to state. This method uses that this operator
+    is :math:`2*P-\mathbb{I}`, where :math:`P` is the projector onto the
+    all-plus state. This allows us to compute the new state by replacing summing
+    over all axes on which the operation acts, and "filling in" the all-plus state
+    in the resulting lower-dimensional state via a Kronecker product.
+    """
+    if len(op.wires) < 8:
+        return apply_operation_einsum(op, state, is_state_batched)
+
+    # The axes to sum over in order to obtain <+|\psi>, where <+| only acts on the op wires.
+    sum_axes = [w + is_state_batched for w in op.wires]
+    n_wires = len(sum_axes)
+    collapsed = math.sum(state, axis=tuple(sum_axes))
+
+    # 2 * Squared normalization of the all-plus state on the op wires
+    # (squared, because we skipped the normalization when summing, 2* because of the def of Grover)
+    prefactor = 2 ** (1 - n_wires)
+    all_plus = math.cast_like(math.full([2] * n_wires, prefactor), state)
+
+    # After the Kronecker product (realized with tensordot with axes=0), we need to move
+    # the new axes to the summed-away axes' positions. Finally, subtract the original state.
+    source = list(range(math.ndim(collapsed), math.ndim(state)))
+    return math.moveaxis(math.tensordot(collapsed, all_plus, axes=0), source, sum_axes) - state
+
+
+@apply_operation.register
 def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None):
     """Take a snapshot of the state"""
     if debugger is not None and debugger.active:
