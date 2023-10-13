@@ -964,6 +964,7 @@ class QNode:
         )
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
+        config = None
         # Add the device program to the QNode program
         if isinstance(self.device, qml.devices.Device):
             if self.gradient_fn is None:
