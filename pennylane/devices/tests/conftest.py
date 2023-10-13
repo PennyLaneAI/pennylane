@@ -130,6 +130,16 @@ def pytest_runtest_setup(item):
 # These functions are required to define the device name to run the tests for
 
 
+def _convert_to_int_or_float(value):
+    try:
+        return int(value)
+    except ValueError:
+        try:
+            return float(value)
+        except ValueError:
+            return value
+
+
 class StoreDictKeyPair(argparse.Action):
     """Argparse action for storing key-value pairs as a dictionary.
 
@@ -140,7 +150,8 @@ class StoreDictKeyPair(argparse.Action):
     >>> args.my_dict
     {"v1": "k1", "v2": "5"}
 
-    Note that all keys will be strings.
+    Note that strings will be converted to ints and floats if possible.
+
     """
 
     # pylint: disable=too-few-public-methods
@@ -153,7 +164,7 @@ class StoreDictKeyPair(argparse.Action):
         my_dict = {}
         for kv in values:
             k, v = kv.split("=")
-            my_dict[k] = v
+            my_dict[k] = _convert_to_int_or_float(v)
         setattr(namespace, self.dest, my_dict)
 
 

@@ -176,8 +176,6 @@ class TestJacobianProductResults:
         """Test execute_and_compute_jvp for a simple single input single output."""
         if shots and not _accepts_finite_shots(jpc):
             pytest.skip("jpc does not work with finite shots.")
-        if qml.measurements.Shots(shots).has_partitioned_shots:
-            pytest.skip("have not yet figured out jvp and partitioned shots.")
 
         x = 0.92
         tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], shots=shots)
@@ -186,7 +184,6 @@ class TestJacobianProductResults:
 
         if tape.shots.has_partitioned_shots:
             assert len(res[0]) == 2
-            print(jvp[0])
             assert len(jvp[0]) == 2
         else:
             assert qml.math.shape(res[0]) == tuple()
@@ -478,7 +475,7 @@ class TestCachingDeviceDerivatives:
             jpc.execute_and_compute_jvp(batch, tuple())
 
 
-@pytest.mark.parametrize("jpc", transform_jpc_matrix)
+@pytest.mark.parametrize("jpc", transform_jpc_matrix + [device_ps_jacs])
 class TestProbsTransformJacobians:
     """Testing results when probabilities are returned. This only works with gradient transforms."""
 
