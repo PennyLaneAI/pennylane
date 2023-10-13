@@ -42,12 +42,12 @@ single_qubit_decomps_zyz = [
     (
         S,
         typeof_gates_zyz,
-        [np.pi / 4, 0.0, np.pi / 4, (-0.7853981633974483 - 1.6780315470477092e-09j)],
+        [np.pi / 4, 0.0, np.pi / 4, -0.7853981633974483],
     ),
     (
         T,
         typeof_gates_zyz,
-        [np.pi / 8, 0.0, np.pi / 8, (-0.39269908047469393 - 3.225207101387184e-09j)],
+        [np.pi / 8, 0.0, np.pi / 8, -0.39269908047469393],
     ),
     (qml.RZ(0.3, wires=0).matrix(), typeof_gates_zyz, [0.15, 0.0, 0.15, 0]),
     (
@@ -315,12 +315,12 @@ single_qubit_decomps_zxz = [
     (
         S,
         typeof_gates_zxz,
-        [np.pi / 4, 0.0, np.pi / 4, (-0.7853981633974483 - 1.6780315470477092e-09j)],
+        [np.pi / 4, 0.0, np.pi / 4, -0.7853981633974483],
     ),
     (
         T,
         typeof_gates_zxz,
-        [np.pi / 8, 0.0, np.pi / 8, (-0.39269908047469393 - 3.225207101387184e-09j)],
+        [np.pi / 8, 0.0, np.pi / 8, -0.39269908047469393],
     ),
     (qml.RZ(0.3, wires=0).matrix(), typeof_gates_zxz, [0.15, 0.0, 0.15, 0]),
     (
