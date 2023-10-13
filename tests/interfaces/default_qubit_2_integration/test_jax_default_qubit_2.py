@@ -412,7 +412,9 @@ class TestJaxExecuteIntegration:
 
         def cost_fn(a, p):
             tape = qml.tape.QuantumScript(
-                [qml.RX(a, wires=0), U3(*p, wires=0)], [qml.expval(qml.PauliX(0))]
+                [qml.RX(a, wires=0), U3(*p, wires=0)],
+                [qml.expval(qml.PauliX(0))],
+                shots=shots,
             )
             gradient_fn = execute_kwargs["gradient_fn"]
             if gradient_fn is None:

@@ -554,7 +554,7 @@ def execute(
         interface = get_jax_interface_name(tapes)
 
     gradient_kwargs = gradient_kwargs or {}
-    config = config or _get_execution_config(gradient_fn, gradient_kwargs, interface, device)
+    config = config or _get_execution_config(gradient_fn, grad_on_execution, interface, device)
 
     if isinstance(cache, bool) and cache:
         # cache=True: create a LRUCache object
@@ -738,7 +738,7 @@ def execute(
     return post_processing(results)
 
 
-def _get_execution_config(gradient_fn, gradient_kwargs, interface, device):
+def _get_execution_config(gradient_fn, grad_on_execution, interface, device):
     """Helper function to get the execution config."""
     if gradient_fn is None:
         _gradient_method = None
@@ -746,7 +746,6 @@ def _get_execution_config(gradient_fn, gradient_kwargs, interface, device):
         _gradient_method = gradient_fn
     else:
         _gradient_method = "gradient-transform"
-    grad_on_execution = gradient_kwargs.get("grad_on_execution")
     config = qml.devices.ExecutionConfig(
         interface=interface,
         gradient_method=_gradient_method,
