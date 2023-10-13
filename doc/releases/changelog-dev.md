@@ -60,6 +60,9 @@
   to the new transform program system.
   [(#4573)](https://github.com/PennyLaneAI/pennylane/pull/4573)
 
+* Transforms can be applied on devices following the new device API.
+ [(#4667)](https://github.com/PennyLaneAI/pennylane/pull/4667)
+
 * All quantum functions transforms are update to the new transform program system.
  [(#4439)](https://github.com/PennyLaneAI/pennylane/pull/4439)
 
@@ -191,13 +194,23 @@
   interface-specific scalar data, eg `[(tf.Variable(1.1), tf.Variable(2.2))]`.
   [(#4603)](https://github.com/PennyLaneAI/pennylane/pull/4603)
 
+* When decomposing a unitary matrix with `one_qubit_decomposition`, and opting to include the `GlobalPhase` 
+  in the decomposition, the phase is no longer cast to `dtype=complex`.
+  [(#4653)](https://github.com/PennyLaneAI/pennylane/pull/4653)
+
 * `qml.cut_circuit` is now compatible with circuits that compute the expectation values of Hamiltonians 
   with two or more terms.
   [(#4642)](https://github.com/PennyLaneAI/pennylane/pull/4642)
 
+
 * `_qfunc_output` has been removed from `QuantumScript`, as it is no longer necessary. There is
   still a `_qfunc_output` property on `QNode` instances.
   [(#4651)](https://github.com/PennyLaneAI/pennylane/pull/4651)
+
+* The `qml.jordan_wigner` function has been modified to optionally remove the imaginary components
+  of the computed qubit operator, if imaginary components are smaller than a threshold. 
+  [(#4639)](https://github.com/PennyLaneAI/pennylane/pull/4639)
+
 
 <h3>Breaking changes 💔</h3>
 
@@ -343,6 +356,9 @@
 * Minor documentation improvement to the usage example in the `qml.QuantumMonteCarlo` page. Integral was missing the differential dx with respect to which the integration is being performed. [(#4593)](https://github.com/PennyLaneAI/pennylane/pull/4593)  
 
 <h3>Bug fixes 🐛</h3>
+
+* Providing `work_wires=None` to `qml.GroverOperator` no longer interprets `None` as a wire.
+  [(#4668)](https://github.com/PennyLaneAI/pennylane/pull/4668)
 
 * Fixed issue where `__copy__` method of the `qml.Select()` operator attempted to access un-initialized data.
 [(#4551)](https://github.com/PennyLaneAI/pennylane/pull/4551)

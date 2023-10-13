@@ -314,12 +314,13 @@ class TestVQE:
     # pylint: disable=protected-access
     @pytest.mark.torch
     @pytest.mark.slow
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
-    def test_optimize_torch(self, shots):
+    def test_optimize_torch(self, dev_name, shots):
         """Test that an ExpvalCost with observable optimization gives the same result as another
         ExpvalCost without observable optimization."""
 
-        dev = qml.device("default.qubit", wires=4, shots=shots)
+        dev = qml.device(dev_name, wires=4, shots=shots)
 
         hamiltonian1 = copy.copy(big_hamiltonian)
         hamiltonian2 = copy.copy(big_hamiltonian)
