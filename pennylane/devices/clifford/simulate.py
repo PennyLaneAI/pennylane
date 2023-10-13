@@ -18,113 +18,44 @@ from numpy.random import default_rng
 import pennylane as qml
 from pennylane.typing import Result
 from pennylane.wires import Wires
+from pennylane.measurements.expval import ExpectationMP
 
 from .initialize_state import create_initial_state
-from .apply_operation import apply_operation
 from .measure import measure
 from .sampling import measure_with_samples
 
+from .qubit.simulate import INTERFACE_TO_LIKE
 
-INTERFACE_TO_LIKE = {
-    # map interfaces known by autoray to themselves
-    None: None,
-    "numpy": "numpy",
-    "autograd": "autograd",
-    "jax": "jax",
-    "torch": "torch",
-    "tensorflow": "tensorflow",
-    # map non-standard interfaces to those known by autoray
-    "auto": None,
-    "scipy": "numpy",
-    "jax-jit": "jax",
-    "jax-python": "jax",
-    "JAX": "jax",
-    "pytorch": "torch",
-    "tf": "tensorflow",
-    "tensorflow-autograph": "tensorflow",
-    "tf-autograph": "tensorflow",
+_GATE_OPERATIONS = {
+    "Identity": "I",
+    "Snapshot": None,
+    "BasisState": None,
+    "StatePrep": None,
+    "PauliX": "X",
+    "PauliY": "Y",
+    "PauliZ": "Z",
+    "Hadamard": "H",
+    "S": "S",
+    "SX": "SX",
+    "CNOT": "CNOT",
+    "SWAP": "SWAP",
+    "ISWAP": "ISWAP",
+    "CY": "CY",
+    "CZ": "CZ",
+    "GlobalPhase": None,
 }
 
-
-def expand_state_over_wires(state, state_wires, all_wires, is_state_batched):
-    """
-    Expand and re-order a state given some initial and target wire orders, setting
-    all additional wires to the 0 state.
-
-    Args:
-        state (~pennylane.typing.TensorLike): The state to re-order and expand
-        state_wires (.Wires): The wire order of the inputted state
-        all_wires (.Wires): The desired wire order
-        is_state_batched (bool): Whether the state has a batch dimension or not
-
-    Returns:
-        TensorLike: The state in the new desired size and order
-    """
-    pad_width = 2 ** len(all_wires) - 2 ** len(state_wires)
-    pad = (pad_width, 0) if qml.math.get_interface(state) == "torch" else (0, pad_width)
-    shape = (2,) * len(all_wires)
-    if is_state_batched:
-        pad = ((0, 0), pad)
-        batch_size = qml.math.shape(state)[0]
-        shape = (batch_size,) + shape
-        state = qml.math.reshape(state, (batch_size, -1))
-    else:
-        pad = (pad,)
-        state = qml.math.flatten(state)
-
-    state = qml.math.pad(state, pad, mode="constant")
-    state = qml.math.reshape(state, shape)
-
-    # re-order
-    new_wire_order = Wires.unique_wires([all_wires, state_wires]) + state_wires
-    desired_axes = [new_wire_order.index(w) for w in all_wires]
-    if is_state_batched:
-        desired_axes = [0] + [i + 1 for i in desired_axes]
-    return qml.math.transpose(state, desired_axes)
-
-
-def get_final_state(circuit, debugger=None, interface=None):
-    """
-    Get the final state that results from executing the given quantum script.
-
-    This is an internal function that will be called by the successor to ``default.qubit``.
-
-    Args:
-        circuit (.QuantumScript): The single circuit to simulate
-        debugger (._Debugger): The debugger to use
-        interface (str): The machine learning interface to create the initial state with
-
-    Returns:
-        Tuple[TensorLike, bool]: A tuple containing the final state of the quantum script and
-            whether the state has a batch dimension.
-
-    """
-    circuit = circuit.map_to_standard_wires()
-
-    prep = None
-    if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
-        prep = circuit[0]
-
-    state = create_initial_state(circuit.op_wires, prep, like=INTERFACE_TO_LIKE[interface])
-
-    # initial state is batched only if the state preparation (if it exists) is batched
-    is_state_batched = bool(prep and prep.batch_size is not None)
-    for op in circuit.operations[bool(prep) :]:
-        state = apply_operation(op, state, is_state_batched=is_state_batched, debugger=debugger)
-
-        # new state is batched if i) the old state is batched, or ii) the new op adds a batch dim
-        is_state_batched = is_state_batched or op.batch_size is not None
-
-    if set(circuit.op_wires) < set(circuit.wires):
-        state = expand_state_over_wires(
-            state,
-            Wires(range(len(circuit.op_wires))),
-            Wires(range(circuit.num_wires)),
-            is_state_batched,
-        )
-
-    return state, is_state_batched
-
+def _import_stim():
+    """Import stim."""
+    try:
+        # pylint: disable=import-outside-toplevel, unused-import, multiple-imports
+        import stim
+    except ImportError as Error:
+        raise ImportError(
+            "This feature requires stim, a fast stabilizer circuit simulator."
+            "It can be installed with: pip install stim."
+        ) from Error
+    return stim
 
 def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=None) -> Result:
     """
@@ -211,5 +142,57 @@ def simulate(
     tensor([0.68117888, 0.        , 0.31882112, 0.        ], requires_grad=True))
 
     """
-    state, is_state_batched = get_final_state(circuit, debugger=debugger, interface=interface)
-    return measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key)
+    stim = _import_stim()
+
+    circuit = circuit.map_to_standard_wires()
+    stim_ct = stim.Circuit()
+
+    prep = None
+    if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
+        prep = circuit[0]
+
+    initial_state = create_initial_state(circuit.op_wires, prep, like=INTERFACE_TO_LIKE[interface])
+    initial_tableau = stim.Tableau.from_state_vector(initial_state)
+
+    # initial state is batched only if the state preparation (if it exists) is batched
+    is_state_batched = bool(prep and prep.batch_size is not None)
+    for op in circuit.operations[bool(prep) :]:
+        gate, wires = _GATE_OPERATIONS[op.name], op.wires
+        if gate is not None:
+            stim_ct.append(gate, *wires)
+        else:
+            if op.name == "GlobalPhase":
+                pass
+            elif op.name == "Snapshot":
+                state = stim.Tableau.from_circuit(stim_ct).to_state_vector()
+                if debugger is not None and debugger.active:
+                    flat_state = qml.math.flatten(state)
+                if op.tag:
+                    debugger.snapshots[op.tag] = flat_state
+                else:
+                    debugger.snapshots[len(debugger.snapshots)] = flat_state
+            else:
+                pass
+
+    circ_meas = []
+    for meas in circuit.measurements:
+        if isinstance(meas, ExpectationMP):
+            if isinstance(meas.obs, qml.operation.Tensor):
+                expec = ''.join([_GATE_OPERATIONS[name] for name in meas.obs.name])
+                pauli = stim._stim_polyfill.PauliString(expec)
+                circ_meas.append(pauli)
+        else:
+            pass
+
+    tableau_simulator = stim.TableauSimulator()
+    if prep:
+        tableau_simulator.do_tableau(initial_tableau)
+    tableau_simulator.do_circuit(stim_ct)
+
+    if not circuit.shots:
+        res = tuple(tableau_simulator.measure_observable(meas) for meas in circ_meas)
+    else:
+        res = tuple()
+
+    #state, is_state_batched = get_final_state(circuit, debugger=debugger, interface=interface)
+    return res

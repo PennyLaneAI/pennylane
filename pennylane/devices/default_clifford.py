@@ -34,7 +34,6 @@ from .clifford.sampling import get_num_shots_and_executions
 from .qubit.adjoint_jacobian import adjoint_jacobian, adjoint_vjp, adjoint_jvp
 from .clifford.preprocess import (
     preprocess,
-    validate_and_expand_adjoint,
     validate_multiprocessing_workers,
     validate_device_wires,
 )

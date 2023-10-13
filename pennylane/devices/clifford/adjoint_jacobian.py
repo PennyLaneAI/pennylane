@@ -33,8 +33,7 @@ def adjoint_jacobian(tape: QuantumTape, **kwargs):
     # Map wires if custom wire labels used
     tape, _ = tape.map_to_standard_wires(), kwargs
 
-    jac = np.zeros((len(tape.observables), len(tape.trainable_params)))
-    jac = np.squeeze(jac)
+    jac = np.squeeze(np.zeros((len(tape.observables), len(tape.trainable_params))))
 
     if jac.ndim == 0:
         return np.array(jac)
@@ -62,10 +61,9 @@ def adjoint_jvp(tape: QuantumTape, **kwargs):
         wire_map = {w: i for i, w in enumerate(tape.wires)}
         tape = qml.map_wires(tape, wire_map)
 
-    n_obs, _ = len(tape.observables), kwargs
-    tangents_out = np.zeros(n_obs)
+    tangents_out, _ = np.zeros(len(tape.observables)), kwargs
 
-    if n_obs == 1:
+    if len(tape.observables) == 1:
         return np.array(tangents_out[0])
 
     return tuple(np.array(t) for t in tangents_out)
