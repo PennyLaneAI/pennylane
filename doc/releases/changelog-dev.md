@@ -78,6 +78,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `default.qubit` no longer uses a dense matrix for `MultiControlledX` for more than seven wires.
+  [(#4673)](https://github.com/PennyLaneAI/pennylane/pull/4673)
+
 * `default.qubit` now tracks the number of equivalent qpu executions and total shots
   when the device is sampling. Note that `"simulations"` denotes the number of simulation passes, where as
   `"executions"` denotes how many different computational bases need to be sampled in. Additionally, the
@@ -385,3 +388,4 @@ Daniel F. Nino,
 Mudit Pandey,
 Matthew Silverman,
 Jay Soni,
+David Wierichs,
