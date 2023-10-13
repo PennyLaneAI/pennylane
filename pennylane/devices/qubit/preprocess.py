@@ -68,8 +68,6 @@ def _accepted_operator(op: qml.operation.Operator) -> bool:
     """Specify whether or not an Operator object is supported by the device."""
     if op.name == "QFT" and len(op.wires) >= 6:
         return False
-    if op.name == "GroverOperator" and len(op.wires) >= 13:
-        return False
     if op.name == "Snapshot":
         return True
     if op.__class__.__name__ == "Pow" and qml.operation.is_trainable(op):
