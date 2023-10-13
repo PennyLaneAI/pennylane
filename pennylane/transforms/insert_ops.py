@@ -14,15 +14,13 @@
 """
 Provides transforms for inserting operations into quantum circuits.
 """
-from collections.abc import Sequence
 from types import FunctionType
-from typing import Type, Union
+from typing import Type, Union, Callable, Sequence
 
 import pennylane as qml
-from pennylane import Device, apply
 from pennylane.operation import Operation
 from pennylane.tape import QuantumTape
-from pennylane.transforms.qfunc_transforms import qfunc_transform
+from pennylane.transforms.core import transform
 from pennylane.ops.op_math import Adjoint
 
 # pylint: disable=too-many-branches
@@ -51,14 +49,14 @@ def _check_position(position):
     return not_op, req_ops
 
 
-@qfunc_transform
+@transform
 def insert(
-    circuit: Union[callable, QuantumTape, Device],
+    tape: QuantumTape,
     op: Union[callable, Type[Operation]],
     op_args: Union[tuple, float],
     position: Union[str, list, Type[Operation]] = "all",
     before: bool = False,
-) -> Union[callable, QuantumTape]:
+) -> (Sequence[QuantumTape], Callable):
     """Insert an operation into specified points in an input circuit.
 
     Circuits passed through this transform will be updated to have the operation, specified by the
@@ -71,8 +69,7 @@ def insert(
     for more information).
 
     Args:
-        circuit (callable or QuantumTape or pennylane.Device): the input circuit to be transformed, or a
-            device
+        circuit (QuantumTape): the input circuit to be transformed.
         op (callable or Type[Operation]): the single-qubit operation, or sequence of operations
             acting on a single qubit, to be inserted into the circuit
         op_args (tuple or float): the arguments fed to the operation, either as a tuple or a single
@@ -214,7 +211,7 @@ def insert(
     # decompose templates and their adjoints (which fixes a bug in the tutorial_error_mitigation demo)
     # TODO: change this to be cleaner and more robust
     try:
-        circuit = circuit.expand(
+        tape = tape.expand(
             stop_at=lambda op: not hasattr(qml.templates, op.name) and not isinstance(op, Adjoint)
         )
     except qml.QuantumFunctionError as e:
@@ -235,34 +232,45 @@ def insert(
 
     if not isinstance(op_args, Sequence):
         op_args = [op_args]
-
-    for prep_op in circuit.operations[: circuit.num_preps]:
-        apply(prep_op)
+    new_operations = []
+    for prep_op in tape.operations[: tape.num_preps]:
+        new_operations.append(prep_op)
 
     if position == "start":
-        for w in circuit.wires:
-            op(*op_args, wires=w)
+        for w in tape.wires:
+            sub_tape = qml.tape.make_qscript(op)(*op_args, wires=w)
+            new_operations.extend(sub_tape.operations)
 
-    for circuit_op in circuit.operations[circuit.num_preps :]:
+    for circuit_op in tape.operations[tape.num_preps :]:
         if not before:
-            apply(circuit_op)
+            new_operations.append(circuit_op)
 
         if position == "all":
             for w in circuit_op.wires:
-                op(*op_args, wires=w)
+                sub_tape = qml.tape.make_qscript(op)(*op_args, wires=w)
+                new_operations.extend(sub_tape.operations)
 
         if req_ops:
             for operation in req_ops:
                 if operation == type(circuit_op):
                     for w in circuit_op.wires:
-                        op(*op_args, wires=w)
+                        sub_tape = qml.tape.make_qscript(op)(*op_args, wires=w)
+                        new_operations.extend(sub_tape.operations)
 
         if before:
-            apply(circuit_op)
+            new_operations.append(circuit_op)
 
     if position == "end":
-        for w in circuit.wires:
-            op(*op_args, wires=w)
+        for w in tape.wires:
+            sub_tape = qml.tape.make_qscript(op)(*op_args, wires=w)
+            new_operations.extend(sub_tape.operations)
 
-    for m in circuit.measurements:
-        apply(m)
+    new_tape = type(tape)(new_operations, tape.measurements, shots=tape.shots)
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [new_tape], null_postprocessing
