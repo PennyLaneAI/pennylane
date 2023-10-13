@@ -60,6 +60,9 @@
   to the new transform program system.
   [(#4573)](https://github.com/PennyLaneAI/pennylane/pull/4573)
 
+* Transforms can be applied on devices following the new device API.
+ [(#4667)](https://github.com/PennyLaneAI/pennylane/pull/4667)
+
 * All quantum functions transforms are update to the new transform program system.
  [(#4439)](https://github.com/PennyLaneAI/pennylane/pull/4439)
 
@@ -345,6 +348,9 @@
 * Minor documentation improvement to the usage example in the `qml.QuantumMonteCarlo` page. Integral was missing the differential dx with respect to which the integration is being performed. [(#4593)](https://github.com/PennyLaneAI/pennylane/pull/4593)  
 
 <h3>Bug fixes 🐛</h3>
+
+* Providing `work_wires=None` to `qml.GroverOperator` no longer interprets `None` as a wire.
+  [(#4668)](https://github.com/PennyLaneAI/pennylane/pull/4668)
 
 * Fixed issue where `__copy__` method of the `qml.Select()` operator attempted to access un-initialized data.
 [(#4551)](https://github.com/PennyLaneAI/pennylane/pull/4551)
