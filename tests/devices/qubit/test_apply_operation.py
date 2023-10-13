@@ -801,14 +801,20 @@ class TestLargerOperations:
         ]
     )
 
-    def test_multicontrolledx(self, method):
+    @pytest.mark.parametrize("control_values", ["111", "010", None, "100"])
+    def test_multicontrolledx(self, method, control_values):
         """Tests a four qubit multi-controlled x gate."""
 
-        new_state = method(qml.MultiControlledX(wires=(0, 1, 2, 3)), self.state)
+        op = qml.MultiControlledX(wires=(0, 1, 2, 3), control_values=control_values)
+        new_state = method(op, self.state)
 
         expected_state = np.copy(self.state)
-        expected_state[1, 1, 1, 1] = self.state[1, 1, 1, 0]
-        expected_state[1, 1, 1, 0] = self.state[1, 1, 1, 1]
+        if control_values is None:
+            values = (1, 1, 1)
+        else:
+            values = tuple(map(int, control_values))
+        expected_state[values + (1,)] = self.state[values + (0,)]
+        expected_state[values + (0,)] = self.state[values + (1,)]
 
         assert qml.math.allclose(new_state, expected_state)
 
@@ -824,6 +830,15 @@ class TestLargerOperations:
             state_v2 = method(d_op, state_v2)
 
         assert qml.math.allclose(state_v1, state_v2)
+
+@pytest.mark.parametrize("num_wires, einsum_called", [(3, True), (8, False)])
+def test_multicontrolledx_dispatching(num_wires, einsum_called, mocker):
+    """Test that apply_multicontrolledx dispatches to einsum for small numbers of wires."""
+    op = qml.MultiControlledX(wires=list(range(num_wires)))
+    state = np.zeros([2] * num_wires, dtype=complex)
+    spy = mocker.spy(qml.math, "einsum")
+    apply_operation(op, state, is_state_batched=False, debugger=None)
+    assert spy.call_count == int(einsum_called)
 
 
 @pytest.mark.tf
