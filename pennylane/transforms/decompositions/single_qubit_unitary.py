@@ -40,13 +40,10 @@ def _convert_to_su2(U, return_global_phase=False):
     # Compute the determinants
     U = qml.math.cast(U, "complex128")
     dets = math.linalg.det(U)
+    exp_angles = math.angle(dets) / 2
+    U_SU2 = math.cast_like(U, dets) * math.exp(-1j * math.cast_like(exp_angles, 1j))[:, None, None]
 
-    # math.angle(dets) is always real, but we cast to complex for torch (so we can multiply by -1j)
-    exp_angles = math.cast_like(math.angle(dets), 1j) / 2
-    U_SU2 = math.cast_like(U, dets) * math.exp(-1j * exp_angles)[:, None, None]
-
-    # we cast back to real again if returning exp_angles
-    return (U_SU2, qml.math.real(exp_angles)) if return_global_phase else U_SU2
+    return (U_SU2, exp_angles) if return_global_phase else U_SU2
 
 
 def _rot_decomposition(U, wire):
