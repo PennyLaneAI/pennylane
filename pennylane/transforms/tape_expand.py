@@ -282,7 +282,7 @@ def _custom_decomp_context(custom_decomps):
             yield
 
         finally:
-            obj.compute_decomposition = original_decomp_method
+            obj.compute_decomposition = staticmethod(original_decomp_method)
 
     # Loop through the decomposition dictionary and create all the contexts
     try:
