@@ -120,7 +120,6 @@ def load(  # pylint: disable=too-many-arguments
     folder_path: Path = Path("./datasets/"),
     force: bool = False,
     num_threads: int = 50,
-    cache_dir: Optional[Path] = Path(".cache"),
     **params: Union[ParamArg, str, List[str]],
 ):
     r"""Downloads the data if it is not already present in the directory and returns it as a list of
@@ -133,7 +132,6 @@ def load(  # pylint: disable=too-many-arguments
         folder_path (str) : Path to the directory used for saving datasets. Defaults to './datasets'
         force (Bool)      : Bool representing whether data has to be downloaded even if it is still present
         num_threads (int) : The maximum number of threads to spawn while downloading files (1 thread per file)
-        cache_dir (str): Directory used for HTTP caching. Defaults to '{folder_path}/.cache'
         params (kwargs)   : Keyword arguments exactly matching the parameters required for the data type.
             Note that these are not optional
 
@@ -212,8 +210,6 @@ def load(  # pylint: disable=too-many-arguments
         _validate_attributes(data_struct, data_name, attributes)
 
     folder_path = Path(folder_path)
-    if cache_dir and not Path(cache_dir).is_absolute():
-        cache_dir = folder_path / cache_dir
 
     data_paths = [data_path for _, data_path in foldermap.find(data_name, **params)]
 

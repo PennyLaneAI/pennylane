@@ -15,10 +15,10 @@
 
 from collections.abc import MutableMapping
 from pathlib import Path
-from typing import Literal, Optional, TypeVar, Union
+from typing import Literal, TypeVar, Union
 from uuid import uuid4
-
 from numpy.typing import ArrayLike
+from typing import Any
 
 from ._lazy_modules import fsspec, h5py
 
@@ -96,15 +96,13 @@ def copy_all(
         dest.attrs.update(source.attrs)
 
 
-def open_hdf5_s3(s3_url: str, cache_dir: Optional[Path] = None) -> HDF5Group:
+def open_hdf5_s3(s3_url: str) -> HDF5Group:
     """Uses ``fsspec`` module to open the HDF5 file at ``s3_url``.
 
     This requires both ``fsspec`` and ``aiohttp`` to be installed.
     """
 
-    if cache_dir is not None:
-        fs = fsspec.open(f"blockcache::{s3_url}", blockcache={"cache_storage": str(cache_dir)})
-    else:
-        fs = fsspec.open(s3_url)
+    memory_cache_args = {"cache_type": "mmap", "block_size": 8 * (2**20)}
+    fs = fsspec.open(s3_url, **memory_cache_args)
 
     return h5py.File(fs.open())
