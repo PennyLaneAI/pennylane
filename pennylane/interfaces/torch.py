@@ -148,7 +148,8 @@ class ExecuteTapes(torch.autograd.Function):
         return (None,) + vjps
 
 
-def execute(tapes, execute_fn, jpc):
+# pylint: disable=unused-argument
+def execute(tapes, execute_fn, jpc, differentiable=False):
     """Execute a batch of tapes with Torch parameters on a device.
 
     Args:

@@ -105,10 +105,7 @@ def autograd_execute(
 
 @autograd.extend.primitive
 def _execute(
-    parameters,
-    tapes,
-    execute_fn,
-    jpc,
+    parameters, tapes, execute_fn, jpc, differentiable=False
 ):  # pylint: disable=dangerous-default-value,unused-argument
     """Autodifferentiable wrapper around ``Device.batch_execute``.
 

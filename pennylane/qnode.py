@@ -394,6 +394,7 @@ class QNode:
         cache=True,
         cachesize=10000,
         max_diff=1,
+        use_device_jacobian_product=False,
         **gradient_kwargs,
     ):
         if logger.isEnabledFor(logging.DEBUG):
@@ -464,6 +465,7 @@ class QNode:
             "cachesize": cachesize,
             "max_diff": max_diff,
             "max_expansion": max_expansion,
+            "use_device_jacobian_product": use_device_jacobian_product,
         }
 
         if self.expansion_strategy == "device":

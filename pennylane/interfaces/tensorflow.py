@@ -115,7 +115,7 @@ def _res_restructured(res, tapes):
     return tuple(res_nested)
 
 
-def execute(tapes, execute_fn, jpc):
+def execute(tapes, execute_fn, jpc, differentiable=False):
     """Execute a batch of tapes with TensorFlow parameters on a device.
 
     Args:
@@ -152,14 +152,17 @@ def execute(tapes, execute_fn, jpc):
     def _execute(*parameters):  # pylint:disable=unused-argument
         def grad_fn(*dy, **tfkwargs):
             # reconstruct the nested structure of dy
-            numpy_tapes = set_parameters_on_copy(tapes, params_unwrapped)
+            if differentiable:
+                inner_tapes = tuple(tapes)
+            else:
+                inner_tapes = set_parameters_on_copy(tapes, params_unwrapped)
 
             dy = _res_restructured(dy, tapes)
 
             if tf.executing_eagerly():
-                vjps = jpc.compute_vjp(numpy_tapes, dy)
+                vjps = jpc.compute_vjp(inner_tapes, dy)
             else:
-                jacs = jpc.compute_jacobian(numpy_tapes)
+                jacs = jpc.compute_jacobian(inner_tapes)
                 multi_measurements = [len(t.measurements) > 1 for t in tapes]
                 vjps = _compute_vjp(dy, jacs, multi_measurements, has_partitioned_shots)
 

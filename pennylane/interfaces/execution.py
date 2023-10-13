@@ -638,10 +638,13 @@ def execute(
     _grad_on_execution = False
 
     if config.use_device_jacobian_product:
+        if max_diff > 1:
+            raise NotImplementedError("no higher order derivatives with device derivatives")
         jpc = DeviceJacobianProducts(device, config)
 
     elif config.use_device_gradient:
-
+        if max_diff > 1:
+            raise NotImplementedError("no higher order derivatives with device derivatives")
         jpc = DeviceDerivatives(device, config)
 
         # must be new device if this is specified as true
@@ -693,6 +696,8 @@ def execute(
                 return device.compute_derivatives(numpy_tapes, config)
 
     elif gradient_fn == "device":
+        if max_diff > 1:
+            raise NotImplementedError("no higher order derivatives with device derivatives")
         # gradient function is a device method
 
         # Expand all tapes as per the device's expand function here.
@@ -766,15 +771,17 @@ def execute(
         raise ValueError("Gradient transforms cannot be used with grad_on_execution=True")
     elif interface in jpc_interfaces:
         jpc = TransformJacobianProducts(execute_fn, gradient_fn, gradient_kwargs)
-        for _ in range(1, max_diff):
+        for i in range(1, max_diff):
             ml_boundary_execute = _get_ml_boundary_execute(interface, _grad_on_execution)
-            execute_fn = partial(ml_boundary_execute, execute_fn=execute_fn, jpc=jpc)
+            execute_fn = partial(
+                ml_boundary_execute, execute_fn=execute_fn, jpc=jpc, differentiable=(i > 1)
+            )
             jpc = TransformJacobianProducts(execute_fn, gradient_fn, gradient_kwargs)
 
     ml_boundary_execute = _get_ml_boundary_execute(interface, _grad_on_execution)
 
     if interface in jpc_interfaces:
-        results = ml_boundary_execute(tapes, execute_fn, jpc)
+        results = ml_boundary_execute(tapes, execute_fn, jpc, differentiable=max_diff > 1)
     else:
         results = ml_boundary_execute(
             tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
