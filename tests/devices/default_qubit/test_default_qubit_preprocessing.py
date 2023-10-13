@@ -199,7 +199,7 @@ class TestPreprocessing:
         assert res == expected
 
     def test_adjoint_only_one_wire(self):
-        """Tests adjoint accepts operators with no parameters or a sinlge parameter and a generator."""
+        """Tests adjoint accepts operators with no parameters or a single parameter and a generator."""
 
         program = qml.device("default.qubit").preprocess(
             ExecutionConfig(gradient_method="adjoint")
