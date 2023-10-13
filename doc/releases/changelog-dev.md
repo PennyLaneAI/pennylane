@@ -182,8 +182,7 @@
   [(#4603)](https://github.com/PennyLaneAI/pennylane/pull/4603)
 
 * When decomposing a unitary matrix with `one_qubit_decomposition`, and opting to include the `GlobalPhase` 
-  in the decomposition, the phase no longer has `dtype=complex` for phases with an imaginary component of 0.
-  To account for rounding errors in calculating the phase, any complex component less than `1e-15` is discarded.
+  in the decomposition, the phase is no longer cast to `dtype=complex`.
   [(#4653)](https://github.com/PennyLaneAI/pennylane/pull/4653)
 
 * `_qfunc_output` has been removed from `QuantumScript`, as it is no longer necessary. There is
