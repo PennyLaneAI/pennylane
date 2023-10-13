@@ -77,8 +77,8 @@ class AQFT(Operation):
 
         **Example:**
 
-        >>> qml.AQFT.compute_decomposition((0,1,2,3),3,order=1)
-        [Hadamard(wires=[0]), ControlledPhaseShift(1.5707963267948966, wires=[1, 0]), Hadamard(wires=[1]), ControlledPhaseShift(1.5707963267948966, wires=[2, 1]), Hadamard(wires=[2]), Hadamard(wires=[3]), SWAP(wires=[0, 3])]
+        >>> qml.AQFT.compute_decomposition((0, 1, 2), 3, order=1)
+        [Hadamard(wires=[0]), ControlledPhaseShift(1.5707963267948966, wires=[1, 0]), Hadamard(wires=[1]), ControlledPhaseShift(1.5707963267948966, wires=[2, 1]), Hadamard(wires=[2]), SWAP(wires=[0, 2])]
 
         """
         shifts = [2 * np.pi * 2**-i for i in range(2, n_wires + 1)]
