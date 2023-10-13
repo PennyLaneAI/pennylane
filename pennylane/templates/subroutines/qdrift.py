@@ -24,8 +24,8 @@ class QDrift(Operation):
     r"""An operation representing the QDrift subroutine for the complex matrix exponential
     of a given Hamiltonian.
 
-    The QDrift subroutine provides a method to approximate the matrix exponential of hamiltonian
-    expressed as a linear combination of terms which in general do not commute. Consider the hamiltonian
+    The QDrift subroutine provides a method to approximate the matrix exponential of Hamiltonian
+    expressed as a linear combination of terms which in general do not commute. Consider the Hamiltonian
     :math:`H = \Sigma_j h_j H_{j}`, the product formula is constructed by random sampling over the terms
     of the Hamiltonian. With probability :math:`p_j` we will add to the product the operator
     :math:`\exp{(\frac{i \lambda H_j}{n})}`, where :math:`\lambda = \sum_j |h_j|` and :math:`n` is
@@ -40,7 +40,7 @@ class QDrift(Operation):
         n (int): The number of terms to be added to the product formula. Default is 1.
         seed (int): The seed for the random number generator.
     Raises:
-        TypeError: The 'hamiltonian' is not of type ~.Hamiltonian, or ~.Sum.
+        TypeError: The 'hamiltonian' is not of type :class:`~.Hamiltonian`, or :class:`~.Sum`.
         ValueError: One or more of the terms in 'hamiltonian' are not Hermitian.
 
     **Example**
