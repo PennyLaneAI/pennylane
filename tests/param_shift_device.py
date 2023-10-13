@@ -21,15 +21,16 @@ import dataclasses
 import pennylane as qml
 
 
+# pylint: disable=unused-argument
 class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
     """This device provides derivatives via parameter shift."""
 
     name = "param_shift.qubit"
 
     def preprocess(self, execution_config=qml.devices.DefaultExecutionConfig):
-        if config.gradient_method in {"device", "parameter-shift"}:
+        if execution_config.gradient_method in {"device", "parameter-shift"}:
             config = dataclasses.replace(
-                config, use_device_gradient=True, use_device_jacobian_product=True
+                execution_config, use_device_gradient=True, use_device_jacobian_product=True
             )
         return super().preprocess(config)
 
@@ -87,7 +88,7 @@ class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
             self.tracker.update(jvp_batches=1, jvps=len(circuits))
             self.tracker.record()
 
-        batch, fn = qml.gradients.batch_jvp(circuits, tangents, qml.gradients.param_shift)
+        batch, fn = qml.gradient.batch_jvp(circuits, tangents, qml.gradients.param_shift)
         results = self.execute(batch)
         return fn(results)[0] if is_single_circuit else fn(results)
 
