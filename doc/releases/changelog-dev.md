@@ -194,6 +194,10 @@
 * `qml.data.load` properly handles parameters that come after `'full'`
   [(#4663)](https://github.com/PennyLaneAI/pennylane/pull/4663)
 
+* The `qml.jordan_wigner` function has been modified to optionally remove the imaginary components
+  of the computed qubit operator, if imaginary components are smaller than a threshold. 
+  [(#4639)](https://github.com/PennyLaneAI/pennylane/pull/4639)
+
 <h3>Breaking changes 💔</h3>
 
 * The device test suite now converts device kwargs to integers or floats if they can be converted to integers or floats.
