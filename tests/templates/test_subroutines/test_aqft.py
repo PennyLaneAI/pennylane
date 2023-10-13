@@ -62,3 +62,9 @@ class TestAQFT:
             op = qml.AQFT(order=0, wires=range(wires))
             for gate in op.decomposition()[: -wires // 2]:
                 assert gate.name == "Hadamard"
+
+    @pytest.mark.parametrize("order", [4, 5, 6])
+    def test_higher_order(self, order):
+        """Test if higher order recommends using QFT"""
+        with pytest.warns(UserWarning, match="Using the QFT class is recommended in this case"):
+            qml.AQFT(order=order, wires=range(5))
