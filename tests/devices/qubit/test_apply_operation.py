@@ -849,7 +849,7 @@ class TestLargerOperations:
 
         assert qml.math.allclose(state_v1, state_v2)
 
-    @pytest.mark.parametrize("apply_wires", ([0, 3], [1, 3, 2], [2, 1], [1, 3]))
+    @pytest.mark.parametrize("apply_wires", ([0, 3], [0, 1, 3, 2], [2, 1], [1, 3]))
     def test_grover(self, method, apply_wires):
         """Tests a four qubit GroverOperator."""
         op = qml.GroverOperator(apply_wires)
@@ -862,10 +862,20 @@ class TestLargerOperations:
         assert qml.math.allclose(expected_state, new_state)
 
 
+@pytest.mark.parametrize("num_wires, einsum_called", [(3, True), (8, False)])
+def test_grover_dispatching(num_wires, einsum_called, mocker):
+    """Test that apply_grover dispatches to einsum correctly for small numbers of wires."""
+    op = qml.GroverOperator(list(range(num_wires)))
+    state = np.zeros([2] * num_wires, dtype=complex)
+    spy = mocker.spy(qml.math, "einsum")
+    apply_operation(op, state, is_state_batched=False, debugger=None)
+    assert spy.call_count == int(einsum_called)
+
+
 @pytest.mark.tf
 @pytest.mark.parametrize("op", (qml.PauliZ(8), qml.CNOT((5, 6))))
 def test_tf_large_state(op):
-    """ "Tests that custom kernels that use slicing fall back to a different method when
+    """Tests that custom kernels that use slicing fall back to a different method when
     the state has a large number of wires."""
     import tensorflow as tf
 

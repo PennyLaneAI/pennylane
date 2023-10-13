@@ -271,6 +271,9 @@ def apply_grover(op: qml.GroverOperator, state, is_state_batched: bool = False, 
     over all axes on which the operation acts, and "filling in" the all-plus state
     in the resulting lower-dimensional state via a Kronecker product.
     """
+    if len(op.wires) < 8:
+        return apply_operation_einsum(op, state, is_state_batched)
+
     # The axes to sum over in order to obtain <+|\psi>, where <+| only acts on the op wires.
     sum_axes = [w + is_state_batched for w in op.wires]
     n_wires = len(sum_axes)
