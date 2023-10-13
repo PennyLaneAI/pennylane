@@ -506,12 +506,37 @@ def set_decomposition(custom_decomps, dev, decomp_depth=10):
 
         finally:
             dev.custom_expand_fn = original_custom_expand_fn
+
     else:
+
+        def decomposer(op):
+            if op.name in custom_decomps:
+                return custom_decomps[op.name](*op.data, wires=op.wires, **op.hyperparameters)
+            if type(op) in custom_decomps:
+                return custom_decomps[type(op)](*op.data, wires=op.wires, **op.hyperparameters)
+            return op.decomposition()
+
         original_preprocess = dev.preprocess
 
+        # pylint: disable=cell-var-from-loop
         def new_preprocess(execution_config=qml.devices.DefaultExecutionConfig):
             program, config = original_preprocess(execution_config)
-            program.insert_front_transform(custom_decomposition, custom_decomps, decomp_depth)
+
+            for container in program:
+                if container.transform == qml.devices.preprocess.decompose.transform:
+                    container.kwargs["decomposer"] = decomposer
+
+                    original_stopping_condition = container.kwargs["stopping_condition"]
+
+                    def stopping_condition(obj):
+                        if obj.name in custom_decomps or type(obj) in custom_decomps:
+                            return False
+                        return original_stopping_condition(obj)
+
+                    container.kwargs["stopping_condition"] = stopping_condition
+
+                    break
+
             return program, config
 
         try:

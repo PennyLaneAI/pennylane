@@ -1218,7 +1218,9 @@ class TestDeviceNewUnits:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         dev = qml.device("default.qubit", wires=3)
-        with pytest.raises(qml.DeviceError, match="Analytic circuits must only contain"):
+        with pytest.raises(
+            qml.DeviceError, match="not accepted for analytic simulation on default.qubit"
+        ):
             qml.execute(tapes=[tape], device=dev, gradient_fn=None)
 
     def test_state_return_with_other_types(self):

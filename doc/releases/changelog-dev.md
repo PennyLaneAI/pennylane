@@ -78,10 +78,20 @@
 
 <h3>Improvements 🛠</h3>
 
+* `pennylane.devices.preprocess` now offers the transforms `decompose`, `validate_observables`, `validate_measurements`,
+  `validate_device_wires`, `validate_multiprocessing_workers`, `warn_about_trainable_observables`,
+  and `no_sampling` to assist in the construction of devices under the new `devices.Device` API.
+  [(#4659)](https://github.com/PennyLaneAI/pennylane/pull/4659)
+
+* `pennylane.defer_measurements` will now exit early if the input does not contain mid circuit measurements.
+  [(#4659)](https://github.com/PennyLaneAI/pennylane/pull/4659)
+
 * `default.qubit` now tracks the number of equivalent qpu executions and total shots
   when the device is sampling. Note that `"simulations"` denotes the number of simulation passes, where as
-  `"executions"` denotes how many different computational bases need to be sampled in.
+  `"executions"` denotes how many different computational bases need to be sampled in. Additionally, the
+  new `default.qubit` also tracks the results of `device.execute`.
   [(#4628)](https://github.com/PennyLaneAI/pennylane/pull/4628)
+  [(#4649)](https://github.com/PennyLaneAI/pennylane/pull/4649)
 
 * The `JacobianProductCalculator` abstract base class and implementation `TransformJacobianProducts`
   have been added to `pennylane.interfaces.jacobian_products`.
@@ -180,6 +190,14 @@
 * Updated `qml.math.ndim` and `qml.math.shape` to work with built-in lists/tuples that contain
   interface-specific scalar data, eg `[(tf.Variable(1.1), tf.Variable(2.2))]`.
   [(#4603)](https://github.com/PennyLaneAI/pennylane/pull/4603)
+
+* `qml.cut_circuit` is now compatible with circuits that compute the expectation values of Hamiltonians 
+  with two or more terms.
+  [(#4642)](https://github.com/PennyLaneAI/pennylane/pull/4642)
+
+* `_qfunc_output` has been removed from `QuantumScript`, as it is no longer necessary. There is
+  still a `_qfunc_output` property on `QNode` instances.
+  [(#4651)](https://github.com/PennyLaneAI/pennylane/pull/4651)
 
 <h3>Breaking changes 💔</h3>
 

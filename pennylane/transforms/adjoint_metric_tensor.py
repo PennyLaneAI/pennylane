@@ -257,8 +257,12 @@ def _adjoint_metric_tensor_qnode(qnode, device, hybrid):
         )
 
         qnode.construct(args, kwargs)
-        program, _ = qml.devices.qubit.preprocess()
+        program, _ = qml.device("default.qubit").preprocess()
         tapes, _ = program((qnode.tape,))
+        for tape in tapes:
+            # set the trainable parameters
+            params = tape.get_parameters(trainable_only=False)
+            tape.trainable_params = qml.math.get_trainable_indices(params)
         mt = _adjoint_metric_tensor_tape(tapes[0])
 
         if old_interface == "auto":
