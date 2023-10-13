@@ -214,7 +214,7 @@ def warn_about_trainable_observables(
 def decompose(
     tape: qml.tape.QuantumTape,
     stopping_condition: Callable[[qml.operation.Operator], bool],
-    skip_initial_state_prep=True,
+    skip_initial_state_prep: bool = True,
     decomposer: Optional[
         Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]]
     ] = None,
