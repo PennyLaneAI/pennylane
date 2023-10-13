@@ -73,9 +73,6 @@ def hadamard_grad(
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
-        argnums (int or list[int] or None): Trainable tape parameter indices to differentiate
-            with respect to. If not provided, the derivatives with respect to all
-            trainable parameters are returned.
         aux_wire (pennylane.wires.Wires): Auxiliary wire to be used for the Hadamard tests. If ``None`` (the default),
             a suitable wire is inferred from the wires used in the original circuit and ``device_wires``.
         device_wires (pennylane.wires.Wires): Wires of the device that are going to be used for the

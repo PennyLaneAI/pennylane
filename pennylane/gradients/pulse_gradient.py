@@ -338,9 +338,6 @@ def stoch_pulse_grad(
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
-        argnums (int or list[int] or None): Trainable tape parameter indices to differentiate
-            with respect to. If not provided, the derivatives with respect to all
-            trainable parameters are returned.
         num_split_times (int): number of time samples to use in the stochastic parameter-shift
             rule underlying the differentiation; also see details
         sample_seed (int): randomness seed to be used for the time samples in the stochastic
