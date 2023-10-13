@@ -236,6 +236,12 @@ class TransformDispatcher:
 
     def _old_device_transform(self, original_device, targs, tkwargs):
         """Apply the transform on a device"""
+        if self._expand_transform:
+            raise TransformError("Device transform does not support expand transforms.")
+        if self._is_informative:
+            raise TransformError("Device transform does not support informative transforms.")
+        if self._final_transform:
+            raise TransformError("Device transform does not support final transforms.")
         new_dev = copy.deepcopy(original_device)
         transform = self._transform
 
