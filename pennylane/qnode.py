@@ -972,16 +972,17 @@ class QNode:
                 _gradient_method = self.gradient_fn
             else:
                 _gradient_method = "gradient-transform"
-            grad_on_execution = self.gradient_kwargs.get("grad_on_execution")
+            grad_on_execution = self.execute_kwargs.get("grad_on_execution")
             config = qml.devices.ExecutionConfig(
                 interface=self.interface,
                 gradient_method=_gradient_method,
                 grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
             )
-            device_transform_program, _ = self.device.preprocess(execution_config=config)
+            device_transform_program, config = self.device.preprocess(execution_config=config)
             full_transform_program = self.transform_program + device_transform_program
         else:
             full_transform_program = self.transform_program
+        # Add the gradient expand to the porgram if necessary
         if (
             isinstance(self.gradient_fn, qml.transforms.core.TransformDispatcher)
             and self.gradient_fn.expand_transform
@@ -990,7 +991,7 @@ class QNode:
                 qml.transforms.core.TransformDispatcher(self.gradient_fn.expand_transform),
                 **self.gradient_kwargs,
             )
-        # Calculate the classical jacobians if needed
+        # Calculate the classical jacobians if necessary
         if full_transform_program.has_classical_cotransform():
             argnums = full_transform_program[-1]._kwargs.pop(
                 "argnums", None
@@ -1009,6 +1010,7 @@ class QNode:
             gradient_fn=self.gradient_fn,
             interface=self.interface,
             transform_program=full_transform_program,
+            config=config,
             gradient_kwargs=self.gradient_kwargs,
             override_shots=override_shots,
             **self.execute_kwargs,

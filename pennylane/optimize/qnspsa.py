@@ -217,11 +217,21 @@ class QNSPSAOptimizer:
             all_metric_tapes += metric_tapes
             all_grad_dirs.append(grad_dirs)
             all_tensor_dirs.append(tensor_dirs)
-        program, _ = cost.device.preprocess()
 
-        raw_results = qml.execute(
-            all_grad_tapes + all_metric_tapes, cost.device, None, transform_program=program
-        )
+        if isinstance(cost.device, qml.devices.Device):
+            program, config = cost.device.preprocess()
+
+            raw_results = qml.execute(
+                all_grad_tapes + all_metric_tapes,
+                cost.device,
+                None,
+                transform_program=program,
+                config=config,
+            )
+        else:
+            raw_results = qml.execute(
+                all_grad_tapes + all_metric_tapes, cost.device, None
+            )  # pragma: no cover
         grads = [
             self._post_process_grad(raw_results[2 * i : 2 * i + 2], all_grad_dirs[i])
             for i in range(self.resamplings)

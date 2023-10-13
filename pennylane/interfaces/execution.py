@@ -399,6 +399,7 @@ def execute(
     gradient_fn: Optional[Union[Callable, str]] = None,
     interface="auto",
     transform_program=None,
+    config=None,
     grad_on_execution="best",
     gradient_kwargs=None,
     cache: Union[bool, dict, Cache] = True,
@@ -552,18 +553,8 @@ def execute(
 
         interface = get_jax_interface_name(tapes)
 
-    if gradient_fn is None:
-        _gradient_method = None
-    elif isinstance(gradient_fn, str):
-        _gradient_method = gradient_fn
-    else:
-        _gradient_method = "gradient-transform"
-    config = qml.devices.ExecutionConfig(
-        interface=interface,
-        gradient_method=_gradient_method,
-        grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
-    )
     gradient_kwargs = gradient_kwargs or {}
+    config = config or _get_execution_config(gradient_fn, gradient_kwargs, interface, device)
 
     if isinstance(cache, bool) and cache:
         # cache=True: create a LRUCache object
@@ -604,7 +595,6 @@ def execute(
                 "device batch transforms cannot be turned off with the new device interface.",
                 UserWarning,
             )
-        _, config = device.preprocess(config)
         tapes, post_processing = transform_program(tapes)
     else:
         # TODO: Remove once old device are removed
@@ -746,3 +736,22 @@ def execute(
     )
 
     return post_processing(results)
+
+
+def _get_execution_config(gradient_fn, gradient_kwargs, interface, device):
+    """Helper function to get the execution config."""
+    if gradient_fn is None:
+        _gradient_method = None
+    elif isinstance(gradient_fn, str):
+        _gradient_method = gradient_fn
+    else:
+        _gradient_method = "gradient-transform"
+    grad_on_execution = gradient_kwargs.get("grad_on_execution")
+    config = qml.devices.ExecutionConfig(
+        interface=interface,
+        gradient_method=_gradient_method,
+        grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
+    )
+    if isinstance(device, qml.devices.Device):
+        _, config = device.preprocess(config)
+    return config
