@@ -134,7 +134,7 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
     + ((0.775+0j)*(PauliX(wires=[0]) @ PauliX(wires=[1])))
     + (0.775j*(PauliX(wires=[0]) @ PauliY(wires=[1])))
     """
-    h = qml.jordan_wigner(o_ferm, ps=True)
+    h = qml.jordan_wigner(o_ferm, ps=True, tol=cutoff)
     h.simplify(tol=cutoff)
 
     if active_new_opmath():
