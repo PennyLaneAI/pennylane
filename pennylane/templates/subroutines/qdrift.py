@@ -19,6 +19,7 @@ from pennylane.operation import Operation
 from pennylane.ops import Sum
 import numpy as np
 
+
 class QDrift(Operation):
     r"""An operation representing the QDrift subroutine for the complex matrix exponential
     of a given Hamiltonian.
@@ -27,9 +28,9 @@ class QDrift(Operation):
     expressed as a linear combination of terms which in general do not commute. Consider the hamiltonian
     :math:`H = \Sigma_j h_j H_{j}`, the product formula is constructed by random sampling over the terms
     of the Hamiltonian. With probability :math:`p_j` we will add to the product the operator
-    :math:`\exp{(\frac{i \lambda H_j}{n})}`, where :math:`\lambda = \sum_{j=1}^{N} |h_j|` and :math:`n` is
+    :math:`\exp{(\frac{i \lambda H_j}{n})}`, where :math:`\lambda = \sum_j |h_j|` and :math:`n` is
     the number of terms to be added to the product.
-    We calculate the probabilities :math:`p_j` as :math:`p_j = \frac{|h_j|}{\lambda}`.
+    We calculate the probabilities as :math:`p_j = \frac{|h_j|}{\lambda}`.
 
     Args:
         hamiltonian (Union[~.Hamiltonian, ~.Sum]): The Hamiltonian of the system.
@@ -63,7 +64,7 @@ class QDrift(Operation):
             return qml.probs()
 
     >>> my_circ()
-    [0.52825127 0.         0.47174873 0.        ]
+    [0.71061676 0.         0.28938324 0.        ]
 
 
     .. details::
@@ -73,6 +74,8 @@ class QDrift(Operation):
         evolution time:
 
         .. code-block:: python3
+
+            dev = qml.device("default.qubit", wires=2)
 
             @qml.qnode(dev)
             def my_circ(time):
@@ -209,15 +212,15 @@ class QDrift(Operation):
         ops = kwargs["base"].operands
 
         with qml.QueuingManager.stop_recording():
-            
             coeffs = [op.scalar for op in ops]
             lmbda = qml.math.sum(qml.math.abs(coeffs))
             probs = qml.math.abs(coeffs) / lmbda
-            exps = [qml.exp(op.base, qml.math.sign(op.scalar) * lmbda * time * 1j / n) for op in ops]
+            exps = [
+                qml.exp(op.base, qml.math.sign(op.scalar) * lmbda * time * 1j / n) for op in ops
+            ]
 
             choice_rng = np.random.default_rng(seed=seed)
             decomp = choice_rng.choice(exps, p=probs, size=n, replace=True)
-
 
         if qml.QueuingManager.recording():
             for op in decomp:  # apply operators in reverse order of expression
