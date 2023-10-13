@@ -31,7 +31,7 @@ from . import Device
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
 from .clifford.simulate import simulate, get_final_state, measure_final_state
 from .clifford.sampling import get_num_shots_and_executions
-from .qubit.adjoint_jacobian import adjoint_jacobian, adjoint_vjp, adjoint_jvp
+from .clifford.adjoint_jacobian import adjoint_jacobian, adjoint_vjp, adjoint_jvp
 from .clifford.preprocess import (
     preprocess,
     validate_multiprocessing_workers,

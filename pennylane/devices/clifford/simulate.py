@@ -20,10 +20,10 @@ from pennylane.typing import Result
 from pennylane.wires import Wires
 from pennylane.measurements.expval import ExpectationMP
 
-from .initialize_state import create_initial_state
 from .measure import measure
 from .sampling import measure_with_samples
 
+from .qubit.initial_state import create_initial_state
 from .qubit.simulate import INTERFACE_TO_LIKE
 
 _GATE_OPERATIONS = {
@@ -145,12 +145,12 @@ def simulate(
     stim = _import_stim()
 
     circuit = circuit.map_to_standard_wires()
-    stim_ct = stim.Circuit()
 
     prep = None
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         prep = circuit[0]
 
+    stim_ct = stim.Circuit()
     initial_state = create_initial_state(circuit.op_wires, prep, like=INTERFACE_TO_LIKE[interface])
     initial_tableau = stim.Tableau.from_state_vector(initial_state)
 

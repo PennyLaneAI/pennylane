@@ -56,11 +56,6 @@ def adjoint_jvp(tape: QuantumTape, **kwargs):
     Returns:
         Tuple[Number]: gradient vector for output parameters
     """
-    # Map wires if custom wire labels used
-    if set(tape.wires) != set(range(tape.num_wires)):
-        wire_map = {w: i for i, w in enumerate(tape.wires)}
-        tape = qml.map_wires(tape, wire_map)
-
     tangents_out, _ = np.zeros(len(tape.observables)), kwargs
 
     if len(tape.observables) == 1:
@@ -80,10 +75,6 @@ def adjoint_vjp(tape: QuantumTape, **kwargs):
     Returns:
         Tuple[Number]: gradient vector for input parameters
     """
-    # Map wires if custom wire labels used
-    if set(tape.wires) != set(range(tape.num_wires)):
-        wire_map = {w: i for i, w in enumerate(tape.wires)}
-        tape = qml.map_wires(tape, wire_map)
 
     cotangents_in, _ = np.empty(len(tape.trainable_params)), kwargs
 
