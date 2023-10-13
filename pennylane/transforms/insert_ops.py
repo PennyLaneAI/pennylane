@@ -238,9 +238,8 @@ def insert(
 
     if position == "start":
         for w in tape.wires:
-            with qml.QueuingManager.stop_recording():
-                sub_tape = qml.tape.make_qscript(op)(*op_args, wires=w)
-                new_operations.extend(sub_tape.operations)
+            sub_tape = qml.tape.make_qscript(op)(*op_args, wires=w)
+            new_operations.extend(sub_tape.operations)
 
     for circuit_op in tape.operations[tape.num_preps :]:
         if not before:
@@ -248,26 +247,23 @@ def insert(
 
         if position == "all":
             for w in circuit_op.wires:
-                with qml.QueuingManager.stop_recording():
-                    sub_tape = qml.tape.make_qscript(op)(*op_args, wires=w)
-                    new_operations.extend(sub_tape.operations)
+                sub_tape = qml.tape.make_qscript(op)(*op_args, wires=w)
+                new_operations.extend(sub_tape.operations)
 
         if req_ops:
             for operation in req_ops:
                 if operation == type(circuit_op):
                     for w in circuit_op.wires:
-                        with qml.QueuingManager.stop_recording():
-                            sub_tape = qml.tape.make_qscript(op)(*op_args, wires=w)
-                            new_operations.extend(sub_tape.operations)
+                        sub_tape = qml.tape.make_qscript(op)(*op_args, wires=w)
+                        new_operations.extend(sub_tape.operations)
 
         if before:
             new_operations.append(circuit_op)
 
     if position == "end":
         for w in tape.wires:
-            with qml.QueuingManager.stop_recording():
-                sub_tape = qml.tape.make_qscript(op)(*op_args, wires=w)
-                new_operations.extend(sub_tape.operations)
+            sub_tape = qml.tape.make_qscript(op)(*op_args, wires=w)
+            new_operations.extend(sub_tape.operations)
 
     new_tape = type(tape)(new_operations, tape.measurements, shots=tape.shots)
 

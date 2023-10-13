@@ -60,6 +60,9 @@
   to the new transform program system.
   [(#4573)](https://github.com/PennyLaneAI/pennylane/pull/4573)
 
+* Transforms can be applied on devices following the new device API.
+ [(#4667)](https://github.com/PennyLaneAI/pennylane/pull/4667)
+
 * All quantum functions transforms are update to the new transform program system.
  [(#4439)](https://github.com/PennyLaneAI/pennylane/pull/4439)
 

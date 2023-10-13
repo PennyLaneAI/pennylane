@@ -552,6 +552,18 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert new_program[-1].transform is valid_transform
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
+    def test_old_device_transform(self, valid_transform):
+        """Test a device transform on old device."""
+        dispatched_transform = transform(valid_transform)
+        device = qml.device("default.mixed", wires=2)
+        new_dev = dispatched_transform(device, index=0)
+
+        assert isinstance(new_dev, type(device))
+        assert new_dev.custom_expand_fn
+        assert repr(device).startswith("<DefaultMixed device (wires=2, shots=None)")
+        assert repr(new_dev).startswith("<DefaultMixed device (wires=2, shots=None)")
+
+    @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_device_transform_error(self, valid_transform):
         """Test that the device transform returns errors."""
 
