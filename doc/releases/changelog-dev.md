@@ -186,9 +186,14 @@
   interface-specific scalar data, eg `[(tf.Variable(1.1), tf.Variable(2.2))]`.
   [(#4603)](https://github.com/PennyLaneAI/pennylane/pull/4603)
 
+* When decomposing a unitary matrix with `one_qubit_decomposition`, and opting to include the `GlobalPhase` 
+  in the decomposition, the phase is no longer cast to `dtype=complex`.
+  [(#4653)](https://github.com/PennyLaneAI/pennylane/pull/4653)
+
 * `qml.cut_circuit` is now compatible with circuits that compute the expectation values of Hamiltonians 
   with two or more terms.
   [(#4642)](https://github.com/PennyLaneAI/pennylane/pull/4642)
+
 
 * `_qfunc_output` has been removed from `QuantumScript`, as it is no longer necessary. There is
   still a `_qfunc_output` property on `QNode` instances.
@@ -197,6 +202,7 @@
 * The `qml.jordan_wigner` function has been modified to optionally remove the imaginary components
   of the computed qubit operator, if imaginary components are smaller than a threshold. 
   [(#4639)](https://github.com/PennyLaneAI/pennylane/pull/4639)
+
 
 <h3>Breaking changes 💔</h3>
 
