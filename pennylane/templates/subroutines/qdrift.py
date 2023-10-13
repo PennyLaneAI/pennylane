@@ -212,11 +212,20 @@ class QDrift(Operation):
         ops = kwargs["base"].operands
 
         with qml.QueuingManager.stop_recording():
-            coeffs = [op.scalar for op in ops]
+            coeffs, bases = [], []
+            for op in ops:
+                try:
+                    coeffs.append(op.scalar)
+                    bases.append(op.base)
+                except:
+                    coeffs.append(1.0)
+                    bases.append(op)
+
             lmbda = qml.math.sum(qml.math.abs(coeffs))
             probs = qml.math.abs(coeffs) / lmbda
             exps = [
-                qml.exp(op.base, qml.math.sign(op.scalar) * lmbda * time * 1j / n) for op in ops
+                qml.exp(bases[i], qml.math.sign(coeffs[i]) * lmbda * time * 1j / n)
+                for i in range(len(coeffs))
             ]
 
             choice_rng = np.random.default_rng(seed=seed)
