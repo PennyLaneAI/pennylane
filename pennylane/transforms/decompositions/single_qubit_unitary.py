@@ -40,9 +40,13 @@ def _convert_to_su2(U, return_global_phase=False):
     # Compute the determinants
     U = qml.math.cast(U, "complex128")
     dets = math.linalg.det(U)
+
+    # math.angle(dets) is always real, but we cast to complex for torch (so we can multiply by -1j)
     exp_angles = math.cast_like(math.angle(dets), 1j) / 2
     U_SU2 = math.cast_like(U, dets) * math.exp(-1j * exp_angles)[:, None, None]
-    return (U_SU2, exp_angles) if return_global_phase else U_SU2
+
+    # we cast back to real again if returning exp_angles
+    return (U_SU2, qml.math.real(exp_angles)) if return_global_phase else U_SU2
 
 
 def _rot_decomposition(U, wire):
@@ -191,8 +195,6 @@ def _zyz_decomposition(U, wire, return_global_phase=False):
 
     operations = [qml.RZ(phis, wire), qml.RY(thetas, wire), qml.RZ(omegas, wire)]
     if return_global_phase:
-        if qml.math.all(np.imag(alphas) < 1e-15):
-            alphas = np.real(alphas)
         operations.append(qml.GlobalPhase(-alphas))
 
     return operations
@@ -257,8 +259,6 @@ def _xyx_decomposition(U, wire, return_global_phase=False):
 
     operations = [qml.RX(lams, wire), qml.RY(thetas, wire), qml.RX(phis, wire)]
     if return_global_phase:
-        if qml.math.all(np.imag(gammas) < 1e-15):
-            gammas = np.real(gammas)
         operations.append(qml.GlobalPhase(-gammas))
 
     return operations
@@ -326,8 +326,6 @@ def _zxz_decomposition(U, wire, return_global_phase=False):
     # Return gates in the order they will be applied on the qubit
     operations = [qml.RZ(psis, wire), qml.RX(thetas, wire), qml.RZ(phis, wire)]
     if return_global_phase:
-        if qml.math.all(np.imag(alphas) < 1e-15):
-            alphas = np.real(alphas)
         operations.append(qml.GlobalPhase(-alphas))
 
     return operations
