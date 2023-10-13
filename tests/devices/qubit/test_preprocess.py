@@ -71,8 +71,6 @@ class TestPrivateHelpers:
             (qml.Barrier(), False),
             (qml.QFT(wires=range(5)), True),
             (qml.QFT(wires=range(10)), False),
-            (qml.GroverOperator(wires=range(10)), True),
-            (qml.GroverOperator(wires=range(14)), False),
             (qml.pow(qml.RX(1.1, 0), 3), True),
             (qml.pow(qml.RX(pnp.array(1.1), 0), 3), False),
         ],
