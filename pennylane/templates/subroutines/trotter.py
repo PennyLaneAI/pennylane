@@ -61,35 +61,33 @@ def _recursive_expression(x, order, ops):
 
 
 class TrotterProduct(Operation):
-    r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix exponential
-    of a given Hamiltonian.
+    r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
+    exponential of a given Hamiltonian.
 
-    The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of Hamiltonian
-    expressed as a linear combination of terms which in general do not commute. Consider the Hamiltonian
-    :math:`H = \Sigma^{N}_{j=0} O_{j}`, the product formula is constructed using symmetrized products of the terms
-    in the Hamiltonian. The symmetrized products of order :math: `m \in [1, 2, 4, ..., 2k] | k \in \mathbb{N}`
-    are given by:
+    The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
+    Hamiltonian expressed as a linear combination of terms which in general do not commute. Consider
+    the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`, the product formula is constructed using
+    symmetrized products of the terms in the Hamiltonian. The symmetrized products of order
+    :math:`m \in [1, 2, 4, ..., 2k] | k \in \mathbb{N}` are given by:
 
     .. math::
 
         \begin{align}
-            S_{m=1}(t) &= \Pi_{j=0}^{N} \ exp(i t O_{j}) \\
-            S_{m=2}(t) &= \Pi_{j=0}^{N} \ exp(i \frac{t}{2} O_{j}) \cdot \Pi_{j=N}^{0} \ exp(i \frac{t}{2} O_{j}) \\
-            &\vdots
-            S_{m=2k}(t) &= S_{2k-2}(p_{2k}t)^{2} \cdot S_{2k-2}((1-4p_{2k})t) \cdot S_{2k-2}(p_{2k}t)^{2}
-        \end{align}
+            S_{1}(t) &= \Pi_{j=0}^{N} \ e^{i t O_{j}} \\
+            S_{2}(t) &= \Pi_{j=0}^{N} \ e^{i \frac{t}{2} O_{j}} \cdot \Pi_{j=N}^{0} \ e^{i \frac{t}{2} O_{j}} \\
+            &\vdots \\
+            S_{2k}(t) &= S_{2k-2}(p_{2k}t)^{2} \cdot S_{2k-2}((1-4p_{2k})t) \cdot S_{2k-2}(p_{2k}t)^{2}
+        \end{align},
 
-    Where the coefficient is :math:`p_{2k} = \frac{1}{4 - \sqrt[2k - 1]{4}}`.
+    where the coefficient is :math:`p_{2k} = 1 / (4 - \sqrt[2k - 1]{4})`. The :math:`2k`th order, :math:`n`-step Suzuki-Trotter approximation is then defined as:
 
-    The :math:`2k`th order, :math:`n`-step Suzuki-Trotter approximation is then defined as:
-
-    .. math:: exp(iHt) \approx (S_{2k}(\frac{t}{n}))^{n}
+    .. math:: e^{iHt} \approx \left [S_{2k}(t / n)  \right ]^{n}.
 
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_).
 
     Args:
         hamiltonian (Union[~.Hamiltonian, ~.Sum]): The Hamiltonian written in terms of products of
-        Pauli gates
+            Pauli gates
         time (int or float): The time of evolution, namely the parameter :math:`t` in :math:`e^{-iHt}`
         n (int): An integer representing the number of Trotter steps to perform
         order (int): An integer representing the order of the approximation (must be 1 or even)
