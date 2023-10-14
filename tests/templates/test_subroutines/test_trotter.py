@@ -14,16 +14,15 @@
 """
 Tests for the TrotterProduct template and helper functions.
 """
+# pylint: disable=private-access, protected-access
 import copy
-import pytest
 from functools import reduce
 
+import pytest
+
 import pennylane as qml
-from pennylane.templates.subroutines.trotter import (
-    _recursive_expression,
-    _scalar,
-)  # pylint: disable=private-access
 from pennylane import numpy as qnp
+from pennylane.templates.subroutines.trotter import _recursive_expression, _scalar
 
 test_hamiltonians = (
     qml.dot([1, 1, 1], [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(1)]),
