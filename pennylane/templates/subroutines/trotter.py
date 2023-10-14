@@ -148,7 +148,7 @@ class TrotterProduct(Operation):
         (tensor(0.00961064, requires_grad=True), tensor(-0.12338274, requires_grad=True), tensor(-5.43401259, requires_grad=True))
     """
 
-    def __init__(  # pylin: disable=too-many-arguments
+    def __init__(  # pylint: disable=too-many-arguments
         self, hamiltonian, time, n=1, order=1, check_hermitian=True, id=None
     ):
         r"""Initialize the TrotterProduct class"""
