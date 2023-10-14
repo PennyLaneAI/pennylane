@@ -86,12 +86,12 @@ class TrotterProduct(Operation):
     .. math:: exp(iHt) \approx (S_{2k}(\frac{t}{n}))^{n}
 
     Args:
-        hamiltonian (Union[~.Hamiltonian, ~.Sum]):
-
-    Keyword Args:
-        n (int): An integer representing the number of Trotter steps to perform.
-        order (int): An integer representing the order of the approximation (must be 1 or even).
-        check_hermitian (bool): A flag to enable the validation check to ensure this is a valid unitary operator.
+        hamiltonian (Union[~.Hamiltonian, ~.Sum]): The Hamiltonian written in terms of products of
+        Pauli gates
+        time (int or float): The time of evolution, namely the parameter :math:`t` in :math:`e^{-iHt}`
+        n (int): An integer representing the number of Trotter steps to perform
+        order (int): An integer representing the order of the approximation (must be 1 or even)
+        check_hermitian (bool): A flag to enable the validation check to ensure this is a valid unitary operator
 
     Raises:
         TypeError: The 'hamiltonian' is not of type ~.Hamiltonian, or ~.Sum.
