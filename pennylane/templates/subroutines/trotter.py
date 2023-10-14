@@ -85,6 +85,8 @@ class TrotterProduct(Operation):
 
     .. math:: exp(iHt) \approx (S_{2k}(\frac{t}{n}))^{n}
 
+    For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_).
+
     Args:
         hamiltonian (Union[~.Hamiltonian, ~.Sum]): The Hamiltonian written in terms of products of
         Pauli gates
