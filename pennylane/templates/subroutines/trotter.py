@@ -23,7 +23,7 @@ def _scalar(order):
     """Compute the scalar used in the recursive expression.
 
     Args:
-        order (int): order of trotter product (assume order is an even integer > 2).
+        order (int): order of Trotter product (assume order is an even integer > 2).
 
     Returns:
         float: scalar to be used in the recursive expression.
@@ -35,7 +35,7 @@ def _scalar(order):
 @qml.QueuingManager.stop_recording()
 def _recursive_expression(x, order, ops):
     """Generate a list of operations using the
-    recursive expression which defines the trotter product.
+    recursive expression which defines the Trotter product.
 
     Args:
         x (complex): the evolution 'time'
@@ -43,7 +43,7 @@ def _recursive_expression(x, order, ops):
         ops (Iterable(~.Operators)): a list of terms in the Hamiltonian
 
     Returns:
-        List: the approximation as product of exponentials of the hamiltonian terms
+        List: the approximation as product of exponentials of the Hamiltonian terms
     """
     if order == 1:
         return [qml.exp(op, x * 1j) for op in ops]
@@ -64,10 +64,10 @@ class TrotterProduct(Operation):
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix exponential
     of a given Hamiltonian.
 
-    The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of hamiltonian
-    expressed as a linear combination of terms which in general do not commute. Consider the hamiltonian
+    The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of Hamiltonian
+    expressed as a linear combination of terms which in general do not commute. Consider the Hamiltonian
     :math:`H = \Sigma^{N}_{j=0} O_{j}`, the product formula is constructed using symmetrized products of the terms
-    in the hamiltonian. The symmetrized products of order :math: `m \in [1, 2, 4, ..., 2k] | k \in \mathbb{N}`
+    in the Hamiltonian. The symmetrized products of order :math: `m \in [1, 2, 4, ..., 2k] | k \in \mathbb{N}`
     are given by:
 
     .. math::
@@ -124,7 +124,7 @@ class TrotterProduct(Operation):
     .. details::
         :title: Usage Details
 
-        We can also compute the gradient with respect to the coefficients of the hamiltonian and the
+        We can also compute the gradient with respect to the coefficients of the Hamiltonian and the
         evolution time:
 
         .. code-block:: python3
@@ -171,7 +171,7 @@ class TrotterProduct(Operation):
             for op in hamiltonian.operands:
                 if not op.is_hermitian:
                     raise ValueError(
-                        "One or more of the terms in the Hamiltonian may not be hermitian"
+                        "One or more of the terms in the Hamiltonian may not be Hermitian"
                     )
 
         self._hyperparameters = {
