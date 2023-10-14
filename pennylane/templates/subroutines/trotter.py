@@ -76,8 +76,8 @@ class TrotterProduct(Operation):
             S_{1}(t) &= \Pi_{j=0}^{N} \ e^{i t O_{j}} \\
             S_{2}(t) &= \Pi_{j=0}^{N} \ e^{i \frac{t}{2} O_{j}} \cdot \Pi_{j=N}^{0} \ e^{i \frac{t}{2} O_{j}} \\
             &\vdots \\
-            S_{2k}(t) &= S_{2k-2}(p_{2k}t)^{2} \cdot S_{2k-2}((1-4p_{2k})t) \cdot S_{2k-2}(p_{2k}t)^{2}
-        \end{align},
+            S_{2k}(t) &= S_{2k-2}(p_{2k}t)^{2} \cdot S_{2k-2}((1-4p_{2k})t) \cdot S_{2k-2}(p_{2k}t)^{2},
+        \end{align}
 
     where the coefficient is :math:`p_{2k} = 1 / (4 - \sqrt[2k - 1]{4})`. The :math:`2k`th order, :math:`n`-step Suzuki-Trotter approximation is then defined as:
 
@@ -94,9 +94,9 @@ class TrotterProduct(Operation):
         check_hermitian (bool): A flag to enable the validation check to ensure this is a valid unitary operator
 
     Raises:
-        TypeError: The 'hamiltonian' is not of type ~.Hamiltonian, or ~.Sum.
-        ValueError: One or more of the terms in 'hamiltonian' are not Hermitian.
-        ValueError: The 'order' is not one or a positive even integer.
+        TypeError: The ``hamiltonian`` is not of type :class:`~.Hamiltonian`, or :class:`~.Sum`
+        ValueError: One or more of the terms in ``hamiltonian`` are not Hermitian
+        ValueError: The ``order`` is not one or a positive even integer
 
     **Example**
 
