@@ -199,10 +199,10 @@ class TestInitialization:
     )
     def test_error_hermiticity(self, hamiltonian):
         """Test that an error is raised if any terms in
-        the hamiltonian are not hermitian and check_hermitian is True."""
+        the Hamiltonian are not Hermitian and check_hermitian is True."""
 
         with pytest.raises(
-            ValueError, match="One or more of the terms in the Hamiltonian may not be hermitian"
+            ValueError, match="One or more of the terms in the Hamiltonian may not be Hermitian"
         ):
             qml.TrotterProduct(hamiltonian, time=0.5)
 
