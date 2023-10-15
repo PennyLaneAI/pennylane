@@ -23,7 +23,7 @@ def _scalar(order):
     """Compute the scalar used in the recursive expression.
 
     Args:
-        order (int): order of trotter product (assume order is an even integer > 2).
+        order (int): order of Trotter product (assume order is an even integer > 2).
 
     Returns:
         float: scalar to be used in the recursive expression.
@@ -35,7 +35,7 @@ def _scalar(order):
 @qml.QueuingManager.stop_recording()
 def _recursive_expression(x, order, ops):
     """Generate a list of operations using the
-    recursive expression which defines the trotter product.
+    recursive expression which defines the Trotter product.
 
     Args:
         x (complex): the evolution 'time'
@@ -43,7 +43,7 @@ def _recursive_expression(x, order, ops):
         ops (Iterable(~.Operators)): a list of terms in the Hamiltonian
 
     Returns:
-        List: the approximation as product of exponentials of the hamiltonian terms
+        List: the approximation as product of exponentials of the Hamiltonian terms
     """
     if order == 1:
         return [qml.exp(op, x * 1j) for op in ops]
@@ -61,42 +61,42 @@ def _recursive_expression(x, order, ops):
 
 
 class TrotterProduct(Operation):
-    r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix exponential
-    of a given Hamiltonian.
+    r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
+    exponential of a given Hamiltonian.
 
-    The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of hamiltonian
-    expressed as a linear combination of terms which in general do not commute. Consider the hamiltonian
-    :math:`H = \Sigma^{N}_{j=0} O_{j}`, the product formula is constructed using symmetrized products of the terms
-    in the hamiltonian. The symmetrized products of order :math: `m \in [1, 2, 4, ..., 2k] | k \in \mathbb{N}`
-    are given by:
+    The Suzuki-Trotter product formula provides a method to approximate the matrix exponential of
+    Hamiltonian expressed as a linear combination of terms which in general do not commute. Consider
+    the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`, the product formula is constructed using
+    symmetrized products of the terms in the Hamiltonian. The symmetrized products of order
+    :math:`m \in [1, 2, 4, ..., 2k] | k \in \mathbb{N}` are given by:
 
     .. math::
 
         \begin{align}
-            S_{m=1}(t) &= \Pi_{j=0}^{N} \ exp(i t O_{j}) \\
-            S_{m=2}(t) &= \Pi_{j=0}^{N} \ exp(i \frac{t}{2} O_{j}) \cdot \Pi_{j=N}^{0} \ exp(i \frac{t}{2} O_{j}) \\
-            &\vdots
-            S_{m=2k}(t) &= S_{2k-2}(p_{2k}t)^{2} \cdot S_{2k-2}((1-4p_{2k})t) \cdot S_{2k-2}(p_{2k}t)^{2}
+            S_{1}(t) &= \Pi_{j=0}^{N} \ e^{i t O_{j}} \\
+            S_{2}(t) &= \Pi_{j=0}^{N} \ e^{i \frac{t}{2} O_{j}} \cdot \Pi_{j=N}^{0} \ e^{i \frac{t}{2} O_{j}} \\
+            &\vdots \\
+            S_{2k}(t) &= S_{2k-2}(p_{2k}t)^{2} \cdot S_{2k-2}((1-4p_{2k})t) \cdot S_{2k-2}(p_{2k}t)^{2},
         \end{align}
 
-    Where the coefficient is :math:`p_{2k} = \frac{1}{4 - \sqrt[2k - 1]{4}}`.
+    where the coefficient is :math:`p_{2k} = 1 / (4 - \sqrt[2k - 1]{4})`. The :math:`2k`th order, :math:`n`-step Suzuki-Trotter approximation is then defined as:
 
-    The :math:`2k`th order, :math:`n`-step Suzuki-Trotter approximation is then defined as:
+    .. math:: e^{iHt} \approx \left [S_{2k}(t / n)  \right ]^{n}.
 
-    .. math:: exp(iHt) \approx (S_{2k}(\frac{t}{n}))^{n}
+    For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_).
 
     Args:
-        hamiltonian (Union[~.Hamiltonian, ~.Sum]):
-
-    Keyword Args:
-        n (int): An integer representing the number of Trotter steps to perform.
-        order (int): An integer representing the order of the approximation (must be 1 or even).
-        check_hermitian (bool): A flag to enable the validation check to ensure this is a valid unitary operator.
+        hamiltonian (Union[~.Hamiltonian, ~.Sum]): The Hamiltonian written in terms of products of
+            Pauli gates
+        time (int or float): The time of evolution, namely the parameter :math:`t` in :math:`e^{-iHt}`
+        n (int): An integer representing the number of Trotter steps to perform
+        order (int): An integer representing the order of the approximation (must be 1 or even)
+        check_hermitian (bool): A flag to enable the validation check to ensure this is a valid unitary operator
 
     Raises:
-        TypeError: The 'hamiltonian' is not of type ~.Hamiltonian, or ~.Sum.
-        ValueError: One or more of the terms in 'hamiltonian' are not Hermitian.
-        ValueError: The 'order' is not one or a positive even integer.
+        TypeError: The ``hamiltonian`` is not of type :class:`~.Hamiltonian`, or :class:`~.Sum`
+        ValueError: One or more of the terms in ``hamiltonian`` are not Hermitian
+        ValueError: The ``order`` is not one or a positive even integer
 
     **Example**
 
@@ -124,7 +124,7 @@ class TrotterProduct(Operation):
     .. details::
         :title: Usage Details
 
-        We can also compute the gradient with respect to the coefficients of the hamiltonian and the
+        We can also compute the gradient with respect to the coefficients of the Hamiltonian and the
         evolution time:
 
         .. code-block:: python3
@@ -148,7 +148,7 @@ class TrotterProduct(Operation):
         (tensor(0.00961064, requires_grad=True), tensor(-0.12338274, requires_grad=True), tensor(-5.43401259, requires_grad=True))
     """
 
-    def __init__(  # pylin: disable=too-many-arguments
+    def __init__(  # pylint: disable=too-many-arguments
         self, hamiltonian, time, n=1, order=1, check_hermitian=True, id=None
     ):
         r"""Initialize the TrotterProduct class"""
@@ -171,7 +171,7 @@ class TrotterProduct(Operation):
             for op in hamiltonian.operands:
                 if not op.is_hermitian:
                     raise ValueError(
-                        "One or more of the terms in the Hamiltonian may not be hermitian"
+                        "One or more of the terms in the Hamiltonian may not be Hermitian"
                     )
 
         self._hyperparameters = {
