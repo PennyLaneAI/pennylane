@@ -160,7 +160,7 @@ class QDrift(Operation):
                 for i in range(len(coeffs))
             ]
 
-            choice_rng = qml.math.random.default_rng(seed=seed)
+            choice_rng = qml.math.random.default_rng(seed)
             decomp = choice_rng.choice(exps, p=probs, size=n, replace=True)
 
         if qml.QueuingManager.recording():
