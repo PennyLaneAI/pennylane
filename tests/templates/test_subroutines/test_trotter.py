@@ -14,17 +14,16 @@
 """
 Tests for the TrotterProduct template and helper functions.
 """
+# pylint: disable=private-access, protected-access
 import copy
-import pytest
 from functools import reduce
 
+import pytest
+
 import pennylane as qml
-from pennylane.math import get_interface, allclose
-from pennylane.templates.subroutines.trotter import (
-    _recursive_expression,
-    _scalar,
-)  # pylint: disable=private-access
 from pennylane import numpy as qnp
+from pennylane.math import allclose, get_interface
+from pennylane.templates.subroutines.trotter import _recursive_expression, _scalar
 
 test_hamiltonians = (
     qml.dot([1, 1, 1], [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(1)]),
@@ -241,10 +240,10 @@ class TestInitialization:
     )
     def test_error_hermiticity(self, hamiltonian):
         """Test that an error is raised if any terms in
-        the hamiltonian are not hermitian and check_hermitian is True."""
+        the Hamiltonian are not Hermitian and check_hermitian is True."""
 
         with pytest.raises(
-            ValueError, match="One or more of the terms in the Hamiltonian may not be hermitian"
+            ValueError, match="One or more of the terms in the Hamiltonian may not be Hermitian"
         ):
             qml.TrotterProduct(hamiltonian, time=0.5)
 
