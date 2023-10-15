@@ -23,19 +23,23 @@ class QDrift(Operation):
     r"""An operation representing the QDrift approximation for the complex matrix exponential
     of a given Hamiltonian.
 
-    The QDrift subroutine provides a method to approximate the matrix exponential of Hamiltonian
-    expressed as a linear combination of terms which in general do not commute. Consider the
-    Hamiltonian :math:`H = \Sigma_j h_j H_{j}`, the product formula is constructed by random
-    sampling from the terms of the Hamiltonian with probability
-    :math:`p_j = h_j / \left (\sum_{j} hj  \right )`. Then the product
-    :math:`\exp{(\frac{i \lambda H_j}{n})}` is constructed where
-    :math:`\lambda = \sum_j |h_j|` and :math:`n` is the number of terms to be added to the product.
+    The QDrift subroutine provides a method to approximate the matrix exponential of a Hamiltonian
+    expressed as a linear combination of terms which in general do not commute. For the Hamiltonian
+    :math:`H = \Sigma_j h_j H_{j}`, the product formula is constructed by random sampling from the
+    terms of the Hamiltonian with the probability :math:`p_j = h_j / \sum_{j} hj`:
+
+    .. math::
+
+        \coprod_{j}^{n} e^{i \lambda H_j \tau / n},
+
+    where :math:`\tau` is time, :math:`\lambda = \sum_j |h_j|` and :math:`n` is the total number of
+    terms to be added to the product.
 
     Args:
         hamiltonian (Union[~.Hamiltonian, ~.Sum]): The Hamiltonian written in terms of products of
             Pauli gates
         time (int or float): The time of evolution, namely the parameter :math:`t` in :math:`e^{-iHt}`
-        n (int): An integer representing the number of Trotter steps to perform
+        n (int): An integer representing the number of exponentiated terms
         seed (int): The seed for the random number generator
 
     Raises:
