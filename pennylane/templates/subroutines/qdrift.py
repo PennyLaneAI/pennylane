@@ -17,7 +17,6 @@ Contains template for QDrift subroutine.
 import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.ops import Sum
-import numpy as np
 
 
 class QDrift(Operation):
@@ -161,7 +160,7 @@ class QDrift(Operation):
                 for i in range(len(coeffs))
             ]
 
-            choice_rng = np.random.default_rng(seed=seed)
+            choice_rng = qml.math.random.default_rng(seed=seed)
             decomp = choice_rng.choice(exps, p=probs, size=n, replace=True)
 
         if qml.QueuingManager.recording():
