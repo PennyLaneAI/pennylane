@@ -97,7 +97,7 @@ class QDrift(Operation):
         0.27980654844422853
     """
 
-    def __init__(  # pylin: disable=too-many-arguments
+    def __init__(  # pylint: disable=too-many-arguments
         self, hamiltonian, time, n=1, seed=None, id=None
     ):
         r"""Initialize the QDrift class"""
