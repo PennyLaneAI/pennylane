@@ -43,8 +43,8 @@ class QDrift(Operation):
         seed (int): The seed for the random number generator
 
     Raises:
-        TypeError: The ``hamiltonian`` is not of type :class:`~.Hamiltonian`, or :class:`~.Sum`.
-        ValueError: One or more of the terms in 'hamiltonian' are not Hermitian.
+        TypeError: The ``hamiltonian`` is not of type :class:`~.Hamiltonian`, or :class:`~.Sum`
+        ValueError: One or more of the terms in 'hamiltonian' are not Hermitian
 
     **Example**
 
