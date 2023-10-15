@@ -210,6 +210,8 @@ class RootTwo(ABC):
                 self.a * other.a + 2 * self.b * other.b,
                 self.a * other.b + self.b * other.a,
             )
+        if isinstance(other, Omega):
+            return Omega.from_root_two(self) * other
         return root_two(self.a * other, self.b * other)
 
     def __eq__(self, other):
@@ -360,16 +362,31 @@ class Omega(ABC):
     def cast(cls, value):
         """Cast a value to the type for this ring."""
 
-    @classmethod
-    def from_root_two(cls, v: RootTwo):
+    @staticmethod
+    def from_root_two(v: RootTwo):
         """Convert a real RootTwo ring value to a Omega value."""
-        return cls(-v.b, 0, v.b, v.a)
+        return omega(-v.b, 0, v.b, v.a)
 
     def to_root_two(self):
         """Convert a real-valued Omega value to a RootTwo value, or fail."""
         if self.imag != 0:
             raise ValueError("non-real value:", self)
         return self.real
+
+    def abs_squared(self):
+        """Return the absolute value of this instance, squared, as a RootTwo instance."""
+        return (self * self.conjugate()).to_root_two()
+
+    def log(self):
+        """Return the omega-log of this instance."""
+        vals = [self.a, self.b, self.c, self.d]
+        if vals.count(0) != 3:
+            return None
+        if 1 in vals:
+            return 3 - vals.index(1)
+        if -1 in vals:
+            return 7 - vals.index(-1)
+        return None
 
     def __repr__(self):
         vals = [self.a, self.b, self.c, self.d]
@@ -386,7 +403,7 @@ class Omega(ABC):
 
     def __float__(self):
         if self.b == 0 and self.a == -self.c:
-            return self.real
+            return float(self.real)
         raise ValueError("Requested float for complex-valued Omega instance:", self)
 
     @property
@@ -496,6 +513,36 @@ class DOmega(Omega):
         if len(res) == 1:
             return f"{res[0]}/{2**max_k}"
         return f"({' + '.join(res)})/{2**max_k}"
+
+
+class Z2:
+    """Z2[ω]. Like Z[ω], but elements are in {0, 1}"""
+
+    def __init__(self, a, b, c, d):
+        self.a = a % 2
+        self.b = b % 2
+        self.c = c % 2
+        self.d = d % 2
+
+    def reducible(self):
+        """Return whether or not this instance is reducible."""
+        return self.a == self.c and self.b == self.d
+
+    def __hash__(self):
+        return hash((self.a, self.b, self.c, self.d))
+
+    def __eq__(self, other):
+        if not isinstance(other, Z2):
+            return False
+        return self.a == other.a and self.b == other.b and self.c == other.c and self.d == other.d
+
+    def __repr__(self):
+        return f"Z2[{self.a}{self.b}{self.c}{self.d}]"
+
+
+def omega_power(k):
+    """ω ** k. Use k%8 because ω is cyclic."""
+    return ZOmega(0, 0, 1, 0) ** (k % 8)
 
 
 def hibit(n: int) -> int:

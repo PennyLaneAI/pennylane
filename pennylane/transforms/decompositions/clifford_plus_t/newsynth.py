@@ -29,26 +29,23 @@ from .shapes import ConvexSet, Ellipse, Point
 from .rings import Matrix, DOmega, ZOmega
 
 
-def gridsynth(prec, theta, effort):
+def gridsynth(epsilon, theta):
     """
     The gridsynth algorithm. Converts RZ(theta) into a sequence of Clifford+T gates.
 
     Args:
-        g (TensorLike): source of randomness
-        prec (Number): used to define the epsilon (error) value, 2 ** -prec
+        prec (Number): the error bound
         theta (float): the angle we are trying to approximate
-        effort (int): the number of candidates to try before giving up
 
     Returns:
-        (U2 DOmega, Maybe Double, [(DOmega, Integer, DStatus)])
+        Matrix[DOmega], float, List[Tuple[DOmega, int, DOmega]]: The matrix approximating
+            the RZ rotation with elements in the DOmega ring, the negative base-2 logarithm
+            of the error in the approximation, and the list of all candidate ``u`` values tried
+            along with their respective T-counts
     """
-    if effort < 1:
-        raise ValueError("`effort` must be a positive integer.")
-
-    epsilon = 2**-prec
     region = epsilon_region(epsilon, theta)
     candidates = gridpoints2_increasing(region)
-    candidate_info = first_solvable(candidates, effort)
+    candidate_info = first_solvable(candidates)
     u, _, t = candidate_info[-1]
     uU, log_err = with_succesful_candidate(u, t, theta)
     return uU, log_err, candidate_info
@@ -98,7 +95,7 @@ def tcount_for(k):
     return 2 * k - 2 if k > 0 else 0
 
 
-def first_solvable(candidates: Iterator[Tuple[DOmega, int]], effort: int):
+def first_solvable(candidates: Iterator[Tuple[DOmega, int]]):
     """Get the first solvable ``u`` from a list of candidates."""
     # TODO: do we need to track ``infos``?
     infos = []
@@ -106,7 +103,7 @@ def first_solvable(candidates: Iterator[Tuple[DOmega, int]], effort: int):
         u_dagger_u = u.conjugate() * u
         xi = 1 - u_dagger_u.real
         try:
-            t = diophantine_dyadic(xi, effort)
+            t = diophantine_dyadic(xi)
             infos.append((u, tcount, t))
             return infos
         except DiophantineError:

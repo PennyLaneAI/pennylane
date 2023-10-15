@@ -14,7 +14,7 @@
 """Various conversion functions for the gridsynth implementation."""
 # pylint:disable=missing-function-docstring
 
-from .rings import DOmega, DRootTwo, ZRootTwo, RootTwo, Matrix, Omega
+from .rings import Omega, ZOmega, DOmega, DRootTwo, ZRootTwo, RootTwo, Matrix
 
 
 def adj2(x):
@@ -46,7 +46,7 @@ def denomexp(v):
     """Return the smallest denominator exponent of ``x``."""
     if isinstance(v, DRootTwo):
         return max(2 * v.a.k, 2 * v.b.k - 1)
-    if isinstance(v, ZRootTwo):
+    if isinstance(v, (ZRootTwo, ZOmega)):
         return 0
     if isinstance(v, DOmega):
         vals = (v.a, v.b, v.c, v.d)

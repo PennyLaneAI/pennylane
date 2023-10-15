@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Solve the Diophantine equation :math:`t^{\dagger}t = \xi`"""
-# pylint:disable=missing-function-docstring,unused-argument
+# pylint:disable=missing-function-docstring
 
 from typing import Union, List, Tuple
 import numpy as np
@@ -30,7 +30,7 @@ class DiophantineError(Exception):
     """A generic error meaning we failed to solve the Diophantine equation."""
 
 
-def diophantine_dyadic(xi: DRootTwo, effort: int) -> DOmega:
+def diophantine_dyadic(xi: DRootTwo) -> DOmega:
     r"""Given a :math:`\xi` value, solve the Diophantine equation or fail."""
     k = denomexp(xi)
     k_, k__ = divmod(k, 2)
