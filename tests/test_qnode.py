@@ -335,7 +335,7 @@ class TestValidation:
 
         with pytest.raises(
             qml._device.DeviceError,
-            match="Circuits with finite shots must be executed with non-analytic gradient methods; got adjoint",
+            match="Finite shots are not supported with adjoint",
         ):
             circ()
 
@@ -888,13 +888,13 @@ class TestIntegration:
             qml.cond(m_0, qml.RY)(y, wires=1)
             return qml.apply(return_type), mv_return(op=m_0)
 
-        spy = mocker.spy(qml, "defer_measurements")
+        spy = mocker.spy(qml.defer_measurements, "_transform")
         r1 = cry_qnode(first_par, sec_par)
         r2 = conditional_ry_qnode(first_par, sec_par)
 
         assert np.allclose(r1, r2[0])
         assert np.allclose(r2[1], mv_res(first_par))
-        spy.assert_called_once()
+        assert spy.call_count == 3  # once for each preprocessing, once for conditional qnode
 
     def test_drawing_has_deferred_measurements(self):
         """Test that `qml.draw` with qnodes uses defer_measurements
@@ -937,11 +937,11 @@ class TestIntegration:
             qml.cond(m_0, qml.RY)(x, wires=1)
             return qml.sample(qml.PauliZ(1))
 
-        spy = mocker.spy(qml, "defer_measurements")
+        spy = mocker.spy(qml.defer_measurements, "_transform")
         r1 = cry_qnode(first_par)
         r2 = conditional_ry_qnode(first_par)
         assert np.allclose(r1, r2)
-        spy.assert_called_once()
+        assert spy.call_count == 3  # once per device preprocessing, once for conditional qnode
 
     @pytest.mark.tf
     @pytest.mark.parametrize("interface", ["tf", "auto"])
@@ -1604,9 +1604,7 @@ class TestNewDeviceIntegration:
         def circuit():
             return qml.sample(wires=(0, 1))
 
-        with pytest.raises(
-            qml.DeviceError, match="Analytic circuits must only contain StateMeasurements"
-        ):
+        with pytest.raises(qml.DeviceError, match="not accepted for analytic simulation"):
             circuit()
 
         results = circuit(shots=10)  # pylint: disable=unexpected-keyword-arg
