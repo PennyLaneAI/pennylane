@@ -7,7 +7,7 @@
 <h4>Decompose circuits into the Clifford+T gateset 🧩</h4>
 
 * A new transform called `clifford_t_decomposition` is available, which decomposes
-  circuits into the Clifford+T gateset. 
+  circuits into the Clifford+T gate set. 
   [(#ABCD)]()
 
   The Clifford+T universal gate set — `Hadamard`, `S`, `CNOT` and `T` — is paramount
