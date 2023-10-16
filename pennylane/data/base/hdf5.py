@@ -17,8 +17,8 @@ from collections.abc import MutableMapping
 from pathlib import Path
 from typing import Literal, TypeVar, Union
 from uuid import uuid4
+
 from numpy.typing import ArrayLike
-from typing import Any
 
 from ._lazy_modules import fsspec, h5py
 
@@ -102,6 +102,7 @@ def open_hdf5_s3(s3_url: str) -> HDF5Group:
     This requires both ``fsspec`` and ``aiohttp`` to be installed.
     """
 
+    # Tells fsspec to fetch data in 8MB chunks for faster loading
     memory_cache_args = {"cache_type": "mmap", "block_size": 8 * (2**20)}
     fs = fsspec.open(s3_url, **memory_cache_args)
 
