@@ -331,12 +331,11 @@ tensor([0., 1.], requires_grad=True)
 
 Statistics can also be collected on mid-circuit measurements along with terminal measurement statistics.
 Currently, ``qml.probs``, ``qml.sample``, ``qml.expval``, ``qml.var``, and ``qml.counts`` are supported,
-and can be requested along with other measurements. The devices that currently support collecting such
-statistics are ``"default.qubit"``, ``"default.mixed"``, and ``"default.qubit.legacy"``.
+and can be requested along with other measurements.
 
 .. code-block:: python3
 
-    dev = qml.device("default.qubit", wires=2)
+    dev = qml.device("default.qubit")
 
     @qml.qnode(dev)
     def func(x, y):
@@ -350,10 +349,6 @@ Executing this QNode:
 >>> func(np.pi / 2, np.pi / 4)
 (tensor([0.9267767, 0.0732233], requires_grad=True),
  tensor([0.5, 0.5], requires_grad=True))
-
-Currently, statistics can only be collected for single mid-circuit measurement values. Moreover, any
-measurement values manipulated using boolean or arithmetic operators cannot be used. These can lead to
-unexpected/incorrect behaviour.
 
 The deferred measurement principle provides a natural method to simulate the
 application of mid-circuit measurements and conditional operations in a

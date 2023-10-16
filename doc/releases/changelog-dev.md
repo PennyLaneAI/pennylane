@@ -30,7 +30,7 @@
 
   ```pycon
   0: ──RZ(-2.36)──H────╭●──S†─────────H──RZ(0.10)──H─╭●──S──────────H──S──T──GlobalPhase(-2.36)─┤
-1: ──RZ(-0.79)──H──S─╰X──RZ(-0.10)─────────────────╰X──RZ(-1.57)──H──T─────GlobalPhase(-2.36)─┤
+  1: ──RZ(-0.79)──H──S─╰X──RZ(-0.10)─────────────────╰X──RZ(-1.57)──H──T─────GlobalPhase(-2.36)─┤
   ```
 
   `RZ` gates are approximated in the Clifford+T basis using the method 
@@ -40,28 +40,35 @@
 
 <h4>Postselection and statistics in mid-circuit measurements 📌</h4>
 
-* Measurement statistics can now be collected for mid-circuit measurements. Currently,
-  `qml.expval`, `qml.var`, `qml.probs`, `qml.sample`, and `qml.counts` are supported on
-  `default.qubit`, `default.mixed`, and the new `DefaultQubit2` device.
+* TODO postselection
+
+* Measurement statistics can now be collected for mid-circuit measurements.
   [(#4544)](https://github.com/PennyLaneAI/pennylane/pull/4544)
 
   ```python
-  dev = qml.device("default.qubit", wires=2)
+  dev = qml.device("default.qubit")
 
   @qml.qnode(dev)
   def circ(x, y):
       qml.RX(x, wires=0)
       qml.RY(y, wires=1)
       m0 = qml.measure(1)
-      return qml.expval(qml.PauliZ(0)), qml.sample(m0)
+      return qml.expval(qml.PauliZ(0)), qml.expval(m0), qml.sample(m0)
   ```
-
-  QNodes can be executed as usual when collecting mid-circuit measurement statistics:
 
   ```pycon
-  >>> circ(1.0, 2.0, shots=5)
-  (array(0.6), array([1, 1, 1, 0, 1]))
+  >>> circ(1.0, 2.0, shots=10000)
+  (0.5606, 0.7089, array([0, 1, 1, ..., 1, 1, 1]))
   ```
+  
+  Support is provided for both
+  [finite-shot and analytic modes](https://docs.pennylane.ai/en/stable/introduction/circuits.html#shots)
+  and devices default to using the
+  [deferred measurement](https://docs.pennylane.ai/en/stable/code/api/pennylane.defer_measurements.html)
+  principle to enact the mid-circuit measurements.
+
+  In future releases, we will be exploring the ability to combine and manipulate mid-circuit
+  measurements such as `qml.expval(m0 @ m1)` or `qml.expval(m0 @ qml.PauliZ(0))`.
 
 <h4>Exponentiate Hamiltonians with flexible Trotter products 🐖</h4>
 
@@ -149,9 +156,9 @@
     True
     ```
 
-    * TODO
-
-* Support drawing QJIT QNode from Catalyst.
+* Added support for drawing a QNode that has been decorated with `qjit` from PennyLane's
+  [Catalyst](https://docs.pennylane.ai/projects/catalyst) library for just-in-time hybrid
+  compilation.
   [(#4609)](https://github.com/PennyLaneAI/pennylane/pull/4609)
 
   ```python
@@ -179,14 +186,18 @@
   >>>draw
   "0: ──RX──H──┤  <Z>\n1: ──H───RY─┤     \n2: ──RZ─────┤     "
   ```
+  
+  Stay tuned for more integration of Catalyst into PennyLane!
 
-* Extended ``qml.qchem.import_state`` to import wavefunctions from MPS DMRG and SHCI classical
-  calculations performed with the Block2 and Dice libraries, incorporating new tests and wavefunction
-  input selection logic.
+* Extended ``qml.qchem.import_state`` to import more quantum chemistry wavefunctions, from MPS DMRG
+  and SHCI classical calculations performed with the Block2 and Dice libraries.
   [#4523](https://github.com/PennyLaneAI/pennylane/pull/4523)
   [#4524](https://github.com/PennyLaneAI/pennylane/pull/4524)
   [#4626](https://github.com/PennyLaneAI/pennylane/pull/4626)
   [#4634](https://github.com/PennyLaneAI/pennylane/pull/4634)
+
+  Check out our [how-to guide](https://pennylane.ai/qml/demos/tutorial_initial_state_preparation)
+  to learn more about how PennyLane integrates with your favourite quantum chemistry libraries.
 
 <h3>Improvements 🛠</h3>
 
