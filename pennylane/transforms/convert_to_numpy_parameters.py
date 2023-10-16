@@ -86,5 +86,4 @@ def convert_to_numpy_parameters(circuit: QuantumScript) -> QuantumScript:
     new_circuit = circuit.__class__(new_ops, new_measurements, shots=circuit.shots)
     # must preserve trainable params as we lose information about the machine learning interface
     new_circuit.trainable_params = circuit.trainable_params
-    new_circuit._qfunc_output = circuit._qfunc_output
     return new_circuit

@@ -48,6 +48,7 @@ class TransformDispatcher:
         is_informative=False,
         final_transform=False,
     ):  # pylint:disable=redefined-outer-name
+        self.__doc__ = transform.__doc__
         self._transform = transform
         self._expand_transform = expand_transform
         self._classical_cotransform = classical_cotransform
@@ -57,7 +58,7 @@ class TransformDispatcher:
 
         self._qnode_transform = self.default_qnode_transform
 
-    def __call__(self, *targs, **tkwargs):
+    def __call__(self, *targs, **tkwargs):  # pylint: disable=too-many-return-statements
         obj = None
 
         if targs:
@@ -66,7 +67,17 @@ class TransformDispatcher:
             obj, *targs = targs
 
         if isinstance(obj, qml.tape.QuantumScript):
-            transformed_tapes, processing_fn = self._transform(obj, *targs, **tkwargs)
+            if self._expand_transform:
+                transformed_tapes, _ = self._expand_transform(obj, *targs, **tkwargs)
+                transformed_tapes, transform_processing_fn = self._transform(
+                    transformed_tapes[0], *targs, **tkwargs
+                )
+
+                def processing_fn(results):
+                    return transform_processing_fn(results)
+
+            else:
+                transformed_tapes, processing_fn = self._transform(obj, *targs, **tkwargs)
 
             if self.is_informative:
                 return processing_fn(transformed_tapes)
@@ -74,6 +85,11 @@ class TransformDispatcher:
 
         if isinstance(obj, qml.QNode):
             return self._qnode_transform(obj, targs, tkwargs)
+        # TODO: Remove with the previous device generation
+        if isinstance(obj, qml.Device):
+            return self._old_device_transform(obj, targs, tkwargs)
+        if isinstance(obj, qml.devices.Device):
+            return self._device_transform(obj, targs, tkwargs)
         if callable(obj):
             return self._qfunc_transform(obj, targs, tkwargs)
 
@@ -101,6 +117,14 @@ class TransformDispatcher:
         )
 
         return wrapper
+
+    def __repr__(self):
+        return f"<transform: {self.__name__}>"
+
+    @property
+    def __name__(self):
+        """Return the quantum transform name."""
+        return self._transform.__name__
 
     @property
     def transform(self):
@@ -192,7 +216,10 @@ class TransformDispatcher:
         """Apply the transform on a quantum function."""
 
         def qfunc_transformed(*args, **kwargs):
-            tape = qml.tape.make_qscript(qfunc)(*args, **kwargs)
+            with qml.queuing.AnnotatedQueue() as q:
+                qfunc_output = qfunc(*args, **kwargs)
+
+            tape = qml.tape.QuantumScript.from_queue(q)
             transformed_tapes, processing_fn = self._transform(tape, *targs, **tkwargs)
 
             if len(transformed_tapes) != 1:
@@ -209,9 +236,76 @@ class TransformDispatcher:
             for op in transformed_tape.circuit:
                 qml.apply(op)
 
-            return transformed_tape._qfunc_output  # pylint:disable=protected-access
+            mps = transformed_tape.measurements
+
+            if not mps:
+                return qfunc_output
+
+            if isinstance(qfunc_output, qml.measurements.MeasurementProcess):
+                return tuple(mps) if len(mps) > 1 else mps[0]
+
+            if isinstance(qfunc_output, (tuple, list)):
+                return type(qfunc_output)(mps)
+
+            interface = qml.math.get_interface(qfunc_output)
+            return qml.math.asarray(mps, like=interface)
 
         return qfunc_transformed
+
+    def _old_device_transform(self, original_device, targs, tkwargs):
+        """Apply the transform on a device"""
+        if self._expand_transform:
+            raise TransformError("Device transform does not support expand transforms.")
+        if self._is_informative:
+            raise TransformError("Device transform does not support informative transforms.")
+        if self._final_transform:
+            raise TransformError("Device transform does not support final transforms.")
+        new_dev = copy.deepcopy(original_device)
+        transform = self._transform
+
+        @new_dev.custom_expand
+        def new_expand_fn(self, tape, *args, **kwargs):  # pylint: disable=unused-variable
+            tapes, _ = transform(tape, *targs, **tkwargs)
+            tape = tapes[0]
+            return self.default_expand_fn(tape, *args, **kwargs)
+
+        return new_dev
+
+    def _device_transform(self, original_device, targs, tkwargs):
+        """Apply the transform on a device"""
+        if self._expand_transform:
+            raise TransformError("Device transform does not support expand transforms.")
+        if self._is_informative:
+            raise TransformError("Device transform does not support informative transforms.")
+        if self._final_transform:
+            raise TransformError("Device transform does not support final transforms.")
+
+        class TransformedDevice(type(original_device)):
+            """A transformed device with updated preprocess method."""
+
+            def __init__(self, original_device, transform):
+                for key, value in original_device.__dict__.items():
+                    self.__setattr__(key, value)
+                self.transform = transform
+                self._original_device = original_device
+
+            def __repr__(self):
+                return f"Transformed Device({original_device.__repr__()} with additional preprocess transform {self.transform})"
+
+            def preprocess(
+                self, config: qml.devices.ExecutionConfig = qml.devices.DefaultExecutionConfig
+            ):
+                """This function updates the original device transform program to be applied."""
+                program, config = self.original_device.preprocess(config)
+                program.push_back(TransformContainer(self.transform, targs, tkwargs))
+                return program, config
+
+            @property
+            def original_device(self):
+                """Return the original device."""
+                return self._original_device
+
+        return TransformedDevice(original_device, self._transform)
 
 
 class TransformContainer:
