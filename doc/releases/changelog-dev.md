@@ -78,10 +78,9 @@
 
   Trotterization techniques are an affective route towards accurate and efficient
   Hamiltonian simulation. The Suzuki-Trotter product formula allows for the ability
-  to express higher-order approximations to the matrix exponential of a Hamiltonian.
-  The new `TrotterProduct` operation implements the Suzuki-Trotter product formula 
-  at the circuit level, where the `order` keyword argument specifies the order of
-  the approximation.
+  to express higher-order approximations to the matrix exponential of a Hamiltonian, 
+  and it is now available to use in PennyLane via the `TrotterProduct` operation. 
+  Simply specifiy the `order` of the approximation and the evolution `time`.
 
   ```python
   coeffs = [0.25, 0.75]
