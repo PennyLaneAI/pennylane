@@ -1135,13 +1135,13 @@ class TestIntegration:
             qml.cond(m_0, qml.RY)(y, wires=1)
             return qml.apply(return_type), mv_return(op=m_0)
 
-        spy = mocker.spy(qml, "defer_measurements")
+        spy = mocker.spy(qml.defer_measurements, "_transform")
         r1 = cry_qnode(first_par, sec_par)
         r2 = conditional_ry_qnode(first_par, sec_par)
 
         assert np.allclose(r1, r2[0])
         assert np.allclose(r2[1], mv_res(first_par))
-        spy.assert_called_once()
+        assert spy.call_count == 3 if dev.name == "defaut.qubit" else 1
 
     def test_drawing_has_deferred_measurements(self):
         """Test that `qml.draw` with qnodes uses defer_measurements
