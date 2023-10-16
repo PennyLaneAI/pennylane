@@ -8,28 +8,33 @@
 
 <h4>Postselection and statistics in mid-circuit measurements 📌</h4>
 
-* Measurement statistics can now be collected for mid-circuit measurements. Currently,
-  `qml.expval`, `qml.var`, `qml.probs`, `qml.sample`, and `qml.counts` are supported on
-  `default.qubit`, `default.mixed`, and the new `DefaultQubit2` device.
+* Measurement statistics can now be collected for mid-circuit measurements.
   [(#4544)](https://github.com/PennyLaneAI/pennylane/pull/4544)
 
   ```python
-  dev = qml.device("default.qubit", wires=2)
+  dev = qml.device("default.qubit")
 
   @qml.qnode(dev)
   def circ(x, y):
       qml.RX(x, wires=0)
       qml.RY(y, wires=1)
       m0 = qml.measure(1)
-      return qml.expval(qml.PauliZ(0)), qml.sample(m0)
+      return qml.expval(qml.PauliZ(0)), qml.expval(m0), qml.sample(m0)
   ```
-
-  QNodes can be executed as usual when collecting mid-circuit measurement statistics:
 
   ```pycon
-  >>> circ(1.0, 2.0, shots=5)
-  (array(0.6), array([1, 1, 1, 0, 1]))
+  >>> circ(1.0, 2.0, shots=10000)
+  (0.5606, 0.7089, array([0, 1, 1, ..., 1, 1, 1]))
   ```
+  
+  Support is provided for both
+  [finite-shot and analytic modes](https://docs.pennylane.ai/en/stable/introduction/circuits.html#shots)
+  and devices default to using the
+  [deferred measurement](https://docs.pennylane.ai/en/stable/code/api/pennylane.defer_measurements.html)
+  principle to enact the mid-circuit measurements.
+
+  In future releases, we will be exploring the ability to combine and manipulate mid-circuit
+  measurements such as `qml.expval(m0 @ m1)` or `qml.expval(m0 @ qml.PauliZ(0))`.
 
 <h4>Exponentiate Hamiltonians with flexible Trotter products 🤩</h4>
 
