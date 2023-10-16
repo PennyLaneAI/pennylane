@@ -1904,7 +1904,10 @@ class TestOutputShape:
             qml.apply(measurement)
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
-        res = qml.execute([tape], dev, gradient_fn=qml.gradients.param_shift)[0]
+        program, _ = dev.preprocess()
+        res = qml.execute(
+            [tape], dev, gradient_fn=qml.gradients.param_shift, transform_program=program
+        )[0]
 
         if isinstance(res, tuple):
             res_shape = tuple(r.shape for r in res)
@@ -2105,7 +2108,8 @@ class TestOutputShape:
             qml.apply(measurement)
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
-        expected = qml.execute([tape], dev, gradient_fn=None)[0]
+        program, _ = dev.preprocess()
+        expected = qml.execute([tape], dev, gradient_fn=None, transform_program=program)[0]
         assert tape.shape(dev) == expected.shape
 
     @pytest.mark.autograd
@@ -2132,7 +2136,8 @@ class TestOutputShape:
                 qml.apply(measurement)
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
-        expected = qml.execute([tape], dev, gradient_fn=None)[0]
+        program, _ = dev.preprocess()
+        expected = qml.execute([tape], dev, gradient_fn=None, transform_program=program)[0]
         expected = tuple(i.shape for i in expected)
         assert tape.shape(dev) == expected
 
