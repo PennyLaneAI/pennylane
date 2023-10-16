@@ -886,8 +886,6 @@ class TestCreateCustomDecompDeviceExpandFn:
 
         assert decomp_ops[2].name == "CNOT"
 
-    # ToDo: implement decomp_depth
-    @pytest.mark.xfail(reason="decomp_depth not implemented")
     def test_no_decomp_with_depth_zero(self):
         """Test that specifying a single custom decomposition works as expected."""
 
@@ -911,7 +909,7 @@ class TestCreateCustomDecompDeviceExpandFn:
         """Test that the custom_decomps dictionary accepts both strings and operator classes as keys."""
 
         custom_decomps = {"Hadamard": custom_hadamard, qml.CNOT: custom_cnot}
-        decomp_dev = qml.device("default.qubit", custom_decomps=custom_decomps, decomp_depth=0)
+        decomp_dev = qml.device("default.qubit", custom_decomps=custom_decomps)
 
         @qml.qnode(decomp_dev, expansion_strategy="device")
         def circuit():
@@ -1075,8 +1073,6 @@ class TestCreateCustomDecompDeviceExpandFn:
         assert decomp_ops[4].name == "CNOT"
         assert decomp_ops[4].wires == Wires([0, 1])
 
-    # ToDo: implement decomp_depth
-    @pytest.mark.xfail(reason="decomp_depth not implemented")
     def test_custom_decomp_different_depth(self):
         """Test that alternative expansion depths can be specified."""
 

@@ -14,7 +14,7 @@
 
 """This module contains functions for preprocessing `QuantumTape` objects to ensure
 that they are supported for execution by a device."""
-# pylint: disable=protected-access
+# pylint: disable=protected-access, too-many-arguments
 import os
 from typing import Generator, Callable, Union, Sequence, Optional
 from copy import copy
@@ -46,21 +46,34 @@ def _operator_decomposition_gen(
     op: qml.operation.Operator,
     acceptance_function: Callable[[qml.operation.Operator], bool],
     decomposer: Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]],
+    decomp_depth: Union[int, None] = None,
+    current_depth=0,
     name: str = "device",
 ) -> Generator[qml.operation.Operator, None, None]:
     """A generator that yields the next operation that is accepted."""
-    if acceptance_function(op):
+    max_depth_reached = False
+    if decomp_depth is not None and decomp_depth <= current_depth:
+        max_depth_reached = True
+    if acceptance_function(op) or max_depth_reached:
         yield op
     else:
         try:
             decomp = decomposer(op)
+            current_depth += 1
         except qml.operation.DecompositionUndefinedError as e:
             raise DeviceError(
                 f"Operator {op} not supported on {name} and does not provide a decomposition."
             ) from e
 
         for sub_op in decomp:
-            yield from _operator_decomposition_gen(sub_op, acceptance_function, decomposer, name)
+            yield from _operator_decomposition_gen(
+                sub_op,
+                acceptance_function,
+                decomposer,
+                decomp_depth=decomp_depth,
+                current_depth=current_depth,
+                name=name,
+            )
 
 
 #######################
@@ -218,6 +231,7 @@ def decompose(
     decomposer: Optional[
         Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]]
     ] = None,
+    decomp_depth: Union[int, None] = None,
     name: str = "device",
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Decompose operations until the stopping condition is met.
@@ -228,6 +242,9 @@ def decompose(
             should be decomposed. If an operator cannot be decomposed and is not accepted by ``stopping_condition``,
             a ``DecompositionUndefinedError`` will be raised.
         skip_initial_state_prep=True (bool): If ``True``, the first operator will not be decomposed if it inherits from :class:`~.StatePrepBase`.
+        decomposer (Callable): a callable that takes an operator and implements the relevant decomposition. Defaults to
+            a callabe returning ``op.decomposition()`` for any :class:`~.Operator` .
+        decomp_depth:
 
     Returns:
         pennylane.QNode or qfunc or Tuple[List[.QuantumTape], Callable]: If a QNode is passed,
@@ -295,7 +312,7 @@ def decompose(
                 final_op
                 for op in tape.operations[bool(prep_op) :]
                 for final_op in _operator_decomposition_gen(
-                    op, stopping_condition, decomposer, name
+                    op, stopping_condition, decomposer, decomp_depth=decomp_depth, name=name
                 )
             ]
         except RecursionError as e:

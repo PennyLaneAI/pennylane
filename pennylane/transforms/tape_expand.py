@@ -407,6 +407,7 @@ def create_decomp_preprocessing(custom_decomps, dev, decomp_depth=10):
         for container in program:
             if container.transform == qml.devices.preprocess.decompose.transform:
                 container.kwargs["decomposer"] = decomposer
+                container.kwargs["decomp_depth"] = decomp_depth
 
                 original_stopping_condition = container.kwargs["stopping_condition"]
 
