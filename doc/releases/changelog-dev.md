@@ -6,6 +6,38 @@
 
 <h4>Decompose circuits into the Clifford+T gateset 🧩</h4>
 
+* A new transform called `clifford_t_decomposition` is available, which decomposes
+  circuits into the Clifford+T gate set. 
+  [(#ABCD)]()
+
+  The Clifford+T universal gate set — `Hadamard`, `S`, `CNOT` and `T` — is paramount
+  to the implementation of many fault-tolerant protocols on quantum computers. With 
+  the new `clifford_t_decomposition` transform, circuits can be decomposed into 
+  a basis consisting of Clifford, `RZ` and `GlobalPhase` operations. Here, Clifford 
+  gates include `Identity`, `PauliX`, `PauliY`, `PauliZ`, `SX`, `S`, `Hadamard`, 
+  `CNOT`, `CY`, `CZ`, `SWAP` and `ISWAP`. 
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  def circuit():
+      qml.SingleExcitation(0.2, [1, 0])
+      return qml.state()
+
+  clifford_circuit = qml.QNode(qml.transforms.clifford_t_decomposition(circuit), dev)
+  print(qml.draw(clifford_circuit)())
+  ```
+
+  ```pycon
+  0: ──RZ(-2.36)──H────╭●──S†─────────H──RZ(0.10)──H─╭●──S──────────H──S──T──GlobalPhase(-2.36)─┤
+1: ──RZ(-0.79)──H──S─╰X──RZ(-0.10)─────────────────╰X──RZ(-1.57)──H──T─────GlobalPhase(-2.36)─┤
+  ```
+
+  `RZ` gates are approximated in the Clifford+T basis using the method 
+  described in [Ross and Selinger (2016)](https://arxiv.org/abs/1403.2975). The 
+  `epsilon` argument in `clifford_t_decomposition` allows for the error in approximating
+  `RZ` gates to be adjusted.
+
 <h4>Postselection and statistics in mid-circuit measurements 📌</h4>
 
 * TODO postselection
