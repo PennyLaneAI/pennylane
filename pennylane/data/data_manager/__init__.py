@@ -113,10 +113,10 @@ def _download_dataset(
     url_safe_datapath = urllib.parse.quote(str(data_path))
     s3_url = f"{S3_URL}/{url_safe_datapath}"
 
-    if (not attributes) and (force or not dest.exists()):
-        _download_full(s3_url, dest=dest)
-    else:
+    if attributes is not None or dest.exists():
         _download_partial(s3_url, dest=dest, attributes=attributes, overwrite=force)
+    else:
+        _download_full(s3_url, dest=dest)
 
 
 def _validate_attributes(data_struct: dict, data_name: str, attributes: typing.Iterable[str]):

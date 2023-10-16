@@ -284,49 +284,17 @@ def test_load_except(monkeypatch, tmp_path):
 
 @patch("pennylane.data.data_manager._download_partial")
 @patch("pennylane.data.data_manager._download_full")
+@pytest.mark.parametrize("force", (True, False))
 @pytest.mark.parametrize(
-    "dest_exists, force",
-    [
-        (True, True),
-        (False, True),
-        (False, False),
-    ],
+    "attributes, dest_exists, called_partial",
+    [(["x"], True, True), (["x"], False, True), (None, True, True), (None, False, False)],
 )
-def test_download_dataset_full_cases(download_full, download_partial, dest_exists, force):
-    """Test that _download_dataset calls _download_full when ``attributes`` is empty
-    and:
-        - ``dest`` does not exist
-        - ``dest`` exists but ``force`` is True
-    """
-
-    dest = MagicMock()
-    dest.exists.return_value = dest_exists
-
-    pennylane.data.data_manager._download_dataset(
-        "dataset/path", attributes=None, dest=dest, force=force
-    )
-
-    download_full.assert_called_once_with(f"{S3_URL}/dataset/path", dest=dest)
-    download_partial.assert_not_called()
-
-
-@patch("pennylane.data.data_manager._download_partial")
-@patch("pennylane.data.data_manager._download_full")
-@pytest.mark.parametrize(
-    "attributes, dest_exists, force",
-    [
-        (["x"], True, True),
-        (["x"], True, False),
-        (["x"], False, False),
-        (["x"], False, True),
-        (None, True, False),
-    ],
-)
-def test_download_dataset_partial_cases(
-    download_full, download_partial, attributes, dest_exists, force
+def test_download_dataset_full_or_partial(
+    download_full, download_partial, attributes, dest_exists, force, called_partial
 ):
-    """Test that _download_dataset calls _download_partial when ``attributes`` is not empty,
-    or when the dataset already exists locally and ``force`` is true.``
+    """Test that _download_dataset calls ``_download_partial()`` if ``attributes`` is not None,
+    or the dataset already exists at ``dest``, and that it only calls ``_download_full()`` if
+    the dataset does not exist at ``dest`` and ``attributes`` is None.
     """
 
     dest = MagicMock()
@@ -336,10 +304,43 @@ def test_download_dataset_partial_cases(
         "dataset/path", attributes=attributes, dest=dest, force=force
     )
 
+    assert download_partial.called is called_partial
+    assert download_full.called is not called_partial
+
+
+@pytest.mark.parametrize("force", (True, False))
+@patch("pennylane.data.data_manager._download_full")
+def test_download_dataset_full_call(download_full, force):
+    """Test that ``_download_dataset()`` passes the correct parameters
+    to ``_download_full()``
+    """
+    dest = MagicMock()
+    dest.exists.return_value = False
+
+    pennylane.data.data_manager._download_dataset(
+        "dataset/path", attributes=None, dest=dest, force=force
+    )
+
+    download_full.assert_called_once_with(f"{S3_URL}/dataset/path", dest=dest)
+
+
+@pytest.mark.parametrize("attributes", [None, ["x"]])
+@pytest.mark.parametrize("force", (True, False))
+@patch("pennylane.data.data_manager._download_partial")
+def test_download_dataset_partial_call(download_partial, attributes, force):
+    """Test that ``_download_dataset()`` passes the correct parameters
+    to ``_download_partial()``
+    """
+    dest = MagicMock()
+    dest.exists.return_value = True
+
+    pennylane.data.data_manager._download_dataset(
+        "dataset/path", attributes=attributes, dest=dest, force=force
+    )
+
     download_partial.assert_called_once_with(
         f"{S3_URL}/dataset/path", dest=dest, attributes=attributes, overwrite=force
     )
-    download_full.assert_not_called()
 
 
 @pytest.mark.usefixtures("mock_requests_get")
@@ -348,29 +349,13 @@ def test_download_full(tmp_path):
     """Tests that _download_dataset will fetch the dataset file
     at ``s3_url`` into ``dest``."""
 
-    pennylane.data.data_manager._download_dataset(
+    pennylane.data.data_manager._download_full(
         "dataset/path",
         tmp_path / "dataset",
-        attributes=None,
     )
 
     with open(tmp_path / "dataset", "rb") as f:
         assert f.read() == b"This is binary data"
-
-
-@pytest.mark.usefixtures("mock_requests_get")
-@pytest.mark.parametrize("mock_requests_get", [b"This is downloaded data"], indirect=True)
-def test_download_full_already_exists(tmp_path):
-    """Tests that _download_full will always overwrite an existing dataset
-    at ``dest``."""
-
-    with open(tmp_path / "dataset", "wb") as f:
-        f.write(b"This is local data")
-
-    pennylane.data.data_manager._download_full("dataset/path", tmp_path / "dataset")
-
-    with open(tmp_path / "dataset", "rb") as f:
-        assert f.read() == b"This is downloaded data"
 
 
 @pytest.mark.parametrize("overwrite", [True, False])
