@@ -14,7 +14,7 @@
 """Functions to apply an operation to a state vector."""
 # pylint: disable=unused-argument
 
-from functools import singledispatch
+from functools import singledispatch, partial
 from string import ascii_letters as alphabet
 import numpy as np
 
@@ -261,6 +261,14 @@ def apply_cnot(op: qml.CNOT, state, is_state_batched: bool = False, debugger=Non
 
     state_x = math.roll(state[sl_1], 1, target_axes)
     return math.stack([state[sl_0], state_x], axis=control_axes)
+
+@apply_operation.register
+def apply_swap(op: qml.SWAP, state, is_state_batched: bool = False, debugger=None):
+    """Apply a SWAP gate without multiplication, just by moving axes."""
+    wires = [w + is_state_batched for w in sorted(op.wires)]
+    first_move = [wires[0], wires[1]]
+    second_move = [wires[1]-1, wires[0]]
+    return math.moveaxis(math.moveaxis(state, *first_move), *second_move)
 
 
 @apply_operation.register

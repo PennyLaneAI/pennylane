@@ -79,14 +79,8 @@ class QFT(Operation):
     @functools.lru_cache()
     def compute_matrix(n_wires):  # pylint: disable=arguments-differ
         dimension = 2**n_wires
-
-        mat = np.zeros((dimension, dimension), dtype=np.complex128)
-        omega = np.exp(2 * np.pi * 1j / dimension)
-
-        for m in range(dimension):
-            for n in range(dimension):
-                mat[m, n] = omega ** (m * n)
-
+        counter = np.arange(dimension)
+        mat = np.exp(2j * np.pi / dimension * np.tensordot(counter, counter, axes=0))
         return mat / np.sqrt(dimension)
 
     @staticmethod
