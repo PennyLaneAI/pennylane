@@ -46,8 +46,10 @@ def null_postprocessing(results):
 def _operator_decomposition_gen(
     op: qml.operation.Operator,
     acceptance_function: Callable[[qml.operation.Operator], bool],
-    decomposer: Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]],
-    max_expansion: Union[int, None] = None,
+    decomposer: Optional[
+        Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]]
+    ] = None,
+    max_expansion: Optional[int] = None,
     current_depth=0,
     name: str = "device",
 ) -> Generator[qml.operation.Operator, None, None]:
@@ -59,7 +61,7 @@ def _operator_decomposition_gen(
         yield op
     else:
         try:
-            decomp = decomposer(op)
+            decomp = decomposer(op) if decomposer else op.decomposition()
             current_depth += 1
         except qml.operation.DecompositionUndefinedError as e:
             raise DeviceError(
@@ -70,7 +72,7 @@ def _operator_decomposition_gen(
             yield from _operator_decomposition_gen(
                 sub_op,
                 acceptance_function,
-                decomposer,
+                decomposer=decomposer,
                 max_expansion=max_expansion,
                 current_depth=current_depth,
                 name=name,
@@ -243,8 +245,8 @@ def decompose(
             should be decomposed. If an operator cannot be decomposed and is not accepted by ``stopping_condition``,
             a ``DecompositionUndefinedError`` will be raised.
         skip_initial_state_prep=True (bool): If ``True``, the first operator will not be decomposed if it inherits from :class:`~.StatePrepBase`.
-        decomposer (Callable): a callable that takes an operator and implements the relevant decomposition. Defaults to
-            a callabe returning ``op.decomposition()`` for any :class:`~.Operator` .
+        decomposer (Callable): an optional callable that takes an operator and implements the relevant decomposition.
+            If None, defaults to using a callable returning ``op.decomposition()`` for any :class:`~.Operator` .
         max_expansion: The maximum depth of the expansion.
 
 
@@ -313,7 +315,11 @@ def decompose(
                 final_op
                 for op in tape.operations[bool(prep_op) :]
                 for final_op in _operator_decomposition_gen(
-                    op, stopping_condition, decomposer, max_expansion=max_expansion, name=name
+                    op,
+                    stopping_condition,
+                    decomposer=decomposer,
+                    max_expansion=max_expansion,
+                    name=name,
                 )
             ]
         except RecursionError as e:
