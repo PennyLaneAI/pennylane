@@ -1139,8 +1139,6 @@ class TestCreateCustomDecompDeviceExpandFn:
         assert decomp_ops[1].name == "Hadamard"
         assert decomp_ops[1].wires == Wires("a")
 
-    # ToDo: figure out what is going on here
-    @pytest.mark.xfail(reason="control is not working yet with custom decomps on the new API")
     def test_custom_decomp_with_control(self):
         """Test that decomposing a controlled version of a gate uses the custom decomposition
         for the base gate."""
@@ -1151,6 +1149,8 @@ class TestCreateCustomDecompDeviceExpandFn:
             @staticmethod
             def compute_decomposition(wires):
                 return [qml.S(wires)]
+
+        original_decomp = CustomOp(0).decomposition()
 
         custom_decomps = {CustomOp: lambda wires: [qml.T(wires), qml.T(wires)]}
         decomp_dev = qml.device("default.qubit", wires=2, custom_decomps=custom_decomps)
@@ -1168,6 +1168,9 @@ class TestCreateCustomDecompDeviceExpandFn:
         for op in decomp_ops:
             assert isinstance(op, qml.ops.op_math.Controlled)
             assert qml.equal(op.base, qml.T(0))
+
+        # check that new instances of the operator are not affected by the modifications made to get the decomposition
+        assert [op1 == op2 for op1, op2 in zip(CustomOp(0).decomposition(), original_decomp)]
 
     def test_custom_decomp_in_separate_context(self, mocker):
         """Test that the set_decomposition context manager works for the new device API."""

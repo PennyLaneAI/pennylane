@@ -13,7 +13,7 @@
 # limitations under the License.
 """This module contains tape expansion functions and stopping criteria to
 generate such functions from."""
-# pylint: disable=unused-argument,invalid-unary-operand-type, unsupported-binary-operation
+# pylint: disable=unused-argument,invalid-unary-operand-type, unsupported-binary-operation, no-member
 import contextlib
 from typing import Sequence, Callable
 import numpy as np
@@ -392,6 +392,9 @@ def create_decomp_preprocessing(custom_decomps, dev, decomp_depth=10):
     """
 
     def decomposer(op):
+        if isinstance(op, qml.ops.Controlled) and type(op.base) in custom_decomps:
+            op.base.compute_decomposition = custom_decomps[type(op.base)]
+            return op.decomposition()
         if op.name in custom_decomps:
             return custom_decomps[op.name](*op.data, wires=op.wires, **op.hyperparameters)
         if type(op) in custom_decomps:
