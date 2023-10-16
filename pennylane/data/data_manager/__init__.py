@@ -56,17 +56,43 @@ def _get_data_struct():
 
 
 def _download_partial(
-    s3_url: str, dest: Path, attributes: typing.Iterable[str], overwrite: bool
+    s3_url: str, dest: Path, attributes: Optional[typing.Iterable[str]], overwrite: bool
 ) -> None:
-    """Download only the requested attributes of the Dataset at ``s3_path`` into ``dest``.
-    If a dataset already exists at ``dest``, the attributes will be loaded into
-    the existing dataset.
+    """Download the requested attributes of the Dataset at ``s3_path`` into ``dest``.
+
+    Args:
+        s3_url: URL of the remote dataset
+        dest: Destination dataset path
+        attributes: Requested attributes to download. Passing ``None`` is equivalent
+            to requesting all attributes of the remote dataset.
+        overwrite: If True, overwrite attributes that already exist at ``dest``. Otherwise,
+            only download attributes that do not exist at ``dest``.
     """
 
+    dest_dataset = Dataset.open(dest, mode="a")
     remote_dataset = Dataset(open_hdf5_s3(s3_url))
-    remote_dataset.write(dest, "a", attributes, overwrite=overwrite)
 
+    attributes = set(attributes) if attributes is not None else set(remote_dataset.attrs.keys())
+    if not overwrite:
+        attributes.difference_update(dest_dataset.attrs.keys())
+
+    if attributes:
+        remote_dataset.write(dest_dataset, "a", attributes, overwrite=overwrite)
+
+    remote_dataset.close()
+    dest_dataset.close()
     del remote_dataset
+    del dest_dataset
+
+
+def _download_full(s3_url: str, dest: Path):
+    """Download the full dataset file at ``s3_url`` to ``path``."""
+
+    with open(dest, "wb") as f:
+        resp = get(s3_url, timeout=5.0)
+        resp.raise_for_status()
+
+        f.write(resp.content)
 
 
 def _download_dataset(
@@ -76,25 +102,21 @@ def _download_dataset(
     force: bool = False,
 ) -> None:
     """Downloads the dataset at ``data_path`` to ``dest``, optionally downloading
-    only requested attributes."""
+    only requested attributes. If ``attributes`` is not provided, every attribute
+    will be requested.
+
+    If any of the attributes of the remote dataset are already downloaded locally,
+    they will not be overwritten unless ``force`` is True.
+    """
 
     # URL-escape special characters like '+', '$', and '%' in the data path
     url_safe_datapath = urllib.parse.quote(str(data_path))
+    s3_url = f"{S3_URL}/{url_safe_datapath}"
 
-    s3_path = f"{S3_URL}/{url_safe_datapath}"
-
-    if attributes is not None:
-        _download_partial(s3_path, dest, attributes, overwrite=force)
-        return
-
-    if dest.exists() and not force:
-        return
-
-    with open(dest, "wb") as f:
-        resp = get(s3_path, timeout=5.0)
-        resp.raise_for_status()
-
-        f.write(resp.content)
+    if (not attributes) and (force or not dest.exists()):
+        _download_full(s3_url, dest=dest)
+    else:
+        _download_partial(s3_url, dest=dest, attributes=attributes, overwrite=force)
 
 
 def _validate_attributes(data_struct: dict, data_name: str, attributes: typing.Iterable[str]):
