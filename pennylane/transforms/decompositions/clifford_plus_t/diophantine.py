@@ -17,7 +17,6 @@ r"""Solve the Diophantine equation :math:`t^{\dagger}t = \xi`"""
 from typing import Union, List, Tuple
 import numpy as np
 
-from .conversion import denomexp
 from .rings import ZRootTwo, DRootTwo, ZOmega, DOmega, Dyadic
 
 ZRing = Union[ZRootTwo, ZOmega]
@@ -32,7 +31,7 @@ class DiophantineError(Exception):
 
 def diophantine_dyadic(xi: DRootTwo) -> DOmega:
     r"""Given a :math:`\xi` value, solve the Diophantine equation or fail."""
-    k = denomexp(xi)
+    k = xi.denomexp()
     k_, k__ = divmod(k, 2)
     xi_ = ZRootTwo(2, 1) ** k__ * 2**k_ * xi
     if not isinstance(xi_, ZRootTwo):
@@ -73,7 +72,6 @@ def diophantine_associate(xi: ZRootTwo) -> ZOmega:
 
 
 def dioph_zroottwo_selfassociate(xi: ZRootTwo) -> ZOmega:
-    """Diophantine."""
     if xi == zero:
         return ZOmega(0, 0, 0, 0)
 
@@ -86,7 +84,6 @@ def dioph_zroottwo_selfassociate(xi: ZRootTwo) -> ZOmega:
 
 
 def dioph_zroottwo_assoc(xi: ZRootTwo) -> ZOmega:
-    """Diophantine."""
     if xi == zero:
         return ZOmega(0, 0, 0, 0)
     res = dioph_zroottwo_assoc_prime(xi)
@@ -102,7 +99,6 @@ def dioph_zroottwo_assoc(xi: ZRootTwo) -> ZOmega:
 
 
 def dioph_zroottwo_assoc_prime(xi: ZRootTwo) -> ZOmega:
-    """Diophantine."""
     if xi == zero:
         return ZOmega(0, 0, 0, 0)
     n = abs(xi.norm())
@@ -120,7 +116,6 @@ def dioph_zroottwo_assoc_prime(xi: ZRootTwo) -> ZOmega:
 
 
 def dioph_zroottwo_assoc_powers(facs: List[Tuple[ZRootTwo, int]]) -> ZOmega:
-    """Diophantine."""
     vals = []
     for xi, k in facs:
         if k % 2 == 0:
@@ -134,7 +129,6 @@ def dioph_zroottwo_assoc_powers(facs: List[Tuple[ZRootTwo, int]]) -> ZOmega:
 
 
 def dioph_int_assoc(n: int) -> ZOmega:
-    """Diophantine."""
     if n < 0:
         return dioph_int_assoc(-n)
     if n in {0, 1}:
@@ -151,7 +145,6 @@ def dioph_int_assoc(n: int) -> ZOmega:
 
 
 def dioph_int_assoc_prime(n: int) -> ZOmega:
-    """recursive prime factorization solver."""
     # pylint:disable=too-many-return-statements
     if n < 0:
         return dioph_int_assoc_prime(-n)
@@ -238,7 +231,6 @@ def relatively_prime_factors(
 
 
 def dioph_int_assoc_powers(facs: List[Tuple[int, int]]) -> ZOmega:
-    """Diophantine."""
     vals = []
     for n, k in facs:
         if k % 2 == 0:

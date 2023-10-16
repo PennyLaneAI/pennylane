@@ -21,8 +21,8 @@ from typing import List, Tuple
 import numpy as np
 
 from .newsynth import gridsynth
-from .conversion import denomexp
-from .rings import DOmega, Matrix, ZRootTwo, ZOmega, Z2, omega_power
+from .rings import DOmega, ZRootTwo, ZOmega, Z2, omega_power
+from .shapes import Matrix
 
 
 ZERO = ZOmega(0, 0, 0, 0)
@@ -106,7 +106,7 @@ def reduce_column(vectors, i):
 
 
 def denomexp_decompose(omegas: List[DOmega]):
-    k = max(denomexp(d) for d in omegas)
+    k = max(d.denomexp() for d in omegas)
     root_two_k = ZOmega.from_root_two(ZRootTwo(0, 1) ** k)
     b = [a * root_two_k for a in omegas]
     if not all(isinstance(a, ZOmega) for a in b):

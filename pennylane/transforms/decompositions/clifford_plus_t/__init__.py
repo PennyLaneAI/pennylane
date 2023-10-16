@@ -15,4 +15,4 @@ r"""This module contains the Clifford+T decomposition transform as well as
 the helper functions needed to compute it.
 """
 
-from .newsynth import gridsynth
+from .synthesis import theta_to_gates

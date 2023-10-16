@@ -16,15 +16,8 @@
 from typing import Tuple, Iterator
 import numpy as np
 
-from .conversion import (
-    action,
-    adj2,
-    denomexp,
-    fatten_interval,
-    operator_to_bl2z,
-)
-from .rings import Matrix, DRootTwo, ZRootTwo, DOmega, SQRT2
-from .shapes import ConvexSet, Ellipse, Point
+from .rings import DRootTwo, ZRootTwo, DOmega, SQRT2
+from .shapes import Matrix, ConvexSet, Ellipse, Point
 
 LAMBDA = ZRootTwo(1, 1)
 LAMBDA_INV = ZRootTwo(-1, 1)
@@ -40,7 +33,7 @@ def gridpoints2_increasing(region: ConvexSet) -> Iterator[Tuple[DOmega, int]]:
     opG = reduction(matA, unitdisk.ellipse.operator)
     opG_inv = opG.inverse()
     setA = region.transform(opG_inv)
-    setB = unitdisk.transform(adj2(opG_inv))
+    setB = unitdisk.transform(opG_inv.adj2())
     (x0A, x1A), (y0A, y1A) = setA.ellipse.bounding_box()
     (x0B, x1B), (y0B, y1B) = setB.ellipse.bounding_box()
 
@@ -81,7 +74,7 @@ def gridpoints2_increasing(region: ConvexSet) -> Iterator[Tuple[DOmega, int]]:
     k = 1
     while True:
         for u in solutions_fn(k):
-            if denomexp(u) == k:
+            if u.denomexp() == k:
                 yield (u, k)
         k += 1
 
@@ -120,9 +113,9 @@ def gridpoints_scaled(x, y, k) -> Iterator[DRootTwo]:
     return (scale * b for b in beta if test(b))
 
 
-def gridpoints_scaled_parity(beta, x, y, k):
+def gridpoints_scaled_parity(beta: DRootTwo, x, y, k):
     """Like gridpoints_scaled, but with k >= 1"""
-    if denomexp(beta) <= k - 1:
+    if beta.denomexp() <= k - 1:
         return gridpoints_scaled(x, y, k - 1)
     offs = 1 / ZRootTwo(0, 1) ** k
     offs_bul = offs.adj2()
@@ -221,7 +214,8 @@ def step_lemma(matA: np.ndarray, matB: np.ndarray) -> Matrix:
         if l2z <= 1.6969:
             return Matrix.array([[-LAMBDA_INV, -1], [LAMBDA, 1]]) / ZRootTwo(0, 1)
         if l2zeta <= 1.6969:
-            return adj2(Matrix.array([[-LAMBDA_INV, -1], [LAMBDA, 1]]) / ZRootTwo(0, 1))
+            m = Matrix.array([[-LAMBDA_INV, -1], [LAMBDA, 1]]) / ZRootTwo(0, 1)
+            return m.adj2()  # pylint:disable=no-member
         l2c = min(l2z, l2zeta)
         power = max(1, int(np.sqrt(l2c // 4)))
         return Matrix.array([[1, -2 * power], [0, 1]])
@@ -231,9 +225,9 @@ def step_lemma(matA: np.ndarray, matB: np.ndarray) -> Matrix:
     return Matrix.array([[1, ZRootTwo(0, power)], [0, 1]])
 
 
-def wlog_using(matA, matB, op):
+def wlog_using(matA, matB, op: Matrix):
     """Helper function for Step Lemma."""
-    matA, matB = action(matA, matB, op)
+    matA, matB = op.action(matA, matB)
     op2 = step_lemma(matA, matB)
     return op if op2 is None else op @ op2
 
@@ -263,8 +257,19 @@ def shift_tau(k, op):
     return Matrix.array([[a / lambda_k, b], [c, d * lambda_k]])
 
 
+def operator_to_bl2z(m):
+    """Get the b and z parameters from a matrix."""
+    return m[0][1], m[1][1] / m[0][0]
+
+
 def reduction(matA, matB) -> Matrix:
     """Applies the Step Lemma until the skew is 15 or less"""
     if (opG := step_lemma(matA, matB)) is None:
         return Matrix.array([[1, 0], [0, 1]])
-    return opG @ reduction(*action(matA, matB, opG))
+    return opG @ reduction(*opG.action(matA, matB))  # pylint:disable=no-member
+
+
+def fatten_interval(x, y):
+    """Used when defining a region."""
+    epsilon = 0.0001 * (y - x)
+    return x - epsilon, y + epsilon

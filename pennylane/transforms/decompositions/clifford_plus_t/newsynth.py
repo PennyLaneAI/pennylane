@@ -13,20 +13,15 @@
 # limitations under the License.
 """The gridsynth method, adapted from the ``newsynth`` Haskell package."""
 
-from typing import Tuple, Iterator
+from typing import Tuple, Iterator, List
 import numpy as np
 
 import pennylane as qml
 
-from .conversion import (
-    denomexp,
-    from_d_root_two,
-    point_from_d_root_two,
-)
 from .diophantine import diophantine_dyadic, DiophantineError
 from .gridpoints import gridpoints2_increasing
-from .shapes import ConvexSet, Ellipse, Point
-from .rings import Matrix, DOmega, ZOmega
+from .shapes import Matrix, ConvexSet, Ellipse, Point
+from .rings import DOmega, ZOmega
 
 
 def gridsynth(epsilon, theta):
@@ -67,7 +62,7 @@ def epsilon_region(epsilon, theta):
     ell = Ellipse(mat, ctr)
 
     def characteristic_fn(x, y):
-        return x**2 + y**2 <= 1 and from_d_root_two(x) + zy * from_d_root_two(y) >= d
+        return x**2 + y**2 <= 1 and x + zy * y >= d
 
     def intersector(p, v):
         p, v = (list(p), list(v))
@@ -78,8 +73,8 @@ def epsilon_region(epsilon, theta):
         if len(q) != 2:
             return None
         t0, t1 = sorted(q)
-        vz = np.inner(point_from_d_root_two(v), z)
-        rhs = d - np.inner(point_from_d_root_two(p), z)
+        vz = np.inner(v, z)
+        rhs = d - np.inner(p, z)
         t2 = rhs / vz
         if vz > 0:
             return max(t0, t2), t1
@@ -90,32 +85,31 @@ def epsilon_region(epsilon, theta):
     return ConvexSet(ell, characteristic_fn, intersector)
 
 
-def tcount_for(k):
+def tcount_for(k: int) -> int:
     """Returns the T-count for a given k-value"""
     return 2 * k - 2 if k > 0 else 0
 
 
-def first_solvable(candidates: Iterator[Tuple[DOmega, int]]):
+def first_solvable(candidates: Iterator[Tuple[DOmega, int]]) -> List[Tuple[DOmega, int, DOmega]]:
     """Get the first solvable ``u`` from a list of candidates."""
-    # TODO: do we need to track ``infos``?
     infos = []
-    for u, tcount in candidates:
+    for u, k in candidates:
         u_dagger_u = u.conjugate() * u
         xi = 1 - u_dagger_u.real
         try:
             t = diophantine_dyadic(xi)
-            infos.append((u, tcount, t))
+            infos.append((u, tcount_for(k), t))
             return infos
         except DiophantineError:
-            infos.append((u, tcount, None))
+            infos.append((u, tcount_for(k), None))
 
     raise ValueError("no valid candidates")
 
 
-def with_succesful_candidate(u, t, theta):
+def with_succesful_candidate(u: DOmega, t: DOmega, theta: float):
     """Validate a successful candidate and return the matrix."""
     t_omega = ZOmega(0, 0, 1, 0) * t
-    if denomexp(u + t) < denomexp(u + t_omega):
+    if (u + t).denomexp() < (u + t_omega).denomexp():
         t = t_omega
     uU = Matrix.array([[u, -np.conj(t)], [t, np.conj(u)]])
     uU_fixed = uU.astype(complex)

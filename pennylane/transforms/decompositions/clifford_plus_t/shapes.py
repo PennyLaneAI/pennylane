@@ -15,7 +15,48 @@
 
 import numpy as np
 
-from .rings import Matrix
+
+class Matrix(np.ndarray):
+    """Custom numpy array. Assumes input is a 2x2 matrix, for the most part."""
+
+    @classmethod
+    def array(cls, value) -> "Matrix":
+        """
+        Constructor to build a 2x2 matrix.
+
+        The ndarray constructor is messy, it's easier to provide this (like np.array). Also, we
+        set the type to "object" explicitly to ensure numpy does not convert ints to np.int64,
+        as that would break the type-checking in the ``root_two`` function.
+        """
+        return np.array(value).astype("object").view(cls)
+
+    def inverse(self):
+        """Return the inverse of the matrix, assuming |det M| = 1."""
+        (a, b), (c, d) = self
+        det = a * d - b * c
+        if det == 1:
+            return self.array([[d, -b], [-c, a]])
+        if det == -1:
+            return self.array([[-d, b], [c, -a]])
+        raise ValueError("can only get special inverse.")
+
+    def adjoint(self):
+        """Returns the adjoint of the matrix."""
+        return np.conj(self).T
+
+    def adj2(self) -> "Matrix":
+        """Returns the root-two adjoint of the matrix."""
+        (a, b), (c, d) = self
+        a_, b_, c_, d_ = [v if isinstance(v, int) else v.adj2() for v in (a, b, c, d)]
+        return self.array([[a_, b_], [c_, d_]])
+
+    def action(self, a, b):
+        """Perform the action of this matrix to matrices ``a`` and ``b``."""
+        g4 = self.adj2()
+        g3 = g4.adjoint()  # pylint:disable=no-member
+        g2 = self
+        g1 = g2.adjoint()
+        return g1 @ a @ g2, g3 @ b @ g4
 
 
 class Point:

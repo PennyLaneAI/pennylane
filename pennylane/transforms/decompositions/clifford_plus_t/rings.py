@@ -41,8 +41,6 @@ class Dyadic:
             return Fraction(self.x * other.x, 2 ** (self.k + other.k))
         if isinstance(other, int):
             return Fraction(self.x * other, 2**self.k)
-        if isinstance(other, RootTwo):
-            return other * self
         return float(self) * other
 
     def __add__(self, other):
@@ -54,8 +52,6 @@ class Dyadic:
             return Fraction(a.x * int(2**k_delta) + b.x, 2**b.k)
         if isinstance(other, int):
             return Fraction(self.x + other * 2**self.k, 2**self.k)
-        if isinstance(other, RootTwo):
-            return other + self
         return float(self) + other
 
     def __sub__(self, other):
@@ -63,17 +59,10 @@ class Dyadic:
             return self + (-other)
         if isinstance(other, int):
             return Fraction(self.x - other * 2**self.k, 2**self.k)
-        if isinstance(other, RootTwo):
-            return -other + self
-        return float(self) - other
+        raise TypeError(f"cannot subtract {other} of type {type(other).__name__} from Dyadic")
 
     def __rsub__(self, other):
         return -self + other
-
-    def __truediv__(self, other):
-        if isinstance(other, int):
-            return Fraction(self.x, other * 2**self.k)
-        return float(self) / other
 
     def __eq__(self, other):
         if isinstance(other, Dyadic):
@@ -108,49 +97,17 @@ class Fraction(_Fraction):
             return self.numerator
         if (log_d := np.log2(self.denominator)).is_integer():
             return Dyadic(self.numerator, int(log_d))
-        return self
-
-
-class Matrix(np.ndarray):
-    """Assumes input is a 2x2 matrix."""
-
-    @classmethod
-    def array(cls, value) -> "Matrix":
-        """
-        Constructor to build a 2x2 matrix.
-
-        The ndarray constructor is messy, it's easier to provide this (like np.array). Also, we
-        set the type to "object" explicitly to ensure numpy does not convert ints to np.int64,
-        as that would break the type-checking in the ``root_two`` function.
-        """
-        return np.array(value).astype("object").view(cls)
-
-    def inverse(self):
-        """Return the inverse of the matrix, assuming |det M| = 1."""
-        (a, b), (c, d) = self
-        det = a * d - b * c
-        if det == 1:
-            return self.array([[d, -b], [-c, a]])
-        if det == -1:
-            return self.array([[-d, b], [c, -a]])
-        raise ValueError("can only get special inverse.")
-
-    def adjoint(self):
-        """Returns the adjoint of the matrix."""
-        return np.conj(self).T
+        raise TypeError(f"only Dyadic fractions are expected, got {self}")
 
 
 def root_two(a, b):
     """Determine the RootTwo ring (if any) that should be used, and return that type."""
     types = {type(a), type(b)} - {int}
 
-    if not types.issubset({Fraction, Dyadic}):
-        return a + b * SQRT2
     if types == {Dyadic}:
         return DRootTwo(a, b)
-    if types:  # at least one is a Fraction
-        # return QRootTwo(a, b)
-        raise ValueError("No code should produce non-Dyadic fraction")
+    if types:
+        return a + b * SQRT2
     return ZRootTwo(a, b)
 
 
@@ -210,8 +167,6 @@ class RootTwo(ABC):
                 self.a * other.a + 2 * self.b * other.b,
                 self.a * other.b + self.b * other.a,
             )
-        if isinstance(other, Omega):
-            return Omega.from_root_two(self) * other
         return root_two(self.a * other, self.b * other)
 
     def __eq__(self, other):
@@ -251,11 +206,9 @@ class RootTwo(ABC):
     def __truediv__(self, other):
         if isinstance(other, RootTwo):
             return self * (1 / other)
-        return float(self) / other
+        raise TypeError(f"cannot divide RootTwo ring by {other} of type {type(other).__name__}")
 
     def __rtruediv__(self, other):
-        if isinstance(other, RootTwo):
-            return other * (1 / self)
         return other / float(self)
 
     __radd__ = __add__
@@ -288,10 +241,9 @@ class ZRootTwo(RootTwo):
                 return o
         return None
 
-    def __truediv__(self, other):
-        if isinstance(other, int):
-            return root_two(Fraction(self.a, other), Fraction(self.b, other))
-        return super().__truediv__(other)
+    def denomexp(self):  # pylint:disable=no-self-use
+        """Return the smallest denominator exponent."""
+        return 0
 
     def __rtruediv__(self, other):
         if isinstance(other, int):
@@ -314,27 +266,9 @@ class DRootTwo(RootTwo):
             return Dyadic(int(value))
         raise TypeError(f"Cannot cast {value} of unknown type {type(value)} to Dyadic")
 
-    def __truediv__(self, other):
-        if isinstance(other, int):
-            a = Fraction(self.a.x, other * 2**self.a.k)
-            b = Fraction(self.b.x, other * 2**self.b.k)
-            return root_two(a, b)
-        return super().__truediv__(other)
-
-
-class QRootTwo(RootTwo):
-    """Q[√2]"""
-
-    @classmethod
-    def cast(cls, value):
-        t = type(value)
-        if t in {Dyadic, Fraction}:
-            return value
-        if t is int:
-            return Dyadic(value)
-        if t is float and value.is_integer():
-            return Dyadic(int(value))
-        raise TypeError(f"Cannot cast {value} of unknown type {type(value)} to Fraction")
+    def denomexp(self):
+        """Return the smallest denominator exponent."""
+        return max(2 * self.a.k, 2 * self.b.k - 1)
 
 
 def omega(a, b, c, d):
@@ -344,7 +278,7 @@ def omega(a, b, c, d):
         return ZOmega(a, b, c, d)
     if types == {Dyadic}:
         return DOmega(a, b, c, d)
-    raise ValueError(
+    raise TypeError(
         f"Unknown types {types - {Dyadic}} found. Cannot make Omega-ring instance from values {(a, b, c, d)}"
     )
 
@@ -373,10 +307,6 @@ class Omega(ABC):
             raise ValueError("non-real value:", self)
         return self.real
 
-    def abs_squared(self):
-        """Return the absolute value of this instance, squared, as a RootTwo instance."""
-        return (self * self.conjugate()).to_root_two()
-
     def log(self):
         """Return the omega-log of this instance."""
         vals = [self.a, self.b, self.c, self.d]
@@ -400,11 +330,6 @@ class Omega(ABC):
 
     def __complex__(self):
         return self.a * OMEGA**3 + self.b * 1j + self.c * OMEGA + self.d
-
-    def __float__(self):
-        if self.b == 0 and self.a == -self.c:
-            return float(self.real)
-        raise ValueError("Requested float for complex-valued Omega instance:", self)
 
     @property
     def real(self):
@@ -466,8 +391,6 @@ class Omega(ABC):
             return (
                 self.a == other.a and self.b == other.b and self.c == other.c and self.d == other.d
             )
-        if isinstance(other, RootTwo):
-            return self.imag == 0 and self.real == other
         if isinstance(other, (int, Dyadic)):
             return self.a == 0 and self.b == 0 and self.c == 0 and self.d == other
         raise TypeError(f"cannot compare Omega ring with {other} of type {type(other).__name__}")
@@ -494,6 +417,10 @@ class ZOmega(Omega):
     def cast(cls, value):
         return ZRootTwo.cast(value)
 
+    def denomexp(self):  # pylint:disable=no-self-use
+        """Return the smallest denominator exponent."""
+        return 0
+
 
 class DOmega(Omega):
     """D[ω]"""
@@ -513,6 +440,15 @@ class DOmega(Omega):
         if len(res) == 1:
             return f"{res[0]}/{2**max_k}"
         return f"({' + '.join(res)})/{2**max_k}"
+
+    def denomexp(self):
+        """Return the smallest denominator exponent."""
+        vals = [self.a, self.b, self.c, self.d]
+        k = max(val.k for val in vals)
+        a, b, c, d = [(val.x if val.k == k else 0) for val in vals]
+        if k > 0 and (a - c) % 2 == 0 and (b - d) % 2 == 0:
+            return 2 * k - 1
+        return 2 * k
 
 
 class Z2:
