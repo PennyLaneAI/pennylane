@@ -44,7 +44,14 @@ class TestSingleReturnExecute:
 
         if dev.shots:
             pytest.skip("cannot return analytic measurements with finite shots.")
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None, interface=interface)
+        program, _ = dev.preprocess()
+        res = qml.execute(
+            tapes=[qnode.tape],
+            device=dev,
+            gradient_fn=None,
+            interface=interface,
+            transform_program=program,
+        )
 
         assert res[0].shape == (2**wires,)
         assert isinstance(res[0], (np.ndarray, np.float64))
@@ -1219,7 +1226,8 @@ class TestDeviceNewUnits:
         tape = qml.tape.QuantumScript.from_queue(q)
         dev = qml.device("default.qubit", wires=3)
         with pytest.raises(qml.DeviceError, match="Analytic circuits must only contain"):
-            qml.execute(tapes=[tape], device=dev, gradient_fn=None)
+            program, _ = dev.preprocess()
+            qml.execute(tapes=[tape], device=dev, gradient_fn=None, transform_program=program)
 
     def test_state_return_with_other_types(self):
         """Test that an exception is raised when a state is returned along with another return
@@ -1248,7 +1256,8 @@ class TestDeviceNewUnits:
             qml.vn_entropy(wires=["a"])
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        res = qml.execute(tapes=[tape], device=dev, gradient_fn=None)
+        program, _ = dev.preprocess()
+        res = qml.execute(tapes=[tape], device=dev, gradient_fn=None, transform_program=program)
         assert res == (0,)
 
     def test_custom_wire_labels_error(self):
@@ -1261,5 +1270,6 @@ class TestDeviceNewUnits:
             qml.mutual_info(wires0=["a"], wires1=["b"])
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        res = qml.execute(tapes=[tape], device=dev, gradient_fn=None)
+        program, _ = dev.preprocess()
+        res = qml.execute(tapes=[tape], device=dev, gradient_fn=None, transform_program=program)
         assert res == (0,)

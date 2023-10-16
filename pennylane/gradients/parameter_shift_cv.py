@@ -15,22 +15,25 @@
 This module contains functions for computing the parameter-shift gradient
 of a CV-based quantum tape.
 """
-# pylint: disable=protected-access,too-many-arguments,too-many-statements,too-many-branches
+# pylint: disable=protected-access,too-many-arguments,too-many-statements,too-many-branches,unused-argument
+from typing import Sequence, Callable
 import itertools
+from functools import partial
 import warnings
-from collections.abc import Sequence
 
 import numpy as np
 
 import pennylane as qml
 from pennylane.measurements import ExpectationMP, ProbabilityMP, StateMP, VarianceMP
+from pennylane.transforms.core import transform
+from pennylane.transforms.tape_expand import expand_invalid_trainable
+from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 
 from .finite_difference import finite_diff
 from .general_shift_rules import generate_shifted_tapes, process_shifts
 from .gradient_transform import (
     choose_grad_methods,
     _grad_method_validation,
-    gradient_transform,
     _no_trainable_grad,
 )
 from .parameter_shift import _get_operation_recipe, expval_param_shift
@@ -263,11 +266,6 @@ def var_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient_recipes=
     gradient_tapes.extend(pdA2_tapes)
 
     def processing_fn(results):
-        # HOTFIX: Apply the same squeezing as in qml.QNode to make the transform output consistent.
-        # pylint: disable=protected-access
-        if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
-            results = [qml.math.squeeze(res) for res in results]
-
         mask = qml.math.convert_like(qml.math.reshape(var_mask, [-1, 1]), results[0])
         f0 = qml.math.expand_dims(results[0], -1)
 
@@ -435,11 +433,6 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
         gradient_values.append(None)
 
     def processing_fn(results):
-        # HOTFIX: Apply the same squeezing as in qml.QNode to make the transform output consistent.
-        # pylint: disable=protected-access
-        if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
-            results = [qml.math.squeeze(res) for res in results]
-
         grads = []
         start = 0
 
@@ -489,11 +482,8 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
     return gradient_tapes, processing_fn
 
 
-# TODO: integration of CV devices with new return types
-# pylint: disable=unused-argument
-@gradient_transform
-def param_shift_cv(
-    tape,
+def _expand_transform_param_shift_cv(
+    tape: qml.tape.QuantumTape,
     dev,
     argnum=None,
     shifts=None,
@@ -501,7 +491,35 @@ def param_shift_cv(
     fallback_fn=finite_diff,
     f0=None,
     force_order2=False,
-):
+) -> (Sequence[qml.tape.QuantumTape], Callable):
+    """Expand function to be applied before parameter shift CV."""
+    expanded_tape = expand_invalid_trainable(tape)
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [expanded_tape], null_postprocessing
+
+
+@partial(
+    transform,
+    expand_transform=_expand_transform_param_shift_cv,
+    classical_cotransform=_contract_qjac_with_cjac,
+    final_transform=True,
+)
+def param_shift_cv(
+    tape: qml.tape.QuantumTape,
+    dev,
+    argnum=None,
+    shifts=None,
+    gradient_recipes=None,
+    fallback_fn=finite_diff,
+    f0=None,
+    force_order2=False,
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Transform a continuous-variable QNode to compute the parameter-shift gradient of all gate
     parameters with respect to its inputs.
 
