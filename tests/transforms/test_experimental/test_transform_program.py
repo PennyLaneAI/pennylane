@@ -465,7 +465,7 @@ class TestTransformProgram:
         assert transform_program[1].transform is first_valid_transform
 
     def test_valid_transforms(self):
-        """Test that that it is only possible to create valid transforms."""
+        """Test that it is only possible to create valid transforms."""
         transform_program = TransformProgram()
         transform1 = TransformContainer(transform=first_valid_transform, is_informative=True)
         transform_program.push_back(transform1)
@@ -499,21 +499,6 @@ class TestTransformProgramCall:
 
         obj = [1, 2, 3, "b"]
         assert null_postprocessing(obj) is obj
-
-    def test_cotransform_support_notimplemented(self):
-        """Test that a transform with a cotransform raises a not implemented error."""
-
-        my_transform = TransformContainer(
-            first_valid_transform, classical_cotransform=lambda res: res
-        )
-
-        prog = TransformProgram((my_transform,))
-
-        batch = (qml.tape.QuantumScript([], [qml.state()]),)
-        with pytest.raises(
-            NotImplementedError, match="cotransforms are not yet integrated with TransformProgram"
-        ):
-            prog(batch)
 
     def test_single_transform_program(self):
         """Basic test with a single transform that only modifies the tape but not the results."""
