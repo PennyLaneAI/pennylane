@@ -33,6 +33,7 @@ jobs:
       matrix:
         python-version:
           - '3.9'
+          - '3.11'
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: torch-tests (${{ matrix.python-version }})
@@ -53,6 +54,8 @@ jobs:
       matrix:
         python-version:
           - '3.9'
+          - '3.10'
+          - '3.11'
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: autograd-tests (${{ matrix.python-version }})
@@ -75,6 +78,8 @@ jobs:
           - '2'
         python-version:
           - '3.9'
+          - '3.10'
+    uses: ./.github/workflows/unit-test.yml
     with:
       job_name: tf-tests (${{ matrix.group }}, ${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
@@ -100,6 +105,7 @@ jobs:
           - '2'
         python-version:
           - '3.9'
+          - '3.11'
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: jax-tests (${{ matrix.group }}, ${{ matrix.python-version }})
@@ -125,6 +131,8 @@ jobs:
           - '2'
         python-version:
           - '3.9'
+          - '3.10'
+          - '3.11'
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: core-tests (${{ matrix.group }}, ${{ matrix.python-version }})
