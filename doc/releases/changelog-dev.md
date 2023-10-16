@@ -84,9 +84,9 @@
     True
     ```
 
-    * TODO
-
-* Support drawing QJIT QNode from Catalyst.
+* Added support for drawing a QNode that has been decorated with `qjit` from PennyLane's
+  [Catalyst](https://docs.pennylane.ai/projects/catalyst) library for just-in-time hybrid
+  compilation.
   [(#4609)](https://github.com/PennyLaneAI/pennylane/pull/4609)
 
   ```python
@@ -114,14 +114,18 @@
   >>>draw
   "0: ──RX──H──┤  <Z>\n1: ──H───RY─┤     \n2: ──RZ─────┤     "
   ```
+  
+  Stay tuned for more integration of Catalyst into PennyLane!
 
-* Extended ``qml.qchem.import_state`` to import wavefunctions from MPS DMRG and SHCI classical
-  calculations performed with the Block2 and Dice libraries, incorporating new tests and wavefunction
-  input selection logic.
+* Extended ``qml.qchem.import_state`` to import more quantum chemistry wavefunctions, from MPS DMRG
+  and SHCI classical calculations performed with the Block2 and Dice libraries.
   [#4523](https://github.com/PennyLaneAI/pennylane/pull/4523)
   [#4524](https://github.com/PennyLaneAI/pennylane/pull/4524)
   [#4626](https://github.com/PennyLaneAI/pennylane/pull/4626)
   [#4634](https://github.com/PennyLaneAI/pennylane/pull/4634)
+
+  Check out our [how-to guide](https://pennylane.ai/qml/demos/tutorial_initial_state_preparation)
+  to learn more about how PennyLane integrates with your favourite quantum chemistry libraries.
 
 <h3>Improvements 🛠</h3>
 
