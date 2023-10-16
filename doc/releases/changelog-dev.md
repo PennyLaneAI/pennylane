@@ -8,6 +8,8 @@
 
 <h4>Postselection and statistics in mid-circuit measurements 📌</h4>
 
+* TODO postselection
+
 * Measurement statistics can now be collected for mid-circuit measurements.
   [(#4544)](https://github.com/PennyLaneAI/pennylane/pull/4544)
 
