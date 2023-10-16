@@ -91,11 +91,8 @@
 
   @qml.qnode(dev)
   def circuit():
-      # Prepare some state
       qml.Hadamard(0)
-      # Evolve according to H
       qml.TrotterProduct(H, time=2.4, order=2)
-      # Measure some quantity
       return qml.state()
   ```
 
