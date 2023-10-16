@@ -68,7 +68,7 @@ class TrotterProduct(Operation):
     Hamiltonian expressed as a linear combination of terms which in general do not commute. Consider
     the Hamiltonian :math:`H = \Sigma^{N}_{j=0} O_{j}`, the product formula is constructed using
     symmetrized products of the terms in the Hamiltonian. The symmetrized products of order
-    :math:`m \in [1, 2, 4, ..., 2k] | k \in \mathbb{N}` are given by:
+    :math:`m \in [1, 2, 4, ..., 2k]` with :math:`k \in \mathbb{N}` are given by:
 
     .. math::
 
@@ -79,11 +79,12 @@ class TrotterProduct(Operation):
             S_{2k}(t) &= S_{2k-2}(p_{2k}t)^{2} \cdot S_{2k-2}((1-4p_{2k})t) \cdot S_{2k-2}(p_{2k}t)^{2},
         \end{align}
 
-    where the coefficient is :math:`p_{2k} = 1 / (4 - \sqrt[2k - 1]{4})`. The :math:`2k`th order, :math:`n`-step Suzuki-Trotter approximation is then defined as:
+    where the coefficient is :math:`p_{2k} = 1 / (4 - \sqrt[2k - 1]{4})`. The :math:`2k`th order,
+    :math:`n`-step Suzuki-Trotter approximation is then defined as:
 
     .. math:: e^{iHt} \approx \left [S_{2k}(t / n)  \right ]^{n}.
 
-    For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_).
+    For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
         hamiltonian (Union[~.Hamiltonian, ~.Sum]): The Hamiltonian written in terms of products of
