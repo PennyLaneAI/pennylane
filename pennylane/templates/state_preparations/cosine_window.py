@@ -27,9 +27,14 @@ class CosineWindow(StatePrepBase):
 
     .. math::
 
-        |\psi\rangle = \sqrt{2^{1-m}}\frac{\sqrt{2}}{\sqrt{2^m}} \sum_{k=0}^{2^m-1} \cos(\frac{\pi k}{2^m} - \frac{\pi}{2}) |k\rangle,
+        |\psi\rangle = \sqrt{2^{1-m}} \sum_{k=0}^{2^m-1} \cos(\frac{\pi k}{2^m} - \frac{\pi}{2}) |k\rangle,
 
     where :math:`m` is the number of wires.
+
+    .. figure:: ../../_static/templates/state_preparations/cosine_window.png
+        :align: center
+        :width: 65%
+        :target: javascript:void(0);
 
     .. note::
 
