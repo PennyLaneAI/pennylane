@@ -70,7 +70,6 @@ class CosineWindow(StatePrepBase):
     def __init__(self, wires, id=None):
         super().__init__(wires=wires, id=id)
 
-
     @staticmethod
     def compute_decomposition(state, wires):
         r"""Representation of the operator as a product of other operators (static method).
@@ -90,15 +89,21 @@ class CosineWindow(StatePrepBase):
         decomp_ops.append(qml.adjoint(qml.QFT)(wires=wires))
 
         for ind, wire in enumerate(wires):
-            decomp_ops.append(qml.PhaseShift(np.pi * 2 ** (- ind - 1), wires=wire))
+            decomp_ops.append(qml.PhaseShift(np.pi * 2 ** (-ind - 1), wires=wire))
 
         return decomp_ops
-
 
     def state_vector(self, wire_order=None):
         num_op_wires = len(self.wires)
         op_vector_shape = (-1,) + (2,) * num_op_wires if self.batch_size else (2,) * num_op_wires
-        vector = np.array([np.sqrt(2) * np.cos(-np.pi/2 + np.pi *x/2**(num_op_wires))/np.sqrt(2 ** num_op_wires) for x in range(2**num_op_wires)])
+        vector = np.array(
+            [
+                np.sqrt(2)
+                * np.cos(-np.pi / 2 + np.pi * x / 2 ** (num_op_wires))
+                / np.sqrt(2**num_op_wires)
+                for x in range(2**num_op_wires)
+            ]
+        )
         op_vector = math.reshape(vector, op_vector_shape)
 
         if wire_order is None or Wires(wire_order) == self.wires:
