@@ -460,7 +460,7 @@ def test_download_dataset_escapes_url(_, mock_get_args, datapath, escaped):
     "datapath, escaped",
     [("data/NH3+/data.h5", "data/NH3%2B/data.h5"), ("data/CA$H/money.h5", "data/CA%24H/money.h5")],
 )
-def test_download_dataset_escapes_url_partial(mock_download_partial, datapath, escaped):
+def test_download_dataset_escapes_url_partial(download_partial, datapath, escaped):
     """Tests that _download_dataset escapes special characters in a URL when doing a partial
     download."""
     dest = Path("dest")
@@ -471,8 +471,8 @@ def test_download_dataset_escapes_url_partial(mock_download_partial, datapath, e
         DataPath(datapath), dest=dest, attributes=attributes, force=force
     )
 
-    mock_download_partial.assert_called_once_with(
-        f"{S3_URL}/{escaped}", dest, attributes, overwrite=force
+    download_partial.assert_called_once_with(
+        f"{S3_URL}/{escaped}", dest=dest, attributes=attributes, overwrite=force
     )
 
 
