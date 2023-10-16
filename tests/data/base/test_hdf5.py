@@ -50,15 +50,15 @@ def patch_h5py(monkeypatch):
     monkeypatch.setattr(hdf5, "h5py", MagicMock())
 
 
-def test_open_hdf5_s3(
-    mock_fsspec
-):  # pylint: disable=redefined-outer-name
+def test_open_hdf5_s3(mock_fsspec):  # pylint: disable=redefined-outer-name
     """Test that open_hdf5_s3 calls fsspec.open() with the expected arguments."""
 
     ret = hdf5.open_hdf5_s3("/bucket")
 
     assert isinstance(ret, h5py.File)
-    mock_fsspec.open.assert_called_once_with("/bucket", **{"cache_type": "mmap", "block_size": 8 * (2**20)})
+    mock_fsspec.open.assert_called_once_with(
+        "/bucket", **{"cache_type": "mmap", "block_size": 8 * (2**20)}
+    )
 
 
 def test_copy_all_conflict_overwrite(tmp_path):
