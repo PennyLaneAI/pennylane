@@ -119,34 +119,52 @@ def get_final_state(c, debugger=None):
 
 
 def _stabilizer_vn_entropy(stabilizer, wires, log_base=None):
-    r"""Computing entanglement entropy for a subsytem described by wires A -
-    :math:`S_A = \text{rank}(\text{projection}_A {G}) - N_{A}`, where G is the set
-    of stabilizers
-    """
+    r"""Computes the entanglement entropy using stabilizer information.
 
+    Computes the entanglement entropy :math:`S_A` for a subsytem described by :math:`A`, 
+    :math:`S_A = \text{rank}(\text{projection}_A {\mathcal{S}}) - |\mathcal{S}|`, where
+    :math:`\mathcal{S}` is the stabilizer group for the system using the theory described
+    in `arXiv:1901.08092 <https://arxiv.org/abs/1901.08092>`_.
+    
+    Args:
+        stabilizer (TensorLike): stabilizer set for the system
+        wires (Iterable): wires describing the subsystem
+        log_base (int): base for the logarithm.
+
+    Returns:
+        (float): entanglement entropy of the subsystem
+
+    """
+    # Get the number of qubits for the system
     num_qubits = qml.math.shape(stabilizer)[0]
 
-    if num_qubits == len(wires):
+    # Von Neumann entropy of a stabilizer state is zero
+    if len(wires) == num_qubits:
         return 0.0
 
+    # Build a binary matrix desribing the stabilizers using the Pauli words
     pauli_dict = {0: "I", 1: "X", 2: "Y", 3: "Z"}
     terms = [
         qml.pauli.PauliWord({idx: pauli_dict[ele] for idx, ele in enumerate(row)})
         for row in stabilizer
     ]
+    binary_mat = qml.pauli.utils._binary_matrix_from_pws(terms, num_qubits)
 
-    mat = qml.pauli.utils._binary_matrix_from_pws(terms, num_qubits)
-
-    cut_mat = qml.math.hstack(
+    # Partition the binary matrix to represent the subsystem
+    partition_mat = qml.math.hstack(
         (
-            mat[:, num_qubits:][:, wires],
-            mat[:, :num_qubits][:, wires],
+            binary_mat[:, num_qubits:][:, wires],
+            binary_mat[:, :num_qubits][:, wires],
         )
     )
-    rank = qml.math.sum(qml.math.any(qml.qchem.tapering._reduced_row_echelon(cut_mat), axis=1))
 
+    # Use the reduced row echelon form for finding rank efficiently
+    rank = qml.math.sum(qml.math.any(qml.qchem.tapering._reduced_row_echelon(partition_mat), axis=1))
+
+    # Use the Eq. A17 in arXiv:1901.08092 for entropy calculation
     entropy = qml.math.log(2) * (rank - len(wires))
 
+    # Determine wether to use any log base
     if log_base is None:
         return entropy
 
@@ -189,10 +207,10 @@ def simulate(
 
     circuit = circuit.map_to_standard_wires()
 
-    if circuit.shots:
-        raise NotImplementedError(
-            "default.clifford currently doesn't support computation with shots."
-        )
+    #if circuit.shots:
+    #    raise NotImplementedError(
+    #        "default.clifford currently doesn't support computation with shots."
+    #    )
 
     prep = None
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
@@ -235,68 +253,82 @@ def simulate(
 
     res = []
     for meas in circuit.measurements:
-        # Computing statevector via tableaus
-        if type(meas) is qml.measurements.StateMP:
-            state_vector = qml.math.array(
-                tableau_simulator.state_vector(endian="big"), like=INTERFACE_TO_LIKE[interface]
-            )
-            res.append(state_vector)
 
-        # Computing density matrix via tableaus
-        elif type(meas) is qml.measurements.DensityMatrixMP:
-            state_vector = qml.math.array(
-                tableau_simulator.state_vector(endian="big"), like=INTERFACE_TO_LIKE[interface]
-            )
-            density_matrix = qml.math.einsum("i, j->ij", state_vector, state_vector)
-            res.append(density_matrix)
+        # Analytic case
+        if not circuit.shots:
+            # Computing statevector via tableaus
+            if type(meas) is qml.measurements.StateMP:
+                state_vector = qml.math.array(
+                    tableau_simulator.state_vector(endian="big"), like=INTERFACE_TO_LIKE[interface]
+                )
+                res.append(state_vector)
 
-        # Computing purity via tableaus
-        elif type(meas) is qml.measurements.PurityMP:
-            res.append(1.0)
+            # Computing density matrix via tableaus
+            elif type(meas) is qml.measurements.DensityMatrixMP:
+                state_vector = qml.math.array(
+                    tableau_simulator.state_vector(endian="big"), like=INTERFACE_TO_LIKE[interface]
+                )
+                density_matrix = qml.math.einsum("i, j->ij", state_vector, state_vector)
+                res.append(density_matrix)
 
-        # Computing entropy via tableaus
-        elif type(meas) is qml.measurements.VnEntropyMP:
-            tableau = tableau_simulator.current_inverse_tableau() ** -1
-            zs = qml.math.array([tableau.z_output(k) for k in range(len(circuit.wires))])
-            res.append(_stabilizer_vn_entropy(zs, list(meas.wires)))
+            # Computing purity via tableaus
+            elif type(meas) is qml.measurements.PurityMP:
+                res.append(1.0)
 
-        # Computing entropy via tableaus
-        elif type(meas) is qml.measurements.MutualInfoMP:
-            tableau = tableau_simulator.current_inverse_tableau() ** -1
-            zs = qml.math.array([tableau.z_output(k) for k in range(len(circuit.wires))])
-            indices0, indices1 = list(meas._wires[0]), list(meas._wires[1])
-            res.append(_stabilizer_vn_entropy(zs, indices0) + _stabilizer_vn_entropy(zs, indices1))
+            # Computing entropy via tableaus
+            elif type(meas) is qml.measurements.VnEntropyMP:
+                tableau = tableau_simulator.current_inverse_tableau() ** -1
+                zs = qml.math.array([tableau.z_output(k) for k in range(len(circuit.wires))])
+                res.append(_stabilizer_vn_entropy(zs, list(meas.wires)))
 
-        # Computing expectation values via measurement
-        elif isinstance(meas, ExpectationMP):
-            # Case for simple Pauli terms
-            if (
-                isinstance(meas.obs, qml.PauliZ)
-                or isinstance(meas.obs, qml.PauliX)
-                or isinstance(meas.obs, qml.PauliY)
-            ):
-                pauli = stim._stim_polyfill.PauliString(_GATE_OPERATIONS[meas.obs.name])
-                res.append(tableau_simulator.peek_observable_expectation(pauli))
+            # Computing entropy via tableaus
+            elif type(meas) is qml.measurements.MutualInfoMP:
+                tableau = tableau_simulator.current_inverse_tableau() ** -1
+                zs = qml.math.array([tableau.z_output(k) for k in range(len(circuit.wires))])
+                indices0, indices1 = list(meas._wires[0]), list(meas._wires[1])
+                res.append(_stabilizer_vn_entropy(zs, indices0) + _stabilizer_vn_entropy(zs, indices1))
 
-            # Case for simple Pauli tensor
-            elif isinstance(meas.obs, qml.operation.Tensor):
-                expec = "".join([_GATE_OPERATIONS[name] for name in meas.obs.name])
-                pauli = stim._stim_polyfill.PauliString(expec)
-                res.append(tableau_simulator.peek_observable_expectation(pauli))
+            # Computing expectation values via measurement
+            elif isinstance(meas, ExpectationMP):
+                # Case for simple Pauli terms
+                if (
+                    isinstance(meas.obs, qml.PauliZ)
+                    or isinstance(meas.obs, qml.PauliX)
+                    or isinstance(meas.obs, qml.PauliY)
+                ):
+                    pauli = stim.PauliString(_GATE_OPERATIONS[meas.obs.name])
+                    res.append(tableau_simulator.peek_observable_expectation(pauli))
 
-            # Case for a Hamiltonian
-            elif isinstance(meas.obs, qml.Hamiltonian):
-                coeffs, obs = meas.obs.terms()
-                expecs = qml.math.zeros_like(coeffs)
-                for idx, ob in enumerate(obs):
-                    expec = "".join([_GATE_OPERATIONS[name] for name in ob.name])
-                    pauli = stim._stim_polyfill.PauliString(expec)
-                    expecs[idx] = tableau_simulator.peek_observable_expectation(pauli)
-                res.append(qml.math.sum(coeffs * expecs))
+                # Case for simple Pauli tensor
+                elif isinstance(meas.obs, qml.operation.Tensor):
+                    expec = "".join([_GATE_OPERATIONS[name] for name in meas.obs.name])
+                    pauli = stim.PauliString(expec)
+                    res.append(tableau_simulator.peek_observable_expectation(pauli))
 
-            # Add support for more case when the time is right
-            else:
-                raise NotImplementedError(f"default.clifford doesn't support {meas} at the moment.")
+                # Case for a Hamiltonian
+                elif isinstance(meas.obs, qml.Hamiltonian):
+                    coeffs, obs = meas.obs.terms()
+                    expecs = qml.math.zeros_like(coeffs)
+                    for idx, ob in enumerate(obs):
+                        expec = "".join([_GATE_OPERATIONS[name] for name in ob.name])
+                        pauli = stim.PauliString(expec)
+                        expecs[idx] = tableau_simulator.peek_observable_expectation(pauli)
+                    res.append(qml.math.sum(coeffs * expecs))
+
+                # Add support for more case when the time is right
+                else:
+                    raise NotImplementedError(f"default.clifford doesn't support {meas} at the moment.")
+
+        # finite-shot case
+        else:
+
+            rng = default_rng(rng)
+
+            sample_circuit = initial_tableau.to_circuit() + stim_ct
+            sample_circuit.append("M", circuit.wires)
+            sampler = sample_circuit.compile_sampler()
+            samples = qml.math.array(sampler.sample(shots=circuit.shots.total_shots), dtype=int)
+            res.append(meas.process_samples(samples=samples, wire_order=circuit.wires))
 
     # state, is_state_batched = get_final_state(circuit, debugger=debugger, interface=interface)
     return tuple(res)
