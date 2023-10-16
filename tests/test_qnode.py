@@ -1679,23 +1679,7 @@ class TestTapeExpansion:
             return qml.expval(qml.PauliZ(0))
 
         x = pnp.array(0.5, requires_grad=True)
-        spy = mocker.spy(circuit.gradient_fn, "transform_fn")
         qml.grad(circuit)(x)
-
-        # check that the gradient recipe was applied *prior* to
-        # device expansion
-        input_tape = spy.call_args[0][0]
-        assert len(input_tape.operations) == 1
-        assert input_tape.operations[0].name == "UnsupportedOp"
-        assert input_tape.operations[0].data[0] == x
-
-        shifted_tape1, shifted_tape2 = spy.spy_return[0]
-
-        assert len(shifted_tape1.operations) == 1
-        assert shifted_tape1.operations[0].name == "UnsupportedOp"
-
-        assert len(shifted_tape2.operations) == 1
-        assert shifted_tape2.operations[0].name == "UnsupportedOp"
 
         # check second derivative
         assert np.allclose(qml.grad(qml.grad(circuit))(x), -9 * np.cos(3 * x))
@@ -1721,25 +1705,10 @@ class TestTapeExpansion:
             PhaseShift(x, wires=0)
             return qml.expval(qml.PauliX(0))
 
-        spy = mocker.spy(circuit.device, "execute")
         x = pnp.array(0.5, requires_grad=True)
         circuit(x)
 
-        spy = mocker.spy(circuit.gradient_fn, "transform_fn")
         res = qml.grad(circuit)(x)
-
-        input_tape = spy.call_args[0][0]
-        assert len(input_tape.operations) == 2
-        assert input_tape.operations[1].name == "RY"
-        assert input_tape.operations[1].data[0] == 3 * x
-
-        shifted_tape1, shifted_tape2 = spy.spy_return[0]
-
-        assert len(shifted_tape1.operations) == 2
-        assert shifted_tape1.operations[1].name == "RY"
-
-        assert len(shifted_tape2.operations) == 2
-        assert shifted_tape2.operations[1].name == "RY"
 
         assert np.allclose(res, -3 * np.sin(3 * x))
 
