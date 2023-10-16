@@ -63,7 +63,40 @@
   (array(0.6), array([1, 1, 1, 0, 1]))
   ```
 
-<h4>Exponentiate Hamiltonians with flexible Trotter products 🤩</h4>
+<h4>Exponentiate Hamiltonians with flexible Trotter products 🐖</h4>
+
+* Higher-order Trotter-Suzuki methods are now easily accessible through a new operation
+  called `TrotterProduct`.
+  [(#ABCD)]()
+
+  Trotterization techniques are an affective route towards accurate and efficient
+  Hamiltonian simulation. The Suzuki-Trotter product formula allows for the ability
+  to express higher-order approximations to the matrix exponential of a Hamiltonian.
+  The new `TrotterProduct` operation implements the Suzuki-Trotter product formula 
+  at the circuit level, where the `order` keyword argument specifies the order of
+  the approximation.
+
+  ```python
+  coeffs = [0.25, 0.75]
+  ops = [qml.PauliX(0), qml.PauliZ(0)]
+  H = qml.dot(coeffs, ops)
+
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit():
+      # Prepare some state
+      qml.Hadamard(0)
+      # Evolve according to H
+      qml.TrotterProduct(H, time=2.4, order=2)
+      # Measure some quantity
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> my_circ()
+  [-0.13259524+0.59790098j  0.        +0.j         -0.13259524-0.77932754j  0.        +0.j        ]
+  ```
 
 <h4>New device capabilities, integration with Catalyst, and more! ⚗️</h4>
 
