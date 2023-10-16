@@ -15,6 +15,7 @@
 """This module contains functions for preprocessing `QuantumTape` objects to ensure
 that they are supported for execution by a device."""
 # pylint: disable=protected-access, too-many-arguments
+
 import os
 from typing import Generator, Callable, Union, Sequence, Optional
 from copy import copy
@@ -45,6 +46,7 @@ def null_postprocessing(results):
 def _operator_decomposition_gen(
     op: qml.operation.Operator,
     acceptance_function: Callable[[qml.operation.Operator], bool],
+
     decomposer: Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]],
     decomp_depth: Union[int, None] = None,
     current_depth=0,
@@ -246,6 +248,7 @@ def decompose(
             a callabe returning ``op.decomposition()`` for any :class:`~.Operator` .
         decomp_depth:
 
+
     Returns:
         pennylane.QNode or qfunc or Tuple[List[.QuantumTape], Callable]: If a QNode is passed,
         it returns a QNode with the transform added to its transform program.
@@ -295,7 +298,6 @@ def decompose(
     RZ(1.5707963267948966, wires=[1])]
 
     """
-
     if decomposer is None:
 
         def decomposer(op):
