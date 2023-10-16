@@ -406,7 +406,7 @@ def create_decomp_preprocessing(custom_decomps, dev, decomp_depth=10):
         for container in program:
             if container.transform == qml.devices.preprocess.decompose.transform:
                 container.kwargs["decomposer"] = decomposer
-                container.kwargs["decomp_depth"] = decomp_depth
+                container.kwargs["max_expansion"] = decomp_depth
 
                 original_stopping_condition = container.kwargs["stopping_condition"]
 
@@ -490,9 +490,7 @@ def set_decomposition(custom_decomps, dev, decomp_depth=10):
             dev.custom_expand_fn = original_custom_expand_fn
 
     else:
-
         original_preprocess = dev.preprocess
-
         new_preprocess = create_decomp_preprocessing(custom_decomps, dev, decomp_depth=decomp_depth)
 
         try:

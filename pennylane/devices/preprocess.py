@@ -46,15 +46,14 @@ def null_postprocessing(results):
 def _operator_decomposition_gen(
     op: qml.operation.Operator,
     acceptance_function: Callable[[qml.operation.Operator], bool],
-
     decomposer: Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]],
-    decomp_depth: Union[int, None] = None,
+    max_expansion: Union[int, None] = None,
     current_depth=0,
     name: str = "device",
 ) -> Generator[qml.operation.Operator, None, None]:
     """A generator that yields the next operation that is accepted."""
     max_depth_reached = False
-    if decomp_depth is not None and decomp_depth <= current_depth:
+    if max_expansion is not None and max_expansion <= current_depth:
         max_depth_reached = True
     if acceptance_function(op) or max_depth_reached:
         yield op
@@ -72,7 +71,7 @@ def _operator_decomposition_gen(
                 sub_op,
                 acceptance_function,
                 decomposer,
-                decomp_depth=decomp_depth,
+                max_expansion=max_expansion,
                 current_depth=current_depth,
                 name=name,
             )
@@ -233,7 +232,7 @@ def decompose(
     decomposer: Optional[
         Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]]
     ] = None,
-    decomp_depth: Union[int, None] = None,
+    max_expansion: Union[int, None] = None,
     name: str = "device",
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Decompose operations until the stopping condition is met.
@@ -246,7 +245,7 @@ def decompose(
         skip_initial_state_prep=True (bool): If ``True``, the first operator will not be decomposed if it inherits from :class:`~.StatePrepBase`.
         decomposer (Callable): a callable that takes an operator and implements the relevant decomposition. Defaults to
             a callabe returning ``op.decomposition()`` for any :class:`~.Operator` .
-        decomp_depth:
+        max_expansion: The maximum depth of the expansion.
 
 
     Returns:
@@ -314,7 +313,7 @@ def decompose(
                 final_op
                 for op in tape.operations[bool(prep_op) :]
                 for final_op in _operator_decomposition_gen(
-                    op, stopping_condition, decomposer, decomp_depth=decomp_depth, name=name
+                    op, stopping_condition, decomposer, max_expansion=max_expansion, name=name
                 )
             ]
         except RecursionError as e:
