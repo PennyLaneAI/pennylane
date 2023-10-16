@@ -218,14 +218,15 @@ class CountsMP(SampleMeasurement):
         shot_range: Tuple[int] = None,
         bin_size: int = None,
     ):
-        if self.mv is not None:
-            samples = qml.sample(wires=self.mv.wires).process_samples(
-                samples, wire_order, shot_range, bin_size
-            )
-        else:
-            samples = qml.sample(op=self.obs, wires=self._wires).process_samples(
-                samples, wire_order, shot_range, bin_size
-            )
+        with qml.queuing.QueuingManager.stop_recording():
+            if self.mv is not None:
+                samples = qml.sample(wires=self.mv.wires).process_samples(
+                    samples, wire_order, shot_range, bin_size
+                )
+            else:
+                samples = qml.sample(op=self.obs, wires=self._wires).process_samples(
+                    samples, wire_order, shot_range, bin_size
+                )
 
         if bin_size is None:
             return self._samples_to_counts(samples)
