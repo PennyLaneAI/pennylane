@@ -192,10 +192,10 @@ def _generate_simple_decomp(coeffs, ops, time, order, n):
 
         s_2_p = []
         s_2_p.extend(
-            qml.exp(op, ((1 - 4 * p_4) * coeff) * (time / n) * 1j / 2) for coeff, op in coeffs_ops
+            qml.exp(op, ((1 - (4 * p_4)) * coeff) * (time / n) * 1j / 2) for coeff, op in coeffs_ops
         )
         s_2_p.extend(
-            qml.exp(op, ((1 - 4 * p_4) * coeff) * (time / n) * 1j / 2)
+            qml.exp(op, ((1 - (4 * p_4)) * coeff) * (time / n) * 1j / 2)
             for coeff, op in coeffs_ops_reversed
         )
 
@@ -686,52 +686,6 @@ class TestIntegration:
         state = circ(time, coeffs)
         assert qnp.allclose(expected_state, state)
 
-    #   Gradient tests:
-
-    def _generate_grad_decomp(self, coeffs, ops, time, order, n):
-        """Generate the derivative matrix decomposition assuming
-        h = c1 X(0) + c2 Y(1)"""
-        tp_h = _generate_simple_decomp(coeffs, ops, time, order, n)
-
-        if (order, n) == (1, 1):
-            time_derivative = (
-                [qml.s_prod(coeffs[0] * 1j, ops[0])] + tp_h,
-                tp_h + [qml.s_prod(coeffs[1] * 1j, ops[1])],
-            )
-            c1_derivative = ([qml.s_prod(time * 1j, ops[0])] + tp_h,)
-            c2_derivative = (tp_h + [qml.s_prod(time * 1j, ops[1])],)
-
-        if (order, n) == (1, 2):
-            time_derivative = (
-                [qml.s_prod(coeffs[0] * 1j / 2, ops[0])] + tp_h,
-                tp_h[:2] + [qml.s_prod(coeffs[0] * 1j / 2, ops[0])] + tp_h[2:],
-                tp_h[:1] + [qml.s_prod(coeffs[1] * 1j / 2, ops[1])] + tp_h[1:],
-                tp_h + [qml.s_prod(coeffs[1] * 1j / 2, ops[1])],
-            )
-            c1_derivative = (
-                [qml.s_prod(time * 1j / 2, ops[0])] + tp_h,
-                tp_h[:2] + [qml.s_prod(time * 1j / 2, ops[0])] + tp_h[2:],
-            )
-            c2_derivative = (
-                tp_h[:1] + [qml.s_prod(time * 1j / 2, ops[1])] + tp_h[1:],
-                tp_h + [qml.s_prod(time * 1j / 2, ops[1])],
-            )
-
-        if (order, n) == (2, 1):
-            time_derivative = (
-                [qml.s_prod(coeffs[0] * 1j / 2, ops[0])] + tp_h,
-                tp_h[:1] + [qml.s_prod(coeffs[1] * 1j, ops[1])] + tp_h[1:],
-                tp_h + [qml.s_prod(coeffs[0] * 1j / 2, ops[0])],
-            )
-            c1_derivative = (
-                [qml.s_prod(time * 1j / 2, ops[0])] + tp_h,
-                tp_h + [qml.s_prod(time * 1j / 2, ops[0])],
-            )
-            c2_derivative = (tp_h[:1] + [qml.s_prod(time * 1j, ops[1])] + tp_h[1:],)
-
-        return time_derivative, c1_derivative, c2_derivative
-
-    @pytest.mark.xfail
     @pytest.mark.autograd
     @pytest.mark.parametrize("order, n", ((1, 1), (1, 2), (2, 1)))
     def test_autograd_gradient(self, order, n):
@@ -747,53 +701,32 @@ class TestIntegration:
             h = qml.dot(coeffs, terms)
             qml.TrotterProduct(h, time, n=n, order=order)
             return qml.expval(qml.Hadamard(0))
-            # return qml.state()
 
-        initial_state = qnp.array([1.0, 0.0])
-        dt, dc1, dc2 = self._generate_grad_decomp(coeffs, terms, time, order, n)
+        @qml.qnode(dev)
+        def reference_circ(time, coeffs):
+            with qml.QueuingManager.stop_recording():
+                decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
 
-        m_dt = reduce(
-            lambda x, y: x + y,
-            [reduce(lambda x, y: x @ y, [qml.matrix(op) for op in term]) for term in dt],
-        )
-        m_dc1 = reduce(
-            lambda x, y: x + y,
-            [reduce(lambda x, y: x @ y, [qml.matrix(op) for op in term]) for term in dc1],
-        )
-        m_dc2 = reduce(
-            lambda x, y: x + y,
-            [reduce(lambda x, y: x @ y, [qml.matrix(op) for op in term]) for term in dc2],
-        )
+            for op in decomp[-1::-1]:
+                qml.apply(op)
 
-        t_f_state = m_dt @ initial_state
-        dc1_f_state = m_dc1 @ initial_state
-        dc2_f_state = m_dc2 @ initial_state
+            return qml.expval(qml.Hadamard(0))
 
-        g_t = qnp.dot(qnp.conj(t_f_state), qml.matrix(qml.Hadamard(0)) @ t_f_state)
-        g_dc1 = qnp.dot(qnp.conj(dc1_f_state), qml.matrix(qml.Hadamard(0)) @ dc1_f_state)
-        g_dc2 = qnp.dot(qnp.conj(dc2_f_state), qml.matrix(qml.Hadamard(0)) @ dc2_f_state)
+        measured_time_grad, measured_coeff_grad = qml.grad(circ)(time, coeffs)
+        reference_time_grad, reference_coeff_grad = qml.grad(reference_circ)(time, coeffs)
+        assert allclose(measured_time_grad, reference_time_grad)
+        assert allclose(measured_coeff_grad, reference_coeff_grad)
 
-        # g_t = (qnp.conj(m_dt).T @ qml.matrix(qml.Hadamard(0), wire_order=range(2)) @ m_dt)[0,0]
-        # g_dc1 = (qnp.conj(m_dc1).T @ qml.matrix(qml.Hadamard(0), wire_order=range(2)) @ m_dc1)[0,0]
-        # g_dc2 = (qnp.conj(m_dc2).T @ qml.matrix(qml.Hadamard(0), wire_order=range(2)) @ m_dc2)[0,0]
-
-        measured_grad_t, (measured_grad_c1, measured_grad_c2) = qml.grad(circ)(time, coeffs)
-        # print("Measured grad: ", qml.grad(circ)(time, coeffs))
-        # print(g_t[0, 0], g_dc1[0, 0], g_dc2[0,0])
-        # print(g_t, g_dc1, g_dc2)
-        assert qnp.allclose(measured_grad_t, g_t)
-        assert qnp.allclose(measured_grad_c1, g_dc1)
-        assert qnp.allclose(measured_grad_c2, g_dc2)
-
-    @pytest.mark.xfail
     @pytest.mark.torch
     @pytest.mark.parametrize("order, n", ((1, 1), (1, 2), (2, 1)))
     def test_torch_gradient(self, order, n):
-        """Test that the gradient is computed correctly"""
+        """Test that the gradient is computed correctly using torch"""
         import torch
 
         time = torch.tensor(1.5, dtype=torch.complex64, requires_grad=True)
         coeffs = torch.tensor([1.23, -0.45], dtype=torch.complex64, requires_grad=True)
+        time_reference = torch.tensor(1.5, dtype=torch.complex64, requires_grad=True)
+        coeffs_reference = torch.tensor([1.23, -0.45], dtype=torch.complex64, requires_grad=True)
         terms = [qml.PauliX(0), qml.PauliZ(0)]
 
         dev = qml.device("default.qubit", wires=1)
@@ -803,51 +736,34 @@ class TestIntegration:
             h = qml.dot(coeffs, terms)
             qml.TrotterProduct(h, time, n=n, order=order)
             return qml.expval(qml.Hadamard(0))
-            # return qml.state()
 
-        initial_state = torch.tensor([1.0, 0.0], dtype=torch.complex64)
-        dt, dc1, dc2 = self._generate_grad_decomp(coeffs, terms, time, order, n)
+        @qml.qnode(dev)
+        def reference_circ(time, coeffs):
+            with qml.QueuingManager.stop_recording():
+                decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
 
-        m_dt = reduce(
-            lambda x, y: x + y,
-            [reduce(lambda x, y: x @ y, [qml.matrix(op) for op in term]) for term in dt],
-        )
-        m_dc1 = reduce(
-            lambda x, y: x + y,
-            [reduce(lambda x, y: x @ y, [qml.matrix(op) for op in term]) for term in dc1],
-        )
-        m_dc2 = reduce(
-            lambda x, y: x + y,
-            [reduce(lambda x, y: x @ y, [qml.matrix(op) for op in term]) for term in dc2],
-        )
+            for op in decomp[-1::-1]:
+                qml.apply(op)
 
-        t_f_state = m_dt @ initial_state
-        dc1_f_state = m_dc1 @ initial_state
-        dc2_f_state = m_dc2 @ initial_state
+            return qml.expval(qml.Hadamard(0))
 
-        h_mat = torch.tensor(qml.matrix(qml.Hadamard(0)), dtype=torch.complex64)
+        res_circ = circ(time, coeffs)
+        res_circ.backward()
+        measured_time_grad = time.grad
+        measured_coeff_grad = coeffs.grad
 
-        g_t = torch.dot(torch.conj(t_f_state), h_mat @ t_f_state)
-        g_dc1 = torch.dot(torch.conj(dc1_f_state), h_mat @ dc1_f_state)
-        g_dc2 = torch.dot(torch.conj(dc2_f_state), h_mat @ dc2_f_state)
+        ref_circ = reference_circ(time_reference, coeffs_reference)
+        ref_circ.backward()
+        reference_time_grad = time_reference.grad
+        reference_coeff_grad = coeffs_reference.grad
 
-        # g_t = (qnp.conj(m_dt).T @ qml.matrix(qml.Hadamard(0), wire_order=range(2)) @ m_dt)[0,0]
-        # g_dc1 = (qnp.conj(m_dc1).T @ qml.matrix(qml.Hadamard(0), wire_order=range(2)) @ m_dc1)[0,0]
-        # g_dc2 = (qnp.conj(m_dc2).T @ qml.matrix(qml.Hadamard(0), wire_order=range(2)) @ m_dc2)[0,0]
+        assert allclose(measured_time_grad, reference_time_grad)
+        assert allclose(measured_coeff_grad, reference_coeff_grad)
 
-        measured_grad_t, (measured_grad_c1, measured_grad_c2) = qml.grad(circ)(time, coeffs)
-        # print("Measured grad: ", qml.grad(circ)(time, coeffs))
-        # print(g_t[0, 0], g_dc1[0, 0], g_dc2[0,0])
-        # print(g_t, g_dc1, g_dc2)
-        assert allclose(measured_grad_t, g_t)
-        assert allclose(measured_grad_c1, g_dc1)
-        assert allclose(measured_grad_c2, g_dc2)
-
-    @pytest.mark.xfail
     @pytest.mark.tf
     @pytest.mark.parametrize("order, n", ((1, 1), (1, 2), (2, 1)))
     def test_tf_gradient(self, order, n):
-        """Test that the gradient is computed correctly"""
+        """Test that the gradient is computed correctly using tensorflow"""
         import tensorflow as tf
 
         time = tf.Variable(1.5, dtype=tf.complex128)
@@ -858,54 +774,35 @@ class TestIntegration:
 
         @qml.qnode(dev)
         def circ(time, coeffs):
-            h = qml.dot(coeffs, terms)
+            h = qml.sum(
+                qml.s_prod(coeffs[0], terms[0]),
+                qml.s_prod(coeffs[1], terms[1]),
+            )
             qml.TrotterProduct(h, time, n=n, order=order)
             return qml.expval(qml.Hadamard(0))
-            # return qml.state()
 
-        initial_state = tf.Variable([1.0, 0.0], dtype=tf.complex128)
-        dt, dc1, dc2 = self._generate_grad_decomp(coeffs, terms, time, order, n)
+        @qml.qnode(dev)
+        def reference_circ(time, coeffs):
+            with qml.QueuingManager.stop_recording():
+                decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
 
-        m_dt = reduce(
-            lambda x, y: x + y,
-            [reduce(lambda x, y: x @ y, [qml.matrix(op) for op in term]) for term in dt],
-        )
-        m_dc1 = reduce(
-            lambda x, y: x + y,
-            [reduce(lambda x, y: x @ y, [qml.matrix(op) for op in term]) for term in dc1],
-        )
-        m_dc2 = reduce(
-            lambda x, y: x + y,
-            [reduce(lambda x, y: x @ y, [qml.matrix(op) for op in term]) for term in dc2],
-        )
+            for op in decomp[-1::-1]:
+                qml.apply(op)
 
-        t_f_state = tf.linalg.matvec(m_dt, initial_state)
-        dc1_f_state = tf.linalg.matvec(m_dc1, initial_state)
-        dc2_f_state = tf.linalg.matvec(m_dc2, initial_state)
+            return qml.expval(qml.Hadamard(0))
 
-        g_t = tf.tensordot(
-            tf.math.conj(t_f_state), tf.linalg.matvec(qml.matrix(qml.Hadamard(0)), t_f_state)
-        )
-        g_dc1 = tf.tensordot(
-            tf.math.conj(dc1_f_state), tf.linalg.matvec(qml.matrix(qml.Hadamard(0)), dc1_f_state)
-        )
-        g_dc2 = tf.tensordot(
-            tf.math.conj(dc2_f_state), tf.linalg.matvec(qml.matrix(qml.Hadamard(0)), dc2_f_state)
-        )
+        with tf.GradientTape() as tape:
+            result = circ(time, coeffs)
 
-        # g_t = (qnp.conj(m_dt).T @ qml.matrix(qml.Hadamard(0), wire_order=range(2)) @ m_dt)[0,0]
-        # g_dc1 = (qnp.conj(m_dc1).T @ qml.matrix(qml.Hadamard(0), wire_order=range(2)) @ m_dc1)[0,0]
-        # g_dc2 = (qnp.conj(m_dc2).T @ qml.matrix(qml.Hadamard(0), wire_order=range(2)) @ m_dc2)[0,0]
+        measured_time_grad, measured_coeff_grad = tape.gradient(result, (time, coeffs))
 
-        measured_grad_t, (measured_grad_c1, measured_grad_c2) = qml.grad(circ)(time, coeffs)
-        # print("Measured grad: ", qml.grad(circ)(time, coeffs))
-        # print(g_t[0, 0], g_dc1[0, 0], g_dc2[0,0])
-        # print(g_t, g_dc1, g_dc2)
-        assert allclose(measured_grad_t, g_t)
-        assert allclose(measured_grad_c1, g_dc1)
-        assert allclose(measured_grad_c2, g_dc2)
+        with tf.GradientTape() as tape:
+            result = reference_circ(time, coeffs)
 
-    @pytest.mark.xfail
+        reference_time_grad, reference_coeff_grad = tape.gradient(result, (time, coeffs))
+        assert allclose(measured_time_grad, reference_time_grad)
+        assert allclose(measured_coeff_grad, reference_coeff_grad)
+
     @pytest.mark.jax
     @pytest.mark.parametrize("order, n", ((1, 1), (1, 2), (2, 1)))
     def test_jax_gradient(self, order, n):
@@ -924,40 +821,20 @@ class TestIntegration:
             h = qml.dot(coeffs, terms)
             qml.TrotterProduct(h, time, n=n, order=order)
             return qml.expval(qml.Hadamard(0))
-            # return qml.state()
 
-        initial_state = jnp.array([1.0, 0.0])
-        dt, dc1, dc2 = self._generate_grad_decomp(coeffs, terms, time, order, n)
+        @qml.qnode(dev)
+        def reference_circ(time, coeffs):
+            with qml.QueuingManager.stop_recording():
+                decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
 
-        m_dt = reduce(
-            lambda x, y: x + y,
-            [reduce(lambda x, y: x @ y, [qml.matrix(op) for op in term]) for term in dt],
+            for op in decomp[-1::-1]:
+                qml.apply(op)
+
+            return qml.expval(qml.Hadamard(0))
+
+        measured_time_grad, measured_coeff_grad = jax.grad(circ, argnums=[0, 1])(time, coeffs)
+        reference_time_grad, reference_coeff_grad = jax.grad(reference_circ, argnums=[0, 1])(
+            time, coeffs
         )
-        m_dc1 = reduce(
-            lambda x, y: x + y,
-            [reduce(lambda x, y: x @ y, [qml.matrix(op) for op in term]) for term in dc1],
-        )
-        m_dc2 = reduce(
-            lambda x, y: x + y,
-            [reduce(lambda x, y: x @ y, [qml.matrix(op) for op in term]) for term in dc2],
-        )
-
-        t_f_state = m_dt @ initial_state
-        dc1_f_state = m_dc1 @ initial_state
-        dc2_f_state = m_dc2 @ initial_state
-
-        g_t = jnp.dot(jnp.conj(t_f_state), qml.matrix(qml.Hadamard(0)) @ t_f_state)
-        g_dc1 = jnp.dot(jnp.conj(dc1_f_state), qml.matrix(qml.Hadamard(0)) @ dc1_f_state)
-        g_dc2 = jnp.dot(jnp.conj(dc2_f_state), qml.matrix(qml.Hadamard(0)) @ dc2_f_state)
-
-        # g_t = (qnp.conj(m_dt).T @ qml.matrix(qml.Hadamard(0), wire_order=range(2)) @ m_dt)[0,0]
-        # g_dc1 = (qnp.conj(m_dc1).T @ qml.matrix(qml.Hadamard(0), wire_order=range(2)) @ m_dc1)[0,0]
-        # g_dc2 = (qnp.conj(m_dc2).T @ qml.matrix(qml.Hadamard(0), wire_order=range(2)) @ m_dc2)[0,0]
-
-        measured_grad_t, (measured_grad_c1, measured_grad_c2) = qml.grad(circ)(time, coeffs)
-        # print("Measured grad: ", qml.grad(circ)(time, coeffs))
-        # print(g_t[0, 0], g_dc1[0, 0], g_dc2[0,0])
-        # print(g_t, g_dc1, g_dc2)
-        assert allclose(measured_grad_t, g_t)
-        assert allclose(measured_grad_c1, g_dc1)
-        assert allclose(measured_grad_c2, g_dc2)
+        assert allclose(measured_time_grad, reference_time_grad)
+        assert allclose(measured_coeff_grad, reference_coeff_grad)
