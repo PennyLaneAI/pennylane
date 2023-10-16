@@ -228,7 +228,7 @@ def fermionic_dipole(mol, cutoff=1.0e-18, core=None, active=None):
     return _fermionic_dipole
 
 
-def dipole_moment(mol, cutoff=1.0e-18, core=None, active=None):
+def dipole_moment(mol, cutoff=1.0e-16, core=None, active=None):
     r"""Return a function that computes the qubit dipole moment observable.
 
     The dipole operator in the second-quantized form is

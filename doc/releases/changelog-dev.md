@@ -186,6 +186,15 @@
 * Dunder ``__add__`` method is added to the ``TransformProgram`` class, therefore two programs can be added using ``+`` .
   [(#4549)](https://github.com/PennyLaneAI/pennylane/pull/4549)
 
+* Transforms can be applied on devices following the new device API.
+ [(#4667)](https://github.com/PennyLaneAI/pennylane/pull/4667)
+
+* All gradient transforms are updated to the new transform program system.
+ [(#4595)](https://github.com/PennyLaneAI/pennylane/pull/4595)
+
+* `pennylane.defer_measurements` will now exit early if the input does not contain mid circuit measurements.
+  [(#4659)](https://github.com/PennyLaneAI/pennylane/pull/4659)
+
 <h4>Improving QChem and existing algorithms</h4>
 
 * The qchem ``fermionic_dipole`` and ``particle_number`` functions are updated to use a
@@ -206,10 +215,12 @@
 
 <h4>Next-generation device API</h4>
 
-* `default.qubit` now tracks the number of equivalent QPU executions and total shots
+* `default.qubit` now tracks the number of equivalent qpu executions and total shots
   when the device is sampling. Note that `"simulations"` denotes the number of simulation passes, where as
-  `"executions"` denotes how many different computational bases need to be sampled in.
+  `"executions"` denotes how many different computational bases need to be sampled in. Additionally, the
+  new `default.qubit` also tracks the results of `device.execute`.
   [(#4628)](https://github.com/PennyLaneAI/pennylane/pull/4628)
+  [(#4649)](https://github.com/PennyLaneAI/pennylane/pull/4649)
 
 * `DefaultQubit2` can now accept a `jax.random.PRNGKey` as a `seed`, to set the key for the JAX pseudo random 
   number generator when using the JAX interface. This corresponds to the `prng_key` on 
@@ -247,6 +258,11 @@
   device shots before execution. This makes it compatible with the new device API.
   [(#4599)](https://github.com/PennyLaneAI/pennylane/pull/4599)
 
+* `pennylane.devices.preprocess` now offers the transforms `decompose`, `validate_observables`, `validate_measurements`,
+  `validate_device_wires`, `validate_multiprocessing_workers`, `warn_about_trainable_observables`,
+  and `no_sampling` to assist in the construction of devices under the new `devices.Device` API.
+  [(#4659)](https://github.com/PennyLaneAI/pennylane/pull/4659)
+
 <h4>Other improvements</h4>
 
 * The `JacobianProductCalculator` abstract base class and implementation `TransformJacobianProducts`
@@ -276,6 +292,27 @@
 * Updated `qml.math.ndim` and `qml.math.shape` to work with built-in lists/tuples that contain
   interface-specific scalar data, eg `[(tf.Variable(1.1), tf.Variable(2.2))]`.
   [(#4603)](https://github.com/PennyLaneAI/pennylane/pull/4603)
+
+* When decomposing a unitary matrix with `one_qubit_decomposition`, and opting to include the `GlobalPhase` 
+  in the decomposition, the phase is no longer cast to `dtype=complex`.
+  [(#4653)](https://github.com/PennyLaneAI/pennylane/pull/4653)
+
+* `qml.cut_circuit` is now compatible with circuits that compute the expectation values of Hamiltonians 
+  with two or more terms.
+  [(#4642)](https://github.com/PennyLaneAI/pennylane/pull/4642)
+
+
+* `_qfunc_output` has been removed from `QuantumScript`, as it is no longer necessary. There is
+  still a `_qfunc_output` property on `QNode` instances.
+  [(#4651)](https://github.com/PennyLaneAI/pennylane/pull/4651)
+
+* `qml.data.load` properly handles parameters that come after `'full'`
+  [(#4663)](https://github.com/PennyLaneAI/pennylane/pull/4663)
+
+* The `qml.jordan_wigner` function has been modified to optionally remove the imaginary components
+  of the computed qubit operator, if imaginary components are smaller than a threshold. 
+  [(#4639)](https://github.com/PennyLaneAI/pennylane/pull/4639)
+
 
 <h3>Breaking changes 💔</h3>
 
@@ -424,6 +461,9 @@
 * Minor documentation improvement to the usage example in the `qml.QuantumMonteCarlo` page. Integral was missing the differential dx with respect to which the integration is being performed. [(#4593)](https://github.com/PennyLaneAI/pennylane/pull/4593)  
 
 <h3>Bug fixes 🐛</h3>
+
+* Providing `work_wires=None` to `qml.GroverOperator` no longer interprets `None` as a wire.
+  [(#4668)](https://github.com/PennyLaneAI/pennylane/pull/4668)
 
 * Fixed issue where `__copy__` method of the `qml.Select()` operator attempted to access un-initialized data.
 [(#4551)](https://github.com/PennyLaneAI/pennylane/pull/4551)
