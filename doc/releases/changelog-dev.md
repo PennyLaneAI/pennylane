@@ -30,7 +30,7 @@
 
   ```pycon
   0: ──RZ(-2.36)──H────╭●──S†─────────H──RZ(0.10)──H─╭●──S──────────H──S──T──GlobalPhase(-2.36)─┤
-1: ──RZ(-0.79)──H──S─╰X──RZ(-0.10)─────────────────╰X──RZ(-1.57)──H──T─────GlobalPhase(-2.36)─┤
+  1: ──RZ(-0.79)──H──S─╰X──RZ(-0.10)─────────────────╰X──RZ(-1.57)──H──T─────GlobalPhase(-2.36)─┤
   ```
 
   `RZ` gates are approximated in the Clifford+T basis using the method 
