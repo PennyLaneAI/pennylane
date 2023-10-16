@@ -274,7 +274,9 @@ def _measure_with_samples_diagonalizing_gates(
                     rng=rng,
                     prng_key=prng_key,
                 )
-            except ValueError:
+            except ValueError as e:
+                if str(e) != "probabilities contain NaN":
+                    raise e
                 samples = qml.math.full((s, len(wires)), np.NaN)
 
             processed_samples.append(_process_single_shot(samples))
@@ -290,7 +292,9 @@ def _measure_with_samples_diagonalizing_gates(
             rng=rng,
             prng_key=prng_key,
         )
-    except ValueError:
+    except ValueError as e:
+        if str(e) != "probabilities contain NaN":
+            raise e
         samples = qml.math.full((shots.total_shots, len(wires)), np.NaN)
 
     return _process_single_shot(samples)

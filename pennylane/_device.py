@@ -971,6 +971,9 @@ class Device(abc.ABC):
                     "simulate the application of mid-circuit measurements on this device."
                 )
 
+            if isinstance(o, qml.Projector):
+                raise ValueError(f"Postselection is not supported on the {self.name} device.")
+
             if not self.stopping_condition(o):
                 raise DeviceError(
                     f"Gate {operation_name} not supported on device {self.short_name}"

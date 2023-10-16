@@ -136,7 +136,6 @@ def sum_of_terms_method(
     )
 
 
-# pylint: disable=too-many-return-statements
 def get_measurement_function(
     measurementprocess: MeasurementProcess, state: TensorLike
 ) -> Callable[[MeasurementProcess, TensorLike], TensorLike]:
@@ -150,7 +149,6 @@ def get_measurement_function(
     Returns:
         Callable: function that returns the measurement result
     """
-
     if isinstance(measurementprocess, StateMeasurement):
         if isinstance(measurementprocess.mv, MeasurementValue):
             return state_diagonalizing_gates

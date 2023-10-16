@@ -135,8 +135,11 @@ def _postselection_postprocess(state, is_state_batched, shots):
             "postselection is used."
         )
 
-    # if qml.math.is_abstract(state):
-    norm = qml.math.floor(qml.math.real(qml.math.norm(state)) * 1e8) * 1e-8
+    # The floor function is being used here so that a norm very close to zero becomes exactly
+    # equal to zero so that the state can become invalid. This way, execution can continue, and
+    # bad postselection gives results that are invalid rather than results that look valid but
+    # are incorrect.
+    norm = qml.math.floor(qml.math.real(qml.math.norm(state)) * 1e15) * 1e-15
 
     if shots:
         # Clip the number of shots using a binomial distribution using the probability of
