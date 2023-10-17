@@ -22,6 +22,8 @@ import functools
 import numpy as np
 
 import pennylane as qml  # pylint: disable=unused-import
+import pennylane.math as qnp
+
 from pennylane import QutritDevice, QutritBasisState, DeviceError
 from pennylane.wires import WireError
 from pennylane.devices.default_qubit_legacy import _get_slice
@@ -30,7 +32,7 @@ from .._version import __version__
 # tolerance for numerical errors
 tolerance = 1e-10
 
-OMEGA = np.exp(2 * np.pi * 1j / 3)
+OMEGA = qnp.exp(2 * np.pi * 1j / 3)
 
 
 class DefaultQutrit(QutritDevice):
@@ -92,6 +94,29 @@ class DefaultQutrit(QutritDevice):
         "GellMann",
         "Identity",
     }
+    _reshape = staticmethod(qnp.reshape)
+    _flatten = staticmethod(qnp.flatten)
+    _transpose = staticmethod(qnp.transpose)
+    _dot = staticmethod(qnp.dot)
+    _stack = staticmethod(qnp.stack)
+    _conj = staticmethod(qnp.conj)
+    _roll = staticmethod(qnp.roll)
+    _cast = staticmethod(qnp.cast)
+    _real = staticmethod(qnp.real)
+    _imag = staticmethod(qnp.imag)
+
+    @staticmethod
+    def _reduce_sum(array, axes):
+        return qnp.sum(array, tuple(axes))
+
+    @staticmethod
+    def _asarray(array, dtype=None):
+        # Support float
+        if not hasattr(array, "__len__"):
+            return np.asarray(array, dtype=dtype)
+
+        res = qnp.cast(array, dtype=dtype)
+        return res
 
     def __init__(
         self,
@@ -350,6 +375,9 @@ class DefaultQutrit(QutritDevice):
             supports_inverse_operations=True,
             supports_analytic_computation=True,
             returns_state=True,
+            passthru_devices={
+                "autograd": "default.qutrit",
+            }
         )
         return capabilities
 
@@ -416,9 +444,9 @@ class DefaultQutrit(QutritDevice):
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
 
-        mat = self._cast(self._reshape(mat, [3] * len(device_wires) * 2), dtype=self.C_DTYPE)
-        axes = (np.arange(len(device_wires), 2 * len(device_wires)), device_wires)
-        tdot = self._tensordot(mat, state, axes=axes)
+        mat = qnp.cast(self._reshape(mat, [3] * len(device_wires) * 2), dtype=self.C_DTYPE)
+        axes = (qnp.arange(len(device_wires), 2 * len(device_wires)), device_wires)
+        tdot = qnp.tensordot(mat, state, axes=axes)
 
         # tensordot causes the axes given in `wires` to end up in the first positions
         # of the resulting tensor. This corresponds to a (partial) transpose of
