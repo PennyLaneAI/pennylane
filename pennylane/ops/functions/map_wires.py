@@ -104,7 +104,7 @@ def map_wires(
     raise ValueError(f"Cannot map wires of object {input} of type {type(input)}.")
 
 
-@partial(transform, is_informative=True)
+@partial(transform)
 def _map_wires_transform(
     tape: qml.tape.QuantumTape, wire_map=None
 ) -> (Sequence[qml.tape.QuantumTape], Callable):

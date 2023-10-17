@@ -228,7 +228,7 @@ def pattern_matching_optimization(
 
                         # First add all the predecessors of the given match.
                         for elem in pred:
-                            node = circuit_dag.get_node(elem)
+                            node = circuit_dag.get_node(elem)  # pylint: disable=no-member
                             inst = copy.deepcopy(node.op)
                             qml.apply(inst)
                             already_sub.append(elem)
@@ -251,12 +251,13 @@ def pattern_matching_optimization(
 
                     # Add the unmatched gates.
                     for node_id in substitution.unmatched_list:
-                        node = circuit_dag.get_node(node_id)
+                        node = circuit_dag.get_node(node_id)  # pylint: disable=no-member
                         inst = copy.deepcopy(node.op)
                         qml.apply(inst)
 
                 qscript = QuantumScript.from_queue(q_inside)
-                tape = qml.map_wires(input=qscript, wire_map=inverse_wires_map)
+                tapes, fn = qml.map_wires(input=qscript, wire_map=inverse_wires_map)
+                tape = fn(tapes)
 
     new_tape = type(tape)(tape.operations, tape.measurements, shots=tape.shots)
 

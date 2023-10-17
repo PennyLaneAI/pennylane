@@ -406,7 +406,9 @@ def cut_circuit(
 
     # convert decomposed DAGs into tapes, remap their wires for device and expand them
     fragment_tapes = [graph_to_tape(f) for f in fragments]
-    fragment_tapes = [qml.map_wires(t, dict(zip(t.wires, device_wires))) for t in fragment_tapes]
+    fragment_tapes = [
+        qml.map_wires(t, dict(zip(t.wires, device_wires)))[0][0] for t in fragment_tapes
+    ]
     expanded = [expand_fragment_tape(t) for t in fragment_tapes]
 
     # store the data necessary for classical post processing of results

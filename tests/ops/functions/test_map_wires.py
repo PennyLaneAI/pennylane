@@ -162,7 +162,6 @@ class TestMapWiresQNodes:
 
         m_op = tapes[0].operations
         m_obs = tapes[0].observables
-
         assert qml.equal(m_op[0], mapped_op)
         assert qml.equal(m_obs[0], mapped_obs)
 
