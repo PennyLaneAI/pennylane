@@ -42,6 +42,7 @@ class CosineWindow(StatePrepBase):
 
 
     .. seealso:: :class:`~.QuantumPhaseEstimation`, :class:`~.QFT`
+    
     **Details:**
 
     * Number of wires: Any (the operation can act on any number of wires)
