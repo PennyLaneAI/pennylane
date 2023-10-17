@@ -380,8 +380,8 @@ be equivalent to projecting the state vector onto the :math:`|1\rangle` state on
         qml.cond(m0, qml.PauliX)(wires=1)
         return qml.sample(wires=1)
 
-By postselecting on ``1``, we only consider the ``1`` measurement outcome. So, the probability of measuring 1
-on wire 1 should be 100%. Executing this QNode with 10 shots:
+By postselecting on ``1``, we only consider the ``1`` measurement outcome on wire 0. So, the probability of
+measuring ``1`` on wire 1 after postselection should also be 1. Executing this QNode with 10 shots:
 
 >>> func(np.pi / 2, shots=10)
 array([1, 1, 1, 1, 1, 1, 1])
