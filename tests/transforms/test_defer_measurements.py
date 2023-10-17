@@ -152,11 +152,11 @@ class TestQNode:
             qml.RX(phi, 0)
             return qml.expval(qml.PauliZ(0))
 
-        spy = mocker.spy(qml, "defer_measurements")
+        spy = mocker.spy(qml.defer_measurements, "_transform")
 
         # Outputs should match
         assert np.isclose(qnode1(np.pi / 4), qnode2(np.pi / 4))
-        spy.assert_called_once()
+        assert spy.call_count == 3  # once per device preprocessing, one for qnode
 
         deferred_tapes, _ = qml.defer_measurements(qnode1.qtape)
         deferred_tape = deferred_tapes[0]
@@ -170,7 +170,7 @@ class TestQNode:
         """Test that a new wire is added for every measurement after which
         the wire is reused."""
         dev = qml.device("default.qubit", wires=4)
-        spy = mocker.spy(qml, "defer_measurements")
+        spy = mocker.spy(qml.defer_measurements, "_transform")
 
         @qml.qnode(dev)
         def qnode1(phi, theta):
@@ -196,7 +196,7 @@ class TestQNode:
 
         res2 = qnode2(np.pi / 4, 3 * np.pi / 4)
 
-        assert spy.call_count == 2
+        assert spy.call_count == 4
 
         deferred_tapes1, _ = qml.defer_measurements(qnode1.qtape)
         deferred_tape1 = deferred_tapes1[0]
@@ -468,6 +468,7 @@ class TestQNode:
         @qml.qnode(dev)
         @qml.defer_measurements
         def qnode():
+            qml.measure(0)
             qml.Rotation(0.123, wires=[0])
             return qml.expval(qml.NumberOperator(1))
 
@@ -483,6 +484,7 @@ class TestQNode:
         @qml.qnode(dev)
         @qml.defer_measurements
         def qnode():
+            qml.measure(0)
             return qml.expval(qml.NumberOperator(1))
 
         with pytest.raises(
@@ -1355,9 +1357,9 @@ class TestQubitReuseAndReset:
             qml.cond(m1 | m2, qml.RY)(y, 2)
             return qml.expval(qml.PauliZ(2))
 
-        spy = mocker.spy(qml, "defer_measurements")
+        spy = mocker.spy(qml.defer_measurements, "_transform")
         _ = qnode(0.123, 0.456, 0.789)
-        spy.assert_called_once()
+        assert spy.call_count == 2
 
         expected_circuit = [
             qml.Hadamard(0),
