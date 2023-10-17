@@ -51,7 +51,7 @@ class TestDecomposition:
             assert q.name == "PhaseShift"
             assert np.isclose(q.data[0], np.pi / 2 ** (ind + 1))
 
-    def test_custom_wire_labels(self, tol):
+    def test_custom_wire_labels(self):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
 
         dev = qml.device("default.qubit", wires=3)
@@ -70,8 +70,8 @@ class TestDecomposition:
         res1, state1 = circuit()
         res2, state2 = circuit2()
 
-        assert np.allclose(res1, res2, atol=tol, rtol=0)
-        assert np.allclose(state1, state2, atol=tol, rtol=0)
+        assert np.allclose(res1, res2)
+        assert np.allclose(state1, state2)
 
 
 class TestInputs:
