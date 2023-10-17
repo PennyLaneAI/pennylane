@@ -41,8 +41,6 @@ class CosineWindow(StatePrepBase):
         The wave function is shifted by :math:`\frac{\pi}{2}` units so that the window is centered.
 
 
-    .. seealso:: :class:`~.QuantumPhaseEstimation`, :class:`~.QFT`
-    
     **Details:**
 
     * Number of wires: Any (the operation can act on any number of wires)
