@@ -102,6 +102,6 @@ class TestStateVector:
     def test_CosineWindow_state_vector_wire_order(self):
         """Tests that the state vector is correct for a single wire."""
         op = qml.CosineWindow(wires=[0, 1])
-        res = op.state_vector(wire_order=[1, 0]) ** 2
+        res = np.reshape(op.state_vector(wire_order=[1, 0]) ** 2, (-1,))
         expected = np.array([0.0, 0.5, 0.25, 0.25])
         assert np.allclose(res, expected)
