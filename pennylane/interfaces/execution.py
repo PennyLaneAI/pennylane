@@ -43,7 +43,7 @@ logger.addHandler(logging.NullHandler())
 
 device_type = Union[qml.Device, "qml.devices.Device"]
 
-jpc_interfaces = {"autograd", "torch", "pytorch"}
+jpc_interfaces = {"torch", "pytorch"}
 
 INTERFACE_MAP = {
     None: "Numpy",
@@ -547,7 +547,6 @@ def execute(
         for tape in tapes:
             params.extend(tape.get_parameters(trainable_only=False))
         interface = qml.math.get_interface(*params)
-    interface = "autograd" if interface == "numpy" else interface
     if interface == "jax":
         try:  # pragma: no-cover
             from .jax import get_jax_interface_name

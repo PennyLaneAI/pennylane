@@ -23,7 +23,7 @@ import pennylane.logging as pl_logging
 _grad_log_map = {
     "adjoint": "gradient_fn=adjoint, interface=autograd, grad_on_execution=best, gradient_kwargs={}",
     "backprop": "gradient_fn=backprop, interface=autograd, grad_on_execution=best, gradient_kwargs={}",
-    "parameter-shift": "gradient_fn=<gradient_transform: param_shift>",
+    "parameter-shift": "gradient_fn=<transform: param_shift>",
 }
 
 
@@ -99,7 +99,7 @@ class TestLogging:
             assert all(msg in actual.getMessage() for msg in expected[1])
 
     @pytest.mark.parametrize(
-        "diff_method,num_records", [("parameter-shift", 6), ("backprop", 3), ("adjoint", 7)]
+        "diff_method,num_records", [("parameter-shift", 7), ("backprop", 3), ("adjoint", 7)]
     )
     def test_dq_qnode_execution_grad(self, caplog, diff_method, num_records):
         "Test logging of QNode with parameterised gradients"
