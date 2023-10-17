@@ -423,7 +423,7 @@ def custom_basic_entangler_layers(weights, wires, **kwargs):
     ]
 
 
-class TestCreateCustomDecompDeviceExpandFn:
+class TestCreateCustomDecompExpandFn:
     """Tests for the custom_decomps argument for devices"""
 
     @pytest.mark.parametrize("device_name", ["default.qubit", "default.qubit.legacy"])
