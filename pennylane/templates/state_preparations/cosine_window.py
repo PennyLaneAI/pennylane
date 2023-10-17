@@ -85,7 +85,7 @@ class CosineWindow(StatePrepBase):
         decomp_ops = []
 
         decomp_ops.append(qml.Hadamard(wires=wires[-1]))
-        decomp_ops.append(qml.RZ(-np.pi, wires=wires[-1]))
+        decomp_ops.append(qml.RZ(np.pi, wires=wires[-1]))
         decomp_ops.append(qml.adjoint(qml.QFT)(wires=wires))
 
         for ind, wire in enumerate(wires):
