@@ -970,7 +970,7 @@ def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta
     ra0, ra1, ra2 = ra[0:3]
     rb0, rb1, rb2 = rb[0:3]
     rc0, rc1, rc2 = rc[0:3]
-    rd0, rd1, rd2 = rc[0:3]
+    rd0, rd1, rd2 = rd[0:3]
 
     g_t = [expansion(l1, l2, ra0, rb0, alpha, beta, t) for t in range(l1 + l2 + 1)]
     g_u = [expansion(m1, m2, ra1, rb1, alpha, beta, u) for u in range(m1 + m2 + 1)]
