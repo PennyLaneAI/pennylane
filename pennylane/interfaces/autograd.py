@@ -80,7 +80,9 @@ def autograd_execute(
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
         execute_fn (Callable[[Sequence[.QuantumTape]], ResultBatch]): a function that turns a batch of circuits into results
-        jpc (JacobianProductCalculator): a class that can compute the vector jacobian product for the input tapes.
+        jpc (JacobianProductCalculator): a class that can compute the vector Jacobian product (VJP)
+            for the input tapes.
+
 
     Returns:
         TensorLike: A nested tuple of tape results. Each element in
@@ -117,7 +119,9 @@ def _execute(
             This argument should be generated from the provided list of tapes.
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
         execute_fn (Callable[[Sequence[.QuantumTape]], ResultBatch]): a function that turns a batch of circuits into results
-        jpc (JacobianProductCalculator): a class that can compute the vector jacobian product for the input tapes.
+        jpc (JacobianProductCalculator): a class that can compute the vector Jacobian product (VJP)
+            for the input tapes.
+
     """
     return execute_fn(tapes)
 
@@ -138,7 +142,9 @@ def vjp(
             This argument should be generated from the provided list of tapes.
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
         execute_fn (Callable[[Sequence[.QuantumTape]], ResultBatch]): a function that turns a batch of circuits into results
-        jpc (JacobianProductCalculator): a class that can compute the vector jacobian product for the input tapes.
+        jpc (JacobianProductCalculator): a class that can compute the vector Jacobian product (VJP)
+            for the input tapes.
+
 
     Returns:
         function: this function accepts the backpropagation
