@@ -158,10 +158,13 @@ class TestMapWiresQNodes:
         m_qnode = qml.map_wires(qnode, wire_map=wire_map)
         assert m_qnode() == qnode()
         assert len(m_qnode.tape) == 2
-        m_op = m_qnode.tape.operations[0]
-        m_obs = m_qnode.tape.observables[0]
-        assert qml.equal(m_op, mapped_op)
-        assert qml.equal(m_obs, mapped_obs)
+        tapes, _ = m_qnode.transform_program((m_qnode.tape,))
+
+        m_op = tapes[0].operations
+        m_obs = tapes[0].observables
+
+        assert qml.equal(m_op[0], mapped_op)
+        assert qml.equal(m_obs[0], mapped_obs)
 
 
 class TestMapWiresCallables:
