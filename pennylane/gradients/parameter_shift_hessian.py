@@ -17,10 +17,14 @@ of a qubit-based quantum tape.
 """
 import itertools as it
 import warnings
+from functools import partial
+from typing import Sequence, Callable
+from .hessian_transform import _process_jacs
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.measurements import ProbabilityMP, StateMP, VarianceMP
+from pennylane.transforms import transform
 
 from .general_shift_rules import (
     _combine_shift_rules,
@@ -28,7 +32,6 @@ from .general_shift_rules import (
     generate_shifted_tapes,
 )
 from .gradient_transform import gradient_analysis_and_validation
-from .hessian_transform import hessian_transform
 from .parameter_shift import _get_operation_recipe
 
 
@@ -363,8 +366,36 @@ def expval_hessian_param_shift(
     return hessian_tapes, processing_fn
 
 
-@hessian_transform
-def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_shifts=None, f0=None):
+# pylint: disable=too-many-return-statements,too-many-branches
+def _contract_qjac_with_cjac(qhess, cjac, tape):
+    """Contract a quantum Jacobian with a classical preprocessing Jacobian."""
+    if len(tape.measurements) > 1:
+        qhess = qhess[0]
+    has_single_arg = False
+    if not isinstance(cjac, tuple):
+        has_single_arg = True
+        cjac = (cjac,)
+
+    # The classical Jacobian for each argument has shape:
+    #   (# gate_args, *qnode_arg_shape)
+    # The Jacobian needs to be contracted twice with the quantum Hessian of shape:
+    #   (*qnode_output_shape, # gate_args, # gate_args)
+    # The result should then have the shape:
+    #   (*qnode_output_shape, *qnode_arg_shape, *qnode_arg_shape)
+    hessians = []
+
+    for jac in cjac:
+        if jac is not None:
+            hess = _process_jacs(jac, qhess)
+            hessians.append(hess)
+
+    return hessians[0] if has_single_arg else tuple(hessians)
+
+
+@partial(transform, classical_cotransform=_contract_qjac_with_cjac, final_transform=True)
+def param_shift_hessian(
+    tape: qml.tape.QuantumTape, argnum=None, diagonal_shifts=None, off_diagonal_shifts=None, f0=None
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Transform a QNode to compute the parameter-shift Hessian with respect to its trainable
     parameters. This is the Hessian transform to replace the old one in the new return types system
 

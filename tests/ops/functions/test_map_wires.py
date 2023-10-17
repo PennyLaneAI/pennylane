@@ -108,7 +108,8 @@ class TestMapWiresTapes:
         tape.trainable_params = [0, 2]
         # TODO: Use qml.equal when supported
 
-        s_tape = qml.map_wires(tape, wire_map=wire_map)
+        s_tapes, _ = qml.map_wires(tape, wire_map=wire_map)
+        s_tape = s_tapes[0]
         assert len(s_tape) == 1
         assert s_tape.trainable_params == [0, 2]
         s_op = s_tape[0]
@@ -129,7 +130,8 @@ class TestMapWiresTapes:
         tape = QuantumScript.from_queue(q_tape, shots=shots)
         # TODO: Use qml.equal when supported
 
-        m_tape = qml.map_wires(tape, wire_map=wire_map)
+        m_tapes, _ = qml.map_wires(tape, wire_map=wire_map)
+        m_tape = m_tapes[0]
         m_op = m_tape.operations[0]
         m_obs = m_tape.observables[0]
         assert qml.equal(m_op, mapped_op)
