@@ -16,4 +16,3 @@ the helper functions needed to compute it.
 """
 
 from .cliffordt_transform import clifford_t_decomposition
-from .solovay_kitaev import solovay_kitaev_decomposition, build_approximate_set
