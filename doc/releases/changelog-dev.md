@@ -85,6 +85,23 @@
 * `CosineWindow` has been added. Prepare the initial state following a cosine wave function.
   [(#4683)](https://github.com/PennyLaneAI/pennylane/pull/4683)
 
+  ```python
+  import pennylane as qml
+  import matplotlib.pyplot as plt
+  
+  dev = qml.device('default.qubit', wires=4)
+  
+  @qml.qnode(dev)
+  def example_circuit():
+        qml.CosineWindow(wires=range(4))
+        return qml.state()
+  output = example_circuit()
+  
+  # Graph showing state amplitudes
+  plt.bar(range(len(output)), output)
+  plt.show()
+  ```
+
 <h3>Improvements 🛠</h3>
 
 * `pennylane.devices.preprocess` now offers the transforms `decompose`, `validate_observables`, `validate_measurements`,

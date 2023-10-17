@@ -100,7 +100,7 @@ class TestStateVector:
             qsv_op.state_vector(wire_order=[1, 2])
 
     def test_CosineWindow_state_vector_wire_order(self):
-        """Tests that the state vector is correct for a single wire."""
+        """Tests that the state vector works with a different order of wires."""
         op = qml.CosineWindow(wires=[0, 1])
         res = np.reshape(op.state_vector(wire_order=[1, 0]) ** 2, (-1,))
         expected = np.array([0.0, 0.5, 0.25, 0.25])

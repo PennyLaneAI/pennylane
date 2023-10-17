@@ -71,7 +71,7 @@ class CosineWindow(StatePrepBase):
         super().__init__(wires=wires, id=id)
 
     @staticmethod
-    def compute_decomposition(wires):
+    def compute_decomposition(*args, wires, **kwargs):
         r"""Representation of the operator as a product of other operators (static method).
         It is efficiently decomposed from one QFT over all qubits and one-qubit rotation gates.
 
