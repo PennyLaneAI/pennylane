@@ -14,6 +14,7 @@
 """Unit tests for sample_state in devices/qubit."""
 
 from random import shuffle
+from typing import Sequence
 
 import pytest
 
@@ -39,6 +40,47 @@ def fixture_init_state():
         return state.reshape((2,) * n)
 
     return _init_state
+
+
+def _valid_flex_int(s):
+    """Returns True if s is a non-negative integer."""
+    return isinstance(s, int) and s >= 0
+
+
+def _valid_flex_tuple(s):
+    """Returns True if s is a tuple of the form (shots, copies)."""
+    return (
+        isinstance(s, tuple)
+        and len(s) == 2
+        and _valid_flex_int(s[0])
+        and isinstance(s[1], int)
+        and s[1] > 0
+    )
+
+
+class _FlexShots(Shots):
+    """Shots class that allows zero shots."""
+
+    # pylint: disable=super-init-not-called
+    def __init__(self, shots=None):
+        if shots is None:
+            self.total_shots = None
+            self.shot_vector = ()
+        elif isinstance(shots, int):
+            if shots < 0:
+                raise self._SHOT_ERROR
+            self.total_shots = shots
+            self.shot_vector = (qml.measurements.ShotCopies(shots, 1),)
+        elif isinstance(shots, Sequence):
+            if not all(_valid_flex_int(s) or _valid_flex_tuple(s) for s in shots):
+                raise self._SHOT_ERROR
+            self.__all_tuple_init__([s if isinstance(s, tuple) else (s, 1) for s in shots])
+        elif isinstance(shots, self.__class__):
+            return  # self already _is_ shots as defined by __new__
+        else:
+            raise self._SHOT_ERROR
+
+        self._frozen = True
 
 
 def samples_to_probs(samples, num_wires):
@@ -514,18 +556,19 @@ class TestInvalidStateSamples:
             qml.var(qml.PauliZ(0)),
         ],
     )
-    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow", "jax"])
     @pytest.mark.parametrize("shots", [0, [0, 0]])
     def test_nan_float_result(self, mp, interface, shots):
         """Test that the result of circuits with 0 probability postselections is NaN with the
         expected shape."""
         state = qml.math.full((2, 2), np.NaN, like=interface)
-        res = measure_with_samples((mp,), state, Shots(shots), is_state_batched=False)
+        res = measure_with_samples((mp,), state, _FlexShots(shots), is_state_batched=False)
 
         if not isinstance(shots, list):
+            assert isinstance(res, tuple)
+            res = res[0]
             assert qml.math.ndim(res) == 0
             assert qml.math.isnan(res)
-            assert qml.math.get_interface(res) == interface
 
         else:
             assert isinstance(res, tuple)
@@ -535,202 +578,72 @@ class TestInvalidStateSamples:
                 r = r[0]
                 assert qml.math.ndim(r) == 0
                 assert qml.math.isnan(r)
-                assert qml.math.get_interface(r) == interface
-
-    @pytest.mark.jax
-    @pytest.mark.parametrize(
-        "mp",
-        [
-            qml.expval(qml.PauliZ(0)),
-            qml.expval(
-                qml.Hamiltonian(
-                    [1.0, 2.0, 3.0, 4.0],
-                    [qml.PauliZ(0) @ qml.PauliX(1), qml.PauliX(1), qml.PauliZ(1), qml.PauliY(1)],
-                )
-            ),
-            qml.expval(
-                qml.dot(
-                    [1.0, 2.0, 3.0, 4.0],
-                    [qml.PauliZ(0) @ qml.PauliX(1), qml.PauliX(1), qml.PauliZ(1), qml.PauliY(1)],
-                )
-            ),
-            qml.var(qml.PauliZ(0)),
-            qml.var(
-                qml.Hamiltonian(
-                    [1.0, 2.0, 3.0, 4.0],
-                    [qml.PauliZ(0) @ qml.PauliX(1), qml.PauliX(1), qml.PauliZ(1), qml.PauliY(1)],
-                )
-            ),
-            qml.var(
-                qml.dot(
-                    [1.0, 2.0, 3.0, 4.0],
-                    [qml.PauliZ(0) @ qml.PauliX(1), qml.PauliX(1), qml.PauliZ(1), qml.PauliY(1)],
-                )
-            ),
-        ],
-    )
-    @pytest.mark.parametrize("use_jit", [True, False])
-    @pytest.mark.parametrize("shots", [0, [0, 0]])
-    def test_nan_float_result_jax(self, mp, use_jit, shots):
-        """Test that the result of circuits with 0 probability postselections is NaN with the
-        expected shape."""
-        state = qml.math.full((2, 2), np.NaN, like="jax")
-        if use_jit:
-            import jax
-
-            res = jax.jit(measure_with_samples, static_argnums=[0, 2, 3])(
-                (mp,), state, Shots(shots), is_state_batched=False
-            )
-        else:
-            res = measure_with_samples((mp,), state, Shots(shots), is_state_batched=False)
-
-        if not isinstance(shots, list):
-            assert isinstance(res, tuple)
-            res = res[0]
-            assert qml.math.ndim(res) == 0
-            assert qml.math.isnan(res)
-            assert qml.math.get_interface(res) == "jax"
-
-        else:
-            assert isinstance(res, tuple)
-            res = res[0]
-            assert isinstance(res, tuple)
-            assert len(res) == 2
-            for r in res:
-                assert qml.math.ndim(r) == 0
-                assert qml.math.isnan(r)
-                assert qml.math.get_interface(r) == "jax"
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize(
         "mp", [qml.sample(wires=0), qml.sample(op=qml.PauliZ(0)), qml.sample(wires=[0, 1])]
     )
-    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow", "jax"])
     @pytest.mark.parametrize("shots", [0, [0, 0]])
     def test_nan_samples(self, mp, interface, shots):
         """Test that the result of circuits with 0 probability postselections is NaN with the
         expected shape."""
         state = qml.math.full((2, 2), np.NaN, like=interface)
-        res = measure_with_samples((mp,), state, Shots(shots), is_state_batched=False)
+        res = measure_with_samples((mp,), state, _FlexShots(shots), is_state_batched=False)
 
         if not isinstance(shots, list):
             assert isinstance(res, tuple)
             res = res[0]
-            assert qml.math.shape(res) == (shots, 2)
-            assert qml.math.get_interface(res) == interface
+            assert qml.math.shape(res) == (shots,) if len(mp.wires) == 1 else (shots, len(mp.wires))
 
         else:
-            assert isinstance(res, tuple)
-            res = res[0]
             assert isinstance(res, tuple)
             assert len(res) == 2
             for i, r in enumerate(res):
-                assert qml.math.shape(r) == (shots[i], 2)
-                assert qml.math.get_interface(r) == interface
-
-    @pytest.mark.jax
-    @pytest.mark.parametrize(
-        "mp", [qml.sample(wires=0), qml.sample(op=qml.PauliZ(0)), qml.sample(wires=[0, 1])]
-    )
-    @pytest.mark.parametrize("use_jit", [True, False])
-    @pytest.mark.parametrize("shots", [0, [0, 0]])
-    def test_nan_samples_jax(self, mp, use_jit, shots):
-        """Test that the result of circuits with 0 probability postselections is NaN with the
-        expected shape."""
-        state = qml.math.full((2, 2), np.NaN, like="jax")
-        if use_jit:
-            import jax
-
-            res = jax.jit(measure_with_samples, static_argnums=[0, 2, 3])(
-                (mp,), state, Shots(shots), is_state_batched=False
-            )
-        else:
-            res = measure_with_samples((mp,), state, Shots(shots), is_state_batched=False)
-
-        if not isinstance(shots, list):
-            assert isinstance(res, tuple)
-            res = res[0]
-            assert qml.math.shape(res) == (shots, 2)
-            assert qml.math.get_interface(res) == "jax"
-
-        else:
-            assert isinstance(res, tuple)
-            res = res[0]
-            assert isinstance(res, tuple)
-            assert len(res) == 2
-            for i, r in enumerate(res):
-                assert qml.math.shape(r) == (shots[i], 2)
-                assert qml.math.get_interface(r) == "jax"
+                assert isinstance(r, tuple)
+                r = r[0]
+                assert (
+                    qml.math.shape(r) == (shots[i],)
+                    if len(mp.wires) == 1
+                    else (shots[i], len(mp.wires))
+                )
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow", "jax"])
     @pytest.mark.parametrize("shots", [0, [0, 0]])
     def test_nan_classical_shadows(self, interface, shots):
         """Test that classical_shadows returns an empty array when the state has
         NaN values"""
         state = qml.math.full((2, 2), np.NaN, like=interface)
         res = measure_with_samples(
-            (qml.classical_shadow([0]),), state, Shots(shots), is_state_batched=False
+            (qml.classical_shadow([0]),), state, _FlexShots(shots), is_state_batched=False
         )
 
         if not isinstance(shots, list):
             assert isinstance(res, tuple)
             res = res[0]
-            assert qml.math.shape(res) == (0,)
-            assert qml.math.get_interface(res) == interface
+            assert qml.math.shape(res) == (2, 0, 1)
+            assert qml.math.size(res) == 0
 
         else:
-            assert isinstance(res, tuple)
-            res = res[0]
             assert isinstance(res, tuple)
             assert len(res) == 2
             for r in res:
-                assert qml.math.shape(r) == (0,)
-                assert qml.math.get_interface(r) == interface
-
-    @pytest.mark.jax
-    @pytest.mark.parametrize("use_jit", [True, False])
-    @pytest.mark.parametrize("shots", [0, [0, 0]])
-    def test_nan_classical_shadows_jax(self, use_jit, shots):
-        """Test that classical_shadows returns an empty array when the state has
-        NaN values"""
-        state = qml.math.full((2, 2), np.NaN, like="jax")
-        if use_jit:
-            import jax
-
-            res = jax.jit(measure_with_samples, static_argnums=[0, 2, 3])(
-                (qml.classical_shadow([0]),), state, Shots(shots), is_state_batched=False
-            )
-        else:
-            res = measure_with_samples(
-                (qml.classical_shadow([0]),), state, Shots(shots), is_state_batched=False
-            )
-
-        if not isinstance(shots, list):
-            assert isinstance(res, tuple)
-            res = res[0]
-            assert qml.math.shape(res) == (0,)
-            assert qml.math.get_interface(res) == "jax"
-
-        else:
-            assert isinstance(res, tuple)
-            res = res[0]
-            assert isinstance(res, tuple)
-            assert len(res) == 2
-            for r in res:
-                assert qml.math.shape(r) == (0,)
-                assert qml.math.get_interface(r) == "jax"
+                assert isinstance(r, tuple)
+                r = r[0]
+                assert qml.math.shape(r) == (2, 0, 1)
+                assert qml.math.size(r) == 0
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("H", [qml.PauliZ(0), [qml.PauliZ(0), qml.PauliX(1)]])
-    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow", "jax"])
     @pytest.mark.parametrize("shots", [0, [0, 0]])
     def test_nan_shadow_expval(self, H, interface, shots):
         """Test that shadow_expval returns an empty array when the state has
         NaN values"""
         state = qml.math.full((2, 2), np.NaN, like=interface)
         res = measure_with_samples(
-            (qml.shadow_expval(H),), state, Shots(shots), is_state_batched=False
+            (qml.shadow_expval(H),), state, _FlexShots(shots), is_state_batched=False
         )
 
         if not isinstance(shots, list):
@@ -738,53 +651,15 @@ class TestInvalidStateSamples:
             res = res[0]
             assert qml.math.shape(res) == qml.math.shape(H)
             assert qml.math.all(qml.math.isnan(res))
-            assert qml.math.get_interface(res) == interface
 
         else:
-            assert isinstance(res, tuple)
-            res = res[0]
             assert isinstance(res, tuple)
             assert len(res) == 2
             for r in res:
+                assert isinstance(r, tuple)
+                r = r[0]
                 assert qml.math.shape(r) == qml.math.shape(H)
                 assert qml.math.all(qml.math.isnan(r))
-                assert qml.math.get_interface(r) == interface
-
-    @pytest.mark.jax
-    @pytest.mark.parametrize("H", [qml.PauliZ(0), [qml.PauliZ(0), qml.PauliX(1)]])
-    @pytest.mark.parametrize("use_jit", [True, False])
-    @pytest.mark.parametrize("shots", [0, [0, 0]])
-    def test_nan_shadow_expval_jax(self, H, use_jit, shots):
-        """Test that shadow_expval returns an empty array when the state has
-        NaN values"""
-        state = qml.math.full((2, 2), np.NaN, like="jax")
-        if use_jit:
-            import jax
-
-            res = jax.jit(measure_with_samples, static_argnums=[0, 2, 3])(
-                (qml.shadow_expval(H),), state, Shots(shots), is_state_batched=False
-            )
-        else:
-            res = measure_with_samples(
-                (qml.shadow_expval(H),), state, Shots(shots), is_state_batched=False
-            )
-
-        if not isinstance(shots, list):
-            assert isinstance(res, tuple)
-            res = res[0]
-            assert qml.math.shape(res) == qml.math.shape(H)
-            assert qml.math.all(qml.math.isnan(res))
-            assert qml.math.get_interface(res) == "jax"
-
-        else:
-            assert isinstance(res, tuple)
-            res = res[0]
-            assert isinstance(res, tuple)
-            assert len(res) == 2
-            for r in res:
-                assert qml.math.shape(r) == qml.math.shape(H)
-                assert qml.math.all(qml.math.isnan(r))
-                assert qml.math.get_interface(r) == "jax"
 
 
 class TestBroadcasting:

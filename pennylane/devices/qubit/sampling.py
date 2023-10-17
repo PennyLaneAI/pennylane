@@ -277,7 +277,7 @@ def _measure_with_samples_diagonalizing_gates(
             except ValueError as e:
                 if str(e) != "probabilities contain NaN":
                     raise e
-                samples = qml.math.full((s, len(wires)), np.NaN)
+                samples = qml.math.full((s, len(wires)), 0)
 
             processed_samples.append(_process_single_shot(samples))
 
@@ -295,7 +295,7 @@ def _measure_with_samples_diagonalizing_gates(
     except ValueError as e:
         if str(e) != "probabilities contain NaN":
             raise e
-        samples = qml.math.full((shots.total_shots, len(wires)), np.NaN)
+        samples = qml.math.full((shots.total_shots, len(wires)), 0)
 
     return _process_single_shot(samples)
 
@@ -363,7 +363,7 @@ def _measure_hamiltonian_with_samples(
         )
         return sum(c * res for c, res in zip(mp.obs.terms()[0], results))
 
-    unsqueezed_results = tuple(_sum_for_single_shot(Shots(s)) for s in shots)
+    unsqueezed_results = tuple(_sum_for_single_shot(type(shots)(s)) for s in shots)
     return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
 
 
@@ -391,7 +391,7 @@ def _measure_sum_with_samples(
         )
         return sum(results)
 
-    unsqueezed_results = tuple(_sum_for_single_shot(Shots(s)) for s in shots)
+    unsqueezed_results = tuple(_sum_for_single_shot(type(shots)(s)) for s in shots)
     return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
 
 

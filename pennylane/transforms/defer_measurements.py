@@ -232,13 +232,6 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
 
     new_tape = type(tape)(new_operations, new_measurements, shots=tape.shots)
 
-    # pylint: disable=protected-access
-    # We can remove this once _qfunc_output is removed from tape
-    if not isinstance(tape._qfunc_output, Sequence):
-        new_tape._qfunc_output = new_measurements[0]
-    else:
-        new_tape._qfunc_output = type(tape._qfunc_output)(new_measurements)
-
     if is_postselecting and new_tape.batch_size is not None:
         # Split tapes if broadcasting with postselection
         return qml.transforms.broadcast_expand(new_tape)

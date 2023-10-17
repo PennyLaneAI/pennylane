@@ -906,7 +906,7 @@ class QNode:
         )
         if expand_mid_measure:
             # Assume that tapes are not split if old device is used since postselection is not supported
-            tapes, _ = qml.defer_measurements(self._tape)
+            tapes, _ = qml.defer_measurements(self._tape, device=self.device)
             self._tape = tapes[0]
 
         if self.expansion_strategy == "device":

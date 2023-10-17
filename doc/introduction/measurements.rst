@@ -272,6 +272,15 @@ PennyLane implements the deferred measurement principle to transform
 conditional operations with the :func:`~.defer_measurements` quantum
 function transform.
 
+The deferred measurement principle provides a natural method to simulate the
+application of mid-circuit measurements and conditional operations in a
+differentiable and device-independent way. Performing true mid-circuit
+measurements and conditional operations is dependent on the
+quantum hardware and PennyLane device capabilities.
+
+For more examples on applying quantum functions conditionally, refer to the
+:func:`~.pennylane.cond` transform.
+
 .. code-block:: python
 
     transformed_qfunc = qml.transforms.defer_measurements(my_quantum_function)
@@ -329,52 +338,6 @@ Executing this QNode:
 >>> func()
 tensor([0., 1.], requires_grad=True)
 
-PennyLane also supports postselecting on mid-circuit measurement outcomes such that only states matching the
-postselection are considered in the remaining execution by specifying the ``postselect`` keyword argument of
-:func:`~.pennylane.measure`:
-
-.. code-block:: python3
-
-    dev = qml.device("default.qubit", wires=2)
-
-    @qml.qnode(dev)
-    def func(x):
-        qml.RX(x, wires=0)
-        m0 = qml.measure(0, postselect=1)
-        qml.cond(m0, qml.PauliX)(wires=1)
-        return qml.sample(wires=1)
-
-By postselecting on ``1``, we only consider the ``1`` measurement outcome. So, the probability of measuring 1
-on wire 1 should be 100%. Executing this QNode with 10 shots:
-
->>> func(np.pi / 2, shots=10)
-array([1, 1, 1, 1, 1, 1, 1])
-
-Note that only 7 samples are returned. This is because samples that do not meet the postselection criteria are
-thrown away.
-
-If postselection is requested on a state with zero probability of being measured, ``NaN`` will be returned regardless
-of what and how many measurements are made:
-
-.. code-block:: python3
-
-    dev = qml.device("default.qubit", wires=2)
-
-    @qml.qnode(dev)
-    def func(x):
-        qml.RX(x, wires=0)
-        m0 = qml.measure(0, postselect=1)
-        qml.cond(m0, qml.PauliX)(wires=1)
-        return qml.probs(wires=1)
-
->>> func(0.0)
-nan
-
-.. note::
-
-    Currently, postselection support is only available on ``"default.qubit"``. Requesting postselection on other
-    devices will not do anything.
-
 Statistics can also be collected on mid-circuit measurements along with terminal measurement statistics.
 Currently, ``qml.probs``, ``qml.sample``, ``qml.expval``, ``qml.var``, and ``qml.counts`` are supported,
 and can be requested along with other measurements. The devices that currently support collecting such
@@ -401,15 +364,81 @@ Currently, statistics can only be collected for single mid-circuit measurement v
 measurement values manipulated using boolean or arithmetic operators cannot be used. These can lead to
 unexpected/incorrect behaviour.
 
-The deferred measurement principle provides a natural method to simulate the
-application of mid-circuit measurements and conditional operations in a
-differentiable and device-independent way. Performing true mid-circuit
-measurements and conditional operations is dependent on the
-quantum hardware and PennyLane device capabilities.
+PennyLane also supports postselecting on mid-circuit measurement outcomes by specifying the ``postselect``
+keyword argument of :func:`~.pennylane.measure`. Postselection discards outcomes that do not meet the
+criteria provided by the ``postselect`` argument. For example, specifying ``postselect=1`` on wire 0 would
+be equivalent to projecting the state vector onto the :math:`|1\rangle` state on wire 0:
 
-For more examples on applying quantum functions conditionally, refer to the
-:func:`~.pennylane.cond` transform.
+.. code-block:: python3
 
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.qnode(dev)
+    def func(x):
+        qml.RX(x, wires=0)
+        m0 = qml.measure(0, postselect=1)
+        qml.cond(m0, qml.PauliX)(wires=1)
+        return qml.sample(wires=1)
+
+By postselecting on ``1``, we only consider the ``1`` measurement outcome. So, the probability of measuring 1
+on wire 1 should be 100%. Executing this QNode with 10 shots:
+
+>>> func(np.pi / 2, shots=10)
+array([1, 1, 1, 1, 1, 1, 1])
+
+Note that only 7 samples are returned. This is because samples that do not meet the postselection criteria are
+thrown away.
+
+If postselection is requested on a state with zero probability of being measured, the result may contain ``NaN``
+or ``Inf`` values:
+
+.. code-block:: python3
+
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.qnode(dev)
+    def func(x):
+        qml.RX(x, wires=0)
+        m0 = qml.measure(0, postselect=1)
+        qml.cond(m0, qml.PauliX)(wires=1)
+        return qml.probs(wires=1)
+
+>>> func(0.0)
+tensor([nan, nan], requires_grad=True)
+
+In the case of ``qml.sample``, an empty array will be returned:
+
+.. code-block:: python3
+
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.qnode(dev)
+    def func(x):
+        qml.RX(x, wires=0)
+        m0 = qml.measure(0, postselect=1)
+        qml.cond(m0, qml.PauliX)(wires=1)
+        return qml.sample()
+
+>>> func(0.0, shots=[10, 10])
+(array([], dtype=float64), array([], dtype=float64))
+
+.. note::
+
+    Currently, postselection support is only available on ``"default.qubit"``. Using postselection
+    on other devices will raise an error.
+
+.. warning::
+
+    All measurements are supported when using postselection. However, postselection on a zero probability
+    state can cause some measurements to break.
+
+    With finite shots, one must be careful when measuring ``qml.probs`` or ``qml.counts``, as these
+    measurements will raise errors if there are no valid samples after postselection. This will occur
+    with postselection states that have zero or close to zero probability.
+
+    With analytic execution, ``qml.mutual_info`` will raise errors when using any interfaces except
+    ``jax``, and ``qml.vn_entropy`` will raise an error with the ``tensorflow`` interface when the
+    postselection state has zero probability.
 
 Changing the number of shots
 ----------------------------
