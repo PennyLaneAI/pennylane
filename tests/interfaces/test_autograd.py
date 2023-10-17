@@ -346,9 +346,18 @@ class TestCaching:
             assert np.allclose(expected, hess1, atol=tol, rtol=0)
 
         expected_runs = 1  # forward pass
-        expected_runs += 2 * N  # Jacobian
-        expected_runs += 4 * N + 1  # Hessian diagonal
-        expected_runs += 4 * N**2  # Hessian off-diagonal
+
+        # Jacobian of an involutory observable:
+        # ------------------------------------
+        #
+        # 2 * N execs: evaluate the analytic derivative of <A>
+        # 1 execs: Get <A>, the expectation value of the tape with unshifted parameters.
+        num_shifted_evals = 2 * N
+        runs_for_jacobian = num_shifted_evals + 1
+        expected_runs += runs_for_jacobian
+
+        # Each tape used to compute the Jacobian is then shifted again
+        expected_runs += runs_for_jacobian * num_shifted_evals
         assert dev.num_executions == expected_runs
 
         # Use caching: number of executions is ideal

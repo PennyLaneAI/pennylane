@@ -763,11 +763,15 @@ def execute(
         # in this case would have ambiguous behaviour.
         raise ValueError("Gradient transforms cannot be used with grad_on_execution=True")
     elif interface in jpc_interfaces:
-        jpc = TransformJacobianProducts(execute_fn, gradient_fn, gradient_kwargs)
+        cache_full_jacobian = interface == "autograd"
+        jpc = TransformJacobianProducts(
+            execute_fn, gradient_fn, gradient_kwargs, cache_full_jacobian=cache_full_jacobian
+        )
         for _ in range(1, max_diff):
             ml_boundary_execute = _get_ml_boundary_execute(interface, _grad_on_execution)
             execute_fn = partial(ml_boundary_execute, execute_fn=execute_fn, jpc=jpc)
             jpc = TransformJacobianProducts(execute_fn, gradient_fn, gradient_kwargs)
+            cache_full_jacobian = False
 
     ml_boundary_execute = _get_ml_boundary_execute(interface, _grad_on_execution)
 

@@ -184,30 +184,38 @@ class TransformJacobianProducts(JacobianProductCalculator):
     """
 
     def __repr__(self):
-        return f"TransformJacobianProducts({self._inner_execute}, gradient_transform={self._gradient_transform}, gradient_kwargs={self._gradient_kwargs})"
+        return (
+            f"TransformJacobianProducts({self._inner_execute}, gradient_transform={self._gradient_transform}, "
+            f"gradient_kwargs={self._gradient_kwargs}, cache_full_jacobian={self._cache_full_jacobian})"
+        )
 
     def __init__(
         self,
         inner_execute: Callable,
         gradient_transform: "qml.gradients.gradient_transform",
         gradient_kwargs: Optional[dict] = None,
+        cache_full_jacobian: bool = False,
     ):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug(
-                "TransformJacobianProduct being created with (%s, %s, %s)",
+                "TransformJacobianProduct being created with (%s, %s, %s, %s)",
                 inspect.getsource(inner_execute)
                 if logger.isEnabledFor(qml.logging.TRACE)
                 else inner_execute,
                 gradient_transform,
                 gradient_kwargs,
+                cache_full_jacobian,
             )
         self._inner_execute = inner_execute
         self._gradient_transform = gradient_transform
         self._gradient_kwargs = gradient_kwargs or {}
+        self._cache_full_jacobian = cache_full_jacobian
+        self._cache = LRUCache(maxsize=10)
 
     def execute_and_compute_jvp(self, tapes: Batch, tangents: Tuple[Tuple[TensorLike]]):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("execute_and_compute_jvp called with (%s, %s)", tapes, tangents)
+
         num_result_tapes = len(tapes)
 
         jvp_tapes, jvp_processing_fn = qml.gradients.batch_jvp(
@@ -226,6 +234,12 @@ class TransformJacobianProducts(JacobianProductCalculator):
     def compute_vjp(self, tapes: Batch, dy: Tuple[Tuple[TensorLike]]):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("compute_vjp called with (%s, %s)", tapes, dy)
+
+        if self._cache_full_jacobian:
+            jacs = self.compute_jacobian(tapes)
+            multi_measurements = (len(t.measurements) > 1 for t in tapes)
+            return _compute_vjps(jacs, dy, multi_measurements, tapes[0].shots.has_partitioned_shots)
+
         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
             tapes, dy, self._gradient_transform, gradient_kwargs=self._gradient_kwargs
         )
@@ -236,12 +250,17 @@ class TransformJacobianProducts(JacobianProductCalculator):
     def compute_jacobian(self, tapes: Batch):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("compute_jacobian called with %s", tapes)
+        if tapes in self._cache:
+            return self._cache[tapes]
         partial_gradient_fn = partial(self._gradient_transform, **self._gradient_kwargs)
         jac_tapes, batch_post_processing = qml.transforms.map_batch_transform(
             partial_gradient_fn, tapes
         )
         results = self._inner_execute(jac_tapes)
-        return tuple(batch_post_processing(results))
+        jacs = tuple(batch_post_processing(results))
+        if self._cache_full_jacobian:
+            self._cache[tapes] = jacs
+        return jacs
 
 
 class DeviceDerivatives(JacobianProductCalculator):
