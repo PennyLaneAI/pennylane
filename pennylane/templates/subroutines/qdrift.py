@@ -11,12 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Contains template for QDrift subroutine.
-"""
+"""Contains template for QDrift subroutine."""
+
 import pennylane as qml
 from pennylane.operation import Operation
-from pennylane.ops import Sum
+from pennylane.ops import Sum, SProd, Hamiltonian
 
 
 class QDrift(Operation):
@@ -100,9 +99,7 @@ class QDrift(Operation):
         0.27980654844422853
     """
 
-    def __init__(  # pylint: disable=too-many-arguments
-        self, hamiltonian, time, n=1, seed=None, id=None
-    ):
+    def __init__(self, hamiltonian, time, n=1, seed=None, id=None):
         r"""Initialize the QDrift class"""
 
         if isinstance(hamiltonian, qml.Hamiltonian):
@@ -153,15 +150,15 @@ class QDrift(Operation):
                 try:
                     coeffs.append(op.scalar)
                     bases.append(op.base)
-                except:
+                except AttributeError:  # coefficient is 1.0
                     coeffs.append(1.0)
                     bases.append(op)
 
             lmbda = qml.math.sum(qml.math.abs(coeffs))
             probs = qml.math.abs(coeffs) / lmbda
             exps = [
-                qml.exp(bases[i], qml.math.sign(coeffs[i]) * lmbda * time * 1j / n)
-                for i in range(len(coeffs))
+                qml.exp(base, qml.math.sign(coeff) * lmbda * time * 1j / n)
+                for base, coeff in zip(bases, coeffs)
             ]
 
             choice_rng = qml.math.random.default_rng(seed)
@@ -172,3 +169,19 @@ class QDrift(Operation):
                 qml.apply(op)
 
         return decomp
+    
+    @staticmethod
+    def error(hamiltonian, time, n=1):
+        """Computes the expected precision of the QDrift approximation given the initial parameters."""
+        if isinstance(hamiltonian, Hamiltonian):
+            num_terms = len(hamiltonian.coeffs)
+            max_coeff = max(hamiltonian.coeffs)
+        
+        elif isinstance(hamiltonian, Sum): 
+            num_terms = len(hamiltonian)
+            max_coeff = max(op.scalar if isinstance(op, SProd) else 1. for op in hamiltonian)
+        
+        else:
+            raise TypeError(f"The given operator must be a PennyLane ~.Hamiltonian or ~.Sum got {hamiltonian}")
+
+        return ( (num_terms ** 2) * (max_coeff ** 2) * (time ** 2) / (2*n) ) * qml.math.exp(max_coeff * time * num_terms / n)
