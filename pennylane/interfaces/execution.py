@@ -111,7 +111,7 @@ def _get_ml_boundary_execute(interface: str, grad_on_execution: bool) -> Callabl
     mapped_interface = INTERFACE_MAP[interface]
     try:
         if mapped_interface == "autograd":
-            from .autograd import autograd_execute as ml_boundary
+            from .autograd import execute as ml_boundary
 
         elif mapped_interface == "tf":
             import tensorflow as tf
