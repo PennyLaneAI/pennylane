@@ -47,43 +47,18 @@ INTERFACE_TO_LIKE = {
 }
 
 
-def _valid_flex_int(s):
-    """Returns True if s is a non-negative integer."""
-    return isinstance(s, int) and s >= 0
-
-
-def _valid_flex_tuple(s):
-    """Returns True if s is a tuple of the form (shots, copies)."""
-    return (
-        isinstance(s, tuple)
-        and len(s) == 2
-        and _valid_flex_int(s[0])
-        and isinstance(s[1], int)
-        and s[1] > 0
-    )
-
-
 class _FlexShots(qml.measurements.Shots):
     """Shots class that allows zero shots."""
 
     # pylint: disable=super-init-not-called
     def __init__(self, shots=None):
-        if shots is None:
-            self.total_shots = None
-            self.shot_vector = ()
-        elif isinstance(shots, int):
-            if shots < 0:
-                raise self._SHOT_ERROR
+        if isinstance(shots, int):
             self.total_shots = shots
             self.shot_vector = (qml.measurements.ShotCopies(shots, 1),)
         elif isinstance(shots, Sequence):
-            if not all(_valid_flex_int(s) or _valid_flex_tuple(s) for s in shots):
-                raise self._SHOT_ERROR
             self.__all_tuple_init__([s if isinstance(s, tuple) else (s, 1) for s in shots])
-        elif isinstance(shots, self.__class__):
-            return  # self already _is_ shots as defined by __new__
         else:
-            raise self._SHOT_ERROR
+            return  # self already _is_ shots as defined by __new__
 
         self._frozen = True
 

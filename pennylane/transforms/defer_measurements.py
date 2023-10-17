@@ -236,11 +236,6 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
         # Split tapes if broadcasting with postselection
         return qml.transforms.broadcast_expand(new_tape)
 
-    def null_postprocessing(results):
-        """A postprocessing function returned by a transform that only converts the batch of results
-        into a result for a single ``QuantumTape``."""
-        return results[0]
-
     return [new_tape], null_postprocessing
 
 
