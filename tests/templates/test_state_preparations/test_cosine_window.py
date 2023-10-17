@@ -95,7 +95,7 @@ class TestStateVector:
 
     def test_CosineWindow_state_vector_bad_wire_order(self):
         """Tests that the provided wire_order must contain the wires in the operation."""
-        qsv_op = qml.StatePrep(wires=[0, 1])
+        qsv_op = qml.CosineWindow(wires=[0, 1])
         with pytest.raises(WireError, match="wire_order must contain all CosineWindow wires"):
             qsv_op.state_vector(wire_order=[1, 2])
 
