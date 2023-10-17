@@ -1589,7 +1589,6 @@ class TestTapeExpansion:
             [0, -torch.sin(d[0] + w[0]) * torch.sin(d[1] + w[1]), torch.cos(d[1] + w[1])]
         )
 
-        print(grad[0], expected_w)
         assert torch.allclose(grad[0], expected_w, atol=tol)
         assert torch.allclose(grad[1], expected_c, atol=tol)
 
