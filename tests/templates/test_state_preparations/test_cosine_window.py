@@ -20,6 +20,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.wires import WireError
 
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 

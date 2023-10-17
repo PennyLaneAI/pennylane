@@ -95,7 +95,7 @@ class CosineWindow(StatePrepBase):
 
     def state_vector(self, wire_order=None):
         num_op_wires = len(self.wires)
-        op_vector_shape = (-1,) + (2,) * num_op_wires
+        op_vector_shape = (-1,) + (2,) * num_op_wires if self.batch_size else (2,) * num_op_wires
         vector = np.array(
             [
                 np.sqrt(2)
@@ -118,6 +118,9 @@ class CosineWindow(StatePrepBase):
             [Ellipsis] + [slice(None)] * num_op_wires + [0] * (num_total_wires - num_op_wires)
         )
         ket_shape = [2] * num_total_wires
+        if self.batch_size:
+            # Add broadcasted dimension to the shape of the state vector
+            ket_shape = [self.batch_size] + ket_shape
 
         ket = np.zeros(ket_shape, dtype=np.complex128)
         ket[indices] = op_vector
@@ -130,7 +133,6 @@ class CosineWindow(StatePrepBase):
                 # If the operation is broadcasted, the desired order must include the batch dimension
                 # as the first dimension.
                 desired_order = [0] + [d + 1 for d in desired_order]
-
             ket = ket.transpose(desired_order)
 
         return math.convert_like(ket, op_vector)
