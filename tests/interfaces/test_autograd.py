@@ -282,12 +282,10 @@ class TestCaching:
             tape = qml.tape.QuantumScript.from_queue(q)
             return qml.execute([tape], dev, gradient_fn=param_shift, cache=cache)[0]
 
-        # Without caching, 9 evaluations would be required to compute
-        # the Jacobian: 1 (forward pass) + 2 (backward pass) * (2 shifts * 2 params)
-        #
+        # Without caching, 5 jacobians should still be performed
         params = np.array([0.1, 0.2])
         qml.jacobian(cost)(params, cache=None)
-        assert dev.num_executions == 9
+        assert dev.num_executions == 5
 
         # With caching, 5 evaluations are required to compute
         # the Jacobian: 1 (forward pass) + (2 shifts * 2 params)

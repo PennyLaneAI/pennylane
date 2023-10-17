@@ -100,7 +100,7 @@ def autograd_execute(
     parameters = autograd.builtins.tuple(
         [autograd.builtins.list(t.get_parameters()) for t in tapes]
     )
-    return _execute(parameters, tapes, execute_fn, jpc)
+    return _execute(parameters, tuple(tapes), execute_fn, jpc)
 
 
 @autograd.extend.primitive
@@ -109,7 +109,7 @@ def _execute(
     tapes,
     execute_fn,
     jpc,
-):  # pylint: disable=dangerous-default-value,unused-argument
+):  # pylint: disable=unused-argument
     """Autodifferentiable wrapper around ``Device.batch_execute``.
 
     Args:
@@ -122,7 +122,7 @@ def _execute(
     return execute_fn(tapes)
 
 
-# pylint: disable=dangerous-default-value,unused-argument
+# pylint: disable=unused-argument
 def vjp(
     ans,
     parameters,

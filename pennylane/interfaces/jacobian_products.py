@@ -230,7 +230,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
             tapes, dy, self._gradient_transform, gradient_kwargs=self._gradient_kwargs
         )
 
-        vjp_results = self._inner_execute(vjp_tapes)
+        vjp_results = self._inner_execute(tuple(vjp_tapes))
         return tuple(processing_fn(vjp_results))
 
     def compute_jacobian(self, tapes: Batch):
