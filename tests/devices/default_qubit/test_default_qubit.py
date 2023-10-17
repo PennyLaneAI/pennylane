@@ -1704,7 +1704,7 @@ class TestPostselection:
         ],
     )
     @pytest.mark.parametrize("param", np.linspace(np.pi / 4, 3 * np.pi / 4, 3))
-    @pytest.mark.parametrize("shots", [20000, (20000, 20000)])
+    @pytest.mark.parametrize("shots", [20000])
     def test_postselection_valid_finite_shots(
         self, param, mp, shots, interface, use_jit, tol_stochastic
     ):
@@ -1742,6 +1742,8 @@ class TestPostselection:
             assert qml.math.get_interface(res) == qml.math.get_interface(expected)
 
         else:
+            # No testing with shot vectors currently, but keeping this here so that
+            # we can just use it once shot vectors are supported
             assert isinstance(res, tuple)
             for r, e in zip(res, expected):
                 assert qml.math.allclose(r, e, atol=tol_stochastic, rtol=0)
