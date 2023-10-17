@@ -19,7 +19,6 @@ import itertools as it
 import warnings
 from functools import partial
 from typing import Sequence, Callable
-from .hessian_transform import _process_jacs
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -33,6 +32,7 @@ from .general_shift_rules import (
 )
 from .gradient_transform import gradient_analysis_and_validation
 from .parameter_shift import _get_operation_recipe
+from .hessian_transform import _process_jacs
 
 
 def _process_argnum(argnum, tape):

@@ -198,8 +198,8 @@ def pattern_matching_optimization(
             raise qml.QuantumFunctionError("Circuit has less qubits than the pattern.")
 
         # Construct Dag representation of the circuit and the pattern.
-        circuit_dag = commutation_dag(tape)()
-        pattern_dag = commutation_dag(pattern)()
+        circuit_dag = commutation_dag(tape)
+        pattern_dag = commutation_dag(pattern)
 
         max_matches = pattern_matching(circuit_dag, pattern_dag)
 

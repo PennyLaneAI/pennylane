@@ -1206,8 +1206,7 @@ class QuantumScript:
             return self
 
         wire_map = {w: i for i, w in enumerate(op_wires + meas_only_wires)}
-        tapes, fn = qml.map_wires(self, wire_map)
-        return fn(tapes)
+        return qml.map_wires(self, wire_map)
 
 
 def make_qscript(fn, shots: Optional[Union[int, Sequence, Shots]] = None):

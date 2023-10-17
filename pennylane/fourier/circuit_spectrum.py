@@ -16,9 +16,9 @@ of a quantum circuit, that is the frequencies without considering
 preprocessing in the QNode."""
 from typing import Sequence, Callable
 from functools import partial
-from .utils import get_spectrum, join_spectra
 from pennylane.transforms.core import transform
 from pennylane.tape import QuantumTape
+from .utils import get_spectrum, join_spectra
 
 
 @partial(transform, is_informative=True)

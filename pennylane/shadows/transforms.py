@@ -14,7 +14,7 @@
 """Classical shadow transforms"""
 
 import warnings
-from functools import reduce, wraps, partial
+from functools import reduce, partial
 from itertools import product
 from typing import Sequence, Callable
 

@@ -98,13 +98,13 @@ def map_wires(
                 qml.apply(new_op)
             return new_op
         return input.map_wires(wire_map=wire_map)
-    elif isinstance(input, (QuantumScript, QNode)) or callable(input):
+    if isinstance(input, (QuantumScript, QNode)) or callable(input):
         return _map_wires_transform(input, wire_map=wire_map)
 
     raise ValueError(f"Cannot map wires of object {input} of type {type(input)}.")
 
 
-@partial(transform)
+@partial(transform, is_informative=True)
 def _map_wires_transform(
     tape: qml.tape.QuantumTape, wire_map=None
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
