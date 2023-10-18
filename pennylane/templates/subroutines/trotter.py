@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -89,7 +89,7 @@ class TrotterProduct(Operation):
     Args:
         hamiltonian (Union[~.Hamiltonian, ~.Sum]): The Hamiltonian written as a linear combination
             of operators with known matrix exponentials.
-        time (float): The time of evolution, namely the parameter :math:`t` in :math:`e^{-iHt}`
+        time (float): The time of evolution, namely the parameter :math:`t` in :math:`e^{iHt}`
         n (int): An integer representing the number of Trotter steps to perform
         order (int): An integer (m) representing the order of the approximation (must be 1 or even)
         check_hermitian (bool): A flag to enable the validation check to ensure this is a valid unitary operator
@@ -126,7 +126,7 @@ class TrotterProduct(Operation):
     .. details::
         :title: Usage Details
 
-        One can recover the behaviour of :class:`~.ApproxTimeEvolution` by setting :code:`order=1`. 
+        One can recover the behaviour of :class:`~.ApproxTimeEvolution` by setting :code:`order=1`.
         We can also compute the gradient with respect to the coefficients of the Hamiltonian and the
         evolution time:
 
