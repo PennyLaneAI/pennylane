@@ -342,6 +342,15 @@ class PauliSentence(dict):
             larger_ps[key] += smaller_ps[key]
 
         return larger_ps
+    
+    def __iadd__(self, other):
+        """Inplace addition of two Pauli sentence together by adding terms of other to self"""
+        for key in other:
+            if key in self:
+                self[key] += other[key]
+            else:
+                self[key] = other[key]
+        return self
 
     def __copy__(self):
         """Copy the PauliSentence instance."""
