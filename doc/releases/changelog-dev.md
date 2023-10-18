@@ -87,6 +87,10 @@
 * Transforms can be applied on devices following the new device API.
  [(#4667)](https://github.com/PennyLaneAI/pennylane/pull/4667)
 
+* `commutation_dag`, `shadow_expval`, `shadow_state`, `circuit_spectrum`, `map_wires` are updated to the new transform 
+  program system.
+  [(#4686)](https://github.com/PennyLaneAI/pennylane/pull/4686)
+
 * All gradient transforms are updated to the new transform program system.
  [(#4595)](https://github.com/PennyLaneAI/pennylane/pull/4595)
 
@@ -95,6 +99,7 @@
 
 * All batch transforms are updated to the new transform program system.
   [(#4440)](https://github.com/PennyLaneAI/pennylane/pull/4440)
+  [(#4686)](https://github.com/PennyLaneAI/pennylane/pull/4686)
 
 * Quantum information transforms are updated to the new transform program system.
   [(#4569)](https://github.com/PennyLaneAI/pennylane/pull/4569)
