@@ -295,14 +295,21 @@ class TestSupportedConfs:
 
         msg = None
         if not shots and return_type is Sample:
-            msg = "Analytic circuits must only contain StateMeasurements"
+            msg = "not accepted for analytic simulation"
         elif diff_method == "adjoint":
             if shots:
-                msg = (
-                    "Circuits with finite shots must be executed with non-analytic gradient methods"
-                )
+                if return_type in {
+                    VnEntropy,
+                    MutualInfo,
+                    "StateCost",
+                    "StateVector",
+                    "DensityMatrix",
+                }:
+                    msg = "not accepted with finite shots"
+                else:
+                    msg = "Finite shots are not supported with"
             elif return_type not in ("Hermitian", "Projector", Expectation):
-                msg = "Adjoint differentiation method does not support measurement .*"
+                msg = "not accepted for analytic simulation"
         elif shots and return_type in (
             VnEntropy,
             MutualInfo,
@@ -310,7 +317,7 @@ class TestSupportedConfs:
             "StateCost",
             "StateVector",
         ):
-            msg = "Circuits with finite shots must only contain"
+            msg = "not accepted with finite shots on"
 
         if msg is not None:
             with pytest.raises(qml.DeviceError, match=msg):
@@ -360,9 +367,9 @@ class TestSupportedConfs:
         """Test diff_method=adjoint raises an error for non-expectation
         measurements for all interfaces"""
         msg = (
-            "Circuits with finite shots must be executed with non-analytic gradient methods"
+            ""  # two options of message both along the lines of "no shots"
             if shots
-            else "Adjoint differentiation method does not support measurement .*"
+            else "not accepted for analytic simulation on adjoint"
         )
 
         circuit = get_qnode(interface, "adjoint", return_type, shots, wire_specs)
@@ -387,7 +394,7 @@ class TestSupportedConfs:
             x = get_variable(interface, wire_specs)
             with pytest.raises(
                 qml.DeviceError,
-                match="Circuits with finite shots must be executed with non-analytic gradient methods",
+                match="Finite shots are not supported",
             ):
                 compute_gradient(x, interface, circuit, return_type)
 
@@ -426,9 +433,7 @@ class TestSupportedConfs:
         circuit = get_qnode(interface, "parameter-shift", return_type, shots, wire_specs)
         x = get_variable(interface, wire_specs, complex=complex)
         if shots is not None:
-            with pytest.raises(
-                qml.DeviceError, match="Circuits with finite shots must only contain"
-            ):
+            with pytest.raises(qml.DeviceError, match="not accepted with finite shots"):
                 compute_gradient(x, interface, circuit, return_type, complex=complex)
         else:
             with pytest.raises(ValueError, match=msg):
@@ -450,9 +455,7 @@ class TestSupportedConfs:
         circuit = get_qnode(interface, diff_method, return_type, shots, wire_specs)
         x = get_variable(interface, wire_specs)
         if shots is not None and return_type in (VnEntropy, MutualInfo):
-            with pytest.raises(
-                qml.DeviceError, match="Circuits with finite shots must only contain"
-            ):
+            with pytest.raises(qml.DeviceError, match="not accepted with finite shots"):
                 compute_gradient(x, interface, circuit, return_type)
         else:
             compute_gradient(x, interface, circuit, return_type)
@@ -492,7 +495,7 @@ class TestSupportedConfs:
         """Test sample measurement fails for all interfaces and diff_methods
         when shots=None"""
 
-        with pytest.raises(qml.DeviceError, match="Analytic circuits must only contain"):
+        with pytest.raises(qml.DeviceError, match="not accepted for analytic simulation on"):
             circuit = get_qnode(interface, diff_method, Sample, None, wire_specs)
             x = get_variable(interface, wire_specs)
             circuit(x)
@@ -549,7 +552,7 @@ class TestSupportedConfs:
         if return_type in (VnEntropy, MutualInfo):
             if shots:
                 err_cls = qml.DeviceError
-                msg = "Circuits with finite shots must only contain"
+                msg = "not accepted with finite shots"
             else:
                 err_cls = ValueError
                 msg = "Computing the gradient of circuits that return the state with the Hadamard test gradient transform is not supported"

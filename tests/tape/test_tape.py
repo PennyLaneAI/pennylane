@@ -1456,14 +1456,14 @@ class TestExecution:
     def test_decomposition(self, tol):
         """Test decomposition onto a device's supported gate set"""
         dev = qml.device("default.qubit", wires=1)
-        from pennylane.devices.qubit.preprocess import _accepted_operator
+        from pennylane.devices.default_qubit import stopping_condition
 
         with QuantumTape() as tape:
             qml.U3(0.1, 0.2, 0.3, wires=[0])
             qml.expval(qml.PauliZ(0))
 
         def stop_fn(op):
-            return isinstance(op, qml.measurements.MeasurementProcess) or _accepted_operator(op)
+            return isinstance(op, qml.measurements.MeasurementProcess) or stopping_condition(op)
 
         tape = tape.expand(stop_at=stop_fn)
         res = dev.execute(tape)
@@ -1904,7 +1904,10 @@ class TestOutputShape:
             qml.apply(measurement)
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
-        res = qml.execute([tape], dev, gradient_fn=qml.gradients.param_shift)[0]
+        program, _ = dev.preprocess()
+        res = qml.execute(
+            [tape], dev, gradient_fn=qml.gradients.param_shift, transform_program=program
+        )[0]
 
         if isinstance(res, tuple):
             res_shape = tuple(r.shape for r in res)
@@ -2105,7 +2108,8 @@ class TestOutputShape:
             qml.apply(measurement)
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
-        expected = qml.execute([tape], dev, gradient_fn=None)[0]
+        program, _ = dev.preprocess()
+        expected = qml.execute([tape], dev, gradient_fn=None, transform_program=program)[0]
         assert tape.shape(dev) == expected.shape
 
     @pytest.mark.autograd
@@ -2132,7 +2136,8 @@ class TestOutputShape:
                 qml.apply(measurement)
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
-        expected = qml.execute([tape], dev, gradient_fn=None)[0]
+        program, _ = dev.preprocess()
+        expected = qml.execute([tape], dev, gradient_fn=None, transform_program=program)[0]
         expected = tuple(i.shape for i in expected)
         assert tape.shape(dev) == expected
 
