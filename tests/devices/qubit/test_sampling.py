@@ -58,7 +58,7 @@ def _valid_flex_tuple(s):
     )
 
 
-class _FlexShots(Shots):  # pylint: disable=too-few-methods
+class _FlexShots(Shots):  # pylint: disable=too-few-public-methods
     """Shots class that allows zero shots."""
 
     # pylint: disable=super-init-not-called
@@ -535,6 +535,16 @@ class TestMeasureSamples:
 
 class TestInvalidStateSamples:
     """Tests for state vectors containing nan values or shot vectors with zero shots."""
+
+    @pytest.mark.parametrize("shots", [10, [10, 10]])
+    def test_only_catch_nan_errors(self, shots):
+        """Test that errors are only caught if they are raised due to nan values in the state."""
+        state = np.zeros((2, 2)).astype(np.complex128)
+        mp = qml.expval(qml.PauliZ(0))
+        _shots = Shots(shots)
+
+        with pytest.raises(Exception):
+            _ = measure_with_samples([mp], state, _shots)
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize(

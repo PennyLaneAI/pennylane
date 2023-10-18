@@ -57,8 +57,6 @@ class _FlexShots(qml.measurements.Shots):
             self.shot_vector = (qml.measurements.ShotCopies(shots, 1),)
         elif isinstance(shots, Sequence):
             self.__all_tuple_init__([s if isinstance(s, tuple) else (s, 1) for s in shots])
-        else:
-            return  # self already _is_ shots as defined by __new__
 
         self._frozen = True
 
@@ -120,7 +118,13 @@ def _postselection_postprocess(state, is_state_batched, shots):
         # Clip the number of shots using a binomial distribution using the probability of
         # measuring the postselected state.
         postselected_shots = (
-            [binomial(s, float(norm)) for s in shots] if not qml.math.is_abstract(norm) else shots
+            (
+                binomial(shots.total_shots, float(norm))
+                if not shots.has_partitioned_shots
+                else [binomial(s, float(norm)) for s in shots]
+            )
+            if not qml.math.is_abstract(norm)
+            else shots
         )
 
         # _FlexShots is used here since the binomial distribution could result in zero

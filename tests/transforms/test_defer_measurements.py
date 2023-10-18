@@ -83,6 +83,21 @@ def test_postselection_error_with_wrong_device():
 class TestQNode:
     """Test that the transform integrates well with QNodes."""
 
+    def test_custom_qnode_transform_error(self):
+        """Test that an error is raised if a user tries to give a device argument to the
+        transform when transformingn a qnode."""
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circ():
+            qml.PauliX(0)
+            qml.measure(0)
+            return qml.probs()
+
+        with pytest.raises(ValueError, match="Cannot provide a 'device'"):
+            _ = qml.defer_measurements(circ, device=dev)
+
     def test_only_mcm(self):
         """Test that a quantum function that only contains one mid-circuit
         measurement yields the correct results and is transformed correctly."""
