@@ -76,22 +76,22 @@ class TrotterProduct(Operation):
             S_{1}(t) &= \Pi_{j=0}^{N} \ e^{i t O_{j}} \\
             S_{2}(t) &= \Pi_{j=0}^{N} \ e^{i \frac{t}{2} O_{j}} \cdot \Pi_{j=N}^{0} \ e^{i \frac{t}{2} O_{j}} \\
             &\vdots \\
-            S_{2k}(t) &= S_{2k-2}(p_{2k}t)^{2} \cdot S_{2k-2}((1-4p_{2k})t) \cdot S_{2k-2}(p_{2k}t)^{2},
+            S_{m}(t) &= S_{m-2}(p_{m}t)^{2} \cdot S_{m-2}((1-4p_{m})t) \cdot S_{m-2}(p_{m}t)^{2},
         \end{align}
 
-    where the coefficient is :math:`p_{2k} = 1 / (4 - \sqrt[2k - 1]{4})`. The :math:`2k`th order,
+    where the coefficient is :math:`p_{m} = 1 / (4 - \sqrt[m - 1]{4})`. The :math:`m`th order,
     :math:`n`-step Suzuki-Trotter approximation is then defined as:
 
-    .. math:: e^{iHt} \approx \left [S_{2k}(t / n)  \right ]^{n}.
+    .. math:: e^{iHt} \approx \left [S_{m}(t / n)  \right ]^{n}.
 
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        hamiltonian (Union[~.Hamiltonian, ~.Sum]): The Hamiltonian written in terms of products of
-            Pauli gates
+        hamiltonian (Union[~.Hamiltonian, ~.Sum]): The Hamiltonian written as a linear combination
+            of operators with known matrix exponentials.
         time (int or float): The time of evolution, namely the parameter :math:`t` in :math:`e^{-iHt}`
         n (int): An integer representing the number of Trotter steps to perform
-        order (int): An integer representing the order of the approximation (must be 1 or even)
+        order (int): An integer (m) representing the order of the approximation (must be 1 or even)
         check_hermitian (bool): A flag to enable the validation check to ensure this is a valid unitary operator
 
     Raises:
