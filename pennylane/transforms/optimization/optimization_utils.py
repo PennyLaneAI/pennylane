@@ -18,16 +18,7 @@ from functools import partial
 import numpy as np
 
 from pennylane.math import abs as math_abs
-from pennylane.math import (
-    allclose,
-    arccos,
-    arctan2,
-    cos,
-    get_interface,
-    is_abstract,
-    sin,
-    stack,
-)
+from pennylane.math import allclose, arccos, arctan2, cos, get_interface, is_abstract, sin, stack
 from pennylane.wires import Wires
 
 
