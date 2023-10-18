@@ -15,18 +15,21 @@
 This module contains functions for computing the SPSA gradient
 of a quantum tape.
 """
-# pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements
+# pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements,unused-argument
+from typing import Sequence, Callable
 from functools import partial
 
 import numpy as np
 
 import pennylane as qml
+from pennylane.transforms.core import transform
+from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
+from pennylane.transforms.tape_expand import expand_invalid_trainable
 
 from .finite_difference import _processing_fn, finite_diff_coeffs
 from .gradient_transform import (
     _all_zero_grad,
     assert_no_tape_batching,
-    gradient_transform,
     choose_grad_methods,
     gradient_analysis_and_validation,
     _no_trainable_grad,
@@ -56,9 +59,8 @@ def _rademacher_sampler(indices, num_params, *args, rng):
     return direction
 
 
-@gradient_transform
-def spsa_grad(
-    tape,
+def _expand_transform_spsa(
+    tape: qml.tape.QuantumTape,
     argnum=None,
     h=1e-5,
     approx_order=2,
@@ -69,7 +71,38 @@ def spsa_grad(
     num_directions=1,
     sampler=_rademacher_sampler,
     sampler_rng=None,
-):
+) -> (Sequence[qml.tape.QuantumTape], Callable):
+    """Expand function to be applied before spsa gradient."""
+    expanded_tape = expand_invalid_trainable(tape)
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [expanded_tape], null_postprocessing
+
+
+@partial(
+    transform,
+    expand_transform=_expand_transform_spsa,
+    classical_cotransform=_contract_qjac_with_cjac,
+    final_transform=True,
+)
+def spsa_grad(
+    tape: qml.tape.QuantumTape,
+    argnum=None,
+    h=1e-5,
+    approx_order=2,
+    n=1,
+    strategy="center",
+    f0=None,
+    validate_params=True,
+    num_directions=1,
+    sampler=_rademacher_sampler,
+    sampler_rng=None,
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Transform a QNode to compute the SPSA gradient of all gate
     parameters with respect to its inputs. This estimator shifts all parameters
     simultaneously and approximates the gradient based on these shifts and a
@@ -250,6 +283,7 @@ def spsa_grad(
         Note that the stochastic approximation and the fluctuations from the shot noise
         of the device accumulate, leading to a very coarse-grained estimate for the gradient.
     """
+
     transform_name = "SPSA"
     assert_no_tape_batching(tape, transform_name)
 

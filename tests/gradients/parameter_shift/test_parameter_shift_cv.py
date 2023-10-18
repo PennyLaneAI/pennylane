@@ -298,10 +298,8 @@ class TestParameterShiftLogic:
             return qml.expval(qml.QuadX(0))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = qml.gradients.param_shift_cv(circuit)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.param_shift_cv(circuit)(weights)
 
     @pytest.mark.torch
     def test_no_trainable_params_qnode_torch(self):
@@ -317,10 +315,8 @@ class TestParameterShiftLogic:
             return qml.expval(qml.QuadX(0))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = qml.gradients.param_shift_cv(circuit)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.param_shift_cv(circuit)(weights)
 
     @pytest.mark.tf
     def test_no_trainable_params_qnode_tf(self):
@@ -336,10 +332,8 @@ class TestParameterShiftLogic:
             return qml.expval(qml.QuadX(0))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = qml.gradients.param_shift_cv(circuit)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.param_shift_cv(circuit)(weights)
 
     @pytest.mark.jax
     def test_no_trainable_params_qnode_jax(self):
@@ -355,10 +349,8 @@ class TestParameterShiftLogic:
             return qml.expval(qml.QuadX(0))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = qml.gradients.param_shift_cv(circuit)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.param_shift_cv(circuit)(weights)
 
     def test_no_trainable_params_tape(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
@@ -396,9 +388,6 @@ class TestParameterShiftLogic:
 
         result = qml.gradients.param_shift_cv(circuit, dev)(params)
         assert np.allclose(result, np.zeros((2, 3)), atol=0, rtol=0)
-
-        tapes, _ = qml.gradients.param_shift_cv(circuit.tape, dev)
-        assert tapes == []
 
     def test_state_non_differentiable_error(self):
         """Test error raised if attempting to differentiate with

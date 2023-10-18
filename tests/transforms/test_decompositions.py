@@ -38,16 +38,16 @@ from pennylane.transforms.decompositions.two_qubit_unitary import (
 typeof_gates_zyz = (qml.RZ, qml.RY, qml.RZ, qml.GlobalPhase)
 single_qubit_decomps_zyz = [
     (I, typeof_gates_zyz, [0.0, 0.0, 0.0, 0]),
-    (Z, typeof_gates_zyz, [np.pi / 2, 0.0, np.pi / 2, (-1.5707963267948966 + 0j)]),
+    (Z, typeof_gates_zyz, [np.pi / 2, 0.0, np.pi / 2, -1.5707963267948966]),
     (
         S,
         typeof_gates_zyz,
-        [np.pi / 4, 0.0, np.pi / 4, (-0.7853981633974483 - 1.6780315470477092e-09j)],
+        [np.pi / 4, 0.0, np.pi / 4, -0.7853981633974483],
     ),
     (
         T,
         typeof_gates_zyz,
-        [np.pi / 8, 0.0, np.pi / 8, (-0.39269908047469393 - 3.225207101387184e-09j)],
+        [np.pi / 8, 0.0, np.pi / 8, -0.39269908047469393],
     ),
     (qml.RZ(0.3, wires=0).matrix(), typeof_gates_zyz, [0.15, 0.0, 0.15, 0]),
     (
@@ -70,8 +70,8 @@ single_qubit_decomps_zyz = [
         typeof_gates_zyz,
         [12.382273469673908, np.pi, 0.18409714468526372, 0],
     ),
-    (H, typeof_gates_zyz, [np.pi, np.pi / 2, 0.0, (-1.5707963267948966 + 0j)]),
-    (X, typeof_gates_zyz, [np.pi / 2, np.pi, 10.995574287564276, (-1.5707963267948966 + 0j)]),
+    (H, typeof_gates_zyz, [np.pi, np.pi / 2, 0.0, -1.5707963267948966]),
+    (X, typeof_gates_zyz, [np.pi / 2, np.pi, 10.995574287564276, -1.5707963267948966]),
     (
         np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix(),
         typeof_gates_zyz,
@@ -79,7 +79,7 @@ single_qubit_decomps_zyz = [
             11.566370614359172,
             2.0,
             9.566370614359172,
-            (-0.020000000000000042 - 2.122325752640375e-17j),
+            -0.020000000000000042,
         ],
     ),
     # Add two instances of broadcasted unitaries, one coming from RZ and another from Rot
@@ -196,14 +196,14 @@ single_qubit_decomps_xyx = [
             10.845351366405708,
             1.3974974118006183,
             0.45246583660683803,
-            (1.1759220332464762 - 4.163336342344337e-17j),
+            1.1759220332464762,
         ),
     ),
     # Try a few specific special unitaries
     (I, typeof_gates_xyx, [0, 0, 0, 0]),  # This triggers the if conditional trivially
-    (X, typeof_gates_xyx, [4.71238898038469, 0.0, 10.995574287564276, (-1.5707963267948966 + 0j)]),
-    (Y, typeof_gates_xyx, [1 / 2 * np.pi, np.pi, 1 / 2 * np.pi, (-1.5707963267948966 + 0j)]),
-    (Z, typeof_gates_xyx, [10.995574287564276, np.pi, 1 / 2 * np.pi, (-1.5707963267948966 + 0j)]),
+    (X, typeof_gates_xyx, [4.71238898038469, 0.0, 10.995574287564276, -1.5707963267948966]),
+    (Y, typeof_gates_xyx, [1 / 2 * np.pi, np.pi, 1 / 2 * np.pi, -1.5707963267948966]),
+    (Z, typeof_gates_xyx, [10.995574287564276, np.pi, 1 / 2 * np.pi, -1.5707963267948966]),
     # Add two instances of broadcasted unitaries, one coming from RZ and another from Rot
     (
         qml.QubitUnitary(qml.RZ.compute_matrix(np.array([np.pi, np.pi / 2])), wires=0).matrix(),
@@ -311,16 +311,16 @@ class TestQubitUnitaryXYXDecomposition:
 typeof_gates_zxz = (qml.RZ, qml.RX, qml.RZ, qml.GlobalPhase)
 single_qubit_decomps_zxz = [
     (I, typeof_gates_zxz, [0.0, 0.0, 0.0, 0]),
-    (Z, typeof_gates_zxz, [np.pi / 2, 0.0, np.pi / 2, (-1.5707963267948966 + 0j)]),
+    (Z, typeof_gates_zxz, [np.pi / 2, 0.0, np.pi / 2, -1.5707963267948966]),
     (
         S,
         typeof_gates_zxz,
-        [np.pi / 4, 0.0, np.pi / 4, (-0.7853981633974483 - 1.6780315470477092e-09j)],
+        [np.pi / 4, 0.0, np.pi / 4, -0.7853981633974483],
     ),
     (
         T,
         typeof_gates_zxz,
-        [np.pi / 8, 0.0, np.pi / 8, (-0.39269908047469393 - 3.225207101387184e-09j)],
+        [np.pi / 8, 0.0, np.pi / 8, -0.39269908047469393],
     ),
     (qml.RZ(0.3, wires=0).matrix(), typeof_gates_zxz, [0.15, 0.0, 0.15, 0]),
     (
@@ -484,7 +484,7 @@ single_qubit_decomps = [
             10.845351366405708,
             1.3974974118006183,
             0.45246583660683803,
-            1.1759220332464762 - 4.163336342344337e-17j,
+            1.1759220332464762,
         ),
     ),
     (

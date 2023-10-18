@@ -77,26 +77,6 @@ class TestMetricTensor:
         assert qml.math.shape(result[0]) == ()
         assert qml.math.shape(result[1]) == ()
 
-    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
-    def test_parameter_fan_out(self, diff_method):
-        """The metric tensor is with respect to the quantum circuit and ignores
-        classical processing if ``hybrid=False``. As a result, if there is
-        parameter fan-out, the returned metric tensor will be larger than
-        ``(len(args), len(args))`` if hybrid computation is deactivated.
-        """
-        dev = qml.device("default.qubit", wires=2)
-
-        def circuit(a):
-            qml.RX(a, wires=0)
-            qml.RX(a, wires=0)
-            return qml.expval(qml.PauliX(0))
-
-        circuit = qml.QNode(circuit, dev, diff_method=diff_method)
-        params = np.array([0.1], requires_grad=True)
-        # pylint:disable=unexpected-keyword-arg
-        result = qml.metric_tensor(circuit, hybrid=False, approx="block-diag")(*params)
-        assert result.shape == (2, 2)
-
     def test_construct_subcircuit(self):
         """Test correct subcircuits constructed"""
         with qml.queuing.AnnotatedQueue() as q:
@@ -231,13 +211,12 @@ class TestMetricTensor:
         assert qml.math.allclose(g_diag, np.diag(expected), atol=tol, rtol=0)
         assert qml.math.allclose(g_blockdiag, np.diag(expected), atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("strategy", ["gradient", "device"])
-    def test_template_integration(self, strategy):
+    def test_template_integration(self):
         """Test that the metric tensor transform acts on QNodes
         correctly when the QNode contains a template"""
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, expansion_strategy=strategy)
+        @qml.qnode(dev)
         def circuit(weights):
             qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
             return qml.probs(wires=[0, 1])
@@ -858,10 +837,8 @@ class TestMetricTensor:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="tensor of a QNode with no trainable parameters"):
-            res = qml.metric_tensor(circuit)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.metric_tensor(circuit)(weights)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("interface", ["auto", "torch"])
@@ -878,10 +855,8 @@ class TestMetricTensor:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="tensor of a QNode with no trainable parameters"):
-            res = qml.metric_tensor(circuit)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.metric_tensor(circuit)(weights)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("interface", ["auto", "tf"])
@@ -898,10 +873,8 @@ class TestMetricTensor:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="tensor of a QNode with no trainable parameters"):
-            res = qml.metric_tensor(circuit)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.metric_tensor(circuit)(weights)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("interface", ["auto", "jax"])
@@ -918,10 +891,8 @@ class TestMetricTensor:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="tensor of a QNode with no trainable parameters"):
-            res = qml.metric_tensor(circuit)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.metric_tensor(circuit)(weights)
 
     def test_no_trainable_params_tape(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
@@ -1621,7 +1592,9 @@ def test_error_missing_aux_wire():
     x = np.array(0.5, requires_grad=True)
     z = np.array(0.1, requires_grad=True)
 
-    with pytest.warns(UserWarning, match="The device does not have a wire that is not used"):
+    with pytest.raises(
+        qml.wires.WireError, match="The device has no free wire for the auxiliary wire."
+    ):
         qml.metric_tensor(circuit, approx=None)(x, z)
 
 
@@ -1637,56 +1610,20 @@ def test_error_not_available_aux_wire():
         qml.RY(x, wires=0)
         return qml.expval(qml.PauliZ(0))
 
-    with pytest.warns(UserWarning, match="An auxiliary wire is not available."):
+    with pytest.raises(
+        qml.wires.WireError, match="The requested auxiliary wire does not exist on the used device."
+    ):
         qml.metric_tensor(circuit, aux_wire=404)(x)
 
 
-@pytest.mark.filterwarnings("ignore:An auxiliary wire is not")
-def test_error_aux_wire_replaced():
-    """Tests that even if an aux_wire is provided, it is superseded by a device
-    wire if it does not exist itself on the device, so that the metric_tensor is
-    successfully computed."""
-    dev = qml.device("default.qubit", wires=qml.wires.Wires(["wire1", "wire2", "hidden_wire"]))
-
-    @qml.qnode(dev)
-    def circuit(x, z):
-        qml.RX(x, wires="wire1")
-        qml.RZ(z, wires="wire2")
-        qml.CNOT(wires=["wire1", "wire2"])
-        qml.RX(x, wires="wire1")
-        qml.RZ(z, wires="wire2")
-        return qml.expval(qml.PauliZ("wire2"))
-
-    x = np.array(0.5, requires_grad=True)
-    z = np.array(0.1, requires_grad=True)
-
-    qml.metric_tensor(circuit, approx=None, aux_wire="wire3")(x, z)
-
-
 @pytest.mark.parametrize("allow_nonunitary", [True, False])
-def test_error_generator_not_registered(allow_nonunitary, monkeypatch):
+def test_error_generator_not_registered(allow_nonunitary):
     """Tests that an error is raised if an operation doe not have a
     controlled-generator operation registered."""
     dev = qml.device("default.qubit", wires=qml.wires.Wires(["wire1", "wire2", "wire3"]))
 
     x = np.array(0.5, requires_grad=True)
     z = np.array(0.1, requires_grad=True)
-
-    @qml.qnode(dev)
-    def circuit0(x, z):
-        qml.CRX(x, wires=["wire1", "wire2"])
-        qml.RZ(z, wires="wire2")
-        return qml.expval(qml.PauliZ("wire2"))
-
-    with monkeypatch.context() as m:
-        exp_fn = lambda tape, *args, **kwargs: tape
-        m.setattr("pennylane.transforms.metric_tensor.expand_fn", exp_fn)
-
-        if allow_nonunitary:
-            qml.metric_tensor(circuit0, approx=None, allow_nonunitary=allow_nonunitary)(x, z)
-        else:
-            with pytest.raises(ValueError, match="Generator for operation"):
-                qml.metric_tensor(circuit0, approx=None, allow_nonunitary=allow_nonunitary)(x, z)
 
     class RX(qml.RX):
         def generator(self):
@@ -1698,15 +1635,11 @@ def test_error_generator_not_registered(allow_nonunitary, monkeypatch):
         qml.RZ(z, wires="wire1")
         return qml.expval(qml.PauliZ("wire2"))
 
-    with monkeypatch.context() as m:
-        exp_fn = lambda tape, *args, **kwargs: tape
-        m.setattr("pennylane.transforms.metric_tensor.expand_fn", exp_fn)
-
-        if allow_nonunitary:
+    if allow_nonunitary:
+        qml.metric_tensor(circuit1, approx=None, allow_nonunitary=allow_nonunitary)(x, z)
+    else:
+        with pytest.raises(ValueError, match="Generator for operation"):
             qml.metric_tensor(circuit1, approx=None, allow_nonunitary=allow_nonunitary)(x, z)
-        else:
-            with pytest.raises(ValueError, match="Generator for operation"):
-                qml.metric_tensor(circuit1, approx=None, allow_nonunitary=allow_nonunitary)(x, z)
 
 
 def test_no_error_missing_aux_wire_not_used(recwarn):
