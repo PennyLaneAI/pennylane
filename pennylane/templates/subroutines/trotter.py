@@ -39,11 +39,11 @@ def _recursive_expression(x, order, ops):
 
     Args:
         x (complex): the evolution 'time'
-        order (int): the order of the Trotter Expansion
+        order (int): the order of the Trotter expansion
         ops (Iterable(~.Operators)): a list of terms in the Hamiltonian
 
     Returns:
-        List: the approximation as product of exponentials of the Hamiltonian terms
+        list: the approximation as product of exponentials of the Hamiltonian terms
     """
     if order == 1:
         return [qml.exp(op, x * 1j) for op in ops]
