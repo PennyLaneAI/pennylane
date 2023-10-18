@@ -128,6 +128,8 @@ import pennylane.qinfo  # pylint:disable=wrong-import-order
 from pennylane.interfaces import execute  # pylint:disable=wrong-import-order
 import pennylane.logging  # pylint:disable=wrong-import-order
 
+from pennylane.compiler import Compiler
+
 import pennylane.data
 
 # Look for an existing configuration file
