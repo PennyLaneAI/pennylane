@@ -14,6 +14,7 @@
 """Tests for default qubit."""
 # pylint: disable=import-outside-toplevel, no-member, too-many-arguments
 
+from unittest import mock
 import pytest
 
 import numpy as np
@@ -1746,6 +1747,55 @@ class TestPostselection:
             for r, e in zip(res, expected):
                 assert qml.math.allclose(r, e, atol=tol_stochastic, rtol=0)
                 assert qml.math.get_interface(r) == qml.math.get_interface(e)
+
+    @pytest.mark.parametrize(
+        "mp, expected_shape",
+        [(qml.sample(wires=[0]), (5,)), (qml.classical_shadow(wires=[0]), (2, 5, 1))],
+    )
+    @pytest.mark.parametrize("param", np.linspace(np.pi / 4, 3 * np.pi / 4, 3))
+    @pytest.mark.parametrize("shots", [10, (10, 10)])
+    def test_postselection_valid_finite_shots_varied_shape(
+        self, mp, param, expected_shape, shots, interface, use_jit
+    ):
+        """Test that qml.sample and qml.classical_shadow work correctly.
+        Separate test because their shape is non-deterministic."""
+
+        if use_jit:
+            pytest.skip("Cannot JIT while mocking function.")
+
+        # with monkeypatch.context() as m:
+        #     m.setattr(np.random, "binomial", lambda *args, **kwargs: 5)
+
+        dev = qml.device("default.qubit", shots=shots, seed=42)
+        param = qml.math.asarray(param, like=interface)
+
+        with mock.patch("numpy.random.binomial", lambda *args, **kwargs: 5):
+
+            @qml.qnode(dev, interface=interface)
+            def circ_postselect(theta):
+                qml.RX(theta, 0)
+                qml.CNOT([0, 1])
+                qml.measure(0, postselect=1)
+                return qml.apply(mp)
+
+            if use_jit:
+                import jax
+
+                circ_postselect = jax.jit(circ_postselect)
+
+            res = circ_postselect(param)
+
+        if not isinstance(shots, tuple):
+            assert qml.math.get_interface(res) == interface if interface != "autograd" else "numpy"
+            assert qml.math.shape(res) == expected_shape
+
+        else:
+            assert isinstance(res, tuple)
+            for r in res:
+                assert (
+                    qml.math.get_interface(r) == interface if interface != "autograd" else "numpy"
+                )
+                assert qml.math.shape(r) == expected_shape
 
     @pytest.mark.parametrize(
         "mp, autograd_interface, is_nan",

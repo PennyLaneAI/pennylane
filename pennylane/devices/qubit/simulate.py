@@ -14,7 +14,8 @@
 """Simulate a quantum script."""
 # pylint: disable=protected-access
 from typing import Sequence
-from numpy.random import default_rng, binomial
+from numpy.random import default_rng
+import numpy as np
 
 import pennylane as qml
 from pennylane.typing import Result
@@ -119,9 +120,9 @@ def _postselection_postprocess(state, is_state_batched, shots):
         # measuring the postselected state.
         postselected_shots = (
             (
-                binomial(shots.total_shots, float(norm))
+                np.random.binomial(shots.total_shots, float(norm))
                 if not shots.has_partitioned_shots
-                else [binomial(s, float(norm)) for s in shots]
+                else [np.random.binomial(s, float(norm)) for s in shots]
             )
             if not qml.math.is_abstract(norm)
             else shots
