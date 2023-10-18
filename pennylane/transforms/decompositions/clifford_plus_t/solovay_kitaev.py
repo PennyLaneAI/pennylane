@@ -320,7 +320,7 @@ def solovay_kitaev_decomposition(op, depth, basis_set=None, approximate_set=None
     This method implements a recursive Solovay-Kitaev decomposition for approximating any SU(2) operation
     with :math:`\epsilon > 0` error that depdends on the recursion ``depth``. In general, this algorithm runs
     in :math:`O(\text{log}^{2.71}(1/\epsilon))` time and produces :math:`O(\text{log}^{3.97}(1/\epsilon))`
-    gate operations in the decomposition. 
+    gate operations in the decomposition.
 
     Args:
         op (~.Operation): A single-qubit gate operation

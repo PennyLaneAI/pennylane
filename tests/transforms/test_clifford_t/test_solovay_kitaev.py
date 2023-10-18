@@ -151,7 +151,14 @@ class TestSolovayKitaev:
     def test_solovay_kitaev(self, op):
         """Test Solovay-Kitaev decomposition method"""
 
-        approximate_set = build_approximate_set(basis_set=["t", "tdg", "h",], depth=10)
+        approximate_set = build_approximate_set(
+            basis_set=[
+                "t",
+                "tdg",
+                "h",
+            ],
+            depth=10,
+        )
         gates = solovay_kitaev_decomposition(op, depth=5, approximate_set=approximate_set)
 
         matrix_sk = functools.reduce(lambda x, y: x @ y, map(qml.matrix, gates))
