@@ -140,14 +140,26 @@ def broadcast_expand(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
             output_tapes.append(new_tape)
 
         def processing_fn(results: qml.typing.ResultBatch) -> qml.typing.Result:
-            if len(tape.measurements) > 1:
-                processed_results = [
-                    qml.math.squeeze(
-                        qml.math.stack([results[b][i] for b in range(tape.batch_size)])
+            if tape._shots.has_partitioned_shots:
+                if len(tape.measurements) > 1:
+                    return tuple(
+                        tuple(
+                            qml.math.stack([results[b][s][i] for b in range(tape.batch_size)])
+                            for i in range(len(tape.measurements))
+                        )
+                        for s in range(tape._shots.num_copies)
                     )
+
+                return tuple(
+                    qml.math.stack([results[b][s] for b in range(tape.batch_size)])
+                    for s in range(tape._shots.num_copies)
+                )
+
+            if len(tape.measurements) > 1:
+                return tuple(
+                    qml.math.stack([results[b][i] for b in range(tape.batch_size)])
                     for i in range(len(tape.measurements))
-                ]
-                return tuple(processed_results)
-            return qml.math.squeeze(qml.math.stack(results))
+                )
+            return qml.math.stack(results)
 
     return output_tapes, processing_fn

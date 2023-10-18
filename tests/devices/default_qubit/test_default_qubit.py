@@ -1657,13 +1657,16 @@ class TestPostselection:
         ],
     )
     @pytest.mark.parametrize("param", np.linspace(np.pi / 4, 3 * np.pi / 4, 3))
-    def test_postselection_valid_analytic(self, param, mp, interface, use_jit):
+    @pytest.mark.parametrize("broadcast", [True, False])
+    def test_postselection_valid_analytic(self, param, mp, broadcast, interface, use_jit):
         """Test that the results of a circuit with postselection is expected
         with analytic execution."""
         if use_jit and interface != "jax":
             pytest.skip("Cannot JIT in non-JAX interfaces.")
 
         dev = qml.device("default.qubit")
+        if broadcast:
+            param = [param, param - 0.5]
         param = qml.math.asarray(param, like=interface)
 
         @qml.qnode(dev, interface=interface)
@@ -1675,7 +1678,7 @@ class TestPostselection:
 
         @qml.qnode(dev, interface=interface)
         def circ_expected():
-            qml.RX(np.pi, 0)
+            qml.RX(np.pi if not broadcast else [np.pi, np.pi], 0)
             qml.CNOT([0, 1])
             return qml.apply(mp)
 
@@ -1705,8 +1708,9 @@ class TestPostselection:
     )
     @pytest.mark.parametrize("param", np.linspace(np.pi / 4, 3 * np.pi / 4, 3))
     @pytest.mark.parametrize("shots", [50000, (50000, 50000)])
+    @pytest.mark.parametrize("broadcast", [True, False])
     def test_postselection_valid_finite_shots(
-        self, param, mp, shots, interface, use_jit, tol_stochastic
+        self, param, mp, shots, broadcast, interface, use_jit, tol_stochastic
     ):
         """Test that the results of a circuit with postselection is expected with
         finite shots."""
@@ -1714,6 +1718,8 @@ class TestPostselection:
             pytest.skip("Cannot JIT in non-JAX interfaces, or with shot vectors.")
 
         dev = qml.device("default.qubit", shots=shots)
+        if broadcast:
+            param = [param, param - 0.5]
         param = qml.math.asarray(param, like=interface)
 
         @qml.qnode(dev, interface=interface)
@@ -1725,7 +1731,7 @@ class TestPostselection:
 
         @qml.qnode(dev, interface=interface)
         def circ_expected():
-            qml.RX(np.pi, 0)
+            qml.RX(np.pi if not broadcast else [np.pi, np.pi], 0)
             qml.CNOT([0, 1])
             return qml.apply(mp)
 
@@ -1852,6 +1858,10 @@ class TestPostselection:
                 )
                 if not 0 in expected_shape:  # No nan values if array is empty
                     assert qml.math.all(qml.math.isnan(r))
+
+    # def test_postselection_mixed_valid_broadcasted(self):
+    #     """Test that the results of broadcasted qnodes with postselection only have invalid
+    #     results in the same dimensions as invalid parameters."""
 
 
 class TestIntegration:
