@@ -89,15 +89,16 @@ class TrotterProduct(Operation):
     Args:
         hamiltonian (Union[~.Hamiltonian, ~.Sum]): The Hamiltonian written as a linear combination
             of operators with known matrix exponentials.
-        time (int or float): The time of evolution, namely the parameter :math:`t` in :math:`e^{-iHt}`
+        time (float): The time of evolution, namely the parameter :math:`t` in :math:`e^{-iHt}`
         n (int): An integer representing the number of Trotter steps to perform
         order (int): An integer (m) representing the order of the approximation (must be 1 or even)
         check_hermitian (bool): A flag to enable the validation check to ensure this is a valid unitary operator
 
     Raises:
-        TypeError: The ``hamiltonian`` is not of type :class:`~.Hamiltonian`, or :class:`~.Sum`
-        ValueError: One or more of the terms in ``hamiltonian`` are not Hermitian
-        ValueError: The ``order`` is not one or a positive even integer
+        TypeError: The ``hamiltonian`` is not of type :class:`~.Hamiltonian`, or :class:`~.Sum`.
+        ValueError: The ``hamiltonian`` must have atleast two terms.
+        ValueError: One or more of the terms in ``hamiltonian`` are not Hermitian.
+        ValueError: The ``order`` is not one or a positive even integer.
 
     **Example**
 
@@ -125,6 +126,7 @@ class TrotterProduct(Operation):
     .. details::
         :title: Usage Details
 
+        One can recover the behaviour of :class:`~.ApproxTimeEvolution` by setting :code:`order=1`. 
         We can also compute the gradient with respect to the coefficients of the Hamiltonian and the
         evolution time:
 
