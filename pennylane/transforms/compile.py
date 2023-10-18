@@ -178,10 +178,9 @@ def compile(
                 tapes, _ = transf(expanded_tape)
                 expanded_tape = tapes[0]
 
-    new_tape = QuantumTape(
+    new_tape = type(tape)(
         expanded_tape.operations, expanded_tape.measurements, shots=expanded_tape.shots
     )
-    new_tape._qfunc_output = tape._qfunc_output  # pylint: disable=protected-access
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
