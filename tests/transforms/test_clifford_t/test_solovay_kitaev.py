@@ -129,7 +129,7 @@ class TestSolovayKitaev:
 
         op_axis, op_angle = _unitary_bloch(su2_matrix)
 
-        assert qml.math.allclose(op_axis, axis) and op_angle == angle
+        assert qml.math.allclose(op_axis, axis) and qml.math.allclose(op_angle, angle)
 
     def test_build_approximate_set(self):
         """Test for building approximate sets"""
