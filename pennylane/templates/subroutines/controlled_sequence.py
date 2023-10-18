@@ -67,7 +67,7 @@ class ControlledSequence(SymbolicOp, Operation):
 
     @property
     def wires(self):
-        return self.control + self.base.wires
+        return self.base.wires + self.control
 
     @property
     def has_matrix(self):
@@ -119,7 +119,7 @@ class ControlledSequence(SymbolicOp, Operation):
         """
         # ToDo: docstring missing example
         ops = []
-        powers_of_two = 1 << np.arange(len(control_wires))
+        powers_of_two = 2 ** np.arange(len(control_wires))
 
         for z, ctrl_wire in zip(powers_of_two[::-1], control_wires):
             ops.append(qml.pow(qml.ctrl(base, control=ctrl_wire), z=z))
