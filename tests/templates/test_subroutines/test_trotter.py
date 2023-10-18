@@ -248,6 +248,11 @@ class TestInitialization:
         except ValueError:
             assert False  # No error should be raised if the check_hermitian flag is disabled
 
+    def test_error_hamiltonian(self):
+        """Test that an error is raised if the input hamultonian has only 1 term."""
+        with pytest.raises(ValueError, match="There should be atleast 2 terms in the Hamiltonian."):
+            qml.TrotterProduct(qml.Hamiltonian([1.0], [qml.PauliX(0)]), 1.23, n=2, order=4)
+
     @pytest.mark.parametrize("order", (-1, 0, 0.5, 3, 7.0))
     def test_error_order(self, order):
         """Test that an error is raised if 'order' is not one or positive even number."""
@@ -706,13 +711,6 @@ class TestIntegration:
                 qml.apply(op)
 
             return qml.expval(qml.Hadamard(0))
-
-        decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
-        h = qml.dot(coeffs, terms)
-        op = qml.TrotterProduct(h, time, n=n, order=order)
-        print(len(decomp), len(op.decomposition()))
-        for op1, op2 in zip(decomp, op.decomposition()):
-            print(op1, qml.simplify(op2))
 
         measured_time_grad, measured_coeff_grad = qml.grad(circ)(time, coeffs)
         reference_time_grad, reference_coeff_grad = qml.grad(reference_circ)(time, coeffs)
