@@ -17,7 +17,6 @@ Contains the CosineWindow template.
 import numpy as np
 import pennylane as qml
 from pennylane.operation import AnyWires, StatePrepBase
-from pennylane.wires import Wires, WireError
 from pennylane import math
 
 

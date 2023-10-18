@@ -15,10 +15,8 @@
 Unit tests for the CosineWindow template.
 """
 # pylint: disable=too-few-public-methods
-import pytest
 import numpy as np
 import pennylane as qml
-from pennylane.wires import WireError
 
 
 class TestDecomposition:
