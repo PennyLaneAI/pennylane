@@ -93,7 +93,7 @@ class TestBasics:
         expected_repr = (
             f"TransformJacobianProducts({repr(inner_execute_numpy)}, "
             "gradient_transform=<gradient_transform: _hadamard_grad>, "
-            "gradient_kwargs={'aux_wire': 'aux'})"
+            "gradient_kwargs={'aux_wire': 'aux'}, cache_full_jacobian=False)"
         )
         assert repr(jpc) == expected_repr
 
