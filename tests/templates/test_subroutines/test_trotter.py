@@ -175,9 +175,9 @@ def _generate_simple_decomp(coeffs, ops, time, order, n):
     if get_interface(coeffs) == "torch":
         import torch
 
-        coeffs_ops_reversed = zip(torch.flip(coeffs, dims=(0,)), ops[-1::-1])
+        coeffs_ops_reversed = zip(torch.flip(coeffs, dims=(0,)), ops[::-1])
     else:
-        coeffs_ops_reversed = zip(coeffs[-1::-1], ops[-1::-1])
+        coeffs_ops_reversed = zip(coeffs[::-1], ops[::-1])
 
     if order == 2:
         decomp.extend(qml.exp(op, coeff * (time / n) * 1j / 2) for coeff, op in coeffs_ops)
@@ -185,21 +185,17 @@ def _generate_simple_decomp(coeffs, ops, time, order, n):
 
     if order == 4:
         s_2 = []
-        s_2.extend(qml.exp(op, (p_4 * coeff) * (time / n) * 1j / 2) for coeff, op in coeffs_ops)
-        s_2.extend(
-            qml.exp(op, (p_4 * coeff) * (time / n) * 1j / 2) for coeff, op in coeffs_ops_reversed
-        )
-
         s_2_p = []
-        s_2_p.extend(
-            qml.exp(op, ((1 - (4 * p_4)) * coeff) * (time / n) * 1j / 2) for coeff, op in coeffs_ops
-        )
-        s_2_p.extend(
-            qml.exp(op, ((1 - (4 * p_4)) * coeff) * (time / n) * 1j / 2)
-            for coeff, op in coeffs_ops_reversed
-        )
 
-        decomp = s_2 * 2 + s_2_p + s_2 * 2
+        for coeff, op in coeffs_ops:
+            s_2.append(qml.exp(op, (p_4 * coeff) * (time / n) * 1j / 2))
+            s_2_p.append(qml.exp(op, ((1 - (4 * p_4)) * coeff) * (time / n) * 1j / 2))
+
+        for coeff, op in coeffs_ops_reversed:
+            s_2.append(qml.exp(op, (p_4 * coeff) * (time / n) * 1j / 2))
+            s_2_p.append(qml.exp(op, ((1 - (4 * p_4)) * coeff) * (time / n) * 1j / 2))
+
+        decomp = (s_2 * 2) + s_2_p + (s_2 * 2)
 
     return decomp * n
 
@@ -403,7 +399,7 @@ class TestDecomposition:
 
         decomp = [qml.simplify(op) for op in decomp]
         true_decomp = [
-            qml.simplify(op) for op in test_decompositions[(hamiltonian_index, order)][-1::-1]
+            qml.simplify(op) for op in test_decompositions[(hamiltonian_index, order)][::-1]
         ]
         assert all(
             qml.equal(op1, op2) for op1, op2 in zip(decomp, true_decomp)
@@ -505,7 +501,7 @@ class TestIntegration:
 
         expected_state = (
             reduce(
-                lambda x, y: x @ y, [qml.matrix(op, wire_order=wires) for op in true_decomp[-1::-1]]
+                lambda x, y: x @ y, [qml.matrix(op, wire_order=wires) for op in true_decomp[::-1]]
             )
             @ initial_state
         )
@@ -686,7 +682,7 @@ class TestIntegration:
         assert qnp.allclose(expected_state, state)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("order, n", ((1, 1), (1, 2), (2, 1)))
+    @pytest.mark.parametrize("order, n", ((1, 1), (1, 2), (2, 1), (4, 1)))
     def test_autograd_gradient(self, order, n):
         """Test that the gradient is computed correctly"""
         time = qnp.array(1.5)
@@ -706,10 +702,17 @@ class TestIntegration:
             with qml.QueuingManager.stop_recording():
                 decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
 
-            for op in decomp[-1::-1]:
+            for op in decomp[::-1]:
                 qml.apply(op)
 
             return qml.expval(qml.Hadamard(0))
+
+        decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
+        h = qml.dot(coeffs, terms)
+        op = qml.TrotterProduct(h, time, n=n, order=order)
+        print(len(decomp), len(op.decomposition()))
+        for op1, op2 in zip(decomp, op.decomposition()):
+            print(op1, qml.simplify(op2))
 
         measured_time_grad, measured_coeff_grad = qml.grad(circ)(time, coeffs)
         reference_time_grad, reference_coeff_grad = qml.grad(reference_circ)(time, coeffs)
@@ -717,7 +720,7 @@ class TestIntegration:
         assert allclose(measured_coeff_grad, reference_coeff_grad)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("order, n", ((1, 1), (1, 2), (2, 1)))
+    @pytest.mark.parametrize("order, n", ((1, 1), (1, 2), (2, 1), (4, 1)))
     def test_torch_gradient(self, order, n):
         """Test that the gradient is computed correctly using torch"""
         import torch
@@ -741,7 +744,7 @@ class TestIntegration:
             with qml.QueuingManager.stop_recording():
                 decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
 
-            for op in decomp[-1::-1]:
+            for op in decomp[::-1]:
                 qml.apply(op)
 
             return qml.expval(qml.Hadamard(0))
@@ -760,7 +763,7 @@ class TestIntegration:
         assert allclose(measured_coeff_grad, reference_coeff_grad)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("order, n", ((1, 1), (1, 2), (2, 1)))
+    @pytest.mark.parametrize("order, n", ((1, 1), (1, 2), (2, 1), (4, 1)))
     def test_tf_gradient(self, order, n):
         """Test that the gradient is computed correctly using tensorflow"""
         import tensorflow as tf
@@ -785,7 +788,7 @@ class TestIntegration:
             with qml.QueuingManager.stop_recording():
                 decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
 
-            for op in decomp[-1::-1]:
+            for op in decomp[::-1]:
                 qml.apply(op)
 
             return qml.expval(qml.Hadamard(0))
@@ -803,7 +806,7 @@ class TestIntegration:
         assert allclose(measured_coeff_grad, reference_coeff_grad)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("order, n", ((1, 1), (1, 2), (2, 1)))
+    @pytest.mark.parametrize("order, n", ((1, 1), (1, 2), (2, 1), (4, 1)))
     def test_jax_gradient(self, order, n):
         """Test that the gradient is computed correctly"""
         import jax
@@ -826,7 +829,7 @@ class TestIntegration:
             with qml.QueuingManager.stop_recording():
                 decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
 
-            for op in decomp[-1::-1]:
+            for op in decomp[::-1]:
                 qml.apply(op)
 
             return qml.expval(qml.Hadamard(0))
