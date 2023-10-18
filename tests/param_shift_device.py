@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains a device that provides derivatives using parameter shift. This can be 
+This module contains a device that provides derivatives using parameter shift. This can be
 used to test integration with device provided derivatives and shot vectors.
 """
 
