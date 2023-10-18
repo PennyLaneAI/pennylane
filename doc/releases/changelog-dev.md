@@ -4,30 +4,10 @@
 
 <h3>New features since last release</h3>
 
-* Support Hamiltonian exponentiation with Suzuki-Trotter products.
+* Higher-order Trotter-Suzuki methods are now easily accessible through a new operation called
+  `TrotterProduct`.
   [(#4661)](https://github.com/PennyLaneAI/pennylane/pull/4661)
   [(#4677)](https://github.com/PennyLaneAI/pennylane/pull/4677)
-
-  The new `TrotterProduct` template can be used to approximately exponentiate a Hamiltonian written 
-  as a sum of operations.
-
-  ```python
-  H = qml.dot([0.25, 0.75], [qml.PauliX(0), qml.PauliZ(1)])
-  
-  dev = qml.device("default.qubit", wires=2)
-  @qml.qnode(dev)
-  def circuit():
-      qml.TrotterProduct(H, time=2.4, order=2)
-      return qml.state()
-      
-  draw = qml.draw(circuit, expansion_strategy='device')()
-  ```
-
-   ```pycon
-  >>> print(draw)
-  0: ──Exp(0.00+1.20j 0.25*X)──Exp(0.00+1.20j 0.25*X)─┤ ╭State
-  1: ──Exp(0.00+1.20j 0.75*Z)──Exp(0.00+1.20j 0.75*Z)─┤ ╰State
-  ```
 
 * Support drawing QJIT QNode from Catalyst.
   [(#4609)](https://github.com/PennyLaneAI/pennylane/pull/4609)
