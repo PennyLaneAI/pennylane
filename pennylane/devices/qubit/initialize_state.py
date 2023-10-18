@@ -42,4 +42,4 @@ def create_initial_state(
         state[(0,) * num_wires] = 1
         return qml.math.asarray(state, like=like)
 
-    return qml.math.asarray(prep_operation.state_vector(), like=like)
+    return qml.math.asarray(prep_operation.state_vector(wire_order=list(wires)), like=like)
