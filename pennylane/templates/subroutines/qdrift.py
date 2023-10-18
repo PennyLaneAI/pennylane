@@ -15,12 +15,40 @@
 
 import pennylane as qml
 from pennylane.operation import Operation
+from pennylane.math import requires_grad, unwrap
 from pennylane.ops import Sum, SProd, Hamiltonian
+
+
+@qml.QueuingManager.stop_recording()
+def _sample_decomposition(coeffs, ops, time, n=1, seed=None):
+    """Generate the randomly sampled decomposition
+
+    Args:
+        coeffs (Array): the coefficients of the operations from each term in the hamiltonian.
+        ops (List[~.Operator]): the normalized operations from each term in the hamiltonian.
+        time (complex): time to evolve under the target hamiltonian.
+        n (int): number of samples in the product. Defaults to 1.
+        seed (int): random seed. Defaults to None.
+
+    Returns:
+        List[~.Operator]: the decomposition of operations as per the approximation.
+    """
+    normalization_factor = qml.math.sum(qml.math.abs(coeffs))
+    probs = qml.math.abs(coeffs) / normalization_factor
+    exps = [
+        qml.exp(base, qml.math.sign(coeff) * normalization_factor * time * 1j / n)
+        for base, coeff in zip(ops, coeffs)
+    ]
+
+    choice_rng = qml.math.random.default_rng(seed)
+    return choice_rng.choice(exps, p=probs, size=n, replace=True)
 
 
 class QDrift(Operation):
     r"""An operation representing the QDrift approximation for the complex matrix exponential
     of a given Hamiltonian.
+
+    # TODO: link paper reference, mention that we assume each operator is normalized.
 
     The QDrift subroutine provides a method to approximate the matrix exponential of a Hamiltonian
     expressed as a linear combination of terms which in general do not commute. For the Hamiltonian
@@ -43,7 +71,8 @@ class QDrift(Operation):
 
     Raises:
         TypeError: The ``hamiltonian`` is not of type :class:`~.Hamiltonian`, or :class:`~.Sum`
-        ValueError: One or more of the terms in 'hamiltonian' are not Hermitian
+        QuantumFunctionError: If the coefficients of ``hamiltonian`` are trainable and are used
+            in a differentiable workflow.
 
     **Example**
 
@@ -72,8 +101,7 @@ class QDrift(Operation):
     .. details::
         :title: Usage Details
 
-        We can also compute the gradient with respect to the
-        evolution time:
+        We can also compute the gradient with respect to the evolution time:
 
         .. code-block:: python3
 
@@ -99,24 +127,74 @@ class QDrift(Operation):
         0.27980654844422853
     """
 
-    def __init__(self, hamiltonian, time, n=1, seed=None, id=None):
+    def __init__(self, hamiltonian, time, n=1, seed=None, decomposition=None, id=None):
         r"""Initialize the QDrift class"""
 
-        if isinstance(hamiltonian, qml.Hamiltonian):
+        if isinstance(hamiltonian, Hamiltonian):
             coeffs, ops = hamiltonian.terms()
-            hamiltonian = qml.dot(coeffs, ops)
 
-        if not isinstance(hamiltonian, Sum):
+        elif isinstance(hamiltonian, Sum):
+            coeffs, ops = [], []
+            for op in hamiltonian:
+                try:
+                    coeffs.append(op.scalar)
+                    ops.append(op.base)
+                except AttributeError:  # coefficient is 1.0
+                    coeffs.append(1.0)
+                    ops.append(op)
+
+        else:
             raise TypeError(
                 f"The given operator must be a PennyLane ~.Hamiltonian or ~.Sum got {hamiltonian}"
             )
+
+        if any(requires_grad(coeff) for coeff in coeffs):
+            raise qml.QuantumFunctionError(
+                "The QDrift template currently doesn't support differentiation through the "
+                "coefficients of the input Hamiltonian. Please instantiate the operation "
+                "using coefficents with `requires_grad` set to False."
+            )
+
+        if decomposition is None:  # need to do this to allow flatten and _unflatten
+            unwrapped_coeffs = unwrap(coeffs)
+            decomposition = _sample_decomposition(unwrapped_coeffs, ops, time, n=1, seed=None)
 
         self._hyperparameters = {
             "n": n,
             "seed": seed,
             "base": hamiltonian,
+            "decomposition": decomposition,
         }
         super().__init__(time, wires=hamiltonian.wires, id=id)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        """Recreate an operation from its serialized format.
+
+        Args:
+            data: the trainable component of the operation
+            metadata: the non-trainable component of the operation.
+
+        The output of ``Operator._flatten`` and the class type must be sufficient to reconstruct the original
+        operation with ``Operator._unflatten``.
+
+        **Example:**
+
+        >>> op = qml.Rot(1.2, 2.3, 3.4, wires=0)
+        >>> op._flatten()
+        ((1.2, 2.3, 3.4), (<Wires = [0]>, ()))
+        >>> qml.Rot._unflatten(*op._flatten())
+        >>> op = qml.PauliRot(1.2, "XY", wires=(0,1))
+        >>> op._flatten()
+        ((1.2,), (<Wires = [0, 1]>, (('pauli_word', 'XY'),)))
+        >>> op = qml.ctrl(qml.U2(3.4, 4.5, wires="a"), ("b", "c") )
+        >>> type(op)._unflatten(*op._flatten())
+        Controlled(U2(3.4, 4.5, wires=['a']), control_wires=['b', 'c'])
+
+        """
+        hyperparameters_dict = dict(metadata[1])
+        hamiltonian = hyperparameters_dict.pop("base")
+        return cls(hamiltonian, *data, **hyperparameters_dict)
 
     @staticmethod
     def compute_decomposition(*args, **kwargs):
@@ -139,49 +217,32 @@ class QDrift(Operation):
         Returns:
             list[Operator]: decomposition of the operator
         """
-        time = args[0]
-        n = kwargs["n"]
-        seed = kwargs["seed"]
-        ops = kwargs["base"].operands
-
-        with qml.QueuingManager.stop_recording():
-            coeffs, bases = [], []
-            for op in ops:
-                try:
-                    coeffs.append(op.scalar)
-                    bases.append(op.base)
-                except AttributeError:  # coefficient is 1.0
-                    coeffs.append(1.0)
-                    bases.append(op)
-
-            lmbda = qml.math.sum(qml.math.abs(coeffs))
-            probs = qml.math.abs(coeffs) / lmbda
-            exps = [
-                qml.exp(base, qml.math.sign(coeff) * lmbda * time * 1j / n)
-                for base, coeff in zip(bases, coeffs)
-            ]
-
-            choice_rng = qml.math.random.default_rng(seed)
-            decomp = choice_rng.choice(exps, p=probs, size=n, replace=True)
+        decomp = kwargs["decomposition"]
 
         if qml.QueuingManager.recording():
-            for op in decomp:  # apply operators in reverse order of expression
+            for op in decomp:
                 qml.apply(op)
 
         return decomp
-    
+
     @staticmethod
     def error(hamiltonian, time, n=1):
-        """Computes the expected precision of the QDrift approximation given the initial parameters."""
+        """Computes the expected precision of the QDrift approximation given the initial parameters.
+        # TODO: Add more detail and link paper reference.
+        """
         if isinstance(hamiltonian, Hamiltonian):
             num_terms = len(hamiltonian.coeffs)
             max_coeff = max(hamiltonian.coeffs)
-        
-        elif isinstance(hamiltonian, Sum): 
-            num_terms = len(hamiltonian)
-            max_coeff = max(op.scalar if isinstance(op, SProd) else 1. for op in hamiltonian)
-        
-        else:
-            raise TypeError(f"The given operator must be a PennyLane ~.Hamiltonian or ~.Sum got {hamiltonian}")
 
-        return ( (num_terms ** 2) * (max_coeff ** 2) * (time ** 2) / (2*n) ) * qml.math.exp(max_coeff * time * num_terms / n)
+        elif isinstance(hamiltonian, Sum):
+            num_terms = len(hamiltonian)
+            max_coeff = max(op.scalar if isinstance(op, SProd) else 1.0 for op in hamiltonian)
+
+        else:
+            raise TypeError(
+                f"The given operator must be a PennyLane ~.Hamiltonian or ~.Sum got {hamiltonian}"
+            )
+
+        return ((num_terms**2) * (max_coeff**2) * (time**2) / (2 * n)) * qml.math.exp(
+            max_coeff * time * num_terms / n
+        )
