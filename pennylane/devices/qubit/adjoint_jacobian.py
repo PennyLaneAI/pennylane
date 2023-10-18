@@ -242,7 +242,5 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
 
         bra = apply_operation(adj_op, bra)
 
-    # if len(tape.trainable_params) == 1:
-    #    return cotangents_in[0]
 
     return tuple(cotangents_in)

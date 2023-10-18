@@ -362,7 +362,7 @@ class TestAutogradExecuteIntegration:
             assert np.allclose(res[3], np.cos(x) * np.cos(y), atol=atol_for_shots(shots))
 
         if shots.has_partitioned_shots:
-            pytest.xfail("pre-existing bug out of the scope to fix.")
+            pytest.xfail("autograd jacobians do not work with ragged results and shot vectors.")
             # TODO: autograd jacobians with ragged results and shot vectors
         jac = qml.jacobian(cost)(params)
         assert isinstance(jac, np.ndarray)
@@ -831,7 +831,7 @@ class TestHamiltonianWorkflows:
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)
         if shots.has_partitioned_shots:
             pytest.xfail(
-                "multiple hamiltonains with shot vectors does not seem to be differentiable."
+                "multiple hamiltonians with shot vectors does not seem to be differentiable."
             )
         else:
             assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
