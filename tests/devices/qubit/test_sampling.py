@@ -61,7 +61,7 @@ def _valid_flex_tuple(s):
 class _FlexShots(Shots):
     """Shots class that allows zero shots."""
 
-    # pylint: disable=super-init-not-called
+    # pylint: disable=super-init-not-called, too-few-methods
     def __init__(self, shots=None):
         if shots is None:
             self.total_shots = None

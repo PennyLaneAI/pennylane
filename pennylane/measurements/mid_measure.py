@@ -90,6 +90,84 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
             measurement. None by default. If postselection is requested, only the post-measurement
             state that is used for postselection will be considered in the remaining circuit.
 
+    .. details::
+        :title: Postselection
+
+        Postselection discards outcomes that do not meet the criteria provided by the ``postselect``
+        argument. For example, specifying ``postselect=1`` on wire 0 would be equivalent to projecting
+        the state vector onto the :math:`|1\rangle` state on wire 0:
+
+        .. code-block:: python3
+
+            dev = qml.device("default.qubit")
+
+            @qml.qnode(dev)
+            def func(x):
+                qml.RX(x, wires=0)
+                m0 = qml.measure(0, postselect=1)
+                qml.cond(m0, qml.PauliX)(wires=1)
+                return qml.sample(wires=1)
+
+        By postselecting on ``1``, we only consider the ``1`` measurement outcome on wire 0. So, the probability of
+        measuring ``1`` on wire 1 after postselection should also be 1. Executing this QNode with 10 shots:
+
+        >>> func(np.pi / 2, shots=10)
+        array([1, 1, 1, 1, 1, 1, 1])
+
+        Note that only 7 samples are returned. This is because samples that do not meet the postselection criteria are
+        thrown away.
+
+        If postselection is requested on a state with zero probability of being measured, the result may contain ``NaN``
+        or ``Inf`` values:
+
+        .. code-block:: python3
+
+            dev = qml.device("default.qubit")
+
+            @qml.qnode(dev)
+            def func(x):
+                qml.RX(x, wires=0)
+                m0 = qml.measure(0, postselect=1)
+                qml.cond(m0, qml.PauliX)(wires=1)
+                return qml.probs(wires=1)
+
+        >>> func(0.0)
+        tensor([nan, nan], requires_grad=True)
+
+        In the case of ``qml.sample``, an empty array will be returned:
+
+        .. code-block:: python3
+
+            dev = qml.device("default.qubit")
+
+            @qml.qnode(dev)
+            def func(x):
+                qml.RX(x, wires=0)
+                m0 = qml.measure(0, postselect=1)
+                qml.cond(m0, qml.PauliX)(wires=1)
+                return qml.sample()
+
+        >>> func(0.0, shots=[10, 10])
+        (array([], dtype=float64), array([], dtype=float64))
+
+        .. note::
+
+            Currently, postselection support is only available on ``"default.qubit"``. Using postselection
+            on other devices will raise an error.
+
+        .. warning::
+
+            All measurements are supported when using postselection. However, postselection on a zero probability
+            state can cause some measurements to break.
+
+            With finite shots, one must be careful when measuring ``qml.probs`` or ``qml.counts``, as these
+            measurements will raise errors if there are no valid samples after postselection. This will occur
+            with postselection states that have zero or close to zero probability.
+
+            With analytic execution, ``qml.mutual_info`` will raise errors when using any interfaces except
+            ``jax``, and ``qml.vn_entropy`` will raise an error with the ``tensorflow`` interface when the
+            postselection state has zero probability.
+
     Returns:
         MidMeasureMP: measurement process instance
 
