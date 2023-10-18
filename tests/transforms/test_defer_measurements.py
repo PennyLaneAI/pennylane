@@ -156,7 +156,7 @@ class TestQNode:
 
         # Outputs should match
         assert np.isclose(qnode1(np.pi / 4), qnode2(np.pi / 4))
-        assert spy.call_count == 3  # once per device preprocessing, one for qnode
+        assert spy.call_count == 2  # once per device preprocessing
 
         deferred_tapes, _ = qml.defer_measurements(qnode1.qtape)
         deferred_tape = deferred_tapes[0]
@@ -196,7 +196,7 @@ class TestQNode:
 
         res2 = qnode2(np.pi / 4, 3 * np.pi / 4)
 
-        assert spy.call_count == 4
+        assert spy.call_count == 2
 
         deferred_tapes1, _ = qml.defer_measurements(qnode1.qtape)
         deferred_tape1 = deferred_tapes1[0]
@@ -1359,7 +1359,7 @@ class TestQubitReuseAndReset:
 
         spy = mocker.spy(qml.defer_measurements, "_transform")
         _ = qnode(0.123, 0.456, 0.789)
-        assert spy.call_count == 2
+        assert spy.call_count == 1
 
         expected_circuit = [
             qml.Hadamard(0),
