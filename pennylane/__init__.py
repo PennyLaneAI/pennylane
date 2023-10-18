@@ -103,7 +103,6 @@ from pennylane.transforms import (
     commutation_dag,
     pattern_matching,
     pattern_matching_optimization,
-    clifford_t_decomposition,
 )
 from pennylane.ops.functions import (
     dot,

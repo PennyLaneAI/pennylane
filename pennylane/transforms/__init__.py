@@ -227,7 +227,6 @@ from .decompositions import (
     one_qubit_decomposition,
     two_qubit_decomposition,
 )
-from .decompositions.clifford_plus_t import clifford_t_decomposition
 from .defer_measurements import defer_measurements
 from .sign_expand import sign_expand
 from .hamiltonian_expand import hamiltonian_expand, sum_expand
