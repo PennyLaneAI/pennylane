@@ -135,38 +135,6 @@ class TRX(Operation):
                 [0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000-0.2474j, 0.0000+0.0000j, 0.9689+0.0000j]])
         """
-        # c = qml.math.cos(theta / 2)
-        # s = qml.math.sin(theta / 2)
-        #
-        # if qml.math.get_interface(theta) == "tensorflow":
-        #     c = qml.math.cast_like(c, 1j)
-        #     s = qml.math.cast_like(s, 1j)
-        #
-        # # The following avoids casting an imaginary quantity to reals when backpropagating
-        # c = (1 + 0j) * c
-        # js = -1j * s
-        #
-        # shape = qml.math.shape(theta)
-        # is_broadcasted = len(shape) != 0
-        # # Construct identity matrices and cast to complex type
-        # mat = (
-        #     qml.math.tensordot([1] * shape[0], qml.math.eye(3), axes=0)
-        #     if is_broadcasted
-        #     else qml.math.eye(3)
-        # )
-        # mat = qml.math.cast_like(mat, js)
-        #
-        # # Create slices that determine the indices at which the rotation terms of the matrix should be
-        # slices = tuple(itertools.product(subspace, subspace))
-        # if is_broadcasted:
-        #     slices = [(Ellipsis, *s) for s in slices]
-        #
-        # # Put rotation terms in the appropriate indices using the slices
-        # mat[slices[0]] = mat[slices[3]] = c
-        # mat[slices[1]] = mat[slices[2]] = js
-        #
-        # return qml.math.convert_like(mat, theta)
-
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
 
@@ -180,17 +148,17 @@ class TRX(Operation):
         one = 1 + 0j
         z = 0j
 
-        dags = [one, one, one]
-        dags[subspace[0]] = c
-        dags[subspace[1]] = c
+        diags = [one, one, one]
+        diags[subspace[0]] = c
+        diags[subspace[1]] = c
 
-        off_dags = [z, z, z]
-        off_dags[qml.math.sum(subspace)] = js
+        off_diags = [z, z, z]
+        off_diags[qml.math.sum(subspace)-1] = js
 
         return qml.math.stack([
-            stack_last([dags[0], off_dags[0], off_dags[1]]),
-            stack_last([off_dags[0], dags[1], off_dags[2]]),
-            stack_last([off_dags[1], off_dags[2], dags[2]])], axis=-2)
+            stack_last([diags[0], off_diags[0], off_diags[1]]),
+            stack_last([off_diags[0], diags[1], off_diags[2]]),
+            stack_last([off_diags[1], off_diags[2], diags[2]])], axis=-2)
 
     def adjoint(self):
         return TRX(-self.data[0], wires=self.wires, subspace=self.subspace)
@@ -305,38 +273,6 @@ class TRY(Operation):
                 [ 0.0000+0.j,  1.0000+0.j,  0.0000+0.j],
                 [ 0.2474+0.j,  0.0000+0.j,  0.9689+0.j]])
         """
-        # c = qml.math.cos(theta / 2)
-        # s = qml.math.sin(theta / 2)
-        #
-        # if qml.math.get_interface(theta) == "tensorflow":
-        #     c = qml.math.cast_like(c, 1j)
-        #     s = qml.math.cast_like(s, 1j)
-        #
-        # # The following avoids casting an imaginary quantity to reals when backpropagating
-        # c = (1 + 0j) * c
-        # s = (1 + 0j) * s
-        #
-        # shape = qml.math.shape(theta)
-        # is_broadcasted = len(shape) != 0
-        # # Construct identity matrices and cast to complex type
-        # mat = (
-        #     qml.math.tensordot([1] * qml.math.shape(theta)[0], qml.math.eye(3), axes=0)
-        #     if is_broadcasted
-        #     else qml.math.eye(3)
-        # )
-        # mat = qml.math.cast_like(mat, s)
-        #
-        # slices = tuple(itertools.product(subspace, subspace))
-        # if is_broadcasted:
-        #     slices = [(Ellipsis, *s) for s in slices]
-        #
-        # # Put rotation terms in the appropriate indices using the slices
-        # mat[slices[0]] = mat[slices[3]] = c
-        # mat[slices[1]] = -s
-        # mat[slices[2]] = s
-        #
-        # return qml.math.convert_like(mat, theta)
-
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
         if qml.math.get_interface(theta) == "tensorflow":
@@ -349,17 +285,17 @@ class TRY(Operation):
         one = 1 + 0j
         z = 0j
 
-        dags = [one, one, one]
-        dags[subspace[0]] = c
-        dags[subspace[1]] = c
+        diags = [one, one, one]
+        diags[subspace[0]] = c
+        diags[subspace[1]] = c
 
-        off_dags = [z, z, z]
-        off_dags[qml.math.sum(subspace)] = s
+        off_diags = [z, z, z]
+        off_diags[qml.math.sum(subspace)-1] = s
 
         return qml.math.stack([
-            stack_last([dags[0], -off_dags[0], -off_dags[1]]),
-            stack_last([off_dags[0], dags[1], -off_dags[2]]),
-            stack_last([off_dags[1], off_dags[2], dags[2]])], axis=-2)
+            stack_last([diags[0], -off_diags[0], -off_diags[1]]),
+            stack_last([off_diags[0], diags[1], -off_diags[2]]),
+            stack_last([off_diags[1], off_diags[2], diags[2]])], axis=-2)
 
     def adjoint(self):
         return TRY(-self.data[0], wires=self.wires, subspace=self.subspace)
@@ -480,38 +416,18 @@ class TRZ(Operation):
                 [0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.2474j]])
         """
-        # if qml.math.get_interface(theta) == "tensorflow":
-        #     theta = qml.math.cast_like(theta, 1j)
-        # p = qml.math.exp(-1j * theta / 2)
-        #
-        # shape = qml.math.shape(theta)
-        # is_broadcasted = len(shape) != 0
-        # # Construct identity matrices and cast to complex type
-        # mat = (
-        #     qml.math.tensordot([1] * shape[0], qml.math.eye(3), axes=0)
-        #     if is_broadcasted
-        #     else qml.math.eye(3)
-        # )
-        # mat = qml.math.cast_like(mat, p)
-        #
-        # slices = [(Ellipsis, i, i) for i in subspace]
-        #
-        # mat[slices[0]] = p
-        # mat[slices[1]] = qml.math.conj(p)
-        #
-        # return qml.math.convert_like(mat, theta)
         one = 1 + 0j
         z = 0j
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
         p = qml.math.exp(-1j * theta / 2)
 
-        dags = [one, one, one]
-        dags[subspace[0]] = p
-        dags[subspace[1]] = qml.math.conj(p)
+        diags = [one, one, one]
+        diags[subspace[0]] = p
+        diags[subspace[1]] = qml.math.conj(p)
 
         return qml.math.stack(
-            [stack_last([dags[0], z, z]), stack_last([z, dags[1], z]), stack_last([z, z, dags[2]])], axis=-2)
+            [stack_last([diags[0], z, z]), stack_last([z, diags[1], z]), stack_last([z, z, diags[2]])], axis=-2)
 
     def adjoint(self):
         return TRZ(-self.data[0], wires=self.wires, subspace=self.subspace)
