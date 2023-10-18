@@ -14,6 +14,7 @@
 """Solovay-Kitaev implementation for approximate RZ decomposition."""
 
 import math
+import warnings
 import functools
 import scipy as sp
 import pennylane as qml
@@ -94,10 +95,12 @@ class GateSet:
     @staticmethod
     def get_SU2_matrix(matrix):
         """Performs a U(2) to SU(2) transformation via a global phase addition."""
-
-        factor = qml.math.sqrt((1 + 0j) * qml.math.linalg.det(matrix)) ** -1
-        gphase = qml.math.arctan2(qml.math.imag(factor), qml.math.real(factor))
-        s2_mat = factor * matrix
+        
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            factor = qml.math.sqrt((1 + 0j) * qml.math.linalg.det(matrix + 1e-10)) ** -1
+            gphase = qml.math.arctan2(qml.math.imag(factor), qml.math.real(factor))
+            s2_mat = factor * matrix
 
         return s2_mat, gphase
 
@@ -140,7 +143,7 @@ class GateSet:
         self.gates.append(operation)
         self.labels.append(operation.name)
 
-        self.matrix = self.matrix.dot(qml.matrix(operation))
+        self.matrix = qml.math.dot(qml.matrix(operation), self.matrix)
         self.su2_matrix, self.global_phase = self.get_SU2_matrix(self.matrix)
         self.so3_matrix = self.get_SO3_matrix(self.su2_matrix)
 
@@ -162,7 +165,7 @@ class GateSet:
         """Compute the adjoint of the GateSet object"""
 
         adjoint = GateSet()
-        adjoint.gates = [qml.adjoint(gate, lazy=False) for gate in self.gates]
+        adjoint.gates = [qml.adjoint(gate, lazy=False) for gate in reversed(self.gates)]
         adjoint.labels = [op.name for op in adjoint.gates]
         adjoint.matrix = qml.math.conj(qml.math.transpose(self.matrix))
         adjoint.su2_matrix = qml.math.conj(qml.math.transpose(self.su2_matrix))
@@ -240,16 +243,18 @@ class TreeSet:
         if any(seqs1.labels == seq.labels for seq in seqs2):
             return False
 
+        # using SO(3) instead of SU(2) since KDTrees doesn't support complex datatype
         node_points = qml.math.array([qml.math.flatten(seq.so3_matrix) for seq in seqs2])
-        seq1_points = qml.math.flatten(seqs1.so3_matrix)
+        seq1_points = qml.math.array([qml.math.flatten(seqs1.so3_matrix)])
 
-        tree = sp.spatial.cKDTree(node_points)
-        dist = tree.query(seq1_points)[0]
+        tree = sp.spatial.KDTree(node_points)
+        dist = tree.query(seq1_points, workers=-1)[0][0]
+
         return dist > tol
 
 
 def _unitary_bloch(mat, eps=1e-10):
-    """Computes angle and axis for a unitary."""
+    """Computes angle and axis for any given unitary matrix."""
 
     angle = qml.math.real(qml.math.arccos(qml.math.trace(mat) / 2))
     sine = qml.math.sin(angle)
@@ -262,30 +267,32 @@ def _unitary_bloch(mat, eps=1e-10):
         nz = qml.math.imag((mat[1, 1] - mat[0, 0]) / (2 * sine))
         axis = [nx, ny, nz]
 
-    return axis, angle
+    return axis, 2 * angle
 
 
 def _group_commutator_decompose(mat):
-    """Performs group commutator decomposition."""
+    """Performs group commutator decomposition U = V' @ W' @ V'.dag @ W'.dag."""
     # Get axis and theta for the operator.
     axis, theta = _unitary_bloch(mat)
 
     # The angle phi comes from eq 10 in 'The Solovay-Kitaev Algorithm' paper
     phi = 2.0 * qml.math.arcsin(qml.math.sqrt(qml.math.sqrt((0.5 - 0.5 * qml.math.cos(theta / 2)))))
 
-    # Begin decomposition
+    # Begin decomposition by computing the rotation matrices
     v = qml.RX(phi, [0])
-    w = qml.RY(phi, [0]) if axis[2] <= 0 else qml.RY(2 * math.pi - phi, [0])
+    w = qml.RY(2 * math.pi - phi, [0]) if axis[2] > 0 else qml.RY(phi, [0])
 
-    ud = qml.math.linalg.eigh(mat)[1]
-    vwd = qml.math.linalg.eigh(qml.matrix(v @ w @ qml.adjoint(v) @ qml.adjoint(w)))[1]
-
+    # Get similarity transormation matrix S and S.dag
+    ud = qml.math.linalg.eig(mat)[1]
+    vwd = qml.math.linalg.eig(qml.matrix(v @ w @ v.adjoint() @ w.adjoint()))[1]
     s = ud @ qml.math.conj(qml.math.transpose(vwd))
+    sdg = vwd @ qml.math.conj(qml.math.transpose(ud))
 
-    v_hat = s @ qml.matrix(v) @ qml.math.conj(qml.math.transpose(s))
-    w_hat = s @ qml.matrix(w) @ qml.math.conj(qml.math.transpose(s))
+    # Get the required matrices V' and W'
+    v_hat = s @ v.matrix() @ sdg
+    w_hat = s @ w.matrix() @ sdg
 
-    return v_hat, w_hat
+    return w_hat, v_hat
 
 
 def _approximate_umat(seqs, basic_approximations):
@@ -293,16 +300,12 @@ def _approximate_umat(seqs, basic_approximations):
 
     def key(x):
         return qml.math.linalg.norm(qml.math.subtract(x.so3_matrix, seqs.so3_matrix))
-        # qml.math.trace_distance(x.su2_matrix, seqs.su2_matrix)
-        # qml.math.linalg.norm(
-        #    qml.math.subtract(x.so3_matrix, seqs.so3_matrix)
-        # )  # qml.math.trace_distance(x.su2_matrix, seqs.su2_matrix)
 
     return min(basic_approximations, key=key)
 
 
 def build_approximate_set(basis_set=None, depth=10):
-    """Builds approximate set required for Solovay-Kitaev algorithm"""
+    """Builds approximate unitary set required for Solovay-Kitaev algorithm"""
 
     if basis_set is None:
         basis_set = ["t", "tdg", "h"]
@@ -338,13 +341,21 @@ def solovay_kitaev_decomposition(op, depth, basis_set=None, approximate_set=None
             return _approximate_umat(gateset, approximate_set)
 
         u_n1 = _solovay_kitaev(gateset, n - 1)
+        u_n1dg = u_n1.adjoint()
 
-        v_n, w_n = _group_commutator_decompose(gateset.dot(u_n1.adjoint()).su2_matrix)
+        v_n, w_n = _group_commutator_decompose(gateset.dot(u_n1dg).su2_matrix)
 
         v_n1 = _solovay_kitaev(GateSet.from_matrix(v_n), n - 1)
         w_n1 = _solovay_kitaev(GateSet.from_matrix(w_n), n - 1)
 
-        return v_n1.dot(w_n1).dot(v_n1.adjoint()).dot(w_n1.adjoint()).dot(u_n1)
+        v_n1dg = v_n1.adjoint()
+        w_n1dg = w_n1.adjoint()
+
+        return v_n1.dot(w_n1).dot(v_n1dg).dot(w_n1dg).dot(u_n1)
 
     decomposition = _solovay_kitaev(GateSet.from_matrix(gate_set_op.su2_matrix), depth)
-    return decomposition.su2_matrix
+
+    if not decomposition.global_phase:
+        return decomposition
+
+    return decomposition.gates
