@@ -44,7 +44,7 @@ The following images are generated via the code:
 
 Note that the shown ``pennylane`` style can be replicated exactly by having the
 Quicksand Bold font installed and refreshing the Matplotlib font cache (by
-deleting the fontlist file in the Matplotlib cache directory) — to find the
+deleting the ``fontlist`` file in the Matplotlib cache directory) — to find the
 cache directory, run ``matplotlib.get_cachedir()``. If this font is not
 available, the drawer will fall back on a default font.
 
