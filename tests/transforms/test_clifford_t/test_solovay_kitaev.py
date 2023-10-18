@@ -35,13 +35,17 @@ def test_gate_sets():
     gateset1 = GateSet([])
     gateset2 = GateSet([qml.PauliX(0), qml.PauliZ(0)])
 
-    # test names
+    # test names and string representation
     assert gateset1.name == "" and gateset2.name == "PauliXPauliZ"
+    assert str(gateset1) == "Gates: [], Matrix: [[1. 0.]\n [0. 1.]]"
+    assert str(gateset2) == "Gates: [PauliX, PauliZ], Matrix: [[ 0 -1]\n [ 1  0]]"
 
-    # test lengths
+    # test lengths and getter
     assert len(gateset1) == 0 and len(gateset2) == 2
+    assert isinstance(gateset2[0], qml.PauliX)
 
     # test append functionality
+    assert gateset1 != gateset2
     assert gateset1.append(qml.PauliX(0)).append(qml.PauliZ(0)) == gateset2
 
     # test copy functionality
@@ -50,10 +54,8 @@ def test_gate_sets():
     gateset3 = GateSet([qml.PauliZ(0), qml.PauliX(0)])
 
     # test adjoint functionality
-    assert gateset2.adjoint() == gateset3
-
-    # test equality
     assert gateset2 != gateset3
+    assert gateset2.adjoint() == gateset3
 
     # test dot functionality
     matrix = gateset2.dot(gateset3).matrix
@@ -64,6 +66,20 @@ def test_gate_sets():
     # test SU(2) amd SO(3) matrix generators
     assert qml.math.allclose(gateset1.get_SU2_matrix(matrix)[0], gateset4.su2_matrix)
     assert qml.math.allclose(gateset1.get_SO3_matrix(matrix), gateset4.so3_matrix)
+
+    # test equality with phase difference
+    gateset5 = gateset4.copy()
+    gateset5.so3_matrix = gateset4.get_SO3_matrix(
+        gateset4.su2_matrix * qml.math.exp(0.5j * math.pi)
+    )
+    assert gateset5 != gateset4
+
+    # test .from_matrix exception
+    with pytest.raises(
+        ValueError,
+        match=r"Matrix should be of shape \(2, 2\), got \(3, 3\).",
+    ):
+        gateset4 = GateSet.from_matrix(qml.math.eye(3))
 
 
 def test_tree_sets():
@@ -77,9 +93,15 @@ def test_tree_sets():
     assert len(treeset2.basic_approximation(depth=1)) == 3
 
     # Verify check_nodes help reduce redundancy via GP-like summation
-    treeset2 = TreeSet(GateSet(), ["h", "t", "tdg"], [])
-    assert len(treeset2.basic_approximation(depth=3)) < 39  # 3 + 3x3 + 3x3x3
-    assert len(treeset2.basic_approximation(depth=5)) < 263  # 3 + ... + 3x3x3x3x3
+    treeset3 = TreeSet(GateSet(), ["h", "t", "tdg"], [])
+    assert len(treeset3.basic_approximation(depth=3)) < 39  # 3 + 3x3 + 3x3x3
+    assert len(treeset3.basic_approximation(depth=5)) < 263  # 3 + ... + 3x3x3x3x3
+
+    # Verify sequence check in check_nodes method
+    treeset4 = TreeSet(GateSet(), ["x", "z"], [])
+    seqs1 = GateSet([qml.PauliX(0)])
+    seqs2 = [GateSet([]), GateSet([qml.PauliX(0)]), GateSet([qml.PauliX(0), qml.PauliZ(0)])]
+    assert not treeset4.check_nodes(seqs1, seqs2)
 
 
 class TestSolovayKitaev:
@@ -112,6 +134,7 @@ class TestSolovayKitaev:
     @pytest.mark.parametrize(
         ("op", "axis", "angle"),
         [
+            (qml.Identity(wires=[0]), [0.0, 0.0, 1.0], 0.0),
             (qml.S(wires=[0]), [0.0, 0.0, 1.0], math.pi / 2),
             (qml.Hadamard(wires=["a"]), [1 / math.sqrt(2), 0.0, 1 / math.sqrt(2)], math.pi),
         ],
@@ -160,3 +183,23 @@ class TestSolovayKitaev:
         matrix_sk /= qml.math.sqrt((1 + 0j) * qml.math.linalg.det(matrix_sk))
 
         assert qml.math.allclose(qml.matrix(op), matrix_sk, atol=1e-3)
+
+    def test_solovay_kitaev_without_approx_set(self):
+        """Test Solovay-Kitaev decomposition method without providing approximation set"""
+        op = qml.RY(math.pi / 42, wires=[1])
+        gates = solovay_kitaev_decomposition(op, depth=5)
+
+        matrix_sk = functools.reduce(lambda x, y: x @ y, map(qml.matrix, gates))
+        matrix_sk /= qml.math.sqrt((1 + 0j) * qml.math.linalg.det(matrix_sk))
+
+        assert qml.math.allclose(qml.matrix(op), matrix_sk, atol=1e-3)
+
+    def test_exception(self):
+        """Test operation wire exception in Solovay-Kitaev"""
+        op = qml.SingleExcitation(1.0, wires=[1, 2])
+
+        with pytest.raises(
+            ValueError,
+            match=r"Operator must be a single qubit operation",
+        ):
+            solovay_kitaev_decomposition(op, depth=1)
