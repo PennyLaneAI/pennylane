@@ -15,14 +15,13 @@
 Tests for the QDrift template.
 """
 import copy
-from unittest.mock import patch
-
 import pytest
+from functools import reduce
 
 import pennylane as qml
 from pennylane import numpy as qnp
 from pennylane.math import allclose, get_interface
-from pennylane.templates.subroutines.qdrift import QDrift
+from pennylane.templates.subroutines.qdrift import _sample_decomposition
 
 
 test_hamiltonians = (
@@ -36,14 +35,28 @@ test_hamiltonians = (
     ),  # op arith
     (
         [1, -0.5, 0.5],
-        [qml.Identity(wires=[0, 1]), qml.PauliZ(0), qml.PauliZ(0)],
-    ),  # H = Identity
+        [qml.Identity(wires=[0, 1]), qml.PauliZ(0), qml.PauliZ(1)],
+    ), 
 )
 
 
-def mocked_choice(exps, p, size, replace=True):
+def mocked_choice(*args, **kwargs):
     """Fix randomness"""
-    return []
+    n, t, normalization = (10, 1.23, 2)
+    print("Here!")
+
+    return [
+        qml.exp(qml.Identity([0, 1]), 1 * normalization * t * 1j / n),
+        qml.exp(qml.PauliZ(0), -1 * normalization * t * 1j / n),
+        qml.exp(qml.PauliZ(1), 1 * normalization * t * 1j / n),
+        qml.exp(qml.Identity([0, 1]), 1 * normalization * t * 1j / n),
+        qml.exp(qml.PauliZ(0), -1 * normalization * t * 1j / n),
+        qml.exp(qml.PauliZ(1), 1 * normalization * t * 1j / n),
+        qml.exp(qml.Identity([0, 1]), 1 * normalization * t * 1j / n),
+        qml.exp(qml.PauliZ(0), -1 * normalization * t * 1j / n),
+        qml.exp(qml.PauliZ(1), 1 * normalization * t * 1j / n),
+        qml.exp(qml.Identity([0, 1]), 1 * normalization * t * 1j / n),
+    ]
 
 
 class TestInitialization:
@@ -69,6 +82,18 @@ class TestInitialization:
         for term in op.hyperparameters["decomposition"]:
             # the decomposition is solely made up of exponentials of ops sampled from hamiltonian terms
             assert term.base in ops
+
+    def test_set_decomp(self):
+        """Test that setting the decomposition works correctly."""
+        h = qml.dot([1.23, -0.45], [qml.PauliX(0), qml.PauliY(0)])
+        decomposition = [
+            qml.exp(qml.PauliX(0), 0.5j * 1.68 / 3),
+            qml.exp(qml.PauliY(0), -0.5j * 1.68 / 3),
+            qml.exp(qml.PauliX(0), 0.5j * 1.68 / 3)
+        ]
+        op = qml.QDrift(h, 0.5, n=3, decomposition=decomposition)
+
+        assert op.hyperparameters["decomposition"] == decomposition
 
     @pytest.mark.parametrize("n", (1, 2, 3))
     @pytest.mark.parametrize("time", (0.5, 1, 2))
@@ -134,14 +159,79 @@ class TestInitialization:
 class TestDecomposition:
     """Test decompositions are generated correctly."""
 
-    @patch("numpy.random.choice", mocked_choice)
-    def test_private_sample(self):
+    @pytest.mark.parametrize("n", (1, 2, 3))
+    @pytest.mark.parametrize("time", (0.5, 1, 2))
+    @pytest.mark.parametrize("seed", (None, 1234, 42))
+    @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
+    def test_private_sample(self, coeffs, ops, time, seed, n):
         """Test the private function which samples the decomposition"""
+        ops_to_coeffs = dict(zip(ops, coeffs))
+        normalization = qnp.sum(qnp.abs(coeffs))
+        decomp = _sample_decomposition(coeffs, ops, time, n, seed)
 
-    pass
+        assert len(decomp) == n
+        for term in decomp:
+            exponent_coeff_sign = qml.math.sign(ops_to_coeffs[term.base])
+            assert term.base in ops  # sample from ops
+            assert term.coeff == (exponent_coeff_sign * normalization * time * 1j / n)  # with this exponent
+    
+    @pytest.mark.parametrize("seed", (1234, 42))
+    def test_compute_decomposition(self, seed):
+        """Test that the decomposition is computed and queues correctly."""
+        coeffs = [1, -0.5, 0.5]
+        ops = [qml.Identity(wires=[0, 1]), qml.PauliZ(0), qml.PauliZ(1)]
+
+        h = qml.dot(coeffs, ops)
+        op = qml.QDrift(h, time=1.23, n=10, seed=seed)
+
+        expected_decomp = _sample_decomposition(coeffs, ops, 1.23, 10, seed=seed)
+
+        with qml.tape.QuantumTape() as tape:
+            decomp = op.compute_decomposition(*op.parameters, **op.hyperparameters)
+
+        assert all(decomp == tape.operations)  # queue matches decomp with circuit ordering
+        assert all(decomp == expected_decomp)  # sample the same ops
 
 
 class TestIntegration:
+    """Test that the QDrift template integrates well with the rest of PennyLane"""
+
+    @pytest.mark.parametrize("n", (1, 2, 3))
+    @pytest.mark.parametrize("time", (0.5, 1, 2))
+    @pytest.mark.parametrize("seed", (1234, 42))
+    @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
+    def test_execution(self, coeffs, ops, time, n, seed):
+        """Test that the circuit executes as expected"""
+        hamiltonian = qml.dot(coeffs, ops)
+        wires = hamiltonian.wires
+        dev = qml.device("default.qubit", wires=wires)
+
+        @qml.qnode(dev)
+        def circ():
+            qml.QDrift(hamiltonian, time, n=n, seed=seed)
+            return qml.state()
+
+        expected_decomp = _sample_decomposition(coeffs, ops, time, n=n, seed=seed)
+
+        initial_state = qnp.zeros(2 ** (len(wires)))
+        initial_state[0] = 1
+
+        expected_state = (
+            reduce(
+                lambda x, y: x @ y,
+                [qml.matrix(op, wire_order=wires) for op in expected_decomp],
+            )
+            @ initial_state
+        )
+        state = circ()
+
+        assert allclose(expected_state, state)
+
     def test_error_gradient_workflow(self):
         """Test that an error is raised if we require a gradient of QDrift with respect to hamiltonian coefficients."""
+        pass
+
+    @pytest.mark.autograd
+    def test_autograd_gradient(self):
+        """Test that the gradient is computed correctly"""
         pass

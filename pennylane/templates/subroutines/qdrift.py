@@ -157,7 +157,7 @@ class QDrift(Operation):
 
         if decomposition is None:  # need to do this to allow flatten and _unflatten
             unwrapped_coeffs = unwrap(coeffs)
-            decomposition = _sample_decomposition(unwrapped_coeffs, ops, time, n=1, seed=None)
+            decomposition = _sample_decomposition(unwrapped_coeffs, ops, time, n=n, seed=seed)
 
         self._hyperparameters = {
             "n": n,
