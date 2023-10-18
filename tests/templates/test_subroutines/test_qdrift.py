@@ -36,7 +36,7 @@ test_hamiltonians = (
     (
         [1, -0.5, 0.5],
         [qml.Identity(wires=[0, 1]), qml.PauliZ(0), qml.PauliZ(1)],
-    ), 
+    ),
 )
 
 
@@ -89,7 +89,7 @@ class TestInitialization:
         decomposition = [
             qml.exp(qml.PauliX(0), 0.5j * 1.68 / 3),
             qml.exp(qml.PauliY(0), -0.5j * 1.68 / 3),
-            qml.exp(qml.PauliX(0), 0.5j * 1.68 / 3)
+            qml.exp(qml.PauliX(0), 0.5j * 1.68 / 3),
         ]
         op = qml.QDrift(h, 0.5, n=3, decomposition=decomposition)
 
@@ -173,8 +173,10 @@ class TestDecomposition:
         for term in decomp:
             exponent_coeff_sign = qml.math.sign(ops_to_coeffs[term.base])
             assert term.base in ops  # sample from ops
-            assert term.coeff == (exponent_coeff_sign * normalization * time * 1j / n)  # with this exponent
-    
+            assert term.coeff == (
+                exponent_coeff_sign * normalization * time * 1j / n
+            )  # with this exponent
+
     @pytest.mark.parametrize("seed", (1234, 42))
     def test_compute_decomposition(self, seed):
         """Test that the decomposition is computed and queues correctly."""
