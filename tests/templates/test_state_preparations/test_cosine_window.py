@@ -38,7 +38,7 @@ class TestDecomposition:
         assert np.isclose(queue[3].data[0], np.pi / 2)
 
     def test_correct_gates_many_wires(self):
-        """Test that the correct gates are applied on on two wires."""
+        """Test that the correct gates are applied on two wires."""
 
         op = qml.CosineWindow(wires=[0, 1, 2, 3, 4])
         queue = op.expand().operations
