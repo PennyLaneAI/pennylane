@@ -39,11 +39,11 @@ def _recursive_expression(x, order, ops):
 
     Args:
         x (complex): the evolution 'time'
-        order (int): the order of the Trotter Expansion
+        order (int): the order of the Trotter expansion
         ops (Iterable(~.Operators)): a list of terms in the Hamiltonian
 
     Returns:
-        List: the approximation as product of exponentials of the Hamiltonian terms
+        list: the approximation as product of exponentials of the Hamiltonian terms
     """
     if order == 1:
         return [qml.exp(op, x * 1j) for op in ops]
@@ -76,28 +76,29 @@ class TrotterProduct(Operation):
             S_{1}(t) &= \Pi_{j=0}^{N} \ e^{i t O_{j}} \\
             S_{2}(t) &= \Pi_{j=0}^{N} \ e^{i \frac{t}{2} O_{j}} \cdot \Pi_{j=N}^{0} \ e^{i \frac{t}{2} O_{j}} \\
             &\vdots \\
-            S_{2k}(t) &= S_{2k-2}(p_{2k}t)^{2} \cdot S_{2k-2}((1-4p_{2k})t) \cdot S_{2k-2}(p_{2k}t)^{2},
+            S_{m}(t) &= S_{m-2}(p_{m}t)^{2} \cdot S_{m-2}((1-4p_{m})t) \cdot S_{m-2}(p_{m}t)^{2},
         \end{align}
 
-    where the coefficient is :math:`p_{2k} = 1 / (4 - \sqrt[2k - 1]{4})`. The :math:`2k`th order,
+    where the coefficient is :math:`p_{m} = 1 / (4 - \sqrt[m - 1]{4})`. The :math:`m`th order,
     :math:`n`-step Suzuki-Trotter approximation is then defined as:
 
-    .. math:: e^{iHt} \approx \left [S_{2k}(t / n)  \right ]^{n}.
+    .. math:: e^{iHt} \approx \left [S_{m}(t / n)  \right ]^{n}.
 
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        hamiltonian (Union[~.Hamiltonian, ~.Sum]): The Hamiltonian written in terms of products of
-            Pauli gates
-        time (int or float): The time of evolution, namely the parameter :math:`t` in :math:`e^{-iHt}`
+        hamiltonian (Union[~.Hamiltonian, ~.Sum]): The Hamiltonian written as a linear combination
+            of operators with known matrix exponentials.
+        time (float): The time of evolution, namely the parameter :math:`t` in :math:`e^{-iHt}`
         n (int): An integer representing the number of Trotter steps to perform
-        order (int): An integer representing the order of the approximation (must be 1 or even)
+        order (int): An integer (m) representing the order of the approximation (must be 1 or even)
         check_hermitian (bool): A flag to enable the validation check to ensure this is a valid unitary operator
 
     Raises:
-        TypeError: The ``hamiltonian`` is not of type :class:`~.Hamiltonian`, or :class:`~.Sum`
-        ValueError: One or more of the terms in ``hamiltonian`` are not Hermitian
-        ValueError: The ``order`` is not one or a positive even integer
+        TypeError: The ``hamiltonian`` is not of type :class:`~.Hamiltonian`, or :class:`~.Sum`.
+        ValueError: The ``hamiltonian`` must have atleast two terms.
+        ValueError: One or more of the terms in ``hamiltonian`` are not Hermitian.
+        ValueError: The ``order`` is not one or a positive even integer.
 
     **Example**
 
@@ -125,6 +126,7 @@ class TrotterProduct(Operation):
     .. details::
         :title: Usage Details
 
+        One can recover the behaviour of :class:`~.ApproxTimeEvolution` by setting :code:`order=1`. 
         We can also compute the gradient with respect to the coefficients of the Hamiltonian and the
         evolution time:
 
@@ -161,6 +163,11 @@ class TrotterProduct(Operation):
 
         if isinstance(hamiltonian, qml.Hamiltonian):
             coeffs, ops = hamiltonian.terms()
+            if len(coeffs) < 2:
+                raise ValueError(
+                    "There should be atleast 2 terms in the Hamiltonian. Otherwise use `qml.exp`"
+                )
+
             hamiltonian = qml.dot(coeffs, ops)
 
         if not isinstance(hamiltonian, Sum):
@@ -276,7 +283,7 @@ class TrotterProduct(Operation):
         order = kwargs["order"]
         ops = kwargs["base"].operands
 
-        decomp = _recursive_expression(time / n, order, ops)[-1::-1] * n
+        decomp = _recursive_expression(time / n, order, ops)[::-1] * n
 
         if qml.QueuingManager.recording():
             for op in decomp:  # apply operators in reverse order of expression
