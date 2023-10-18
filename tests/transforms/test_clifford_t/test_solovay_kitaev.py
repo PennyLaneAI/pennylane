@@ -128,8 +128,10 @@ class TestSolovayKitaev:
         su2_matrix = matrix / qml.math.sqrt((1 + 0j) * qml.math.linalg.det(matrix))
 
         op_axis, op_angle = _unitary_bloch(su2_matrix)
-        print(op_axis, op_angle)
-        assert qml.math.allclose(op_axis, axis) and op_angle == angle
+
+        assert (
+            qml.math.allclose(qml.math.array(op_axis), qml.math.array(axis)) and op_angle == angle
+        )
 
     def test_build_approximate_set(self):
         """Test for building approximate sets"""

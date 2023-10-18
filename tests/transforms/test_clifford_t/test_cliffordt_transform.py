@@ -130,7 +130,11 @@ class TestCliffordCompile:
         )
 
         dev = qml.device("default.qubit")
-        res1, res2 = qml.execute([old_tape, new_tape], device=dev)
+        transform_program = dev.preprocess()[0]
+        res1, res2 = qml.execute(
+            [old_tape, new_tape], device=dev, transform_program=transform_program
+        )
+
         qml.math.allclose(res1, tape_fn([res2]))
 
     def test_qnode_decomposition(self):
