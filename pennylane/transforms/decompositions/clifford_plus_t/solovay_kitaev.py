@@ -78,16 +78,16 @@ class GateSet:
     def __eq__(self, gateset):
         """Checks equivalence of two GateSet objects"""
 
-        phase = qml.math.divide(
-            self.matrix,
-            gateset.matrix,
-            out=qml.math.zeros_like(self.matrix, dtype=complex),
-            where=self.matrix != 0,
-        )[qml.math.nonzero(qml.math.round(self.matrix, 16))]
-        if not qml.math.allclose(phase / phase[0], qml.math.ones(len(phase))):
+        if len(self.gates) != len(gateset.gates):
             return False
 
-        if not qml.math.allclose(self.su2_matrix, gateset.su2_matrix):
+        if gateset.labels != gateset.labels:
+            return False
+
+        if not qml.math.allclose(self.matrix, gateset.matrix):
+            return False
+
+        if not qml.math.allclose(self.so3_matrix, gateset.so3_matrix):
             return False
 
         return True
@@ -98,11 +98,11 @@ class GateSet:
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
-            factor = qml.math.sqrt((1 + 0j) * qml.math.linalg.det(matrix + 1e-10)) ** -1
+            factor = qml.math.sqrt((1 + 0j) * qml.math.linalg.det(matrix)) ** -1
             gphase = qml.math.arctan2(qml.math.imag(factor), qml.math.real(factor))
             s2_mat = factor * matrix
 
-        return s2_mat, gphase
+            return s2_mat, gphase
 
     @staticmethod
     def get_SO3_matrix(matrix):
@@ -143,7 +143,7 @@ class GateSet:
         self.gates.append(operation)
         self.labels.append(operation.name)
 
-        self.matrix = qml.math.dot(qml.matrix(operation), self.matrix)
+        self.matrix = self.matrix @ qml.matrix(operation)  # qml.math.dot(qml.matrix(operation), )
         self.su2_matrix, self.global_phase = self.get_SU2_matrix(self.matrix)
         self.so3_matrix = self.get_SO3_matrix(self.su2_matrix)
 
@@ -177,8 +177,8 @@ class GateSet:
         """Compute the dot-product with another GateSet."""
 
         dotset = GateSet()
-        dotset.gates = gateset.gates + self.gates
-        dotset.labels = gateset.labels + self.labels
+        dotset.gates = self.gates + gateset.gates
+        dotset.labels = self.labels + gateset.labels
         dotset.matrix = qml.math.dot(self.matrix, gateset.matrix)
         dotset.su2_matrix = qml.math.dot(self.su2_matrix, gateset.su2_matrix)
         dotset.so3_matrix = qml.math.dot(self.so3_matrix, gateset.so3_matrix)
@@ -231,15 +231,15 @@ class TreeSet:
             ops = node.operations.copy()
             ops.append(op)
 
-            if self.check_sequences(ops, seqs):
+            if self.check_nodes(ops, seqs):
                 seqs.append(ops)
                 node.children.append(TreeSet(ops, self.basis_gate, []))
 
         return node.children
 
     @staticmethod
-    def check_sequences(seqs1, seqs2, tol=1e-10):
-        """Check if there's a GateSet that implements the same matrix up to ``tol``."""
+    def check_nodes(seqs1, seqs2, tol=1e-10):
+        """Check if there's a GateSet that implements the same matrix in the given sequence up to ``tol``."""
 
         if any(seqs1.labels == seq.labels for seq in seqs2):
             return False
@@ -315,7 +315,12 @@ def build_approximate_set(basis_set=None, depth=10):
 
 
 def solovay_kitaev_decomposition(op, depth, basis_set=None, approximate_set=None):
-    """Solovay-Kitaev algorithm for approximately decomposing an arbitrary single-qubit gate into Clifford+T basis set.
+    r"""Approximate an arbitrary single-qubit gate in Clifford+T basis using `Solovay-Kitaev algorithm <https://arxiv.org/abs/quant-ph/0505030>`_.
+
+    This method implements a recursive Solovay-Kitaev decomposition for approximating any SU(2) operation
+    with :math:`\epsilon > 0` error that depdends on the recursion ``depth``. In general, this algorithm runs
+    in :math:`O(\text{log}^{2.71}(1/\epsilon))` time and produces :math:`O(\text{log}^{3.97}(1/\epsilon))`
+    gate operations in the decomposition. 
 
     Args:
         op (~.Operation): A single-qubit gate operation
@@ -355,8 +360,5 @@ def solovay_kitaev_decomposition(op, depth, basis_set=None, approximate_set=None
         return v_n1.dot(w_n1).dot(v_n1dg).dot(w_n1dg).dot(u_n1)
 
     decomposition = _solovay_kitaev(GateSet.from_matrix(gate_set_op.su2_matrix), depth)
-
-    if not decomposition.global_phase:
-        return decomposition
 
     return decomposition.gates
