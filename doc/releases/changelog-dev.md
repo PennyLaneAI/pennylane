@@ -217,6 +217,8 @@
   of the computed qubit operator, if imaginary components are smaller than a threshold. 
   [(#4639)](https://github.com/PennyLaneAI/pennylane/pull/4639)
 
+* Plots generated with the `pennylane.drawer.plot` style of `matplotlib.pyplot` now have black axis labels and are generated at a default DPI of 300. Documentation for the use of the `pennylane` style of `qml.drawer` and the `pennylane.drawer.plot` style of `matplotlib.pyplot` has also been improved. [(#4690)](https://github.com/PennyLaneAI/pennylane/pull/4690)
+
 
 <h3>Breaking changes 💔</h3>
 
