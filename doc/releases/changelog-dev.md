@@ -164,7 +164,7 @@
           qml.Hadamard(wires=i)
 
       qml.RX(x, wires=0)
-      loop()  # pylint: disable=no-value-for-parameter
+      loop()  
       qml.RY(y, wires=1)
       qml.RZ(z, wires=2)
       return qml.expval(qml.PauliZ(0))
