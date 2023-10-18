@@ -122,6 +122,6 @@ class ControlledSequence(SymbolicOp, Operation):
         powers_of_two = 1 << np.arange(len(control_wires))
 
         for z, ctrl_wire in zip(powers_of_two[::-1], control_wires):
-            ops.append(qml.ctrl(qml.pow(base, z=z), control=ctrl_wire))
+            ops.append(qml.pow(qml.ctrl(base, control=ctrl_wire), z=z))
 
         return ops
