@@ -26,9 +26,9 @@ from typing import List
 from importlib import reload
 import pkg_resources
 
+
 class Compiler:
-    """The JIT compiler module containing all utilities and wrapper methods for ``qml.qjit`` in PennyLane.
-    """
+    """The JIT compiler module containing all utilities and wrapper methods for ``qml.qjit`` in PennyLane."""
 
     # Private class properties
     __BACKENDS = []
@@ -37,7 +37,7 @@ class Compiler:
     @classmethod
     def available(cls, name: str = "pennylane_catalyst") -> bool:
         """Check the availability of the given compiler package.
-        
+
         Args:
             name (str): the name of the compiler package
 
@@ -50,7 +50,10 @@ class Compiler:
 
         if pkg_resources.working_set.find(pkg_name):
             if name not in cls.__BACKENDS:
-                cls.__ENTRY_POINTS = {entry.name: entry for entry in pkg_resources.iter_entry_points("pennylane.compilers")}
+                cls.__ENTRY_POINTS = {
+                    entry.name: entry
+                    for entry in pkg_resources.iter_entry_points("pennylane.compilers")
+                }
                 cls.__BACKENDS.append(name)
             return True
 
@@ -67,7 +70,7 @@ class Compiler:
     @classmethod
     def active(cls) -> bool:
         """Check whether the caller is inside a QJIT evaluation context.
-        
+
         Return:
             bool : True if the caller is inside a QJIT evaluation context
         """
@@ -81,7 +84,7 @@ class Compiler:
         return utils_loader.contexts.EvaluationContext.is_tracing()
 
     @classmethod
-    def qjit(cls, *args, **kwargs):
+    def qjit(cls, fn=None, *args, **kwargs):
         """A just-in-time decorator for PennyLane and JAX programs using Catalyst.
 
         This decorator enables both just-in-time and ahead-of-time compilation,
@@ -216,7 +219,7 @@ class Compiler:
             raise RuntimeError("There is no available 'cpl_qjit' entry point.")
 
         qjit_loader = cls.__ENTRY_POINTS["cpl_qjit"].load()
-        return qjit_loader(*args, *kwargs)
+        return qjit_loader(fn=fn, *args, **kwargs)
 
 
 # Exported Methods
