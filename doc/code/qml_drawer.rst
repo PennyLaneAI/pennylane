@@ -26,7 +26,9 @@ be reset with ``qml.drawer.use_style('black_white')``.
     available_styles
     use_style
 
-The following images are generated via the code:
+The following images are generated via the following code, where ``style`` is
+replaced by an available style specification string (e.g., ``pennylane`` or
+``solarized_light``):
 
 .. code-block:: python
 
