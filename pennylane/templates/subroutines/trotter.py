@@ -161,6 +161,11 @@ class TrotterProduct(Operation):
 
         if isinstance(hamiltonian, qml.Hamiltonian):
             coeffs, ops = hamiltonian.terms()
+            if len(coeffs) < 2:
+                raise ValueError(
+                    "There should be atleast 2 terms in the Hamiltonian. Otherwise use `qml.exp`"
+                )
+
             hamiltonian = qml.dot(coeffs, ops)
 
         if not isinstance(hamiltonian, Sum):
@@ -276,7 +281,7 @@ class TrotterProduct(Operation):
         order = kwargs["order"]
         ops = kwargs["base"].operands
 
-        decomp = _recursive_expression(time / n, order, ops)[-1::-1] * n
+        decomp = _recursive_expression(time / n, order, ops)[::-1] * n
 
         if qml.QueuingManager.recording():
             for op in decomp:  # apply operators in reverse order of expression
