@@ -81,7 +81,7 @@ class GateSet:
         if len(self.gates) != len(gateset.gates):
             return False
 
-        if gateset.labels != gateset.labels:
+        if self.labels != gateset.labels:
             return False
 
         if not qml.math.allclose(self.matrix, gateset.matrix):
@@ -305,8 +305,17 @@ def _approximate_umat(seqs, basic_approximations):
     return min(basic_approximations, key=key)
 
 
-def build_approximate_set(basis_set=None, depth=10):
-    """Builds approximate unitary set required for Solovay-Kitaev algorithm"""
+def sk_approximate_set(basis_set=None, depth=10):
+    r"""Builds approximate unitary set required for Solovay-Kitaev algorithm.
+
+    Args:
+        basis_set (list(str)): Basis set to be used for Solovay-Kitaev decomposition build using
+            following terms, ``['x', 'y', 'z', 'h', 't', 'tdg', 's', 'sdg']``
+        depth (int): Maximum expansion length of Clifford+T sequences in the approximation set
+
+    Returns:
+        list: A list of Clifford+T sequences that will be used for approximating a matrix in the base case of recursive implementation of Solovay-Kitaev.
+    """
 
     if basis_set is None:
         basis_set = ["t", "tdg", "h"]
@@ -314,7 +323,7 @@ def build_approximate_set(basis_set=None, depth=10):
     return TreeSet(GateSet(), basis_set, ()).basic_approximation(depth)
 
 
-def solovay_kitaev_decomposition(op, depth, basis_set=None, approximate_set=None):
+def sk_decomposition(op, depth, basis_set=None, approximate_set=None):
     r"""Approximate an arbitrary single-qubit gate in Clifford+T basis using `Solovay-Kitaev algorithm <https://arxiv.org/abs/quant-ph/0505030>`_.
 
     This method implements a recursive Solovay-Kitaev decomposition for approximating any SU(2) operation
@@ -325,6 +334,10 @@ def solovay_kitaev_decomposition(op, depth, basis_set=None, approximate_set=None
     Args:
         op (~.Operation): A single-qubit gate operation
         depth (int): Depth until which the recursion occurs
+        basis_set (list(str)): Basis set to be used for decomposition build using following terms,
+            ``['x', 'y', 'z', 'h', 't', 'tdg', 's', 'sdg']``
+        approximate_set (list): An approximate set built using the
+            :func:`~.pennylane.transform.decomposition.sk_approximate_set` method
 
     Returns:
         list(~.Operations): A list of gates in the Clifford+T basis set that approximates the given operation
@@ -338,7 +351,7 @@ def solovay_kitaev_decomposition(op, depth, basis_set=None, approximate_set=None
     gate_set_op = GateSet([op])
 
     if approximate_set is None:
-        approximate_set = build_approximate_set(basis_set)
+        approximate_set = sk_approximate_set(basis_set)
 
     def _solovay_kitaev(gateset, n):
         """Recursive method as given in the Section 3. of arXiv:0505030"""

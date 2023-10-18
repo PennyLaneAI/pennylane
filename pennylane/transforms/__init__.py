@@ -100,6 +100,16 @@ Transforms for Clifford+T compilation
 
 This transform accepts quantum functions, and perform decomposition to Clifford+T basis.
 
+.. autosummary::
+    :toctree: api
+
+It make use of following functionalities for this purpose
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.decompositions.sk_decomposition
+    ~transforms.decompositions.sk_approximate_set
 
 Transform for circuit cutting
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

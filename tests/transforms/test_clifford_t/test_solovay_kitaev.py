@@ -24,8 +24,8 @@ from pennylane.transforms.decompositions.clifford_plus_t.solovay_kitaev import (
     TreeSet,
     _group_commutator_decompose,
     _unitary_bloch,
-    build_approximate_set,
-    solovay_kitaev_decomposition,
+    sk_approximate_set,
+    sk_decomposition,
 )
 
 
@@ -64,6 +64,7 @@ def test_gate_sets():
     gateset4 = GateSet.from_matrix(matrix)
 
     # test SU(2) amd SO(3) matrix generators
+    assert gateset4 != GateSet.from_matrix(1j * matrix)
     assert qml.math.allclose(gateset1.get_SU2_matrix(matrix)[0], gateset4.su2_matrix)
     assert qml.math.allclose(gateset1.get_SO3_matrix(matrix), gateset4.so3_matrix)
 
@@ -149,11 +150,11 @@ class TestSolovayKitaev:
 
         assert qml.math.allclose(op_axis, axis) and qml.math.allclose(op_angle, angle)
 
-    def test_build_approximate_set(self):
+    def test_sk_approximate_set(self):
         """Test for building approximate sets"""
 
-        approx_set1 = build_approximate_set(depth=5)
-        approx_set2 = build_approximate_set(basis_set=["t", "tdg", "h"], depth=5)
+        approx_set1 = sk_approximate_set(depth=5)
+        approx_set2 = sk_approximate_set(basis_set=["t", "tdg", "h"], depth=5)
 
         assert approx_set1 == approx_set2
         assert len(approx_set1) < 263 and len(approx_set2) < 263  # 3 + ... + 3x3x3x3x3
@@ -169,7 +170,7 @@ class TestSolovayKitaev:
     def test_solovay_kitaev(self, op):
         """Test Solovay-Kitaev decomposition method"""
 
-        approximate_set = build_approximate_set(
+        approximate_set = sk_approximate_set(
             basis_set=[
                 "t",
                 "tdg",
@@ -177,7 +178,7 @@ class TestSolovayKitaev:
             ],
             depth=10,
         )
-        gates = solovay_kitaev_decomposition(op, depth=5, approximate_set=approximate_set)
+        gates = sk_decomposition(op, depth=5, approximate_set=approximate_set)
 
         matrix_sk = functools.reduce(lambda x, y: x @ y, map(qml.matrix, gates))
         matrix_sk /= qml.math.sqrt((1 + 0j) * qml.math.linalg.det(matrix_sk))
@@ -187,7 +188,7 @@ class TestSolovayKitaev:
     def test_solovay_kitaev_without_approx_set(self):
         """Test Solovay-Kitaev decomposition method without providing approximation set"""
         op = qml.RY(math.pi / 42, wires=[1])
-        gates = solovay_kitaev_decomposition(op, depth=5)
+        gates = sk_decomposition(op, depth=5)
 
         matrix_sk = functools.reduce(lambda x, y: x @ y, map(qml.matrix, gates))
         matrix_sk /= qml.math.sqrt((1 + 0j) * qml.math.linalg.det(matrix_sk))
@@ -202,4 +203,4 @@ class TestSolovayKitaev:
             ValueError,
             match=r"Operator must be a single qubit operation",
         ):
-            solovay_kitaev_decomposition(op, depth=1)
+            sk_decomposition(op, depth=1)
