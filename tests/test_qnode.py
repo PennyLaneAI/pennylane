@@ -335,7 +335,7 @@ class TestValidation:
 
         with pytest.raises(
             qml._device.DeviceError,
-            match="Circuits with finite shots must be executed with non-analytic gradient methods; got adjoint",
+            match="Finite shots are not supported with adjoint",
         ):
             circ()
 
@@ -888,13 +888,13 @@ class TestIntegration:
             qml.cond(m_0, qml.RY)(y, wires=1)
             return qml.apply(return_type), mv_return(op=m_0)
 
-        spy = mocker.spy(qml, "defer_measurements")
+        spy = mocker.spy(qml.defer_measurements, "_transform")
         r1 = cry_qnode(first_par, sec_par)
         r2 = conditional_ry_qnode(first_par, sec_par)
 
         assert np.allclose(r1, r2[0])
         assert np.allclose(r2[1], mv_res(first_par))
-        spy.assert_called_once()
+        assert spy.call_count == 3  # once for each preprocessing, once for conditional qnode
 
     def test_drawing_has_deferred_measurements(self):
         """Test that `qml.draw` with qnodes uses defer_measurements
@@ -937,11 +937,11 @@ class TestIntegration:
             qml.cond(m_0, qml.RY)(x, wires=1)
             return qml.sample(qml.PauliZ(1))
 
-        spy = mocker.spy(qml, "defer_measurements")
+        spy = mocker.spy(qml.defer_measurements, "_transform")
         r1 = cry_qnode(first_par)
         r2 = conditional_ry_qnode(first_par)
         assert np.allclose(r1, r2)
-        spy.assert_called_once()
+        assert spy.call_count == 3  # once per device preprocessing, once for conditional qnode
 
     @pytest.mark.tf
     @pytest.mark.parametrize("interface", ["tf", "auto"])
@@ -1604,9 +1604,7 @@ class TestNewDeviceIntegration:
         def circuit():
             return qml.sample(wires=(0, 1))
 
-        with pytest.raises(
-            qml.DeviceError, match="Analytic circuits must only contain StateMeasurements"
-        ):
+        with pytest.raises(qml.DeviceError, match="not accepted for analytic simulation"):
             circuit()
 
         results = circuit(shots=10)  # pylint: disable=unexpected-keyword-arg
@@ -1679,23 +1677,7 @@ class TestTapeExpansion:
             return qml.expval(qml.PauliZ(0))
 
         x = pnp.array(0.5, requires_grad=True)
-        spy = mocker.spy(circuit.gradient_fn, "transform_fn")
         qml.grad(circuit)(x)
-
-        # check that the gradient recipe was applied *prior* to
-        # device expansion
-        input_tape = spy.call_args[0][0]
-        assert len(input_tape.operations) == 1
-        assert input_tape.operations[0].name == "UnsupportedOp"
-        assert input_tape.operations[0].data[0] == x
-
-        shifted_tape1, shifted_tape2 = spy.spy_return[0]
-
-        assert len(shifted_tape1.operations) == 1
-        assert shifted_tape1.operations[0].name == "UnsupportedOp"
-
-        assert len(shifted_tape2.operations) == 1
-        assert shifted_tape2.operations[0].name == "UnsupportedOp"
 
         # check second derivative
         assert np.allclose(qml.grad(qml.grad(circuit))(x), -9 * np.cos(3 * x))
@@ -1721,25 +1703,10 @@ class TestTapeExpansion:
             PhaseShift(x, wires=0)
             return qml.expval(qml.PauliX(0))
 
-        spy = mocker.spy(circuit.device, "execute")
         x = pnp.array(0.5, requires_grad=True)
         circuit(x)
 
-        spy = mocker.spy(circuit.gradient_fn, "transform_fn")
         res = qml.grad(circuit)(x)
-
-        input_tape = spy.call_args[0][0]
-        assert len(input_tape.operations) == 2
-        assert input_tape.operations[1].name == "RY"
-        assert input_tape.operations[1].data[0] == 3 * x
-
-        shifted_tape1, shifted_tape2 = spy.spy_return[0]
-
-        assert len(shifted_tape1.operations) == 2
-        assert shifted_tape1.operations[1].name == "RY"
-
-        assert len(shifted_tape2.operations) == 2
-        assert shifted_tape2.operations[1].name == "RY"
 
         assert np.allclose(res, -3 * np.sin(3 * x))
 

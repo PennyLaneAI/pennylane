@@ -138,7 +138,7 @@ def specs(qnode, max_expansion=None, expansion_strategy=None):
             else qnode.diff_method
         )
 
-        if isinstance(qnode.gradient_fn, qml.gradients.gradient_transform):
+        if isinstance(qnode.gradient_fn, qml.transforms.core.TransformDispatcher):
             info["gradient_fn"] = _get_absolute_import_path(qnode.gradient_fn)
 
             try:
