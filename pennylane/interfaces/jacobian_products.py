@@ -175,6 +175,8 @@ class TransformJacobianProducts(JacobianProductCalculator):
             executes the batch of circuits and returns their results.
         gradient_transform (pennylane.gradients.gradient_transform): the gradient transform to use.
         gradient_kwargs (dict): Any keyword arguments for the gradient transform.
+        cache_full_jacobian=False (bool): Whether or not to compute the full jacobian and cache it,
+            instead of treating each call as independent
 
     >>> inner_execute = qml.device('default.qubit').execute
     >>> gradient_transform = qml.gradients.param_shift
@@ -218,6 +220,13 @@ class TransformJacobianProducts(JacobianProductCalculator):
 
         num_result_tapes = len(tapes)
 
+        if self._cache_full_jacobian:
+            jacs = self.compute_jacobian(tapes)
+            multi_measurements = (len(t.measurements) > 1 for t in tapes)
+            jvps = _compute_jvps(
+                jacs, tangents, multi_measurements, tapes[0].shots.has_partitioned_shots
+            )
+            return self._inner_execute(tapes), jvps
         jvp_tapes, jvp_processing_fn = qml.gradients.batch_jvp(
             tapes, tangents, self._gradient_transform, gradient_kwargs=self._gradient_kwargs
         )

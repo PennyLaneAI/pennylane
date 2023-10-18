@@ -41,6 +41,9 @@ def inner_execute_numpy(tapes):
 
 
 param_shift_jpc = TransformJacobianProducts(inner_execute_numpy, qml.gradients.param_shift)
+param_shift_cached_jpc = TransformJacobianProducts(
+    inner_execute_numpy, qml.gradients.param_shift, cache_full_jacobian=True
+)
 hadamard_grad_jpc = TransformJacobianProducts(
     inner_execute_numpy, qml.gradients.hadamard_grad, {"aux_wire": "aux"}
 )
@@ -50,10 +53,11 @@ device_ps_jacs = DeviceDerivatives(dev_ps, ps_config)
 device_native_jps = DeviceJacobianProducts(dev, adjoint_config)
 device_ps_native_jps = DeviceJacobianProducts(dev_ps, ps_config)
 
-transform_jpc_matrix = [param_shift_jpc, hadamard_grad_jpc]
+transform_jpc_matrix = [param_shift_jpc, param_shift_cached_jpc, hadamard_grad_jpc]
 dev_jpc_matrix = [device_jacs, legacy_device_jacs, device_ps_jacs]
 jpc_matrix = [
     param_shift_jpc,
+    param_shift_cached_jpc,
     hadamard_grad_jpc,
     device_jacs,
     legacy_device_jacs,

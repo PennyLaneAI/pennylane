@@ -78,6 +78,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* Autograd can now use vjps provided by the device from the new device API. If a device provides
+  a vector Jacobian product, this can be selected by providing `use_device_jacobian_product=True` to
+  `qml.execute`.
+  [(#4557)](https://github.com/PennyLaneAI/pennylane/pull/4557)
+
 * `default.qubit` now tracks the number of equivalent qpu executions and total shots
   when the device is sampling. Note that `"simulations"` denotes the number of simulation passes, where as
   `"executions"` denotes how many different computational bases need to be sampled in.

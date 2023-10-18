@@ -558,6 +558,11 @@ def execute(
 
         interface = get_jax_interface_name(tapes)
 
+    if use_device_jacobian_product and isinstance(device, qml.Device):
+        raise qml.QuantumFunctionError(
+            "device provided jacobian products are not compatible with the old device interface."
+        )
+
     if gradient_fn is None:
         _gradient_method = None
     elif isinstance(gradient_fn, str):
@@ -763,7 +768,10 @@ def execute(
         # in this case would have ambiguous behaviour.
         raise ValueError("Gradient transforms cannot be used with grad_on_execution=True")
     elif interface in jpc_interfaces:
-        cache_full_jacobian = interface == "autograd"
+        # autograd requests the jacobian too many times
+        # so we need to cache the full jacobian even when caching is turned off
+        cache_full_jacobian = (interface == "autograd") and not cache
+
         jpc = TransformJacobianProducts(
             execute_fn, gradient_fn, gradient_kwargs, cache_full_jacobian=cache_full_jacobian
         )
