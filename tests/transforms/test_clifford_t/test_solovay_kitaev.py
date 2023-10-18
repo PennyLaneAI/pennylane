@@ -117,8 +117,8 @@ class TestSolovayKitaev:
     @pytest.mark.parametrize(
         ("op", "axis", "angle"),
         [
-            (qml.S(wires=[0]), [0., 0., 1.], math.pi / 2),
-            (qml.Hadamard(wires=["a"]), [1 / math.sqrt(2), 0., 1 / math.sqrt(2)], math.pi),
+            (qml.S(wires=[0]), [0.0, 0.0, 1.0], math.pi / 2),
+            (qml.Hadamard(wires=["a"]), [1 / math.sqrt(2), 0.0, 1 / math.sqrt(2)], math.pi),
         ],
     )
     def test_unitary_bloch(self, op, axis, angle):
@@ -129,9 +129,7 @@ class TestSolovayKitaev:
 
         op_axis, op_angle = _unitary_bloch(su2_matrix)
 
-        assert (
-            qml.math.allclose(op_axis, axis) and op_angle == angle
-        )
+        assert qml.math.allclose(op_axis, axis) and op_angle == angle
 
     def test_build_approximate_set(self):
         """Test for building approximate sets"""
