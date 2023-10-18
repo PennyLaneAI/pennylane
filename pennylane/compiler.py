@@ -15,11 +15,11 @@
 
 
 This subpackage exclusively functions as a wrapper for PennyLane's JIT compiler packages, without independently
-implementing any compiler package itself. Presently, it exclusively supports the 'pennylane-catalyst package,
-with plans to incorporate additional packages in the near future.
+implementing any compiler itself. Currently, it supports the ``pennylane-catalyst`` package, with plans to
+incorporate additional packages in the near future.
 
 For any compiler packages seeking to be registered, it is imperative that they expose the 'entry_points' metadata
-under the designated group name: 'pennylane.compilers'.
+under the designated group name: ``pennylane.compilers``.
 """
 
 from typing import List
