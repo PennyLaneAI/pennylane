@@ -14,8 +14,9 @@
 """Tests for Solovay-Kitaev implementation."""
 
 import math
-import pytest
 import functools
+
+import pytest
 import pennylane as qml
 
 from pennylane.transforms.decompositions.clifford_plus_t.solovay_kitaev import (
@@ -28,63 +29,57 @@ from pennylane.transforms.decompositions.clifford_plus_t.solovay_kitaev import (
 )
 
 
-class TestsGateSet:
-    """Test for GateSets"""
+def test_gate_sets():
+    """Test various functionalities for the GateSet object"""
 
-    def test_gate_sets(self):
-        """Test various functionalities for the GateSet object"""
+    gateset1 = GateSet([])
+    gateset2 = GateSet([qml.PauliX(0), qml.PauliZ(0)])
 
-        gateset1 = GateSet([])
-        gateset2 = GateSet([qml.PauliX(0), qml.PauliZ(0)])
+    # test names
+    assert gateset1.name == "" and gateset2.name == "PauliXPauliZ"
 
-        # test names
-        assert gateset1.name == "" and gateset2.name == "PauliXPauliZ"
+    # test lengths
+    assert len(gateset1) == 0 and len(gateset2) == 2
 
-        # test lengths
-        assert len(gateset1) == 0 and len(gateset2) == 2
+    # test append functionality
+    assert gateset1.append(qml.PauliX(0)).append(qml.PauliZ(0)) == gateset2
 
-        # test append functionality
-        assert gateset1.append(qml.PauliX(0)).append(qml.PauliZ(0)) == gateset2
+    # test copy functionality
+    assert gateset2.copy() == gateset2
 
-        # test copy functionality
-        assert gateset2.copy() == gateset2
+    gateset3 = GateSet([qml.PauliZ(0), qml.PauliX(0)])
 
-        gateset3 = GateSet([qml.PauliZ(0), qml.PauliX(0)])
+    # test adjoint functionality
+    assert gateset2.adjoint() == gateset3
 
-        # test adjoint functionality
-        assert gateset2.adjoint() == gateset3
+    # test equality
+    assert gateset2 != gateset3
 
-        # test equality
-        assert gateset2 != gateset3
+    # test dot functionality
+    matrix = gateset2.dot(gateset3).matrix
+    assert qml.math.allclose(matrix, qml.math.eye(2))
 
-        # test dot functionality
-        matrix = gateset2.dot(gateset3).matrix
-        assert qml.math.allclose(matrix, qml.math.eye(2))
+    gateset4 = GateSet.from_matrix(matrix)
 
-        gateset4 = GateSet.from_matrix(matrix)
-
-        # test SU(2) amd SO(3) matrix generators
-        assert qml.math.allclose(gateset1.get_SU2_matrix(matrix)[0], gateset4.su2_matrix)
-        assert qml.math.allclose(gateset1.get_SO3_matrix(matrix), gateset4.so3_matrix)
+    # test SU(2) amd SO(3) matrix generators
+    assert qml.math.allclose(gateset1.get_SU2_matrix(matrix)[0], gateset4.su2_matrix)
+    assert qml.math.allclose(gateset1.get_SO3_matrix(matrix), gateset4.so3_matrix)
 
 
-class TestTreeSet:
-    """Tests for TreeSets"""
+def test_tree_sets():
+    """Test various functionalities for the TreeSet object"""
 
-    def test_tree_sets(self):
-        """Test various functionalities for the TreeSet object"""
+    treeset1 = TreeSet(GateSet(), [], [])
+    treeset2 = TreeSet(GateSet(), ["h", "t"], [])
 
-        treeset1 = TreeSet(GateSet(), [], [])
-        treeset2 = TreeSet(GateSet(), ["h", "t"], [])
+    # Check process_node method expands the approximated gates with depth
+    assert len(treeset1.basic_approximation(depth=0)) == 1
+    assert len(treeset2.basic_approximation(depth=1)) == 3
 
-        # Check process_node method expands the approximated gates with depth
-        assert len(treeset1.basic_approximation(depth=0)) == 1
-        assert len(treeset2.basic_approximation(depth=1)) == 3
-
-        # Verify check_nodes help reduce redundancy via GP-like summation
-        treeset2 = TreeSet(GateSet(), ["h", "t", "tdg"], [])
-        assert len(treeset2.basic_approximation(depth=3)) < 39  # 3 + 3x3 + 3x3x3
-        assert len(treeset2.basic_approximation(depth=5)) < 263  # 3 + ... + 3x3x3x3x3
+    # Verify check_nodes help reduce redundancy via GP-like summation
+    treeset2 = TreeSet(GateSet(), ["h", "t", "tdg"], [])
+    assert len(treeset2.basic_approximation(depth=3)) < 39  # 3 + 3x3 + 3x3x3
+    assert len(treeset2.basic_approximation(depth=5)) < 263  # 3 + ... + 3x3x3x3x3
 
 
 class TestSolovayKitaev:
