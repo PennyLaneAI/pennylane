@@ -18,24 +18,18 @@ Unit tests for the compiler subpackage.
 import pytest
 
 import pennylane as qml
-from jax.core import ShapedArray
-from jax import numpy as jnp
-import numpy as np
-
 
 pytest.importorskip("catalyst")
+pytest.importorskip("jax")
+
+from jax import numpy as jnp  # pylint:disable=wrong-import-order
+from jax.core import ShapedArray  # pylint:disable=wrong-import-order
 
 # pylint: disable=too-few-public-methods, too-many-public-methods
 
 
 class TestCatalyst:
     """Test ``qml.qjit`` with Catalyst"""
-
-    def test_qjit_doc(self):
-        """Test qjit docstring"""
-        qml_qjit_doc = str(qml.qjit.__doc__)
-        cat_qjit_doc_header = "just-in-time decorator for PennyLane and JAX programs using Catalyst"
-        assert cat_qjit_doc_header in qml_qjit_doc
 
     def test_compiler(self):
         """Test compiler active and available methods"""
@@ -50,22 +44,6 @@ class TestCatalyst:
         assert qml.Compiler.available()
         assert qml.Compiler.available_backends() == ["pennylane-catalyst"]
 
-    def test_qjit_cost_fn(self):
-        """Test JIT compilation of a simple function"""
-        dev = qml.device("lightning.qubit", wires=1)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        @qml.qjit
-        def cost_fn(x: float):
-            res = circuit(x)
-            return res
-
-        assert np.allclose(cost_fn(2.0), -0.41614684)
-
     def test_qjit_circuit(self):
         """Test JIT compilation of a circuit with 2-qubit"""
         dev = qml.device("lightning.qubit", wires=2)
@@ -78,7 +56,7 @@ class TestCatalyst:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(wires=1))
 
-        assert np.allclose(circuit(0.5), 0.0)
+        assert jnp.allclose(circuit(0.5), 0.0)
 
     def test_qjit_aot(self):
         """Test AOT compilation of a circuit with 2-qubit"""
@@ -97,7 +75,74 @@ class TestCatalyst:
         expected = jnp.array(
             [0.75634905 - 0.52801002j, 0.0 + 0.0j, 0.35962678 + 0.14074839j, 0.0 + 0.0j]
         )
-        assert np.allclose(result, expected)
+        assert jnp.allclose(result, expected)
+
+    @pytest.mark.parametrize(
+        "_in,_out",
+        [
+            (0, False),
+            (1, True),
+        ],
+    )
+    def test_variable_capture_multiple_devices(self, _in, _out):
+        """Test variable capture using multiple backend devices."""
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qjit()
+        def workflow(n: int):
+            @qml.qnode(dev)
+            def f(x: float):
+                qml.RX(n * x, wires=n)
+                return qml.expval(qml.PauliZ(wires=n))
+
+            @qml.qnode(dev)
+            def g(x: float):
+                qml.RX(x, wires=1)
+                return qml.expval(qml.PauliZ(wires=1))
+
+            return jnp.array_equal(f(jnp.pi), g(jnp.pi))
+
+        assert workflow(_in) == _out
+
+    def test_args_workflow(self):
+        """Test arguments with workflows."""
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qjit
+        def workflow1(params1, params2):
+            """A classical workflow"""
+            res1 = params1["a"][0][0] + params2[1]
+            return jnp.sin(res1)
+
+        params1 = {
+            "a": [[0.1], 0.2],
+        }
+        params2 = (0.6, 0.8)
+        expected = 0.78332691
+        result = workflow1(params1, params2)
+        assert jnp.allclose(result, expected)
+
+    def test_return_value_dict(self):
+        """Test pytree return values."""
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit1(params):
+            qml.RX(params[0], wires=0)
+            qml.RX(params[1], wires=1)
+            return {
+                "w0": qml.expval(qml.PauliZ(0)),
+                "w1": qml.expval(qml.PauliZ(1)),
+            }
+
+        jitted_fn = qml.qjit(circuit1)
+
+        params = [0.2, 0.6]
+        expected = {"w0": 0.98006658, "w1": 0.82533561}
+        result = jitted_fn(params)
+        assert isinstance(result, dict)
+        assert jnp.allclose(result["w0"], expected["w0"])
+        assert jnp.allclose(result["w1"], expected["w1"])
 
     def test_qjit_python_if(self):
         """Test JIT compilation with the autograph support"""
@@ -113,8 +158,8 @@ class TestCatalyst:
 
             return qml.expval(qml.PauliZ(0))
 
-        assert np.allclose(circuit(3), 0.0)
-        assert np.allclose(circuit(5), 1.0)
+        assert jnp.allclose(circuit(3), 0.0)
+        assert jnp.allclose(circuit(5), 1.0)
 
     def test_compilation_opt(self):
         """Test user-configurable compilation options"""
