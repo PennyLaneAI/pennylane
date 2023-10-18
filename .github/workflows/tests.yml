@@ -24,9 +24,3 @@ jobs:
           && !contains(github.event.pull_request.labels.*.name, 'ci:run-full-test-suite')
           || false
          }}
-      skip_ci_test_jobs: >-
-        ${{
-           github.event_name == 'pull_request' 
-           && 'qcut-tests, data-tests'
-           || ''
-         }}
