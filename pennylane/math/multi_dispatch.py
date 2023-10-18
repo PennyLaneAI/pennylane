@@ -925,7 +925,8 @@ def jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
     Args:
         qnode(qml.QNode): the quantum node.
         argnums(int, list[int]): the parameters that we want to set as trainable (on the QNode level).
-        program(qml.transforms.core.TransformProgram): the program to be applied on the tape.
+        program(qml.transforms.core.TransformProgram): the transform program to be applied on the tape.
+
 
     Return:
         list[float, jax.JVPTracer]: List of parameters where the trainable one are `JVPTracer`.
