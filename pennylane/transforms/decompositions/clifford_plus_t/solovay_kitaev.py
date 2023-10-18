@@ -33,7 +33,7 @@ _CLIFFORD_T_BASIS = {
 
 
 class GateSet:
-    """Implements gate set used for decompose step in Solovay-Kitaev.
+    """Implements gate set used for decomposition step in Solovay-Kitaev.
 
     Args:
         operations (Iterable): list of Clifford gates
@@ -95,7 +95,7 @@ class GateSet:
     @staticmethod
     def get_SU2_matrix(matrix):
         """Performs a U(2) to SU(2) transformation via a global phase addition."""
-        
+
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
             factor = qml.math.sqrt((1 + 0j) * qml.math.linalg.det(matrix + 1e-10)) ** -1
@@ -237,7 +237,8 @@ class TreeSet:
 
         return node.children
 
-    def check_sequences(self, seqs1, seqs2, tol=1e-10):
+    @staticmethod
+    def check_sequences(seqs1, seqs2, tol=1e-10):
         """Check if there's a GateSet that implements the same matrix up to ``tol``."""
 
         if any(seqs1.labels == seq.labels for seq in seqs2):
