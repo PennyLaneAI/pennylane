@@ -146,9 +146,9 @@
     True
     ```
 
-* Added support for drawing a QNode that has been decorated with `qjit` from PennyLane's
+* A QNode that has been decorated with `qjit` from PennyLane's
   [Catalyst](https://docs.pennylane.ai/projects/catalyst) library for just-in-time hybrid
-  compilation.
+  compilation is now compatible with `qml.draw`.
   [(#4609)](https://github.com/PennyLaneAI/pennylane/pull/4609)
 
   ```python
@@ -173,8 +173,10 @@
   ```
   
   ```pycon
-  >>>draw
-  "0: ──RX──H──┤  <Z>\n1: ──H───RY─┤     \n2: ──RZ─────┤     "
+  >>> print(draw)
+  0: ──RX──H──┤  <Z>
+  1: ──H───RY─┤
+  2: ──RZ─────┤
   ```
   
   Stay tuned for more integration of Catalyst into PennyLane!
