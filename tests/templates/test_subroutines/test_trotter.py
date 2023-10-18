@@ -516,7 +516,6 @@ class TestIntegration:
     @pytest.mark.parametrize("time", (0.5, 1, 2))
     def test_jax_execute(self, time):
         """Test that the gate executes correctly in the jax interface."""
-        import jax  # pylint: disable=unused-import
         from jax import numpy as jnp
 
         time = jnp.array(time)
