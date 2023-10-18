@@ -35,7 +35,7 @@ class Compiler:
     __ENTRY_POINTS = {}
 
     @classmethod
-    def available(cls, name: str = "pennylane_catalyst") -> bool:
+    def available(cls, name: str = "pennylane-catalyst") -> bool:
         """Check the availability of the given compiler package.
 
         Args:

@@ -37,6 +37,19 @@ class TestCatalyst:
         cat_qjit_doc_header = "just-in-time decorator for PennyLane and JAX programs using Catalyst"
         assert cat_qjit_doc_header in qml_qjit_doc
 
+    def test_compiler(self):
+        """Test compiler active and available methods"""
+
+        with pytest.raises(RuntimeError, match="There is no available compiler package"):
+            qml.Compiler.active()
+
+        assert not qml.Compiler.available_backends()
+        assert qml.Compiler.available()
+        assert qml.Compiler.available_backends() == ["pennylane-catalyst"]
+
+        assert qml.Compiler.available()
+        assert qml.Compiler.available_backends() == ["pennylane-catalyst"]
+
     def test_qjit_cost_fn(self):
         """Test JIT compilation of a simple function"""
         dev = qml.device("lightning.qubit", wires=1)
