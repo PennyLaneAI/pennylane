@@ -71,6 +71,12 @@
   It is recommended to switch over to use of `TrotterProduct` because `ApproxTimeEvolution` will be
   deprecated and removed in upcoming releases.
 
+* TODO QDrift
+
+<h4>Building blocks for quantum phase estimation 🧱</h4>
+
+* TODO
+
 <h4>New device capabilities, integration with Catalyst, and more! ⚗️</h4>
 
 * `default.qubit` now uses the new `qml.devices.Device` API and supporting functionality in
