@@ -18,16 +18,16 @@ from copy import copy
 import numpy as np
 import pennylane as qml
 
-from pennylane.operation import AnyWires
+from pennylane.operation import AnyWires, Operation
 from pennylane.wires import Wires
 from pennylane.ops.op_math.symbolicop import SymbolicOp
 
 
-class CtrlSequence(SymbolicOp):
+class ControlledSequence(SymbolicOp, Operation):
     """docstring"""
 
     num_wires = AnyWires
-    grad_method = None
+    # grad_method = None
 
     def _flatten(self):
         return (self.base,), (self.control,)
@@ -46,7 +46,7 @@ class CtrlSequence(SymbolicOp):
         self.hyperparameters["control_wires"] = control_wires
         self.hyperparameters["base"] = base
 
-        self._name = "CtrlSequence"
+        self._name = "ControlledSequence"
 
         super().__init__(base, id=id)
 
@@ -74,7 +74,7 @@ class CtrlSequence(SymbolicOp):
         return False
 
     def __repr__(self):
-        return f"CtrlSequence({self.base}, control={list(self.control)})"
+        return f"ControlledSequence({self.base}, control={list(self.control)})"
 
     def map_wires(self, wire_map: dict):
         # pylint:disable=protected-access

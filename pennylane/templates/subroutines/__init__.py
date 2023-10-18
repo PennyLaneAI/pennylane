@@ -38,3 +38,4 @@ from .select import Select
 from .qdrift import QDrift
 from .trotter import TrotterProduct
 from .ctrlsequence import CtrlSequence
+from .controlled_sequence import ControlledSequence
