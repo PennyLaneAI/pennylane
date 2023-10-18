@@ -24,7 +24,7 @@ from pennylane import math
 class CosineWindow(StatePrepBase):
     r"""CosineWindow(wires)
     Prepares an initial state with a cosine wave function.
-    
+
     The wave function is defined as
 
     .. math::
@@ -65,9 +65,7 @@ class CosineWindow(StatePrepBase):
         super().__init__(wires=wires, id=id)
 
     @staticmethod
-    def compute_decomposition(
-        *args, wires, **kwargs
-    ):  # pylint: disable=arguments-differ,unused-argument
+    def compute_decomposition(wires):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a product of other operators (static method).
         It is efficiently decomposed from one QFT over all qubits and one-qubit rotation gates.
 
