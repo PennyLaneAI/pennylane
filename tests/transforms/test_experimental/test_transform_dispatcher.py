@@ -19,7 +19,6 @@ import pytest
 import pennylane as qml
 from pennylane.transforms.core import transform, TransformError
 
-# TODO: Replace with default qubit 2
 dev = qml.device("default.qubit", wires=2)
 
 with qml.tape.QuantumTape() as tape_circuit:
@@ -352,6 +351,15 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         with pytest.raises(TransformError):
             transform(non_valid_transform)
 
+    @pytest.mark.parametrize("valid_transform", valid_transforms)
+    def test_dispatcher_signature_classical_cotransform(self, valid_transform):
+        """Test that  valid transforms with non-valid co transform raises a Transform error."""
+
+        with pytest.raises(
+            TransformError, match="The classical co-transform must be a valid Python function."
+        ):
+            transform(valid_transform, classical_cotransform=3)
+
     def test_error_not_callable_transform(self):
         """Test that a non-callable is not a valid transforms."""
 
@@ -410,14 +418,6 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
             match="The expand transform must have the same signature as the transform",
         ):
             transform(first_valid_transform, expand_transform=non_valid_expand_transform)
-
-    def test_cotransform_not_implemented(self):
-        """Test that a co-transform must be a callable."""
-
-        with pytest.raises(
-            NotImplementedError, match="Classical cotransforms are not yet integrated."
-        ):
-            transform(first_valid_transform, classical_cotransform=non_callable)
 
     def test_qfunc_transform_multiple_tapes(self):
         """Test that quantum function is not compatible with multiple tapes."""
@@ -546,8 +546,8 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert isinstance(program, qml.transforms.core.TransformProgram)
         assert isinstance(new_program, qml.transforms.core.TransformProgram)
 
-        assert len(program) == 4
-        assert len(new_program) == 5
+        assert len(program) == 5
+        assert len(new_program) == 6
 
         assert new_program[-1].transform is valid_transform
 

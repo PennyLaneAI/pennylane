@@ -15,6 +15,7 @@
 This module contains functions for computing the pulse generator
 parameter-shift gradient of pulse sequences in a qubit-based quantum tape.
 """
+from typing import Callable, Sequence
 import warnings
 from functools import partial
 import numpy as np
@@ -23,6 +24,7 @@ import pennylane as qml
 
 from pennylane.pulse import ParametrizedEvolution
 from pennylane.ops.qubit.special_unitary import pauli_basis_strings, _pauli_decompose
+from pennylane.transforms.core import transform
 
 from .parameter_shift import _make_zero_rep
 from .pulse_gradient import _assert_has_jax, raise_pulse_diff_on_qnode
@@ -33,7 +35,6 @@ from .gradient_transform import (
     assert_no_variance,
     choose_grad_methods,
     gradient_analysis_and_validation,
-    gradient_transform,
     _no_trainable_grad,
     reorder_grads,
 )
@@ -398,7 +399,10 @@ def _expval_pulse_odegen(tape, argnum, atol):
     return gradient_tapes, processing_fn
 
 
-def _pulse_odegen(tape, argnum=None, atol=1e-7):
+@partial(transform, final_transform=True)
+def pulse_odegen(
+    tape: qml.tape.QuantumTape, argnum=None, atol=1e-7
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Transform a QNode to compute the pulse generator parameter-shift gradient of pulses
     in a pulse program with respect to their inputs.
     This method combines automatic differentiation of few-qubit operations with
@@ -699,31 +703,19 @@ def _pulse_odegen(tape, argnum=None, atol=1e-7):
     return _expval_pulse_odegen(tape, argnum, atol)
 
 
-def expand_invalid_trainable_pulse_odegen(x, *args, **kwargs):
-    r"""Do not expand any operation. We expect the ``pulse_odegen`` to be used
-    on pulse programs and we do not expect decomposition pipelines between pulses
-    and gate-based circuits yet.
-    """
-    # pylint:disable=unused-argument
-    return x
-
-
-pulse_odegen = gradient_transform(_pulse_odegen, expand_fn=expand_invalid_trainable_pulse_odegen)
-
-
-def _legacy_pulse_generator_wrapper(*args, **kwargs):
+def _legacy_pulse_generator_wrapper(
+    tape: qml.tape.QuantumTape, argnum=None, atol=1e-7
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     warnings.warn(
         "pulse_generator for gradient computation has been renamed to pulse_odegen and will not be available in pennylane v0.34 onwards"
     )
-    return _pulse_odegen(*args, **kwargs)
+    return pulse_odegen(tape, argnum, atol)
 
 
-pulse_generator = gradient_transform(
-    _legacy_pulse_generator_wrapper, expand_fn=expand_invalid_trainable_pulse_odegen
-)
+pulse_generator = transform(_legacy_pulse_generator_wrapper, final_transform=True)
 
 
-@pulse_odegen.custom_qnode_wrapper
+@pulse_odegen.custom_qnode_transform
 def pulse_odegen_qnode_wrapper(self, qnode, targs, tkwargs):
     """A custom QNode wrapper for the gradient transform :func:`~.pulse_odegen`.
     It raises an error, so that applying ``pulse_odegen`` to a ``QNode`` directly

@@ -23,7 +23,7 @@ import pennylane.logging as pl_logging
 _grad_log_map = {
     "adjoint": "gradient_fn=adjoint, interface=autograd, grad_on_execution=best, gradient_kwargs={}",
     "backprop": "gradient_fn=backprop, interface=autograd, grad_on_execution=best, gradient_kwargs={}",
-    "parameter-shift": "gradient_fn=<gradient_transform: param_shift>",
+    "parameter-shift": "gradient_fn=<transform: param_shift>",
 }
 
 
