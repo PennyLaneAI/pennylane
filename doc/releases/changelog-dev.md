@@ -79,7 +79,7 @@
 
 <h4>New device capabilities, integration with Catalyst, and more! ⚗️</h4>
 
-* `default.qubit` now uses the new `qml.devices.Device` API and supporting functionality in
+* `default.qubit` now uses the new `qml.devices.Device` API and functionality in
   `qml.devices.qubit`. If you experience any issues with the updated `default.qubit`, please let us
   know by [posting an issue](https://github.com/PennyLaneAI/pennylane/issues/new/choose). 
   The old version of the device is still
@@ -94,6 +94,24 @@
   * The number of wires is now optional - simply having `qml.device("default.qubit")` is valid! If
     wires are not provided at instantiation, the device automatically infers the required number of
     wires for each circuit provided for execution.
+
+    ```python
+    dev = qml.device("default.qubit")
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.PauliZ("new")
+        qml.RZ(0.1, wires="device")
+        qml.Hadamard("api")
+        return qml.state()
+    ```
+
+    ```pycon
+    >>> print(qml.draw(circuit)())
+       new: ──Z────────┤  State
+    device: ──RZ(0.10)─┤  State
+       api: ──H────────┤  State
+    ```
 
   * `default.qubit` is no longer silently swapped out with an interface-appropriate device when the
     backpropagation differentiation method is used. For example, consider:
