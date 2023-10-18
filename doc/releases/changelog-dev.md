@@ -181,8 +181,8 @@
   
   Stay tuned for more integration of Catalyst into PennyLane!
 
-* Extended ``qml.qchem.import_state`` to import more quantum chemistry wavefunctions, from MPS DMRG
-  and SHCI classical calculations performed with the Block2 and Dice libraries.
+* `qml.qchem.import_state` has been extended to import more quantum chemistry wavefunctions, 
+  from MPS, DMRG and SHCI classical calculations performed with the Block2 and Dice libraries.
   [#4523](https://github.com/PennyLaneAI/pennylane/pull/4523)
   [#4524](https://github.com/PennyLaneAI/pennylane/pull/4524)
   [#4626](https://github.com/PennyLaneAI/pennylane/pull/4626)
