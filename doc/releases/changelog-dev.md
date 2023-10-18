@@ -4,8 +4,6 @@
 
 <h3>New features since last release</h3>
 
-<h4></h4>
-
 <h4>Postselection and statistics in mid-circuit measurements 📌</h4>
 
 * TODO postselection
@@ -42,13 +40,13 @@
 
 * Higher-order Trotter-Suzuki methods are now easily accessible through a new operation
   called `TrotterProduct`.
-  [(#ABCD)]()
+  [(#4661)](https://github.com/PennyLaneAI/pennylane/pull/4661)
 
   Trotterization techniques are an affective route towards accurate and efficient
   Hamiltonian simulation. The Suzuki-Trotter product formula allows for the ability
   to express higher-order approximations to the matrix exponential of a Hamiltonian, 
   and it is now available to use in PennyLane via the `TrotterProduct` operation. 
-  Simply specifiy the `order` of the approximation and the evolution `time`.
+  Simply specify the `order` of the approximation and the evolution `time`.
 
   ```python
   coeffs = [0.25, 0.75]
@@ -68,6 +66,10 @@
   >>> circuit()
   [-0.13259524+0.59790098j  0.        +0.j         -0.13259524-0.77932754j  0.        +0.j        ]
   ```
+
+  The already-available `ApproxTimeEvolution` operation represents the special case of `order=1`.
+  It is recommended to switch over to use of `TrotterProduct` because `ApproxTimeEvolution` will be
+  deprecated and removed in upcoming releases.
 
 <h4>New device capabilities, integration with Catalyst, and more! ⚗️</h4>
 
