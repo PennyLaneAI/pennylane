@@ -139,9 +139,11 @@
   [(#4628)](https://github.com/PennyLaneAI/pennylane/pull/4628)
   [(#4649)](https://github.com/PennyLaneAI/pennylane/pull/4649)
 
-* The `JacobianProductCalculator` abstract base class and implementation `TransformJacobianProducts`
-  have been added to `pennylane.interfaces.jacobian_products`.
+* The `JacobianProductCalculator` abstract base class and implementations `TransformJacobianProducts`
+  `DeviceDerivatives`, and `DeviceJacobianProducts` have been added to `pennylane.interfaces.jacobian_products`.
   [(#4435)](https://github.com/PennyLaneAI/pennylane/pull/4435)
+  [(#4527)](https://github.com/PennyLaneAI/pennylane/pull/4527)
+  [(#4637)](https://github.com/PennyLaneAI/pennylane/pull/4637)
 
 * Extended ``qml.qchem.import_state`` to import wavefunctions from MPS DMRG and SHCI classical
   calculations performed with the Block2 and Dice libraries, incorporating new tests and wavefunction
@@ -259,6 +261,14 @@
 * `qml.data.load` correctly performs a full download of dataset after a partial download of the
   same dataset.
   [(#4681)](https://github.com/PennyLaneAI/pennylane/pull/4681)
+  
+* Updated `qml.device`, `devices.preprocessing` and the `tape_expand.set_decomposition` context 
+  manager to bring `DefaultQubit2` to feature parity with `default.qubit.legacy` with regards to 
+  using custom decompositions. The `DefaultQubit2` device can now be included in a `set_decomposition` 
+  context or initialized with a `custom_decomps` dictionary, as well as a custom `max_depth` for 
+  decomposition.
+  [(#4675)](https://github.com/PennyLaneAI/pennylane/pull/4675)
+
 
 <h3>Breaking changes 💔</h3>
 
