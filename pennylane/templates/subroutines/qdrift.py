@@ -24,19 +24,19 @@ def _sample_decomposition(coeffs, ops, time, n=1, seed=None):
     """Generate the randomly sampled decomposition
 
     Args:
-        coeffs (Array): the coefficients of the operations from each term in the hamiltonian.
-        ops (List[~.Operator]): the normalized operations from each term in the hamiltonian.
-        time (complex): time to evolve under the target hamiltonian.
-        n (int): number of samples in the product. Defaults to 1.
-        seed (int): random seed. Defaults to None.
+        coeffs (array): the coefficients of the operations from each term in the Hamiltonian
+        ops (list[~.Operator]): the normalized operations from each term in the Hamiltonian
+        time (float): time to evolve under the target Hamiltonian
+        n (int): number of samples in the product. defaults to 1
+        seed (int): random seed. defaults to None
 
     Returns:
-        List[~.Operator]: the decomposition of operations as per the approximation.
+        list[~.Operator]: the decomposition of operations as per the approximation
     """
     normalization_factor = qml.math.sum(qml.math.abs(coeffs))
     probs = qml.math.abs(coeffs) / normalization_factor
     exps = [
-        qml.exp(base, qml.math.sign(coeff) * normalization_factor * time * 1j / n)
+        qml.exp(base, (coeff / qml.math.abs(coeff)) * normalization_factor * time * 1j / n)
         for base, coeff in zip(ops, coeffs)
     ]
 
@@ -63,8 +63,7 @@ class QDrift(Operation):
     terms to be added to the product.
 
     Args:
-        hamiltonian (Union[~.Hamiltonian, ~.Sum]): The Hamiltonian written in terms of products of
-            Pauli gates
+        hamiltonian (Union[~.Hamiltonian, ~.Sum]): The Hamiltonian written as a sum of operations
         time (int or float): The time of evolution, namely the parameter :math:`t` in :math:`e^{-iHt}`
         n (int): An integer representing the number of exponentiated terms
         seed (int): The seed for the random number generator
@@ -101,7 +100,9 @@ class QDrift(Operation):
     .. details::
         :title: Usage Details
 
-        We can also compute the gradient with respect to the evolution time:
+        We currently **Do NOT** support computing gradients with respect to the 
+        coefficients of the input Hamiltonian. We can however compute the gradient 
+        with respect to the evolution time:
 
         .. code-block:: python3
 
@@ -127,7 +128,9 @@ class QDrift(Operation):
         0.27980654844422853
     """
 
-    def __init__(self, hamiltonian, time, n=1, seed=None, decomposition=None, id=None):
+    def __init__(  # pylint: disable=too-many-arguments
+            self, hamiltonian, time, n=1, seed=None, decomposition=None, id=None
+        ):
         r"""Initialize the QDrift class"""
 
         if isinstance(hamiltonian, Hamiltonian):
@@ -148,11 +151,15 @@ class QDrift(Operation):
                 f"The given operator must be a PennyLane ~.Hamiltonian or ~.Sum got {hamiltonian}"
             )
 
+        if len(ops) < 2: 
+            raise ValueError(
+                "There should be atleast 2 terms in the Hamiltonian. Otherwise use `qml.exp`"
+            )
+
         if any(requires_grad(coeff) for coeff in coeffs):
             raise qml.QuantumFunctionError(
                 "The QDrift template currently doesn't support differentiation through the "
-                "coefficients of the input Hamiltonian. Please instantiate the operation "
-                "using coefficents with `requires_grad` set to False."
+                "coefficients of the input Hamiltonian."
             )
 
         if decomposition is None:  # need to do this to allow flatten and _unflatten
@@ -173,7 +180,7 @@ class QDrift(Operation):
 
         Args:
             data: the trainable component of the operation
-            metadata: the non-trainable component of the operation.
+            metadata: the non-trainable component of the operation
 
         The output of ``Operator._flatten`` and the class type must be sufficient to reconstruct the original
         operation with ``Operator._unflatten``.
@@ -197,7 +204,7 @@ class QDrift(Operation):
         return cls(hamiltonian, *data, **hyperparameters_dict)
 
     @staticmethod
-    def compute_decomposition(*args, **kwargs):
+    def compute_decomposition(*args, **kwargs):  # pylint: disable=unused-argument 
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
