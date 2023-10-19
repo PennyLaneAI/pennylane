@@ -1426,7 +1426,7 @@ class TestResourcesTracker:
         ):
             assert tracked_r == expected_r
 
-    @pytest.mark.all_interfaces
+    @pytest.mark.autograd
     def test_tracker_grad(self):
         """Test that the tracker can track resources through a gradient computation"""
         dev = qml.device("default.qubit.legacy", wires=1, shots=100)
