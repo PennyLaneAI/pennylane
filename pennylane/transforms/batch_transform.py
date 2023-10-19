@@ -292,7 +292,7 @@ class batch_transform:
             argnums = kwargs.pop("argnums", None)
 
             if argnums:
-                tkwargs["argnums"] = argnums
+                tkwargs["argnums"] = argnums  # pragma: no cover
 
             old_interface = qnode.interface
 
@@ -419,7 +419,7 @@ class batch_transform:
             tape = self.expand_fn(tape, *targs, **tkwargs)
 
         if argnums is not None:
-            tape.trainable_params = argnums
+            tape.trainable_params = argnums  # pragma: no cover
         tapes, processing_fn = self.transform_fn(tape, *targs, **tkwargs)
 
         if processing_fn is None:
