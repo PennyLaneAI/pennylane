@@ -19,11 +19,11 @@ import pytest
 
 import pennylane as qml
 
-pytest.importorskip("catalyst")
-pytest.importorskip("jax")
+catalyst = pytest.mark.external("catalyst")
+jax = pytest.mark.external("jax")
 
-from jax import numpy as jnp  # pylint:disable=wrong-import-order
-from jax.core import ShapedArray  # pylint:disable=wrong-import-order
+from jax import numpy as jnp  # pylint:disable=wrong-import-position
+from jax.core import ShapedArray  # pylint:disable=wrong-import-position
 
 # pylint: disable=too-few-public-methods, too-many-public-methods
 
