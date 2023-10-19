@@ -87,7 +87,7 @@ class TrotterProduct(Operation):
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        hamiltonian (Union[~.Hamiltonian, ~.Sum]): The Hamiltonian written as a linear combination
+        hamiltonian (Union[~Hamiltonian, ~Sum]): The Hamiltonian written as a linear combination
             of operators with known matrix exponentials.
         time (float): The time of evolution, namely the parameter :math:`t` in :math:`e^{iHt}`
         n (int): An integer representing the number of Trotter steps to perform
@@ -135,7 +135,7 @@ class TrotterProduct(Operation):
             @qml.qnode(dev)
             def my_circ(c1, c2, time):
                 # Prepare H:
-                H = qml.dot([c1, c2], [qml.PauliX(0), qml.PauliZ(1)])
+                H = qml.dot([c1, c2], [qml.PauliX(0), qml.PauliZ(0)])
 
                 # Prepare some state
                 qml.Hadamard(0)
@@ -146,7 +146,7 @@ class TrotterProduct(Operation):
                 # Measure some quantity
                 return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        >>> args = qnp.array([1.23, 4.5, 0.1])
+        >>> args = np.array([1.23, 4.5, 0.1])
         >>> qml.grad(my_circ)(*tuple(args))
         (tensor(0.00961064, requires_grad=True), tensor(-0.12338274, requires_grad=True), tensor(-5.43401259, requires_grad=True))
     """
