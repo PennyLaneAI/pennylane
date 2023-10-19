@@ -128,7 +128,7 @@ class TransformDispatcher:
             # instantiating the object. This allows the signature to
             # be correctly displayed in the documentation.
 
-            args[0].custom_qnode_tranform = lambda x: x
+            args[0].custom_qnode_transform = lambda x: x
             return args[0]
 
         return super().__new__(cls)
