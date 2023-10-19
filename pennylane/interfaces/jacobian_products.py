@@ -285,12 +285,12 @@ class DeviceDerivatives(JacobianProductCalculator):
     This is because the `hash` of  :class:`~.QuantumScript` is expensive, as it requires inspecting all its constituents,
     which is not worth the effort in this case.
 
-    When a forward pass with :meth:`~.execute` is called, both the results and the jacobian for the object are stored.
+    When a forward pass with :meth:`~.execute_and_cache_jacobian` is called, both the results and the jacobian for the object are stored.
 
     >>> tape = qml.tape.QuantumScript([qml.RX(1.0, wires=0)], [qml.expval(qml.PauliZ(0))])
     >>> batch = (tape, )
     >>> with device.tracker:
-    ...     results = jpc.execute(batch )
+    ...     results = jpc.execute_and_cache_jacobian(batch )
     >>> results
     (0.5403023058681398,)
     >>> device.tracker.totals
@@ -372,7 +372,7 @@ class DeviceDerivatives(JacobianProductCalculator):
             return self._device.compute_derivatives(numpy_tapes, self._execution_config)
         return self._device.gradients(numpy_tapes, **self._gradient_kwargs)
 
-    def execute(self, tapes: Batch):
+    def execute_and_cache_jacobian(self, tapes: Batch):
         """Forward pass used to cache the results and jacobians.
 
         Args:

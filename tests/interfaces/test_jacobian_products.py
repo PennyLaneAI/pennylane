@@ -326,7 +326,7 @@ class TestCachingDeviceDerivatives:
         batch = (tape1,)
 
         with jpc._device.tracker:
-            results = jpc.execute(batch)
+            results = jpc.execute_and_cache_jacobian(batch)
 
         assert qml.math.allclose(results[0], np.cos(0.1))
         assert jpc._device.tracker.totals["execute_and_derivative_batches"] == 1
