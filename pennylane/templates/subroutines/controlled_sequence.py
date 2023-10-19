@@ -48,17 +48,14 @@ class ControlledSequence(SymbolicOp, Operation):
 
     **Example**
 
-    @qml.qnode(dev)
-    def circuit():
-
-    for i in range(3):
-        qml.Hadamard(wires = i)
-
-    qml.CtrlSequence(qml.RX(0.25, wires = 3), control = [0, 1, 2]) # <-- 👀
-
-    qml.adjoint(qml.QFT)(wires = range(3))
-
-    return qml.probs(wires = range(3))
+    .. code-block:: python
+        @qml.qnode(dev)
+        def circuit():
+            for i in range(3):
+                qml.Hadamard(wires = i)
+            qml.ControlledSequence(qml.RX(0.25, wires = 3), control = [0, 1, 2]) # <-- 👀
+            qml.adjoint(qml.QFT)(wires = range(3))
+            return qml.probs(wires = range(3))
     """
     num_wires = AnyWires
     # grad_method = None
