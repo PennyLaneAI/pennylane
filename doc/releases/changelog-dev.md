@@ -258,8 +258,8 @@
   of the computed qubit operator, if imaginary components are smaller than a threshold. 
   [(#4639)](https://github.com/PennyLaneAI/pennylane/pull/4639)
 
-* `qml.data.load` correctly performs a full download of dataset after a partial download of the
-  same dataset.
+* `qml.data.load` correctly performs a full download of the dataset after a partial download of the
+  same dataset has already been performed.
   [(#4681)](https://github.com/PennyLaneAI/pennylane/pull/4681)
   
 * Updated `qml.device`, `devices.preprocessing` and the `tape_expand.set_decomposition` context 
