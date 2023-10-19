@@ -60,13 +60,17 @@ def shadow_expval(tape: QuantumTape, H, k=1) -> (Sequence[QuantumTape], Callable
     See :func:`~.pennylane.shadow_expval` for more usage details.
 
     Args:
+        tape (:class:`qml.tape.QuantumTape`): A :class:`qml.tape.QuantumTape`.
         H (:class:`~.pennylane.Observable` or list[:class:`~.pennylane.Observable`]): Observables
             for which to compute the expectation values
         k (int): k (int): Number of equal parts to split the shadow's measurements to compute
             the median of means. ``k=1`` corresponds to simply taking the mean over all measurements.
 
     Returns:
-        tensor-like[float]: 1-D tensor containing the expectation value estimates for each observable
+        pennylane.QNode or qfunc or tuple[List[.QuantumTape], Callable]: If a QNode
+        is passed, it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of quantum tapes to be
+        evaluated, and a function to be applied to these tape executions.
 
     **Example**
 
@@ -75,7 +79,7 @@ def shadow_expval(tape: QuantumTape, H, k=1) -> (Sequence[QuantumTape], Callable
         H = qml.PauliZ(0) @ qml.PauliZ(1)
         dev = qml.device("default.qubit", wires=2, shots=10000)
 
-        @qml.shadows.shadow_expval(H, k=1)
+        @partial(qml.shadows.shadow_expval, H, k=1)
         @qml.qnode(dev)
         def circuit(x):
             qml.Hadamard(wires=0)
@@ -172,6 +176,7 @@ def shadow_state(tape: QuantumTape, wires, diffable=False) -> (Sequence[QuantumT
     the reconstructed state in a differentiable manner.
 
     Args:
+        tape (:class:`qml.tape.QuantumTape`): A :class:`qml.tape.QuantumTape`.
         wires (list[int] or list[list[int]]): If a list of ints, this represents
             the wires over which to reconstruct the state. If a list of list of ints,
             a state is reconstructed for every element of the outer list, saving
@@ -182,7 +187,10 @@ def shadow_state(tape: QuantumTape, wires, diffable=False) -> (Sequence[QuantumT
             cost.
 
     Returns:
-        list[tensor-like[complex]]: The reconstructed states
+        pennylane.QNode or qfunc or tuple[List[.QuantumTape], Callable]: If a QNode
+        is passed, it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of quantum tapes to be
+        evaluated, and a function to be applied to these tape executions.
 
     **Example**
 
@@ -190,7 +198,7 @@ def shadow_state(tape: QuantumTape, wires, diffable=False) -> (Sequence[QuantumT
 
         dev = qml.device("default.qubit", wires=2, shots=10000)
 
-        @qml.shadows.shadow_state(wires=[0, 1], diffable=True)
+        @partial(qml.shadows.shadow_state, wires=[0, 1], diffable=True)
         @qml.qnode(dev)
         def circuit(x):
             qml.Hadamard(wires=0)
