@@ -21,6 +21,12 @@ def qjit(
 ):  # pylint:disable=keyword-arg-before-vararg
     """A just-in-time decorator for PennyLane and JAX programs.
 
+    .. note::
+
+        This is a wrapper around
+        `catalyst.while_loop <https://docs.pennylane.ai/projects/catalyst/en/latest/code/api/catalyst.qjit.html>`__.
+
+
     This decorator enables both just-in-time and ahead-of-time compilation,
     depending on the compiler package and whether function argument type hints
     are provided.
@@ -66,7 +72,7 @@ def qjit(
 
     .. code-block:: python
 
-        @qjit
+        @qml.qjit
         @qml.qnode(qml.device("lightning.qubit", wires=2))
         def circuit(theta):
             qml.Hadamard(wires=0)
@@ -86,7 +92,7 @@ def qjit(
 
         from jax.core import ShapedArray
 
-        @qjit  # compilation happens at definition
+        @qml.qjit  # compilation happens at definition
         @qml.qnode(qml.device("lightning.qubit", wires=2))
         def circuit(x: complex, z: ShapedArray(shape=(3,), dtype=jnp.float64)):
             theta = jnp.abs(x)
@@ -105,7 +111,7 @@ def qjit(
 
     .. code-block:: python
 
-        @qjit(autograph=True)
+        @qml.qjit(autograph=True)
         @qml.qnode(qml.device("lightning.qubit", wires=2))
         def circuit(x: int):
 
