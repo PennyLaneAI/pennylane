@@ -100,9 +100,9 @@ class QNode:
             * ``"auto"``: The QNode automatically detects the interface from the input values of
               the quantum function.
 
-        diff_method (str or .gradient_transform): The method of differentiation to use in the created QNode.
-            Can either be a :class:`~.gradient_transform`, which includes all quantum gradient
-            transforms in the :mod:`qml.gradients <.gradients>` module, or a string. The following
+        diff_method (str or .pennylane.transforms.core.TransformDispatcher): The method of differentiation to use in
+            the created QNode. Can either be a :class:`pennylane.transforms.core.TransformDispatcher`, which includes all
+            quantum gradient transforms in the :mod:`qml.gradients <.gradients>` module, or a string. The following
             strings are allowed:
 
             * ``"best"``: Best available method. Uses classical backpropagation or the
@@ -130,7 +130,6 @@ class QNode:
             * ``"hadamard"``: Use the analytic hadamard gradient test
               rule for all supported quantum operation arguments. More info is in the documentation
               :func:`qml.gradients.hadamard_grad <.gradients.hadamard_grad>`.
-
 
             * ``"finite-diff"``: Uses numerical finite-differences for all quantum operation
               arguments.
@@ -575,13 +574,13 @@ class QNode:
         Args:
             device (.Device): PennyLane device
             interface (str): name of the requested interface
-            diff_method (str or .gradient_transform): The requested method of differentiation.
+            diff_method (str or pennylane.transforms.core.TransformDispatcher): The requested method of differentiation.
                 If a string, allowed options are ``"best"``, ``"backprop"``, ``"adjoint"``,
                 ``"device"``, ``"parameter-shift"``, ``"hadamard"``, ``"finite-diff"``, or ``"spsa"``.
                 A gradient transform may also be passed here.
 
         Returns:
-            tuple[str or .gradient_transform, dict, .Device: Tuple containing the ``gradient_fn``,
+            tuple[str or pennylane.transforms.core.TransformDispatcher, dict, .Device: Tuple containing the ``gradient_fn``,
             ``gradient_kwargs``, and the device to use when calling the execute function.
         """
         if diff_method == "best":
@@ -644,7 +643,7 @@ class QNode:
             interface (str): name of the requested interface
 
         Returns:
-            tuple[str or .gradient_transform, dict, .Device: Tuple containing the ``gradient_fn``,
+            tuple[str or pennylane.transforms.core.TransformDispatcher, dict, .Device: Tuple containing the ``gradient_fn``,
             ``gradient_kwargs``, and the device to use when calling the execute function.
         """
         try:
