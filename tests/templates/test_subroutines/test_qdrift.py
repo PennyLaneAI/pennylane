@@ -566,28 +566,27 @@ class TestIntegration:
         assert allclose(measured_grad, reference_grad)
 
 
-test_error_data = (
+test_error_data = (  # Computed by hand
+    (qml.dot([1.23, -0.45j], [qml.PauliX(0), qml.PauliZ(1)]), 0.5, 5, 0.19348472),
+    (qml.Hamiltonian([1.23, -0.45], [qml.PauliX(0), qml.PauliZ(1)]), 0.5, 5, 0.19348472),
     (
-        qml.dot([1.23, -0.45j], [qml.PauliX(0), qml.PauliZ(1)]), 0.5, 5, 
-
-    ),
-    (
-
-    ),
-    (
-
+        qml.dot([1, -0.5, 0.5j], [qml.Identity(wires=[0, 1]), qml.PauliZ(0), qml.Hadamard(1)]),
+        3,
+        100,
+        0.4431405849,
     ),
 )
 
 
-# def test_error_func(h, time, n, expected_error):
-#     """Test that the error function as expected"""
-#     computed_error = qml.QDrfit.error(h, time, n)
-#     assert isclose(computed_error, expected_error)
+@pytest.mark.parametrize("h, time, n, expected_error", test_error_data)
+def test_error_func(h, time, n, expected_error):
+    """Test that the error function as expected"""
+    computed_error = qml.QDrift.error(h, time, n)
+    assert isclose(computed_error, expected_error)
 
 
-# def test_error_func_type_error():
-#     """Test that an error is raised if the wrong type is passed for hamiltonian"""
-#     msg = "The given operator must be a PennyLane ~.Hamiltonian or ~.Sum"
-#     with pytest.raises(TypeError, match=msg):
-#         qml.QDrift.error(qml.PauliX(0), time=1.23, n=10)
+def test_error_func_type_error():
+    """Test that an error is raised if the wrong type is passed for hamiltonian"""
+    msg = "The given operator must be a PennyLane ~.Hamiltonian or ~.Sum"
+    with pytest.raises(TypeError, match=msg):
+        qml.QDrift.error(qml.PauliX(0), time=1.23, n=10)

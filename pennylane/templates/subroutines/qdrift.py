@@ -100,8 +100,8 @@ class QDrift(Operation):
     .. details::
         :title: Usage Details
 
-        We currently **Do NOT** support computing gradients with respect to the 
-        coefficients of the input Hamiltonian. We can however compute the gradient 
+        We currently **Do NOT** support computing gradients with respect to the
+        coefficients of the input Hamiltonian. We can however compute the gradient
         with respect to the evolution time:
 
         .. code-block:: python3
@@ -129,8 +129,8 @@ class QDrift(Operation):
     """
 
     def __init__(  # pylint: disable=too-many-arguments
-            self, hamiltonian, time, n=1, seed=None, decomposition=None, id=None
-        ):
+        self, hamiltonian, time, n=1, seed=None, decomposition=None, id=None
+    ):
         r"""Initialize the QDrift class"""
 
         if isinstance(hamiltonian, Hamiltonian):
@@ -151,7 +151,7 @@ class QDrift(Operation):
                 f"The given operator must be a PennyLane ~.Hamiltonian or ~.Sum got {hamiltonian}"
             )
 
-        if len(ops) < 2: 
+        if len(ops) < 2:
             raise ValueError(
                 "There should be atleast 2 terms in the Hamiltonian. Otherwise use `qml.exp`"
             )
@@ -204,7 +204,7 @@ class QDrift(Operation):
         return cls(hamiltonian, *data, **hyperparameters_dict)
 
     @staticmethod
-    def compute_decomposition(*args, **kwargs):  # pylint: disable=unused-argument 
+    def compute_decomposition(*args, **kwargs):  # pylint: disable=unused-argument
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -239,11 +239,13 @@ class QDrift(Operation):
         """
         if isinstance(hamiltonian, Hamiltonian):
             num_terms = len(hamiltonian.coeffs)
-            max_coeff = max(hamiltonian.coeffs)
+            max_coeff = max(qml.math.abs(hamiltonian.coeffs))
 
         elif isinstance(hamiltonian, Sum):
             num_terms = len(hamiltonian)
-            max_coeff = max(op.scalar if isinstance(op, SProd) else 1.0 for op in hamiltonian)
+            max_coeff = max(
+                qml.math.abs(op.scalar) if isinstance(op, SProd) else 1.0 for op in hamiltonian
+            )
 
         else:
             raise TypeError(
