@@ -260,6 +260,9 @@ outcome of such mid-circuit measurements:
         qml.cond(m_0, qml.RY)(y, wires=0)
         return qml.probs(wires=[0])
 
+Deferred measurements
+*********************
+
 A quantum function with mid-circuit measurements (defined using
 :func:`~.pennylane.measure`) and conditional operations (defined using
 :func:`~.pennylane.cond`) can be executed by applying the `deferred measurement
@@ -269,17 +272,12 @@ measurement on qubit 1 yielded ``1`` as an outcome, otherwise doing nothing
 for the ``0`` measurement outcome.
 
 PennyLane implements the deferred measurement principle to transform
-conditional operations with the :func:`~.defer_measurements` quantum
-function transform.
-
-The deferred measurement principle provides a natural method to simulate the
-application of mid-circuit measurements and conditional operations in a
-differentiable and device-independent way. Performing true mid-circuit
-measurements and conditional operations is dependent on the
-quantum hardware and PennyLane device capabilities.
-
-For more examples on applying quantum functions conditionally, refer to the
-:func:`~.pennylane.cond` transform.
+conditional operations with the :func:`~.pennylane.defer_measurements` quantum
+function transform. The deferred measurement principle provides a natural method
+to simulate the application of mid-circuit measurements and conditional operations
+in a differentiable and device-independent way. Performing true mid-circuit
+measurements and conditional operations is dependent on the quantum hardware and
+PennyLane device capabilities.
 
 .. code-block:: python
 
@@ -299,24 +297,8 @@ The decorator syntax applies equally well:
     def qnode(x, y):
         (...)
 
-Note that we can also specify an outcome when defining a conditional operation:
-
-.. code-block:: python
-
-    @qml.qnode(dev)
-    @qml.defer_measurements
-    def qnode_conditional_op_on_zero(x, y):
-        qml.RY(x, wires=0)
-        qml.CNOT(wires=[0, 1])
-        m_0 = qml.measure(1)
-
-        qml.cond(m_0 == 0, qml.RY)(y, wires=0)
-        return qml.probs(wires=[0])
-
-    pars = np.array([0.643, 0.246], requires_grad=True)
-
->>> qnode_conditional_op_on_zero(*pars)
-tensor([0.88660045, 0.11339955], requires_grad=True)
+Resetting wires
+***************
 
 Wires can be reused as normal after making mid-circuit measurements. Moreover, a measured wire can also be
 reset to the :math:`|0 \rangle` state by setting the ``reset`` keyword argument of :func:`~.pennylane.measure`
@@ -338,31 +320,35 @@ Executing this QNode:
 >>> func()
 tensor([0., 1.], requires_grad=True)
 
-Statistics can also be collected on mid-circuit measurements along with terminal measurement statistics.
-Currently, ``qml.probs``, ``qml.sample``, ``qml.expval``, ``qml.var``, and ``qml.counts`` are supported,
-and can be requested along with other measurements. The devices that currently support collecting such
-statistics are ``"default.qubit"``, ``"default.mixed"``, and ``"default.qubit.legacy"``.
+Conditional operators
+*********************
 
-.. code-block:: python3
+Users can create conditional operators controlled on mid-circuit measurements using
+:func:`~.pennylane.cond`. We can also specify an outcome when defining a conditional
+operation:
 
-    dev = qml.device("default.qubit", wires=2)
+.. code-block:: python
 
     @qml.qnode(dev)
-    def func(x, y):
-        qml.RX(x, wires=0)
-        m0 = qml.measure(0)
-        qml.cond(m0, qml.RY)(y, wires=1)
-        return qml.probs(wires=1), qml.probs(op=m0)
+    @qml.defer_measurements
+    def qnode_conditional_op_on_zero(x, y):
+        qml.RY(x, wires=0)
+        qml.CNOT(wires=[0, 1])
+        m_0 = qml.measure(1)
 
-Executing this QNode:
+        qml.cond(m_0 == 0, qml.RY)(y, wires=0)
+        return qml.probs(wires=[0])
 
->>> func(np.pi / 2, np.pi / 4)
-(tensor([0.9267767, 0.0732233], requires_grad=True),
- tensor([0.5, 0.5], requires_grad=True))
+    pars = np.array([0.643, 0.246], requires_grad=True)
 
-Currently, statistics can only be collected for single mid-circuit measurement values. Moreover, any
-measurement values manipulated using boolean or arithmetic operators cannot be used. These can lead to
-unexpected/incorrect behaviour.
+>>> qnode_conditional_op_on_zero(*pars)
+tensor([0.88660045, 0.11339955], requires_grad=True)
+
+For more examples on applying quantum functions conditionally, refer to the
+:func:`~.pennylane.cond` documentation.
+
+Postselecting mid-circuit measurements
+**************************************
 
 PennyLane also supports postselecting on mid-circuit measurement outcomes by specifying the ``postselect``
 keyword argument of :func:`~.pennylane.measure`. Postselection discards outcomes that do not meet the
@@ -387,12 +373,43 @@ measuring ``1`` on wire 1 after postselection should also be 1. Executing this Q
 array([1, 1, 1, 1, 1, 1, 1])
 
 Note that only 7 samples are returned. This is because samples that do not meet the postselection criteria are
-thrown away.
+discarded.
 
 .. note::
 
     Currently, postselection support is only available on ``"default.qubit"``. Using postselection
     on other devices will raise an error.
+
+Mid-circuit measurement statistics
+**********************************
+
+Statistics can be collected on mid-circuit measurements along with terminal measurement statistics.
+Currently, ``qml.probs``, ``qml.sample``, ``qml.expval``, ``qml.var``, and ``qml.counts`` are supported,
+and can be requested along with other measurements. The devices that currently support collecting such
+statistics are ``"default.qubit"``, ``"default.mixed"``, and ``"default.qubit.legacy"``.
+
+.. code-block:: python3
+
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.qnode(dev)
+    def func(x, y):
+        qml.RX(x, wires=0)
+        m0 = qml.measure(0)
+        qml.cond(m0, qml.RY)(y, wires=1)
+        return qml.probs(wires=1), qml.probs(op=m0)
+
+Executing this QNode:
+
+>>> func(np.pi / 2, np.pi / 4)
+(tensor([0.9267767, 0.0732233], requires_grad=True),
+ tensor([0.5, 0.5], requires_grad=True))
+
+.. warning::
+
+    Currently, statistics can only be collected for single mid-circuit measurement values. Moreover, any
+    measurement values manipulated using boolean or arithmetic operators cannot be used. These can lead to
+    unexpected/incorrect behaviour.
 
 Changing the number of shots
 ----------------------------
