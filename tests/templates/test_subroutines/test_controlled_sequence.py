@@ -282,7 +282,7 @@ class TestIntegration:
         @qml.qnode(dev)
         @qml.compile()
         def circuit(thetas):
-            qml.ControlledSequence(U(thetas, wires=[0, 1]), control=[2, 3])
+            qml.ControlledSequence(U(thetas), control=[2, 3])
             return qml.state()
 
         _ = circuit([1.0, 1.0])
