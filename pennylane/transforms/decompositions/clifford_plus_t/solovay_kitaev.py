@@ -261,6 +261,7 @@ def _unitary_bloch(mat, eps=1e-10):
     sine = qml.math.sin(angle)
 
     if sine < eps:
+        angle = 0.0  # put back even multiple of pi in place
         axis = [0, 0, 1]
     else:
         nx = -qml.math.imag((mat[1, 0] + mat[0, 1]) / (2 * sine))
@@ -282,6 +283,10 @@ def _group_commutator_decompose(mat):
     # Begin decomposition by computing the rotation matrices
     v = qml.RX(phi, [0])
     w = qml.RY(2 * math.pi - phi, [0]) if axis[2] > 0 else qml.RY(phi, [0])
+
+    # Early return for the case where matrix I or -I
+    if qml.math.isclose(theta, 0.0) and qml.math.allclose(axis, [0, 0, 1]):
+        return qml.math.eye(2, dtype=complex), qml.math.eye(2, dtype=complex)
 
     # Get similarity transormation matrix S and S.dag
     ud = qml.math.linalg.eig(mat)[1]

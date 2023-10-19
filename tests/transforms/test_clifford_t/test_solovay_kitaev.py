@@ -192,12 +192,11 @@ class TestSolovayKitaev:
     def test_solovay_kitaev_without_approx_set(self, basis_depth, basis_set):
         """Test Solovay-Kitaev decomposition method without providing approximation set"""
         op = qml.PhaseShift(math.pi / 4, 0)
-        gates = sk_decomposition(op, depth=1, basis_depth=basis_depth, basis_set=basis_set)
+        gates = sk_decomposition(op, depth=3, basis_depth=basis_depth, basis_set=basis_set)
 
         matrix_sk = functools.reduce(lambda x, y: x @ y, map(qml.matrix, gates))
-        # matrix_sk /= qml.math.sqrt((1 + 0j) * qml.math.linalg.det(matrix_sk))
 
-        assert qml.math.allclose(qml.matrix(op), matrix_sk, atol=1e-2)
+        assert qml.math.allclose(qml.matrix(op), matrix_sk, atol=1e-5)
 
     def test_exception(self):
         """Test operation wire exception in Solovay-Kitaev"""
