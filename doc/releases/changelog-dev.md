@@ -4,6 +4,41 @@
 
 <h3>New features since last release</h3>
 
+<h4>Exponentiate Hamiltonians with flexible Trotter products 🐖</h4>
+
+* Higher-order Trotter-Suzuki methods are now easily accessible through a new operation
+  called `TrotterProduct`.
+  [(#4661)](https://github.com/PennyLaneAI/pennylane/pull/4661)
+
+  Trotterization techniques are an affective route towards accurate and efficient
+  Hamiltonian simulation. The Suzuki-Trotter product formula allows for the ability
+  to express higher-order approximations to the matrix exponential of a Hamiltonian, 
+  and it is now available to use in PennyLane via the `TrotterProduct` operation. 
+  Simply specify the `order` of the approximation and the evolution `time`.
+
+  ```python
+  coeffs = [0.25, 0.75]
+  ops = [qml.PauliX(0), qml.PauliZ(0)]
+  H = qml.dot(coeffs, ops)
+
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.Hadamard(0)
+      qml.TrotterProduct(H, time=2.4, order=2)
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> circuit()
+  [-0.13259524+0.59790098j  0.        +0.j         -0.13259524-0.77932754j  0.        +0.j        ]
+  ```
+
+  The already-available `ApproxTimeEvolution` operation represents the special case of `order=1`.
+  It is recommended to switch over to use of `TrotterProduct` because `ApproxTimeEvolution` will be
+  deprecated and removed in upcoming releases.
+
 * Support drawing QJIT QNode from Catalyst.
   [(#4609)](https://github.com/PennyLaneAI/pennylane/pull/4609)
 
