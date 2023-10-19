@@ -19,6 +19,13 @@ import functools
 import scipy as sp
 import pennylane as qml
 
+from pennylane.queuing import QueuingManager
+from pennylane.tape import QuantumTape
+from pennylane.transforms.optimization import (
+    cancel_inverses,
+)
+
+
 _CLIFFORD_T_BASIS = {
     "i": qml.Identity(0),
     "x": qml.PauliX(0),
@@ -320,6 +327,8 @@ def sk_approximate_set(basis_set=(), basis_depth=10):
 
     Returns:
         list: A list of Clifford+T sequences that will be used for approximating a matrix in the base case of recursive implementation of Solovay-Kitaev.
+
+    .. seealso:: :func:`~.sk_decomposition`
     """
 
     if not basis_set:
@@ -344,7 +353,7 @@ def sk_decomposition(op, depth, basis_set=(), basis_depth=10, approximate_set=No
             to the gate adjoint. Default value is ``['h', 't', 'tdg']``
         basis_depth (int): Maximum expansion length of Clifford+T sequences in the ``approximate_set``. Default is `10`
         approximate_set (list): A list of gate sequences that are used to find an approximation of unitaries in the
-            base case of recursion. This can be precomputed using the :func:`~.pennylane.transform.decomposition.sk_approximate_set`
+            base case of recursion. This can be precomputed using the :func:`~.sk_approximate_set`
             method, otherwise will be built using the default/given values of ``basis_set`` and ``basis_depth``
 
     Returns:
@@ -375,46 +384,52 @@ def sk_decomposition(op, depth, basis_set=(), basis_depth=10, approximate_set=No
     >>> qml.math.allclose(op.matrix(), su2_matrix, atol=1e-3)
     True
 
+    .. seealso:: :func:`~.sk_approximate_set`
     """
-    # Check for length of wires in the operation
-    if len(op.wires) > 1:
-        raise ValueError(
-            f"Operator must be a single qubit operation, got {op} acting on {op.wires} wires."
-        )
+    with QueuingManager.stop_recording():
+        # Check for length of wires in the operation
+        if len(op.wires) > 1:
+            raise ValueError(
+                f"Operator must be a single qubit operation, got {op} acting on {op.wires} wires."
+            )
 
-    # Check if we need to build the approximation set manually
-    if (
-        approximate_set is None
-        or basis_depth != 10
-        or (basis_set and sorted(basis_set) != ["h", "t", "tdg"])
-    ):
-        approximate_set = sk_approximate_set(basis_set, basis_depth)
+        # Check if we need to build the approximation set manually
+        if (
+            approximate_set is None
+            or basis_depth != 10
+            or (basis_set and sorted(basis_set) != ["h", "t", "tdg"])
+        ):
+            approximate_set = sk_approximate_set(basis_set, basis_depth)
 
-    # Recursive implementation for Solovay-Kitaev algorithm
-    def _solovay_kitaev(gateset, n):
-        """Recursive method as given in the Section 3 of arXiv:0505030"""
+        # Recursive implementation for Solovay-Kitaev algorithm
+        def _solovay_kitaev(gateset, n):
+            """Recursive method as given in the Section 3 of arXiv:0505030"""
 
-        if not n:
-            return _approximate_umat(gateset, approximate_set)
+            if not n:
+                return _approximate_umat(gateset, approximate_set)
 
-        u_n1 = _solovay_kitaev(gateset, n - 1)
-        u_n1dg = u_n1.adjoint()
+            u_n1 = _solovay_kitaev(gateset, n - 1)
+            u_n1dg = u_n1.adjoint()
 
-        v_n, w_n = _group_commutator_decompose(gateset.dot(u_n1dg).su2_matrix)
+            v_n, w_n = _group_commutator_decompose(gateset.dot(u_n1dg).su2_matrix)
 
-        v_n1 = _solovay_kitaev(GateSet.from_matrix(v_n), n - 1)
-        w_n1 = _solovay_kitaev(GateSet.from_matrix(w_n), n - 1)
+            v_n1 = _solovay_kitaev(GateSet.from_matrix(v_n), n - 1)
+            w_n1 = _solovay_kitaev(GateSet.from_matrix(w_n), n - 1)
 
-        v_n1dg = v_n1.adjoint()
-        w_n1dg = w_n1.adjoint()
+            v_n1dg = v_n1.adjoint()
+            w_n1dg = w_n1.adjoint()
 
-        return v_n1.dot(w_n1).dot(v_n1dg).dot(w_n1dg).dot(u_n1)
+            return v_n1.dot(w_n1).dot(v_n1dg).dot(w_n1dg).dot(u_n1)
 
-    # Build a GateSet object
-    gate_set_op = GateSet([op])
+        # Build a GateSet object
+        gate_set_op = GateSet([op])
 
-    # Get the decomposition for the given operation
-    decomposition = _solovay_kitaev(gate_set_op, depth)
+        # Get the decomposition for the given operation
+        decomposition = _solovay_kitaev(gate_set_op, depth)
 
-    # Return the gates from the GateSet
-    return decomposition.gates
+        # Remove inverses if any and map the wires to that of operation
+        [new_tape], _ = cancel_inverses(QuantumTape(decomposition.gates))
+        [map_tape], _ = qml.map_wires(new_tape, wire_map={0: op.wires[0]})
+
+        # Return the gates from the mapped tape
+        return map_tape.operations
