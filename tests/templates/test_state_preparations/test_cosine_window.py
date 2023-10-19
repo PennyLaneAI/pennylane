@@ -82,7 +82,7 @@ class TestInputs:
         wires = [0, 1, 2]
         template = qml.CosineWindow(wires=wires, id="a")
         assert template.id == "a"
-        assert template.wires == qml.Wires(wires)
+        assert template.wires == qml.wires.Wires(wires)
 
 
 class TestStateVector:
