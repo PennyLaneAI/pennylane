@@ -32,29 +32,34 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-def _compute_vjps(jacs, dys, multi_measurements, has_partitioned_shots):
+def _compute_vjps(jacs, dys, tapes):
     """Compute the vjps of multiple tapes, directly for a Jacobian and co-tangents dys."""
     f = {True: qml.gradients.compute_vjp_multi, False: qml.gradients.compute_vjp_single}
-    if not has_partitioned_shots:
-        return tuple(f[multi](dy, jac) for jac, dy, multi in zip(jacs, dys, multi_measurements))
 
     vjps = []
-    for i, multi in enumerate(multi_measurements):
-        shot_vjps = [f[multi](d, j) for d, j in zip(dys[i], jacs[i])]
-        vjps.append(qml.math.sum(qml.math.stack(shot_vjps), axis=0))
+    for jac, dy, t in zip(jacs, dys, tapes):
+        multi = len(t.measurements) > 1
+        if t.shots.has_partitioned_shots:
+            shot_vjps = [f[multi](d, j) for d, j in zip(dy, jac)]
+            vjps.append(qml.math.sum(qml.math.stack(shot_vjps), axis=0))
+        else:
+            vjps.append(f[multi](dy, jac))
 
     return tuple(vjps)
 
 
-def _compute_jvps(jacs, tangents, multi_measurements, has_partitioned_shots):
+def _compute_jvps(jacs, tangents, tapes):
     """Compute the jvps of multiple tapes, directly for a Jacobian and tangents."""
     f = {True: qml.gradients.compute_jvp_multi, False: qml.gradients.compute_jvp_single}
-    if has_partitioned_shots:
-        return tuple(
-            tuple(f[multi](dx, j) for j in jac)
-            for jac, dx, multi in zip(jacs, tangents, multi_measurements)
-        )
-    return tuple(f[multi](dx, jac) for jac, dx, multi in zip(jacs, tangents, multi_measurements))
+
+    jvps = []
+    for jac, dx, t in zip(jacs, tangents, tapes):
+        multi = len(t.measurements) > 1
+        if t.shots.has_partitioned_shots:
+            jvps.append(tuple(f[multi](dx, j) for j in jac))
+        else:
+            jvps.append(f[multi](dx, jac))
+    return tuple(jvps)
 
 
 class JacobianProductCalculator(abc.ABC):
@@ -266,10 +271,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
             partial_gradient_fn, tapes
         )
         results = self._inner_execute(jac_tapes)
-        jacs = tuple(batch_post_processing(results))
-        if self._cache_full_jacobian:
-            self._cache[tapes] = jacs
-        return jacs
+        return tuple(batch_post_processing(results))
 
 
 class DeviceDerivatives(JacobianProductCalculator):
@@ -305,15 +307,15 @@ class DeviceDerivatives(JacobianProductCalculator):
     flexibility for future uses.
 
     Note that batches of identically looking :class:`~.QuantumScript` s that are different instances will be cached separately.
-    This is because the `hash` of  :class:`~.QuantumScript` is expensive, as it requires inspecting all its constituents,
+    This is because the ``hash`` of  :class:`~.QuantumScript` is expensive, as it requires inspecting all its constituents,
     which is not worth the effort in this case.
 
-    When a forward pass with :meth:`~.execute` is called, both the results and the jacobian for the object are stored.
+    When a forward pass with :meth:`~.execute_and_cache_jacobian` is called, both the results and the jacobian for the object are stored.
 
     >>> tape = qml.tape.QuantumScript([qml.RX(1.0, wires=0)], [qml.expval(qml.PauliZ(0))])
     >>> batch = (tape, )
     >>> with device.tracker:
-    ...     results = jpc.execute(batch )
+    ...     results = jpc.execute_and_cache_jacobian(batch )
     >>> results
     (0.5403023058681398,)
     >>> device.tracker.totals
@@ -480,13 +482,7 @@ class DeviceDerivatives(JacobianProductCalculator):
                     "No path to cache results without caching jac. This branch should not occur."
                 )
 
-        multi_measurements = (len(t.measurements) > 1 for t in tapes)
-        jvps = _compute_jvps(
-            jacs,
-            tangents,
-            multi_measurements,
-            has_partitioned_shots=tapes[0].shots.has_partitioned_shots,
-        )
+        jvps = _compute_jvps(jacs, tangents, tapes)
         return results, jvps
 
     def compute_vjp(self, tapes, dy):
@@ -538,8 +534,7 @@ class DeviceDerivatives(JacobianProductCalculator):
             jacs = self._dev_compute_derivatives(tapes)
             self._jacs_cache[tapes] = jacs
 
-        multi_measurements = (len(t.measurements) > 1 for t in tapes)
-        return _compute_vjps(jacs, dy, multi_measurements, tapes[0].shots.has_partitioned_shots)
+        return _compute_vjps(jacs, dy, tapes)
 
     def compute_jacobian(self, tapes):
         """Compute the full Jacobian for a batch of tapes.
