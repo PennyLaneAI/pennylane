@@ -282,7 +282,7 @@ class DeviceDerivatives(JacobianProductCalculator):
     flexibility for future uses.
 
     Note that batches of identically looking :class:`~.QuantumScript` s that are different instances will be cached separately.
-    This is because the `hash` of  :class:`~.QuantumScript` is expensive, as it requires inspecting all its constituents,
+    This is because the ``hash`` of  :class:`~.QuantumScript` is expensive, as it requires inspecting all its constituents,
     which is not worth the effort in this case.
 
     When a forward pass with :meth:`~.execute_and_cache_jacobian` is called, both the results and the jacobian for the object are stored.
