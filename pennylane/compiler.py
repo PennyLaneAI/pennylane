@@ -24,204 +24,237 @@ under the designated group name: ``pennylane.compilers``.
 
 from typing import List
 from importlib import reload
+import dataclasses
 import pkg_resources
 
 
-class Compiler:
-    """The JIT compiler module containing all utilities and wrapper methods for ``qml.qjit`` in PennyLane."""
+@dataclasses.dataclass
+class AvailableCompilers:
+    """This contains data of installed PennyLane compiler packages"""
 
-    # Private class properties
-    __BACKENDS = []
-    __ENTRY_POINTS = {}
+    names_entrypoints = {}
 
-    @classmethod
-    def available(cls, name: str = "pennylane-catalyst") -> bool:
-        """Check the availability of the given compiler package.
 
-        Args:
-            name (str): the name of the compiler package
+def _refresh_compilers():
+    """Scan installed PennyLane compiler pacakges to refresh the compilers
+    names and entry points
+    """
 
-        Return:
-            bool : True if the compiler package is installed on the system
-        """
+    reload(pkg_resources)
 
-        reload(pkg_resources)
-        pkg_name = pkg_resources.Requirement.parse(name)
+    # Refresh the list of compilers
+    AvailableCompilers.names_entrypoints = {}
 
-        if pkg_resources.working_set.find(pkg_name):
-            if name not in cls.__BACKENDS:
-                cls.__ENTRY_POINTS = {
-                    entry.name: entry
-                    for entry in pkg_resources.iter_entry_points("pennylane.compilers")
-                }
-                cls.__BACKENDS.append(name)
-            return True
+    # Iterator packages entry-points with the 'pennylane.compilers' group name
+    for entry in pkg_resources.iter_entry_points("pennylane.compilers"):
+        module_name = entry.module_name
+        # Only need name of the parent module
+        module_name = module_name.split(".")[0]
 
-        if name in cls.__BACKENDS:
-            cls.__BACKENDS.remove(name)
+        if module_name not in AvailableCompilers.names_entrypoints:
+            AvailableCompilers.names_entrypoints[module_name] = {}
+        AvailableCompilers.names_entrypoints[module_name][entry.name] = entry
 
+
+def available(name="catalyst") -> bool:
+    """Check the availability of the given compiler package.
+
+    It only refreshes the compilers names and entry points if the name
+    is not already stored. This reduces the number of re-importing
+    ``pkg_resources`` as it can be a very slow operation on systems
+    with a large number of installed packages.
+
+    Args:
+        name (str): name of the compiler package (Default is ``catalyst``)
+
+    Return:
+        bool: ``True`` if the compiler package is installed on the system
+
+    **Example**
+
+    Before installing the ``pennylane-catalyst`` package:
+
+    .. code-block:: python
+
+    >>> qml.compiler.available("catalyst")
+    False
+
+    After installing the ``pennylane-catalyst`` package:
+
+    >>> qml.compiler.available("catalyst")
+    True
+    """
+
+    if name not in AvailableCompilers.names_entrypoints:
+        # This class updates the class variable names_entrypoints
+        _refresh_compilers()
+
+    return name in AvailableCompilers.names_entrypoints
+
+
+def available_compilers() -> List[str]:
+    """Return the name of available compilers by refreshing the compilers
+    names and entry points.
+
+    **Example**
+
+    This method returns the name of installed compiler packages supported in
+    PennyLane. For example, after installing the ``pennylane-catalyst`` pacakge,
+
+    .. code-block:: python
+
+    >>> qml.compiler.available_compilers()
+    ['catalyst']
+    """
+
+    # This class updates the class variable names_entrypoints
+    _refresh_compilers()
+
+    return list(AvailableCompilers.names_entrypoints.keys())
+
+
+def active(name="catalyst") -> bool:
+    """Check whether the caller is inside a QJIT evaluation context.
+
+    Args:
+        name (str): name of the compiler package (Default is ``catalyst``)
+
+    Return:
+        bool: True if the caller is inside a QJIT evaluation context
+
+    **Example**
+
+    In the JIT compilation of PennyLane programs, this helper method checks
+    the status of the compilation. For example, Catalyst captures Python
+    programs by tracing and we can tell if the caller is inside the Catalyst
+    tracer context manager or not but calling this method.
+
+    This method is practically useful in implementing quantum operations to
+    correctly call the interpreter or compiler equivalent functions.
+    """
+
+    compilers = AvailableCompilers.names_entrypoints
+
+    if not compilers:
         return False
 
-    @classmethod
-    def available_backends(cls) -> List[str]:
-        """Return the available compiler packages."""
-        return cls.__BACKENDS
+    try:
+        tracer_loader = compilers[name]["context"].load()
+        return tracer_loader.is_tracing()
+    except KeyError:
+        return False
 
-    @classmethod
-    def active(cls) -> bool:
-        """Check whether the caller is inside a QJIT evaluation context.
 
-        Return:
-            bool : True if the caller is inside a QJIT evaluation context
-        """
-        if not cls.__BACKENDS:
-            raise RuntimeError("There is no available compiler package.")
+def qjit(
+    fn=None, *args, compiler_name="catalyst", **kwargs
+):  # pylint:disable=keyword-arg-before-vararg
+    """A just-in-time decorator for PennyLane and JAX programs.
 
-        if "cpl_utils" not in cls.__ENTRY_POINTS:
-            raise RuntimeError("There is no available 'cpl_utils' entry point.")
+    This decorator enables both just-in-time and ahead-of-time compilation,
+    depending on the compiler package and whether function argument type hints
+    are provided.
 
-        utils_loader = cls.__ENTRY_POINTS["cpl_utils"].load()
-        return utils_loader.contexts.EvaluationContext.is_tracing()
+    Args:
+        compiler_name(str): name of the compiler package (Default is ``catalyst``)
+        fn (Callable): the quantum or classical function
+        autograph (bool): Experimental support for automatically converting Python control
+            flow statements to Catalyst-compatible control flow. Currently supports Python ``if``,
+            ``elif``, ``else``, and ``for`` statements. Note that this feature requires an
+            available TensorFlow installation. Please see the
+            `AutoGraph guide <https://docs.pennylane.ai/projects/catalyst/en/latest/dev/autograph.html>`__
+            for more information.
+        target (str): the compilation target
+        keep_intermediate (bool): Whether or not to store the intermediate files throughout the
+            compilation. If ``True``, intermediate representations are available via the
+            :attr:`~.QJIT.mlir`, :attr:`~.QJIT.jaxpr`, and :attr:`~.QJIT.qir`, representing
+            different stages in the optimization process.
+        verbosity (bool): If ``True``, the tools and flags used by Catalyst behind the scenes are
+            printed out.
+        logfile (Optional[TextIOWrapper]): File object to write verbose messages to (default -
+            ``sys.stderr``).
+        pipelines (Optional(List[Tuple[str,List[str]]])): A list of pipelines to be executed. The
+            elements of this list are named sequences of MLIR passes to be executed. A ``None``
+            value (the default) results in the execution of the default pipeline. This option is
+            considered to be used by advanced users for low-level debugging purposes.
 
-    @classmethod
-    def qjit(cls, fn=None, *args, **kwargs):
-        """A just-in-time decorator for PennyLane and JAX programs using Catalyst.
+    Returns:
+        QJIT object.
 
-        This decorator enables both just-in-time and ahead-of-time compilation,
-        depending on whether function argument type hints are provided.
+    Raises:
+        FileExistsError: Unable to create temporary directory
+        PermissionError: Problems creating temporary directory
+        OSError: Problems while creating folder for intermediate files
+        AutoGraphError: Raised if there was an issue converting the given the function(s).
+        ImportError: Raised if AutoGraph is turned on and TensorFlow could not be found.
 
-        .. note::
+    **Example**
 
-            Currently, ``lightning.qubit`` is the only supported backend device
-            for Catalyst compilation. For a list of supported operations, observables,
-            and measurements, please see the :doc:`/dev/quick_start`.
+    In just-in-time (JIT) mode, the compilation is triggered at the call site the
+    first time the quantum function is executed. For example, ``circuit`` is
+    compiled as early as the first call.
 
-        Args:
-            fn (Callable): the quantum or classical function
-            autograph (bool): Experimental support for automatically converting Python control
-                flow statements to Catalyst-compatible control flow. Currently supports Python ``if``,
-                ``elif``, ``else``, and ``for`` statements. Note that this feature requires an
-                available TensorFlow installation.
-            target (str): the compilation target
-            keep_intermediate (bool): Whether or not to store the intermediate files throughout the
-                compilation. If ``True``, intermediate representations are available via the
-                :attr:`~.QJIT.mlir`, :attr:`~.QJIT.jaxpr`, and :attr:`~.QJIT.qir`, representing
-                different stages in the optimization process.
-            verbosity (bool): If ``True``, the tools and flags used by Catalyst behind the scenes are
-                printed out.
-            logfile (Optional[TextIOWrapper]): File object to write verbose messages to (default -
-                ``sys.stderr``).
-            pipelines (Optional(List[Tuple[str,List[str]]])): A list of pipelines to be executed. The
-                elements of this list are named sequences of MLIR passes to be executed. A ``None``
-                value (the default) results in the execution of the default pipeline. This option is
-                considered to be used by advanced users for low-level debugging purposes.
+    .. code-block:: python
 
-        Returns:
-            catalyst.QJIT object.
+        @qjit
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def circuit(theta):
+            qml.Hadamard(wires=0)
+            qml.RX(theta, wires=1)
+            qml.CNOT(wires=[0,1])
+            return qml.expval(qml.PauliZ(wires=1))
 
-        Raises:
-            FileExistsError: Unable to create temporary directory
-            PermissionError: Problems creating temporary directory
-            OSError: Problems while creating folder for intermediate files
-            AutoGraphError: Raised if there was an issue converting the given the function(s).
-            ImportError: Raised if AutoGraph is turned on and TensorFlow could not be found.
+    >>> circuit(0.5)  # the first call, compilation occurs here
+    array(0.)
+    >>> circuit(0.5)  # the precompiled quantum function is called
+    array(0.)
 
-        **Example**
+    Alternatively, if argument type hints are provided, compilation
+    can occur 'ahead of time' when the function is decorated.
 
-        In just-in-time (JIT) mode, the compilation is triggered at the call site the
-        first time the quantum function is executed. For example, ``circuit`` is
-        compiled as early as the first call.
+    .. code-block:: python
 
-        .. code-block:: python
+        from jax.core import ShapedArray
 
-            @qjit
-            @qml.qnode(qml.device("lightning.qubit", wires=2))
-            def circuit(theta):
+        @qjit  # compilation happens at definition
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def circuit(x: complex, z: ShapedArray(shape=(3,), dtype=jnp.float64)):
+            theta = jnp.abs(x)
+            qml.RY(theta, wires=0)
+            qml.Rot(z[0], z[1], z[2], wires=0)
+            return qml.state()
+
+    >>> circuit(0.2j, jnp.array([0.3, 0.6, 0.9]))  # calls precompiled function
+    array([0.75634905-0.52801002j, 0. +0.j,
+        0.35962678+0.14074839j, 0. +0.j])
+
+    Catalyst also supports capturing imperative Python control flow in compiled programs. You can
+    enable this feature via the ``autograph=True`` parameter. Note that it does come with some
+    restrictions, in particular whenever global state is involved. Refer to the documentation page
+    for a complete discussion of the supported and unsupported use-cases.
+
+    .. code-block:: python
+
+        @qjit(autograph=True)
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def circuit(x: int):
+
+            if x < 5:
                 qml.Hadamard(wires=0)
-                qml.RX(theta, wires=1)
-                qml.CNOT(wires=[0,1])
-                return qml.expval(qml.PauliZ(wires=1))
+            else:
+                qml.T(wires=0)
 
-        >>> circuit(0.5)  # the first call, compilation occurs here
-        array(0.)
-        >>> circuit(0.5)  # the precompiled quantum function is called
-        array(0.)
+            return qml.expval(qml.PauliZ(0))
 
-        Alternatively, if argument type hints are provided, compilation
-        can occur 'ahead of time' when the function is decorated.
+    >>> circuit(3)
+    array(0.)
 
-        .. code-block:: python
+    >>> circuit(5)
+    array(1.)
+    """
 
-            from jax.core import ShapedArray
+    if not available(compiler_name):
+        raise RuntimeError(f"The {compiler_name} package is not installed.")
 
-            @qjit  # compilation happens at definition
-            @qml.qnode(qml.device("lightning.qubit", wires=2))
-            def circuit(x: complex, z: ShapedArray(shape=(3,), dtype=jnp.float64)):
-                theta = jnp.abs(x)
-                qml.RY(theta, wires=0)
-                qml.Rot(z[0], z[1], z[2], wires=0)
-                return qml.state()
-
-        >>> circuit(0.2j, jnp.array([0.3, 0.6, 0.9]))  # calls precompiled function
-        array([0.75634905-0.52801002j, 0. +0.j,
-            0.35962678+0.14074839j, 0. +0.j])
-
-        Catalyst also supports capturing imperative Python control flow in compiled programs. You can
-        enable this feature via the ``autograph=True`` parameter. Note that it does come with some
-        restrictions, in particular whenever global state is involved. Refer to the documentation page
-        for a complete discussion of the supported and unsupported use-cases.
-
-        .. code-block:: python
-
-            @qjit(autograph=True)
-            @qml.qnode(qml.device("lightning.qubit", wires=2))
-            def circuit(x: int):
-
-                if x < 5:
-                    qml.Hadamard(wires=0)
-                else:
-                    qml.T(wires=0)
-
-                return qml.expval(qml.PauliZ(0))
-
-        >>> circuit(3)
-        array(0.)
-
-        >>> circuit(5)
-        array(1.)
-
-        Note that imperative control flow will still work in Catalyst even when the AutoGraph feature is
-        turned off, it just won't be captured in the compiled program and cannot involve traced values.
-        The example above would then raise a tracing error, as there is no value for ``x`` yet than can
-        be compared in the if statement. A loop like ``for i in range(5)`` would be unrolled during
-        tracing, "copy-pasting" the body 5 times into the program rather than appearing as is.
-
-        .. important::
-
-            Most decomposition logic will be equivalent to PennyLane's decomposition.
-            However, decomposition logic will differ in the following cases:
-
-            1. All :class:`qml.Controlled <pennylane.ops.op_math.Controlled>` operations will decompose
-                to :class:`qml.QubitUnitary <pennylane.QubitUnitary>` operations.
-
-            2. :class:`qml.ControlledQubitUnitary <pennylane.ControlledQubitUnitary>` operations will
-                decompose to :class:`qml.QubitUnitary <pennylane.QubitUnitary>` operations.
-
-            3. The list of device-supported gates employed by Catalyst is currently different than that
-                of the ``lightning.qubit`` device, as defined by the
-                :class:`~.pennylane_extensions.QJITDevice`.
-        """
-
-        if not cls.__BACKENDS and not cls.available():
-            raise RuntimeError("There is no available compiler package.")
-
-        if "cpl_qjit" not in cls.__ENTRY_POINTS:
-            raise RuntimeError("There is no available 'cpl_qjit' entry point.")
-
-        qjit_loader = cls.__ENTRY_POINTS["cpl_qjit"].load()
-        return qjit_loader(fn=fn, *args, **kwargs)
-
-
-# Exported Methods
-
-qjit = Compiler.qjit
+    compilers = AvailableCompilers.names_entrypoints
+    qjit_loader = compilers[compiler_name]["qjit"].load()
+    return qjit_loader(fn=fn, *args, **kwargs)

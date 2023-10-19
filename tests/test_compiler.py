@@ -34,15 +34,13 @@ class TestCatalyst:
     def test_compiler(self):
         """Test compiler active and available methods"""
 
-        with pytest.raises(RuntimeError, match="There is no available compiler package"):
-            qml.Compiler.active()
+        assert not qml.compiler.active()
 
-        assert not qml.Compiler.available_backends()
-        assert qml.Compiler.available()
-        assert qml.Compiler.available_backends() == ["pennylane-catalyst"]
+        assert qml.compiler.available("catalyst")
+        assert qml.compiler.available_compilers() == ["catalyst"]
 
-        assert qml.Compiler.available()
-        assert qml.Compiler.available_backends() == ["pennylane-catalyst"]
+        assert qml.compiler.available("catalyst")
+        assert qml.compiler.available_compilers() == ["catalyst"]
 
     def test_qjit_circuit(self):
         """Test JIT compilation of a circuit with 2-qubit"""
