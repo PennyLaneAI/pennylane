@@ -48,8 +48,6 @@ class QDrift(Operation):
     r"""An operation representing the QDrift approximation for the complex matrix exponential
     of a given Hamiltonian.
 
-    # TODO: link paper reference, mention that we assume each operator is normalized.
-
     The QDrift subroutine provides a method to approximate the matrix exponential of a Hamiltonian
     expressed as a linear combination of terms which in general do not commute. For the Hamiltonian
     :math:`H = \Sigma_j h_j H_{j}`, the product formula is constructed by random sampling from the
@@ -60,11 +58,14 @@ class QDrift(Operation):
         \prod_{j}^{n} e^{i \lambda H_j \tau / n},
 
     where :math:`\tau` is time, :math:`\lambda = \sum_j |h_j|` and :math:`n` is the total number of
-    terms to be added to the product.
+    terms to be added to the product. Note, the terms :math:`H_{j}` are assumed to be normalized such
+    that the "impact" of each term is fully encoded in the magnitude of :math:`h_{j}`.
+
+    For more details see `Phys. Rev. Lett. 123, 070503 (2019) <https://arxiv.org/abs/1811.08017>`_.
 
     Args:
-        hamiltonian (Union[~.Hamiltonian, ~.Sum]): The Hamiltonian written as a sum of operations
-        time (int or float): The time of evolution, namely the parameter :math:`t` in :math:`e^{-iHt}`
+        hamiltonian (Union[.Hamiltonian, .Sum]): The Hamiltonian written as a sum of operations
+        time (float): The time of evolution, namely the parameter :math:`t` in :math:`e^{-iHt}`
         n (int): An integer representing the number of exponentiated terms
         seed (int): The seed for the random number generator
 
@@ -234,16 +235,34 @@ class QDrift(Operation):
 
     @staticmethod
     def error(hamiltonian, time, n=1):
-        """Computes the expected precision of the QDrift approximation given the initial parameters.
-        # TODO: Add more detail and link paper reference.
+        """A method for determining the upper-bound for the error in the approximation of
+        the true matrix exponential.
+
+        The error is bounded according to the following expression:
+
+        .. math::
+
+            \epsilon \ \leq \ \frac{2\lambda^{2}t^{2}}{n}  e^{\frac{2 \lambda t}{n}},
+
+        where :math:`t` is time, :math:`\lambda = \sum_j |h_j|` and :math:`n` is the total number of
+        terms to be added to the product. For more details see `Phys. Rev. Lett. 123, 070503 (2019) <https://arxiv.org/abs/1811.08017>`_.
+
+        Args:
+        hamiltonian (Union[.Hamiltonian, .Sum]): The Hamiltonian written as a sum of operations
+        time (float): The time of evolution, namely the parameter :math:`t` in :math:`e^{-iHt}`
+        n (int): An integer representing the number of exponentiated terms. default is 1
+
+        Raises:
+            TypeError: The given operator must be a PennyLane .Hamiltonian or .Sum
+
+        Returns:
+            float: upper bound on the precision achievable using the QDrift protocol
         """
         if isinstance(hamiltonian, Hamiltonian):
-            num_terms = len(hamiltonian.coeffs)
-            max_coeff = max(qml.math.abs(hamiltonian.coeffs))
+            lmbda = qml.math.sum(qml.math.abs(hamiltonian.coeffs))
 
         elif isinstance(hamiltonian, Sum):
-            num_terms = len(hamiltonian)
-            max_coeff = max(
+            lmbda = qml.math.sum(
                 qml.math.abs(op.scalar) if isinstance(op, SProd) else 1.0 for op in hamiltonian
             )
 
@@ -252,6 +271,4 @@ class QDrift(Operation):
                 f"The given operator must be a PennyLane ~.Hamiltonian or ~.Sum got {hamiltonian}"
             )
 
-        return ((num_terms**2) * (max_coeff**2) * (time**2) / (2 * n)) * qml.math.exp(
-            max_coeff * time * num_terms / n
-        )
+        return (2 * lmbda**2 * time**2 / n) * qml.math.exp(2 * lmbda * time / n)

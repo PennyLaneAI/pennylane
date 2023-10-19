@@ -15,9 +15,10 @@
 Tests for the QDrift template.
 """
 import copy
+from functools import reduce
+
 import pytest
 from flaky import flaky
-from functools import reduce
 
 import pennylane as qml
 from pennylane import numpy as qnp
@@ -48,7 +49,9 @@ class TestInitialization:
     @pytest.mark.parametrize("time", (0.5, 1, 2))
     @pytest.mark.parametrize("seed", (None, 1234, 42))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
-    def test_init_correctly(self, coeffs, ops, time, n, seed):
+    def test_init_correctly(  # pylint: disable=too-many-arguments
+        self, coeffs, ops, time, n, seed
+    ):
         """Test that all of the attributes are initalized correctly."""
         h = qml.dot(coeffs, ops)
         op = qml.QDrift(h, time, n=n, seed=seed)
@@ -81,7 +84,9 @@ class TestInitialization:
     @pytest.mark.parametrize("time", (0.5, 1, 2))
     @pytest.mark.parametrize("seed", (None, 1234, 42))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
-    def test_copy(self, coeffs, ops, time, n, seed):
+    def test_copy(  # pylint: disable=too-many-arguments
+        self, coeffs, ops, time, n, seed
+    ):
         """Test that we can make copies of QDrift correctly."""
         h = qml.dot(coeffs, ops)
         op = qml.QDrift(h, time, n=n, seed=seed)
@@ -130,7 +135,7 @@ class TestInitialization:
         op = qml.QDrift(hamiltonian, time, n=n, seed=seed)
         decomp = op.decomposition()
 
-        data, metadata = op._flatten()
+        data, metadata = op._flatten()  # pylint: disable=protected-access
         assert data[0] == time
         assert metadata[0] == op.wires
         assert dict(metadata[1]) == {
@@ -140,7 +145,7 @@ class TestInitialization:
             "decomposition": decomp,
         }
 
-        new_op = type(op)._unflatten(data, metadata)
+        new_op = type(op)._unflatten(data, metadata)  # pylint: disable=protected-access
         assert qml.equal(op, new_op)
         assert new_op is not op
 
@@ -152,7 +157,9 @@ class TestDecomposition:
     @pytest.mark.parametrize("time", (0.5, 1, 2))
     @pytest.mark.parametrize("seed", (None, 1234, 42))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
-    def test_private_sample(self, coeffs, ops, time, seed, n):
+    def test_private_sample(  # pylint: disable=too-many-arguments
+        self, coeffs, ops, time, seed, n
+    ):
         """Test the private function which samples the decomposition"""
         ops_to_coeffs = dict(zip(ops, coeffs))
         normalization = qnp.sum(qnp.abs(coeffs))
@@ -204,7 +211,9 @@ class TestIntegration:
     @pytest.mark.parametrize("time", (0.5, 1, 2))
     @pytest.mark.parametrize("seed", (1234, 42))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
-    def test_execution(self, coeffs, ops, time, n, seed):
+    def test_execution(  # pylint: disable=too-many-arguments
+        self, coeffs, ops, time, n, seed
+    ):
         """Test that the circuit executes as expected"""
         hamiltonian = qml.dot(coeffs, ops)
         wires = hamiltonian.wires
@@ -330,7 +339,6 @@ class TestIntegration:
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_execution_jax(self, coeffs, ops, seed):
         """Test that the circuit executes as expected using jax"""
-        import jax
         from jax import numpy as jnp
 
         time = jnp.array(0.5)
@@ -567,13 +575,13 @@ class TestIntegration:
 
 
 test_error_data = (  # Computed by hand
-    (qml.dot([1.23, -0.45j], [qml.PauliX(0), qml.PauliZ(1)]), 0.5, 5, 0.19348472),
-    (qml.Hamiltonian([1.23, -0.45], [qml.PauliX(0), qml.PauliZ(1)]), 0.5, 5, 0.19348472),
+    (qml.dot([1.23, -0.45j], [qml.PauliX(0), qml.PauliZ(1)]), 0.5, 5, 0.3949494464),
+    (qml.Hamiltonian([1.23, -0.45], [qml.PauliX(0), qml.PauliZ(1)]), 0.5, 5, 0.3949494464),
     (
         qml.dot([1, -0.5, 0.5j], [qml.Identity(wires=[0, 1]), qml.PauliZ(0), qml.Hadamard(1)]),
         3,
         100,
-        0.4431405849,
+        0.81179773314,
     ),
 )
 
