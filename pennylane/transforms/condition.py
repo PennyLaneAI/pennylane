@@ -64,7 +64,7 @@ def cond(condition, true_fn, false_fn=None):
     """A :func:`~.qjit` compatible decorator for if-else conditionals in PennyLane/Catalyst.
 
     This can be used to condition a quantum operation on the results of mid-circuit qubit measurements
-    in the interpreted mode while acts like the Python if-else conditional when is called inside a
+    in the interpreted mode while acts like the traditional if-else conditional when is called inside a
     QJIT decorated workflow. This means that each execution path, 'if' and 'else' branchs, is provided
     as a separate function. All functions will be traced during compilation, but only one of them will
     be executed at runtime, depending on the value of one or more Boolean predicates. The JAX equivalent

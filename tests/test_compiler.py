@@ -287,3 +287,32 @@ class TestCatalyst:
 
         assert jnp.allclose(circuit(1.4), 0.16996714)
         assert jnp.allclose(circuit(1.6), 0.0)
+
+    def test_measure_basic(self):
+        """Test measure (basic)."""
+        dev = qml.device("lightning.qubit", wires=1)
+
+        @qml.qjit
+        @qml.qnode(dev)
+        def circuit(x: float):
+            qml.RX(x, wires=0)
+            return qml.measure(wires=0)
+
+        assert circuit(jnp.pi)  # m will be equal to True if wire 0 is measured in 1 state
+
+    def test_more_complex(self):
+        """Test measure (more complex)."""
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qjit()
+        @qml.qnode(dev)
+        def circuit(x: float):
+            qml.RX(x, wires=0)
+            m1 = qml.measure(wires=0)
+            maybe_pi = m1 * jnp.pi
+            qml.RX(maybe_pi, wires=1)
+            m2 = qml.measure(wires=1)
+            return m2
+
+        assert circuit(jnp.pi)  # m will be equal to True if wire 0 is measured in 1 state
+        assert not circuit(0.0)
