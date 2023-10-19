@@ -52,7 +52,7 @@ class TransformDispatcher:
             args[0].custom_qnode_transform = lambda x: x
             return args[0]
 
-        return args[0]
+        return super().__new__(cls)
 
     # pylint: disable=too-many-arguments
     def __init__(
