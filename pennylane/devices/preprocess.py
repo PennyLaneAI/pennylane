@@ -46,9 +46,7 @@ def null_postprocessing(results):
 def _operator_decomposition_gen(
     op: qml.operation.Operator,
     acceptance_function: Callable[[qml.operation.Operator], bool],
-    decomposer: Optional[
-        Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]]
-    ] = None,
+    decomposer: Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]],
     max_expansion: Optional[int] = None,
     current_depth=0,
     name: str = "device",
@@ -61,7 +59,7 @@ def _operator_decomposition_gen(
         yield op
     else:
         try:
-            decomp = decomposer(op) if decomposer else op.decomposition()
+            decomp = decomposer(op)
             current_depth += 1
         except qml.operation.DecompositionUndefinedError as e:
             raise DeviceError(
