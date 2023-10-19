@@ -131,7 +131,10 @@ for each QNode will be used.
 Transforming QNodes
 -------------------
 
-Alternatively, quantum gradient transforms can be applied manually to QNodes.
+Alternatively, quantum gradient transforms can be applied manually to QNodes. This is not
+recommended because PennyLane must compute the classical Jacobian of the parameters and multiply it with
+the quantum Jacobian, we recommend using the `diff_method` kwargs with your favorite machine learning
+framework.
 
 .. code-block:: python
 
@@ -301,12 +304,12 @@ from executing the gradient tapes.
 Custom gradient transforms
 --------------------------
 
-Using the :class:`~.gradient_transform` decorator, custom gradient transforms
+Using the :class:`pennylane.transforms.core.transform` decorator, custom gradient transforms
 can be created:
 
 .. code-block:: python
 
-    @gradient_transform
+    @transform
     def my_custom_gradient(tape, **kwargs):
         ...
         return gradient_tapes, processing_fn
@@ -315,7 +318,7 @@ Once created, a custom gradient transform can be applied directly
 to QNodes, or registered as the quantum gradient transform to use
 during autodifferentiation.
 
-For more details, please see the :class:`~.gradient_transform`
+For more details, please see the :class:`pennylane.transforms.core.transform`
 documentation.
 """
 import pennylane as qml
