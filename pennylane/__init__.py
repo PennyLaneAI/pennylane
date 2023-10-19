@@ -163,6 +163,7 @@ def refresh_devices():
 plugin_devices = _get_device_entrypoints()
 
 
+# pylint: disable=protected-access
 def device(name, *args, **kwargs):
     r"""device(name, wires=1, *args, **kwargs)
     Load a :class:`~.Device` and return the instance.
@@ -355,7 +356,7 @@ def device(name, *args, **kwargs):
                 dev.custom_expand(custom_decomp_expand_fn)
             else:
                 custom_decomp_preprocess = (
-                    pennylane.transforms.tape_expand.create_decomp_preprocessing(
+                    pennylane.transforms.tape_expand._create_decomp_preprocessing(
                         custom_decomps, dev, decomp_depth=decomp_depth
                     )
                 )

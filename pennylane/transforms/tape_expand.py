@@ -350,7 +350,7 @@ def create_decomp_expand_fn(custom_decomps, dev, decomp_depth=10):
     return custom_decomp_expand
 
 
-def create_decomp_preprocessing(custom_decomps, dev, decomp_depth=10):
+def _create_decomp_preprocessing(custom_decomps, dev, decomp_depth=10):
     """Creates a custom preprocessing method for a device that applies
     a set of specified custom decompositions.
 
@@ -383,7 +383,7 @@ def create_decomp_preprocessing(custom_decomps, dev, decomp_depth=10):
     result as a custom function of the device:
 
     >>> custom_decomps = {qml.CNOT : custom_cnot}
-    >>> new_preprocessing = create_decomp_preprocessing(custom_decomps, dev)
+    >>> new_preprocessing = _create_decomp_preprocessing(custom_decomps, dev)
     >>> dev.preprocessing = new_preprocessing
     """
 
@@ -491,7 +491,9 @@ def set_decomposition(custom_decomps, dev, decomp_depth=10):
 
     else:
         original_preprocess = dev.preprocess
-        new_preprocess = create_decomp_preprocessing(custom_decomps, dev, decomp_depth=decomp_depth)
+        new_preprocess = _create_decomp_preprocessing(
+            custom_decomps, dev, decomp_depth=decomp_depth
+        )
 
         try:
             dev.preprocess = new_preprocess
