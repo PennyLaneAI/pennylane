@@ -247,7 +247,7 @@ def decompose(
         skip_initial_state_prep=True (bool): If ``True``, the first operator will not be decomposed if it inherits from :class:`~.StatePrepBase`.
         decomposer (Callable): an optional callable that takes an operator and implements the relevant decomposition.
             If None, defaults to using a callable returning ``op.decomposition()`` for any :class:`~.Operator` .
-        max_expansion: The maximum depth of the expansion.
+        max_expansion (int): The maximum depth of the expansion.
 
 
     Returns:
