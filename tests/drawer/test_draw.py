@@ -173,9 +173,9 @@ class TestMatrixParameters:
         expected2 = (
             "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n"
             "1: ─╰|Ψ⟩────────┤         \n"
+            "\n"
             "M0 = \n[[1. 0.]\n [0. 1.]]"
         )
-
         assert draw(matrices_circuit)() == expected2
 
     def test_matrix_parameters_batch_transform(self):
