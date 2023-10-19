@@ -33,7 +33,7 @@ class ControlledSequence(SymbolicOp, Operation):
 
     .. figure:: ../../_static/templates/subroutines/big_ctrl.png
         :align: center
-        :width: 60%
+        :width: 40%
         :target: javascript:void(0);
 
     Args:
