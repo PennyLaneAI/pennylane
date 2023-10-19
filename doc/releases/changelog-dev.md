@@ -4,6 +4,41 @@
 
 <h3>New features since last release</h3>
 
+<h4>Exponentiate Hamiltonians with flexible Trotter products 🐖</h4>
+
+* Higher-order Trotter-Suzuki methods are now easily accessible through a new operation
+  called `TrotterProduct`.
+  [(#4661)](https://github.com/PennyLaneAI/pennylane/pull/4661)
+
+  Trotterization techniques are an affective route towards accurate and efficient
+  Hamiltonian simulation. The Suzuki-Trotter product formula allows for the ability
+  to express higher-order approximations to the matrix exponential of a Hamiltonian, 
+  and it is now available to use in PennyLane via the `TrotterProduct` operation. 
+  Simply specify the `order` of the approximation and the evolution `time`.
+
+  ```python
+  coeffs = [0.25, 0.75]
+  ops = [qml.PauliX(0), qml.PauliZ(0)]
+  H = qml.dot(coeffs, ops)
+
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.Hadamard(0)
+      qml.TrotterProduct(H, time=2.4, order=2)
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> circuit()
+  [-0.13259524+0.59790098j  0.        +0.j         -0.13259524-0.77932754j  0.        +0.j        ]
+  ```
+
+  The already-available `ApproxTimeEvolution` operation represents the special case of `order=1`.
+  It is recommended to switch over to use of `TrotterProduct` because `ApproxTimeEvolution` will be
+  deprecated and removed in upcoming releases.
+
 * Support drawing QJIT QNode from Catalyst.
   [(#4609)](https://github.com/PennyLaneAI/pennylane/pull/4609)
 
@@ -104,9 +139,11 @@
   [(#4628)](https://github.com/PennyLaneAI/pennylane/pull/4628)
   [(#4649)](https://github.com/PennyLaneAI/pennylane/pull/4649)
 
-* The `JacobianProductCalculator` abstract base class and implementation `TransformJacobianProducts`
-  have been added to `pennylane.interfaces.jacobian_products`.
+* The `JacobianProductCalculator` abstract base class and implementations `TransformJacobianProducts`
+  `DeviceDerivatives`, and `DeviceJacobianProducts` have been added to `pennylane.interfaces.jacobian_products`.
   [(#4435)](https://github.com/PennyLaneAI/pennylane/pull/4435)
+  [(#4527)](https://github.com/PennyLaneAI/pennylane/pull/4527)
+  [(#4637)](https://github.com/PennyLaneAI/pennylane/pull/4637)
 
 * Extended ``qml.qchem.import_state`` to import wavefunctions from MPS DMRG and SHCI classical
   calculations performed with the Block2 and Dice libraries, incorporating new tests and wavefunction
@@ -221,6 +258,13 @@
 * The `qml.jordan_wigner` function has been modified to optionally remove the imaginary components
   of the computed qubit operator, if imaginary components are smaller than a threshold. 
   [(#4639)](https://github.com/PennyLaneAI/pennylane/pull/4639)
+
+* Updated `qml.device`, `devices.preprocessing` and the `tape_expand.set_decomposition` context 
+  manager to bring `DefaultQubit2` to feature parity with `default.qubit.legacy` with regards to 
+  using custom decompositions. The `DefaultQubit2` device can now be included in a `set_decomposition` 
+  context or initialized with a `custom_decomps` dictionary, as well as a custom `max_depth` for 
+  decomposition.
+  [(#4675)](https://github.com/PennyLaneAI/pennylane/pull/4675)
 
 
 <h3>Breaking changes 💔</h3>

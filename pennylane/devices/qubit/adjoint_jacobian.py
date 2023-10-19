@@ -218,6 +218,8 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
 
     ket = state if state is not None else get_final_state(tape)[0]
 
+    if np.shape(cotangents) == tuple():
+        cotangents = (cotangents,)
     obs = qml.dot(cotangents, tape.observables)
     bra = apply_operation(obs, ket)
 
