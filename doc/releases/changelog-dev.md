@@ -63,6 +63,10 @@
 * Transforms can be applied on devices following the new device API.
  [(#4667)](https://github.com/PennyLaneAI/pennylane/pull/4667)
 
+* `commutation_dag`, `shadow_expval`, `shadow_state`, `circuit_spectrum`, `map_wires` are updated to the new transform 
+  program system.
+  [(#4686)](https://github.com/PennyLaneAI/pennylane/pull/4686)
+
 * All gradient transforms are updated to the new transform program system.
  [(#4595)](https://github.com/PennyLaneAI/pennylane/pull/4595)
 
@@ -71,6 +75,7 @@
 
 * All batch transforms are updated to the new transform program system.
   [(#4440)](https://github.com/PennyLaneAI/pennylane/pull/4440)
+  [(#4686)](https://github.com/PennyLaneAI/pennylane/pull/4686)
 
 * Quantum information transforms are updated to the new transform program system.
   [(#4569)](https://github.com/PennyLaneAI/pennylane/pull/4569)
@@ -209,6 +214,9 @@
 * `_qfunc_output` has been removed from `QuantumScript`, as it is no longer necessary. There is
   still a `_qfunc_output` property on `QNode` instances.
   [(#4651)](https://github.com/PennyLaneAI/pennylane/pull/4651)
+
+* `qml.data.load` properly handles parameters that come after `'full'`
+  [(#4663)](https://github.com/PennyLaneAI/pennylane/pull/4663)
 
 * The `qml.jordan_wigner` function has been modified to optionally remove the imaginary components
   of the computed qubit operator, if imaginary components are smaller than a threshold. 
