@@ -400,6 +400,7 @@
 This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad,
+Jack Brown,
 Stepan Fomichev,
 Joana Fraxanet,
 Diego Guala,
@@ -413,4 +414,3 @@ Daniel F. Nino,
 Mudit Pandey,
 Matthew Silverman,
 Jay Soni,
-Jack Brown,
