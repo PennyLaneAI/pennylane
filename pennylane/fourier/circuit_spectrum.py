@@ -48,7 +48,7 @@ def circuit_spectrum(
         If no input-encoding gates are found, an empty dictionary is returned.
 
     Args:
-        tape (QuantumTape): a quantum node representing a circuit in which
+        tape (QuantumTape): a quantum tape representing a circuit in which
             input-encoding gates are marked by their ``id`` attribute
         encoding_gates (list[str]): list of input-encoding gate ``id`` strings
             for which to compute the frequency spectra
@@ -185,6 +185,7 @@ def circuit_spectrum(
     """
 
     def processing_fn(tapes):
+        """Process the tapes extract the spectrum of the circuit."""
         tape = tapes[0]
         freqs = {}
         for op in tape.operations:

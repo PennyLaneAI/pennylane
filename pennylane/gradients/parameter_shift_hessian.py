@@ -453,7 +453,9 @@ def param_shift_hessian(
 
     **Example**
 
-    Applying the Hessian transform to a QNode computes its Hessian tensor:
+    Applying the Hessian transform to a QNode computes its Hessian tensor. This is not efficient if the classical
+    parameters are classically transformed. It is because PennyLane must compute the classical Jacobian of the
+    parameters and multiply it with the quantum Hessian.
 
     >>> dev = qml.device("default.qubit", wires=2)
     >>> @qml.qnode(dev)

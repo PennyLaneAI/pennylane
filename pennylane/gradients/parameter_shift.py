@@ -794,7 +794,7 @@ def param_shift(
             a single broadcasted tape per operation instead of one tape per shift angle.
 
     Returns:
-        function or tuple[list[QuantumTape], function]:
+        pennylane.QNode or tuple[list[QuantumTape], function]:
 
         - If the input is a QNode, an object representing the Jacobian (function) of the QNode
           that can be executed to obtain the Jacobian.
@@ -928,7 +928,10 @@ def param_shift(
     .. details::
         :title: Usage Details
 
-        This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects:
+        This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects. This is not
+        recommended because PennyLane must compute the classical Jacobian of the parameters and multiply it with
+        the quantum Jacobian, we recommend using the `diff_method` kwargs with your favorite machine learning
+        framework.
 
         >>> @qml.qnode(dev)
         ... def circuit(params):

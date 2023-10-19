@@ -210,7 +210,7 @@ def finite_diff(
     f0=None,
     validate_params=True,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
-    r"""Transform a QNode to compute the finite-difference gradient of all gate parameters with respect to its inputs.
+    r"""Transform a circuit to compute the finite-difference gradient of all gate parameters with respect to its inputs.
 
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
@@ -237,7 +237,7 @@ def finite_diff(
             If ``False``, the finite-difference method will be applied to all parameters.
 
     Returns:
-        function or tuple[list[QuantumTape], function]:
+        pennylane.QNode or tuple[list[QuantumTape], function]:
 
         - If the input is a QNode, an object representing the Jacobian (function) of the QNode
           that can be executed to obtain the Jacobian.
@@ -287,7 +287,10 @@ def finite_diff(
     .. details::
         :title: Usage Details
 
-        This gradient transform can also be applied directly to :class:`QNode <pennylane.QNode>` objects:
+        This gradient transform can also be applied directly to :class:`QNode <pennylane.QNode>` objects. This is not
+        recommended because PennyLane must compute the classical Jacobian of the parameters and multiply it with
+        the quantum Jacobian, we recommend using the `diff_method` kwargs with your favorite machine learning
+        framework.
 
         >>> @qml.qnode(dev)
         ... def circuit(params):

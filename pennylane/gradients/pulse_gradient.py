@@ -348,7 +348,7 @@ def stoch_pulse_grad(
             tapes is created, increasing performance on simulators.
 
     Returns:
-        function or tuple[list[QuantumTape], function]:
+        pennylane.QNode or tuple[list[QuantumTape], function]:
 
         - If the input is a QNode, an object representing the Jacobian (function) of the QNode
           that can be executed to obtain the Jacobian.

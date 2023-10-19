@@ -556,7 +556,7 @@ def param_shift_cv(
         force_order2 (bool): if True, use the order-2 method even if not necessary
 
     Returns:
-        function or tuple[list[QuantumTape], function]:
+        pennylane.QNode or tuple[list[QuantumTape], function]:
 
         - If the input is a QNode, an object representing the Jacobian (function) of the QNode
           that can be executed to obtain the Jacobian matrix.
@@ -646,7 +646,10 @@ def param_shift_cv(
     .. details::
         :title: Usage Details
 
-        This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects:
+        This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects. This is not
+        recommended because PennyLane must compute the classical Jacobian of the parameters and multiply it with
+        the quantum Jacobian, we recommend using the `diff_method` kwargs with your favorite machine learning
+        framework.
 
         >>> @qml.qnode(dev)
         ... def circuit(params):

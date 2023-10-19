@@ -437,7 +437,7 @@ def pulse_odegen(
             ``qml.math.isclose(x, 0., atol=atol, rtol=0) == True`` are neglected.
 
     Returns:
-        function or tuple[list[QuantumTape], function]:
+        pennylane.QNode or tuple[list[QuantumTape], function]:
 
         - If the input is a QNode, an object representing the Jacobian (function) of the QNode
           that can be executed to obtain the Jacobian.
