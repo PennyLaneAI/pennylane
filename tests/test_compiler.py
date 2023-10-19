@@ -13,17 +13,21 @@
 # limitations under the License.
 """
 Unit tests for the compiler subpackage.
+TODO: Uncomment 'pytest.mark.external' to check these tests in GitHub actions with
+    the 'pennylane-catalyst' v0.3.2 release. These tests require the installation
+    of Catalyst from the main branch at the moment.
 """
-
+# pylint: disable=import-outside-toplevel
 import pytest
-
 import pennylane as qml
 
-catalyst = pytest.mark.external("catalyst")
-jax = pytest.mark.external("jax")
+catalyst = pytest.importorskip("catalyst")
+jax = pytest.importorskip("jax")
 
-from jax import numpy as jnp  # pylint:disable=wrong-import-position
-from jax.core import ShapedArray  # pylint:disable=wrong-import-position
+# pytestmark = pytest.mark.external
+
+from jax import numpy as jnp  # pylint:disable=wrong-import-order, wrong-import-position
+from jax.core import ShapedArray  # pylint:disable=wrong-import-order, wrong-import-position
 
 # pylint: disable=too-few-public-methods, too-many-public-methods
 
@@ -104,7 +108,6 @@ class TestCatalyst:
 
     def test_args_workflow(self):
         """Test arguments with workflows."""
-        dev = qml.device("lightning.qubit", wires=2)
 
         @qml.qjit
         def workflow1(params1, params2):
