@@ -50,8 +50,7 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
 
         Devices that inherit from :class:`~pennylane.QubitDevice` such as
         ``default.qubit.legacy`` **must** be initialized with an additional wire for
-        each mid-circuit measurement after which the measured wire is reused or reset
-        for ``defer_measurements`` to transform the quantum tape correctly. Devices
+        each mid-circuit measurement that includes a wire reuse or reset. Devices
         that inherit from :class:`~pennylane.devices.Device` such as ``default.qubit``
         must be initialized with the same number of wires, or with ``wires=None``.
 
