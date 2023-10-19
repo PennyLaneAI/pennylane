@@ -272,7 +272,7 @@ measurement on qubit 1 yielded ``1`` as an outcome, otherwise doing nothing
 for the ``0`` measurement outcome.
 
 PennyLane implements the deferred measurement principle to transform
-conditional operations with the :func:`~.pennylane.defer_measurements` quantum
+conditional operations with the :mod:`~.pennylane.defer_measurements` quantum
 function transform. The deferred measurement principle provides a natural method
 to simulate the application of mid-circuit measurements and conditional operations
 in a differentiable and device-independent way. Performing true mid-circuit
@@ -418,7 +418,8 @@ Mid-circuit measurement statistics
 Statistics can be collected on mid-circuit measurements along with terminal measurement statistics.
 Currently, ``qml.probs``, ``qml.sample``, ``qml.expval``, ``qml.var``, and ``qml.counts`` are supported,
 and can be requested along with other measurements. The devices that currently support collecting such
-statistics are ``"default.qubit"``, ``"default.mixed"``, and ``"default.qubit.legacy"``.
+statistics are :class:`~.pennylane.devices.DefaultQubit`, :class:`~.pennylane.devices.DefaultMixed`, and
+:class:`~.pennylane.devices.DefaultQubitLegacy`.
 
 .. code-block:: python3
 
