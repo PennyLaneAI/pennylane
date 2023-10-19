@@ -232,15 +232,181 @@ class TestIntegration:
 
         assert allclose(expected_state, state)
 
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("seed", (1234, 42))
+    @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
+    def test_execution_autograd(self, coeffs, ops, seed):
+        """Test that the circuit executes as expected using autograd"""
+
+        time = qnp.array(0.5)
+        coeffs = qnp.array(coeffs, requires_grad=False)
+
+        dev = qml.device("default.qubit", wires=[0, 1])
+
+        @qml.qnode(dev)
+        def circ(time):
+            hamiltonian = qml.dot(coeffs, ops)
+            qml.QDrift(hamiltonian, time, n=2, seed=seed)
+            return qml.state()
+
+        expected_decomp = _sample_decomposition(coeffs, ops, time, n=2, seed=seed)
+
+        initial_state = qnp.array(
+            [
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+            ]
+        )
+
+        expected_state = (
+            reduce(
+                lambda x, y: x @ y,
+                [qml.matrix(op, wire_order=[0, 1]) for op in expected_decomp],
+            )
+            @ initial_state
+        )
+        state = circ(time)
+
+        assert allclose(expected_state, state)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("seed", (1234, 42))
+    @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
+    def test_execution_torch(self, coeffs, ops, seed):
+        """Test that the circuit executes as expected using torch"""
+        import torch
+
+        time = torch.tensor(0.5, dtype=torch.complex128, requires_grad=True)
+        dev = qml.device("default.qubit", wires=[0, 1])
+
+        @qml.qnode(dev)
+        def circ(time):
+            hamiltonian = qml.dot(coeffs, ops)
+            qml.QDrift(hamiltonian, time, n=2, seed=seed)
+            return qml.state()
+
+        expected_decomp = _sample_decomposition(coeffs, ops, time, n=2, seed=seed)
+
+        initial_state = torch.tensor([1.0, 0.0, 0.0, 0.0], dtype=torch.complex128)
+
+        expected_state = (
+            reduce(
+                lambda x, y: x @ y,
+                [qml.matrix(op, wire_order=[0, 1]) for op in expected_decomp],
+            )
+            @ initial_state
+        )
+        state = circ(time)
+
+        assert allclose(expected_state, state)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("seed", (1234, 42))
+    @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
+    def test_execution_tf(self, coeffs, ops, seed):
+        """Test that the circuit executes as expected using tensorflow"""
+        import tensorflow as tf
+
+        time = tf.Variable(0.5, dtype=tf.complex128)
+        dev = qml.device("default.qubit", wires=[0, 1])
+
+        @qml.qnode(dev)
+        def circ(time):
+            hamiltonian = qml.dot(coeffs, ops)
+            qml.QDrift(hamiltonian, time, n=2, seed=seed)
+            return qml.state()
+
+        expected_decomp = _sample_decomposition(coeffs, ops, time, n=2, seed=seed)
+
+        initial_state = tf.Variable([1.0, 0.0, 0.0, 0.0], dtype=tf.complex128)
+
+        expected_state = tf.linalg.matvec(
+            reduce(
+                lambda x, y: x @ y,
+                [qml.matrix(op, wire_order=[0, 1]) for op in expected_decomp],
+            ),
+            initial_state,
+        )
+        state = circ(time)
+
+        assert allclose(expected_state, state)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("seed", (1234, 42))
+    @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
+    def test_execution_jax(self, coeffs, ops, seed):
+        """Test that the circuit executes as expected using jax"""
+        import jax
+        from jax import numpy as jnp
+
+        time = jnp.array(0.5)
+        dev = qml.device("default.qubit", wires=[0, 1])
+
+        @qml.qnode(dev)
+        def circ(time):
+            hamiltonian = qml.dot(coeffs, ops)
+            qml.QDrift(hamiltonian, time, n=2, seed=seed)
+            return qml.state()
+
+        expected_decomp = _sample_decomposition(coeffs, ops, time, n=2, seed=seed)
+
+        initial_state = jnp.array([1.0, 0.0, 0.0, 0.0])
+
+        expected_state = (
+            reduce(
+                lambda x, y: x @ y,
+                [qml.matrix(op, wire_order=[0, 1]) for op in expected_decomp],
+            )
+            @ initial_state
+        )
+        state = circ(time)
+
+        assert allclose(expected_state, state)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("seed", (1234, 42))
+    @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
+    def test_execution_jaxjit(self, coeffs, ops, seed):
+        """Test that the circuit executes as expected using jax jit"""
+        import jax
+        from jax import numpy as jnp
+
+        time = jnp.array(0.5)
+        dev = qml.device("default.qubit", wires=[0, 1])
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circ(time):
+            hamiltonian = qml.sum(*(qml.s_prod(coeff, op) for coeff, op in zip(coeffs, ops)))
+            qml.QDrift(hamiltonian, time, n=2, seed=seed)
+            return qml.state()
+
+        expected_decomp = _sample_decomposition(coeffs, ops, time, n=2, seed=seed)
+
+        initial_state = jnp.array([1.0, 0.0, 0.0, 0.0])
+
+        expected_state = (
+            reduce(
+                lambda x, y: x @ y,
+                [qml.matrix(op, wire_order=[0, 1]) for op in expected_decomp],
+            )
+            @ initial_state
+        )
+        state = circ(time)
+
+        assert allclose(expected_state, state)
+
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize(
-        "interface", 
+        "interface",
         (
             # "tf",
             # "jax",
             # "torch",
             "autograd",
-        )
+        ),
     )
     def test_error_gradient_workflow(self, interface):
         """Test that an error is raised if we require a gradient of QDrift with respect to hamiltonian coefficients."""
@@ -257,7 +423,7 @@ class TestIntegration:
             h = qml.dot(coeffs, terms)
             qml.QDrift(h, time, n=3)
             return qml.expval(qml.Hadamard(0))
-        
+
         msg = "The QDrift template currently doesn't support differentiation through the coefficients of the input Hamiltonian."
         with pytest.raises(qml.QuantumFunctionError, match=msg):
             qml.grad(circ)(time, coeffs)
@@ -292,3 +458,96 @@ class TestIntegration:
         measured_grad = qml.grad(circ)(time, coeffs)
         reference_grad = qml.grad(reference_circ)(time, coeffs)
         assert allclose(measured_grad, reference_grad)
+
+    # @pytest.mark.torch
+    # @pytest.mark.parametrize("n", (1, 5, 10))
+    # @pytest.mark.parametrize("seed", (1234, 42))
+    # def test_torch_gradient(self, n, seed):
+    #     """Test that the gradient is computed correctly using torch"""
+    #     time = qnp.array(1.5)
+    #     coeffs = qnp.array([1.23, -0.45], requires_grad=False)
+    #     terms = [qml.PauliX(0), qml.PauliZ(0)]
+
+    #     dev = qml.device("default.qubit", wires=1)
+
+    #     @qml.qnode(dev)
+    #     def circ(time, coeffs):
+    #         h = qml.dot(coeffs, terms)
+    #         qml.QDrift(h, time, n=n, seed=seed)
+    #         return qml.expval(qml.Hadamard(0))
+
+    #     @qml.qnode(dev)
+    #     def reference_circ(time, coeffs):
+    #         with qml.QueuingManager.stop_recording():
+    #             decomp = _sample_decomposition(coeffs, terms, time, n, seed)
+
+    #         for op in decomp:
+    #             qml.apply(op)
+
+    #         return qml.expval(qml.Hadamard(0))
+
+    #     measured_grad = qml.grad(circ)(time, coeffs)
+    #     reference_grad = qml.grad(reference_circ)(time, coeffs)
+    #     assert allclose(measured_grad, reference_grad)
+
+    # @pytest.mark.tf
+    # @pytest.mark.parametrize("n", (1, 5, 10))
+    # @pytest.mark.parametrize("seed", (1234, 42))
+    # def test_tf_gradient(self, n, seed):
+    #     """Test that the gradient is computed correctly using tensorflow"""
+    #     time = qnp.array(1.5)
+    #     coeffs = qnp.array([1.23, -0.45], requires_grad=False)
+    #     terms = [qml.PauliX(0), qml.PauliZ(0)]
+
+    #     dev = qml.device("default.qubit", wires=1)
+
+    #     @qml.qnode(dev)
+    #     def circ(time, coeffs):
+    #         h = qml.dot(coeffs, terms)
+    #         qml.QDrift(h, time, n=n, seed=seed)
+    #         return qml.expval(qml.Hadamard(0))
+
+    #     @qml.qnode(dev)
+    #     def reference_circ(time, coeffs):
+    #         with qml.QueuingManager.stop_recording():
+    #             decomp = _sample_decomposition(coeffs, terms, time, n, seed)
+
+    #         for op in decomp:
+    #             qml.apply(op)
+
+    #         return qml.expval(qml.Hadamard(0))
+
+    #     measured_grad = qml.grad(circ)(time, coeffs)
+    #     reference_grad = qml.grad(reference_circ)(time, coeffs)
+    #     assert allclose(measured_grad, reference_grad)
+
+    # @pytest.mark.jax
+    # @pytest.mark.parametrize("n", (1, 5, 10))
+    # @pytest.mark.parametrize("seed", (1234, 42))
+    # def test_jax_gradient(self, n, seed):
+    #     """Test that the gradient is computed correctly using jax"""
+    #     time = qnp.array(1.5)
+    #     coeffs = qnp.array([1.23, -0.45], requires_grad=False)
+    #     terms = [qml.PauliX(0), qml.PauliZ(0)]
+
+    #     dev = qml.device("default.qubit", wires=1)
+
+    #     @qml.qnode(dev)
+    #     def circ(time, coeffs):
+    #         h = qml.dot(coeffs, terms)
+    #         qml.QDrift(h, time, n=n, seed=seed)
+    #         return qml.expval(qml.Hadamard(0))
+
+    #     @qml.qnode(dev)
+    #     def reference_circ(time, coeffs):
+    #         with qml.QueuingManager.stop_recording():
+    #             decomp = _sample_decomposition(coeffs, terms, time, n, seed)
+
+    #         for op in decomp:
+    #             qml.apply(op)
+
+    #         return qml.expval(qml.Hadamard(0))
+
+    #     measured_grad = qml.grad(circ)(time, coeffs)
+    #     reference_grad = qml.grad(reference_circ)(time, coeffs)
+    #     assert allclose(measured_grad, reference_grad)
