@@ -41,7 +41,7 @@ class TestDecomposition:
         """Test that the correct gates are applied on two wires."""
 
         op = qml.CosineWindow(wires=[0, 1, 2, 3, 4])
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         assert queue[0].name == "Hadamard"
         assert queue[1].name == "RZ"
@@ -79,8 +79,10 @@ class TestInputs:
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.CosineWindow(wires=[0, 1, 2], id="a")
+        wires = [0, 1, 2]
+        template = qml.CosineWindow(wires=wires, id="a")
         assert template.id == "a"
+        assert template.wires == wires
 
 
 class TestStateVector:
