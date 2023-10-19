@@ -46,7 +46,23 @@ def _cut_circuit_expand(
     def processing_fn(res):
         return res[0]
 
-    return [_qcut_expand_fn(tape, max_depth, auto_cutter)], processing_fn
+    tapes, tapes_fn = [tape], processing_fn
+
+    # Expand the tapes for handling Hamiltonian with two or more terms
+    tape_meas_ops = tape.measurements
+    if tape_meas_ops and isinstance(tape_meas_ops[0].obs, qml.Hamiltonian):
+        if len(tape_meas_ops) > 1:
+            raise NotImplementedError(
+                "Hamiltonian expansion is supported only with a single Hamiltonian"
+            )
+
+        new_meas_op = type(tape_meas_ops[0])(obs=qml.Hamiltonian(*tape_meas_ops[0].obs.terms()))
+        new_tape = qml.tape.QuantumScript(tape.operations, [new_meas_op], shots=tape.shots)
+        new_tape.trainable_params = tape.trainable_params
+
+        tapes, tapes_fn = qml.transforms.hamiltonian_expand(new_tape, group=False)
+
+    return [_qcut_expand_fn(tape, max_depth, auto_cutter) for tape in tapes], tapes_fn
 
 
 @partial(transform, expand_transform=_cut_circuit_expand)
@@ -282,7 +298,7 @@ def cut_circuit(
         Additionally, we must remap the tape wires to match those available on our device.
 
         >>> dev = qml.device("default.qubit", wires=2)
-        >>> fragment_tapes = [qml.map_wires(t, dict(zip(t.wires, dev.wires))) for t in fragment_tapes]
+        >>> fragment_tapes = [qml.map_wires(t, dict(zip(t.wires, dev.wires)))[0][0] for t in fragment_tapes]
 
         Next, each circuit fragment is expanded over :class:`~.MeasureNode` and
         :class:`~.PrepareNode` configurations and a flat list of tapes is created:
@@ -365,8 +381,10 @@ def cut_circuit(
                 "installed using:\npip install opt_einsum"
             ) from e
 
+    # convert the quantum tape to a DAG structure
     g = tape_to_graph(tape)
 
+    # place WireCut(s) nodes in the DAG automatically if intended
     if auto_cutter is True or callable(auto_cutter):
         cut_strategy = kwargs.pop("cut_strategy", None) or CutStrategy(
             max_free_wires=len(device_wires)
@@ -379,12 +397,21 @@ def cut_circuit(
             **kwargs,
         )
 
+    # replace the WireCut nodes in the DAG with Measure and Perpare nodes.
     replace_wire_cut_nodes(g)
+
+    # decompose the DAG into subgraphs based on the replaced WireCut(s)
+    # along with a quotient graph to store connections between them
     fragments, communication_graph = fragment_graph(g)
+
+    # convert decomposed DAGs into tapes, remap their wires for device and expand them
     fragment_tapes = [graph_to_tape(f) for f in fragments]
-    fragment_tapes = [qml.map_wires(t, dict(zip(t.wires, device_wires))) for t in fragment_tapes]
+    fragment_tapes = [
+        qml.map_wires(t, dict(zip(t.wires, device_wires)))[0][0] for t in fragment_tapes
+    ]
     expanded = [expand_fragment_tape(t) for t in fragment_tapes]
 
+    # store the data necessary for classical post processing of results
     configurations = []
     prepare_nodes = []
     measure_nodes = []
@@ -393,6 +420,7 @@ def cut_circuit(
         prepare_nodes.append(p)
         measure_nodes.append(m)
 
+    # flatten out the tapes to be returned
     tapes = tuple(tape for c in configurations for tape in c)
 
     return tapes, partial(

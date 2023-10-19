@@ -82,8 +82,7 @@ def append_time_evolution(
         with QueuingManager.stop_recording():
             new_operations.append(qml.templates.ApproxTimeEvolution(riemannian_gradient, t, n))
 
-    new_tape = QuantumTape(new_operations, tape.measurements, shots=tape.shots)
-    new_tape._qfunc_output = tape._qfunc_output  # pylint: disable=protected-access
+    new_tape = type(tape)(new_operations, tape.measurements, shots=tape.shots)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
@@ -391,7 +390,24 @@ class RiemannianGradientOptimizer:
             self.lie_algebra_basis_names,
             self.nqubits,
         )
-        circuits = qml.execute(circuits, self.circuit.device, gradient_fn=None)
+
+        if isinstance(self.circuit.device, qml.devices.Device):
+            program, config = self.circuit.device.preprocess()
+
+            circuits = qml.execute(
+                circuits,
+                self.circuit.device,
+                transform_program=program,
+                config=config,
+                gradient_fn=None,
+            )
+        else:
+            circuits = qml.execute(
+                circuits, self.circuit.device, gradient_fn=None
+            )  # pragma: no cover
+
+        program, _ = self.circuit.device.preprocess()
+
         circuits_plus = np.array(circuits[: len(circuits) // 2]).reshape(
             len(self.coeffs), len(self.lie_algebra_basis_names)
         )

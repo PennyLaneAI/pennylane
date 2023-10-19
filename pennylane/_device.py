@@ -103,7 +103,6 @@ def _local_tape_expand(tape, depth, stop_at):
     new_tape.all_sampled = tape.all_sampled
     new_tape._batch_size = tape.batch_size
     new_tape._output_dim = tape.output_dim
-    new_tape._qfunc_output = tape._qfunc_output
     return new_tape
 
 

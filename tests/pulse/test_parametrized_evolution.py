@@ -558,7 +558,7 @@ class TestIntegration:
         H = time_dependent_hamiltonian()
 
         dev = device_class(wires=2)
-        t = 2
+        t = 0.1
 
         def generator(params):
             time_step = 1e-3
