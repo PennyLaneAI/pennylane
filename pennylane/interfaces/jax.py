@@ -176,7 +176,7 @@ def _execute_bwd(
     @execute_wrapper.defjvp
     def execute_wrapper_jvp(primals, tangents):
         """Primals[0] are parameters as Jax tracers and tangents[0] is a list of tangent vectors as Jax tracers."""
-        if isinstance(gradient_fn, qml.gradients.gradient_transform):
+        if isinstance(gradient_fn, qml.transforms.core.TransformDispatcher):
             at_max_diff = _n == max_diff
             new_tapes = set_parameters_on_copy_and_unwrap(tapes, primals[0], unwrap=False)
             _args = (

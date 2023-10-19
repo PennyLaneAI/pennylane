@@ -14,15 +14,16 @@
 """
 This module contains the qml.map_wires function.
 """
-from functools import wraps
-from typing import Callable, Union
+from functools import partial
+from typing import Callable, Union, Sequence
 
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.qnode import QNode
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumScript, make_qscript, QuantumTape
+from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.transforms.core import transform
 
 
 def map_wires(
@@ -97,35 +98,24 @@ def map_wires(
                 qml.apply(new_op)
             return new_op
         return input.map_wires(wire_map=wire_map)
-
-    if isinstance(input, QuantumScript):
-        ops = [qml.map_wires(op, wire_map) for op in input.operations]
-        measurements = [qml.map_wires(m, wire_map) for m in input.measurements]
-
-        out = input.__class__(ops=ops, measurements=measurements, shots=input.shots)
-        out.trainable_params = input.trainable_params
-        return out
-
-    if callable(input):
-        func = input.func if isinstance(input, QNode) else input
-
-        @wraps(func)
-        def qfunc(*args, **kwargs):
-            qscript = make_qscript(func)(*args, **kwargs)
-            _ = [qml.map_wires(op, wire_map=wire_map, queue=True) for op in qscript.operations]
-            m = tuple(qml.map_wires(m, wire_map=wire_map, queue=True) for m in qscript.measurements)
-            return m[0] if len(m) == 1 else m
-
-        if isinstance(input, QNode):
-            return QNode(
-                func=qfunc,
-                device=input.device,
-                interface=input.interface,
-                diff_method=input.diff_method,
-                expansion_strategy=input.expansion_strategy,
-                **input.execute_kwargs,
-                **input.gradient_kwargs,
-            )
-        return qfunc
+    if isinstance(input, (QuantumScript, QNode)) or callable(input):
+        return _map_wires_transform(input, wire_map=wire_map)
 
     raise ValueError(f"Cannot map wires of object {input} of type {type(input)}.")
+
+
+@partial(transform)
+def _map_wires_transform(
+    tape: qml.tape.QuantumTape, wire_map=None
+) -> (Sequence[qml.tape.QuantumTape], Callable):
+    ops = [map_wires(op, wire_map) for op in tape.operations]
+    measurements = [map_wires(m, wire_map) for m in tape.measurements]
+
+    out = tape.__class__(ops=ops, measurements=measurements, shots=tape.shots)
+    out.trainable_params = tape.trainable_params
+
+    def processing_fn(res):
+        """Defines how matrix works if applied to a tape containing multiple operations."""
+        return res[0]
+
+    return [out], processing_fn
