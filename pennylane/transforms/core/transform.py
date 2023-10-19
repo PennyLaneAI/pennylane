@@ -146,7 +146,8 @@ def transform(
         is_informative=is_informative,
         final_transform=final_transform,
     )
-    functools.update_wrapper(dispatcher, quantum_transform)
+    assignements = ('__module__', '__doc__', '__annotations__')
+    functools.update_wrapper(dispatcher, quantum_transform, assignements)
     return dispatcher
 
 
