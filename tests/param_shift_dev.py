@@ -85,7 +85,7 @@ class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
             self.tracker.update(jvp_batches=1, jvps=len(circuits))
             self.tracker.record()
 
-        batch, fn = qml.gradient.batch_jvp(circuits, tangents, qml.gradients.param_shift)
+        batch, fn = qml.gradients.batch_jvp(circuits, tangents, qml.gradients.param_shift)
         results = self.execute(batch)
         return fn(results)[0] if is_single_circuit else fn(results)
 
