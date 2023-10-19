@@ -14,6 +14,7 @@
 """
 This module contains the transform dispatcher and the transform container.
 """
+import functools
 import os
 import copy
 import warnings
@@ -41,6 +42,18 @@ class TransformDispatcher:
     .. seealso:: :func:`~.pennylane.transforms.core.transform`
     """
 
+    def __new__(cls, *args, **kwargs):  # pylint: disable=unused-argument
+        if os.environ.get("SPHINX_BUILD") == "1":
+            # If called during a Sphinx documentation build,
+            # simply return the original function rather than
+            # instantiating the object. This allows the signature to
+            # be correctly displayed in the documentation.
+
+            args[0].custom_qnode_transform = lambda x: x
+            return args[0]
+
+        return args[0]
+
     # pylint: disable=too-many-arguments
     def __init__(
             self,
@@ -56,8 +69,8 @@ class TransformDispatcher:
         self._is_informative = is_informative
         # is_informative supersedes final_transform
         self._final_transform = is_informative or final_transform
-
         self._qnode_transform = self.default_qnode_transform
+        functools.update_wrapper(self, transform_fn)
 
     def __call__(self, *targs, **tkwargs):  # pylint: disable=too-many-return-statements
         obj = None
@@ -120,18 +133,6 @@ class TransformDispatcher:
         )
 
         return wrapper
-
-    def __new__(cls, *args, **kwargs):  # pylint: disable=unused-argument
-        if os.environ.get("SPHINX_BUILD") == "1":
-            # If called during a Sphinx documentation build,
-            # simply return the original function rather than
-            # instantiating the object. This allows the signature to
-            # be correctly displayed in the documentation.
-
-            args[0].custom_qnode_transform = lambda x: x
-            return args[0]
-
-        return super().__new__(cls)
 
     def __repr__(self):
         return f"<transform: {self.__name__}>"
