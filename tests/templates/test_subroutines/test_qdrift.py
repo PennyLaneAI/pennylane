@@ -167,9 +167,12 @@ class TestDecomposition:
         """Test the private function which samples the decomposition"""
         ops_to_coeffs = dict(zip(ops, coeffs))
         normalization = qnp.sum(qnp.abs(coeffs))
-        decomp = _sample_decomposition(coeffs, ops, time, n, seed)
+
+        with qml.tape.QuantumTape() as tape:
+            decomp = _sample_decomposition(coeffs, ops, time, n, seed)
 
         assert len(decomp) == n
+        assert len(tape.operations) == 0  # no queuing
         for term in decomp:
             exponent_coeff_sign = qml.math.sign(ops_to_coeffs[term.base])
             assert term.base in ops  # sample from ops
@@ -229,11 +232,63 @@ class TestIntegration:
 
         assert allclose(expected_state, state)
 
-    def test_error_gradient_workflow(self):
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize(
+        "interface", 
+        (
+            # "tf",
+            # "jax",
+            # "torch",
+            "autograd",
+        )
+    )
+    def test_error_gradient_workflow(self, interface):
         """Test that an error is raised if we require a gradient of QDrift with respect to hamiltonian coefficients."""
-        pass
+        if interface == "autograd":
+            time = qnp.array(1.5)
+            coeffs = qnp.array([1.23, -0.45], requires_grad=True)
+
+        terms = [qml.PauliX(0), qml.PauliZ(0)]
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circ(time, coeffs):
+            h = qml.dot(coeffs, terms)
+            qml.QDrift(h, time, n=3)
+            return qml.expval(qml.Hadamard(0))
+        
+        msg = "The QDrift template currently doesn't support differentiation through the coefficients of the input Hamiltonian."
+        with pytest.raises(qml.QuantumFunctionError, match=msg):
+            qml.grad(circ)(time, coeffs)
 
     @pytest.mark.autograd
-    def test_autograd_gradient(self):
+    @pytest.mark.parametrize("n", (1, 5, 10))
+    @pytest.mark.parametrize("seed", (1234, 42))
+    def test_autograd_gradient(self, n, seed):
         """Test that the gradient is computed correctly"""
-        pass
+        time = qnp.array(1.5)
+        coeffs = qnp.array([1.23, -0.45], requires_grad=False)
+        terms = [qml.PauliX(0), qml.PauliZ(0)]
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circ(time, coeffs):
+            h = qml.dot(coeffs, terms)
+            qml.QDrift(h, time, n=n, seed=seed)
+            return qml.expval(qml.Hadamard(0))
+
+        @qml.qnode(dev)
+        def reference_circ(time, coeffs):
+            with qml.QueuingManager.stop_recording():
+                decomp = _sample_decomposition(coeffs, terms, time, n, seed)
+
+            for op in decomp:
+                qml.apply(op)
+
+            return qml.expval(qml.Hadamard(0))
+
+        measured_grad = qml.grad(circ)(time, coeffs)
+        reference_grad = qml.grad(reference_circ)(time, coeffs)
+        assert allclose(measured_grad, reference_grad)
