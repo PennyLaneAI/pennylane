@@ -112,3 +112,9 @@ class TestStateVector:
         res = np.reshape(op.state_vector(wire_order=[1, 0]) ** 2, (-1,))
         expected = np.array([0.0, 0.5, 0.25, 0.25])
         assert np.allclose(res, expected)
+
+
+def test_label():
+    """Test label method returns CosineWindow"""
+    op = qml.CosineWindow(wires=[0, 1])
+    assert op.label() == "CosineWindow"
