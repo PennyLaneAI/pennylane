@@ -16,6 +16,8 @@ Tests for the jacobian product calculator classes.
 """
 # pylint: disable=protected-access
 import pytest
+from cachetools import LRUCache
+from param_shift_dev import ParamShiftDerivativesDevice
 
 import numpy as np
 
@@ -23,9 +25,14 @@ import pennylane as qml
 from pennylane.interfaces.jacobian_products import (
     JacobianProductCalculator,
     TransformJacobianProducts,
+    DeviceDerivatives,
 )
 
-dev = qml.devices.DefaultQubit()
+dev = qml.device("default.qubit")
+dev_old = qml.device("default.qubit.legacy", wires=5)
+adjoint_config = qml.devices.ExecutionConfig(gradient_method="adjoint")
+dev_ps = ParamShiftDerivativesDevice()
+ps_config = qml.devices.ExecutionConfig(gradient_method="parameter-shift")
 
 
 def inner_execute_numpy(tapes):
@@ -36,8 +43,25 @@ param_shift_jpc = TransformJacobianProducts(inner_execute_numpy, qml.gradients.p
 hadamard_grad_jpc = TransformJacobianProducts(
     inner_execute_numpy, qml.gradients.hadamard_grad, {"aux_wire": "aux"}
 )
+device_jacs = DeviceDerivatives(dev, adjoint_config)
+legacy_device_jacs = DeviceDerivatives(dev_old, gradient_kwargs={"method": "adjoint_jacobian"})
+device_ps_jacs = DeviceDerivatives(dev_ps, ps_config)
 
-jpc_matrix = [param_shift_jpc, hadamard_grad_jpc]
+transform_jpc_matrix = [param_shift_jpc, hadamard_grad_jpc]
+dev_jpc_matrix = [device_jacs, legacy_device_jacs, device_ps_jacs]
+jpc_matrix = [param_shift_jpc, hadamard_grad_jpc, device_jacs, legacy_device_jacs, device_ps_jacs]
+
+
+def _accepts_finite_shots(jpc):
+    if isinstance(jpc, TransformJacobianProducts):
+        return True
+    if isinstance(jpc, DeviceDerivatives):
+        return isinstance(jpc._device, ParamShiftDerivativesDevice)
+    return False
+
+
+def _tol_for_shots(shots):
+    return 0.05 if shots else 1e-6
 
 
 # pylint: disable=too-few-public-methods
@@ -62,34 +86,368 @@ class TestBasics:
         )
         assert repr(jpc) == expected_repr
 
+    def test_device_jacobians_initialization_new_dev(self):
+        """Tests the private attributes are set during initialization of a DeviceDerivatives class."""
+
+        device = qml.device("default.qubit")
+        config = qml.devices.ExecutionConfig(gradient_method="adjoint")
+
+        jpc = DeviceDerivatives(device, config)
+
+        assert jpc._device is device
+        assert jpc._execution_config is config
+        assert jpc._gradient_kwargs == {}
+        assert jpc._uses_new_device is True
+        assert isinstance(jpc._results_cache, LRUCache)
+        assert len(jpc._results_cache) == 0
+        assert isinstance(jpc._jacs_cache, LRUCache)
+        assert len(jpc._jacs_cache) == 0
+
+    def test_device_jacobians_initialization_old_dev(self):
+        """Test the private attributes are set during initialization of a DeviceDerivatives class with the
+        old device interface."""
+
+        device = qml.devices.DefaultQubitLegacy(wires=5)
+        gradient_kwargs = {"method": "adjoint_jacobian"}
+
+        jpc = DeviceDerivatives(device, gradient_kwargs=gradient_kwargs)
+
+        assert jpc._device is device
+        assert jpc._gradient_kwargs == gradient_kwargs
+        assert jpc._uses_new_device is False
+        assert isinstance(jpc._results_cache, LRUCache)
+        assert len(jpc._results_cache) == 0
+        assert isinstance(jpc._jacs_cache, LRUCache)
+        assert len(jpc._jacs_cache) == 0
+
+    def test_device_jacobians_repr(self):
+        """Test the repr method for device jacobians."""
+        device = qml.device("default.qubit")
+        config = qml.devices.ExecutionConfig(gradient_method="adjoint")
+
+        jpc = DeviceDerivatives(device, config)
+
+        expected = (
+            r"<DeviceDerivatives: default.qubit, {},"
+            r" ExecutionConfig(grad_on_execution=None, use_device_gradient=None,"
+            r" gradient_method='adjoint', gradient_keyword_arguments={},"
+            r" device_options={}, interface=None, derivative_order=1)>"
+        )
+
+        assert repr(jpc) == expected
+
 
 @pytest.mark.parametrize("jpc", jpc_matrix)
+@pytest.mark.parametrize("shots", (None, 10000, (10000, 10000)))
 class TestJacobianProductResults:
     """Test first order results for the matrix of jpc options."""
 
-    def test_execute_jvp_basic(self, jpc):
+    def test_execute_jvp_basic(self, jpc, shots):
         """Test execute_and_compute_jvp for a simple single input single output."""
+        if shots and not _accepts_finite_shots(jpc):
+            pytest.skip("jpc does not work with finite shots.")
+
         x = 0.92
-        tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], shots=shots)
         tangents = ((0.5,),)
         res, jvp = jpc.execute_and_compute_jvp((tape,), tangents)
-        assert qml.math.allclose(res[0], np.cos(x))
-        assert qml.math.allclose(jvp[0], -0.5 * np.sin(x))
 
-    def test_vjp_basic(self, jpc):
+        if tape.shots.has_partitioned_shots:
+            assert len(res[0]) == 2
+            assert len(jvp[0]) == 2
+        else:
+            assert qml.math.shape(res[0]) == tuple()
+            assert qml.math.shape(jvp[0]) == tuple()
+
+        assert qml.math.allclose(res[0], np.cos(x), atol=_tol_for_shots(shots))
+        assert qml.math.allclose(jvp[0], -0.5 * np.sin(x), atol=_tol_for_shots(shots))
+
+        if tape.shots.has_partitioned_shots:
+            assert qml.math.allclose(res[0][1], np.cos(x), atol=_tol_for_shots(shots))
+            assert qml.math.allclose(jvp[0][1], -0.5 * np.sin(x), atol=_tol_for_shots(shots))
+
+    def test_vjp_basic(self, jpc, shots):
         """Test compute_vjp for a simple single input single output."""
-        x = -0.294
-        tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-        dy = ((1.8,),)
-        vjp = jpc.compute_vjp((tape,), dy)
-        assert qml.math.allclose(vjp[0], -1.8 * np.sin(x))
+        if shots and not _accepts_finite_shots(jpc):
+            pytest.skip("jpc does not work with finite shots.")
 
-    def test_jacobian_basic(self, jpc):
+        x = -0.294
+        tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], shots=shots)
+
+        dy = ((1.1, 0.7),) if tape.shots.has_partitioned_shots else (1.8,)
+        vjp = jpc.compute_vjp((tape,), dy)
+
+        assert qml.math.allclose(vjp[0], -1.8 * np.sin(x), atol=_tol_for_shots(shots))
+
+    def test_jacobian_basic(self, jpc, shots):
         """Test compute_jacobian for a simple single input single output."""
+        if shots and not _accepts_finite_shots(jpc):
+            pytest.skip("jpc does not work with finite shots.")
+
         x = 1.62
-        tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], shots=shots)
         jac = jpc.compute_jacobian((tape,))
-        assert qml.math.allclose(jac, -np.sin(x))
+        assert qml.math.allclose(jac, -np.sin(x), atol=_tol_for_shots(shots))
+
+    def test_batch_execute_jvp(self, jpc, shots):
+        """Test execute_and_compute_jvp on a batch with ragged observables and parameters.."""
+        if shots and not _accepts_finite_shots(jpc):
+            pytest.skip("jpc does not work with finite shots.")
+        x = -0.92
+        y = 0.84
+        phi = 1.62
+
+        tape1 = qml.tape.QuantumScript(
+            [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))],
+            [qml.expval(qml.PauliX(1)), qml.expval(qml.PauliY(0))],
+        )
+        tape2 = qml.tape.QuantumScript(
+            [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))],
+            [qml.expval(qml.PauliZ(1))],
+            shots=shots,
+        )
+
+        tangents = ((2.0, 3.0), (0.5,))
+
+        res, jvps = jpc.execute_and_compute_jvp((tape1, tape2), tangents)
+
+        assert qml.math.allclose(res[0][0], np.sin(y), atol=_tol_for_shots(shots))
+        assert qml.math.allclose(res[0][1], -np.sin(x) * np.sin(y), atol=_tol_for_shots(shots))
+        assert qml.math.allclose(res[1], np.cos(phi), atol=_tol_for_shots(shots))
+
+        assert qml.math.allclose(jvps[0][0], 3.0 * np.cos(y), atol=_tol_for_shots(shots))
+        assert qml.math.allclose(
+            jvps[0][1],
+            -2.0 * np.cos(x) * np.sin(y) - 3.0 * np.sin(x) * np.cos(y),
+            atol=_tol_for_shots(shots),
+        )
+        assert qml.math.allclose(jvps[1], -0.5 * np.sin(phi), atol=_tol_for_shots(shots))
+
+    def test_batch_vjp(self, jpc, shots):
+        """Test compute_vjp on a batch with ragged observables and parameters."""
+
+        if shots and not _accepts_finite_shots(jpc):
+            pytest.skip("jpc does not work with finite shots.")
+        if jpc is hadamard_grad_jpc and qml.measurements.Shots(shots).has_partitioned_shots:
+            pytest.skip(
+                "hadamard gradient does not support multiple measurments with partitioned shots."
+            )
+
+        x = 0.385
+        y = 1.92
+        phi = -1.05
+
+        tape1 = qml.tape.QuantumScript(
+            [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))],
+            [qml.expval(qml.PauliX(1)), qml.expval(qml.PauliY(0))],
+            shots=shots,
+        )
+        tape2 = qml.tape.QuantumScript(
+            [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))],
+            [qml.expval(qml.PauliZ(1))],
+            shots=shots,
+        )
+
+        if tape1.shots.has_partitioned_shots:
+            dy1 = ((0.3, 0.2), (0.2, 0.4))
+            dy2 = (0.4, 0.5)
+            dy = (dy1, dy2)
+        else:
+            dy = ((0.5, 0.6), (0.9,))
+
+        vjps = jpc.compute_vjp((tape1, tape2), dy)
+
+        assert qml.math.allclose(
+            vjps[0][0], -0.6 * np.cos(x) * np.sin(y), atol=_tol_for_shots(shots)
+        )  # dx
+        assert qml.math.allclose(
+            vjps[0][1], 0.5 * np.cos(y) - 0.6 * np.sin(x) * np.cos(y), atol=_tol_for_shots(shots)
+        )  # dy
+        assert qml.math.allclose(vjps[1], -0.9 * np.sin(phi), atol=_tol_for_shots(shots))
+
+    def test_batch_jacobian(self, jpc, shots):
+        """Test compute_jacobian on a batch with ragged observables and parameters."""
+
+        if shots and not _accepts_finite_shots(jpc):
+            pytest.skip("jpc does not work with finite shots.")
+        if jpc is hadamard_grad_jpc and qml.measurements.Shots(shots).has_partitioned_shots:
+            pytest.skip(
+                "hadamard gradient does not work with partitioned shots and multiple measurements."
+            )
+
+        x = np.array(0.28)
+        y = np.array(1.62)
+        phi = np.array(0.6293)
+
+        tape1 = qml.tape.QuantumScript(
+            [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))],
+            [qml.expval(qml.PauliX(1)), qml.expval(qml.PauliY(0))],
+            shots=shots,
+        )
+        tape2 = qml.tape.QuantumScript(
+            [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))],
+            [qml.expval(qml.PauliZ(1))],
+            shots=shots,
+        )
+
+        # note reversed order of tapes in this test
+        jacs = jpc.compute_jacobian((tape2, tape1))
+
+        if tape1.shots.has_partitioned_shots:
+            for i in [0, 1]:
+                assert qml.math.allclose(jacs[0][i], -np.sin(phi), atol=_tol_for_shots(shots))
+                assert qml.math.allclose(jacs[1][i][0][0], 0, atol=_tol_for_shots(shots))
+                assert qml.math.allclose(jacs[1][i][0][1], np.cos(y), atol=_tol_for_shots(shots))
+                assert qml.math.allclose(
+                    jacs[1][i][1][0], -np.cos(x) * np.sin(y), atol=_tol_for_shots(shots)
+                )
+                assert qml.math.allclose(
+                    jacs[1][i][1][1], -np.sin(x) * np.cos(y), atol=_tol_for_shots(shots)
+                )
+        else:
+            assert qml.math.allclose(jacs[0], -np.sin(phi), atol=_tol_for_shots(shots))
+            assert qml.math.allclose(jacs[1][0][0], 0, atol=_tol_for_shots(shots))
+            assert qml.math.allclose(jacs[1][0][1], np.cos(y), atol=_tol_for_shots(shots))
+            assert qml.math.allclose(
+                jacs[1][1][0], -np.cos(x) * np.sin(y), atol=_tol_for_shots(shots)
+            )
+            assert qml.math.allclose(
+                jacs[1][1][1], -np.sin(x) * np.cos(y), atol=_tol_for_shots(shots)
+            )
+
+
+@pytest.mark.parametrize("jpc", dev_jpc_matrix)
+class TestCachingDeviceDerivatives:
+    """Test caching for device jacobians."""
+
+    def test_execution_caching(self, jpc):
+        """Test that results and jacobians are cached on calls to execute."""
+        tape1 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
+        batch = (tape1,)
+
+        with jpc._device.tracker:
+            results = jpc.execute_and_cache_jacobian(batch)
+
+        assert qml.math.allclose(results[0], np.cos(0.1))
+        assert jpc._device.tracker.totals["execute_and_derivative_batches"] == 1
+        assert jpc._device.tracker.totals["derivatives"] == 1
+
+        # extra execution since needs to do the forward pass again.
+        if jpc._uses_new_device:
+            expected_execs = 3 if isinstance(jpc._device, ParamShiftDerivativesDevice) else 1
+        else:
+            expected_execs = 2
+        assert jpc._device.tracker.totals["executions"] == expected_execs
+
+        # Test reuse with jacobian
+        with jpc._device.tracker:
+            jac = jpc.compute_jacobian(batch)
+
+        assert qml.math.allclose(jac, -np.sin(0.1))
+        assert jpc._device.tracker.totals.get("derivatives", 0) == 0
+        assert jpc._device.tracker.totals.get("executions", 0) == 0
+
+        # Test reuse with execute_and_compute_jvp
+        with jpc._device.tracker:
+            res2, jvp = jpc.execute_and_compute_jvp(batch, ((0.5,),))
+
+        assert qml.math.allclose(res2, results)
+        assert qml.math.allclose(jvp, 0.5 * -np.sin(0.1))
+        assert jpc._device.tracker.totals.get("derivatives", 0) == 0
+        assert jpc._device.tracker.totals.get("executions", 0) == 0
+
+        # Test reuse with compute_vjp
+        with jpc._device.tracker:
+            vjp = jpc.compute_vjp(batch, ((1.5,),))
+
+        assert qml.math.allclose(vjp, -1.5 * np.sin(0.1))
+        assert jpc._device.tracker.totals.get("derivatives", 0) == 0
+        assert jpc._device.tracker.totals.get("executions", 0) == 0
+
+        # Test device called again if batch a new instance, even if identical
+        tape2 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
+        batch2 = (tape2,)
+
+        with jpc._device.tracker:
+            jac2 = jpc.compute_jacobian(batch2)
+
+        assert qml.math.allclose(jac, jac2)
+        assert jpc._device.tracker.totals["derivatives"] == 1
+        if jpc._uses_new_device:
+            expected_execs = 2 if isinstance(jpc._device, ParamShiftDerivativesDevice) else 0
+        else:
+            expected_execs = 1
+        assert jpc._device.tracker.totals.get("executions", 0) == expected_execs
+
+    def test_cached_on_execute_and_compute_jvps(self, jpc):
+        """Test that execute_and_compute_jvp caches results and Jacobians if they are not precalculated."""
+        tape1 = qml.tape.QuantumScript(
+            [qml.Hadamard(0), qml.IsingXX(0.8, wires=(0, 1))], [qml.expval(qml.PauliZ(1))]
+        )
+        batch = (tape1,)
+        tangents = ((0.5,),)
+
+        with jpc._device.tracker:
+            res, jvps = jpc.execute_and_compute_jvp(batch, tangents)
+
+        assert jpc._device.tracker.totals["execute_and_derivative_batches"] == 1
+
+        assert qml.math.allclose(res, np.cos(0.8))
+        assert qml.math.allclose(jvps, -0.5 * np.sin(0.8))
+
+        assert jpc._results_cache[batch] is res
+        assert qml.math.allclose(jpc._jacs_cache[batch], (-np.sin(0.8)))
+
+        with jpc._device.tracker:
+            jpc.execute_and_compute_jvp(batch, tangents)
+
+        assert jpc._device.tracker.totals.get("derivatives", 0) == 0
+        assert jpc._device.tracker.totals.get("executions", 0) == 0
+
+    def test_cached_on_vjps(self, jpc):
+        """test that only jacs are cached on calls to compute_vjp."""
+
+        tape1 = qml.tape.QuantumScript([qml.RZ(0.5, wires=0)], [qml.expval(qml.PauliX(0))])
+        batch = (tape1,)
+        dy = ((0.5,),)
+
+        with jpc._device.tracker:
+            jpc.compute_vjp(batch, dy)
+
+        if isinstance(jpc._device, ParamShiftDerivativesDevice):
+            expected = 2
+        elif isinstance(jpc._device, qml.devices.Device):
+            expected = 0
+        else:
+            expected = 1
+
+        assert jpc._device.tracker.totals.get("executions", 0) == expected
+
+        assert batch not in jpc._results_cache
+        assert qml.math.allclose(jpc._jacs_cache[batch], 0)
+
+        with jpc._device.tracker:
+            jpc.execute_and_compute_jvp(batch, ((0.5,),))
+
+        assert jpc._device.tracker.totals["executions"] == 1
+        assert jpc._device.tracker.totals.get("derivatives", 0) == 0
+        assert qml.math.allclose(jpc._results_cache[batch], 0)
+
+    def test_error_cant_cache_results_without_jac(self, jpc):
+        """Test that a NotImplementedError is raised if somehow the results are cached
+        without the jac being cached and execute_and_compute_jvp is called."""
+
+        tape = qml.tape.QuantumScript([], [qml.state()])
+        batch = (tape,)
+        jpc._results_cache[batch] = "value"
+
+        with pytest.raises(NotImplementedError):
+            jpc.execute_and_compute_jvp(batch, tuple())
+
+
+@pytest.mark.parametrize("jpc", transform_jpc_matrix + [device_ps_jacs])
+class TestProbsTransformJacobians:
+    """Testing results when probabilities are returned. This only works with gradient transforms."""
 
     def test_execute_jvp_multi_params_multi_out(self, jpc):
         """Test execute_and_compute_jvp with multiple parameters and multiple outputs"""
