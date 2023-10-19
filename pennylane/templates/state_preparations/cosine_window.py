@@ -90,6 +90,9 @@ class CosineWindow(StatePrepBase):
         Args:
             wire_order (Iterable, Wires): Custom order of wires for the returned state vector.
 
+        Raises:
+            WireError: Custom wire_order must contain all wires.
+
         Returns:
             TensorLike[complex]: output state
         """
