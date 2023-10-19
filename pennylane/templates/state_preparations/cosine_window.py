@@ -24,6 +24,7 @@ from pennylane.wires import Wires, WireError
 class CosineWindow(StatePrepBase):
     r"""CosineWindow(wires)
     Prepares an initial state with a cosine wave function.
+    Inspired by https://arxiv.org/abs/2110.09590
 
     The wave function is defined as
 
@@ -42,6 +43,7 @@ class CosineWindow(StatePrepBase):
 
         The wave function is shifted by :math:`\frac{\pi}{2}` units so that the window is centered.
 
+    See also: :class:`~.QuantumPhaseEstimation` and :class:`~.QFT`.
 
     Args:
         wires (Sequence[int] or int): the wire(s) the operation acts on
@@ -58,11 +60,6 @@ class CosineWindow(StatePrepBase):
     >>> print(example_circuit())
     [1.87469973e-33 2.50000000e-01 5.00000000e-01 2.50000000e-01]
     """
-    num_wires = AnyWires
-    num_params = 0
-
-    def __init__(self, wires, id=None):
-        super().__init__(wires=wires, id=id)
 
     @staticmethod
     def compute_decomposition(wires):  # pylint: disable=arguments-differ,unused-argument
