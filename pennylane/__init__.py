@@ -27,7 +27,6 @@ from semantic_version import SimpleSpec, Version
 from pennylane.boolean_fn import BooleanFn
 from pennylane.queuing import QueuingManager, apply
 
-import pennylane.fourier
 import pennylane.kernels
 import pennylane.math
 import pennylane.operation
@@ -123,6 +122,7 @@ from pennylane.debugging import snapshots
 from pennylane.shadows import ClassicalShadow
 import pennylane.pulse
 
+import pennylane.fourier
 import pennylane.gradients  # pylint:disable=wrong-import-order
 import pennylane.qinfo  # pylint:disable=wrong-import-order
 from pennylane.interfaces import execute  # pylint:disable=wrong-import-order
