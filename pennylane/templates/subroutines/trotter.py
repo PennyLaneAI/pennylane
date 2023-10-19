@@ -87,7 +87,7 @@ class TrotterProduct(Operation):
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        hamiltonian (Union[~Hamiltonian, ~Sum]): The Hamiltonian written as a linear combination
+        hamiltonian (Union[.Hamiltonian, .Sum]): The Hamiltonian written as a linear combination
             of operators with known matrix exponentials.
         time (float): The time of evolution, namely the parameter :math:`t` in :math:`e^{iHt}`
         n (int): An integer representing the number of Trotter steps to perform
