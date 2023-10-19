@@ -1,6 +1,5 @@
 name: Docker builds
 on:
-  pull_request:
   push:
     branches:
       - master
