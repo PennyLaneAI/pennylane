@@ -15,7 +15,6 @@ r"""
 Contains the CtrlSequence template.
 """
 from copy import copy
-import numpy as np
 import pennylane as qml
 
 from pennylane.operation import AnyWires, Operation
@@ -118,8 +117,8 @@ class ControlledSequence(SymbolicOp, Operation):
             list[.Operator]: decomposition of the operator
         """
         # ToDo: docstring missing example
+        powers_of_two = [2**i for i in range(len(control_wires))]
         ops = []
-        powers_of_two = 2 ** np.arange(len(control_wires))
 
         for z, ctrl_wire in zip(powers_of_two[::-1], control_wires):
             ops.append(qml.pow(qml.ctrl(base, control=ctrl_wire), z=z))
