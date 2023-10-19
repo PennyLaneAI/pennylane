@@ -20,6 +20,7 @@ TODO: Uncomment 'pytest.mark.external' to check these tests in GitHub actions wi
 # pylint: disable=import-outside-toplevel
 import pytest
 import pennylane as qml
+import numpy as np
 
 catalyst = pytest.importorskip("catalyst")
 jax = pytest.importorskip("jax")
@@ -176,3 +177,92 @@ class TestCatalyst:
         mlir_str = str(circuit.mlir)
         result_header = "func.func private @circuit(%arg0: tensor<f64>) -> tensor<f64>"
         assert result_header in mlir_str
+
+    def test_alternating_while_loop(self):
+        """Test simple while loop."""
+        dev = qml.device("lightning.qubit", wires=1)
+
+        @qml.qjit
+        @qml.qnode(dev)
+        def circuit(n):
+            @qml.while_loop(lambda v: v[0] < v[1])
+            def loop(v):
+                qml.PauliX(wires=0)
+                return v[0] + 1, v[1]
+
+            loop((0, n))
+            return qml.expval(qml.PauliZ(0))
+
+        assert jnp.allclose(circuit(1), -1.0)
+
+    def test_nested_while_loops(self):
+        """Test nested while loops."""
+        dev = qml.device("lightning.qubit", wires=1)
+
+        @qml.qjit
+        @qml.qnode(dev)
+        def circuit(n, m):
+            @qml.while_loop(lambda i, _: i < n)
+            def outer(i, sum):
+                @qml.while_loop(lambda j: j < m)
+                def inner(j):
+                    return j + 1
+
+                return i + 1, sum + inner(0)
+
+            return outer(0, 0)[1]
+
+        assert circuit(5, 6) == 30  # 5 * 6
+        assert circuit(4, 7) == 28  # 4 * 7
+
+    def test_dynamic_wires_for_loops(self):
+        """Test for loops with iteration index-dependant wires."""
+        dev = qml.device("lightning.qubit", wires=6)
+
+        @qml.qjit()
+        @qml.qnode(dev)
+        def circuit(n: int):
+            qml.Hadamard(wires=0)
+
+            @qml.for_loop(0, n - 1, 1)
+            def loop_fn(i):
+                qml.CNOT(wires=[i, i + 1])
+
+            loop_fn()
+            return qml.state()
+
+        expected = np.zeros(2**6)
+        expected[[0, 2**6 - 1]] = 1 / np.sqrt(2)
+
+        assert jnp.allclose(circuit(6), expected)
+
+    def test_nested_for_loops(self):
+        """Test nested for loops."""
+        dev = qml.device("lightning.qubit", wires=4)
+
+        @qml.qjit
+        @qml.qnode(dev)
+        def circuit(n):
+            # Input state: equal superposition
+            @qml.for_loop(0, n, 1)
+            def init(i):
+                qml.Hadamard(wires=i)
+
+            # QFT
+            @qml.for_loop(0, n, 1)
+            def qft(i):
+                qml.Hadamard(wires=i)
+
+                @qml.for_loop(i + 1, n, 1)
+                def inner(j):
+                    qml.ControlledPhaseShift(np.pi / 2 ** (n - j + 1), [i, j])
+
+                inner()
+
+            init()
+            qft()
+
+            # Expected output: |100...>
+            return qml.state()
+
+        assert jnp.allclose(circuit(4), jnp.eye(2**4)[0])

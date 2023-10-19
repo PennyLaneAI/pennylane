@@ -109,4 +109,4 @@ Basic usage
 
 from .compiler import available_compilers, available, active
 
-from .qjit_api import qjit
+from .qjit_api import qjit, while_loop, for_loop
