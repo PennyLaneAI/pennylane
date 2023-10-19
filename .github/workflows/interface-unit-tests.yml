@@ -10,7 +10,7 @@ on:
         description: The version of JAX to install for any job that requires JAX
         required: false
         type: string
-        default: 0.4.16
+        default: 0.4.18
       tensorflow_version:
         description: The version of TensorFlow to install for any job that requires TensorFlow
         required: false

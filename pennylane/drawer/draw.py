@@ -260,10 +260,21 @@ def _draw_qnode(
             _wire_order = wire_order or qnode.tape.wires
         else:
             original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
-
             try:
                 qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
                 tapes = qnode.construct(args, kwargs)
+                if isinstance(qnode.device, qml.devices.Device):
+                    program = qnode.transform_program
+                    if any(
+                        isinstance(op, qml.measurements.MidMeasureMP)
+                        for op in qnode.tape.operations
+                    ):
+                        tapes, _ = qml.defer_measurements(qnode.tape, device=qnode.device)
+                    else:
+                        tapes = [qnode.tape]
+
+                    tapes = program(tapes)
+
             finally:
                 qnode.expansion_strategy = original_expansion_strategy
 

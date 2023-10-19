@@ -15,11 +15,14 @@
 This module contains functions for computing the stochastic parameter-shift gradient
 of pulse sequences in a qubit-based quantum tape.
 """
+from typing import Sequence, Callable
+from functools import partial
 import warnings
 import numpy as np
 
 import pennylane as qml
 from pennylane.pulse import ParametrizedEvolution, HardwareHamiltonian
+from pennylane.transforms.core import transform
 
 from .parameter_shift import _make_zero_rep
 from .general_shift_rules import eigvals_to_frequencies, generate_shift_rule
@@ -30,7 +33,6 @@ from .gradient_transform import (
     assert_no_variance,
     choose_grad_methods,
     gradient_analysis_and_validation,
-    gradient_transform,
     _no_trainable_grad,
     reorder_grads,
 )
@@ -281,9 +283,14 @@ def _parshift_and_integrate(
 
 
 # pylint: disable=too-many-arguments
-def _stoch_pulse_grad(
-    tape, argnum=None, num_split_times=1, sampler_seed=None, use_broadcasting=False
-):
+@partial(transform, final_transform=True)
+def stoch_pulse_grad(
+    tape: qml.tape.QuantumTape,
+    argnum=None,
+    num_split_times=1,
+    sampler_seed=None,
+    use_broadcasting=False,
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Compute the gradient of a quantum circuit composed of pulse sequences by applying the
     stochastic parameter shift rule.
 
@@ -854,24 +861,10 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, use_broadcastin
     return tapes, processing_fn
 
 
-def expand_invalid_trainable_stoch_pulse_grad(x, *args, **kwargs):
-    r"""Do not expand any operation. We expect the ``stoch_pulse_grad`` to be used
-    on pulse programs and we do not expect decomposition pipelines between pulses
-    and gate-based circuits yet.
-    """
-    # pylint:disable=unused-argument
-    return x
-
-
-stoch_pulse_grad = gradient_transform(
-    _stoch_pulse_grad, expand_fn=expand_invalid_trainable_stoch_pulse_grad
-)
-
-
-@stoch_pulse_grad.custom_qnode_wrapper
+@stoch_pulse_grad.custom_qnode_transform
 def stoch_pulse_grad_qnode_wrapper(self, qnode, targs, tkwargs):
     """A custom QNode wrapper for the gradient transform :func:`~.stoch_pulse_grad`.
-    It raises an error, so that applying ``pulse_generator`` to a ``QNode`` directly
+    It raises an error, so that applying ``stoch_pulse_grad`` to a ``QNode`` directly
     is not supported.
     """
     # pylint:disable=unused-argument

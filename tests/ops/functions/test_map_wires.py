@@ -127,11 +127,9 @@ class TestMapWiresTapes:
             qml.expval(op=qml.PauliZ(1))
 
         tape = QuantumScript.from_queue(q_tape, shots=shots)
-        tape._qfunc_output = (qml.expval(qml.PauliZ(1)),)  # pylint: disable=protected-access
         # TODO: Use qml.equal when supported
 
         m_tape = qml.map_wires(tape, wire_map=wire_map)
-        assert m_tape._qfunc_output is tape._qfunc_output  # pylint: disable=protected-access
         m_op = m_tape.operations[0]
         m_obs = m_tape.observables[0]
         assert qml.equal(m_op, mapped_op)

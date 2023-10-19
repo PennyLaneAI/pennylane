@@ -391,13 +391,19 @@ def reorder_grads(grads, tape_specs):
 
 
 # pylint: disable=too-many-return-statements,too-many-branches
-def _contract_qjac_with_cjac(qjac, cjac, num_measurements, has_partitioned_shots):
+def _contract_qjac_with_cjac(qjac, cjac, tape):
     """Contract a quantum Jacobian with a classical preprocessing Jacobian.
     Essentially, this function computes the generalized version of
     ``tensordot(qjac, cjac)`` over the tape parameter axis, adapted to the new
     return type system. This function takes the measurement shapes and different
     QNode arguments into account.
     """
+    num_measurements = len(tape.measurements)
+    has_partitioned_shots = tape.shots.has_partitioned_shots
+
+    if isinstance(qjac, tuple) and len(qjac) == 1:
+        qjac = qjac[0]
+
     if isinstance(cjac, tuple) and len(cjac) == 1:
         cjac = cjac[0]
 
@@ -453,7 +459,7 @@ def _contract_qjac_with_cjac(qjac, cjac, num_measurements, has_partitioned_shots
     return tuple(tuple(tdot(qml.math.stack(q), c) for c in cjac if c is not None) for q in qjac)
 
 
-class gradient_transform(qml.batch_transform):
+class gradient_transform(qml.batch_transform):  # pragma: no cover
     """Decorator for defining quantum gradient transforms.
 
     Quantum gradient transforms are a specific case of :class:`~.batch_transform`.
@@ -537,6 +543,9 @@ class gradient_transform(qml.batch_transform):
         ...     params = tape.get_parameters()  # list of floats
     """
 
+    def __repr__(self):
+        return f"<gradient_transform: {self.__name__}>"  # pylint: disable=no-member
+
     def __init__(
         self, transform_fn, expand_fn=expand_invalid_trainable, differentiable=True, hybrid=True
     ):
@@ -598,8 +607,6 @@ class gradient_transform(qml.batch_transform):
                 qnode, argnum=argnum_cjac, expand_fn=self.expand_fn
             )(*args, **kwargs)
 
-            num_measurements = len(qnode.tape.measurements)
-            has_partitioned_shots = qnode.tape.shots.has_partitioned_shots
-            return _contract_qjac_with_cjac(qjac, cjac, num_measurements, has_partitioned_shots)
+            return _contract_qjac_with_cjac(qjac, cjac, qnode.tape)  # pragma: no cover
 
         return jacobian_wrapper

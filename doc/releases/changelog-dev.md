@@ -56,9 +56,39 @@
   (array(0.6), array([1, 1, 1, 0, 1]))
   ```
 
+* Users can now request postselection after making mid-circuit measurements. They can do so
+  by specifying the `postselect` keyword argument for `qml.measure` as either `0` or `1`,
+  corresponding to the basis states.
+  [(#4604)](https://github.com/PennyLaneAI/pennylane/pull/4604)
+
+  ```python
+  dev = qml.device("default.qubit", wires=3)
+
+  @qml.qnode(dev)
+  def circuit(phi):
+      qml.RX(phi, wires=0)
+      m = qml.measure(0, postselect=1)
+      qml.cond(m, qml.PauliX)(wires=1)
+      return qml.probs(wires=1)
+  ```
+  ```pycon
+  >>> circuit(np.pi)
+  tensor([0., 1.], requires_grad=True)
+  ```
+
+  Here, we measure a probability of one on wire 1 as we postselect on the $|1\rangle$ state on wire
+  0, thus resulting in the circuit being projected onto the state corresponding to the measurement
+  outcome $|1\rangle$ on wire 0.
+
 * Operator transforms `qml.matrix`, `qml.eigvals`, `qml.generator`, and `qml.transforms.to_zx` are updated
   to the new transform program system.
   [(#4573)](https://github.com/PennyLaneAI/pennylane/pull/4573)
+
+* Transforms can be applied on devices following the new device API.
+ [(#4667)](https://github.com/PennyLaneAI/pennylane/pull/4667)
+
+* All gradient transforms are updated to the new transform program system.
+ [(#4595)](https://github.com/PennyLaneAI/pennylane/pull/4595)
 
 * All quantum functions transforms are update to the new transform program system.
  [(#4439)](https://github.com/PennyLaneAI/pennylane/pull/4439)
@@ -74,6 +104,7 @@
   [(#4594)](https://github.com/PennyLaneAI/pennylane/pull/4594)
   [(#4436)](https://github.com/PennyLaneAI/pennylane/pull/4436)
   [(#4620)](https://github.com/PennyLaneAI/pennylane/pull/4620)
+  [(#4632)](https://github.com/PennyLaneAI/pennylane/pull/4632)
 
 <h3>Improvements 🛠</h3>
 
@@ -85,10 +116,32 @@
   that only the original wires are used for the measurements.
   [(#4625)](https://github.com/PennyLaneAI/pennylane/pull/4625)
 
+* `pennylane.devices.preprocess` now offers the transforms `decompose`, `validate_observables`, `validate_measurements`,
+  `validate_device_wires`, `validate_multiprocessing_workers`, `warn_about_trainable_observables`,
+  and `no_sampling` to assist in the construction of devices under the new `devices.Device` API.
+  [(#4659)](https://github.com/PennyLaneAI/pennylane/pull/4659)
+
+* `pennylane.defer_measurements` will now exit early if the input does not contain mid circuit measurements.
+  [(#4659)](https://github.com/PennyLaneAI/pennylane/pull/4659)
+
+* `default.qubit` now tracks the number of equivalent qpu executions and total shots
+  when the device is sampling. Note that `"simulations"` denotes the number of simulation passes, where as
+  `"executions"` denotes how many different computational bases need to be sampled in. Additionally, the
+  new `default.qubit` also tracks the results of `device.execute`.
+  [(#4628)](https://github.com/PennyLaneAI/pennylane/pull/4628)
+  [(#4649)](https://github.com/PennyLaneAI/pennylane/pull/4649)
+
+* The `JacobianProductCalculator` abstract base class and implementation `TransformJacobianProducts`
+  have been added to `pennylane.interfaces.jacobian_products`.
+  [(#4435)](https://github.com/PennyLaneAI/pennylane/pull/4435)
+
 * Extended ``qml.qchem.import_state`` to import wavefunctions from MPS DMRG and SHCI classical
-  calculations performed with the Block2 and Dice libraries.
+  calculations performed with the Block2 and Dice libraries, incorporating new tests and wavefunction
+  input selection logic.
   [#4523](https://github.com/PennyLaneAI/pennylane/pull/4523)
   [#4524](https://github.com/PennyLaneAI/pennylane/pull/4524)
+  [#4626](https://github.com/PennyLaneAI/pennylane/pull/4626)
+  [#4634](https://github.com/PennyLaneAI/pennylane/pull/4634)
 
 * `MeasurementProcess` and `QuantumScript` objects are now registered as jax pytrees.
   [(#4607)](https://github.com/PennyLaneAI/pennylane/pull/4607)
@@ -169,8 +222,38 @@
   been updated to reflect this assumption and avoid redundant reshaping.
   [(#4602)](https://github.com/PennyLaneAI/pennylane/pull/4602)
 
+* Added `qml.math.get_deep_interface` to get the interface of a scalar hidden deep in lists or tuples.
+  [(#4603)](https://github.com/PennyLaneAI/pennylane/pull/4603)
+
+* Updated `qml.math.ndim` and `qml.math.shape` to work with built-in lists/tuples that contain
+  interface-specific scalar data, eg `[(tf.Variable(1.1), tf.Variable(2.2))]`.
+  [(#4603)](https://github.com/PennyLaneAI/pennylane/pull/4603)
+
+* When decomposing a unitary matrix with `one_qubit_decomposition`, and opting to include the `GlobalPhase` 
+  in the decomposition, the phase is no longer cast to `dtype=complex`.
+  [(#4653)](https://github.com/PennyLaneAI/pennylane/pull/4653)
+
+* `qml.cut_circuit` is now compatible with circuits that compute the expectation values of Hamiltonians 
+  with two or more terms.
+  [(#4642)](https://github.com/PennyLaneAI/pennylane/pull/4642)
+
+
+* `_qfunc_output` has been removed from `QuantumScript`, as it is no longer necessary. There is
+  still a `_qfunc_output` property on `QNode` instances.
+  [(#4651)](https://github.com/PennyLaneAI/pennylane/pull/4651)
+
+* `qml.data.load` properly handles parameters that come after `'full'`
+  [(#4663)](https://github.com/PennyLaneAI/pennylane/pull/4663)
+
+* The `qml.jordan_wigner` function has been modified to optionally remove the imaginary components
+  of the computed qubit operator, if imaginary components are smaller than a threshold. 
+  [(#4639)](https://github.com/PennyLaneAI/pennylane/pull/4639)
+
 
 <h3>Breaking changes 💔</h3>
+
+* The device test suite now converts device kwargs to integers or floats if they can be converted to integers or floats.
+  [(#4640)](https://github.com/PennyLaneAI/pennylane/pull/4640)
 
 * `MeasurementProcess.eigvals()` now raises an `EigvalsUndefinedError` if the measurement observable
   does not have eigenvalues.
@@ -290,6 +373,10 @@
   ```
   [(#4457)](https://github.com/PennyLaneAI/pennylane/pull/4457/)
 
+* `qml.gradients.pulse_generator` becomes `qml.gradients.pulse_odegen` to adhere to paper naming conventions. During v0.33, `pulse_generator`
+  is still available but raises a warning.
+  [(#4633)](https://github.com/PennyLaneAI/pennylane/pull/4633)
+
 <h3>Documentation 📝</h3>
 
 * Add a warning section in DefaultQubit's docstring regarding the start method used in multiprocessing.
@@ -304,7 +391,12 @@
   Note that these functions are unstable while device upgrades are underway.
   [(#4555)](https://github.com/PennyLaneAI/pennylane/pull/4555)
 
+* Minor documentation improvement to the usage example in the `qml.QuantumMonteCarlo` page. Integral was missing the differential dx with respect to which the integration is being performed. [(#4593)](https://github.com/PennyLaneAI/pennylane/pull/4593)  
+
 <h3>Bug fixes 🐛</h3>
+
+* Providing `work_wires=None` to `qml.GroverOperator` no longer interprets `None` as a wire.
+  [(#4668)](https://github.com/PennyLaneAI/pennylane/pull/4668)
 
 * Fixed issue where `__copy__` method of the `qml.Select()` operator attempted to access un-initialized data.
 [(#4551)](https://github.com/PennyLaneAI/pennylane/pull/4551)
@@ -339,12 +431,15 @@ This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad,
 Stepan Fomichev,
+Joana Fraxanet,
 Diego Guala,
 Soran Jahangiri,
+Korbinian Kottmann
 Christina Lee,
 Lillian M. A. Frederiksen,
 Vincent Michaud-Rioux,
 Romain Moyard,
+Daniel F. Nino,
 Mudit Pandey,
 Matthew Silverman,
 Jay Soni,

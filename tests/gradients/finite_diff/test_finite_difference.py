@@ -123,7 +123,7 @@ class TestFiniteDiff:
         with pytest.raises(
             ValueError, match=r"Cannot differentiate with respect to parameter\(s\) {0}"
         ):
-            finite_diff(tape, _expand=False)
+            finite_diff(tape)
 
         # setting trainable parameters avoids this
         tape.trainable_params = {1, 2}
@@ -221,10 +221,8 @@ class TestFiniteDiff:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = qml.gradients.finite_diff(circuit)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.finite_diff(circuit)(weights)
 
     @pytest.mark.torch
     def test_no_trainable_params_qnode_torch(self):
@@ -239,10 +237,8 @@ class TestFiniteDiff:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = qml.gradients.finite_diff(circuit)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.finite_diff(circuit)(weights)
 
     @pytest.mark.tf
     def test_no_trainable_params_qnode_tf(self):
@@ -257,10 +253,8 @@ class TestFiniteDiff:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = qml.gradients.finite_diff(circuit)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.finite_diff(circuit)(weights)
 
     @pytest.mark.jax
     def test_no_trainable_params_qnode_jax(self):
@@ -275,10 +269,8 @@ class TestFiniteDiff:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = qml.gradients.finite_diff(circuit)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.finite_diff(circuit)(weights)
 
     def test_all_zero_diff_methods(self):
         """Test that the transform works correctly when the diff method for every parameter is
@@ -309,9 +301,6 @@ class TestFiniteDiff:
         assert isinstance(result[2], numpy.ndarray)
         assert result[2].shape == (4,)
         assert np.allclose(result[2], 0)
-
-        tapes, _ = qml.gradients.finite_diff(circuit.tape)
-        assert tapes == []
 
     def test_all_zero_diff_methods_multiple_returns(self):
         """Test that the transform works correctly when the diff method for every parameter is
@@ -362,9 +351,6 @@ class TestFiniteDiff:
         assert result[1][2].shape == (4,)
         assert np.allclose(result[1][2], 0)
 
-        tapes, _ = qml.gradients.finite_diff(circuit.tape)
-        assert tapes == []
-
     def test_y0(self):
         """Test that if first order finite differences is used, then
         the tape is executed only once using the current parameter
@@ -398,7 +384,7 @@ class TestFiniteDiff:
     def test_independent_parameters(self):
         """Test the case where expectation values are independent of some parameters. For those
         parameters, the gradient should be evaluated to zero without executing the device."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit")
 
         with qml.queuing.AnnotatedQueue() as q1:
             qml.RX(1.0, wires=[0])
@@ -417,7 +403,7 @@ class TestFiniteDiff:
             j1 = fn(dev.execute(tapes))
 
         # We should only be executing the device to differentiate 1 parameter (2 executions)
-        assert tracker.latest["executions"] == 2
+        assert tracker.totals["executions"] == 2
 
         tapes, fn = finite_diff(tape2, approx_order=1)
         j2 = fn(dev.execute(tapes))
@@ -460,8 +446,17 @@ class TestFiniteDiff:
 
         transform = [qml.math.shape(qml.gradients.finite_diff(c)(x)) for c in circuits]
 
-        expected = [(3,), (3,), (2, 3), (3, 4), (3, 4), (2, 3, 4)]
-
+        expected = [
+            (3,),
+            (
+                1,
+                3,
+            ),
+            (2, 3),
+            (3, 4),
+            (1, 3, 4),
+            (2, 3, 4),
+        ]
         assert all(t == q for t, q in zip(transform, expected))
 
     def test_special_observable_qnode_differentiation(self):
@@ -1166,7 +1161,7 @@ class TestJaxArgnums:
 
         res = jax.jacobian(
             qml.gradients.finite_diff(
-                circuit, approx_order=approx_order, strategy=strategy, h=1e-5
+                circuit, approx_order=approx_order, strategy=strategy, h=1e-5, argnums=argnums
             ),
             argnums=argnums,
         )(x, y)

@@ -101,7 +101,7 @@ class TestCaching:
         """Tests that the backward pass is one single batch, not a bunch of batches, when parameter shift
         is requested for multiple tapes."""
 
-        dev = DefaultQubit()
+        dev = qml.device("default.qubit")
 
         def f(x):
             tape1 = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.probs(wires=0)])
@@ -115,7 +115,7 @@ class TestCaching:
             out = qml.jacobian(f)(x)
 
         assert dev.tracker.totals["batches"] == 2
-        assert dev.tracker.history["executions"] == [2, 4]
+        assert dev.tracker.history["simulations"] == [1, 1, 1, 1, 1, 1]
         expected = [-2 * np.cos(x / 2) * np.sin(x / 2), 2 * np.sin(x / 2) * np.cos(x / 2)]
         assert qml.math.allclose(out, expected)
 
@@ -442,7 +442,21 @@ class TestAutogradExecuteIntegration:
             tape = qml.tape.QuantumScript(
                 [qml.RX(a, wires=0), U3(*p, wires=0)], [qml.expval(qml.PauliX(0))]
             )
-            return execute([tape], device, **execute_kwargs)[0]
+            gradient_fn = execute_kwargs["gradient_fn"]
+
+            if gradient_fn is None:
+                _gradient_method = None
+            elif isinstance(gradient_fn, str):
+                _gradient_method = gradient_fn
+            else:
+                _gradient_method = "gradient-transform"
+            config = qml.devices.ExecutionConfig(
+                interface="autograd",
+                gradient_method=_gradient_method,
+                grad_on_execution=execute_kwargs.get("grad_on_execution", None),
+            )
+            program, _ = device.preprocess(execution_config=config)
+            return execute([tape], device, **execute_kwargs, transform_program=program)[0]
 
         a = np.array(0.1, requires_grad=False)
         p = np.array([0.1, 0.2, 0.3], requires_grad=True)

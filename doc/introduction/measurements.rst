@@ -272,6 +272,15 @@ PennyLane implements the deferred measurement principle to transform
 conditional operations with the :func:`~.defer_measurements` quantum
 function transform.
 
+The deferred measurement principle provides a natural method to simulate the
+application of mid-circuit measurements and conditional operations in a
+differentiable and device-independent way. Performing true mid-circuit
+measurements and conditional operations is dependent on the
+quantum hardware and PennyLane device capabilities.
+
+For more examples on applying quantum functions conditionally, refer to the
+:func:`~.pennylane.cond` transform.
+
 .. code-block:: python
 
     transformed_qfunc = qml.transforms.defer_measurements(my_quantum_function)
@@ -355,15 +364,35 @@ Currently, statistics can only be collected for single mid-circuit measurement v
 measurement values manipulated using boolean or arithmetic operators cannot be used. These can lead to
 unexpected/incorrect behaviour.
 
-The deferred measurement principle provides a natural method to simulate the
-application of mid-circuit measurements and conditional operations in a
-differentiable and device-independent way. Performing true mid-circuit
-measurements and conditional operations is dependent on the
-quantum hardware and PennyLane device capabilities.
+PennyLane also supports postselecting on mid-circuit measurement outcomes by specifying the ``postselect``
+keyword argument of :func:`~.pennylane.measure`. Postselection discards outcomes that do not meet the
+criteria provided by the ``postselect`` argument. For example, specifying ``postselect=1`` on wire 0 would
+be equivalent to projecting the state vector onto the :math:`|1\rangle` state on wire 0:
 
-For more examples on applying quantum functions conditionally, refer to the
-:func:`~.pennylane.cond` transform.
+.. code-block:: python3
 
+    dev = qml.device("default.qubit")
+
+    @qml.qnode(dev)
+    def func(x):
+        qml.RX(x, wires=0)
+        m0 = qml.measure(0, postselect=1)
+        qml.cond(m0, qml.PauliX)(wires=1)
+        return qml.sample(wires=1)
+
+By postselecting on ``1``, we only consider the ``1`` measurement outcome on wire 0. So, the probability of
+measuring ``1`` on wire 1 after postselection should also be 1. Executing this QNode with 10 shots:
+
+>>> func(np.pi / 2, shots=10)
+array([1, 1, 1, 1, 1, 1, 1])
+
+Note that only 7 samples are returned. This is because samples that do not meet the postselection criteria are
+thrown away.
+
+.. note::
+
+    Currently, postselection support is only available on ``"default.qubit"``. Using postselection
+    on other devices will raise an error.
 
 Changing the number of shots
 ----------------------------

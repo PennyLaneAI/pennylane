@@ -103,7 +103,6 @@ def _local_tape_expand(tape, depth, stop_at):
     new_tape.all_sampled = tape.all_sampled
     new_tape._batch_size = tape.batch_size
     new_tape._output_dim = tape.output_dim
-    new_tape._qfunc_output = tape._qfunc_output
     return new_tape
 
 
@@ -971,6 +970,9 @@ class Device(abc.ABC):
                     "Apply the @qml.defer_measurements decorator to your quantum function to "
                     "simulate the application of mid-circuit measurements on this device."
                 )
+
+            if isinstance(o, qml.Projector):
+                raise ValueError(f"Postselection is not supported on the {self.name} device.")
 
             if not self.stopping_condition(o):
                 raise DeviceError(

@@ -416,7 +416,20 @@ class TestJaxExecuteIntegration:
                 [qml.expval(qml.PauliX(0))],
                 shots=shots,
             )
-            return execute([tape], device, **execute_kwargs)[0]
+            gradient_fn = execute_kwargs["gradient_fn"]
+            if gradient_fn is None:
+                _gradient_method = None
+            elif isinstance(gradient_fn, str):
+                _gradient_method = gradient_fn
+            else:
+                _gradient_method = "gradient-transform"
+            conf = qml.devices.ExecutionConfig(
+                interface="autograd",
+                gradient_method=_gradient_method,
+                grad_on_execution=execute_kwargs.get("grad_on_execution", None),
+            )
+            program, _ = device.preprocess(execution_config=conf)
+            return execute([tape], device, **execute_kwargs, transform_program=program)[0]
 
         a = jnp.array(0.1)
         p = jnp.array([0.1, 0.2, 0.3])
