@@ -384,7 +384,7 @@ def _create_decomp_preprocessing(custom_decomps, dev, decomp_depth=10):
 
     >>> custom_decomps = {qml.CNOT : custom_cnot}
     >>> new_preprocessing = _create_decomp_preprocessing(custom_decomps, dev)
-    >>> dev.preprocessing = new_preprocessing
+    >>> dev.preprocess = new_preprocessing
     """
 
     def decomposer(op):
