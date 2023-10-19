@@ -667,11 +667,14 @@ def quantum_fisher(
         :func:`~.pennylane.metric_tensor`, :func:`~.pennylane.adjoint_metric_tensor`, :func:`~.pennylane.qinfo.transforms.classical_fisher`
 
     Args:
-        qnode (:class:`.QNode`): A :class:`.QNode` that may have arbitrary return types.
+        tape (:class:`qml.tape.QuantumTape`): A :class:`qml.tape.QuantumTape` that may have arbitrary return types.
         *args: In case finite shots are used, further arguments according to :func:`~.pennylane.metric_tensor` may be passed.
 
     Returns:
-        func: A function that computes the quantum fisher information matrix.
+        pennylane.QNode or qfunc or tuple[List[.QuantumTape], Callable]: If a QNode
+        is passed, it returns a QNode with the transform added to its transform program.
+        If a tape is passed, returns a tuple containing a list of quantum tapes to be
+        evaluated, and a function to be applied to these tape executions.
 
     .. note::
 
