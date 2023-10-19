@@ -140,9 +140,10 @@
   [(#4649)](https://github.com/PennyLaneAI/pennylane/pull/4649)
 
 * The `JacobianProductCalculator` abstract base class and implementations `TransformJacobianProducts`
-  and `DeviceDerivatives` have been added to `pennylane.interfaces.jacobian_products`.
+  `DeviceDerivatives`, and `DeviceJacobianProducts` have been added to `pennylane.interfaces.jacobian_products`.
   [(#4435)](https://github.com/PennyLaneAI/pennylane/pull/4435)
   [(#4527)](https://github.com/PennyLaneAI/pennylane/pull/4527)
+  [(#4637)](https://github.com/PennyLaneAI/pennylane/pull/4637)
 
 * Extended ``qml.qchem.import_state`` to import wavefunctions from MPS DMRG and SHCI classical
   calculations performed with the Block2 and Dice libraries, incorporating new tests and wavefunction
@@ -257,6 +258,10 @@
 * The `qml.jordan_wigner` function has been modified to optionally remove the imaginary components
   of the computed qubit operator, if imaginary components are smaller than a threshold. 
   [(#4639)](https://github.com/PennyLaneAI/pennylane/pull/4639)
+
+* Plots generated with the `pennylane.drawer.plot` style of `matplotlib.pyplot` now have black
+  axis labels and are generated at a default DPI of 300.
+  [(#4690)](https://github.com/PennyLaneAI/pennylane/pull/4690)
 
 * Updated `qml.device`, `devices.preprocessing` and the `tape_expand.set_decomposition` context 
   manager to bring `DefaultQubit2` to feature parity with `default.qubit.legacy` with regards to 
@@ -407,7 +412,13 @@
   Note that these functions are unstable while device upgrades are underway.
   [(#4555)](https://github.com/PennyLaneAI/pennylane/pull/4555)
 
-* Minor documentation improvement to the usage example in the `qml.QuantumMonteCarlo` page. Integral was missing the differential dx with respect to which the integration is being performed. [(#4593)](https://github.com/PennyLaneAI/pennylane/pull/4593)  
+* Minor documentation improvement to the usage example in the `qml.QuantumMonteCarlo` page.
+  Integral was missing the differential dx with respect to which the integration is being performed.
+  [(#4593)](https://github.com/PennyLaneAI/pennylane/pull/4593)  
+
+* Minor documentation improvement for the use of the `pennylane` style of `qml.drawer` and the
+  `pennylane.drawer.plot` style of `matplotlib.pyplot`. The use of the default font was clarified.
+  [(#4690)](https://github.com/PennyLaneAI/pennylane/pull/4690)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -450,7 +461,8 @@ Stepan Fomichev,
 Joana Fraxanet,
 Diego Guala,
 Soran Jahangiri,
-Korbinian Kottmann
+Korbinian Kottmann,
+Ivana Kurecic,
 Christina Lee,
 Lillian M. A. Frederiksen,
 Vincent Michaud-Rioux,

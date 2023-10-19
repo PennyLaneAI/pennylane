@@ -150,7 +150,7 @@ jobs:
         env:
           PYTEST_MARKER: ${{ inputs.pytest_markers != '' && format('-m "{0}"', inputs.pytest_markers) || '' }}
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
-        run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ inputs.pytest_coverage_flags }} ${{ inputs.pytest_additional_args }} ${{ env.PYTEST_MARKER }} -n auto
+        run: python -m pytest  ${{ inputs.pytest_test_directory }} ${{ inputs.pytest_coverage_flags }} ${{ inputs.pytest_additional_args }} ${{ env.PYTEST_MARKER }} -n auto
 
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
