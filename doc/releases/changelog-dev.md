@@ -82,25 +82,54 @@
   [(#4620)](https://github.com/PennyLaneAI/pennylane/pull/4620)
   [(#4632)](https://github.com/PennyLaneAI/pennylane/pull/4632)
 
-* `CosineWindow` has been added. Prepare the initial state following a cosine wave function.
-  [(#4683)](https://github.com/PennyLaneAI/pennylane/pull/4683)
+  * `CosineWindow` has been added. Prepare the initial state following a cosine wave function.
+    [(#4683)](https://github.com/PennyLaneAI/pennylane/pull/4683)
 
-  ```python
-  import pennylane as qml
-  import matplotlib.pyplot as plt
+    ```python
+    import pennylane as qml
+    import matplotlib.pyplot as plt
   
-  dev = qml.device('default.qubit', wires=4)
+    dev = qml.device('default.qubit', wires=4)
   
-  @qml.qnode(dev)
-  def example_circuit():
-        qml.CosineWindow(wires=range(4))
+    @qml.qnode(dev)
+    def example_circuit():
+          qml.CosineWindow(wires=range(4))
+          return qml.state()
+    output = example_circuit()
+  
+    # Graph showing state amplitudes
+    plt.bar(range(len(output)), output)
+    plt.show()
+    ```
+  
+    We can show how this operator is built:
+  
+    ```python
+    import pennylane as qml
+
+    dev = qml.device("default.qubit", wires=5)
+  
+    op = qml.CosineWindow(wires=range(5))
+    
+    @qml.qnode(dev)
+    def circuit():
+        op.decomposition()
         return qml.state()
-  output = example_circuit()
   
-  # Graph showing state amplitudes
-  plt.bar(range(len(output)), output)
-  plt.show()
-  ```
+    print(qml.draw(circuit)())
+
+    ```
+    
+    ```pycon
+  
+    0: ──────────────╭QFT†──Rϕ(1.57)─┤  State
+    1: ──────────────├QFT†──Rϕ(0.79)─┤  State
+    2: ──────────────├QFT†──Rϕ(0.39)─┤  State
+    3: ──────────────├QFT†──Rϕ(0.20)─┤  State
+    4: ──H──RZ(3.14)─╰QFT†──Rϕ(0.10)─┤  State
+    
+    ```  
+
 
 <h3>Improvements 🛠</h3>
 
