@@ -1714,7 +1714,7 @@ class TestPostselection:
         if use_jit and (interface != "jax" or isinstance(shots, tuple)):
             pytest.skip("Cannot JIT in non-JAX interfaces, or with shot vectors.")
 
-        dev = qml.device("default.qubit", shots=shots)
+        dev = qml.device("default.qubit")
         param = qml.math.asarray(param, like=interface)
 
         @qml.qnode(dev, interface=interface)
@@ -1733,10 +1733,10 @@ class TestPostselection:
         if use_jit:
             import jax
 
-            circ_postselect = jax.jit(circ_postselect)
+            circ_postselect = jax.jit(circ_postselect, static_argnames=["shots"])
 
-        res = circ_postselect(param)
-        expected = circ_expected()
+        res = circ_postselect(param, shots=shots)
+        expected = circ_expected(shots=shots)
 
         if not isinstance(shots, tuple):
             assert qml.math.allclose(res, expected, atol=tol_stochastic, rtol=0)
@@ -1763,10 +1763,7 @@ class TestPostselection:
         if use_jit:
             pytest.skip("Cannot JIT while mocking function.")
 
-        # with monkeypatch.context() as m:
-        #     m.setattr(np.random, "binomial", lambda *args, **kwargs: 5)
-
-        dev = qml.device("default.qubit", shots=shots, seed=42)
+        dev = qml.device("default.qubit", seed=42)
         param = qml.math.asarray(param, like=interface)
 
         with mock.patch("numpy.random.binomial", lambda *args, **kwargs: 5):
@@ -1781,9 +1778,9 @@ class TestPostselection:
             if use_jit:
                 import jax
 
-                circ_postselect = jax.jit(circ_postselect)
+                circ_postselect = jax.jit(circ_postselect, static_argnames=["shots"])
 
-            res = circ_postselect(param)
+            res = circ_postselect(param, shots=shots)
 
         if not isinstance(shots, tuple):
             assert qml.math.get_interface(res) == interface if interface != "autograd" else "numpy"
@@ -1871,8 +1868,7 @@ class TestPostselection:
         if use_jit and interface != "jax":
             pytest.skip("Can't jit with non-jax interfaces.")
 
-        # Wires are specified so that the shape for measurements can be determined correctly
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit")
 
         @qml.qnode(dev, interface=interface)
         def circ():

@@ -321,7 +321,7 @@ class SparseHamiltonian(Observable):
         return H
 
 
-class Projector(Operation, Observable):
+class Projector(Observable):
     r"""Projector(state, wires, id=None)
     Observable corresponding to the state projector :math:`P=\ket{\phi}\bra{\phi}`.
 
@@ -412,7 +412,7 @@ class Projector(Operation, Observable):
         return [copy(self)] if (isinstance(z, int) and z > 0) else super().pow(z)
 
 
-class BasisStateProjector(Projector):
+class BasisStateProjector(Projector, Operation):
     r"""Observable corresponding to the state projector :math:`P=\ket{\phi}\bra{\phi}`, where
     :math:`\phi` denotes a basis state."""
 

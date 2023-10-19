@@ -13,7 +13,6 @@
 # limitations under the License.
 """Simulate a quantum script."""
 # pylint: disable=protected-access
-from typing import Sequence
 from numpy.random import default_rng
 import numpy as np
 
@@ -53,11 +52,7 @@ class _FlexShots(qml.measurements.Shots):
 
     # pylint: disable=super-init-not-called
     def __init__(self, shots=None):
-        if isinstance(shots, int):
-            self.total_shots = shots
-            self.shot_vector = (qml.measurements.ShotCopies(shots, 1),)
-        elif isinstance(shots, Sequence):
-            self.__all_tuple_init__([s if isinstance(s, tuple) else (s, 1) for s in shots])
+        self.__all_tuple_init__([s if isinstance(s, tuple) else (s, 1) for s in shots])
 
         self._frozen = True
 
@@ -119,11 +114,7 @@ def _postselection_postprocess(state, is_state_batched, shots):
         # Clip the number of shots using a binomial distribution using the probability of
         # measuring the postselected state.
         postselected_shots = (
-            (
-                np.random.binomial(shots.total_shots, float(norm))
-                if not shots.has_partitioned_shots
-                else [np.random.binomial(s, float(norm)) for s in shots]
-            )
+            [np.random.binomial(s, float(norm)) for s in shots]
             if not qml.math.is_abstract(norm)
             else shots
         )
