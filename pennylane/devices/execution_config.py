@@ -58,7 +58,7 @@ class ExecutionConfig:
     """Whether or not to use the device provided vjp or jvp to compute gradients.
 
     ``None`` indicates to use the device if possible, but to fall back to the device Jacobian
-    or PennyLane behavior if it isn't.
+    or PennyLane behaviour if it isn't.
 
     ``True`` indicates to either use the device Jacobian products or fail.
     """
