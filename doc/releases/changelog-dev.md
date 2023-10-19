@@ -259,6 +259,14 @@
 * Improved performance of `qml.data.load()` when partially loading a dataset
   [(#4674)](https://github.com/PennyLaneAI/pennylane/pull/4674)
 
+* Updated `qml.device`, `devices.preprocessing` and the `tape_expand.set_decomposition` context 
+  manager to bring `DefaultQubit2` to feature parity with `default.qubit.legacy` with regards to 
+  using custom decompositions. The `DefaultQubit2` device can now be included in a `set_decomposition` 
+  context or initialized with a `custom_decomps` dictionary, as well as a custom `max_depth` for 
+  decomposition.
+  [(#4675)](https://github.com/PennyLaneAI/pennylane/pull/4675)
+
+
 
 <h3>Breaking changes 💔</h3>
 
