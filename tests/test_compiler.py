@@ -266,3 +266,24 @@ class TestCatalyst:
             return qml.state()
 
         assert jnp.allclose(circuit(4), jnp.eye(2**4)[0])
+
+    def test_cond(self):
+        """Test condition with simple true_fn and false_fn"""
+        dev = qml.device("lightning.qubit", wires=1)
+
+        @qml.qjit
+        @qml.qnode(dev)
+        def circuit(x: float):
+            def ansatz_true():
+                qml.RX(x, wires=0)
+                qml.Hadamard(wires=0)
+
+            def ansatz_false():
+                qml.RY(x, wires=0)
+
+            qml.cond(x > 1.4, ansatz_true, ansatz_false)
+
+            return qml.expval(qml.PauliZ(0))
+
+        assert jnp.allclose(circuit(1.4), 0.16996714)
+        assert jnp.allclose(circuit(1.6), 0.0)

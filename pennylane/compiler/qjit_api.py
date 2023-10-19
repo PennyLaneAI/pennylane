@@ -143,7 +143,7 @@ def while_loop(*args, compiler_name="catalyst", **kwargs):
     .. note::
 
         This is a wrapper around
-        `catalyst.while_loop <https://docs.pennylane.ai/projects/catalyst/en/latest/code/api/catalyst.while_loop.html>`_.
+        `catalyst.while_loop <https://docs.pennylane.ai/projects/catalyst/en/latest/code/api/catalyst.while_loop.html>`__.
 
     This decorator provides a functional version of the traditional while
     loop, similar to ``jax.lax.while_loop``. That is, any variables that are
@@ -220,7 +220,7 @@ def for_loop(*args, compiler_name="catalyst", **kwargs):
     .. note::
 
         This is a wrapper around
-        `catalyst.for_loop <https://docs.pennylane.ai/projects/catalyst/en/latest/code/api/catalyst.for_loop.html>`_.
+        `catalyst.for_loop <https://docs.pennylane.ai/projects/catalyst/en/latest/code/api/catalyst.for_loop.html>`__.
 
     This for-loop representation is a functional version of the traditional
     for-loop, similar to ``jax.cond.fori_loop``. That is, any variables that
