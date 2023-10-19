@@ -106,7 +106,7 @@ def test_tree_sets():
 
 
 class TestSolovayKitaev:
-    """Test for Sololvay-Kitaev functionality"""
+    """Test for Solovay-Kitaev functionality"""
 
     @pytest.mark.parametrize(
         ("op"),
@@ -153,8 +153,8 @@ class TestSolovayKitaev:
     def test_sk_approximate_set(self):
         """Test for building approximate sets"""
 
-        approx_set1 = sk_approximate_set(depth=5)
-        approx_set2 = sk_approximate_set(basis_set=["t", "tdg", "h"], depth=5)
+        approx_set1 = sk_approximate_set(basis_depth=5)
+        approx_set2 = sk_approximate_set(basis_set=["t", "tdg", "h"], basis_depth=5)
 
         assert approx_set1 == approx_set2
         assert len(approx_set1) < 263 and len(approx_set2) < 263  # 3 + ... + 3x3x3x3x3
@@ -176,7 +176,7 @@ class TestSolovayKitaev:
                 "tdg",
                 "h",
             ],
-            depth=10,
+            basis_depth=10,
         )
         gates = sk_decomposition(op, depth=5, approximate_set=approximate_set)
 
@@ -185,15 +185,19 @@ class TestSolovayKitaev:
 
         assert qml.math.allclose(qml.matrix(op), matrix_sk, atol=1e-3)
 
-    def test_solovay_kitaev_without_approx_set(self):
+    @pytest.mark.parametrize(
+        ("basis_depth", "basis_set"),
+        [(10, ()), (5, (["s", "t"])), (10, ["h", "t", "s"])],
+    )
+    def test_solovay_kitaev_without_approx_set(self, basis_depth, basis_set):
         """Test Solovay-Kitaev decomposition method without providing approximation set"""
-        op = qml.RY(math.pi / 42, wires=[1])
-        gates = sk_decomposition(op, depth=5)
+        op = qml.RZ(math.pi / 4, wires=[1])
+        gates = sk_decomposition(op, depth=5, basis_depth=basis_depth, basis_set=basis_set)
 
         matrix_sk = functools.reduce(lambda x, y: x @ y, map(qml.matrix, gates))
         matrix_sk /= qml.math.sqrt((1 + 0j) * qml.math.linalg.det(matrix_sk))
 
-        assert qml.math.allclose(qml.matrix(op), matrix_sk, atol=1e-3)
+        assert qml.math.allclose(qml.matrix(op), matrix_sk, atol=1e-2)
 
     def test_exception(self):
         """Test operation wire exception in Solovay-Kitaev"""

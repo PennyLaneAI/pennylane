@@ -82,6 +82,10 @@
   [(#4620)](https://github.com/PennyLaneAI/pennylane/pull/4620)
   [(#4632)](https://github.com/PennyLaneAI/pennylane/pull/4632)
 
+* `qml.transforms.decomposition.sk_decomposition` method implements the Solovay-Kitaev algorithm for
+  apprxoimately decomposing any single-qubit operation to Clifford+T basis.
+  [(#4687)](https://github.com/PennyLaneAI/pennylane/pull/4687)
+
 <h3>Improvements 🛠</h3>
 
 * `pennylane.devices.preprocess` now offers the transforms `decompose`, `validate_observables`, `validate_measurements`,
