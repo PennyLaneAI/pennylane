@@ -291,6 +291,10 @@
   of the computed qubit operator, if imaginary components are smaller than a threshold. 
   [(#4639)](https://github.com/PennyLaneAI/pennylane/pull/4639)
 
+* Plots generated with the `pennylane.drawer.plot` style of `matplotlib.pyplot` now have black
+  axis labels and are generated at a default DPI of 300.
+  [(#4690)](https://github.com/PennyLaneAI/pennylane/pull/4690)
+
 * Updated `qml.device`, `devices.preprocessing` and the `tape_expand.set_decomposition` context 
   manager to bring `DefaultQubit2` to feature parity with `default.qubit.legacy` with regards to 
   using custom decompositions. The `DefaultQubit2` device can now be included in a `set_decomposition` 
@@ -440,7 +444,13 @@
   Note that these functions are unstable while device upgrades are underway.
   [(#4555)](https://github.com/PennyLaneAI/pennylane/pull/4555)
 
-* Minor documentation improvement to the usage example in the `qml.QuantumMonteCarlo` page. Integral was missing the differential dx with respect to which the integration is being performed. [(#4593)](https://github.com/PennyLaneAI/pennylane/pull/4593)  
+* Minor documentation improvement to the usage example in the `qml.QuantumMonteCarlo` page.
+  Integral was missing the differential dx with respect to which the integration is being performed.
+  [(#4593)](https://github.com/PennyLaneAI/pennylane/pull/4593)  
+
+* Minor documentation improvement for the use of the `pennylane` style of `qml.drawer` and the
+  `pennylane.drawer.plot` style of `matplotlib.pyplot`. The use of the default font was clarified.
+  [(#4690)](https://github.com/PennyLaneAI/pennylane/pull/4690)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -483,7 +493,8 @@ Stepan Fomichev,
 Joana Fraxanet,
 Diego Guala,
 Soran Jahangiri,
-Korbinian Kottmann
+Korbinian Kottmann,
+Ivana Kurecic,
 Christina Lee,
 Lillian M. A. Frederiksen,
 Vincent Michaud-Rioux,
