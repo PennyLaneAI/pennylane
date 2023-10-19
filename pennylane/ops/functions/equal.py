@@ -264,7 +264,9 @@ def _equal_adjoint(op1: Adjoint, op2: Adjoint, **kwargs):
 # pylint: disable=unused-argument
 def _equal_exp(op1: Exp, op2: Exp, **kwargs):
     """Determine whether two Exp objects are equal"""
-    if op1.coeff != op2.coeff:
+    rtol, atol = (kwargs["rtol"], kwargs["atol"])
+
+    if not qml.math.allclose(op1.coeff, op2.coeff, rtol=rtol, atol=atol):
         return False
     return qml.equal(op1.base, op2.base)
 
@@ -273,7 +275,9 @@ def _equal_exp(op1: Exp, op2: Exp, **kwargs):
 # pylint: disable=unused-argument
 def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
     """Determine whether two SProd objects are equal"""
-    if op1.scalar != op2.scalar:
+    rtol, atol = (kwargs["rtol"], kwargs["atol"])
+
+    if not qml.math.allclose(op1.scalar, op2.scalar, rtol=rtol, atol=atol):
         return False
     return qml.equal(op1.base, op2.base)
 
