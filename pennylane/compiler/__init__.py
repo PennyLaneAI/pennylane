@@ -38,6 +38,18 @@ The compiler package exclusively functions as a wrapper for PennyLane's JIT comp
 implementing any compiler itself. Currently, it supports the ``pennylane-catalyst`` package, with plans to
 incorporate additional packages in the near future.
 
+.. note::
+
+    Catalyst is officially supported on Linux (x86_64) and macOS (aarch64) platforms. To install it, simply run
+    the following ``pip`` command:
+
+    .. code-block:: console
+
+      pip install pennylane-catalyst
+
+    Please see the `installation <https://docs.pennylane.ai/projects/catalyst/en/latest/dev/installation.html>`__ guide
+    for more information.
+
 For any compiler packages seeking to be registered, it is imperative that they expose the 'entry_points' metadata
 under the designated group name: ``pennylane.compilers``.
 

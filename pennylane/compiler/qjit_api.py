@@ -24,7 +24,7 @@ def qjit(
     .. note::
 
         This is a wrapper around
-        `catalyst.while_loop <https://docs.pennylane.ai/projects/catalyst/en/latest/code/api/catalyst.qjit.html>`__.
+        `catalyst.qjit <https://docs.pennylane.ai/projects/catalyst/en/latest/code/api/catalyst.qjit.html>`__.
 
 
     This decorator enables both just-in-time and ahead-of-time compilation,
