@@ -14,13 +14,13 @@
 """Unit tests for sample_state in devices/qubit."""
 
 from random import shuffle
-from typing import Sequence
 
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.devices.qubit import simulate
+from pennylane.devices.qubit.simulate import _FlexShots
 from pennylane.devices.qubit import sample_state, measure_with_samples
 from pennylane.devices.qubit.sampling import _sample_state_jax
 from pennylane.measurements import Shots
@@ -56,31 +56,6 @@ def _valid_flex_tuple(s):
         and isinstance(s[1], int)
         and s[1] > 0
     )
-
-
-class _FlexShots(Shots):  # pylint: disable=too-few-public-methods
-    """Shots class that allows zero shots."""
-
-    # pylint: disable=super-init-not-called
-    def __init__(self, shots=None):
-        if shots is None:
-            self.total_shots = None
-            self.shot_vector = ()
-        elif isinstance(shots, int):
-            if shots < 0:
-                raise self._SHOT_ERROR
-            self.total_shots = shots
-            self.shot_vector = (qml.measurements.ShotCopies(shots, 1),)
-        elif isinstance(shots, Sequence):
-            if not all(_valid_flex_int(s) or _valid_flex_tuple(s) for s in shots):
-                raise self._SHOT_ERROR
-            self.__all_tuple_init__([s if isinstance(s, tuple) else (s, 1) for s in shots])
-        elif isinstance(shots, self.__class__):
-            return  # self already _is_ shots as defined by __new__
-        else:
-            raise self._SHOT_ERROR
-
-        self._frozen = True
 
 
 def samples_to_probs(samples, num_wires):

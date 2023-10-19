@@ -52,7 +52,11 @@ class _FlexShots(qml.measurements.Shots):
 
     # pylint: disable=super-init-not-called
     def __init__(self, shots=None):
-        self.__all_tuple_init__([s if isinstance(s, tuple) else (s, 1) for s in shots])
+        if isinstance(shots, int):
+            self.total_shots = shots
+            self.shot_vector = (qml.measurements.ShotCopies(shots, 1),)
+        else:
+            self.__all_tuple_init__([s if isinstance(s, tuple) else (s, 1) for s in shots])
 
         self._frozen = True
 
