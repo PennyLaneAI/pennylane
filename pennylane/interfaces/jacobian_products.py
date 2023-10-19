@@ -395,7 +395,7 @@ class DeviceDerivatives(JacobianProductCalculator):
             return self._device.compute_derivatives(numpy_tapes, self._execution_config)
         return self._device.gradients(numpy_tapes, **self._gradient_kwargs)
 
-    def execute(self, tapes: Batch):
+    def execute_and_cache_jacobian(self, tapes: Batch):
         """Forward pass used to cache the results and jacobians.
 
         Args:

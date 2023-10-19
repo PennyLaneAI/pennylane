@@ -176,8 +176,7 @@ def pattern_matching_optimization(
     Exact and practical pattern matching for quantum circuit optimization.
     `doi.org/10.1145/3498325 <https://dl.acm.org/doi/abs/10.1145/3498325>`_
     """
-    # pylint: disable=protected-access, too-many-branches
-    original_qfunc_output = tape._qfunc_output  # pylint: disable=protected-access
+    # pylint: disable=too-many-branches
     consecutive_wires = Wires(range(len(tape.wires)))
     inverse_wires_map = OrderedDict(zip(consecutive_wires, tape.wires))
 
@@ -199,8 +198,8 @@ def pattern_matching_optimization(
             raise qml.QuantumFunctionError("Circuit has less qubits than the pattern.")
 
         # Construct Dag representation of the circuit and the pattern.
-        circuit_dag = commutation_dag(tape)()
-        pattern_dag = commutation_dag(pattern)()
+        circuit_dag = commutation_dag(tape)
+        pattern_dag = commutation_dag(pattern)
 
         max_matches = pattern_matching(circuit_dag, pattern_dag)
 
@@ -229,7 +228,7 @@ def pattern_matching_optimization(
 
                         # First add all the predecessors of the given match.
                         for elem in pred:
-                            node = circuit_dag.get_node(elem)
+                            node = circuit_dag.get_node(elem)  # pylint: disable=no-member
                             inst = copy.deepcopy(node.op)
                             qml.apply(inst)
                             already_sub.append(elem)
@@ -252,15 +251,15 @@ def pattern_matching_optimization(
 
                     # Add the unmatched gates.
                     for node_id in substitution.unmatched_list:
-                        node = circuit_dag.get_node(node_id)
+                        node = circuit_dag.get_node(node_id)  # pylint: disable=no-member
                         inst = copy.deepcopy(node.op)
                         qml.apply(inst)
 
                 qscript = QuantumScript.from_queue(q_inside)
-                tape = qml.map_wires(input=qscript, wire_map=inverse_wires_map)
+                tapes, fn = qml.map_wires(input=qscript, wire_map=inverse_wires_map)
+                tape = fn(tapes)
 
-    new_tape = QuantumTape(tape.operations, tape.measurements, shots=tape.shots)
-    new_tape._qfunc_output = original_qfunc_output  # pylint: disable=protected-access
+    new_tape = type(tape)(tape.operations, tape.measurements, shots=tape.shots)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
