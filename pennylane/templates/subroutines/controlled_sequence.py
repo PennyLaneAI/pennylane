@@ -31,7 +31,7 @@ class ControlledSequence(SymbolicOp, Operation):
     controlled gates, one for each control wire, with the base :class:`~.Operator` raised to
     decreasing powers of 2:
 
-    .. figure:: ../../_static/templates/subroutines/controlled_sequence.svg
+    .. figure:: ../../_static/templates/subroutines/big_ctrl.png
         :align: center
         :width: 60%
         :target: javascript:void(0);
@@ -49,13 +49,22 @@ class ControlledSequence(SymbolicOp, Operation):
     **Example**
 
     .. code-block:: python
+
         @qml.qnode(dev)
         def circuit():
+
             for i in range(3):
                 qml.Hadamard(wires = i)
-            qml.ControlledSequence(qml.RX(0.25, wires = 3), control = [0, 1, 2]) # <-- 👀
+
+            qml.ControlledSequence(qml.RX(0.25, wires = 3), control = [0, 1, 2])
+
             qml.adjoint(qml.QFT)(wires = range(3))
+
             return qml.probs(wires = range(3))
+
+    >>> print(circuit())
+    [0.92059345 0.02637178 0.00729619 0.00423258 0.00360545 0.00423258 0.00729619 0.02637178]
+
     """
     num_wires = AnyWires
     # grad_method = None
@@ -68,7 +77,6 @@ class ControlledSequence(SymbolicOp, Operation):
         return cls(data[0], control=metadata[0])
 
     def __init__(self, base, control, id=None):
-
         control_wires = Wires(control)
 
         if len(Wires.shared_wires([base.wires, control_wires])) != 0:
@@ -129,8 +137,28 @@ class ControlledSequence(SymbolicOp, Operation):
 
         Returns:
             list[.Operator]: decomposition of the operator
+
+        **Example**
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit")
+            op = qml.ControlledSequence(qml.RX(0.25, wires = 3), control = [0, 1, 2])
+
+            @qml.qnode(dev)
+            def circuit():
+                op.decomposition()
+                return qml.state()
+
+
+        >>> print(qml.draw(circuit, wire_order=[0,1,2,3])())
+        0: ─╭●─────────────────────────────────────┤  State
+        1: ─│────────────╭●────────────────────────┤  State
+        2: ─│────────────│────────────╭●───────────┤  State
+        3: ─╰(RX(0.25))⁴─╰(RX(0.25))²─╰(RX(0.25))¹─┤  State
+
         """
-        # ToDo: docstring missing example
+
         return self.compute_decomposition(self.base, self.control)
 
     @staticmethod
@@ -147,8 +175,28 @@ class ControlledSequence(SymbolicOp, Operation):
 
         Returns:
             list[.Operator]: decomposition of the operator
+
+        **Example**
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit")
+            op = qml.ControlledSequence(qml.RX(0.25, wires = 3), control = [0, 1, 2])
+
+            @qml.qnode(dev)
+            def circuit():
+                op.decomposition()
+                return qml.state()
+
+
+        >>> print(qml.draw(circuit, wire_order=[0,1,2,3])())
+        0: ─╭●─────────────────────────────────────┤  State
+        1: ─│────────────╭●────────────────────────┤  State
+        2: ─│────────────│────────────╭●───────────┤  State
+        3: ─╰(RX(0.25))⁴─╰(RX(0.25))²─╰(RX(0.25))¹─┤  State
+
         """
-        # ToDo: docstring missing example
+
         powers_of_two = [2**i for i in range(len(control_wires))]
         ops = []
 
