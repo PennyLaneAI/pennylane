@@ -91,7 +91,7 @@ class TrotterProduct(Operation):
             of operators with known matrix exponentials.
         time (float): The time of evolution, namely the parameter :math:`t` in :math:`e^{iHt}`
         n (int): An integer representing the number of Trotter steps to perform
-        order (int): An integer (m) representing the order of the approximation (must be 1 or even)
+        order (int): An integer (:math:`m`) representing the order of the approximation (must be 1 or even)
         check_hermitian (bool): A flag to enable the validation check to ensure this is a valid unitary operator
 
     Raises:
