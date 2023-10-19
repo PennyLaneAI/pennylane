@@ -210,7 +210,6 @@
   with two or more terms.
   [(#4642)](https://github.com/PennyLaneAI/pennylane/pull/4642)
 
-
 * `_qfunc_output` has been removed from `QuantumScript`, as it is no longer necessary. There is
   still a `_qfunc_output` property on `QNode` instances.
   [(#4651)](https://github.com/PennyLaneAI/pennylane/pull/4651)
@@ -222,6 +221,9 @@
   of the computed qubit operator, if imaginary components are smaller than a threshold. 
   [(#4639)](https://github.com/PennyLaneAI/pennylane/pull/4639)
 
+* `qml.data.load` correctly performs a full download of dataset after a partial download of the
+  same dataset.
+  [(#4681)](https://github.com/PennyLaneAI/pennylane/pull/4681)
 
 <h3>Breaking changes 💔</h3>
 

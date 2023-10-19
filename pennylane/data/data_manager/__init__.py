@@ -70,16 +70,26 @@ def _download_partial(
     """
 
     dest_dataset = Dataset.open(dest, mode="a")
-    remote_dataset = Dataset(open_hdf5_s3(s3_url))
+    remote_dataset = None
 
-    attributes = set(attributes) if attributes is not None else set(remote_dataset.attrs.keys())
+    attributes_to_fetch = set()
+
+    if attributes is not None:
+        attributes_to_fetch.update(attributes)
+    else:
+        remote_dataset = Dataset(open_hdf5_s3(s3_url))
+        attributes_to_fetch.update(remote_dataset.attrs)
+
     if not overwrite:
-        attributes.difference_update(dest_dataset.attrs.keys())
+        attributes_to_fetch.difference_update(dest_dataset.attrs)
 
-    if attributes:
+    if len(attributes_to_fetch) > 0:
+        remote_dataset = remote_dataset or Dataset(open_hdf5_s3(s3_url))
         remote_dataset.write(dest_dataset, "a", attributes, overwrite=overwrite)
 
-    remote_dataset.close()
+    if remote_dataset:
+        remote_dataset.close()
+
     dest_dataset.close()
     del remote_dataset
     del dest_dataset

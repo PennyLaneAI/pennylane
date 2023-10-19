@@ -423,6 +423,23 @@ def test_download_partial_dest_exists(tmp_path, monkeypatch, attributes, overwri
     assert local.attrs == expect_attrs
 
 
+@patch("pennylane.data.data_manager.open_hdf5_s3")
+def test_download_partial_no_check_remote(open_hdf5_s3, tmp_path):
+    """Test that `_download_partial()` will not open the remote dataset if all requested attributes
+    are present in the local dataset, and ``overwrite`` is ``False``."""
+    local_dataset = Dataset.open(tmp_path / "dataset", "w")
+    local_dataset.x = 1
+    local_dataset.y = 2
+
+    local_dataset.close()
+
+    pennylane.data.data_manager._download_partial(
+        "dataset_url", tmp_path / "dataset", ["x", "y"], overwrite=False
+    )
+
+    open_hdf5_s3.assert_not_called()
+
+
 @patch("builtins.open")
 @pytest.mark.parametrize(
     "datapath, escaped",
