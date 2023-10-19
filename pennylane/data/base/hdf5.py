@@ -96,14 +96,19 @@ def copy_all(
         dest.attrs.update(source.attrs)
 
 
-def open_hdf5_s3(s3_url: str) -> HDF5Group:
+def open_hdf5_s3(s3_url: str, *, block_size: int = 8388608) -> HDF5Group:
     """Uses ``fsspec`` module to open the HDF5 file at ``s3_url``.
 
     This requires both ``fsspec`` and ``aiohttp`` to be installed.
+
+    Args:
+        s3_url: URL of dataset file in S3
+        block_size: Number of bytes to fetch per read operation. Larger values
+            may improve performance for large datasets
     """
 
     # Tells fsspec to fetch data in 8MB chunks for faster loading
-    memory_cache_args = {"cache_type": "mmap", "block_size": 8 * (2**20)}
+    memory_cache_args = {"cache_type": "mmap", "block_size": block_size}
     fs = fsspec.open(s3_url, **memory_cache_args)
 
     return h5py.File(fs.open())
