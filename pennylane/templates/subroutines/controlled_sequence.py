@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Contains the CtrlSequence template.
+Contains the ControlledSequence template.
 """
 from copy import copy
 import pennylane as qml
@@ -23,8 +23,43 @@ from pennylane.ops.op_math.symbolicop import SymbolicOp
 
 
 class ControlledSequence(SymbolicOp, Operation):
-    """docstring"""
+    r"""Creates a sequence of controlled gates raised to decreasing powers of 2. Can be used as
+    a sub-block in building a `quantum phase estimation <https://en.wikipedia.org/wiki/Quantum_phase_estimation_algorithm>`__
+    circuit.
 
+    Given an :class:`~.Operator` and a list of control wires, this template creates a sequence of
+    controlled gates, one for each control wire, with the base :class:`~.Operator` raised to
+    decreasing powers of 2:
+
+    .. figure:: ../../_static/templates/subroutines/controlled_sequence.svg
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
+
+    Args:
+        base (Operator): the phase estimation unitary, specified as an :class:`~.Operator`
+        control (Union[Wires, Sequence[int], or int]): the wires to be used for control
+
+    Raises:
+        ValueError: if the wires in ``control`` and wires on the ``base`` operator share a common
+            element
+
+    .. seealso:: :class:`~.QuantumPhaseEstimation`
+
+    **Example**
+
+    @qml.qnode(dev)
+    def circuit():
+
+    for i in range(3):
+        qml.Hadamard(wires = i)
+
+    qml.CtrlSequence(qml.RX(0.25, wires = 3), control = [0, 1, 2]) # <-- 👀
+
+    qml.adjoint(qml.QFT)(wires = range(3))
+
+    return qml.probs(wires = range(3))
+    """
     num_wires = AnyWires
     # grad_method = None
 
