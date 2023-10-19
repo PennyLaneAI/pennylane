@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the transform function, the transform dispatcher and the transform container.
+This module contains the transform dispatcher and the transform container.
 """
 import copy
 import warnings
@@ -22,15 +22,16 @@ import pennylane as qml
 
 
 class TransformError(Exception):
-    """Raised when there is an error with the transform logic"""
+    """Raised when there is an error with the transform logic."""
 
 
 class TransformDispatcher:
     r"""This object is developer facing and should not be used directly to create transforms. Use
-    :func:`~.pennylane.transforms.core.transform`.
+    :func:`~.pennylane.transforms.core.transform` instead.
 
-    Convert a transform that has the signature (tape -> Sequence(tape), fn) to a transform dispatcher that can act
-    on tape, qfunc and qnode.
+    Convert a transform that has the signature ``(tape -> Sequence(tape), fn)`` to a transform dispatcher
+    that can act on :class:`pennylane.tape.QuantumTape`., quantum function, :class:`pennylane.QNode`,
+    :class:`pennylane.device.Device`.
 
     .. warning::
 
@@ -48,7 +49,6 @@ class TransformDispatcher:
         is_informative=False,
         final_transform=False,
     ):  # pylint:disable=redefined-outer-name
-        self.__doc__ = transform.__doc__
         self._transform = transform
         self._expand_transform = expand_transform
         self._classical_cotransform = classical_cotransform
