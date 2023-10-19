@@ -981,8 +981,8 @@ class QNode:
             device_transform_program, config = self.device.preprocess(execution_config=config)
             full_transform_program = self.transform_program + device_transform_program
         else:
-            full_transform_program = self.transform_program
-        # Add the gradient expand to the porgram if necessary
+            full_transform_program = qml.transforms.core.TransformProgram(self.transform_program)
+        # Add the gradient expand to the program if necessary
         if (
             isinstance(self.gradient_fn, qml.transforms.core.TransformDispatcher)
             and self.gradient_fn.expand_transform
