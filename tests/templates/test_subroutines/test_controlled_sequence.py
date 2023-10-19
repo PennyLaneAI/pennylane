@@ -1,0 +1,408 @@
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Unit tests for the ControlledSequence subroutine.
+"""
+import pytest
+import numpy as np
+import pennylane as qml
+
+from pennylane.wires import Wires
+
+# pylint: disable=unidiomatic-typecheck, cell-var-from-loop
+
+
+class TestInitialization:
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        op = qml.ControlledSequence(qml.RX(0.25, wires=3), control=[0, 1, 2], id="a")
+        assert op.id == "a"
+
+    # pylint: disable=protected-access
+    def test_flatten_and_unflatten(self):
+        """Test the _flatten and _unflatten methods for ControlledSequence"""
+
+        op = qml.ControlledSequence(qml.RX(0.25, wires=3), control=[0, 1, 2])
+        data, metadata = op._flatten()
+
+        assert len(data) == 1
+        assert qml.equal(data[0], op.base)
+
+        assert len(metadata) == 1
+        assert metadata[0] == op.control
+
+        # make sure metadata is hashable
+        assert hash(metadata)
+
+        new_op = type(op)._unflatten(*op._flatten())
+
+        assert qml.equal(op.base, new_op.base)
+        assert op.control_wires == new_op.control_wires
+        assert op is not new_op
+
+    def test_overlapping_control_and_base_wires_raises_error(self):
+        """Test that an error is raised if the wires of the base
+        operator and the control wires overlap"""
+
+        base = qml.PauliX(1)
+        control = [0, 1, 2]
+
+        with pytest.raises(
+            ValueError, match="The control wires must be different from the base operation wires."
+        ):
+            _ = qml.ControlledSequence(base, control)
+
+    def test_name(self):
+        """Test that the name for the operator is ControlledSequence (must be overwritten for SymbolicOps)"""
+
+        op = qml.ControlledSequence(qml.RX(0.25, wires=3), control=[0, 1, 2])
+
+        assert op.name == "ControlledSequence"
+
+
+class TestProperties:
+    def test_hash(self):
+        """Test that op.hash uniquely describes a ControlledSequence"""
+
+        op = qml.ControlledSequence(qml.RX(0.25, wires=3), control=[0, 1, 2])
+        op1 = qml.ControlledSequence(qml.RX(0.25, wires=3), control=[0, 1, 2])  # identical
+        op2 = qml.ControlledSequence(
+            qml.RX(0.25, wires=4), control=[0, 1, 2]
+        )  # different base wire
+        op3 = qml.ControlledSequence(
+            qml.RX(0.35, wires=3), control=[0, 1, 2]
+        )  # different base param
+        op4 = qml.ControlledSequence(
+            qml.RY(0.25, wires=3), control=[0, 1, 2]
+        )  # different base class
+        op5 = qml.ControlledSequence(
+            qml.RX(0.25, wires=3), control=[0, 1, 4]
+        )  # different control wires
+
+        assert hash(op) == hash(op1)
+        for other_op in [op2, op3, op4, op5]:
+            assert hash(op) != hash(other_op)
+
+    def test_control(self):
+        """Test that the control property returns control wires"""
+        op = qml.ControlledSequence(qml.RX(0.25, wires=3), control=["a", 1, "blue"])
+        assert op.control == Wires(["a", 1, "blue"])
+
+    def test_wires(self):
+        """Test that the wires property returns all wires, including both base and control"""
+        op = qml.ControlledSequence(qml.CNOT([17, "3"]), control=["b", 2])
+        assert op.wires == Wires([17, "3", "b", 2])
+
+    def test_has_matrix(self):
+        """Test that a ControlledSequence returns False for has_matrix, even if the base returns True"""
+        op = qml.ControlledSequence(qml.PauliX(0), control=[1])
+        assert op.has_matrix is False
+        assert op.base.has_matrix is True
+
+
+class TestMethods:
+    def test_repr(self):
+        """Test that the operator repr is as expected"""
+        op = qml.ControlledSequence(qml.RX(0.25, wires=3), control=[0, 1, 2])
+        assert repr(op) == f"ControlledSequence({op.base}, control=[0, 1, 2])"
+
+    def test_map_wires(self):
+        """Test mapping wires works as expected, including mapping wires on the base operator"""
+
+        op = qml.ControlledSequence(qml.CNOT([0, 1]), control=[2, 3])
+        wire_map = {0: "a", 1: "b", 2: "c", 3: "d"}
+
+        new_op = op.map_wires(wire_map)
+
+        assert type(new_op) == type(op)
+        assert type(new_op.base) == type(op.base)
+        assert new_op.data == op.data
+
+        assert new_op.wires == Wires(["a", "b", "c", "d"])
+        assert new_op.base.wires == Wires(["a", "b"])
+        assert new_op.control == Wires(["c", "d"])
+
+    def test_compute_decomposition(self):
+        """Test that the decomposition is as expected"""
+        base = qml.RZ(4.3, 1)
+        control_wires = [0, 2, 3]
+
+        decomp = qml.ControlledSequence.compute_decomposition(base, control_wires=control_wires)
+
+        assert len(decomp) == len(control_wires)
+        for i, op in enumerate(decomp):
+            assert qml.equal(op.base.base, base)
+            assert isinstance(op, qml.ops.Pow)
+            assert op.z == 2 ** (len(control_wires) - i - 1)
+
+        for op, w in zip(decomp, control_wires):
+            assert op.base.control_wires == Wires(w)
+
+    def test_decomposition(self):
+        op = qml.ControlledSequence(qml.RX(0.25, wires=3), control=["a", 1, "blue"])
+
+        decomp = op.decomposition()
+        expected_decomp = qml.ControlledSequence.compute_decomposition(
+            qml.RX(0.25, wires=3), ["a", 1, "blue"]
+        )
+
+        for op1, op2 in zip(decomp, expected_decomp):
+            assert op1 == op2
+
+
+class TestIntegration:
+    """Tests that the ControlledSequence is executable and differentiable in a QNode context"""
+
+    @staticmethod
+    def circuit(x):
+        """Test circuit"""
+        qml.PauliX(2)
+        qml.ControlledSequence(qml.RX(x, wires=3), control=[0, 1, 2])
+        return qml.probs(wires=range(4))
+
+    x = np.array(0.25)
+    # not calculated analytically, we are only ensuring that the results are consistent accross interfaces
+    exp_result = np.array([0, 0, 0.9835, 0.0165, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    exp_jac = np.array([0, 0, -0.12342829, 0.12342829, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+
+    def test_qnode_numpy(self):
+        """Test that the QNode executes with Numpy."""
+        dev = qml.device("default.qubit")
+        qnode = qml.QNode(self.circuit, dev, interface=None)
+
+        res = qnode(self.x)
+        assert res.shape == (16,)
+        assert np.allclose(res, self.exp_result, atol=0.002)
+
+    @pytest.mark.autograd
+    def test_qnode_autograd(self):
+        """Test that the QNode executes with Autograd."""
+
+        dev = qml.device("default.qubit")
+        qnode = qml.QNode(self.circuit, dev, interface="autograd")
+
+        x = qml.numpy.array(self.x, requires_grad=True)
+        res = qnode(x)
+        assert qml.math.shape(res) == (16,)
+        assert np.allclose(res, self.exp_result, atol=0.002)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("use_jit", [False, True])
+    @pytest.mark.parametrize("shots", [None, 10000])
+    def test_qnode_jax(self, shots, use_jit):
+        """Test that the QNode executes and is differentiable with JAX. The shots
+        argument controls whether autodiff or parameter-shift gradients are used."""
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+
+        dev = qml.device("default.qubit", shots=shots, seed=10)
+        diff_method = "backprop" if shots is None else "parameter-shift"
+        qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
+        if use_jit:
+            qnode = jax.jit(qnode)
+
+        x = jax.numpy.array(self.x)
+        res = qnode(x)
+        assert qml.math.shape(res) == (16,)
+        assert np.allclose(res, self.exp_result, atol=0.005)
+
+        jac_fn = jax.jacobian(qnode)
+        if use_jit:
+            jac_fn = jax.jit(jac_fn)
+
+        jac = jac_fn(x)
+        assert jac.shape == (16,)
+        assert np.allclose(jac, self.exp_jac, atol=0.006)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("shots", [None, 10000])
+    def test_qnode_torch(self, shots):
+        """Test that the QNode executes and is differentiable with Torch. The shots
+        argument controls whether autodiff or parameter-shift gradients are used."""
+        import torch
+
+        dev = qml.device("default.qubit", shots=shots, seed=10)
+        diff_method = "backprop" if shots is None else "parameter-shift"
+        qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
+
+        x = torch.tensor(self.x, requires_grad=True)
+        res = qnode(x)
+        assert qml.math.shape(res) == (16,)
+        assert qml.math.allclose(res, self.exp_result, atol=0.002)
+
+        jac = torch.autograd.functional.jacobian(qnode, x)
+        assert qml.math.shape(jac) == (16,)
+        assert qml.math.allclose(jac, self.exp_jac, atol=0.006)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("shots", [None, 10000])
+    @pytest.mark.xfail(reason="tf gradient doesn't seem to be working, returns ()")
+    def test_qnode_tf(self, shots):
+        """Test that the QNode executes and is differentiable with TensorFlow. The shots
+        argument controls whether autodiff or parameter-shift gradients are used."""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", shots=shots, seed=10)
+        diff_method = "backprop" if shots is None else "parameter-shift"
+        qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
+
+        x = tf.Variable(self.x)
+        with tf.GradientTape() as tape:
+            res = qnode(x)
+
+        assert qml.math.shape(res) == (16,)
+        assert qml.math.allclose(res, self.exp_result, atol=0.002)
+
+        jac = tape.gradient(res, x)
+        assert qml.math.shape(jac) == (16,)
+
+    def test_prod_rx_rx_compiled_circuit(self):
+        """Test that a circuit can execute successfully using qml.compile and
+        a CompositeOp as a base"""
+
+        @qml.prod
+        def U(thetas):
+            qml.RX(thetas[0], wires=0)
+            qml.RX(thetas[1], wires=1)
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        @qml.compile()
+        def circuit(thetas):
+            qml.ControlledSequence(U(thetas, wires=[0, 1]), control=[2, 3])
+            return qml.state()
+
+        _ = circuit([1.0, 1.0])
+
+    def test_approx_time_base(self):
+        """Test that using ControlledSequence with ApproxTimeEvolution as a base in a
+        circuit can be decomposed to execute successfully"""
+        H = qml.Hamiltonian([1.0, 2.0], [qml.PauliZ(0), qml.PauliZ(1)])
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.ControlledSequence(qml.ApproxTimeEvolution(H, 1, 1), control=[2, 3])
+            return qml.state()
+
+        _ = circuit()
+
+    @pytest.mark.xfail(reason="not working yet")
+    def test_gradient_with_composite_op_base(self):
+        """Test executing and getting the gradient of a circuit with a
+        ControlledSequence based on a CompositeOp"""
+
+        @qml.prod
+        def U(thetas):
+            qml.RX(thetas[0], wires=0)
+            qml.RX(thetas[1], wires=1)
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def circuit(thetas):
+            qml.ControlledSequence(U(thetas, wires=[0, 1]), control=[2, 3])
+            return qml.state()
+
+        thetas = np.array([1.0, 1.0], requires_grad=True)
+        _ = circuit(thetas)
+        _ = qml.grad(circuit)(thetas)
+
+
+class TestQPEResults:
+    """Tests phase estimation using the template"""
+
+    @pytest.mark.parametrize("phase", [7, np.pi, np.pi / 3, 2.3])
+    def test_phase_estimated_single_ops(self, phase):
+        """Tests that the QPE defined using ControlledSequence works correctly for a single operator"""
+        dev = qml.device("default.qubit")
+        unitary = qml.RX(phase, wires=[0])
+
+        estimates = []
+        wire_range = range(3, 11)
+
+        for wires in wire_range:
+            estimation_wires = range(1, wires - 1)
+
+            @qml.qnode(dev)
+            def circuit():
+                qml.Hadamard(wires=0)
+
+                for i in estimation_wires:
+                    qml.Hadamard(wires=i)
+
+                qml.ControlledSequence(unitary, control=estimation_wires)
+
+                qml.adjoint(qml.QFT)(wires=estimation_wires)
+
+                return qml.probs(wires=estimation_wires)
+
+            res = circuit()
+
+            estimate = np.argmax(res) / 2 ** (wires - 2)
+            # Need to rescale phase due to convention of RX gate
+            estimate = 4 * np.pi * (1 - estimate)
+            estimates.append(estimate)
+
+        # Check that the error is monotonically decreasing
+        for i in range(len(estimates) - 1):
+            err1 = np.abs(estimates[i] - phase)
+            err2 = np.abs(estimates[i + 1] - phase)
+            assert err1 >= err2
+
+        # This is a large error, but we'd need to push the qubit number up more to get it lower
+        assert np.allclose(estimates[-1], phase, rtol=2e-2)
+
+    @pytest.mark.parametrize("phase", [7, np.pi, np.pi / 3, 2.3])
+    def test_phase_estimated_composite_ops(self, phase):
+        """Tests that the QPE defined using ControlledSequence works correctly for compound operators"""
+        dev = qml.device("default.qubit")
+        unitary = qml.RX(phase, wires=[0]) @ qml.CNOT(wires=[0, 1])
+
+        estimates = []
+        wire_range = range(5, 12)
+
+        for wires in wire_range:
+            estimation_wires = range(2, wires)
+
+            @qml.qnode(dev)
+            def circuit():
+                qml.Hadamard(wires=0)
+
+                for i in estimation_wires:
+                    qml.Hadamard(wires=i)
+
+                qml.ControlledSequence(unitary, control=estimation_wires)
+
+                qml.adjoint(qml.QFT)(wires=estimation_wires)
+
+                return qml.probs(wires=estimation_wires)
+
+            res = circuit()
+
+            estimate = np.argmax(res) / 2 ** (wires - 2)
+            # Need to rescale phase due to convention of RX gate
+            estimate = 4 * np.pi * (1 - estimate)
+            estimates.append(estimate)
+
+        # Check that the error is monotonically decreasing
+        for i in range(len(estimates) - 1):
+            err1 = np.abs(estimates[i] - phase)
+            err2 = np.abs(estimates[i + 1] - phase)
+            assert err1 >= err2
+
+        # This is a large error, but we'd need to push the qubit number up more to get it lower
+        assert np.allclose(estimates[-1], phase, rtol=2e-2)
