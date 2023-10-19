@@ -49,9 +49,7 @@ class TestInitialization:
     @pytest.mark.parametrize("time", (0.5, 1, 2))
     @pytest.mark.parametrize("seed", (None, 1234, 42))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
-    def test_init_correctly(  # pylint: disable=too-many-arguments
-        self, coeffs, ops, time, n, seed
-    ):
+    def test_init_correctly(self, coeffs, ops, time, n, seed):  # pylint: disable=too-many-arguments
         """Test that all of the attributes are initalized correctly."""
         h = qml.dot(coeffs, ops)
         op = qml.QDrift(h, time, n=n, seed=seed)
@@ -84,9 +82,7 @@ class TestInitialization:
     @pytest.mark.parametrize("time", (0.5, 1, 2))
     @pytest.mark.parametrize("seed", (None, 1234, 42))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
-    def test_copy(  # pylint: disable=too-many-arguments
-        self, coeffs, ops, time, n, seed
-    ):
+    def test_copy(self, coeffs, ops, time, n, seed):  # pylint: disable=too-many-arguments
         """Test that we can make copies of QDrift correctly."""
         h = qml.dot(coeffs, ops)
         op = qml.QDrift(h, time, n=n, seed=seed)
@@ -157,9 +153,7 @@ class TestDecomposition:
     @pytest.mark.parametrize("time", (0.5, 1, 2))
     @pytest.mark.parametrize("seed", (None, 1234, 42))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
-    def test_private_sample(  # pylint: disable=too-many-arguments
-        self, coeffs, ops, time, seed, n
-    ):
+    def test_private_sample(self, coeffs, ops, time, seed, n):  # pylint: disable=too-many-arguments
         """Test the private function which samples the decomposition"""
         ops_to_coeffs = dict(zip(ops, coeffs))
         normalization = qnp.sum(qnp.abs(coeffs))
@@ -211,9 +205,7 @@ class TestIntegration:
     @pytest.mark.parametrize("time", (0.5, 1, 2))
     @pytest.mark.parametrize("seed", (1234, 42))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
-    def test_execution(  # pylint: disable=too-many-arguments
-        self, coeffs, ops, time, n, seed
-    ):
+    def test_execution(self, coeffs, ops, time, n, seed):  # pylint: disable=too-many-arguments
         """Test that the circuit executes as expected"""
         hamiltonian = qml.dot(coeffs, ops)
         wires = hamiltonian.wires

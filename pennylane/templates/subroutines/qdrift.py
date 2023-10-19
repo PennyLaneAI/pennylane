@@ -235,7 +235,7 @@ class QDrift(Operation):
 
     @staticmethod
     def error(hamiltonian, time, n=1):
-        """A method for determining the upper-bound for the error in the approximation of
+        r"""A method for determining the upper-bound for the error in the approximation of
         the true matrix exponential.
 
         The error is bounded according to the following expression:
