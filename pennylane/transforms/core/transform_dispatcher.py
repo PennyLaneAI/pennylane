@@ -70,7 +70,7 @@ class TransformDispatcher:
         # is_informative supersedes final_transform
         self._final_transform = is_informative or final_transform
         self._qnode_transform = self.default_qnode_transform
-        functools.update_wrapper(self, transform_fn)
+        functools.update_wrapper(self, transform)
 
     def __call__(self, *targs, **tkwargs):  # pylint: disable=too-many-return-statements
         obj = None
