@@ -36,3 +36,4 @@ from .basis_rotation import BasisRotation
 from .qsvt import QSVT, qsvt
 from .select import Select
 from .qdrift import QDrift
+from .trotter import TrotterProduct
