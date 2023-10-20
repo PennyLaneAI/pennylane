@@ -68,3 +68,22 @@ class TestAQFT:
         """Test if higher order recommends using QFT"""
         with pytest.warns(UserWarning, match="Using the QFT class is recommended in this case"):
             qml.AQFT(order=order, wires=range(5))
+
+    @pytest.mark.parametrize("wires", [3, 4, 5, 6, 7, 8, 9])
+    def test_matrix_higher_order(self, wires):
+        """Test if the matrix from AQFT and QFT are same for higher order"""
+
+        m1 = qml.matrix(qml.AQFT(order=10, wires=range(wires)))
+        m2 = qml.matrix(qml.QFT(wires=range(wires)))
+
+        assert np.allclose(m1, m2)
+
+    @pytest.mark.parametrize("order,wires", [(o, w) for w in range(2, 10) for o in range(1, w)])
+    def test_gates(self, order, wires):
+        """Test if the AQFT operation consists of only 3 type of gates"""
+
+        op = qml.AQFT(order=order, wires=range(wires))
+        decomp = op.decomposition()
+
+        for gate in decomp:
+            assert gate.name in ["Hadamard", "ControlledPhaseShift", "SWAP"]
