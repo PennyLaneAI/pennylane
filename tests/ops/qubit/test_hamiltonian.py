@@ -838,7 +838,7 @@ class TestHamiltonian:
         assert H5.compare(H4) is False
 
     def test_hamiltonian_compare_tensor_observables(self):
-        """to test if hamiltonian comapre function has float point error while comparing with Tensors/Observables"""
+        """Test that Hamiltonian.compare correctly compares Hamiltonians with Tensors/Observables."""
         H1 = qml.Hamiltonian([0.2, 0.7, 0.1], [qml.PauliZ(0), qml.PauliZ(0), qml.PauliZ(0)])
         H2 = qml.Hamiltonian([0.3, 0.3], [qml.PauliZ(0), qml.PauliZ(0)])
         H3 = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliX(0)])
