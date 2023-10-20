@@ -377,7 +377,6 @@ def sk_decomposition(op, depth, basis_set=(), basis_depth=10, approximate_set=No
 
     .. code-block:: python3
 
-        import functools
         import numpy as np
         import pennylane as qml
 
