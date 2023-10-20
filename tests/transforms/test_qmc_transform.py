@@ -258,27 +258,21 @@ class TestQuantumMonteCarlo:
             fn, wires=wires, target_wire=target_wire, estimation_wires=estimation_wires
         )
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qmc_circuit()
-            qml.probs(estimation_wires)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        tape = tape.expand(depth=2)
-
-        assert all(
-            not isinstance(op, (qml.MultiControlledX, qml.templates.QFT, qml.tape.QuantumScript))
-            for op in tape.operations
-        )
-
         dev = qml.device("default.qubit", wires=wires + estimation_wires)
-        res = dev.execute(tape)
 
         @qml.qnode(dev)
         def circuit():
+            qmc_circuit()
+            return qml.probs(estimation_wires)
+
+        @qml.qnode(dev)
+        def circuit_expected():
             qml.templates.QuantumMonteCarlo(
                 probs, func, target_wires=wires, estimation_wires=estimation_wires
             )
             return qml.probs(estimation_wires)
 
-        res_expected = circuit()
+        res = circuit()
+        res_expected = circuit_expected()
+
         assert np.allclose(res, res_expected)

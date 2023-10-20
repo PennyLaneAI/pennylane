@@ -80,7 +80,7 @@ def _apply_controlled_v(target_wire, control_wire):
 
 @transform
 def apply_controlled_Q(
-    tape: qml.tape.QuantumTape, wires, target_wire, control_wire, work_wires
+        tape: qml.tape.QuantumTape, wires, target_wire, control_wire, work_wires
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Provides the circuit to apply a controlled version of the :math:`\mathcal{Q}` unitary
     defined in `this <https://arxiv.org/abs/1805.00109>`__ paper.
@@ -109,9 +109,11 @@ def apply_controlled_Q(
     Raises:
         ValueError: if ``target_wire`` is not in ``wires``
     """
+    operations = tape.operations.copy()
+    updated_operations = []
+
     with qml.queuing.QueuingManager.stop_recording():
-        updated_operations = []
-        fn_inv = [adjoint(op) for op in reversed(tape.operations)]
+        fn_inv = [adjoint(op, lazy=False) for op in reversed(operations)]
 
         wires = Wires(wires)
         target_wire = Wires(target_wire)
@@ -128,8 +130,7 @@ def apply_controlled_Q(
         updated_operations.extend(
             _apply_controlled_z(wires=wires, control_wire=control_wire, work_wires=work_wires)
         )
-        updated_operations.extend(tape.operations)
-
+        updated_operations.extend(operations)
         updated_operations.extend(
             _apply_controlled_v(target_wire=target_wire, control_wire=control_wire)
         )
@@ -137,7 +138,7 @@ def apply_controlled_Q(
         updated_operations.extend(
             _apply_controlled_z(wires=wires, control_wire=control_wire, work_wires=work_wires)
         )
-        updated_operations.extend(tape.operations)
+        updated_operations.extend(operations)
 
     tape = qml.tape.QuantumTape(ops=updated_operations)
     return [tape], lambda x: x[0]
@@ -145,7 +146,7 @@ def apply_controlled_Q(
 
 @transform
 def quantum_monte_carlo(
-    tape: qml.tape.QuantumTape, wires, target_wire, estimation_wires
+        tape: qml.tape.QuantumTape, wires, target_wire, estimation_wires
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Provides the circuit to perform the
     `quantum Monte Carlo estimation <https://arxiv.org/abs/1805.00109>`__ algorithm.
@@ -354,6 +355,7 @@ def quantum_monte_carlo(
         'diff_method': 'best',
         'gradient_fn': 'backprop'}
     """
+    operations = tape.operations.copy()
     wires = Wires(wires)
     target_wire = Wires(target_wire)
     estimation_wires = Wires(estimation_wires)
@@ -362,9 +364,8 @@ def quantum_monte_carlo(
         raise ValueError("No wires can be shared between the wires and estimation_wires registers")
 
     updated_operations = []
-
     with qml.queuing.QueuingManager.stop_recording():
-        updated_operations.extend(tape.operations)
+        updated_operations.extend(operations)
         for i, control_wire in enumerate(estimation_wires):
             updated_operations.append(Hadamard(control_wire))
 
@@ -383,6 +384,6 @@ def quantum_monte_carlo(
             for _ in range(n_reps):
                 updated_operations.extend(tape_q.operations)
 
-        updated_operations.append(adjoint(QFT(wires=estimation_wires)))
-    updated_tape = qml.tape.QuantumTape(ops=updated_operations, measurements=tape.measurements)
+        updated_operations.append(adjoint(QFT(wires=estimation_wires), lazy=False))
+    updated_tape = type(tape)(updated_operations, tape.measurements, shots=tape.shots)
     return [updated_tape], lambda x: x[0]
