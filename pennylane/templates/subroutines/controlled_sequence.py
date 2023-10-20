@@ -17,7 +17,7 @@ Contains the ControlledSequence template.
 from copy import copy
 import pennylane as qml
 
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 from pennylane.wires import Wires
 from pennylane.ops.op_math.symbolicop import SymbolicOp
 
