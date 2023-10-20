@@ -24,7 +24,6 @@ from pennylane.wires import Wires, WireError
 class CosineWindow(StatePrepBase):
     r"""CosineWindow(wires)
     Prepares an initial state with a cosine wave function.
-    Inspired by https://arxiv.org/abs/2110.09590
 
     The wave function is defined as
 
