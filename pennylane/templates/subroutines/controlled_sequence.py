@@ -106,7 +106,7 @@ class ControlledSequence(SymbolicOp, Operation):
 
     @property
     def wires(self):
-        return self.base.wires + self.control
+        return self.control + self.base.wires
 
     @property
     def has_matrix(self):
@@ -124,45 +124,9 @@ class ControlledSequence(SymbolicOp, Operation):
         )
         return new_op
 
-    def decomposition(self):  # pylint:disable=arguments-differ
-        r"""Representation of the operator as a product of other operators.
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-        .. seealso:: :meth:`~.CtrlSequence.decomposition`.
-
-        Args:
-            base (Operator): the operator that acts as the base for the sequence
-            control_wires (Any or Iterable[Any]): the control wires for the sequence
-
-        Returns:
-            list[.Operator]: decomposition of the operator
-
-        **Example**
-
-        .. code-block:: python
-
-            dev = qml.device("default.qubit")
-            op = qml.ControlledSequence(qml.RX(0.25, wires = 3), control = [0, 1, 2])
-
-            @qml.qnode(dev)
-            def circuit():
-                op.decomposition()
-                return qml.state()
-
-
-        >>> print(qml.draw(circuit, wire_order=[0,1,2,3])())
-        0: ─╭●─────────────────────────────────────┤  State
-        1: ─│────────────╭●────────────────────────┤  State
-        2: ─│────────────│────────────╭●───────────┤  State
-        3: ─╰(RX(0.25))⁴─╰(RX(0.25))²─╰(RX(0.25))¹─┤  State
-
-        """
-
-        return self.compute_decomposition(self.base, self.control)
-
+    # pylint:disable=arguments-differ
     @staticmethod
-    def compute_decomposition(base, control_wires):  # pylint:disable=arguments-differ
+    def compute_decomposition(*_, base=None, control_wires=None, **__):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.

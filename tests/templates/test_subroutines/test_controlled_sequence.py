@@ -102,7 +102,7 @@ class TestProperties:
     def test_wires(self):
         """Test that the wires property returns all wires, including both base and control"""
         op = qml.ControlledSequence(qml.CNOT([17, "3"]), control=["b", 2])
-        assert op.wires == Wires([17, "3", "b", 2])
+        assert op.wires == Wires(["b", 2, 17, "3"])
 
     def test_has_matrix(self):
         """Test that a ControlledSequence returns False for has_matrix, even if the base returns True"""
@@ -129,7 +129,7 @@ class TestMethods:
         assert type(new_op.base) == type(op.base)
         assert new_op.data == op.data
 
-        assert new_op.wires == Wires(["a", "b", "c", "d"])
+        assert new_op.wires == Wires(["c", "d", "a", "b"])
         assert new_op.base.wires == Wires(["a", "b"])
         assert new_op.control == Wires(["c", "d"])
 
@@ -138,7 +138,9 @@ class TestMethods:
         base = qml.RZ(4.3, 1)
         control_wires = [0, 2, 3]
 
-        decomp = qml.ControlledSequence.compute_decomposition(base, control_wires=control_wires)
+        decomp = qml.ControlledSequence.compute_decomposition(
+            base=base, control_wires=control_wires
+        )
 
         assert len(decomp) == len(control_wires)
         for i, op in enumerate(decomp):

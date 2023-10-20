@@ -328,11 +328,6 @@ class Controlled(SymbolicOp):
     def has_matrix(self):
         return self.base.has_matrix
 
-    # pylint: disable=missing-function-docstring
-    @property
-    def basis(self):
-        return self.base.basis
-
     # pylint: disable=protected-access
     def _check_batching(self, params):
         self.base._check_batching(params)
