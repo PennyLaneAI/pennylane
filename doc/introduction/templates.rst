@@ -114,6 +114,10 @@ state preparation is typically used as the first operation.
     :description: :doc:`ArbitraryStatePreparation <../code/api/pennylane.ArbitraryStatePreparation>`
     :figure: _static/templates/subroutines/arbitrarystateprep.png
 
+.. gallery-item::
+    :description: :doc:`CosineWindow <../code/api/pennylane.CosineWindow>`
+    :figure: _static/templates/state_preparations/thumbnail_cosine_window.png
+
 .. raw:: html
 
         <div style='clear:both'></div>
@@ -226,6 +230,10 @@ Other useful templates which do not belong to the previous categories can be fou
 .. gallery-item::
   :description: :doc:`ApproxTimeEvolution <../code/api/pennylane.ApproxTimeEvolution>`
   :figure: _static/templates/subroutines/approx_time_evolution.png
+
+.. gallery-item::
+  :description: :doc:`QDrift <../code/api/pennylane.QDrift>`
+  :figure: _static/templates/subroutines/qdrift.png
 
 .. gallery-item::
   :description: :doc:`TrotterProduct <../code/api/pennylane.TrotterProduct>`
