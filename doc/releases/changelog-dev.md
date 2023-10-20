@@ -148,6 +148,14 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.defer_measurements` now supports custom wire labels. When transforming tapes or QNodes with devices
+  initialized with `wires=None`, wires with labels `mv{i}`, where `{i}` is an integer, will be used to
+  store mid-circuit measurement results. Thus, these labels are reserved when using the `qml.defer_measurements`
+  transform. Additionally, when measuring `qml.probs`, `qml.sample`, or `qml.counts` without
+  specifying an observable or wires, `qml.defer_measurements` will correctly transform the measurements such
+  that only the original wires are used for the measurements.
+  [(#4625)](https://github.com/PennyLaneAI/pennylane/pull/4625)
+
 * `pennylane.devices.preprocess` now offers the transforms `decompose`, `validate_observables`, `validate_measurements`,
   `validate_device_wires`, `validate_multiprocessing_workers`, `warn_about_trainable_observables`,
   and `no_sampling` to assist in the construction of devices under the new `devices.Device` API.
@@ -295,8 +303,6 @@
   context or initialized with a `custom_decomps` dictionary, as well as a custom `max_depth` for 
   decomposition.
   [(#4675)](https://github.com/PennyLaneAI/pennylane/pull/4675)
-
-
 
 <h3>Breaking changes 💔</h3>
 
