@@ -81,14 +81,14 @@ def _download_partial(
     if attributes is not None:
         attributes_to_fetch.update(attributes)
     else:
-        remote_dataset = Dataset(open_hdf5_s3(s3_url))
+        remote_dataset = Dataset(open_hdf5_s3(s3_url, block_size=block_size))
         attributes_to_fetch.update(remote_dataset.attrs)
 
     if not overwrite:
         attributes_to_fetch.difference_update(dest_dataset.attrs)
 
     if len(attributes_to_fetch) > 0:
-        remote_dataset = remote_dataset or Dataset(open_hdf5_s3(s3_url))
+        remote_dataset = remote_dataset or Dataset(open_hdf5_s3(s3_url, block_size=block_size))
         remote_dataset.write(dest_dataset, "a", attributes, overwrite=overwrite)
 
     if remote_dataset:
