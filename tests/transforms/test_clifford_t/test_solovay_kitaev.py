@@ -187,7 +187,9 @@ class TestSolovayKitaev:
             ],
             basis_depth=10,
         )
-        gates = sk_decomposition(op, depth=5, approximate_set=approximate_set)
+        with qml.queuing.AnnotatedQueue() as q:
+            gates = sk_decomposition(op, depth=5, approximate_set=approximate_set)
+        assert q.queue == gates
 
         matrix_sk = functools.reduce(lambda x, y: x @ y, map(qml.matrix, gates))
         matrix_sk /= qml.math.sqrt((1 + 0j) * qml.math.linalg.det(matrix_sk))
