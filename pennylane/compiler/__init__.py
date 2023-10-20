@@ -14,16 +14,38 @@
 r"""
 .. currentmodule:: pennylane
 
-QJIT API
+This module provides support for hybrid quantum-classical compilation.
+Through the use of the :func:`~.qjit` decorator, entire workflows
+can be just-in-time (JIT) compiled --- including both quantum and
+classical processing --- down to a machine binary on first
+function execution. Subsequent calls to the compiled function will execute
+previously compiled binary, resulting in significant
+performance improvements.
+
+Currently, PennyLane supports the
+`Catalyst <https://github.com/pennylaneai/catalyst>`__ hybrid compiler
+with the :func:`~.qjit` decorator. A significant benefit of Catalyst
+is the ability to preserve complex control flow around quantum
+operations — such as if statements and for loops, and including measurement feedforward — during compilation, while continuing to support end-to-end
+autodifferentiation.
+
+.. note::
+
+    Catalyst currently only support the JAX interface of PennyLane.
+
+Overview
 --------
+
+The main entry point to hybrid compilation in PennyLane
+is via the qjit decorator.
 
 .. autosummary::
     :toctree: api
 
     ~qjit
 
-Compiler developer functions
-----------------------------
+In addition, several developer functions are available to probe
+available hybrid compilers.
 
 .. autosummary::
     :toctree: api
@@ -34,9 +56,13 @@ Compiler developer functions
 
 Compiler
 --------
-The compiler package exclusively functions as a wrapper for PennyLane's JIT compiler packages, without independently
-implementing any compiler itself. Currently, it supports the ``pennylane-catalyst`` package, with plans to
-incorporate additional packages in the near future.
+The compiler module provides the infrastructure to integrate external
+hybrid quantum-classical compilers with PennyLane, but does not provide
+a built-in compiler.
+
+Currently, only the `Catalyst <https://github.com/pennylaneai/catalyst>`__
+hybrid compiler is supported with PennyLane, however there are plans
+to incorporate additional compilers in the near future.
 
 .. note::
 
@@ -56,14 +82,16 @@ under the designated group name: ``pennylane.compilers``.
 Basic usage
 -----------
 
-    In just-in-time (JIT) mode, the compilation is triggered at the call site the
-    first time the quantum function is executed. For example, ``circuit`` is
-    compiled as early as the first call.
+When using just-in-time (JIT) compilation, the compilation is triggered at the call site the
+first time the quantum function is executed. For example, ``circuit`` is
+compiled as early as the first call.
 
     .. code-block:: python
 
+        dev = qml.device("lightning.qubit", wires=2)
+
         @qjit
-        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        @qml.qnode(dev)
         def circuit(theta):
             qml.Hadamard(wires=0)
             qml.RX(theta, wires=1)
@@ -83,7 +111,7 @@ Basic usage
         from jax.core import ShapedArray
 
         @qjit  # compilation happens at definition
-        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        @qml.qnode(dev)
         def circuit(x: complex, z: ShapedArray(shape=(3,), dtype=jnp.float64)):
             theta = jnp.abs(x)
             qml.RY(theta, wires=0)
@@ -94,15 +122,17 @@ Basic usage
     array([0.75634905-0.52801002j, 0. +0.j,
         0.35962678+0.14074839j, 0. +0.j])
 
-    Catalyst also supports capturing imperative Python control flow in compiled programs. You can
-    enable this feature via the ``autograph=True`` parameter. Note that it does come with some
-    restrictions, in particular whenever global state is involved. Refer to the documentation page
+    The Catalyst compiler also supports capturing imperative Python control flow in compiled programs. You can
+    enable this feature via the ``autograph=True`` keyword argument.
+    
+    Note AutoGraph results in additional
+    restrictions, in particular whenever global state is involved. Please refer to the `AutoGraph guide <https://docs.pennylane.ai/projects/catalyst/en/latest/dev/autograph.html>`__
     for a complete discussion of the supported and unsupported use-cases.
 
     .. code-block:: python
 
         @qjit(autograph=True)
-        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        @qml.qnode(dev)
         def circuit(x: int):
 
             if x < 5:
@@ -114,9 +144,16 @@ Basic usage
 
     >>> circuit(3)
     array(0.)
-
     >>> circuit(5)
     array(1.)
+    
+For more details on using the :func:`~.qjit` decorator and Catalyst
+with PennyLane, please refer to the Catalyst
+`quickstart guide <https://docs.pennylane.ai/projects/catalyst/en/latest/dev/quick_start.html>`__,
+as well as the `sharp bits and debugging tips <https://docs.pennylane.ai/projects/catalyst/en/latest/dev/sharp_bits.html>`__
+page for an overview of the differences between Catalyst and PennyLane, and
+how to best structure your workflows to improve performance when
+using Catalyst.
 """
 
 from .compiler import available_compilers, available, active

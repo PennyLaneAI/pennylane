@@ -48,15 +48,14 @@ def _refresh_compilers():
 
 
 def available_compilers() -> List[str]:
-    """Return the name of available compilers by refreshing the compilers
-    names and entry points.
+    """Loads and returns a list of available compilers that are
+    installed and compatible with the :func:`~.qjit` decorator.
 
     **Example**
 
     This method returns the name of installed compiler packages supported in
-    PennyLane. For example, after installing the ``pennylane-catalyst`` pacakge,
-
-    .. code-block:: python
+    PennyLane. For example, after installing the `Catalyst <https://github.com/pennylaneai/catalyst>`__
+    compiler, this will now appear as an available compiler:
 
     >>> qml.compiler.available_compilers()
     ['catalyst']
@@ -77,7 +76,7 @@ def available(name="catalyst") -> bool:
     with a large number of installed packages.
 
     Args:
-        name (str): name of the compiler package (Default is ``catalyst``)
+        name (str): name of the compiler package (default value is ``catalyst``)
 
     Return:
         bool: ``True`` if the compiler package is installed on the system
@@ -85,8 +84,6 @@ def available(name="catalyst") -> bool:
     **Example**
 
     Before installing the ``pennylane-catalyst`` package:
-
-    .. code-block:: python
 
     >>> qml.compiler.available("catalyst")
     False
@@ -105,10 +102,14 @@ def available(name="catalyst") -> bool:
 
 
 def active(name="catalyst") -> bool:
-    """Check whether the caller is inside a QJIT evaluation context.
+    """Check whether the caller is inside a :func:`~.qjit` evaluation context.
+    
+    This helper function may be used during implementation
+    to allow differing logic for circuits or operations that are
+    just-in-time compiled versus those that are not.
 
     Args:
-        name (str): name of the compiler package (Default is ``catalyst``)
+        name (str): name of the compiler package (default value is ``catalyst``)
 
     Return:
         bool: True if the caller is inside a QJIT evaluation context
