@@ -61,7 +61,8 @@ class AQFT(Operation):
     .. code-block:: pycon
 
         >>> circuit_aqft()
-        [insert output here]
+        [ 0.5 +0.j   -0.25-0.25j  0.  +0.j   -0.25+0.25j  0.5 +0.j   -0.25-0.25j   0.  +0.j   -0.25+0.25j]
+
 
     .. details::
         :title: Usage Details
