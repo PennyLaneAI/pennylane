@@ -55,13 +55,14 @@ class AQFT(Operation):
 
 
         @qml.qnode(dev)
-        def circuit_aqft(basis_state):
-            qml.BasisState(basis_state, wires=range(wires))
+        def circuit_aqft():
+            qml.PauliX(0)
+            qml.Hadamard(1)
             qml.AQFT(order=1,wires=range(wires))
             return qml.state()
 
 
-        circuit_aqft(np.array([1.0, 0.0, 0.0], requires_grad=False))
+        circuit_aqft()
 
     .. details::
         :title: Usage Details
