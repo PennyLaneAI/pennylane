@@ -15,6 +15,7 @@
 
 from typing import List
 from importlib import reload
+from collections import defaultdict
 import dataclasses
 import pkg_resources
 
@@ -34,16 +35,12 @@ def _refresh_compilers():
     reload(pkg_resources)
 
     # Refresh the list of compilers
-    AvailableCompilers.names_entrypoints = {}
+    AvailableCompilers.names_entrypoints = defaultdict(dict)
 
     # Iterator packages entry-points with the 'pennylane.compilers' group name
     for entry in pkg_resources.iter_entry_points("pennylane.compilers"):
-        module_name = entry.module_name
         # Only need name of the parent module
-        module_name = module_name.split(".")[0]
-
-        if module_name not in AvailableCompilers.names_entrypoints:
-            AvailableCompilers.names_entrypoints[module_name] = {}
+        module_name = entry.module_name.split(".")[0]
         AvailableCompilers.names_entrypoints[module_name][entry.name] = entry
 
 
