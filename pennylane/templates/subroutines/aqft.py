@@ -111,7 +111,7 @@ class AQFT(Operation):
             2: ──────────────╰●───────────╰●────────│──────────H─╭Rϕ(1.57)────│─────╰SWAP─┤ ├Probs
             3: ─────────────────────────────────────╰●───────────╰●─────────H─╰SWAP───────┤ ╰Probs
 
-        * ``order`` :math:`>= n-1`
+        * ``order`` :math:`\geq n-1`
             Using the QFT class is recommended in this case. The AQFT operation here is
             equivalent to QFT.
 
