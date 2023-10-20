@@ -847,7 +847,7 @@ class TestHamiltonian:
         assert H2.compare(Pauli_Z) is False
         assert H1.compare(Tensor_Z)
         assert H2.compare(Tensor_Z) is False
-        
+
     def test_hamiltonian_equal_error(self):
         """Tests that the correct error is raised when compare() is called on invalid type"""
 

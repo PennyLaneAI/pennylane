@@ -620,7 +620,10 @@ class Hamiltonian(Observable):
             for self_data in self._obs_data():  # pylint: disable=protected-access
                 is_equal = False
                 for other_data in other._obs_data():  # pylint: disable=protected-access
-                    if qml.math.isclose(self_data[0], other_data[0]) and self_data[1] == other_data[1]:
+                    if (
+                        qml.math.isclose(self_data[0], other_data[0])
+                        and self_data[1] == other_data[1]
+                    ):
                         is_equal = True
                         break
                 if not is_equal:
@@ -629,7 +632,9 @@ class Hamiltonian(Observable):
 
         if isinstance(other, (Tensor, Observable)):
             self.simplify()
-            return (qml.math.isclose(list(self._obs_data())[0][0],1) and list(self._obs_data())[0][1]==frozenset(other._obs_data()))
+            return qml.math.isclose(list(self._obs_data())[0][0], 1) and list(self._obs_data())[0][
+                1
+            ] == frozenset(other._obs_data())
 
         raise ValueError("Can only compare a Hamiltonian, and a Hamiltonian/Observable/Tensor.")
 
