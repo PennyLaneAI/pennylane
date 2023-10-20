@@ -271,7 +271,6 @@
   with two or more terms.
   [(#4642)](https://github.com/PennyLaneAI/pennylane/pull/4642)
 
-
 * `_qfunc_output` has been removed from `QuantumScript`, as it is no longer necessary. There is
   still a `_qfunc_output` property on `QNode` instances.
   [(#4651)](https://github.com/PennyLaneAI/pennylane/pull/4651)
@@ -283,6 +282,9 @@
   of the computed qubit operator, if imaginary components are smaller than a threshold. 
   [(#4639)](https://github.com/PennyLaneAI/pennylane/pull/4639)
 
+* Improved performance of `qml.data.load()` when partially loading a dataset
+  [(#4674)](https://github.com/PennyLaneAI/pennylane/pull/4674)
+
 * Plots generated with the `pennylane.drawer.plot` style of `matplotlib.pyplot` now have black
   axis labels and are generated at a default DPI of 300.
   [(#4690)](https://github.com/PennyLaneAI/pennylane/pull/4690)
@@ -293,6 +295,7 @@
   context or initialized with a `custom_decomps` dictionary, as well as a custom `max_depth` for 
   decomposition.
   [(#4675)](https://github.com/PennyLaneAI/pennylane/pull/4675)
+
 
 
 <h3>Breaking changes 💔</h3>
@@ -476,11 +479,15 @@
   the last axis (`axis=-1`). Without the fix, it would wrongly return `tensor[indices]`.
   [(#4605)](https://github.com/PennyLaneAI/pennylane/pull/4605)
 
+* Ensure the logging `TRACE` level works with gradient-free execution.
+  [(#4669)](https://github.com/PennyLaneAI/pennylane/pull/4669)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad,
+Jack Brown,
 Stepan Fomichev,
 Joana Fraxanet,
 Diego Guala,
@@ -492,6 +499,7 @@ Lillian M. A. Frederiksen,
 Vincent Michaud-Rioux,
 Romain Moyard,
 Daniel F. Nino,
+Lee James O'Riordan,
 Mudit Pandey,
 Matthew Silverman,
 Jay Soni,

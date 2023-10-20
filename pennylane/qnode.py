@@ -400,7 +400,7 @@ class QNode:
             logger.debug(
                 """Creating QNode(func=%s, device=%s, interface=%s, diff_method=%s, expansion_strategy=%s, max_expansion=%s, grad_on_execution=%s, cache=%s, cachesize=%s, max_diff=%s, gradient_kwargs=%s""",
                 func
-                if not (logger.isEnabledFor(qml.logging.TRACE) and callable(func))
+                if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(func))
                 else "\n" + inspect.getsource(func),
                 repr(device),
                 interface,
