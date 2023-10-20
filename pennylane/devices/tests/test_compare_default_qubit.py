@@ -27,7 +27,8 @@ pytestmark = pytest.mark.skip_unsupported
 class TestComparison:
     """Test that a device different to default.qubit gives the same result"""
 
-    def test_hermitian_expectation(self, device, tol):
+    @pytest.mark.benchmarks
+    def test_hermitian_expectation(self, device, tol, benchmark):
         """Test that arbitrary multi-mode Hermitian expectation values are correct"""
         n_wires = 2
         dev = device(n_wires)
@@ -66,8 +67,13 @@ class TestComparison:
         grad_def = qml.grad(qnode_def, argnum=[0, 1])
         grad = qml.grad(qnode, argnum=[0, 1])
 
-        assert np.allclose(qnode(theta, phi), qnode_def(theta, phi), atol=tol(dev.shots))
-        assert np.allclose(grad(theta, phi), grad_def(theta, phi), atol=tol(dev.shots))
+        def workload():
+            return qnode(theta, phi), qnode_def(theta, phi), grad(theta, phi), grad_def(theta, phi)
+
+        qnode_res, qnode_def_res, grad_res, grad_def_res = benchmark(workload)
+
+        assert np.allclose(qnode_res, qnode_def_res, atol=tol(dev.shots))
+        assert np.allclose(grad_res, grad_def_res, atol=tol(dev.shots))
 
     @pytest.mark.parametrize(
         "state",
