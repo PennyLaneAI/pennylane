@@ -282,10 +282,10 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             tapes,
             repr(device),
             execute_fn
-            if not (logger.isEnabledFor(qml.logging.TRACE) and callable(execute_fn))
+            if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(execute_fn))
             else "\n" + inspect.getsource(execute_fn) + "\n",
             gradient_fn
-            if not (logger.isEnabledFor(qml.logging.TRACE) and callable(gradient_fn))
+            if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(gradient_fn))
             else "\n" + inspect.getsource(gradient_fn) + "\n",
             gradient_kwargs,
             _n,

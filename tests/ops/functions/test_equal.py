@@ -1438,6 +1438,14 @@ class TestSymbolicOpComparison:
         op2 = qml.exp(base2, param2)
         assert qml.equal(op1, op2) == (bases_match and params_match)
 
+    def test_exp_comparison_with_tolerance(self):
+        """Test that equal compares the parameters within a provided tolerance."""
+        op1 = qml.exp(qml.PauliX(0), 0.12345)
+        op2 = qml.exp(qml.PauliX(0), 0.12356)
+
+        assert qml.equal(op1, op2, atol=1e-3, rtol=1e-2)
+        assert not qml.equal(op1, op2, atol=1e-5, rtol=1e-4)
+
     @pytest.mark.parametrize("bases_bases_match", BASES)
     @pytest.mark.parametrize("params_params_match", PARAMS)
     def test_s_prod_comparison(self, bases_bases_match, params_params_match):
@@ -1447,6 +1455,14 @@ class TestSymbolicOpComparison:
         op1 = qml.s_prod(param1, base1)
         op2 = qml.s_prod(param2, base2)
         assert qml.equal(op1, op2) == (bases_match and params_match)
+
+    def test_s_prod_comparison_with_tolerance(self):
+        """Test that equal compares the parameters within a provided tolerance."""
+        op1 = qml.s_prod(0.12345, qml.PauliX(0))
+        op2 = qml.s_prod(0.12356, qml.PauliX(0))
+
+        assert qml.equal(op1, op2, atol=1e-3, rtol=1e-2)
+        assert not qml.equal(op1, op2, atol=1e-5, rtol=1e-4)
 
 
 class TestProdComparisons:

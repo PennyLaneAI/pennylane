@@ -400,7 +400,7 @@ class QNode:
             logger.debug(
                 """Creating QNode(func=%s, device=%s, interface=%s, diff_method=%s, expansion_strategy=%s, max_expansion=%s, grad_on_execution=%s, cache=%s, cachesize=%s, max_diff=%s, gradient_kwargs=%s""",
                 func
-                if not (logger.isEnabledFor(qml.logging.TRACE) and callable(func))
+                if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(func))
                 else "\n" + inspect.getsource(func),
                 repr(device),
                 interface,
@@ -982,8 +982,8 @@ class QNode:
             device_transform_program, config = self.device.preprocess(execution_config=config)
             full_transform_program = self.transform_program + device_transform_program
         else:
-            full_transform_program = self.transform_program
-        # Add the gradient expand to the porgram if necessary
+            full_transform_program = qml.transforms.core.TransformProgram(self.transform_program)
+        # Add the gradient expand to the program if necessary
         if (
             isinstance(self.gradient_fn, qml.transforms.core.TransformDispatcher)
             and self.gradient_fn.expand_transform
