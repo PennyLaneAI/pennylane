@@ -25,13 +25,11 @@ class CosineWindow(StatePrepBase):
     r"""CosineWindow(wires)
     Prepares an initial state with a cosine wave function.
 
-    The wave function is defined as
+    The wave function is defined below where :math:`m` is the number of wires.
 
     .. math::
 
         |\psi\rangle = \sqrt{2^{1-m}} \sum_{k=0}^{2^m-1} \cos(\frac{\pi k}{2^m} - \frac{\pi}{2}) |k\rangle,
-
-    where :math:`m` is the number of wires. For more details see `arXiv:2110.09590 <https://arxiv.org/abs/2110.09590>`_.
 
     .. figure:: ../../_static/templates/state_preparations/cosine_window.png
         :align: center
@@ -41,6 +39,8 @@ class CosineWindow(StatePrepBase):
     .. note::
 
         The wave function is shifted by :math:`\frac{\pi}{2}` units so that the window is centered.
+
+    For more details see `Phys. Rev. D 106 (2022) <https://journals.aps.org/prd/abstract/10.1103/PhysRevD.106.034503>`_.
 
     .. seealso:: :class:`~.QuantumPhaseEstimation` and :class:`~.QFT`.
 
