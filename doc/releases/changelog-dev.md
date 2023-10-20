@@ -257,11 +257,14 @@
 * The `qml.jordan_wigner` function has been modified to optionally remove the imaginary components
   of the computed qubit operator, if imaginary components are smaller than a threshold. 
   [(#4639)](https://github.com/PennyLaneAI/pennylane/pull/4639)
-  
+
 * `qml.data.load` correctly performs a full download of the dataset after a partial download of the
   same dataset has already been performed.
   [(#4681)](https://github.com/PennyLaneAI/pennylane/pull/4681)
   
+* Improved performance of `qml.data.load()` when partially loading a dataset
+  [(#4674)](https://github.com/PennyLaneAI/pennylane/pull/4674)
+
 * Plots generated with the `pennylane.drawer.plot` style of `matplotlib.pyplot` now have black
   axis labels and are generated at a default DPI of 300.
   [(#4690)](https://github.com/PennyLaneAI/pennylane/pull/4690)
@@ -455,11 +458,15 @@
   the last axis (`axis=-1`). Without the fix, it would wrongly return `tensor[indices]`.
   [(#4605)](https://github.com/PennyLaneAI/pennylane/pull/4605)
 
+* Ensure the logging `TRACE` level works with gradient-free execution.
+  [(#4669)](https://github.com/PennyLaneAI/pennylane/pull/4669)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad,
+Jack Brown,
 Stepan Fomichev,
 Joana Fraxanet,
 Diego Guala,
@@ -471,6 +478,7 @@ Lillian M. A. Frederiksen,
 Vincent Michaud-Rioux,
 Romain Moyard,
 Daniel F. Nino,
+Lee James O'Riordan,
 Mudit Pandey,
 Matthew Silverman,
 Jay Soni,

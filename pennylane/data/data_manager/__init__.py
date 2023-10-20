@@ -56,7 +56,11 @@ def _get_data_struct():
 
 
 def _download_partial(
-    s3_url: str, dest: Path, attributes: Optional[typing.Iterable[str]], overwrite: bool
+    s3_url: str,
+    dest: Path,
+    attributes: Optional[typing.Iterable[str]],
+    overwrite: bool,
+    block_size: int,
 ) -> None:
     """Download the requested attributes of the Dataset at ``s3_path`` into ``dest``.
 
@@ -109,6 +113,7 @@ def _download_dataset(
     data_path: DataPath,
     dest: Path,
     attributes: Optional[typing.Iterable[str]],
+    block_size: int,
     force: bool = False,
 ) -> None:
     """Downloads the dataset at ``data_path`` to ``dest``, optionally downloading
@@ -124,7 +129,9 @@ def _download_dataset(
     s3_url = f"{S3_URL}/{url_safe_datapath}"
 
     if attributes is not None or dest.exists():
-        _download_partial(s3_url, dest=dest, attributes=attributes, overwrite=force)
+        _download_partial(
+            s3_url, dest=dest, attributes=attributes, overwrite=force, block_size=block_size
+        )
     else:
         _download_full(s3_url, dest=dest)
 
@@ -152,7 +159,7 @@ def load(  # pylint: disable=too-many-arguments
     folder_path: Path = Path("./datasets/"),
     force: bool = False,
     num_threads: int = 50,
-    cache_dir: Optional[Path] = Path(".cache"),
+    block_size: int = 8388608,
     **params: Union[ParamArg, str, List[str]],
 ):
     r"""Downloads the data if it is not already present in the directory and returns it as a list of
@@ -165,7 +172,9 @@ def load(  # pylint: disable=too-many-arguments
         folder_path (str) : Path to the directory used for saving datasets. Defaults to './datasets'
         force (Bool)      : Bool representing whether data has to be downloaded even if it is still present
         num_threads (int) : The maximum number of threads to spawn while downloading files (1 thread per file)
-        cache_dir (str): Directory used for HTTP caching. Defaults to '{folder_path}/.cache'
+        block_size (int)  : The number of bytes to fetch per read operation when fetching datasets from S3.
+            Larger values may improve performance for large datasets, but will slow down small reads. Defaults
+            to 8MB
         params (kwargs)   : Keyword arguments exactly matching the parameters required for the data type.
             Note that these are not optional
 
@@ -244,8 +253,6 @@ def load(  # pylint: disable=too-many-arguments
         _validate_attributes(data_struct, data_name, attributes)
 
     folder_path = Path(folder_path)
-    if cache_dir and not Path(cache_dir).is_absolute():
-        cache_dir = folder_path / cache_dir
 
     data_paths = [data_path for _, data_path in foldermap.find(data_name, **params)]
 
@@ -256,7 +263,14 @@ def load(  # pylint: disable=too-many-arguments
 
     with ThreadPoolExecutor(min(num_threads, len(dest_paths))) as pool:
         futures = [
-            pool.submit(_download_dataset, data_path, dest_path, attributes, force=force)
+            pool.submit(
+                _download_dataset,
+                data_path,
+                dest_path,
+                attributes,
+                force=force,
+                block_size=block_size,
+            )
             for data_path, dest_path in zip(data_paths, dest_paths)
         ]
         results = wait(futures, return_when=FIRST_EXCEPTION)

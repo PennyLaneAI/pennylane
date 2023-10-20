@@ -234,7 +234,7 @@ class TestMiscHelpers:
 
 @pytest.fixture
 def mock_download_dataset(monkeypatch):
-    def mock(data_path, dest, attributes, force):
+    def mock(data_path, dest, attributes, force, block_size):
         dset = Dataset.open(Path(dest), "w")
         dset.close()
 
@@ -262,6 +262,7 @@ def test_load(tmp_path, data_name, params, expect_paths):
     dsets = pennylane.data.data_manager.load(
         data_name=data_name,
         folder_path=folder_path,
+        block_size=1,
         **params,
     )
 
@@ -301,7 +302,7 @@ def test_download_dataset_full_or_partial(
     dest.exists.return_value = dest_exists
 
     pennylane.data.data_manager._download_dataset(
-        "dataset/path", attributes=attributes, dest=dest, force=force
+        "dataset/path", attributes=attributes, dest=dest, force=force, block_size=1
     )
 
     assert download_partial.called is called_partial
@@ -318,7 +319,7 @@ def test_download_dataset_full_call(download_full, force):
     dest.exists.return_value = False
 
     pennylane.data.data_manager._download_dataset(
-        "dataset/path", attributes=None, dest=dest, force=force
+        "dataset/path", attributes=None, dest=dest, force=force, block_size=1
     )
 
     download_full.assert_called_once_with(f"{S3_URL}/dataset/path", dest=dest)
@@ -335,11 +336,11 @@ def test_download_dataset_partial_call(download_partial, attributes, force):
     dest.exists.return_value = True
 
     pennylane.data.data_manager._download_dataset(
-        "dataset/path", attributes=attributes, dest=dest, force=force
+        "dataset/path", attributes=attributes, dest=dest, force=force, block_size=1
     )
 
     download_partial.assert_called_once_with(
-        f"{S3_URL}/dataset/path", dest=dest, attributes=attributes, overwrite=force
+        f"{S3_URL}/dataset/path", dest=dest, attributes=attributes, overwrite=force, block_size=1
     )
 
 
@@ -377,7 +378,11 @@ def test_download_partial_dest_not_exists(
     )
 
     pennylane.data.data_manager._download_partial(
-        "dataset/path", dest=tmp_path / "dataset", attributes=attributes, overwrite=overwrite
+        "dataset/path",
+        dest=tmp_path / "dataset",
+        attributes=attributes,
+        overwrite=overwrite,
+        block_size=1,
     )
 
     local = Dataset.open(tmp_path / "dataset")
@@ -415,7 +420,11 @@ def test_download_partial_dest_exists(tmp_path, monkeypatch, attributes, overwri
     local_dataset.close()
 
     pennylane.data.data_manager._download_partial(
-        "dataset/path", dest=tmp_path / "dataset", attributes=attributes, overwrite=overwrite
+        "dataset/path",
+        dest=tmp_path / "dataset",
+        attributes=attributes,
+        overwrite=overwrite,
+        block_size=1,
     )
 
     local = Dataset.open(tmp_path / "dataset")
@@ -434,7 +443,7 @@ def test_download_partial_no_check_remote(open_hdf5_s3, tmp_path):
     local_dataset.close()
 
     pennylane.data.data_manager._download_partial(
-        "dataset_url", tmp_path / "dataset", ["x", "y"], overwrite=False
+        "dataset_url", tmp_path / "dataset", ["x", "y"], overwrite=False, block_size=1
     )
 
     open_hdf5_s3.assert_not_called()
@@ -451,7 +460,9 @@ def test_download_dataset_escapes_url(_, mock_get_args, datapath, escaped):
     dest = MagicMock()
     dest.exists.return_value = False
 
-    pennylane.data.data_manager._download_dataset(DataPath(datapath), dest=dest, attributes=None)
+    pennylane.data.data_manager._download_dataset(
+        DataPath(datapath), dest=dest, attributes=None, block_size=1
+    )
 
     mock_get_args.assert_called_once()
     assert mock_get_args.call_args[0] == (f"{S3_URL}/{escaped}",)
@@ -470,11 +481,11 @@ def test_download_dataset_escapes_url_partial(download_partial, datapath, escape
     force = False
 
     pennylane.data.data_manager._download_dataset(
-        DataPath(datapath), dest=dest, attributes=attributes, force=force
+        DataPath(datapath), dest=dest, attributes=attributes, force=force, block_size=1
     )
 
     download_partial.assert_called_once_with(
-        f"{S3_URL}/{escaped}", dest=dest, attributes=attributes, overwrite=force
+        f"{S3_URL}/{escaped}", dest=dest, attributes=attributes, overwrite=force, block_size=1
     )
 
 
