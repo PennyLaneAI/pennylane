@@ -56,12 +56,12 @@ class TransformDispatcher:
 
     # pylint: disable=too-many-arguments
     def __init__(
-            self,
-            transform,
-            expand_transform=None,
-            classical_cotransform=None,
-            is_informative=False,
-            final_transform=False,
+        self,
+        transform,
+        expand_transform=None,
+        classical_cotransform=None,
+        is_informative=False,
+        final_transform=False,
     ):  # pylint:disable=redefined-outer-name
         self._transform = transform
         self._expand_transform = expand_transform
@@ -135,7 +135,7 @@ class TransformDispatcher:
         return wrapper
 
     def __repr__(self):
-        return f"<transform: {self.__name__}>"
+        return f"<transform: {self._transform.__name__}>"
 
     @property
     def transform(self):
@@ -200,9 +200,9 @@ class TransformDispatcher:
         """
         # pylint: disable=protected-access
         if (
-                isinstance(qnode._original_device, qml.Device)
-                and hasattr(qnode._original_device, "_state")
-                and qml.math.is_abstract(qnode._original_device._state)
+            isinstance(qnode._original_device, qml.Device)
+            and hasattr(qnode._original_device, "_state")
+            and qml.math.is_abstract(qnode._original_device._state)
         ):
             qnode._original_device.reset()
             qnode.device.reset()
@@ -304,7 +304,7 @@ class TransformDispatcher:
                 return f"Transformed Device({original_device.__repr__()} with additional preprocess transform {self.transform})"
 
             def preprocess(
-                    self, config: qml.devices.ExecutionConfig = qml.devices.DefaultExecutionConfig
+                self, config: qml.devices.ExecutionConfig = qml.devices.DefaultExecutionConfig
             ):
                 """This function updates the original device transform program to be applied."""
                 program, config = self.original_device.preprocess(config)
@@ -331,13 +331,13 @@ class TransformContainer:
     """
 
     def __init__(
-            self,
-            transform,
-            args=None,
-            kwargs=None,
-            classical_cotransform=None,
-            is_informative=False,
-            final_transform=False,
+        self,
+        transform,
+        args=None,
+        kwargs=None,
+        classical_cotransform=None,
+        is_informative=False,
+        final_transform=False,
     ):  # pylint:disable=redefined-outer-name,too-many-arguments
         self._transform = transform
         self._args = args or []
