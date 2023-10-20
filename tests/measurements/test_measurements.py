@@ -577,7 +577,7 @@ class TestSampleMeasurement:
 
         with pytest.raises(
             qml.DeviceError,
-            match="Analytic circuits must only contain StateMeasurements; got sample",
+            match="not accepted for analytic simulation on default.qubit",
         ):
             circuit()
 
@@ -617,7 +617,9 @@ class TestStateMeasurement:
         def circuit():
             return MyMeasurement()
 
-        with pytest.raises(qml.DeviceError, match="Circuits with finite shots must only contain"):
+        with pytest.raises(
+            qml.DeviceError, match="not accepted with finite shots on default.qubit"
+        ):
             circuit()
 
 

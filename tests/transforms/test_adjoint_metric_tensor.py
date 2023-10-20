@@ -272,16 +272,17 @@ class TestAdjointMetricTensorTape:
             return qml.expval(qml.PauliZ(wires[0]))
 
         circuit(*params)
-        mt = qml.adjoint_metric_tensor(circuit.qtape, dev)
+
+        mt = qml.adjoint_metric_tensor(circuit)(*params)
+        assert qml.math.allclose(mt, expected)
+
+        mt = qml.adjoint_metric_tensor(circuit.qtape)
         expected = qml.math.reshape(expected, qml.math.shape(mt))
         assert qml.math.allclose(mt, expected)
 
-        mt = qml.adjoint_metric_tensor(circuit, hybrid=False)(*params)
-        assert qml.math.allclose(mt, expected)
-
     @pytest.mark.jax
-    @pytest.mark.skip("JAX does not support forward pass executiong of the metric tensor.")
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
+    @pytest.mark.skip("JAX does not support forward pass execution of the metric tensor.")
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_correct_output_tape_jax(self, dev_name, ansatz, params):
         """Test that the output is correct when using JAX and
         calling the adjoint metric tensor directly on a tape."""
@@ -302,18 +303,18 @@ class TestAdjointMetricTensorTape:
             return qml.expval(qml.PauliZ(0))
 
         circuit(*j_params)
-        mt = qml.adjoint_metric_tensor(circuit.qtape, dev)
+        mt = qml.adjoint_metric_tensor(circuit.qtape)
         expected = qml.math.reshape(expected, qml.math.shape(mt))
         assert qml.math.allclose(mt, expected)
 
-        mt = qml.adjoint_metric_tensor(circuit, hybrid=False)(*j_params)
+        mt = qml.adjoint_metric_tensor(circuit)(*j_params)
         assert qml.math.allclose(mt, expected)
 
     interfaces = ["auto", "torch"]
 
     @pytest.mark.torch
     @pytest.mark.parametrize("interface", interfaces)
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.torch"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_correct_output_tape_torch(self, ansatz, params, interface, dev_name):
         """Test that the output is correct when using Torch and
         calling the adjoint metric tensor directly on a tape."""
@@ -331,18 +332,18 @@ class TestAdjointMetricTensorTape:
             return qml.expval(qml.PauliZ(0))
 
         circuit(*t_params)
-        mt = qml.adjoint_metric_tensor(circuit.qtape, dev)
+        mt = qml.adjoint_metric_tensor(circuit)(*t_params)
+        assert qml.math.allclose(mt, expected)
+
+        mt = qml.adjoint_metric_tensor(circuit.qtape)
         expected = qml.math.reshape(expected, qml.math.shape(mt))
         assert qml.math.allclose(mt.detach().numpy(), expected)
-
-        mt = qml.adjoint_metric_tensor(circuit, hybrid=False)(*t_params)
-        assert qml.math.allclose(mt, expected)
 
     interfaces = ["auto", "tf"]
 
     @pytest.mark.tf
     @pytest.mark.parametrize("interface", interfaces)
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.tf"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_correct_output_tape_tf(self, ansatz, params, interface, dev_name):
         """Test that the output is correct when using TensorFlow and
         calling the adjoint metric tensor directly on a tape."""
@@ -361,13 +362,13 @@ class TestAdjointMetricTensorTape:
 
         with tf.GradientTape():
             circuit(*t_params)
-            mt = qml.adjoint_metric_tensor(circuit.qtape, dev)
-
-        expected = qml.math.reshape(expected, qml.math.shape(mt))
-        assert qml.math.allclose(mt, expected)
+            mt = qml.adjoint_metric_tensor(circuit.qtape)
 
         with tf.GradientTape():
-            mt = qml.adjoint_metric_tensor(circuit, hybrid=False)(*t_params)
+            mt = qml.adjoint_metric_tensor(circuit)(*t_params)
+        assert qml.math.allclose(mt, expected)
+
+        expected = qml.math.reshape(expected, qml.math.shape(mt))
         assert qml.math.allclose(mt, expected)
 
 
@@ -402,7 +403,7 @@ class TestAdjointMetricTensorQNode:
             assert qml.math.allclose(mt, expected)
 
     @pytest.mark.jax
-    @pytest.mark.skip("JAX does not support forward pass executiong of the metric tensor.")
+    @pytest.mark.skip("JAX does not support forward pass execution of the metric tensor.")
     @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
     def test_correct_output_qnode_jax(self, ansatz, params):
         """Test that the output is correct when using JAX and
@@ -435,7 +436,7 @@ class TestAdjointMetricTensorQNode:
     @pytest.mark.torch
     @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
     @pytest.mark.parametrize("interface", interfaces)
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.torch"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_correct_output_qnode_torch(self, ansatz, params, interface, dev_name):
         """Test that the output is correct when using Torch and
         calling the adjoint metric tensor on a QNode."""
@@ -482,31 +483,6 @@ class TestAdjointMetricTensorQNode:
 
         with tf.GradientTape():
             mt = qml.adjoint_metric_tensor(circuit)(*t_params)
-
-        if isinstance(mt, tuple):
-            assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
-        else:
-            assert qml.math.allclose(mt, expected)
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
-    def test_autograd_with_other_device(self, dev_name):
-        """Test passing an extra device to the QNode wrapper."""
-        ansatz = fubini_ansatz2
-        params = fubini_params[2]
-
-        exp_fn = autodiff_metric_tensor(ansatz, self.num_wires)
-        expected = qml.jacobian(exp_fn)(*params)
-        dev = qml.device("default.qubit", wires=self.num_wires)
-        dev2 = qml.device(dev_name, wires=self.num_wires)
-
-        @qml.qnode(dev)
-        def circuit(*params):
-            """Circuit with dummy output to create a QNode."""
-            ansatz(*params, dev.wires)
-            return qml.expval(qml.PauliZ(0))
-
-        mt = qml.jacobian(qml.adjoint_metric_tensor(circuit, device=dev2))(*params)
 
         if isinstance(mt, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
@@ -576,7 +552,7 @@ class TestAdjointMetricTensorDifferentiability:
             ansatz(*params, dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        mt_fn = qml.adjoint_metric_tensor(circuit, hybrid=True)
+        mt_fn = qml.adjoint_metric_tensor(circuit)
         argnums = list(range(len(params)))
         mt_jac = jax.jacobian(mt_fn, argnums=argnums)(*j_params)
 
@@ -641,43 +617,12 @@ class TestAdjointMetricTensorDifferentiability:
             assert qml.math.allclose(mt_jac, expected)
 
 
-class TestErrors:
-    """Test that errors are raised correctly."""
+def test_error_finite_shots():
+    """Test that an error is raised if the device has a finite number of shots set."""
+    with qml.queuing.AnnotatedQueue() as q:
+        qml.RX(0.2, wires=0)
+        qml.RY(1.9, wires=1)
+    tape = qml.tape.QuantumScript.from_queue(q, shots=1)
 
-    def test_error_wrong_object_passed(self):
-        """Test that an error is raised if neither a tape nor a QNode is passed."""
-
-        def ansatz(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-
-        dev = qml.device("default.qubit", wires=2)
-
-        with pytest.raises(qml.QuantumFunctionError, match="The passed object is not a "):
-            qml.adjoint_metric_tensor(ansatz, device=dev)
-
-    def test_error_finite_shots(self):
-        """Test that an error is raised if the device has a finite number of shots set."""
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(0.2, wires=0)
-            qml.RY(1.9, wires=1)
-        tape = qml.tape.QuantumScript.from_queue(q, shots=1)
-        dev = qml.device("default.qubit", wires=2, shots=1)
-
-        with pytest.raises(ValueError, match="The adjoint method for the metric tensor"):
-            qml.adjoint_metric_tensor(tape, device=dev)
-
-    def test_warning_multiple_devices(self):
-        """Test that a warning is issued if an ExpvalCost with multiple
-        devices is passed."""
-        dev1 = qml.device("default.qubit", wires=2)
-        dev2 = qml.device("default.qubit", wires=1)
-        H = qml.Hamiltonian([0.2, 0.9], [qml.PauliZ(0), qml.PauliY(0)])
-
-        def ansatz(x, wires):
-            qml.RX(x, wires=wires[0])
-
-        with pytest.warns(UserWarning, match="is deprecated,"):
-            cost = qml.ExpvalCost(ansatz, H, [dev1, dev2])
-        with pytest.warns(UserWarning, match="ExpvalCost was instantiated"):
-            qml.adjoint_metric_tensor(cost)
+    with pytest.raises(ValueError, match="The adjoint method for the metric tensor"):
+        qml.adjoint_metric_tensor(tape)
