@@ -64,17 +64,20 @@ def cond(condition, true_fn, false_fn=None):
     """A :func:`~.qjit` compatible decorator for if-else conditionals in PennyLane/Catalyst.
 
     This can be used to condition a quantum operation on the results of mid-circuit qubit measurements
-    in the interpreted mode while acts like the traditional if-else conditional when is called inside a
+    with the Python interpreter while acts like the traditional if-else conditional when is called inside a
     QJIT decorated workflow. This means that each execution path, 'if' and 'else' branchs, is provided
     as a separate function. All functions will be traced during compilation, but only one of them will
     be executed at runtime, depending on the value of one or more Boolean predicates. The JAX equivalent
     is the ``jax.lax.cond`` function, but this version is optimized to work with quantum programs in PennyLane.
     This version also supports an 'else if' construct which the JAX version does not. However to use `else if`
-    you need to use `catalyst.cond <https://docs.pennylane.ai/projects/catalyst/en/latest/code/api/catalyst.cond.html>`__
+    you need to use `catalyst.cond <https://docs.pennylane.ai/projects/catalyst/en/latest/code/api/catalyst.cond.html>`__.
 
 
-    In the interpreted mode, support for using :func:`~.cond` is device-dependent. If a device doesn't
+    Support for using :func:`~.cond` is device-dependent. With the Python interpreter, If a device doesn't
     support mid-circuit measurements natively, then the QNode will apply the :func:`defer_measurements` transform.
+    This function has a different set of support when it is called within :func:`~.qjit`. Please see
+    `catalyst.cond <https://docs.pennylane.ai/projects/catalyst/en/latest/code/api/catalyst.cond.html>`__
+    for details.
 
     Args:
         condition (.MeasurementValue): a conditional expression involving a mid-circuit
@@ -245,7 +248,7 @@ def cond(condition, true_fn, false_fn=None):
             >>> qnode(par, x, y, z)
             tensor(-0.30922805, requires_grad=True)
 
-    In the compilation mode,
+    In the compilation mode using the :func:`~.qjit` JIT compiler decorator,
 
     .. code-block:: python
 

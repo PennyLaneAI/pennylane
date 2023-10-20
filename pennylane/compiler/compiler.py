@@ -15,6 +15,7 @@
 
 from typing import List
 from importlib import reload
+from collections import defaultdict
 import dataclasses
 import pkg_resources
 
@@ -23,6 +24,7 @@ import pkg_resources
 class AvailableCompilers:
     """This contains data of installed PennyLane compiler packages"""
 
+    entrypoints_interface = ("qjit", "context", "ops")
     names_entrypoints = {}
 
 
@@ -34,29 +36,30 @@ def _refresh_compilers():
     reload(pkg_resources)
 
     # Refresh the list of compilers
-    AvailableCompilers.names_entrypoints = {}
+    AvailableCompilers.names_entrypoints = defaultdict(dict)
 
     # Iterator packages entry-points with the 'pennylane.compilers' group name
     for entry in pkg_resources.iter_entry_points("pennylane.compilers"):
-        module_name = entry.module_name
         # Only need name of the parent module
-        module_name = module_name.split(".")[0]
-
-        if module_name not in AvailableCompilers.names_entrypoints:
-            AvailableCompilers.names_entrypoints[module_name] = {}
+        module_name = entry.module_name.split(".")[0]
         AvailableCompilers.names_entrypoints[module_name][entry.name] = entry
+
+    # Check the definition of all expected entry points in compiler packages
+    for _, eps_dict in AvailableCompilers.names_entrypoints.items():
+        ep_interface = AvailableCompilers.entrypoints_interface
+        if any(ep not in eps_dict.keys() for ep in ep_interface):
+            raise KeyError(f"expected {ep_interface}, but recieved {eps_dict}")
 
 
 def available_compilers() -> List[str]:
-    """Return the name of available compilers by refreshing the compilers
-    names and entry points.
+    """Loads and returns a list of available compilers that are
+    installed and compatible with the :func:`~.qjit` decorator.
 
     **Example**
 
     This method returns the name of installed compiler packages supported in
-    PennyLane. For example, after installing the ``pennylane-catalyst`` pacakge,
-
-    .. code-block:: python
+    PennyLane. For example, after installing the `Catalyst <https://github.com/pennylaneai/catalyst>`__
+    compiler, this will now appear as an available compiler:
 
     >>> qml.compiler.available_compilers()
     ['catalyst']
@@ -68,16 +71,11 @@ def available_compilers() -> List[str]:
     return list(AvailableCompilers.names_entrypoints.keys())
 
 
-def available(name="catalyst") -> bool:
+def available(compiler="catalyst") -> bool:
     """Check the availability of the given compiler package.
 
-    It only refreshes the compilers names and entry points if the name
-    is not already stored. This reduces the number of re-importing
-    ``pkg_resources`` as it can be a very slow operation on systems
-    with a large number of installed packages.
-
     Args:
-        name (str): name of the compiler package (Default is ``catalyst``)
+        compiler (str): name of the compiler package (default value is ``catalyst``)
 
     Return:
         bool: ``True`` if the compiler package is installed on the system
@@ -85,8 +83,6 @@ def available(name="catalyst") -> bool:
     **Example**
 
     Before installing the ``pennylane-catalyst`` package:
-
-    .. code-block:: python
 
     >>> qml.compiler.available("catalyst")
     False
@@ -97,18 +93,27 @@ def available(name="catalyst") -> bool:
     True
     """
 
-    if name not in AvailableCompilers.names_entrypoints:
+    # It only refreshes the compilers names and entry points if the name
+    # is not already stored. This reduces the number of re-importing
+    # ``pkg_resources`` as it can be a very slow operation on systems
+    # with a large number of installed packages.
+
+    if compiler not in AvailableCompilers.names_entrypoints:
         # This class updates the class variable names_entrypoints
         _refresh_compilers()
 
-    return name in AvailableCompilers.names_entrypoints
+    return compiler in AvailableCompilers.names_entrypoints
 
 
-def active(name="catalyst") -> bool:
-    """Check whether the caller is inside a QJIT evaluation context.
+def active(compiler="catalyst") -> bool:
+    """Check whether the caller is inside a :func:`~.qjit` evaluation context.
+
+    This helper function may be used during implementation
+    to allow differing logic for circuits or operations that are
+    just-in-time compiled versus those that are not.
 
     Args:
-        name (str): name of the compiler package (Default is ``catalyst``)
+        compiler (str): name of the compiler package (default value is ``catalyst``)
 
     Return:
         bool: True if the caller is inside a QJIT evaluation context
@@ -130,7 +135,7 @@ def active(name="catalyst") -> bool:
         return False
 
     try:
-        tracer_loader = compilers[name]["context"].load()
+        tracer_loader = compilers[compiler]["context"].load()
         return tracer_loader.is_tracing()
     except KeyError:
         return False
