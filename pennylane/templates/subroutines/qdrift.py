@@ -58,8 +58,14 @@ class QDrift(Operation):
         \prod_{j}^{n} e^{i \lambda H_j \tau / n},
 
     where :math:`\tau` is time, :math:`\lambda = \sum_j |h_j|` and :math:`n` is the total number of
-    terms to be added to the product. Note, the terms :math:`H_{j}` are assumed to be normalized such
-    that the "impact" of each term is fully encoded in the magnitude of :math:`h_{j}`.
+    terms to be sampled and added to the product. Note, the terms :math:`H_{j}` are assumed to be 
+    normalized such that the "impact" of each term is fully encoded in the magnitude of :math:`h_{j}`.
+    
+    The number of samples :math:`n` required for a given error threshold can be approximated by: 
+
+    .. math::
+
+        n \ \approx \ \frac{2\lambda^{2}t^{2}}{\epsilon}
 
     For more details see `Phys. Rev. Lett. 123, 070503 (2019) <https://arxiv.org/abs/1811.08017>`_.
 
@@ -89,13 +95,13 @@ class QDrift(Operation):
             qml.Hadamard(0)
 
             # Evolve according to H
-            qml.QDrift(H, time=1.2, n = 10)
+            qml.QDrift(H, time=1.2, n=10, seed=10)
 
             # Measure some quantity
             return qml.probs()
 
     >>> my_circ()
-    [0.71061676 0.         0.28938324 0.        ]
+    array([0.65379493, 0.        , 0.34620507, 0.        ])
 
 
     .. details::
@@ -124,9 +130,18 @@ class QDrift(Operation):
                 return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
 
-        >>> args = np.array([1.23])
-        >>> print(qml.grad(my_circ)(*tuple(args)))
+        >>> time = np.array(1.23)
+        >>> print(qml.grad(my_circ)(time))
         0.27980654844422853
+
+        The error in the approximation of time evolution with the QDrift protocol is 
+        directly related to the number of samples used in the product. We provide a 
+        method to upper-bound the error: 
+
+        >>> H = qml.dot([0.25, 0.75], [qml.PauliX(0), qml.PauliZ(0)])
+        >>> print(qml.QDrift.error(H, time=1.2, n=10))
+        0.3661197552925645
+
     """
 
     def __init__(  # pylint: disable=too-many-arguments
