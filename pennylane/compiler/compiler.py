@@ -30,7 +30,7 @@ class AvailableCompilers:
 
 def _refresh_compilers():
     """Scan installed PennyLane compiler pacakges to refresh the compilers
-    names and entry points
+    names and entry points.
     """
 
     reload(pkg_resources)
