@@ -404,7 +404,7 @@ def sk_decomposition(op, depth, basis_set=(), basis_depth=10, approximate_set=No
     >>> qml.math.allclose(op.matrix(), su2_matrix, atol=1e-3)
     True
 
-    .. seealso:: :func:`~.sk_approximate_set` for precomputing the ``approximate_set``.
+    .. seealso:: :func:`~.sk_approximate_set` for precomputing the ``approximate_set`` and ``kd_tree``.
     """
     with QueuingManager.stop_recording():
         # Check for length of wires in the operation
