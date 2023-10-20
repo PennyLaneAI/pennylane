@@ -74,8 +74,8 @@ class TestDecomposition:
         assert np.allclose(state1, state2)
 
 
-class TestInputs:
-    """Test inputs and pre-processing."""
+class TestRepresentation:
+    """Test id and label."""
 
     def test_id(self):
         """Tests that the id attribute can be set."""
@@ -83,6 +83,11 @@ class TestInputs:
         template = qml.CosineWindow(wires=wires, id="a")
         assert template.id == "a"
         assert template.wires == qml.wires.Wires(wires)
+
+    def test_label(self):
+        """Test label method returns CosineWindow"""
+        op = qml.CosineWindow(wires=[0, 1])
+        assert op.label() == "CosineWindow"
 
 
 class TestStateVector:
@@ -112,9 +117,3 @@ class TestStateVector:
         res = np.reshape(op.state_vector(wire_order=[1, 0]) ** 2, (-1,))
         expected = np.array([0.0, 0.5, 0.25, 0.25])
         assert np.allclose(res, expected)
-
-
-def test_label():
-    """Test label method returns CosineWindow"""
-    op = qml.CosineWindow(wires=[0, 1])
-    assert op.label() == "CosineWindow"
