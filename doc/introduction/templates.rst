@@ -232,6 +232,10 @@ Other useful templates which do not belong to the previous categories can be fou
   :figure: _static/templates/subroutines/approx_time_evolution.png
 
 .. gallery-item::
+  :description: :doc:`QDrift <../code/api/pennylane.QDrift>`
+  :figure: _static/templates/subroutines/qdrift.png
+
+.. gallery-item::
   :description: :doc:`TrotterProduct <../code/api/pennylane.TrotterProduct>`
   :figure: _static/templates/subroutines/trotter_product.png
 
