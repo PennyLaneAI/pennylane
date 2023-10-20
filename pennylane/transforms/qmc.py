@@ -384,5 +384,5 @@ def quantum_monte_carlo(
                 updated_operations.extend(tape_q.operations)
 
         updated_operations.append(adjoint(QFT(wires=estimation_wires)))
-    tape = qml.tape.QuantumTape(ops=updated_operations, measurements=tape.measurements)
-    return [tape], lambda x: x[0]
+    updated_tape = qml.tape.QuantumTape(ops=updated_operations, measurements=tape.measurements)
+    return [updated_tape], lambda x: x[0]

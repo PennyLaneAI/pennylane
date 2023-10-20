@@ -225,7 +225,7 @@ class TestQuantumMonteCarlo:
         with pytest.raises(ValueError, match="No wires can be shared between the wires"):
             quantum_monte_carlo(
                 lambda: None, wires=wires, target_wire=0, estimation_wires=estimation_wires
-            )
+            )()
 
     @pytest.mark.slow
     def test_integration(self):
