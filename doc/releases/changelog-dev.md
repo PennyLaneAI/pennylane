@@ -196,6 +196,9 @@
     
     ```  
 
+* `qml.transforms.decomposition.sk_decomposition` method implements the Solovay-Kitaev algorithm for
+  approximately decomposing any single-qubit operation to Clifford+T basis.
+  [(#4687)](https://github.com/PennyLaneAI/pennylane/pull/4687)
 
 <h3>Improvements 🛠</h3>
 
