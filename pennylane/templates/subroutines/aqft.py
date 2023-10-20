@@ -114,8 +114,6 @@ class AQFT(Operation):
             equivalent to QFT.
 
     """
-    num_wires = AnyWires
-    grad_method = None
 
     def __init__(self, order, wires=None, id=None):
         wires = qml.wires.Wires(wires)
