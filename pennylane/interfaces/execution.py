@@ -292,13 +292,13 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
         logger.debug(
             "Entry with args=(fn=%s, cache=%s, pass_kwargs=%s, return_tuple=%s, expand_fn=%s) called by=%s",
             fn
-            if not (logger.isEnabledFor(qml.logging.TRACE) and callable(fn))
+            if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(fn))
             else "\n" + inspect.getsource(fn),
             cache,
             pass_kwargs,
             return_tuple,
             expand_fn
-            if not (logger.isEnabledFor(qml.logging.TRACE) and callable(expand_fn))
+            if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(expand_fn))
             else "\n" + inspect.getsource(expand_fn) + "\n",
             "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
         )
@@ -399,6 +399,7 @@ def execute(
     gradient_fn: Optional[Union[Callable, str]] = None,
     interface="auto",
     transform_program=None,
+    config=None,
     grad_on_execution="best",
     gradient_kwargs=None,
     cache: Union[bool, dict, Cache] = True,
@@ -423,6 +424,8 @@ def execute(
         interface (str): The interface that will be used for classical autodifferentiation.
             This affects the types of parameters that can exist on the input tapes.
             Available options include ``autograd``, ``torch``, ``tf``, ``jax`` and ``auto``.
+        transform_program(qml.transforms.core.TransformProgram): A transform program to be applied to the initial tape.
+        config (qml.devices.ExecutionConfig): A datastructure describing the parameters needed to fully describe the execution.
         grad_on_execution (bool, str): Whether the gradients should be computed on the execution or not. Only applies
             if the device is queried for the gradient; gradient transform
             functions available in ``qml.gradients`` are only supported on the backward
@@ -516,7 +519,7 @@ def execute(
             tapes,
             repr(device),
             gradient_fn
-            if not (logger.isEnabledFor(qml.logging.TRACE) and callable(gradient_fn))
+            if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(gradient_fn))
             else "\n" + inspect.getsource(gradient_fn) + "\n",
             interface,
             grad_on_execution,
@@ -526,7 +529,7 @@ def execute(
             max_diff,
             override_shots,
             expand_fn
-            if not (logger.isEnabledFor(qml.logging.TRACE) and callable(gradient_fn))
+            if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(expand_fn))
             else "\n" + inspect.getsource(expand_fn) + "\n",
             max_expansion,
             device_batch_transform,
@@ -552,18 +555,8 @@ def execute(
 
         interface = get_jax_interface_name(tapes)
 
-    if gradient_fn is None:
-        _gradient_method = None
-    elif isinstance(gradient_fn, str):
-        _gradient_method = gradient_fn
-    else:
-        _gradient_method = "gradient-transform"
-    config = qml.devices.ExecutionConfig(
-        interface=interface,
-        gradient_method=_gradient_method,
-        grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
-    )
     gradient_kwargs = gradient_kwargs or {}
+    config = config or _get_execution_config(gradient_fn, grad_on_execution, interface, device)
 
     if isinstance(cache, bool) and cache:
         # cache=True: create a LRUCache object
@@ -604,9 +597,7 @@ def execute(
                 "device batch transforms cannot be turned off with the new device interface.",
                 UserWarning,
             )
-        device_transform_program, config = device.preprocess(config)
-        full_transform_program = transform_program + device_transform_program
-        tapes, post_processing = full_transform_program(tapes)
+        tapes, post_processing = transform_program(tapes)
     else:
         # TODO: Remove once old device are removed
         tapes, program_post_processing = transform_program(tapes)
@@ -747,3 +738,21 @@ def execute(
     )
 
     return post_processing(results)
+
+
+def _get_execution_config(gradient_fn, grad_on_execution, interface, device):
+    """Helper function to get the execution config."""
+    if gradient_fn is None:
+        _gradient_method = None
+    elif isinstance(gradient_fn, str):
+        _gradient_method = gradient_fn
+    else:
+        _gradient_method = "gradient-transform"
+    config = qml.devices.ExecutionConfig(
+        interface=interface,
+        gradient_method=_gradient_method,
+        grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
+    )
+    if isinstance(device, qml.devices.Device):
+        _, config = device.preprocess(config)
+    return config
