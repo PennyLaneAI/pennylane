@@ -826,7 +826,7 @@ class TestHamiltonian:
         assert H2.compare(H4) is False
 
     def test_hamiltonian_compare(self):
-        """to test if hamiltonian comapre function has float point error"""
+        """Test that Hamiltonian.compare correctly compares two Hamiltonians."""
         H1 = qml.Hamiltonian([0.1, 0.2, 0.3], [qml.PauliZ(0), qml.PauliZ(0), qml.PauliZ(0)])
         H2 = qml.Hamiltonian([0.3, 0.3], [qml.PauliZ(0), qml.PauliZ(0)])
         H3 = qml.Hamiltonian([0.2, 0.3, 0.2], [qml.PauliZ(0), qml.PauliZ(0), qml.PauliZ(0)])
