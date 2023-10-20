@@ -44,9 +44,7 @@ class AQFT(Operation):
     .. code-block::
 
         wires = 3
-
         dev = qml.device('default.qubit', wires=wires)
-
 
         @qml.qnode(dev)
         def circuit_aqft():
