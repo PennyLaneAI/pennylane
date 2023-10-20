@@ -16,6 +16,9 @@
 import math
 from itertools import product
 from typing import Sequence, Callable
+
+from tqdm.auto import tqdm
+import scipy as sp
 import pennylane as qml
 from pennylane.queuing import QueuingManager
 from pennylane.transforms.core import transform
@@ -27,6 +30,7 @@ from pennylane.transforms.optimization import (
     remove_barrier,
 )
 from pennylane.transforms.optimization.optimization_utils import find_next_gate, _fuse_global_phases
+from .solovay_kitaev import sk_decomposition, sk_approximate_set
 
 # Single qubits Clifford+T gates in PL
 _CLIFFORD_T_ONE_GATES = [
@@ -128,6 +132,16 @@ def check_clifford_t(op):
         )
     ):
         return True
+
+    # Save time and check from the parameter of rotation gates
+    if any(
+        (
+            isinstance(op, gate) or isinstance(getattr(op, "base", None), gate)
+            for gate in _PARAMETER_GATES[:-1]  # don't check for GlobalPhase
+        )
+    ):
+        return True if qml.math.isclose(op.data[0] % math.pi, 0.0) else False
+
     return check_clifford_op(op)
 
 
@@ -273,7 +287,10 @@ def _merge_pauli_rotations(operations, merge_ops=None):
 # pylint: disable= too-many-nested-blocks, too-many-branches, too-many-statements, unnecessary-lambda-assignment
 @transform
 def clifford_t_decomposition(
-    tape: QuantumTape, epsilon=1e-8, max_depth=6
+    tape: QuantumTape,
+    max_depth=6,
+    method="sk",
+    **kwargs,
 ) -> (Sequence[QuantumTape], Callable):
     r"""Unrolls a circuit into Clifford+T basis using the optimal ancilla-free approximation of :class:`~.RZ` operations.
 
@@ -284,14 +301,21 @@ def clifford_t_decomposition(
       :class:`~.SX`, :class:`~.S`, and :class:`~.Hadamard`.
     - Two qubit gates - :class:`~.CNOT`, :class:`~.CY`, :class:`~.CZ`, :class:`~.SWAP`, and :class:`~.ISWAP`.
 
-    Then the leftover single qubit :class:`~.pennylane.RZ` operations are approximated in the Clifford+T basis - {H, S, CNOT, T}
-    using the optimal ancilla-free method described in `Ross and Selinger (2016) <https://arxiv.org/abs/1403.2975>`_ with
-    :math:`\epsilon`-error in :math:`O(\text{polylog}(1/\epsilon))` time.
+    Then the leftover single qubit :class:`~.pennylane.RZ` operations are approximated in the Clifford+T basis with
+    :math:`\epsilon > 0` error using the recursive Solovay-Kitaev algorithm described in
+    `Dawson and Nielsen (2005) <https://arxiv.org/abs/quant-ph/0505030>`_.
 
     Args:
-        qfunc (function): A quantum function.
-        epsilon (float): Permissible :math:`\epsilon`-error for approximation of z-rotations
-        max_depth (int): The depth to use for tape expansion before manual decomposition to Clifford+T basis is applied.
+        qfunc (function): A quantum function
+        max_depth (int): The depth to use for tape expansion before manual decomposition to Clifford+T basis is applied
+        method (str): Method to be used for Clifford+T decomposition. Default value is ``"sk"`` for Solovay-Kitaev
+        **kwargs: Keyword argument to pass options for the ``method`` used for decompositions
+
+    Keyword Args:
+        Extra arguments:
+
+        * **depth** (int), **basis_set** (list(str)), **basis_depth** (int), **approximate_set** (list) and **kd_tree** (scipy.spatial.KDTree): 
+            arguments for using the :func:`~.sk_decomposition` for Solovay-Kitaev ``"sk"`` decomposition.
 
     Returns:
         pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
@@ -300,6 +324,11 @@ def clifford_t_decomposition(
         quantum tapes to be evaluated, and a function to be applied to these
         tape executions.
 
+    Raises:
+        ValueError: If any gate operation does not have any existing rule for its decomposition
+        NotImplementedError: If chosen decomposition is not supported
+
+    .. seealso:: :func:`~.sk_decomposition` and :func:`~.sk_approximate_set`
     """
     with QueuingManager.stop_recording():
         # Build the basis set and the pipeline for intial compilation pass
@@ -393,15 +422,38 @@ def clifford_t_decomposition(
         # Squeeze global phases into a single global phase
         new_operations = _fuse_global_phases(gphase_ops + merged_ops)
 
-        # TODO: Replace it with the real newsynth routine
-        rz_to_clifford_plus_t = lambda op, epsilon: ([op], 0.0)
+        # TODO: Replace RZ conversion with the newsynth routine
+        # Build the approximation set for Solovay-Kitaev decomposition
+        if method == "sk":
+            _depth = kwargs.get("depth", 5)
+            _basis_set = kwargs.get("basis_set", ["t", "tdg", "h"])
+            _basis_depth = kwargs.get("basis_depth", 10)
+            _approximate_set = kwargs.get("approximate_set", None)
+            _kd_tree = kwargs.get("kd_tree", None)
 
-        new_ops, error = [], 0
-        for op in new_operations:
+            # Check what kind of precomputation needs to be done
+            if _approximate_set is not None and _kd_tree is None:
+                gnodes = qml.math.array(
+                    [qml.math.flatten(seq.so3_matrix) for seq in _approximate_set]
+                )
+                _kd_tree = sp.spatial.KDTree(gnodes)
+            if _approximate_set is None and _kd_tree is None:
+                _approximate_set, _kd_tree = sk_approximate_set(
+                    basis_set=_basis_set, basis_depth=_basis_depth, kd_tree=True
+                )
+
+        else:
+            raise NotImplementedError(
+                "Currently we only support Solovay-Kitaev ('sk') decompostion, got {method}"
+            )
+
+        new_ops = []
+        for op in tqdm(new_operations):
             if isinstance(op, qml.RZ):
-                clifford_ops, err = rz_to_clifford_plus_t(op, epsilon)
+                clifford_ops = sk_decomposition(
+                    op, depth=_depth, approximate_set=_approximate_set, kd_tree=_kd_tree
+                )
                 new_ops.extend(clifford_ops)
-                error += err
             else:
                 new_ops.append(op)
 
@@ -409,10 +461,8 @@ def clifford_t_decomposition(
     new_tape = QuantumTape(new_ops, expanded_tape.measurements, shots=tape.shots)
     setattr(new_tape, "_qfunc_output", getattr(tape, "_qfunc_output", None))
 
-    # Perform three final attempts of simplification before return
-    for _ in range(3):
-        for transf in [commute_controlled, cancel_inverses]:
-            [new_tape], _ = transf(new_tape)
+    # Perform a final attempt of simplification before return
+    [new_tape], _ = cancel_inverses(new_tape)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results

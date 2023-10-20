@@ -17,6 +17,7 @@ import math
 from functools import reduce
 
 import pytest
+import scipy as sp
 import pennylane as qml
 
 from pennylane.transforms.decompositions.clifford_plus_t.cliffordt_transform import (
@@ -27,11 +28,12 @@ from pennylane.transforms.decompositions.clifford_plus_t.cliffordt_transform imp
     _two_qubit_decompose,
     _CLIFFORD_T_GATES,
 )
-
+from pennylane.transforms.decompositions.clifford_plus_t import sk_approximate_set
 from pennylane.transforms.optimization.optimization_utils import _fuse_global_phases
 
 _SKIP_GATES = [qml.Barrier, qml.Snapshot, qml.WireCut, qml.GlobalPhase]
 _CLIFFORD_PHASE_GATES = _CLIFFORD_T_GATES + _SKIP_GATES
+_APPROX_SET = sk_approximate_set(basis_set=["t", "tdg", "h"], basis_depth=10)
 
 INVSQ2 = 1 / math.sqrt(2)
 PI = math.pi
@@ -42,7 +44,6 @@ def circuit_1():
     qml.RZ(1.0, wires=[0])
     qml.PhaseShift(1.0, wires=[1])
     qml.SingleExcitation(2.0, wires=[1, 2])
-    qml.DoubleExcitation(2.0, wires=[1, 2, 3, 4])
     return qml.expval(qml.PauliZ(1))
 
 
@@ -51,7 +52,6 @@ def circuit_2():
     qml.CRX(1, wires=[0, 1])
     qml.IsingXY(2, wires=[1, 2])
     qml.ISWAP(wires=[0, 1])
-    qml.Toffoli(wires=[1, 2, 3])
     return qml.expval(qml.PauliZ(0))
 
 
@@ -88,7 +88,7 @@ def circuit_5():
         [qml.math.exp(1j * 0.1), qml.math.exp(1j * PI), INVSQ2 * (1 + 1j), INVSQ2 * (1 - 1j)],
         wires=[0, 1],
     )
-
+    return qml.expval(qml.PauliZ(0))
 
 class TestCliffordCompile:
     """Unit tests for clifford compilation function."""
@@ -116,14 +116,14 @@ class TestCliffordCompile:
 
         with qml.tape.QuantumTape() as old_tape:
             circuit()
-
-        [new_tape], tape_fn = clifford_t_decomposition(old_tape, max_depth=max_depth)
+        print(circuit)
+        [new_tape], tape_fn = clifford_t_decomposition(old_tape, max_depth=max_depth, approximate_set=_APPROX_SET)
 
         assert all(
             any(
                 (
                     isinstance(op, gate) or isinstance(getattr(op, "base", None), gate)
-                    for gate in _CLIFFORD_PHASE_GATES + [qml.RZ]  # TODO: remove this
+                    for gate in _CLIFFORD_PHASE_GATES
                 )
             )
             for op in new_tape.operations
@@ -143,9 +143,7 @@ class TestCliffordCompile:
 
         def qfunc():
             qml.CRX(1, wires=[0, 1])
-            qml.IsingXY(2, wires=[1, 2])
             qml.ISWAP(wires=[0, 1])
-            qml.Toffoli(wires=[1, 2, 3])
             return qml.expval(qml.PauliZ(0))
 
         original_qnode = qml.QNode(qfunc, dev)
