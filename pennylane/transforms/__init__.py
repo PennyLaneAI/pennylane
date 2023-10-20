@@ -98,7 +98,7 @@ There are also utility functions that take a circuit and return a DAG.
 Transforms for Clifford+T compilation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-There are functions that assist in performing decomposition to Clifford+T basis
+The following functions assist in decomposing operations to the Clifford+T basis.
 
 .. autosummary::
     :toctree: api
