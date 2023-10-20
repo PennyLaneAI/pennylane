@@ -17,7 +17,6 @@ import math
 from itertools import product
 from typing import Sequence, Callable
 
-from tqdm.auto import tqdm
 import scipy as sp
 import pennylane as qml
 from pennylane.queuing import QueuingManager
@@ -312,9 +311,9 @@ def clifford_t_decomposition(
         **kwargs: Keyword argument to pass options for the ``method`` used for decompositions
 
     Keyword Args:
-        Extra arguments:
+        Arguments (*):
 
-        * **depth** (int), **basis_set** (list(str)), **basis_depth** (int), **approximate_set** (list) and **kd_tree** (scipy.spatial.KDTree): 
+        * **depth** (int), **basis_set** (list(str)), **basis_depth** (int), **approximate_set** (list) and **kd_tree** (scipy.spatial.KDTree):
             arguments for using the :func:`~.sk_decomposition` for Solovay-Kitaev ``"sk"`` decomposition.
 
     Returns:
@@ -448,7 +447,7 @@ def clifford_t_decomposition(
             )
 
         new_ops = []
-        for op in tqdm(new_operations):
+        for op in new_operations:
             if isinstance(op, qml.RZ):
                 clifford_ops = sk_decomposition(
                     op, depth=_depth, approximate_set=_approximate_set, kd_tree=_kd_tree

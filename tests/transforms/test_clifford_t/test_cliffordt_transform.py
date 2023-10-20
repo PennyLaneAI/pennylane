@@ -90,6 +90,7 @@ def circuit_5():
     )
     return qml.expval(qml.PauliZ(0))
 
+
 class TestCliffordCompile:
     """Unit tests for clifford compilation function."""
 
@@ -117,7 +118,9 @@ class TestCliffordCompile:
         with qml.tape.QuantumTape() as old_tape:
             circuit()
         print(circuit)
-        [new_tape], tape_fn = clifford_t_decomposition(old_tape, max_depth=max_depth, approximate_set=_APPROX_SET)
+        [new_tape], tape_fn = clifford_t_decomposition(
+            old_tape, max_depth=max_depth, approximate_set=_APPROX_SET
+        )
 
         assert all(
             any(
