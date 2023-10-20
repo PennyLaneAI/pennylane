@@ -313,8 +313,8 @@ def clifford_t_decomposition(
     Keyword Args:
         Arguments (*):
 
-            * **depth** (int), **basis_set** (list(str)), **basis_depth** (int), **approximate_set** (list) and **kd_tree** (scipy.spatial.KDTree):
-                arguments for using the :func:`~.sk_decomposition` for Solovay-Kitaev ``"sk"`` decomposition.
+            * **depth** (int), **basis_set** (list(str)), **basis_depth** (int), **approximate_set** (list) and **kd_tree** (scipy.spatial.KDTree): 
+                arguments for using the ``"sk"`` method, i.e., for performing Solovay-Kitaev decomposition using :func:`~.sk_decomposition`
 
     Returns:
         pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,

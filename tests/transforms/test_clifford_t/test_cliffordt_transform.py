@@ -17,7 +17,6 @@ import math
 from functools import reduce
 
 import pytest
-import scipy as sp
 import pennylane as qml
 
 from pennylane.transforms.decompositions.clifford_plus_t.cliffordt_transform import (
@@ -159,7 +158,7 @@ class TestCliffordCompile:
             any(
                 (
                     isinstance(op, gate) or isinstance(getattr(op, "base", None), gate)
-                    for gate in _CLIFFORD_PHASE_GATES + [qml.RZ]  # TODO: remove this
+                    for gate in _CLIFFORD_PHASE_GATES
                 )
             )
             for op in transfmd_qnode.tape.operations
