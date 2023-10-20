@@ -362,9 +362,9 @@ def quantum_monte_carlo(
         raise ValueError("No wires can be shared between the wires and estimation_wires registers")
 
     updated_operations = []
-    updated_operations.extend(tape.operations)
 
     with qml.queuing.QueuingManager.stop_recording():
+        updated_operations.extend(tape.operations)
         for i, control_wire in enumerate(estimation_wires):
             updated_operations.append(Hadamard(control_wire))
 
@@ -383,6 +383,6 @@ def quantum_monte_carlo(
             for _ in range(n_reps):
                 updated_operations.extend(tape_q.operations)
 
-            updated_operations.append(adjoint(QFT(wires=estimation_wires)))
+        updated_operations.append(adjoint(QFT(wires=estimation_wires)))
     tape = qml.tape.QuantumTape(ops=updated_operations, measurements=tape.measurements)
     return [tape], lambda x: x[0]
