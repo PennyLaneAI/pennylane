@@ -17,7 +17,6 @@ Unit tests for the aqft template.
 import pytest
 
 import numpy as np
-
 import pennylane as qml
 
 
