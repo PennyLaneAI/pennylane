@@ -24,7 +24,101 @@ from pennylane.operation import AnyWires, Operation
 
 
 class AQFT(Operation):
-    r"""stuff"""
+    r"""AQFT(order, wires)
+    Apply an approximate quantum Fourier transform (AQFT).
+
+    The AQFT operation helps to reduce the number of `ControlledPhaseShift` operations required
+    for QFT by only using a maximum of `order` number of `ControlledPhaseShift` gates per qubit.
+
+    .. seealso:: :meth:`~.QFT`.
+
+    **Details:**
+
+    * Number of wires: Any (the operation can act on any number of wires)
+    * Number of parameters: 0
+    * Gradient recipe: None
+
+    Args:
+        order (int): the order of approximation
+        wires (int or Iterable[Number, str]]): the wire(s) the operation acts on
+
+    **Example**
+
+    The approximate quantum Fourier transform is applied by specifying the corresponding wires and
+    the order of approximation:
+
+    .. code-block::
+
+        wires = 3
+
+        dev = qml.device('default.qubit', wires=wires)
+
+
+        @qml.qnode(dev)
+        def circuit_aqft(basis_state):
+            qml.BasisState(basis_state, wires=range(wires))
+            qml.AQFT(order=1,wires=range(wires))
+            return qml.state()
+
+
+        circuit_aqft(np.array([1.0, 0.0, 0.0], requires_grad=False))
+
+    .. details::
+        :title: Usage Details
+
+        **Order**
+
+        The order of approximation must be a whole number less than :math:`n-1`
+        where :math:`n` is the number of wires the operation is being applied on.
+        This creates four cases for different `order` values:
+
+        * `order` :math:`< 0`
+            This will raise a `ValueError`
+
+        * `order` :math:`= 0`
+            This will warn the user that only a Hadamard transform is being applied.
+
+            .. code-block::
+
+                @qml.qnode(dev)
+                def circ():
+                    qml.AQFT(order=0, range(6))
+                    return qml.probs()
+
+            The resulting circuit is:
+
+            >>> print(qml.draw(circ, expansion_strategy='device')())
+            UserWarning: order=0, applying Hadamard transform warnings.warn("order=0, applying Hadamard transform")
+            0: ──H─╭SWAP─────────────┤ ╭Probs
+            1: ──H─│─────╭SWAP───────┤ ├Probs
+            2: ──H─│─────│─────╭SWAP─┤ ├Probs
+            3: ──H─│─────│─────╰SWAP─┤ ├Probs
+            4: ──H─│─────╰SWAP───────┤ ├Probs
+            5: ──H─╰SWAP─────────────┤ ╰Probs
+
+        * :math:`0 < ``order` :math:`< n-1`
+            This is the intended AQFT use case.
+
+            .. code-block::
+
+                @qml.qnode(dev)
+                def circ():
+                    qml.AQFT(order=2, range(4))
+                    return qml.probs()
+
+            The resulting circuit is:
+
+            >>> print(qml.draw(circ, expansion_strategy='device')())
+            0: ──H─╭Rϕ(1.57)─╭Rϕ(0.79)────────────────────────────────────────╭SWAP───────┤ ╭Probs
+            1: ────╰●────────│──────────H─╭Rϕ(1.57)─╭Rϕ(0.79)─────────────────│─────╭SWAP─┤ ├Probs
+            2: ──────────────╰●───────────╰●────────│──────────H─╭Rϕ(1.57)────│─────╰SWAP─┤ ├Probs
+            3: ─────────────────────────────────────╰●───────────╰●─────────H─╰SWAP───────┤ ╰Probs
+
+        * `order` :math:`>= n-1`
+            Using the QFT class is recommended in this case. The AQFT operation here is
+            equivalent to QFT.
+
+    """
     num_wires = AnyWires
     grad_method = None
 
