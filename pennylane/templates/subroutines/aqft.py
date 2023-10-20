@@ -58,7 +58,10 @@ class AQFT(Operation):
             return qml.state()
 
 
-        circuit_aqft()
+    .. code-block:: pycon
+
+        >>> circuit_aqft()
+        [insert output here]
 
     .. details::
         :title: Usage Details
