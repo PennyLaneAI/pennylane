@@ -258,6 +258,10 @@
   of the computed qubit operator, if imaginary components are smaller than a threshold. 
   [(#4639)](https://github.com/PennyLaneAI/pennylane/pull/4639)
 
+* `qml.data.load` correctly performs a full download of the dataset after a partial download of the
+  same dataset has already been performed.
+  [(#4681)](https://github.com/PennyLaneAI/pennylane/pull/4681)
+  
 * Improved performance of `qml.data.load()` when partially loading a dataset
   [(#4674)](https://github.com/PennyLaneAI/pennylane/pull/4674)
 
@@ -271,7 +275,6 @@
   context or initialized with a `custom_decomps` dictionary, as well as a custom `max_depth` for 
   decomposition.
   [(#4675)](https://github.com/PennyLaneAI/pennylane/pull/4675)
-
 
 
 <h3>Breaking changes 💔</h3>
