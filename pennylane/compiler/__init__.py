@@ -57,6 +57,7 @@ available hybrid compilers.
 
 Compiler
 --------
+
 The compiler module provides the infrastructure to integrate external
 hybrid quantum-classical compilers with PennyLane, but does not provide
 a built-in compiler.
@@ -76,9 +77,6 @@ to incorporate additional compilers in the near future.
 
     Please see the `installation <https://docs.pennylane.ai/projects/catalyst/en/latest/dev/installation.html>`__
     guide for more information.
-
-For any compiler packages seeking to be registered, it is imperative that they expose the 'entry_points' metadata
-under the designated group name: ``pennylane.compilers``.
 
 Basic usage
 -----------
@@ -155,6 +153,16 @@ as well as the `sharp bits and debugging tips <https://docs.pennylane.ai/project
 page for an overview of the differences between Catalyst and PennyLane, and
 how to best structure your workflows to improve performance when
 using Catalyst.
+
+Adding a compiler
+-----------------
+
+For any compiler packages seeking to be registered, it is imperative that they expose the 'entry_points' metadata
+under the designated group name: ``pennylane.compilers`` with the following entry points:
+
+- ``context`` : Path to the compilation evaluation context manager
+- ``ops`` : Path to the compiler operations module
+- ``qjit`` : Path to the JIT compiler decorator
 """
 
 from .compiler import available_compilers, available, active

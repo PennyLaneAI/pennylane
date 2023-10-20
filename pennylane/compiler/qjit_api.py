@@ -92,7 +92,6 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
     page for an overview of the differences between Catalyst and PennyLane, and
     how to best structure your workflows to improve performance when
     using Catalyst.
-
     """
 
     if not available(compiler):
