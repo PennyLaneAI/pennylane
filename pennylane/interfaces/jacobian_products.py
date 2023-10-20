@@ -227,10 +227,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
 
         if self._cache_full_jacobian:
             jacs = self.compute_jacobian(tapes)
-            multi_measurements = (len(t.measurements) > 1 for t in tapes)
-            jvps = _compute_jvps(
-                jacs, tangents, multi_measurements, tapes[0].shots.has_partitioned_shots
-            )
+            jvps = _compute_jvps(jacs, tangents, tapes)
             return self._inner_execute(tapes), jvps
         jvp_tapes, jvp_processing_fn = qml.gradients.batch_jvp(
             tapes, tangents, self._gradient_transform, gradient_kwargs=self._gradient_kwargs
@@ -251,8 +248,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
 
         if self._cache_full_jacobian:
             jacs = self.compute_jacobian(tapes)
-            multi_measurements = (len(t.measurements) > 1 for t in tapes)
-            return _compute_vjps(jacs, dy, multi_measurements, tapes[0].shots.has_partitioned_shots)
+            return _compute_vjps(jacs, dy, tapes)
 
         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
             tapes, dy, self._gradient_transform, gradient_kwargs=self._gradient_kwargs
@@ -271,7 +267,9 @@ class TransformJacobianProducts(JacobianProductCalculator):
             partial_gradient_fn, tapes
         )
         results = self._inner_execute(jac_tapes)
-        return tuple(batch_post_processing(results))
+        jacs = tuple(batch_post_processing(results))
+        self._cache[tapes] = jacs
+        return jacs
 
 
 class DeviceDerivatives(JacobianProductCalculator):
