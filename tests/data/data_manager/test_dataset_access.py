@@ -234,7 +234,7 @@ class TestMiscHelpers:
 
 @pytest.fixture
 def mock_download_dataset(monkeypatch):
-    def mock(data_path, dest, attributes, force):
+    def mock(data_path, dest, attributes, force, block_size):
         dset = Dataset.open(Path(dest), "w")
         dset.close()
 
@@ -262,6 +262,7 @@ def test_load(tmp_path, data_name, params, expect_paths):
     dsets = pennylane.data.data_manager.load(
         data_name=data_name,
         folder_path=folder_path,
+        block_size=1,
         **params,
     )
 
@@ -289,9 +290,7 @@ def test_download_dataset_full(tmp_path):
     using requests if all attributes are requested."""
 
     pennylane.data.data_manager._download_dataset(
-        "dataset/path",
-        tmp_path / "dataset",
-        attributes=None,
+        "dataset/path", tmp_path / "dataset", attributes=None, block_size=1
     )
 
     with open(tmp_path / "dataset", "rb") as f:
@@ -311,7 +310,7 @@ def test_download_dataset_full_already_exists(tmp_path, force, expect_data):
         f.write(b"This is local data")
 
     pennylane.data.data_manager._download_dataset(
-        "dataset/path", tmp_path / "dataset", attributes=None, force=force
+        "dataset/path", tmp_path / "dataset", attributes=None, force=force, block_size=1
     )
 
     with open(tmp_path / "dataset", "rb") as f:
@@ -331,7 +330,7 @@ def test_download_dataset_partial(tmp_path, monkeypatch):
     )
 
     pennylane.data.data_manager._download_dataset(
-        "dataset/path", tmp_path / "dataset", attributes=["x"]
+        "dataset/path", tmp_path / "dataset", attributes=["x"], block_size=1
     )
 
     local = Dataset.open(tmp_path / "dataset")
@@ -351,7 +350,9 @@ def test_download_dataset_escapes_url(_, mock_get_args, datapath, escaped):
     dest = MagicMock()
     dest.exists.return_value = False
 
-    pennylane.data.data_manager._download_dataset(DataPath(datapath), dest=dest, attributes=None)
+    pennylane.data.data_manager._download_dataset(
+        DataPath(datapath), dest=dest, attributes=None, block_size=1
+    )
 
     mock_get_args.assert_called_once()
     assert mock_get_args.call_args[0] == (f"{S3_URL}/{escaped}",)
@@ -370,11 +371,11 @@ def test_download_dataset_escapes_url_partial(mock_download_partial, datapath, e
     force = False
 
     pennylane.data.data_manager._download_dataset(
-        DataPath(datapath), dest=dest, attributes=attributes, force=force
+        DataPath(datapath), dest=dest, attributes=attributes, force=force, block_size=1
     )
 
     mock_download_partial.assert_called_once_with(
-        f"{S3_URL}/{escaped}", dest, attributes, overwrite=force
+        f"{S3_URL}/{escaped}", dest, attributes, overwrite=force, block_size=1
     )
 
 
