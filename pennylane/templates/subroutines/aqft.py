@@ -125,17 +125,17 @@ class AQFT(Operation):
     def __init__(self, order, wires=None, id=None):
         wires = qml.wires.Wires(wires)
 
-        self.hyperparameters["n_wires"] = len(wires)
+        self.n_wires = len(wires)
 
         if not isinstance(order, int):
             warnings.warn(f"The order must be an integer. Using order = {round(order)}")
             order = round(order)
 
-        if order >= self.hyperparameters["n_wires"] - 1:
+        if order >= self.n_wires - 1:
             warnings.warn(
-                f'The order ({order}) is >= to the number of wires - 1 ({self.hyperparameters["n_wires"]-1}). Using the QFT class is recommended in this case.'
+                f"The order ({order}) is >= to the number of wires - 1 ({self.n_wires-1}). Using the QFT class is recommended in this case."
             )
-            order = self.hyperparameters["n_wires"] - 1
+            order = self.n_wires - 1
 
         if order < 0:
             raise ValueError("Order can not be less than 0")
@@ -151,9 +151,7 @@ class AQFT(Operation):
         return 0
 
     @staticmethod
-    def compute_decomposition(
-        wires, n_wires, order
-    ):  # pylint: disable=arguments-differ,unused-argument
+    def compute_decomposition(wires, order):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -163,7 +161,6 @@ class AQFT(Operation):
 
         Args:
             wires (Iterable, Wires): wires that the operator acts on
-            n_wires (int): number of wires or ``len(wires)``
             order (int): order of approximation
 
         Returns:
@@ -175,6 +172,7 @@ class AQFT(Operation):
         [Hadamard(wires=[0]), ControlledPhaseShift(1.5707963267948966, wires=[1, 0]), Hadamard(wires=[1]), ControlledPhaseShift(1.5707963267948966, wires=[2, 1]), Hadamard(wires=[2]), SWAP(wires=[0, 2])]
 
         """
+        n_wires = len(wires)
         shifts = [2 * np.pi * 2**-i for i in range(2, n_wires + 1)]
 
         decomp_ops = []
