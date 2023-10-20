@@ -51,7 +51,7 @@ class TestInitialization:
         assert op.control_wires == new_op.control_wires
         assert op is not new_op
 
-    def test_overlapping_control_and_base_wires_raises_error(self):
+    def test_overlapping_wires_error(self):
         """Test that an error is raised if the wires of the base
         operator and the control wires overlap"""
 
@@ -153,9 +153,11 @@ class TestMethods:
         op = qml.ControlledSequence(qml.RX(0.25, wires=3), control=["a", 1, "blue"])
 
         decomp = op.decomposition()
-        expected_decomp = qml.ControlledSequence.compute_decomposition(
-            qml.RX(0.25, wires=3), ["a", 1, "blue"]
-        )
+        expected_decomp = [
+            qml.ops.op_math.Controlled(qml.RX(0.25, wires=3), control_wires="a") ** 4,
+            qml.ops.op_math.Controlled(qml.RX(0.25, wires=3), control_wires=1) ** 2,
+            qml.ops.op_math.Controlled(qml.RX(0.25, wires=3), control_wires="blue") ** 1,
+        ]
 
         for op1, op2 in zip(decomp, expected_decomp):
             assert op1 == op2
@@ -328,81 +330,44 @@ class TestQPEResults:
     @pytest.mark.parametrize("phase", [7, np.pi, np.pi / 3, 2.3])
     def test_phase_estimated_single_ops(self, phase):
         """Tests that the QPE defined using ControlledSequence works correctly for a single operator"""
-        dev = qml.device("default.qubit")
+
         unitary = qml.RX(phase, wires=[0])
+        estimation_wires = range(1, 6)
+        dev = qml.device("default.qubit")
 
-        estimates = []
-        wire_range = range(3, 11)
+        @qml.qnode(dev)
+        def circuit():
+            for i in estimation_wires:
+                qml.Hadamard(wires=i)
 
-        for wires in wire_range:
-            estimation_wires = range(1, wires - 1)
+            qml.ControlledSequence(unitary, control=estimation_wires)
 
-            @qml.qnode(dev)
-            def circuit():
-                qml.Hadamard(wires=0)
+            qml.adjoint(qml.QFT)(wires=estimation_wires)
 
-                for i in estimation_wires:
-                    qml.Hadamard(wires=i)
+            return qml.state()
 
-                qml.ControlledSequence(unitary, control=estimation_wires)
+        qpe = qml.QuantumPhaseEstimation(unitary, estimation_wires=estimation_wires)
 
-                qml.adjoint(qml.QFT)(wires=estimation_wires)
-
-                return qml.probs(wires=estimation_wires)
-
-            res = circuit()
-
-            estimate = np.argmax(res) / 2 ** (wires - 2)
-            # Need to rescale phase due to convention of RX gate
-            estimate = 4 * np.pi * (1 - estimate)
-            estimates.append(estimate)
-
-        # Check that the error is monotonically decreasing
-        for i in range(len(estimates) - 1):
-            err1 = np.abs(estimates[i] - phase)
-            err2 = np.abs(estimates[i + 1] - phase)
-            assert err1 >= err2
-
-        # This is a large error, but we'd need to push the qubit number up more to get it lower
-        assert np.allclose(estimates[-1], phase, rtol=2e-2)
+        assert np.allclose(qml.matrix(circuit)(), qml.matrix(qpe))
 
     @pytest.mark.parametrize("phase", [7, np.pi, np.pi / 3, 2.3])
     def test_phase_estimated_composite_ops(self, phase):
         """Tests that the QPE defined using ControlledSequence works correctly for compound operators"""
-        dev = qml.device("default.qubit")
         unitary = qml.RX(phase, wires=[0]) @ qml.CNOT(wires=[0, 1])
+        estimation_wires = range(2, 6)
+        dev = qml.device("default.qubit")
 
-        estimates = []
-        wire_range = range(5, 12)
+        @qml.qnode(dev)
+        def circuit():
+            for i in estimation_wires:
+                qml.Hadamard(wires=i)
 
-        for wires in wire_range:
-            estimation_wires = range(2, wires)
+            qml.ControlledSequence(unitary, control=estimation_wires)
 
-            @qml.qnode(dev)
-            def circuit():
-                qml.Hadamard(wires=0)
+            qml.adjoint(qml.QFT)(wires=estimation_wires)
 
-                for i in estimation_wires:
-                    qml.Hadamard(wires=i)
+            return qml.state()
 
-                qml.ControlledSequence(unitary, control=estimation_wires)
+        qpe = qml.QuantumPhaseEstimation(unitary, estimation_wires=estimation_wires)
 
-                qml.adjoint(qml.QFT)(wires=estimation_wires)
-
-                return qml.probs(wires=estimation_wires)
-
-            res = circuit()
-
-            estimate = np.argmax(res) / 2 ** (wires - 2)
-            # Need to rescale phase due to convention of RX gate
-            estimate = 4 * np.pi * (1 - estimate)
-            estimates.append(estimate)
-
-        # Check that the error is monotonically decreasing
-        for i in range(len(estimates) - 1):
-            err1 = np.abs(estimates[i] - phase)
-            err2 = np.abs(estimates[i + 1] - phase)
-            assert err1 >= err2
-
-        # This is a large error, but we'd need to push the qubit number up more to get it lower
-        assert np.allclose(estimates[-1], phase, rtol=2e-2)
+        assert np.allclose(qml.matrix(circuit)(), qml.matrix(qpe))

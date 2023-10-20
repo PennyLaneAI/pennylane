@@ -50,6 +50,8 @@ class ControlledSequence(SymbolicOp, Operation):
 
     .. code-block:: python
 
+        dev = qml.device("default.qubit", wires = 4)
+
         @qml.qnode(dev)
         def circuit():
 
@@ -66,8 +68,6 @@ class ControlledSequence(SymbolicOp, Operation):
     [0.92059345 0.02637178 0.00729619 0.00423258 0.00360545 0.00423258 0.00729619 0.02637178]
 
     """
-    num_wires = AnyWires
-    # grad_method = None
 
     def _flatten(self):
         return (self.base,), (self.control,)
