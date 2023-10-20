@@ -280,7 +280,8 @@ def _unitary_bloch(mat, eps=1e-10):
 
 
 def _group_commutator_decompose(mat):
-    r"""Performs group commutator decomposition :math:`U = V' \times W' \times V'^{\dagger}. \times W'^{\dagger}` as given in the Section 4.1 of arXiv:0505030"""
+    r"""Performs group commutator decomposition :math:`U = V' \times W' \times V'^{\dagger}. \times W'^{\dagger}`
+    as given in the Section 4.1 of arXiv:0505030"""
     # Get axis and theta for the operator.
     axis, theta = _unitary_bloch(mat)
 
@@ -291,7 +292,7 @@ def _group_commutator_decompose(mat):
     v = qml.RX(phi, [0])
     w = qml.RY(2 * math.pi - phi, [0]) if axis[2] > 0 else qml.RY(phi, [0])
 
-    # Early return for the case where matrix I or -I
+    # Early return for the case where matrix is I or -I
     if qml.math.isclose(theta, 0.0) and qml.math.allclose(axis, [0, 0, 1]):
         return qml.math.eye(2, dtype=complex), qml.math.eye(2, dtype=complex)
 
@@ -308,36 +309,52 @@ def _group_commutator_decompose(mat):
     return w_hat, v_hat
 
 
-def _approximate_umat(seqs, basic_approximations):
+def _approximate_umat(seqs, basic_approximations, KDTree=None):
     """Approximates given GateSet using the TreeSet structure"""
 
-    def key(x):
-        return qml.math.linalg.norm(qml.math.subtract(x.so3_matrix, seqs.so3_matrix))
+    if KDTree is None:
+        # use built-in min function for comparision - should be at least O(n^2)
+        def key(x):
+            return qml.math.linalg.norm(qml.math.subtract(x.so3_matrix, seqs.so3_matrix))
 
-    return min(basic_approximations, key=key)
+        return min(basic_approximations, key=key)
+
+    # make use of the KD-Tree - should be at least O(log n)
+    seq_node = qml.math.array([qml.math.flatten(seqs.so3_matrix)])
+    _, index = KDTree.query(seq_node, workers=-1)
+
+    return basic_approximations[index[0]]
 
 
-def sk_approximate_set(basis_set=(), basis_depth=10):
+def sk_approximate_set(basis_set=(), basis_depth=10, kd_tree=False):
     r"""Builds approximate unitary set required for Solovay-Kitaev algorithm.
 
     Args:
         basis_set (list(str)): Basis set to be used for Solovay-Kitaev decomposition build using
             following terms, ``['x', 'y', 'z', 'h', 't', 'tdg', 's', 'sdg']``. Default is ``["t", "tdg", "h"]``
         basis_depth (int): Maximum expansion length of Clifford+T sequences in the approximation set. Default is `10`
+        kd_tree (bool): Return a KD-Tree corresponding to the gates in approximated set. Default is ``False``
 
     Returns:
-        list: A list of Clifford+T sequences that will be used for approximating a matrix in the base case of recursive implementation of Solovay-Kitaev.
+        list or tuple(list, scipy.spatial.KDTree): A list of Clifford+T sequences that will be used for approximating
+        a matrix in the base case of recursive implementation of Solovay-Kitaev algorithm. If ``kd_tree`` argument
+        is ``True``, it also returns a KD-Tree built based on the list
 
-    .. seealso:: :func:`~.sk_decomposition`
+    .. seealso:: :func:`~.sk_decomposition` for performing Solovay-Kitaev decomposition.
     """
 
     if not basis_set:
         basis_set = ["t", "tdg", "h"]
 
-    return TreeSet(GateSet(), basis_set, ()).basic_approximation(depth=basis_depth)
+    approximate_set = TreeSet(GateSet(), basis_set, ()).basic_approximation(depth=basis_depth)
+    if not kd_tree:
+        return approximate_set
+
+    gnodes = qml.math.array([qml.math.flatten(seq.so3_matrix) for seq in approximate_set])
+    return (approximate_set, sp.spatial.KDTree(gnodes))
 
 
-def sk_decomposition(op, depth, basis_set=(), basis_depth=10, approximate_set=None):
+def sk_decomposition(op, depth, basis_set=(), basis_depth=10, approximate_set=None, kd_tree=None):
     r"""Approximate an arbitrary single-qubit gate in the Clifford+T basis using the `Solovay-Kitaev algorithm <https://arxiv.org/abs/quant-ph/0505030>`_.
 
     This method implements a recursive Solovay-Kitaev decomposition that approximates any :math:`U \in \text{SU}(2)`
@@ -355,6 +372,8 @@ def sk_decomposition(op, depth, basis_set=(), basis_depth=10, approximate_set=No
         approximate_set (list): A list of gate sequences that are used to find an approximation of unitaries in the
             base case of recursion. This can be precomputed using the :func:`~.sk_approximate_set`
             method, otherwise will be built using the default/given values of ``basis_set`` and ``basis_depth``
+        kd_tree (scipy.spatial.KDTree): A KD-Tree corresponding to the ``approximate_set``. This can also be
+            precomputed using :func:`~.sk_approximate_set`, otherwise will be built internally.
 
     Returns:
         list(~.Operations): A list of gates in the Clifford+T basis set that approximates the given operation
@@ -384,7 +403,7 @@ def sk_decomposition(op, depth, basis_set=(), basis_depth=10, approximate_set=No
     >>> qml.math.allclose(op.matrix(), su2_matrix, atol=1e-3)
     True
 
-    .. seealso:: :func:`~.sk_approximate_set` for precomputing the  ``approximate_set``.
+    .. seealso:: :func:`~.sk_approximate_set` for precomputing the ``approximate_set``.
     """
     with QueuingManager.stop_recording():
         # Check for length of wires in the operation
@@ -399,14 +418,19 @@ def sk_decomposition(op, depth, basis_set=(), basis_depth=10, approximate_set=No
             or basis_depth != 10
             or (basis_set and sorted(basis_set) != ["h", "t", "tdg"])
         ):
-            approximate_set = sk_approximate_set(basis_set, basis_depth)
+            approximate_set, kd_tree = sk_approximate_set(basis_set, basis_depth, True)
+
+        # Build the KDTree with the approximation set for querying in the base case
+        if kd_tree is None:
+            gnodes = qml.math.array([qml.math.flatten(seq.so3_matrix) for seq in approximate_set])
+            kd_tree = sp.spatial.KDTree(gnodes)
 
         # Recursive implementation for Solovay-Kitaev algorithm
         def _solovay_kitaev(gateset, n):
             """Recursive method as given in the Section 3 of arXiv:0505030"""
 
             if not n:
-                return _approximate_umat(gateset, approximate_set)
+                return _approximate_umat(gateset, approximate_set, kd_tree)
 
             u_n1 = _solovay_kitaev(gateset, n - 1)
             u_n1dg = u_n1.adjoint()

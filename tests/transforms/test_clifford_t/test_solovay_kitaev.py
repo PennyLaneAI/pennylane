@@ -17,6 +17,7 @@ import math
 import functools
 
 import pytest
+import scipy as sp
 import pennylane as qml
 
 from pennylane.transforms.decompositions.clifford_plus_t.solovay_kitaev import (
@@ -24,6 +25,7 @@ from pennylane.transforms.decompositions.clifford_plus_t.solovay_kitaev import (
     TreeSet,
     _group_commutator_decompose,
     _unitary_bloch,
+    _approximate_umat,
     sk_approximate_set,
     sk_decomposition,
 )
@@ -158,6 +160,13 @@ class TestSolovayKitaev:
 
         assert approx_set1 == approx_set2
         assert len(approx_set1) < 263 and len(approx_set2) < 263  # 3 + ... + 3x3x3x3x3
+
+        _, kdtree = sk_approximate_set(basis_depth=5, kd_tree=True)
+        assert isinstance(kdtree, sp.spatial.KDTree)
+        assert kdtree.data.shape == (len(approx_set1), 9)  # 9 comes from SO(3) repr
+
+        op = GateSet([qml.PhaseShift(math.pi / 4, 0)])
+        assert _approximate_umat(op, approx_set1) == _approximate_umat(op, approx_set1, kdtree)
 
     @pytest.mark.parametrize(
         ("op"),
