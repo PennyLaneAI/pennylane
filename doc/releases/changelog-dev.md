@@ -125,6 +125,7 @@
 <h3>Improvements 🛠</h3>
 
 * Multi-controlled operations with a single qubit special unitary target can now automatically decompose.
+  [(#4697)](https://github.com/PennyLaneAI/pennylane/pull/4697)
 
 * `pennylane.devices.preprocess` now offers the transforms `decompose`, `validate_observables`, `validate_measurements`,
   `validate_device_wires`, `validate_multiprocessing_workers`, `warn_about_trainable_observables`,
