@@ -43,6 +43,7 @@ def circuit_1():
     qml.RZ(1.0, wires=[0])
     qml.PhaseShift(1.0, wires=[1])
     qml.SingleExcitation(2.0, wires=[1, 2])
+    qml.PauliX(0)
     return qml.expval(qml.PauliZ(1))
 
 
@@ -116,7 +117,7 @@ class TestCliffordCompile:
 
         with qml.tape.QuantumTape() as old_tape:
             circuit()
-        print(circuit)
+
         [new_tape], tape_fn = clifford_t_decomposition(
             old_tape, max_depth=max_depth, approximate_set=_APPROX_SET
         )
@@ -183,7 +184,7 @@ class TestCliffordCompile:
             for op in decomp_ops
         )
 
-        decomp_ops, global_ops = decomp_ops[:-1], decomp_ops[-1]
+        global_ops = decomp_ops.pop()
         assert isinstance(global_ops, qml.GlobalPhase)
 
         matrix_op = reduce(
@@ -301,3 +302,18 @@ class TestCliffordCompile:
             match="qml.RX, qml.RY, qml.RZ, qml.Rot and qml.PhaseShift",
         ):
             _fuse_global_phases(_rot_decompose(op))
+
+    def test_raise_with_decomposition_method(self):
+        """Test that exception is correctly raise when using incorrect decomposing method"""
+
+        with pytest.raises(
+            NotImplementedError,
+            match=r"Currently we only support Solovay-Kitaev \('sk'\) decompostion",
+        ):
+
+            dev = qml.device("default.qubit")
+            def qfunc():
+                qml.RX(1.0, wires=[0])
+                return qml.expval(qml.PauliZ(0))
+
+            qml.QNode(clifford_t_decomposition(qfunc, method="synth"), dev)()

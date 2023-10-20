@@ -98,7 +98,7 @@ There are also utility functions that take a circuit and return a DAG.
 Transforms for Clifford+T compilation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This transform accepts quantum functions, and perform decomposition to Clifford+T basis.
+This transform accepts quantum functions and decomposes them to the Clifford+T basis.
 
 .. autosummary::
     :toctree: api

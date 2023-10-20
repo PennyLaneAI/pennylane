@@ -291,10 +291,10 @@ def clifford_t_decomposition(
     method="sk",
     **kwargs,
 ) -> (Sequence[QuantumTape], Callable):
-    r"""Unrolls a circuit into Clifford+T basis using the optimal ancilla-free approximation of :class:`~.RZ` operations.
+    r"""Unrolls a circuit into the Clifford+T basis using the optimal ancilla-free approximation of :class:`~.RZ` operations.
 
-    This method first decomposes the gate operations to a basis comprising of Clifford, :class:`~.RZ` and
-    :class:`~.GlobalPhase` operations (or their adjoint), where the Clifford gates include the following PennyLane operations:
+    This method first decomposes the gate operations to a basis comprised of Clifford, :class:`~.RZ` and
+    :class:`~.GlobalPhase` operations (and their adjoint). The Clifford gates include the following PennyLane operations:
 
     - Single qubit gates - :class:`~.Identity`, :class:`~.PauliX`, :class:`~.PauliY`, :class:`~.PauliZ`,
       :class:`~.SX`, :class:`~.S`, and :class:`~.Hadamard`.
@@ -324,7 +324,7 @@ def clifford_t_decomposition(
         tape executions.
 
     Raises:
-        ValueError: If any gate operation does not have any existing rule for its decomposition
+        ValueError: If any gate operation does not have a rule for its decomposition
         NotImplementedError: If chosen decomposition is not supported
 
     .. seealso:: :func:`~.sk_decomposition` and :func:`~.sk_approximate_set`
@@ -443,7 +443,7 @@ def clifford_t_decomposition(
 
         else:
             raise NotImplementedError(
-                "Currently we only support Solovay-Kitaev ('sk') decompostion, got {method}"
+                f"Currently we only support Solovay-Kitaev ('sk') decompostion, got {method}"
             )
 
         new_ops = []
@@ -457,8 +457,7 @@ def clifford_t_decomposition(
                 new_ops.append(op)
 
     # Construct a new tape with the expanded set of operations
-    new_tape = QuantumTape(new_ops, expanded_tape.measurements, shots=tape.shots)
-    setattr(new_tape, "_qfunc_output", getattr(tape, "_qfunc_output", None))
+    new_tape = type(tape)(new_ops, expanded_tape.measurements, shots=tape.shots)
 
     # Perform a final attempt of simplification before return
     [new_tape], _ = cancel_inverses(new_tape)
