@@ -4,6 +4,41 @@
 
 <h3>New features since last release</h3>
 
+<h4>Exponentiate Hamiltonians with flexible Trotter products 🐖</h4>
+
+* Higher-order Trotter-Suzuki methods are now easily accessible through a new operation
+  called `TrotterProduct`.
+  [(#4661)](https://github.com/PennyLaneAI/pennylane/pull/4661)
+
+  Trotterization techniques are an affective route towards accurate and efficient
+  Hamiltonian simulation. The Suzuki-Trotter product formula allows for the ability
+  to express higher-order approximations to the matrix exponential of a Hamiltonian, 
+  and it is now available to use in PennyLane via the `TrotterProduct` operation. 
+  Simply specify the `order` of the approximation and the evolution `time`.
+
+  ```python
+  coeffs = [0.25, 0.75]
+  ops = [qml.PauliX(0), qml.PauliZ(0)]
+  H = qml.dot(coeffs, ops)
+
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.Hadamard(0)
+      qml.TrotterProduct(H, time=2.4, order=2)
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> circuit()
+  [-0.13259524+0.59790098j  0.        +0.j         -0.13259524-0.77932754j  0.        +0.j        ]
+  ```
+
+  The already-available `ApproxTimeEvolution` operation represents the special case of `order=1`.
+  It is recommended to switch over to use of `TrotterProduct` because `ApproxTimeEvolution` will be
+  deprecated and removed in upcoming releases.
+
 * Support drawing QJIT QNode from Catalyst.
   [(#4609)](https://github.com/PennyLaneAI/pennylane/pull/4609)
 
@@ -63,6 +98,10 @@
 * Transforms can be applied on devices following the new device API.
  [(#4667)](https://github.com/PennyLaneAI/pennylane/pull/4667)
 
+* `commutation_dag`, `shadow_expval`, `shadow_state`, `circuit_spectrum`, `map_wires` are updated to the new transform 
+  program system.
+  [(#4686)](https://github.com/PennyLaneAI/pennylane/pull/4686)
+
 * All gradient transforms are updated to the new transform program system.
  [(#4595)](https://github.com/PennyLaneAI/pennylane/pull/4595)
 
@@ -71,6 +110,7 @@
 
 * All batch transforms are updated to the new transform program system.
   [(#4440)](https://github.com/PennyLaneAI/pennylane/pull/4440)
+  [(#4686)](https://github.com/PennyLaneAI/pennylane/pull/4686)
 
 * Quantum information transforms are updated to the new transform program system.
   [(#4569)](https://github.com/PennyLaneAI/pennylane/pull/4569)
@@ -148,9 +188,11 @@
   [(#4628)](https://github.com/PennyLaneAI/pennylane/pull/4628)
   [(#4649)](https://github.com/PennyLaneAI/pennylane/pull/4649)
 
-* The `JacobianProductCalculator` abstract base class and implementation `TransformJacobianProducts`
-  have been added to `pennylane.interfaces.jacobian_products`.
+* The `JacobianProductCalculator` abstract base class and implementations `TransformJacobianProducts`
+  `DeviceDerivatives`, and `DeviceJacobianProducts` have been added to `pennylane.interfaces.jacobian_products`.
   [(#4435)](https://github.com/PennyLaneAI/pennylane/pull/4435)
+  [(#4527)](https://github.com/PennyLaneAI/pennylane/pull/4527)
+  [(#4637)](https://github.com/PennyLaneAI/pennylane/pull/4637)
 
 * Extended ``qml.qchem.import_state`` to import wavefunctions from MPS DMRG and SHCI classical
   calculations performed with the Block2 and Dice libraries, incorporating new tests and wavefunction
@@ -254,14 +296,31 @@
   with two or more terms.
   [(#4642)](https://github.com/PennyLaneAI/pennylane/pull/4642)
 
-
 * `_qfunc_output` has been removed from `QuantumScript`, as it is no longer necessary. There is
   still a `_qfunc_output` property on `QNode` instances.
   [(#4651)](https://github.com/PennyLaneAI/pennylane/pull/4651)
 
+* `qml.data.load` properly handles parameters that come after `'full'`
+  [(#4663)](https://github.com/PennyLaneAI/pennylane/pull/4663)
+
 * The `qml.jordan_wigner` function has been modified to optionally remove the imaginary components
   of the computed qubit operator, if imaginary components are smaller than a threshold. 
   [(#4639)](https://github.com/PennyLaneAI/pennylane/pull/4639)
+
+* Improved performance of `qml.data.load()` when partially loading a dataset
+  [(#4674)](https://github.com/PennyLaneAI/pennylane/pull/4674)
+
+* Plots generated with the `pennylane.drawer.plot` style of `matplotlib.pyplot` now have black
+  axis labels and are generated at a default DPI of 300.
+  [(#4690)](https://github.com/PennyLaneAI/pennylane/pull/4690)
+
+* Updated `qml.device`, `devices.preprocessing` and the `tape_expand.set_decomposition` context 
+  manager to bring `DefaultQubit2` to feature parity with `default.qubit.legacy` with regards to 
+  using custom decompositions. The `DefaultQubit2` device can now be included in a `set_decomposition` 
+  context or initialized with a `custom_decomps` dictionary, as well as a custom `max_depth` for 
+  decomposition.
+  [(#4675)](https://github.com/PennyLaneAI/pennylane/pull/4675)
+
 
 
 <h3>Breaking changes 💔</h3>
@@ -405,7 +464,13 @@
   Note that these functions are unstable while device upgrades are underway.
   [(#4555)](https://github.com/PennyLaneAI/pennylane/pull/4555)
 
-* Minor documentation improvement to the usage example in the `qml.QuantumMonteCarlo` page. Integral was missing the differential dx with respect to which the integration is being performed. [(#4593)](https://github.com/PennyLaneAI/pennylane/pull/4593)  
+* Minor documentation improvement to the usage example in the `qml.QuantumMonteCarlo` page.
+  Integral was missing the differential dx with respect to which the integration is being performed.
+  [(#4593)](https://github.com/PennyLaneAI/pennylane/pull/4593)  
+
+* Minor documentation improvement for the use of the `pennylane` style of `qml.drawer` and the
+  `pennylane.drawer.plot` style of `matplotlib.pyplot`. The use of the default font was clarified.
+  [(#4690)](https://github.com/PennyLaneAI/pennylane/pull/4690)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -445,11 +510,13 @@ This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
 Utkarsh Azad,
+Jack Brown,
 Stepan Fomichev,
 Joana Fraxanet,
 Diego Guala,
 Soran Jahangiri,
-Korbinian Kottmann
+Korbinian Kottmann,
+Ivana Kurecic,
 Christina Lee,
 Lillian M. A. Frederiksen,
 Vincent Michaud-Rioux,
