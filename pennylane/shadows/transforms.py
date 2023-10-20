@@ -14,7 +14,7 @@
 """Classical shadow transforms"""
 
 import warnings
-from functools import reduce, wraps
+from functools import reduce, partial
 from itertools import product
 from typing import Sequence, Callable
 
@@ -52,7 +52,8 @@ def _replace_obs(tape: QuantumTape, obs, *args, **kwargs) -> (Sequence[QuantumTa
     return [qscript], processing_fn
 
 
-def shadow_expval(H, k=1):
+@partial(transform, final_transform=True)
+def shadow_expval(tape: QuantumTape, H, k=1) -> (Sequence[QuantumTape], Callable):
     """Transform a QNode returning a classical shadow into one that returns
     the approximate expectation values in a differentiable manner.
 
@@ -88,14 +89,15 @@ def shadow_expval(H, k=1):
     >>> qml.grad(circuit)(x)
     -0.9323999999999998
     """
+    tapes, _ = _replace_obs(tape, qml.shadow_expval, H, k=k)
 
-    def decorator(qnode):
-        return _replace_obs(qnode, qml.shadow_expval, H, k=k)
+    def post_processing_fn(res):
+        return res
 
-    return decorator
+    return tapes, post_processing_fn
 
 
-def _shadow_state_diffable(wires):
+def _shadow_state_diffable(tape, wires):
     """Differentiable version of the shadow state transform"""
     wires_list = wires if isinstance(wires[0], list) else [wires]
 
@@ -117,63 +119,55 @@ def _shadow_state_diffable(wires):
             observables.append(reduce(lambda a, b: a @ b, [ob(wire) for ob, wire in zip(obs, w)]))
         all_observables.extend(observables)
 
-    def decorator(qnode):
-        new_qnode = _replace_obs(qnode, qml.shadow_expval, all_observables)
+    tapes, _ = _replace_obs(tape, qml.shadow_expval, all_observables)
 
-        @wraps(qnode)
-        def wrapper(*args, **kwargs):
-            # pylint: disable=not-callable
-            results = new_qnode(*args, **kwargs)
+    def post_processing_fn(results):
+        """Post process the classical shadows."""
+        results = results[0]
+        # cast to complex
+        results = qml.math.cast(results, np.complex64)
 
-            # cast to complex
-            results = qml.math.cast(results, np.complex64)
+        states = []
+        start = 0
+        for w in wires_list:
+            # reconstruct the state given the observables and the expectations of
+            # those observables
 
-            states = []
-            start = 0
-            for w in wires_list:
-                # reconstruct the state given the observables and the expectations of
-                # those observables
+            obs_matrices = qml.math.stack(
+                [
+                    qml.math.cast_like(qml.math.convert_like(qml.matrix(obs), results), results)
+                    for obs in all_observables[start : start + 4 ** len(w)]
+                ]
+            )
 
-                obs_matrices = qml.math.stack(
-                    [
-                        qml.math.cast_like(qml.math.convert_like(qml.matrix(obs), results), results)
-                        for obs in all_observables[start : start + 4 ** len(w)]
-                    ]
-                )
+            s = qml.math.einsum(
+                "a,abc->bc", results[start : start + 4 ** len(w)], obs_matrices
+            ) / 2 ** len(w)
+            states.append(s)
 
-                s = qml.math.einsum(
-                    "a,abc->bc", results[start : start + 4 ** len(w)], obs_matrices
-                ) / 2 ** len(w)
-                states.append(s)
+            start += 4 ** len(w)
 
-                start += 4 ** len(w)
+        return states if isinstance(wires[0], list) else states[0]
 
-            return states if isinstance(wires[0], list) else states[0]
-
-        return wrapper
-
-    return decorator
+    return tapes, post_processing_fn
 
 
-def _shadow_state_undiffable(wires):
+def _shadow_state_undiffable(tape, wires):
     """Non-differentiable version of the shadow state transform"""
     wires_list = wires if isinstance(wires[0], list) else [wires]
 
-    def decorator(qnode):
-        @wraps(qnode)
-        def wrapper(*args, **kwargs):
-            bits, recipes = qnode(*args, **kwargs)
-            shadow = qml.shadows.ClassicalShadow(bits, recipes)
+    def post_processing(results):
+        bits, recipes = results[0]
+        shadow = qml.shadows.ClassicalShadow(bits, recipes)
 
-            states = [qml.math.mean(shadow.global_snapshots(wires=w), 0) for w in wires_list]
-            return states if isinstance(wires[0], list) else states[0]
+        states = [qml.math.mean(shadow.global_snapshots(wires=w), 0) for w in wires_list]
+        return states if isinstance(wires[0], list) else states[0]
 
-        return wrapper
-
-    return decorator
+    return [tape], post_processing
 
 
-def shadow_state(wires, diffable=False):
+@partial(transform, final_transform=True)
+def shadow_state(tape: QuantumTape, wires, diffable=False) -> (Sequence[QuantumTape], Callable):
     """Transform a QNode returning a classical shadow into one that returns
     the reconstructed state in a differentiable manner.
 
@@ -221,4 +215,7 @@ def shadow_state(wires, diffable=False):
            [ 0.004275,  0.2358  ,  0.244875, -0.002175],
            [-0.2358  , -0.004275, -0.002175, -0.235125]])
     """
-    return _shadow_state_diffable(wires) if diffable else _shadow_state_undiffable(wires)
+    tapes, fn = (
+        _shadow_state_diffable(tape, wires) if diffable else _shadow_state_undiffable(tape, wires)
+    )
+    return tapes, fn

@@ -1170,9 +1170,9 @@ class TestStochPulseGrad:
         qnode.construct((params,), {})
 
         num_split_times = 5
-        tapes, fn = stoch_pulse_grad(
-            qnode.tape, argnums=[0, 1, 2], num_split_times=num_split_times, sampler_seed=7123
-        )
+        qnode.tape.trainable_params = [0, 1, 2]
+
+        tapes, fn = stoch_pulse_grad(qnode.tape, num_split_times=num_split_times, sampler_seed=7123)
         # Two generating terms with two shifts (X_0 and Z_0), one with eight shifts
         # (Y_0Y_1+0.4 X_1 has eigenvalues [-1.4, -0.6, 0.6, 1.4] yielding frequencies
         # [0.8, 1.2, 2.0, 2.8] and hence 2 * 4 = 8 shifts)
@@ -1534,7 +1534,6 @@ class TestStochPulseGradIntegration:
             diff_method=stoch_pulse_grad,
             num_split_times=num_split_times,
             sampler_seed=7123,
-            cache=False,  # remove once 3870 is merged
         )
         qnode_backprop = qml.QNode(ansatz, dev, interface="jax")
 

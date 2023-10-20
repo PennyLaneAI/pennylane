@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the specs transform"""
+from typing import Sequence, Callable
 from collections import defaultdict
 from contextlib import nullcontext
 import pytest
@@ -53,7 +54,9 @@ class TestSpecsTransform:
 
         if diff_method == "parameter-shift":
             assert info["num_gradient_executions"] == 0
-            assert info["gradient_fn"] == "pennylane.gradients.parameter_shift.param_shift"
+            assert (
+                info["gradient_fn"] == "pennylane.transforms.core.transform_dispatcher.param_shift"
+            )
 
     @pytest.mark.parametrize(
         "diff_method, len_info", [("backprop", 11), ("parameter-shift", 12), ("adjoint", 11)]
@@ -184,15 +187,15 @@ class TestSpecsTransform:
 
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
             info = qml.specs(circuit)()
-        assert info["diff_method"] == "pennylane.gradients.parameter_shift.param_shift"
-        assert info["gradient_fn"] == "pennylane.gradients.parameter_shift.param_shift"
+        assert info["diff_method"] == "pennylane.transforms.core.transform_dispatcher.param_shift"
+        assert info["gradient_fn"] == "pennylane.transforms.core.transform_dispatcher.param_shift"
 
     def test_custom_gradient_transform(self):
         """Test that a custom gradient transform is properly labelled"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.gradients.gradient_transform
-        def my_transform(tape):
+        @qml.transforms.core.transform
+        def my_transform(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
             return tape, None
 
         @qml.qnode(dev, diff_method=my_transform)
@@ -200,8 +203,8 @@ class TestSpecsTransform:
             return qml.probs(wires=0)
 
         info = qml.specs(circuit)()
-        assert info["diff_method"] == "test_specs.my_transform"
-        assert info["gradient_fn"] == "test_specs.my_transform"
+        assert info["diff_method"] == "pennylane.transforms.core.transform_dispatcher.my_transform"
+        assert info["gradient_fn"] == "pennylane.transforms.core.transform_dispatcher.my_transform"
 
     @pytest.mark.parametrize(
         "device,num_wires",

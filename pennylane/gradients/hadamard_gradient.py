@@ -15,9 +15,14 @@
 This module contains functions for computing the Hadamard-test gradient
 of a qubit-based quantum tape.
 """
+# pylint: disable=unused-argument
+from typing import Sequence, Callable
+from functools import partial
 import pennylane as qml
 import pennylane.numpy as np
 from pennylane.transforms.metric_tensor import _get_aux_wire
+from pennylane.transforms.core import transform
+from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 from pennylane.transforms.tape_expand import expand_invalid_trainable_hadamard_gradient
 
 from .gradient_transform import (
@@ -27,17 +32,40 @@ from .gradient_transform import (
     assert_no_variance,
     choose_grad_methods,
     gradient_analysis_and_validation,
-    gradient_transform,
     _no_trainable_grad,
 )
 
 
-def _hadamard_grad(
-    tape,
+def _expand_transform_hadamard(
+    tape: qml.tape.QuantumTape,
     argnum=None,
     aux_wire=None,
     device_wires=None,
-):
+) -> (Sequence[qml.tape.QuantumTape], Callable):
+    """Expand function to be applied before hadamard gradient."""
+    expanded_tape = expand_invalid_trainable_hadamard_gradient(tape)
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [expanded_tape], null_postprocessing
+
+
+@partial(
+    transform,
+    expand_transform=_expand_transform_hadamard,
+    classical_cotransform=_contract_qjac_with_cjac,
+    final_transform=True,
+)
+def hadamard_grad(
+    tape: qml.tape.QuantumTape,
+    argnum=None,
+    aux_wire=None,
+    device_wires=None,
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Transform a QNode to compute the Hadamard test gradient of all gates with respect to their inputs.
 
     Args:
@@ -174,6 +202,7 @@ def _hadamard_grad(
         The number of trainable parameters may increase due to the decomposition.
 
     """
+
     transform_name = "Hadamard test"
     assert_no_state_returns(tape.measurements, transform_name)
     assert_no_variance(tape.measurements, transform_name)
@@ -427,8 +456,3 @@ def _get_generators(trainable_op):
         coeffs = trainable_op.generator().coeffs
 
     return coeffs, generators
-
-
-hadamard_grad = gradient_transform(
-    _hadamard_grad, expand_fn=expand_invalid_trainable_hadamard_gradient
-)
