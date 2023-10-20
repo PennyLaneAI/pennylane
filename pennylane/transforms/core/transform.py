@@ -103,6 +103,12 @@ def transform(
     >>> transformed_qnode.transform_program
     TransformProgram(my_quantum_transform)
 
+    If we apply a second time the transform on the and :class:`pennylane.QNode`, we would add it to the transform
+    program again and therefore the transform would be applied twice before execution.
+
+    >>> transformed_qnode = dispatched_transform(transformed_qnode)
+    TransformProgram(my_quantum_transform, my_quantum_transform)
+
     The transform program is automatically applied on the tapes before sending the tapes to execution. When called the
     transform program applies all the transforms that it contains and create a sequence of tapes, it also produces a single
     post-processing function that containes a reversed concatenation of all the transforms processing functions. After

@@ -20,38 +20,19 @@ This subpackage contains QNode, quantum function, device, and tape transforms.
 Transforms
 ----------
 
-Transforms that act on QNodes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Transforms core
+---------------
 
-These transforms accept QNodes, and return new transformed functions
-that compute the desired quantity.
-
-.. autosummary::
-    :toctree: api
-
-    ~transforms.classical_jacobian
-    ~batch_params
-    ~batch_input
-    ~batch_partial
-    ~metric_tensor
-    ~adjoint_metric_tensor
-    ~specs
-    ~transforms.split_non_commuting
-
-Transforms that act on quantum functions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-These transforms accept quantum functions (Python functions
-containing quantum operations) that are used to construct QNodes.
+In this section you can find the building blocks of transforms in PennyLane. The user facing way of creating a
+transform is the `transform` function / decorator. `TransformDispatcher` and `TransformProgram` are developper-facing
+objects, that allows the creation, dispatching and composability of transforms.
 
 .. autosummary::
     :toctree: api
 
-    ~transforms.cond
-    ~defer_measurements
-    ~apply_controlled_Q
-    ~quantum_monte_carlo
-    ~transforms.insert
+    ~transforms.core.transform
+    ~transforms.core.transform_dispatcher
+    ~transforms.core.transform_program
 
 Transforms for circuit compilation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -137,27 +118,6 @@ There are also low-level functions that can be used to build up the circuit cutt
     ~transforms.qcut.place_wire_cuts
     ~transforms.qcut.find_and_place_cuts
 
-Transforms that act on tapes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-These transforms accept quantum tapes, and return one or
-more tapes as well as a classical processing function.
-
-.. autosummary::
-    :toctree: api
-
-    ~transforms.broadcast_expand
-    ~transforms.hamiltonian_expand
-    ~transforms.sign_expand
-    ~transforms.sum_expand
-
-This transform accepts a single tape and returns a single tape:
-
-.. autosummary::
-    :toctree: api
-
-    ~transforms.convert_to_numpy_parameters
-
 Decorators and utility functions
 --------------------------------
 
@@ -167,10 +127,6 @@ to help build custom QNode, quantum function, and tape transforms:
 .. autosummary::
     :toctree: api
 
-    ~single_tape_transform
-    ~batch_transform
-    ~qfunc_transform
-    ~op_transform
     ~transforms.make_tape
     ~transforms.map_batch_transform
     ~transforms.create_expand_fn
@@ -192,17 +148,59 @@ Transforms for error mitigation
     ~transforms.poly_extrapolate
     ~transforms.richardson_extrapolate
 
-Transforms core
----------------
+Transforms that act only on QNodes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+These transforms use the :func:`pennylane.transforms.core.transform` decorator and can be used on
+:class:`pennylane.tape.QuantumTape`, :class:`pennylane.QNode`. They fulfill multiple roles.
 
 .. autosummary::
     :toctree: api
 
-    ~transforms.core.transform
-    ~transforms.core.transform_dispatcher
+    ~metric_tensor
+    ~adjoint_metric_tensor
+    ~batch_params
+    ~batch_input
+    ~transforms.insert
+    ~defer_measurements
+    ~transforms.split_non_commuting
+    ~transforms.broadcast_expand
+    ~transforms.hamiltonian_expand
+    ~transforms.sign_expand
+    ~transforms.sum_expand
+    ~transforms.convert_to_numpy_parameters
+    ~apply_controlled_Q
+    ~quantum_monte_carlo
 
+Transforms that act only on QNodes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+These transforms only accept QNodes, and return new transformed functions
+that compute the desired quantity.
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.classical_jacobian
+    ~batch_partial
+    ~specs
+    ~draw
+    ~draw_mpl
+
+
+Transforms that act on quantum functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+These transforms accept quantum functions (Python functions
+containing quantum operations) that are used to construct QNodes.
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.cond
 """
 # Import the decorators first to prevent circular imports when used in other transforms
+from .core import transform
 from .batch_transform import batch_transform, map_batch_transform
 from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
 from .op_transforms import op_transform
