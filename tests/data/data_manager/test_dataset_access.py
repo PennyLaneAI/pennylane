@@ -24,7 +24,7 @@ import requests
 import pennylane as qml
 import pennylane.data.data_manager
 from pennylane.data import Dataset
-from pennylane.data.data_manager import DataPath, S3_URL, _validate_attributes
+from pennylane.data.data_manager import S3_URL, DataPath, _validate_attributes
 
 # pylint:disable=protected-access,redefined-outer-name
 
@@ -283,44 +283,92 @@ def test_load_except(monkeypatch, tmp_path):
         )
 
 
-@pytest.mark.usefixtures("mock_requests_get")
-@pytest.mark.parametrize("mock_requests_get", [b"This is binary data"], indirect=True)
-def test_download_dataset_full(tmp_path):
-    """Tests that _download_dataset will fetch the dataset file
-    using requests if all attributes are requested."""
+@patch("pennylane.data.data_manager._download_partial")
+@patch("pennylane.data.data_manager._download_full")
+@pytest.mark.parametrize("force", (True, False))
+@pytest.mark.parametrize(
+    "attributes, dest_exists, called_partial",
+    [(["x"], True, True), (["x"], False, True), (None, True, True), (None, False, False)],
+)
+def test_download_dataset_full_or_partial(
+    download_full, download_partial, attributes, dest_exists, force, called_partial
+):  # pylint: disable=too-many-arguments
+    """Test that _download_dataset calls ``_download_partial()`` if ``attributes`` is not None,
+    or the dataset already exists at ``dest``, and that it only calls ``_download_full()`` if
+    the dataset does not exist at ``dest`` and ``attributes`` is None.
+    """
+
+    dest = MagicMock()
+    dest.exists.return_value = dest_exists
 
     pennylane.data.data_manager._download_dataset(
-        "dataset/path", tmp_path / "dataset", attributes=None, block_size=1
+        "dataset/path", attributes=attributes, dest=dest, force=force, block_size=1
+    )
+
+    assert download_partial.called is called_partial
+    assert download_full.called is not called_partial
+
+
+@pytest.mark.parametrize("force", (True, False))
+@patch("pennylane.data.data_manager._download_full")
+def test_download_dataset_full_call(download_full, force):
+    """Test that ``_download_dataset()`` passes the correct parameters
+    to ``_download_full()``
+    """
+    dest = MagicMock()
+    dest.exists.return_value = False
+
+    pennylane.data.data_manager._download_dataset(
+        "dataset/path", attributes=None, dest=dest, force=force, block_size=1
+    )
+
+    download_full.assert_called_once_with(f"{S3_URL}/dataset/path", dest=dest)
+
+
+@pytest.mark.parametrize("attributes", [None, ["x"]])
+@pytest.mark.parametrize("force", (True, False))
+@patch("pennylane.data.data_manager._download_partial")
+def test_download_dataset_partial_call(download_partial, attributes, force):
+    """Test that ``_download_dataset()`` passes the correct parameters
+    to ``_download_partial()``
+    """
+    dest = MagicMock()
+    dest.exists.return_value = True
+
+    pennylane.data.data_manager._download_dataset(
+        "dataset/path", attributes=attributes, dest=dest, force=force, block_size=1
+    )
+
+    download_partial.assert_called_once_with(
+        f"{S3_URL}/dataset/path", dest=dest, attributes=attributes, overwrite=force, block_size=1
+    )
+
+
+@pytest.mark.usefixtures("mock_requests_get")
+@pytest.mark.parametrize("mock_requests_get", [b"This is binary data"], indirect=True)
+def test_download_full(tmp_path):
+    """Tests that _download_dataset will fetch the dataset file
+    at ``s3_url`` into ``dest``."""
+
+    pennylane.data.data_manager._download_full(
+        "dataset/path",
+        tmp_path / "dataset",
     )
 
     with open(tmp_path / "dataset", "rb") as f:
         assert f.read() == b"This is binary data"
 
 
-@pytest.mark.usefixtures("mock_requests_get")
-@pytest.mark.parametrize("mock_requests_get", [b"This is downloaded data"], indirect=True)
+@pytest.mark.parametrize("overwrite", [True, False])
 @pytest.mark.parametrize(
-    "force, expect_data", [(False, b"This is local data"), (True, b"This is downloaded data")]
+    "attributes, expect_attrs",
+    [(None, {"x": 1, "y": 2}), (["x"], {"x": 1}), (["x", "y"], {"x": 1, "y": 2})],
 )
-def test_download_dataset_full_already_exists(tmp_path, force, expect_data):
-    """Tests that _download_dataset will only overwrite an exists
-    dataset in the same path if `force` is True."""
-
-    with open(tmp_path / "dataset", "wb") as f:
-        f.write(b"This is local data")
-
-    pennylane.data.data_manager._download_dataset(
-        "dataset/path", tmp_path / "dataset", attributes=None, force=force, block_size=1
-    )
-
-    with open(tmp_path / "dataset", "rb") as f:
-        assert f.read() == expect_data
-
-
-def test_download_dataset_partial(tmp_path, monkeypatch):
-    """Tests that _download_dataset will fetch the dataset file
-    using requests if all attributes are requested."""
-
+def test_download_partial_dest_not_exists(
+    tmp_path, monkeypatch, attributes, expect_attrs, overwrite
+):
+    """Tests that _download_dataset will fetch only the requested attributes
+    of a dataset when the destination does not exist."""
     remote_dataset = Dataset()
     remote_dataset.x = 1
     remote_dataset.y = 2
@@ -329,14 +377,76 @@ def test_download_dataset_partial(tmp_path, monkeypatch):
         pennylane.data.data_manager, "open_hdf5_s3", MagicMock(return_value=remote_dataset.bind)
     )
 
-    pennylane.data.data_manager._download_dataset(
-        "dataset/path", tmp_path / "dataset", attributes=["x"], block_size=1
+    pennylane.data.data_manager._download_partial(
+        "dataset/path",
+        dest=tmp_path / "dataset",
+        attributes=attributes,
+        overwrite=overwrite,
+        block_size=1,
     )
 
     local = Dataset.open(tmp_path / "dataset")
 
-    assert local.x == 1
-    assert not hasattr(local, "y")
+    assert local.attrs == expect_attrs
+
+
+@pytest.mark.parametrize(
+    "attributes, overwrite, expect_attrs",
+    [
+        (None, False, {"x": "local_value", "y": 2, "z": 3}),
+        (["x", "y", "z"], False, {"x": "local_value", "y": 2, "z": 3}),
+        (None, True, {"x": "remote_value", "y": 2, "z": 3}),
+        (["x", "y", "z"], True, {"x": "remote_value", "y": 2, "z": 3}),
+        (["x"], False, {"x": "local_value"}),
+        (["x"], True, {"x": "remote_value"}),
+        (["y"], True, {"x": "local_value", "y": 2}),
+        (["y"], False, {"x": "local_value", "y": 2}),
+    ],
+)
+def test_download_partial_dest_exists(tmp_path, monkeypatch, attributes, overwrite, expect_attrs):
+    """Tests that _download_dataset will fetch only the requested attributes
+    of a dataset when the dataset does not exist locally."""
+    remote_dataset = Dataset()
+    remote_dataset.x = "remote_value"
+    remote_dataset.y = 2
+    remote_dataset.z = 3
+
+    monkeypatch.setattr(
+        pennylane.data.data_manager, "open_hdf5_s3", MagicMock(return_value=remote_dataset.bind)
+    )
+
+    local_dataset = Dataset.open(tmp_path / "dataset", "w")
+    local_dataset.x = "local_value"
+    local_dataset.close()
+
+    pennylane.data.data_manager._download_partial(
+        "dataset/path",
+        dest=tmp_path / "dataset",
+        attributes=attributes,
+        overwrite=overwrite,
+        block_size=1,
+    )
+
+    local = Dataset.open(tmp_path / "dataset")
+
+    assert local.attrs == expect_attrs
+
+
+@patch("pennylane.data.data_manager.open_hdf5_s3")
+def test_download_partial_no_check_remote(open_hdf5_s3, tmp_path):
+    """Test that `_download_partial()` will not open the remote dataset if all requested attributes
+    are present in the local dataset, and ``overwrite`` is ``False``."""
+    local_dataset = Dataset.open(tmp_path / "dataset", "w")
+    local_dataset.x = 1
+    local_dataset.y = 2
+
+    local_dataset.close()
+
+    pennylane.data.data_manager._download_partial(
+        "dataset_url", tmp_path / "dataset", ["x", "y"], overwrite=False, block_size=1
+    )
+
+    open_hdf5_s3.assert_not_called()
 
 
 @patch("builtins.open")
@@ -363,7 +473,7 @@ def test_download_dataset_escapes_url(_, mock_get_args, datapath, escaped):
     "datapath, escaped",
     [("data/NH3+/data.h5", "data/NH3%2B/data.h5"), ("data/CA$H/money.h5", "data/CA%24H/money.h5")],
 )
-def test_download_dataset_escapes_url_partial(mock_download_partial, datapath, escaped):
+def test_download_dataset_escapes_url_partial(download_partial, datapath, escaped):
     """Tests that _download_dataset escapes special characters in a URL when doing a partial
     download."""
     dest = Path("dest")
@@ -374,8 +484,8 @@ def test_download_dataset_escapes_url_partial(mock_download_partial, datapath, e
         DataPath(datapath), dest=dest, attributes=attributes, force=force, block_size=1
     )
 
-    mock_download_partial.assert_called_once_with(
-        f"{S3_URL}/{escaped}", dest, attributes, overwrite=force, block_size=1
+    download_partial.assert_called_once_with(
+        f"{S3_URL}/{escaped}", dest=dest, attributes=attributes, overwrite=force, block_size=1
     )
 
 
