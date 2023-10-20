@@ -622,7 +622,7 @@ class Hamiltonian(Observable):
                 for other_data in other._obs_data():  # pylint: disable=protected-access
                     if qml.math.isclose(self_data[0], other_data[0]) and self_data[1] == other_data[1]:
                         is_equal = True
-                        continue
+                        break
                 if not is_equal:
                     return False
             return True
