@@ -58,10 +58,10 @@ class QDrift(Operation):
         \prod_{j}^{n} e^{i \lambda H_j \tau / n},
 
     where :math:`\tau` is time, :math:`\lambda = \sum_j |h_j|` and :math:`n` is the total number of
-    terms to be sampled and added to the product. Note, the terms :math:`H_{j}` are assumed to be 
+    terms to be sampled and added to the product. Note, the terms :math:`H_{j}` are assumed to be
     normalized such that the "impact" of each term is fully encoded in the magnitude of :math:`h_{j}`.
-    
-    The number of samples :math:`n` required for a given error threshold can be approximated by: 
+
+    The number of samples :math:`n` required for a given error threshold can be approximated by:
 
     .. math::
 
@@ -134,9 +134,9 @@ class QDrift(Operation):
         >>> print(qml.grad(my_circ)(time))
         0.27980654844422853
 
-        The error in the approximation of time evolution with the QDrift protocol is 
-        directly related to the number of samples used in the product. We provide a 
-        method to upper-bound the error: 
+        The error in the approximation of time evolution with the QDrift protocol is
+        directly related to the number of samples used in the product. We provide a
+        method to upper-bound the error:
 
         >>> H = qml.dot([0.25, 0.75], [qml.PauliX(0), qml.PauliZ(0)])
         >>> print(qml.QDrift.error(H, time=1.2, n=10))
