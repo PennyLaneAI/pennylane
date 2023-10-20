@@ -142,9 +142,11 @@
   [(#4628)](https://github.com/PennyLaneAI/pennylane/pull/4628)
   [(#4649)](https://github.com/PennyLaneAI/pennylane/pull/4649)
 
-* The `JacobianProductCalculator` abstract base class and implementation `TransformJacobianProducts`
-  have been added to `pennylane.interfaces.jacobian_products`.
+* The `JacobianProductCalculator` abstract base class and implementations `TransformJacobianProducts`
+  `DeviceDerivatives`, and `DeviceJacobianProducts` have been added to `pennylane.interfaces.jacobian_products`.
   [(#4435)](https://github.com/PennyLaneAI/pennylane/pull/4435)
+  [(#4527)](https://github.com/PennyLaneAI/pennylane/pull/4527)
+  [(#4637)](https://github.com/PennyLaneAI/pennylane/pull/4637)
 
 * Extended ``qml.qchem.import_state`` to import wavefunctions from MPS DMRG and SHCI classical
   calculations performed with the Block2 and Dice libraries, incorporating new tests and wavefunction
@@ -248,7 +250,6 @@
   with two or more terms.
   [(#4642)](https://github.com/PennyLaneAI/pennylane/pull/4642)
 
-
 * `_qfunc_output` has been removed from `QuantumScript`, as it is no longer necessary. There is
   still a `_qfunc_output` property on `QNode` instances.
   [(#4651)](https://github.com/PennyLaneAI/pennylane/pull/4651)
@@ -260,12 +261,20 @@
   of the computed qubit operator, if imaginary components are smaller than a threshold. 
   [(#4639)](https://github.com/PennyLaneAI/pennylane/pull/4639)
 
+* Improved performance of `qml.data.load()` when partially loading a dataset
+  [(#4674)](https://github.com/PennyLaneAI/pennylane/pull/4674)
+
+* Plots generated with the `pennylane.drawer.plot` style of `matplotlib.pyplot` now have black
+  axis labels and are generated at a default DPI of 300.
+  [(#4690)](https://github.com/PennyLaneAI/pennylane/pull/4690)
+
 * Updated `qml.device`, `devices.preprocessing` and the `tape_expand.set_decomposition` context 
   manager to bring `DefaultQubit2` to feature parity with `default.qubit.legacy` with regards to 
   using custom decompositions. The `DefaultQubit2` device can now be included in a `set_decomposition` 
   context or initialized with a `custom_decomps` dictionary, as well as a custom `max_depth` for 
   decomposition.
   [(#4675)](https://github.com/PennyLaneAI/pennylane/pull/4675)
+
 
 
 <h3>Breaking changes 💔</h3>
@@ -409,7 +418,13 @@
   Note that these functions are unstable while device upgrades are underway.
   [(#4555)](https://github.com/PennyLaneAI/pennylane/pull/4555)
 
-* Minor documentation improvement to the usage example in the `qml.QuantumMonteCarlo` page. Integral was missing the differential dx with respect to which the integration is being performed. [(#4593)](https://github.com/PennyLaneAI/pennylane/pull/4593)  
+* Minor documentation improvement to the usage example in the `qml.QuantumMonteCarlo` page.
+  Integral was missing the differential dx with respect to which the integration is being performed.
+  [(#4593)](https://github.com/PennyLaneAI/pennylane/pull/4593)  
+
+* Minor documentation improvement for the use of the `pennylane` style of `qml.drawer` and the
+  `pennylane.drawer.plot` style of `matplotlib.pyplot`. The use of the default font was clarified.
+  [(#4690)](https://github.com/PennyLaneAI/pennylane/pull/4690)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -448,11 +463,13 @@
 This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad,
+Jack Brown,
 Stepan Fomichev,
 Joana Fraxanet,
 Diego Guala,
 Soran Jahangiri,
-Korbinian Kottmann
+Korbinian Kottmann,
+Ivana Kurecic,
 Christina Lee,
 Lillian M. A. Frederiksen,
 Vincent Michaud-Rioux,
