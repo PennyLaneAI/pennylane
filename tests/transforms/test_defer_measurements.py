@@ -80,6 +80,23 @@ def test_postselection_error_with_wrong_device():
         _ = circ()
 
 
+@pytest.mark.parametrize(
+    "mp, err_msg",
+    [
+        (qml.state(), "Cannot use StateMP as a measurement when"),
+        (qml.probs(), "Cannot use ProbabilityMP as a measurement without"),
+        (qml.sample(), "Cannot use SampleMP as a measurement without"),
+        (qml.counts(), "Cannot use CountsMP as a measurement without"),
+    ],
+)
+def test_unsupported_measurements(mp, err_msg):
+    """Test that using unsupported measurements raises an error."""
+    tape = qml.tape.QuantumScript([MidMeasureMP(0)], [mp])
+
+    with pytest.raises(ValueError, match=err_msg):
+        _, _ = qml.defer_measurements(tape)
+
+
 class TestQNode:
     """Test that the transform integrates well with QNodes."""
 
@@ -1467,7 +1484,7 @@ def test_custom_wire_labels_allowed_without_reset():
         qml.Hadamard("a")
         ma = qml.measure("a", reset=False)
         qml.cond(ma, qml.PauliX)("b")
-        qml.state()
+        qml.probs(wires="a")
 
     tape = qml.tape.QuantumScript.from_queue(q)
     tapes, _ = qml.defer_measurements(tape)
@@ -1476,7 +1493,7 @@ def test_custom_wire_labels_allowed_without_reset():
     assert len(tape) == 3
     assert qml.equal(tape[0], qml.Hadamard("a"))
     assert qml.equal(tape[1], qml.CNOT(["a", "b"]))
-    assert qml.equal(tape[2], qml.state())
+    assert qml.equal(tape[2], qml.probs(wires="a"))
 
 
 def test_custom_wire_labels_fails_with_reset():
@@ -1485,7 +1502,7 @@ def test_custom_wire_labels_fails_with_reset():
         qml.Hadamard("a")
         ma = qml.measure("a", reset=True)
         qml.cond(ma, qml.PauliX)("b")
-        qml.state()
+        qml.probs(wires="a")
 
     tape = qml.tape.QuantumScript.from_queue(q)
     with pytest.raises(TypeError, match="can only concatenate str"):

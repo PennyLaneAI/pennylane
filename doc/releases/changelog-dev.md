@@ -296,9 +296,11 @@
   decomposition.
   [(#4675)](https://github.com/PennyLaneAI/pennylane/pull/4675)
 
-
-
 <h3>Breaking changes 💔</h3>
+
+* ``qml.defer_measurements`` now raises an error if a transformed circuit measures ``qml.probs``,
+  ``qml.sample``, or ``qml.counts`` without any wires or obsrvable, or if it measures ``qml.state``.
+  [(#)]()
 
 * The device test suite now converts device kwargs to integers or floats if they can be converted to integers or floats.
   [(#4640)](https://github.com/PennyLaneAI/pennylane/pull/4640)
