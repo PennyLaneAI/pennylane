@@ -23,7 +23,7 @@ from pennylane.transforms.core import transform
 from pennylane.wires import Wires
 from pennylane.queuing import QueuingManager
 
-# pylint: disable=too-many-branches, too-many-statements
+# pylint: disable=too-many-branches
 
 
 def _check_tape_validity(tape: QuantumTape):
@@ -315,10 +315,7 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
             wire_map = {m.wires[0]: control_wires[m.id] for m in mp.mv.measurements}
             mp = qml.map_wires(mp, wire_map=wire_map)
 
-        elif isinstance(
-            mp,
-            (qml.measurements.SampleMP, qml.measurements.ProbabilityMP, qml.measurements.CountsMP),
-        ) and not (mp.obs or mp.wires):
+        elif not (mp.obs or mp.wires):
             mp._wires = tape.wires  # Original wires are always tape wires
 
         new_measurements.append(mp)
