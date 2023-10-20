@@ -32,12 +32,6 @@ class AQFT(Operation):
 
     .. seealso:: :class:`~.qft.QFT`.
 
-    **Details:**
-
-    * Number of wires: Any (the operation can act on any number of wires)
-    * Number of parameters: 0
-    * Gradient recipe: None
-
     Args:
         order (int): the order of approximation
         wires (int or Iterable[Number, str]]): the wire(s) the operation acts on
