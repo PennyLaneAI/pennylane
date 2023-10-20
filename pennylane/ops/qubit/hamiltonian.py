@@ -632,7 +632,7 @@ class Hamiltonian(Observable):
             for self_data in self._obs_data():  # pylint: disable=protected-access
                 is_equal = False
                 for other_data in other._obs_data():  # pylint: disable=protected-access
-                    if np.isclose(self_data[0], 1) and self_data[1] == frozenset({other_data}):
+                    if qml.math.isclose(self_data[0], 1) and self_data[1] == frozenset({other_data}):
                         is_equal = True
                         continue
                 if not is_equal:
