@@ -356,7 +356,7 @@ def sk_decomposition(op, depth, basis_set=(), basis_depth=10, approximate_set=No
     :math:`O(\text{log}^{3.97}(1/\epsilon))` operations.
 
     Args:
-        op (~.pennylane.operation.Operation): A single-qubit gate operation
+        op (~pennylane.operation.Operation): A single-qubit gate operation
         depth (int): Depth until which the recursion occurs
         basis_set (list(str)): Basis set to be used for the decomposition and building the ``approximate_set``. It
             accepts the following gate terms: ``['x', 'y', 'z', 'h', 't', 'tdg', 's', 'sdg']``, where `dg` refers
@@ -369,7 +369,7 @@ def sk_decomposition(op, depth, basis_set=(), basis_depth=10, approximate_set=No
             precomputed using :func:`~.sk_approximate_set`, otherwise will be built internally.
 
     Returns:
-        list(~.Operations): A list of gates in the Clifford+T basis set that approximates the given operation
+        list(~pennylane.operation.Operation): A list of gates in the Clifford+T basis set that approximates the given operation
 
     **Example**
 
