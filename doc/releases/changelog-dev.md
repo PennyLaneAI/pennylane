@@ -82,7 +82,7 @@
   [(#4620)](https://github.com/PennyLaneAI/pennylane/pull/4620)
   [(#4632)](https://github.com/PennyLaneAI/pennylane/pull/4632)
 
-  * `CosineWindow` has been added. Prepare the initial state following a cosine wave function.
+  * The `CosineWindow` template has been added to prepare an initial state based on a cosine wave function.
     [(#4683)](https://github.com/PennyLaneAI/pennylane/pull/4683)
 
     ```python
