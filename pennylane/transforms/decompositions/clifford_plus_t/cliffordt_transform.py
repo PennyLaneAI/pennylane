@@ -139,7 +139,7 @@ def check_clifford_t(op):
             for gate in _PARAMETER_GATES[:-1]  # don't check for GlobalPhase
         )
     ):
-        return True if qml.math.isclose(op.data[0] % math.pi, 0.0) else False
+        return qml.math.isclose(op.data[0] % math.pi, 0.0)
 
     return check_clifford_op(op)
 
@@ -313,8 +313,8 @@ def clifford_t_decomposition(
     Keyword Args:
         Arguments (*):
 
-        * **depth** (int), **basis_set** (list(str)), **basis_depth** (int), **approximate_set** (list) and **kd_tree** (scipy.spatial.KDTree):
-            arguments for using the :func:`~.sk_decomposition` for Solovay-Kitaev ``"sk"`` decomposition.
+            * **depth** (int), **basis_set** (list(str)), **basis_depth** (int), **approximate_set** (list) and **kd_tree** (scipy.spatial.KDTree):
+                arguments for using the :func:`~.sk_decomposition` for Solovay-Kitaev ``"sk"`` decomposition.
 
     Returns:
         pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
