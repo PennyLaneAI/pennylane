@@ -193,6 +193,7 @@ class TestSolovayKitaev:
         matrix_sk /= qml.math.sqrt((1 + 0j) * qml.math.linalg.det(matrix_sk))
 
         assert qml.math.allclose(qml.matrix(op), matrix_sk, atol=1e-2)
+        assert qml.prod(*gates, lazy=False).wires == op.wires
 
     @pytest.mark.parametrize(
         ("basis_depth", "basis_set"),
@@ -206,6 +207,16 @@ class TestSolovayKitaev:
         matrix_sk = functools.reduce(lambda x, y: x @ y, map(qml.matrix, gates))
 
         assert qml.math.allclose(qml.matrix(op), matrix_sk, atol=1e-5)
+
+    def test_warning(self):
+        """Test warning for recomputation of approximate set in Solovay-Kitaev"""
+        op = qml.T(wires=[0])
+        approximate_set = sk_approximate_set(basis_set=["t", "tdg", "h"], basis_depth=2)
+        with pytest.warns(
+            UserWarning,
+            match="Ignoring provided approximate set and recomputing it for given basis_set and basis_depth",
+        ):
+            sk_decomposition(op, depth=1, basis_depth=2, approximate_set=approximate_set)
 
     def test_exception(self):
         """Test operation wire exception in Solovay-Kitaev"""

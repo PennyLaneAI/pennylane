@@ -15,7 +15,6 @@
 
 import math
 import warnings
-import functools
 import scipy as sp
 import pennylane as qml
 
@@ -51,13 +50,7 @@ class GateSet:
         self.gates = list(operations) if operations is not None else []
         self.labels = [op.name for op in self.gates]
 
-        self.matrix = (
-            qml.math.linalg.multi_dot(list(map(qml.matrix, self.gates)))
-            if len(self.gates) > 1
-            else functools.reduce(
-                lambda x, y: x @ y, map(qml.matrix, [qml.Identity(0), *self.gates])
-            )
-        )
+        self.matrix = qml.prod(*(self.gates or [qml.Identity(0)])).matrix()
         self.su2_matrix, self.global_phase = self.get_SU2_matrix(self.matrix)
         self.so3_matrix = self.get_SO3_matrix(self.su2_matrix)
 
@@ -108,7 +101,6 @@ class GateSet:
             factor = qml.math.sqrt((1 + 0j) * qml.math.linalg.det(matrix)) ** -1
             gphase = qml.math.arctan2(qml.math.imag(factor), qml.math.real(factor))
             s2_mat = factor * matrix
-
             return s2_mat, gphase
 
     @staticmethod
@@ -150,7 +142,7 @@ class GateSet:
         self.gates.append(operation)
         self.labels.append(operation.name)
 
-        self.matrix = self.matrix @ qml.matrix(operation)  # qml.math.dot(qml.matrix(operation), )
+        self.matrix = self.matrix @ qml.matrix(operation)
         self.su2_matrix, self.global_phase = self.get_SU2_matrix(self.matrix)
         self.so3_matrix = self.get_SO3_matrix(self.su2_matrix)
 
@@ -216,10 +208,10 @@ class TreeSet:
         seqs = [tree.operations]
 
         for _ in range(depth):
-            next = []
+            _next = []
             for node in curr:
-                next.extend(self.process_node(node, seqs))
-            curr = next
+                _next.extend(self.process_node(node, seqs))
+            curr = _next
 
         return seqs
 
@@ -337,8 +329,8 @@ def sk_approximate_set(basis_set=(), basis_depth=10, kd_tree=False):
 
     Returns:
         list or tuple(list, scipy.spatial.KDTree): A list of Clifford+T sequences that will be used for approximating
-        a matrix in the base case of recursive implementation of Solovay-Kitaev algorithm. If ``kd_tree`` argument
-        is ``True``, it also returns a KD-Tree built based on the list
+        a matrix in the base case of recursive implementation of Solovay-Kitaev algorithm. If the ``kd_tree`` argument
+        is ``True``, it also returns a KD-Tree built based on this list
 
     .. seealso:: :func:`~.sk_decomposition` for performing Solovay-Kitaev decomposition.
     """
@@ -364,7 +356,7 @@ def sk_decomposition(op, depth, basis_set=(), basis_depth=10, approximate_set=No
     :math:`O(\text{log}^{3.97}(1/\epsilon))` operations.
 
     Args:
-        op (~.Operation): A single-qubit gate operation
+        op (~.pennylane.operation.Operation): A single-qubit gate operation
         depth (int): Depth until which the recursion occurs
         basis_set (list(str)): Basis set to be used for the decomposition and building the ``approximate_set``. It
             accepts the following gate terms: ``['x', 'y', 'z', 'h', 't', 'tdg', 's', 'sdg']``, where `dg` refers
@@ -392,10 +384,10 @@ def sk_decomposition(op, depth, basis_set=(), basis_depth=10, approximate_set=No
         op  = qml.RZ(np.pi/3, wires=0)
 
         # Get the gate decomposition in ['t', 'tdg', 'h']
-        ops = qml.transforms.decompositions.sk_decomposition(op, depth=2)
+        ops = qml.transforms.decompositions.sk_decomposition(op, depth=4)
 
         # Get SU2 matrix from the ops
-        op_matrix = functools.reduce(lambda x, y: x @ y, map(qml.matrix, gates))
+        op_matrix = qml.prod(*ops).matrix()
         su2_matrix = op_matrix / np.sqrt((1 + 0j) * np.linalg.det(op_matrix))
 
     When the function is run for a sufficient ``depth`` with a good enough ``approximate_set``,
@@ -408,7 +400,7 @@ def sk_decomposition(op, depth, basis_set=(), basis_depth=10, approximate_set=No
     """
     with QueuingManager.stop_recording():
         # Check for length of wires in the operation
-        if len(op.wires) > 1:
+        if len(op.wires) != 1:
             raise ValueError(
                 f"Operator must be a single qubit operation, got {op} acting on {op.wires} wires."
             )
@@ -419,6 +411,11 @@ def sk_decomposition(op, depth, basis_set=(), basis_depth=10, approximate_set=No
             or basis_depth != 10
             or (basis_set and sorted(basis_set) != ["h", "t", "tdg"])
         ):
+            if approximate_set is not None:
+                warnings.warn(
+                    "Ignoring provided approximate set and recomputing it for given basis_set and basis_depth",
+                    UserWarning,
+                )
             approximate_set, kd_tree = sk_approximate_set(basis_set, basis_depth, True)
 
         # Build the KDTree with the approximation set for querying in the base case
@@ -452,9 +449,11 @@ def sk_decomposition(op, depth, basis_set=(), basis_depth=10, approximate_set=No
         # Get the decomposition for the given operation
         decomposition = _solovay_kitaev(gate_set_op, depth)
 
-        # Remove inverses if any and map the wires to that of operation
-        [new_tape], _ = cancel_inverses(QuantumTape(decomposition.gates))
-        [map_tape], _ = qml.map_wires(new_tape, wire_map={0: op.wires[0]})
+        # Remove inverses if any in the decomposition and handle trivial case
+        [new_tape], _ = cancel_inverses(QuantumTape(decomposition.gates or [qml.Identity(0)]))
 
-        # Return the gates from the mapped tape
-        return map_tape.operations
+    # Map the wires to that of the operation and queue
+    [map_tape], _ = qml.map_wires(new_tape, wire_map={0: op.wires[0]}, queue=True)
+
+    # Return the gates from the mapped tape
+    return map_tape.operations
