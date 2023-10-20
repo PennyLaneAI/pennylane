@@ -72,10 +72,10 @@ class AQFT(Operation):
         where :math:`n` is the number of wires the operation is being applied on.
         This creates four cases for different `order` values:
 
-        * `order` :math:`< 0`
+        * `order` :math:` < 0`
             This will raise a `ValueError`
 
-        * `order` :math:`= 0`
+        * `order` :math:` = 0`
             This will warn the user that only a Hadamard transform is being applied.
 
             .. code-block::
@@ -96,7 +96,7 @@ class AQFT(Operation):
             4: ──H─│─────╰SWAP───────┤ ├Probs
             5: ──H─╰SWAP─────────────┤ ╰Probs
 
-        * :math:`0 < ``order` :math:`< n-1`
+        * :math:`0 <` `order` :math:`< n-1`
             This is the intended AQFT use case.
 
             .. code-block::
@@ -114,7 +114,7 @@ class AQFT(Operation):
             2: ──────────────╰●───────────╰●────────│──────────H─╭Rϕ(1.57)────│─────╰SWAP─┤ ├Probs
             3: ─────────────────────────────────────╰●───────────╰●─────────H─╰SWAP───────┤ ╰Probs
 
-        * `order` :math:`>= n-1`
+        * `order` :math:` >= n-1`
             Using the QFT class is recommended in this case. The AQFT operation here is
             equivalent to QFT.
 
