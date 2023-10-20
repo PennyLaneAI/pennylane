@@ -390,24 +390,13 @@ class TestIntegration:
 
         assert allclose(expected_state, state)
 
-    @pytest.mark.all_interfaces
-    @pytest.mark.parametrize(
-        "interface",
-        (
-            # "tf",
-            # "jax",
-            # "torch",
-            "autograd",
-        ),
-    )
-    def test_error_gradient_workflow(self, interface):
+    @pytest.mark.autograd
+    def test_error_gradient_workflow_autograd(self):
         """Test that an error is raised if we require a gradient of QDrift with respect to hamiltonian coefficients."""
-        if interface == "autograd":
-            time = qnp.array(1.5)
-            coeffs = qnp.array([1.23, -0.45], requires_grad=True)
+        time = qnp.array(1.5)
+        coeffs = qnp.array([1.23, -0.45], requires_grad=True)
 
         terms = [qml.PauliX(0), qml.PauliZ(0)]
-
         dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)
@@ -419,6 +408,76 @@ class TestIntegration:
         msg = "The QDrift template currently doesn't support differentiation through the coefficients of the input Hamiltonian."
         with pytest.raises(qml.QuantumFunctionError, match=msg):
             qml.grad(circ)(time, coeffs)
+
+    @pytest.mark.torch
+    def test_error_gradient_workflow_torch(self):
+        """Test that an error is raised if we require a gradient of QDrift with respect to hamiltonian coefficients."""
+        import torch
+
+        time = torch.tensor(1.5, dtype=torch.complex128, requires_grad=True)
+        coeffs = torch.tensor([1.23, -0.45], dtype=torch.complex128, requires_grad=True)
+
+        terms = [qml.PauliX(0), qml.PauliZ(0)]
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circ(time, coeffs):
+            h = qml.dot(coeffs, terms)
+            qml.QDrift(h, time, n=3)
+            return qml.expval(qml.Hadamard(0))
+
+        msg = "The QDrift template currently doesn't support differentiation through the coefficients of the input Hamiltonian."
+        with pytest.raises(qml.QuantumFunctionError, match=msg):
+            res_circ = circ(time, coeffs)
+            res_circ.backward()
+
+    @pytest.mark.tf
+    def test_error_gradient_workflow_tf(self):
+        """Test that an error is raised if we require a gradient of QDrift with respect to hamiltonian coefficients."""
+        import tensorflow as tf
+
+        time = tf.Variable(1.5, dtype=tf.complex128)
+        coeffs = tf.Variable([1.23, -0.45], dtype=tf.complex128)
+
+        terms = [qml.PauliX(0), qml.PauliZ(0)]
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circ(time, coeffs):
+            h = qml.sum(
+                qml.s_prod(coeffs[0], terms[0]),
+                qml.s_prod(coeffs[1], terms[1]),
+            )
+            qml.QDrift(h, time, n=3)
+            return qml.expval(qml.Hadamard(0))
+
+        msg = "The QDrift template currently doesn't support differentiation through the coefficients of the input Hamiltonian."
+        with pytest.raises(qml.QuantumFunctionError, match=msg):
+            with tf.GradientTape() as tape:
+                result = circ(time, coeffs)
+            tape.gradient(result, coeffs)
+
+    @pytest.mark.jax
+    def test_error_gradient_workflow_jax(self):
+        """Test that an error is raised if we require a gradient of QDrift with respect to hamiltonian coefficients."""
+        import jax
+        from jax import numpy as jnp
+
+        time = jnp.array(1.5)
+        coeffs = jnp.array([1.23, -0.45])
+
+        terms = [qml.PauliX(0), qml.PauliZ(0)]
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circ(time, coeffs):
+            h = qml.dot(coeffs, terms)
+            qml.QDrift(h, time, n=3)
+            return qml.expval(qml.Hadamard(0))
+
+        msg = "The QDrift template currently doesn't support differentiation through the coefficients of the input Hamiltonian."
+        with pytest.raises(qml.QuantumFunctionError, match=msg):
+            jax.grad(circ, argnums=[1])(time, coeffs)
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("n", (1, 5, 10))
@@ -580,7 +639,7 @@ test_error_data = (  # Computed by hand
 
 @pytest.mark.parametrize("h, time, n, expected_error", test_error_data)
 def test_error_func(h, time, n, expected_error):
-    """Test that the error function as expected"""
+    """Test that the error function computes the expected precision correctly"""
     computed_error = qml.QDrift.error(h, time, n)
     assert isclose(computed_error, expected_error)
 

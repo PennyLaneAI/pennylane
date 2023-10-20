@@ -27,7 +27,7 @@ def _sample_decomposition(coeffs, ops, time, n=1, seed=None):
         coeffs (array): the coefficients of the operations from each term in the Hamiltonian
         ops (list[~.Operator]): the normalized operations from each term in the Hamiltonian
         time (float): time to evolve under the target Hamiltonian
-        n (int): number of samples in the product. defaults to 1
+        n (int): number of samples in the product, defaults to 1
         seed (int): random seed. defaults to None
 
     Returns:
@@ -65,7 +65,7 @@ class QDrift(Operation):
 
     Args:
         hamiltonian (Union[.Hamiltonian, .Sum]): The Hamiltonian written as a sum of operations
-        time (float): The time of evolution, namely the parameter :math:`t` in :math:`e^{-iHt}`
+        time (float): The time of evolution, namely the parameter :math:`t` in :math:`e^{iHt}`
         n (int): An integer representing the number of exponentiated terms
         seed (int): The seed for the random number generator
 
@@ -124,7 +124,7 @@ class QDrift(Operation):
                 return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
 
-        >>> args = qnp.array([1.23])
+        >>> args = np.array([1.23])
         >>> print(qml.grad(my_circ)(*tuple(args)))
         0.27980654844422853
     """
