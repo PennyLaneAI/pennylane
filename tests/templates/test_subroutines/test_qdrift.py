@@ -18,7 +18,6 @@ import copy
 from functools import reduce
 
 import pytest
-from flaky import flaky
 
 import pennylane as qml
 from pennylane import numpy as qnp
@@ -170,12 +169,11 @@ class TestDecomposition:
             assert term.base in ops  # sample from ops
             assert term.coeff == (s * normalization * time * 1j / n)  # with this exponent
 
-    @flaky(max_runs=5, min_passes=4)
     @pytest.mark.parametrize("coeffs", ([0.99, 0.01], [0.5 + 0.49j, -0.01j]))
     def test_private_sample_statistics(self, coeffs):
         """Test the private function samples from the right distribution"""
         ops = [qml.PauliX(0), qml.PauliZ(1)]
-        decomp = _sample_decomposition(coeffs, ops, 1.23, n=10, seed=None)
+        decomp = _sample_decomposition(coeffs, ops, 1.23, n=10, seed=1234)
 
         # High probability we only sample PauliX!
         assert all(isinstance(op.base, qml.PauliX) for op in decomp)
