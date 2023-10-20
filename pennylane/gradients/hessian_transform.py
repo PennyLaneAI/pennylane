@@ -66,7 +66,7 @@ def _process_jacs(jac, qhess):
     return tuple(hess) if len(hess) > 1 else hess[0]
 
 
-class hessian_transform(qml.batch_transform):
+class hessian_transform(qml.batch_transform):  # pragma: no cover
     """Decorator for defining quantum Hessian transforms.
 
     Quantum Hessian transforms are a specific case of :class:`~.batch_transform`s,

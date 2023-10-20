@@ -340,7 +340,7 @@ def _execute_bwd(
                 idx for idx, t in enumerate(tangent) if not isinstance(t, Zero)
             )
 
-        if not isinstance(gradient_fn, qml.gradients.gradient_transform):
+        if not isinstance(gradient_fn, qml.transforms.core.TransformDispatcher):
             jacobians_func = _device_method_jac_via_callback
         elif _n == max_diff:
             jacobians_func = _grad_transform_jac_via_callback
