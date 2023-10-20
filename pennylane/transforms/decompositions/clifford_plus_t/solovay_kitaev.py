@@ -354,6 +354,7 @@ def sk_approximate_set(basis_set=(), basis_depth=10, kd_tree=False):
     return (approximate_set, sp.spatial.KDTree(gnodes))
 
 
+# pylint: disable=too-many-arguments
 def sk_decomposition(op, depth, basis_set=(), basis_depth=10, approximate_set=None, kd_tree=None):
     r"""Approximate an arbitrary single-qubit gate in the Clifford+T basis using the `Solovay-Kitaev algorithm <https://arxiv.org/abs/quant-ph/0505030>`_.
 
