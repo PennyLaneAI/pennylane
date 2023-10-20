@@ -30,9 +30,7 @@ class AQFT(Operation):
     The AQFT operation helps to reduce the number of ``ControlledPhaseShift`` operations required
     for QFT by only using a maximum of ``order`` number of ``ControlledPhaseShift`` gates per qubit.
 
-    .. seealso::
-
-       :class:`~.QFT`
+    .. seealso:: :class:`~.QFT`
 
     Args:
         order (int): the order of approximation
