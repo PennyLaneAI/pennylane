@@ -310,8 +310,8 @@ class TestCliffordCompile:
             NotImplementedError,
             match=r"Currently we only support Solovay-Kitaev \('sk'\) decompostion",
         ):
-
             dev = qml.device("default.qubit")
+
             def qfunc():
                 qml.RX(1.0, wires=[0])
                 return qml.expval(qml.PauliZ(0))
