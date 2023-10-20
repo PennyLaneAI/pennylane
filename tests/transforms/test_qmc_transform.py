@@ -176,7 +176,7 @@ class TestApplyControlledQ:
         with pytest.raises(ValueError, match="The target wire must be contained within wires"):
             apply_controlled_Q(
                 lambda: ..., wires=range(3), target_wire=4, control_wire=5, work_wires=None
-            )
+            )()
 
 
 class TestQuantumMonteCarlo:

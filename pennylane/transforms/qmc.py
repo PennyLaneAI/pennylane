@@ -48,11 +48,13 @@ def _apply_controlled_z(wires, control_wire, work_wires):
 
     control_values = "0" * (len(wires) - 1) + "1"
     control_wires = wires[1:] + control_wire
-    updated_operations.append(MultiControlledX(
-        wires=[*control_wires, target_wire],
-        control_values=control_values,
-        work_wires=work_wires,
-    ))
+    updated_operations.append(
+        MultiControlledX(
+            wires=[*control_wires, target_wire],
+            control_values=control_values,
+            work_wires=work_wires,
+        )
+    )
 
     updated_operations.append(Hadamard(target_wire))
     updated_operations.append(PauliX(target_wire))
@@ -77,8 +79,9 @@ def _apply_controlled_v(target_wire, control_wire):
 
 
 @transform
-def apply_controlled_Q(tape: qml.tape.QuantumTape, wires, target_wire, control_wire, work_wires) -> (
-        Sequence[qml.tape.QuantumTape], Callable):
+def apply_controlled_Q(
+    tape: qml.tape.QuantumTape, wires, target_wire, control_wire, work_wires
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Provides the circuit to apply a controlled version of the :math:`\mathcal{Q}` unitary
     defined in `this <https://arxiv.org/abs/1805.00109>`__ paper.
 
@@ -106,30 +109,44 @@ def apply_controlled_Q(tape: qml.tape.QuantumTape, wires, target_wire, control_w
     Raises:
         ValueError: if ``target_wire`` is not in ``wires``
     """
-    updated_operations = []
-    fn_inv = [adjoint(op) for op in reversed(tape.operations)]
+    with qml.queuing.QueuingManager.stop_recording():
+        updated_operations = []
+        fn_inv = [adjoint(op) for op in reversed(tape.operations)]
 
-    wires = Wires(wires)
-    target_wire = Wires(target_wire)
-    control_wire = Wires(control_wire)
-    work_wires = Wires(work_wires)
+        wires = Wires(wires)
+        target_wire = Wires(target_wire)
+        control_wire = Wires(control_wire)
+        work_wires = Wires(work_wires)
 
-    if not wires.contains_wires(target_wire):
-        raise ValueError("The target wire must be contained within wires")
+        if not wires.contains_wires(target_wire):
+            raise ValueError("The target wire must be contained within wires")
 
-    updated_operations.extend(_apply_controlled_v(target_wire=target_wire, control_wire=control_wire))
-    updated_operations.extend(fn_inv)
-    updated_operations.extend(_apply_controlled_z(wires=wires, control_wire=control_wire, work_wires=work_wires))
-    updated_operations.extend(tape.operations)
+        updated_operations.extend(
+            _apply_controlled_v(target_wire=target_wire, control_wire=control_wire)
+        )
+        updated_operations.extend(fn_inv)
+        updated_operations.extend(
+            _apply_controlled_z(wires=wires, control_wire=control_wire, work_wires=work_wires)
+        )
+        updated_operations.extend(tape.operations)
+
+        updated_operations.extend(
+            _apply_controlled_v(target_wire=target_wire, control_wire=control_wire)
+        )
+        updated_operations.extend(fn_inv)
+        updated_operations.extend(
+            _apply_controlled_z(wires=wires, control_wire=control_wire, work_wires=work_wires)
+        )
+        updated_operations.extend(tape.operations)
 
     tape = qml.tape.QuantumTape(ops=updated_operations)
-    print([op.name for op in updated_operations])
     return [tape], lambda x: x[0]
 
 
 @transform
-def quantum_monte_carlo(tape: qml.tape.QuantumTape, wires, target_wire, estimation_wires) -> (
-        Sequence[qml.tape.QuantumTape], Callable):
+def quantum_monte_carlo(
+    tape: qml.tape.QuantumTape, wires, target_wire, estimation_wires
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Provides the circuit to perform the
     `quantum Monte Carlo estimation <https://arxiv.org/abs/1805.00109>`__ algorithm.
 
