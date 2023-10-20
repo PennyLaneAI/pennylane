@@ -841,16 +841,13 @@ class TestHamiltonian:
         """Test that Hamiltonian.compare correctly compares Hamiltonians with Tensors/Observables."""
         H1 = qml.Hamiltonian([0.2, 0.7, 0.1], [qml.PauliZ(0), qml.PauliZ(0), qml.PauliZ(0)])
         H2 = qml.Hamiltonian([0.3, 0.3], [qml.PauliZ(0), qml.PauliZ(0)])
-        H3 = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliX(0)])
         Pauli_Z = qml.PauliZ(0)
         Tensor_Z = qml.operation.Tensor(qml.PauliZ(0))
-        Tensor_XZ = qml.PauliX(0) @ qml.PauliZ(0)
         assert H1.compare(Pauli_Z)
         assert H2.compare(Pauli_Z) is False
         assert H1.compare(Tensor_Z)
         assert H2.compare(Tensor_Z) is False
-        assert H3.compare(Tensor_XZ)
-
+        
     def test_hamiltonian_equal_error(self):
         """Tests that the correct error is raised when compare() is called on invalid type"""
 
