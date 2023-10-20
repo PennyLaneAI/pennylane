@@ -16,9 +16,7 @@
 from .compiler import AvailableCompilers, available
 
 
-def qjit(
-    fn=None, *args, compiler_name="catalyst", **kwargs
-):  # pylint:disable=keyword-arg-before-vararg
+def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keyword-arg-before-vararg
     """A just-in-time decorator for PennyLane and JAX programs.
 
     .. note::
@@ -32,7 +30,7 @@ def qjit(
     are provided.
 
     Args:
-        compiler_name(str): name of the compiler package (Default is ``catalyst``)
+        compiler(str): name of the compiler package (default value is ``catalyst``)
         fn (Callable): the quantum or classical function
         autograph (bool): Experimental support for automatically converting Python control
             flow statements to Catalyst-compatible control flow. Currently supports Python ``if``,
@@ -72,8 +70,10 @@ def qjit(
 
     .. code-block:: python
 
+        dev = qml.device("lightning.qubit", wires=2)
+
         @qml.qjit
-        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        @qml.qnode(dev)
         def circuit(theta):
             qml.Hadamard(wires=0)
             qml.RX(theta, wires=1)
@@ -85,53 +85,19 @@ def qjit(
     >>> circuit(0.5)  # the precompiled quantum function is called
     array(0.)
 
-    Alternatively, if argument type hints are provided, compilation
-    can occur 'ahead of time' when the function is decorated.
+    For more details on using the :func:`~.qjit` decorator and Catalyst
+    with PennyLane, please refer to the Catalyst
+    `quickstart guide <https://docs.pennylane.ai/projects/catalyst/en/latest/dev/quick_start.html>`__,
+    as well as the `sharp bits and debugging tips <https://docs.pennylane.ai/projects/catalyst/en/latest/dev/sharp_bits.html>`__
+    page for an overview of the differences between Catalyst and PennyLane, and
+    how to best structure your workflows to improve performance when
+    using Catalyst.
 
-    .. code-block:: python
-
-        from jax.core import ShapedArray
-
-        @qml.qjit  # compilation happens at definition
-        @qml.qnode(qml.device("lightning.qubit", wires=2))
-        def circuit(x: complex, z: ShapedArray(shape=(3,), dtype=jnp.float64)):
-            theta = jnp.abs(x)
-            qml.RY(theta, wires=0)
-            qml.Rot(z[0], z[1], z[2], wires=0)
-            return qml.state()
-
-    >>> circuit(0.2j, jnp.array([0.3, 0.6, 0.9]))  # calls precompiled function
-    array([0.75634905-0.52801002j, 0. +0.j,
-        0.35962678+0.14074839j, 0. +0.j])
-
-    Catalyst also supports capturing imperative Python control flow in compiled programs. You can
-    enable this feature via the ``autograph=True`` parameter. Note that it does come with some
-    restrictions, in particular whenever global state is involved. Refer to the documentation page
-    for a complete discussion of the supported and unsupported use-cases.
-
-    .. code-block:: python
-
-        @qml.qjit(autograph=True)
-        @qml.qnode(qml.device("lightning.qubit", wires=2))
-        def circuit(x: int):
-
-            if x < 5:
-                qml.Hadamard(wires=0)
-            else:
-                qml.T(wires=0)
-
-            return qml.expval(qml.PauliZ(0))
-
-    >>> circuit(3)
-    array(0.)
-
-    >>> circuit(5)
-    array(1.)
     """
 
-    if not available(compiler_name):
-        raise RuntimeError(f"The {compiler_name} package is not installed.")
+    if not available(compiler):
+        raise RuntimeError(f"The {compiler} package is not installed.")
 
     compilers = AvailableCompilers.names_entrypoints
-    qjit_loader = compilers[compiler_name]["qjit"].load()
+    qjit_loader = compilers[compiler]["qjit"].load()
     return qjit_loader(fn=fn, *args, **kwargs)

@@ -26,7 +26,8 @@ Currently, PennyLane supports the
 `Catalyst <https://github.com/pennylaneai/catalyst>`__ hybrid compiler
 with the :func:`~.qjit` decorator. A significant benefit of Catalyst
 is the ability to preserve complex control flow around quantum
-operations — such as if statements and for loops, and including measurement feedforward — during compilation, while continuing to support end-to-end
+operations — such as if statements and for loops, and including measurement
+feedforward — during compilation, while continuing to support end-to-end
 autodifferentiation.
 
 .. note::
@@ -73,8 +74,8 @@ to incorporate additional compilers in the near future.
 
       pip install pennylane-catalyst
 
-    Please see the `installation <https://docs.pennylane.ai/projects/catalyst/en/latest/dev/installation.html>`__ guide
-    for more information.
+    Please see the `installation <https://docs.pennylane.ai/projects/catalyst/en/latest/dev/installation.html>`__
+    guide for more information.
 
 For any compiler packages seeking to be registered, it is imperative that they expose the 'entry_points' metadata
 under the designated group name: ``pennylane.compilers``.
@@ -86,67 +87,67 @@ When using just-in-time (JIT) compilation, the compilation is triggered at the c
 first time the quantum function is executed. For example, ``circuit`` is
 compiled as early as the first call.
 
-    .. code-block:: python
+.. code-block:: python
 
-        dev = qml.device("lightning.qubit", wires=2)
+    dev = qml.device("lightning.qubit", wires=2)
 
-        @qjit
-        @qml.qnode(dev)
-        def circuit(theta):
+    @qjit
+    @qml.qnode(dev)
+    def circuit(theta):
+        qml.Hadamard(wires=0)
+        qml.RX(theta, wires=1)
+        qml.CNOT(wires=[0,1])
+        return qml.expval(qml.PauliZ(wires=1))
+
+>>> circuit(0.5)  # the first call, compilation occurs here
+array(0.)
+>>> circuit(0.5)  # the precompiled quantum function is called
+array(0.)
+
+Alternatively, if argument type hints are provided, compilation
+can occur 'ahead of time' when the function is decorated.
+
+.. code-block:: python
+
+    from jax.core import ShapedArray
+
+    @qml.qjit  # compilation happens at definition
+    @qml.qnode(dev)
+    def circuit(x: complex, z: ShapedArray(shape=(3,), dtype=jnp.float64)):
+        theta = jnp.abs(x)
+        qml.RY(theta, wires=0)
+        qml.Rot(z[0], z[1], z[2], wires=0)
+        return qml.state()
+
+>>> circuit(0.2j, jnp.array([0.3, 0.6, 0.9]))  # calls precompiled function
+array([0.75634905-0.52801002j, 0. +0.j,
+    0.35962678+0.14074839j, 0. +0.j])
+
+The Catalyst compiler also supports capturing imperative Python control flow in compiled programs. You can
+enable this feature via the ``autograph=True`` keyword argument.
+
+Note AutoGraph results in additional
+restrictions, in particular whenever global state is involved. Please refer to the `AutoGraph guide <https://docs.pennylane.ai/projects/catalyst/en/latest/dev/autograph.html>`__
+for a complete discussion of the supported and unsupported use-cases.
+
+.. code-block:: python
+
+    @qml.qjit(autograph=True)
+    @qml.qnode(dev)
+    def circuit(x: int):
+
+        if x < 5:
             qml.Hadamard(wires=0)
-            qml.RX(theta, wires=1)
-            qml.CNOT(wires=[0,1])
-            return qml.expval(qml.PauliZ(wires=1))
+        else:
+            qml.T(wires=0)
 
-    >>> circuit(0.5)  # the first call, compilation occurs here
-    array(0.)
-    >>> circuit(0.5)  # the precompiled quantum function is called
-    array(0.)
+        return qml.expval(qml.PauliZ(0))
 
-    Alternatively, if argument type hints are provided, compilation
-    can occur 'ahead of time' when the function is decorated.
+>>> circuit(3)
+array(0.)
+>>> circuit(5)
+array(1.)
 
-    .. code-block:: python
-
-        from jax.core import ShapedArray
-
-        @qjit  # compilation happens at definition
-        @qml.qnode(dev)
-        def circuit(x: complex, z: ShapedArray(shape=(3,), dtype=jnp.float64)):
-            theta = jnp.abs(x)
-            qml.RY(theta, wires=0)
-            qml.Rot(z[0], z[1], z[2], wires=0)
-            return qml.state()
-
-    >>> circuit(0.2j, jnp.array([0.3, 0.6, 0.9]))  # calls precompiled function
-    array([0.75634905-0.52801002j, 0. +0.j,
-        0.35962678+0.14074839j, 0. +0.j])
-
-    The Catalyst compiler also supports capturing imperative Python control flow in compiled programs. You can
-    enable this feature via the ``autograph=True`` keyword argument.
-    
-    Note AutoGraph results in additional
-    restrictions, in particular whenever global state is involved. Please refer to the `AutoGraph guide <https://docs.pennylane.ai/projects/catalyst/en/latest/dev/autograph.html>`__
-    for a complete discussion of the supported and unsupported use-cases.
-
-    .. code-block:: python
-
-        @qjit(autograph=True)
-        @qml.qnode(dev)
-        def circuit(x: int):
-
-            if x < 5:
-                qml.Hadamard(wires=0)
-            else:
-                qml.T(wires=0)
-
-            return qml.expval(qml.PauliZ(0))
-
-    >>> circuit(3)
-    array(0.)
-    >>> circuit(5)
-    array(1.)
-    
 For more details on using the :func:`~.qjit` decorator and Catalyst
 with PennyLane, please refer to the Catalyst
 `quickstart guide <https://docs.pennylane.ai/projects/catalyst/en/latest/dev/quick_start.html>`__,

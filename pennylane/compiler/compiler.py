@@ -67,16 +67,11 @@ def available_compilers() -> List[str]:
     return list(AvailableCompilers.names_entrypoints.keys())
 
 
-def available(name="catalyst") -> bool:
+def available(compiler="catalyst") -> bool:
     """Check the availability of the given compiler package.
 
-    It only refreshes the compilers names and entry points if the name
-    is not already stored. This reduces the number of re-importing
-    ``pkg_resources`` as it can be a very slow operation on systems
-    with a large number of installed packages.
-
     Args:
-        name (str): name of the compiler package (default value is ``catalyst``)
+        compiler (str): name of the compiler package (default value is ``catalyst``)
 
     Return:
         bool: ``True`` if the compiler package is installed on the system
@@ -94,22 +89,27 @@ def available(name="catalyst") -> bool:
     True
     """
 
-    if name not in AvailableCompilers.names_entrypoints:
+    # It only refreshes the compilers names and entry points if the name
+    # is not already stored. This reduces the number of re-importing
+    # ``pkg_resources`` as it can be a very slow operation on systems
+    # with a large number of installed packages.
+
+    if compiler not in AvailableCompilers.names_entrypoints:
         # This class updates the class variable names_entrypoints
         _refresh_compilers()
 
-    return name in AvailableCompilers.names_entrypoints
+    return compiler in AvailableCompilers.names_entrypoints
 
 
-def active(name="catalyst") -> bool:
+def active(compiler="catalyst") -> bool:
     """Check whether the caller is inside a :func:`~.qjit` evaluation context.
-    
+
     This helper function may be used during implementation
     to allow differing logic for circuits or operations that are
     just-in-time compiled versus those that are not.
 
     Args:
-        name (str): name of the compiler package (default value is ``catalyst``)
+        compiler (str): name of the compiler package (default value is ``catalyst``)
 
     Return:
         bool: True if the caller is inside a QJIT evaluation context
@@ -131,7 +131,7 @@ def active(name="catalyst") -> bool:
         return False
 
     try:
-        tracer_loader = compilers[name]["context"].load()
+        tracer_loader = compilers[compiler]["context"].load()
         return tracer_loader.is_tracing()
     except KeyError:
         return False
