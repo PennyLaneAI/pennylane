@@ -1263,6 +1263,7 @@ class TestObservablesComparisons:
     @pytest.mark.parametrize(("H1", "H2", "res"), equal_hamiltonians)
     def test_hamiltonian_equal(self, H1, H2, res):
         """Tests that equality can be checked between Hamiltonians"""
+        # print(H1.simplify(),' & ', H2.simplify())
         assert qml.equal(H1, H2) == qml.equal(H2, H1)
         assert qml.equal(H1, H2) == res
 

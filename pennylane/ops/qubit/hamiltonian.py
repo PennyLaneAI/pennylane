@@ -616,7 +616,9 @@ class Hamiltonian(Observable):
         if isinstance(other, Hamiltonian):
             self.simplify()
             other.simplify()
-
+            if len(self._obs_data()) != len(other._obs_data()):
+                return False
+            print(self._obs_data(), " and ", other._obs_data())
             for self_data in self._obs_data():  # pylint: disable=protected-access
                 is_equal = False
                 for other_data in other._obs_data():  # pylint: disable=protected-access
