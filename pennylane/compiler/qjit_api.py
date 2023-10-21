@@ -26,10 +26,19 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
     .. note::
 
         Currently, only the :doc:`Catalyst <catalyst:index>` hybrid quantum-classical
-        compiler is supported. The Catalyst compiler works with the JAX interface.
+        compiler is supported. The Catalyst compiler works with the JAX interface
 
-        For more details, please see the Catalyst documentation and :func:`catalyst:qjit`
+        For more details, please see the Catalyst documentation and :func:`catalyst:.qjit`
         docstring.
+
+    .. note::
+
+        Catalyst supports compiling QNodes that use ``lightning.qubit``,
+        ``lightning.kokkos``, ``braket.local.qubit``, and ``braket.aws.qubit``
+        devices. It does not support ``default.qubit``.
+
+        Please see the Catalyst documentation for more details on supported
+        devices, operations, and measurements.
 
     Args:
         compiler (str): name of the compiler to use for just-in-time compilation
@@ -38,7 +47,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
             flow statements to Catalyst-compatible control flow. Currently supports Python ``if``,
             ``elif``, ``else``, and ``for`` statements. Note that this feature requires an
             available TensorFlow installation. Please see the
-            :doc:`AutoGraph guide <catalyst:dev/autograph.html>` for more information.
+            :doc:`AutoGraph guide <catalyst:dev/autograph>` for more information.
         target (str): the compilation target
         keep_intermediate (bool): Whether or not to store the intermediate files throughout the
             compilation. If ``True``, intermediate representations are available via the
@@ -88,8 +97,8 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
 
     For more details on using the :func:`~.qjit` decorator and Catalyst
     with PennyLane, please refer to the Catalyst
-    :doc:`quickstart guide <catalyst:/dev/quick_start.html>`,
-    as well as the :doc:`sharp bits and debugging tips <catalyst:/dev/sharp_bits.html>`
+    :doc:`quickstart guide <catalyst:dev/quick_start>`,
+    as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
     page for an overview of the differences between Catalyst and PennyLane, and
     how to best structure your workflows to improve performance when
     using Catalyst.

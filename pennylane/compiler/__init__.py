@@ -81,6 +81,15 @@ to incorporate additional compilers in the near future.
 Basic usage
 -----------
 
+.. note::
+
+    Catalyst supports compiling QNodes that use ``lightning.qubit``,
+    ``lightning.kokkos``, ``braket.local.qubit``, and ``braket.aws.qubit``
+    devices. It does not support ``default.qubit``.
+
+    Please see the Catalyst documentation for more details on supported
+    devices, operations, and measurements.
+
 When using just-in-time (JIT) compilation, the compilation is triggered at the call site the
 first time the quantum function is executed. For example, ``circuit`` is
 compiled as early as the first call.
@@ -151,8 +160,8 @@ for a complete discussion of the supported and unsupported use-cases.
 
 For more details on using the :func:`~.qjit` decorator and Catalyst
 with PennyLane, please refer to the Catalyst
-:doc:`quickstart guide <catalyst:dev/quick_start.html>`,
-as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits.html>`
+:doc:`quickstart guide <catalyst:dev/quick_start>`,
+as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
 page for an overview of the differences between Catalyst and PennyLane, and
 how to best structure your workflows to improve performance when
 using Catalyst.
