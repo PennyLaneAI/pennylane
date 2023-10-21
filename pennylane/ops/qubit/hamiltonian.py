@@ -634,9 +634,9 @@ class Hamiltonian(Observable):
 
         if isinstance(other, (Tensor, Observable)):
             self.simplify()
-            if (qml.math.isclose(list(self._obs_data())[0][0], 1) and list(self._obs_data())[0][
+            if qml.math.isclose(list(self._obs_data())[0][0], 1) and list(self._obs_data())[0][
                 1
-            ] == frozenset(other._obs_data())):
+            ] == frozenset(other._obs_data()):
                 return True
             else:
                 return False
