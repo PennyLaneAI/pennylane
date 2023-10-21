@@ -63,7 +63,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
             considered to be used by advanced users for low-level debugging purposes.
 
     Returns:
-        QJIT: a class that, when executed, just-in-time compiles the decorated function
+        catalyst.QJIT: a class that, when executed, just-in-time compiles and executes the decorated function
 
     Raises:
         FileExistsError: Unable to create temporary directory

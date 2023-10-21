@@ -354,15 +354,16 @@ appropriate.
 Currently, Catalyst must be installed separately, and only supports the JAX
 interface and select devices such as ``lightning.qubit``,
 ``lightning.kokkos``, ``braket.local.qubit`` and ``braket.aws.qubit``. It
-does not support ``default.qubit``. On MacOS and Linux, Catalyst can be installed
-with ``pip``:
+does **not** support ``default.qubit``.
+
+On MacOS and Linux, Catalyst can be installed with ``pip``:
 
 .. code-block:: console
 
     pip install pennylane-catalyst
 
 Check out the Catalyst documentation for
-:doc:`installation instructions <catalyst:dev/installation.html>`.
+:doc:`installation instructions <catalyst:dev/installation>`.
 
 Using Catalyst with PennyLane is a simple as using the :func:`@qjit <.qjit>` decorator to
 compile your hybrid workflows:
@@ -382,9 +383,10 @@ compile your hybrid workflows:
         qml.RX(jnp.sqrt(params[1]), wires=1)
         return qml.expval(qml.PauliZ(1))
 
-The :func:`~.qjit`` decorator can also be used on hybrid cost functions -- that is,
-cost functions that include both QNodes and classical processing. We can even
-JIT compile the full optimization loop, for example when training models:
+The :func:`~.qjit` decorator can also be used on hybrid cost functions --
+that is, cost functions that include both QNodes and classical processing. We
+can even JIT compile the full optimization loop, for example when training
+models:
 
 .. code-block:: python
 
@@ -428,10 +430,10 @@ array(0.)
 >>> circuit(5)
 array(1.)
 
-Note that AutoGraph results in additional
-restrictions, in particular whenever global state is involved. Please refer to the
-:doc:`AutoGraph guide <catalyst:dev/autograph>` for a complete discussion of
- the supported and unsupported use-cases.
+Note that AutoGraph results in additional restrictions, in particular whenever
+global state is involved.
+Please refer to the :doc:`AutoGraph guide<catalyst:dev/autograph>` for a
+complete discussion of the supported and unsupported use-cases.
 
 For more details on using the :func:`~.qjit` decorator and Catalyst
 with PennyLane, please refer to the Catalyst
