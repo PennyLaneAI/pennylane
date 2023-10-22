@@ -613,15 +613,17 @@ class Hamiltonian(Observable):
         >>> ob1.compare(ob2)
         False
         """
+        # pylint: disable=protected-access
         if isinstance(other, Hamiltonian):
             self.simplify()
             other.simplify()
-            if len(self._obs_data()) != len(other._obs_data()):
+            self_odata = self._obs_data()
+            other_odata = other._obs_data()
+            if len(self_odata) != len(other_odata):
                 return False
-            print(self._obs_data(), " and ", other._obs_data())
-            for self_data in self._obs_data():  # pylint: disable=protected-access
+            for self_data in self_odata:
                 is_equal = False
-                for other_data in other._obs_data():  # pylint: disable=protected-access
+                for other_data in other_odata:
                     if (
                         qml.math.isclose(self_data[0], other_data[0])
                         and self_data[1] == other_data[1]
