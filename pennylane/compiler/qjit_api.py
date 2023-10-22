@@ -37,7 +37,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
         ``lightning.kokkos``, ``braket.local.qubit``, and ``braket.aws.qubit``
         devices. It does not support ``default.qubit``.
 
-        Please see the Catalyst documentation for more details on supported
+        Please see the :doc:`Catalyst documentation <catalyst:index>` for more details on supported
         devices, operations, and measurements.
 
     Args:
@@ -57,7 +57,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
             printed out.
         logfile (TextIOWrapper): File object to write verbose messages to (default is
             ``sys.stderr``).
-        pipelines (List[Tuple[str,List[str]]]): A list of pipelines to be executed. The
+        pipelines (List[Tuple[str, List[str]]]): A list of pipelines to be executed. The
             elements of this list are named sequences of MLIR passes to be executed. A ``None``
             value (the default) results in the execution of the default pipeline. This option is
             considered to be used by advanced users for low-level debugging purposes.

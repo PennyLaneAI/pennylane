@@ -87,7 +87,7 @@ Basic usage
     ``lightning.kokkos``, ``braket.local.qubit``, and ``braket.aws.qubit``
     devices. It does not support ``default.qubit``.
 
-    Please see the Catalyst documentation for more details on supported
+    Please see the :doc:`Catalyst documentation <catalyst:index>` for more details on supported
     devices, operations, and measurements.
 
 When using just-in-time (JIT) compilation, the compilation is triggered at the call site the
