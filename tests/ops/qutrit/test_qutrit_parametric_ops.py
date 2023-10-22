@@ -420,7 +420,7 @@ class TestGrad:
     """Test that the gradients for qutrit parametrized operations are correct"""
 
     # ``default.qutrit`` doesn't currently support device, adjoint, or backprop diff methods
-    diff_methods = ["parameter-shift", "finite-diff", "best"]
+    diff_methods = ["parameter-shift", "finite-diff", "best", "adjoint", "backprop"]
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("phi", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))

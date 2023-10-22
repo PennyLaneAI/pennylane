@@ -925,6 +925,12 @@ class TestCapabilities:
             "supports_tensor_observables": True,
             "returns_probs": True,
             "supports_broadcasting": False,
+            "passthru_devices":{
+                "autograd": "default.qutrit",
+                "tf": "default.qutrit",
+                "torch": "default.qutrit",
+                "jax": "default.qutrit",
+            }
         }
         assert capabilities == QutritDevice.capabilities()
 
