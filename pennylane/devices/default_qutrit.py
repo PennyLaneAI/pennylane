@@ -377,6 +377,9 @@ class DefaultQutrit(QutritDevice):
             returns_state=True,
             passthru_devices={
                 "autograd": "default.qutrit",
+                "tf": "default.qutrit",
+                "torch": "default.qutrit",
+                "jax": "default.qutrit",
             }
         )
         return capabilities
