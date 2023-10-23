@@ -30,8 +30,8 @@ def measure(wires: Wires, reset: Optional[bool] = False):
 
     It performs a mid-circuit measurement in the computational basis on the supplied
     qubit with the Python interpreter. However, this method behaves differently when it is
-    called inside a QJIT decorated workflow. Please see the
-    `catalyst.measure <https://docs.pennylane.ai/projects/catalyst/en/latest/code/api/catalyst.measure.html>`__
+    called inside a QJIT decorated workflow; **only** supports PennyLane projective mid-circuit measurement.
+    Please see the `catalyst.measure <https://docs.pennylane.ai/projects/catalyst/en/latest/code/api/catalyst.measure.html>`__
     for details.
 
     Measurement outcomes can be obtained and used to conditionally apply

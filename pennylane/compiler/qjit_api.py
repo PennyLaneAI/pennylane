@@ -272,7 +272,7 @@ def for_loop(*args, compiler="catalyst", **kwargs):
 
 
 def select_measure(wires: Wires, compiler="catalyst"):
-    r"""A :func:`qjit` compatible mid-circuit measurement for PennyLane/Catalyst.
+    """A :func:`qjit` compatible mid-circuit measurement for the PennyLane projective measurement computation.
 
     This method behaves differently when it is called inside a QJIT decorated workflow. Please see the
     `catalyst.measure <https://docs.pennylane.ai/projects/catalyst/en/latest/code/api/catalyst.measure.html>`__
