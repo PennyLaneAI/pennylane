@@ -636,11 +636,6 @@ class ControlledOp(Controlled, operation.Operation):
     def grad_method(self):
         return self.base.grad_method
 
-    # pylint: disable=missing-function-docstring
-    @property
-    def basis(self):
-        return self.base.basis
-
     @property
     def parameter_frequencies(self):
         if self.base.num_params == 1:
