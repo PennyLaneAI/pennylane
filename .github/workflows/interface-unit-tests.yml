@@ -48,7 +48,7 @@ on:
         required: false
         type: string
         default: ''
-      run_benchmarks:
+      run_benchmarks_ci:
         description: |
           Indicate if a selected set of benchmarks will be run instead of the entire suite.
 
