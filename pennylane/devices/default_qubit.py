@@ -387,7 +387,7 @@ class DefaultQubit(Device):
         config = self._setup_execution_config(execution_config)
         transform_program = TransformProgram()
 
-        transform_program.add_transform(qml.defer_measurements)
+        transform_program.add_transform(qml.defer_measurements, device=self)
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(
             decompose, stopping_condition=stopping_condition, name=self.name
