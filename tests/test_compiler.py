@@ -19,8 +19,8 @@ TODO: Uncomment 'pytest.mark.external' to check these tests in GitHub actions wi
 """
 # pylint: disable=import-outside-toplevel
 import pytest
-import pennylane as qml
 import numpy as np
+import pennylane as qml
 
 catalyst = pytest.importorskip("catalyst")
 jax = pytest.importorskip("jax")
