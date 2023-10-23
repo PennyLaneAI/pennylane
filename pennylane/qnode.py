@@ -898,13 +898,17 @@ class QNode:
                 )
 
         # Apply the deferred measurement principle if the device doesn't
-        # support mid-circuit measurements natively
-        expand_mid_measure = any(isinstance(op, MidMeasureMP) for op in self.tape.operations) and (
-            isinstance(self.device, qml.devices.Device)
-            or not self.device.capabilities().get("supports_mid_measure", False)
+        # support mid-circuit measurements natively.
+        # Only apply transform with old device API as postselection with
+        # broadcasting will split tapes.
+        expand_mid_measure = (
+            any(isinstance(op, MidMeasureMP) for op in self.tape.operations)
+            and not isinstance(self.device, qml.devices.Device)
+            and not self.device.capabilities().get("supports_mid_measure", False)
         )
         if expand_mid_measure:
-            tapes, _ = qml.defer_measurements(self._tape)
+            # Assume that tapes are not split if old device is used since postselection is not supported.
+            tapes, _ = qml.defer_measurements(self._tape, device=self.device)
             self._tape = tapes[0]
 
         if self.expansion_strategy == "device":
