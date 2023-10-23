@@ -1,12 +1,34 @@
 :orphan:
 
-# Release 0.33.0-dev (development release)
+# Release 0.33.0 (current release)
 
 <h3>New features since last release</h3>
 
 <h4>Postselection and statistics in mid-circuit measurements 📌</h4>
 
-* TODO postselection
+* Requesting postselection after making mid-circuit measurements is now possible by specifying the 
+  `postselect` keyword argument in `qml.measure` as either `0` or `1`, corresponding to the basis states.
+  [(#4604)](https://github.com/PennyLaneAI/pennylane/pull/4604)
+
+  ```python
+  dev = qml.device("default.qubit", wires=3)
+
+  @qml.qnode(dev)
+  def circuit(phi):
+      qml.RX(phi, wires=0)
+      m = qml.measure(0, postselect=1)
+      qml.cond(m, qml.PauliX)(wires=1)
+      return qml.probs(wires=1)
+  ```
+  
+  ```pycon
+  >>> circuit(np.pi)
+  tensor([0., 1.], requires_grad=True)
+  ```
+
+  Here, we measure a probability of one on wire 1 as we postselect on the $|1\rangle$ state on wire
+  0, thus resulting in the circuit being projected onto the state corresponding to the measurement
+  outcome $|1\rangle$ on wire 0.
 
 * Measurement statistics can now be collected for mid-circuit measurements.
   [(#4544)](https://github.com/PennyLaneAI/pennylane/pull/4544)
@@ -125,9 +147,8 @@
   plt.bar(range(len(output)), output)
   plt.show()
   ```
-
+  
   <img src="_images/cosine_window.png" width=50%/>
-
 
 <h4>New device capabilities, integration with Catalyst, and more! ⚗️</h4>
 
@@ -243,36 +264,6 @@
 
   TODO
 
-<h4>Transforms</h4>
-
-* All quantum functions transforms are update to the new transform program system.
-  [(#4439)](https://github.com/PennyLaneAI/pennylane/pull/4439)
-
-* All batch transforms are updated to the new transform program system.
-  [(#4440)](https://github.com/PennyLaneAI/pennylane/pull/4440)
-
-* Quantum information transforms are updated to the new transform program system.
-  [(#4569)](https://github.com/PennyLaneAI/pennylane/pull/4569)
-
-* Operator transforms `qml.matrix`, `qml.eigvals`, `qml.generator`, and `qml.transforms.to_zx` are updated
-  to the new transform program system.
-  [(#4573)](https://github.com/PennyLaneAI/pennylane/pull/4573)
-
-* Add the method ``add_transform`` and ``insert_front_transform`` transform in the ``TransformProgram``.
-  [(#4559)](https://github.com/PennyLaneAI/pennylane/pull/4559)
-
-* Dunder ``__add__`` method is added to the ``TransformProgram`` class, therefore two programs can be added using ``+`` .
-  [(#4549)](https://github.com/PennyLaneAI/pennylane/pull/4549)
-
-* Transforms can be applied on devices following the new device API.
- [(#4667)](https://github.com/PennyLaneAI/pennylane/pull/4667)
-
-* All gradient transforms are updated to the new transform program system.
- [(#4595)](https://github.com/PennyLaneAI/pennylane/pull/4595)
-
-* `pennylane.defer_measurements` will now exit early if the input does not contain mid circuit measurements.
-  [(#4659)](https://github.com/PennyLaneAI/pennylane/pull/4659)
-
 <h4>Improving QChem and existing algorithms</h4>
 
 * The qchem ``fermionic_dipole`` and ``particle_number`` functions are updated to use a
@@ -305,6 +296,12 @@
   `DefaultQubitJax` in the old API.
   [(#4596)](https://github.com/PennyLaneAI/pennylane/pull/4596)
 
+* The `JacobianProductCalculator` abstract base class and implementations `TransformJacobianProducts`
+  `DeviceDerivatives`, and `DeviceJacobianProducts` have been added to `pennylane.interfaces.jacobian_products`.
+  [(#4435)](https://github.com/PennyLaneAI/pennylane/pull/4435)
+  [(#4527)](https://github.com/PennyLaneAI/pennylane/pull/4527)
+  [(#4637)](https://github.com/PennyLaneAI/pennylane/pull/4637)
+
 * `DefaultQubit2` dispatches to a faster implementation for applying `ParametrizedEvolution` to a state
   when it is more efficient to evolve the state than the operation matrix.
   [(#4598)](https://github.com/PennyLaneAI/pennylane/pull/4598)
@@ -322,6 +319,11 @@
 
 * `DefaultQubit2` now works as expected with measurement processes that don't specify wires.
   [(#4580)](https://github.com/PennyLaneAI/pennylane/pull/4580)
+
+* The function `integrals.py` is modified to replace indexing with slicing in the computationally
+  expensive functions `electron_repulsion` and `_hermite_coulomb`, for a better compatibility with
+  JAX.
+  [(#4685)](https://github.com/PennyLaneAI/pennylane/pull/4685)
 
 * Various changes to measurements to improve feature parity between the legacy `default.qubit` and
   the new `DefaultQubit2`. This includes not trying to squeeze batched `CountsMP` results and implementing
@@ -343,6 +345,23 @@
 
 <h4>Other improvements</h4>
 
+* Add the method ``add_transform`` and ``insert_front_transform`` transform in the ``TransformProgram``.
+  [(#4559)](https://github.com/PennyLaneAI/pennylane/pull/4559)
+
+* Dunder ``__add__`` method is added to the ``TransformProgram`` class, therefore two programs can be added using ``+`` .
+  [(#4549)](https://github.com/PennyLaneAI/pennylane/pull/4549)
+
+* Transforms can be applied on devices following the new device API.
+ [(#4667)](https://github.com/PennyLaneAI/pennylane/pull/4667)
+
+* All gradient transforms are updated to the new transform program system.
+ [(#4595)](https://github.com/PennyLaneAI/pennylane/pull/4595)
+* Multi-controlled operations with a single qubit special unitary target can now automatically decompose.
+  [(#4697)](https://github.com/PennyLaneAI/pennylane/pull/4697)
+
+* `pennylane.defer_measurements` will now exit early if the input does not contain mid circuit measurements.
+  [(#4659)](https://github.com/PennyLaneAI/pennylane/pull/4659)
+
 * `qml.qchem.import_state` has been extended to import more quantum chemistry wavefunctions, 
   from MPS, DMRG and SHCI classical calculations performed with the Block2 and Dice libraries.
   [#4523](https://github.com/PennyLaneAI/pennylane/pull/4523)
@@ -352,10 +371,6 @@
 
   Check out our [how-to guide](https://pennylane.ai/qml/demos/tutorial_initial_state_preparation)
   to learn more about how PennyLane integrates with your favourite quantum chemistry libraries.
-
-* The `JacobianProductCalculator` abstract base class and implementation `TransformJacobianProducts`
-  have been added to `pennylane.interfaces.jacobian_products`.
-  [(#4435)](https://github.com/PennyLaneAI/pennylane/pull/4435)
 
 * The density matrix aspects of `StateMP` have been split into their own measurement
   process, `DensityMatrixMP`.
@@ -389,7 +404,6 @@
   with two or more terms.
   [(#4642)](https://github.com/PennyLaneAI/pennylane/pull/4642)
 
-
 * `_qfunc_output` has been removed from `QuantumScript`, as it is no longer necessary. There is
   still a `_qfunc_output` property on `QNode` instances.
   [(#4651)](https://github.com/PennyLaneAI/pennylane/pull/4651)
@@ -401,14 +415,36 @@
   of the computed qubit operator, if imaginary components are smaller than a threshold. 
   [(#4639)](https://github.com/PennyLaneAI/pennylane/pull/4639)
 
+* `qml.data.load` correctly performs a full download of the dataset after a partial download of the
+  same dataset has already been performed.
+  [(#4681)](https://github.com/PennyLaneAI/pennylane/pull/4681)
+  
+* Improved performance of `qml.data.load()` when partially loading a dataset
+  [(#4674)](https://github.com/PennyLaneAI/pennylane/pull/4674)
+
+* Plots generated with the `pennylane.drawer.plot` style of `matplotlib.pyplot` now have black
+  axis labels and are generated at a default DPI of 300.
+  [(#4690)](https://github.com/PennyLaneAI/pennylane/pull/4690)
+
+* Updated `qml.device`, `devices.preprocessing` and the `tape_expand.set_decomposition` context 
+  manager to bring `DefaultQubit2` to feature parity with `default.qubit.legacy` with regards to 
+  using custom decompositions. The `DefaultQubit2` device can now be included in a `set_decomposition` 
+  context or initialized with a `custom_decomps` dictionary, as well as a custom `max_depth` for 
+  decomposition.
+  [(#4675)](https://github.com/PennyLaneAI/pennylane/pull/4675)
 
 <h3>Breaking changes 💔</h3>
 
-* `default.qubit` now implements the new device API. If you initialize a device
-  with `qml.device("default.qubit")`, all methods and properties that were tied to the old
-  device API will no longer be on the device. The legacy version can still be accessed with
-  `qml.device("default.qubit.legacy", wires=n_wires)`.
-  [(#4436)](https://github.com/PennyLaneAI/pennylane/pull/4436)
+* ``qml.defer_measurements`` now raises an error if a transformed circuit measures ``qml.probs``,
+  ``qml.sample``, or ``qml.counts`` without any wires or obsrvable, or if it measures ``qml.state``.
+  [(#4701)](https://github.com/PennyLaneAI/pennylane/pull/4701)
+
+* The device test suite now converts device kwargs to integers or floats if they can be converted to integers or floats.
+  [(#4640)](https://github.com/PennyLaneAI/pennylane/pull/4640)
+
+* `MeasurementProcess.eigvals()` now raises an `EigvalsUndefinedError` if the measurement observable
+  does not have eigenvalues.
+  [(#4544)](https://github.com/PennyLaneAI/pennylane/pull/4544)
 
 * The `__eq__` and `__hash__` methods of `Operator` and `MeasurementProcess` no longer rely on the
   object's address is memory. Using `==` with operators and measurement processes will now behave the
@@ -546,7 +582,13 @@
   Note that these functions are unstable while device upgrades are underway.
   [(#4555)](https://github.com/PennyLaneAI/pennylane/pull/4555)
 
-* Minor documentation improvement to the usage example in the `qml.QuantumMonteCarlo` page. Integral was missing the differential dx with respect to which the integration is being performed. [(#4593)](https://github.com/PennyLaneAI/pennylane/pull/4593)  
+* Minor documentation improvement to the usage example in the `qml.QuantumMonteCarlo` page.
+  Integral was missing the differential dx with respect to which the integration is being performed.
+  [(#4593)](https://github.com/PennyLaneAI/pennylane/pull/4593)  
+
+* Minor documentation improvement for the use of the `pennylane` style of `qml.drawer` and the
+  `pennylane.drawer.plot` style of `matplotlib.pyplot`. The use of the default font was clarified.
+  [(#4690)](https://github.com/PennyLaneAI/pennylane/pull/4690)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -580,24 +622,31 @@
   the last axis (`axis=-1`). Without the fix, it would wrongly return `tensor[indices]`.
   [(#4605)](https://github.com/PennyLaneAI/pennylane/pull/4605)
 
+* Ensure the logging `TRACE` level works with gradient-free execution.
+  [(#4669)](https://github.com/PennyLaneAI/pennylane/pull/4669)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso,
 Utkarsh Azad,
 Thomas Bromley,
 Isaac De Vlugt,
+Jack Brown,
 Stepan Fomichev,
 Joana Fraxanet,
 Diego Guala,
 Soran Jahangiri,
 Edward Jiang,
 Korbinian Kottmann,
+Ivana Kurecic,
 Christina Lee,
 Lillian M. A. Frederiksen,
 Vincent Michaud-Rioux,
 Romain Moyard,
 Daniel F. Nino,
+Lee James O'Riordan,
 Mudit Pandey,
 Matthew Silverman,
 Jay Soni.

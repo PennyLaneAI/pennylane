@@ -383,31 +383,12 @@ class TransformProgram:
         level.
         """
 
-        def jax_argnums_to_tape_trainable(program, argnums, args, kwargs):
-            import jax  # pylint: disable=import-outside-toplevel
-
-            with jax.core.new_main(jax.interpreters.ad.JVPTrace) as main:
-                trace = jax.interpreters.ad.JVPTrace(main, 0)
-
-            args_jvp = [
-                jax.interpreters.ad.JVPTracer(trace, arg, jax.numpy.zeros(arg.shape))
-                if i in argnums
-                else arg
-                for i, arg in enumerate(args)
-            ]
-
-            qnode.construct(args_jvp, kwargs)
-            tape = qnode.qtape
-            tapes, _ = program((tape,))
-            del trace
-            return tuple(tape.get_parameters(trainable_only=False) for tape in tapes)
-
         argnums_list = []
         for index, transform in enumerate(self):
             argnums = [0] if qnode.interface in ["jax", "jax-jit"] and argnums is None else argnums
             if transform.classical_cotransform and argnums:
-                params = jax_argnums_to_tape_trainable(
-                    TransformProgram(self[0:index]), argnums, args, kwargs
+                params = qml.math.jax_argnums_to_tape_trainable(
+                    qnode, argnums, TransformProgram(self[0:index]), args, kwargs
                 )
                 argnums_list.append([qml.math.get_trainable_indices(param) for param in params])
             else:
@@ -453,7 +434,7 @@ class TransformProgram:
                     slices_classical.append(slice(start_classical, start_classical + 1))
                     start_classical += 1
 
-            if cotransform:
+            if cotransform and self._classical_jacobians:
                 batch_postprocessing_classical = partial(
                     _batch_postprocessing, individual_fns=classical_fns, slices=slices_classical
                 )

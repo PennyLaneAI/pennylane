@@ -400,7 +400,7 @@ class QNode:
             logger.debug(
                 """Creating QNode(func=%s, device=%s, interface=%s, diff_method=%s, expansion_strategy=%s, max_expansion=%s, grad_on_execution=%s, cache=%s, cachesize=%s, max_diff=%s, gradient_kwargs=%s""",
                 func
-                if not (logger.isEnabledFor(qml.logging.TRACE) and callable(func))
+                if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(func))
                 else "\n" + inspect.getsource(func),
                 repr(device),
                 interface,
@@ -898,13 +898,17 @@ class QNode:
                 )
 
         # Apply the deferred measurement principle if the device doesn't
-        # support mid-circuit measurements natively
-        expand_mid_measure = any(isinstance(op, MidMeasureMP) for op in self.tape.operations) and (
-            isinstance(self.device, qml.devices.Device)
-            or not self.device.capabilities().get("supports_mid_measure", False)
+        # support mid-circuit measurements natively.
+        # Only apply transform with old device API as postselection with
+        # broadcasting will split tapes.
+        expand_mid_measure = (
+            any(isinstance(op, MidMeasureMP) for op in self.tape.operations)
+            and not isinstance(self.device, qml.devices.Device)
+            and not self.device.capabilities().get("supports_mid_measure", False)
         )
         if expand_mid_measure:
-            tapes, _ = qml.defer_measurements(self._tape)
+            # Assume that tapes are not split if old device is used since postselection is not supported.
+            tapes, _ = qml.defer_measurements(self._tape, device=self.device)
             self._tape = tapes[0]
 
         if self.expansion_strategy == "device":
@@ -982,8 +986,8 @@ class QNode:
             device_transform_program, config = self.device.preprocess(execution_config=config)
             full_transform_program = self.transform_program + device_transform_program
         else:
-            full_transform_program = self.transform_program
-        # Add the gradient expand to the porgram if necessary
+            full_transform_program = qml.transforms.core.TransformProgram(self.transform_program)
+        # Add the gradient expand to the program if necessary
         if (
             isinstance(self.gradient_fn, qml.transforms.core.TransformDispatcher)
             and self.gradient_fn.expand_transform
@@ -994,15 +998,21 @@ class QNode:
             )
         # Calculate the classical jacobians if necessary
         if full_transform_program.has_classical_cotransform():
-            argnums = full_transform_program[-1]._kwargs.pop(
-                "argnums", None
+            hybrid = full_transform_program[-1]._kwargs.pop(
+                "hybrid", True
             )  # pylint: disable=protected-access
-            full_transform_program._set_all_classical_jacobians(
-                self, args, kwargs, argnums
-            )  # pylint: disable=protected-access
-            full_transform_program._set_all_argnums(
-                self, args, kwargs, argnums
-            )  # pylint: disable=protected-access
+
+            if hybrid:
+                argnums = full_transform_program[-1]._kwargs.pop(
+                    "argnums", None
+                )  # pylint: disable=protected-access
+
+                full_transform_program._set_all_classical_jacobians(
+                    self, args, kwargs, argnums
+                )  # pylint: disable=protected-access
+                full_transform_program._set_all_argnums(
+                    self, args, kwargs, argnums
+                )  # pylint: disable=protected-access
 
         # pylint: disable=unexpected-keyword-arg
         res = qml.execute(
