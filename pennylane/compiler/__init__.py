@@ -218,4 +218,4 @@ if no function is provided:
 
 from .compiler import available_compilers, available, active
 
-from .qjit_api import qjit
+from .qjit_api import qjit, select_measure

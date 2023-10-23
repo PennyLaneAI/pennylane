@@ -13,6 +13,9 @@
 # limitations under the License.
 """QJIT compatible quantum and compilation operations API"""
 
+import pennylane as qml
+from pennylane.wires import Wires
+
 from .compiler import AvailableCompilers, available
 
 
@@ -110,3 +113,37 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
     compilers = AvailableCompilers.names_entrypoints
     qjit_loader = compilers[compiler]["qjit"].load()
     return qjit_loader(fn=fn, *args, **kwargs)
+
+
+def select_measure(wires: Wires, compiler="catalyst"):
+    """A :func:`qjit` compatible mid-circuit measurement for the PennyLane projective measurement computation.
+
+    This method behaves differently when it is called inside a QJIT decorated workflow. Please see the
+    `catalyst.measure <https://docs.pennylane.ai/projects/catalyst/en/latest/code/api/catalyst.measure.html>`__
+    for details.
+
+    Args:
+        wires (Wires): The wire of the qubit the measurement process applies to.
+        reset (Optional[bool]): Whether to reset the wire to the :math:`|0 \rangle`
+            state after measurement.
+
+    Returns:
+        MidMeasureMP: measurement process instance
+
+    Raises:
+        RuntimeError: if the compiler is not installed
+        QuantumFunctionError: if multiple wires were specified
+    """
+
+    if not available(compiler):
+        raise RuntimeError(f"The {compiler} package is not installed.")
+
+    wire = Wires(wires)
+    if len(wire) > 1:
+        raise qml.QuantumFunctionError(
+            "Only a single qubit can be measured in the middle of the circuit"
+        )
+
+    compilers = AvailableCompilers.names_entrypoints
+    ops_loader = compilers[compiler]["ops"].load()
+    return ops_loader.measure(wire[0])
