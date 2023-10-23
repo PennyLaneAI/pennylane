@@ -71,11 +71,63 @@
   It is recommended to switch over to use of `TrotterProduct` because `ApproxTimeEvolution` will be
   deprecated and removed in upcoming releases.
 
-* TODO QDrift
+* Approximating matrix exponentiation with random product formulas, qDrift, is now available with the new `QDrift`
+  operation.
+  [(#4671)](https://github.com/PennyLaneAI/pennylane/pull/4671)
+
+  As shown in [1811.08017](https://arxiv.org/pdf/1811.08017.pdf), qDrift is a Markovian process that can provide
+  a speedup in Hamiltonian simulation. At a high level, qDrift works by randomly sampling from the Hamiltonian 
+  terms with a probability that depends on the Hamiltonian coefficients. This method for Hamiltonian
+  simulation is now ready to use in PennyLane with the `QDrift` operator. Simply specify the evolution `time`
+  and the number of samples drawn from the Hamiltonian, `n`:
+  
+  ```python
+  coeffs = [0.25, 0.75]
+  ops = [qml.PauliX(0), qml.PauliZ(0)]
+  H = qml.dot(coeffs, ops)
+
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.Hadamard(0)
+      qml.QDrift(H, time=1.2, n = 10)
+      return qml.probs()
+  ```
+
+  ```pycon
+  >>> circuit()
+  array([0.61814334, 0.        , 0.38185666, 0.        ])
+  ```
 
 <h4>Building blocks for quantum phase estimation 🧱</h4>
 
-* TODO
+* A new operator called `CosineWindow` has been added to prepare an initial state based on a cosine wave function.
+  [(#4683)](https://github.com/PennyLaneAI/pennylane/pull/4683)
+
+  As outlined in [2110.09590](https://arxiv.org/pdf/2110.09590.pdf), the cosine tapering window is part of a modification
+  to quantum phase estimation that can provide a cubic improvement to the algorithm's error rate. Using `CosineWindow` will 
+  prepare a state whose amplitudes follow a cosinusoidal distribution over the computational basis.
+
+  ```python
+  import pennylane as qml
+  import matplotlib.pyplot as plt
+
+  dev = qml.device('default.qubit', wires=4)
+
+  @qml.qnode(dev)
+  def example_circuit():
+        qml.CosineWindow(wires=range(4))
+        return qml.state()
+  output = example_circuit()
+
+  # Graph showing state amplitudes
+  plt.bar(range(len(output)), output)
+  plt.show()
+  ```
+
+  <img src="_images/cosine_window.png" width=50%/>
+
 
 <h4>New device capabilities, integration with Catalyst, and more! ⚗️</h4>
 
@@ -91,7 +143,7 @@
 
   This changeover has a number of benefits for `default.qubit`, including:
 
-  * The number of wires is now optional - simply having `qml.device("default.qubit")` is valid! If
+  * The number of wires is now optional — simply having `qml.device("default.qubit")` is valid! If
     wires are not provided at instantiation, the device automatically infers the required number of
     wires for each circuit provided for execution.
 
@@ -100,17 +152,17 @@
 
     @qml.qnode(dev)
     def circuit():
-        qml.PauliZ("new")
-        qml.RZ(0.1, wires="device")
-        qml.Hadamard("api")
+        qml.PauliZ(0)
+        qml.RZ(0.1, wires=1)
+        qml.Hadamard(2)
         return qml.state()
     ```
 
     ```pycon
     >>> print(qml.draw(circuit)())
-       new: ──Z────────┤  State
-    device: ──RZ(0.10)─┤  State
-       api: ──H────────┤  State
+    0: ──Z────────┤  State
+    1: ──RZ(0.10)─┤  State
+    2: ──H────────┤  State
     ```
 
   * `default.qubit` is no longer silently swapped out with an interface-appropriate device when the
@@ -180,16 +232,6 @@
   ```
   
   Stay tuned for more integration of Catalyst into PennyLane!
-
-* `qml.qchem.import_state` has been extended to import more quantum chemistry wavefunctions, 
-  from MPS, DMRG and SHCI classical calculations performed with the Block2 and Dice libraries.
-  [#4523](https://github.com/PennyLaneAI/pennylane/pull/4523)
-  [#4524](https://github.com/PennyLaneAI/pennylane/pull/4524)
-  [#4626](https://github.com/PennyLaneAI/pennylane/pull/4626)
-  [#4634](https://github.com/PennyLaneAI/pennylane/pull/4634)
-
-  Check out our [how-to guide](https://pennylane.ai/qml/demos/tutorial_initial_state_preparation)
-  to learn more about how PennyLane integrates with your favourite quantum chemistry libraries.
 
 <h3>Improvements 🛠</h3>
 
@@ -300,6 +342,16 @@
   [(#4659)](https://github.com/PennyLaneAI/pennylane/pull/4659)
 
 <h4>Other improvements</h4>
+
+* `qml.qchem.import_state` has been extended to import more quantum chemistry wavefunctions, 
+  from MPS, DMRG and SHCI classical calculations performed with the Block2 and Dice libraries.
+  [#4523](https://github.com/PennyLaneAI/pennylane/pull/4523)
+  [#4524](https://github.com/PennyLaneAI/pennylane/pull/4524)
+  [#4626](https://github.com/PennyLaneAI/pennylane/pull/4626)
+  [#4634](https://github.com/PennyLaneAI/pennylane/pull/4634)
+
+  Check out our [how-to guide](https://pennylane.ai/qml/demos/tutorial_initial_state_preparation)
+  to learn more about how PennyLane integrates with your favourite quantum chemistry libraries.
 
 * The `JacobianProductCalculator` abstract base class and implementation `TransformJacobianProducts`
   have been added to `pennylane.interfaces.jacobian_products`.
