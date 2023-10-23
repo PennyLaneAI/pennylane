@@ -51,15 +51,6 @@ Gradient transforms
     stoch_pulse_grad
     pulse_odegen
 
-Custom gradients
-^^^^^^^^^^^^^^^^
-
-.. autosummary::
-    :toctree: api
-
-    gradient_transform
-    hessian_transform
-
 Utility functions
 ^^^^^^^^^^^^^^^^^
 
@@ -299,6 +290,16 @@ the gradient:
 Note that the post-processing function ``fn`` returned by the
 gradient transform is applied to the flat list of results returned
 from executing the gradient tapes.
+
+
+Custom gradients
+^^^^^^^^^^^^^^^^
+
+.. autosummary::
+    :toctree: api
+
+    gradient_transform
+    hessian_transform
 
 
 Custom gradient transforms
