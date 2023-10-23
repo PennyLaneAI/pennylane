@@ -68,18 +68,27 @@ to incorporate additional compilers in the near future.
 
 .. note::
 
-    Catalyst is officially supported on Linux (x86_64) and macOS (aarch64) platforms. To install it, simply run
-    the following ``pip`` command:
+    Catalyst is officially supported on Linux (x86_64) and macOS (aarch64) platforms.
+    To install it, simply run the following ``pip`` command:
 
     .. code-block:: console
 
       pip install pennylane-catalyst
 
-    Please see the `installation <https://docs.pennylane.ai/projects/catalyst/en/latest/dev/installation.html>`__
+    Please see the :doc:`installation <catalyst:dev/installation>`
     guide for more information.
 
 Basic usage
 -----------
+
+.. note::
+
+    Catalyst supports compiling QNodes that use ``lightning.qubit``,
+    ``lightning.kokkos``, ``braket.local.qubit``, and ``braket.aws.qubit``
+    devices. It does not support ``default.qubit``.
+
+    Please see the :doc:`Catalyst documentation <catalyst:index>` for more details on supported
+    devices, operations, and measurements.
 
 When using just-in-time (JIT) compilation, the compilation is triggered at the call site the
 first time the quantum function is executed. For example, ``circuit`` is
@@ -121,12 +130,10 @@ can occur 'ahead of time' when the function is decorated.
 array([0.75634905-0.52801002j, 0. +0.j,
     0.35962678+0.14074839j, 0. +0.j])
 
-The Catalyst compiler also supports capturing imperative Python control flow in compiled programs. You can
-enable this feature via the ``autograph=True`` keyword argument.
-
-Note AutoGraph results in additional
-restrictions, in particular whenever global state is involved. Please refer to the `AutoGraph guide <https://docs.pennylane.ai/projects/catalyst/en/latest/dev/autograph.html>`__
-for a complete discussion of the supported and unsupported use-cases.
+The Catalyst compiler also supports capturing imperative Python control flow
+in compiled programs, resulting in control flow being interpreted at runtime
+rather than in Python at compile time. You can enable this feature via the
+``autograph=True`` keyword argument.
 
 .. code-block:: python
 
@@ -146,10 +153,15 @@ array(0.)
 >>> circuit(5)
 array(1.)
 
+Note that AutoGraph results in additional
+restrictions, in particular whenever global state is involved. Please refer to the
+:doc:`AutoGraph guide <catalyst:dev/autograph>`
+for a complete discussion of the supported and unsupported use-cases.
+
 For more details on using the :func:`~.qjit` decorator and Catalyst
 with PennyLane, please refer to the Catalyst
-`quickstart guide <https://docs.pennylane.ai/projects/catalyst/en/latest/dev/quick_start.html>`__,
-as well as the `sharp bits and debugging tips <https://docs.pennylane.ai/projects/catalyst/en/latest/dev/sharp_bits.html>`__
+:doc:`quickstart guide <catalyst:dev/quick_start>`,
+as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
 page for an overview of the differences between Catalyst and PennyLane, and
 how to best structure your workflows to improve performance when
 using Catalyst.
@@ -157,12 +169,51 @@ using Catalyst.
 Adding a compiler
 -----------------
 
-For any compiler packages seeking to be registered, it is imperative that they expose the 'entry_points' metadata
-under the designated group name: ``pennylane.compilers`` with the following entry points:
+For any compiler packages seeking to be registered, it is imperative that they
+expose the ``entry_points`` metadata under the designated group name
+``pennylane.compilers``, with the following entry points:
 
-- ``context`` : Path to the compilation evaluation context manager
-- ``ops`` : Path to the compiler operations module
-- ``qjit`` : Path to the JIT compiler decorator
+- ``context``: Path to the compilation evaluation context manager.
+  This context manager should have the method ``context.is_tracing()``,
+  which returns ``True`` if called within a program that is being traced
+  or captured.
+
+- ``ops``: Path to the compiler operations module. This operations module
+  may contain compiler specific versions of PennyLane operations,
+  for example such as :func:`~.cond`, :func:`~.measure`, and :func:`~.adjoint`.
+  Within a JIT context, PennyLane operations may dispatch to these functions.
+
+- ``qjit``: Path to the JIT compiler decorator provided by the compiler.
+  This decorator should have the signature ``qjit(fn, *args, **kwargs)``,
+  where ``fn`` is the function to be compiled.
+
+In order to support the following two syntaxes,
+
+.. code-block:: python
+
+    @qml.qjit
+    def function(x, y):
+        ...
+
+    @qml.qjit(verbose=True, additional_args, ...)
+    def function(x, y):
+        ...
+
+where the ``qjit`` decorator can be applied with and without arguments,
+you should ensure that your ``qjit`` decorator itself returns a decorator
+if no function is provided:
+
+.. code-block:: python
+
+    def qjit(fn=None, **kwargs):
+        if fn is not None:
+            return compile_fn(fn, **kwargs)
+
+        def wrapper_fn(fn):
+            return compile_fn(fn, **kwargs)
+
+        return wrapper_fn
+
 """
 
 from .compiler import available_compilers, available, active

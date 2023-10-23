@@ -62,7 +62,11 @@ bibtex_bibfiles = ["bibfile.bib"]
 copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "
 copybutton_prompt_is_regexp = True
 
-intersphinx_mapping = {"https://pennylane.ai/qml/": None}
+intersphinx_mapping = {
+    "demo": ("https://pennylane.ai/qml/", None),
+    "catalyst": ("https://docs.pennylane.ai/projects/catalyst/en/stable", None)
+}
+
 mathjax_path = (
     "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"
 )
