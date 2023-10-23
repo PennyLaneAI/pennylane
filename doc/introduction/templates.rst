@@ -114,6 +114,10 @@ state preparation is typically used as the first operation.
     :description: :doc:`ArbitraryStatePreparation <../code/api/pennylane.ArbitraryStatePreparation>`
     :figure: _static/templates/subroutines/arbitrarystateprep.png
 
+.. gallery-item::
+    :description: :doc:`CosineWindow <../code/api/pennylane.CosineWindow>`
+    :figure: _static/templates/state_preparations/thumbnail_cosine_window.png
+
 .. raw:: html
 
         <div style='clear:both'></div>
