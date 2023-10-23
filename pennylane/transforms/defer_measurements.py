@@ -44,12 +44,16 @@ def _check_tape_validity(tape: QuantumTape):
         ):
             raise ValueError(
                 f"Cannot use {mp.__class__.__name__} as a measurement without specifying wires "
-                "when using qml.defer_measurements."
+                "when using qml.defer_measurements. Deferred measurements can occur "
+                "automatically when using mid-circuit measurements on a device that does not "
+                "support them."
             )
 
         if mp.__class__.__name__ == "StateMP":
             raise ValueError(
-                "Cannot use StateMP as a measurement when using qml.defer_measurements."
+                "Cannot use StateMP as a measurement when using qml.defer_measurements. "
+                "Deferred measurements can occur automatically when using mid-circuit "
+                "measurements on a device that does not support them."
             )
 
 
