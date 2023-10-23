@@ -518,7 +518,7 @@ class TestInvalidStateSamples:
         mp = qml.expval(qml.PauliZ(0))
         _shots = Shots(shots)
 
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError, match="probabilities do not sum to 1"):
             _ = measure_with_samples([mp], state, _shots)
 
     @pytest.mark.all_interfaces

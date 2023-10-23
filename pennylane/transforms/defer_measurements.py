@@ -209,6 +209,8 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
 
     device = kwargs.get("device", None)
 
+    device = kwargs.get("device", None)
+
     new_operations = []
 
     # Find wires that are reused after measurement
