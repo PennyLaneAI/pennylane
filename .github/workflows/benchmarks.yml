@@ -1,0 +1,25 @@
+name: Tests
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+concurrency:
+  group: benchmarks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    uses: ./.github/workflows/interface-unit-tests.yml
+    with:
+      branch: ${{ github.ref }}
+
+      # Run the benchmark tests if the label `ci:run-benchmarks` is attached to the PR.
+      # Not running it on push events.
+      run_benchmarks_ci: >-
+        ${{
+          github.event_name == 'pull_request'
+          && contains(github.event.pull_request.labels.*.name, 'ci:run-benchmarks')
+          || false
+         }}

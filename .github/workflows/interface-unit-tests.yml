@@ -26,10 +26,15 @@ on:
         required: false
         type: string
         default: --cov=pennylane --cov-report=term-missing --cov-report=xml --no-flaky-report -p no:warnings --tb=native
+      pytest_benchmark_flags:
+        description: PyTest Coverage flags to pass to all jobs
+        required: false
+        type: string
+        default: --benchmark-enable --benchmark-only --benchmark-json=benchmarks.json
       run_lightened_ci:
         description: |
           Indicate if a lightened version of the CI should be run instead of the entire suite.
-          
+
           The lightened version of the CI includes the following changes:
           - Only Python 3.9 is tested against, instead of 3.9, 3.10, 3.11
         required: false
@@ -43,6 +48,13 @@ on:
         required: false
         type: string
         default: ''
+      run_benchmarks:
+        description: |
+          Indicate if a selected set of benchmarks will be run instead of the entire suite.
+
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   setup-ci-load:
@@ -55,7 +67,7 @@ jobs:
         # All jobs will use the 'default' python versions listed in the dictionary below.
         # Unless the job name exists as a key as well, in which case the python versions listed for the job itself will be used instead.
         run: |
-          if [ "${{ inputs.run_lightened_ci }}" == "true" ]; 
+          if [ "${{ inputs.run_lightened_ci }}" == "true" ];
           then
             cat >python_versions.json <<-EOF
           {
@@ -108,7 +120,7 @@ jobs:
           }
           EOF
           fi
-          
+
           jq . matrix_max_parallel.json
           echo "matrix_max_parallel=$(jq -r tostring matrix_max_parallel.json)" >> $GITHUB_OUTPUT
 
@@ -117,7 +129,7 @@ jobs:
         env:
           JOBS_TO_SKIP: ${{ inputs.skip_ci_test_jobs }}
         run: |
-          if [ "${{ inputs.run_lightened_ci }}" == "true" ]; 
+          if [ "${{ inputs.run_lightened_ci }}" == "true" ];
           then
             skipped_jobs=$(echo -n "$JOBS_TO_SKIP" | python -c 'import json, sys; print(json.dumps(list(map(lambda job: job.strip(), filter(None, sys.stdin.read().split(","))))))')
             echo "The following jobs will be skipped: $skipped_jobs"
@@ -249,12 +261,14 @@ jobs:
       job_name: jax-tests (${{ matrix.group }}, ${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-jax-${{ matrix.python-version }}-${{ matrix.group }}
+      benchmarks_artifact_name: core-interfaces-benchmarks-jax-${{ matrix.python-version }}-${{ matrix.group }}
       python_version: ${{ matrix.python-version }}
       install_jax: true
       jax_version: ${{ inputs.jax_version }}
       install_tensorflow: false
       install_pytorch: false
       install_pennylane_lightning_master: true
+      pytest_benchmark_flags: ${{ inputs.run_benchmarks && inputs.pytest_benchmark_flags || ''}}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: jax and not qcut and not finite-diff and not param-shift
       pytest_additional_args: --splits 5 --group ${{ matrix.group }} --durations-path='.github/workflows/jax_tests_durations.json'
@@ -526,6 +540,7 @@ jobs:
       job_name: device-tests (${{ matrix.config.device }}, ${{ matrix.config.shots }}, ${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: devices-coverage-${{ matrix.config.device }}-${{ matrix.config.shots }}
+      benchmarks_artifact_name: devices-benchmarks-${{ matrix.config.device }}-${{ matrix.config.shots }}
       python_version: ${{ matrix.python-version }}
       install_jax: ${{ contains(matrix.config.device, 'jax') }}
       jax_version: ${{ inputs.jax_version }}
@@ -536,6 +551,7 @@ jobs:
       pytorch_version: ${{ inputs.pytorch_version }}
       install_pennylane_lightning_master: false
       pytest_test_directory: pennylane/devices/tests
+      pytest_benchmark_flags: ${{ inputs.run_benchmarks && inputs.pytest_benchmark_flags || ''}}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_additional_args: --device=${{ matrix.config.device }} --shots=${{ matrix.config.shots }}
 

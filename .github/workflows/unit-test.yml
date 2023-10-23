@@ -14,6 +14,10 @@ on:
         description: Name of the artifact file that will contain the coverage file for codevoc
         required: true
         type: string
+      benchmarks_artifact_name:
+        description: Name of the artifact file that will contain the Pytest-benchmarks report.
+        required: true
+        type: string
       checkout_fetch_depth:
         description: How many commits to checkout from HEAD of branch passed
         required: false
@@ -76,6 +80,11 @@ on:
         default: ''
       pytest_markers:
         description: Custom mark string to pass to PyTest
+        required: false
+        type: string
+        default: ''
+      pytest_benchmark_flags:
+        description: Benchmark arguments to pass to PyTest
         required: false
         type: string
         default: ''
@@ -150,13 +159,21 @@ jobs:
         env:
           PYTEST_MARKER: ${{ inputs.pytest_markers != '' && format('-m "{0}"', inputs.pytest_markers) || '' }}
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
-        run: python -m pytest  ${{ inputs.pytest_test_directory }} ${{ inputs.pytest_coverage_flags }} ${{ inputs.pytest_additional_args }} ${{ env.PYTEST_MARKER }} -n auto
+        run: python -m pytest  ${{ inputs.pytest_test_directory }} ${{ inputs.pytest_benchmark_flags }} ${{ inputs.pytest_coverage_flags }} ${{ inputs.pytest_additional_args }} ${{ env.PYTEST_MARKER }} -n auto
 
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
 
       - name: Upload Coverage File
+        if: ${{ inputs.pytest_benchmark_flags == '' }}
         uses: actions/upload-artifact@v3
         with:
           name: ${{ inputs.coverage_artifact_name }}
           path: coverage.xml
+
+      - name: Upload Pytest-benchmark file
+        if: ${{ inputs.pytest_benchmark_flags != '' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ inputs.benchmarks_artifact_name }}
+          path: benchmarks.json
