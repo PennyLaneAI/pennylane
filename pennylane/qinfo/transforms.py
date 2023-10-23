@@ -838,7 +838,7 @@ def fidelity(qnode0, qnode1, wires0, wires1):
             qml.RY(x, wires=0)
             return qml.state()
 
-    >>> qml.qinfo.fidelity(circuit_rx, circuit_ry, wires0=[0], wires1=[0])((), (0.2))
+    >>> qml.qinfo.fidelity(circuit_rx, circuit_ry, wires0=[0], wires1=[0])(None, (0.2))
     0.9900332889206207
 
     On the other hand, if the second QNode is the one that does not depend on parameters then a single tuple can also be
@@ -996,7 +996,7 @@ def relative_entropy(qnode0, qnode1, wires0, wires1):
 
     >>> x, y = np.array(0.4), np.array(0.6)
     >>> relative_entropy_circuit((x,), (y,))
-    0.017750012490703237
+    tensor(0.01775001, requires_grad=True)
 
     This transform is fully differentiable:
 
@@ -1006,7 +1006,7 @@ def relative_entropy(qnode0, qnode1, wires0, wires1):
             return relative_entropy_circuit((x,), (y,))
 
     >>> wrapper(x, y)
-    0.017750012490703237
+    tensor(0.01775001, requires_grad=True)
     >>> qml.grad(wrapper)(x, y)
     (tensor(-0.16458856, requires_grad=True),
      tensor(0.16953273, requires_grad=True))

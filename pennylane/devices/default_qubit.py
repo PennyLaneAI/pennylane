@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the next generation successor to default qubit
+The default.qubit device is PennyLane's standard qubit-based device.
+
+This module contains the next generation successor to default qubit.
 """
 
 from dataclasses import replace
