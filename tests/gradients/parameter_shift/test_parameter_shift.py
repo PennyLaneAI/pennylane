@@ -3481,7 +3481,7 @@ class TestQnodeAutograd:
 
         res_expected = qml.jacobian(circuit)(x)
         assert res.shape == res_expected.shape
-        assert np.allclose(2*res, res_expected)
+        assert np.allclose(2 * res, res_expected)
 
     @pytest.mark.parametrize("interface", interfaces)
     def test_single_measurement_single_param_2(self, interface):
