@@ -167,4 +167,4 @@ under the designated group name: ``pennylane.compilers`` with the following entr
 
 from .compiler import available_compilers, available, active
 
-from .qjit_api import qjit, select_measure, while_loop, for_loop
+from .qjit_api import qjit, while_loop, for_loop

@@ -20,19 +20,13 @@ from typing import Generic, TypeVar, Optional
 import pennylane as qml
 import pennylane.numpy as np
 from pennylane.wires import Wires
-from pennylane.compiler import compiler
 
 from .measurements import MeasurementProcess, MidMeasure
 
 
 def measure(wires: Wires, reset: Optional[bool] = False):
-    r"""A :func:`qjit` compatible mid-circuit measurement for PennyLane/Catalyst.
-
-    It performs a mid-circuit measurement in the computational basis on the supplied
-    qubit with the Python interpreter. However, this method behaves differently when it is
-    called inside a QJIT decorated workflow; **only** supports PennyLane projective mid-circuit measurement.
-    Please see the `catalyst.measure <https://docs.pennylane.ai/projects/catalyst/en/latest/code/api/catalyst.measure.html>`__
-    for details.
+    r"""Perform a mid-circuit measurement in the computational basis on the
+    supplied qubit.
 
     Measurement outcomes can be obtained and used to conditionally apply
     operations.
@@ -105,11 +99,6 @@ def measure(wires: Wires, reset: Optional[bool] = False):
         raise qml.QuantumFunctionError(
             "Only a single qubit can be measured in the middle of the circuit"
         )
-
-    if compiler.active("catalyst"):
-        catalyst_compiler = compiler.AvailableCompilers.names_entrypoints["catalyst"]
-        ops_loader = catalyst_compiler["ops"].load()
-        return ops_loader.measure(wire[0])
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())[:8]

@@ -178,6 +178,10 @@ class TestCatalyst:
         result_header = "func.func private @circuit(%arg0: tensor<f64>) -> tensor<f64>"
         assert result_header in mlir_str
 
+
+class TestCatalystControlFlow:
+    """Test ``qml.qjit`` with Catalyst's control-flow operations"""
+
     def test_alternating_while_loop(self):
         """Test simple while loop."""
         dev = qml.device("lightning.qubit", wires=1)
@@ -287,76 +291,3 @@ class TestCatalyst:
 
         assert jnp.allclose(circuit(1.4), 0.16996714)
         assert jnp.allclose(circuit(1.6), 0.0)
-
-    def test_measure_basic(self):
-        """Test measure (basic)."""
-        dev = qml.device("lightning.qubit", wires=1)
-
-        @qml.qjit
-        @qml.qnode(dev)
-        def circuit(x: float):
-            qml.RX(x, wires=0)
-            return qml.measure(wires=0)
-
-        assert circuit(jnp.pi)
-
-    def test_measure_more_complex(self):
-        """Test measure (more complex)."""
-        dev = qml.device("lightning.qubit", wires=2)
-
-        @qml.qjit()
-        @qml.qnode(dev)
-        def circuit(x: float):
-            qml.RX(x, wires=0)
-            m1 = qml.measure(wires=0)
-            maybe_pi = m1 * jnp.pi
-            qml.RX(maybe_pi, wires=1)
-            m2 = qml.measure(wires=1)
-            return m2
-
-        assert circuit(jnp.pi)
-        assert not circuit(0.0)
-
-    def test_select_measure_qferror(self):
-        """Test select_measure with QuantumFunctionError."""
-        dev = qml.device("lightning.qubit", wires=1)
-
-        @qml.qnode(dev)
-        def circuit(x: float):
-            qml.RX(x, wires=0)
-            return qml.measure(wires=[0, 1])
-
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Only a single qubit can be measured in the middle of the circuit",
-        ):
-            circuit(jnp.pi)
-
-    def test_select_measure_basic(self):
-        """Test select_measure (basic)."""
-        dev = qml.device("lightning.qubit", wires=1)
-
-        @qml.qjit
-        @qml.qnode(dev)
-        def circuit(x: float):
-            qml.RX(x, wires=0)
-            return qml.select_measure(wires=0)
-
-        assert circuit(jnp.pi)
-
-    def test_select_measure_more_complex(self):
-        """Test select_measure (more complex)."""
-        dev = qml.device("lightning.qubit", wires=2)
-
-        @qml.qjit()
-        @qml.qnode(dev)
-        def circuit(x: float):
-            qml.RX(x, wires=0)
-            m1 = qml.select_measure(wires=0)
-            maybe_pi = m1 * jnp.pi
-            qml.RX(maybe_pi, wires=1)
-            m2 = qml.select_measure(wires=1)
-            return m2
-
-        assert circuit(jnp.pi)
-        assert not circuit(0.0)
