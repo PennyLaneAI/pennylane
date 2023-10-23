@@ -201,7 +201,7 @@ containing quantum operations) that are used to construct QNodes.
     ~transforms.cond
 """
 # Import the decorators first to prevent circular imports when used in other transforms
-from .core import transform
+from .core import transform, TransformError
 from .batch_transform import batch_transform, map_batch_transform
 from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
 from .op_transforms import op_transform
@@ -259,4 +259,3 @@ from . import qcut
 from .qcut import cut_circuit, cut_circuit_mc
 from .zx import to_zx, from_zx
 from .broadcast_expand import broadcast_expand
-from .core import transform, TransformError
