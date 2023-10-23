@@ -52,7 +52,28 @@ def merge_rotations(
 
     **Example**
 
-    Consider the following quantum function.
+    >>> dev = qml.device('default.qubit', wires=3)
+
+    You can apply the transform direclty on :class:`QNode`
+
+    .. code-block:: python
+
+        @merge_rotations
+        @qml.qnode(device=dev)
+        def circuit(x, y, z):
+            qml.RX(x, wires=0)
+            qml.RX(y, wires=0)
+            qml.CNOT(wires=[1, 2])
+            qml.RY(y, wires=1)
+            qml.Hadamard(wires=2)
+            qml.CRZ(z, wires=[2, 0])
+            qml.RY(-y, wires=1)
+            return qml.expval(qml.PauliZ(0))
+
+    >>> circuit(0.1, 0.2, 0.3)
+    0.9553364891256055
+
+    You can also apply it on quantum function.
 
     .. code-block:: python
 
@@ -68,7 +89,6 @@ def merge_rotations(
 
     The circuit before optimization:
 
-    >>> dev = qml.device('default.qubit', wires=3)
     >>> qnode = qml.QNode(qfunc, dev)
     >>> print(qml.draw(qnode)(1, 2, 3))
     0: ──RX(1.00)──RX(2.00)─╭RZ(3.00)────────────┤  <Z>

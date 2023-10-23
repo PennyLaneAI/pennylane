@@ -37,7 +37,24 @@ def merge_amplitude_embedding(tape: QuantumTape) -> (Sequence[QuantumTape], Call
 
     **Example**
 
-    Consider the following quantum function.
+    >>> dev = qml.device('default.qubit', wires=4)
+
+    You can apply the transform directly on :class:`QNode`:
+
+    .. code-block:: python
+
+        @qml.transforms.merge_amplitude_embedding
+        @qml.qnode(device=dev)
+        def circuit():
+            qml.CNOT(wires = [0,1])
+            qml.AmplitudeEmbedding([0,1], wires = 2)
+            qml.AmplitudeEmbedding([0,1], wires = 3)
+            return qml.state()
+
+    >>> circuit()
+    [1.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j]
+
+    You can also apply it on quantum function.
 
     .. code-block:: python
 
@@ -51,7 +68,6 @@ def merge_amplitude_embedding(tape: QuantumTape) -> (Sequence[QuantumTape], Call
 
     Using the transformation we can join the different amplitude embedding into a single one:
 
-    >>> dev = qml.device('default.qubit', wires=4)
     >>> optimized_qfunc = qml.transforms.merge_amplitude_embedding(qfunc)
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
     >>> print(qml.draw(optimized_qnode)())

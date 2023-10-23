@@ -80,7 +80,31 @@ def cancel_inverses(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
 
     **Example**
 
-    Consider the following quantum function:
+    You can apply the cancel inverses transform directly on :class:`~.QNode`.
+
+    >>> dev = qml.device('default.qubit', wires=3)
+
+    .. code-block:: python
+
+        @cancel_inverses
+        @qml.qnode(device=dev)
+        def circuit(x, y, z):
+            qml.Hadamard(wires=0)
+            qml.Hadamard(wires=1)
+            qml.Hadamard(wires=0)
+            qml.RX(x, wires=2)
+            qml.RY(y, wires=1)
+            qml.PauliX(wires=1)
+            qml.RZ(z, wires=0)
+            qml.RX(y, wires=2)
+            qml.CNOT(wires=[0, 2])
+            qml.PauliX(wires=1)
+            return qml.expval(qml.PauliZ(0))
+
+    >>> circuit(0.1, 0.2, 0.3)
+    0.999999999999999
+
+    You can also apply it on quantum functions:
 
     .. code-block:: python
 
@@ -99,7 +123,6 @@ def cancel_inverses(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
 
     The circuit before optimization:
 
-    >>> dev = qml.device('default.qubit', wires=3)
     >>> qnode = qml.QNode(qfunc, dev)
     >>> print(qml.draw(qnode)(1, 2, 3))
     0: ──H─────────H─────────RZ(3.00)─╭●────┤  <Z>

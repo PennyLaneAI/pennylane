@@ -172,7 +172,35 @@ def commute_controlled(tape: QuantumTape, direction="right") -> (Sequence[Quantu
 
     **Example**
 
-    Consider the following quantum function.
+    >>> dev = qml.device('default.qubit', wires=3)
+
+    You can apply the transform directly on :class:`QNode`:
+
+    .. code-block:: python
+
+        @partial(commute_controlled, direction="right")
+        @qml.qnode(device=dev)
+        def circuit(theta):
+            qml.CZ(wires=[0, 2])
+            qml.PauliX(wires=2)
+            qml.S(wires=0)
+
+            qml.CNOT(wires=[0, 1])
+
+            qml.PauliY(wires=1)
+            qml.CRY(theta, wires=[0, 1])
+            qml.PhaseShift(theta/2, wires=0)
+
+            qml.Toffoli(wires=[0, 1, 2])
+            qml.T(wires=0)
+            qml.RZ(theta/2, wires=1)
+
+            return qml.expval(qml.PauliZ(0))
+
+    >>> circuit(0.5)
+    0.9999999999999999
+
+    You can also apply it on quantum function.
 
     .. code-block:: python
 
@@ -193,7 +221,6 @@ def commute_controlled(tape: QuantumTape, direction="right") -> (Sequence[Quantu
 
             return qml.expval(qml.PauliZ(0))
 
-    >>> dev = qml.device('default.qubit', wires=3)
     >>> qnode = qml.QNode(qfunc, dev)
     >>> print(qml.draw(qnode)(0.5))
     0: ─╭●──S─╭●────╭●─────────Rϕ(0.25)─╭●──T────────┤  <Z>
@@ -207,7 +234,7 @@ def commute_controlled(tape: QuantumTape, direction="right") -> (Sequence[Quantu
     with ``CRY``). We can use the transform to push single-qubit gates as
     far as possible through the controlled operations:
 
-    >>> optimized_qfunc = commute_controlled(direction="right")(qfunc)
+    >>> optimized_qfunc = commute_controlled(qfunc, direction="right")
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
     >>> print(qml.draw(optimized_qnode)(0.5))
     0: ─╭●─╭●─╭●───────────╭●──S─────────Rϕ(0.25)──T─┤  <Z>

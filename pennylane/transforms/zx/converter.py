@@ -227,7 +227,8 @@ def to_zx(tape, expand_measurements=False):  # pylint: disable=unused-argument
 
             wires = qml.wires.Wires([4, 3, 0, 2, 1])
             wires_map = dict(zip(tape_opt.wires, wires))
-            tape_opt_reorder = qml.map_wires(input=tape_opt, wire_map=wires_map)[0][0]
+            tapes_opt_reorder, fn = qml.map_wires(input=tape_opt, wire_map=wires_map)[0][0]
+            tape_opt_reorder = fn(tapes_opt_reorder)
 
             @qml.qnode(device=dev)
             def mod_5_4():

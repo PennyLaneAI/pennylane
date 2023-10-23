@@ -53,6 +53,24 @@ def single_qubit_fusion(
 
     **Example**
 
+    >>> dev = qml.device('default.qubit', wires=1)
+
+    You can apply the transform directly on :class:`QNode`:
+
+    .. code-block:: python
+
+        @single_qubit_fusion
+        @qml.qnode(device=dev)
+        def qfunc(r1, r2):
+            qml.Hadamard(wires=0)
+            qml.Rot(*r1, wires=0)
+            qml.Rot(*r2, wires=0)
+            qml.RZ(r1[0], wires=0)
+            qml.RZ(r2[0], wires=0)
+            return qml.expval(qml.PauliX(0))
+
+    The single qubit gates are fused before execution.
+
     Consider the following quantum function.
 
     .. code-block:: python
@@ -67,7 +85,6 @@ def single_qubit_fusion(
 
     The circuit before optimization:
 
-    >>> dev = qml.device('default.qubit', wires=1)
     >>> qnode = qml.QNode(qfunc, dev)
     >>> print(qml.draw(qnode)([0.1, 0.2, 0.3], [0.4, 0.5, 0.6]))
     0: ──H──Rot(0.1, 0.2, 0.3)──Rot(0.4, 0.5, 0.6)──RZ(0.1)──RZ(0.4)──┤ ⟨X⟩

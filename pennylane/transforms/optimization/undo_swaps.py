@@ -40,6 +40,24 @@ def undo_swaps(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
 
     **Example**
 
+    >>> dev = qml.device('default.qubit', wires=3)
+
+    You can apply the transform directly on a :class:`QNode`
+
+    .. code-block:: python
+
+        @undo_swaps
+        @qml.qnode(device=dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.PauliX(wires=1)
+            qml.SWAP(wires=[0,1])
+            qml.SWAP(wires=[0,2])
+            qml.PauliY(wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+    The SWAP gates are removed before execution.
+
     Consider the following quantum function:
 
     .. code-block:: python

@@ -24,7 +24,7 @@ def remove_barrier(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
     """Quantum transform to remove Barrier gates.
 
     Args:
-        qfunc (function): A quantum function.
+        tape (QuantumTape): A quantum tape.
 
     Returns:
         pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
@@ -34,6 +34,21 @@ def remove_barrier(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
         tape executions.
 
     **Example**
+
+    The transform can be applied on :class:`QNode` directly.
+
+    .. code-block:: python
+
+        @remove_barrier
+        @qml.qnode(device=dev)
+        def circuit(x, y):
+            qml.Hadamard(wires=0)
+            qml.Hadamard(wires=1)
+            qml.Barrier(wires=[0,1])
+            qml.PauliX(wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+    The barrier is then removed before execution.
 
     Consider the following quantum function:
 
