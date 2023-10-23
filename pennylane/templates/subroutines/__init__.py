@@ -37,3 +37,4 @@ from .qsvt import QSVT, qsvt
 from .select import Select
 from .qdrift import QDrift
 from .trotter import TrotterProduct
+from .aqft import AQFT
