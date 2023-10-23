@@ -34,7 +34,7 @@ class NumpyMPSSimulator:
         pass
 
     @classmethod
-    def execute(cls, qs: QuantumScript, dtype=np.complex128, chi_max=20, eps=1e-10):
+    def execute(cls, qs: QuantumScript, dtype=np.complex128, chi_max=100, eps=1e-10):
         num_indices = np.max(qs.wires)+1
         state = cls.init_MPS(num_indices)
         for i,op in enumerate(qs._ops):
@@ -59,6 +59,7 @@ class NumpyMPSSimulator:
     @staticmethod
     def apply_operation(state, operation, chi_max, eps):
         wires = operation.wires
+        print(operation, wires)
         matrix = qml.matrix(operation)
         if len(wires) == 1:
             return update_site(state, i=operation.wires[0], U_site=matrix, chi_max=chi_max, eps=eps)
