@@ -21,6 +21,8 @@ TODO: Uncomment 'pytest.mark.external' to check these tests in GitHub actions wi
 import pytest
 import pennylane as qml
 
+from pennylane import numpy as np
+
 catalyst = pytest.importorskip("catalyst")
 jax = pytest.importorskip("jax")
 
@@ -176,3 +178,66 @@ class TestCatalyst:
         mlir_str = str(circuit.mlir)
         result_header = "func.func private @circuit(%arg0: tensor<f64>) -> tensor<f64>"
         assert result_header in mlir_str
+
+    def test_jacobian_diff_method(self):
+        """Test the Jacobian transformation with the device diff_method."""
+        dev = qml.device("lightning.qubit", wires=1)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def func(p):
+            qml.RY(p, wires=0)
+            return qml.probs(wires=0)
+
+        @qml.qjit
+        def workflow(p: float):
+            return qml.jacobian(func, method="auto")(p)
+
+        result = workflow(0.5)
+        reference = qml.jacobian(func, argnum=0)(0.5)
+
+        assert jnp.allclose(result, reference)
+
+    def test_jacobian_auto(self):
+        """Test the Jacobian transformation with 'auto'."""
+        dev = qml.device("lightning.qubit", wires=1)
+
+        def workflow(x):
+            @qml.qnode(dev)
+            def circuit(x):
+                qml.RX(jnp.pi * x[0], wires=0)
+                qml.RY(x[1], wires=0)
+                return qml.probs()
+
+            g = qml.jacobian(circuit)
+            return g(x)
+
+        reference = workflow(np.array([2.0, 1.0]))
+        result = qml.qjit(workflow)(jnp.array([2.0, 1.0]))
+
+        assert jnp.allclose(result, reference)
+
+    def test_jacobian_fd(self):
+        """Test the Jacobian transformation with 'fd'."""
+        dev = qml.device("lightning.qubit", wires=1)
+
+        def workflow(x):
+            @qml.qnode(dev)
+            def circuit(x):
+                qml.RX(np.pi * x[0], wires=0)
+                qml.RY(x[1], wires=0)
+                return qml.probs()
+
+            g = qml.jacobian(circuit, method="fd", step_size=0.3)
+            return g(x)
+
+        result = qml.qjit(workflow)(np.array([2.0, 1.0]))
+        print(result)
+
+        reference = np.array([[-0.37120096, -0.45467246], [0.37120096, 0.45467246]])
+        print(jnp.allclose(result, reference))
+
+        with pytest.raises(
+            ValueError,
+            match="invalid values for 'method' and 'step_size' arguments in interpreter mode",
+        ):
+            workflow(np.array([2.0, 1.0]))

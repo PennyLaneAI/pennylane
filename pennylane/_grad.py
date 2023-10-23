@@ -21,6 +21,7 @@ from autograd.core import make_vjp as _make_vjp
 from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.extend import vspace
 from autograd.wrap_util import unary_to_nary
+from pennylane.compiler import compiler
 
 make_vjp = unary_to_nary(_make_vjp)
 
@@ -145,28 +146,59 @@ class grad:
         return grad_value, ans
 
 
-def jacobian(func, argnum=None):
-    """Returns the Jacobian as a callable function of vector-valued
-    (functions of) QNodes.
+def jacobian(func, *, method="auto", step_size=None, argnum=None):
+    """A :func:`~.qjit` compatible transformation, returns the Jacobian as a callable function
+    of vector-valued (functions of) QNodes.
 
-    This is a wrapper around the :mod:`autograd.jacobian` function.
+    This is a wrapper around the :mod:`autograd.jacobian` function outside the context of :mod:`~.compiler`.
+
+    Inside a :func:`~.qjit` decorated program, this will patch to :func:`catalyst:.jacobian` and
+    returns a callable object utilized by the supported compilers in :doc:`Catalyst <catalyst:index>`.
 
     Args:
         func (function): A vector-valued Python function or QNode that contains
             a combination of quantum and classical nodes. The output of the computation
             must consist of a single NumPy array (if classical) or a tuple of
             expectation values (if a quantum node)
+
+        method (str): The method **only** used for differentiation within :func:`~.qjit`.
+                      The value of this method should be ``"auto"`` when is *not* called inside
+                      a :func:`~.qjit` decorated method. (default value is ``"auto"``)
+                      In just-in-time (JIT) mode, this can be any of ``["auto", "fd"]``, where:
+
+                      - ``"auto"`` represents deferring the quantum differentiation to the method
+                        specified by the QNode, while the classical computation is differentiated
+                        using traditional auto-diff. Catalyst supports ``"parameter-shift"`` and
+                        ``"adjoint"`` on internal QNodes. Notably, QNodes with
+                        ``diff_method="finite-diff"`` is not supported with ``"auto"``.
+
+                      - ``"fd"`` represents first-order finite-differences for the entire hybrid
+                        function.
+
+        step_size (float): the step-size value for the finite-difference (``"fd"``) method within :func:`~.qjit`.
+                      The value of this method should be ``None`` when is *not* called inside
+                      a :func:`~.qjit` decorated method. (default value is ``None``)
+
         argnum (int or Sequence[int]): Which argument to take the gradient
             with respect to. If a sequence is given, the Jacobian corresponding
             to all marked inputs and all output elements is returned.
 
     Returns:
-        function: the function that returns the Jacobian of the input
-        function with respect to the arguments in argnum
+        function: the function that returns the Jacobian of the input function with respect to the
+        arguments in argnum
 
     .. note::
-        Due to a limitation in Autograd, this function can only differentiate built-in scalar
-        or NumPy array arguments.
+
+        In the interpreted mode, due to a limitation in Autograd, this function can only differentiate
+        built-in scalar or NumPy array arguments.
+
+    .. note::
+
+        In just-in-time (JIT) mode, this function is a wrapper around :func:`catalyst:.jacobian`.
+
+        Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
+        as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
+        page for an overview of the differences between Catalyst and PennyLane.
 
     For ``argnum=None``, the trainable arguments are inferred dynamically from the arguments
     passed to the function. The returned function takes the same arguments as the original
@@ -288,8 +320,61 @@ def jacobian(func, argnum=None):
 
     As expected, the tuple was unpacked and we directly received the Jacobian of the
     QNode with respect to ``y``.
+
+    We can also compute the Jacobian transformation inside a :func:`~.qjit` decorated program.
+
+    Consider this QNode
+
+    .. code-block::
+
+        dev = qml.device("lightning.qubit", wires=1)
+
+        @qml.qjit
+        def workflow(x):
+            @qml.qnode(dev)
+            def circuit(x):
+                qml.RX(np.pi * x[0], wires=0)
+                qml.RY(x[1], wires=0)
+                return qml.probs()
+
+            g = qml.jacobian(circuit)
+            return g(x)
+
+    >>> workflow(np.array([2.0, 1.0]))
+    array([[-1.32116540e-07,  1.33781874e-07],
+           [-4.20735506e-01,  4.20735506e-01]])
+
+    You can further compute the Jacobian transformation using other supported ``method``s
+    by :func:`catalyst:.jacobian`.
+
+    .. code-block::
+
+        @qml.qjit
+        def workflow(x):
+            @qml.qnode(dev)
+            def circuit(x):
+                qml.RX(np.pi * x[0], wires=0)
+                qml.RY(x[1], wires=0)
+                return qml.probs()
+
+            g = qml.jacobian(circuit, method="fd", step_size=0.3)
+            return g(x)
+
+    >>> qml.qjit(workflow)(np.array([2.0, 1.0]))
+    array([[-0.37120096, -0.45467246],
+            [0.37120096,  0.45467246]])
     """
     # pylint: disable=no-value-for-parameter
+
+    if compiler.active("catalyst"):
+        catalyst_compiler = compiler.AvailableCompilers.names_entrypoints["catalyst"]
+        ops_loader = catalyst_compiler["ops"].load()
+        return ops_loader.jacobian(func, method=method, h=step_size, argnum=argnum)
+
+    if method != "auto" or step_size:
+        raise ValueError(
+            "invalid values for 'method' and 'step_size' arguments in interpreter mode"
+        )
 
     def _get_argnum(args):
         """Inspect the arguments for differentiability and return the
