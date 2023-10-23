@@ -638,9 +638,9 @@ class Hamiltonian(Observable):
             self.simplify()
             if len(self._obs_data()) != 1:
                 return False
-            return qml.math.isclose(list(self._obs_data())[0][0], 1) and list(self._obs_data())[0][
+            return bool(qml.math.isclose(list(self._obs_data())[0][0], 1) and list(self._obs_data())[0][
                 1
-            ] == frozenset(other._obs_data())
+            ] == frozenset(other._obs_data()))
 
         raise ValueError("Can only compare a Hamiltonian, and a Hamiltonian/Observable/Tensor.")
 
