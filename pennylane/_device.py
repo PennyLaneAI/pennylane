@@ -560,6 +560,9 @@ class Device(abc.ABC):
             tuple[list[array[float]], list[array[float]]]: Tuple containing list of measured value(s)
             and list of Jacobians. Returned Jacobians should be of shape ``(output_shape, num_params)``.
         """
+        if self.tracker.active:
+            self.tracker.update(execute_and_derivative_batches=1, derivatives=len(circuits))
+            self.tracker.record()
         gradient_method = getattr(self, method)
 
         res = []
@@ -593,6 +596,9 @@ class Device(abc.ABC):
             list[array[float]]: List of Jacobians. Returned Jacobians should be of
             shape ``(output_shape, num_params)``.
         """
+        if self.tracker.active:
+            self.tracker.update(derivatives=len(circuits))
+            self.tracker.record()
         gradient_method = getattr(self, method)
         return [gradient_method(circuit, **kwargs) for circuit in circuits]
 
