@@ -574,14 +574,14 @@ class StateVectorProjector(Projector):
         **Example:**
 
         >>> state_vector = np.array([0, 1, 1, 0])/np.sqrt(2)
-        >>> StateVectorProjector(state_vector, wires=(0, 1)).label()
+        >>> qml.Projector(state_vector, wires=(0, 1)).label()
         'P'
-        >>> StateVectorProjector(state_vector, wires=(0, 1)).label(base_label="hi!")
+        >>> qml.Projector(state_vector, wires=(0, 1)).label(base_label="hi!")
         'hi!'
         >>> dev = qml.device("default.qubit", wires=1)
         >>> @qml.qnode(dev)
         >>> def circuit(state):
-        ...     return qml.expval(StateVectorProjector(state, [0]))
+        ...     return qml.expval(qml.Projector(state, [0]))
         >>> print(qml.draw(circuit)([1, 0]))
         0: ───┤  <|0⟩⟨0|>
         >>> print(qml.draw(circuit)(np.array([1, 1]) / np.sqrt(2)))

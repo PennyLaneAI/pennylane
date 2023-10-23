@@ -293,7 +293,7 @@ class Device(abc.ABC):
 
         **Example**
 
-        >>> dev = qml.device("default.qubit", wires=2, shots=[3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10])
+        >>> dev = qml.device("default.qubit.legacy", wires=2, shots=[3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10])
         >>> dev.shots
         57
         >>> dev.shot_vector
@@ -618,7 +618,7 @@ class Device(abc.ABC):
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit", wires=2)
+            dev = qml.device("default.qubit.legacy", wires=2)
 
             @dev.custom_expand
             def my_expansion_function(self, tape, max_expansion=10):
