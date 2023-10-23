@@ -385,13 +385,9 @@ Mid-circuit measurement statistics
 
 Statistics can be collected on mid-circuit measurements along with terminal measurement statistics.
 Currently, ``qml.probs``, ``qml.sample``, ``qml.expval``, ``qml.var``, and ``qml.counts`` are supported,
-<<<<<<< HEAD
-and can be requested along with other measurements.
-=======
 and can be requested along with other measurements. The devices that currently support collecting such
 statistics are :class:`~.pennylane.devices.DefaultQubit`, :class:`~.pennylane.devices.DefaultMixed`, and
 :class:`~.pennylane.devices.DefaultQubitLegacy`.
->>>>>>> master
 
 .. code-block:: python3
 
@@ -410,7 +406,6 @@ Executing this QNode:
 (tensor([0.9267767, 0.0732233], requires_grad=True),
  tensor([0.5, 0.5], requires_grad=True))
 
-<<<<<<< HEAD
 The deferred measurement principle provides a natural method to simulate the
 application of mid-circuit measurements and conditional operations in a
 differentiable and device-independent way. Performing true mid-circuit
@@ -419,9 +414,7 @@ quantum hardware and PennyLane device capabilities.
 
 For more examples on applying quantum functions conditionally, refer to the
 :func:`~.pennylane.cond` transform.
-=======
 .. warning::
->>>>>>> master
 
     Currently, statistics can only be collected for single mid-circuit measurement values. Moreover, any
     measurement values manipulated using boolean or arithmetic operators cannot be used. These can lead to
