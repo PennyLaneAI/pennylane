@@ -179,6 +179,79 @@ class TestCatalyst:
         result_header = "func.func private @circuit(%arg0: tensor<f64>) -> tensor<f64>"
         assert result_header in mlir_str
 
+    def test_grad_classical_preprocessing(self):
+        """Test the grad transformation with classical preprocessing."""
+
+        dev = qml.device("lightning.qubit", wires=1)
+
+        @qml.qjit
+        def workflow(x):
+            @qml.qnode(dev)
+            def circuit(x):
+                qml.RX(jnp.pi * x, wires=0)
+                return qml.expval(qml.PauliY(0))
+
+            g = qml.grad(circuit)
+            return g(x)
+
+        assert jnp.allclose(workflow(2.0), -jnp.pi)
+
+    def test_grad_with_postprocessing(self):
+        """Test the grad transformation with classical preprocessing and postprocessing."""
+        dev = qml.device("lightning.qubit", wires=1)
+
+        @qml.qjit
+        def workflow(theta):
+            @qml.qnode(dev, diff_method="adjoint")
+            def circuit(theta):
+                qml.RX(jnp.exp(theta**2) / jnp.cos(theta / 4), wires=0)
+                return qml.expval(qml.PauliZ(wires=0))
+
+            def loss(theta):
+                return jnp.pi / jnp.tanh(circuit(theta))
+
+            return qml.grad(loss, method="auto")(theta)
+
+        assert jnp.allclose(workflow(1.0), 5.04324559)
+
+    def test_grad_with_multiple_qnodes(self):
+        """Test the grad transformation with multiple QNodes with their own differentiation methods."""
+        dev = qml.device("lightning.qubit", wires=1)
+
+        @qml.qjit
+        def workflow(theta):
+            @qml.qnode(dev, diff_method="parameter-shift")
+            def circuit_A(params):
+                qml.RX(jnp.exp(params[0] ** 2) / jnp.cos(params[1] / 4), wires=0)
+                return qml.probs()
+
+            @qml.qnode(dev, diff_method="adjoint")
+            def circuit_B(params):
+                qml.RX(jnp.exp(params[1] ** 2) / jnp.cos(params[0] / 4), wires=0)
+                return qml.expval(qml.PauliZ(wires=0))
+
+            def loss(params):
+                return jnp.prod(circuit_A(params)) + circuit_B(params)
+
+            return qml.grad(loss)(theta)
+
+        result = workflow(jnp.array([1.0, 2.0]))
+        reference = jnp.array([0.57367285, 44.4911605])
+
+        assert jnp.allclose(result, reference)
+
+    def test_grad_with_pure_classical(self):
+        """Test the grad transformation with purely classical functions."""
+
+        def square(x: float):
+            return x**2
+
+        @qml.qjit
+        def dsquare(x: float):
+            return catalyst.grad(square)(x)
+
+        assert jnp.allclose(dsquare(2.3), 4.6)
+
     def test_jacobian_diff_method(self):
         """Test the Jacobian transformation with the device diff_method."""
         dev = qml.device("lightning.qubit", wires=1)
