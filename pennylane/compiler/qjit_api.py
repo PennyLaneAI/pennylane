@@ -114,12 +114,14 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
 
 
 def while_loop(*args, compiler="catalyst", **kwargs):
-    """A :func:`~.qjit` compatible while-loop decorator for PennyLane/Catalyst.
+    """A :func:`~.qjit` compatible while-loop decorator for PennyLane programs.
 
     .. note::
+        This function is a wrapper around :func:`catalyst:.while_loop`.
 
-        This is a wrapper around
-        `catalyst.while_loop <https://docs.pennylane.ai/projects/catalyst/en/latest/code/api/catalyst.while_loop.html>`__.
+        Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
+        as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
+        page for an overview of the differences between Catalyst and PennyLane.
 
     This decorator provides a functional version of the traditional while
     loop, similar to ``jax.lax.while_loop``. That is, any variables that are
@@ -191,12 +193,14 @@ def while_loop(*args, compiler="catalyst", **kwargs):
 
 
 def for_loop(*args, compiler="catalyst", **kwargs):
-    """A :func:`~.qjit` compatible for-loop decorator for PennyLane/Catalyst.
+    """A :func:`~.qjit` compatible for-loop decorator for PennyLane programs.
 
     .. note::
+        This function is a wrapper around :func:`catalyst:.while_loop`.
 
-        This is a wrapper around
-        `catalyst.for_loop <https://docs.pennylane.ai/projects/catalyst/en/latest/code/api/catalyst.for_loop.html>`__.
+        Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
+        as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
+        page for an overview of the differences between Catalyst and PennyLane.
 
     This for-loop representation is a functional version of the traditional
     for-loop, similar to ``jax.cond.fori_loop``. That is, any variables that
