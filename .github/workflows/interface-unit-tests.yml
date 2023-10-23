@@ -171,7 +171,7 @@ jobs:
       install_pytorch: true
       pytorch_version: ${{ inputs.pytorch_version }}
       install_pennylane_lightning_master: true
-      pytest_benchmark_flags: ${{ inputs.run_benchmarks && inputs.pytest_benchmark_flags || ''}}
+      pytest_benchmark_flags: ${{ inputs.run_benchmarks_ci && inputs.pytest_benchmark_flags || ''}}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: torch and not qcut and not finite-diff and not param-shift
 
@@ -203,7 +203,7 @@ jobs:
       install_tensorflow: false
       install_pytorch: false
       install_pennylane_lightning_master: true
-      pytest_benchmark_flags: ${{ inputs.run_benchmarks && inputs.pytest_benchmark_flags || ''}}
+      pytest_benchmark_flags: ${{ inputs.run_benchmarks_ci && inputs.pytest_benchmark_flags || ''}}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: autograd and not qcut and not finite-diff and not param-shift
 
@@ -238,7 +238,7 @@ jobs:
       keras_version: ${{ inputs.tensorflow_version }}
       install_pytorch: false
       install_pennylane_lightning_master: true
-      pytest_benchmark_flags: ${{ inputs.run_benchmarks && inputs.pytest_benchmark_flags || ''}}
+      pytest_benchmark_flags: ${{ inputs.run_benchmarks_ci && inputs.pytest_benchmark_flags || ''}}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: tf and not qcut and not finite-diff and not param-shift
       pytest_additional_args: --splits 3 --group ${{ matrix.group }} --durations-path='.github/workflows/tf_tests_durations.json'
@@ -274,7 +274,7 @@ jobs:
       install_tensorflow: false
       install_pytorch: false
       install_pennylane_lightning_master: true
-      pytest_benchmark_flags: ${{ inputs.run_benchmarks && inputs.pytest_benchmark_flags || ''}}
+      pytest_benchmark_flags: ${{ inputs.run_benchmarks_ci && inputs.pytest_benchmark_flags || ''}}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: jax and not qcut and not finite-diff and not param-shift
       pytest_additional_args: --splits 5 --group ${{ matrix.group }} --durations-path='.github/workflows/jax_tests_durations.json'
@@ -311,7 +311,7 @@ jobs:
       install_tensorflow: false
       install_pytorch: false
       install_pennylane_lightning_master: true
-      pytest_benchmark_flags: ${{ inputs.run_benchmarks && inputs.pytest_benchmark_flags || ''}}
+      pytest_benchmark_flags: ${{ inputs.run_benchmarks_ci && inputs.pytest_benchmark_flags || ''}}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: core and not qcut and not finite-diff and not param-shift
       pytest_additional_args: --splits 2 --group ${{ matrix.group }}
@@ -349,7 +349,7 @@ jobs:
       install_pytorch: true
       pytorch_version: ${{ inputs.pytorch_version }}
       install_pennylane_lightning_master: false
-      pytest_benchmark_flags: ${{ inputs.run_benchmarks && inputs.pytest_benchmark_flags || ''}}
+      pytest_benchmark_flags: ${{ inputs.run_benchmarks_ci && inputs.pytest_benchmark_flags || ''}}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: all_interfaces
 
@@ -381,7 +381,7 @@ jobs:
       install_tensorflow: True
       install_pytorch: false
       install_pennylane_lightning_master: false
-      pytest_benchmark_flags: ${{ inputs.run_benchmarks && inputs.pytest_benchmark_flags || ''}}
+      pytest_benchmark_flags: ${{ inputs.run_benchmarks_ci && inputs.pytest_benchmark_flags || ''}}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: external
       additional_pip_packages: git+https://github.com/Quantomatic/pyzx.git@master pennylane-catalyst
@@ -418,7 +418,7 @@ jobs:
       install_pytorch: true
       pytorch_version: ${{ inputs.pytorch_version }}
       install_pennylane_lightning_master: false
-      pytest_benchmark_flags: ${{ inputs.run_benchmarks && inputs.pytest_benchmark_flags || ''}}
+      pytest_benchmark_flags: ${{ inputs.run_benchmarks_ci && inputs.pytest_benchmark_flags || ''}}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: qcut
       additional_pip_packages: kahypar==1.1.7 opt_einsum
@@ -451,7 +451,7 @@ jobs:
       install_tensorflow: false
       install_pytorch: false
       install_pennylane_lightning_master: false
-      pytest_benchmark_flags: ${{ inputs.run_benchmarks && inputs.pytest_benchmark_flags || ''}}
+      pytest_benchmark_flags: ${{ inputs.run_benchmarks_ci && inputs.pytest_benchmark_flags || ''}}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: qchem
       additional_pip_packages: openfermionpyscf basis-set-exchange
@@ -490,7 +490,7 @@ jobs:
       install_pytorch: true
       pytorch_version: ${{ inputs.pytorch_version }}
       install_pennylane_lightning_master: false
-      pytest_benchmark_flags: ${{ inputs.run_benchmarks && inputs.pytest_benchmark_flags || ''}}
+      pytest_benchmark_flags: ${{ inputs.run_benchmarks_ci && inputs.pytest_benchmark_flags || ''}}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: ${{ matrix.config.suite }}
 
@@ -522,7 +522,7 @@ jobs:
       install_tensorflow: false
       install_pytorch: false
       install_pennylane_lightning_master: false
-      pytest_benchmark_flags: ${{ inputs.run_benchmarks && inputs.pytest_benchmark_flags || ''}}
+      pytest_benchmark_flags: ${{ inputs.run_benchmarks_ci && inputs.pytest_benchmark_flags || ''}}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: data
       additional_pip_packages: h5py
@@ -571,7 +571,7 @@ jobs:
       pytorch_version: ${{ inputs.pytorch_version }}
       install_pennylane_lightning_master: false
       pytest_test_directory: pennylane/devices/tests
-      pytest_benchmark_flags: ${{ inputs.run_benchmarks && inputs.pytest_benchmark_flags || ''}}
+      pytest_benchmark_flags: ${{ inputs.run_benchmarks_ci && inputs.pytest_benchmark_flags || ''}}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_additional_args: --device=${{ matrix.config.device }} --shots=${{ matrix.config.shots }}
 
@@ -594,11 +594,13 @@ jobs:
       - device-tests
 
     # Run this even if any of the above jobs are skipped but not if any of the jobs failed
+    # It is not to be run if running benchmarks.
     if: >-
       ${{
         always() &&
         !contains(needs.*.result, 'failure') &&
-        !contains(needs.*.result, 'cancelled')
+        !contains(needs.*.result, 'cancelled') &&
+        !inputs.run_benchmarks_ci
        }}
 
     steps:
