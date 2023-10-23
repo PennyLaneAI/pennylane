@@ -453,7 +453,7 @@ class TransformProgram:
                     slices_classical.append(slice(start_classical, start_classical + 1))
                     start_classical += 1
 
-            if cotransform:
+            if cotransform and self._classical_jacobians:
                 batch_postprocessing_classical = partial(
                     _batch_postprocessing, individual_fns=classical_fns, slices=slices_classical
                 )
