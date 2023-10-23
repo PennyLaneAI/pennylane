@@ -20,6 +20,10 @@ import dataclasses
 import pkg_resources
 
 
+class CompilerNotFoundError(RuntimeError):
+    """Exception raised when the compiler package is not installed."""
+
+
 @dataclasses.dataclass
 class AvailableCompilers:
     """This contains data of installed PennyLane compiler packages"""

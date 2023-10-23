@@ -13,7 +13,10 @@
 # limitations under the License.
 """QJIT compatible quantum and compilation operations API"""
 
-from .compiler import AvailableCompilers, available
+import pennylane as qml
+from pennylane.wires import Wires
+
+from .compiler import CompilerNotFoundError, AvailableCompilers, available
 
 
 def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keyword-arg-before-vararg
@@ -56,6 +59,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
         QJIT object.
 
     Raises:
+        CompilerNotFoundError: if the compiler is not installed
         FileExistsError: Unable to create temporary directory
         PermissionError: Problems creating temporary directory
         OSError: Problems while creating folder for intermediate files
@@ -95,7 +99,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
     """
 
     if not available(compiler):
-        raise RuntimeError(f"The {compiler} package is not installed.")
+        raise CompilerNotFoundError(f"The {compiler} package is not installed.")
 
     compilers = AvailableCompilers.names_entrypoints
     qjit_loader = compilers[compiler]["qjit"].load()
@@ -144,7 +148,7 @@ def while_loop(*args, compiler="catalyst", **kwargs):
         Callable: A wrapper around the while-loop function.
 
     Raises:
-        TypeError: Invalid return type of the condition expression.
+        CompilerNotFoundError: if the compiler is not installed
 
     **Example**
 
@@ -172,7 +176,7 @@ def while_loop(*args, compiler="catalyst", **kwargs):
     """
 
     if not available(compiler):
-        raise RuntimeError(f"The {compiler} package is not installed.")
+        raise CompilerNotFoundError(f"The {compiler} package is not installed.")
 
     compilers = AvailableCompilers.names_entrypoints
     ops_loader = compilers[compiler]["ops"].load()
@@ -229,6 +233,9 @@ def for_loop(*args, compiler="catalyst", **kwargs):
         iterations is handled automatically by the provided loop bounds, it must not be returned
         from the function.
 
+    Raises:
+        CompilerNotFoundError: if the compiler is not installed
+
     **Example**
 
 
@@ -257,8 +264,42 @@ def for_loop(*args, compiler="catalyst", **kwargs):
     """
 
     if not available(compiler):
-        raise RuntimeError(f"The {compiler} package is not installed.")
+        raise CompilerNotFoundError(f"The {compiler} package is not installed.")
 
     compilers = AvailableCompilers.names_entrypoints
     ops_loader = compilers[compiler]["ops"].load()
     return ops_loader.for_loop(*args, **kwargs)
+
+
+def select_measure(wires: Wires, compiler="catalyst"):
+    r"""A :func:`qjit` compatible mid-circuit measurement for PennyLane/Catalyst.
+
+    This method behaves differently when it is called inside a QJIT decorated workflow. Please see the
+    `catalyst.measure <https://docs.pennylane.ai/projects/catalyst/en/latest/code/api/catalyst.measure.html>`__
+    for details.
+
+    Args:
+        wires (Wires): The wire of the qubit the measurement process applies to.
+        reset (Optional[bool]): Whether to reset the wire to the :math:`|0 \rangle`
+            state after measurement.
+
+    Returns:
+        MidMeasureMP: measurement process instance
+
+    Raises:
+        CompilerNotFoundError: if the compiler is not installed
+        QuantumFunctionError: if multiple wires were specified
+    """
+
+    if not available(compiler):
+        raise CompilerNotFoundError(f"The {compiler} package is not installed.")
+
+    wire = Wires(wires)
+    if len(wire) > 1:
+        raise qml.QuantumFunctionError(
+            "Only a single qubit can be measured in the middle of the circuit"
+        )
+
+    compilers = AvailableCompilers.names_entrypoints
+    ops_loader = compilers[compiler]["ops"].load()
+    return ops_loader.measure(wire[0])

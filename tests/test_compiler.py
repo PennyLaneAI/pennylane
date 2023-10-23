@@ -298,9 +298,9 @@ class TestCatalyst:
             qml.RX(x, wires=0)
             return qml.measure(wires=0)
 
-        assert circuit(jnp.pi)  # m will be equal to True if wire 0 is measured in 1 state
+        assert circuit(jnp.pi)
 
-    def test_more_complex(self):
+    def test_measure_more_complex(self):
         """Test measure (more complex)."""
         dev = qml.device("lightning.qubit", wires=2)
 
@@ -314,5 +314,49 @@ class TestCatalyst:
             m2 = qml.measure(wires=1)
             return m2
 
-        assert circuit(jnp.pi)  # m will be equal to True if wire 0 is measured in 1 state
+        assert circuit(jnp.pi)
+        assert not circuit(0.0)
+
+    def test_select_measure_qferror(self):
+        """Test select_measure with QuantumFunctionError."""
+        dev = qml.device("lightning.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(x: float):
+            qml.RX(x, wires=0)
+            return qml.measure(wires=[0, 1])
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Only a single qubit can be measured in the middle of the circuit",
+        ):
+            circuit(jnp.pi)
+
+    def test_select_measure_basic(self):
+        """Test select_measure (basic)."""
+        dev = qml.device("lightning.qubit", wires=1)
+
+        @qml.qjit
+        @qml.qnode(dev)
+        def circuit(x: float):
+            qml.RX(x, wires=0)
+            return qml.select_measure(wires=0)
+
+        assert circuit(jnp.pi)
+
+    def test_select_measure_more_complex(self):
+        """Test select_measure (more complex)."""
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qjit()
+        @qml.qnode(dev)
+        def circuit(x: float):
+            qml.RX(x, wires=0)
+            m1 = qml.select_measure(wires=0)
+            maybe_pi = m1 * jnp.pi
+            qml.RX(maybe_pi, wires=1)
+            m2 = qml.select_measure(wires=1)
+            return m2
+
+        assert circuit(jnp.pi)
         assert not circuit(0.0)
