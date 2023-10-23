@@ -97,6 +97,11 @@ class SymbolicOp(Operator):
     def wires(self):
         return self.base.wires
 
+    # pylint:disable = missing-function-docstring
+    @property
+    def basis(self):
+        return self.base.basis
+
     @property
     def num_wires(self):
         """Number of wires the operator acts on."""

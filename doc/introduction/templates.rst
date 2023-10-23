@@ -279,6 +279,10 @@ Other useful templates which do not belong to the previous categories can be fou
     :description: :doc:`Select<../code/api/pennylane.Select>`
     :figure: _static/templates/subroutines/select.png
 
+.. gallery-item::
+    :description: :doc:`ControlledSequence<../code/api/pennylane.ControlledSequence>`
+    :figure: _static/templates/subroutines/small_ctrl.png
+
 .. raw:: html
 
         <div style='clear:both'></div>

@@ -848,7 +848,11 @@ class TestIntegration:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
-        "dev", [qml.device("default.qubit", wires=3), qml.device("default.qubit", wires=3)]
+        "dev, call_count",
+        [
+            (qml.device("default.qubit", wires=3), 2),
+            (qml.device("default.qubit.legacy", wires=3), 1),
+        ],
     )
     @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize("sec_par", np.linspace(0.15, np.pi - 0.3, 3))
@@ -864,7 +868,7 @@ class TestIntegration:
         ],
     )
     def test_defer_meas_if_mcm_unsupported(
-        self, dev, first_par, sec_par, return_type, mv_return, mv_res, mocker
+        self, dev, call_count, first_par, sec_par, return_type, mv_return, mv_res, mocker
     ):  # pylint: disable=too-many-arguments
         """Tests that the transform using the deferred measurement principle is
         applied if the device doesn't support mid-circuit measurements
@@ -894,7 +898,7 @@ class TestIntegration:
 
         assert np.allclose(r1, r2[0])
         assert np.allclose(r2[1], mv_res(first_par))
-        assert spy.call_count == 3  # once for each preprocessing, once for conditional qnode
+        assert spy.call_count == call_count  # once for each preprocessing
 
     def test_drawing_has_deferred_measurements(self):
         """Test that `qml.draw` with qnodes uses defer_measurements
@@ -941,7 +945,7 @@ class TestIntegration:
         r1 = cry_qnode(first_par)
         r2 = conditional_ry_qnode(first_par)
         assert np.allclose(r1, r2)
-        assert spy.call_count == 3  # once per device preprocessing, once for conditional qnode
+        assert spy.call_count == 2  # once per device preprocessing
 
     @pytest.mark.tf
     @pytest.mark.parametrize("interface", ["tf", "auto"])
