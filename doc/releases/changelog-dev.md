@@ -272,6 +272,11 @@
 * Improve builtin types support with `qml.pauli_decompose`.
   [(#4577)](https://github.com/PennyLaneAI/pennylane/pull/4577)
 
+* The function `integrals.py` is modified to replace indexing with slicing in the computationally
+  expensive functions `electron_repulsion` and `_hermite_coulomb`, for a better compatibility with
+  JAX.
+  [(#4685)](https://github.com/PennyLaneAI/pennylane/pull/4685)
+
 * Various changes to measurements to improve feature parity between the legacy `default.qubit` and
   the new `DefaultQubit2`. This includes not trying to squeeze batched `CountsMP` results and implementing
   `MutualInfoMP.map_wires`.
