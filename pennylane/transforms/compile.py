@@ -70,6 +70,32 @@ def compile(
 
     **Example**
 
+    >>> dev = qml.device('default.qubit', wires=[0, 1, 2])
+
+    You can apply the transform directly on a :class:`QNode`:
+
+    .. code-block:: python
+
+        @compile
+        @qml.qnode(device=dev)
+        def circuit(x, y, z):
+            qml.Hadamard(wires=0)
+            qml.Hadamard(wires=1)
+            qml.Hadamard(wires=2)
+            qml.RZ(z, wires=2)
+            qml.CNOT(wires=[2, 1])
+            qml.RX(z, wires=0)
+            qml.CNOT(wires=[1, 0])
+            qml.RX(x, wires=0)
+            qml.CNOT(wires=[1, 0])
+            qml.RZ(-z, wires=2)
+            qml.RX(y, wires=2)
+            qml.PauliY(wires=2)
+            qml.CY(wires=[1, 2])
+            return qml.expval(qml.PauliZ(wires=0))
+
+    The default compilation pipeline is applied before execution.
+
     Consider the following quantum function:
 
     .. code-block:: python
@@ -92,7 +118,6 @@ def compile(
 
     Visually, the original function looks like this:
 
-    >>> dev = qml.device('default.qubit', wires=[0, 1, 2])
     >>> qnode = qml.QNode(qfunc, dev)
     >>> print(qml.draw(qnode)(0.2, 0.3, 0.4))
     0: ──H──RX(0.40)────╭X──────────RX(0.20)─╭X────┤  <Z>
@@ -102,7 +127,7 @@ def compile(
     We can compile it down to a smaller set of gates using the ``qml.compile``
     transform.
 
-    >>> compiled_qfunc = qml.compile()(qfunc)
+    >>> compiled_qfunc = qml.compile(qfunc)
     >>> compiled_qnode = qml.QNode(compiled_qfunc, dev)
     >>> print(qml.draw(compiled_qnode)(0.2, 0.3, 0.4))
     0: ──H──RX(0.60)─────────────────┤  <Z>
@@ -119,8 +144,8 @@ def compile(
 
         compiled_qfunc = qml.compile(
             pipeline=[
-                qml.transforms.commute_controlled(direction="left"),
-                qml.transforms.merge_rotations(atol=1e-6),
+                partial(qml.transforms.commute_controlled, direction="left"),
+                partial(qml.transforms.merge_rotations, atol=1e-6),
                 qml.transforms.cancel_inverses
             ],
             basis_set=["CNOT", "RX", "RY", "RZ"],

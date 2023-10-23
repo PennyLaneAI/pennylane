@@ -47,8 +47,11 @@ def commutation_dag(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
 
     **Example**
 
+    >>> dev = qml.device("default.qubit")
+
     .. code-block:: python
 
+        @qml.qnode(device=dev)
         def circuit(x, y, z):
             qml.RX(x, wires=0)
             qml.RX(y, wires=0)

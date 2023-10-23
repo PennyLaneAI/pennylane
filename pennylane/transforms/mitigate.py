@@ -388,6 +388,7 @@ def mitigate_with_zne(
 
     .. code-block:: python3
 
+        from functools import partial
         from pennylane import numpy as np
         from pennylane import qnode
 
@@ -400,7 +401,7 @@ def mitigate_with_zne(
         np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
-        @qml.transforms.mitigate_with_zne([1., 2., 3.], fold_global, poly_extrapolate, extrapolate_kwargs={'order': 2})
+        @partial(qml.transforms.mitigate_with_zne, [1., 2., 3.], fold_global, poly_extrapolate, extrapolate_kwargs={'order': 2})
         @qnode(dev)
         def circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
