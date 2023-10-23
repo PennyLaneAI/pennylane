@@ -40,7 +40,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 WORKDIR /opt/pennylane
 COPY  . .
 RUN git submodule update --init --recursive
-RUN pip install wheel && pip install -r requirements.txt
+RUN pip install wheel && pip install "numpy<1.25" -r requirements.txt
 RUN python3 setup.py install
 RUN pip install pytest pytest-cov pytest-mock flaky
 RUN pip install -i https://test.pypi.org/simple/ pennylane-lightning --pre --upgrade
