@@ -117,6 +117,30 @@
   (array(0.6), array([1, 1, 1, 0, 1]))
   ```
 
+* Users can now request postselection after making mid-circuit measurements. They can do so
+  by specifying the `postselect` keyword argument for `qml.measure` as either `0` or `1`,
+  corresponding to the basis states.
+  [(#4604)](https://github.com/PennyLaneAI/pennylane/pull/4604)
+
+  ```python
+  dev = qml.device("default.qubit", wires=3)
+
+  @qml.qnode(dev)
+  def circuit(phi):
+      qml.RX(phi, wires=0)
+      m = qml.measure(0, postselect=1)
+      qml.cond(m, qml.PauliX)(wires=1)
+      return qml.probs(wires=1)
+  ```
+  ```pycon
+  >>> circuit(np.pi)
+  tensor([0., 1.], requires_grad=True)
+  ```
+
+  Here, we measure a probability of one on wire 1 as we postselect on the $|1\rangle$ state on wire
+  0, thus resulting in the circuit being projected onto the state corresponding to the measurement
+  outcome $|1\rangle$ on wire 0.
+
 * Operator transforms `qml.matrix`, `qml.eigvals`, `qml.generator`, and `qml.transforms.to_zx` are updated
   to the new transform program system.
   [(#4573)](https://github.com/PennyLaneAI/pennylane/pull/4573)
@@ -358,8 +382,11 @@
   decomposition.
   [(#4675)](https://github.com/PennyLaneAI/pennylane/pull/4675)
 
-
 <h3>Breaking changes 💔</h3>
+
+* ``qml.defer_measurements`` now raises an error if a transformed circuit measures ``qml.probs``,
+  ``qml.sample``, or ``qml.counts`` without any wires or obsrvable, or if it measures ``qml.state``.
+  [(#4701)](https://github.com/PennyLaneAI/pennylane/pull/4701)
 
 * The device test suite now converts device kwargs to integers or floats if they can be converted to integers or floats.
   [(#4640)](https://github.com/PennyLaneAI/pennylane/pull/4640)

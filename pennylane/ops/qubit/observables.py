@@ -23,7 +23,7 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Observable
+from pennylane.operation import AnyWires, Observable, Operation
 from pennylane.wires import Wires
 
 from .matrix_ops import QubitUnitary
@@ -412,7 +412,7 @@ class Projector(Observable):
         return [copy(self)] if (isinstance(z, int) and z > 0) else super().pow(z)
 
 
-class BasisStateProjector(Projector):
+class BasisStateProjector(Projector, Operation):
     r"""Observable corresponding to the state projector :math:`P=\ket{\phi}\bra{\phi}`, where
     :math:`\phi` denotes a basis state."""
 
