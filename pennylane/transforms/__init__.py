@@ -148,11 +148,12 @@ Transforms for error mitigation
     ~transforms.poly_extrapolate
     ~transforms.richardson_extrapolate
 
-Transforms that act only on QNodes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Other transforms
+~~~~~~~~~~~~~~~~
 
 These transforms use the :func:`pennylane.transforms.core.transform` decorator and can be used on
-:class:`pennylane.tape.QuantumTape`, :class:`pennylane.QNode`. They fulfill multiple roles.
+:class:`pennylane.tape.QuantumTape`, :class:`pennylane.QNode`. They fulfill multiple purposes like circuit
+preprocessing, get information from a circuit and more.
 
 .. autosummary::
     :toctree: api
