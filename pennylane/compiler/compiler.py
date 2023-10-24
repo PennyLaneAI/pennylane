@@ -20,8 +20,8 @@ import dataclasses
 import pkg_resources
 
 
-class CompilerNotFoundError(Exception):
-    """Exception raised when the compiler package is not installed."""
+class CompileError(Exception):
+    """Error encountered in the compilation phase."""
 
 
 @dataclasses.dataclass
@@ -48,7 +48,8 @@ def _refresh_compilers():
         module_name = entry.module_name.split(".")[0]
         AvailableCompilers.names_entrypoints[module_name][entry.name] = entry
 
-    # Check the definition of all expected entry points in compiler packages
+    # Check whether available compilers follow the entry_point interface
+    # by validating that all entry points (qjit, context, and ops) are defined.
     for _, eps_dict in AvailableCompilers.names_entrypoints.items():
         ep_interface = AvailableCompilers.entrypoints_interface
         if any(ep not in eps_dict.keys() for ep in ep_interface):
@@ -62,7 +63,8 @@ def available_compilers() -> List[str]:
     **Example**
 
     This method returns the name of installed compiler packages supported in
-    PennyLane. For example, after installing the `Catalyst <https://github.com/pennylaneai/catalyst>`__
+    PennyLane. For example, after installing the
+    `Catalyst <https://github.com/pennylaneai/catalyst>`__
     compiler, this will now appear as an available compiler:
 
     >>> qml.compiler.available_compilers()

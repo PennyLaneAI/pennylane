@@ -13,7 +13,7 @@
 # limitations under the License.
 """QJIT compatible quantum and compilation operations API"""
 
-from .compiler import CompilerNotFoundError, AvailableCompilers, available
+from .compiler import CompileError, AvailableCompilers, available
 
 
 def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keyword-arg-before-vararg
@@ -63,10 +63,11 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
             considered to be used by advanced users for low-level debugging purposes.
 
     Returns:
-        catalyst.QJIT: a class that, when executed, just-in-time compiles and executes the decorated function
+        catalyst.QJIT: a class that, when executed, just-in-time compiles and executes the decorated
+        function
 
     Raises:
-        CompilerNotFoundError: if the compiler is not installed
+        CompileError: if the compiler is not installed
         FileExistsError: Unable to create temporary directory
         PermissionError: Problems creating temporary directory
         OSError: Problems while creating folder for intermediate files
@@ -106,7 +107,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
     """
 
     if not available(compiler):
-        raise CompilerNotFoundError(f"The {compiler} package is not installed.")
+        raise CompileError(f"The {compiler} package is not installed.")
 
     compilers = AvailableCompilers.names_entrypoints
     qjit_loader = compilers[compiler]["qjit"].load()
@@ -120,7 +121,7 @@ def while_loop(*args, compiler="catalyst", **kwargs):
 
         When used with :func:`~.qjit`, this function only supports
         the Catalyst compiler. Please see
-        :func:`~catalyst:catalyst.while_loop` for more details.
+        :func:`catalyst.while_loop` for more details.
 
         Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
@@ -157,7 +158,7 @@ def while_loop(*args, compiler="catalyst", **kwargs):
         Callable: A wrapper around the while-loop function.
 
     Raises:
-        CompilerNotFoundError: if the compiler is not installed
+        CompileError: if the compiler is not installed
 
     **Example**
 
@@ -185,7 +186,7 @@ def while_loop(*args, compiler="catalyst", **kwargs):
     """
 
     if not available(compiler):
-        raise CompilerNotFoundError(f"The {compiler} package is not installed.")
+        raise CompileError(f"The {compiler} package is not installed.")
 
     compilers = AvailableCompilers.names_entrypoints
     ops_loader = compilers[compiler]["ops"].load()
@@ -199,7 +200,7 @@ def for_loop(*args, compiler="catalyst", **kwargs):
 
         When used with :func:`~.qjit`, this function only supports
         the Catalyst compiler. Please see
-        :func:`~catalyst:catalyst.for_loop` for more details.
+        :func:`catalyst.for_loop` for more details.
 
         Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
@@ -239,13 +240,13 @@ def for_loop(*args, compiler="catalyst", **kwargs):
 
     Returns:
         Callable[[int, ...], ...]: A wrapper around the loop body function.
-        Note that the loop body function must always have the iteration index as its first argument,
-        which can be used arbitrarily inside the loop body. As the value of the index across
-        iterations is handled automatically by the provided loop bounds, it must not be returned
-        from the function.
+        Note that the loop body function must always have the iteration index as its first
+        argument, which can be used arbitrarily inside the loop body. As the value of the index
+        across iterations is handled automatically by the provided loop bounds, it must not be
+        returned from the function.
 
     Raises:
-        CompilerNotFoundError: if the compiler is not installed
+        CompileError: if the compiler is not installed
 
     **Example**
 
@@ -275,7 +276,7 @@ def for_loop(*args, compiler="catalyst", **kwargs):
     """
 
     if not available(compiler):
-        raise CompilerNotFoundError(f"The {compiler} package is not installed.")
+        raise CompileError(f"The {compiler} package is not installed.")
 
     compilers = AvailableCompilers.names_entrypoints
     ops_loader = compilers[compiler]["ops"].load()

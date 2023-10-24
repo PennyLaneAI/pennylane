@@ -19,8 +19,7 @@ Through the use of the :func:`~.qjit` decorator, entire workflows
 can be just-in-time (JIT) compiled --- including both quantum and
 classical processing --- down to a machine binary on first
 function execution. Subsequent calls to the compiled function will execute
-previously compiled binary, resulting in significant
-performance improvements.
+previously compiled binary, resulting in significant performance improvements.
 
 Currently, PennyLane supports the
 `Catalyst <https://github.com/pennylaneai/catalyst>`__ hybrid compiler
