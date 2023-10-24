@@ -197,10 +197,10 @@ def jacobian(func, argnum=None, method=None, step_size=None):
     as a callable function of vector-valued (functions of) QNodes.
 
     Inside a :func:`~.qjit` decorated program, this will patch to :func:`catalyst.jacobian` and
-    returns a callable object utilized by the supported compilers in :doc:`Catalyst <catalyst:index>`.
+    returns a callable object utilized by the supported compilers in
+    :doc:`Catalyst <catalyst:index>`.
 
-    By default in interpreter mode, this is a wrapper around the :mod:`autograd.jacobian` function
-    outside the context of :mod:`~.compiler`.
+    By default in interpreter mode, this is a wrapper around the :mod:`autograd.jacobian` function.
 
     Args:
         func (function): A vector-valued Python function or QNode that contains
@@ -226,9 +226,9 @@ def jacobian(func, argnum=None, method=None, step_size=None):
                       - ``"fd"`` represents first-order finite-differences for the entire hybrid
                         function.
 
-        step_size (float): the step-size value for the finite-difference (``"fd"``) method within :func:`~.qjit`.
-                      The value of this method should be ``None`` when is *not* called inside
-                      a :func:`~.qjit` decorated method. (default value is ``None``)
+        step_size (float): the step-size value for the finite-difference (``"fd"``) method within
+                      :func:`~.qjit`. The value of this method should be ``None`` when is *not*
+                      called inside a :func:`~.qjit` decorated method. (default value is ``None``)
 
     Returns:
         function: the function that returns the Jacobian of the input function with respect to the
