@@ -338,11 +338,9 @@ class TestLocalHilbertSchmidt:
         assert tape_dec.operations == expected_operations
 
     def test_qnode_integration(self):
-        """Test that the local hilbert schmidt template can be used inside a qnode.
-        
-        """
+        """Test that the local hilbert schmidt template can be used inside a qnode."""
 
-        u_tape = qml.tape.QuantumTape([qml.CZ(wires=(0,1))])
+        u_tape = qml.tape.QuantumTape([qml.CZ(wires=(0, 1))])
 
         def v_function(params):
             qml.RZ(params[0], wires=2)
@@ -358,10 +356,21 @@ class TestLocalHilbertSchmidt:
             qml.LocalHilbertSchmidt(v_params, v_function=v_function, v_wires=v_wires, u_tape=u_tape)
             return qml.probs(u_tape.wires + v_wires)
 
+        # pylint: disable=unsubscriptable-object
         def cost_lhst(parameters, v_function, v_wires, u_tape):
-            return (1 - local_hilbert_test(v_params=parameters, v_function=v_function, v_wires=v_wires, u_tape=u_tape)[0])
+            return (
+                1
+                - local_hilbert_test(
+                    v_params=parameters, v_function=v_function, v_wires=v_wires, u_tape=u_tape
+                )[0]
+            )
 
-        res = cost_lhst([3*qml.numpy.pi/2, 3*qml.numpy.pi/2, qml.numpy.pi/2], v_function = v_function, v_wires = [2,3], u_tape = u_tape)
+        res = cost_lhst(
+            [3 * qml.numpy.pi / 2, 3 * qml.numpy.pi / 2, qml.numpy.pi / 2],
+            v_function=v_function,
+            v_wires=[2, 3],
+            u_tape=u_tape,
+        )
 
         assert qml.math.allclose(res, 0.5)
         # the answer is currently 0.5, and I'm going to assume that's correct. This test will let us know
