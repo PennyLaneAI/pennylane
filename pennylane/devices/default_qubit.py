@@ -13,7 +13,6 @@
 # limitations under the License.
 """
 The default.qubit device is PennyLane's standard qubit-based device.
-
 """
 
 from dataclasses import replace
