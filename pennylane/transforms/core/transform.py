@@ -55,12 +55,47 @@ def transform(
         final_transform (bool): Whether or not the transform is terminal. If true the transform is queued at the end
             of the transform program. ``is_informative`` supersedes ``final_transform``.
 
+    Returns:
+
+        pennylane.transforms.core.TransformDispatcher: It returns a transform dispatcher object that is dispatching
+            given the received circuit object.
+
+    **What can a dispatched function accept as argument and what does it return?**
+
+    A dispatched transform is able to handle several PenyLane objects: :class:`pennylane.QNode`, quantum function
+    (callable), :class:`pennylane.tape.QuantumTape` and :class:`pennylane.devices.Device`. For each object, the transform
+    will be applied in a different way but it always preseves the provided underlying quantum transform. What is
+    returned by the transform dispatcher depends on what circuit abstraction is given as argument. Here is provided a
+    list of the different behavior and return for the different objects:
+
+    - For a :class:`pennylane.QNode` as argument of the dispatched transform, the underlying transform is added to
+      its :class:`pennylane.transform.core.TransformProgram` and the return is the transformed :class:`pennylane.QNode`.
+      For each execution of the :class:`pennylane.QNode`, it first applies the transform program on the original captured
+      circuit. Then the transformed circuits are executed by a device and finally the post-processing function is
+      applied on the results.
+
+    - For a quantum function (callable) as argument of the dispatched transform, it first builds the tape from the
+      quantum function, the transform is then applied on the tape. Then the resulting tape is converted back
+      to a quantum function (callable). It therefore returns a transformed quantum function (callable). The limitation
+      is that the underlying transform can only return a sequence containing a single tape, because quantum
+      functions only support single circuit.
+
+    - For a :class:`pennylane.tape.QuantumTape`, the underlying quantum transform is directly applied on the
+      :class:`pennylane.tape.QuantumTape`. It returns a sequence of :class:`pennylane.tape.QuantumTape` and a processing
+      function to be applied after execution.
+
+    - For a :class:`pennylane.devices.Device`, the transform is added to the device transform program and a transformed
+      :class:`pennylane.devices.Device` is returned. The transform is added to the end of the device program and will
+      be last in the overall transform program.
+
     **Example**
 
     First define your quantum transform, with the necessary type hinting defined above. In this example we copy the
     tape and sum the results of the execution of the two tapes.
 
     .. code-block:: python
+
+        from typing import Sequence, Callable
 
         def my_quantum_transform(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
             tape1 = tape

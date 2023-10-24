@@ -20,17 +20,30 @@ This subpackage contains QNode, quantum function, device, and tape transforms.
 Transforms
 ----------
 
-Transforms core
----------------
+How to build a custom PennyLane transform?
+------------------------------------------
 
-In this section you can find the building blocks of transforms in PennyLane. The user facing way of creating a
-transform is the `transform` function / decorator. `TransformDispatcher` and `TransformProgram` are developper-facing
-objects, that allows the creation, dispatching and composability of transforms.
+The user facing way of creating a transform is to use :class:`transforms.core.transform` as a function or a decorator.
+The PennyLane contract for defining your own quantum transform is the following: you need to define a quantum transform
+that takes a :class:`qml.tape.QuantumTape` as first argument and returns a sequence of :class:`qml.tape.QuantumTape` and
+a processing function. The resulting batch of circuits is then executed and the results are post-processed by the
+provided processing function. For more details and an example, read the following page:
 
 .. autosummary::
     :toctree: api
 
     ~transforms.core.transform
+
+Transforms core
+---------------
+
+In this core section of transform you can find the building blocks of transforms in PennyLane. The :class:`TransformDispatcher`
+and  :class:`TransformProgram` are developer-facing objects, that allows the creation, dispatching and composability
+of transforms.
+
+.. autosummary::
+    :toctree: api
+
     ~transforms.core.transform_dispatcher
     ~transforms.core.transform_program
 
