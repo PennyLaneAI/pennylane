@@ -26,9 +26,9 @@
   tensor([0., 1.], requires_grad=True)
   ```
 
-  Here, we measure a probability of one on wire 1 as we postselect on the $|1\rangle$ state on wire
-  0, thus resulting in the circuit being projected onto the state corresponding to the measurement
-  outcome $|1\rangle$ on wire 0.
+  Here, we measure a probability of one on wire 1 as we postselect on the :math:`|1\rangle` state on
+  wire 0, thus resulting in the circuit being projected onto the state corresponding to the
+  measurement outcome :math:`|1\rangle` on wire 0.
 
 * Measurement statistics can now be collected for mid-circuit measurements.
   [(#4544)](https://github.com/PennyLaneAI/pennylane/pull/4544)
@@ -148,8 +148,8 @@
   plt.bar(range(len(output)), output)
   plt.show()
   ```
-  
-  <img src="_images/cosine_window.png" width=50%/>
+
+  <img src="https://docs.pennylane.ai/en/stable/_images/cosine_window.png" width=50%/>
 
 <h4>New device capabilities, integration with Catalyst, and more! ⚗️</h4>
 
