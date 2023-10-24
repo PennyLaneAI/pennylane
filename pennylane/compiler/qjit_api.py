@@ -114,10 +114,13 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
 
 
 def while_loop(*args, compiler="catalyst", **kwargs):
-    """A :func:`~.qjit` compatible while-loop decorator for PennyLane programs.
+    """A :func:`~.qjit` compatible while-loop for PennyLane programs.
 
     .. note::
-        This function is a wrapper around :func:`catalyst:.while_loop`.
+
+        When used with :func:`~.qjit`, this function only supports
+        the Catalyst compiler. Please see
+        :func:`~catalyst:catalyst.while_loop` for more details.
 
         Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
@@ -136,9 +139,6 @@ def while_loop(*args, compiler="catalyst", **kwargs):
 
     The final iteration values are also returned from the
     transformed function.
-
-    This form of control flow can also be called from the Python interpreter without needing to use
-    :func:`~.qjit`.
 
     The semantics of ``while_loop`` are given by the following Python pseudo-code:
 
@@ -193,10 +193,13 @@ def while_loop(*args, compiler="catalyst", **kwargs):
 
 
 def for_loop(*args, compiler="catalyst", **kwargs):
-    """A :func:`~.qjit` compatible for-loop decorator for PennyLane programs.
+    """A :func:`~.qjit` compatible for-loop for PennyLane programs.
 
     .. note::
-        This function is a wrapper around :func:`catalyst:.for_loop`.
+
+        When used with :func:`~.qjit`, this function only supports
+        the Catalyst compiler. Please see
+        :func:`~catalyst:catalyst.for_loop` for more details.
 
         Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
@@ -215,9 +218,6 @@ def for_loop(*args, compiler="catalyst", **kwargs):
 
     The final iteration values are also returned from the transformed
     function.
-
-    This form of control flow can also be called from the Python interpreter without needing to use
-    :func:`~.qjit`.
 
     The semantics of ``for_loop`` are given by the following Python pseudo-code:
 
