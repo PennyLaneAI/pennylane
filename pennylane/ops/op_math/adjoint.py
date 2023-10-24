@@ -21,6 +21,7 @@ from pennylane.math import conj, moveaxis, transpose
 from pennylane.operation import Observable, Operation, Operator
 from pennylane.queuing import QueuingManager
 from pennylane.tape import make_qscript
+from pennylane.compiler import compiler
 
 from .symbolicop import SymbolicOp
 
@@ -101,6 +102,32 @@ def adjoint(fn, lazy=True):
     >>> print(qml.draw(circuit)(0.2))
     0: ──RX(0.20)──SX──SX†──RX(0.20)†─┤  <Z>
 
+    **Example with compiler**
+
+    The adjoint used in a compilation context can be applied on control flow.
+
+    .. code-block:: python
+
+        @qml.qjit
+        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        def workflow(theta, n, wires):
+            def func():
+                @catalyst.for_loop(0, n, 1)
+                def loop_fn(i):
+                    qml.RX(theta, wires=wires)
+
+                loop_fn()
+            qml.adjoint(func)()
+            return qml.probs()
+
+    >>> workflow(jnp.pi/2, 3, 0)
+    [1.00000000e+00 7.39557099e-32]
+
+    .. warning::
+
+        The Catalyst adjoint function does not support performing the adjoint
+        of quantum functions that contain mid-circuit measurements.
+
     .. details::
         :title: Lazy Evaluation
 
@@ -117,6 +144,12 @@ def adjoint(fn, lazy=True):
         Adjoint(S)(wires=[0])
 
     """
+    if compiler.active("catalyst"):
+        if lazy is False:
+            raise RuntimeError("Lazy kwarg is not support with qjit.")
+        catalyst_compiler = compiler.AvailableCompilers.names_entrypoints["catalyst"]
+        ops_loader = catalyst_compiler["ops"].load()
+        return ops_loader.adjoint(fn)
     if isinstance(fn, Operator):
         return Adjoint(fn) if lazy else _single_op_eager(fn, update_queue=True)
     if not callable(fn):
