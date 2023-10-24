@@ -248,7 +248,6 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 
         Now that the cost function has been defined it can be called for specific parameters:
 
-
         >>> cost_lhst([3*np.pi/2, 3*np.pi/2, np.pi/2], v_function = v_function, v_wires = [2,3], u_tape = u_tape)
         0.5
     """
