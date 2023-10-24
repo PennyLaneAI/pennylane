@@ -263,7 +263,19 @@
   [(#4607)](https://github.com/PennyLaneAI/pennylane/pull/4607)
   [(#4608)](https://github.com/PennyLaneAI/pennylane/pull/4608)
 
-  TODO
+  It is now possible to JIT-compile functions with arguments that are a `MeasurementProcess` or
+  a `QuantumScript`:
+
+  ```python
+  tape0 = qml.tape.QuantumTape([qml.RX(1.0, 0), qml.RY(0.5, 0)], [qml.expval(qml.PauliZ(0))])
+  dev = qml.device('lightning.qubit', wires=5)
+
+  execute_kwargs = {"device": dev, "gradient_fn": qml.gradients.param_shift, "interface":"jax"}
+
+  jitted_execute = jax.jit(qml.execute, static_argnames=execute_kwargs.keys())
+
+  jitted_execute((tape0, ), **execute_kwargs)
+  ```
 
 <h4>Improving QChem and existing algorithms</h4>
 
