@@ -615,9 +615,9 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         with pytest.warns(UserWarning, match="Transforms have been disabled, as a Sphinx"):
 
             @qml.transforms.core.transform
-            def transform(
+            def custom_transform(
                 tape: qml.tape.QuantumTape, index: int
-            ) -> (Sequence[qml.tape.QuantumTape], Callable):
+            ) -> (Sequence[qml.tape.QuantumTape], Callable):  # pylint:disable=unused-variable
                 """A valid transform."""
                 tape = tape.copy()
                 tape._ops.pop(index)  # pylint:disable=protected-access
