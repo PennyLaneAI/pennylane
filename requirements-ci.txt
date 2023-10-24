@@ -9,7 +9,7 @@ toml
 appdirs
 semantic_version
 dask[delayed]
-autoray==0.6.1
+autoray
 matplotlib
 requests
 tomli # Drop once minimum Python version is 3.11
