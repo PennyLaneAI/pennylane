@@ -9,7 +9,7 @@ Pending deprecations
 * ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
   
   - Deprecated in v0.24
-  - Will be removed in v0.32
+  - Will be removed in v0.34
 
   Instead, it is recommended to simply
   pass Hamiltonians to the ``qml.expval`` function inside QNodes:
@@ -20,6 +20,42 @@ Pending deprecations
     def ansatz(params):
         some_qfunc(params)
         return qml.expval(Hamiltonian)
+
+* The ``prep`` keyword argument in ``QuantumScript`` is deprecated and will be removed from ``QuantumScript``.
+  ``StatePrepBase`` operations should be placed at the beginning of the `ops` list instead.
+
+  - Deprecated in v0.33
+  - Will be removed in v0.34
+
+* `qml.gradients.pulse_generator` becomes `qml.gradients.pulse_odegen` to adhere to paper naming conventions. During v0.33, `pulse_generator`
+  is still available but raises a warning.
+
+  - Deprecated in v0.33
+  - Will be removed in v0.34
+
+Completed deprecation cycles
+----------------------------
+
+* The public methods of ``DefaultQubit`` are pending changes to
+  follow the new device API.
+
+  We will be switching to the new device interface in a coming release.
+  In this new interface, simulation implementation details
+  will be abstracted away from the device class itself and provided by composition, rather than inheritance.
+  Therefore, some public and private methods from ``DefaultQubit`` will no longer exist, though its behaviour
+  in a workflow will remain the same.
+
+  If you directly interact with device methods, please consult
+  :class:`pennylane.devices.Device` and
+  :class:`pennylane.devices.DefaultQubit`
+  for more information on what the new interface will look like and be prepared
+  to make updates in a coming release. If you have any feedback on these
+  changes, please create an
+  `issue <https://github.com/PennyLaneAI/pennylane/issues>`_ or post in our
+  `discussion forum <https://discuss.pennylane.ai/>`_.
+
+  - Deprecated in v0.31
+  - Changed in v0.33
 
 * The behaviour of ``Operator.__eq__`` and ``Operator.__hash__`` will be updated soon. Their documentation
   has been updated to reflect the incoming changes.
@@ -41,43 +77,7 @@ Pending deprecations
   {PauliZ(wires=[0]), PauliZ(wires=[0])}
 
   - Added in v0.32
-  - Behaviour will change in v0.33
-
-* The public methods of ``DefaultQubit`` are pending changes to
-  follow the new device API.
-
-  We will be switching to the new device interface in a coming release.
-  In this new interface, simulation implementation details
-  will be abstracted away from the device class itself and provided by composition, rather than inheritance.
-  Therefore, some public and private methods from ``DefaultQubit`` will no longer exist, though its behaviour
-  in a workflow will remain the same.
-  
-  If you directly interact with device methods, please consult
-  :class:`pennylane.devices.Device` and
-  :class:`pennylane.devices.DefaultQubit`
-  for more information on what the new interface will look like and be prepared
-  to make updates in a coming release. If you have any feedback on these
-  changes, please create an
-  `issue <https://github.com/PennyLaneAI/pennylane/issues>`_ or post in our
-  `discussion forum <https://discuss.pennylane.ai/>`_.
-
-  - Deprecated in v0.31
-  
-* The ``prep`` keyword argument in ``QuantumScript`` is deprecated and will be removed from ``QuantumScript``.
-  ``StatePrepBase`` operations should be placed at the beginning of the `ops` list instead.
-
-  - Deprecated in v0.33
-  - Will be removed in v0.34
-
-* `qml.gradients.pulse_generator` becomes `qml.gradients.pulse_odegen` to adhere to paper naming conventions. During v0.33, `pulse_generator`
-  is still available but raises a warning.
-  
-  - Deprecated in v0.33
-  - Will be removed in v0.34
-
-
-Completed deprecation cycles
-----------------------------
+  - Behaviour changed in v0.33
 
 * ``qml.qchem.jordan_wigner`` had been removed.
   Use ``qml.jordan_wigner`` instead. List input to define the fermionic operator
