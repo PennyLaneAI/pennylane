@@ -17,14 +17,14 @@ This module contains functions for computing the vector-Jacobian product and Jac
 from pennylane.compiler import compiler
 
 # pylint: disable=too-many-arguments
-def vjp(f, params, cotangents, *, method=None, h=None, argnum=None):
-    """A :func:`~.qjit` compatible Vector-Jacobian product for PennyLane/Catalyst.
+def vjp(f, params, cotangents, method=None, h=None, argnum=None):
+    """A :func:`~.qjit` compatible Vector-Jacobian product for PennyLane.
 
     This function allows the Vector-Jacobian Product of a hybrid quantum-classical function to be
     computed within the compiled program.
 
     Args:
-        f(Callable): Function-like object to calculate JVP for
+        f(Callable): Function-like object to calculate VJP for
         params(List[Array]): List (or a tuple) of f's arguments specifying the point to calculate
                              VJP at. A subset of these parameters are declared as
                              differentiable by listing their indices in the ``argnum`` parameter.
@@ -45,13 +45,13 @@ def vjp(f, params, cotangents, *, method=None, h=None, argnum=None):
 
     .. code-block:: python
 
-        @qjit
+        @qml.qjit
         def vjp(params, cotangent):
           def f(x):
               y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
               return jnp.stack(y)
 
-          return catalyst.vjp(f, [params], [cotangent])
+          return qml.vjp(f, [params], [cotangent])
 
     >>> x = jnp.array([0.1, 0.2])
     >>> dy = jnp.array([-0.5, 0.1, 0.3])
@@ -59,12 +59,17 @@ def vjp(f, params, cotangents, *, method=None, h=None, argnum=None):
     [array([0.09983342, 0.04      , 0.02      ]),
     array([-0.43750208,  0.07000001])]
     """
-
+    if compiler.active("catalyst"):
+        catalyst_compiler = compiler.AvailableCompilers.names_entrypoints["catalyst"]
+        ops_loader = catalyst_compiler["ops"].load()
+        return ops_loader.vjp(f, params, cotangents, method=method, h=h, argnum=argnum)
+    else:
+        raise RuntimeError("Pennylane does not support the VJ operation")
 
 
 # pylint: disable=too-many-arguments
-def jvp(f, params, tangents, *, method=None, h=None, argnum=None):
-    """A :func:`~.qjit` compatible Jacobian-vector product for PennyLane/Catalyst.
+def jvp(f, params, tangents, method=None, h=None, argnum=None):
+    """A :func:`~.qjit` compatible Jacobian-vector product for PennyLane.
 
     This function allows the Jacobian-vector Product of a hybrid quantum-classical function to be
     computed within the compiled program.
@@ -113,19 +118,26 @@ def jvp(f, params, tangents, *, method=None, h=None, argnum=None):
 
     .. code-block:: python
 
-        @qjit
+        @qml.qjit
         @qml.qnode(qml.device("lightning.qubit", wires=2))
         def circuit(n, params):
             qml.RX(params[n, 0], wires=n)
             qml.RY(params[n, 1], wires=n)
             return qml.expval(qml.PauliZ(1))
 
-        @qjit
+        @qml.qjit
         def workflow(primals, tangents):
-            return catalyst.jvp(circuit, [1, primals], [tangents], argnum=[1])
+            return qml.jvp(circuit, [1, primals], [tangents], argnum=[1])
 
     >>> params = jnp.array([[0.54, 0.3154], [0.654, 0.123]])
     >>> dy = jnp.array([[1.0, 1.0], [1.0, 1.0]])
     >>> workflow(params, dy)
     [array(0.78766064), array(-0.7011436)]
     """
+    if compiler.active("catalyst"):
+        catalyst_compiler = compiler.AvailableCompilers.names_entrypoints["catalyst"]
+        ops_loader = catalyst_compiler["ops"].load()
+        return ops_loader.jvp(f, params, tangents, method=method, h=h, argnum=argnum)
+    else:
+        raise RuntimeError("Pennylane does not support the JVP operation")
+
