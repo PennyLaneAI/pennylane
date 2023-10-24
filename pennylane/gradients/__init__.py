@@ -124,7 +124,7 @@ Transforming QNodes
 
 Alternatively, quantum gradient transforms can be applied manually to QNodes. This is not
 recommended because PennyLane must compute the classical Jacobian of the parameters and multiply it with
-the quantum Jacobian, we recommend using the `diff_method` kwargs with your favorite machine learning
+the quantum Jacobian, we recommend using the ``diff_method`` kwargs with your favorite machine learning
 framework.
 
 .. code-block:: python
