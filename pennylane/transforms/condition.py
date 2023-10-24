@@ -69,7 +69,7 @@ def cond(condition, true_fn, false_fn=None):
     will be captured by the compiler, with the executed branch determined
     at runtime (similar to ``jax.lax.cond``). For more details, as well
     as ``elseif`` support, please see :func:`catalyst.cond`.
-    
+
     Without the :func:`~.qjit` decorator (**interpreted mode**), it is
     restricted to simply branching on mid-circuit measurement results.
 
@@ -95,7 +95,7 @@ def cond(condition, true_fn, false_fn=None):
 
     **Example**
 
-    In the interpreted mode,
+    In interpreted mode,
 
     .. code-block:: python3
 
@@ -133,6 +133,31 @@ def cond(condition, true_fn, false_fn=None):
 
         While such statements may not result in errors, they may result in
         incorrect behaviour.
+
+    In just-in-time (JIT) mode using the :func:`~.qjit` decorator,
+
+    .. code-block:: python
+
+        dev = qml.device("lightning.qubit", wires=1)
+
+        @qml.qjit
+        @qml.qnode(dev)
+        def circuit(x: float):
+            def ansatz_true():
+                qml.RX(x, wires=0)
+                qml.Hadamard(wires=0)
+
+            def ansatz_false():
+                qml.RY(x, wires=0)
+
+            qml.cond(x > 1.4, ansatz_true, ansatz_false)
+
+            return qml.expval(qml.PauliZ(0))
+
+    >>> circuit(1.4)
+    array(0.16996714)
+    >>> circuit(1.6)
+    array(0.)
 
     .. details::
         :title: Usage Details
@@ -249,32 +274,6 @@ def cond(condition, true_fn, false_fn=None):
             >>> z = np.array(0.3, requires_grad=True)
             >>> qnode(par, x, y, z)
             tensor(-0.30922805, requires_grad=True)
-
-    In the compilation mode using the :func:`~.qjit` JIT compiler decorator,
-
-    .. code-block:: python
-
-        dev = qml.device("lightning.qubit", wires=1)
-
-        @qml.qjit
-        @qml.qnode(dev)
-        def circuit(x: float):
-            def ansatz_true():
-                qml.RX(x, wires=0)
-                qml.Hadamard(wires=0)
-
-            def ansatz_false():
-                qml.RY(x, wires=0)
-
-            qml.cond(x > 1.4, ansatz_true, ansatz_false)
-
-            return qml.expval(qml.PauliZ(0))
-
-    >>> circuit(1.4)
-    array(0.16996714)
-    >>> circuit(1.6)
-    array(0.)
-
     """
     if compiler.active("catalyst"):
         catalyst_compiler = compiler.AvailableCompilers.names_entrypoints["catalyst"]

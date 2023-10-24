@@ -20,7 +20,7 @@ import dataclasses
 import pkg_resources
 
 
-class CompilerNotFoundError(RuntimeError):
+class CompilerNotFoundError(Exception):
     """Exception raised when the compiler package is not installed."""
 
 

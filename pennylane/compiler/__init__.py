@@ -44,6 +44,8 @@ is via the qjit decorator.
     :toctree: api
 
     ~qjit
+    ~for_loop
+    ~while_loop
 
 In addition, several developer functions are available to probe
 available hybrid compilers.
