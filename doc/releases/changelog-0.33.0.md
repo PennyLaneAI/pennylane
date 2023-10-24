@@ -1,6 +1,6 @@
 :orphan:
 
-# Release 0.33.0-dev (development release)
+# Release 0.33.0 (current release)
 
 <h3>New features since last release</h3>
 
@@ -117,6 +117,30 @@
   (array(0.6), array([1, 1, 1, 0, 1]))
   ```
 
+* Users can now request postselection after making mid-circuit measurements. They can do so
+  by specifying the `postselect` keyword argument for `qml.measure` as either `0` or `1`,
+  corresponding to the basis states.
+  [(#4604)](https://github.com/PennyLaneAI/pennylane/pull/4604)
+
+  ```python
+  dev = qml.device("default.qubit", wires=3)
+
+  @qml.qnode(dev)
+  def circuit(phi):
+      qml.RX(phi, wires=0)
+      m = qml.measure(0, postselect=1)
+      qml.cond(m, qml.PauliX)(wires=1)
+      return qml.probs(wires=1)
+  ```
+  ```pycon
+  >>> circuit(np.pi)
+  tensor([0., 1.], requires_grad=True)
+  ```
+
+  Here, we measure a probability of one on wire 1 as we postselect on the $|1\rangle$ state on wire
+  0, thus resulting in the circuit being projected onto the state corresponding to the measurement
+  outcome $|1\rangle$ on wire 0.
+
 * Operator transforms `qml.matrix`, `qml.eigvals`, `qml.generator`, and `qml.transforms.to_zx` are updated
   to the new transform program system.
   [(#4573)](https://github.com/PennyLaneAI/pennylane/pull/4573)
@@ -148,7 +172,58 @@
   [(#4620)](https://github.com/PennyLaneAI/pennylane/pull/4620)
   [(#4632)](https://github.com/PennyLaneAI/pennylane/pull/4632)
 
+* The `CosineWindow` template has been added to prepare an initial state based on a cosine wave function.
+  [(#4683)](https://github.com/PennyLaneAI/pennylane/pull/4683)
+
+  ```python
+  import pennylane as qml
+  import matplotlib.pyplot as plt
+
+  dev = qml.device('default.qubit', wires=4)
+
+  @qml.qnode(dev)
+  def example_circuit():
+        qml.CosineWindow(wires=range(4))
+        return qml.state()
+  output = example_circuit()
+
+  # Graph showing state amplitudes
+  plt.bar(range(len(output)), output)
+  plt.show()
+  ```
+
+  We can show how this operator is built:
+
+  ```python
+  import pennylane as qml
+
+  dev = qml.device("default.qubit", wires=5)
+
+  op = qml.CosineWindow(wires=range(5))
+  
+  @qml.qnode(dev)
+  def circuit():
+      op.decomposition()
+      return qml.state()
+
+  print(qml.draw(circuit)())
+
+  ```
+  
+  ```pycon
+
+  0: ──────────────╭QFT†──Rϕ(1.57)─┤  State
+  1: ──────────────├QFT†──Rϕ(0.79)─┤  State
+  2: ──────────────├QFT†──Rϕ(0.39)─┤  State
+  3: ──────────────├QFT†──Rϕ(0.20)─┤  State
+  4: ──H──RZ(3.14)─╰QFT†──Rϕ(0.10)─┤  State
+  
+  ```  
+
 <h3>Improvements 🛠</h3>
+
+* Multi-controlled operations with a single qubit special unitary target can now automatically decompose.
+  [(#4697)](https://github.com/PennyLaneAI/pennylane/pull/4697)
 
 * `pennylane.devices.preprocess` now offers the transforms `decompose`, `validate_observables`, `validate_measurements`,
   `validate_device_wires`, `validate_multiprocessing_workers`, `warn_about_trainable_observables`,
@@ -307,8 +382,11 @@
   decomposition.
   [(#4675)](https://github.com/PennyLaneAI/pennylane/pull/4675)
 
-
 <h3>Breaking changes 💔</h3>
+
+* ``qml.defer_measurements`` now raises an error if a transformed circuit measures ``qml.probs``,
+  ``qml.sample``, or ``qml.counts`` without any wires or obsrvable, or if it measures ``qml.state``.
+  [(#4701)](https://github.com/PennyLaneAI/pennylane/pull/4701)
 
 * The device test suite now converts device kwargs to integers or floats if they can be converted to integers or floats.
   [(#4640)](https://github.com/PennyLaneAI/pennylane/pull/4640)
@@ -496,6 +574,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso,
 Utkarsh Azad,
 Jack Brown,
 Stepan Fomichev,
