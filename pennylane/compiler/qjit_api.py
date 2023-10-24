@@ -196,7 +196,7 @@ def for_loop(*args, compiler="catalyst", **kwargs):
     """A :func:`~.qjit` compatible for-loop decorator for PennyLane programs.
 
     .. note::
-        This function is a wrapper around :func:`catalyst:.while_loop`.
+        This function is a wrapper around :func:`catalyst:.for_loop`.
 
         Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
@@ -229,7 +229,7 @@ def for_loop(*args, compiler="catalyst", **kwargs):
             return args
 
     Unlike ``jax.cond.fori_loop``, the step can be negative if it is known at tracing time
-    (i.e. constant). If a non-constant negative step is used, the loop will produce no iterations.
+    (i.e., constant). If a non-constant negative step is used, the loop will produce no iterations.
 
     Args:
         lower_bound (int): starting value of the iteration index

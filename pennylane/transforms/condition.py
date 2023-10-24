@@ -61,23 +61,25 @@ class Conditional(Operation):
 
 
 def cond(condition, true_fn, false_fn=None):
-    """A :func:`~.qjit` compatible decorator for if-else conditionals in PennyLane/Catalyst.
+    """Quantum-compatible if-else conditionals --- condition quantum operations on parameters such as the results of mid-circuit qubit measurements.
 
-    This can be used to condition a quantum operation on the results of mid-circuit qubit measurements
-    with the Python interpreter while acts like the traditional if-else conditional when is called inside a
-    QJIT decorated workflow. This means that each execution path, 'if' and 'else' branchs, is provided
-    as a separate function. All functions will be traced during compilation, but only one of them will
-    be executed at runtime, depending on the value of one or more Boolean predicates. The JAX equivalent
-    is the ``jax.lax.cond`` function, but this version is optimized to work with quantum programs in PennyLane.
-    This version also supports an 'else if' construct which the JAX version does not. However to use `else if`
-    you need to use `catalyst.cond <https://docs.pennylane.ai/projects/catalyst/en/latest/code/api/catalyst.cond.html>`__.
+    When used with the :func:`~.qjit` decorator with a hybrid
+    quantum-classical compiler, this function allows for general
+    if-else constructs. Both the ``true_fn`` and ``false_fn`` branches
+    will be captured by the compiler, with the executed branch determined
+    at runtime (similar to ``jax.lax.cond``). For more details, as well
+    as ``elseif`` support, please see :func:`catalyst.cond`.
+    
+    Without the :func:`~.qjit` decorator (**interpreted mode**), it is
+    restricted to simply branching on mid-circuit measurement results.
 
 
-    Support for using :func:`~.cond` is device-dependent. With the Python interpreter, If a device doesn't
-    support mid-circuit measurements natively, then the QNode will apply the :func:`defer_measurements` transform.
-    This function has a different set of support when it is called within :func:`~.qjit`. Please see
-    `catalyst.cond <https://docs.pennylane.ai/projects/catalyst/en/latest/code/api/catalyst.cond.html>`__
-    for details.
+    .. note::
+
+        With the Python interpreter, support for :func:`~.cond`
+        is device-dependent. If a device doesn't
+        support mid-circuit measurements natively, then the QNode will
+        apply the :func:`defer_measurements` transform.
 
     Args:
         condition (.MeasurementValue): a conditional expression involving a mid-circuit
@@ -272,36 +274,6 @@ def cond(condition, true_fn, false_fn=None):
     array(0.16996714)
     >>> circuit(1.6)
     array(0.)
-
-    Additional 'else-if' clauses can also be included via the ``else_if`` method:
-
-    .. code-block:: python
-
-        @qml.qjit
-        @qml.qnode(dev)
-        def circuit(x):
-
-            @catalyst.cond(x > 2.7)
-            def cond_fn():
-                qml.RX(x, wires=0)
-
-            @cond_fn.else_if(x > 1.4)
-            def cond_elif():
-                qml.RY(x, wires=0)
-
-            @cond_fn.otherwise
-            def cond_else():
-                qml.RX(x ** 2, wires=0)
-
-            cond_fn()
-
-            eturn qml.probs(wires=0)
-
-    The conditional function is permitted to also return values.
-    Any value that is supported by JAX JIT compilation is supported as a return
-    type. Please see the
-    `catalyst.cond <https://docs.pennylane.ai/projects/catalyst/en/latest/code/api/catalyst.cond.html>`__
-    page for examples.
 
     """
     if compiler.active("catalyst"):
