@@ -28,7 +28,7 @@ def batch_input(
     argnum: Union[Sequence[int], int],
 ) -> (Sequence[QuantumTape], Callable):
     """
-    Transform a QNode to support an initial batch dimension for gate inputs.
+    Transform a circuit to support an initial batch dimension for gate inputs.
 
     In a classical ML application one needs to batch the non-trainable inputs of the network.
     This function executes the same analogue for a quantum circuit:

@@ -103,7 +103,7 @@ def spsa_grad(
     sampler=_rademacher_sampler,
     sampler_rng=None,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
-    r"""Transform a QNode to compute the SPSA gradient of all gate
+    r"""Transform a circuit to compute the SPSA gradient of all gate
     parameters with respect to its inputs. This estimator shifts all parameters
     simultaneously and approximates the gradient based on these shifts and a
     finite-difference method.

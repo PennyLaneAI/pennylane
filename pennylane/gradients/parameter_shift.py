@@ -759,7 +759,7 @@ def param_shift(
     f0=None,
     broadcast=False,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
-    r"""Transform a QNode to compute the parameter-shift gradient of all gate
+    r"""Transform a circuit to compute the parameter-shift gradient of all gate
     parameters with respect to its inputs.
 
     Args:

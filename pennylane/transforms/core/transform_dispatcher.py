@@ -49,6 +49,13 @@ class TransformDispatcher:
             # instantiating the object. This allows the signature to
             # be correctly displayed in the documentation.
 
+            warnings.warn(
+                "Transforms have been disabled, as a Sphinx "
+                "build has been detected via SPHINX_BUILD='1'. If this is not the "
+                "case, please set the environment variable SPHINX_BUILD='0'.",
+                UserWarning,
+            )
+
             args[0].custom_qnode_transform = lambda x: x
             return args[0]
 

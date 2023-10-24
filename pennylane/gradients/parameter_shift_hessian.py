@@ -396,7 +396,7 @@ def _contract_qjac_with_cjac(qhess, cjac, tape):
 def param_shift_hessian(
     tape: qml.tape.QuantumTape, argnum=None, diagonal_shifts=None, off_diagonal_shifts=None, f0=None
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
-    r"""Transform a QNode to compute the parameter-shift Hessian with respect to its trainable
+    r"""Transform a circuit to compute the parameter-shift Hessian with respect to its trainable
     parameters. This is the Hessian transform to replace the old one in the new return types system
 
     Use this transform to explicitly generate and explore parameter-shift circuits for computing

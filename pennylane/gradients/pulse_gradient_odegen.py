@@ -403,7 +403,7 @@ def _expval_pulse_odegen(tape, argnum, atol):
 def pulse_odegen(
     tape: qml.tape.QuantumTape, argnum=None, atol=1e-7
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
-    r"""Transform a QNode to compute the pulse generator parameter-shift gradient of pulses
+    r"""Transform a circuit to compute the pulse generator parameter-shift gradient of pulses
     in a pulse program with respect to their inputs.
     This method combines automatic differentiation of few-qubit operations with
     hardware-compatible shift rules.

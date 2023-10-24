@@ -66,7 +66,7 @@ def hadamard_grad(
     aux_wire=None,
     device_wires=None,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
-    r"""Transform a QNode to compute the Hadamard test gradient of all gates with respect to their inputs.
+    r"""Transform a circuit to compute the Hadamard test gradient of all gates with respect to their inputs.
 
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate

@@ -54,7 +54,7 @@ def _replace_obs(tape: QuantumTape, obs, *args, **kwargs) -> (Sequence[QuantumTa
 
 @partial(transform, final_transform=True)
 def shadow_expval(tape: QuantumTape, H, k=1) -> (Sequence[QuantumTape], Callable):
-    """Transform a QNode returning a classical shadow into one that returns
+    """Transform a circuit returning a classical shadow into one that returns
     the approximate expectation values in a differentiable manner.
 
     See :func:`~.pennylane.shadow_expval` for more usage details.
@@ -172,7 +172,7 @@ def _shadow_state_undiffable(tape, wires):
 
 @partial(transform, final_transform=True)
 def shadow_state(tape: QuantumTape, wires, diffable=False) -> (Sequence[QuantumTape], Callable):
-    """Transform a QNode returning a classical shadow into one that returns
+    """Transform a circuit returning a classical shadow into one that returns
     the reconstructed state in a differentiable manner.
 
     Args:
