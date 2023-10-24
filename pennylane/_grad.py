@@ -30,7 +30,7 @@ class grad:
     """A :func:`~.qjit` compatible gradient transformation that returns the gradient
     as a callable function of (functions of) QNodes.
 
-    Inside a :func:`~.qjit` decorated program, this will patch to :func:`catalyst:catalyst.grad` and
+    Inside a :func:`~.qjit` decorated program, this will patch to :func:`catalyst.grad` and
     returns a callable object utilized by the supported compilers in :doc:`Catalyst <catalyst:index>`.
 
     By default in interpreter mode, gradients are computed for arguments which contain the property
@@ -50,7 +50,7 @@ class grad:
 
     .. note::
 
-        In just-in-time (JIT) mode, this function is a wrapper around :func:`catalyst:catalyst.grad`.
+        In just-in-time (JIT) mode, this function is a wrapper around :func:`catalyst.grad`.
 
         Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
@@ -196,7 +196,7 @@ def jacobian(func, argnum=None, method=None, step_size=None):
     """A :func:`~.qjit` compatible Jacobian transformation that returns the Jacobian
     as a callable function of vector-valued (functions of) QNodes.
 
-    Inside a :func:`~.qjit` decorated program, this will patch to :func:`catalyst:catalyst.jacobian` and
+    Inside a :func:`~.qjit` decorated program, this will patch to :func:`catalyst.jacobian` and
     returns a callable object utilized by the supported compilers in :doc:`Catalyst <catalyst:index>`.
 
     By default in interpreter mode, this is a wrapper around the :mod:`autograd.jacobian` function
@@ -241,7 +241,7 @@ def jacobian(func, argnum=None, method=None, step_size=None):
 
     .. note::
 
-        In just-in-time (JIT) mode, this function is a wrapper around :func:`catalyst:catalyst.jacobian`.
+        In just-in-time (JIT) mode, this function is a wrapper around :func:`catalyst.jacobian`.
 
         Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
@@ -392,7 +392,7 @@ def jacobian(func, argnum=None, method=None, step_size=None):
            [-4.20735506e-01,  4.20735506e-01]])
 
     You can further compute the Jacobian transformation using other supported ``method``s
-    by :func:`catalyst:catalyst.jacobian`.
+    by :func:`catalyst.jacobian`.
 
     .. code-block::
 
