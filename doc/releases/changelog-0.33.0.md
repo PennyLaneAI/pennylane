@@ -294,6 +294,8 @@
   a `QuantumScript`:
 
   ```python
+  import jax
+
   tape0 = qml.tape.QuantumTape([qml.RX(1.0, 0), qml.RY(0.5, 0)], [qml.expval(qml.PauliZ(0))])
   dev = qml.device('lightning.qubit', wires=5)
 
