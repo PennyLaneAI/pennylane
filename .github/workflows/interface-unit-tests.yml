@@ -218,7 +218,6 @@ jobs:
       install_jax: false
       install_tensorflow: true
       tensorflow_version: ${{ inputs.tensorflow_version }}
-      keras_version: ${{ inputs.tensorflow_version }}
       install_pytorch: false
       install_pennylane_lightning_master: true
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
@@ -322,7 +321,6 @@ jobs:
       jax_version: ${{ inputs.jax_version }}
       install_tensorflow: true
       tensorflow_version: ${{ inputs.tensorflow_version }}
-      keras_version: ${{ inputs.tensorflow_version }}
       install_pytorch: true
       pytorch_version: ${{ inputs.pytorch_version }}
       install_pennylane_lightning_master: false
@@ -352,8 +350,10 @@ jobs:
       branch: ${{ inputs.branch }}
       coverage_artifact_name: external-libraries-tests-coverage
       python_version: ${{ matrix.python-version }}
-      install_jax: True
-      install_tensorflow: True
+      install_jax: true
+      jax_version: ${{ inputs.jax_version }}
+      install_tensorflow: true
+      tensorflow_version: ${{ inputs.tensorflow_version }}
       install_pytorch: false
       install_pennylane_lightning_master: false
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
@@ -387,7 +387,6 @@ jobs:
       jax_version: ${{ inputs.jax_version }}
       install_tensorflow: true
       tensorflow_version: ${{ inputs.tensorflow_version }}
-      keras_version: ${{ inputs.tensorflow_version }}
       install_pytorch: true
       pytorch_version: ${{ inputs.pytorch_version }}
       install_pennylane_lightning_master: false
@@ -455,7 +454,6 @@ jobs:
       jax_version: ${{ inputs.jax_version }}
       install_tensorflow: true
       tensorflow_version: ${{ inputs.tensorflow_version }}
-      keras_version: ${{ inputs.tensorflow_version }}
       install_pytorch: true
       pytorch_version: ${{ inputs.pytorch_version }}
       install_pennylane_lightning_master: false
@@ -531,7 +529,6 @@ jobs:
       jax_version: ${{ inputs.jax_version }}
       install_tensorflow: ${{ contains(matrix.config.device, 'tf') }}
       tensorflow_version: ${{ inputs.tensorflow_version }}
-      keras_version: ${{ inputs.tensorflow_version }}
       install_pytorch: ${{ contains(matrix.config.device, 'torch') }}
       pytorch_version: ${{ inputs.pytorch_version }}
       install_pennylane_lightning_master: false

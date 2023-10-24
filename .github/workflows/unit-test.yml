@@ -44,11 +44,6 @@ on:
         required: false
         type: string
         default: ''
-      keras_version:
-        description: The version of Keras to install alongside TensorFlow. This will only be install if TensorFlow is being installed. Leave empty to install latest version.
-        required: false
-        type: string
-        default: ''
       install_pytorch:
         description: Indicate if PyTorch should be installed or not
         required: false
