@@ -14,7 +14,6 @@
 """
 The default.qubit device is PennyLane's standard qubit-based device.
 
-This module contains the next generation successor to default qubit.
 """
 
 from dataclasses import replace
