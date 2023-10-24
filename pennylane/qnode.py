@@ -998,15 +998,21 @@ class QNode:
             )
         # Calculate the classical jacobians if necessary
         if full_transform_program.has_classical_cotransform():
-            argnums = full_transform_program[-1]._kwargs.pop(
-                "argnums", None
+            hybrid = full_transform_program[-1]._kwargs.pop(
+                "hybrid", True
             )  # pylint: disable=protected-access
-            full_transform_program._set_all_classical_jacobians(
-                self, args, kwargs, argnums
-            )  # pylint: disable=protected-access
-            full_transform_program._set_all_argnums(
-                self, args, kwargs, argnums
-            )  # pylint: disable=protected-access
+
+            if hybrid:
+                argnums = full_transform_program[-1]._kwargs.pop(
+                    "argnums", None
+                )  # pylint: disable=protected-access
+
+                full_transform_program._set_all_classical_jacobians(
+                    self, args, kwargs, argnums
+                )  # pylint: disable=protected-access
+                full_transform_program._set_all_argnums(
+                    self, args, kwargs, argnums
+                )  # pylint: disable=protected-access
 
         # pylint: disable=unexpected-keyword-arg
         res = qml.execute(

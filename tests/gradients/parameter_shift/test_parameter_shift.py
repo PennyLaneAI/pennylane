@@ -3465,6 +3465,25 @@ class TestQnodeAutograd:
         assert np.allclose(res, res_expected)
 
     @pytest.mark.parametrize("interface", interfaces)
+    def test_single_measurement_single_param_not_hybrid(self, interface):
+        """Test for a single measurement and a single param with hybrid False."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(x):
+            qml.RX(2 * x, wires=[0])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        x = qml.numpy.array(0.543, requires_grad=True)
+
+        res = qml.gradients.param_shift(circuit, hybrid=False)(x)
+
+        res_expected = qml.jacobian(circuit)(x)
+        assert res.shape == res_expected.shape
+        assert np.allclose(2 * res, res_expected)
+
+    @pytest.mark.parametrize("interface", interfaces)
     def test_single_measurement_single_param_2(self, interface):
         """Test for a single measurement and a single param."""
         dev = qml.device("default.qubit", wires=2)
