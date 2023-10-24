@@ -151,6 +151,33 @@
 
   <img src="https://docs.pennylane.ai/en/stable/_images/cosine_window.png" width=50%/>
 
+* Controlled gate sequences raised to decreasing powers, a sub-block in quantum phase estimation, can now be created with the new 
+  `CtrlSequence` operator.
+  [(#4707)](https://github.com/PennyLaneAI/pennylane/pull/4707/)
+
+  Applying sequences of controlled unitary operations raised to decreasing powers is a key part in the quantum phase estimation 
+  algorithm. The new `CtrlSequence` operator allows for the ability to create just this part of the algorithm, facilitating users 
+  to tinker with quantum phase estimation.
+
+  To use `CtrlSequence`, specify the controlled unitary operator and the control wires, `control`:
+
+  ```python
+  dev = qml.device("default.qubit", wires = 4)
+
+  @qml.qnode(dev)
+  def circuit():
+      for i in range(3):
+          qml.Hadamard(wires = i)
+      qml.ControlledSequence(qml.RX(0.25, wires = 3), control = [0, 1, 2])
+      qml.adjoint(qml.QFT)(wires = range(3))
+      return qml.probs(wires = range(3))
+  ```
+
+  ```pycon
+  >>> print(circuit())
+  [0.92059345 0.02637178 0.00729619 0.00423258 0.00360545 0.00423258 0.00729619 0.02637178]
+  ```
+  
 <h4>New device capabilities, integration with Catalyst, and more! ⚗️</h4>
 
 * `default.qubit` now uses the new `qml.devices.Device` API and functionality in
