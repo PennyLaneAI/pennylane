@@ -28,15 +28,12 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
     r"""The matrix representation of an operation or quantum circuit.
 
     Args:
-        op (.Operator or .QuantumTape): A quantum operator or tape.
+        op (.Operator or .pennylane.QNode or .QuantumTape or Callable): A quantum operator or quantum circuit.
         wire_order (Sequence[Any], optional): Order of the wires in the quantum circuit.
             Defaults to the order in which the wires appear in the quantum function.
 
     Returns:
-        TensorLike or (Sequence[.QuantumTape], Callable): If an operator is provided as input, the matrix
-        is returned directly. If a quantum tape is provided, a list of transformed tapes and a post-processing
-        function are returned. When called, this function will return unitary matrix in the appropriate
-        autodiff framework (Autograd, TensorFlow, PyTorch, JAX) given its parameters.
+        TensorLike or qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
 
     **Example**
 

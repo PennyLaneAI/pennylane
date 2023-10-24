@@ -39,11 +39,10 @@ def commutation_dag(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
     operations can be moved next to each other by pairwise commutation.
 
     Args:
-        tape ( .QuantumTape): The quantum circuit.
+        tape (.pennylane.QNode or .QuantumTape or Callable): The quantum circuit.
 
     Returns:
-         function: Function which accepts the same arguments as the :class:`qml.QNode`, :class:`qml.tape.QuantumTape`
-         or quantum function. When called, this function will return the commutation DAG representation of the circuit.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
 
     **Example**
 

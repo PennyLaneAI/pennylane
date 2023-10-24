@@ -27,16 +27,12 @@ def transpile(
         is passed which contains these types of measurements, a ``NotImplementedError`` will be raised.
 
     Args:
-        tape (QuantumTape): A quantum tape.
+        tape (pennylane.QNode or pennylane.tape.QuantumTape or Callable): A quantum tape.
         coupling_map (list[tuple(int, int)] or nx.Graph): Either a list of tuples(int, int) or an instance of
             `networkx.Graph` specifying the couplings between different qubits.
 
     Returns:
-        pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
-        it returns a QNode with the transform added to its transform program.
-        If a tape is passed, returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
 
     **Example**
 
@@ -74,7 +70,7 @@ def transpile(
     with the circuit, to the transpile function to get a circuit which can be executed for the specified coupling map:
 
     >>> dev = qml.device('default.qubit', wires=[0, 1, 2, 3])
-    >>> transpiled_circuit = qml.transforms.transpile(coupling_map=[(0, 1), (1, 3), (3, 2), (2, 0)])(circuit)
+    >>> transpiled_circuit = qml.transforms.transpile(circuit, coupling_map=[(0, 1), (1, 3), (3, 2), (2, 0)])
     >>> transpiled_qnode = qml.QNode(transpiled_circuit, dev)
     >>> print(qml.draw(transpiled_qnode)())
     0: ─╭●────────────────╭●─┤ ╭Probs

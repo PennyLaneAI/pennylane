@@ -35,7 +35,7 @@ def merge_rotations(
     neither gate will be applied.
 
     Args:
-        tape (QuantumTape): A quantum tape.
+        tape (pennylane.QNode or pennylane.tape.QuantumTape or Callable): A quantum circuit.
         atol (float): After fusion of gates, if the fused angle :math:`\theta` is such that
             :math:`|\theta|\leq \text{atol}`, no rotation gate will be applied.
         include_gates (None or list[str]): A list of specific operations to merge. If
@@ -44,11 +44,7 @@ def merge_rotations(
             only the operations whose names match those in the list will undergo merging.
 
     Returns:
-        pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
-        it returns a QNode with the transform added to its transform program.
-        If a tape is passed, returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
 
     **Example**
 

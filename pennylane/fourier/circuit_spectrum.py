@@ -48,15 +48,14 @@ def circuit_spectrum(
         If no input-encoding gates are found, an empty dictionary is returned.
 
     Args:
-        tape (QuantumTape): a quantum tape representing a circuit in which
+        tape (pennylane.QNode or pennylane.tape.QuantumTape or Callable): a quantum circuit in which
             input-encoding gates are marked by their ``id`` attribute
         encoding_gates (list[str]): list of input-encoding gate ``id`` strings
             for which to compute the frequency spectra
         decimals (int): number of decimals to which to round frequencies.
 
     Returns:
-        (dict[str, list[float]]): Dictionary with the input-encoding gate ``id`` as keys and
-        their frequency spectra as values.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
 
 
     **Details**

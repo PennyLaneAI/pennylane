@@ -34,8 +34,7 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
             non-commuting observables to measure.
 
     Returns:
-        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]:  The transformed circuit as described in
-            :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
 
     **Example**
 

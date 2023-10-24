@@ -524,7 +524,7 @@ def param_shift_cv(
     parameters with respect to its inputs.
 
     Args:
-        tape (.QuantumTape): quantum tape to differentiate
+        tape (.QuantumTape): quantum circuit to differentiate
         dev (pennylane.Device): device the parameter-shift method is to be computed on
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivative with respect to all
@@ -556,16 +556,7 @@ def param_shift_cv(
         force_order2 (bool): if True, use the order-2 method even if not necessary
 
     Returns:
-        pennylane.QNode or tuple[list[QuantumTape], function]:
-
-        - If the input is a QNode, an object representing the Jacobian (function) of the QNode
-          that can be executed to obtain the Jacobian matrix.
-          The returned matrix is a tensor of size ``(number_outputs, number_gate_parameters)``
-
-        - If the input is a tape, a tuple containing a
-          list of generated tapes, together with a post-processing
-          function to be applied to the results of the evaluated tapes
-          in order to obtain the Jacobian matrix.
+        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
 
     This transform supports analytic gradients of Gaussian CV operations using
     the parameter-shift rule. This gradient method returns *exact* gradients,

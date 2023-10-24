@@ -157,18 +157,15 @@ def commute_controlled(tape: QuantumTape, direction="right") -> (Sequence[Quantu
     """Quantum transform to move commuting gates past control and target qubits of controlled operations.
 
     Args:
-        tape (QuantumTape): A quantum tape.
+        tape (pennylane.QNode or pennylane.tape.QuantumTape or Callable): A quantum circuit.
         direction (str): The direction in which to move single-qubit gates.
             Options are "right" (default), or "left". Single-qubit gates will
             be pushed through controlled operations as far as possible in the
             specified direction.
 
     Returns:
-        pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
-        it returns a QNode with the transform added to its transform program. If a qfunc is passed,
-        it returns a transformed quantum function. If a tape is passed, returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+
 
     **Example**
 

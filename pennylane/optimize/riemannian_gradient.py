@@ -56,17 +56,14 @@ def append_time_evolution(
     and append this unitary.
 
     Args:
-        tape (QuantumTape or .QNode): circuit to transform.
+        tape (QuantumTape or .QNode or Callable): circuit to transform.
         riemannian_gradient (.Hamiltonian): Hamiltonian object representing the Riemannian gradient.
         t (float): time evolution parameter.
         n (int): number of Trotter steps.
 
     Returns:
-        pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
-        it returns a QNode with the transform added to its transform program.
-        If a tape is passed, returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+
 
     """
     new_operations = tape.operations

@@ -69,14 +69,11 @@ def cancel_inverses(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
     (self-)inverses or adjoint.
 
     Args:
-        tape (~.QuantumTape): A quantum tape
+        tape (pennylane.QNode or pennylane.tape.QuantumTape or Callable): A quantum circuit.
 
     Returns:
-        pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
-        it returns a QNode with the transform added to its transform program.
-        If a tape is passed, returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+
 
     **Example**
 

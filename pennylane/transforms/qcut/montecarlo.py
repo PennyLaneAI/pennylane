@@ -87,7 +87,7 @@ def cut_circuit_mc(
     an expectation value will be evaluated.
 
     Args:
-        tape (QuantumTape): the tape of the full circuit to be cut
+        tape (.pennylane.QNode or .QuantumTape or Callable): the quantum circuit to be cut.
         classical_processing_fn (callable): A classical postprocessing function to be applied to
             the reconstructed bitstrings. The expected input is a bitstring; a flat array of length ``wires``,
             and the output should be a single number within the interval :math:`[-1, 1]`.
@@ -111,9 +111,7 @@ def cut_circuit_mc(
             :func:`~.find_and_place_cuts` and :func:`~.kahypar_cut` for the available arguments.
 
     Returns:
-        Callable: Function which accepts the same arguments as the QNode.
-        When called, this function will sample from the partitioned circuit fragments
-        and combine the results using a Monte Carlo method.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
 
     **Example**
 

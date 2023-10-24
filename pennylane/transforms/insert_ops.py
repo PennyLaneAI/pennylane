@@ -69,7 +69,7 @@ def insert(
     for more information).
 
     Args:
-        circuit (QuantumTape): the input circuit to be transformed.
+        tape (pennylane.QNode or pennylane.tape.QuantumTape or Callable or pennylane.devices.Device): the input circuit to be transformed.
         op (callable or Type[Operation]): the single-qubit operation, or sequence of operations
             acting on a single qubit, to be inserted into the circuit
         op_args (tuple or float): the arguments fed to the operation, either as a tuple or a single
@@ -83,8 +83,10 @@ def insert(
             Default is ``False`` and the operation is inserted after.
 
     Returns:
-        callable or QuantumTape or pennylane.Device: the updated version of the input circuit or an updated
-        device which will transform circuits before execution
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function] or device (pennylane.devices.Device):
+
+        The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+
 
     Raises:
         QuantumFunctionError: if some observables in the tape are not qubit-wise commuting

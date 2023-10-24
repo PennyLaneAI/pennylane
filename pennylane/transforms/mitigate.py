@@ -37,18 +37,11 @@ def fold_global(tape: QuantumTape, scale_factor) -> (Sequence[QuantumTape], Call
     The purpose of folding is to artificially increase the noise for zero noise extrapolation, see :func:`~.pennylane.transforms.mitigate_with_zne`.
 
     Args:
-        tape (~.QuantumTape): the circuit to be folded
+        tape (pennylane.QNode or pennylane.tape.QuantumTape or Callable): the quantum circuit to be folded
         scale_factor (float): Scale factor :math:`\lambda` determining :math:`n` and :math:`s`
 
     Returns:
-        function or tuple[list[QuantumTape], function]:
-
-        - If the input is a QNode, an object representing the folded QNode that can be executed
-          with the same arguments as the QNode to obtain the result of the folded circuit.
-
-        - If the input is a tape, a tuple containing a (single-entry) list of generated
-          circuits, together with a post-processing function that extracts the single tape result
-          from the evaluated tape list in order to obtain the result of the folded circuit.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
 
     .. seealso:: :func:`~.pennylane.transforms.mitigate_with_zne`; This function is analogous to the implementation in ``mitiq``  `mitiq.zne.scaling.fold_global <https://mitiq.readthedocs.io/en/v.0.1a2/apidoc.html?highlight=global_folding#mitiq.zne.scaling.fold_global>`_.
 
@@ -354,7 +347,7 @@ def mitigate_with_zne(
     see the example and usage details for further information.
 
     Args:
-        tape (~.QuantumTape): the circuit to be error-mitigated
+        tape (pennylane.QNode or pennylane.tape.QuantumTape or Callable): the quantum circuit to be error-mitigated
         scale_factors (Sequence[float]): the range of noise scale factors used
         folding (callable): a function that returns a folded circuit for a specified scale factor
         extrapolate (callable): a function that returns an extrapolated result when provided a
@@ -365,7 +358,7 @@ def mitigate_with_zne(
             folding function is stochastic.
 
     Returns:
-        float: the result of evaluating the circuit when mitigated using ZNE
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
 
     **Example:**
 

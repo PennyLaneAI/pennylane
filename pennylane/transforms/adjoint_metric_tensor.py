@@ -80,11 +80,13 @@ def adjoint_metric_tensor(
           Note also that this makes the metric tensor strictly real-valued.
 
     Args:
-        tape (.QuantumTape): Circuit to compute the metric tensor of
+        tape (pennylane.QNode or .QuantumTape): Circuit to compute the metric tensor of
 
     Returns:
-        array: the metric tensor of the tape with respect to its trainable parameters.
-        Dimensions are ``(tape.num_params, tape.num_params)``.
+        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]:
+
+        The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation. Dimensions
+        are ``(tape.num_params, tape.num_params)``.
 
     .. seealso:: :func:`~.metric_tensor` for hardware-compatible metric tensor computations.
 

@@ -142,6 +142,7 @@ def transform(
     program again and therefore the transform would be applied twice before execution.
 
     >>> transformed_qnode = dispatched_transform(transformed_qnode)
+    >>> transformed_qnode.transform_program
     TransformProgram(my_quantum_transform, my_quantum_transform)
 
     The transform program is automatically applied on the tapes before sending the tapes to execution. When called the

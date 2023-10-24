@@ -47,7 +47,7 @@ def compile(
       (:func:`~pennylane.transforms.merge_rotations`)
 
     Args:
-        qfunc (function): A quantum function.
+        tape (pennylane.QNode or pennylane.tape.QuantumTape or Callable): A quantum circuit.
         pipeline (list[single_tape_transform, qfunc_transform]): A list of
             tape and/or quantum function transforms to apply.
         basis_set (list[str]): A list of basis gates. When expanding the tape,
@@ -62,11 +62,7 @@ def compile(
             for tape expansion into the basis gates.
 
     Returns:
-        pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
-        it returns a QNode with the transform added to its transform program.
-        If a tape is passed, returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
 
     **Example**
 
