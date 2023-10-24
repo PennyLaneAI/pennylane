@@ -99,7 +99,7 @@ class TestDecimals:
     def test_decimals_multiparameters(self):
         """Test decimals also displays parameters when the operation has multiple parameters."""
 
-        @qml.qnode(qml.device("default.qubit", wires=(0)))
+        @qml.qnode(qml.device("default.qubit", wires=[0]))
         def circ(x):
             qml.Rot(*x, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -279,6 +279,25 @@ class TestLayering:
             "2: ────╰IsingXX(1.23)────┤     "
         )
         assert draw(circ)() == expected
+
+
+@pytest.mark.parametrize("device_name", ["default.qubit"])
+def test_mid_circuit_measurement_device_api(device_name, mocker):
+    """Test that a circuit containing mid-circuit measurements is transformed by the drawer
+    to use deferred measurements if the device uses the new device API."""
+    dev = qml.device(device_name)
+
+    @qml.qnode(dev)
+    def circ():
+        qml.PauliX(0)
+        qml.measure(0)
+        return qml.probs(wires=0)
+
+    draw_qnode = qml.draw(circ)
+    spy = mocker.spy(qml.defer_measurements, "_transform")
+
+    _ = draw_qnode()
+    spy.assert_called_once()
 
 
 @pytest.mark.parametrize(
