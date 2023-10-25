@@ -53,6 +53,7 @@ available hybrid compilers.
 
     ~compiler.available_compilers
     ~compiler.available
+    ~compiler.active_compiler
     ~compiler.active
 
 Compiler
@@ -215,6 +216,6 @@ if no function is provided:
 
 """
 
-from .compiler import available_compilers, available, active
+from .compiler import available_compilers, available, active_compiler, active
 
 from .qjit_api import qjit

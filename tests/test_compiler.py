@@ -46,6 +46,36 @@ class TestCatalyst:
         assert qml.compiler.available("catalyst")
         assert qml.compiler.available_compilers() == ["catalyst"]
 
+    def test_active_compiler(self):
+        """Test `qml.compiler.active_compiler` inside a simple circuit"""
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(phi, theta):
+            if qml.compiler.active_compiler() == "catalyst":
+                qml.RX(phi, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PhaseShift(theta, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        assert jnp.allclose(circuit(jnp.pi, jnp.pi / 2), 1.0)
+        assert jnp.allclose(qml.qjit(circuit)(jnp.pi, jnp.pi / 2), -1.0)
+
+    def test_active(self):
+        """Test `qml.compiler.active` inside a simple circuit"""
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(phi, theta):
+            if qml.compiler.active():
+                qml.RX(phi, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PhaseShift(theta, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        assert jnp.allclose(circuit(jnp.pi, jnp.pi / 2), 1.0)
+        assert jnp.allclose(qml.qjit(circuit)(jnp.pi, jnp.pi / 2), -1.0)
+
     def test_qjit_circuit(self):
         """Test JIT compilation of a circuit with 2-qubit"""
         dev = qml.device("lightning.qubit", wires=2)
