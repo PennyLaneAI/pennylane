@@ -34,7 +34,7 @@ jobs:
           github.event_name == 'pull_request'
           && !contains(github.event.pull_request.labels.*.name, 'ci:run-full-test-suite')
           || false
-         }}
+        }}
 
       skip_ci_test_jobs: torch-tests, autograd-tests, tf-tests, core-tests, all-interfaces-tests, external-libraries-tests, qcut-tests, qchem-tests, gradients-tests, data-tests
 
