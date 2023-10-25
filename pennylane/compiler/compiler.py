@@ -13,7 +13,7 @@
 # limitations under the License.
 """Compiler developer functions"""
 
-from typing import List
+from typing import List, Optional
 from importlib import reload
 from collections import defaultdict
 import dataclasses
@@ -125,7 +125,7 @@ def available(compiler="catalyst") -> bool:
     return compiler in AvailableCompilers.names_entrypoints
 
 
-def active_compiler() -> str:
+def active_compiler() -> Optional[str]:
     """Check which compiler is activated inside a :func:`~.qjit` evaluation context.
 
     This helper function may be used during implementation
@@ -133,7 +133,7 @@ def active_compiler() -> str:
     just-in-time compiled, versus those that are not.
 
     Return:
-        str or None: Name of the active compiler inside a :func:`~.qjit`
+        Optional[str]: Name of the active compiler inside a :func:`~.qjit`
             evaluation context. If there is no active compiler, ``None``
             will be returned.
 
