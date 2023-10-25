@@ -279,8 +279,6 @@
   1: ──H───RY─┤
   2: ──RZ─────┤
   ```
-  
-  Stay tuned for more integration of Catalyst into PennyLane!
 
 <h3>Improvements 🛠</h3>
 
