@@ -33,9 +33,9 @@ class grad:
     Inside a :func:`~.qjit` decorated program, this will patch to :func:`catalyst.grad` and
     returns a callable object utilized by the supported compilers in :doc:`Catalyst <catalyst:index>`.
 
-    By default in interpreter mode, gradients are computed for arguments which contain the property
-    ``requires_grad=True``. Alternatively, the ``argnum`` keyword argument can
-    be specified to compute gradients for function arguments without this property,
+    By default, in interpreted mode, gradients are computed for arguments which contain
+    the property ``requires_grad=True``. Alternatively, the ``argnum`` keyword argument
+    can be specified to compute gradients for function arguments without this property,
     such as scalars, lists, tuples, dicts, or vanilla NumPy arrays. Setting
     ``argnum`` to the index of an argument with ``requires_grad=False`` will raise
     a ``NonDifferentiableError``.
@@ -99,7 +99,7 @@ class grad:
 
         if method or step_size:
             raise ValueError(
-                "invalid values for 'method' and 'step_size' arguments in interpreter mode"
+                "invalid values for 'method' and 'step_size' arguments in interpreted mode"
             )
 
         return super().__new__(cls)
@@ -196,7 +196,11 @@ def jacobian(func, argnum=None, method=None, step_size=None):
     """A :func:`~.qjit` compatible Jacobian transformation that returns the Jacobian
     as a callable function of vector-valued (functions of) QNodes.
 
-    By default in interpreter mode, this is a wrapper around the :mod:`autograd.jacobian` function.
+    Inside a :func:`~.qjit` decorated program, this will patch to :func:`catalyst.jacobian` and
+    returns a callable object utilized by the supported compilers in
+    :doc:`Catalyst <catalyst:index>`.
+
+    By default, in interpreted mode, this is a wrapper around the :mod:`autograd.jacobian` function.
 
     Args:
         func (function): A vector-valued Python function or QNode that contains
@@ -208,6 +212,20 @@ def jacobian(func, argnum=None, method=None, step_size=None):
             with respect to. If a sequence is given, the Jacobian corresponding
             to all marked inputs and all output elements is returned.
 
+        method (str): The method **only** used for differentiation within :func:`~.qjit`.
+                      The value of this method should be ``None`` when is *not* called inside
+                      a :func:`~.qjit` decorated method. (default value is ``None``)
+                      In just-in-time (JIT) mode, this can be any of ``["auto", "fd"]``, where:
+
+                      - ``"auto"`` represents deferring the quantum differentiation to the method
+                        specified by the QNode, while the classical computation is differentiated
+                        using traditional auto-diff. Catalyst supports ``"parameter-shift"`` and
+                        ``"adjoint"`` on internal QNodes. Notably, QNodes with
+                        ``diff_method="finite-diff"`` is not supported with ``"auto"``.
+
+                      - ``"fd"`` represents first-order finite-differences for the entire hybrid
+                        function.
+
         step_size (float): the step-size value for the finite-difference (``"fd"``) method within
                       :func:`~.qjit`. The value of this method should be ``None`` when is *not*
                       called inside a :func:`~.qjit` decorated method. (default value is ``None``)
@@ -218,7 +236,7 @@ def jacobian(func, argnum=None, method=None, step_size=None):
 
     .. note::
 
-        In the interpreted mode, due to a limitation in Autograd, this function can only differentiate
+        In interpreted mode, due to a limitation in Autograd, this function can only differentiate
         built-in scalar or NumPy array arguments.
 
     .. note::
@@ -373,7 +391,7 @@ def jacobian(func, argnum=None, method=None, step_size=None):
     array([[-1.32116540e-07,  1.33781874e-07],
            [-4.20735506e-01,  4.20735506e-01]])
 
-    You can further compute the Jacobian transformation using other supported ``method``s
+    You can further compute the Jacobian transformation using other supported methods
     by :func:`catalyst.jacobian`.
 
     .. code-block::
@@ -402,7 +420,7 @@ def jacobian(func, argnum=None, method=None, step_size=None):
 
     if method or step_size:
         raise ValueError(
-            "invalid values for 'method' and 'step_size' arguments in interpreter mode"
+            "invalid values for 'method' and 'step_size' arguments in interpreted mode"
         )
 
     def _get_argnum(args):
