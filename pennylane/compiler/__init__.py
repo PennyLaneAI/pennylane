@@ -19,7 +19,7 @@ Through the use of the :func:`~.qjit` decorator, entire workflows
 can be just-in-time (JIT) compiled --- including both quantum and
 classical processing --- down to a machine binary on first
 function execution. Subsequent calls to the compiled function will execute
-previously compiled binary, resulting in significant
+the previously compiled binary, resulting in significant
 performance improvements.
 
 Currently, PennyLane supports the
@@ -27,12 +27,12 @@ Currently, PennyLane supports the
 with the :func:`~.qjit` decorator. A significant benefit of Catalyst
 is the ability to preserve complex control flow around quantum
 operations — such as if statements and for loops, and including measurement
-feedforward — during compilation, while continuing to support end-to-end
+feedback — during compilation, while continuing to support end-to-end
 autodifferentiation.
 
 .. note::
 
-    Catalyst currently only support the JAX interface of PennyLane.
+    Catalyst currently only supports the JAX interface of PennyLane.
 
 Overview
 --------
@@ -180,14 +180,14 @@ expose the ``entry_points`` metadata under the designated group name
 
 - ``ops``: Path to the compiler operations module. This operations module
   may contain compiler specific versions of PennyLane operations,
-  for example such as :func:`~.cond`, :func:`~.measure`, and :func:`~.adjoint`.
+  for example :func:`~.cond`, :func:`~.measure`, and :func:`~.adjoint`.
   Within a JIT context, PennyLane operations may dispatch to these functions.
 
-- ``qjit``: Path to the JIT compiler decorator provided by the compiler.
+- ``qjit``: Path to the JIT decorator provided by the compiler.
   This decorator should have the signature ``qjit(fn, *args, **kwargs)``,
   where ``fn`` is the function to be compiled.
 
-In order to support the following two syntaxes,
+In order to support applying the ``qjit`` decorator with and without arguments,
 
 .. code-block:: python
 
