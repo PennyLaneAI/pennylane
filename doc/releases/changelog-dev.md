@@ -217,6 +217,9 @@
   of the computed qubit operator, if imaginary components are smaller than a threshold. 
   [(#4639)](https://github.com/PennyLaneAI/pennylane/pull/4639)
 
+* Added `__iadd__` method to PauliSentence, which enables inplace-addition using `+=`, we no longer need to perform a copy, leading to performance improvements.
+[(#4662)](https://github.com/PennyLaneAI/pennylane/pull/4662) 
+
 
 <h3>Breaking changes 💔</h3>
 
@@ -411,3 +414,4 @@ Daniel F. Nino,
 Mudit Pandey,
 Matthew Silverman,
 Jay Soni,
+Anurav Modak.
