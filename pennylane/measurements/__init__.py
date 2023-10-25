@@ -118,7 +118,7 @@ ability to collect statistics on single measurement values.
 QNodes can be executed as usual when collecting mid-circuit measurement statistics:
 
 >>> circ(1.0, 2.0, shots=5)
-(array(0.6), array([1, 1, 1, 0, 1]))
+(0.6, array([1, 1, 1, 0, 1]))
 
 Creating custom measurements
 ----------------------------
@@ -138,10 +138,10 @@ obtained of a given state:
             wires = list(range(len(state)))
             super().__init__(wires=wires)
 
-        def process_samples(self, samples, wire_order, shot_range, bin_size):
+        def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
             counts_mp = qml.counts(wires=self._wires)
             counts = counts_mp.process_samples(samples, wire_order, shot_range, bin_size)
-            return counts.get(self.state, 0)
+            return float(counts.get(self.state, 0))
 
         def __copy__(self):
             return CountState(state=self.state)
@@ -181,7 +181,7 @@ When :math:`\theta = 1.23`, the probability of obtaining the state
 we should obtain the excited state 3333 times approximately.
 
 >>> circuit(1.23)
-tensor(3303., requires_grad=True)
+array(3303.)
 
 Given that the measurement process returns a real scalar value, we can differentiate it
 using the analytic method.

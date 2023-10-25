@@ -5595,6 +5595,28 @@ class TestCutCircuitWithHamiltonians:
             # each frag should have the device size constraint satisfied.
             assert all(len(set(e[2] for e in f.edges.data("wire"))) <= device_size for f in frags)
 
+    def test_hamiltonian_with_tape(self):
+        """Test that an expand function that generates multiple tapes is applied before the transform and the transform
+        returns correct results."""
+        ops = [qml.Identity(0), qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)]
+        coeffs = [0.4567, 0.25, 0.25, 0.5]
+
+        H = qml.Hamiltonian(observables=ops, coeffs=coeffs)
+
+        dev = qml.device("lightning.qubit", wires=4)
+
+        circuit = [
+            qml.IsingXX(0.1234, wires=[0, 3]),
+            qml.WireCut(0),
+        ]
+
+        tape = qml.tape.QuantumScript(circuit, measurements=[qml.expval(H)])
+        cut_tapes, proc_fn = qml.cut_circuit(tape, device_wires=range(3))
+
+        assert np.allclose(
+            qml.execute([tape], dev, None)[0], proc_fn(qml.execute(cut_tapes, dev, None))
+        )
+
     def test_raise_with_hamiltonian(self):
         """Test that exception is correctly raise when caclulating expectation values of multiple Hamiltonians"""
 

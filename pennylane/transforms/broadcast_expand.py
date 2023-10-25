@@ -116,7 +116,7 @@ def broadcast_expand(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
     >>> tapes
     [<QuantumTape: wires=[0], params=1>, <QuantumTape: wires=[0], params=1>, <QuantumTape: wires=[0], params=1>]
     >>> fn(qml.execute(tapes, qml.device("default.qubit", wires=1), None))
-    array([0.98006658, 0.82533561, 0.54030231])
+    tensor([0.98006658, 0.82533561, 0.54030231], requires_grad=True)
     """
     # pylint: disable=protected-access
     if tape.batch_size is None:

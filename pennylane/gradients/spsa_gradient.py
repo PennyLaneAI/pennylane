@@ -241,7 +241,7 @@ def spsa_grad(
         device evaluation. Instead, the processed tapes, and post-processing
         function, which together define the gradient are directly returned:
 
-        >>> ops = [qml.RX(p, wires=0) for p in params]
+        >>> ops = [qml.RX(params[0], 0), qml.RY(params[1], 0), qml.RX(params[2], 0)]
         >>> measurements = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))]
         >>> tape = qml.tape.QuantumTape(ops, measurements)
         >>> gradient_tapes, fn = qml.gradients.spsa_grad(tape)
