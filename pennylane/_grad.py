@@ -208,20 +208,6 @@ def jacobian(func, argnum=None, method=None, step_size=None):
             with respect to. If a sequence is given, the Jacobian corresponding
             to all marked inputs and all output elements is returned.
 
-        method (str): The method **only** used for differentiation within :func:`~.qjit`.
-                      The value of this method should be ``None`` when is *not* called inside
-                      a :func:`~.qjit` decorated method. (default value is ``None``)
-                      In just-in-time (JIT) mode, this can be any of ``["auto", "fd"]``, where:
-
-                      - ``"auto"`` represents deferring the quantum differentiation to the method
-                        specified by the QNode, while the classical computation is differentiated
-                        using traditional auto-diff. Catalyst supports ``"parameter-shift"`` and
-                        ``"adjoint"`` on internal QNodes. Notably, QNodes with
-                        ``diff_method="finite-diff"`` is not supported with ``"auto"``.
-
-                      - ``"fd"`` represents first-order finite-differences for the entire hybrid
-                        function.
-
         step_size (float): the step-size value for the finite-difference (``"fd"``) method within
                       :func:`~.qjit`. The value of this method should be ``None`` when is *not*
                       called inside a :func:`~.qjit` decorated method. (default value is ``None``)
