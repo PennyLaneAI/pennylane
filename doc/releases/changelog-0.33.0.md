@@ -6,31 +6,36 @@
 
 <h4>Postselection and statistics in mid-circuit measurements 📌</h4>
 
-* Requesting postselection after making mid-circuit measurements is now possible by specifying the 
-  `postselect` keyword argument in `qml.measure` as either `0` or `1`, corresponding to the basis states.
+* It is now possible to request postselection on a mid-circuit measurement.
   [(#4604)](https://github.com/PennyLaneAI/pennylane/pull/4604)
+
+  This can be achieved by specifying the `postselect` keyword argument in `qml.measure` as either
+  `0` or `1`, corresponding to the basis states.
 
   ```python
   import pennylane as qml
 
-  dev = qml.device("default.qubit", wires=3)
+  dev = qml.device("default.qubit")
 
-  @qml.qnode(dev)
-  def circuit(phi):
-      qml.RX(phi, wires=0)
-      m = qml.measure(0, postselect=1)
-      qml.cond(m, qml.PauliX)(wires=1)
-      return qml.probs(wires=1)
+  @qml.qnode(dev, interface=None)
+  def circuit():
+      qml.Hadamard(wires=0)
+      qml.CNOT(wires=[0, 1])
+      qml.measure(0, postselect=1)
+      return qml.expval(qml.PauliZ(1)), qml.sample(wires=1)
   ```
   
+  This circuit prepares the :math:`| \Phi^{+} \rangle` Bell state and postselects on measuring
+  :math:`|1\rangle` in the first wire. The output of the second wire is then also :math:`|1\rangle`
+  at all times:
+
   ```pycon
-  >>> circuit(np.pi)
-  tensor([0., 1.], requires_grad=True)
+  >>> circuit(shots=10)
+  (-1.0, array([1, 1, 1, 1, 1, 1]))
   ```
 
-  Here, we measure a probability of one on wire 1 as we postselect on the :math:`|1\rangle` state on
-  wire 0, thus resulting in the circuit being projected onto the state corresponding to the
-  measurement outcome :math:`|1\rangle` on wire 0.
+  Note that the number of shots is less than the requested amount because we have thrown away the
+  samples where :math:`|0\rangle` was measured in wire ``0``.
 
 * Measurement statistics can now be collected for mid-circuit measurements.
   [(#4544)](https://github.com/PennyLaneAI/pennylane/pull/4544)
