@@ -312,6 +312,13 @@
   [(#4546)](https://github.com/PennyLaneAI/pennylane/pull/4546)
   [(#4556)](https://github.com/PennyLaneAI/pennylane/pull/4556)
 
+* `qml.qchem.import_state` has been extended to import more quantum chemistry wavefunctions, 
+  from MPS, DMRG and SHCI classical calculations performed with the Block2 and Dice libraries.
+  [#4523](https://github.com/PennyLaneAI/pennylane/pull/4523)
+  [#4524](https://github.com/PennyLaneAI/pennylane/pull/4524)
+  [#4626](https://github.com/PennyLaneAI/pennylane/pull/4626)
+  [#4634](https://github.com/PennyLaneAI/pennylane/pull/4634)
+
 * Tensor-network template `qml.MPS` now supports changing `offset` between subsequent blocks for more flexibility.
   [(#4531)](https://github.com/PennyLaneAI/pennylane/pull/4531)
 
@@ -401,13 +408,6 @@
 
 * `pennylane.defer_measurements` will now exit early if the input does not contain mid circuit measurements.
   [(#4659)](https://github.com/PennyLaneAI/pennylane/pull/4659)
-
-* `qml.qchem.import_state` has been extended to import more quantum chemistry wavefunctions, 
-  from MPS, DMRG and SHCI classical calculations performed with the Block2 and Dice libraries.
-  [#4523](https://github.com/PennyLaneAI/pennylane/pull/4523)
-  [#4524](https://github.com/PennyLaneAI/pennylane/pull/4524)
-  [#4626](https://github.com/PennyLaneAI/pennylane/pull/4626)
-  [#4634](https://github.com/PennyLaneAI/pennylane/pull/4634)
 
   Check out our [how-to guide](https://pennylane.ai/qml/demos/tutorial_initial_state_preparation)
   to learn more about how PennyLane integrates with your favourite quantum chemistry libraries.
