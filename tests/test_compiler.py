@@ -341,6 +341,6 @@ class TestCatalyst:
 
         with pytest.raises(
             ValueError,
-            match="invalid values for 'method' and 'step_size' arguments in interpreter mode",
+            match="Invalid values for 'method=fd' and 'step_size=0.3' in interpreted mode",
         ):
             workflow(np.array([2.0, 1.0]))

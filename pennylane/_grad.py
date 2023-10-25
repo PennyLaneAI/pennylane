@@ -80,7 +80,7 @@ class grad:
                       - ``"fd"`` represents first-order finite-differences for the entire hybrid
                         function.
 
-        step_size (float): the step-size value for the finite-difference (``"fd"``) method within
+        step_size (float): The step-size value for the finite-difference (``"fd"``) method within
                       :func:`~.qjit`. The value of this method should be ``None`` when is *not*
                       called inside a :func:`~.qjit` decorated method. (default value is ``None``)
 
@@ -93,14 +93,14 @@ class grad:
     def __new__(cls, func, argnum=None, method=None, step_size=None):
         """Patch to the proper grad function"""
 
-        if compiler.active("catalyst"):
-            catalyst_compiler = compiler.AvailableCompilers.names_entrypoints["catalyst"]
-            ops_loader = catalyst_compiler["ops"].load()
+        if active_jit := compiler.active_compiler():
+            available_eps = compiler.AvailableCompilers.names_entrypoints
+            ops_loader = available_eps[active_jit]["ops"].load()
             return ops_loader.grad(func, method=method, h=step_size, argnum=argnum)
 
         if method or step_size:
             raise ValueError(
-                "invalid values for 'method' and 'step_size' arguments in interpreted mode"
+                f"Invalid values for 'method={method}' and 'step_size={step_size}' in interpreted mode"
             )
 
         return super().__new__(cls)
@@ -204,6 +204,15 @@ def jacobian(func, argnum=None, method=None, step_size=None):
     By default, in interpreted mode, this is a wrapper around the :mod:`autograd.jacobian`
     function.
 
+    .. note::
+
+        When used with :func:`~.qjit`, this function only supports the Catalyst compiler.
+        Please see :func:`catalyst.jacobian` for more details.
+
+        Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
+        as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
+        page for an overview of the differences between Catalyst and PennyLane.
+
     Args:
         func (function): A vector-valued Python function or QNode that contains
             a combination of quantum and classical nodes. The output of the computation
@@ -228,7 +237,7 @@ def jacobian(func, argnum=None, method=None, step_size=None):
                       - ``"fd"`` represents first-order finite-differences for the entire hybrid
                         function.
 
-        step_size (float): the step-size value for the finite-difference (``"fd"``) method within
+        step_size (float): The step-size value for the finite-difference (``"fd"``) method within
                       :func:`~.qjit`. The value of this method should be ``None`` when is *not*
                       called inside a :func:`~.qjit` decorated method. (default value is ``None``)
 
@@ -395,8 +404,8 @@ def jacobian(func, argnum=None, method=None, step_size=None):
     array([[-1.32116540e-07,  1.33781874e-07],
            [-4.20735506e-01,  4.20735506e-01]])
 
-    You can further compute the Jacobian transformation using other supported methods
-    by :func:`catalyst.jacobian`.
+    You can further compute the Jacobian transformation using other supported differentiation
+    methods by :func:`catalyst.jacobian`.
 
     .. code-block::
 
@@ -417,14 +426,14 @@ def jacobian(func, argnum=None, method=None, step_size=None):
     """
     # pylint: disable=no-value-for-parameter
 
-    if compiler.active("catalyst"):
-        catalyst_compiler = compiler.AvailableCompilers.names_entrypoints["catalyst"]
-        ops_loader = catalyst_compiler["ops"].load()
+    if active_jit := compiler.active_compiler():
+        available_eps = compiler.AvailableCompilers.names_entrypoints
+        ops_loader = available_eps[active_jit]["ops"].load()
         return ops_loader.jacobian(func, method=method, h=step_size, argnum=argnum)
 
     if method or step_size:
         raise ValueError(
-            "invalid values for 'method' and 'step_size' arguments in interpreted mode"
+            f"Invalid values for 'method={method}' and 'step_size={step_size}' in interpreted mode"
         )
 
     def _get_argnum(args):
