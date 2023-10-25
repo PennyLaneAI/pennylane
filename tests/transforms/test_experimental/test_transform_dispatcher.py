@@ -186,7 +186,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
 
         with dev.tracker:
             qnode_circuit(0.1)
-        assert dev.tracker.totals['executions'] == 1
+        assert dev.tracker.totals["executions"] == 1
 
         assert isinstance(qnode_transformed, qml.QNode)
         assert isinstance(qnode_transformed.transform_program, qml.transforms.core.TransformProgram)
