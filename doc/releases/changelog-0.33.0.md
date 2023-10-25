@@ -155,7 +155,7 @@
   plt.show()
   ```
 
-  <img src="https://docs.pennylane.ai/en/stable/_images/cosine_window.png" width=50%/>
+  <img src="https://docs.pennylane.ai/en/stable/_images/cosine_window_notes.png" width=50%/>
 
 * Controlled gate sequences raised to decreasing powers, a sub-block in quantum phase estimation, can now be created with the new 
   `CtrlSequence` operator.
