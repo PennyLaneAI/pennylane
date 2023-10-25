@@ -13,13 +13,13 @@
 # limitations under the License.
 """Contains H5Py lazy module and convenience functions for HDF5."""
 
+import ssl
 from collections.abc import MutableMapping
 from pathlib import Path
 from typing import Literal, TypeVar, Union
 from uuid import uuid4
-import ssl
-import certifi
 
+import certifi
 from numpy.typing import ArrayLike
 
 from ._lazy_modules import fsspec, h5py
