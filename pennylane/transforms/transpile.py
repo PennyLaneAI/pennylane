@@ -5,7 +5,7 @@ from typing import List, Union, Sequence, Callable
 
 import networkx as nx
 
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 from pennylane import Hamiltonian
 from pennylane.operation import Tensor
 from pennylane.ops import __all__ as all_ops
@@ -32,7 +32,7 @@ def transpile(
             `networkx.Graph` specifying the couplings between different qubits.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     **Example**
 

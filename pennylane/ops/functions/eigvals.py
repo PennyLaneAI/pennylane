@@ -23,7 +23,7 @@ import scipy
 
 import pennylane as qml
 from pennylane.transforms.op_transforms import OperationTransformError
-from pennylane.transforms.core import transform
+from pennylane import transform
 from pennylane.typing import TensorLike
 
 
@@ -49,7 +49,7 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
             from each end of the spectrum).
 
     Returns:
-        TensorLike or qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation
+        TensorLike or qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation
 
     **Example**
 

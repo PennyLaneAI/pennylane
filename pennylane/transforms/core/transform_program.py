@@ -112,7 +112,7 @@ class TransformProgram:
 
         This class is developer-facing and should not be used directly.
 
-    .. seealso:: :func:`~.pennylane.transforms.core.transform`
+    .. seealso:: :func:`~.pennylane.transform`
 
     """
 

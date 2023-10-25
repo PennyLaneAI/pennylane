@@ -23,7 +23,7 @@ from pennylane.operation import Operator
 from pennylane.qnode import QNode
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumTape
-from pennylane.transforms.core import transform
+from pennylane import transform
 
 
 def map_wires(
@@ -43,7 +43,7 @@ def map_wires(
             replaced by its mapped version. Defaults to False.
 
     Returns:
-        operator (.Operator) or qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        operator (.Operator) or qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     .. note::
 

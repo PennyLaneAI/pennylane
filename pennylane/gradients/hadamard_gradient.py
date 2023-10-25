@@ -21,7 +21,7 @@ from functools import partial
 import pennylane as qml
 import pennylane.numpy as np
 from pennylane.transforms.metric_tensor import _get_aux_wire
-from pennylane.transforms.core import transform
+from pennylane import transform
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 from pennylane.transforms.tape_expand import expand_invalid_trainable_hadamard_gradient
 
@@ -80,7 +80,7 @@ def hadamard_grad(
             is ``None``.
 
     Returns:
-        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     For a variational evolution :math:`U(\mathbf{p}) \vert 0\rangle` with
     :math:`N` parameters :math:`\mathbf{p}`,

@@ -18,7 +18,7 @@ from typing import Sequence, Callable
 from pennylane.ops.op_math import Adjoint
 from pennylane.wires import Wires
 from pennylane.tape import QuantumTape
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 
 from pennylane.ops.qubit.attributes import (
     self_inverses,
@@ -72,7 +72,7 @@ def cancel_inverses(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
         tape (pennylane.QNode or pennylane.tape.QuantumTape or Callable): A quantum circuit.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
 
     **Example**

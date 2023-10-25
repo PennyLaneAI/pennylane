@@ -62,7 +62,7 @@ def compile(
             for tape expansion into the basis gates.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     **Example**
 

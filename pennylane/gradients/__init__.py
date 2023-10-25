@@ -292,20 +292,10 @@ gradient transform is applied to the flat list of results returned
 from executing the gradient tapes.
 
 
-Custom gradients
-^^^^^^^^^^^^^^^^
-
-.. autosummary::
-    :toctree: api
-
-    gradient_transform
-    hessian_transform
-
-
 Custom gradient transforms
 --------------------------
 
-Using the :class:`pennylane.transforms.core.transform` decorator, custom gradient transforms
+Using the :class:`pennylane.transform` decorator, custom gradient transforms
 can be created:
 
 .. code-block:: python
@@ -319,7 +309,7 @@ Once created, a custom gradient transform can be applied directly
 to QNodes, or registered as the quantum gradient transform to use
 during autodifferentiation.
 
-For more details, please see the :class:`pennylane.transforms.core.transform`
+For more details, please see the :class:`pennylane.transform`
 documentation.
 """
 import pennylane as qml

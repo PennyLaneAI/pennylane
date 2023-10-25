@@ -20,7 +20,7 @@ from pennylane import apply, adjoint
 from pennylane.math import mean, shape, round
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumTape, QuantumScript
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 
 import pennylane as qml
 
@@ -41,7 +41,7 @@ def fold_global(tape: QuantumTape, scale_factor) -> (Sequence[QuantumTape], Call
         scale_factor (float): Scale factor :math:`\lambda` determining :math:`n` and :math:`s`
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     .. seealso:: :func:`~.pennylane.transforms.mitigate_with_zne`; This function is analogous to the implementation in ``mitiq``  `mitiq.zne.scaling.fold_global <https://mitiq.readthedocs.io/en/v.0.1a2/apidoc.html?highlight=global_folding#mitiq.zne.scaling.fold_global>`_.
 
@@ -358,7 +358,7 @@ def mitigate_with_zne(
             folding function is stochastic.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     **Example:**
 

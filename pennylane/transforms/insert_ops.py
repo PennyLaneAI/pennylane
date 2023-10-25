@@ -20,7 +20,7 @@ from typing import Type, Union, Callable, Sequence
 import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.tape import QuantumTape
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 from pennylane.ops.op_math import Adjoint
 
 # pylint: disable=too-many-branches
@@ -85,7 +85,7 @@ def insert(
     Returns:
         qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function] or device (pennylane.devices.Device):
 
-        The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        The transformed circuit as described in :class:`pennylane.transform` documentation.
 
 
     Raises:

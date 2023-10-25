@@ -22,7 +22,7 @@ import pennylane as qml
 import pennylane.numpy as np
 from pennylane.measurements import ClassicalShadowMP
 from pennylane.tape import QuantumScript, QuantumTape
-from pennylane.transforms.core import transform
+from pennylane import transform
 
 
 @transform
@@ -67,7 +67,7 @@ def shadow_expval(tape: QuantumTape, H, k=1) -> (Sequence[QuantumTape], Callable
             the median of means. ``k=1`` corresponds to simply taking the mean over all measurements.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     **Example**
 
@@ -184,7 +184,7 @@ def shadow_state(tape: QuantumTape, wires, diffable=False) -> (Sequence[QuantumT
             cost.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     **Example**
 

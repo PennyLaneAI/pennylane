@@ -25,7 +25,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.measurements import ExpectationMP, ProbabilityMP, StateMP, VarianceMP
-from pennylane.transforms.core import transform
+from pennylane import transform
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 
@@ -556,7 +556,7 @@ def param_shift_cv(
         force_order2 (bool): if True, use the order-2 method even if not necessary
 
     Returns:
-        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     This transform supports analytic gradients of Gaussian CV operations using
     the parameter-shift rule. This gradient method returns *exact* gradients,

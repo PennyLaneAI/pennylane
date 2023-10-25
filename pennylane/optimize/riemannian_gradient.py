@@ -19,7 +19,7 @@ import numpy as np
 from scipy.sparse.linalg import expm
 import pennylane as qml
 
-from pennylane.transforms.core import transform
+from pennylane import transform
 from pennylane.tape import QuantumTape
 from pennylane.queuing import QueuingManager
 
@@ -62,7 +62,7 @@ def append_time_evolution(
         n (int): number of Trotter steps.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
 
     """

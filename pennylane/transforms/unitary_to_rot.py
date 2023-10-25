@@ -18,7 +18,7 @@ from typing import Sequence, Callable
 
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumTape
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 
 import pennylane as qml
 from pennylane.transforms.decompositions import one_qubit_decomposition, two_qubit_decomposition
@@ -44,7 +44,7 @@ def unitary_to_rot(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
         tape (pennylane.QNode or pennylane.tape.QuantumTape or Callable): A quantum circuit.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     **Example**
 

@@ -30,7 +30,7 @@ from pennylane.measurements import (
 )
 from pennylane.typing import ResultBatch, Result
 from pennylane import DeviceError
-from pennylane.transforms.core import transform
+from pennylane import transform
 from pennylane.wires import WireError
 
 PostprocessingFn = Callable[[ResultBatch], Union[Result, ResultBatch]]
@@ -91,7 +91,7 @@ def no_sampling(
         name="device" (str): name to use in error message.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
 
     This transform can be added to forbid finite shots. For example, ``default.qubit`` uses it for
@@ -117,7 +117,7 @@ def validate_device_wires(
         name="device" (str): the name of the device to use in error messages.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     Raises:
         WireError: if the tape has a wire not present in the provided wires.
@@ -158,7 +158,7 @@ def validate_multiprocessing_workers(
         device (pennylane.devices.Device): The device to be checked.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     """
     if max_workers is not None:
@@ -246,7 +246,7 @@ def decompose(
 
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     Raises:
         DecompositionUndefinedError: if an operator is not accepted and does not define a decomposition
@@ -337,7 +337,7 @@ def validate_observables(
         name (str): the name of the device to use in error messages.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     Raises:
         DeviceError: if an observable is not supported
@@ -380,7 +380,7 @@ def validate_measurements(
         name (str): the name to use in error messages.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     Raises:
         DeviceError: if a measurement process is not supported.

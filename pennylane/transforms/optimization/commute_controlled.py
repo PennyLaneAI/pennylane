@@ -15,7 +15,7 @@
 from typing import Sequence, Callable
 
 from pennylane.tape import QuantumTape
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 from pennylane.wires import Wires
 
 from .optimization_utils import find_next_gate
@@ -164,7 +164,7 @@ def commute_controlled(tape: QuantumTape, direction="right") -> (Sequence[Quantu
             specified direction.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
 
     **Example**

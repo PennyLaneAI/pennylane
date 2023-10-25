@@ -16,7 +16,7 @@
 from typing import Sequence, Callable
 
 from pennylane.tape import QuantumTape
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 from pennylane.math import allclose, stack, cast_like, zeros, is_abstract
 from pennylane.queuing import QueuingManager
 
@@ -44,7 +44,7 @@ def merge_rotations(
             only the operations whose names match those in the list will undergo merging.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     **Example**
 

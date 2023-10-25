@@ -20,7 +20,7 @@ from functools import partial
 
 import pennylane as qml
 from pennylane.transforms.op_transforms import OperationTransformError
-from pennylane.transforms.core import transform
+from pennylane import transform
 from pennylane.typing import TensorLike
 
 
@@ -33,7 +33,7 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
             Defaults to the order in which the wires appear in the quantum function.
 
     Returns:
-        TensorLike or qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        TensorLike or qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     **Example**
 

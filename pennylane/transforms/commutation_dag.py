@@ -25,7 +25,7 @@ from networkx.drawing.nx_pydot import to_pydot
 import pennylane as qml
 from pennylane.tape import QuantumTape
 from pennylane.wires import Wires
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 
 
 @partial(transform, is_informative=True)
@@ -42,7 +42,7 @@ def commutation_dag(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
         tape (.pennylane.QNode or .QuantumTape or Callable): The quantum circuit.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     **Example**
 

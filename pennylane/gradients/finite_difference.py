@@ -26,7 +26,7 @@ from scipy.special import factorial
 
 import pennylane as qml
 from pennylane.measurements import ProbabilityMP
-from pennylane.transforms.core import transform
+from pennylane import transform
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 
@@ -237,7 +237,7 @@ def finite_diff(
             If ``False``, the finite-difference method will be applied to all parameters.
 
     Returns:
-        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     **Example**
 

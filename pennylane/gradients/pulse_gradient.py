@@ -22,7 +22,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.pulse import ParametrizedEvolution, HardwareHamiltonian
-from pennylane.transforms.core import transform
+from pennylane import transform
 
 from .parameter_shift import _make_zero_rep
 from .general_shift_rules import eigvals_to_frequencies, generate_shift_rule
@@ -348,7 +348,7 @@ def stoch_pulse_grad(
             tapes is created, increasing performance on simulators.
 
     Returns:
-        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     This transform realizes the stochastic parameter-shift rule for pulse sequences, as introduced
     in `Banchi and Crooks (2018) <https://quantum-journal.org/papers/q-2021-01-25-386/>`_ and

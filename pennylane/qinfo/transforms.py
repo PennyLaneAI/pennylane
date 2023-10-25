@@ -21,7 +21,7 @@ from pennylane.tape import QuantumTape
 from pennylane.devices import DefaultQubit, DefaultQubitLegacy, DefaultMixed
 from pennylane.measurements import StateMP, DensityMatrixMP
 from pennylane.transforms import adjoint_metric_tensor, metric_tensor
-from pennylane.transforms.core import transform
+from pennylane import transform
 
 
 @partial(transform, final_transform=True)
@@ -34,7 +34,7 @@ def reduced_dm(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Ca
         wires (Sequence(int)): List of wires in the considered subsystem.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     **Example**
 
@@ -120,7 +120,7 @@ def purity(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Callab
         wires (Sequence(int)): List of wires in the considered subsystem.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     **Example**
 
@@ -210,7 +210,7 @@ def vn_entropy(
         base (float): Base for the logarithm, default is None the natural logarithm is used in this case.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     **Example**
 
@@ -309,7 +309,7 @@ def mutual_info(
         base (float): Base for the logarithm. If None, the natural logarithm is used.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     **Example**
 
@@ -659,7 +659,7 @@ def quantum_fisher(
         *args: In case finite shots are used, further arguments according to :func:`~.pennylane.metric_tensor` may be passed.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     .. note::
 

@@ -14,7 +14,7 @@
 """Transform for merging AmplitudeEmbedding gates in a quantum circuit."""
 from typing import Sequence, Callable
 
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 from pennylane.tape import QuantumTape
 from pennylane import AmplitudeEmbedding
 from pennylane._device import DeviceError
@@ -29,7 +29,7 @@ def merge_amplitude_embedding(tape: QuantumTape) -> (Sequence[QuantumTape], Call
         tape (pennylane.QNode or pennylane.tape.QuantumTape or Callable): A quantum circuit.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
 
     **Example**

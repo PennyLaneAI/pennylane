@@ -16,7 +16,7 @@ of a quantum circuit, that is the frequencies without considering
 preprocessing in the QNode."""
 from typing import Sequence, Callable
 from functools import partial
-from pennylane.transforms.core import transform
+from pennylane import transform
 from pennylane.tape import QuantumTape
 from .utils import get_spectrum, join_spectra
 
@@ -55,7 +55,7 @@ def circuit_spectrum(
         decimals (int): number of decimals to which to round frequencies.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
 
     **Details**

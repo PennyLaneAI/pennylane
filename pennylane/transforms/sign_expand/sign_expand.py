@@ -19,7 +19,7 @@ from typing import Sequence, Callable
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 
 
 def controlled_pauli_evolution(theta, wires, pauli_word, controls):
@@ -219,7 +219,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
           Hadamard test and the quantum signal processing part on, have to be wires on the device
 
     Returns:
-        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     **Example**
 

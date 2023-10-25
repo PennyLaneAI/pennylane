@@ -22,7 +22,7 @@ from functools import partial
 import numpy as np
 
 import pennylane as qml
-from pennylane.transforms.core import transform
+from pennylane import transform
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 
@@ -166,7 +166,7 @@ def spsa_grad(
             ``spsa_grad`` in each call.
 
     Returns:
-        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     **Example**
 

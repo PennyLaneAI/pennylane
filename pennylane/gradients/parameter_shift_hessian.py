@@ -432,7 +432,7 @@ def param_shift_hessian(
             instead of evaluating the input tape, reducing the number of device invocations.
 
     Returns:
-        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
 
         Note: By default a QNode with the keyword ``hybrid=True`` computes derivates with respect to

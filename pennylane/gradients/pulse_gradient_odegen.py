@@ -24,7 +24,7 @@ import pennylane as qml
 
 from pennylane.pulse import ParametrizedEvolution
 from pennylane.ops.qubit.special_unitary import pauli_basis_strings, _pauli_decompose
-from pennylane.transforms.core import transform
+from pennylane import transform
 
 from .parameter_shift import _make_zero_rep
 from .pulse_gradient import _assert_has_jax, raise_pulse_diff_on_qnode
@@ -437,7 +437,7 @@ def pulse_odegen(
             ``qml.math.isclose(x, 0., atol=atol, rtol=0) == True`` are neglected.
 
     Returns:
-        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     .. note::
 

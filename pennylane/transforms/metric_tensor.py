@@ -24,7 +24,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.circuit_graph import LayerData
 from pennylane.queuing import WrappedObj
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 
 
 def _contract_metric_tensor_with_cjac(mt, cjac, tape):  # pylint: disable=unused-argument
@@ -159,7 +159,7 @@ def metric_tensor(  # pylint:disable=too-many-arguments
               The output shape is a single two-dimensional tensor.
 
     Returns:
-        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     The block-diagonal part of the metric tensor always is computed using the
     covariance-based approach. If no approximation is selected,

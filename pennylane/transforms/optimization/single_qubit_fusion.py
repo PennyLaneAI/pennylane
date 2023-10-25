@@ -16,7 +16,7 @@
 from typing import Sequence, Callable
 
 from pennylane.tape import QuantumTape
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 from pennylane.ops.qubit import Rot
 from pennylane.math import allclose, stack, is_abstract
 from pennylane.queuing import QueuingManager
@@ -45,7 +45,7 @@ def single_qubit_fusion(
             be fused will be fused.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     **Example**
 

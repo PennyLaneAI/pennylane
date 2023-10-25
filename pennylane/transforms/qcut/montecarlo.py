@@ -26,7 +26,7 @@ from pennylane import numpy as np
 from pennylane.measurements import SampleMP
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript, QuantumTape
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 from pennylane.wires import Wires
 
 from .cutstrategy import CutStrategy
@@ -111,7 +111,7 @@ def cut_circuit_mc(
             :func:`~.find_and_place_cuts` and :func:`~.kahypar_cut` for the available arguments.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     **Example**
 

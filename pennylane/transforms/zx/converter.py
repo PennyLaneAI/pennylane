@@ -21,7 +21,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms.op_transforms import OperationTransformError
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 from pennylane.wires import Wires
 
 

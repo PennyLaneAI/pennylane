@@ -21,7 +21,7 @@ import pennylane as qml
 from pennylane.measurements import ExpectationMP, MeasurementProcess
 from pennylane.ops import SProd, Sum
 from pennylane.tape import QuantumScript, QuantumTape
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 
 
 @transform
@@ -37,7 +37,7 @@ def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[Quant
             If grouping information can be found in the Hamiltonian, it will be used even if group=False.
 
     Returns:
-        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     **Example**
 

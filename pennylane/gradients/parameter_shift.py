@@ -23,7 +23,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.measurements import VarianceMP
-from pennylane.transforms.core import transform
+from pennylane import transform
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 
@@ -794,7 +794,7 @@ def param_shift(
             a single broadcasted tape per operation instead of one tape per shift angle.
 
     Returns:
-        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     For a variational evolution :math:`U(\mathbf{p}) \vert 0\rangle` with
     :math:`N` parameters :math:`\mathbf{p}`,

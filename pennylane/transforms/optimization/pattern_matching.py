@@ -22,7 +22,7 @@ from typing import Sequence, Callable
 import numpy as np
 
 import pennylane as qml
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 from pennylane import adjoint
 from pennylane.ops.qubit.attributes import symmetric_over_all_wires
 from pennylane.tape import QuantumTape, QuantumScript
@@ -43,7 +43,7 @@ def pattern_matching_optimization(
         custom_quantum_cost (dict): Optional, quantum cost that overrides the default cost dictionary.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     Raises:
         QuantumFunctionError: The pattern provided is not a valid QuantumTape or the pattern contains measurements or

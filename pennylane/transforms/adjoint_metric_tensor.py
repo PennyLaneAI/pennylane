@@ -23,7 +23,7 @@ from pennylane import numpy as np
 
 # pylint: disable=too-many-statements,unused-argument
 from pennylane.transforms.metric_tensor import _contract_metric_tensor_with_cjac
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 
 
 def _reshape_real_imag(state, dim):
@@ -85,7 +85,7 @@ def adjoint_metric_tensor(
     Returns:
         qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]:
 
-        The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation. Dimensions
+        The transformed circuit as described in :class:`pennylane.transform` documentation. Dimensions
         are ``(tape.num_params, tape.num_params)``.
 
     .. seealso:: :func:`~.metric_tensor` for hardware-compatible metric tensor computations.

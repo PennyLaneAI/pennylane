@@ -29,7 +29,7 @@ class TransformError(Exception):
 
 class TransformDispatcher:
     r"""This object is developer facing and should not be used directly to create transforms. Use
-    :func:`~.pennylane.transforms.core.transform` instead.
+    :func:`~.pennylane.transform` instead.
 
     Convert a transform that has the signature ``(tape -> Sequence(tape), fn)`` to a transform dispatcher
     that can act on :class:`pennylane.tape.QuantumTape`., quantum function, :class:`pennylane.QNode`,
@@ -39,7 +39,7 @@ class TransformDispatcher:
 
         This class is developer-facing and should not be used directly.
 
-    .. seealso:: :func:`~.pennylane.transforms.core.transform`
+    .. seealso:: :func:`~.pennylane.transform`
     """
 
     def __new__(cls, *args, **kwargs):  # pylint: disable=unused-argument
@@ -328,13 +328,13 @@ class TransformDispatcher:
 
 class TransformContainer:
     """Class to store a quantum transform with its args, kwargs and classical co-transforms.  Use
-    :func:`~.pennylane.transforms.core.transform`.
+    :func:`~.pennylane.transform`.
 
     .. warning::
 
         This class is developer-facing and should not be used directly.
 
-    .. seealso:: :func:`~.pennylane.transforms.core.transform`
+    .. seealso:: :func:`~.pennylane.transform`
     """
 
     def __init__(

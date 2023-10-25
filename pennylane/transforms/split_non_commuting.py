@@ -21,7 +21,7 @@ from functools import reduce
 import pennylane as qml
 from pennylane.measurements import ProbabilityMP, SampleMP
 
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 
 
 @transform
@@ -34,7 +34,7 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
             non-commuting observables to measure.
 
     Returns:
-        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     **Example**
 

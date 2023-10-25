@@ -18,7 +18,7 @@ from pennylane.measurements import MidMeasureMP, ProbabilityMP, SampleMP, Counts
 from pennylane.ops.op_math import ctrl
 
 from pennylane.tape import QuantumTape
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 
 from pennylane.wires import Wires
 from pennylane.queuing import QueuingManager
@@ -143,7 +143,7 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
         tape (pennylane.QNode or pennylane.tape.QuantumTape or Callable): a quantum circuit.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transforms.core.transform` documentation.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
 
     **Example**
 
