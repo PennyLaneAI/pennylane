@@ -140,8 +140,5 @@ def active(compiler="catalyst") -> bool:
     if not compilers:
         return False
 
-    try:
-        tracer_loader = compilers[compiler]["context"].load()
-        return tracer_loader.is_tracing()
-    except KeyError:
-        return False
+    tracer_loader = compilers[compiler]["context"].load()
+    return tracer_loader.is_tracing()
