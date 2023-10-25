@@ -6,7 +6,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* `default.qubit` no longer uses a dense matrix for `MultiControlledX` for more than seven wires.
+* `default.qubit` no longer uses a dense matrix for `MultiControlledX` for more than 12 wires.
   [(#4673)](https://github.com/PennyLaneAI/pennylane/pull/4673)
 
 <h3>Breaking changes 💔</h3>

@@ -267,11 +267,22 @@ def apply_cnot(op: qml.CNOT, state, is_state_batched: bool = False, debugger=Non
 def apply_multicontrolledx(
     op: qml.MultiControlledX, state, is_state_batched: bool = False, debugger=None
 ):
+    r"""Apply MultiControlledX to a state with the default einsum/tensordot choice
+    for 12 operation wires or less. Otherwise, apply a custom kernel based on
+    composing transpositions, rolling of control axes and the CNOT logic above."""
+    if len(op.wires) < 13:
+        if (
+            len(op.wires) < EINSUM_OP_WIRECOUNT_PERF_THRESHOLD
+            and math.ndim(state) < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD
+        ):
+            return apply_operation_einsum(op, state, is_state_batched)
+        return apply_operation_tensordot(op, state, is_state_batched)
+
+    return _apply_multicontrolledx(op, state, is_state_batched)
+
+def _apply_multicontrolledx(op, state, is_state_batched):
     r"""Apply MultiControlledX to state by composing transpositions, rolling of control axes
     and the CNOT logic above."""
-    if len(op.wires) < 9:
-        return apply_operation_einsum(op, state, is_state_batched)
-
     ctrl_wires = [w + is_state_batched for w in op.hyperparameters["control_wires"]]
     # apply x on all "wrong" controls
     roll_axes = [
@@ -290,7 +301,6 @@ def apply_multicontrolledx(
         )
         + is_state_batched
     )
-    # transpose_axes =  + is_state_batched for w in transpose_axes]
     state = math.transpose(state, transpose_axes)
 
     # Reshape the state into 3-dimensional array with axes [batch+other, target, controls]
