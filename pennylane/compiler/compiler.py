@@ -133,8 +133,7 @@ def active_compiler() -> str:
     just-in-time compiled versus those that are not.
 
     Return:
-        str: Name of the active compiler inside a :func:`~.qjit` evaluation context.
-            If there's not any active compiler, it will return an empty string.
+        str or None: Name of the active compiler inside a :func:`~.qjit` evaluation context.
 
     **Example**
 
@@ -166,7 +165,7 @@ def active_compiler() -> str:
         if tracer_loader.is_tracing():
             return name
 
-    return ""
+    return None
 
 
 def active() -> bool:
@@ -202,4 +201,4 @@ def active() -> bool:
     -1.0
     """
 
-    return active_compiler() != ""
+    return active_compiler() is not None
