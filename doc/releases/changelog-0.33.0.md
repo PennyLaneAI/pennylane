@@ -630,6 +630,10 @@
 <h3>Bug fixes 🐛</h3>
 
 * Fixed `LocalHilbertSchmidt.compute_decomposition` so that the template can be used in a QNode.
+  [(#4719)](https://github.com/PennyLaneAI/pennylane/pull/4719)
+
+* Fixes `transforms.transpile` with arbitrary measurement processes.
+  [(#4732)](https://github.com/PennyLaneAI/pennylane/pull/4732)
 
 * Providing `work_wires=None` to `qml.GroverOperator` no longer interprets `None` as a wire.
   [(#4668)](https://github.com/PennyLaneAI/pennylane/pull/4668)
