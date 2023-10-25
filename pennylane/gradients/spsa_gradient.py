@@ -331,7 +331,7 @@ def spsa_grad(
     for idx_rep in range(num_directions):
         direction = sampler(indices, num_trainable_params, idx_rep, rng=sampler_rng)
         inv_direction = qml.math.divide(
-            1, direction, where=(direction != 0), out=qml.math.zeros_like(direction)
+            1, direction, where=list(direction != 0), out=qml.math.zeros_like(direction)
         )
         # Use only the non-zero part of `direction` for the shifts, to skip redundant zero shifts
         _shifts = qml.math.tensordot(h * shifts, direction[indices], axes=0)
