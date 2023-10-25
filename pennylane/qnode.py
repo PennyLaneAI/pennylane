@@ -400,7 +400,7 @@ class QNode:
             logger.debug(
                 """Creating QNode(func=%s, device=%s, interface=%s, diff_method=%s, expansion_strategy=%s, max_expansion=%s, grad_on_execution=%s, cache=%s, cachesize=%s, max_diff=%s, gradient_kwargs=%s""",
                 func
-                if not (logger.isEnabledFor(qml.logging.TRACE) and callable(func))
+                if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(func))
                 else "\n" + inspect.getsource(func),
                 repr(device),
                 interface,
@@ -615,7 +615,7 @@ class QNode:
                 "'device', 'adjoint', 'spsa', 'hadamard')."
             )
 
-        if isinstance(diff_method, qml.gradients.gradient_transform):
+        if isinstance(diff_method, qml.transforms.core.TransformDispatcher):
             return diff_method, {}, device
 
         raise qml.QuantumFunctionError(
@@ -898,13 +898,17 @@ class QNode:
                 )
 
         # Apply the deferred measurement principle if the device doesn't
-        # support mid-circuit measurements natively
-        expand_mid_measure = any(isinstance(op, MidMeasureMP) for op in self.tape.operations) and (
-            isinstance(self.device, qml.devices.Device)
-            or not self.device.capabilities().get("supports_mid_measure", False)
+        # support mid-circuit measurements natively.
+        # Only apply transform with old device API as postselection with
+        # broadcasting will split tapes.
+        expand_mid_measure = (
+            any(isinstance(op, MidMeasureMP) for op in self.tape.operations)
+            and not isinstance(self.device, qml.devices.Device)
+            and not self.device.capabilities().get("supports_mid_measure", False)
         )
         if expand_mid_measure:
-            tapes, _ = qml.defer_measurements(self._tape)
+            # Assume that tapes are not split if old device is used since postselection is not supported.
+            tapes, _ = qml.defer_measurements(self._tape, device=self.device)
             self._tape = tapes[0]
 
         if self.expansion_strategy == "device":
@@ -917,11 +921,6 @@ class QNode:
                 self._tape = tape[0]
             else:
                 self._tape = self.device.expand_fn(self.tape, max_expansion=self.max_expansion)
-
-        # If the gradient function is a transform, expand the tape so that
-        # all operations are supported by the transform.
-        if isinstance(self.gradient_fn, qml.gradients.gradient_transform):
-            self._tape = self.gradient_fn.expand_fn(self._tape)
 
         if old_interface == "auto":
             self.interface = "auto"
@@ -969,13 +968,60 @@ class QNode:
         )
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
+        config = None
+        # Add the device program to the QNode program
+        if isinstance(self.device, qml.devices.Device):
+            if self.gradient_fn is None:
+                _gradient_method = None
+            elif isinstance(self.gradient_fn, str):
+                _gradient_method = self.gradient_fn
+            else:
+                _gradient_method = "gradient-transform"
+            grad_on_execution = self.execute_kwargs.get("grad_on_execution")
+            config = qml.devices.ExecutionConfig(
+                interface=self.interface,
+                gradient_method=_gradient_method,
+                grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
+            )
+            device_transform_program, config = self.device.preprocess(execution_config=config)
+            full_transform_program = self.transform_program + device_transform_program
+        else:
+            full_transform_program = qml.transforms.core.TransformProgram(self.transform_program)
+        # Add the gradient expand to the program if necessary
+        if (
+            isinstance(self.gradient_fn, qml.transforms.core.TransformDispatcher)
+            and self.gradient_fn.expand_transform
+        ):
+            full_transform_program.insert_front_transform(
+                qml.transforms.core.TransformDispatcher(self.gradient_fn.expand_transform),
+                **self.gradient_kwargs,
+            )
+        # Calculate the classical jacobians if necessary
+        if full_transform_program.has_classical_cotransform():
+            hybrid = full_transform_program[-1]._kwargs.pop(
+                "hybrid", True
+            )  # pylint: disable=protected-access
+
+            if hybrid:
+                argnums = full_transform_program[-1]._kwargs.pop(
+                    "argnums", None
+                )  # pylint: disable=protected-access
+
+                full_transform_program._set_all_classical_jacobians(
+                    self, args, kwargs, argnums
+                )  # pylint: disable=protected-access
+                full_transform_program._set_all_argnums(
+                    self, args, kwargs, argnums
+                )  # pylint: disable=protected-access
+
         # pylint: disable=unexpected-keyword-arg
         res = qml.execute(
             (self._tape,),
             device=self.device,
             gradient_fn=self.gradient_fn,
             interface=self.interface,
-            transform_program=self.transform_program,
+            transform_program=full_transform_program,
+            config=config,
             gradient_kwargs=self.gradient_kwargs,
             override_shots=override_shots,
             **self.execute_kwargs,

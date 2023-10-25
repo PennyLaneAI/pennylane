@@ -206,6 +206,25 @@ def mock_device_arbitrary_wires(monkeypatch):
         yield get_device
 
 
+def test_gradients_record():
+    """Test that execute_and_gradients and gradient both track the number of gradients requested."""
+
+    dev = qml.device("default.qubit.legacy", wires=1)
+
+    tape = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
+
+    with dev.tracker:
+        dev.execute_and_gradients((tape, tape), method="adjoint_jacobian", use_device_state=True)
+
+    assert dev.tracker.totals["execute_and_derivative_batches"] == 1
+    assert dev.tracker.totals["derivatives"] == 2
+
+    with dev.tracker:
+        dev.gradients((tape, tape), method="adjoint_jacobian", use_device_state=True)
+
+    assert dev.tracker.totals["derivatives"] == 2
+
+
 class TestDeviceSupportedLogic:
     """Test the logic associated with the supported operations and observables"""
 
@@ -375,6 +394,16 @@ class TestInternalFunctions:
         observables = [qml.expval(qml.Hadamard(0))]
 
         with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
+            dev.check_validity(queue, observables)
+
+    def test_check_validity_on_projector_as_operation(self, mock_device_with_operations):
+        """Test that an error is raised if the operation queue contains qml.Projector"""
+        dev = mock_device_with_operations(wires=1)
+
+        queue = [qml.PauliX(0), qml.Projector([0], wires=0), qml.PauliZ(0)]
+        observables = []
+
+        with pytest.raises(ValueError, match="Postselection is not supported"):
             dev.check_validity(queue, observables)
 
     def test_args(self, mock_device):

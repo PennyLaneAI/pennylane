@@ -14,7 +14,7 @@
 """Code for the tape transform implementing the deferred measurement principle."""
 from typing import Sequence, Callable
 import pennylane as qml
-from pennylane.measurements import MidMeasureMP
+from pennylane.measurements import MidMeasureMP, ProbabilityMP, SampleMP, CountsMP
 from pennylane.ops.op_math import ctrl
 
 from pennylane.tape import QuantumTape
@@ -23,11 +23,77 @@ from pennylane.transforms.core import transform
 from pennylane.wires import Wires
 from pennylane.queuing import QueuingManager
 
-# pylint: disable=too-many-branches
+# pylint: disable=too-many-branches, protected-access
+
+
+def _check_tape_validity(tape: QuantumTape):
+    """Helper function to check that the tape is valid."""
+    cv_types = (qml.operation.CVOperation, qml.operation.CVObservable)
+    ops_cv = any(isinstance(op, cv_types) and op.name != "Identity" for op in tape.operations)
+    obs_cv = any(
+        isinstance(getattr(op, "obs", None), cv_types)
+        and not isinstance(getattr(op, "obs", None), qml.Identity)
+        for op in tape.measurements
+    )
+    if ops_cv or obs_cv:
+        raise ValueError("Continuous variable operations and observables are not supported.")
+
+    for mp in tape.measurements:
+        if isinstance(mp, (CountsMP, ProbabilityMP, SampleMP)) and not (
+            mp.obs or mp._wires or mp.mv
+        ):
+            raise ValueError(
+                f"Cannot use {mp.__class__.__name__} as a measurement without specifying wires "
+                "when using qml.defer_measurements. Deferred measurements can occur "
+                "automatically when using mid-circuit measurements on a device that does not "
+                "support them."
+            )
+
+        if mp.__class__.__name__ == "StateMP":
+            raise ValueError(
+                "Cannot use StateMP as a measurement when using qml.defer_measurements. "
+                "Deferred measurements can occur automatically when using mid-circuit "
+                "measurements on a device that does not support them."
+            )
+
+
+def _collect_mid_measure_info(tape: QuantumTape):
+    """Helper function to collect information related to mid-circuit measurements in the tape."""
+
+    # Find wires that are reused after measurement
+    measured_wires = []
+    reused_measurement_wires = set()
+    any_repeated_measurements = False
+    is_postselecting = False
+
+    for op in tape.operations:
+        if isinstance(op, MidMeasureMP):
+            if op.postselect is not None:
+                is_postselecting = True
+            if op.reset:
+                reused_measurement_wires.add(op.wires[0])
+
+            if op.wires[0] in measured_wires:
+                any_repeated_measurements = True
+            measured_wires.append(op.wires[0])
+
+        else:
+            reused_measurement_wires = reused_measurement_wires.union(
+                set(measured_wires).intersection(op.wires.toset())
+            )
+
+    return measured_wires, reused_measurement_wires, any_repeated_measurements, is_postselecting
+
+
+def null_postprocessing(results):
+    """A postprocessing function returned by a transform that only converts the batch of results
+    into a result for a single ``QuantumTape``.
+    """
+    return results[0]
 
 
 @transform
-def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
+def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], Callable):
     """Quantum function transform that substitutes operations conditioned on
     measurement outcomes to controlled operations.
 
@@ -61,11 +127,17 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
 
     .. note::
 
-        When applying the transform on a quantum function that returns
-        :func:`~pennylane.state` as the terminal measurement or contains the
+        When applying the transform on a quantum function that contains the
         :class:`~.Snapshot` instruction, state information corresponding to
         simulating the transformed circuit will be obtained. No
         post-measurement states are considered.
+
+    .. warning::
+
+        :func:`~.pennylane.state` is not supported with the ``defer_measurements`` transform.
+        Additionally, :func:`~.pennylane.probs`, :func:`~.pennylane.sample` and
+        :func:`~.pennylane.counts` can only be used with ``defer_measurements`` if wires
+        or an observable are explicitly specified.
 
     Args:
         tape (.QuantumTape): a quantum tape
@@ -129,45 +201,43 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
     >>> func(*pars)
     tensor([0.76960924, 0.13204407, 0.08394415, 0.01440254], requires_grad=True)
     """
-    # pylint: disable=protected-access
 
-    cv_types = (qml.operation.CVOperation, qml.operation.CVObservable)
-    ops_cv = any(isinstance(op, cv_types) for op in tape.operations)
-    obs_cv = any(isinstance(getattr(op, "obs", None), cv_types) for op in tape.measurements)
-    if ops_cv or obs_cv:
-        raise ValueError("Continuous variable operations and observables are not supported.")
+    if not any(isinstance(o, MidMeasureMP) for o in tape.operations):
+        return (tape,), null_postprocessing
+
+    _check_tape_validity(tape)
+
+    device = kwargs.get("device", None)
+
+    device = kwargs.get("device", None)
 
     new_operations = []
 
     # Find wires that are reused after measurement
-    measured_wires = []
-    reused_measurement_wires = set()
-    repeated_measurement_wire = False
+    (
+        measured_wires,
+        reused_measurement_wires,
+        any_repeated_measurements,
+        is_postselecting,
+    ) = _collect_mid_measure_info(tape)
 
-    for op in tape.operations:
-        if isinstance(op, MidMeasureMP):
-            if op.reset is True:
-                reused_measurement_wires.add(op.wires[0])
-
-            if op.wires[0] in measured_wires:
-                repeated_measurement_wire = True
-            measured_wires.append(op.wires[0])
-
-        else:
-            reused_measurement_wires = reused_measurement_wires.union(
-                set(measured_wires).intersection(op.wires.toset())
-            )
+    if is_postselecting and device is not None and not isinstance(device, qml.devices.DefaultQubit):
+        raise ValueError(f"Postselection is not supported on the {device} device.")
 
     # Apply controlled operations to store measurement outcomes and replace
     # classically controlled operations
     control_wires = {}
     cur_wire = (
-        max(tape.wires) + 1 if reused_measurement_wires or repeated_measurement_wire else None
+        max(tape.wires) + 1 if reused_measurement_wires or any_repeated_measurements else None
     )
 
     for op in tape.operations:
         if isinstance(op, MidMeasureMP):
             _ = measured_wires.pop(0)
+
+            if op.postselect is not None:
+                with QueuingManager.stop_recording():
+                    new_operations.append(qml.Projector([op.postselect], wires=op.wires[0]))
 
             # Store measurement outcome in new wire if wire gets reused
             if op.wires[0] in reused_measurement_wires or op.wires[0] in measured_wires:
@@ -178,7 +248,13 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
 
                 if op.reset:
                     with QueuingManager.stop_recording():
-                        new_operations.append(qml.CNOT([cur_wire, op.wires[0]]))
+                        # No need to manually reset if postselecting on |0>
+                        if op.postselect is None:
+                            new_operations.append(qml.CNOT([cur_wire, op.wires[0]]))
+                        elif op.postselect == 1:
+                            # We know that the measured wire will be in the |1> state if postselected
+                            # |1>. So we can just apply a PauliX instead of a CNOT to reset
+                            new_operations.append(qml.PauliX(op.wires[0]))
 
                 cur_wire += 1
             else:
@@ -194,19 +270,31 @@ def defer_measurements(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
 
     for mp in tape.measurements:
         if mp.mv is not None:
+            # Update measurement value wires
             wire_map = {m.wires[0]: control_wires[m.id] for m in mp.mv.measurements}
             mp = qml.map_wires(mp, wire_map=wire_map)
         new_measurements.append(mp)
 
     new_tape = type(tape)(new_operations, new_measurements, shots=tape.shots)
 
-    def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
-        into a result for a single ``QuantumTape``.
-        """
-        return results[0]
+    if is_postselecting and new_tape.batch_size is not None:
+        # Split tapes if broadcasting with postselection
+        return qml.transforms.broadcast_expand(new_tape)
 
     return [new_tape], null_postprocessing
+
+
+@defer_measurements.custom_qnode_transform
+def _defer_measurements_qnode(self, qnode, targs, tkwargs):
+    """Custom qnode transform for ``defer_measurements``."""
+    if tkwargs.get("device", None):
+        raise ValueError(
+            "Cannot provide a 'device' value directly to the defer_measurements decorator "
+            "when transforming a QNode."
+        )
+
+    tkwargs.setdefault("device", qnode.device)
+    return self.default_qnode_transform(qnode, targs, tkwargs)
 
 
 def _add_control_gate(op, control_wires):
@@ -214,7 +302,7 @@ def _add_control_gate(op, control_wires):
     control = [control_wires[m.id] for m in op.meas_val.measurements]
     new_ops = []
 
-    for branch, value in op.meas_val._items():  # pylint: disable=protected-access
+    for branch, value in op.meas_val._items():
         if value:
             qscript = qml.tape.make_qscript(
                 ctrl(

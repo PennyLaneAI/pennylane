@@ -269,7 +269,7 @@ def apply_multicontrolledx(
 ):
     r"""Apply MultiControlledX to state by composing transpositions, rolling of control axes
     and the CNOT logic above."""
-    if len(op.wires) < 8:
+    if len(op.wires) < 9:
         return apply_operation_einsum(op, state, is_state_batched)
 
     ctrl_wires = [w + is_state_batched for w in op.hyperparameters["control_wires"]]
@@ -277,7 +277,8 @@ def apply_multicontrolledx(
     roll_axes = [
         w for val, w in zip(op.hyperparameters["control_values"], ctrl_wires) if val == "0"
     ]
-    state = math.roll(state, 1, roll_axes)
+    for ax in roll_axes:
+        state = math.roll(state, 1, ax)
 
     orig_shape = math.shape(state)
     # Move the axes into the order [(batch), other, target, controls]
@@ -293,7 +294,7 @@ def apply_multicontrolledx(
     state = math.transpose(state, transpose_axes)
 
     # Reshape the state into 3-dimensional array with axes [batch+other, target, controls]
-    state = state.reshape((-1, 2, 2 ** (len(op.wires) - 1)))
+    state = math.reshape(state, (-1, 2, 2 ** (len(op.wires) - 1)))
 
     # The part of the state to which we want to apply PauliX is now in the last entry along
     # the third axis. Extract it, apply the PauliX along the target axis, and append a dummy axis
@@ -303,10 +304,12 @@ def apply_multicontrolledx(
     state = math.concatenate([state[:, :, :-1], state_x], axis=2)
 
     # Reshape into original shape and undo the transposition
-    state = math.transpose(state.reshape(orig_shape), np.argsort(transpose_axes))
+    state = math.transpose(math.reshape(state, orig_shape), np.argsort(transpose_axes))
 
     # revert x on all "wrong" controls
-    return math.roll(state, 1, roll_axes)
+    for ax in roll_axes:
+        state = math.roll(state, 1, ax)
+    return state
 
 
 @apply_operation.register

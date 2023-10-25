@@ -15,10 +15,13 @@
 This module contains the next generation successor to default qubit
 """
 
+from dataclasses import replace
 from functools import partial
 from numbers import Number
 from typing import Union, Callable, Tuple, Optional, Sequence
 import concurrent.futures
+import inspect
+import logging
 import numpy as np
 
 import pennylane as qml
@@ -28,22 +31,117 @@ from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
 
 from . import Device
+from .preprocess import (
+    decompose,
+    validate_observables,
+    validate_measurements,
+    validate_multiprocessing_workers,
+    validate_device_wires,
+    warn_about_trainable_observables,
+    no_sampling,
+)
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
 from .qubit.simulate import simulate, get_final_state, measure_final_state
 from .qubit.sampling import get_num_shots_and_executions
-from .qubit.preprocess import (
-    preprocess,
-    validate_and_expand_adjoint,
-    validate_multiprocessing_workers,
-    validate_device_wires,
-)
 from .qubit.adjoint_jacobian import adjoint_jacobian, adjoint_vjp, adjoint_jvp
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 Result_or_ResultBatch = Union[Result, ResultBatch]
 QuantumTapeBatch = Sequence[QuantumTape]
 QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 # always a function from a resultbatch to either a result or a result batch
 PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
+
+
+observables = {
+    "PauliX",
+    "PauliY",
+    "PauliZ",
+    "Hadamard",
+    "Hermitian",
+    "Identity",
+    "Projector",
+    "SparseHamiltonian",
+    "Hamiltonian",
+    "Sum",
+    "SProd",
+    "Prod",
+    "Exp",
+    "Evolution",
+}
+
+
+def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
+    """Specifies whether or not an observable is accepted by DefaultQubit."""
+    return obs.name in observables
+
+
+def stopping_condition(op: qml.operation.Operator) -> bool:
+    """Specify whether or not an Operator object is supported by the device."""
+    if op.name == "QFT" and len(op.wires) >= 6:
+        return False
+    if op.name == "GroverOperator" and len(op.wires) >= 13:
+        return False
+    if op.name == "Snapshot":
+        return True
+    if op.__class__.__name__ == "Pow" and qml.operation.is_trainable(op):
+        return False
+
+    return op.has_matrix
+
+
+def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
+    """Specifies whether or not a measurement is accepted when sampling."""
+    return isinstance(
+        m,
+        (
+            qml.measurements.SampleMeasurement,
+            qml.measurements.ClassicalShadowMP,
+            qml.measurements.ShadowExpvalMP,
+        ),
+    )
+
+
+def _add_adjoint_transforms(program: TransformProgram) -> None:
+    """Private helper function for ``preprocess`` that adds the transforms specific
+    for adjoint differentiation.
+
+    Args:
+        program (TransformProgram): where we will add the adjoint differentiation transforms
+
+    Side Effects:
+        Adds transforms to the input program.
+
+    """
+
+    def adjoint_ops(op: qml.operation.Operator) -> bool:
+        """Specify whether or not an Operator is supported by adjoint differentiation."""
+        return op.num_params == 0 or op.num_params == 1 and op.has_generator
+
+    def adjoint_observables(obs: qml.operation.Operator) -> bool:
+        """Specifies whether or not an observable is compatible with adjoint differentiation on DefaultQubit."""
+        return obs.has_matrix
+
+    def accepted_adjoint_measurement(m: qml.measurements.MeasurementProcess) -> bool:
+        return isinstance(m, qml.measurements.ExpectationMP)
+
+    name = "adjoint + default.qubit"
+    program.add_transform(no_sampling, name=name)
+    program.add_transform(
+        decompose,
+        stopping_condition=adjoint_ops,
+        name=name,
+    )
+    program.add_transform(validate_observables, adjoint_observables, name=name)
+    program.add_transform(
+        validate_measurements,
+        analytic_measurements=accepted_adjoint_measurement,
+        name=name,
+    )
+    program.add_transform(qml.transforms.broadcast_expand)
+    program.add_transform(warn_about_trainable_observables)
 
 
 class DefaultQubit(Device):
@@ -246,18 +344,28 @@ class DefaultQubit(Device):
         ):
             return True
 
-        if execution_config.gradient_method == "adjoint" and execution_config.use_device_gradient:
+        if (
+            execution_config.gradient_method == "adjoint"
+            and execution_config.use_device_gradient is not False
+        ):
             if circuit is None:
                 return True
 
-            return isinstance(validate_and_expand_adjoint(circuit)[0][0], QuantumScript)
+            prog = TransformProgram()
+            _add_adjoint_transforms(prog)
+
+            try:
+                prog((circuit,))
+            except (qml.operation.DecompositionUndefinedError, qml.DeviceError):
+                return False
+            return True
 
         return False
 
     def preprocess(
         self,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Tuple[QuantumTapeBatch, PostprocessingFn, ExecutionConfig]:
+    ) -> Tuple[TransformProgram, ExecutionConfig]:
         """This function defines the device transform program to be applied and an updated device configuration.
 
         Args:
@@ -276,24 +384,78 @@ class DefaultQubit(Device):
         * Currently does not intrinsically support parameter broadcasting
 
         """
+        config = self._setup_execution_config(execution_config)
         transform_program = TransformProgram()
-        # Validate device wires
-        transform_program.add_transform(validate_device_wires, self)
+
+        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
+        transform_program.add_transform(qml.defer_measurements, device=self)
+        transform_program.add_transform(
+            decompose, stopping_condition=stopping_condition, name=self.name
+        )
+        transform_program.add_transform(
+            validate_measurements, sample_measurements=accepted_sample_measurement, name=self.name
+        )
+        transform_program.add_transform(
+            validate_observables, stopping_condition=observable_stopping_condition, name=self.name
+        )
 
         # Validate multi processing
-        max_workers = execution_config.device_options.get("max_workers", self._max_workers)
-        transform_program.add_transform(validate_multiprocessing_workers, max_workers, self)
+        max_workers = config.device_options.get("max_workers", self._max_workers)
+        if max_workers:
+            transform_program.add_transform(validate_multiprocessing_workers, max_workers, self)
 
-        # General preprocessing (Validate measurement, expand, adjoint expand, broadcast expand)
-        transform_program_preprocess, config = preprocess(execution_config=execution_config)
-        transform_program = transform_program + transform_program_preprocess
+        if config.gradient_method == "backprop":
+            transform_program.add_transform(no_sampling, name="backprop + default.qubit")
+
+        if config.gradient_method == "adjoint":
+            _add_adjoint_transforms(transform_program)
+
         return transform_program, config
+
+    def _setup_execution_config(self, execution_config: ExecutionConfig) -> ExecutionConfig:
+        """This is a private helper for ``preprocess`` that sets up the execution config.
+
+        Args:
+            execution_config (ExecutionConfig)
+
+        Returns:
+            ExecutionConfig: a preprocessed execution config
+
+        """
+        updated_values = {}
+        if execution_config.gradient_method == "best":
+            updated_values["gradient_method"] = "backprop"
+        if execution_config.use_device_gradient is None:
+            updated_values["use_device_gradient"] = execution_config.gradient_method in {
+                "best",
+                "adjoint",
+                "backprop",
+            }
+        if execution_config.grad_on_execution is None:
+            updated_values["grad_on_execution"] = execution_config.gradient_method == "adjoint"
+        updated_values["device_options"] = dict(execution_config.device_options)  # copy
+        if "max_workers" not in updated_values["device_options"]:
+            updated_values["device_options"]["max_workers"] = self._max_workers
+        if "rng" not in updated_values["device_options"]:
+            updated_values["device_options"]["rng"] = self._rng
+        if "prng_key" not in updated_values["device_options"]:
+            updated_values["device_options"]["prng_key"] = self._prng_key
+        return replace(execution_config, **updated_values)
 
     def execute(
         self,
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Result_or_ResultBatch:
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                """Entry with args=(circuits=%s) called by=%s""",
+                circuits,
+                "::L".join(
+                    str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
+                ),
+            )
+
         is_single_circuit = False
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True

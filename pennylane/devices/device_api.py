@@ -599,8 +599,9 @@ class Device(abc.ABC):
 
         Args:
             circuits (Union[QuantumTape, Sequence[QuantumTape]]): the circuit or batch of circuits
-            cotangents (Tuple[Number]): Gradient-output vector. Must have shape matching the output shape of the
-                corresponding circuit
+            cotangents (Tuple[Number, Tuple[Number]]): Gradient-output vector. Must have shape matching the output shape of the
+                corresponding circuit. If the circuit has a single output, `cotangents` may be a single number, not an iterable
+                of numbers.
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
 
         Returns:
@@ -638,8 +639,9 @@ class Device(abc.ABC):
 
         Args:
             circuits (Union[QuantumTape, Sequence[QuantumTape]]): the circuit or batch of circuits to be executed
-            cotangents Tuple[Number]: Gradient-output vector. Must have shape matching the output shape of the
-                corresponding circuit
+            cotangents (Tuple[Number, Tuple[Number]]): Gradient-output vector. Must have shape matching the output shape of the
+                corresponding circuit. If the circuit has a single output, `cotangents` may be a single number, not an iterable
+                of numbers.
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
 
         Returns:

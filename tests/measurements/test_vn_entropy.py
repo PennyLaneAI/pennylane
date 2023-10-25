@@ -147,7 +147,9 @@ class TestIntegration:
             qml.CRX(x, wires=[0, 1])
             return qml.vn_entropy(wires=[0])
 
-        with pytest.raises(qml.DeviceError, match="Circuits with finite shots must only contain"):
+        with pytest.raises(
+            qml.DeviceError, match="not accepted with finite shots on default.qubit"
+        ):
             circuit(0.5)
 
     @pytest.mark.parametrize("wires", single_wires_list)
