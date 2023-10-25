@@ -443,4 +443,4 @@ the differences between Catalyst and PennyLane, and how to best structure
 your workflows to improve performance when using Catalyst.
 
 To make your own compiler compatible with PennyLane, please see
-the :mod:`~.compiler` module documentation.
+the :mod:`~.compiler#adding-a-compiler` module documentation.

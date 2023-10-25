@@ -47,6 +47,36 @@ class TestCatalyst:
         assert qml.compiler.available("catalyst")
         assert qml.compiler.available_compilers() == ["catalyst"]
 
+    def test_active_compiler(self):
+        """Test `qml.compiler.active_compiler` inside a simple circuit"""
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(phi, theta):
+            if qml.compiler.active_compiler() == "catalyst":
+                qml.RX(phi, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PhaseShift(theta, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        assert jnp.allclose(circuit(jnp.pi, jnp.pi / 2), 1.0)
+        assert jnp.allclose(qml.qjit(circuit)(jnp.pi, jnp.pi / 2), -1.0)
+
+    def test_active(self):
+        """Test `qml.compiler.active` inside a simple circuit"""
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(phi, theta):
+            if qml.compiler.active():
+                qml.RX(phi, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PhaseShift(theta, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        assert jnp.allclose(circuit(jnp.pi, jnp.pi / 2), 1.0)
+        assert jnp.allclose(qml.qjit(circuit)(jnp.pi, jnp.pi / 2), -1.0)
+
     def test_qjit_circuit(self):
         """Test JIT compilation of a circuit with 2-qubit"""
         dev = qml.device("lightning.qubit", wires=2)
@@ -272,6 +302,24 @@ class TestCatalystControlFlow:
         assert jnp.allclose(circuit(4), jnp.eye(2**4)[0])
 
     def test_cond(self):
+        """Test condition with simple true_fn"""
+        dev = qml.device("lightning.qubit", wires=1)
+
+        @qml.qjit
+        @qml.qnode(dev)
+        def circuit(x: float):
+            def ansatz_true():
+                qml.RX(x, wires=0)
+                qml.Hadamard(wires=0)
+
+            qml.cond(x > 1.4, ansatz_true)
+
+            return qml.expval(qml.PauliZ(0))
+
+        assert jnp.allclose(circuit(1.4), 1.0)
+        assert jnp.allclose(circuit(1.6), 0.0)
+
+    def test_cond_with_else(self):
         """Test condition with simple true_fn and false_fn"""
         dev = qml.device("lightning.qubit", wires=1)
 

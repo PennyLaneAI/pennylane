@@ -13,11 +13,11 @@
 # limitations under the License.
 """QJIT compatible quantum and compilation operations API"""
 
-from .compiler import AvailableCompilers, available, active
+from .compiler import CompileError, AvailableCompilers, available, active_compiler
 
 
 def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keyword-arg-before-vararg
-    """A just-in-time hybrid quantum-classical compiler for PennyLane programs.
+    """A decorator for just-in-time compilation of hybrid quantum programs in PennyLane.
 
     This decorator enables both just-in-time and ahead-of-time compilation,
     depending on the compiler package and whether function argument type hints
@@ -37,8 +37,8 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
         ``lightning.kokkos``, ``braket.local.qubit``, and ``braket.aws.qubit``
         devices. It does not support ``default.qubit``.
 
-        Please see the :doc:`Catalyst documentation <catalyst:index>` for more details on supported
-        devices, operations, and measurements.
+        Please see the :doc:`Catalyst documentation <catalyst:index>` for more details on
+        supported devices, operations, and measurements.
 
     Args:
         compiler (str): name of the compiler to use for just-in-time compilation
@@ -63,11 +63,11 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
             considered to be used by advanced users for low-level debugging purposes.
 
     Returns:
-        catalyst.QJIT: a class that, when executed, just-in-time compiles and executes the decorated
-        function
+        catalyst.QJIT: a class that, when executed, just-in-time compiles and executes the
+        decorated function
 
     Raises:
-        RuntimeError: if the compiler is not installed
+        CompileError: if the compiler is not installed
         FileExistsError: Unable to create temporary directory
         PermissionError: Problems creating temporary directory
         OSError: Problems while creating folder for intermediate files
@@ -107,7 +107,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
     """
 
     if not available(compiler):
-        raise RuntimeError(f"The {compiler} package is not installed.")
+        raise CompileError(f"The {compiler} package is not installed.")
 
     compilers = AvailableCompilers.names_entrypoints
     qjit_loader = compilers[compiler]["qjit"].load()
@@ -157,7 +157,7 @@ def while_loop(*args, **kwargs):
         Callable: A wrapper around the while-loop function.
 
     Raises:
-        RuntimeError: if the compiler is not installed
+        CompileError: if the compiler is not installed
 
     **Example**
 
@@ -184,12 +184,12 @@ def while_loop(*args, **kwargs):
     [array(-0.02919952), array(2.56)]
     """
 
-    if active("catalyst"):
+    if active_jit := active_compiler():
         compilers = AvailableCompilers.names_entrypoints
-        ops_loader = compilers["catalyst"]["ops"].load()
+        ops_loader = compilers[active_jit]["ops"].load()
         return ops_loader.while_loop(*args, **kwargs)
 
-    raise RuntimeError("There is no active compiler package.")
+    raise CompileError("There is no active compiler package.")
 
 
 def for_loop(*args, **kwargs):
@@ -244,7 +244,7 @@ def for_loop(*args, **kwargs):
         returned from the function.
 
     Raises:
-        RuntimeError: if the compiler is not installed
+        CompileError: if the compiler is not installed
 
     **Example**
 
@@ -273,9 +273,9 @@ def for_loop(*args, **kwargs):
     [array(0.97926626), array(0.55395718)]
     """
 
-    if active("catalyst"):
+    if active_jit := active_compiler():
         compilers = AvailableCompilers.names_entrypoints
-        ops_loader = compilers["catalyst"]["ops"].load()
+        ops_loader = compilers[active_jit]["ops"].load()
         return ops_loader.for_loop(*args, **kwargs)
 
-    raise RuntimeError("There is no active compiler package.")
+    raise CompileError("There is no active compiler package.")

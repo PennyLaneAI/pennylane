@@ -61,7 +61,8 @@ class Conditional(Operation):
 
 
 def cond(condition, true_fn, false_fn=None):
-    """Quantum-compatible if-else conditionals --- condition quantum operations on parameters such as the results of mid-circuit qubit measurements.
+    """Quantum-compatible if-else conditionals --- condition quantum operations
+    on parameters such as the results of mid-circuit qubit measurements.
 
     When used with the :func:`~.qjit` decorator with a hybrid
     quantum-classical compiler, this function allows for general
@@ -73,13 +74,19 @@ def cond(condition, true_fn, false_fn=None):
     Without the :func:`~.qjit` decorator (**interpreted mode**), it is
     restricted to simply branching on mid-circuit measurement results.
 
-
     .. note::
 
         With the Python interpreter, support for :func:`~.cond`
         is device-dependent. If a device doesn't
         support mid-circuit measurements natively, then the QNode will
         apply the :func:`defer_measurements` transform.
+
+    .. note::
+        When used with :func:`~.qjit`, this function only supports
+        the Catalyst compiler. Please see :func:`catalyst.cond` for more details.
+
+        Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
+        as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
 
     Args:
         condition (.MeasurementValue): a conditional expression involving a mid-circuit
@@ -275,9 +282,9 @@ def cond(condition, true_fn, false_fn=None):
             >>> qnode(par, x, y, z)
             tensor(-0.30922805, requires_grad=True)
     """
-    if compiler.active("catalyst"):
-        catalyst_compiler = compiler.AvailableCompilers.names_entrypoints["catalyst"]
-        ops_loader = catalyst_compiler["ops"].load()
+    if active_jit := compiler.active_compiler():
+        available_eps = compiler.AvailableCompilers.names_entrypoints
+        ops_loader = available_eps[active_jit]["ops"].load()
         cond_func = ops_loader.cond(condition)(true_fn)
         if false_fn:
             cond_func.otherwise(false_fn)
