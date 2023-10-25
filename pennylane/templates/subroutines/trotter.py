@@ -126,7 +126,20 @@ class TrotterProduct(Operation):
     .. details::
         :title: Usage Details
 
-        One can recover the behaviour of :class:`~.ApproxTimeEvolution` by setting :code:`order=1`.
+        Note, this operation is similarily to the :class:`~.ApproxTimeEvolution`. Identical behaviour can 
+        be replicated by flipping the order of terms in the input hamiltonian, setting :code:`order=1`, 
+        and setting :code:`time = -1 * time`.
+
+        >>> time, n = (0.25, 1)
+        >>> coeffs, ops = ([1, 2], [qml.PauliX(0), qml.PauliZ(0)])
+        >>> h, h_flipped = (qml.Hamiltonian(coeffs, ops), qml.Hamiltonian(coeffs[::-1], ops[::-1]))
+        >>> 
+        >>> m_trotter_p = qml.matrix(qml.TrotterProduct(h, time, order=1, n=n))
+        >>> m_approx_te = qml.matrix(qml.ApproxTimeEvolution(h_flipped, -1*time, n=n))
+        >>> np.allclose(m_trotter_p == m_approx_te)
+        True
+
+
         We can also compute the gradient with respect to the coefficients of the Hamiltonian and the
         evolution time:
 

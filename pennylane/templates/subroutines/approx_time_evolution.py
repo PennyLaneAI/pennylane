@@ -24,12 +24,6 @@ class ApproxTimeEvolution(Operation):
     r"""Applies the Trotterized time-evolution operator for an arbitrary Hamiltonian, expressed in terms
     of Pauli gates.
 
-    .. note::
-
-        This operation is a special case of :class:`~pennylane.TrotterProduct` and will be deprecated in
-        future releases, please use :class:`~pennylane.TrotterProduct` as the preferred operation for this
-        functionality.
-
     The general time-evolution operator for a time-independent Hamiltonian is given by
 
     .. math:: U(t) \ = \ e^{-i H t},
