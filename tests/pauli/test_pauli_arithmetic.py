@@ -412,7 +412,7 @@ class TestPauliSentence:
     @pytest.mark.parametrize("string1, string2, result", tup_ps_add)
     def test_iadd(self, string1, string2, result):
         """Test that the correct result of inplace addition is produced and other object is not changed."""
-        original_string2=copy(string2)
+        original_string1=copy(string1)
         string1 += string2
         string1.simplify()
 
