@@ -13,7 +13,7 @@
 # limitations under the License.
 """QJIT compatible quantum and compilation operations API"""
 
-from .compiler import CompileError, AvailableCompilers, available
+from .compiler import CompileError, AvailableCompilers, available, active
 
 
 def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keyword-arg-before-vararg
@@ -114,7 +114,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
     return qjit_loader(fn=fn, *args, **kwargs)
 
 
-def while_loop(*args, compiler="catalyst", **kwargs):
+def while_loop(*args, **kwargs):
     """A :func:`~.qjit` compatible while-loop for PennyLane programs.
 
     .. note::
@@ -152,7 +152,6 @@ def while_loop(*args, compiler="catalyst", **kwargs):
 
     Args:
         cond_fn (Callable): the condition function in the while loop
-        compiler(str): name of the compiler package (default value is ``catalyst``)
 
     Returns:
         Callable: A wrapper around the while-loop function.
@@ -185,15 +184,15 @@ def while_loop(*args, compiler="catalyst", **kwargs):
     [array(-0.02919952), array(2.56)]
     """
 
-    if not available(compiler):
-        raise CompileError(f"The {compiler} package is not installed.")
+    if active("catalyst"):
+        compilers = AvailableCompilers.names_entrypoints
+        ops_loader = compilers["catalyst"]["ops"].load()
+        return ops_loader.while_loop(*args, **kwargs)
 
-    compilers = AvailableCompilers.names_entrypoints
-    ops_loader = compilers[compiler]["ops"].load()
-    return ops_loader.while_loop(*args, **kwargs)
+    raise CompileError("There is no active compiler package.")
 
 
-def for_loop(*args, compiler="catalyst", **kwargs):
+def for_loop(*args, **kwargs):
     """A :func:`~.qjit` compatible for-loop for PennyLane programs.
 
     .. note::
@@ -236,7 +235,6 @@ def for_loop(*args, compiler="catalyst", **kwargs):
         lower_bound (int): starting value of the iteration index
         upper_bound (int): (exclusive) upper bound of the iteration index
         step (int): increment applied to the iteration index at the end of each iteration
-        compiler(str): name of the compiler package (default value is ``catalyst``)
 
     Returns:
         Callable[[int, ...], ...]: A wrapper around the loop body function.
@@ -275,9 +273,9 @@ def for_loop(*args, compiler="catalyst", **kwargs):
     [array(0.97926626), array(0.55395718)]
     """
 
-    if not available(compiler):
-        raise CompileError(f"The {compiler} package is not installed.")
+    if active("catalyst"):
+        compilers = AvailableCompilers.names_entrypoints
+        ops_loader = compilers["catalyst"]["ops"].load()
+        return ops_loader.for_loop(*args, **kwargs)
 
-    compilers = AvailableCompilers.names_entrypoints
-    ops_loader = compilers[compiler]["ops"].load()
-    return ops_loader.for_loop(*args, **kwargs)
+    raise CompileError("There is no active compiler package.")
