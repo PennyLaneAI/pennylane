@@ -299,14 +299,14 @@ class TestTranspile:
     def test_transpile_state(self):
         """Test that transpile works with state measurement process."""
 
-        tape = qml.tape.QuantumScript([qml.PauliX(0), qml.CNOT((0,2))], [qml.state()], shots=100)
-        batch, fn = qml.transforms.transpile(tape, coupling_map = [(0,1), (1,2)])
+        tape = qml.tape.QuantumScript([qml.PauliX(0), qml.CNOT((0, 2))], [qml.state()], shots=100)
+        batch, fn = qml.transforms.transpile(tape, coupling_map=[(0, 1), (1, 2)])
 
         assert len(batch) == 1
-        assert fn(("a", )) == "a"
+        assert fn(("a",)) == "a"
 
         assert batch[0][0] == qml.PauliX(0)
-        assert batch[0][1] == qml.SWAP((1,2))
-        assert batch[0][2] == qml.CNOT((0,1))
+        assert batch[0][1] == qml.SWAP((1, 2))
+        assert batch[0][2] == qml.CNOT((0, 1))
         assert batch[0][3] == qml.state()
         assert batch[0].shots == tape.shots

@@ -12,7 +12,6 @@ from pennylane.ops import __all__ as all_ops
 from pennylane.ops.qubit import SWAP
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumTape
-from pennylane.wires import Wires
 
 
 @transform
