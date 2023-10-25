@@ -31,7 +31,8 @@ class grad:
     as a callable function of (functions of) QNodes.
 
     Inside a :func:`~.qjit` decorated program, this will patch to :func:`catalyst.grad` and
-    returns a callable object utilized by the supported compilers in :doc:`Catalyst <catalyst:index>`.
+    returns a callable object utilized by the supported compilers in
+    :doc:`Catalyst <catalyst:index>`.
 
     By default, in interpreted mode, gradients are computed for arguments which contain
     the property ``requires_grad=True``. Alternatively, the ``argnum`` keyword argument
@@ -41,16 +42,16 @@ class grad:
     a ``NonDifferentiableError``.
 
     When the output gradient function is executed, both the forward pass
-    *and* the backward pass will be performed in order to
-    compute the gradient. The value of the forward pass is available via the
-    :attr:`~.forward` property.
+    *and* the backward pass will be performed in order to compute the gradient.
+    The value of the forward pass is available via the :attr:`~.forward` property.
 
     .. warning::
         ``grad`` is intended to be used with the Autograd interface only.
 
     .. note::
 
-        In just-in-time (JIT) mode, this function is a wrapper around :func:`catalyst.grad`.
+        When used with :func:`~.qjit`, this function only supports the Catalyst compiler.
+        Please see :func:`catalyst.grad` for more details.
 
         Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
@@ -196,11 +197,12 @@ def jacobian(func, argnum=None, method=None, step_size=None):
     """A :func:`~.qjit` compatible Jacobian transformation that returns the Jacobian
     as a callable function of vector-valued (functions of) QNodes.
 
-    Inside a :func:`~.qjit` decorated program, this will patch to :func:`catalyst.jacobian` and
-    returns a callable object utilized by the supported compilers in
+    Inside a :func:`~.qjit` decorated program, this will patch to :func:`catalyst.jacobian`
+    and returns a callable object utilized by the supported compilers in
     :doc:`Catalyst <catalyst:index>`.
 
-    By default, in interpreted mode, this is a wrapper around the :mod:`autograd.jacobian` function.
+    By default, in interpreted mode, this is a wrapper around the :mod:`autograd.jacobian`
+    function.
 
     Args:
         func (function): A vector-valued Python function or QNode that contains
@@ -241,11 +243,13 @@ def jacobian(func, argnum=None, method=None, step_size=None):
 
     .. note::
 
-        In just-in-time (JIT) mode, this function is a wrapper around :func:`catalyst.jacobian`.
+        When used with :func:`~.qjit`, this function only supports the Catalyst compiler.
+        Please see :func:`catalyst.jacobian` for more details.
 
         Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
         page for an overview of the differences between Catalyst and PennyLane.
+
 
     For ``argnum=None``, the trainable arguments are inferred dynamically from the arguments
     passed to the function. The returned function takes the same arguments as the original
