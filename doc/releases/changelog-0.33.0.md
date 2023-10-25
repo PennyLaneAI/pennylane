@@ -641,7 +641,7 @@
   [(#4668)](https://github.com/PennyLaneAI/pennylane/pull/4668)
 
 * Fixed an issue where the `__copy__` method of the `qml.Select()` operator attempted to access un-initialized data.
-[(#4551)](https://github.com/PennyLaneAI/pennylane/pull/4551)
+  [(#4551)](https://github.com/PennyLaneAI/pennylane/pull/4551)
 
 * Fixed the `skip_first` option in `expand_tape_state_prep`.
   [(#4564)](https://github.com/PennyLaneAI/pennylane/pull/4564)
