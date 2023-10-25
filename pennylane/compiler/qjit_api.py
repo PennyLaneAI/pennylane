@@ -16,11 +16,11 @@
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .compiler import AvailableCompilers, available
+from .compiler import CompileError, AvailableCompilers, available, active_compiler
 
 
 def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keyword-arg-before-vararg
-    """A just-in-time hybrid quantum-classical compiler for PennyLane programs.
+    """A decorator for just-in-time compilation of hybrid quantum programs in PennyLane.
 
     This decorator enables both just-in-time and ahead-of-time compilation,
     depending on the compiler package and whether function argument type hints
@@ -40,8 +40,8 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
         ``lightning.kokkos``, ``braket.local.qubit``, and ``braket.aws.qubit``
         devices. It does not support ``default.qubit``.
 
-        Please see the :doc:`Catalyst documentation <catalyst:index>` for more details on supported
-        devices, operations, and measurements.
+        Please see the :doc:`Catalyst documentation <catalyst:index>` for more details on
+        supported devices, operations, and measurements.
 
     Args:
         compiler (str): name of the compiler to use for just-in-time compilation
@@ -66,7 +66,8 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
             considered to be used by advanced users for low-level debugging purposes.
 
     Returns:
-        catalyst.QJIT: a class that, when executed, just-in-time compiles and executes the decorated function
+        catalyst.QJIT: a class that, when executed, just-in-time compiles and executes the
+        decorated function
 
     Raises:
         FileExistsError: Unable to create temporary directory
@@ -108,42 +109,39 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
     """
 
     if not available(compiler):
-        raise RuntimeError(f"The {compiler} package is not installed.")
+        raise CompileError(f"The {compiler} package is not installed.")
 
     compilers = AvailableCompilers.names_entrypoints
     qjit_loader = compilers[compiler]["qjit"].load()
     return qjit_loader(fn=fn, *args, **kwargs)
 
 
-def select_measure(wires: Wires, compiler="catalyst"):
-    """A :func:`qjit` compatible mid-circuit measurement for the PennyLane projective measurement computation.
+def select_measure(wires: Wires):
+    """A :func:`qjit` compatible mid-circuit measurement for the PennyLane
+    projective measurement computation.
 
-    This method behaves differently when it is called inside a QJIT decorated workflow. Please see the
-    `catalyst.measure <https://docs.pennylane.ai/projects/catalyst/en/latest/code/api/catalyst.measure.html>`__
-    for details.
+    This method behaves differently when it is called inside a QJIT decorated workflow.
+    Please see :func:`catalyst.measure` for details.
 
     Args:
         wires (Wires): The wire of the qubit the measurement process applies to.
-        reset (Optional[bool]): Whether to reset the wire to the :math:`|0 \rangle`
-            state after measurement.
 
     Returns:
         MidMeasureMP: measurement process instance
 
     Raises:
-        RuntimeError: if the compiler is not installed
+        CompileError: if the compiler is not installed
         QuantumFunctionError: if multiple wires were specified
     """
-
-    if not available(compiler):
-        raise RuntimeError(f"The {compiler} package is not installed.")
-
     wire = Wires(wires)
     if len(wire) > 1:
         raise qml.QuantumFunctionError(
             "Only a single qubit can be measured in the middle of the circuit"
         )
 
-    compilers = AvailableCompilers.names_entrypoints
-    ops_loader = compilers[compiler]["ops"].load()
-    return ops_loader.measure(wire[0])
+    if active_jit := active_compiler():
+        compilers = AvailableCompilers.names_entrypoints
+        ops_loader = compilers[active_jit]["ops"].load()
+        return ops_loader.measure(wire[0])
+
+    raise CompileError("There is no active compiler package.")

@@ -28,18 +28,19 @@ from .measurements import MeasurementProcess, MidMeasure
 def measure(wires: Wires, reset: Optional[bool] = False):
     r"""A :func:`qjit` compatible mid-circuit measurement.
 
-    By default in interpreter mode, it performs a mid-circuit measurement in the computational basis on
+    By default in interpreted mode, it performs a mid-circuit measurement in the computational basis on
     the supplied qubit with the Python interpreter.
 
-    Inside a :func:`~.qjit` decorated program, this will patch to :func:`catalyst:.measure` and
+    Inside a :func:`~.qjit` decorated program, this will patch to :func:`catalyst.measure` and
     returns a callable object utilized by the supported compilers in :doc:`Catalyst <catalyst:index>`.
     This method behaves differently in the just-in-time (JIT) mode; it **only** supports PennyLane
     projective mid-circuit measurement.
 
     .. note::
 
-        In JIT mode, this function *only* supports PennyLane projective
+        When used with :func:`~.qjit`, this function only supports PennyLane projective
         mid-circuit measurement without being able to reset measured wires.
+        Please see :func:`catalyst.measure` for more details.
 
         Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
@@ -102,13 +103,13 @@ def measure(wires: Wires, reset: Optional[bool] = False):
     Args:
         wires (Wires): The wire of the qubit the measurement process applies to.
         reset (Optional[bool]): Whether to reset the wire to the :math:`|0 \rangle`
-            state after measurement. It should be `False` in JIT mode.
+            state after measurement. It should be `False` when used with :func:`~.qjit`.
 
     Returns:
         MidMeasureMP: measurement process instance
 
     Raises:
-        RuntimeError: if ``reset=True`` in JIT mode
+        CompileError: if ``reset=True`` when used with :func:`~.qjit`
         QuantumFunctionError: if multiple wires were specified
     """
 
@@ -118,12 +119,11 @@ def measure(wires: Wires, reset: Optional[bool] = False):
             "Only a single qubit can be measured in the middle of the circuit"
         )
 
-    if compiler.active("catalyst"):
+    if active_jit := compiler.active_compiler():
         if reset:
-            raise RuntimeError("Wires cannot reset after measurement in just-in-time mode")
-
-        catalyst_compiler = compiler.AvailableCompilers.names_entrypoints["catalyst"]
-        ops_loader = catalyst_compiler["ops"].load()
+            raise compiler.CompileError("Wires cannot reset after measurement in compiled mode")
+        available_eps = compiler.AvailableCompilers.names_entrypoints
+        ops_loader = available_eps[active_jit]["ops"].load()
         return ops_loader.measure(wire[0])
 
     # Create a UUID and a map between MP and MV to support serialization
