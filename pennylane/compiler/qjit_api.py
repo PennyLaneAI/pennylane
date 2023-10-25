@@ -13,7 +13,7 @@
 # limitations under the License.
 """QJIT compatible quantum and compilation operations API"""
 
-from .compiler import CompileError, AvailableCompilers, available, active
+from .compiler import AvailableCompilers, available, active
 
 
 def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keyword-arg-before-vararg
@@ -67,7 +67,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
         function
 
     Raises:
-        CompileError: if the compiler is not installed
+        RuntimeError: if the compiler is not installed
         FileExistsError: Unable to create temporary directory
         PermissionError: Problems creating temporary directory
         OSError: Problems while creating folder for intermediate files
@@ -107,7 +107,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
     """
 
     if not available(compiler):
-        raise CompileError(f"The {compiler} package is not installed.")
+        raise RuntimeError(f"The {compiler} package is not installed.")
 
     compilers = AvailableCompilers.names_entrypoints
     qjit_loader = compilers[compiler]["qjit"].load()
@@ -157,7 +157,7 @@ def while_loop(*args, **kwargs):
         Callable: A wrapper around the while-loop function.
 
     Raises:
-        CompileError: if the compiler is not installed
+        RuntimeError: if the compiler is not installed
 
     **Example**
 
@@ -189,7 +189,7 @@ def while_loop(*args, **kwargs):
         ops_loader = compilers["catalyst"]["ops"].load()
         return ops_loader.while_loop(*args, **kwargs)
 
-    raise CompileError("There is no active compiler package.")
+    raise RuntimeError("There is no active compiler package.")
 
 
 def for_loop(*args, **kwargs):
@@ -244,7 +244,7 @@ def for_loop(*args, **kwargs):
         returned from the function.
 
     Raises:
-        CompileError: if the compiler is not installed
+        RuntimeError: if the compiler is not installed
 
     **Example**
 
@@ -278,4 +278,4 @@ def for_loop(*args, **kwargs):
         ops_loader = compilers["catalyst"]["ops"].load()
         return ops_loader.for_loop(*args, **kwargs)
 
-    raise CompileError("There is no active compiler package.")
+    raise RuntimeError("There is no active compiler package.")

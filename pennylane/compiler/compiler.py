@@ -20,21 +20,16 @@ import dataclasses
 import pkg_resources
 
 
-class CompileError(Exception):
-    """Error encountered in the compilation phase."""
-
-
 @dataclasses.dataclass
 class AvailableCompilers:
     """This contains data of installed PennyLane compiler packages"""
 
-    entrypoints_interface = ("qjit", "context", "ops")
     names_entrypoints = {}
 
 
 def _refresh_compilers():
     """Scan installed PennyLane compiler pacakges to refresh the compilers
-    names and entry points.
+    names and entry points
     """
 
     reload(pkg_resources)
@@ -48,13 +43,6 @@ def _refresh_compilers():
         module_name = entry.module_name.split(".")[0]
         AvailableCompilers.names_entrypoints[module_name][entry.name] = entry
 
-    # Check whether available compilers follow the entry_point interface
-    # by validating that all entry points (qjit, context, and ops) are defined.
-    for _, eps_dict in AvailableCompilers.names_entrypoints.items():
-        ep_interface = AvailableCompilers.entrypoints_interface
-        if any(ep not in eps_dict.keys() for ep in ep_interface):
-            raise KeyError(f"expected {ep_interface}, but recieved {eps_dict}")
-
 
 def available_compilers() -> List[str]:
     """Loads and returns a list of available compilers that are
@@ -63,8 +51,7 @@ def available_compilers() -> List[str]:
     **Example**
 
     This method returns the name of installed compiler packages supported in
-    PennyLane. For example, after installing the
-    `Catalyst <https://github.com/pennylaneai/catalyst>`__
+    PennyLane. For example, after installing the `Catalyst <https://github.com/pennylaneai/catalyst>`__
     compiler, this will now appear as an available compiler:
 
     >>> qml.compiler.available_compilers()
@@ -140,5 +127,8 @@ def active(compiler="catalyst") -> bool:
     if not compilers:
         return False
 
-    tracer_loader = compilers[compiler]["context"].load()
-    return tracer_loader.is_tracing()
+    try:
+        tracer_loader = compilers[compiler]["context"].load()
+        return tracer_loader.is_tracing()
+    except KeyError:
+        return False
