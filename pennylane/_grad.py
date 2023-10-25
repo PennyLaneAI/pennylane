@@ -196,10 +196,6 @@ def jacobian(func, argnum=None, method=None, step_size=None):
     """A :func:`~.qjit` compatible Jacobian transformation that returns the Jacobian
     as a callable function of vector-valued (functions of) QNodes.
 
-    Inside a :func:`~.qjit` decorated program, this will patch to :func:`catalyst.jacobian` and
-    returns a callable object utilized by the supported compilers in
-    :doc:`Catalyst <catalyst:index>`.
-
     By default in interpreter mode, this is a wrapper around the :mod:`autograd.jacobian` function.
 
     Args:
