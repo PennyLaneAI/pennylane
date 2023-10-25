@@ -199,8 +199,7 @@ In order to support applying the ``qjit`` decorator with and without arguments,
     def function(x, y):
         ...
 
-where the ``qjit`` decorator can be applied with and without arguments,
-you should ensure that your ``qjit`` decorator itself returns a decorator
+you should ensure that the ``qjit`` decorator itself returns a decorator
 if no function is provided:
 
 .. code-block:: python
