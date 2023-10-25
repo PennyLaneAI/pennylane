@@ -64,7 +64,7 @@ def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[Quant
     We can evaluate these tapes on a device:
 
     >>> dev = qml.device("default.qubit", wires=3)
-    >>> res = dev.batch_execute(tapes)
+    >>> res = dev.execute(tapes)
 
     Applying the processing function results in the expectation value of the Hamiltonian:
 
@@ -264,7 +264,7 @@ def sum_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape],
     We can evaluate these tapes on a device:
 
     >>> dev = qml.device("default.qubit", wires=3)
-    >>> res = dev.batch_execute(tapes)
+    >>> res = dev.execute(tapes)
 
     Applying the processing function results in the expectation value of the Hamiltonian:
 
