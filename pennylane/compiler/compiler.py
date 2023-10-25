@@ -129,17 +129,19 @@ def active_compiler() -> str:
     """Check which compiler is activated inside a :func:`~.qjit` evaluation context.
 
     This helper function may be used during implementation
-    to allow differing logic for circuits or operations that are
-    just-in-time compiled versus those that are not.
+    to allow differing logic for transformations or operations that are
+    just-in-time compiled, versus those that are not.
 
     Return:
-        str or None: Name of the active compiler inside a :func:`~.qjit` evaluation context.
+        str or None: Name of the active compiler inside a :func:`~.qjit`
+            evaluation context. If there is no active compiler, ``None``
+            will be returned.
 
     **Example**
 
-    For example, you can use this method in your hybrid program to execute it
-    conditionally whether is called inside :func:`~.qjit` with ``"catalyst"``
-    as the activate compiler or not.
+    This method can be used to execute logical
+    branches that are conditioned on whether hybrid compilation with a specific
+    compiler is occurring.
 
     .. code-block:: python
 
@@ -147,7 +149,7 @@ def active_compiler() -> str:
 
         @qml.qnode(dev)
         def circuit(phi, theta):
-            if qml.compiler.active() == "catalyst":
+            if qml.compiler.active_compiler() == "catalyst":
                 qml.RX(phi, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.PhaseShift(theta, wires=0)
