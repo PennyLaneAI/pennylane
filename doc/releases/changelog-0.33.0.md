@@ -224,12 +224,14 @@
     backpropagation differentiation method is used. For example, consider:
 
     ```python
+    import jax
+
     dev = qml.device("default.qubit", wires=1)
 
     @qml.qnode(dev, diff_method="backprop")
     def f(x):
         qml.RX(x, wires=0)
-        return qml.expval(qml.PauliX(0))
+        return qml.expval(qml.PauliZ(0))
     
     f(jax.numpy.array(0.2))
     ```
