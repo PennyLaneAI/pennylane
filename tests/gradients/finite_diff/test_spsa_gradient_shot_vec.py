@@ -39,7 +39,7 @@ def coordinate_sampler(indices, num_params, idx, rng=None):
     intended way."""
     # pylint: disable=unused-argument
     idx = idx % len(indices)
-    direction = np.zeros(num_params)
+    direction = numpy.zeros(num_params)
     direction[indices[idx]] = 1.0
     return direction
 
