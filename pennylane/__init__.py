@@ -129,6 +129,7 @@ from pennylane.interfaces import execute  # pylint:disable=wrong-import-order
 import pennylane.logging  # pylint:disable=wrong-import-order
 
 import pennylane.data
+from pennylane.error_prop.error_prop import OperatorError
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")

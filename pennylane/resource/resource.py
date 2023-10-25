@@ -20,6 +20,7 @@ from dataclasses import dataclass, field
 
 from pennylane.operation import Operation
 from pennylane.measurements import Shots
+from pennylane.error_prop import OperatorError
 
 
 @dataclass(frozen=True)
@@ -60,11 +61,12 @@ class Resources:
     gate_types: dict = field(default_factory=dict)
     gate_sizes: dict = field(default_factory=dict)
     depth: int = 0
+    error: OperatorError = field(default_factory=OperatorError)
     shots: Shots = field(default_factory=Shots)
 
     def __str__(self):
-        keys = ["wires", "gates", "depth"]
-        vals = [self.num_wires, self.num_gates, self.depth]
+        keys = ["wires", "gates", "depth", "error"]
+        vals = [self.num_wires, self.num_gates, self.depth, self.error]
         items = "\n".join([str(i) for i in zip(keys, vals)])
         items = items.replace("('", "")
         items = items.replace("',", ":")
@@ -137,6 +139,7 @@ def _count_resources(tape) -> Resources:
     num_wires = len(tape.wires)
     shots = tape.shots
     depth = tape.graph.get_depth()
+    error = OperatorError()
 
     num_gates = 0
     gate_types = defaultdict(int)
@@ -151,10 +154,11 @@ def _count_resources(tape) -> Resources:
                 gate_sizes[n] += op_resource.gate_sizes[n]
 
             num_gates += sum(op_resource.gate_types.values())
+            error += op_resource.error
 
         else:
             gate_types[op.name] += 1
             gate_sizes[len(op.wires)] += 1
             num_gates += 1
 
-    return Resources(num_wires, num_gates, gate_types, gate_sizes, depth, shots)
+    return Resources(num_wires, num_gates, gate_types, gate_sizes, depth, error, shots)
