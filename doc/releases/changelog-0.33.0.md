@@ -144,7 +144,6 @@
         return qml.state()
   output = example_circuit()
 
-  # Graph showing state amplitudes
   plt.style.use("pennylane.drawer.plot")
   plt.bar(range(len(output)), output)
   plt.show()
