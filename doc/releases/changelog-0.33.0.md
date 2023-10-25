@@ -347,7 +347,7 @@
 
 * `DefaultQubit` can now accept a `jax.random.PRNGKey` as a `seed` to set the key for the JAX pseudo random 
   number generator when using the JAX interface. This corresponds to the `prng_key` on 
-  `DefaultQubitJax` in the old API.
+  `default.qubit.jax` in the old API.
   [(#4596)](https://github.com/PennyLaneAI/pennylane/pull/4596)
 
 * The `JacobianProductCalculator` abstract base class and implementations `TransformJacobianProducts`
