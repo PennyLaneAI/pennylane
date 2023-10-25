@@ -635,27 +635,27 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixed `LocalHilbertSchmidt.compute_decomposition` so that the template can be used in a qnode.
+* Fixed `LocalHilbertSchmidt.compute_decomposition` so that the template can be used in a QNode.
 
 * Providing `work_wires=None` to `qml.GroverOperator` no longer interprets `None` as a wire.
   [(#4668)](https://github.com/PennyLaneAI/pennylane/pull/4668)
 
-* Fixed issue where `__copy__` method of the `qml.Select()` operator attempted to access un-initialized data.
+* Fixed an issue where the `__copy__` method of the `qml.Select()` operator attempted to access un-initialized data.
 [(#4551)](https://github.com/PennyLaneAI/pennylane/pull/4551)
 
-* Fix `skip_first` option in `expand_tape_state_prep`.
+* Fixed the `skip_first` option in `expand_tape_state_prep`.
   [(#4564)](https://github.com/PennyLaneAI/pennylane/pull/4564)
 
 * `convert_to_numpy_parameters` now uses `qml.ops.functions.bind_new_parameters`. This reinitializes the operation and
-  makes sure everything references the new numpy parameters.
+  makes sure everything references the new NumPy parameters.
 
-* `tf.function` no longer breaks `ProbabilityMP.process_state` which is needed by new devices.
+* `tf.function` no longer breaks `ProbabilityMP.process_state`, which is needed by new devices.
   [(#4470)](https://github.com/PennyLaneAI/pennylane/pull/4470)
 
-* Fix mocking in the unit tests for `qml.qchem.mol_data`.
+* Fixed unit tests for `qml.qchem.mol_data`.
   [(#4591)](https://github.com/PennyLaneAI/pennylane/pull/4591)
 
-* Fix `ProbabilityMP.process_state` so it allows for proper Autograph compilation. Without this,
+* Fixed `ProbabilityMP.process_state` so that it allows for proper Autograph compilation. Without this,
   decorating a QNode that returns an `expval` with `tf.function` would fail when computing the
   expectation.
   [(#4590)](https://github.com/PennyLaneAI/pennylane/pull/4590)
@@ -663,11 +663,11 @@
 * The `torch.nn.Module` properties are now accessible on a `pennylane.qnn.TorchLayer`.
   [(#4611)](https://github.com/PennyLaneAI/pennylane/pull/4611)
 
-* `qml.math.take` with torch now returns `tensor[..., indices]` when the user requests
+* `qml.math.take` with Pytorch now returns `tensor[..., indices]` when the user requests
   the last axis (`axis=-1`). Without the fix, it would wrongly return `tensor[indices]`.
   [(#4605)](https://github.com/PennyLaneAI/pennylane/pull/4605)
 
-* Ensure the logging `TRACE` level works with gradient-free execution.
+* Ensured the logging `TRACE` level works with gradient-free execution.
   [(#4669)](https://github.com/PennyLaneAI/pennylane/pull/4669)
 
 <h3>Contributors ✍️</h3>
