@@ -182,6 +182,12 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         qnode_transformed = dispatched_transform(qnode_circuit, 0)
         assert not qnode_circuit.transform_program
 
+        assert qnode_transformed.device is qnode_circuit.device
+
+        with dev.tracker:
+            qnode_circuit(0.1)
+        assert dev.tracker.totals['executions'] == 1
+
         assert isinstance(qnode_transformed, qml.QNode)
         assert isinstance(qnode_transformed.transform_program, qml.transforms.core.TransformProgram)
         assert isinstance(

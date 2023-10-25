@@ -55,6 +55,25 @@ class CustomDeviceWithDiffMethod(qml.devices.Device):
         """Device defines its own method to compute derivatives"""
         return 0
 
+def test_copy():
+    """Test that a shallow copy also copies the execute kwargs, gradient kwargs, and transform program."""
+    dev = CustomDevice()
+
+    qn = qml.QNode(dummyfunc, dev)
+    copied_qn = copy.copy(qn)
+    assert copied_qn is not qn
+    assert copied_qn.execute_kwargs == qn.execute_kwargs
+    assert copied_qn.execute_kwargs is not qn.execute_kwargs
+    assert copied_qn.transform_program == qn.transform_program
+    assert copied_qn.transform_program is not qn.transform_program
+    assert copied_qn.gradient_kwargs == qn.gradient_kwargs
+    assert copied_qn.gradient_kwargs is not qn.gradient_kwargs
+
+    assert copied_qn.func is qn.func
+    assert copied_qn.device is qn.device
+    assert copied_qn.interface is qn.interface
+    assert copied_qn.diff_method == qn.diff_method
+    assert copied_qn.expansion_strategy == qn.expansion_strategy
 
 # pylint: disable=too-many-public-methods
 class TestValidation:

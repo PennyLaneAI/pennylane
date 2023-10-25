@@ -19,6 +19,7 @@ import functools
 import inspect
 import warnings
 from collections.abc import Sequence
+from copy import copy
 from typing import Union
 import logging
 
@@ -481,6 +482,17 @@ class QNode:
         self._update_gradient_fn()
         functools.update_wrapper(self, func)
         self._transform_program = qml.transforms.core.TransformProgram()
+
+    def __copy__(self):
+        copied_qnode = QNode.__new__(QNode)
+        for attr, value in vars(self).items():
+            if attr not in {"execute_kwargs", "_transform_program"}:
+                setattr(copied_qnode, attr, value)
+
+        copied_qnode.execute_kwargs = dict(self.execute_kwargs)
+        copied_qnode._transform_program = qml.transforms.core.TransformProgram(self.transform_program) # pylint: disable=protected-access
+        copied_qnode.gradient_kwrags = dict(self.gradient_kwargs)
+        return copied_qnode
 
     def __repr__(self):
         """String representation."""

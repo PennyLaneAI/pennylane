@@ -205,7 +205,7 @@ class TransformDispatcher:
             qnode._original_device.reset()
             qnode.device.reset()
 
-        qnode = copy.deepcopy(qnode)
+        qnode = copy.copy(qnode)
 
         if self.expand_transform:
             qnode.add_transform(TransformContainer(self._expand_transform, targs, tkwargs))
