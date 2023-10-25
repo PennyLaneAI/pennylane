@@ -17,6 +17,8 @@ from collections.abc import MutableMapping
 from pathlib import Path
 from typing import Literal, TypeVar, Union
 from uuid import uuid4
+import ssl
+import certifi
 
 from numpy.typing import ArrayLike
 
@@ -107,8 +109,12 @@ def open_hdf5_s3(s3_url: str, *, block_size: int = 8388608) -> HDF5Group:
             may improve performance for large datasets
     """
 
+    # Use certifi instead of Python's bundled CA certs, which are often
+    # outdated
+    ssl_context = ssl.create_default_context(cafile=certifi.where())
+
     # Tells fsspec to fetch data in 8MB chunks for faster loading
     memory_cache_args = {"cache_type": "mmap", "block_size": block_size}
-    fs = fsspec.open(s3_url, **memory_cache_args)
+    fs = fsspec.open(s3_url, **memory_cache_args, ssl=ssl_context)
 
     return h5py.File(fs.open())
