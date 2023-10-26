@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the next generation successor to default qubit
+The default.qubit device is PennyLane's standard qubit-based device.
 """
 
 from dataclasses import replace
@@ -387,8 +387,8 @@ class DefaultQubit(Device):
         config = self._setup_execution_config(execution_config)
         transform_program = TransformProgram()
 
-        transform_program.add_transform(qml.defer_measurements)
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
+        transform_program.add_transform(qml.defer_measurements, device=self)
         transform_program.add_transform(
             decompose, stopping_condition=stopping_condition, name=self.name
         )

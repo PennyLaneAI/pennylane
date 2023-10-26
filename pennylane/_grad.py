@@ -189,18 +189,18 @@ def jacobian(func, argnum=None):
             qml.RX(weights[0, 0, 0], wires=0)
             qml.RY(weights[0, 0, 1], wires=1)
             qml.RZ(weights[1, 0, 2], wires=0)
-            return tuple(qml.expval(qml.PauliZ(w)) for w in dev.wires)
+            return qml.probs()
 
         weights = np.array(
             [[[0.2, 0.9, -1.4]], [[0.5, 0.2, 0.1]]], requires_grad=True
         )
 
     It has a single array-valued QNode argument with shape ``(2, 1, 3)`` and outputs
-    a tuple of two expectation values. Therefore, the Jacobian of this QNode
-    will be a single array with shape ``(2, 2, 1, 3)``:
+    the probability of each 2-wire basis state, of which there are ``2**num_wires`` = 4.
+    Therefore, the Jacobian of this QNode will be a single array with shape ``(2, 2, 1, 3)``:
 
     >>> qml.jacobian(circuit)(weights).shape
-    (2, 2, 1, 3)
+    (4, 2, 1, 3)
 
     On the other hand, consider the following QNode for the same circuit
     structure:
@@ -220,18 +220,18 @@ def jacobian(func, argnum=None):
         y = np.array(0.9, requires_grad=True)
         z = np.array(-1.4, requires_grad=True)
 
-    It has three scalar QNode arguments and outputs a tuple of two expectation
-    values. Consequently, its Jacobian will be a three-tuple of arrays with the
-    shape ``(2,)``:
+    It has three scalar QNode arguments and outputs the probability for each of
+    the 4 basis states. Consequently, its Jacobian will be a three-tuple of
+    arrays with the shape ``(4,)``:
 
     >>> jac = qml.jacobian(circuit)(x, y, z)
     >>> type(jac)
     tuple
     >>> for sub_jac in jac:
     ...     print(sub_jac.shape)
-    (2,)
-    (2,)
-    (2,)
+    (4,)
+    (4,)
+    (4,)
 
     For a more advanced setting of QNode arguments, consider the QNode
 
@@ -256,14 +256,14 @@ def jacobian(func, argnum=None):
     >>> print(type(jac), len(jac))
     <class 'tuple'> 2
     >>> qml.math.shape(jac[0])
-    (3, 2)
+    (8, 2)
     >>> qml.math.shape(jac[1])
-    (3, 2, 4)
+    (8, 2, 4)
 
     As we can see, there are two entries in the output, one Jacobian for each
-    QNode argument. The shape ``(3, 2)`` of the first Jacobian is the combination
-    of the QNode output shape (``(3,)``) and the shape of ``x`` (``(2,)``).
-    Similarly, the shape ``(2, 4)`` of ``y`` leads to a Jacobian shape ``(3, 2, 4)``.
+    QNode argument. The shape ``(8, 2)`` of the first Jacobian is the combination
+    of the QNode output shape (``(8,)``) and the shape of ``x`` (``(2,)``).
+    Similarly, the shape ``(2, 4)`` of ``y`` leads to a Jacobian shape ``(8, 2, 4)``.
 
     Instead we may choose the output to contain only one of the two
     entries by providing an iterable as ``argnum``:
@@ -272,7 +272,7 @@ def jacobian(func, argnum=None):
     >>> print(type(jac), len(jac))
     <class 'tuple'> 1
     >>> qml.math.shape(jac)
-    (1, 3, 2, 4)
+    (1, 8, 2, 4)
 
     Here we included the size of the tuple in the shape analysis, corresponding to the
     first dimension of size ``1``.
@@ -282,9 +282,9 @@ def jacobian(func, argnum=None):
 
     >>> jac = qml.jacobian(circuit, argnum=1)(x, y)
     >>> print(type(jac), len(jac))
-    <class 'numpy.ndarray'> 3
+    <class 'numpy.ndarray'> 8
     >>> qml.math.shape(jac)
-    (3, 2, 4)
+    (8, 2, 4)
 
     As expected, the tuple was unpacked and we directly received the Jacobian of the
     QNode with respect to ``y``.

@@ -517,7 +517,7 @@ class Operator(abc.ABC):
 
     >>> a = np.array(3.14)
     >>> circuit(a)
-    -0.9999987318946099
+    tensor(-0.99999873, requires_grad=True)
 
     .. details::
         :title: Serialization and Pytree format
@@ -1652,14 +1652,16 @@ class Operation(Operator):
     """
 
     # Attributes for compilation transforms
-    basis = None
-    """str or None: The basis of an operation, or for controlled gates, of the
-    target operation. If not ``None``, should take a value of ``"X"``, ``"Y"``,
-    or ``"Z"``.
+    @property
+    def basis(self):
+        """str or None: The basis of an operation, or for controlled gates, of the
+        target operation. If not ``None``, should take a value of ``"X"``, ``"Y"``,
+        or ``"Z"``.
 
-    For example, ``X`` and ``CNOT`` have ``basis = "X"``, whereas
-    ``ControlledPhaseShift`` and ``RZ`` have ``basis = "Z"``.
-    """
+        For example, ``X`` and ``CNOT`` have ``basis = "X"``, whereas
+        ``ControlledPhaseShift`` and ``RZ`` have ``basis = "Z"``.
+        """
+        return None
 
     @property
     def control_wires(self):  # pragma: no cover

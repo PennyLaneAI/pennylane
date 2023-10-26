@@ -18,7 +18,7 @@ be installed alongside PennyLane:
 * `toml <https://github.com/uiri/toml>`_
 * `appdirs <https://github.com/ActiveState/appdirs>`_
 * `semantic-version <https://github.com/rbarrois/python-semanticversion>`_ >= 2.7
-* `autoray <https://github.com/jcmgray/autoray>`__
+* `autoray <https://github.com/jcmgray/autoray>`__ >= 0.6.1
 
 The following Python packages are optional:
 
