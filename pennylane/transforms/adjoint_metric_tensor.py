@@ -85,8 +85,8 @@ def adjoint_metric_tensor(
     Returns:
         qnode (QNode) or tuple[List[QuantumTape], function]:
 
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Dimensions
-        are ``(tape.num_params, tape.num_params)``.
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+            will provide the metric tensor in the form of a tensor. Dimensions are ``(tape.num_params, tape.num_params)``.
 
     .. seealso:: :func:`~.metric_tensor` for hardware-compatible metric tensor computations.
 

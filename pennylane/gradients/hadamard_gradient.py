@@ -81,6 +81,8 @@ def hadamard_grad(
 
     Returns:
         qnode (QNode) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+            Executing this circuit will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple
+            depending upon the nesting structure of measurements in the original circuit.
 
     For a variational evolution :math:`U(\mathbf{p}) \vert 0\rangle` with
     :math:`N` parameters :math:`\mathbf{p}`,

@@ -160,6 +160,7 @@ def metric_tensor(  # pylint:disable=too-many-arguments
 
     Returns:
         qnode (QNode) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+            Executing this circuit will provide the metric tensor in the form of a tensor.
 
     The block-diagonal part of the metric tensor always is computed using the
     covariance-based approach. If no approximation is selected,

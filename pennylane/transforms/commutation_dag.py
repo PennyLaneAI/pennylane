@@ -42,7 +42,9 @@ def commutation_dag(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
         tape (QNode or QuantumTape or Callable): The quantum circuit.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as
+            described in :func:`qml.transform <pennylane.transform>`. Executing this circuit will provide the
+            commutation DAG.
 
     **Example**
 

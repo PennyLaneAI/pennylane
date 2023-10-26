@@ -428,7 +428,7 @@ def pulse_odegen(
     See the theoretical background section below for more details.
 
     Args:
-        tape (QNode or QuantumTape): quantum circuit to differentiate
+        tape (QuantumTape): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
@@ -437,7 +437,9 @@ def pulse_odegen(
             ``qml.math.isclose(x, 0., atol=atol, rtol=0) == True`` are neglected.
 
     Returns:
-        qnode (QNode) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+            Executing this circuit will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple
+            depending upon the nesting structure of measurements in the original circuit.
 
     .. note::
 

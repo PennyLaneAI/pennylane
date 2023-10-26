@@ -35,6 +35,7 @@ def reduced_dm(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Ca
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+            Executing this circuit will provide the reduced density matrix in the form of a tensor.
 
     **Example**
 
@@ -120,7 +121,9 @@ def purity(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Callab
         wires (Sequence(int)): List of wires in the considered subsystem.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`
+        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]: The transformed circuit as
+            described in :func:`qml.transform <pennylane.transform>`. Executing this circuit will provide the purity
+            in the form of a tensor.
 
     **Example**
 
@@ -210,7 +213,9 @@ def vn_entropy(
         base (float): Base for the logarithm, default is None the natural logarithm is used in this case.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as
+            described in :func:`qml.transform <pennylane.transform>`. Executing this circuit will provide the Von
+            Neumann entropy in the form of a tensor.
 
     **Example**
 
@@ -309,8 +314,9 @@ def mutual_info(
         base (float): Base for the logarithm. If None, the natural logarithm is used.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
-
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as
+            described in :func:`qml.transform <pennylane.transform>`. Executing this circuit will provide the mutual
+            information in the form of a tensor.
     **Example**
 
     It is possible to obtain the mutual information of two subsystems from a
@@ -659,7 +665,9 @@ def quantum_fisher(
         *args: In case finite shots are used, further arguments according to :func:`~.pennylane.metric_tensor` may be passed.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as
+            described in :func:`qml.transform <pennylane.transform>`. Executing this circuit will provide the quantum
+            Fisher information in the form of a tensor.
 
     .. note::
 

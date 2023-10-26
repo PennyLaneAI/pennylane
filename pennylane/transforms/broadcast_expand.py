@@ -62,7 +62,7 @@ def broadcast_expand(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
 
         The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
-        - If the input is a QNode, an object resembling the (broadcasted) input QNode
+        - If the input is a QNode, the broadcasted input QNode
           that computes the QNode output serially with multiple circuit evaluations and
           stacks (and squeezes) the results into one batch of results.
 

@@ -54,9 +54,14 @@ def to_zx(tape, expand_measurements=False):  # pylint: disable=unused-argument
     The graph can be optimized and transformed by well-known ZX-calculus reductions.
 
     Args:
-        tape(pennylane.QNode or pennylane.tape.QuantumTape or Callable or Operation): The PennyLane quantum circuit.
+        tape(QNode or QuantumTape or Callable or Operation): The PennyLane quantum circuit.
         expand_measurements(bool): The expansion will be applied on measurements that are not in the Z-basis and
             rotations will be added to the operations.
+
+    Returns:
+        graph (Graph) or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed
+            circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit will provide the
+            ZX graph in the form of a PyZx graph.
 
     **Example**
 

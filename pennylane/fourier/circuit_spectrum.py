@@ -56,6 +56,7 @@ def circuit_spectrum(
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+            Executing this circuit will return a dictionary with the input-encoding gate ``id`` as keys and their frequency spectra as values.
 
 
     **Details**

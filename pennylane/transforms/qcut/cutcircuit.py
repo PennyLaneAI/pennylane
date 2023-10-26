@@ -113,6 +113,8 @@ def cut_circuit(
 
     Returns:
         qnode (QNode) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+            Executing this circuit will perform a process tomography of the partitioned circuit fragments and combine
+            the results via tensor contractions.
 
     **Example**
 
