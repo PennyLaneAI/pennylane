@@ -330,6 +330,8 @@ def spsa_grad(
     all_coeffs = []
     for idx_rep in range(num_directions):
         direction = sampler(indices, num_trainable_params, idx_rep, rng=sampler_rng)
+        # the `where` arg is being cast to list to avoid unexpected side effects from types that
+        # override __array_ufunc__. See https://github.com/numpy/numpy/pull/23240 for more details
         inv_direction = qml.math.divide(
             1, direction, where=list(direction != 0), out=qml.math.zeros_like(direction)
         )
