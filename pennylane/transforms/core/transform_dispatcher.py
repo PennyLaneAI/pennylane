@@ -68,13 +68,22 @@ class TransformDispatcher:
 
         if isinstance(obj, qml.tape.QuantumScript):
             if self._expand_transform:
-                transformed_tapes, _ = self._expand_transform(obj, *targs, **tkwargs)
-                transformed_tapes, transform_processing_fn = self._transform(
-                    transformed_tapes[0], *targs, **tkwargs
-                )
+                expanded_tapes, expand_processing = self._expand_transform(obj, *targs, **tkwargs)
+                transformed_tapes = []
+                processing_and_sclices = []
+                start = 0
+                for tape in expanded_tapes:
+                    intermediate_tapes, post_processing_fn = self._transform(
+                        tape, *targs, **tkwargs
+                    )
+                    transformed_tapes.extend(intermediate_tapes)
+                    end = start + len(intermediate_tapes)
+                    processing_and_sclices.append(tuple([post_processing_fn, slice(start, end)]))
+                    start = end
 
                 def processing_fn(results):
-                    return transform_processing_fn(results)
+                    processed_results = [fn(results[slice]) for fn, slice in processing_and_sclices]
+                    return expand_processing(processed_results)
 
             else:
                 transformed_tapes, processing_fn = self._transform(obj, *targs, **tkwargs)
