@@ -382,6 +382,11 @@
   decomposition.
   [(#4675)](https://github.com/PennyLaneAI/pennylane/pull/4675)
 
+* Shallow copies of the `QNode` now also copy the `execute_kwargs` and transform program. When applying
+  a transform to a `QNode`, the new qnode is only a shallow copy of the original and thus keeps the same
+  device.
+  [(#4736)](https://github.com/PennyLaneAI/pennylane/pull/4736)
+
 <h3>Breaking changes 💔</h3>
 
 * ``qml.defer_measurements`` now raises an error if a transformed circuit measures ``qml.probs``,
@@ -538,6 +543,10 @@
 <h3>Bug fixes 🐛</h3>
 
 * Fixes `LocalHilbertSchmidt.compute_decomposition` so the template can be used in a qnode.
+  [(#4719)](https://github.com/PennyLaneAI/pennylane/pull/4719)
+
+* Fixes `transforms.transpile` with arbitrary measurement processes.
+  [(#4732)](https://github.com/PennyLaneAI/pennylane/pull/4732)
 
 * Providing `work_wires=None` to `qml.GroverOperator` no longer interprets `None` as a wire.
   [(#4668)](https://github.com/PennyLaneAI/pennylane/pull/4668)
