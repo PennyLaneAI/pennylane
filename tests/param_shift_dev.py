@@ -27,9 +27,11 @@ class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
     name = "param_shift.qubit"
 
     def preprocess(self, execution_config=qml.devices.DefaultExecutionConfig):
-        if config.gradient_method in {"device", "parameter-shift"}:
-            config = dataclasses.replace(config, use_device_gradient=True)
-        return super().preprocess(config)
+        if execution_config.gradient_method in {"device", "parameter-shift"}:
+            execution_config = dataclasses.replace(execution_config, use_device_gradient=True)
+            if execution_config.use_device_jacobian_product is None:
+                execution_config = dataclasses.replace(execution_config, use_device_jacobian_product=True)
+        return super().preprocess(execution_config)
 
     def supports_derivatives(self, execution_config=None, circuit=None):
         if execution_config is None:
