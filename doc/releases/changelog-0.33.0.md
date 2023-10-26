@@ -384,6 +384,7 @@
 
 * Shallow copies of the `QNode` now also copy the `execute_kwargs` and transform program. When applying
   a transform to a `QNode`, the new qnode is only a shallow copy of the original and thus keeps the same
+  [(#4736)](https://github.com/PennyLaneAI/pennylane/pull/4736)
   device.
 
 <h3>Breaking changes 💔</h3>
