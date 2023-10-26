@@ -135,7 +135,7 @@ For example, take the following decorated quantum function:
 
     dev = qml.device('default.qubit', wires=[0, 1, 2])
 
-    @qml.compile()
+    @qml.compile
     @qml.qnode(dev)
     def circuit(x, y, z):
         qml.Hadamard(wires=0)

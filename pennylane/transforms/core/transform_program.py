@@ -105,7 +105,7 @@ class TransformProgram:
     in the list containing the containers.
 
     The only case where one would have to interact directly with a transform program is when developing a
-    :class:`~.device.Device`, indeed the pre processing method of a device returns a transform program. You should
+    :class:`~.device.Device`, indeed the pre-processing method of a device returns a transform program. You should
     directly refer to the device api documentation for more details.
 
     .. warning::

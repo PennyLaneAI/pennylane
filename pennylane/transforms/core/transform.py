@@ -39,7 +39,7 @@ def transform(
               returns a sequence of :class:`pennylane.tape.QuantumTape` and a processing function.
 
             * The transform must have type hinting of the following form: ``my_quantum_transform(tape:
-              qml.tape.QuantumTape, ...) -> ( Sequence[qml.tape.QuantumTape], callable)``
+              qml.tape.QuantumTape, ...) -> ( Sequence[qml.tape.QuantumTape], Callable)``
 
         expand_transform (callable): An expand transform is defined as a function that has the following requirements:
 
@@ -57,14 +57,13 @@ def transform(
 
     Returns:
 
-        pennylane.transforms.core.TransformDispatcher: It returns a transform dispatcher object that is dispatching
-            given the received circuit object.
+        pennylane.transforms.core.TransformDispatcher: It returns a transform dispatcher object that is dispatchin given the received circuit object.
 
     **What can a dispatched function accept as argument and what does it return?**
 
     A dispatched transform is able to handle several PenyLane objects: :class:`pennylane.QNode`, quantum function
     (callable), :class:`pennylane.tape.QuantumTape` and :class:`pennylane.devices.Device`. For each object, the transform
-    will be applied in a different way but it always preseves the provided underlying quantum transform. What is
+    will be applied in a different way but it always preserves the provided underlying quantum transform. What is
     returned by the transform dispatcher depends on what circuit abstraction is given as argument. Here is provided a
     list of the different behavior and return for the different objects:
 
@@ -147,7 +146,7 @@ def transform(
 
     The transform program is automatically applied on the tapes before sending the tapes to execution. When called the
     transform program applies all the transforms that it contains and create a sequence of tapes, it also produces a single
-    post-processing function that containes a reversed concatenation of all the transforms processing functions. After
+    post-processing function that contains a reversed concatenation of all the transforms processing functions. After
     executing the tapes, the post-processing function is applied to get the final results.
 
     """

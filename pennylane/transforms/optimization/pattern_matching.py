@@ -53,7 +53,7 @@ def pattern_matching_optimization(
 
     >>> dev = qml.device('default.qubit', wires=5)
 
-    You can apply the transform directly on a :class:`QNode`, for that you need firs to define a pattern that is to be
+    You can apply the transform directly on a :class:`QNode`, for that you need first to define a pattern that is to be
     found in the circuit. We use the following pattern that implements the identity:
 
     .. code-block:: python
@@ -76,7 +76,7 @@ def pattern_matching_optimization(
             qml.S(wires=2)
             return qml.expval(qml.PauliX(wires=0))
 
-    During the call of the circuit, it is first otpimized (if possible).
+    During the call of the circuit, it is first optimized (if possible).
 
     >>> circuit()
 
