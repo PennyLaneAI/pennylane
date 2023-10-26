@@ -30,9 +30,6 @@ class grad:
     """A :func:`~.qjit` compatible gradient transformation that returns the gradient
     as a callable function of (functions of) QNodes.
 
-    Inside a :func:`~.qjit` decorated program, this will patch to :func:`catalyst.grad` and
-    returns a callable object utilized by the supported compilers in
-    :doc:`Catalyst <catalyst:index>`.
 
     By default, in interpreted mode, gradients are computed for arguments which contain
     the property ``requires_grad=True``. Alternatively, the ``argnum`` keyword argument
@@ -66,23 +63,24 @@ class grad:
             to determine differentiability, by examining the ``requires_grad``
             property.
 
-        method (str): The method **only** used for differentiation within :func:`~.qjit`.
-                      The value of this method should be ``None`` when is *not* called inside
-                      a :func:`~.qjit` decorated method. (default value is ``None``)
+        method (str): Specifies the gradient method when used with
+                      the :func:`~.qjit` decorator. Outside of the
+                      :func:`~.qjit`, this keyword argument has no effect.
+                      and should not be set.
                       In just-in-time (JIT) mode, this can be any of ``["auto", "fd"]``, where:
 
                       - ``"auto"`` represents deferring the quantum differentiation to the method
                         specified by the QNode, while the classical computation is differentiated
                         using traditional auto-diff. Catalyst supports ``"parameter-shift"`` and
                         ``"adjoint"`` on internal QNodes. Notably, QNodes with
-                        ``diff_method="finite-diff"`` is not supported with ``"auto"``.
+                        ``diff_method="finite-diff"`` are not supported with ``"auto"``.
 
                       - ``"fd"`` represents first-order finite-differences for the entire hybrid
                         function.
 
         step_size (float): The step-size value for the finite-difference (``"fd"``) method within
-                      :func:`~.qjit`. The value of this method should be ``None`` when is *not*
-                      called inside a :func:`~.qjit` decorated method. (default value is ``None``)
+                      :func:`~.qjit` decorated functions. This value has
+                      no effect in non-compiled functions.
 
     Returns:
         function: The function that returns the gradient of the input
@@ -197,9 +195,6 @@ def jacobian(func, argnum=None, method=None, step_size=None):
     """A :func:`~.qjit` compatible Jacobian transformation that returns the Jacobian
     as a callable function of vector-valued (functions of) QNodes.
 
-    Inside a :func:`~.qjit` decorated program, this will patch to :func:`catalyst.jacobian`
-    and returns a callable object utilized by the supported compilers in
-    :doc:`Catalyst <catalyst:index>`.
 
     By default, in interpreted mode, this is a wrapper around the :mod:`autograd.jacobian`
     function.
@@ -223,16 +218,16 @@ def jacobian(func, argnum=None, method=None, step_size=None):
             with respect to. If a sequence is given, the Jacobian corresponding
             to all marked inputs and all output elements is returned.
 
-        method (str): The method **only** used for differentiation within :func:`~.qjit`.
-                      The value of this method should be ``None`` when is *not* called inside
-                      a :func:`~.qjit` decorated method. (default value is ``None``)
-                      In just-in-time (JIT) mode, this can be any of ``["auto", "fd"]``, where:
+        method (str): Specifies the gradient method when used within
+                      the :func:`~.qjit` decorator. Outside of the
+                      :func:`~.qjit`, this keyword argument has no effect
+                      and should not be set.
 
                       - ``"auto"`` represents deferring the quantum differentiation to the method
                         specified by the QNode, while the classical computation is differentiated
                         using traditional auto-diff. Catalyst supports ``"parameter-shift"`` and
                         ``"adjoint"`` on internal QNodes. Notably, QNodes with
-                        ``diff_method="finite-diff"`` is not supported with ``"auto"``.
+                        ``diff_method="finite-diff"`` are not supported with ``"auto"``.
 
                       - ``"fd"`` represents first-order finite-differences for the entire hybrid
                         function.
@@ -250,7 +245,6 @@ def jacobian(func, argnum=None, method=None, step_size=None):
         In interpreted mode, due to a limitation in Autograd, this function can only differentiate
         built-in scalar or NumPy array arguments.
 
-    .. note::
 
         When used with :func:`~.qjit`, this function only supports the Catalyst compiler.
         Please see :func:`catalyst.jacobian` for more details.
@@ -381,9 +375,7 @@ def jacobian(func, argnum=None, method=None, step_size=None):
     As expected, the tuple was unpacked and we directly received the Jacobian of the
     QNode with respect to ``y``.
 
-    We can also compute the Jacobian transformation inside a :func:`~.qjit` decorated program.
-
-    Consider this QNode
+    We can also compute the Jacobian transformation inside a :func:`~.qjit` decorated program:
 
     .. code-block::
 
