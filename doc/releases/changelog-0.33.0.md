@@ -391,9 +391,9 @@
   and `no_sampling` to assist in constructing devices under the new device API.
   [(#4659)](https://github.com/PennyLaneAI/pennylane/pull/4659)
 
-* `qml.device`, `devices.preprocessing` and the `tape_expand.set_decomposition` context 
-  manager have been updated to bring `default.qubit` to feature parity with `default.qubit.legacy` with regards to 
-  using custom decompositions. The `DefaultQubit` device can now be included in a `set_decomposition` 
+* Updated `qml.device`, `devices.preprocessing` and the `tape_expand.set_decomposition` context 
+  manager to bring `DefaultQubit` to feature parity with `default.qubit.legacy` with regards to 
+  using custom decompositions. The `DefaultQubit2` device can now be included in a `set_decomposition` 
   context or initialized with a `custom_decomps` dictionary, as well as a custom `max_depth` for 
   decomposition.
   [(#4675)](https://github.com/PennyLaneAI/pennylane/pull/4675)
@@ -467,6 +467,11 @@
 * Plots generated with the `pennylane.drawer.plot` style of `matplotlib.pyplot` now have black
   axis labels and are generated at a default DPI of 300.
   [(#4690)](https://github.com/PennyLaneAI/pennylane/pull/4690)
+
+* Shallow copies of the `QNode` now also copy the `execute_kwargs` and transform program. When applying
+  a transform to a `QNode`, the new qnode is only a shallow copy of the original and thus keeps the same
+  device.
+  [(#4736)](https://github.com/PennyLaneAI/pennylane/pull/4736)
 
 <h3>Breaking changes 💔</h3>
 
