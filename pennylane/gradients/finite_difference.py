@@ -277,10 +277,9 @@ def finite_diff(
     .. details::
         :title: Usage Details
 
-        This gradient transform can also be applied directly to :class:`QNode <pennylane.QNode>` objects. This is not
-        recommended because PennyLane must compute the classical Jacobian of the parameters and multiply it with
-        the quantum Jacobian, we recommend using the ``diff_method`` kwargs with your favorite machine learning
-        framework.
+        This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects.
+        However, for performance reasons, we recommend providing the gradient transform as the ``diff_method`` argument
+        of the QNode decorator, and differentiating with your preferred machine learning framework.
 
         >>> @qml.qnode(dev)
         ... def circuit(params):

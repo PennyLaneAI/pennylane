@@ -20,8 +20,8 @@ This subpackage contains QNode, quantum function, device, and tape transforms.
 Transforms
 ----------
 
-How to build a custom PennyLane transform?
-------------------------------------------
+How to build a custom PennyLane transform
+-----------------------------------------
 
 The user facing way of creating a transform is to use :class:`pennylane.transform` as a function or a decorator.
 The PennyLane contract for defining your own quantum transform is the following: you need to define a quantum transform
@@ -34,8 +34,8 @@ provided processing function. For more details and an example, read the followin
 
     ~transforms.core.transform
 
-Transforms core
----------------
+Transforms developer functions
+------------------------------
 
 In this core section of transform you can find the building blocks of transforms in PennyLane. The :class:`TransformDispatcher`
 and  :class:`TransformProgram` are developer-facing objects, that allows the creation, dispatching and composability

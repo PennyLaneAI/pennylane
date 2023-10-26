@@ -100,7 +100,7 @@ class QNode:
             * ``"auto"``: The QNode automatically detects the interface from the input values of
               the quantum function.
 
-        diff_method (str or .pennylane.transforms.core.TransformDispatcher): The method of differentiation to use in
+        diff_method (str or pennylane.transforms.core.TransformDispatcher): The method of differentiation to use in
             the created QNode. Can either be a :class:`pennylane.transforms.core.TransformDispatcher`, which includes all
             quantum gradient transforms in the :mod:`qml.gradients <.gradients>` module, or a string. The following
             strings are allowed:
@@ -520,7 +520,6 @@ class QNode:
     def add_transform(self, transform_container):
         """Add a transform container to the transform program.
 
-        .. warning:: This is an experimental feature.
         """
         self._transform_program.push_back(transform_container=transform_container)
 
