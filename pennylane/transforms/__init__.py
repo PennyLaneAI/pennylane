@@ -34,7 +34,7 @@ See the :class:`pennylane.transform` documentation for more details and examples
 Transforms developer functions
 ------------------------------
 
-In this core section of transform you can find the building blocks of transforms in PennyLane. The :class:`TransformDispatcher`
+In this section of transform you can find the building blocks of transforms in PennyLane. The :class:`TransformDispatcher`
 and  :class:`TransformProgram` are developer-facing objects, that allows the creation, dispatching and composability
 of transforms.
 
