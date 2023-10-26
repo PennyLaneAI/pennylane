@@ -111,9 +111,10 @@ def cut_circuit_mc(
             :func:`~.find_and_place_cuts` and :func:`~.kahypar_cut` for the available arguments.
 
     Returns:
-        qnode (QNode) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
-            Executing this circuit will sample from the partitioned circuit fragments and combine the results using a
-            Monte Carlo method.
+        qnode (QNode) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will sample from the partitioned circuit fragments and combine the results using a Monte Carlo method.
 
     **Example**
 

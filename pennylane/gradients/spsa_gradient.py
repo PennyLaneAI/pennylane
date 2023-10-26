@@ -166,9 +166,11 @@ def spsa_grad(
             ``spsa_grad`` in each call.
 
     Returns:
-        qnode (QNode) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
-            Executing this circuit will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple
-            depending upon the nesting structure of measurements in the original circuit.
+        qnode (QNode) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple depending upon the nesting
+        structure of measurements in the original circuit.
 
     **Example**
 

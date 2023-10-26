@@ -67,9 +67,10 @@ def shadow_expval(tape: QuantumTape, H, k=1) -> (Sequence[QuantumTape], Callable
             the median of means. ``k=1`` corresponds to simply taking the mean over all measurements.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as
-            described in :func:`qml.transform <pennylane.transform>`. Executing this circuit will provide the
-            expectation value estimates for each observable in the form of a tensor.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the expectation value estimates for each observable in the form of a tensor.
 
     **Example**
 
@@ -186,9 +187,10 @@ def shadow_state(tape: QuantumTape, wires, diffable=False) -> (Sequence[QuantumT
             cost.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as
-            described in :func:`qml.transform <pennylane.transform>`.Executing this circuit will provide the reconstructed
-            state in the form of a tensor.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.Executing this circuit
+        will provide the reconstructed state in the form of a tensor.
 
     **Example**
 

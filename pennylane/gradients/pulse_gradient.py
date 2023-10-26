@@ -348,9 +348,11 @@ def stoch_pulse_grad(
             tapes is created, increasing performance on simulators.
 
     Returns:
-        tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
-            Executing this circuit will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple
-            depending upon the nesting structure of measurements in the original circuit.
+        tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple depending upon the nesting
+        structure of measurements in the original circuit.
 
     This transform realizes the stochastic parameter-shift rule for pulse sequences, as introduced
     in `Banchi and Crooks (2018) <https://quantum-journal.org/papers/q-2021-01-25-386/>`_ and

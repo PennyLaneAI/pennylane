@@ -107,9 +107,10 @@ def batch_params(
             in the QNode, rather than just trainable QNode parameters.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as
-            described in :func:`qml.transform <pennylane.transform>`. Executing this circuit will provide the
-            batched results.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the batched results.
 
     **Example**
 

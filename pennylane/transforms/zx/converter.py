@@ -59,9 +59,10 @@ def to_zx(tape, expand_measurements=False):  # pylint: disable=unused-argument
             rotations will be added to the operations.
 
     Returns:
-        graph (Graph) or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed
-            circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit will provide the
-            ZX graph in the form of a PyZx graph.
+        graph (pyzx.Graph) or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the ZX graph in the form of a PyZx graph.
 
     **Example**
 

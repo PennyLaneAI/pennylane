@@ -33,9 +33,10 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
             Defaults to the order in which the wires appear in the quantum function.
 
     Returns:
-        TensorLike or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed
-            circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit will provide the
-            matrix in the form of a tensor.
+        TensorLike or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the matrix in the form of a tensor.
 
     **Example**
 

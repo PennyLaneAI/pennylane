@@ -358,9 +358,11 @@ def mitigate_with_zne(
             folding function is stochastic.
 
     Returns:
-        qnode (QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
-            Executing this circuit will provide the mitigated results in the form of a tensor of a tensor, a tuple,
-            or a nested tuple depending upon the nesting structure of measurements in the original circuit.
+        qnode (QNode) or tuple[List[.QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the mitigated results in the form of a tensor of a tensor, a tuple, or a nested tuple depending
+        upon the nesting structure of measurements in the original circuit.
 
     **Example:**
 
