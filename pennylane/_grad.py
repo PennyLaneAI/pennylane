@@ -246,13 +246,6 @@ def jacobian(func, argnum=None, method=None, step_size=None):
         built-in scalar or NumPy array arguments.
 
 
-        When used with :func:`~.qjit`, this function only supports the Catalyst compiler.
-        Please see :func:`catalyst.jacobian` for more details.
-
-        Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
-        as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
-        page for an overview of the differences between Catalyst and PennyLane.
-
 
     For ``argnum=None``, the trainable arguments are inferred dynamically from the arguments
     passed to the function. The returned function takes the same arguments as the original
