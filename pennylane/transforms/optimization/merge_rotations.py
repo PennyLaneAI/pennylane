@@ -50,7 +50,7 @@ def merge_rotations(
 
     >>> dev = qml.device('default.qubit', wires=3)
 
-    You can apply the transform direclty on :class:`QNode`
+    You can apply the transform directly on :class:`QNode`
 
     .. code-block:: python
 
