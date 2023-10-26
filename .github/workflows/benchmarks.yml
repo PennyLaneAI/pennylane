@@ -1,0 +1,40 @@
+name: Benchmarks
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+concurrency:
+  group: benchmarks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  benchmarks:
+    if: >-
+      ${{
+        github.event_name == 'push' ||
+        (
+          github.event_name == 'pull_request' &&
+          contains(github.event.pull_request.labels.*.name, 'ci:run-benchmarks')
+        )
+      }}
+
+    uses: ./.github/workflows/interface-unit-tests.yml
+    with:
+      branch: ${{ github.ref }}
+
+      run_benchmarks_ci: true
+
+      # Run a 'lightened' version of the CI on Pull Requests by default
+      # Unless the label `ci:run-full-test-suite` is attached to the PR.
+      # Always runs the full suite for push events.
+      run_lightened_ci: >-
+        ${{
+          github.event_name == 'pull_request'
+          && !contains(github.event.pull_request.labels.*.name, 'ci:run-full-test-suite')
+          || false
+        }}
+
+      skip_ci_test_jobs: torch-tests, autograd-tests, tf-tests, core-tests, all-interfaces-tests, external-libraries-tests, qcut-tests, qchem-tests, gradients-tests, data-tests
+
