@@ -537,6 +537,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Jax jit now works when a probability measurement is broadcasted onto all wires.
+
 * Fixes `LocalHilbertSchmidt.compute_decomposition` so the template can be used in a qnode.
   [(#4719)](https://github.com/PennyLaneAI/pennylane/pull/4719)
 
