@@ -26,7 +26,7 @@ SQRT2INV = 1 / math.sqrt(2)
 
 EINSUM_OP_WIRECOUNT_PERF_THRESHOLD = 3
 EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD = 13
-
+MATRIX_TOO_LARGE_THRESHOLD = 14
 
 def _get_slice(index, axis, num_axes):
     """Allows slicing along an arbitrary axis of an array or tensor.
@@ -270,15 +270,19 @@ def apply_multicontrolledx(
     r"""Apply MultiControlledX to a state with the default einsum/tensordot choice
     for 12 operation wires or less. Otherwise, apply a custom kernel based on
     composing transpositions, rolling of control axes and the CNOT logic above."""
-    if len(op.wires) < 13:
-        if (
-            len(op.wires) < EINSUM_OP_WIRECOUNT_PERF_THRESHOLD
-            and math.ndim(state) < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD
-        ):
-            return apply_operation_einsum(op, state, is_state_batched)
-        return apply_operation_tensordot(op, state, is_state_batched)
 
-    return _apply_multicontrolledx(op, state, is_state_batched)
+    ndim = math.ndim(state)
+    len_op = len(op.wires)
+    if ndim < 12 or len_op >= MATRIX_TOO_LARGE_THRESHOLD:
+        return _apply_multicontrolledx(op, state, is_state_batched)
+    if (
+        len_op < EINSUM_OP_WIRECOUNT_PERF_THRESHOLD
+        and ndim < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD
+    ):
+        return apply_operation_einsum(op, state, is_state_batched)
+    return apply_operation_tensordot(op, state, is_state_batched)
+
+
 
 def _apply_multicontrolledx(op, state, is_state_batched):
     r"""Apply MultiControlledX to state by composing transpositions, rolling of control axes
