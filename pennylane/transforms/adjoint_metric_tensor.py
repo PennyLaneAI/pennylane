@@ -143,7 +143,8 @@ def adjoint_metric_tensor(
             )
         if set(tape.wires) != set(range(tape.num_wires)):
             wire_map = {w: i for i, w in enumerate(tape.wires)}
-            tape = qml.map_wires(tape, wire_map)
+            tapes, fn = qml.map_wires(tape, wire_map)
+            tape = fn(tapes)
         tape = qml.transforms.expand_trainable_multipar(tape)
 
         # Divide all operations of a tape into trainable operations and blocks
