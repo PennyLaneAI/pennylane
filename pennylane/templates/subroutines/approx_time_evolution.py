@@ -70,6 +70,8 @@ class ApproxTimeEvolution(Operation):
         time (int or float): The time of evolution, namely the parameter :math:`t` in :math:`e^{- i H t}`.
         n (int): The number of Trotter steps used when approximating the time-evolution operator.
 
+    .. seealso:: :class:`~.TrotterProduct`.
+    
     .. details::
         :title: Usage Details
 
