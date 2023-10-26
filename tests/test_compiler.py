@@ -17,6 +17,8 @@ TODO: Uncomment 'pytest.mark.external' to check these tests in GitHub actions wi
     the 'pennylane-catalyst' v0.3.2 release. These tests require the installation
     of Catalyst from the main branch at the moment.
 """
+import numpy as np
+
 # pylint: disable=import-outside-toplevel
 import pytest
 import pennylane as qml
@@ -176,3 +178,23 @@ class TestCatalyst:
         mlir_str = str(circuit.mlir)
         result_header = "func.func private @circuit(%arg0: tensor<f64>) -> tensor<f64>"
         assert result_header in mlir_str
+
+    def test_control(self):
+        """Test that control works with qjit."""
+        import jax
+
+        @qml.qjit
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def workflow(theta, w, cw):
+            qml.Hadamard(wires=[0])
+            qml.Hadamard(wires=[1])
+
+            def func(arg):
+                qml.RX(theta, wires=arg)
+
+            qml.ctrl(func, control=[cw])(w)
+            qml.ctrl(qml.RZ, control=[cw])(theta, wires=w)
+            qml.ctrl(qml.RY(theta, wires=w), control=[cw])
+            return qml.probs()
+
+        assert np.allclose(workflow(jnp.pi / 4, 1, 0), jax.numpy.array([0.25, 0.25, 0.125, 0.375]))
