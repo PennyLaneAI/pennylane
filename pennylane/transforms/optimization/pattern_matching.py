@@ -81,7 +81,7 @@ def pattern_matching_optimization(
     >>> circuit()
 
 
-    First let's consider the following circuit where we want to replace sequence of two ``pennylane.S`` gates with a
+    First let's consider the following circuit where we want to replace a sequence of two ``pennylane.S`` gates with a
     ``pennylane.PauliZ`` gate.
 
     .. code-block:: python
