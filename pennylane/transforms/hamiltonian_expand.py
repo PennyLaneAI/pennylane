@@ -31,13 +31,13 @@ def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[Quant
     and provides a function to recombine the results.
 
     Args:
-        tape (pennylane.QNode or pennylane.tape.QuantumTape or Callable): the quantum circuit used when calculating the
+        tape (QNode or QuantumTape or Callable): the quantum circuit used when calculating the
             expectation value of the Hamiltonian
         group (bool): Whether to compute disjoint groups of commuting Pauli observables, leading to fewer tapes.
             If grouping information can be found in the Hamiltonian, it will be used even if group=False.
 
     Returns:
-        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
+        qnode (QNode) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
 

@@ -60,14 +60,14 @@ def shadow_expval(tape: QuantumTape, H, k=1) -> (Sequence[QuantumTape], Callable
     See :func:`~.pennylane.shadow_expval` for more usage details.
 
     Args:
-        tape (pennylane.QNode or pennylane.tape.QuantumTape or Callable): A quantum circuit.
+        tape (QNode or QuantumTape or Callable): A quantum circuit.
         H (:class:`~.pennylane.Observable` or list[:class:`~.pennylane.Observable`]): Observables
             for which to compute the expectation values
         k (int): k (int): Number of equal parts to split the shadow's measurements to compute
             the median of means. ``k=1`` corresponds to simply taking the mean over all measurements.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
 
@@ -173,7 +173,7 @@ def shadow_state(tape: QuantumTape, wires, diffable=False) -> (Sequence[QuantumT
     the reconstructed state in a differentiable manner.
 
     Args:
-        tape (pennylane.QNode or pennylane.tape.QuantumTape or Callable): A quantum circuit.
+        tape (QNode or QuantumTape or Callable): A quantum circuit.
         wires (list[int] or list[list[int]]): If a list of ints, this represents
             the wires over which to reconstruct the state. If a list of list of ints,
             a state is reconstructed for every element of the outer list, saving
@@ -184,7 +184,7 @@ def shadow_state(tape: QuantumTape, wires, diffable=False) -> (Sequence[QuantumT
             cost.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
 

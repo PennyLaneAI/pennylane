@@ -27,12 +27,12 @@ def append_gate(tape: QuantumTape, params, gates) -> (Sequence[QuantumTape], Cal
     """Append parameterized gates to an existing tape.
 
     Args:
-        tape (QuantumTape or .QNode or Callable): quantum circuit to transform by adding gates
+        tape (QuantumTape or QNode or Callable): quantum circuit to transform by adding gates
         params (array[float]): parameters of the gates to be added
         gates (list[Operator]): list of the gates to be added
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     """
     new_operations = []

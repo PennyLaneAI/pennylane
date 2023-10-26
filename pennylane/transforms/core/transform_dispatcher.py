@@ -33,7 +33,7 @@ class TransformDispatcher:
 
     Convert a transform that has the signature ``(tape -> Sequence(tape), fn)`` to a transform dispatcher
     that can act on :class:`pennylane.tape.QuantumTape`., quantum function, :class:`pennylane.QNode`,
-    :class:`pennylane.device.Device`.
+    :class:`pennylane.devices.Device`.
 
     .. warning::
 

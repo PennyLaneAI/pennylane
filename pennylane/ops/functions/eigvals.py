@@ -41,7 +41,7 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
         `documentation <https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigsh.html#scipy.sparse.linalg.eigsh>`_.
 
     Args:
-        op (.Operator or pennylane.QNode or pennylane.tape.QuantumTape or Callable): A quantum operator or quantum circuit.
+        op (Operator or QNode or QuantumTape or Callable): A quantum operator or quantum circuit.
         k (int): The number of eigenvalues to be returned for a :class:`~.SparseHamiltonian`.
         which (str): Method for computing the eigenvalues of a :class:`~.SparseHamiltonian`. The
             possible methods are ``'LM'`` (largest in magnitude), ``'SM'`` (smallest in magnitude),
@@ -49,7 +49,7 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
             from each end of the spectrum).
 
     Returns:
-        TensorLike or qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation
+        TensorLike or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
 

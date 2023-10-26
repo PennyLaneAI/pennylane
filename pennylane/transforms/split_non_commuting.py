@@ -30,11 +30,11 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
     Splits a qnode measuring non-commuting observables into groups of commuting observables.
 
     Args:
-        tape (pennylane.QNode or .QuantumTape or Callable): A circuit that contains a list of
+        tape (QNode or QuantumTape or Callable): A circuit that contains a list of
             non-commuting observables to measure.
 
     Returns:
-        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
+        qnode (QNode) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
 

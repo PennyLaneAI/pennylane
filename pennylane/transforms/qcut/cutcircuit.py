@@ -90,7 +90,7 @@ def cut_circuit(
         Only circuits that return a single expectation value are supported.
 
     Args:
-        tape (pennylane.QNode or pennylane.tape.QuantumTape or Callable): the quantum circuit to be cut
+        tape (QNode or QuantumTape): the quantum circuit to be cut
         auto_cutter (Union[bool, Callable]): Toggle for enabling automatic cutting with the default
             :func:`~.kahypar_cut` partition method. Can also pass a graph partitioning function that
             takes an input graph and returns a list of edges to be cut based on a given set of
@@ -112,7 +112,7 @@ def cut_circuit(
             :func:`~.find_and_place_cuts` and :func:`~.kahypar_cut` for the available arguments.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
+        qnode (QNode) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
 

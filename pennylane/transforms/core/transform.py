@@ -33,7 +33,7 @@ def transform(
     directly as a decorator on quantum function and :class:`pennylane.QNode`.
 
     Args:
-        quantum_transform (callable): A quantum transform is defined as a function that has the following requirements:
+        quantum_transform (Callable): A quantum transform is defined as a function that has the following requirements:
 
             * A quantum transform is a function that takes a :class:`pennylane.tape.QuantumTape` as first input and
               returns a sequence of :class:`pennylane.tape.QuantumTape` and a processing function.
@@ -41,14 +41,14 @@ def transform(
             * The transform must have type hinting of the following form: ``my_quantum_transform(tape:
               qml.tape.QuantumTape, ...) -> ( Sequence[qml.tape.QuantumTape], Callable)``
 
-        expand_transform (callable): An expand transform is defined as a function that has the following requirements:
+        expand_transform (Callable): An expand transform is defined as a function that has the following requirements:
 
             * An expand transform is a function that is applied before applying the defined quantum transform. It
               takes the same arguments as the transform.
 
             * The expand transform must have the same type hinting as a quantum transform.
 
-        classical_cotransform (callable): A classical co-transform is a function to post-process the the classical
+        classical_cotransform (Callable): A classical co-transform is a function to post-process the the classical
             jacobian and the quantum jacobian and has the signature: ``my_cotransform(qjac, cjac, tape) -> tensor_like``
         is_informative (bool): Whether or not a transform is informative. If true the transform is queued at the end
             of the transform program and the tapes or qnode aren't executed.
@@ -57,7 +57,7 @@ def transform(
 
     Returns:
 
-        pennylane.transforms.core.TransformDispatcher: It returns a transform dispatcher object that is dispatchin given the received circuit object.
+        ~.TransformDispatcher: It returns a transform dispatcher object that is dispatching given the received circuit object.
 
     **What can a dispatched function accept as argument and what does it return?**
 

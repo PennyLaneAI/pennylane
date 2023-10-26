@@ -38,12 +38,12 @@ def pattern_matching_optimization(
     r"""Quantum function transform to optimize a circuit given a list of patterns (templates).
 
     Args:
-        tape (pennylane.QNode or pennylane.tape.QuantumTape or Callable): A quantum tape to be optimized.
+        tape (QNode or QuantumTape or Callable): A quantum circuit to be optimized.
         pattern_tapes(list(.QuantumTape)): List of quantum tapes that implement the identity.
         custom_quantum_cost (dict): Optional, quantum cost that overrides the default cost dictionary.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
         QuantumFunctionError: The pattern provided is not a valid QuantumTape or the pattern contains measurements or

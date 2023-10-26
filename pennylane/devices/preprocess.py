@@ -91,7 +91,7 @@ def no_sampling(
         name="device" (str): name to use in error message.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
+        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
 
     This transform can be added to forbid finite shots. For example, ``default.qubit`` uses it for
@@ -111,13 +111,13 @@ def validate_device_wires(
     across all available wires.
 
     Args:
-        tape (QuantumTape or .QNode or Callable): a quantum circuit.
+        tape (QuantumTape or QNode or Callable): a quantum circuit.
         wires=None (Optional[Wires]): the allowed wires. Wires of ``None`` allows any wires
             to be present in the tape.
         name="device" (str): the name of the device to use in error messages.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
         WireError: if the tape has a wire not present in the provided wires.
@@ -158,7 +158,7 @@ def validate_multiprocessing_workers(
         device (pennylane.devices.Device): The device to be checked.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     """
     if max_workers is not None:
@@ -235,7 +235,7 @@ def decompose(
     """Decompose operations until the stopping condition is met.
 
     Args:
-        tape (QuantumTape, QNode, Callable): a quantum circuit.
+        tape (QuantumTape or QNode or Callable): a quantum circuit.
         stopping_condition (Callable): a function from an operator to a boolean. If ``False``, the operator
             should be decomposed. If an operator cannot be decomposed and is not accepted by ``stopping_condition``,
             a ``DecompositionUndefinedError`` will be raised.
@@ -246,7 +246,7 @@ def decompose(
 
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
         DecompositionUndefinedError: if an operator is not accepted and does not define a decomposition
@@ -332,12 +332,12 @@ def validate_observables(
     """Validates the observables and measurements for a circuit.
 
     Args:
-        tape (QuantumTape or .QNode or Callable): a quantum circuit.
+        tape (QuantumTape or QNode or Callable): a quantum circuit.
         stopping_condition (callable): a function that specifies whether or not an observable is accepted.
         name (str): the name of the device to use in error messages.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
+        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
         DeviceError: if an observable is not supported
@@ -380,7 +380,7 @@ def validate_measurements(
         name (str): the name to use in error messages.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
         DeviceError: if a measurement process is not supported.

@@ -109,7 +109,7 @@ def spsa_grad(
     finite-difference method.
 
     Args:
-        tape (pennylane.QNode or .QuantumTape): quantum circuit to differentiate
+        tape (QNode or QuantumTape): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
@@ -166,7 +166,7 @@ def spsa_grad(
             ``spsa_grad`` in each call.
 
     Returns:
-        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
+        qnode (QNode) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
 

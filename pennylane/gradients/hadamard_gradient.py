@@ -69,7 +69,7 @@ def hadamard_grad(
     r"""Transform a circuit to compute the Hadamard test gradient of all gates with respect to their inputs.
 
     Args:
-        tape (pennylane.QNode or .QuantumTape): quantum circuit to differentiate
+        tape (QNode or QuantumTape): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
@@ -80,7 +80,7 @@ def hadamard_grad(
             is ``None``.
 
     Returns:
-        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
+        qnode (QNode) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     For a variational evolution :math:`U(\mathbf{p}) \vert 0\rangle` with
     :math:`N` parameters :math:`\mathbf{p}`,

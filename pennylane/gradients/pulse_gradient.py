@@ -334,7 +334,7 @@ def stoch_pulse_grad(
     of the envelopes :math:`\partial f_j / \partial v_k` at the sampled times suitably.
 
     Args:
-        tape (pennylane.QNode or pennylane.tape.QuantumTape): quantum circuit to differentiate
+        tape (QNode or QuantumTape): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
@@ -348,7 +348,7 @@ def stoch_pulse_grad(
             tapes is created, increasing performance on simulators.
 
     Returns:
-        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
+        qnode (QNode) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     This transform realizes the stochastic parameter-shift rule for pulse sequences, as introduced
     in `Banchi and Crooks (2018) <https://quantum-journal.org/papers/q-2021-01-25-386/>`_ and

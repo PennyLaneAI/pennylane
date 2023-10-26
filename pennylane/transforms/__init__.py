@@ -12,16 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This subpackage contains QNode, quantum function, device, and tape transforms.
+This subpackage contains PennyLane transforms and their building blocks.
 
 
 .. currentmodule:: pennylane
 
-Transforms
-----------
-
-How to build a custom PennyLane transform
------------------------------------------
+Custom transforms
+-----------------
 
 :class:`pennylane.transform` can be used to define custom transformations
 that work with PennyLane QNodes; such transformations can map a circuit

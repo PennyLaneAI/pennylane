@@ -37,11 +37,11 @@ def fold_global(tape: QuantumTape, scale_factor) -> (Sequence[QuantumTape], Call
     The purpose of folding is to artificially increase the noise for zero noise extrapolation, see :func:`~.pennylane.transforms.mitigate_with_zne`.
 
     Args:
-        tape (pennylane.QNode or pennylane.tape.QuantumTape or Callable): the quantum circuit to be folded
+        tape (QNode or QuantumTape): the quantum circuit to be folded
         scale_factor (float): Scale factor :math:`\lambda` determining :math:`n` and :math:`s`
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
+        qnode (QNode) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     .. seealso:: :func:`~.pennylane.transforms.mitigate_with_zne`; This function is analogous to the implementation in ``mitiq``  `mitiq.zne.scaling.fold_global <https://mitiq.readthedocs.io/en/v.0.1a2/apidoc.html?highlight=global_folding#mitiq.zne.scaling.fold_global>`_.
 
@@ -347,7 +347,7 @@ def mitigate_with_zne(
     see the example and usage details for further information.
 
     Args:
-        tape (pennylane.QNode or pennylane.tape.QuantumTape or Callable): the quantum circuit to be error-mitigated
+        tape (QNode or QuantumTape): the quantum circuit to be error-mitigated
         scale_factors (Sequence[float]): the range of noise scale factors used
         folding (callable): a function that returns a folded circuit for a specified scale factor
         extrapolate (callable): a function that returns an extrapolated result when provided a
@@ -358,7 +358,7 @@ def mitigate_with_zne(
             folding function is stochastic.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
+        qnode (QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`
 
     **Example:**
 

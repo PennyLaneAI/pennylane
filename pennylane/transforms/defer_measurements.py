@@ -140,10 +140,10 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
         or an observable are explicitly specified.
 
     Args:
-        tape (pennylane.QNode or pennylane.tape.QuantumTape or Callable): a quantum circuit.
+        tape (QNode or QuantumTape or Callable): a quantum circuit.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
 

@@ -118,7 +118,7 @@ def metric_tensor(  # pylint:disable=too-many-arguments
         This is the case for unitary single-parameter operations.
 
     Args:
-        tape (pennylane.QNode or .QuantumTape): quantum circuit to find the metric tensor of
+        tape (QNode or QuantumTape): quantum circuit to find the metric tensor of
         argnum (int or Sequence[int] or None): Trainable tape-parameter indices with respect to which
             the metric tensor is computed. If ``argnum=None``, the metric tensor with respect to all
             trainable parameters is returned. Excluding tape-parameter indices from this list reduces
@@ -159,7 +159,7 @@ def metric_tensor(  # pylint:disable=too-many-arguments
               The output shape is a single two-dimensional tensor.
 
     Returns:
-        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
+        qnode (QNode) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     The block-diagonal part of the metric tensor always is computed using the
     covariance-based approach. If no approximation is selected,

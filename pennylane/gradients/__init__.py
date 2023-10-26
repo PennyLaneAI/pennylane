@@ -295,13 +295,13 @@ from executing the gradient tapes.
 Custom gradient transforms
 --------------------------
 
-Using the :class:`pennylane.transform` decorator, custom gradient transforms
+Using the :func:`qml.transform <pennylane.transform>` decorator, custom gradient transforms
 can be created:
 
 .. code-block:: python
 
     @transform
-    def my_custom_gradient(tape, **kwargs):
+    def my_custom_gradient(tape: qml.tape.QuantumTape, **kwargs) -> (Sequence[qml.tape.QuantumTape], Callable):
         ...
         return gradient_tapes, processing_fn
 
@@ -309,7 +309,7 @@ Once created, a custom gradient transform can be applied directly
 to QNodes, or registered as the quantum gradient transform to use
 during autodifferentiation.
 
-For more details, please see the :class:`pennylane.transform`
+For more details, please see the :func:`qml.transform <pennylane.transform>`
 documentation.
 """
 import pennylane as qml

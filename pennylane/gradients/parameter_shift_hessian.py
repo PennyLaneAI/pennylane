@@ -408,7 +408,7 @@ def param_shift_hessian(
     >>> qml.jacobian(qml.grad(cost))(weights)
 
     Args:
-        tape (pennylane.QNode or pennylane.tape.QuantumTape): quantum circuit to differentiate
+        tape (QNode or QuantumTape): quantum circuit to differentiate
         argnum (int or list[int] or array_like[bool] or None): Parameter indices to differentiate
             with respect to. If not provided, the Hessian with respect to all
             trainable indices is returned. Note that the indices refer to tape
@@ -432,7 +432,7 @@ def param_shift_hessian(
             instead of evaluating the input tape, reducing the number of device invocations.
 
     Returns:
-        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :class:`pennylane.transform` documentation.
+        qnode (QNode) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
 
         Note: By default a QNode with the keyword ``hybrid=True`` computes derivates with respect to

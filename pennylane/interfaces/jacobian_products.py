@@ -173,12 +173,12 @@ class JacobianProductCalculator(abc.ABC):
 
 
 class TransformJacobianProducts(JacobianProductCalculator):
-    """Compute VJPs, JVPs and Jacobians via a gradient transform :class:`pennylane.transforms.core.TransformDispatcher`.
+    """Compute VJPs, JVPs and Jacobians via a gradient transform :class:`~.TransformDispatcher`.
 
     Args:
         inner_execute (Callable[[Tuple[QuantumTape]], ResultBatch]): a function that
             executes the batch of circuits and returns their results.
-        gradient_transform (pennylane.transforms.core.TransformDispatcher): the gradient transform to use.
+        gradient_transform (.TransformDispatcher): the gradient transform to use.
         gradient_kwargs (dict): Any keyword arguments for the gradient transform.
 
     >>> inner_execute = qml.device('default.qubit').execute
