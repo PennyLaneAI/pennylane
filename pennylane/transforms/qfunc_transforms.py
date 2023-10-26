@@ -325,9 +325,9 @@ def qfunc_transform(tape_transform):
         parameter *and* the transform weights:
 
         >>> circuit(x, y)
-        0.9887793925354269
+        tensor(0.98877939, requires_grad=True)
         >>> qml.grad(circuit)(x, y)
-        (array(-0.02485651), array([-0.02474011, -0.09954244]))
+        (tensor(-0.02485651, requires_grad=True), array([-0.02474011, -0.09954244]))
 
         **Implementation details**
 

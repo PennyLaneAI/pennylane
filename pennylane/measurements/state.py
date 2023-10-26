@@ -67,16 +67,16 @@ def state() -> "StateMP":
         is then differentiated:
 
         >>> dev = qml.device('default.qubit', wires=2)
-        >>> qml.qnode(dev, diff_method="backprop")
+        >>> @qml.qnode(dev, diff_method="backprop")
         ... def test(x):
         ...     qml.RY(x, wires=[0])
         ...     return qml.state()
         >>> def cost(x):
         ...     return np.abs(test(x)[0])
         >>> cost(x)
-        tensor(0.98877108, requires_grad=True)
+        0.9987502603949663
         >>> qml.grad(cost)(x)
-        -0.07471906623679961
+        tensor(-0.02498958, requires_grad=True)
     """
     return StateMP()
 

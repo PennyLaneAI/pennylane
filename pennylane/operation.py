@@ -517,7 +517,7 @@ class Operator(abc.ABC):
 
     >>> a = np.array(3.14)
     >>> circuit(a)
-    -0.9999987318946099
+    tensor(-0.99999873, requires_grad=True)
 
     .. details::
         :title: Serialization and Pytree format
