@@ -17,6 +17,8 @@ TODO: Uncomment 'pytest.mark.external' to check these tests in GitHub actions wi
     the 'pennylane-catalyst' v0.3.2 release. These tests require the installation
     of Catalyst from the main branch at the moment.
 """
+import numpy as np
+
 # pylint: disable=import-outside-toplevel
 import pytest
 import pennylane as qml
@@ -208,16 +210,40 @@ class TestCatalyst:
         assert result_header in mlir_str
 
     def test_qjit_adjoint(self):
-        """Test JIT compilation with the autograph support"""
+        """Test JIT compilation with adjoint support"""
         dev = qml.device("lightning.qubit", wires=2)
 
         @qml.qjit
         @qml.qnode(device=dev)
-        def workflow(theta, n, wires):
+        def workflow_cl(theta, wires):
             def func():
                 qml.RX(theta, wires=wires)
 
             qml.adjoint(func)()
             return qml.probs()
 
-        print(workflow)
+        @qml.qnode(device=dev)
+        def workflow_pl(theta, wires):
+            def func():
+                qml.RX(theta, wires=wires)
+
+            qml.adjoint(func)()
+            return qml.probs()
+
+        assert np.allclose(workflow_cl(0.1, [1]), workflow_pl(0.1, [1]))
+
+    def test_qjit_adjoint_lazy(self):
+        """Test that Lazy kwarg is not supported."""
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qjit
+        @qml.qnode(device=dev)
+        def workflow(theta, wires):
+            def func():
+                qml.RX(theta, wires=wires)
+
+            qml.adjoint(func, lazy=True)()
+            return qml.probs()
+
+        with pytest.raises(RuntimeError, match="Lazy kwarg is not supported with qjit."):
+            workflow(0.1, [1])
