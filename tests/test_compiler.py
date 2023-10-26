@@ -176,3 +176,18 @@ class TestCatalyst:
         mlir_str = str(circuit.mlir)
         result_header = "func.func private @circuit(%arg0: tensor<f64>) -> tensor<f64>"
         assert result_header in mlir_str
+
+    def test_qjit_adjoint(self):
+        """Test JIT compilation with the autograph support"""
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qjit
+        @qml.qnode(device=dev)
+        def workflow(theta, n, wires):
+            def func():
+                qml.RX(theta, wires=wires)
+
+            qml.adjoint(func)()
+            return qml.probs()
+
+        print(workflow)

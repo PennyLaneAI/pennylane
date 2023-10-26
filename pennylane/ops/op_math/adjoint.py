@@ -144,11 +144,11 @@ def adjoint(fn, lazy=True):
         Adjoint(S)(wires=[0])
 
     """
-    if compiler.active("catalyst"):
+    if active_jit := compiler.active_compiler():
         if lazy is False:
             raise RuntimeError("Lazy kwarg is not support with qjit.")
-        catalyst_compiler = compiler.AvailableCompilers.names_entrypoints["catalyst"]
-        ops_loader = catalyst_compiler["ops"].load()
+        available_eps = compiler.AvailableCompilers.names_entrypoints
+        ops_loader = available_eps[active_jit]["ops"].load()
         return ops_loader.adjoint(fn)
     if isinstance(fn, Operator):
         return Adjoint(fn) if lazy else _single_op_eager(fn, update_queue=True)
