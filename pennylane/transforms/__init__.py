@@ -23,11 +23,11 @@ Transforms
 How to build a custom PennyLane transform
 -----------------------------------------
 
-The user facing way of creating a transform is to use :class:`pennylane.transform` as a function or a decorator.
-The PennyLane contract for defining your own quantum transform is the following: you need to define a quantum transform
-that takes a :class:`qml.tape.QuantumTape` as first argument and returns a sequence of :class:`qml.tape.QuantumTape` and
-a processing function. The resulting batch of circuits is then executed and the results are post-processed by the
-provided processing function. For more details and an example, read the following page:
+:class:`pennylane.transform` can be used to define custom transformations
+that work with PennyLane QNodes; such transformations can map a circuit
+to one or many new circuits alongside associated classical post-processing.
+
+See the :class:`pennylane.transform` documentation for more details and examples.
 
 .. autosummary::
     :toctree: api
