@@ -120,7 +120,7 @@ def while_loop(*args, **kwargs):
     .. note::
 
         When used with :func:`~.qjit`, this function only supports
-        the Catalyst compiler. Please see
+        the Catalyst compiler. See
         :func:`catalyst.while_loop` for more details.
 
         Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
@@ -159,6 +159,7 @@ def while_loop(*args, **kwargs):
     Raises:
         CompileError: if the compiler is not installed
 
+    .. seealso:: :func:`~.for_loop`, :func:`~.qjit`
     **Example**
 
     .. code-block:: python
@@ -198,7 +199,7 @@ def for_loop(*args, **kwargs):
     .. note::
 
         When used with :func:`~.qjit`, this function only supports
-        the Catalyst compiler. Please see
+        the Catalyst compiler. See
         :func:`catalyst.for_loop` for more details.
 
         Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
@@ -245,6 +246,8 @@ def for_loop(*args, **kwargs):
 
     Raises:
         CompileError: if the compiler is not installed
+
+    .. seealso:: :func:`~.while_loop`, :func:`~.qjit`
 
     **Example**
 
