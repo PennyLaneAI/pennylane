@@ -26,11 +26,6 @@ on:
         required: false
         type: string
         default: --cov=pennylane --cov-report=term-missing --cov-report=xml --no-flaky-report -p no:warnings --tb=native
-      pytest_benchmark_flags:
-        description: PyTest Coverage flags to pass to all jobs
-        required: false
-        type: string
-        default: --benchmark-enable --benchmark-only --benchmark-json=benchmarks.json
       run_lightened_ci:
         description: |
           Indicate if a lightened version of the CI should be run instead of the entire suite.
@@ -48,13 +43,6 @@ on:
         required: false
         type: string
         default: ''
-      run_benchmarks_ci:
-        description: |
-          Indicate if a selected set of benchmarks will be run instead of the entire suite.
-
-        required: false
-        type: boolean
-        default: false
 
 jobs:
   setup-ci-load:
@@ -164,14 +152,12 @@ jobs:
       job_name: torch-tests (${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-torch-${{ matrix.python-version }}
-      benchmarks_artifact_name: core-interfaces-benchmarks-torch-${{ matrix.python-version }}
       python_version: ${{ matrix.python-version }}
       install_jax: false
       install_tensorflow: false
       install_pytorch: true
       pytorch_version: ${{ inputs.pytorch_version }}
       install_pennylane_lightning_master: true
-      pytest_benchmark_flags: ${{ inputs.run_benchmarks_ci && inputs.pytest_benchmark_flags || ''}}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: torch and not qcut and not finite-diff and not param-shift
 
@@ -197,13 +183,11 @@ jobs:
       job_name: autograd-tests (${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-autograd-${{ matrix.python-version }}
-      benchmarks_artifact_name: core-interfaces-benchmarks-autograd-${{ matrix.python-version }}
       python_version: ${{ matrix.python-version }}
       install_jax: false
       install_tensorflow: false
       install_pytorch: false
       install_pennylane_lightning_master: true
-      pytest_benchmark_flags: ${{ inputs.run_benchmarks_ci && inputs.pytest_benchmark_flags || ''}}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: autograd and not qcut and not finite-diff and not param-shift
 
@@ -230,7 +214,6 @@ jobs:
       job_name: tf-tests (${{ matrix.group }}, ${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-tf-${{ matrix.python-version }}-${{ matrix.group }}
-      benchmarks_artifact_name: core-interfaces-benchmarks-tf-${{ matrix.python-version }}-${{ matrix.group }}
       python_version: ${{ matrix.python-version }}
       install_jax: false
       install_tensorflow: true
@@ -238,7 +221,6 @@ jobs:
       keras_version: ${{ inputs.tensorflow_version }}
       install_pytorch: false
       install_pennylane_lightning_master: true
-      pytest_benchmark_flags: ${{ inputs.run_benchmarks_ci && inputs.pytest_benchmark_flags || ''}}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: tf and not qcut and not finite-diff and not param-shift
       pytest_additional_args: --splits 3 --group ${{ matrix.group }} --durations-path='.github/workflows/tf_tests_durations.json'
@@ -267,14 +249,12 @@ jobs:
       job_name: jax-tests (${{ matrix.group }}, ${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-jax-${{ matrix.python-version }}-${{ matrix.group }}
-      benchmarks_artifact_name: core-interfaces-benchmarks-jax-${{ matrix.python-version }}-${{ matrix.group }}
       python_version: ${{ matrix.python-version }}
       install_jax: true
       jax_version: ${{ inputs.jax_version }}
       install_tensorflow: false
       install_pytorch: false
       install_pennylane_lightning_master: true
-      pytest_benchmark_flags: ${{ inputs.run_benchmarks_ci && inputs.pytest_benchmark_flags || ''}}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: jax and not qcut and not finite-diff and not param-shift
       pytest_additional_args: --splits 5 --group ${{ matrix.group }} --durations-path='.github/workflows/jax_tests_durations.json'
@@ -305,13 +285,11 @@ jobs:
       job_name: core-tests (${{ matrix.group }}, ${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-core-${{ matrix.python-version }}-${{ matrix.group }}
-      benchmarks_artifact_name: core-interfaces-benchmarks-core-${{ matrix.python-version }}-${{ matrix.group }}
       python_version: ${{ matrix.python-version }}
       install_jax: false
       install_tensorflow: false
       install_pytorch: false
       install_pennylane_lightning_master: true
-      pytest_benchmark_flags: ${{ inputs.run_benchmarks_ci && inputs.pytest_benchmark_flags || ''}}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: core and not qcut and not finite-diff and not param-shift
       pytest_additional_args: --splits 2 --group ${{ matrix.group }}
@@ -339,7 +317,6 @@ jobs:
       job_name: all-interfaces-tests (${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: all-interfaces-coverage
-      benchmarks_artifact_name: all-interfaces-benchmarks
       python_version: ${{ matrix.python-version }}
       install_jax: true
       jax_version: ${{ inputs.jax_version }}
@@ -349,7 +326,6 @@ jobs:
       install_pytorch: true
       pytorch_version: ${{ inputs.pytorch_version }}
       install_pennylane_lightning_master: false
-      pytest_benchmark_flags: ${{ inputs.run_benchmarks_ci && inputs.pytest_benchmark_flags || ''}}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: all_interfaces
 
@@ -375,13 +351,11 @@ jobs:
       job_name: external-libraries-tests (${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: external-libraries-tests-coverage
-      benchmarks_artifact_name: external-libraries-tests-benchmarks
       python_version: ${{ matrix.python-version }}
       install_jax: True
       install_tensorflow: True
       install_pytorch: false
       install_pennylane_lightning_master: false
-      pytest_benchmark_flags: ${{ inputs.run_benchmarks_ci && inputs.pytest_benchmark_flags || ''}}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: external
       additional_pip_packages: git+https://github.com/Quantomatic/pyzx.git@master pennylane-catalyst
@@ -408,7 +382,6 @@ jobs:
       job_name: qcut-tests (${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: qcut-coverage
-      benchmarks_artifact_name: qcut-benchmarks
       python_version: ${{ matrix.python-version }}
       install_jax: true
       jax_version: ${{ inputs.jax_version }}
@@ -418,7 +391,6 @@ jobs:
       install_pytorch: true
       pytorch_version: ${{ inputs.pytorch_version }}
       install_pennylane_lightning_master: false
-      pytest_benchmark_flags: ${{ inputs.run_benchmarks_ci && inputs.pytest_benchmark_flags || ''}}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: qcut
       additional_pip_packages: kahypar==1.1.7 opt_einsum
@@ -445,13 +417,11 @@ jobs:
       job_name: qchem-tests (${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: qchem-coverage
-      benchmarks_artifact_name: qchem-benchmarks
       python_version: ${{ matrix.python-version }}
       install_jax: false
       install_tensorflow: false
       install_pytorch: false
       install_pennylane_lightning_master: false
-      pytest_benchmark_flags: ${{ inputs.run_benchmarks_ci && inputs.pytest_benchmark_flags || ''}}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: qchem
       additional_pip_packages: openfermionpyscf basis-set-exchange
@@ -480,7 +450,6 @@ jobs:
       job_name: gradients-tests (${{ matrix.config.suite }}, ${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: gradients-${{ matrix.config.suite }}-coverage
-      benchmarks_artifact_name: gradients-${{ matrix.config.suite }}-benchmarks
       python_version: ${{ matrix.python-version }}
       install_jax: true
       jax_version: ${{ inputs.jax_version }}
@@ -490,7 +459,6 @@ jobs:
       install_pytorch: true
       pytorch_version: ${{ inputs.pytorch_version }}
       install_pennylane_lightning_master: false
-      pytest_benchmark_flags: ${{ inputs.run_benchmarks_ci && inputs.pytest_benchmark_flags || ''}}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: ${{ matrix.config.suite }}
 
@@ -516,13 +484,11 @@ jobs:
       job_name: data-tests (${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: data-coverage
-      benchmarks_artifact_name: data-benchmarks
       python_version: ${{ matrix.python-version }}
       install_jax: false
       install_tensorflow: false
       install_pytorch: false
       install_pennylane_lightning_master: false
-      pytest_benchmark_flags: ${{ inputs.run_benchmarks_ci && inputs.pytest_benchmark_flags || ''}}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: data
       additional_pip_packages: h5py
@@ -560,7 +526,6 @@ jobs:
       job_name: device-tests (${{ matrix.config.device }}, ${{ matrix.config.shots }}, ${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: devices-coverage-${{ matrix.config.device }}-${{ matrix.config.shots }}
-      benchmarks_artifact_name: devices-benchmarks-${{ matrix.config.device }}-${{ matrix.config.shots }}
       python_version: ${{ matrix.python-version }}
       install_jax: ${{ contains(matrix.config.device, 'jax') }}
       jax_version: ${{ inputs.jax_version }}
@@ -571,7 +536,6 @@ jobs:
       pytorch_version: ${{ inputs.pytorch_version }}
       install_pennylane_lightning_master: false
       pytest_test_directory: pennylane/devices/tests
-      pytest_benchmark_flags: ${{ inputs.run_benchmarks_ci && inputs.pytest_benchmark_flags || ''}}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_additional_args: --device=${{ matrix.config.device }} --shots=${{ matrix.config.shots }}
 
@@ -594,13 +558,11 @@ jobs:
       - device-tests
 
     # Run this even if any of the above jobs are skipped but not if any of the jobs failed
-    # It is not to be run if running benchmarks.
     if: >-
       ${{
         always() &&
         !contains(needs.*.result, 'failure') &&
-        !contains(needs.*.result, 'cancelled') &&
-        !inputs.run_benchmarks_ci
+        !contains(needs.*.result, 'cancelled')
        }}
 
     steps:
