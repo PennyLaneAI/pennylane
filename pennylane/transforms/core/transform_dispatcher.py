@@ -196,16 +196,8 @@ class TransformDispatcher:
         The default method that takes in a QNode and returns another QNode
         with the transform applied.
         """
-        # pylint: disable=protected-access
-        if (
-            isinstance(qnode._original_device, qml.Device)
-            and hasattr(qnode._original_device, "_state")
-            and qml.math.is_abstract(qnode._original_device._state)
-        ):
-            qnode._original_device.reset()
-            qnode.device.reset()
 
-        qnode = copy.deepcopy(qnode)
+        qnode = copy.copy(qnode)
 
         if self.expand_transform:
             qnode.add_transform(TransformContainer(self._expand_transform, targs, tkwargs))
