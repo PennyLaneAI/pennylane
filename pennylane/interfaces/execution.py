@@ -633,7 +633,7 @@ def execute(
 
     _grad_on_execution = False
 
-    if config.use_device_jacobian_product:
+    if config.use_device_jacobian_product and interface in jpc_interfaces:
         jpc = DeviceJacobianProducts(device, config)
 
     elif config.use_device_gradient:
