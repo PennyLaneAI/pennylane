@@ -13,26 +13,29 @@
 # limitations under the License.
 """Compiler developer functions"""
 
-from typing import List
+from typing import List, Optional
 from importlib import reload
 from collections import defaultdict
 import dataclasses
 import pkg_resources
 
 
+class CompileError(Exception):
+    """Error encountered in the compilation phase."""
+
+
 @dataclasses.dataclass
 class AvailableCompilers:
-    """This contains data of installed PennyLane compiler packages"""
+    """This contains data of installed PennyLane compiler packages."""
 
+    entrypoints_interface = ("qjit", "context", "ops")
     names_entrypoints = {}
 
 
 def _refresh_compilers():
-    """Scan installed PennyLane compiler pacakges to refresh the compilers
-    names and entry points
+    """Scan installed PennyLane compiler packages to refresh the compilers
+    names and entry points.
     """
-
-    reload(pkg_resources)
 
     # Refresh the list of compilers
     AvailableCompilers.names_entrypoints = defaultdict(dict)
@@ -43,6 +46,27 @@ def _refresh_compilers():
         module_name = entry.module_name.split(".")[0]
         AvailableCompilers.names_entrypoints[module_name][entry.name] = entry
 
+    # Check whether available compilers follow the entry_point interface
+    # by validating that all entry points (qjit, context, and ops) are defined.
+    for _, eps_dict in AvailableCompilers.names_entrypoints.items():
+        ep_interface = AvailableCompilers.entrypoints_interface
+        if any(ep not in eps_dict.keys() for ep in ep_interface):
+            raise KeyError(f"expected {ep_interface}, but recieved {eps_dict}")
+
+
+# Scan installed compiler packages
+# and update AvailableCompilers
+_refresh_compilers()
+
+
+def _reload_compilers():
+    """Reload and scan installed PennyLane compiler packages to refresh the
+    compilers names and entry points.
+    """
+
+    reload(pkg_resources)
+    _refresh_compilers()
+
 
 def available_compilers() -> List[str]:
     """Loads and returns a list of available compilers that are
@@ -51,15 +75,17 @@ def available_compilers() -> List[str]:
     **Example**
 
     This method returns the name of installed compiler packages supported in
-    PennyLane. For example, after installing the `Catalyst <https://github.com/pennylaneai/catalyst>`__
+    PennyLane. For example, after installing the
+    `Catalyst <https://github.com/pennylaneai/catalyst>`__
     compiler, this will now appear as an available compiler:
 
     >>> qml.compiler.available_compilers()
     ['catalyst']
     """
 
-    # This class updates the class variable names_entrypoints
-    _refresh_compilers()
+    # Reload installed packages and updates
+    # the class variable names_entrypoints
+    _reload_compilers()
 
     return list(AvailableCompilers.names_entrypoints.keys())
 
@@ -92,43 +118,89 @@ def available(compiler="catalyst") -> bool:
     # with a large number of installed packages.
 
     if compiler not in AvailableCompilers.names_entrypoints:
-        # This class updates the class variable names_entrypoints
-        _refresh_compilers()
+        # Reload installed packages and updates
+        # the class variable names_entrypoints
+        _reload_compilers()
 
     return compiler in AvailableCompilers.names_entrypoints
 
 
-def active(compiler="catalyst") -> bool:
+def active_compiler() -> Optional[str]:
+    """Check which compiler is activated inside a :func:`~.qjit` evaluation context.
+
+    This helper function may be used during implementation
+    to allow differing logic for transformations or operations that are
+    just-in-time compiled, versus those that are not.
+
+    Return:
+        Optional[str]: Name of the active compiler inside a :func:`~.qjit`
+            evaluation context. If there is no active compiler, ``None``
+            will be returned.
+
+    **Example**
+
+    This method can be used to execute logical
+    branches that are conditioned on whether hybrid compilation with a specific
+    compiler is occurring.
+
+    .. code-block:: python
+
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(phi, theta):
+            if qml.compiler.active_compiler() == "catalyst":
+                qml.RX(phi, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PhaseShift(theta, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+    >>> circuit(np.pi, np.pi / 2)
+    1.0
+    >>> qml.qjit(circuit)(np.pi, np.pi / 2)
+    -1.0
+
+    """
+
+    for name, eps in AvailableCompilers.names_entrypoints.items():
+        tracer_loader = eps["context"].load()
+        if tracer_loader.is_tracing():
+            return name
+
+    return None
+
+
+def active() -> bool:
     """Check whether the caller is inside a :func:`~.qjit` evaluation context.
 
     This helper function may be used during implementation
     to allow differing logic for circuits or operations that are
     just-in-time compiled versus those that are not.
 
-    Args:
-        compiler (str): name of the compiler package (default value is ``catalyst``)
-
     Return:
         bool: True if the caller is inside a QJIT evaluation context
 
     **Example**
 
-    In the JIT compilation of PennyLane programs, this helper method checks
-    the status of the compilation. For example, Catalyst captures Python
-    programs by tracing and we can tell if the caller is inside the Catalyst
-    tracer context manager or not but calling this method.
+    For example, you can use this method in your hybrid program to execute it
+    conditionally whether is called inside :func:`~.qjit` or not.
 
-    This method is practically useful in implementing quantum operations to
-    correctly call the interpreter or compiler equivalent functions.
+    .. code-block:: python
+
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(phi, theta):
+            if qml.compiler.active():
+                qml.RX(phi, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PhaseShift(theta, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+    >>> circuit(np.pi, np.pi / 2)
+    1.0
+    >>> qml.qjit(circuit)(np.pi, np.pi / 2)
+    -1.0
     """
 
-    compilers = AvailableCompilers.names_entrypoints
-
-    if not compilers:
-        return False
-
-    try:
-        tracer_loader = compilers[compiler]["context"].load()
-        return tracer_loader.is_tracing()
-    except KeyError:
-        return False
+    return active_compiler() is not None

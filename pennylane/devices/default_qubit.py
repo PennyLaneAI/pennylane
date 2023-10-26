@@ -20,6 +20,8 @@ from functools import partial
 from numbers import Number
 from typing import Union, Callable, Tuple, Optional, Sequence
 import concurrent.futures
+import inspect
+import logging
 import numpy as np
 
 import pennylane as qml
@@ -42,6 +44,9 @@ from .execution_config import ExecutionConfig, DefaultExecutionConfig
 from .qubit.simulate import simulate, get_final_state, measure_final_state
 from .qubit.sampling import get_num_shots_and_executions
 from .qubit.adjoint_jacobian import adjoint_jacobian, adjoint_vjp, adjoint_jvp
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 Result_or_ResultBatch = Union[Result, ResultBatch]
 QuantumTapeBatch = Sequence[QuantumTape]
@@ -442,6 +447,15 @@ class DefaultQubit(Device):
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Result_or_ResultBatch:
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                """Entry with args=(circuits=%s) called by=%s""",
+                circuits,
+                "::L".join(
+                    str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
+                ),
+            )
+
         is_single_circuit = False
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True
