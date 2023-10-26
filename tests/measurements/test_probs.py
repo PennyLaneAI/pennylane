@@ -75,13 +75,13 @@ class TestProbs:
 
     def test_shape_empty_wires(self):
         """Test that shape works when probs is broadcasted onto all available wires."""
-        dev = qml.device('default.qubit', wires=(1,2,3))
+        dev = qml.device("default.qubit", wires=(1, 2, 3))
         res = qml.probs()
-        assert res.shape(dev, Shots(None)) == (8, )
+        assert res.shape(dev, Shots(None)) == (8,)
 
-        dev2 = qml.device('default.qubit')
+        dev2 = qml.device("default.qubit")
         res = qml.probs()
-        assert res.shape(dev2, Shots(None)) == (1, )
+        assert res.shape(dev2, Shots(None)) == (1,)
 
     @pytest.mark.parametrize("wires", [[0], [2, 1], ["a", "c", 3]])
     def test_shape_shot_vector(self, wires):
