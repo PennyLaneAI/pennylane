@@ -71,7 +71,7 @@ class ApproxTimeEvolution(Operation):
         n (int): The number of Trotter steps used when approximating the time-evolution operator.
 
     .. seealso:: :class:`~.TrotterProduct`.
-    
+
     .. details::
         :title: Usage Details
 
