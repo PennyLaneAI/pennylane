@@ -159,7 +159,8 @@ def while_loop(*args, **kwargs):
     Raises:
         CompileError: if the compiler is not installed
 
-    .. seealso:: :func:`catalyst.for_loop`, :func:`~.qjit`
+    .. seealso:: :func:`~.for_loop`, :func:`~.qjit`
+
     **Example**
 
     .. code-block:: python
@@ -247,7 +248,7 @@ def for_loop(*args, **kwargs):
     Raises:
         CompileError: if the compiler is not installed
 
-    .. seealso:: :func:`catalyst.while_loop`, :func:`~.qjit`
+    .. seealso:: :func:`~.while_loop`, :func:`~.qjit`
 
     **Example**
 
