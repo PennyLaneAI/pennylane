@@ -65,7 +65,7 @@ def test_copy():
     assert copied_qn is not qn
     assert copied_qn.execute_kwargs == qn.execute_kwargs
     assert copied_qn.execute_kwargs is not qn.execute_kwargs
-    assert copied_qn.transform_program == qn.transform_program
+    assert list(copied_qn.transform_program) == list(qn.transform_program)
     assert copied_qn.transform_program is not qn.transform_program
     assert copied_qn.gradient_kwargs == qn.gradient_kwargs
     assert copied_qn.gradient_kwargs is not qn.gradient_kwargs
