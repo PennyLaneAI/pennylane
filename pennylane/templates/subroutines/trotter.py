@@ -126,14 +126,10 @@ class TrotterProduct(Operation):
     .. details::
         :title: Usage Details
 
-        This operation is similar to the :class:`~.ApproxTimeEvolution`. Identical behaviour can
-        be replicated by flipping the order of terms in the input Hamiltonian, setting :code:`order=1`,
-        and setting :code:`time = -1 * time`.
+        This operation is similar to the :class:`~.ApproxTimeEvolution`. One can recover the behaviour of
+        :class:`~.TrotterProduct` by simply taking the adjoint:
 
-        >>> h, h_flipped = (qml.Hamiltonian(coeffs, ops), qml.Hamiltonian(coeffs[::-1], ops[::-1]))
-        >>>
-        >>> qml.ApproxTimeEvolution(h, time, n)                   #  Both operators produce
-        >>> qml.TrotterProduct(h_flipped, -1*time, order=1, n=n)  #  identical unitaries
+        >>> qml.adjoint(qml.ApproxTimeEvolution(hamiltonian, time, n=n))  # for order = 1
 
         We can also compute the gradient with respect to the coefficients of the Hamiltonian and the
         evolution time:

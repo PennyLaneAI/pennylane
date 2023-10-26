@@ -24,6 +24,14 @@ class ApproxTimeEvolution(Operation):
     r"""Applies the Trotterized time-evolution operator for an arbitrary Hamiltonian, expressed in terms
     of Pauli gates.
 
+    .. note::
+
+        We recommend using :class:`~.TrotterProduct` as the more general operation for approximate
+        matrix exponentiation. One can recover the behaviour of :class:`~.ApproxTimeEvolution` by
+        taking the adjoint:
+
+        >>> qml.adjoint(qml.TrotterProduct(hamiltonian, time, order=1, n=n))
+
     The general time-evolution operator for a time-independent Hamiltonian is given by
 
     .. math:: U(t) \ = \ e^{-i H t},
