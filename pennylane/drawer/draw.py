@@ -259,7 +259,6 @@ def _draw_qnode(
             qnode.construct(args, kwargs)
             program, _ = qnode.device.preprocess()
             tapes = program([qnode.tape])
-            _wire_order = wire_order or qnode.tape.wires
         else:
             original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
             try:
@@ -280,7 +279,7 @@ def _draw_qnode(
             finally:
                 qnode.expansion_strategy = original_expansion_strategy
 
-            _wire_order = wire_order or qnode.device.wires
+        _wire_order = wire_order or qnode.device.wires or qnode.tape.wires
 
         if tapes is not None:
             cache = {"tape_offset": 0, "matrices": []}
@@ -572,18 +571,30 @@ def _draw_mpl_qnode(
             program, _ = qnode.device.preprocess()
             tapes, _ = program([qnode.tape])
             tape = tapes[0]
-            _wire_order = wire_order or qnode.tape.wires
         else:
             original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
 
             try:
                 qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
                 qnode.construct(args, kwargs_qnode)
+                if isinstance(qnode.device, qml.devices.Device):
+                    program = qnode.transform_program
+                    if any(
+                        isinstance(op, qml.measurements.MidMeasureMP)
+                        for op in qnode.tape.operations
+                    ):
+                        tapes, _ = qml.defer_measurements(qnode.tape, device=qnode.device)
+                    else:
+                        tapes = [qnode.tape]
+
+                    tapes, _ = program(tapes)
+                    tape = tapes[0]
+                else:
+                    tape = qnode.tape
             finally:
                 qnode.expansion_strategy = original_expansion_strategy
 
-            tape = qnode.tape
-            _wire_order = wire_order or qnode.device.wires
+        _wire_order = wire_order or qnode.device.wires or tape.wires
 
         return tape_mpl(
             tape,
