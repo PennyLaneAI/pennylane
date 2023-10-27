@@ -121,7 +121,7 @@ class TrotterProduct(Operation):
             return qml.state()
 
     >>> my_circ()
-    [-0.13259524+0.59790098j  0.        +0.j         -0.13259524-0.77932754j  0.        +0.j        ]
+    array([-0.13259524+0.59790098j,  0.        +0.j        , -0.13259524-0.77932754j,  0.        +0.j        ])
 
     .. details::
         :title: Usage Details

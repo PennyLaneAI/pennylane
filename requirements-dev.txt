@@ -5,5 +5,6 @@ pytest-mock>=3.7.0
 pytest-xdist>=2.5.0
 flaky>=3.7.0
 pytest-forked>=1.4.0
+pytest-benchmark
 black>=21
 tomli~=2.0.0 # Drop once minimum Python version is 3.11
