@@ -69,7 +69,7 @@ def ctrl(op, control, control_values=None, work_wires=None):
     >>> circuit(x)
     tensor(0.36235775, requires_grad=True)
     >>> qml.grad(circuit)(x)
-    -0.9320390859672264
+    tensor(-0.93203909, requires_grad=True)
 
     :func:`~.ctrl` works on both callables like ``qml.RX`` or a quantum function
     and individual :class:`~.operation.Operator`'s.

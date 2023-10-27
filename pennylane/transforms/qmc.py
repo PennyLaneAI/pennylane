@@ -305,31 +305,22 @@ def quantum_monte_carlo(fn, wires, target_wire, estimation_wires):
         algorithm
 
         >>> qml.specs(qmc, expansion_strategy="device")()
-        {'resources': Resources(num_wires=12, num_gates=31882, gate_types=defaultdict(<class 'int'>, {'RY': 7747, 'CNOT': 7874, 'Hadamard': 258, 'CZ': 126, 'Adjoint(CNOT)': 7812, 'Adjoint(RY)': 7686, 'PauliX': 252, 'MultiControlledX': 126, 'Adjoint(QFT)': 1}), depth=30610, shots=0),
-        'gate_sizes': defaultdict(int, {1: 15943, 2: 15812, 7: 126, 6: 1}),
-        'gate_types': defaultdict(int,
-                    {'RY': 7747,
-                    'CNOT': 7874,
-                    'Hadamard': 258,
-                    'CZ': 126,
-                    'Adjoint(CNOT)': 7812,
-                    'Adjoint(RY)': 7686,
-                    'PauliX': 252,
-                    'MultiControlledX': 126,
-                    'Adjoint(QFT)': 1}),
-        'num_operations': 31882,
-        'num_observables': 1,
-        'num_diagonalizing_gates': 0,
-        'num_used_wires': 12,
-        'num_trainable_params': 15433,
-        'depth': 30610,
-        'num_device_wires': 12,
-        'device_name': 'default.qubit.autograd',
-        'expansion_strategy': 'gradient',
-        'gradient_options': {},
-        'interface': 'auto',
-        'diff_method': 'best',
-        'gradient_fn': 'backprop'}
+        {'resources': Resources(
+            num_wires=12,
+            num_gates=31882,
+            gate_types=defaultdict(<class 'int'>, {'RY': 7747, 'CNOT': 7874, 'Hadamard': 258, 'CZ': 126, 'Adjoint(CNOT)': 7812, 'Adjoint(RY)': 7686, 'PauliX': 252, 'MultiControlledX': 126, 'Adjoint(QFT)': 1}),
+            gate_sizes=defaultdict(<class 'int'>, {1: 15943, 2: 15812, 7: 126, 6: 1}), depth=30610, shots=Shots(total_shots=None, shot_vector=()),
+         ),
+         'num_observables': 1,
+         'num_diagonalizing_gates': 0,
+         'num_trainable_params': 15433,
+         'num_device_wires': 12,
+         'device_name': 'default.qubit',
+         'expansion_strategy': 'gradient',
+         'gradient_options': {},
+         'interface': 'auto',
+         'diff_method': 'best',
+         'gradient_fn': 'backprop'}
     """
     wires = Wires(wires)
     target_wire = Wires(target_wire)
