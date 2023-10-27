@@ -389,7 +389,7 @@ def vjp(f, params, cotangents, method=None, h=None, argnum=None):
 
 # pylint: disable=too-many-arguments
 def jvp(f, params, tangents, method=None, h=None, argnum=None):
-    """A :func:`~.qjit` compatible Jacobian-vector product for PennyLane.
+    """A :func:`~.qjit` compatible Jacobian-vector product of PennyLane programs.
 
     This function allows the Jacobian-vector Product of a hybrid quantum-classical function to be
     computed within the compiled program.
