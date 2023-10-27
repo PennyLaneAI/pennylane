@@ -382,6 +382,10 @@
   decomposition.
   [(#4675)](https://github.com/PennyLaneAI/pennylane/pull/4675)
 
+* Documentation page for `qml.measurements` now links top-level accessible functions (e.g. `qml.expval`) 
+  to their top-level pages (rather than their module-level pages, eg. `qml.measurements.expval`).
+  [(#4748)](https://github.com/PennyLaneAI/pennylane/pull/4748)
+
 <h3>Breaking changes 💔</h3>
 
 * ``qml.defer_measurements`` now raises an error if a transformed circuit measures ``qml.probs``,
