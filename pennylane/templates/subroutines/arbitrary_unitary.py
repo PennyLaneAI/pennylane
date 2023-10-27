@@ -93,19 +93,21 @@ class ArbitraryUnitary(Operation):
 
     num_wires = AnyWires
     grad_method = None
+    num_params = 1
+    ndim_params = (1,)
 
     def __init__(self, weights, wires, id=None):
         shape = qml.math.shape(weights)
-        if shape != (4 ** len(wires) - 1,):
-            raise ValueError(
-                f"Weights tensor must be of shape {(4 ** len(wires) - 1,)}; got {shape}."
-            )
+        # if shape != (4 ** len(wires) - 1,):
+        # raise ValueError(
+        # f"Weights tensor must be of shape {(4 ** len(wires) - 1,)}; got {shape}."
+        # )
 
         super().__init__(weights, wires=wires, id=id)
 
-    @property
-    def num_params(self):
-        return 1
+    # @property
+    # def num_params(self):
+    # return 1
 
     @staticmethod
     def compute_decomposition(weights, wires):  # pylint: disable=arguments-differ
@@ -129,7 +131,7 @@ class ArbitraryUnitary(Operation):
         op_list = []
 
         for i, pauli_word in enumerate(_all_pauli_words_but_identity(len(wires))):
-            op_list.append(PauliRot(weights[i], pauli_word, wires=wires))
+            op_list.append(PauliRot(weights[..., i], pauli_word, wires=wires))
 
         return op_list
 

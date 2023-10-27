@@ -28,6 +28,7 @@ EINSUM_OP_WIRECOUNT_PERF_THRESHOLD = 3
 EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD = 13
 MATRIX_TOO_LARGE_THRESHOLD = 14
 
+
 def _get_slice(index, axis, num_axes):
     """Allows slicing along an arbitrary axis of an array or tensor.
 
@@ -273,15 +274,11 @@ def apply_multicontrolledx(
 
     ndim = math.ndim(state)
     len_op = len(op.wires)
-    if ndim < 12 or len_op >= MATRIX_TOO_LARGE_THRESHOLD:
+    if len_op >= MATRIX_TOO_LARGE_THRESHOLD or ndim < 12:
         return _apply_multicontrolledx(op, state, is_state_batched)
-    if (
-        len_op < EINSUM_OP_WIRECOUNT_PERF_THRESHOLD
-        and ndim < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD
-    ):
+    if len_op < EINSUM_OP_WIRECOUNT_PERF_THRESHOLD and ndim < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD:
         return apply_operation_einsum(op, state, is_state_batched)
     return apply_operation_tensordot(op, state, is_state_batched)
-
 
 
 def _apply_multicontrolledx(op, state, is_state_batched):
@@ -299,7 +296,11 @@ def _apply_multicontrolledx(op, state, is_state_batched):
     # Move the axes into the order [(batch), other, target, controls]
     transpose_axes = (
         np.array(
-            [w for w in range(len(orig_shape)) if w not in op.wires]
+            [
+                w - is_state_batched
+                for w in range(len(orig_shape))
+                if w - is_state_batched not in op.wires
+            ]
             + [op.total_wires[-1]]
             + op.total_wires[:-1].tolist()
         )
