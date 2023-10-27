@@ -140,7 +140,7 @@ def symmetry_generators(h):
     **Example**
 
     >>> symbols = ["H", "H"]
-    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+    >>> coordinates = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
     >>> H, qubits = qml.qchem.molecular_hamiltonian(symbols, coordinates)
     >>> t = symmetry_generators(H)
     >>> t
@@ -468,7 +468,7 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
     >>> symbols = ['He', 'H']
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]])
     >>> mol = qml.qchem.Molecule(symbols, geometry, charge=1)
-    >>> H, n_qubits = qml.qchem.molecular_hamiltonian(symbols, geometry)
+    >>> H, n_qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, charge=1)
     >>> n_elec = mol.n_electrons
     >>> generators = qml.qchem.symmetry_generators(H)
     >>> paulixops = qml.qchem.paulix_ops(generators, 4)
@@ -650,14 +650,14 @@ def taper_operation(
 
     >>> symbols, geometry = ['He', 'H'], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4589]])
     >>> mol = qchem.Molecule(symbols, geometry, charge=1)
-    >>> H, n_qubits = qchem.molecular_hamiltonian(symbols, geometry)
+    >>> H, n_qubits = qchem.molecular_hamiltonian(symbols, geometry, charge=1)
     >>> generators = qchem.symmetry_generators(H)
     >>> paulixops = qchem.paulix_ops(generators, n_qubits)
     >>> paulix_sector = qchem.optimal_sector(H, generators, mol.n_electrons)
     >>> tap_op = qchem.taper_operation(qml.SingleExcitation, generators, paulixops,
     ...                                paulix_sector, wire_order=H.wires, op_wires=[0, 2])
     >>> tap_op(3.14159)
-    [Exp(1.570795j PauliY)]
+    [Exp(1.5707949999999993j PauliY), Exp(0j Identity)]
 
     The obtained tapered operation function can then be used within a :class:`~.pennylane.QNode`:
 

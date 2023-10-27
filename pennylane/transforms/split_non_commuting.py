@@ -103,10 +103,7 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
     :math:`(\langle \sigma_x^0 \rangle, \langle \sigma_z^0 \rangle, \langle \sigma_y^1 \rangle, \langle \sigma_z^0\sigma_z^1 \rangle)`.
 
     >>> circuit0([np.pi/4, np.pi/4])
-    (tensor(0.70710678, requires_grad=True),
-    tensor(0.5, requires_grad=True),
-    tensor(0., requires_grad=True),
-    tensor(0.5, requires_grad=True))
+    [0.7071067811865475, 0.49999999999999994, 0.0, 0.49999999999999994]
 
 
     .. details::

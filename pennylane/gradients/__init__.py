@@ -149,8 +149,9 @@ Alternatively, quantum gradient transforms can be applied manually to QNodes.
 >>> circuit(weights)
 tensor([0.9658079, 0.0341921], requires_grad=True)
 >>> qml.gradients.param_shift(circuit)(weights)
-tensor([[-0.04673668, -0.09442394, -0.14409127],
-        [ 0.04673668,  0.09442394,  0.14409127]], requires_grad=True)
+(tensor([-0.04673668,  0.04673668], requires_grad=True),
+ tensor([-0.09442394,  0.09442394], requires_grad=True),
+ tensor([-0.14409127,  0.14409127], requires_grad=True))
 
 Comparing this to autodifferentiation:
 
@@ -291,7 +292,9 @@ the gradient:
 
 >>> dev = qml.device("default.qubit", wires=2)
 >>> fn(qml.execute(gradient_tapes, dev, None))
-(array(-0.09347337), array(-0.18884787), array(-0.28818254))
+(tensor(-0.09347337, requires_grad=True),
+ tensor(-0.18884787, requires_grad=True),
+ tensor(-0.28818254, requires_grad=True))
 
 Note that the post-processing function ``fn`` returned by the
 gradient transform is applied to the flat list of results returned
