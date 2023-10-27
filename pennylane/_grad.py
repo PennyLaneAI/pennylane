@@ -351,8 +351,9 @@ def vjp(f, params, cotangents, method=None, h=None, argnum=None):
 
     .. note::
 
-        When used with :func:`~.qjit`, this function only supports the Catalyst compiler;
-        see :func:`catalyst.vjp` for more details.
+        When used with :func:`~.qjit`, this function only supports the Catalyst compiler.
+        See :func:`catalyst.vjp` for more details.
+
         Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
         page for an overview of the differences between Catalyst and PennyLane.
