@@ -32,7 +32,7 @@ def transform(
 
     ``transform`` should be applied to a function that transforms tapes. Once validated, the result will
     be an object that is able to transform PennyLane's range of circuit-like objects:
-    :class:`pennylane.tape.QuantumTape`, quantum function and :class:`pennylane.QNode`.
+    :class:`~.QuantumTape`, quantum function and :class:`~.QNode`.
     A circuit-like object can be transformed either via decoration or by passing it functionally through
     the created transform.
 
