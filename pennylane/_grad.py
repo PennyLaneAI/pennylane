@@ -416,7 +416,7 @@ def jvp(f, params, tangents, method=None, h=None, argnum=None):
 
     .. code-block:: python
 
-        @qjit
+        @qml.qjit
         def jvp(params, tangent):
           def f(x):
               y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
