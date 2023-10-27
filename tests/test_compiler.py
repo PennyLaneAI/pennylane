@@ -228,7 +228,7 @@ class TestCatalyst:
             qml.adjoint(func)()
             return qml.probs()
 
-        assert np.allclose(workflow_cl(0.1, [1]), workflow_pl(0.1, [1]))
+        assert jnp.allclose(workflow_cl(0.1, [1]), workflow_pl(0.1, [1]))
 
     def test_qjit_adjoint_lazy(self):
         """Test that Lazy kwarg is not supported."""
