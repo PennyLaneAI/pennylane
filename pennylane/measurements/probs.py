@@ -148,6 +148,8 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
             sum(s.copies for s in shots.shot_vector) if shots.has_partitioned_shots else 1
         )
         len_wires = len(self.wires)
+        if len_wires == 0:
+            len_wires = len(device.wires) if device.wires else 0
         dim = self._get_num_basis_states(len_wires, device)
 
         return (dim,) if num_shot_elements == 1 else tuple((dim,) for _ in range(num_shot_elements))
