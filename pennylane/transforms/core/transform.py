@@ -46,7 +46,7 @@ def transform(
             * The transform must have type hinting of the following form: ``my_quantum_transform(tape:
               qml.tape.QuantumTape, ...) -> ( Sequence[qml.tape.QuantumTape], Callable)``
 
-        expand_transform (Callable): An optional expand transform is a applied directly before the input
+        expand_transform (Callable): An optional expand transform is applied directly before the input
             quantum transform. It must be a function that satisfies the same requirements as
             ``quantum_transform``.
         classical_cotransform (Callable): A classical co-transform is a function to post-process the classical
