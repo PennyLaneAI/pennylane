@@ -128,7 +128,7 @@ class ArbitraryUnitary(Operation):
         op_list = []
 
         for i, pauli_word in enumerate(_all_pauli_words_but_identity(len(wires))):
-            op_list.append(PauliRot(weights[...,i], pauli_word, wires=wires))
+            op_list.append(PauliRot(weights[..., i], pauli_word, wires=wires))
 
         return op_list
 

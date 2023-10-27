@@ -116,7 +116,7 @@ class TestDecomposition:
         pauli_words = ["X", "Y", "Z"]
 
         for i, op in enumerate(queue):
-            assert np.allclose(op.data[0], weights[...,i])
+            assert np.allclose(op.data[0], weights[..., i])
             assert op.hyperparameters["pauli_word"] == pauli_words[i]
 
     @pytest.mark.parametrize("batch_dim", [None, 1, 2])
@@ -151,7 +151,7 @@ class TestDecomposition:
         ]
 
         for i, op in enumerate(queue):
-            assert np.allclose(op.data[0], weights[...,i])
+            assert np.allclose(op.data[0], weights[..., i])
             assert op.hyperparameters["pauli_word"] == pauli_words[i]
 
     def test_custom_wire_labels(self, tol):
