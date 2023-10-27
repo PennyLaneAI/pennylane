@@ -109,7 +109,7 @@ def second_valid_transform(
     """A valid trasnform."""
     tape1 = tape.copy()
     tape2 = tape.copy()
-    tape2 = tape._ops.pop(index)  # pylint:disable=protected-access
+    tape._ops.pop(index)  # pylint:disable=protected-access
 
     def fn(results):
         return qml.math.sum(results)
@@ -181,6 +181,12 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
 
         qnode_transformed = dispatched_transform(qnode_circuit, 0)
         assert not qnode_circuit.transform_program
+
+        assert qnode_transformed.device is qnode_circuit.device
+
+        with dev.tracker:
+            qnode_circuit(0.1)
+        assert dev.tracker.totals["executions"] == 1
 
         assert isinstance(qnode_transformed, qml.QNode)
         assert isinstance(qnode_transformed.transform_program, qml.transforms.core.TransformProgram)
@@ -550,6 +556,13 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert len(new_program) == 6
 
         assert new_program[-1].transform is valid_transform
+
+        @qml.qnode(new_dev)
+        def circuit():
+            qml.PauliX(0)
+            return qml.state()
+
+        circuit()
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_old_device_transform(self, valid_transform):
