@@ -40,8 +40,8 @@ def transform(
         quantum_transform (Callable): The input quantum transform must be a function that satisfies the
             following requirements:
 
-            * Accepts a :class:`pennylane.tape.QuantumTape` as its first input and
-              returns a sequence of :class:`pennylane.tape.QuantumTape` and a processing function.
+            * Accepts a :class:`~.QuantumTape` as its first input and
+              returns a sequence of :class:`~.QuantumTape` and a processing function.
 
             * The transform must have type hinting of the following form: ``my_quantum_transform(tape:
               qml.tape.QuantumTape, ...) -> ( Sequence[qml.tape.QuantumTape], Callable)``
