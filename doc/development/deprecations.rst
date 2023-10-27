@@ -69,7 +69,7 @@ Completed deprecation cycles
   >>> {qml.PauliZ(0), qml.PauliZ(0)}
   {PauliZ(wires=[0])}
 
-  Meanwhile, the current behaviour is shown below:
+  Meanwhile, the previous behaviour is shown below:
 
   >>> qml.RX(0.1, wires=0) == qml.RX(0.1, wires=0)
   False
