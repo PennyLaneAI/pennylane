@@ -284,7 +284,7 @@ def apply_multicontrolledx(
 def _apply_multicontrolledx(op, state, is_state_batched):
     r"""Apply MultiControlledX to state by composing transpositions, rolling of control axes
     and the CNOT logic above."""
-    ctrl_wires = [w + is_state_batched for w in op.hyperparameters["control_wires"]]
+    ctrl_wires = [w + is_state_batched for w in op.control_wires]
     # apply x on all "wrong" controls
     roll_axes = [
         w for val, w in zip(op.hyperparameters["control_values"], ctrl_wires) if val == "0"
@@ -301,8 +301,8 @@ def _apply_multicontrolledx(op, state, is_state_batched):
                 for w in range(len(orig_shape))
                 if w - is_state_batched not in op.wires
             ]
-            + [op.total_wires[-1]]
-            + op.total_wires[:-1].tolist()
+            + [op.wires[-1]]
+            + op.wires[:-1].tolist()
         )
         + is_state_batched
     )
