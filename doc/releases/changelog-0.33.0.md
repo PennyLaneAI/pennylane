@@ -473,6 +473,11 @@
   device.
   [(#4736)](https://github.com/PennyLaneAI/pennylane/pull/4736)
 
+* `QubitDevice` and `CountsMP` are updated to disregard samples containing failed hardware measurements
+  (record as `np.NaN`) when tallying samples, rather than counting failed measurements as ground-state 
+  measurements, and to display `qml.counts` coming from these hardware devices correctly.
+  [(#4739)](https://github.com/PennyLaneAI/pennylane/pull/4739)
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.defer_measurements` now raises an error if a transformed circuit measures `qml.probs`,
