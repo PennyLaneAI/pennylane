@@ -181,10 +181,10 @@ class TestCatalyst:
 
     def test_control(self):
         """Test that control works with qjit."""
-        import jax
+        dev = qml.device("lightning.qubit", wires=2)
 
         @qml.qjit
-        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        @qml.qnode(dev)
         def workflow(theta, w, cw):
             qml.Hadamard(wires=[0])
             qml.Hadamard(wires=[1])
