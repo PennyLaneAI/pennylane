@@ -126,7 +126,7 @@ class TrotterProduct(Operation):
     .. details::
         :title: Usage Details
 
-        This operation is similar to the :class:`~.ApproxTimeEvolution`. One can recover the behaviour 
+        This operation is similar to the :class:`~.ApproxTimeEvolution`. One can recover the behaviour
         of :class:`~.ApproxTimeEvolution` by taking the adjoint:
 
         >>> qml.adjoint(qml.TrotterProduct(hamiltonian, time, order=1, n=n))
