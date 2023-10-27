@@ -29,7 +29,7 @@ def transform(
 ):
     """Generalizes a function that transforms tapes to work with additional circuit-like objects such as a
     :class:`~.QNode`.
-    
+
     ``transform`` should be applied to a function that transforms tapes. Once validated, the result will
     be an object that is able to transform PennyLane's range of circuit-like objects:
     :class:`pennylane.tape.QuantumTape`, quantum function and :class:`pennylane.QNode`.
@@ -126,15 +126,15 @@ def transform(
         :title: Signature of a transform
 
         A dispatched transform is able to handle several PennyLane circuit-like objects:
-        
+
         - :class:`pennylane.QNode`
         - a quantum function (callable)
         - :class:`pennylane.tape.QuantumTape`
         - :class:`pennylane.devices.Device`.
-        
+
         For each object, the transform will be applied in a different way, but it always preserves the underlying
         tape-based quantum transform behaviour.
-        
+
         The return of a dispatched transform depends upon which of the above objects is passed as an input:
 
         - For a :class:`~.QNode` input, the underlying transform is added to the QNode's
