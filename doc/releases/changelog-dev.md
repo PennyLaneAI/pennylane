@@ -6,7 +6,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* `default.qubit` no longer uses a dense matrix for `MultiControlledX` for more than 12 wires.
+* `default.qubit` no longer uses a dense matrix for `MultiControlledX` for less than 12 device wires, or more than 13 operation wires
   [(#4673)](https://github.com/PennyLaneAI/pennylane/pull/4673)
 
 * Updates to some relevant Pytests to enable its use as a suite of benchmarks.
