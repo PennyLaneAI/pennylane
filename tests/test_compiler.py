@@ -197,4 +197,4 @@ class TestCatalyst:
             qml.ctrl(qml.RY(theta, wires=w), control=[cw])
             return qml.probs()
 
-        assert np.allclose(workflow(jnp.pi / 4, 1, 0), jax.numpy.array([0.25, 0.25, 0.125, 0.375]))
+        assert jnp.allclose(workflow(jnp.pi / 4, 1, 0), jnp.array([0.25, 0.25, 0.125, 0.375]))
