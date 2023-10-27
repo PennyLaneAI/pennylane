@@ -9,6 +9,9 @@
 * Updates to some relevant Pytests to enable its use as a suite of benchmarks.
   [(#4703)](https://github.com/PennyLaneAI/pennylane/pull/4703)
 
+* `qml.ArbitraryUnitary` now supports batching.
+  [(#4745)](https://github.com/PennyLaneAI/pennylane/pull/4745)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -21,4 +24,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Amintor Dusko
+Amintor Dusko,
+David Wierichs,
