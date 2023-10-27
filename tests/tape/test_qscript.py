@@ -34,7 +34,9 @@ class TestInitialization:
         assert len(qs._ops) == 0
         assert len(qs._measurements) == 0
         assert len(qs._par_info) == 0
-        assert len(qs._trainable_params) == 0
+        assert qs._trainable_params == "unset"
+        assert qs.trainable_params == []
+        assert qs._trainable_params == []
         assert qs._graph is None
         assert qs._specs is None
         assert qs._shots.total_shots is None
@@ -193,7 +195,7 @@ class TestUpdate:
         assert p_i[6] == {"op": ops[3], "op_idx": 3, "p_idx": 1}
         assert p_i[7] == {"op": m[0].obs, "op_idx": 4, "p_idx": 0}
 
-        assert qs._trainable_params == list(range(8))
+        assert qs.trainable_params == list(range(8))
 
     # pylint: disable=unbalanced-tuple-unpacking
     def test_get_operation(self):

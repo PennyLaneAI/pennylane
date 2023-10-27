@@ -57,8 +57,7 @@ def _cut_circuit_expand(
             )
 
         new_meas_op = type(tape_meas_ops[0])(obs=qml.Hamiltonian(*tape_meas_ops[0].obs.terms()))
-        new_tape = qml.tape.QuantumScript(tape.operations, [new_meas_op], shots=tape.shots)
-        new_tape.trainable_params = tape.trainable_params
+        new_tape = qml.tape.QuantumScript(tape.operations, [new_meas_op], shots=tape.shots, trainable_params=tape.trainable_params)
 
         tapes, tapes_fn = qml.transforms.hamiltonian_expand(new_tape, group=False)
 

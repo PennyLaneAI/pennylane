@@ -135,8 +135,7 @@ def broadcast_expand(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
 
         output_tapes = []
         for ops in new_ops:
-            new_tape = qml.tape.QuantumScript(ops, tape.measurements, shots=tape.shots)
-            new_tape.trainable_params = tape.trainable_params
+            new_tape = qml.tape.QuantumScript(ops, tape.measurements, shots=tape.shots, trainable_params=tape.trainable_params)
             output_tapes.append(new_tape)
 
         def processing_fn(results: qml.typing.ResultBatch) -> qml.typing.Result:

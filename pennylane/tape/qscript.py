@@ -96,6 +96,7 @@ class QuantumScript:
     Keyword Args:
         shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
             Note that this property is still experimental and under development.
+        trainable_params (None, Sequence[int]): the indices for which parameters are trainable
         _update=True (bool): Whether or not to set various properties on initialization. Setting
             ``_update=False`` reduces computations if the script is only an intermediary step.
 
@@ -189,6 +190,7 @@ class QuantumScript:
         measurements=None,
         prep=None,
         shots: Optional[Union[int, Sequence, Shots]] = None,
+        trainable_params: Optional[Sequence[int]] = None,
         _update=True,
     ):  # pylint: disable=too-many-arguments
         self._ops = [] if ops is None else list(ops)
@@ -207,7 +209,7 @@ class QuantumScript:
         """list[dict[str, Operator or int]]: Parameter information.
         Values are dictionaries containing the corresponding operation and operation parameter index."""
 
-        self._trainable_params = []
+        self._trainable_params = "unset" if trainable_params is None else trainable_params
         self._graph = None
         self._specs = None
         self._output_dim = 0
@@ -420,9 +422,6 @@ class QuantumScript:
         self._update_circuit_info()  # Updates wires, num_wires, is_sampled, all_sampled; O(ops+obs)
         self._update_par_info()  # Updates _par_info; O(ops+obs)
 
-        # The following line requires _par_info to be up to date
-        self._update_trainable_params()  # Updates the _trainable_params; O(1)
-
         self._update_observables()  # Updates _obs_sharing_wires and _obs_sharing_wires_id
         self._update_batch_size()  # Updates _batch_size; O(ops)
 
@@ -469,15 +468,6 @@ class QuantumScript:
                     for i, d in enumerate(m.obs.data)
                 )
 
-    def _update_trainable_params(self):
-        """Set the trainable parameters
-
-        Sets:
-            _trainable_params (list[int]): Script parameter indices of trainable parameters
-
-        Call `_update_par_info` before `_update_trainable_params`
-        """
-        self._trainable_params = list(range(len(self._par_info)))
 
     def _update_observables(self):
         """Update information about observables, including the wires that are acted upon and
@@ -588,6 +578,9 @@ class QuantumScript:
         >>> qscript.get_parameters()
         [0.432]
         """
+        if self._trainable_params == "unset":
+            self._update_par_info()
+            self._trainable_params = list(range(len(self._par_info)))
         return self._trainable_params
 
     @trainable_params.setter

@@ -98,8 +98,7 @@ def batch_input(
 
     output_tapes = []
     for ops in _split_operations(tape.operations, all_parameters, argnum, batch_size):
-        new_tape = qml.tape.QuantumScript(ops, tape.measurements, shots=tape.shots)
-        new_tape.trainable_params = tape.trainable_params
+        new_tape = qml.tape.QuantumScript(ops, tape.measurements, shots=tape.shots, trainable_params=tape.trainable_params)
         output_tapes.append(new_tape)
 
     def processing_fn(res):
