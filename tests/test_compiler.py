@@ -224,8 +224,8 @@ class TestCatalyst:
         tangent = jnp.array([0.3, 0.6])
         res = jvp(x, tangent)
         assert len(res) == 2
-        assert np.allclose(res[0], jnp.array([0.09983342, 0.04, 0.02]))
-        assert np.allclose(res[1], jnp.array([0.29850125, 0.24000006, 0.12]))
+        assert jnp.allclose(res[0], jnp.array([0.09983342, 0.04, 0.02]))
+        assert jnp.allclose(res[1], jnp.array([0.29850125, 0.24000006, 0.12]))
 
     def test_jvp_without_qjit(self):
         """Test that an error is raised when using JVP without QJIT."""
