@@ -146,13 +146,13 @@ def cut_circuit_mc(
 
     >>> x = 0.3
     >>> circuit(x)
-    tensor([[1, 1],
-            [0, 1],
-            [0, 1],
-            ...,
-            [0, 1],
-            [0, 1],
-            [0, 1]], requires_grad=True)
+    array([[0., 0.],
+           [0., 1.],
+           [1., 0.],
+           ...,
+           [0., 0.],
+           [0., 0.],
+           [0., 1.]])
 
     Furthermore, the number of shots can be temporarily altered when calling
     the qnode:

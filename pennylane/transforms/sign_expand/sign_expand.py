@@ -267,7 +267,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
     one wants to make the circuit approximation of the decomposition:
 
     >>> dev = qml.device("default.qubit", wires=[0,1,2,'Hadamard','Target'])
-    >>> res = dev.batch_execute(tapes)
+    >>> res = dev.execute(tapes)
     >>> fn(res)
     -0.4999999999999999
 
@@ -276,7 +276,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
 
     >>> tapes, fn = qml.transforms.sign_expand(tape, circuit=True, J=20, delta=0)
     >>> dev = qml.device("default.qubit", wires=[0,1,2,'Hadamard','Target'])
-    >>> dev.batch_execute(tapes)
+    >>> dev.execute(tapes)
     >>> fn(res)
     -0.24999999999999994
 
@@ -293,7 +293,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
 
     >>> tapes, fn = qml.transforms.sign_expand(tape, circuit=True, J=20, delta=0)
     >>> dev = qml.device("default.qubit", wires=[0,1,2,'Hadamard','Target'])
-    >>> res = dev.batch_execute(tapes)
+    >>> res = dev.execute(tapes)
     >>> fn(res)
     10.108949481425782
 

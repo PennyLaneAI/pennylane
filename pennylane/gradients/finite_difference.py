@@ -323,8 +323,12 @@ def finite_diff(
 
         >>> dev = qml.device("default.qubit", wires=2)
         >>> fn(qml.execute(gradient_tapes, dev, None))
-        ((array(-0.38751724), array(-0.18884792), array(-0.38355709)),
-         (array(0.69916868), array(0.34072432), array(0.69202366)))
+        ((tensor(-0.56464251, requires_grad=True),
+         tensor(-0.56464251, requires_grad=True),
+         tensor(-0.56464251, requires_grad=True)),
+        (tensor(0.93203912, requires_grad=True),
+         tensor(0.93203912, requires_grad=True),
+         tensor(0.93203912, requires_grad=True)))
 
         This gradient transform is compatible with devices that use shot vectors for execution.
 

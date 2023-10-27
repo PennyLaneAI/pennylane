@@ -481,6 +481,19 @@ class QNode:
         functools.update_wrapper(self, func)
         self._transform_program = qml.transforms.core.TransformProgram()
 
+    def __copy__(self):
+        copied_qnode = QNode.__new__(QNode)
+        for attr, value in vars(self).items():
+            if attr not in {"execute_kwargs", "_transform_program", "gradient_kwargs"}:
+                setattr(copied_qnode, attr, value)
+
+        copied_qnode.execute_kwargs = dict(self.execute_kwargs)
+        copied_qnode._transform_program = qml.transforms.core.TransformProgram(
+            self.transform_program
+        )  # pylint: disable=protected-access
+        copied_qnode.gradient_kwargs = dict(self.gradient_kwargs)
+        return copied_qnode
+
     def __repr__(self):
         """String representation."""
         if isinstance(self.device, qml.devices.Device):

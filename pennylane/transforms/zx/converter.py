@@ -243,7 +243,7 @@ def to_zx(tape, expand_measurements=False):  # pylint: disable=unused-argument
                 return qml.expval(qml.PauliZ(wires=0))
 
         >>> mod_5_4()
-        -0.9999999999999989
+        tensor(1., requires_grad=True)
 
     .. note::
 
@@ -344,7 +344,7 @@ def _to_zx_transform(
             else:
                 expanded_operations.append(op)
 
-        expanded_tape = QuantumScript(expanded_operations, mapped_tape.measurements, [])
+        expanded_tape = QuantumScript(expanded_operations, mapped_tape.measurements)
 
         _add_operations_to_graph(expanded_tape, graph, gate_types, q_mapper, c_mapper)
 
