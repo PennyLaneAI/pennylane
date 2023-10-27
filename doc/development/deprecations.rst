@@ -6,28 +6,40 @@ Deprecations
 Pending deprecations
 --------------------
 
-* The following decorator syntax for transforms has been deprecated:
+* Passing additional arguments to a transform that decorates a QNode should now be done through use
+  of ``functools.partial``. For example, the :func:`~pennylane.metric_tensor` transform has an
+  optional ``approx`` argument which should now be set using:
 
   .. code-block:: python
 
-      @transform_fn(**transform_kwargs)
-      @qml.qnode(dev)
-      def circuit():
-          ...
+    from functools import partial
 
-  If you are using a transform that has supporting ``transform_kwargs``, please call the
-  transform directly using ``circuit = transform_fn(circuit, **transform_kwargs)``,
-  or use ``functools.partial``:
+    @partial(qml.metric_tensor, approx="block-diag")
+    @qml.qnode(dev)
+    def circuit(weights):
+        ...
+
+  The previously-recommended approach is now deprecated:
 
   .. code-block:: python
 
-      @functools.partial(transform_fn, **transform_kwargs)
-      @qml.qnode(dev)
-      def circuit():
-          ...
+    @qml.metric_tensor(approx="block-diag")
+    @qml.qnode(dev)
+    def circuit(weights):
+        ...
+
+  Alternatively, consider calling the transform directly:
+
+  .. code-block:: python
+
+    @qml.qnode(dev)
+    def circuit(weights):
+        ...
+
+    transformed_circuit = qml.metric_tensor(circuit, approx="block-diag")
 
   - Deprecated in v0.33
-  - Will be removed in v0.34
+  - Will be removed in v0.35
 
 * ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
 
