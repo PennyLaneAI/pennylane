@@ -167,8 +167,7 @@ plugin_devices = _get_device_entrypoints()
 # pylint: disable=protected-access
 def device(name, *args, **kwargs):
     r"""
-    Load a :class:`.Device` (or a new-API :class:`pennylane.devices.Device`)
-    and return the instance.
+    Load a device and return the instance.
 
     This function is used to load a particular quantum device,
     which can then be used to construct QNodes.
