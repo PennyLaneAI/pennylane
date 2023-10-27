@@ -23,7 +23,7 @@ Custom transforms
 that work with PennyLane QNodes; such transformations can map a circuit
 to one or many new circuits alongside associated classical post-processing.
 
-See the :class:`pennylane.transform` documentation for more details and examples.
+See the :func:`pennylane.transform` documentation for more details and examples.
 
 .. autosummary::
     :toctree: api
@@ -206,7 +206,7 @@ Transforms developer functions
 :class:`~.TransformContainer`, :class:`~.TransformDispatcher` and  :class:`~.TransformProgram` are
 developer-facing objects that allow the
 creation, dispatching and composability of transforms. If you would like to make a custom transform, refer
-instead to the documentation of :class:`qml.transform <pennylane.transform>`.
+instead to the documentation of :func:`qml.transform <pennylane.transform>`.
 
 .. autosummary::
     :toctree: api
