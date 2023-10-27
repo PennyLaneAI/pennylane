@@ -35,8 +35,9 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
     Returns:
         TensorLike or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
 
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
-        will provide the matrix in the form of a tensor.
+        If an operator is provided as input, the matrix is returned directly in the form of a tensor.
+        Otherwise, the transformed circuit is returned as described in :func:`qml.transform <pennylane.transform>`.
+        Executing this circuit will provide its matrix representation.
 
     **Example**
 

@@ -110,7 +110,7 @@ def batch_params(
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
 
         The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
-        will provide the batched results.
+        will provide the batched results, with the first dimension treated as the batch dimension.
 
     **Example**
 

@@ -43,7 +43,9 @@ def map_wires(
             replaced by its mapped version. Defaults to False.
 
     Returns:
-        operator (Operator) or qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        operator (Operator) or qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]:
+
+        The transformed circuit or operator with updated wires in :func:`qml.transform <pennylane.transform>`.
 
     .. note::
 

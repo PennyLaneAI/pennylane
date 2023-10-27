@@ -435,8 +435,9 @@ def param_shift_hessian(
         qnode (QNode) or tuple[List[QuantumTape], function]:
 
         The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
-        will provide the Hessian in the form of a tensor, a tuple, or a nested tuple depending upon the nesting
-        structure of measurements in the original circuit.
+        will provide the Hessian in the form of a tensor, a tuple, or a nested tuple depending upon the number
+        of trainable QNode arguments, the output shape(s) of the input QNode itself, and the usage of shot vectors
+        in the QNode execution.
 
 
         Note: By default a QNode with the keyword ``hybrid=True`` computes derivates with respect to

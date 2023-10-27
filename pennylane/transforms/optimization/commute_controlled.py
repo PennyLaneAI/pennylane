@@ -164,7 +164,7 @@ def commute_controlled(tape: QuantumTape, direction="right") -> (Sequence[Quantu
             specified direction.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
 
     **Example**

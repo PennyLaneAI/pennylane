@@ -511,14 +511,14 @@ class QNode:
 
     @property
     def transform_program(self):
-        """The transform program used by the QNode.
-
-        .. warning:: This is an experimental feature.
-        """
+        """The transform program used by the QNode."""
         return self._transform_program
 
     def add_transform(self, transform_container):
-        """Add a transform container to the transform program."""
+        """Add a transform (container) to the transform program.
+
+        .. warning:: This is a developer facing feature and is called when a transform is applied on a QNode.
+        """
         self._transform_program.push_back(transform_container=transform_container)
 
     def _update_gradient_fn(self, shots=None):

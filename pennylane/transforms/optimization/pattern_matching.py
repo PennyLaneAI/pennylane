@@ -53,7 +53,7 @@ def pattern_matching_optimization(
 
     >>> dev = qml.device('default.qubit', wires=5)
 
-    You can apply the transform directly on a :class:`QNode`, for that you need first to define a pattern that is to be
+    You can apply the transform directly on a :class:`QNode`. For that, you need first to define a pattern that is to be
     found in the circuit. We use the following pattern that implements the identity:
 
     .. code-block:: python

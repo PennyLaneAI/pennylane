@@ -51,8 +51,9 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
     Returns:
         TensorLike or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
 
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
-        will provide the eigen values in the form of a tensor.
+        If an operator is provided as input, the eigenvalues are returned directly in the form of a tensor.
+        Otherwise, the transformed circuit is returned as described in :func:`qml.transform <pennylane.transform>`.
+        Executing this circuit will provide the eigenvalues as a tensor.
 
     **Example**
 

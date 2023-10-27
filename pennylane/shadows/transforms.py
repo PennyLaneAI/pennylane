@@ -189,7 +189,7 @@ def shadow_state(tape: QuantumTape, wires, diffable=False) -> (Sequence[QuantumT
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
 
-        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.Executing this circuit
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
         will provide the reconstructed state in the form of a tensor.
 
     **Example**

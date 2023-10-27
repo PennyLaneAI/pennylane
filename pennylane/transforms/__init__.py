@@ -14,13 +14,12 @@
 """
 This subpackage contains PennyLane transforms and their building blocks.
 
-
 .. currentmodule:: pennylane
 
 Custom transforms
 -----------------
 
-:class:`pennylane.transform` can be used to define custom transformations
+:func:`qml.transform <pennylane.transform>` can be used to define custom transformations
 that work with PennyLane QNodes; such transformations can map a circuit
 to one or many new circuits alongside associated classical post-processing.
 
@@ -31,23 +30,14 @@ See the :class:`pennylane.transform` documentation for more details and examples
 
     ~transforms.core.transform
 
-Transforms developer functions
-------------------------------
-
-In this section of transform you can find the building blocks of transforms in PennyLane. The :class:`TransformDispatcher`
-and  :class:`TransformProgram` are developer-facing objects, that allows the creation, dispatching and composability
-of transforms.
-
-.. autosummary::
-    :toctree: api
-
-    ~transforms.core.transform_dispatcher
-    ~transforms.core.transform_program
+Transforms library
+------------------
+A range of ready-to-use transforms are available in PennyLane.
 
 Transforms for circuit compilation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This set of transforms accept quantum functions, and perform basic circuit compilation tasks.
+A set of transforms to perform basic circuit compilation tasks.
 
 .. autosummary::
     :toctree: api
@@ -128,27 +118,8 @@ There are also low-level functions that can be used to build up the circuit cutt
     ~transforms.qcut.place_wire_cuts
     ~transforms.qcut.find_and_place_cuts
 
-Decorators and utility functions
---------------------------------
-
-The following decorators and convenience functions are provided
-to help build custom QNode, quantum function, and tape transforms:
-
-.. autosummary::
-    :toctree: api
-
-    ~transforms.make_tape
-    ~transforms.map_batch_transform
-    ~transforms.create_expand_fn
-    ~transforms.create_decomp_expand_fn
-    ~transforms.expand_invalid_trainable
-    ~transforms.expand_invalid_trainable_hadamard_gradient
-    ~transforms.expand_multipar
-    ~transforms.expand_trainable_multipar
-    ~transforms.expand_nonunitary_gen
-
 Transforms for error mitigation
--------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: api
@@ -209,6 +180,54 @@ containing quantum operations) that are used to construct QNodes.
     :toctree: api
 
     ~transforms.cond
+
+Decorators and utility functions
+--------------------------------
+
+The following decorators and convenience functions are provided
+to help build custom QNode, quantum function, and tape transforms:
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.make_tape
+    ~transforms.map_batch_transform
+    ~transforms.create_expand_fn
+    ~transforms.create_decomp_expand_fn
+    ~transforms.expand_invalid_trainable
+    ~transforms.expand_invalid_trainable_hadamard_gradient
+    ~transforms.expand_multipar
+    ~transforms.expand_trainable_multipar
+    ~transforms.expand_nonunitary_gen
+
+Transforms developer functions
+------------------------------
+
+:class:`TransformDispatcher` and  :class:`TransformProgram` are developer-facing objects that allow the
+creation, dispatching and composability of transforms. If you would like to make a custom transform, refer
+instead to the documentation of :class:`qml.transform <pennylane.transform>`.
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.core.transform_dispatcher
+    ~transforms.core.transform_program
+
+Old transforms framework
+------------------------
+
+These utility functions were previously used to create transforms in PennyLane and will be
+deprecated soon. It is now recommended to use :class:`qml.transform <pennylane.transform>`
+for creation of custom transforms.
+
+.. autosummary::
+    :toctree: api
+
+    ~single_tape_transform
+    ~batch_transform
+    ~qfunc_transform
+    ~op_transform
+
 """
 # Import the decorators first to prevent circular imports when used in other transforms
 from .core import transform, TransformError
