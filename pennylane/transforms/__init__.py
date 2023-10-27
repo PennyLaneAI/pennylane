@@ -203,7 +203,8 @@ to help build custom QNode, quantum function, and tape transforms:
 Transforms developer functions
 ------------------------------
 
-:class:`TransformDispatcher` and  :class:`TransformProgram` are developer-facing objects that allow the
+:class:`~.TransformContainer`, :class:`~.TransformDispatcher` and  :class:`~.TransformProgram` are
+developer-facing objects that allow the
 creation, dispatching and composability of transforms. If you would like to make a custom transform, refer
 instead to the documentation of :class:`qml.transform <pennylane.transform>`.
 
