@@ -89,8 +89,10 @@ def ctrl(op, control, control_values=None, work_wires=None):
 
     .. code-block:: python
 
+        dev = qml.device("lightning.qubit", wires=2)
+
         @qml.qjit
-        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        @qml.qnode(dev)
         def workflow(theta, w, cw):
             qml.Hadamard(wires=[0])
             qml.Hadamard(wires=[1])
