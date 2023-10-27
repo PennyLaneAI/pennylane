@@ -290,9 +290,9 @@ def metric_tensor(  # pylint:disable=too-many-arguments
 
         >>> dev = qml.device("default.qubit", wires=3)
         >>> fn(qml.execute(tapes, dev, None))
-        array([[ 0.25      ,  0.        ,  0.42073549],
-               [ 0.        ,  0.00415023, -0.26517488],
-               [ 0.42073549, -0.26517488,  0.24878844]])
+        tensor([[ 0.25      ,  0.        ,  0.42073549],
+                [ 0.        ,  0.00415023, -0.26517488],
+                [ 0.42073549, -0.26517488,  0.24878844]], requires_grad=True)
 
         The first term of the off block-diagonal entries of the full metric tensor are
         computed with Hadamard tests. This first term reads
@@ -340,9 +340,9 @@ def metric_tensor(  # pylint:disable=too-many-arguments
             >>> mt = qml.metric_tensor(circuit, argnum=(0, 2, 3))(weights)
             >>> print(mt)
             [[ 0.          0.          0.          0.        ]
-            [ 0.          0.25       -0.02495835 -0.02495835]
-            [ 0.         -0.02495835  0.01226071  0.01226071]
-            [ 0.         -0.02495835  0.01226071  0.01226071]]
+             [ 0.          0.25       -0.02495835 -0.02495835]
+             [ 0.         -0.02495835  0.01226071  0.01226071]
+             [ 0.         -0.02495835  0.01226071  0.01226071]]
 
         Because the 0-th element of ``weights`` appears second in the QNode and therefore in the
         underlying tape, it is the 1st tape parameter.
