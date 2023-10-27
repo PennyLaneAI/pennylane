@@ -57,7 +57,7 @@ Completed deprecation cycles
   - Deprecated in v0.31
   - Changed in v0.33
 
-* The behaviour of ``Operator.__eq__`` and ``Operator.__hash__`` will be updated soon. Their documentation
+* The behaviour of ``Operator.__eq__`` and ``Operator.__hash__`` has been updated. Their documentation
   has been updated to reflect the incoming changes.
 
   The upcoming changes to operator equality will allow users to use operator equality the same way as
