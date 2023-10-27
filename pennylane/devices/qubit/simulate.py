@@ -118,7 +118,7 @@ def _postselection_postprocess(state, is_state_batched, shots):
         # Clip the number of shots using a binomial distribution using the probability of
         # measuring the postselected state.
         postselected_shots = (
-            [np.random.binomial(s, float(norm)) for s in shots]
+            [np.random.binomial(s, float(norm**2)) for s in shots]
             if not qml.math.is_abstract(norm)
             else shots
         )

@@ -353,7 +353,8 @@ Postselecting mid-circuit measurements
 PennyLane also supports postselecting on mid-circuit measurement outcomes by specifying the ``postselect``
 keyword argument of :func:`~.pennylane.measure`. Postselection discards outcomes that do not meet the
 criteria provided by the ``postselect`` argument. For example, specifying ``postselect=1`` on wire 0 would
-be equivalent to projecting the state vector onto the :math:`|1\rangle` state on wire 0:
+be equivalent to projecting the state vector onto the :math:`|1\rangle` state on wire 0, i.e., disregarding
+all outcomes where :math:`|0\rangle` is measured on wire 0:
 
 .. code-block:: python3
 
@@ -373,7 +374,8 @@ measuring ``1`` on wire 1 after postselection should also be 1. Executing this Q
 array([1, 1, 1, 1, 1, 1, 1])
 
 Note that only 7 samples are returned. This is because samples that do not meet the postselection criteria are
-discarded.
+discarded. To learn more about postselecting mid-circuit measurements, refer to the :func:`~.pennylane.measure`
+documentation.
 
 .. note::
 

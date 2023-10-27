@@ -42,7 +42,7 @@ Pending deprecations
   - Will be removed in v0.35
 
 * ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
-  
+
   - Deprecated in v0.24
   - Will be removed in v0.35
 
@@ -62,7 +62,7 @@ Pending deprecations
   - Deprecated in v0.33
   - Will be removed in v0.34
 
-* `qml.gradients.pulse_generator` becomes `qml.gradients.pulse_odegen` to adhere to paper naming conventions. During v0.33, `pulse_generator`
+* ``qml.gradients.pulse_generator`` becomes ``qml.gradients.pulse_odegen`` to adhere to paper naming conventions. During v0.33, ``pulse_generator``
   is still available but raises a warning.
 
   - Deprecated in v0.33
@@ -125,9 +125,9 @@ Completed deprecation cycles
   - Deprecated in v0.32
   - Removed in v0.33
 
-* The ``tuple`` input type in ``qubit_observable`` has been deprecated. Please use a fermionic
+* The ``tuple`` input type in ``qubit_observable`` has been removed. Please use a fermionic
   operator object. The ``tuple`` return type in ``fermionic_hamiltonian`` and
-  ``fermionic_observable`` has been deprecated and these functions will return a fermionic operator
+  ``fermionic_observable`` has been removed and these functions will return a fermionic operator
   by default.
 
   - Deprecated in v0.32
@@ -152,6 +152,9 @@ Completed deprecation cycles
 * The ``QuantumScript.set_parameters`` method and the ``QuantumScript.data`` setter have
   been removed. Please use ``QuantumScript.bind_new_parameters`` instead.
 
+  - Deprecated in v0.32
+  - Removed in v0.33
+
 * The ``observables`` argument in ``QubitDevice.statistics`` is removed. Please use ``circuit``
   instead. Using a list of observables in ``QubitDevice.statistics`` is removed. Please use a
   ``QuantumTape`` instead.
@@ -168,7 +171,7 @@ Completed deprecation cycles
 
 * The method ``tape.unwrap()`` and corresponding ``UnwrapTape`` and ``Unwrap`` classes are
   removed.
- 
+
   - Deprecated in v0.32
   - Removed in v0.33
 
