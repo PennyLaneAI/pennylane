@@ -376,7 +376,7 @@ class DefaultQubit(Device):
                 parameters needed to fully describe the execution.
 
         Returns:
-            ~.TransformProgram, ~.ExecutionConfig: A transform program that when called returns QuantumTapes that the device
+            TransformProgram, ExecutionConfig: A transform program that when called returns QuantumTapes that the device
             can natively execute as well as a postprocessing function to be called after execution, and a configuration with
             unset specifications filled in.
 

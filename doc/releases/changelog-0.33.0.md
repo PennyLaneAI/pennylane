@@ -309,23 +309,23 @@
   `MutualInfoMP.map_wires`.
   [(#4574)](https://github.com/PennyLaneAI/pennylane/pull/4574)
 
-* `devices.qubit.simulate` now accepts an interface keyword argument. If a QNode with `default.qubit`
+* `devices.qubit.simulate` now accepts an interface keyword argument. If a QNode with the new `default.qubit`
   specifies an interface, the result will be computed with that interface.
   [(#4582)](https://github.com/PennyLaneAI/pennylane/pull/4582)
 
-* `DefaultQubit` now works as expected with measurement processes that don't specify wires.
+* The new `DefaultQubit` now works as expected with measurement processes that don't specify wires.
   [(#4580)](https://github.com/PennyLaneAI/pennylane/pull/4580)
 
 * `AmplitudeEmbedding` now inherits from `StatePrep`, allowing for it to not be decomposed
   when at the beginning of a circuit, thus behaving like `StatePrep`.
   [(#4583)](https://github.com/PennyLaneAI/pennylane/pull/4583)
 
-* `DefaultQubit` can now accept a `jax.random.PRNGKey` as a `seed`, to set the key for the JAX pseudo random 
+* The new `DefaultQubit` can now accept a `jax.random.PRNGKey` as a `seed`, to set the key for the JAX pseudo random 
   number generator when using the JAX interface. This corresponds to the `prng_key` on 
   `DefaultQubitJax` in the old API.
   [(#4596)](https://github.com/PennyLaneAI/pennylane/pull/4596)
 
-* `DefaultQubit` dispatches to a faster implementation for applying `ParametrizedEvolution` to a state
+* The new `DefaultQubit` dispatches to a faster implementation for applying `ParametrizedEvolution` to a state
   when it is more efficient to evolve the state than the operation matrix.
   [(#4598)](https://github.com/PennyLaneAI/pennylane/pull/4598)
   [(#4620)](https://github.com/PennyLaneAI/pennylane/pull/4620)
@@ -376,7 +376,7 @@
   [(#4690)](https://github.com/PennyLaneAI/pennylane/pull/4690)
 
 * Updated `qml.device`, `devices.preprocessing` and the `tape_expand.set_decomposition` context 
-  manager to bring `default.qubit` to feature parity with `default.qubit.legacy` with regards to 
+  manager to bring the new `default.qubit` to feature parity with `default.qubit.legacy` with regards to 
   using custom decompositions. The `default.qubit` device can now be included in a `set_decomposition` 
   context or initialized with a `custom_decomps` dictionary, as well as a custom `max_depth` for 
   decomposition.
