@@ -1,6 +1,3 @@
-.. role:: html(raw)
-   :format: html
-
 qml.measurements
 ================
 
