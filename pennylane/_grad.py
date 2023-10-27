@@ -16,15 +16,16 @@ This module contains the autograd wrappers :class:`grad` and :func:`jacobian`
 """
 import warnings
 
+
 from autograd import jacobian as _jacobian
 from autograd.core import make_vjp as _make_vjp
 from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.extend import vspace
 from autograd.wrap_util import unary_to_nary
 
-make_vjp = unary_to_nary(_make_vjp)
-
 from pennylane.compiler import compiler
+
+make_vjp = unary_to_nary(_make_vjp)
 
 
 class grad:
@@ -135,7 +136,7 @@ class grad:
         """This function is a replica of ``autograd.grad``, with the only
         difference being that it returns both the gradient *and* the forward pass
         value."""
-        vjp, ans = _make_vjp(fun, x)
+        vjp, ans = _make_vjp(fun, x)  # pylint: disable=redefined-outer-name
 
         if not vspace(ans).size == 1:
             raise TypeError(
@@ -343,6 +344,18 @@ def vjp(f, params, cotangents, method=None, h=None, argnum=None):
     This function allows the Vector-Jacobian Product of a hybrid quantum-classical function to be
     computed within the compiled program.
 
+    .. warning::
+
+        ``vjp`` is intended to be used with :func:`~.qjit` only.
+
+    .. note::
+
+        When used with :func:`~.qjit`, this function only supports the Catalyst compiler;
+        see :func:`catalyst.vjp` for more details.
+        Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
+        as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
+        page for an overview of the differences between Catalyst and PennyLane.
+
     Args:
         f(Callable): Function-like object to calculate VJP for
         params(List[Array]): List (or a tuple) of f's arguments specifying the point to calculate
@@ -383,8 +396,8 @@ def vjp(f, params, cotangents, method=None, h=None, argnum=None):
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
         return ops_loader.vjp(f, params, cotangents, method=method, h=h, argnum=argnum)
-    else:
-        raise RuntimeError("Pennylane does not support the VJP function without QJIT.")
+
+    raise RuntimeError("Pennylane does not support the VJP function without QJIT.")
 
 
 # pylint: disable=too-many-arguments
@@ -393,6 +406,18 @@ def jvp(f, params, tangents, method=None, h=None, argnum=None):
 
     This function allows the Jacobian-vector Product of a hybrid quantum-classical function to be
     computed within the compiled program.
+
+    .. warning::
+
+        ``jvp`` is intended to be used with :func:`~.qjit` only.
+
+    .. note::
+
+        When used with :func:`~.qjit`, this function only supports the Catalyst compiler;
+        see :func:`catalyst.jvp` for more details.
+        Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
+        as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
+        page for an overview of the differences between Catalyst and PennyLane.
 
     Args:
         f (Callable): Function-like object to calculate JVP for
@@ -459,5 +484,5 @@ def jvp(f, params, tangents, method=None, h=None, argnum=None):
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
         return ops_loader.jvp(f, params, tangents, method=method, h=h, argnum=argnum)
-    else:
-        raise RuntimeError("Pennylane does not support the JVP function without QJIT.")
+
+    raise RuntimeError("Pennylane does not support the JVP function without QJIT.")

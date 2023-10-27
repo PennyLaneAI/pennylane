@@ -277,5 +277,7 @@ class TestCatalyst:
         x = jnp.array([0.1, 0.2])
         dy = jnp.array([-0.5, 0.1, 0.3])
 
-        with pytest.raises(RuntimeError, match="Pennylane does not support the VJP function without QJIT."):
+        with pytest.raises(
+            RuntimeError, match="Pennylane does not support the VJP function without QJIT."
+        ):
             vjp(x, dy)
