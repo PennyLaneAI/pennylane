@@ -83,7 +83,7 @@ def pattern_matching_optimization(
 
     >>> dev = qml.device('default.qubit', wires=5)
     >>> qnode = qml.QNode(circuit, dev)
-    >>> optimized_qfunc = pattern_matching_optimization(pattern_tapes=[pattern])(circuit)
+    >>> optimized_qfunc = pattern_matching_optimization(circuit, pattern_tapes=[pattern])
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
 
     >>> print(qml.draw(qnode)())
@@ -101,7 +101,7 @@ def pattern_matching_optimization(
     quantum cost dictionary with a negative cost for ``pennylane.PauliZ``.
 
     >>> my_cost = {"PauliZ": -1 , "S": 1, "Adjoint(S)": 1}
-    >>> optimized_qfunc = pattern_matching_optimization(pattern_tapes=[pattern], custom_quantum_cost=my_cost)(circuit)
+    >>> optimized_qfunc = pattern_matching_optimization(circuit, pattern_tapes=[pattern], custom_quantum_cost=my_cost)
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
 
     >>> print(qml.draw(optimized_qnode)())
@@ -142,7 +142,7 @@ def pattern_matching_optimization(
 
     >>> dev = qml.device('default.qubit', wires=5)
     >>> qnode = qml.QNode(circuit, dev)
-    >>> optimized_qfunc = pattern_matching_optimization(pattern_tapes=[pattern])(circuit)
+    >>> optimized_qfunc = pattern_matching_optimization(circuit, pattern_tapes=[pattern])
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
 
     In our case, it is possible to find three CNOTs and replace this pattern with only two CNOTs and therefore

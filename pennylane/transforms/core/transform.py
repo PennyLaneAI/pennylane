@@ -59,7 +59,7 @@ def transform(
 
     .. code-block:: python
 
-        def my_quantum_transform(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], callable):
+        def my_quantum_transform(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
             tape1 = tape
             tape2 = tape.copy()
 
@@ -98,8 +98,8 @@ def transform(
     For QNodes, the dispatched transform populates the ``TransformProgram`` of your QNode. The transform and its
     processing function are applied in the execution.
 
-    >>> transformed_qnode = dispatched_transform(qfunc_circuit)
-    <QNode: wires=2, device='default.qubit', interface='auto', diff_method='best'>
+    >>> transformed_qnode = dispatched_transform(qnode_circuit); transformed_qnode
+    <QNode: wires=2, device='<default.qubit device (wires=2) at 0x2a09261c0>', interface='auto', diff_method='best'>
 
     One subtlety here, this transform would not work for a qfunc because our transform return more than one case. If
     it was not the case you would be able to dispatch on quantum functions.

@@ -67,14 +67,14 @@ class AmplitudeEmbedding(StatePrep):
             @qml.qnode(dev)
             def circuit(f=None):
                 qml.AmplitudeEmbedding(features=f, wires=range(2))
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.PauliZ(0)), qml.state()
 
-            circuit(f=[1/2, 1/2, 1/2, 1/2])
+            res, state = circuit(f=[1/2, 1/2, 1/2, 1/2])
 
         The final state of the device is - up to a global phase - equivalent to the input passed to the circuit:
 
-        >>> dev.state
-        [0.5+0.j 0.5+0.j 0.5+0.j 0.5+0.j]
+        >>> state
+        tensor([0.5+0.j, 0.5+0.j, 0.5+0.j, 0.5+0.j], requires_grad=True)
 
         **Differentiating with respect to the features**
 
@@ -91,12 +91,12 @@ class AmplitudeEmbedding(StatePrep):
             @qml.qnode(dev)
             def circuit(f=None):
                 qml.AmplitudeEmbedding(features=f, wires=range(2), normalize=True)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.PauliZ(0)), qml.state()
 
-            circuit(f=[15, 15, 15, 15])
+            res, state = circuit(f=[15, 15, 15, 15])
 
-        >>> dev.state
-        [0.5 + 0.j, 0.5 + 0.j, 0.5 + 0.j, 0.5 + 0.j]
+        >>> state
+        tensor([0.5+0.j, 0.5+0.j, 0.5+0.j, 0.5+0.j], requires_grad=True)
 
         **Padding**
 
@@ -110,12 +110,12 @@ class AmplitudeEmbedding(StatePrep):
             @qml.qnode(dev)
             def circuit(f=None):
                 qml.AmplitudeEmbedding(features=f, wires=range(2), pad_with=0.)
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.PauliZ(0)), qml.state()
 
-            circuit(f=[1/sqrt(2), 1/sqrt(2)])
+            res, state = circuit(f=[1/sqrt(2), 1/sqrt(2)])
 
-        >>> dev.state
-        [0.70710678 + 0.j, 0.70710678 + 0.j, 0.0 + 0.j, 0.0 + 0.j]
+        >>> state
+        tensor([0.70710678+0.j, 0.70710678+0.j, 0.        +0.j, 0.        +0.j], requires_grad=True)
 
     """
 
