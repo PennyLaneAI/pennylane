@@ -60,9 +60,9 @@ Completed deprecation cycles
 * The behaviour of ``Operator.__eq__`` and ``Operator.__hash__`` has been updated. Their documentation
   has been updated to reflect the incoming changes.
 
-  The upcoming changes to operator equality will allow users to use operator equality the same way as
-  with ``qml.equal``. With the changes to hashing, unique operators that are equal will have the same
-  hash. These changes will allow behaviour such as the following:
+  The changes to operator equality allow users to use operator equality the same way as
+  with ``qml.equal``. With the changes to hashing, unique operators that are equal now have the same
+  hash. These changes now allow behaviour such as the following:
 
   >>> qml.RX(0.1, wires=0) == qml.RX(0.1, wires=0)
   True
