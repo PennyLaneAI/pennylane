@@ -1246,13 +1246,13 @@ class TestOperatorIntegration:
 
     def test_label_for_operations_with_id(self):
         """Test that the label is correctly generated for an operation with an id"""
-        op=qml.RX(1.344, wires=0, id="test_with_id")
-        assert "\"test_with_id\"" in op.label()
-        assert "\"test_with_id\"" in op.label(decimals=2)
+        op = qml.RX(1.344, wires=0, id="test_with_id")
+        assert '"test_with_id"' in op.label()
+        assert '"test_with_id"' in op.label(decimals=2)
 
-        op=qml.RX(1.344, wires=0)
-        assert "\"test_with_id\"" not in op.label()
-        assert "\"test_with_id\"" not in op.label(decimals=2)
+        op = qml.RX(1.344, wires=0)
+        assert '"test_with_id"' not in op.label()
+        assert '"test_with_id"' not in op.label(decimals=2)
 
 
 class TestTensor:
