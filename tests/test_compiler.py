@@ -17,8 +17,6 @@ TODO: Uncomment 'pytest.mark.external' to check these tests in GitHub actions wi
     the 'pennylane-catalyst' v0.3.2 release. These tests require the installation
     of Catalyst from the main branch at the moment.
 """
-import numpy as np
-
 # pylint: disable=import-outside-toplevel
 import pytest
 import pennylane as qml
