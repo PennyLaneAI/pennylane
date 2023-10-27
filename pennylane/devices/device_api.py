@@ -218,7 +218,7 @@ class Device(abc.ABC):
                 the execution.
 
         Returns:
-            TransformProgram, ExecutionConfig: A transform program that is called before execution, and a configuration
+            ~.TransformProgram, ~.ExecutionConfig: A transform program that is called before execution, and a configuration
                 with unset specifications filled in.
 
         Raises:

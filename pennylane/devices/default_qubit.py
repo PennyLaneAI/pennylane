@@ -148,8 +148,11 @@ class DefaultQubit(Device):
     """A PennyLane device written in Python and capable of backpropagation derivatives.
 
     Args:
-        shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots to use in executions involving
-            this device.
+        wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
+            contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
+            (``['ancilla', 'q1', 'q2']``). Default ``None`` if not specified.
+        shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
+            to use in executions involving this device.
         seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator, jax.random.PRNGKey]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``, or
             a request to seed from numpy's global random number generator.
@@ -373,7 +376,7 @@ class DefaultQubit(Device):
                 parameters needed to fully describe the execution.
 
         Returns:
-            TransformProgram, ExecutionConfig: A transform program that when called returns QuantumTapes that the device
+            ~.TransformProgram, ~.ExecutionConfig: A transform program that when called returns QuantumTapes that the device
             can natively execute as well as a postprocessing function to be called after execution, and a configuration with
             unset specifications filled in.
 
