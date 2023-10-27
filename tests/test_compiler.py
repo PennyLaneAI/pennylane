@@ -212,7 +212,7 @@ class TestCatalyst:
     def test_jvp(self):
         """Test that the correct JVP is returned with QJIT."""
 
-        @qml.jit
+        @qml.qjit
         def jvp(params, tangent):
             def f(x):
                 y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
