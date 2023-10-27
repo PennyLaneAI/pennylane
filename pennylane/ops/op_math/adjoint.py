@@ -107,9 +107,11 @@ def adjoint(fn, lazy=True):
     The adjoint used in a compilation context can be applied on control flow.
 
     .. code-block:: python
+        
+        dev = qml.device("lightning.qubit", wires=1)
 
         @qml.qjit
-        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        @qml.qnode(dev)
         def workflow(theta, n, wires):
             def func():
                 @qml.for_loop(0, n, 1)
