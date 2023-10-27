@@ -40,7 +40,8 @@ def ctrl(op, control, control_values=None, work_wires=None):
     .. note::
 
         When used with :func:`~.qjit`, this function only supports the Catalyst compiler.
-        Please see :func:`catalyst.ctrl` for more details.
+        See :func:`catalyst.ctrl` for more details.
+
         Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
         page for an overview of the differences between Catalyst and PennyLane.
