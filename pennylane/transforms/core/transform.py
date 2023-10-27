@@ -27,28 +27,29 @@ def transform(
     is_informative=None,
     final_transform=False,
 ):
-    """The transform function is to be used to validate and dispatch a quantum transform on PennyLane objects
-    (:class:`pennylane.tape.QuantumTape`, quantum function and :class:`pennylane.QNode`). After applying the function on
-    a valid quantum transform, the resulted function can be used on all the mentioned objects. The function can be used
-    directly as a decorator on quantum function and :class:`pennylane.QNode`.
+    """Generalizes a function that transforms tapes to work with additional circuit-like objects such as a
+    :class:`~.QNode`.
+    
+    ``transform`` should be applied to a function that transforms tapes. Once validated, the result will
+    be an object that is able to transform PennyLane's range of circuit-like objects:
+    :class:`pennylane.tape.QuantumTape`, quantum function and :class:`pennylane.QNode`.
+    A circuit-like object can be transformed either via decoration or by passing it functionally through
+    the created transform.
 
     Args:
-        quantum_transform (Callable): A quantum transform is defined as a function that has the following requirements:
+        quantum_transform (Callable): The input quantum transform must be a function that satisfies the
+            following requirements:
 
-            * A quantum transform is a function that takes a :class:`pennylane.tape.QuantumTape` as first input and
+            * Accepts a :class:`pennylane.tape.QuantumTape` as its first input and
               returns a sequence of :class:`pennylane.tape.QuantumTape` and a processing function.
 
             * The transform must have type hinting of the following form: ``my_quantum_transform(tape:
               qml.tape.QuantumTape, ...) -> ( Sequence[qml.tape.QuantumTape], Callable)``
 
-        expand_transform (Callable): An expand transform is defined as a function that has the following requirements:
-
-            * An expand transform is a function that is applied before applying the defined quantum transform. It
-              takes the same arguments as the transform.
-
-            * The expand transform must have the same type hinting as a quantum transform.
-
-        classical_cotransform (Callable): A classical co-transform is a function to post-process the the classical
+        expand_transform (Callable): An optional expand transform is a applied directly before the input
+            quantum transform. It must be a function that satisfies the same requirements as
+            ``quantum_transform``.
+        classical_cotransform (Callable): A classical co-transform is a function to post-process the classical
             jacobian and the quantum jacobian and has the signature: ``my_cotransform(qjac, cjac, tape) -> tensor_like``
         is_informative (bool): Whether or not a transform is informative. If true the transform is queued at the end
             of the transform program and the tapes or qnode aren't executed.
@@ -57,39 +58,12 @@ def transform(
 
     Returns:
 
-        .TransformDispatcher: It returns a transform dispatcher object that is dispatching given the received circuit object.
-
-    **What can a dispatched function accept as argument and what does it return?**
-
-    A dispatched transform is able to handle several PenyLane objects: :class:`pennylane.QNode`, quantum function
-    (callable), :class:`pennylane.tape.QuantumTape` and :class:`pennylane.devices.Device`. For each object, the transform
-    will be applied in a different way but it always preserves the provided underlying quantum transform. What is
-    returned by the transform dispatcher depends on what circuit abstraction is given as argument. Here is provided a
-    list of the different behavior and return for the different objects:
-
-    - For a :class:`~.QNode` as argument of the dispatched transform, the underlying transform is added to
-      its :class:`~.TransformProgram` and the return is the transformed :class:`~.QNode`.
-      For each execution of the :class:`pennylane.QNode`, it first applies the transform program on the original captured
-      circuit. Then the transformed circuits are executed by a device and finally the post-processing function is
-      applied on the results.
-
-    - For a quantum function (callable) as argument of the dispatched transform, it first builds the tape from the
-      quantum function, the transform is then applied on the tape. Then the resulting tape is converted back
-      to a quantum function (callable). It therefore returns a transformed quantum function (allable). The limitation
-      is that the underlying transform can only return a sequence containing a single tape, because quantum
-      functions only support single circuit.
-
-    - For a :class:`~.QuantumTape`, the underlying quantum transform is directly applied on the
-      :class:`~.QuantumTape`. It returns a sequence of :class:`~.QuantumTape` and a processing
-      function to be applied after execution.
-
-    - For a :class:`pennylane.devices.Device`, the transform is added to the device transform program and a transformed
-      :class:`pennylane.devices.Device` is returned. The transform is added to the end of the device program and will
-      be last in the overall transform program.
+        .TransformDispatcher: Returns a transform dispatcher object that that can transform any
+        circuit-like object in PennyLane.
 
     **Example**
 
-    First define your quantum transform, with the necessary type hinting defined above. In this example we copy the
+    First define an input quantum transform with the necessary type hinting defined above. In this example we copy the
     tape and sum the results of the execution of the two tapes.
 
     .. code-block:: python
@@ -105,28 +79,28 @@ def transform(
 
             return [tape1, tape2], post_processing_fn
 
-    Of course, we want to be able to apply this transform on ``qfunc`` and :class:`pennylane.QNode`. That's where the
-    ``transform`` function comes into play. This function validates the signature of your quantum transform and
-    dispatches it on the different objects. Let's define a circuit as a quantum function and as a
-    :class:`pennylane.QNode`.
+    We want to be able to apply this transform on both a ``qfunc`` and a :class:`pennylane.QNode` and will
+    use ``transform`` to achieve this. ``transform`` validates the signature of your input quantum transform
+    and makes it capable of transforming ``qfunc`` and :class:`pennylane.QNode` in addition to quantum tapes.
+    Let's define a circuit as a :class:`pennylane.QNode`:
 
-        .. code-block:: python
+    .. code-block:: python
 
-            dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit")
 
-            @qml.qnode(device=dev)
-            def qnode_circuit(a):
-                qml.Hadamard(wires=0)
-                qml.CNOT(wires=[0, 1])
-                qml.PauliX(wires=0)
-                qml.RZ(a, wires=1)
-                return qml.expval(qml.PauliZ(wires=0))
+        @qml.qnode(device=dev)
+        def qnode_circuit(a):
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=0)
+            qml.RZ(a, wires=1)
+            return qml.expval(qml.PauliZ(wires=0))
 
-    We apply the transform on our tranform in order to make it compatible with more PennyLane types.
+    We first apply ``transform`` to ``my_quantum_transform``:
 
     >>> dispatched_transform = transform(my_quantum_transform)
 
-    Now you can use the dispatched transform directly on :class:`pennylane.QNode`.
+    Now you can use the dispatched transform directly on a :class:`pennylane.QNode`.
 
     For :class:`pennylane.QNode`, the dispatched transform populates the ``TransformProgram`` of your QNode. The
     transform and its processing function are applied in the execution.
@@ -137,18 +111,45 @@ def transform(
     >>> transformed_qnode.transform_program
     TransformProgram(my_quantum_transform)
 
-    If we apply a second time the transform on the and :class:`pennylane.QNode`, we would add it to the transform
-    program again and therefore the transform would be applied twice before execution.
+    If we apply ``dispatched_transform`` a second time to the :class:`pennylane.QNode`, we would add
+    it to the transform program again and therefore the transform would be applied twice before execution.
 
     >>> transformed_qnode = dispatched_transform(transformed_qnode)
     >>> transformed_qnode.transform_program
     TransformProgram(my_quantum_transform, my_quantum_transform)
 
-    The transform program is automatically applied on the tapes before sending the tapes to execution. When called the
-    transform program applies all the transforms that it contains and create a sequence of tapes, it also produces a single
-    post-processing function that contains a reversed concatenation of all the transforms processing functions. After
-    executing the tapes, the post-processing function is applied to get the final results.
+    When a transformed QNode is executed, the QNode's transform program is applied to the generated tape
+    and creates a sequence of tapes to be executed. The execution results are then post-processed in the
+    reverse order of the transform program to obtain the final results.
 
+    .. details::
+        :title: Signature of a transform
+
+        A dispatched transform is able to handle several PenyLane objects: :class:`pennylane.QNode`, quantum function
+        (callable), :class:`pennylane.tape.QuantumTape` and :class:`pennylane.devices.Device`. For each object, the transform
+        will be applied in a different way but it always preserves the provided underlying quantum transform. What is
+        returned by the transform dispatcher depends on what circuit abstraction is given as argument. Here is provided a
+        list of the different behavior and return for the different objects:
+
+        - For a :class:`~.QNode` as argument of the dispatched transform, the underlying transform is added to
+        its :class:`~.TransformProgram` and the return is the transformed :class:`~.QNode`.
+        For each execution of the :class:`pennylane.QNode`, it first applies the transform program on the original captured
+        circuit. Then the transformed circuits are executed by a device and finally the post-processing function is
+        applied on the results.
+
+        - For a quantum function (callable) as argument of the dispatched transform, it first builds the tape from the
+        quantum function, the transform is then applied on the tape. Then the resulting tape is converted back
+        to a quantum function (callable). It therefore returns a transformed quantum function (allable). The limitation
+        is that the underlying transform can only return a sequence containing a single tape, because quantum
+        functions only support single circuit.
+
+        - For a :class:`~.QuantumTape`, the underlying quantum transform is directly applied on the
+        :class:`~.QuantumTape`. It returns a sequence of :class:`~.QuantumTape` and a processing
+        function to be applied after execution.
+
+        - For a :class:`pennylane.devices.Device`, the transform is added to the device transform program and a transformed
+        :class:`pennylane.devices.Device` is returned. The transform is added to the end of the device program and will
+        be last in the overall transform program.
     """
     # 1: Checks for the transform
     if not callable(quantum_transform):

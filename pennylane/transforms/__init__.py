@@ -28,7 +28,7 @@ See the :class:`pennylane.transform` documentation for more details and examples
 .. autosummary::
     :toctree: api
 
-    ~transforms.core.transform
+    pennylane.transform
 
 Transforms library
 ------------------
