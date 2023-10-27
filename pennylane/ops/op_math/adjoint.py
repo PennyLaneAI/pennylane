@@ -112,7 +112,7 @@ def adjoint(fn, lazy=True):
         @qml.qnode(qml.device("lightning.qubit", wires=1))
         def workflow(theta, n, wires):
             def func():
-                @catalyst.for_loop(0, n, 1)
+                @qml.for_loop(0, n, 1)
                 def loop_fn(i):
                     qml.RX(theta, wires=wires)
 
