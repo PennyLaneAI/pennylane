@@ -51,29 +51,32 @@ def merge_amplitude_embedding(tape: QuantumTape) -> (Sequence[QuantumTape], Call
     >>> circuit()
     [1.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j]
 
-    You can also apply it on quantum function.
+    .. details::
+        :title: Usage Details
 
-    .. code-block:: python
+        You can also apply it on quantum function.
 
-        def qfunc():
-            qml.CNOT(wires = [0,1])
-            qml.AmplitudeEmbedding([0,1], wires = 2)
-            qml.AmplitudeEmbedding([0,1], wires = 3)
-            return qml.state()
+        .. code-block:: python
 
-    The circuit before compilation will not work because of using two amplitude embedding.
+            def qfunc():
+                qml.CNOT(wires = [0,1])
+                qml.AmplitudeEmbedding([0,1], wires = 2)
+                qml.AmplitudeEmbedding([0,1], wires = 3)
+                return qml.state()
 
-    Using the transformation we can join the different amplitude embedding into a single one:
+        The circuit before compilation will not work because of using two amplitude embedding.
 
-    >>> optimized_qfunc = qml.transforms.merge_amplitude_embedding(qfunc)
-    >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-    >>> print(qml.draw(optimized_qnode)())
-    0: ─╭●──────────────────────┤  State
-    1: ─╰X──────────────────────┤  State
-    2: ─╭AmplitudeEmbedding(M0)─┤  State
-    3: ─╰AmplitudeEmbedding(M0)─┤  State
-    M0 =
-    [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
+        Using the transformation we can join the different amplitude embedding into a single one:
+
+        >>> optimized_qfunc = qml.transforms.merge_amplitude_embedding(qfunc)
+        >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        >>> print(qml.draw(optimized_qnode)())
+        0: ─╭●──────────────────────┤  State
+        1: ─╰X──────────────────────┤  State
+        2: ─╭AmplitudeEmbedding(M0)─┤  State
+        3: ─╰AmplitudeEmbedding(M0)─┤  State
+        M0 =
+        [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
 
     """
     # Make a working copy of the list to traverse

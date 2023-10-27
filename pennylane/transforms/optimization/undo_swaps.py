@@ -54,6 +54,9 @@ def undo_swaps(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
 
     The SWAP gates are removed before execution.
 
+    .. details::
+        :title: Usage Details
+
     Consider the following quantum function:
 
     .. code-block:: python
@@ -66,24 +69,24 @@ def undo_swaps(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
             qml.PauliY(wires=0)
             return qml.expval(qml.PauliZ(0))
 
-    The circuit before optimization:
+        The circuit before optimization:
 
-    >>> dev = qml.device('default.qubit', wires=3)
-    >>> qnode = qml.QNode(qfunc, dev)
-    >>> print(qml.draw(qnode)())
-        0: ──H──╭SWAP──╭SWAP──Y──┤ ⟨Z⟩
-        1: ──X──╰SWAP──│─────────┤
-        2: ────────────╰SWAP─────┤
+        >>> dev = qml.device('default.qubit', wires=3)
+        >>> qnode = qml.QNode(qfunc, dev)
+        >>> print(qml.draw(qnode)())
+            0: ──H──╭SWAP──╭SWAP──Y──┤ ⟨Z⟩
+            1: ──X──╰SWAP──│─────────┤
+            2: ────────────╰SWAP─────┤
 
 
-    We can remove the SWAP gates by running the ``undo_swap`` transform:
+        We can remove the SWAP gates by running the ``undo_swap`` transform:
 
-    >>> optimized_qfunc = undo_swaps(qfunc)
-    >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-    >>> print(qml.draw(optimized_qnode)())
-        0: ──Y──┤ ⟨Z⟩
-        1: ──H──┤
-        2: ──X──┤
+        >>> optimized_qfunc = undo_swaps(qfunc)
+        >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        >>> print(qml.draw(optimized_qnode)())
+            0: ──Y──┤ ⟨Z⟩
+            1: ──H──┤
+            2: ──X──┤
 
     """
     # Make a working copy of the list to traverse

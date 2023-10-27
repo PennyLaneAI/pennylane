@@ -67,6 +67,9 @@ def single_qubit_fusion(
 
     The single qubit gates are fused before execution.
 
+    .. details::
+        :title: Usage Details
+
     Consider the following quantum function.
 
     .. code-block:: python
@@ -79,19 +82,19 @@ def single_qubit_fusion(
             qml.RZ(r2[0], wires=0)
             return qml.expval(qml.PauliX(0))
 
-    The circuit before optimization:
+        The circuit before optimization:
 
-    >>> qnode = qml.QNode(qfunc, dev)
-    >>> print(qml.draw(qnode)([0.1, 0.2, 0.3], [0.4, 0.5, 0.6]))
-    0: ──H──Rot(0.1, 0.2, 0.3)──Rot(0.4, 0.5, 0.6)──RZ(0.1)──RZ(0.4)──┤ ⟨X⟩
+        >>> qnode = qml.QNode(qfunc, dev)
+        >>> print(qml.draw(qnode)([0.1, 0.2, 0.3], [0.4, 0.5, 0.6]))
+        0: ──H──Rot(0.1, 0.2, 0.3)──Rot(0.4, 0.5, 0.6)──RZ(0.1)──RZ(0.4)──┤ ⟨X⟩
 
-    Full single-qubit gate fusion allows us to collapse this entire sequence into a
-    single ``qml.Rot`` rotation gate.
+        Full single-qubit gate fusion allows us to collapse this entire sequence into a
+        single ``qml.Rot`` rotation gate.
 
-    >>> optimized_qfunc = single_qubit_fusion(qfunc)
-    >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-    >>> print(qml.draw(optimized_qnode)([0.1, 0.2, 0.3], [0.4, 0.5, 0.6]))
-    0: ──Rot(3.57, 2.09, 2.05)──┤ ⟨X⟩
+        >>> optimized_qfunc = single_qubit_fusion(qfunc)
+        >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        >>> print(qml.draw(optimized_qnode)([0.1, 0.2, 0.3], [0.4, 0.5, 0.6]))
+        0: ──Rot(3.57, 2.09, 2.05)──┤ ⟨X⟩
 
     """
     # Make a working copy of the list to traverse

@@ -101,42 +101,45 @@ def cancel_inverses(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
     >>> circuit(0.1, 0.2, 0.3)
     0.999999999999999
 
-    You can also apply it on quantum functions:
+    .. details::
+        :title: Usage Details
 
-    .. code-block:: python
+        You can also apply it on quantum functions:
 
-        def qfunc(x, y, z):
-            qml.Hadamard(wires=0)
-            qml.Hadamard(wires=1)
-            qml.Hadamard(wires=0)
-            qml.RX(x, wires=2)
-            qml.RY(y, wires=1)
-            qml.PauliX(wires=1)
-            qml.RZ(z, wires=0)
-            qml.RX(y, wires=2)
-            qml.CNOT(wires=[0, 2])
-            qml.PauliX(wires=1)
-            return qml.expval(qml.PauliZ(0))
+        .. code-block:: python
 
-    The circuit before optimization:
+            def qfunc(x, y, z):
+                qml.Hadamard(wires=0)
+                qml.Hadamard(wires=1)
+                qml.Hadamard(wires=0)
+                qml.RX(x, wires=2)
+                qml.RY(y, wires=1)
+                qml.PauliX(wires=1)
+                qml.RZ(z, wires=0)
+                qml.RX(y, wires=2)
+                qml.CNOT(wires=[0, 2])
+                qml.PauliX(wires=1)
+                return qml.expval(qml.PauliZ(0))
 
-    >>> qnode = qml.QNode(qfunc, dev)
-    >>> print(qml.draw(qnode)(1, 2, 3))
-    0: ──H─────────H─────────RZ(3.00)─╭●────┤  <Z>
-    1: ──H─────────RY(2.00)──X────────│───X─┤
-    2: ──RX(1.00)──RX(2.00)───────────╰X────┤
+        The circuit before optimization:
 
-    We can see that there are two adjacent Hadamards on the first qubit that
-    should cancel each other out. Similarly, there are two Pauli-X gates on the
-    second qubit that should cancel. We can obtain a simplified circuit by running
-    the ``cancel_inverses`` transform:
+        >>> qnode = qml.QNode(qfunc, dev)
+        >>> print(qml.draw(qnode)(1, 2, 3))
+        0: ──H─────────H─────────RZ(3.00)─╭●────┤  <Z>
+        1: ──H─────────RY(2.00)──X────────│───X─┤
+        2: ──RX(1.00)──RX(2.00)───────────╰X────┤
 
-    >>> optimized_qfunc = cancel_inverses(qfunc)
-    >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-    >>> print(qml.draw(optimized_qnode)(1, 2, 3))
-    0: ──RZ(3.00)───────────╭●─┤  <Z>
-    1: ──H─────────RY(2.00)─│──┤
-    2: ──RX(1.00)──RX(2.00)─╰X─┤
+        We can see that there are two adjacent Hadamards on the first qubit that
+        should cancel each other out. Similarly, there are two Pauli-X gates on the
+        second qubit that should cancel. We can obtain a simplified circuit by running
+        the ``cancel_inverses`` transform:
+
+        >>> optimized_qfunc = cancel_inverses(qfunc)
+        >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        >>> print(qml.draw(optimized_qnode)(1, 2, 3))
+        0: ──RZ(3.00)───────────╭●─┤  <Z>
+        1: ──H─────────RY(2.00)─│──┤
+        2: ──RX(1.00)──RX(2.00)─╰X─┤
 
     """
     # Make a working copy of the list to traverse

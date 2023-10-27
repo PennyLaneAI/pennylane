@@ -197,46 +197,49 @@ def commute_controlled(tape: QuantumTape, direction="right") -> (Sequence[Quantu
     >>> circuit(0.5)
     0.9999999999999999
 
-    You can also apply it on quantum function.
+    .. details::
+        :title: Usage Details
 
-    .. code-block:: python
+        You can also apply it on quantum function.
 
-        def qfunc(theta):
-            qml.CZ(wires=[0, 2])
-            qml.PauliX(wires=2)
-            qml.S(wires=0)
+        .. code-block:: python
 
-            qml.CNOT(wires=[0, 1])
+            def qfunc(theta):
+                qml.CZ(wires=[0, 2])
+                qml.PauliX(wires=2)
+                qml.S(wires=0)
 
-            qml.PauliY(wires=1)
-            qml.CRY(theta, wires=[0, 1])
-            qml.PhaseShift(theta/2, wires=0)
+                qml.CNOT(wires=[0, 1])
 
-            qml.Toffoli(wires=[0, 1, 2])
-            qml.T(wires=0)
-            qml.RZ(theta/2, wires=1)
+                qml.PauliY(wires=1)
+                qml.CRY(theta, wires=[0, 1])
+                qml.PhaseShift(theta/2, wires=0)
 
-            return qml.expval(qml.PauliZ(0))
+                qml.Toffoli(wires=[0, 1, 2])
+                qml.T(wires=0)
+                qml.RZ(theta/2, wires=1)
 
-    >>> qnode = qml.QNode(qfunc, dev)
-    >>> print(qml.draw(qnode)(0.5))
-    0: ─╭●──S─╭●────╭●─────────Rϕ(0.25)─╭●──T────────┤  <Z>
-    1: ─│─────╰X──Y─╰RY(0.50)───────────├●──RZ(0.25)─┤
-    2: ─╰Z──X───────────────────────────╰X───────────┤
+                return qml.expval(qml.PauliZ(0))
 
-    Diagonal gates on either side of control qubits do not affect the outcome
-    of controlled gates; thus we can push all the single-qubit gates on the
-    first qubit together on the right (and fuse them if desired). Similarly, X
-    gates commute with the target of ``CNOT`` and ``Toffoli`` (and ``PauliY``
-    with ``CRY``). We can use the transform to push single-qubit gates as
-    far as possible through the controlled operations:
+        >>> qnode = qml.QNode(qfunc, dev)
+        >>> print(qml.draw(qnode)(0.5))
+        0: ─╭●──S─╭●────╭●─────────Rϕ(0.25)─╭●──T────────┤  <Z>
+        1: ─│─────╰X──Y─╰RY(0.50)───────────├●──RZ(0.25)─┤
+        2: ─╰Z──X───────────────────────────╰X───────────┤
 
-    >>> optimized_qfunc = commute_controlled(qfunc, direction="right")
-    >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-    >>> print(qml.draw(optimized_qnode)(0.5))
-    0: ─╭●─╭●─╭●───────────╭●──S─────────Rϕ(0.25)──T─┤  <Z>
-    1: ─│──╰X─╰RY(0.50)──Y─├●──RZ(0.25)──────────────┤
-    2: ─╰Z─────────────────╰X──X─────────────────────┤
+        Diagonal gates on either side of control qubits do not affect the outcome
+        of controlled gates; thus we can push all the single-qubit gates on the
+        first qubit together on the right (and fuse them if desired). Similarly, X
+        gates commute with the target of ``CNOT`` and ``Toffoli`` (and ``PauliY``
+        with ``CRY``). We can use the transform to push single-qubit gates as
+        far as possible through the controlled operations:
+
+        >>> optimized_qfunc = commute_controlled(qfunc, direction="right")
+        >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        >>> print(qml.draw(optimized_qnode)(0.5))
+        0: ─╭●─╭●─╭●───────────╭●──S─────────Rϕ(0.25)──T─┤  <Z>
+        1: ─│──╰X─╰RY(0.50)──Y─├●──RZ(0.25)──────────────┤
+        2: ─╰Z─────────────────╰X──X─────────────────────┤
 
     """
     if direction not in ("left", "right"):

@@ -46,33 +46,36 @@ def remove_barrier(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
 
     The barrier is then removed before execution.
 
-    Consider the following quantum function:
+    .. details::
+        :title: Usage Details
 
-    .. code-block:: python
+        Consider the following quantum function:
 
-        def qfunc(x, y):
-            qml.Hadamard(wires=0)
-            qml.Hadamard(wires=1)
-            qml.Barrier(wires=[0,1])
-            qml.PauliX(wires=0)
-            return qml.expval(qml.PauliZ(0))
+        .. code-block:: python
 
-    The circuit before optimization:
+            def qfunc(x, y):
+                qml.Hadamard(wires=0)
+                qml.Hadamard(wires=1)
+                qml.Barrier(wires=[0,1])
+                qml.PauliX(wires=0)
+                return qml.expval(qml.PauliZ(0))
 
-    >>> dev = qml.device('default.qubit', wires=2)
-    >>> qnode = qml.QNode(qfunc, dev)
-    >>> print(qml.draw(qnode)(1, 2))
-        0: ──H──╭||──X──┤ ⟨Z⟩
-        1: ──H──╰||─────┤
+        The circuit before optimization:
+
+        >>> dev = qml.device('default.qubit', wires=2)
+        >>> qnode = qml.QNode(qfunc, dev)
+        >>> print(qml.draw(qnode)(1, 2))
+            0: ──H──╭||──X──┤ ⟨Z⟩
+            1: ──H──╰||─────┤
 
 
-    We can remove the Barrier by running the ``remove_barrier`` transform:
+        We can remove the Barrier by running the ``remove_barrier`` transform:
 
-    >>> optimized_qfunc = remove_barrier(qfunc)
-    >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-    >>> print(qml.draw(optimized_qnode)(1, 2))
-       0: ──H──X──┤ ⟨Z⟩
-       1: ──H─────┤
+        >>> optimized_qfunc = remove_barrier(qfunc)
+        >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        >>> print(qml.draw(optimized_qnode)(1, 2))
+           0: ──H──X──┤ ⟨Z⟩
+           1: ──H─────┤
 
     """
     # Make a working copy of the list to traverse
