@@ -102,7 +102,7 @@ def null_postprocessing(results: ResultBatch) -> ResultBatch:
 
 class TransformProgram:
     """Class that contains a transform program and the methods to interact with it.
-    
+
     The order of execution is the order in the list containing the containers.
 
     The main case where one would have to interact directly with a transform program is when developing a
