@@ -34,7 +34,16 @@ from .symbolicop import SymbolicOp
 
 
 def ctrl(op, control, control_values=None, work_wires=None):
-    """Create a method that applies a controlled version of the provided op.
+    """A :func:`~.qjit` compatible control transformation that creates the control of an Operator or a function
+    that applies the adjoint of the provided function.
+
+    .. note::
+
+        When used with :func:`~.qjit`, this function only supports the Catalyst compiler.
+        Please see :func:`catalyst.ctrl` for more details.
+        Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
+        as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
+        page for an overview of the differences between Catalyst and PennyLane.
 
     Args:
         op (function or :class:`~.operation.Operator`): A single operator or a function that applies pennylane operators.
@@ -82,8 +91,6 @@ def ctrl(op, control, control_values=None, work_wires=None):
     >>> op = qml.ctrl(qml.RX(1.2, wires=0) ** 2 @ qml.RY(0.1, wires=0), control=1)
     >>> qml.simplify(qml.adjoint(op))
     Controlled(RY(12.466370614359173, wires=[0]) @ RX(10.166370614359172, wires=[0]), control_wires=[1])
-
-    **Example**
 
     **Example with compiler**
 
