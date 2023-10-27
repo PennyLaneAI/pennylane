@@ -44,6 +44,7 @@ is via the qjit decorator.
     :toctree: api
 
     ~qjit
+    ~select_measure
 
 In addition, several developer functions are available to probe
 available hybrid compilers.
@@ -218,4 +219,4 @@ if no function is provided:
 
 from .compiler import available_compilers, available, active_compiler, active
 
-from .qjit_api import qjit
+from .qjit_api import qjit, select_measure

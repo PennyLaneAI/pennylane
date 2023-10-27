@@ -128,7 +128,7 @@ import pennylane.qinfo  # pylint:disable=wrong-import-order
 from pennylane.interfaces import execute  # pylint:disable=wrong-import-order
 import pennylane.logging  # pylint:disable=wrong-import-order
 
-from pennylane.compiler import qjit
+from pennylane.compiler import qjit, select_measure
 import pennylane.compiler
 
 import pennylane.data
