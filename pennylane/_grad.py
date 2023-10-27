@@ -350,7 +350,7 @@ def vjp(f, params, cotangents, method=None, h=None, argnum=None):
                              differentiable by listing their indices in the ``argnum`` parameter.
         cotangents(List[Array]): List (or a tuple) of tangent values to use in JVP. The list size
                                  and shapes must match the size and shape of ``f`` outputs.
-        method(str): Differentiation method to use, same as in ``grad``.
+        method(str): Differentiation method to use, same as in :func:`~.grad`.
         h (float): the step-size value for the finite-difference (``"fd"``) method
         argnum (Union[int, List[int]]): the params' indices to differentiate.
 
