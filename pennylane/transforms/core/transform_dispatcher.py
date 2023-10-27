@@ -28,16 +28,15 @@ class TransformError(Exception):
 
 
 class TransformDispatcher:
-    r"""This object is developer facing and should not be used directly to create transforms. Use
-    :func:`~.pennylane.transform` instead.
-
-    Convert a transform that has the signature ``(tape -> Sequence(tape), fn)`` to a transform dispatcher
-    that can act on :class:`pennylane.tape.QuantumTape`., quantum function, :class:`pennylane.QNode`,
+    r"""Converts a transform that has the signature ``(tape -> Sequence(tape), fn)`` to a transform dispatcher
+    that can act on :class:`pennylane.tape.QuantumTape`, quantum function, :class:`pennylane.QNode`,
     :class:`pennylane.devices.Device`.
 
     .. warning::
 
-        This class is developer-facing and should not be used directly.
+        This class is developer-facing and should not be used directly. Instead, use
+        :func:`qml.transform <pennylane.transform>` if you would like to make a custom
+        transform.
 
     .. seealso:: :func:`~.pennylane.transform`
     """
@@ -146,27 +145,27 @@ class TransformDispatcher:
 
     @property
     def transform(self):
-        """Return the quantum transform."""
+        """The quantum transform."""
         return self._transform
 
     @property
     def expand_transform(self):
-        """Return the expand transform."""
+        """The expand transform."""
         return self._expand_transform
 
     @property
     def classical_cotransform(self):
-        """Return the classical co-transform."""
+        """The classical co-transform."""
         return self._classical_cotransform
 
     @property
     def is_informative(self):
-        """Return True is the transform is informative."""
+        """``True`` if the transform is informative."""
         return self._is_informative
 
     @property
     def final_transform(self):
-        """Return True if the transformed tapes must be executed."""
+        """``True`` if the transformed tapes must be executed."""
         return self._final_transform
 
     def custom_qnode_transform(self, fn):
@@ -327,12 +326,14 @@ class TransformDispatcher:
 
 
 class TransformContainer:
-    """Class to store a quantum transform with its args, kwargs and classical co-transforms.  Use
+    """Class to store a quantum transform with its ``args``, ``kwargs`` and classical co-transforms.  Use
     :func:`~.pennylane.transform`.
 
     .. warning::
 
-        This class is developer-facing and should not be used directly.
+        This class is developer-facing and should not be used directly. Instead, use
+        :func:`qml.transform <pennylane.transform>` if you would like to make a custom
+        transform.
 
     .. seealso:: :func:`~.pennylane.transform`
     """
@@ -367,30 +368,30 @@ class TransformContainer:
 
     @property
     def transform(self):
-        """Return the stored quantum transform."""
+        """The stored quantum transform."""
         return self._transform
 
     @property
     def args(self):
-        """Return the stored quantum transform's args."""
+        """The stored quantum transform's ``args``."""
         return self._args
 
     @property
     def kwargs(self):
-        """Return the stored quantum transform's arkwgs."""
+        """The stored quantum transform's ``kwargs``."""
         return self._kwargs
 
     @property
     def classical_cotransform(self):
-        """Return the stored quantum transform's classical co-transform."""
+        """The stored quantum transform's classical co-transform."""
         return self._classical_cotransform
 
     @property
     def is_informative(self):
-        """Return True is the transform is informative."""
+        """``True`` if the transform is informative."""
         return self._is_informative
 
     @property
     def final_transform(self):
-        """Return True if the transform needs to be executed"""
+        """``True`` if the transform needs to be executed"""
         return self._final_transform
