@@ -10,6 +10,7 @@
   [(#4703)](https://github.com/PennyLaneAI/pennylane/pull/4703)
 
 * `qml.ArbitraryUnitary` now supports batching.
+  [(#4745)](https://github.com/PennyLaneAI/pennylane/pull/4745)
 
 <h3>Breaking changes 💔</h3>
 
