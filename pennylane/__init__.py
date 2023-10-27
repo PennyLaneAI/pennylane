@@ -82,6 +82,7 @@ from pennylane.templates.subroutines import *
 from pennylane import qaoa
 from pennylane.qnode import QNode, qnode
 from pennylane.transforms import (
+    transform,
     adjoint_metric_tensor,
     batch_params,
     batch_input,

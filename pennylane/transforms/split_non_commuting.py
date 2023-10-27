@@ -21,7 +21,7 @@ from functools import reduce
 import pennylane as qml
 from pennylane.measurements import ProbabilityMP, SampleMP
 
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 
 
 @transform
@@ -30,15 +30,11 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
     Splits a qnode measuring non-commuting observables into groups of commuting observables.
 
     Args:
-        qnode (pennylane.QNode or .QuantumTape): quantum tape or QNode that contains a list of
+        tape (QNode or QuantumTape or Callable): A circuit that contains a list of
             non-commuting observables to measure.
 
     Returns:
-        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: If a QNode is passed,
-        it returns a QNode capable of handling non-commuting groups.
-        If a tape is passed, returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions to restore the ordering of the inputs.
+        qnode (QNode) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
 

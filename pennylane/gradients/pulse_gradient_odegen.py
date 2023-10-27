@@ -24,7 +24,7 @@ import pennylane as qml
 
 from pennylane.pulse import ParametrizedEvolution
 from pennylane.ops.qubit.special_unitary import pauli_basis_strings, _pauli_decompose
-from pennylane.transforms.core import transform
+from pennylane import transform
 
 from .parameter_shift import _make_zero_rep
 from .pulse_gradient import _assert_has_jax, raise_pulse_diff_on_qnode
@@ -403,7 +403,7 @@ def _expval_pulse_odegen(tape, argnum, atol):
 def pulse_odegen(
     tape: qml.tape.QuantumTape, argnum=None, atol=1e-7
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
-    r"""Transform a QNode to compute the pulse generator parameter-shift gradient of pulses
+    r"""Transform a circuit to compute the pulse generator parameter-shift gradient of pulses
     in a pulse program with respect to their inputs.
     This method combines automatic differentiation of few-qubit operations with
     hardware-compatible shift rules.
@@ -428,7 +428,7 @@ def pulse_odegen(
     See the theoretical background section below for more details.
 
     Args:
-        tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
+        tape (QuantumTape): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
@@ -437,17 +437,11 @@ def pulse_odegen(
             ``qml.math.isclose(x, 0., atol=atol, rtol=0) == True`` are neglected.
 
     Returns:
-        function or tuple[list[QuantumTape], function]:
+        tuple[List[QuantumTape], function]:
 
-        - If the input is a QNode, an object representing the Jacobian (function) of the QNode
-          that can be executed to obtain the Jacobian.
-          The type of the Jacobian returned is either a tensor, a tuple or a
-          nested tuple depending on the nesting structure of the original QNode output.
-
-        - If the input is a tape, a tuple containing a
-          list of generated tapes, together with a post-processing
-          function to be applied to the results of the evaluated tapes
-          in order to obtain the Jacobian.
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple depending upon the nesting
+        structure of measurements in the original circuit.
 
     .. note::
 

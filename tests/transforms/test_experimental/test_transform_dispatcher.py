@@ -607,3 +607,18 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         ):
             dispatched_transform = transform(valid_transform, expand_transform=valid_transform)
             dispatched_transform(device, index=0)
+
+    def test_sphinx_build(self, monkeypatch):
+        """Test that transforms are not created during Sphinx builds"""
+        monkeypatch.setenv("SPHINX_BUILD", "1")
+
+        with pytest.warns(UserWarning, match="Transforms have been disabled, as a Sphinx"):
+
+            @qml.transforms.core.transform
+            def custom_transform(  # pylint:disable=unused-variable
+                tape: qml.tape.QuantumTape, index: int
+            ) -> (Sequence[qml.tape.QuantumTape], Callable):
+                """A valid transform."""
+                tape = tape.copy()
+                tape._ops.pop(index)  # pylint:disable=protected-access
+                return [tape], lambda x: x

@@ -21,7 +21,7 @@ from pennylane.tape import QuantumTape
 from pennylane.devices import DefaultQubit, DefaultQubitLegacy, DefaultMixed
 from pennylane.measurements import StateMP, DensityMatrixMP
 from pennylane.transforms import adjoint_metric_tensor, metric_tensor
-from pennylane.transforms.core import transform
+from pennylane import transform
 
 
 @partial(transform, final_transform=True)
@@ -30,14 +30,14 @@ def reduced_dm(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Ca
     :func:`~pennylane.state`.
 
     Args:
-        tape (QuantumTape): A :class:`~.QuantumTape` returning :func:`~pennylane.state`.
+        tape (QuantumTape or QNode or Callable)): A quantum circuit returning :func:`~pennylane.state`.
         wires (Sequence(int)): List of wires in the considered subsystem.
 
     Returns:
-        pennylane.QNode or qfunc or tuple[List[.QuantumTape], Callable]: If a QNode
-        is passed, it returns a QNode with the transform added to its transform program.
-        If a tape is passed, returns a tuple containing a list of quantum tapes to be
-        evaluated, and a function to be applied to these tape executions.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the reduced density matrix in the form of a tensor.
 
     **Example**
 
@@ -119,14 +119,14 @@ def purity(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Callab
     the overall state, include all wires in the ``wires`` argument.
 
     Args:
-        tape (pennylane.tape.QuantumTape): A :class:`.QuantumTape` objeect returning a :func:`~pennylane.state`.
+        tape (QNode or QuantumTape or Callable): A quantum circuit object returning a :func:`~pennylane.state`.
         wires (Sequence(int)): List of wires in the considered subsystem.
 
     Returns:
-        pennylane.QNode or qfunc or tuple[List[.QuantumTape], Callable]: If a QNode
-        is passed, it returns a QNode with the transform added to its transform program.
-        If a tape is passed, returns a tuple containing a list of quantum tapes to be
-        evaluated, and a function to be applied to these tape executions.
+        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the purity in the form of a tensor.
 
     **Example**
 
@@ -211,15 +211,15 @@ def vn_entropy(
         S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
 
     Args:
-        tape (.QuantumTape): A :class:`.QuantumTape` returning a :func:`~pennylane.state`.
+        tape (QNode or QuantumTape or Callable): A quantum circuit returning a :func:`~pennylane.state`.
         wires (Sequence(int)): List of wires in the considered subsystem.
         base (float): Base for the logarithm, default is None the natural logarithm is used in this case.
 
     Returns:
-        pennylane.QNode or qfunc or tuple[List[.QuantumTape], Callable]: If a QNode
-        is passed, it returns a QNode with the transform added to its transform program.
-        If a tape is passed, returns a tuple containing a list of quantum tapes to be
-        evaluated, and a function to be applied to these tape executions.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the Von Neumann entropy in the form of a tensor.
 
     **Example**
 
@@ -312,16 +312,16 @@ def mutual_info(
     one system by measuring the other system.
 
     Args:
-        qnode (QNode): A :class:`.QNode` returning a :func:`~pennylane.state`.
+        qnode (QNode or QuantumTape or Callable): A quantum circuit returning a :func:`~pennylane.state`.
         wires0 (Sequence(int)): List of wires in the first subsystem.
         wires1 (Sequence(int)): List of wires in the second subsystem.
         base (float): Base for the logarithm. If None, the natural logarithm is used.
 
     Returns:
-        pennylane.QNode or qfunc or tuple[List[.QuantumTape], Callable]: If a QNode
-        is passed, it returns a QNode with the transform added to its transform program.
-        If a tape is passed, returns a tuple containing a list of quantum tapes to be
-        evaluated, and a function to be applied to these tape executions.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the mutual information in the form of a tensor.
 
     **Example**
 
@@ -667,11 +667,14 @@ def quantum_fisher(
         :func:`~.pennylane.metric_tensor`, :func:`~.pennylane.adjoint_metric_tensor`, :func:`~.pennylane.qinfo.transforms.classical_fisher`
 
     Args:
-        qnode (:class:`.QNode`): A :class:`.QNode` that may have arbitrary return types.
+        tape (QNode or QuantumTape or Callable): A quantum circuit that may have arbitrary return types.
         *args: In case finite shots are used, further arguments according to :func:`~.pennylane.metric_tensor` may be passed.
 
     Returns:
-        func: A function that computes the quantum fisher information matrix.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the quantum Fisher information in the form of a tensor.
 
     .. note::
 
