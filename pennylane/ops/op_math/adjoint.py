@@ -22,13 +22,15 @@ from pennylane.operation import Observable, Operation, Operator
 from pennylane.queuing import QueuingManager
 from pennylane.tape import make_qscript
 from pennylane.compiler import compiler
+from pennylane.compiler.compiler import CompileError
 
 from .symbolicop import SymbolicOp
 
 
 # pylint: disable=no-member
 def adjoint(fn, lazy=True):
-    """Create the adjoint of an Operator or a function that applies the adjoint of the provided function.
+    """A :func:`~.qjit` compatible adjoint transformation that creates the adjoint of an Operator or a function
+    that applies the adjoint of the provided function.
 
     Args:
         fn (function or :class:`~.operation.Operator`): A single operator or a quantum function that
@@ -45,7 +47,16 @@ def adjoint(fn, lazy=True):
 
     .. note::
 
-        The adjoint and inverse are identical for unitary gates, but not in general. For example, quantum channels and observables may have different adjoint and inverse operators.
+        The adjoint and inverse are identical for unitary gates, but not in general. For example, quantum channels and
+        observables may have different adjoint and inverse operators.
+
+    .. note::
+
+        When used with :func:`~.qjit`, this function only supports the Catalyst compiler.
+        Please see :func:`catalyst.adjoint` for more details.
+        Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
+        as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
+        page for an overview of the differences between Catalyst and PennyLane.
 
     .. note::
 
@@ -107,7 +118,7 @@ def adjoint(fn, lazy=True):
     The adjoint used in a compilation context can be applied on control flow.
 
     .. code-block:: python
-        
+
         dev = qml.device("lightning.qubit", wires=1)
 
         @qml.qjit
@@ -148,7 +159,7 @@ def adjoint(fn, lazy=True):
     """
     if active_jit := compiler.active_compiler():
         if lazy is False:
-            raise RuntimeError("Lazy kwarg is not support with qjit.")
+            raise CompileError("Lazy kwarg is not support with qjit.")
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
         return ops_loader.adjoint(fn)

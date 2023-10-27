@@ -20,6 +20,7 @@ TODO: Uncomment 'pytest.mark.external' to check these tests in GitHub actions wi
 # pylint: disable=import-outside-toplevel
 import pytest
 import pennylane as qml
+from pennylane.compiler.compiler import CompileError
 
 catalyst = pytest.importorskip("catalyst")
 jax = pytest.importorskip("jax")
@@ -243,5 +244,5 @@ class TestCatalyst:
             qml.adjoint(func, lazy=True)()
             return qml.probs()
 
-        with pytest.raises(RuntimeError, match="Lazy kwarg is not supported with qjit."):
+        with pytest.raises(CompileError, match="Lazy kwarg is not supported with qjit."):
             workflow(0.1, [1])
