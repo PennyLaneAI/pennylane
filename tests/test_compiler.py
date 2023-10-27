@@ -261,8 +261,8 @@ class TestCatalyst:
 
         res = vjp(x, dy)
         assert len(res) == 2
-        assert np.allclose(res[0], jnp.array([0.09983342, 0.04, 0.02]))
-        assert np.allclose(res[0], jnp.array([-0.43750208, 0.07000001]))
+        assert jnp.allclose(res[0], jnp.array([0.09983342, 0.04, 0.02]))
+        assert jnp.allclose(res[1], jnp.array([-0.43750208, 0.07000001]))
 
     def test_vjp_without_qjit(self):
         """Test that an error is raised when using VJP without QJIT."""
