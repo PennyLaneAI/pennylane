@@ -23,8 +23,6 @@ Custom transforms
 that work with PennyLane QNodes; such transformations can map a circuit
 to one or many new circuits alongside associated classical post-processing.
 
-See the :func:`pennylane.transform` documentation for more details and examples.
-
 .. autosummary::
     :toctree: api
 
