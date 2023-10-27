@@ -25,7 +25,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.measurements import ExpectationMP, ProbabilityMP, StateMP, VarianceMP
-from pennylane.transforms.core import transform
+from pennylane import transform
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 
@@ -524,7 +524,7 @@ def param_shift_cv(
     parameters with respect to its inputs.
 
     Args:
-        tape (.QuantumTape): quantum tape to differentiate
+        tape (QNode or QuantumTape): quantum circuit to differentiate
         dev (pennylane.Device): device the parameter-shift method is to be computed on
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivative with respect to all
@@ -556,16 +556,11 @@ def param_shift_cv(
         force_order2 (bool): if True, use the order-2 method even if not necessary
 
     Returns:
-        function or tuple[list[QuantumTape], function]:
+        qnode (QNode) or tuple[List[QuantumTape], function]:
 
-        - If the input is a QNode, an object representing the Jacobian (function) of the QNode
-          that can be executed to obtain the Jacobian matrix.
-          The returned matrix is a tensor of size ``(number_outputs, number_gate_parameters)``
-
-        - If the input is a tape, a tuple containing a
-          list of generated tapes, together with a post-processing
-          function to be applied to the results of the evaluated tapes
-          in order to obtain the Jacobian matrix.
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple depending upon the nesting
+        structure of measurements in the original circuit.
 
     This transform supports analytic gradients of Gaussian CV operations using
     the parameter-shift rule. This gradient method returns *exact* gradients,
@@ -646,7 +641,9 @@ def param_shift_cv(
     .. details::
         :title: Usage Details
 
-        This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects:
+        This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects.
+        However, for performance reasons, we recommend providing the gradient transform as the ``diff_method`` argument
+        of the QNode decorator, and differentiating with your preferred machine learning framework.
 
         >>> @qml.qnode(dev)
         ... def circuit(params):
