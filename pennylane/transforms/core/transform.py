@@ -125,31 +125,37 @@ def transform(
     .. details::
         :title: Signature of a transform
 
-        A dispatched transform is able to handle several PenyLane objects: :class:`pennylane.QNode`, quantum function
-        (callable), :class:`pennylane.tape.QuantumTape` and :class:`pennylane.devices.Device`. For each object, the transform
-        will be applied in a different way but it always preserves the provided underlying quantum transform. What is
-        returned by the transform dispatcher depends on what circuit abstraction is given as argument. Here is provided a
-        list of the different behavior and return for the different objects:
+        A dispatched transform is able to handle several PennyLane circuit-like objects:
+        
+        - :class:`pennylane.QNode`
+        - a quantum function (callable)
+        - :class:`pennylane.tape.QuantumTape`
+        - :class:`pennylane.devices.Device`.
+        
+        For each object, the transform will be applied in a different way, but it always preserves the underlying
+        tape-based quantum transform behaviour.
+        
+        The return of a dispatched transform depends upon which of the above objects is passed as an input:
 
-        - For a :class:`~.QNode` as argument of the dispatched transform, the underlying transform is added to
-        its :class:`~.TransformProgram` and the return is the transformed :class:`~.QNode`.
-        For each execution of the :class:`pennylane.QNode`, it first applies the transform program on the original captured
-        circuit. Then the transformed circuits are executed by a device and finally the post-processing function is
-        applied on the results.
+        - For a :class:`~.QNode` input, the underlying transform is added to the QNode's
+          :class:`~.TransformProgram` and the return is the transformed :class:`~.QNode`.
+          For each execution of the :class:`pennylane.QNode`, it first applies the transform program on the original captured
+          circuit. Then the transformed circuits are executed by a device and finally the post-processing function is
+          applied on the results.
 
-        - For a quantum function (callable) as argument of the dispatched transform, it first builds the tape from the
-        quantum function, the transform is then applied on the tape. Then the resulting tape is converted back
-        to a quantum function (callable). It therefore returns a transformed quantum function (allable). The limitation
-        is that the underlying transform can only return a sequence containing a single tape, because quantum
-        functions only support single circuit.
+        - For a quantum function (callable) input, the transform builds the tape when the quantum function is
+          executed and then applies itself to the tape. The resulting tape is then converted back
+          to a quantum function (callable). It therefore returns a transformed quantum function (Callable). The limitation
+          is that the underlying transform can only return a sequence containing a single tape, because quantum
+          functions only support a single circuit.
 
         - For a :class:`~.QuantumTape`, the underlying quantum transform is directly applied on the
-        :class:`~.QuantumTape`. It returns a sequence of :class:`~.QuantumTape` and a processing
-        function to be applied after execution.
+          :class:`~.QuantumTape`. It returns a sequence of :class:`~.QuantumTape` and a processing
+          function to be applied after execution.
 
-        - For a :class:`pennylane.devices.Device`, the transform is added to the device transform program and a transformed
-        :class:`pennylane.devices.Device` is returned. The transform is added to the end of the device program and will
-        be last in the overall transform program.
+        - For a :class:`~.devices.Device`, the transform is added to the device's transform program
+          and a transformed :class:`pennylane.devices.Device` is returned. The transform is added
+          to the end of the device program and will be last in the overall transform program.
     """
     # 1: Checks for the transform
     if not callable(quantum_transform):
