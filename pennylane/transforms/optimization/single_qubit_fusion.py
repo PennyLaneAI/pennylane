@@ -70,17 +70,17 @@ def single_qubit_fusion(
     .. details::
         :title: Usage Details
 
-    Consider the following quantum function.
+        Consider the following quantum function.
 
-    .. code-block:: python
+        .. code-block:: python
 
-        def qfunc(r1, r2):
-            qml.Hadamard(wires=0)
-            qml.Rot(*r1, wires=0)
-            qml.Rot(*r2, wires=0)
-            qml.RZ(r1[0], wires=0)
-            qml.RZ(r2[0], wires=0)
-            return qml.expval(qml.PauliX(0))
+            def qfunc(r1, r2):
+                qml.Hadamard(wires=0)
+                qml.Rot(*r1, wires=0)
+                qml.Rot(*r2, wires=0)
+                qml.RZ(r1[0], wires=0)
+                qml.RZ(r2[0], wires=0)
+                return qml.expval(qml.PauliX(0))
 
         The circuit before optimization:
 

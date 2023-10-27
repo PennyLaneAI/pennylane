@@ -57,17 +57,17 @@ def undo_swaps(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
     .. details::
         :title: Usage Details
 
-    Consider the following quantum function:
+        Consider the following quantum function:
 
-    .. code-block:: python
+        .. code-block:: python
 
-        def qfunc():
-            qml.Hadamard(wires=0)
-            qml.PauliX(wires=1)
-            qml.SWAP(wires=[0,1])
-            qml.SWAP(wires=[0,2])
-            qml.PauliY(wires=0)
-            return qml.expval(qml.PauliZ(0))
+            def qfunc():
+                qml.Hadamard(wires=0)
+                qml.PauliX(wires=1)
+                qml.SWAP(wires=[0,1])
+                qml.SWAP(wires=[0,2])
+                qml.PauliY(wires=0)
+                return qml.expval(qml.PauliZ(0))
 
         The circuit before optimization:
 
