@@ -17,11 +17,11 @@ TODO: Uncomment 'pytest.mark.external' to check these tests in GitHub actions wi
     the 'pennylane-catalyst' v0.3.2 release. These tests require the installation
     of Catalyst from the main branch at the moment.
 """
-import numpy as np
 
 # pylint: disable=import-outside-toplevel
 import pytest
 import pennylane as qml
+from pennylane.compiler.compiler import CompileError
 
 catalyst = pytest.importorskip("catalyst")
 jax = pytest.importorskip("jax")
@@ -241,7 +241,7 @@ class TestCatalyst:
         tangent = jnp.array([0.3, 0.6])
 
         with pytest.raises(
-            RuntimeError, match="Pennylane does not support the JVP function without QJIT."
+            CompileError, match="Pennylane does not support the JVP function without QJIT."
         ):
             jvp(x, tangent)
 
@@ -278,6 +278,6 @@ class TestCatalyst:
         dy = jnp.array([-0.5, 0.1, 0.3])
 
         with pytest.raises(
-            RuntimeError, match="Pennylane does not support the VJP function without QJIT."
+            CompileError, match="Pennylane does not support the VJP function without QJIT."
         ):
             vjp(x, dy)

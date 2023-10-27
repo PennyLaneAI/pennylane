@@ -24,6 +24,7 @@ from autograd.extend import vspace
 from autograd.wrap_util import unary_to_nary
 
 from pennylane.compiler import compiler
+from pennylane.compiler.compiler import CompileError
 
 make_vjp = unary_to_nary(_make_vjp)
 
@@ -397,7 +398,7 @@ def vjp(f, params, cotangents, method=None, h=None, argnum=None):
         ops_loader = available_eps[active_jit]["ops"].load()
         return ops_loader.vjp(f, params, cotangents, method=method, h=h, argnum=argnum)
 
-    raise RuntimeError("Pennylane does not support the VJP function without QJIT.")
+    raise CompileError("Pennylane does not support the VJP function without QJIT.")
 
 
 # pylint: disable=too-many-arguments
@@ -485,4 +486,4 @@ def jvp(f, params, tangents, method=None, h=None, argnum=None):
         ops_loader = available_eps[active_jit]["ops"].load()
         return ops_loader.jvp(f, params, tangents, method=method, h=h, argnum=argnum)
 
-    raise RuntimeError("Pennylane does not support the JVP function without QJIT.")
+    raise CompileError("Pennylane does not support the JVP function without QJIT.")
