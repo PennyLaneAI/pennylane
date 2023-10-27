@@ -311,10 +311,11 @@ class TransformDispatcher:
                 return f"Transformed Device({original_device.__repr__()} with additional preprocess transform {self.transform})"
 
             def preprocess(
-                self, config: qml.devices.ExecutionConfig = qml.devices.DefaultExecutionConfig
+                self,
+                execution_config: qml.devices.ExecutionConfig = qml.devices.DefaultExecutionConfig,
             ):
                 """This function updates the original device transform program to be applied."""
-                program, config = self.original_device.preprocess(config)
+                program, config = self.original_device.preprocess(execution_config)
                 program.push_back(TransformContainer(self.transform, targs, tkwargs))
                 return program, config
 
