@@ -145,8 +145,8 @@ class TRX(Operation):
         # The following avoids casting an imaginary quantity to reals when backpropagating
         c = (1 + 0j) * c
         js = -1j * s
-        one = qml.math.ones_like(c)#1 + 0j
-        z = qml.math.zeros_like(c)#0j
+        one = qml.math.ones_like(c)
+        z = qml.math.zeros_like(c)
 
         diags = [one, one, one]
         diags[subspace[0]] = c
@@ -282,8 +282,8 @@ class TRY(Operation):
         # The following avoids casting an imaginary quantity to reals when backpropagating
         c = (1 + 0j) * c
         s = (1 + 0j) * s
-        one = qml.math.ones_like(c)  # 1 + 0j
-        z = qml.math.zeros_like(c)  # 0j
+        one = qml.math.ones_like(c)
+        z = qml.math.zeros_like(c)
 
         diags = [one, one, one]
         diags[subspace[0]] = c
@@ -419,8 +419,8 @@ class TRZ(Operation):
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
         p = qml.math.exp(-1j * theta / 2)
-        one = qml.math.ones_like(p)  # 1 + 0j
-        z = qml.math.zeros_like(p)  # 0j
+        one = qml.math.ones_like(p)
+        z = qml.math.zeros_like(p)
 
         diags = [one, one, one]
         diags[subspace[0]] = p
