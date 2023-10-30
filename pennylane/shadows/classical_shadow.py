@@ -204,8 +204,8 @@ class ClassicalShadow:
 
             bell_state = np.array([[0.5, 0, 0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]])
 
-            >>> np.allclose(bell_state, shadow_state, atol=1e-1)
-            True
+        >>> np.allclose(bell_state, shadow_state, atol=1e-1)
+        True
 
         """
         local_snapshot = self.local_snapshots(wires, snapshots)

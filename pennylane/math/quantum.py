@@ -79,14 +79,13 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
     >>> weights = np.random.random(shape, requires_grad=True)
     >>> cov = qml.math.cov_matrix(circuit(weights), obs_list)
     >>> cov
-    array([[0.98707611, 0.03665537],
-         [0.03665537, 0.99998377]])
+    tensor([[0.9275379 , 0.05233832], [0.05233832, 0.99335545]], requires_grad=True)
 
     Autodifferentiation is fully supported using all interfaces.
     Here we use autograd:
 
     >>> cost_fn = lambda weights: qml.math.cov_matrix(circuit(weights), obs_list)[0, 1]
-    >>> qml.grad(cost_fn)(weights)[0]
+    >>> qml.grad(cost_fn)(weights)
     array([[[ 4.94240914e-17, -2.33786398e-01, -1.54193959e-01],
             [-3.05414996e-17,  8.40072236e-04,  5.57884080e-04],
             [ 3.01859411e-17,  8.60411436e-03,  6.15745204e-04]],

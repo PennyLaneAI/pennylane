@@ -339,3 +339,38 @@ def test_draw_mpl_with_qfunc_warns_with_expansion_strategy():
 
     with pytest.warns(UserWarning, match="the expansion_strategy argument is ignored"):
         _ = qml.draw_mpl(qfunc, expansion_strategy="gradient")
+
+
+def test_mid_circuit_measurement_device_api(mocker):
+    """Test that a circuit containing mid-circuit measurements is transformed by the drawer
+    to use deferred measurements if the device uses the new device API."""
+
+    @qml.qnode(qml.device("default.qubit"))
+    def circ():
+        qml.PauliX(0)
+        qml.measure(0)
+        return qml.probs(wires=0)
+
+    draw_qnode = qml.draw_mpl(circ)
+    spy = mocker.spy(qml.defer_measurements, "_transform")
+
+    _ = draw_qnode()
+    spy.assert_called_once()
+
+
+def test_qnode_transform_program(mocker):
+    """Test that qnode transforms are applied before drawing a circuit."""
+
+    @qml.compile
+    @qml.qnode(qml.device("default.qubit"))
+    def circuit():
+        qml.RX(1.1, 0)
+        qml.RX(2.2, 0)
+        return qml.state()
+
+    draw_qnode = qml.draw_mpl(circuit, decimals=2)
+    qnode_transform = circuit.transform_program[0]
+    spy = mocker.spy(qnode_transform, "_transform")
+
+    _ = draw_qnode()
+    spy.assert_called_once()
