@@ -117,7 +117,6 @@ class AQFT(Operation):
     """
 
     def __init__(self, order, wires=None, id=None):
-
         n_wires = len(wires)
 
         if not isinstance(order, int):
