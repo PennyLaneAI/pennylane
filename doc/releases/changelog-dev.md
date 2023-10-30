@@ -19,7 +19,7 @@
 
 * The `prep` keyword argument has been removed from `QuantumScript` and `QuantumTape`.
   ``StatePrepBase`` operations should be placed at the beginning of the `ops` list instead.
-  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+  [(#4756)](https://github.com/PennyLaneAI/pennylane/pull/4756)
 
 <h3>Deprecations 👋</h3>
 
