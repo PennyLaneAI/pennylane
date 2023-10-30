@@ -12,7 +12,7 @@
 * `qml.ArbitraryUnitary` now supports batching.
   [(#4745)](https://github.com/PennyLaneAI/pennylane/pull/4745)
 
-* `qml.draw` now renders operator ids.
+* `qml.draw` and `qml.draw_mpl` now render operator ids.
   [(#4749)](https://github.com/PennyLaneAI/pennylane/pull/4749)
 
 <h3>Breaking changes 💔</h3>
