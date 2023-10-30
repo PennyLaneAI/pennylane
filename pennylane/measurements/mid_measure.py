@@ -158,7 +158,7 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
 
         .. note::
 
-            Currently, postselection support is only available on ``"default.qubit"``. Using postselection
+            Currently, postselection support is only available on ``default.qubit``. Using postselection
             on other devices will raise an error.
 
         .. warning::
