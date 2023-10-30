@@ -105,8 +105,8 @@ def transform(
     For :class:`pennylane.QNode`, the dispatched transform populates the ``TransformProgram`` of your QNode. The
     transform and its processing function are applied in the execution.
 
-    >>> transformed_qnode = dispatched_transform(qnode_circuit)
-    <QNode: wires=2, device='default.qubit', interface='auto', diff_method='best'>
+    >>> transformed_qnode = dispatched_transform(qnode_circuit); transformed_qnode
+    <QNode: wires=2, device='<default.qubit device (wires=2) at 0x2a09261c0>', interface='auto', diff_method='best'>
 
     >>> transformed_qnode.transform_program
     TransformProgram(my_quantum_transform)

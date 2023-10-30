@@ -478,6 +478,11 @@
   measurements, and to display `qml.counts` coming from these hardware devices correctly.
   [(#4739)](https://github.com/PennyLaneAI/pennylane/pull/4739)
 
+* Shallow copies of the `QNode` now also copy the `execute_kwargs` and transform program. When applying
+  a transform to a `QNode`, the new qnode is only a shallow copy of the original and thus keeps the same
+  device.
+  [(#4736)](https://github.com/PennyLaneAI/pennylane/pull/4736)
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.defer_measurements` now raises an error if a transformed circuit measures `qml.probs`,
@@ -642,6 +647,7 @@
   [(#4742)](https://github.com/PennyLaneAI/pennylane/pull/4742)
 
 * Fixed `LocalHilbertSchmidt.compute_decomposition` so that the template can be used in a QNode.
+
   [(#4719)](https://github.com/PennyLaneAI/pennylane/pull/4719)
 
 * Fixes `transforms.transpile` with arbitrary measurement processes.
