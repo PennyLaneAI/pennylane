@@ -417,8 +417,8 @@ class TestPauliSentence:
         copied_string1 += copied_string2
         copied_string1.simplify()
 
-        assert copied_string1 == result # Check if the modified object matches the expected result
-        assert copied_string2 == string2 # Ensure the original object is not modified
+        assert copied_string1 == result  # Check if the modified object matches the expected result
+        assert copied_string2 == string2  # Ensure the original object is not modified
 
     @pytest.mark.parametrize("ps, match", ps_match)
     def test_to_mat_error_empty(self, ps, match):
