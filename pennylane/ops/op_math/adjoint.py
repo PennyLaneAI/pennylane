@@ -38,6 +38,7 @@ def adjoint(fn, lazy=True):
     Keyword Args:
         lazy=True (bool): If the transform is behaving lazily, all operations are wrapped in a ``Adjoint`` class
             and handled later. If ``lazy=False``, operation-specific adjoint decompositions are first attempted.
+            This argument is not supported when used with :func:`~.qjit`.
 
     Returns:
         (function or :class:`~.operation.Operator`): If an Operator is provided, returns an Operator that is the adjoint.
