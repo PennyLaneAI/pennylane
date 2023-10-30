@@ -15,6 +15,9 @@
 * `qml.ArbitraryUnitary` now supports batching.
   [(#4745)](https://github.com/PennyLaneAI/pennylane/pull/4745)
 
+* `qml.draw` and `qml.draw_mpl` now render operator ids.
+  [(#4749)](https://github.com/PennyLaneAI/pennylane/pull/4749)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -30,3 +33,4 @@ This release contains contributions from (in alphabetical order):
 Amintor Dusko,
 Anurav Modak,
 David Wierichs,
+Justin Woodring

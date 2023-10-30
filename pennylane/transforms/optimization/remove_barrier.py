@@ -16,7 +16,7 @@
 from typing import Sequence, Callable
 
 from pennylane.tape import QuantumTape
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 
 
 @transform
@@ -24,44 +24,58 @@ def remove_barrier(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
     """Quantum transform to remove Barrier gates.
 
     Args:
-        qfunc (function): A quantum function.
+        tape (QNode or QuantumTape or Callable): A quantum circuit.
 
     Returns:
-        pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
-        it returns a QNode with the transform added to its transform program.
-        If a tape is passed, returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions.
+        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
 
-    Consider the following quantum function:
+    The transform can be applied on :class:`QNode` directly.
 
     .. code-block:: python
 
-        def qfunc(x, y):
+        @remove_barrier
+        @qml.qnode(device=dev)
+        def circuit(x, y):
             qml.Hadamard(wires=0)
             qml.Hadamard(wires=1)
             qml.Barrier(wires=[0,1])
             qml.PauliX(wires=0)
             return qml.expval(qml.PauliZ(0))
 
-    The circuit before optimization:
+    The barrier is then removed before execution.
 
-    >>> dev = qml.device('default.qubit', wires=2)
-    >>> qnode = qml.QNode(qfunc, dev)
-    >>> print(qml.draw(qnode)(1, 2))
-        0: ──H──╭||──X──┤ ⟨Z⟩
-        1: ──H──╰||─────┤
+    .. details::
+        :title: Usage Details
+
+        Consider the following quantum function:
+
+        .. code-block:: python
+
+            def qfunc(x, y):
+                qml.Hadamard(wires=0)
+                qml.Hadamard(wires=1)
+                qml.Barrier(wires=[0,1])
+                qml.PauliX(wires=0)
+                return qml.expval(qml.PauliZ(0))
+
+        The circuit before optimization:
+
+        >>> dev = qml.device('default.qubit', wires=2)
+        >>> qnode = qml.QNode(qfunc, dev)
+        >>> print(qml.draw(qnode)(1, 2))
+            0: ──H──╭||──X──┤ ⟨Z⟩
+            1: ──H──╰||─────┤
 
 
-    We can remove the Barrier by running the ``remove_barrier`` transform:
+        We can remove the Barrier by running the ``remove_barrier`` transform:
 
-    >>> optimized_qfunc = remove_barrier(qfunc)
-    >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-    >>> print(qml.draw(optimized_qnode)(1, 2))
-       0: ──H──X──┤ ⟨Z⟩
-       1: ──H─────┤
+        >>> optimized_qfunc = remove_barrier(qfunc)
+        >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        >>> print(qml.draw(optimized_qnode)(1, 2))
+           0: ──H──X──┤ ⟨Z⟩
+           1: ──H─────┤
 
     """
     # Make a working copy of the list to traverse
