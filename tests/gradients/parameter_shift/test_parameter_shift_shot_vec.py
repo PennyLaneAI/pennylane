@@ -30,11 +30,11 @@ finite_diff_tol = 0.1
 h_val = 0.1
 
 default_shot_vector = (1000, 2000, 3000)
-many_shots_shot_vector = tuple([1000000] * 3)
-fallback_shot_vec = tuple([1000000] * 4)
+many_shots_shot_vector = tuple((1000000,) * 3)
+fallback_shot_vec = tuple((1000000,) * 4)
 
 # Pick 4 angles in the [-2 * np.pi, np.pi] interval
-angles = [-6.28318531, -3.92699082, 0.78539816, 3.14159265]
+angles = (-6.28318531, -3.92699082, 0.78539816, 3.14159265)
 
 
 def grad_fn(tape, dev, fn=qml.gradients.param_shift, **kwargs):
@@ -1705,7 +1705,7 @@ class TestParameterShiftRule:
         """Test an expectation value and the variance of involutory and non-involutory observables work well with
         multiple trainable parameters"""
         shot_vec = many_shots_shot_vector
-        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
+        dev = qml.device("default.qubit", wires=3, shots=shot_vec, seed=12393)
 
         a = 0.54
         b = -0.423
