@@ -180,8 +180,13 @@ class TransformJacobianProducts(JacobianProductCalculator):
             executes the batch of circuits and returns their results.
         gradient_transform (pennylane.gradients.gradient_transform): the gradient transform to use.
         gradient_kwargs (dict): Any keyword arguments for the gradient transform.
+
+    Keyword Args:
         cache_full_jacobian=False (bool): Whether or not to compute the full jacobian and cache it,
-            instead of treating each call as independent
+            instead of treating each call as independent. This keyword argument is used to patch problematic
+            autograd behavior when caching is turned off. In this case, caching will be based on the identity
+            of the batch, rather than the potentially expensive :property:`~.QuantumScript.hash` that is used
+            by :func:`~.cache_execute`.
 
     >>> inner_execute = qml.device('default.qubit').execute
     >>> gradient_transform = qml.gradients.param_shift

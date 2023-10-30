@@ -48,10 +48,9 @@ The above code told autograd how to differentiate the first argument of ``f``.
 We have an additional problem that autograd does not understand that a :class:`~.QuantumTape`
 contains parameters we want to differentiate. So in order to match the ``vjp`` function with
 the correct parameters, we need to extract them from the batch of tapes, and pass them as is
-as the first argument to the primitive. Even though the primitive function (``f``/ ``_execute``)
-does not use the parameters, that is how we communicate to autograd what parameters the derivatves
+as the first argument to the primitive. Even though the primitive function
+does not use the parameters, that is how we communicate to autograd what parameters the derivatives
 belong to.
-
 
 """
 # pylint: disable=too-many-arguments
@@ -83,10 +82,24 @@ def autograd_execute(
         jpc (JacobianProductCalculator): a class that can compute the vector Jacobian product (VJP)
             for the input tapes.
 
-
     Returns:
         TensorLike: A nested tuple of tape results. Each element in
         the returned tuple corresponds in order to the provided tapes.
+
+    **Example:**
+
+    >>> from pennylane.interfaces.jacobian_products import DeviceDerivatives
+    >>> from pennylane.interfaces.autograd import autograd_execute
+    >>> execute_fn = qml.device('default.qubit').execute
+    >>> config = qml.devices.ExecutionConfig(gradient_method="adjoint", use_device_gradient=True)
+    >>> jpc = DeviceDerivatives(qml.device('default.qubit'), config)
+    >>> def f(x):
+    ...     tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+    ...     batch = (tape, )
+    ...     return autograd_execute(batch, execute_fn, jpc)
+    >>> qml.grad(f)(qml.numpy.array(0.1))
+    -0.09983341664682815
+
     """
     tapes = tuple(tapes)
     if logger.isEnabledFor(logging.DEBUG):
@@ -112,7 +125,7 @@ def _execute(
     execute_fn,
     jpc,
 ):  # pylint: disable=unused-argument
-    """Autodifferentiable wrapper around ``Device.batch_execute``.
+    """Autodifferentiable wrapper around a way of executing tapes.
 
     Args:
         parameters (list[list[Any]]): Nested list of the quantum tape parameters.

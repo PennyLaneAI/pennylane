@@ -766,6 +766,11 @@ def execute(
         # so we need to cache the full jacobian even when caching is turned off
         cache_full_jacobian = (interface == "autograd") and not cache
 
+        # we can have higher order derivatives when the `inner_execute` used to take
+        # transform gradients is itself differentiable
+        # To make the inner execute itself differentiable, we make it an interface boundary with
+        # its own jacobian product class
+        # this mechanism unpacks the currently existing recursion
         jpc = TransformJacobianProducts(
             execute_fn, gradient_fn, gradient_kwargs, cache_full_jacobian=cache_full_jacobian
         )
