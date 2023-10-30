@@ -106,13 +106,15 @@ class GateSet:
 
     @staticmethod
     def get_SO3_matrix(matrix):
-        """Performs a SU(2) to SO(3) transformation."""
+        """Performs a SU(2) to SO(3) transformation using the unit quaternions."""
 
         a = qml.math.real(matrix[0, 0])
         b = qml.math.imag(matrix[0, 0])
         c = -qml.math.real(matrix[0, 1])
         d = -qml.math.imag(matrix[0, 1])
 
+        # Using the theory given in Ch. 15 of Gallier, J. H. & Quaintance, J.,
+        # 'Linear Algebra for Computer Vision, Robotics, and Machine Learning' (2020).
         rotation = qml.math.array(
             [
                 [a**2 - b**2 - c**2 + d**2, 2 * a * b + 2 * c * d, -2 * a * c + 2 * b * d],
