@@ -751,7 +751,7 @@ class TestOperations:
         not supported by the device"""
         dev = mock_device_with_observables()
         obs = qml.PauliZ(0)
-        obs.return_type = qml.measurements.ObservableReturnTypes.Probability
+        obs._return_type = qml.measurements.ObservableReturnTypes.Probability
         with pytest.raises(NotImplementedError):
             dev.execute([], [obs])
 
@@ -830,7 +830,7 @@ class TestObservables:
 
         observables = []
         for m in [qml.expval(qml.PauliX(0)), qml.var(qml.PauliY(1)), qml.sample(qml.PauliZ(2))]:
-            m.obs.return_type = m.return_type
+            m.obs._return_type = m.return_type  # pylint:disable=protected-access
             observables.append(m.obs)
 
         # capture the arguments passed to dev methods
@@ -877,7 +877,7 @@ class TestObservables:
 
         # Make a observable without specifying a return operation upon measuring
         obs = qml.PauliZ(0)
-        obs.return_type = "SomeUnsupportedReturnType"
+        obs._return_type = "SomeUnsupportedReturnType"  # pylint:disable=protected-access
         observables = [obs]
 
         with pytest.raises(

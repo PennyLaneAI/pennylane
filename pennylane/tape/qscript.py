@@ -319,7 +319,7 @@ class QuantumScript:
 
         for m in self.measurements:
             if m.obs is not None:
-                m.obs.return_type = m.return_type
+                m.obs._return_type = m.return_type
                 obs.append(m.obs)
             else:
                 obs.append(m)

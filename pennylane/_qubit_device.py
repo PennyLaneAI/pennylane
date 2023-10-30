@@ -615,7 +615,7 @@ class QubitDevice(Device):
             # TODO: Remove this when all overriden measurements support the `MeasurementProcess` class
             if m.obs is not None:
                 obs = m.obs
-                obs.return_type = m.return_type
+                obs._return_type = m.return_type  # pylint:disable=protected-access
             elif m.mv is not None:
                 obs = m.mv
                 obs.return_type = m.return_type
