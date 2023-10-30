@@ -412,7 +412,7 @@ class TestGatesQubit:
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
     @pytest.mark.parametrize("op,mat", single_qubit)
-    def test_single_qubit_no_parameters(self, device, init_state, op, mat, tol, skip_if):
+    def test_single_qubit_no_parameters(self, device, init_state, op, mat, tol, skip_if, benchmark):
         """Test PauliX application."""
         n_wires = 1
         dev = device(n_wires)
@@ -426,14 +426,16 @@ class TestGatesQubit:
             op(wires=range(n_wires))
             return qml.probs(wires=range(n_wires))
 
-        res = circuit()
+        res = benchmark(circuit)
 
         expected = np.abs(mat @ rnd_state) ** 2
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
     @pytest.mark.parametrize("gamma", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", single_qubit_param)
-    def test_single_qubit_parameters(self, device, init_state, op, func, gamma, tol, skip_if):
+    def test_single_qubit_parameters(
+        self, device, init_state, op, func, gamma, tol, skip_if, benchmark
+    ):
         """Test single qubit gates taking a single scalar argument."""
         n_wires = 1
         dev = device(n_wires)
@@ -447,12 +449,12 @@ class TestGatesQubit:
             op(gamma, wires=range(n_wires))
             return qml.probs(wires=range(n_wires))
 
-        res = circuit()
+        res = benchmark(circuit)
 
         expected = np.abs(func(gamma) @ rnd_state) ** 2
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
-    def test_rotation(self, device, init_state, tol, skip_if):
+    def test_rotation(self, device, init_state, tol, skip_if, benchmark):
         """Test three axis rotation gate."""
         n_wires = 1
         dev = device(n_wires)
@@ -469,13 +471,13 @@ class TestGatesQubit:
             qml.Rot(a, b, c, wires=range(n_wires))
             return qml.probs(wires=range(n_wires))
 
-        res = circuit()
+        res = benchmark(circuit)
 
         expected = np.abs(rot(a, b, c) @ rnd_state) ** 2
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
     @pytest.mark.parametrize("op,mat", two_qubit)
-    def test_two_qubit_no_parameters(self, device, init_state, op, mat, tol, skip_if):
+    def test_two_qubit_no_parameters(self, device, init_state, op, mat, tol, skip_if, benchmark):
         """Test two qubit gates."""
         n_wires = 2
         dev = device(n_wires)
@@ -491,14 +493,16 @@ class TestGatesQubit:
             op(wires=range(n_wires))
             return qml.probs(wires=range(n_wires))
 
-        res = circuit()
+        res = benchmark(circuit)
 
         expected = np.abs(mat @ rnd_state) ** 2
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
     @pytest.mark.parametrize("param", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", two_qubit_param)
-    def test_two_qubit_parameters(self, device, init_state, op, func, param, tol, skip_if):
+    def test_two_qubit_parameters(
+        self, device, init_state, op, func, param, tol, skip_if, benchmark
+    ):
         """Test parametrized two qubit gates taking a single scalar argument."""
         n_wires = 2
         dev = device(n_wires)
@@ -512,13 +516,13 @@ class TestGatesQubit:
             op(param, wires=range(n_wires))
             return qml.probs(wires=range(n_wires))
 
-        res = circuit()
+        res = benchmark(circuit)
 
         expected = np.abs(func(param) @ rnd_state) ** 2
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
     @pytest.mark.parametrize("mat", [U, U2])
-    def test_qubit_unitary(self, device, init_state, mat, tol, skip_if):
+    def test_qubit_unitary(self, device, init_state, mat, tol, skip_if, benchmark):
         """Test QubitUnitary gate."""
         n_wires = int(np.log2(len(mat)))
         dev = device(n_wires)
@@ -536,13 +540,13 @@ class TestGatesQubit:
             qml.QubitUnitary(mat, wires=list(range(n_wires)))
             return qml.probs(wires=range(n_wires))
 
-        res = circuit()
+        res = benchmark(circuit)
 
         expected = np.abs(mat @ rnd_state) ** 2
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
     @pytest.mark.parametrize("theta_", [np.array([0.4, -0.1, 0.2]), np.ones(15) / 3])
-    def test_special_unitary(self, device, init_state, theta_, tol, skip_if):
+    def test_special_unitary(self, device, init_state, theta_, tol, skip_if, benchmark):
         """Test SpecialUnitary gate."""
         n_wires = int(np.log(len(theta_) + 1) / np.log(4))
         dev = device(n_wires)
@@ -560,7 +564,7 @@ class TestGatesQubit:
             qml.SpecialUnitary(theta_, wires=list(range(n_wires)))
             return qml.probs(wires=range(n_wires))
 
-        res = circuit()
+        res = benchmark(circuit)
 
         # Disabling Pylint test because qml.ops can be misunderstood as qml.ops.qubit.ops
         basis_fn = qml.ops.qubit.special_unitary.pauli_basis_matrices  # pylint: disable=no-member
@@ -570,7 +574,7 @@ class TestGatesQubit:
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
     @pytest.mark.parametrize("op, mat", three_qubit)
-    def test_three_qubit_no_parameters(self, device, init_state, op, mat, tol, skip_if):
+    def test_three_qubit_no_parameters(self, device, init_state, op, mat, tol, skip_if, benchmark):
         """Test three qubit gates without parameters."""
         n_wires = 3
         dev = device(n_wires)
@@ -585,7 +589,7 @@ class TestGatesQubit:
             op(wires=[0, 1, 2])
             return qml.probs(wires=range(n_wires))
 
-        res = circuit()
+        res = benchmark(circuit)
 
         expected = np.abs(mat @ rnd_state) ** 2
         assert np.allclose(res, expected, atol=tol(dev.shots))

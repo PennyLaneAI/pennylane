@@ -11,6 +11,15 @@
   `qml.execute`.
   [(#4557)](https://github.com/PennyLaneAI/pennylane/pull/4557)
 
+* Updates to some relevant Pytests to enable its use as a suite of benchmarks.
+  [(#4703)](https://github.com/PennyLaneAI/pennylane/pull/4703)
+
+* `qml.ArbitraryUnitary` now supports batching.
+  [(#4745)](https://github.com/PennyLaneAI/pennylane/pull/4745)
+
+* `qml.draw` and `qml.draw_mpl` now render operator ids.
+  [(#4749)](https://github.com/PennyLaneAI/pennylane/pull/4749)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -23,4 +32,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Christina Lee
+Amintor Dusko,
+Christina Lee,
+David Wierichs,
+Justin Woodring
