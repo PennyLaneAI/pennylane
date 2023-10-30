@@ -109,7 +109,7 @@ def second_valid_transform(
     """A valid trasnform."""
     tape1 = tape.copy()
     tape2 = tape.copy()
-    tape2 = tape._ops.pop(index)  # pylint:disable=protected-access
+    tape._ops.pop(index)  # pylint:disable=protected-access
 
     def fn(results):
         return qml.math.sum(results)
@@ -557,6 +557,13 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
 
         assert new_program[-1].transform is valid_transform
 
+        @qml.qnode(new_dev)
+        def circuit():
+            qml.PauliX(0)
+            return qml.state()
+
+        circuit()
+
     @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_old_device_transform(self, valid_transform):
         """Test a device transform on old device."""
@@ -613,3 +620,18 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         ):
             dispatched_transform = transform(valid_transform, expand_transform=valid_transform)
             dispatched_transform(device, index=0)
+
+    def test_sphinx_build(self, monkeypatch):
+        """Test that transforms are not created during Sphinx builds"""
+        monkeypatch.setenv("SPHINX_BUILD", "1")
+
+        with pytest.warns(UserWarning, match="Transforms have been disabled, as a Sphinx"):
+
+            @qml.transforms.core.transform
+            def custom_transform(  # pylint:disable=unused-variable
+                tape: qml.tape.QuantumTape, index: int
+            ) -> (Sequence[qml.tape.QuantumTape], Callable):
+                """A valid transform."""
+                tape = tape.copy()
+                tape._ops.pop(index)  # pylint:disable=protected-access
+                return [tape], lambda x: x
