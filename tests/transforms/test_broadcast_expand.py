@@ -141,7 +141,7 @@ class TestBroadcastExpand:
         ops = [qml.CNOT([0, 1])]
         meas = [qml.expval(qml.PauliZ(1))]
         prep = [qml.StatePrep(np.eye(4), wires=[0, 1])]
-        tape = qml.tape.QuantumScript(ops, meas, prep)
+        tape = qml.tape.QuantumScript(prep + ops, meas)
 
         tapes, fn = qml.transforms.broadcast_expand(tape)
         assert len(tapes) == 4
