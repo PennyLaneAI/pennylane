@@ -79,7 +79,7 @@ class AQFT(Operation):
 
                 @qml.qnode(dev)
                 def circ():
-                    qml.AQFT(order=0, range(6))
+                    qml.AQFT(order=0, wires=range(6))
                     return qml.probs()
 
             The resulting circuit is:
@@ -100,7 +100,7 @@ class AQFT(Operation):
 
                 @qml.qnode(dev)
                 def circ():
-                    qml.AQFT(order=2, range(4))
+                    qml.AQFT(order=2, wires=range(4))
                     return qml.probs()
 
             The resulting circuit is:
