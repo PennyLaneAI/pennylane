@@ -286,15 +286,15 @@ def _group_commutator_decompose(mat):
     # The angle phi comes from the Eq. 10 in the Solovay-Kitaev algorithm paper (arXiv:0505030)
     phi = 2.0 * qml.math.arcsin(qml.math.sqrt(qml.math.sqrt((0.5 - 0.5 * qml.math.cos(theta / 2)))))
 
-    # Begin decomposition by computing the rotation matrices
+    # Begin decomposition by computing the rotation operations V and W
     v = qml.RX(phi, [0])
     w = qml.RY(2 * math.pi - phi, [0]) if axis[2] > 0 else qml.RY(phi, [0])
 
-    # Early return for the case where matrix is I or -I
+    # Early return for the case where matrix is I or -I, where I is Identity
     if qml.math.isclose(theta, 0.0) and qml.math.allclose(axis, [0, 0, 1]):
         return qml.math.eye(2, dtype=complex), qml.math.eye(2, dtype=complex)
 
-    # Get similarity transormation matrix S and S.dag
+    # Get the similarity transormation matrices S and S.dag
     ud = qml.math.linalg.eig(mat)[1]
     vwd = qml.math.linalg.eig(qml.matrix(v @ w @ v.adjoint() @ w.adjoint()))[1]
     s = ud @ qml.math.conj(qml.math.transpose(vwd))
@@ -334,7 +334,7 @@ def sk_approximate_set(basis_set=(), basis_depth=10, kd_tree=False):
             following terms, ``['x', 'y', 'z', 'h', 't', 'tdg', 's', 'sdg']``, where `dg` refers
             to the gate adjoint. Default is ``["t", "tdg", "h"]``
         basis_depth (int): Maximum expansion length of Clifford+T sequences in the approximation set. Default is `10`
-        kd_tree (bool): Return a KD-Tree corresponding to the gates in the approximated set. Default is ``False``
+        kd_tree (bool): Return a k-d tree corresponding to the gates in the approximated set. Default is ``False``
 
     Returns:
         list or tuple(list, scipy.spatial.KDTree): A list of Clifford+T sequences that will be used for approximating
@@ -376,7 +376,7 @@ def sk_decomposition(op, depth, basis_set=(), basis_depth=10, approximate_set=No
         approximate_set (list): A list of gate sequences that are used to find an approximation of unitaries in the
             base case of recursion. This can be precomputed using the :func:`~.sk_approximate_set`
             method, otherwise will be built using the default/given values of ``basis_set`` and ``basis_depth``
-        kd_tree (scipy.spatial.KDTree): A KD-Tree corresponding to the ``approximate_set``. This can also be
+        kd_tree (scipy.spatial.KDTree): A k-d tree corresponding to the ``approximate_set``. This can also be
             precomputed using :func:`~.sk_approximate_set`, otherwise will be built internally.
 
     Returns:
@@ -429,7 +429,7 @@ def sk_decomposition(op, depth, basis_set=(), basis_depth=10, approximate_set=No
                 )
             approximate_set, kd_tree = sk_approximate_set(basis_set, basis_depth, True)
 
-        # Build the KDTree with the current approximation set for querying in the base case
+        # Build the k-d tree with the current approximation set for querying in the base case
         if kd_tree is None:
             gnodes = qml.math.array([qml.math.flatten(seq.so3_matrix) for seq in approximate_set])
             kd_tree = sp.spatial.KDTree(gnodes)
