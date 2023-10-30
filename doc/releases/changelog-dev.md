@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* `qml.transforms.decomposition.sk_decomposition` method implements the Solovay-Kitaev algorithm for
+  approximately decomposing any single-qubit operation to Clifford+T basis.
+  [(#4687)](https://github.com/PennyLaneAI/pennylane/pull/4687)
+
 <h3>Improvements 🛠</h3>
 
 * Updates to some relevant Pytests to enable its use as a suite of benchmarks.
@@ -24,5 +28,6 @@
 
 This release contains contributions from (in alphabetical order):
 
+Utkarsh Azad
 Amintor Dusko,
 David Wierichs,
