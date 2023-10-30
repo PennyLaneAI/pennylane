@@ -26,7 +26,7 @@ class AQFT(Operation):
     r"""AQFT(order, wires)
     Apply an approximate quantum Fourier transform (AQFT).
 
-    The AQFT operation helps to reduce the number of ``ControlledPhaseShift`` operations required
+    The `AQFT <https://arxiv.org/abs/1803.04933>`_ method helps to reduce the number of ``ControlledPhaseShift`` operations required
     for QFT by only using a maximum of ``order`` number of ``ControlledPhaseShift`` gates per qubit.
 
     .. seealso:: :class:`~.QFT`
