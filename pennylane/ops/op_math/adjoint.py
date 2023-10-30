@@ -30,7 +30,6 @@ from .symbolicop import SymbolicOp
 # pylint: disable=no-member
 def adjoint(fn, lazy=True):
     """A :func:`~.qjit` compatible adjoint transformation that creates the adjoint of an Operator or a function
-    that applies the adjoint of the provided function.
 
     Args:
         fn (function or :class:`~.operation.Operator`): A single operator or a quantum function that
