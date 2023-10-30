@@ -128,6 +128,26 @@ class TestProcessSamples:
             np.logical_and(samples[:, 0] == 1, samples[:, 1] == 1)
         )
 
+    def test_counts_with_nan_samples(self):
+        """Test that the counts function disregards failed measurements (samples including
+        NaN values) when totalling counts"""
+        shots = 1000
+        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.float64)
+
+        samples[0][0] = np.NaN
+        samples[17][1] = np.NaN
+        samples[850][0] = np.NaN
+
+        result = qml.counts(wires=[0, 1]).process_samples(samples, wire_order=[0, 1])
+
+        # no keys with NaNs
+        assert len(result) == 4
+        assert set(result.keys()) == {"00", "01", "10", "11"}
+
+        # NaNs were not converted into "0", but were excluded from the counts
+        total_counts = sum(count for count in result.values())
+        assert total_counts == 997
+
     def test_counts_obs(self):
         """Test that the counts function outputs counts of the right size for observables"""
         shots = 1000

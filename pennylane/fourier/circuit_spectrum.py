@@ -16,7 +16,7 @@ of a quantum circuit, that is the frequencies without considering
 preprocessing in the QNode."""
 from typing import Sequence, Callable
 from functools import partial
-from pennylane.transforms.core import transform
+from pennylane import transform
 from pennylane.tape import QuantumTape
 from .utils import get_spectrum, join_spectra
 
@@ -48,15 +48,17 @@ def circuit_spectrum(
         If no input-encoding gates are found, an empty dictionary is returned.
 
     Args:
-        tape (QuantumTape): a quantum node representing a circuit in which
+        tape (QNode or QuantumTape or Callable): a quantum circuit in which
             input-encoding gates are marked by their ``id`` attribute
         encoding_gates (list[str]): list of input-encoding gate ``id`` strings
             for which to compute the frequency spectra
         decimals (int): number of decimals to which to round frequencies.
 
     Returns:
-        (dict[str, list[float]]): Dictionary with the input-encoding gate ``id`` as keys and
-        their frequency spectra as values.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will return a dictionary with the input-encoding gate ``id`` as keys and their frequency spectra as values.
 
 
     **Details**
@@ -185,6 +187,7 @@ def circuit_spectrum(
     """
 
     def processing_fn(tapes):
+        """Process the tapes extract the spectrum of the circuit."""
         tape = tapes[0]
         freqs = {}
         for op in tape.operations:
