@@ -2509,7 +2509,7 @@ class Tensor(Observable):
         else:
             obs = Tensor(*self.non_identity_obs)
 
-        obs._return_type = self.return_type
+        obs._return_type = self._return_type
         return obs
 
     def map_wires(self, wire_map: dict):
