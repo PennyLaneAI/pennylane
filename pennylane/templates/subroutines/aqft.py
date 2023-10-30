@@ -14,7 +14,6 @@
 """
 This submodule contains the template for AQFT.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access
 
 import warnings
 import numpy as np
@@ -118,19 +117,18 @@ class AQFT(Operation):
     """
 
     def __init__(self, order, wires=None, id=None):
-        wires = qml.wires.Wires(wires)
 
-        self.n_wires = len(wires)
+        n_wires = len(wires)
 
         if not isinstance(order, int):
             warnings.warn(f"The order must be an integer. Using order = {round(order)}")
             order = round(order)
 
-        if order >= self.n_wires - 1:
+        if order >= n_wires - 1:
             warnings.warn(
-                f"The order ({order}) is >= to the number of wires - 1 ({self.n_wires-1}). Using the QFT class is recommended in this case."
+                f"The order ({order}) is >= to the number of wires - 1 ({n_wires-1}). Using the QFT class is recommended in this case."
             )
-            order = self.n_wires - 1
+            order = n_wires - 1
 
         if order < 0:
             raise ValueError("Order can not be less than 0")
@@ -146,7 +144,7 @@ class AQFT(Operation):
         return 0
 
     @staticmethod
-    def compute_decomposition(wires, order):  # pylint: disable=arguments-differ,unused-argument
+    def compute_decomposition(wires, order):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
