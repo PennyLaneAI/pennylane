@@ -14,8 +14,11 @@ qml.measurements
 
 .. automodule:: pennylane.measurements
 
+Overview
+--------
+
 Top-level measurement functions
--------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The :mod:`~pennylane.measurements` functions for creating standard PennyLane measurement
 processes are top-level imports:
