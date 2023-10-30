@@ -412,13 +412,13 @@ class TestPauliSentence:
     @pytest.mark.parametrize("string1, string2, result", tup_ps_add)
     def test_iadd(self, string1, string2, result):
         """Test that the correct result of inplace addition is produced and other object is not changed."""
-        original_string1=copy(string1)
-        string1 += string2
-        string1.simplify()
+        copied_string1 = copy(string1)
+        copied_string2 = copy(string2)
+        copied_string1 += copied_string2
+        copied_string1.simplify()
 
-        assert string1 == result # Check if the modified object matches the expected result
-        assert original_string2 == string2  # Ensure the original object is not modified
-
+        assert copied_string1 == result # Check if the modified object matches the expected result
+        assert copied_string2 == string2  # Ensure the original object is not modified
     @pytest.mark.parametrize("ps, match", ps_match)
     def test_to_mat_error_empty(self, ps, match):
         """Test that an appropriate error is raised when an empty
