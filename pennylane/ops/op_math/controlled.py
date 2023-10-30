@@ -35,7 +35,6 @@ from .symbolicop import SymbolicOp
 
 def ctrl(op, control, control_values=None, work_wires=None):
     """A :func:`~.qjit` compatible control transformation that creates the control of an Operator or a function
-    that applies the adjoint of the provided function.
 
     .. note::
 
@@ -121,6 +120,7 @@ def ctrl(op, control, control_values=None, work_wires=None):
     >>> workflow(jnp.pi/4, 1, 0)
     array([0.25, 0.25, 0.03661165, 0.46338835])
     """
+
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
