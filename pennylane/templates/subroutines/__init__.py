@@ -36,5 +36,6 @@ from .basis_rotation import BasisRotation
 from .qsvt import QSVT, qsvt
 from .select import Select
 from .qdrift import QDrift
+from .controlled_sequence import ControlledSequence
 from .trotter import TrotterProduct
 from .aqft import AQFT

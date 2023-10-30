@@ -37,6 +37,13 @@ wires = [1, 6, 0, 2, 4, 3]
 class TestRydbergInteraction:
     """Unit tests for the ``rydberg_interaction`` function."""
 
+    def test_queuing(self):
+        """Test that the function does not queue any objects."""
+        with qml.queuing.AnnotatedQueue() as q:
+            rydberg_interaction(register=atom_coordinates, wires=wires, interaction_coeff=1)
+
+        assert len(q) == 0
+
     def test_attributes_and_number_of_terms(self):
         """Test that the attributes and the number of terms of the ``ParametrizedHamiltonian`` returned by
         ``rydberg_interaction`` are correct."""

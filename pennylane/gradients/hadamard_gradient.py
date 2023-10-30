@@ -125,16 +125,16 @@ def hadamard_grad(
     ...     return qml.expval(qml.PauliZ(0))
     >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
     >>> qml.gradients.hadamard_grad(circuit)(params)
-    (tensor([-0.3875172], requires_grad=True),
-     tensor([-0.18884787], requires_grad=True),
-     tensor([-0.38355704], requires_grad=True))
+    (tensor(-0.3875172, requires_grad=True),
+     tensor(-0.18884787, requires_grad=True),
+     tensor(-0.38355704, requires_grad=True))
 
     This quantum gradient transform can also be applied to low-level
     :class:`~.QuantumTape` objects. This will result in no implicit quantum
     device evaluation. Instead, the processed tapes, and post-processing
     function, which together define the gradient are directly returned:
 
-    >>> ops = [qml.RX(p, wires=0) for p in params]
+    >>> ops = [qml.RX(params[0], 0), qml.RY(params[1], 0), qml.RX(params[2], 0)]
     >>> measurements = [qml.expval(qml.PauliZ(0))]
     >>> tape = qml.tape.QuantumTape(ops, measurements)
     >>> gradient_tapes, fn = qml.gradients.hadamard_grad(tape)
@@ -151,7 +151,9 @@ def hadamard_grad(
 
     >>> dev = qml.device("default.qubit", wires=2)
     >>> fn(qml.execute(gradient_tapes, dev, None))
-    (array(-0.3875172), array(-0.18884787), array(-0.38355704))
+    (tensor(-0.3875172, requires_grad=True),
+     tensor(-0.18884787, requires_grad=True),
+     tensor(-0.38355704, requires_grad=True))
 
     This transform can be registered directly as the quantum gradient transform
     to use during autodifferentiation:
@@ -165,7 +167,7 @@ def hadamard_grad(
     ...     return qml.expval(qml.PauliZ(0))
     >>> params = jax.numpy.array([0.1, 0.2, 0.3])
     >>> jax.jacobian(circuit)(params)
-    [-0.3875172  -0.18884787 -0.38355704]
+    Array([-0.3875172 , -0.18884787, -0.38355704], dtype=float64)
 
     If you use custom wires on your device, you need to pass an auxiliary wire.
 
@@ -179,7 +181,7 @@ def hadamard_grad(
     ...    return qml.expval(qml.PauliZ("a"))
     >>> params = jax.numpy.array([0.1, 0.2, 0.3])
     >>> jax.jacobian(circuit)(params)
-    [-0.3875172  -0.18884787 -0.38355704]
+    Array([-0.3875172 , -0.18884787, -0.38355704], dtype=float64)
 
     .. note::
 

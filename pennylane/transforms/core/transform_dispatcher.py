@@ -68,13 +68,22 @@ class TransformDispatcher:
 
         if isinstance(obj, qml.tape.QuantumScript):
             if self._expand_transform:
-                transformed_tapes, _ = self._expand_transform(obj, *targs, **tkwargs)
-                transformed_tapes, transform_processing_fn = self._transform(
-                    transformed_tapes[0], *targs, **tkwargs
-                )
+                expanded_tapes, expand_processing = self._expand_transform(obj, *targs, **tkwargs)
+                transformed_tapes = []
+                processing_and_sclices = []
+                start = 0
+                for tape in expanded_tapes:
+                    intermediate_tapes, post_processing_fn = self._transform(
+                        tape, *targs, **tkwargs
+                    )
+                    transformed_tapes.extend(intermediate_tapes)
+                    end = start + len(intermediate_tapes)
+                    processing_and_sclices.append(tuple([post_processing_fn, slice(start, end)]))
+                    start = end
 
                 def processing_fn(results):
-                    return transform_processing_fn(results)
+                    processed_results = [fn(results[slice]) for fn, slice in processing_and_sclices]
+                    return expand_processing(processed_results)
 
             else:
                 transformed_tapes, processing_fn = self._transform(obj, *targs, **tkwargs)
@@ -187,16 +196,8 @@ class TransformDispatcher:
         The default method that takes in a QNode and returns another QNode
         with the transform applied.
         """
-        # pylint: disable=protected-access
-        if (
-            isinstance(qnode._original_device, qml.Device)
-            and hasattr(qnode._original_device, "_state")
-            and qml.math.is_abstract(qnode._original_device._state)
-        ):
-            qnode._original_device.reset()
-            qnode.device.reset()
 
-        qnode = copy.deepcopy(qnode)
+        qnode = copy.copy(qnode)
 
         if self.expand_transform:
             qnode.add_transform(TransformContainer(self._expand_transform, targs, tkwargs))
