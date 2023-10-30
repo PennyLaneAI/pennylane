@@ -78,7 +78,7 @@ def merge_rotations(
     By inspection, we can combine the two ``RX`` rotations on the first qubit.
     On the second qubit, we have a cumulative angle of 0, and the gates will cancel.
 
-    >>> optimized_qfunc = merge_rotations()(qfunc)
+    >>> optimized_qfunc = merge_rotations(qfunc)
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
     >>> print(qml.draw(optimized_qnode)(1, 2, 3))
     0: ──RX(3.00)────╭RZ(3.00)─┤  <Z>
@@ -89,7 +89,7 @@ def merge_rotations(
     be merged using the ``include_gates`` argument. For example, if in the above
     circuit we wanted only to merge the "RX" gates, we could do so as follows:
 
-    >>> optimized_qfunc = merge_rotations(include_gates=["RX"])(qfunc)
+    >>> optimized_qfunc = merge_rotations(qfunc, include_gates=["RX"])
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
     >>> print(qml.draw(optimized_qnode)(1, 2, 3))
     0: ──RX(3.00)───────────╭RZ(3.00)────────────┤  <Z>

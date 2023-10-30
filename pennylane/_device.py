@@ -293,7 +293,7 @@ class Device(abc.ABC):
 
         **Example**
 
-        >>> dev = qml.device("default.qubit", wires=2, shots=[3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10])
+        >>> dev = qml.device("default.qubit.legacy", wires=2, shots=[3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10])
         >>> dev.shots
         57
         >>> dev.shot_vector
@@ -560,6 +560,9 @@ class Device(abc.ABC):
             tuple[list[array[float]], list[array[float]]]: Tuple containing list of measured value(s)
             and list of Jacobians. Returned Jacobians should be of shape ``(output_shape, num_params)``.
         """
+        if self.tracker.active:
+            self.tracker.update(execute_and_derivative_batches=1, derivatives=len(circuits))
+            self.tracker.record()
         gradient_method = getattr(self, method)
 
         res = []
@@ -593,6 +596,9 @@ class Device(abc.ABC):
             list[array[float]]: List of Jacobians. Returned Jacobians should be of
             shape ``(output_shape, num_params)``.
         """
+        if self.tracker.active:
+            self.tracker.update(derivatives=len(circuits))
+            self.tracker.record()
         gradient_method = getattr(self, method)
         return [gradient_method(circuit, **kwargs) for circuit in circuits]
 
@@ -612,7 +618,7 @@ class Device(abc.ABC):
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit", wires=2)
+            dev = qml.device("default.qubit.legacy", wires=2)
 
             @dev.custom_expand
             def my_expansion_function(self, tape, max_expansion=10):
@@ -970,6 +976,9 @@ class Device(abc.ABC):
                     "Apply the @qml.defer_measurements decorator to your quantum function to "
                     "simulate the application of mid-circuit measurements on this device."
                 )
+
+            if isinstance(o, qml.Projector):
+                raise ValueError(f"Postselection is not supported on the {self.name} device.")
 
             if not self.stopping_condition(o):
                 raise DeviceError(

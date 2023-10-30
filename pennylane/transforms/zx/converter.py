@@ -227,7 +227,7 @@ def to_zx(tape, expand_measurements=False):  # pylint: disable=unused-argument
 
             wires = qml.wires.Wires([4, 3, 0, 2, 1])
             wires_map = dict(zip(tape_opt.wires, wires))
-            tape_opt_reorder = qml.map_wires(input=tape_opt, wire_map=wires_map)
+            tape_opt_reorder = qml.map_wires(input=tape_opt, wire_map=wires_map)[0][0]
 
             @qml.qnode(device=dev)
             def mod_5_4():
@@ -236,7 +236,7 @@ def to_zx(tape, expand_measurements=False):  # pylint: disable=unused-argument
                 return qml.expval(qml.PauliZ(wires=0))
 
         >>> mod_5_4()
-        -0.9999999999999989
+        tensor(1., requires_grad=True)
 
     .. note::
 
@@ -302,7 +302,8 @@ def _to_zx_transform(
 
         consecutive_wires = Wires(range(len(res[0].wires)))
         consecutive_wires_map = OrderedDict(zip(res[0].wires, consecutive_wires))
-        mapped_tape = qml.map_wires(input=res[0], wire_map=consecutive_wires_map)
+        mapped_tapes, fn = qml.map_wires(input=res[0], wire_map=consecutive_wires_map)
+        mapped_tape = fn(mapped_tapes)
 
         inputs = []
 
@@ -336,7 +337,7 @@ def _to_zx_transform(
             else:
                 expanded_operations.append(op)
 
-        expanded_tape = QuantumScript(expanded_operations, mapped_tape.measurements, [])
+        expanded_tape = QuantumScript(expanded_operations, mapped_tape.measurements)
 
         _add_operations_to_graph(expanded_tape, graph, gate_types, q_mapper, c_mapper)
 

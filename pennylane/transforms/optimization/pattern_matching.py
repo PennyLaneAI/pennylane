@@ -83,7 +83,7 @@ def pattern_matching_optimization(
 
     >>> dev = qml.device('default.qubit', wires=5)
     >>> qnode = qml.QNode(circuit, dev)
-    >>> optimized_qfunc = pattern_matching_optimization(pattern_tapes=[pattern])(circuit)
+    >>> optimized_qfunc = pattern_matching_optimization(circuit, pattern_tapes=[pattern])
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
 
     >>> print(qml.draw(qnode)())
@@ -101,7 +101,7 @@ def pattern_matching_optimization(
     quantum cost dictionary with a negative cost for ``pennylane.PauliZ``.
 
     >>> my_cost = {"PauliZ": -1 , "S": 1, "Adjoint(S)": 1}
-    >>> optimized_qfunc = pattern_matching_optimization(pattern_tapes=[pattern], custom_quantum_cost=my_cost)(circuit)
+    >>> optimized_qfunc = pattern_matching_optimization(circuit, pattern_tapes=[pattern], custom_quantum_cost=my_cost)
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
 
     >>> print(qml.draw(optimized_qnode)())
@@ -142,7 +142,7 @@ def pattern_matching_optimization(
 
     >>> dev = qml.device('default.qubit', wires=5)
     >>> qnode = qml.QNode(circuit, dev)
-    >>> optimized_qfunc = pattern_matching_optimization(pattern_tapes=[pattern])(circuit)
+    >>> optimized_qfunc = pattern_matching_optimization(circuit, pattern_tapes=[pattern])
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
 
     In our case, it is possible to find three CNOTs and replace this pattern with only two CNOTs and therefore
@@ -198,8 +198,8 @@ def pattern_matching_optimization(
             raise qml.QuantumFunctionError("Circuit has less qubits than the pattern.")
 
         # Construct Dag representation of the circuit and the pattern.
-        circuit_dag = commutation_dag(tape)()
-        pattern_dag = commutation_dag(pattern)()
+        circuit_dag = commutation_dag(tape)
+        pattern_dag = commutation_dag(pattern)
 
         max_matches = pattern_matching(circuit_dag, pattern_dag)
 
@@ -228,7 +228,7 @@ def pattern_matching_optimization(
 
                         # First add all the predecessors of the given match.
                         for elem in pred:
-                            node = circuit_dag.get_node(elem)
+                            node = circuit_dag.get_node(elem)  # pylint: disable=no-member
                             inst = copy.deepcopy(node.op)
                             qml.apply(inst)
                             already_sub.append(elem)
@@ -251,12 +251,13 @@ def pattern_matching_optimization(
 
                     # Add the unmatched gates.
                     for node_id in substitution.unmatched_list:
-                        node = circuit_dag.get_node(node_id)
+                        node = circuit_dag.get_node(node_id)  # pylint: disable=no-member
                         inst = copy.deepcopy(node.op)
                         qml.apply(inst)
 
                 qscript = QuantumScript.from_queue(q_inside)
-                tape = qml.map_wires(input=qscript, wire_map=inverse_wires_map)
+                tapes, fn = qml.map_wires(input=qscript, wire_map=inverse_wires_map)
+                tape = fn(tapes)
 
     new_tape = type(tape)(tape.operations, tape.measurements, shots=tape.shots)
 
