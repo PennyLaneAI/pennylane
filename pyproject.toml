@@ -1,3 +1,115 @@
 [tool.black]
 line-length = 100
 include = '\.pyi?$'
+
+[tool.poetry]
+name = "pennylane"
+version = "0.34.0-dev"
+description = "PennyLane is a Python quantum machine learning library by Xanadu Inc."
+authors = ["PennyLaneAI <info@pennylane.ai>"]
+license = "Apache-2.0"
+readme = "README.md"
+homepage = "https://pennylane.ai/"
+repository = "https://github.com/PennyLaneAI/pennylane"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[[tool.poetry.source]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+priority = "explicit"
+
+[tool.poetry.dependencies]
+python = "~3.9.0"
+numpy = "*"
+scipy = "*"
+networkx = "*"
+rustworkx = "*"
+autograd = "*"
+toml = "*"
+appdirs = "*"
+semantic-version = ">=2.7"
+autoray = ">=0.6.1"
+cachetools = "*"
+pennylane-lightning = ">=0.32"
+requests = "*"
+typing_extensions = "*"
+
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = ">=2.19.0"
+pytest = ">=7.1.2"
+pytest-cov = ">=3.0.0"
+pytest-mock = ">=3.7.0"
+pytest-xdist = ">=2.5.0"
+flaky = ">=3.7.0"
+pytest-forked = ">=1.4.0"
+pytest-benchmark = "*"
+black = ">=21"
+tomli = "~2.0.0" # Drop once minimum Python version is 3.11
+
+[tool.poetry.group.ci]
+optional = true
+
+[tool.poetry.group.ci.dependencies]
+numpy = "*"
+scipy = "*"
+cvxpy = "*"
+cvxopt = "*"
+networkx = "*"
+rustworkx = "*"
+autograd = "*"
+toml = "*"
+appdirs = "*"
+semantic_version = "*"
+dask = "*"
+autoray = "*"
+matplotlib = "*"
+requests = "*"
+tomli = "*"
+
+[tool.poetry.group.doc]
+optional = true
+
+[tool.poetry.group.doc.dependencies]
+appdirs = "*"
+autograd = "*"
+autoray = ">=0.6.1"
+jax = "0.4.16"
+jaxlib = "0.4.16"
+mistune = "0.8.4"
+m2r2 = "*"
+numpy = "*"
+pygments-github-lexers = "*"
+semantic_version = "2.10"
+scipy = "*"
+docutils = "0.16"
+sphinx = [
+    { version = "~3.5.0", markers = "python_version < '3.10'" },
+    { version = "4.2.0", markers = "python_version >= '3.10'" }
+]
+sphinx-automodapi = "0.13"
+sphinx-copybutton = "*"
+sphinxcontrib-bibtex = "2.4.2"
+tensorflow = { version = "2.13.0", markers = "platform_machine == 'x86_64'" }
+tensorflow-macos = { version = "2.13.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'" }
+tensornetwork = "0.3"
+toml = "*"
+torch = [
+    { version = "1.9.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64' and python_version < '3.10'" },
+    { version = "1.9.0+cpu", source = "pytorch-cpu", markers = "platform_machine == 'x86_64' and python_version < '3.10'" },
+    { version = "1.13.1", markers = "sys_platform == 'darwin' and platform_machine == 'arm64' and python_version >= '3.10'" },
+    { version = "1.13.1+cpu", source = "pytorch-cpu", markers = "platform_machine == 'x86_64' and python_version >= '3.10'" }
+]
+jinja2 = "3.0.3"
+rustworkx = "0.12.1"
+networkx = "~2.6.2"
+requests = "~2.28.1"
+# we do not pin the sphinx theme, to allow the
+# navbar and header data to be updated at the source
+pennylane-sphinx-theme = "*"
+tomli = "~2.0.0" # Drop once minimum Python version is 3.11
