@@ -192,9 +192,11 @@ class TestDecomposition:
             target_wires = [0]
 
             tape = qml.tape.QuantumScript(
-                [qml.QuantumPhaseEstimation(unitary, estimation_wires=estimation_wires)],
+                [
+                    qml.StatePrep(eig_vec, wires=target_wires),
+                    qml.QuantumPhaseEstimation(unitary, estimation_wires=estimation_wires),
+                ],
                 [qml.probs(estimation_wires)],
-                prep=[qml.StatePrep(eig_vec, wires=target_wires)],
             )
 
             tapes, _ = dev.preprocess()[0]([tape])
@@ -235,9 +237,11 @@ class TestDecomposition:
             target_wires = [0, 1]
 
             tape = qml.tape.QuantumScript(
-                [qml.QuantumPhaseEstimation(unitary, estimation_wires=estimation_wires)],
+                [
+                    qml.StatePrep(eig_vec, wires=target_wires),
+                    qml.QuantumPhaseEstimation(unitary, estimation_wires=estimation_wires),
+                ],
                 [qml.probs(estimation_wires)],
-                prep=[qml.StatePrep(eig_vec, wires=target_wires)],
             )
 
             tapes, _ = dev.preprocess()[0]([tape])

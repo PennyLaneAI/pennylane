@@ -17,6 +17,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `prep` keyword argument has been removed from `QuantumScript` and `QuantumTape`.
+  ``StatePrepBase`` operations should be placed at the beginning of the `ops` list instead.
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
@@ -28,5 +32,6 @@
 This release contains contributions from (in alphabetical order):
 
 Amintor Dusko,
+Matthew Silverman,
 David Wierichs,
 Justin Woodring
