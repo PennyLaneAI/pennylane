@@ -9,6 +9,9 @@
 * Updates to some relevant Pytests to enable its use as a suite of benchmarks.
   [(#4703)](https://github.com/PennyLaneAI/pennylane/pull/4703)
 
+* Added `__iadd__` method to PauliSentence, which enables inplace-addition using `+=`, we no longer need to perform a copy, leading to performance improvements.
+[(#4662)](https://github.com/PennyLaneAI/pennylane/pull/4662) 
+
 * `qml.ArbitraryUnitary` now supports batching.
   [(#4745)](https://github.com/PennyLaneAI/pennylane/pull/4745)
 
@@ -28,5 +31,6 @@
 This release contains contributions from (in alphabetical order):
 
 Amintor Dusko,
+Anurav Modak,
 David Wierichs,
 Justin Woodring
