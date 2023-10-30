@@ -20,6 +20,7 @@ This module contains functions that act on operators and tapes.
     :toctree: api
 
     ~ops.functions.bind_new_parameters
+    ~ops.functions.assert_valid
     ~dot
     ~eigvals
     ~equal
@@ -45,4 +46,4 @@ from .is_unitary import is_unitary
 from .map_wires import map_wires
 from .matrix import matrix
 from .simplify import simplify
-from .check_validity import check_validity
+from .assert_valid import assert_valid

@@ -170,7 +170,7 @@ def _check_wires(op):
     mapped_op = op.map_wires(wire_map)
     assert mapped_op.wires == qml.wires.Wires(list(ascii_lowercase[:len(op.wires)])), "wires must be mappable"
 
-def check_validity(op: qml.operation.Operator) -> None:
+def assert_valid(op: qml.operation.Operator) -> None:
     """Runs basic validation checks on an :class:`~.operation.Opeartor` to make
     sure it has been correctly defined.
 
@@ -188,7 +188,7 @@ def check_validity(op: qml.operation.Operator) -> None:
                 super().__init__(wires=wires)
 
         op = MyOp(qml.numpy.array(0.5), wires=0)
-        check_validity(op)
+        assert_valid(op)
 
     .. code-block::
 
@@ -202,7 +202,7 @@ def check_validity(op: qml.operation.Operator) -> None:
                 super().__init__(wires=wires)
 
         op = MyOp(wires = 0)
-        check_validity(op)
+        assert_valid(op)
 
     .. code-block::
 
