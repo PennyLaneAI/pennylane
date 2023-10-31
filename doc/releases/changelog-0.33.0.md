@@ -150,10 +150,10 @@
   <img src="https://docs.pennylane.ai/en/stable/_images/cosine_window.png" width=50%/>
 
 * Controlled gate sequences raised to decreasing powers, a sub-block in quantum phase estimation, can now be created with the new 
-  `CtrlSequence` operator.
+  `ControlledSequence` operator.
   [(#4707)](https://github.com/PennyLaneAI/pennylane/pull/4707/)
 
-  To use `CtrlSequence`, specify the controlled unitary operator and the control wires, `control`:
+  To use `ControlledSequence`, specify the controlled unitary operator and the control wires, `control`:
 
   ```python
   dev = qml.device("default.qubit", wires = 4)
