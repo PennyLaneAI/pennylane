@@ -20,16 +20,30 @@ from string import ascii_lowercase
 import copy
 import pickle
 
-import numpy as np
-
 import pennylane as qml
 from pennylane.operation import EigvalsUndefinedError
 
+
+def _assert_error_raised(func, error):
+    def inner_func(*args, **kwargs):
+        error_raised = False
+        try:
+            func(*args, **kwargs)
+        except error:
+            error_raised = True
+        assert error_raised, f"expected error of type {error} to be raised."
+
+    return inner_func
+
+
 def _check_decomposition(op):
+    """Checks involving the decomposition."""
     if op.has_decomposition:
         decomp = op.decomposition()
         try:
-            compute_decomp = op.compute_decomposition(*op.data, wires=op.wires, **op.hyperparameters)
+            compute_decomp = op.compute_decomposition(
+                *op.data, wires=op.wires, **op.hyperparameters
+            )
         except qml.operation.DecompositionUndefinedError:
             # sometimes decomposition is defined but not compute_decomposition
             compute_decomp = decomp
@@ -42,70 +56,50 @@ def _check_decomposition(op):
         assert isinstance(compute_decomp, list), "decomposition must be a list"
         assert isinstance(expand, qml.tape.QuantumScript), "expansion must be a QuantumScript"
 
-        for o1, o2, o3, o4 in zip(decomp, compute_decomp, processed_queue , expand):
+        for o1, o2, o3, o4 in zip(decomp, compute_decomp, processed_queue, expand):
             assert o1 == o2, "decomposition must match compute_decomposition"
             assert o1 == o3, "decomposition must matched queued operations"
             assert o1 == o4, "decomposition must match expansion"
             assert isinstance(o1, qml.operation.Operator), "decomposition must contain operators"
     else:
-        error_raised=False
-        try:
-            op.decomposition()
-        except qml.operation.DecompositionUndefinedError as e:
-            error_raised=True
-        assert error_raised, "error must be raised if decomposition isnt defined"
+        _assert_error_raised(op.decomposition, qml.operation.DecompositionUndefinedError)()
+        _assert_error_raised(op.expand, qml.operation.DecompositionUndefinedError)()
+        _assert_error_raised(op.compute_decomposition, qml.operation.DecompositionUndefinedError)(
+            *op.data, wires=op.wires, **op.hyperparameters
+        )
 
-        error_raised=False
-        try:
-            op.expand()
-        except qml.operation.DecompositionUndefinedError as e:
-            error_raised=True
-        assert error_raised, "error must be raised if decomposition isnt defined"
-
-        error_raised=False
-        try:
-            op.compute_decomposition(*op.data, wires=op.wires, **op.hyperparameters)
-        except qml.operation.DecompositionUndefinedError as e:
-            error_raised=True
-        assert error_raised, "error must be raised if decomposition isnt defined"
 
 def _check_matrix(op):
+    """Check that if the operation says it has a matrix, it is. Otherwise a ``MatrixUndefinedError`` is raised."""
     if op.has_matrix:
         mat = op.matrix()
         mat2 = qml.matrix(op)
         assert qml.math.allclose(mat, mat2), "op.matrix must match qml.matrix"
     else:
-        error_raised = False
-        try:
-            op.matrix()
-        except qml.operation.MatrixUndefinedError:
-            error_raised = True
-        assert error_raised, "error must be raised if matrix isnt defined"
+        _assert_error_raised(op.matrix, qml.operation.MatrixUndefinedError)()
+
 
 def _check_matrix_matches_decomp(op):
+    """Check that if both the matrix and decomposition are defined, they match."""
     if op.has_matrix and op.has_decomposition:
         mat = op.matrix()
         decomp_mat = qml.matrix(op.decomposition, wire_order=op.wires)()
         assert qml.math.allclose(mat, decomp_mat), "matrix and matrix from decomposition must match"
 
-def _check_eigendecomposition(op):
 
+def _check_eigendecomposition(op):
+    """Checks involving diagonalizing gates and eigenvalues."""
     if op.has_diagonalizing_gates:
         dg = op.diagonalizing_gates()
         try:
             compute_dg = op.compute_diagonalizing_gates(*op.data, op.wires, **op.hyperparameters)
-        except qml.operation.DiagGatesUndefinedError as e:
+        except qml.operation.DiagGatesUndefinedError:
             compute_dg = dg
 
         for op1, op2 in zip(dg, compute_dg):
             assert op1 == op2, "diagonalizing_gates and compute_diagonalizing_gates must match"
     else:
-        error_raised = False
-        try:
-            op.diagonalizing_gates()
-        except qml.operation.DiagGatesUndefinedError:
-            error_raised = True
-        assert error_raised, "error must be raised if diagonalizing_gates isnt defined."
+        _assert_error_raised(op.diagonalizing_gates, qml.operation.DiagGatesUndefinedError)()
 
     has_eigvals = True
     try:
@@ -120,11 +114,33 @@ def _check_eigendecomposition(op):
         eg = qml.DiagonalQubitUnitary(eg, wires=op.wires)
         decomp = dg @ qml.DiagonalQubitUnitary(eg, wires=op.wires) @ qml.adjoint(dg)
         decomp_mat = qml.matrix(decomp)
-        assert qml.math.allclose(decomp_mat, qml.matrix(op)), "eigenvalues and diagonalizing gates must be able to reproduce the original operator"
+        assert qml.math.allclose(
+            decomp_mat, qml.matrix(op)
+        ), "eigenvalues and diagonalizing gates must be able to reproduce the original operator"
 
 
-# pylint: disable=import-outside-toplevel
-def _check_jax(op):
+def _check_copy(op):
+    """Check that copies and deep copies give identical objects."""
+    copied_op = copy.copy(op)
+    assert copied_op == op, "copied op must be equivalent to original operation"
+    assert copied_op is not op, "copied op must be a separate instance from original operaiton"
+    assert qml.equal(copied_op, op), "copied op must also be equal with qml.equal"
+    assert copy.deepcopy(op) == op, "deep copied op must also be equal"
+
+
+# pylint: disable=import-outside-toplevel, protected-access
+def _check_pytree(op):
+    """Check that the operator is property a pytree."""
+    data, metadata = op._flatten()
+    try:
+        assert hash(metadata), "metadata must be hashable"
+    except Exception as e:
+        raise ValueError(
+            "metadata output from _flatten must be hashable. This also applies to hyperparameters"
+        ) from e
+    new_op = type(op)._unflatten(data, metadata)
+    assert op == new_op, "metadata and data must be able to replicate the original operation"
+
     try:
         import jax
     except ImportError:
@@ -133,42 +149,36 @@ def _check_jax(op):
     unflattened_op = jax.tree_util.tree_unflatten(struct, leaves)
     assert unflattened_op == op, "op must be a valid pytree"
 
-def _check_copy(op):
+    for d1, d2 in zip(op.data, leaves):
+        assert qml.math.allclose(d1, d2), "data must be the terminal leaves of the pytree"
 
-    copied_op = copy.copy(op)
-    assert copied_op == op, "copied op must be equivalent to original operation"
-    assert copied_op is not op, "copied op must be a separate instance from original operaiton"
-    assert qml.equal(copied_op, op), "copied op must also be equal with qml.equal"
-    assert copy.deepcopy(op) == op, "deep copied op must also be equal"
-
-def _check_pytree(op):
-    data, metadata = op._flatten()
-    try:
-        assert hash(metadata), "metadata must be hashable"
-    except Exception as e:
-        raise ValueError("metadata output from _flatten must be hashable. This also applies to hyperparameters") from e
-    new_op = type(op)._unflatten(data, metadata)
-    assert op == new_op, "metadata and data must be able to replicate the original operation"
 
 def _check_pickle(op):
+    """Check that an operation can be dumped and reloaded with pickle."""
     pickled = pickle.dumps(op)
     unpickled = pickle.loads(pickled)
     assert unpickled == op, "operation must be able to be pickled and unpickled"
 
+
+# pylint: disable=no-member
 def _check_bind_new_parameters(op):
-    new_data = [d+1.0 for d in op.data]
+    """Check that bind new parameters can create a new op with different data."""
+    new_data = [d + 1.0 for d in op.data]
     new_data_op = qml.ops.functions.bind_new_parameters(op, new_data)
     for d1, d2 in zip(new_data_op.data, new_data):
         assert qml.math.allclose(d1, d2), "new data must match the data set with."
 
+
 def _check_wires(op):
+    """Check that wires are a ``Wires`` class and can be mapped."""
     assert isinstance(op.wires, qml.wires.Wires), "wires must be a wires instance"
-    if op.num_wires != -1:
-        assert len(op.wires) == op.num_wires, "num_wires must match the number of wires"
 
     wire_map = {w: ascii_lowercase[i] for i, w in enumerate(op.wires)}
     mapped_op = op.map_wires(wire_map)
-    assert mapped_op.wires == qml.wires.Wires(list(ascii_lowercase[:len(op.wires)])), "wires must be mappable"
+    assert mapped_op.wires == qml.wires.Wires(
+        list(ascii_lowercase[: len(op.wires)])
+    ), "wires must be mappable"
+
 
 def assert_valid(op: qml.operation.Operator) -> None:
     """Runs basic validation checks on an :class:`~.operation.Opeartor` to make
@@ -210,7 +220,6 @@ def assert_valid(op: qml.operation.Operator) -> None:
 
     """
 
-
     assert isinstance(op.data, tuple), "op.data must be a tuple"
     assert isinstance(op.parameters, list), "op.parameters must be a list"
     assert len(op.data) == op.num_params, "length of data must match num_params"
@@ -223,8 +232,6 @@ def assert_valid(op: qml.operation.Operator) -> None:
     _check_pytree(op)
     _check_pickle(op)
     _check_bind_new_parameters(op)
-
-    _check_jax(op)
 
     _check_decomposition(op)
     _check_matrix(op)
