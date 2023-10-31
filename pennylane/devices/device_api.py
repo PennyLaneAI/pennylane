@@ -236,7 +236,7 @@ class Device(abc.ABC):
         **Example**
 
         All the transforms that are part of the preprocessing need to respect the transform contract defined in
-        :func:`pennylane.transforms.core.transform`.
+        :func:`pennylane.transform`.
 
         .. code-block:: python
 
