@@ -49,20 +49,19 @@ extensions = [
     "m2r2",
 ]
 
-# opengraph details
-ogp_type = "article"
-# Comment below to activate custom
-# social media cards
-ogp_use_first_image = False
-ogp_enable_meta_description = True
-# ogp_image = "_static/header-tall.png"
-
+# Open Graph metadata
+ogp_title = "PennyLane Documentation"
+ogp_type = "website"
+ogp_description = "PennyLane is a cross-platform Python library for differentiable programming of quantum computers. Train a quantum computer the same way as a neural network."
 ogp_social_cards = {
     "image": "_static/logo.png",
     "enable": True,
     "site_url": "https://docs.pennylane.ai/",
     "line_color": "#03b2ff",
 }
+# ogp_image = "_static/header-tall.png"
+
+
 # The base URL with a proper language and version.
 html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "/")
 
