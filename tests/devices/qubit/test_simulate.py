@@ -55,7 +55,7 @@ class TestStatePrepBase:
     def test_basis_state(self):
         """Test that the BasisState operator prepares the desired state."""
         qs = qml.tape.QuantumScript(
-            measurements=[qml.probs(wires=(0, 1, 2))], prep=[qml.BasisState([0, 1], wires=(0, 1))]
+            ops=[qml.BasisState([0, 1], wires=(0, 1))], measurements=[qml.probs(wires=(0, 1, 2))]
         )
         probs = simulate(qs)
         expected = np.zeros(8)
@@ -202,7 +202,7 @@ class TestBroadcasting:
         measurements = [qml.expval(qml.PauliZ(i)) for i in range(2)]
         prep = [qml.StatePrep(np.eye(4), wires=[0, 1])]
 
-        qs = qml.tape.QuantumScript(ops, measurements, prep)
+        qs = qml.tape.QuantumScript(prep + ops, measurements)
         res = simulate(qs)
 
         assert isinstance(res, tuple)
@@ -267,7 +267,7 @@ class TestBroadcasting:
         measurements = [qml.expval(qml.PauliZ(i)) for i in range(2)]
         prep = [qml.StatePrep(np.eye(4), wires=[0, 1])]
 
-        qs = qml.tape.QuantumScript(ops, measurements, prep, shots=qml.measurements.Shots(10000))
+        qs = qml.tape.QuantumScript(prep + ops, measurements, shots=qml.measurements.Shots(10000))
         res = simulate(qs, rng=123)
 
         assert isinstance(res, tuple)
