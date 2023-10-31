@@ -291,7 +291,8 @@ class NullQubit(QubitDevice):
         In the _qubit_device.py, the function calls for analytic_probability for its operations."""
         self.analytic_probability()
 
-    def sample(self, observable, shot_range=None, bin_size=None, counts=False):
+    # pylint:disable=too-many-arguments
+    def sample(self, observable, shot_range=None, bin_size=None, counts=False, all_outcomes=False):
         return [0.0]
 
     def operation_calls(self):

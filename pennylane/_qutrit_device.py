@@ -357,7 +357,8 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         prob = self._transpose(prob, np.argsort(np.argsort(device_wires)))
         return self._flatten(prob)
 
-    def sample(self, observable, shot_range=None, bin_size=None, counts=False):
+    # pylint:disable=unused-argument,too-many-arguments
+    def sample(self, observable, shot_range=None, bin_size=None, counts=False, all_outcomes=False):
         def _samples_to_counts(samples, no_observable_provided):
             """Group the obtained samples into a dictionary.
 
