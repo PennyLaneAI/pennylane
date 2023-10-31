@@ -45,8 +45,25 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx_automodapi.automodapi",
     "sphinx_copybutton",
+    "sphinxext.opengraph",
     "m2r2",
 ]
+
+# opengraph details
+ogp_type = "article"
+# Comment below to activate custom
+# social media cards
+# ogp_use_first_image = False
+# ogp_image = "_static/catalyst_illustration.jpg"
+
+ogp_social_cards = {
+    "image": "_static/catalyst_illustration.jpg",
+    "enable": True,
+    "site_url": "https://docs.pennylane.ai/projects/catalyst",
+    "line_color": "#03b2ff",
+}
+# The base URL with a proper language and version.
+html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "/")
 
 os.environ["SPHINX_BUILD"] = "1"
 
