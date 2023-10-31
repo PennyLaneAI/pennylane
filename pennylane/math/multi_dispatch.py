@@ -19,7 +19,6 @@ from collections.abc import Sequence
 import autoray as ar
 import numpy as onp
 from autograd.numpy.numpy_boxes import ArrayBox
-import autograd.numpy
 from autoray import numpy as np
 from numpy import ndarray
 
@@ -848,7 +847,11 @@ def norm(tensor, like=None, **kwargs):
             kwargs["dim"] = axis_val
 
     elif like == "autograd":
-        return _autograd_norm(tensor, **kwargs)
+        ord = kwargs.get("ord", None)
+        if ord is not None and ord != "fro" and ord != "nuc":
+            norm = _autograd_norm
+        else:
+            from autograd.numpy.linalg import norm
 
     else:
         from scipy.linalg import norm
@@ -859,17 +862,28 @@ def norm(tensor, like=None, **kwargs):
 def _autograd_norm(tensor, **kwargs):
     """Autograd differentiable norm"""
     if kwargs.get("axis", None) is not None:
-        raise ValueError("no axis allowed")
-    ord = kwargs.get("ord", None)
-    if ord is not None and ord != "fro" and ord != 2:
-        raise ValueError("Only L2 norm supported")
+        raise ValueError("Specifying axes is not currently supported.")
     if kwargs.get("keep_dims", False):
-        raise ValueError("no keep_dims allowed")
+        raise ValueError("Setting keep_dims is not currently supported.")
 
-    norm = 0
+    import autograd.numpy as anp
+
+    ord = kwargs.get("ord", 2)
+
+    if ord == 0:
+        return anp.sum(tensor != 0)
+
+    if ord == onp.inf:
+        _norm = 0.0
+        for val in tensor.flatten():
+            aval = anp.abs(val)
+            _norm = aval if aval > _norm else _norm
+        return _norm
+
+    _norm = 0.0
     for val in tensor.flatten():
-        norm += val * autograd.numpy.conj(val)
-    return autograd.numpy.sqrt(norm)
+        _norm += anp.abs(val) ** ord
+    return _norm ** (1 / ord)
 
 
 @multi_dispatch(argnum=[1])
