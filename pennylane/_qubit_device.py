@@ -35,7 +35,6 @@ from pennylane.interfaces import set_shots
 from pennylane.math import multiply as qmlmul
 from pennylane.math import sum as qmlsum
 from pennylane.measurements import (
-    AllCounts,
     ClassicalShadowMP,
     CountsMP,
     ExpectationMP,
@@ -633,7 +632,13 @@ class QubitDevice(Device):
                 result = self._asarray(qml.math.squeeze(samples))
 
             elif isinstance(m, CountsMP):
-                result = self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=True)
+                result = self.sample(
+                    obs,
+                    shot_range=shot_range,
+                    bin_size=bin_size,
+                    counts=True,
+                    all_outcomes=m.all_outcomes,
+                )
 
             elif isinstance(m, ProbabilityMP):
                 result = self.probability(wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
@@ -1372,7 +1377,7 @@ class QubitDevice(Device):
         # TODO: do we need to squeeze here? Maybe remove with new return types
         return np.squeeze(np.var(samples, axis=axis))
 
-    def _samples_to_counts(self, samples, obs, num_wires):
+    def _samples_to_counts(self, samples, obs, num_wires, all_outcomes=False):
         """Groups the samples into a dictionary showing number of occurences for
         each possible outcome.
 
@@ -1389,6 +1394,10 @@ class QubitDevice(Device):
                 has shape ``(shots,)``, with sample values being scalar eigenvalues of the observable
             obs (Observable): the observable sampled
             num_wires (int): number of wires the sampled observable was performed on
+
+        Keyword Args:
+            all_outcomes (bool): determines whether the returned dict will contain only the observed
+                outcomes (default), or whether it will display all possible outcomes for the system
 
         Returns:
             dict: dictionary with format ``{'outcome': num_occurences}``, including all
@@ -1436,7 +1445,7 @@ class QubitDevice(Device):
             batched_ndims = 3  # no observable was provided, batched samples will have shape (batch_size, shots, len(wires))
             if obs.all_outcomes:
                 outcomes = list(map(_sample_to_str, self.generate_basis_states(num_wires)))
-        elif obs.return_type is AllCounts:
+        elif all_outcomes:
             outcomes = (
                 qml.eigvals(obs)
                 if not isinstance(obs, MeasurementValue)
@@ -1458,7 +1467,8 @@ class QubitDevice(Device):
 
         return outcome_dicts if batched else outcome_dicts[0]
 
-    def sample(self, observable, shot_range=None, bin_size=None, counts=False):
+    # pylint:disable=too-many-arguments
+    def sample(self, observable, shot_range=None, bin_size=None, counts=False, all_outcomes=False):
         """Return samples of an observable.
 
         Args:
@@ -1526,13 +1536,13 @@ class QubitDevice(Device):
         num_wires = len(device_wires) if len(device_wires) > 0 else self.num_wires
         if bin_size is None:
             if counts:
-                return self._samples_to_counts(samples, observable, num_wires)
+                return self._samples_to_counts(samples, observable, num_wires, all_outcomes)
             return samples
 
         if counts:
             shape = (-1, bin_size, num_wires) if no_observable_provided else (-1, bin_size)
             return [
-                self._samples_to_counts(bin_sample, observable, num_wires)
+                self._samples_to_counts(bin_sample, observable, num_wires, all_outcomes)
                 for bin_sample in samples.reshape(shape)
             ]
 
