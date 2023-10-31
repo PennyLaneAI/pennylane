@@ -199,6 +199,17 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
             # the adjoint operator of this gate simply negates the angle
             return FlipAndRotate(-self.parameters[0], self.wires[0], self.wires[1], do_flip=self.hyperparameters["do_flip"])
 
+      @classmethod
+      def _unflatten(cls, data, metadata):
+          # as the class differs from the standard `__init__` call signature of
+          # (*data, wires=wires, **hyperparameters), the _unflatten method that
+          # must be defined as well
+          # _unflatten recreates a opeartion from the serialized data and 22metadata of ``Operator._flatten``
+          wires = metadata[0]
+          hyperparams = dict(metadata[1])
+          return cls(data[0], wire_rot=wires[0], wire_flip=wires[1], do_flip=hyperparams['do_flip'])
+
+
 The new gate can now be created as follows:
 
 >>> op = FlipAndRotate(0.1, wire_rot="q3", wire_flip="q1", do_flip=True)
@@ -208,6 +219,27 @@ FlipAndRotate(0.1, wires=['q3', 'q1'])
 [PauliX(wires=['q1']), RX(0.1, wires=['q3'])]
 >>> op.adjoint()
 FlipAndRotate(-0.1, wires=['q3', 'q1'])
+
+Once the class has been created, you can run a suite of validation checkis using :function:`pennylane.ops.functions.assert_valid`.
+This function will warn you of some common errors in custom operators. For example, 
+
+>>> qml.ops.functions.assert_valid(op)
+
+For example, if the above operator ommitted the ``_unflatten`` custom definition, it would raise:
+
+```
+File /pennylane/operation.py:1599, in Operator._unflatten(cls, data, metadata)
+   1575 """Recreate an operation from its serialized format.
+   1576 
+   1577 Args:
+   (...)
+   1596 
+   1597 """
+   1598 hyperparameters_dict = dict(metadata[1])
+-> 1599 return cls(*data, wires=metadata[0], **hyperparameters_dict)
+
+TypeError: FlipAndRotate.__init__() got an unexpected keyword argument 'wires'
+```
 
 The new gate can be used with PennyLane devices. Device support for an operation can be checked via
 ``dev.stopping_condition(op)``.  If ``True``, then the device supports the operation.

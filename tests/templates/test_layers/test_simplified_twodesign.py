@@ -21,6 +21,19 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 
+def test_standard_validity():
+    """Run standard checks with the assert_valid function."""
+
+    n_wires = 2
+    weight_shape = (2, 1, 2)
+
+    weights = np.random.random(size=weight_shape)
+    initial_layer = np.random.randn(n_wires)
+
+    op = qml.SimplifiedTwoDesign(initial_layer, weights, wires=range(n_wires))
+    qml.ops.functions.assert_valid(op)
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 

@@ -21,6 +21,14 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 
+def test_standard_validity():
+    """Run standard checks with the assert_valid function."""
+
+    weights = np.array([[0.1, -2.1, 1.4]])
+    op = qml.RandomLayers(weights, wires=(0, 1))
+    qml.ops.functions.assert_valid(op)
+
+
 def test_hyperparameters():
     """Test that the hyperparmaeters are set as expected."""
     weights = np.array([[0.1, -2.1, 1.4]])

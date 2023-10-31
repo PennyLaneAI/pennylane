@@ -21,6 +21,9 @@
 * `qml.draw` and `qml.draw_mpl` now render operator ids.
   [(#4749)](https://github.com/PennyLaneAI/pennylane/pull/4749)
 
+* Added `ops.functions.assert_valid` for checking if an `Operator` class is defined correctly.
+  [(#4764)](https://github.com/PennyLaneAI/pennylane/pull/4764)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -35,6 +38,7 @@ This release contains contributions from (in alphabetical order):
 
 Amintor Dusko,
 Ankit Khandelwal,
+Christina Lee
 Anurav Modak,
 David Wierichs,
 Justin Woodring,

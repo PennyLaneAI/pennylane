@@ -72,9 +72,12 @@ class Select(Operation):
     def _unflatten(cls, data, metadata) -> "Select":
         return cls(data, metadata)
 
+    def __repr__(self):
+        return f"Select(ops={self.ops}, control={self.control})"
+
     def __init__(self, ops, control, id=None):
         control = qml.wires.Wires(control)
-        self.hyperparameters["ops"] = ops
+        self.hyperparameters["ops"] = tuple(ops)
         self.hyperparameters["control"] = control
 
         if 2 ** len(control) < len(ops):
@@ -98,6 +101,11 @@ class Select(Operation):
 
         all_wires = target_wires + control
         super().__init__(*self.data, wires=all_wires, id=id)
+
+    def map_wires(self, wire_map: dict) -> "Select":
+        new_ops = [o.map_wires(wire_map) for o in self.hyperparameters["ops"]]
+        new_control = [wire_map.get(wire, wire) for wire in self.hyperparameters["control"]]
+        return Select(new_ops, new_control)
 
     def __copy__(self):
         """Copy this op"""

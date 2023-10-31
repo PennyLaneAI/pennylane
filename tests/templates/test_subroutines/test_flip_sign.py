@@ -19,6 +19,12 @@ from pennylane import numpy as np
 import pennylane as qml
 
 
+def test_standarad_checks():
+    """Run standard checks with the assert_valid function."""
+    op = qml.FlipSign([0, 1], wires=("a", "b"))
+    qml.ops.functions.assert_valid(op)
+
+
 def test_repr():
     """Test the repr for a flip sign operator."""
     op = qml.FlipSign([0, 1], wires=("a", "b"))

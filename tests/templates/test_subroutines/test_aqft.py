@@ -20,6 +20,12 @@ import numpy as np
 import pennylane as qml
 
 
+def test_standard_validity():
+    """Check the operation using the assert_valid function."""
+    op = qml.AQFT(order=2, wires=(0, 1, 2))
+    qml.ops.functions.assert_valid(op)
+
+
 class TestAQFT:
     """Tests for the aqft operations"""
 

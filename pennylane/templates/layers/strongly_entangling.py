@@ -148,10 +148,11 @@ class StronglyEntanglingLayers(Operation):
         if ranges is None:
             if len(wires) > 1:
                 # tile ranges with iterations of range(1, n_wires)
-                ranges = [(l % (len(wires) - 1)) + 1 for l in range(shape[0])]
+                ranges = tuple((l % (len(wires) - 1)) + 1 for l in range(shape[0]))
             else:
-                ranges = [0] * shape[0]
+                ranges = (0,) * shape[0]
         else:
+            ranges = tuple(ranges)
             if len(ranges) != shape[0]:
                 raise ValueError(f"Range sequence must be of length {shape[0]}; got {len(ranges)}")
             for r in ranges:

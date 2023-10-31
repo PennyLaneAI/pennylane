@@ -20,6 +20,13 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 
+def test_standard_validity():
+    """Check the operation using the assert_valid function."""
+    wires = qml.wires.Wires((0, 1, 2))
+    op = qml.BasisEmbedding(features=np.array([1, 1, 1]), wires=wires)
+    qml.ops.functions.assert_valid(op)
+
+
 # pylint: disable=protected-access
 def test_flatten_unflatten():
     """Test the _flatten and _unflatten methods."""

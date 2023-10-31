@@ -47,6 +47,10 @@ def _check_decomposition(op):
         except qml.operation.DecompositionUndefinedError:
             # sometimes decomposition is defined but not compute_decomposition
             compute_decomp = decomp
+        except TypeError as e:
+            if type(op).decomposition == qml.operation.Operator.decomposition:
+                raise e
+            compute_decomp = decomp
         with qml.queuing.AnnotatedQueue() as queued_decomp:
             op.decomposition()
         processed_queue = qml.tape.QuantumTape.from_queue(queued_decomp)
@@ -84,7 +88,9 @@ def _check_matrix_matches_decomp(op):
     if op.has_matrix and op.has_decomposition:
         mat = op.matrix()
         decomp_mat = qml.matrix(op.decomposition, wire_order=op.wires)()
-        assert qml.math.allclose(mat, decomp_mat), "matrix and matrix from decomposition must match"
+        assert qml.math.allclose(
+            mat, decomp_mat
+        ), f"matrix and matrix from decomposition must match. Got \n{mat}\n\n {decomp_mat}"
 
 
 def _check_eigendecomposition(op):
@@ -136,7 +142,7 @@ def _check_pytree(op):
         assert hash(metadata), "metadata must be hashable"
     except Exception as e:
         raise ValueError(
-            "metadata output from _flatten must be hashable. This also applies to hyperparameters"
+            f"metadata output from _flatten must be hashable. Got metadata {metadata}"
         ) from e
     new_op = type(op)._unflatten(data, metadata)
     assert op == new_op, "metadata and data must be able to replicate the original operation"
@@ -147,7 +153,7 @@ def _check_pytree(op):
         return
     leaves, struct = jax.tree_util.tree_flatten(op)
     unflattened_op = jax.tree_util.tree_unflatten(struct, leaves)
-    assert unflattened_op == op, "op must be a valid pytree"
+    assert unflattened_op == op, f"op must be a valid pytree. Got {unflattened_op} instead of {op}."
 
     for d1, d2 in zip(op.data, leaves):
         assert qml.math.allclose(d1, d2), "data must be the terminal leaves of the pytree"

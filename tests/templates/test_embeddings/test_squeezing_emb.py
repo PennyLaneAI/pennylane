@@ -21,6 +21,13 @@ from pennylane import numpy as pnp
 import pennylane as qml
 
 
+def test_standard_validity():
+    """Check the operation using the assert_valid function."""
+    feature_vector = [1, 2, 3]
+    op = qml.SqueezingEmbedding(features=feature_vector, wires=range(3), method="phase", c=0.5)
+    qml.ops.functions.assert_valid(op)
+
+
 def test_flatten_unflatten_methods():
     """Test the _flatten and _unflatten methods."""
     feature_vector = [1, 2, 3]

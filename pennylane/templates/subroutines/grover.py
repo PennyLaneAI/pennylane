@@ -178,4 +178,4 @@ class GroverOperator(Operation):
 
         # Grover diffusion operator
         G = 2 * np.outer(s, s) - np.identity(2**n_wires)
-        return G
+        return -G
