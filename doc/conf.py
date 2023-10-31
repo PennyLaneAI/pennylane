@@ -53,7 +53,7 @@ extensions = [
 ogp_type = "article"
 # Comment below to activate custom
 # social media cards
-# ogp_use_first_image = False
+ogp_use_first_image = False
 # ogp_image = "_static/header-tall.png"
 
 ogp_social_cards = {
