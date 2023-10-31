@@ -1880,12 +1880,7 @@ class Observable(Operator):
     @property
     def return_type(self):
         """None or ObservableReturnTypes: Measurement type that this observable is called with."""
-        warnings.warn(
-            "`Observable.return_type` is deprecated. Instead, you should "
-            "inspect the type of the surrounding measurement process.",
-            UserWarning,
-        )
-        return self._return_type
+        raise Exception("see if this fails")
 
     def __matmul__(self, other):
         if active_new_opmath():
