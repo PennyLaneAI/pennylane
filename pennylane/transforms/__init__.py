@@ -12,51 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This subpackage contains QNode, quantum function, device, and tape transforms.
-
+This subpackage contains PennyLane transforms and their building blocks.
 
 .. currentmodule:: pennylane
 
-Transforms
-----------
+Custom transforms
+-----------------
 
-Transforms that act on QNodes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-These transforms accept QNodes, and return new transformed functions
-that compute the desired quantity.
+:func:`qml.transform <pennylane.transform>` can be used to define custom transformations
+that work with PennyLane QNodes; such transformations can map a circuit
+to one or many new circuits alongside associated classical post-processing.
 
 .. autosummary::
     :toctree: api
 
-    ~transforms.classical_jacobian
-    ~batch_params
-    ~batch_input
-    ~batch_partial
-    ~metric_tensor
-    ~adjoint_metric_tensor
-    ~specs
-    ~transforms.split_non_commuting
+    ~transforms.core.transform
 
-Transforms that act on quantum functions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-These transforms accept quantum functions (Python functions
-containing quantum operations) that are used to construct QNodes.
-
-.. autosummary::
-    :toctree: api
-
-    ~transforms.cond
-    ~defer_measurements
-    ~apply_controlled_Q
-    ~quantum_monte_carlo
-    ~transforms.insert
+Transforms library
+------------------
+A range of ready-to-use transforms are available in PennyLane.
 
 Transforms for circuit compilation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This set of transforms accept quantum functions, and perform basic circuit compilation tasks.
+A set of transforms to perform basic circuit compilation tasks.
 
 .. autosummary::
     :toctree: api
@@ -148,26 +127,68 @@ There are also low-level functions that can be used to build up the circuit cutt
     ~transforms.qcut.place_wire_cuts
     ~transforms.qcut.find_and_place_cuts
 
-Transforms that act on tapes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-These transforms accept quantum tapes, and return one or
-more tapes as well as a classical processing function.
+Transforms for error mitigation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: api
 
+    ~transforms.mitigate_with_zne
+    ~transforms.fold_global
+    ~transforms.poly_extrapolate
+    ~transforms.richardson_extrapolate
+
+Other transforms
+~~~~~~~~~~~~~~~~
+
+These transforms use the :func:`pennylane.transform` function / decorator and can be used on
+:class:`pennylane.tape.QuantumTape`, :class:`pennylane.QNode`. They fulfill multiple purposes like circuit
+preprocessing, get information from a circuit and more.
+
+.. autosummary::
+    :toctree: api
+
+    ~metric_tensor
+    ~adjoint_metric_tensor
+    ~batch_params
+    ~batch_input
+    ~transforms.insert
+    ~defer_measurements
+    ~transforms.split_non_commuting
     ~transforms.broadcast_expand
     ~transforms.hamiltonian_expand
     ~transforms.sign_expand
     ~transforms.sum_expand
+    ~transforms.convert_to_numpy_parameters
+    ~apply_controlled_Q
+    ~quantum_monte_carlo
 
-This transform accepts a single tape and returns a single tape:
+Transforms that act only on QNodes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+These transforms only accept QNodes, and return new transformed functions
+that compute the desired quantity.
 
 .. autosummary::
     :toctree: api
 
-    ~transforms.convert_to_numpy_parameters
+    ~transforms.classical_jacobian
+    ~batch_partial
+    ~specs
+    ~draw
+    ~draw_mpl
+
+
+Transforms that act on quantum functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+These transforms accept quantum functions (Python functions
+containing quantum operations) that are used to construct QNodes.
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.cond
 
 Decorators and utility functions
 --------------------------------
@@ -178,10 +199,6 @@ to help build custom QNode, quantum function, and tape transforms:
 .. autosummary::
     :toctree: api
 
-    ~single_tape_transform
-    ~batch_transform
-    ~qfunc_transform
-    ~op_transform
     ~transforms.make_tape
     ~transforms.map_batch_transform
     ~transforms.create_expand_fn
@@ -192,28 +209,38 @@ to help build custom QNode, quantum function, and tape transforms:
     ~transforms.expand_trainable_multipar
     ~transforms.expand_nonunitary_gen
 
-Transforms for error mitigation
--------------------------------
+Transforms developer functions
+------------------------------
+
+:class:`~.TransformContainer`, :class:`~.TransformDispatcher` and  :class:`~.TransformProgram` are
+developer-facing objects that allow the
+creation, dispatching and composability of transforms. If you would like to make a custom transform, refer
+instead to the documentation of :func:`qml.transform <pennylane.transform>`.
 
 .. autosummary::
     :toctree: api
 
-    ~transforms.mitigate_with_zne
-    ~transforms.fold_global
-    ~transforms.poly_extrapolate
-    ~transforms.richardson_extrapolate
-
-Transforms core
----------------
-
-.. autosummary::
-    :toctree: api
-
-    ~transforms.core.transform
     ~transforms.core.transform_dispatcher
+    ~transforms.core.transform_program
+
+Old transforms framework
+------------------------
+
+These utility functions were previously used to create transforms in PennyLane and will be
+deprecated soon. It is now recommended to use :class:`qml.transform <pennylane.transform>`
+for creation of custom transforms.
+
+.. autosummary::
+    :toctree: api
+
+    ~single_tape_transform
+    ~batch_transform
+    ~qfunc_transform
+    ~op_transform
 
 """
 # Import the decorators first to prevent circular imports when used in other transforms
+from .core import transform, TransformError
 from .batch_transform import batch_transform, map_batch_transform
 from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
 from .op_transforms import op_transform
@@ -272,4 +299,3 @@ from . import qcut
 from .qcut import cut_circuit, cut_circuit_mc
 from .zx import to_zx, from_zx
 from .broadcast_expand import broadcast_expand
-from .core import transform, TransformError

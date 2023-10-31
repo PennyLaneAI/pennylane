@@ -26,9 +26,11 @@ class ApproxTimeEvolution(Operation):
 
     .. note::
 
-        This operation is a special case of :class:`~pennylane.TrotterProduct` and will be deprecated in
-        future releases, please use :class:`~pennylane.TrotterProduct` as the preferred operation for this
-        functionality.
+        We recommend using :class:`~.TrotterProduct` as the more general operation for approximate
+        matrix exponentiation. One can recover the behaviour of :class:`~.ApproxTimeEvolution` by
+        taking the adjoint:
+
+        >>> qml.adjoint(qml.TrotterProduct(hamiltonian, time, order=1, n=n))
 
     The general time-evolution operator for a time-independent Hamiltonian is given by
 
@@ -75,6 +77,8 @@ class ApproxTimeEvolution(Operation):
            :class:`~.PauliZ`, and :class:`~.Identity`).
         time (int or float): The time of evolution, namely the parameter :math:`t` in :math:`e^{- i H t}`.
         n (int): The number of Trotter steps used when approximating the time-evolution operator.
+
+    .. seealso:: :class:`~.TrotterProduct`.
 
     .. details::
         :title: Usage Details
