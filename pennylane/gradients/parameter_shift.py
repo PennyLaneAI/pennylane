@@ -376,14 +376,14 @@ def expval_param_shift(
             gradient_data.append((0, [], None, None, 0))
             continue
 
-        op, *_ = tape.get_operation(idx)
+        op, op_idx, _ = tape.get_operation(idx)
 
         if op.name == "Hamiltonian":
             # operation is a Hamiltonian
-            if op.return_type is not qml.measurements.Expectation:
+            if tape[op_idx].return_type is not qml.measurements.Expectation:
                 raise ValueError(
                     "Can only differentiate Hamiltonian "
-                    f"coefficients for expectations, not {op.return_type.value}"
+                    f"coefficients for expectations, not {tape[op_idx].return_type.value}"
                 )
 
             g_tapes, h_fn = qml.gradients.hamiltonian_grad(tape, idx)
@@ -671,6 +671,15 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
     for i in var_indices:
         obs = expval_tape.measurements[i].obs
         expval_tape._measurements[i] = qml.expval(op=obs)
+        if obs.name == "Hamiltonian":
+            first_obs_idx = len(expval_tape.operations)
+            for par_info in reversed(expval_tape._par_info):
+                if par_info["op_idx"] < first_obs_idx:
+                    break  # already seen all observables
+                if par_info["op"] is obs:
+                    raise ValueError(
+                        "Can only differentiate Hamiltonian coefficients for expectations, not variances"
+                    )
 
     # evaluate the analytic derivative of <A>
     pdA_tapes, pdA_fn = expval_param_shift(

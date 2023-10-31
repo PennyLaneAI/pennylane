@@ -22,6 +22,7 @@ from collections import namedtuple
 import numpy as np
 import rustworkx as rx
 
+from pennylane.measurements import MeasurementProcess
 from pennylane.resource import ResourcesOperation
 
 
@@ -48,7 +49,7 @@ def _is_observable(x):
     Returns:
         bool: True iff x is an observable
     """
-    return getattr(x, "return_type", None) is not None
+    return isinstance(x, MeasurementProcess)
 
 
 Layer = namedtuple("Layer", ["ops", "param_inds"])

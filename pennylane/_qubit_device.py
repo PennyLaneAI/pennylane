@@ -613,14 +613,7 @@ class QubitDevice(Device):
 
         for m in measurements:
             # TODO: Remove this when all overriden measurements support the `MeasurementProcess` class
-            if m.obs is not None:
-                obs = m.obs
-                obs._return_type = m.return_type  # pylint:disable=protected-access
-            elif m.mv is not None:
-                obs = m.mv
-                obs.return_type = m.return_type
-            else:
-                obs = m
+            obs = m.obs or m.mv or m
             # Check if there is an overriden version of the measurement process
             if method := getattr(self, self.measurement_map[type(m)], False):
                 if isinstance(m, MeasurementTransform):
@@ -728,7 +721,7 @@ class QubitDevice(Device):
             elif isinstance(m, (SampleMeasurement, StateMeasurement)):
                 result = self._measure(m, shot_range=shot_range, bin_size=bin_size)
 
-            elif obs.return_type is not None:
+            elif m.return_type is not None:
                 raise qml.QuantumFunctionError(
                     f"Unsupported return type specified for observable {obs.name}"
                 )
