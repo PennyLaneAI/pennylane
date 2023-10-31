@@ -256,6 +256,10 @@ Other useful templates which do not belong to the previous categories can be fou
     :figure: _static/templates/subroutines/qft.svg
 
 .. gallery-item::
+    :description: :doc:`Approximate QFT<../code/api/pennylane.AQFT>`
+    :figure: _static/templates/subroutines/aqft.png
+
+.. gallery-item::
     :description: :doc:`CommutingEvolution <../code/api/pennylane.CommutingEvolution>`
     :figure: _static/templates/subroutines/commuting_evolution.png
 
