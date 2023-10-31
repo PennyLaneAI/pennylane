@@ -19,7 +19,6 @@ executed by a device.
 
 import contextlib
 import copy
-import warnings
 from collections import Counter
 from typing import List, Union, Optional, Sequence
 
@@ -89,9 +88,6 @@ class QuantumScript:
     Args:
         ops (Iterable[Operator]): An iterable of the operations to be performed
         measurements (Iterable[MeasurementProcess]): All the measurements to be performed
-        prep (Iterable[Operator]): Argument to specify state preparations to
-            perform at the start of the circuit. These should go at the beginning of ``ops``
-            instead.
 
     Keyword Args:
         shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
@@ -187,19 +183,10 @@ class QuantumScript:
         self,
         ops=None,
         measurements=None,
-        prep=None,
         shots: Optional[Union[int, Sequence, Shots]] = None,
         _update=True,
-    ):  # pylint: disable=too-many-arguments
+    ):
         self._ops = [] if ops is None else list(ops)
-        if prep is not None:
-            warnings.warn(
-                "The `prep` keyword argument is being removed from `QuantumScript`, and "
-                "`StatePrepBase` operations should be placed at the beginning of the `ops` list "
-                "instead.",
-                UserWarning,
-            )
-            self._ops = list(prep) + self._ops
         self._measurements = [] if measurements is None else list(measurements)
         self._shots = Shots(shots)
 

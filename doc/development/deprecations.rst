@@ -56,12 +56,6 @@ Pending deprecations
         some_qfunc(params)
         return qml.expval(Hamiltonian)
 
-* The ``prep`` keyword argument in ``QuantumScript`` is deprecated and will be removed from ``QuantumScript``.
-  ``StatePrepBase`` operations should be placed at the beginning of the `ops` list instead.
-
-  - Deprecated in v0.33
-  - Will be removed in v0.34
-
 * ``qml.gradients.pulse_generator`` becomes ``qml.gradients.pulse_odegen`` to adhere to paper naming conventions. During v0.33, ``pulse_generator``
   is still available but raises a warning.
 
@@ -113,6 +107,12 @@ Completed deprecation cycles
 
   - Added in v0.32
   - Behaviour changed in v0.33
+
+* The ``prep`` keyword argument in ``QuantumScript`` has been removed.
+  ``StatePrepBase`` operations should be placed at the beginning of the `ops` list instead.
+
+  - Deprecated in v0.33
+  - Removed in v0.34
 
 * ``qml.qchem.jordan_wigner`` had been removed.
   Use ``qml.jordan_wigner`` instead. List input to define the fermionic operator
