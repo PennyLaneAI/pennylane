@@ -307,7 +307,9 @@ def _group_commutator_decompose(mat):
     return w_hat, v_hat
 
 
-def _approximate_umat(seqs, basic_approximations, KDTree=None):
+def _approximate_umat(
+    seqs: GateSet, basic_approximations: list, KDTree: sp.spatial.KDTree = None
+) -> GateSet:
     """Approximates a given GateSet using the TreeSet structure"""
 
     if KDTree is None:
@@ -401,7 +403,7 @@ def sk_decomposition(op, depth, basis_set=(), basis_depth=10, approximate_set=No
         su2_matrix = op_matrix / np.sqrt((1 + 0j) * np.linalg.det(op_matrix))
 
     When the function is run for a sufficient ``depth`` with a good enough ``approximate_set``,
-    the output gate sequence should implement the same operation approximately.
+    the output gate sequence should implement the same operation approximately up to a global phase.
 
     >>> qml.math.allclose(op.matrix(), su2_matrix, atol=1e-3)
     True

@@ -95,8 +95,8 @@ There are also utility functions that take a circuit and return a DAG.
     ~transforms.CommutationDAG
     ~transforms.CommutationDAGNode
 
-Transforms for Clifford+T compilation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Transform for Clifford+T compilation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The following functions assist in decomposing operations to the Clifford+T basis.
 

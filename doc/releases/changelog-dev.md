@@ -28,6 +28,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Utkarsh Azad
+Utkarsh Azad,
 Amintor Dusko,
 David Wierichs,
