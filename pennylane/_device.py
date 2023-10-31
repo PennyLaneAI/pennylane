@@ -421,7 +421,7 @@ class Device(abc.ABC):
 
         Args:
             queue (Iterable[~.operation.Operation]): operations to execute on the device
-            observables (Iterable[~.operation.Observable]): observables to measure and return
+            observables (Iterable[~.measurements.MeasurementProcess]): observables to measure and return
             parameters (dict[int, list[ParameterDependency]]): Mapping from free parameter index to the list of
                 :class:`Operations <pennylane.operation.Operation>` (in the queue) that depend on it.
 
@@ -460,28 +460,29 @@ class Device(abc.ABC):
 
             self.pre_measure()
 
-            for obs in observables:
+            for mp in observables:
+                obs = mp if mp.obs is None else mp.obs
                 if isinstance(obs, Tensor):
                     wires = [ob.wires for ob in obs.obs]
                 else:
                     wires = obs.wires
 
-                if obs.return_type is Expectation:
+                if mp.return_type is Expectation:
                     results.append(self.expval(obs.name, wires, obs.parameters))
 
-                elif obs.return_type is Variance:
+                elif mp.return_type is Variance:
                     results.append(self.var(obs.name, wires, obs.parameters))
 
-                elif obs.return_type is Sample:
+                elif mp.return_type is Sample:
                     results.append(np.array(self.sample(obs.name, wires, obs.parameters)))
 
-                elif obs.return_type is Probability:
+                elif mp.return_type is Probability:
                     results.append(list(self.probability(wires=wires).values()))
 
-                elif obs.return_type is State:
+                elif mp.return_type is State:
                     raise qml.QuantumFunctionError("Returning the state is not supported")
 
-                elif obs.return_type is not None:
+                elif mp.return_type is not None:
                     raise qml.QuantumFunctionError(
                         f"Unsupported return type specified for observable {obs.name}"
                     )
@@ -501,9 +502,9 @@ class Device(abc.ABC):
 
             # Ensures that a combination with sample does not put
             # expvals and vars in superfluous arrays
-            if all(obs.return_type is Sample for obs in observables):
+            if all(mp.return_type is Sample for mp in observables):
                 return self._asarray(results)
-            if any(obs.return_type is Sample for obs in observables):
+            if any(mp.return_type is Sample for mp in observables):
                 return self._asarray(results, dtype="object")
 
             return self._asarray(results)
@@ -529,7 +530,7 @@ class Device(abc.ABC):
             # not start the next computation in the zero state
             self.reset()
 
-            res = self.execute(circuit.operations, circuit.observables)
+            res = self.execute(circuit.operations, circuit.measurements)
             results.append(res)
 
         if self.tracker.active:
