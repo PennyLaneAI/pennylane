@@ -28,7 +28,7 @@ def batch_input(
     argnum: Union[Sequence[int], int],
 ) -> (Sequence[QuantumTape], Callable):
     """
-    Transform a QNode to support an initial batch dimension for gate inputs.
+    Transform a circuit to support an initial batch dimension for gate inputs.
 
     In a classical ML application one needs to batch the non-trainable inputs of the network.
     This function executes the same analogue for a quantum circuit:
@@ -42,13 +42,15 @@ def batch_input(
     Based on `arXiv:2202.10471 <https://arxiv.org/abs/2202.10471>`__.
 
     Args:
-        tape (.QuantumTape or .QNode): Input quantum circuit to batch
+        tape (QNode or QuantumTape or Callable): Input quantum circuit to batch
         argnum (Sequence[int] or int): One or several index values indicating the position of the
             non-trainable batched parameters in the quantum tape.
 
     Returns:
-        Sequence[Sequence[.QuantumTape], Callable]: list of tapes arranged
-        according to unbatched inputs and a callable function to batch the results.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the batched results.
 
     .. seealso:: :func:`~.batch_params`
 
