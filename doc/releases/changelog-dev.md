@@ -33,6 +33,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `MottonenStatePreparation` now raises an error if decomposing a broadcasted state vector.
+  [(#)]()
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -40,6 +43,7 @@ This release contains contributions from (in alphabetical order):
 Amintor Dusko,
 Ankit Khandelwal,
 Anurav Modak,
+Mudit Pandey,
 Matthew Silverman,
 David Wierichs,
 Justin Woodring,

@@ -315,6 +315,10 @@ class MottonenStatePreparation(Operation):
                         f"State vectors have to be of norm 1.0, vector {i} has norm {norm}"
                     )
 
+        self._hyperparameters["batch_size"] = (
+            None if not batched else qml.math.shape(state_vector)[0]
+        )
+
         super().__init__(state_vector, wires=wires, id=id)
 
     @property
@@ -322,7 +326,7 @@ class MottonenStatePreparation(Operation):
         return 1
 
     @staticmethod
-    def compute_decomposition(state_vector, wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(state_vector, wires, batch_size):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -347,6 +351,12 @@ class MottonenStatePreparation(Operation):
         CNOT(wires=['a', 'b']),
         CNOT(wires=['a', 'b'])]
         """
+        if batch_size is not None:
+            raise ValueError(
+                "Broadcasting with MottonenStatePreparation is not supported. Please use the "
+                "qml.transforms.broadcast_expand transform to use broadcasting with "
+                "MottonenStatePreparation."
+            )
 
         a = qml.math.abs(state_vector)
         omega = qml.math.angle(state_vector)
