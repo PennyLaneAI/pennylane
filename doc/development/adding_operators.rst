@@ -220,26 +220,27 @@ FlipAndRotate(0.1, wires=['q3', 'q1'])
 >>> op.adjoint()
 FlipAndRotate(-0.1, wires=['q3', 'q1'])
 
-Once the class has been created, you can run a suite of validation checkis using :function:`pennylane.ops.functions.assert_valid`.
+Once the class has been created, you can run a suite of validation checkis using :func:`pennylane.ops.functions.assert_valid`.
 This function will warn you of some common errors in custom operators. For example, 
 
 >>> qml.ops.functions.assert_valid(op)
 
 For example, if the above operator ommitted the ``_unflatten`` custom definition, it would raise:
 
-```
-File /pennylane/operation.py:1599, in Operator._unflatten(cls, data, metadata)
-   1575 """Recreate an operation from its serialized format.
-   1576 
-   1577 Args:
-   (...)
-   1596 
-   1597 """
-   1598 hyperparameters_dict = dict(metadata[1])
--> 1599 return cls(*data, wires=metadata[0], **hyperparameters_dict)
+.. code-block:: raw
 
-TypeError: FlipAndRotate.__init__() got an unexpected keyword argument 'wires'
-```
+    File /pennylane/operation.py:1599, in Operator._unflatten(cls, data, metadata)
+      1575 """Recreate an operation from its serialized format.
+      1576 
+      1577 Args:
+      (...)
+      1596 
+      1597 """
+      1598 hyperparameters_dict = dict(metadata[1])
+    -> 1599 return cls(*data, wires=metadata[0], **hyperparameters_dict)
+
+    TypeError: FlipAndRotate.__init__() got an unexpected keyword argument 'wires'
+
 
 The new gate can be used with PennyLane devices. Device support for an operation can be checked via
 ``dev.stopping_condition(op)``.  If ``True``, then the device supports the operation.

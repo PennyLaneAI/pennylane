@@ -20,6 +20,8 @@ from string import ascii_lowercase
 import copy
 import pickle
 
+import numpy as np
+
 import pennylane as qml
 from pennylane.operation import EigvalsUndefinedError
 
@@ -117,12 +119,13 @@ def _check_eigendecomposition(op):
 
     if has_eigvals and op.has_diagonalizing_gates:
         dg = qml.prod(*dg) if len(dg) > 0 else qml.Identity(op.wires)
-        eg = qml.DiagonalQubitUnitary(eg, wires=op.wires)
-        decomp = dg @ qml.DiagonalQubitUnitary(eg, wires=op.wires) @ qml.adjoint(dg)
+        eg = qml.Hermitian(np.diag(eg), wires=op.wires)
+        decomp = qml.prod(qml.adjoint(dg), eg, dg)
         decomp_mat = qml.matrix(decomp)
+        original_mat = qml.matrix(op)
         assert qml.math.allclose(
-            decomp_mat, qml.matrix(op)
-        ), "eigenvalues and diagonalizing gates must be able to reproduce the original operator"
+            decomp_mat, original_mat
+        ), f"eigenvalues and diagonalizing gates must be able to reproduce the original operator. Got \n{decomp_mat}\n\n{original_mat}"
 
 
 def _check_copy(op):
@@ -156,7 +159,9 @@ def _check_pytree(op):
     assert unflattened_op == op, f"op must be a valid pytree. Got {unflattened_op} instead of {op}."
 
     for d1, d2 in zip(op.data, leaves):
-        assert qml.math.allclose(d1, d2), "data must be the terminal leaves of the pytree"
+        assert qml.math.allclose(
+            d1, d2
+        ), f"data must be the terminal leaves of the pytree. Got {d1}, {d2}"
 
 
 def _check_pickle(op):
@@ -169,7 +174,7 @@ def _check_pickle(op):
 # pylint: disable=no-member
 def _check_bind_new_parameters(op):
     """Check that bind new parameters can create a new op with different data."""
-    new_data = [d + 1.0 for d in op.data]
+    new_data = [d * 0.0 for d in op.data]
     new_data_op = qml.ops.functions.bind_new_parameters(op, new_data)
     for d1, d2 in zip(new_data_op.data, new_data):
         assert qml.math.allclose(d1, d2), "new data must match the data set with."

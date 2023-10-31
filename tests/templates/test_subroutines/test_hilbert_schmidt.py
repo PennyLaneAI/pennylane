@@ -19,22 +19,25 @@ import pytest
 import pennylane as qml
 
 
+def global_v_circuit(params):
+    qml.RZ(params, wires=1)
+
+
 # pylint: disable=protected-access
 @pytest.mark.parametrize("op_type", (qml.HilbertSchmidt, qml.LocalHilbertSchmidt))
-def test_flatten_unflatten(op_type):
+def test_flatten_unflatten_standard_checks(op_type):
     """Test the flatten and unflatten methods."""
     u_tape = qml.tape.QuantumScript([qml.Hadamard("a"), qml.Identity("b")])
 
-    def v_circuit(params):
-        qml.RZ(params, wires=1)
-
     v_wires = qml.wires.Wires((0, 1))
-    op = op_type([0.1], v_function=v_circuit, v_wires=v_wires, u_tape=u_tape)
+    op = op_type([0.1], v_function=global_v_circuit, v_wires=v_wires, u_tape=u_tape)
+    qml.ops.functions.assert_valid(op)
+
     data, metadata = op._flatten()
 
     assert data == (0.1,)
     assert metadata == (
-        ("v_function", v_circuit),
+        ("v_function", global_v_circuit),
         ("v_wires", v_wires),
         ("u_tape", u_tape),
     )

@@ -74,6 +74,7 @@ class FlipSign(Operation):
         return f"FlipSign({self.hyperparameters['arr_bin']}, wires={self.wires.tolist()})"
 
     def __init__(self, n, wires, id=None):
+
         if not isinstance(wires, int) and len(wires) == 0:
             raise ValueError("expected at least one wire representing the qubit ")
 
@@ -88,6 +89,7 @@ class FlipSign(Operation):
                 raise ValueError(
                     "expected an integer equal or greater than zero for basic flipping state"
                 )
+        n = tuple(n)
 
         if len(wires) != len(n):
             raise ValueError(

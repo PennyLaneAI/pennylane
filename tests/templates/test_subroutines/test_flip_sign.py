@@ -28,7 +28,7 @@ def test_standarad_checks():
 def test_repr():
     """Test the repr for a flip sign operator."""
     op = qml.FlipSign([0, 1], wires=("a", "b"))
-    expected = "FlipSign([0, 1], wires=['a', 'b'])"
+    expected = "FlipSign((0, 1), wires=['a', 'b'])"
     assert repr(op) == expected
 
 

@@ -25,6 +25,15 @@ from pennylane.templates.subroutines.arbitrary_unitary import (
     _n_k_gray_code,
 )
 
+
+def test_standard_validity():
+    """Run standard tests of operation validity."""
+    shape = (3,)
+    weights = np.arange(np.prod(shape), dtype=float).reshape(shape)
+    op = qml.ArbitraryUnitary(weights, wires=[0])
+    qml.ops.functions.assert_valid(op)
+
+
 # fmt: off
 PAULI_WORD_TEST_DATA = [
     (1, ["X", "Y", "Z"]),

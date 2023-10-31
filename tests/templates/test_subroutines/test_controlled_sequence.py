@@ -23,6 +23,12 @@ from pennylane.wires import Wires
 # pylint: disable=unidiomatic-typecheck, cell-var-from-loop
 
 
+def test_standard_validity():
+    """Check the operation using the assert_valid function."""
+    op = qml.ControlledSequence(qml.RX(0.25, wires=3), control=[0, 1, 2])
+    qml.ops.functions.assert_valid(op)
+
+
 class TestInitialization:
     def test_id(self):
         """Tests that the id attribute can be set."""

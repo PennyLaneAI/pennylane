@@ -244,7 +244,7 @@ def test_matrix(tol):
     res_dynamic = qml.GroverOperator(wires=[0, 1]).matrix()
     res_reordered = qml.GroverOperator(wires=[0, 1]).matrix([1, 0])
 
-    expected = np.array(
+    expected = -np.array(
         [[-0.5, 0.5, 0.5, 0.5], [0.5, -0.5, 0.5, 0.5], [0.5, 0.5, -0.5, 0.5], [0.5, 0.5, 0.5, -0.5]]
     )
 

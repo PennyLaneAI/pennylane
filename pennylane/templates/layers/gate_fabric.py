@@ -200,7 +200,7 @@ class GateFabric(Operation):
             )
 
         self._hyperparameters = {
-            "init_state": qml.math.toarray(init_state),
+            "init_state": tuple(init_state),
             "include_pi": include_pi,
         }
 

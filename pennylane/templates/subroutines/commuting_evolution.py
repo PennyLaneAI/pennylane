@@ -108,12 +108,12 @@ class CommutingEvolution(Operation):
 
     def _flatten(self):
         h = self.hyperparameters["hamiltonian"]
-        data = (h, self.data[0])
+        data = (self.data[0], h)
         return data, (self.hyperparameters["frequencies"], self.hyperparameters["shifts"])
 
     @classmethod
     def _unflatten(cls, data, metadata) -> "CommutingEvolution":
-        return cls(data[0], data[1], frequencies=metadata[0], shifts=metadata[1])
+        return cls(data[1], data[0], frequencies=metadata[0], shifts=metadata[1])
 
     def __init__(self, hamiltonian, time, frequencies=None, shifts=None, id=None):
         # pylint: disable=import-outside-toplevel

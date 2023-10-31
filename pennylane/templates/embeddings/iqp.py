@@ -181,8 +181,7 @@ class IQPEmbedding(Operation):
 
         if pattern is None:
             # default is an all-to-all pattern
-            pattern = combinations(wires, 2)
-
+            pattern = tuple(combinations(wires, 2))
         self._hyperparameters = {"pattern": pattern, "n_repeats": n_repeats}
 
         super().__init__(features, wires=wires, id=id)

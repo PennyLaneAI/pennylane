@@ -169,7 +169,7 @@ class ParticleConservingU2(Operation):
                 f"Weights tensor must have a second dimension of length {2 * len(wires) - 1}; got {shape[1]}"
             )
 
-        self._hyperparameters = {"init_state": qml.math.toarray(init_state)}
+        self._hyperparameters = {"init_state": tuple(init_state)}
 
         super().__init__(weights, wires=wires, id=id)
 

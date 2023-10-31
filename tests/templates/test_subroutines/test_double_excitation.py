@@ -20,6 +20,15 @@ from pennylane import numpy as pnp
 import pennylane as qml
 
 
+def test_standard_validity():
+    """Run standard tests of operation validity."""
+    weight = 0.5
+    wires1 = qml.wires.Wires((0, 1))
+    wires2 = qml.wires.Wires((2, 3, 4))
+    op = qml.FermionicDoubleExcitation(weight, wires1=wires1, wires2=wires2)
+    qml.ops.functions.assert_valid(op)
+
+
 # pylint: disable=protected-access
 def test_flatten_unflatten():
     """Test the _flatten and _unflatten methods."""

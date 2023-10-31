@@ -214,7 +214,7 @@ class TestHermitian:
         """Tests that an error is raised if the input to Hermitian is ragged."""
         ham = [[1, 0], [0, 1, 2]]
 
-        with pytest.raises(ValueError, match="The requested array has an inhomogeneous shape"):
+        with pytest.raises(ValueError, match="Observable must be a square matrix"):
             qml.Hermitian(ham, wires=0)
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
@@ -470,6 +470,8 @@ class TestProjector:
         second_projector = qml.Projector(basis_state, wires)
         assert qml.equal(second_projector, basis_state_projector)
 
+        qml.ops.functions.assert_valid(basis_state_projector)
+
     def test_statevector_projector(self):
         """Test that we obtain a _StateVectorProjector when input is a state vector."""
         state_vector = np.array([1, 1, 1, 1]) / 2
@@ -479,6 +481,8 @@ class TestProjector:
 
         second_projector = qml.Projector(state_vector, wires)
         assert qml.equal(second_projector, state_vector_projector)
+
+        qml.ops.functions.assert_valid(state_vector_projector)
 
     def test_pow_zero(self):
         """Assert that the projector raised to zero is an empty list."""
