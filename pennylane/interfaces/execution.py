@@ -424,7 +424,7 @@ def execute(
         interface (str): The interface that will be used for classical autodifferentiation.
             This affects the types of parameters that can exist on the input tapes.
             Available options include ``autograd``, ``torch``, ``tf``, ``jax`` and ``auto``.
-        transform_program(qml.transforms.core.TransformProgram): A transform program to be applied to the initial tape.
+        transform_program(.TransformProgram): A transform program to be applied to the initial tape.
         config (qml.devices.ExecutionConfig): A datastructure describing the parameters needed to fully describe the execution.
         grad_on_execution (bool, str): Whether the gradients should be computed on the execution or not. Only applies
             if the device is queried for the gradient; gradient transform

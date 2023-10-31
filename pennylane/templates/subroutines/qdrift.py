@@ -263,9 +263,9 @@ class QDrift(Operation):
         terms to be added to the product. For more details see `Phys. Rev. Lett. 123, 070503 (2019) <https://arxiv.org/abs/1811.08017>`_.
 
         Args:
-        hamiltonian (Union[.Hamiltonian, .Sum]): The Hamiltonian written as a sum of operations
-        time (float): The time of evolution, namely the parameter :math:`t` in :math:`e^{-iHt}`
-        n (int): An integer representing the number of exponentiated terms. default is 1
+            hamiltonian (Union[.Hamiltonian, .Sum]): The Hamiltonian written as a sum of operations
+            time (float): The time of evolution, namely the parameter :math:`t` in :math:`e^{-iHt}`
+            n (int): An integer representing the number of exponentiated terms. default is 1
 
         Raises:
             TypeError: The given operator must be a PennyLane .Hamiltonian or .Sum

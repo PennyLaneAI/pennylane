@@ -19,7 +19,7 @@ from typing import Sequence, Callable
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 
 
 def controlled_pauli_evolution(theta, wires, pauli_word, controls):
@@ -208,7 +208,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
     For the calculation of variances, one assumes an even distribution of shots among the groups.
 
     Args:
-        tape (.QuantumTape): the tape used when calculating the expectation value of the Hamiltonian
+        tape (QNode or QuantumTape): the quantum circuit used when calculating the expectation value of the Hamiltonian
         circuit (bool): Toggle the calculation of the analytical Xi decomposition or if True
           constructs the circuits of the approximate sign decomposition to measure the expectation
           value
@@ -219,9 +219,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
           Hadamard test and the quantum signal processing part on, have to be wires on the device
 
     Returns:
-        tuple[list[.QuantumTape], function]: Returns a tuple containing a list of quantum tapes
-          to be evaluated, and a function to be applied to these tape executions to compute the
-          expectation value.
+        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
 

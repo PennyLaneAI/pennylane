@@ -396,7 +396,7 @@ def _contract_qjac_with_cjac(qhess, cjac, tape):
 def param_shift_hessian(
     tape: qml.tape.QuantumTape, argnum=None, diagonal_shifts=None, off_diagonal_shifts=None, f0=None
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
-    r"""Transform a QNode to compute the parameter-shift Hessian with respect to its trainable
+    r"""Transform a circuit to compute the parameter-shift Hessian with respect to its trainable
     parameters. This is the Hessian transform to replace the old one in the new return types system
 
     Use this transform to explicitly generate and explore parameter-shift circuits for computing
@@ -408,7 +408,7 @@ def param_shift_hessian(
     >>> qml.jacobian(qml.grad(cost))(weights)
 
     Args:
-        tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
+        tape (QNode or QuantumTape): quantum circuit to differentiate
         argnum (int or list[int] or array_like[bool] or None): Parameter indices to differentiate
             with respect to. If not provided, the Hessian with respect to all
             trainable indices is returned. Note that the indices refer to tape
@@ -432,18 +432,13 @@ def param_shift_hessian(
             instead of evaluating the input tape, reducing the number of device invocations.
 
     Returns:
-        function or tuple[list[QuantumTape], function]:
+        qnode (QNode) or tuple[List[QuantumTape], function]:
 
-        - If the input is a QNode, an object representing the Hessian (function) of
-          the QNode that can be executed to obtain the Hessian matrix.
-          The returned Hessian matrix is given as a tensor or nested tuples of tensors.
-          The level of nesting depends on the number of trainable QNode arguments, the output
-          shape(s) of the input QNode itself, and the usage of shot vectors in the QNode execution.
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the Hessian in the form of a tensor, a tuple, or a nested tuple depending upon the number
+        of trainable QNode arguments, the output shape(s) of the input QNode itself, and the usage of shot vectors
+        in the QNode execution.
 
-        - If the input is a tape, a tuple containing a
-          list of generated tapes, together with a post-processing
-          function to be applied to the results of the evaluated tapes
-          in order to obtain the Hessian matrix.
 
         Note: By default a QNode with the keyword ``hybrid=True`` computes derivates with respect to
         QNode arguments, which can include classical computations on those arguments before they are
@@ -453,7 +448,9 @@ def param_shift_hessian(
 
     **Example**
 
-    Applying the Hessian transform to a QNode computes its Hessian tensor:
+    Applying the Hessian transform to a QNode computes its Hessian tensor.
+    This works best if no classical processing is applied within the
+    QNode to operation parameters.
 
     >>> dev = qml.device("default.qubit", wires=2)
     >>> @qml.qnode(dev)

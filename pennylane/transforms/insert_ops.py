@@ -20,7 +20,7 @@ from typing import Type, Union, Callable, Sequence
 import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.tape import QuantumTape
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 from pennylane.ops.op_math import Adjoint
 
 # pylint: disable=too-many-branches
@@ -69,7 +69,7 @@ def insert(
     for more information).
 
     Args:
-        circuit (QuantumTape): the input circuit to be transformed.
+        tape (QNode or QuantumTape or Callable or pennylane.devices.Device): the input circuit to be transformed.
         op (callable or Type[Operation]): the single-qubit operation, or sequence of operations
             acting on a single qubit, to be inserted into the circuit
         op_args (tuple or float): the arguments fed to the operation, either as a tuple or a single
@@ -83,8 +83,10 @@ def insert(
             Default is ``False`` and the operation is inserted after.
 
     Returns:
-        callable or QuantumTape or pennylane.Device: the updated version of the input circuit or an updated
-        device which will transform circuits before execution
+        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function] or device (pennylane.devices.Device):
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+
 
     Raises:
         QuantumFunctionError: if some observables in the tape are not qubit-wise commuting
@@ -100,8 +102,8 @@ def insert(
 
         dev = qml.device("default.mixed", wires=2)
 
+        @partial(qml.transforms.insert, qml.AmplitudeDamping, 0.2, position="end")
         @qml.qnode(dev)
-        @qml.transforms.insert(qml.AmplitudeDamping, 0.2, position="end")
         def f(w, x, y, z):
             qml.RX(w, wires=0)
             qml.RY(x, wires=1)
@@ -173,7 +175,7 @@ def insert(
         We can add the :class:`~.AmplitudeDamping` channel to the end of the circuit using:
 
         >>> from pennylane.transforms import insert
-        >>> noisy_tape = insert(qml.AmplitudeDamping, 0.05, position="end")(tape)
+        >>> noisy_tape = insert(tape, qml.AmplitudeDamping, 0.05, position="end")
         >>> print(qml.drawer.tape_text(noisy_tape, decimals=2))
         0: ──RX(0.90)─╭●──RY(0.50)──AmplitudeDamping(0.05)─┤ ╭<Z@Z>
         1: ──RY(0.40)─╰X──RX(0.60)──AmplitudeDamping(0.05)─┤ ╰<Z@Z>
@@ -203,7 +205,7 @@ def insert(
 
         However, noise can be easily added to the device:
 
-        >>> dev_noisy = qml.transforms.insert(qml.AmplitudeDamping, 0.2)(dev)
+        >>> dev_noisy = qml.transforms.insert(dev, qml.AmplitudeDamping, 0.2)
         >>> qnode_noisy = qml.QNode(f, dev_noisy)
         >>> qnode_noisy(0.9, 0.4, 0.5, 0.6)
         tensor(0.72945434, requires_grad=True)
