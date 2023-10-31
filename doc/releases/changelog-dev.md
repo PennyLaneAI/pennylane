@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Approximate Quantum Fourier Transform (AQFT) is now available from `qml.AQFT`.
+  [(#4656)](https://github.com/PennyLaneAI/pennylane/pull/4656)
+
 <h3>Improvements 🛠</h3>
 
 * Updates to some relevant Pytests to enable its use as a suite of benchmarks.
@@ -31,6 +34,7 @@
 This release contains contributions from (in alphabetical order):
 
 Amintor Dusko,
+Ankit Khandelwal,
 Anurav Modak,
 David Wierichs,
-Justin Woodring
+Justin Woodring,
