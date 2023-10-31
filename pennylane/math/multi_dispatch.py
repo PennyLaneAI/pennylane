@@ -19,6 +19,7 @@ from collections.abc import Sequence
 import autoray as ar
 import numpy as onp
 from autograd.numpy.numpy_boxes import ArrayBox
+import autograd.numpy
 from autoray import numpy as np
 from numpy import ndarray
 
@@ -846,10 +847,29 @@ def norm(tensor, like=None, **kwargs):
             axis_val = kwargs.pop("axis")
             kwargs["dim"] = axis_val
 
+    elif like == "autograd":
+        return _autograd_norm(tensor, **kwargs)
+
     else:
         from scipy.linalg import norm
 
     return norm(tensor, **kwargs)
+
+
+def _autograd_norm(tensor, **kwargs):
+    """Autograd differentiable norm"""
+    if kwargs.get("axis", None) is not None:
+        raise ValueError("no axis allowed")
+    ord = kwargs.get("ord", None)
+    if ord is not None and ord != "fro" and ord != 2:
+        raise ValueError("Only L2 norm supported")
+    if kwargs.get("keep_dims", False):
+        raise ValueError("no keep_dims allowed")
+
+    norm = 0
+    for val in tensor.flatten():
+        norm += val * autograd.numpy.conj(val)
+    return autograd.numpy.sqrt(norm)
 
 
 @multi_dispatch(argnum=[1])
