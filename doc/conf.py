@@ -54,12 +54,12 @@ ogp_type = "article"
 # Comment below to activate custom
 # social media cards
 # ogp_use_first_image = False
-# ogp_image = "_static/catalyst_illustration.jpg"
+# ogp_image = "_static/header-tall.png"
 
 ogp_social_cards = {
-    "image": "_static/catalyst_illustration.jpg",
+    "image": "_static/logo.png",
     "enable": True,
-    "site_url": "https://docs.pennylane.ai/projects/catalyst",
+    "site_url": "https://docs.pennylane.ai/",
     "line_color": "#03b2ff",
 }
 # The base URL with a proper language and version.
