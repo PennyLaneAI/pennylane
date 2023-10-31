@@ -504,7 +504,7 @@ class TestGraph:
         # requesting the graph creates it
         g = tape.graph
         assert g.operations == [op_]
-        assert g.observables == [obs]
+        assert g.observables == tape.measurements
         assert tape._graph is not None
         spy.assert_called_once()
 

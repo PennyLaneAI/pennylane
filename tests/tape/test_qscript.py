@@ -406,7 +406,7 @@ class TestInfomationProperties:
         g = qs.graph
         assert isinstance(g, qml.CircuitGraph)
         assert g.operations == qs.operations
-        assert g.observables == qs.observables
+        assert g.observables == qs.measurements
 
         # test that if we request it again, we get the same object
         assert qs.graph is g

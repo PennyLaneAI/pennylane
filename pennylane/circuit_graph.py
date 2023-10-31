@@ -206,8 +206,9 @@ class CircuitGraph:
         # name of the operation and wires
         serialization_string += "|||"
 
-        for obs in self.observables_in_order:
-            serialization_string += str(obs.return_type)
+        for mp in self.observables_in_order:
+            obs = mp.obs or mp
+            serialization_string += str(mp.return_type)
             serialization_string += delimiter
             serialization_string += str(obs.name)
             for param in obs.data:

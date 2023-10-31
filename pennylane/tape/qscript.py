@@ -976,7 +976,11 @@ class QuantumScript:
         """
         if self._graph is None:
             self._graph = qml.CircuitGraph(
-                self.operations, self.observables, self.wires, self._par_info, self.trainable_params
+                self.operations,
+                self.measurements,
+                self.wires,
+                self._par_info,
+                self.trainable_params,
             )
 
         return self._graph
