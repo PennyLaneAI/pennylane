@@ -248,7 +248,7 @@ class TreeSet:
         if any(seqs1.labels == seq.labels for seq in seqs2):
             return False
 
-        # using SO(3) instead of SU(2) since KDTrees doesn't support complex datatype
+        # using SO(3) instead of SU(2) since k-d trees doesn't support complex datatype
         node_points = qml.math.array([qml.math.flatten(seq.so3_matrix) for seq in seqs2])
         seq1_points = qml.math.array([qml.math.flatten(seqs1.so3_matrix)])
 
@@ -318,7 +318,7 @@ def _approximate_umat(seqs, basic_approximations, KDTree=None):
 
         return min(basic_approximations, key=key)
 
-    # Make use of the KD-Tree - should be at least O(log n),
+    # Make use of the k-d tree - should be at least O(log n),
     # where `n` is number of GateSet in the `basic_approximations``
     seq_node = qml.math.array([qml.math.flatten(seqs.so3_matrix)])
     _, index = KDTree.query(seq_node, workers=-1)
@@ -339,7 +339,7 @@ def sk_approximate_set(basis_set=(), basis_depth=10, kd_tree=False):
     Returns:
         list or tuple(list, scipy.spatial.KDTree): A list of Clifford+T sequences that will be used for approximating
         a matrix in the base case of recursive implementation of Solovay-Kitaev algorithm. If the ``kd_tree`` argument
-        is ``True``, it also returns a KD-Tree built based on this list
+        is ``True``, it also returns a k-d tree built based on this list
 
     .. seealso:: :func:`~.sk_decomposition` for performing Solovay-Kitaev decomposition.
     """
@@ -352,7 +352,7 @@ def sk_approximate_set(basis_set=(), basis_depth=10, kd_tree=False):
     if not kd_tree:
         return approximate_set
 
-    # Build the KD-Tree for the approximate set (if requested)
+    # Build the k-d tree for the approximate set (if requested)
     gnodes = qml.math.array([qml.math.flatten(seq.so3_matrix) for seq in approximate_set])
     return (approximate_set, sp.spatial.KDTree(gnodes))
 
@@ -362,9 +362,9 @@ def sk_decomposition(op, depth, basis_set=(), basis_depth=10, approximate_set=No
     r"""Approximate an arbitrary single-qubit gate in the Clifford+T basis using the `Solovay-Kitaev algorithm <https://arxiv.org/abs/quant-ph/0505030>`_.
 
     This method implements a recursive Solovay-Kitaev decomposition that approximates any :math:`U \in \text{SU}(2)`
-    operation with :math:`\epsilon > 0` error. The error depends on the recursion ``depth``. In general, this
-    algorithm runs in :math:`O(\text{log}^{2.71}(1/\epsilon))` time and produces a decomposition with
-    :math:`O(\text{log}^{3.97}(1/\epsilon))` operations.
+    operation with :math:`\epsilon > 0` error up to a global phase. The error depends on the recursion ``depth``.
+    In general, this algorithm runs in :math:`O(\text{log}^{2.71}(1/\epsilon))` time and produces a decomposition
+    with :math:`O(\text{log}^{3.97}(1/\epsilon))` operations.
 
     Args:
         op (~pennylane.operation.Operation): A single-qubit gate operation
