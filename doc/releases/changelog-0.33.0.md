@@ -150,10 +150,10 @@
   <img src="https://docs.pennylane.ai/en/stable/_images/cosine_window.png" width=50%/>
 
 * Controlled gate sequences raised to decreasing powers, a sub-block in quantum phase estimation, can now be created with the new 
-  `CtrlSequence` operator.
+  `ControlledSequence` operator.
   [(#4707)](https://github.com/PennyLaneAI/pennylane/pull/4707/)
 
-  To use `CtrlSequence`, specify the controlled unitary operator and the control wires, `control`:
+  To use `ControlledSequence`, specify the controlled unitary operator and the control wires, `control`:
 
   ```python
   dev = qml.device("default.qubit", wires = 4)
@@ -478,11 +478,6 @@
   measurements, and to display `qml.counts` coming from these hardware devices correctly.
   [(#4739)](https://github.com/PennyLaneAI/pennylane/pull/4739)
 
-* Shallow copies of the `QNode` now also copy the `execute_kwargs` and transform program. When applying
-  a transform to a `QNode`, the new qnode is only a shallow copy of the original and thus keeps the same
-  device.
-  [(#4736)](https://github.com/PennyLaneAI/pennylane/pull/4736)
-
 <h3>Breaking changes 💔</h3>
 
 * `qml.defer_measurements` now raises an error if a transformed circuit measures `qml.probs`,
@@ -647,7 +642,6 @@
   [(#4742)](https://github.com/PennyLaneAI/pennylane/pull/4742)
 
 * Fixed `LocalHilbertSchmidt.compute_decomposition` so that the template can be used in a QNode.
-
   [(#4719)](https://github.com/PennyLaneAI/pennylane/pull/4719)
 
 * Fixes `transforms.transpile` with arbitrary measurement processes.
