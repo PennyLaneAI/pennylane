@@ -364,9 +364,9 @@ def sk_decomposition(op, depth, basis_set=(), basis_depth=10, approximate_set=No
     r"""Approximate an arbitrary single-qubit gate in the Clifford+T basis using the `Solovay-Kitaev algorithm <https://arxiv.org/abs/quant-ph/0505030>`_.
 
     This method implements a recursive Solovay-Kitaev decomposition that approximates any :math:`U \in \text{SU}(2)`
-    operation with :math:`\epsilon > 0` error up to a global phase. The error depends on the recursion ``depth``.
-    In general, this algorithm runs in :math:`O(\text{log}^{2.71}(1/\epsilon))` time and produces a decomposition
-    with :math:`O(\text{log}^{3.97}(1/\epsilon))` operations.
+    operation with :math:`\epsilon > 0` error up to a global phase. Increasing the recursion ``depth`` should
+    reduce this error. In general, this algorithm runs in :math:`O(\text{log}^{2.71}(1/\epsilon))` time and produces
+    a decomposition with :math:`O(\text{log}^{3.97}(1/\epsilon))` operations.
 
     Args:
         op (~pennylane.operation.Operation): A single-qubit gate operation
@@ -386,7 +386,7 @@ def sk_decomposition(op, depth, basis_set=(), basis_depth=10, approximate_set=No
 
     **Example**
 
-    Suppose one would like to decompose :class:`~.RZ` with :math:`\phi = \pi/3`:
+    Suppose one would like to decompose :class:`~.RZ` with rotation angle :math:`\phi = \pi/3`:
 
     .. code-block:: python3
 
