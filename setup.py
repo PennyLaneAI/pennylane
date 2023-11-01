@@ -33,6 +33,7 @@ requirements = [
     "pennylane-lightning>=0.33",
     "requests",
     "typing_extensions",
+    "setuptools",
 ]
 
 info = {
