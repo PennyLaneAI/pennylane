@@ -26,14 +26,14 @@ import pennylane as qml
 from pennylane.operation import EigvalsUndefinedError
 
 
-def _assert_error_raised(func, error):
+def _assert_error_raised(func, error, failure_comment):
     def inner_func(*args, **kwargs):
         error_raised = False
         try:
             func(*args, **kwargs)
         except error:
             error_raised = True
-        assert error_raised, f"expected error of type {error} to be raised."
+        assert error_raised, failure_comment
 
     return inner_func
 
@@ -60,29 +60,47 @@ def _check_decomposition(op):
 
         assert isinstance(decomp, list), "decomposition must be a list"
         assert isinstance(compute_decomp, list), "decomposition must be a list"
-        assert isinstance(expand, qml.tape.QuantumScript), "expansion must be a QuantumScript"
+        assert isinstance(expand, qml.tape.QuantumScript), "expand must return a QuantumScript"
 
         for o1, o2, o3, o4 in zip(decomp, compute_decomp, processed_queue, expand):
             assert o1 == o2, "decomposition must match compute_decomposition"
-            assert o1 == o3, "decomposition must matched queued operations"
+            assert o1 == o3, "decomposition must match queued operations"
             assert o1 == o4, "decomposition must match expansion"
             assert isinstance(o1, qml.operation.Operator), "decomposition must contain operators"
     else:
-        _assert_error_raised(op.decomposition, qml.operation.DecompositionUndefinedError)()
-        _assert_error_raised(op.expand, qml.operation.DecompositionUndefinedError)()
-        _assert_error_raised(op.compute_decomposition, qml.operation.DecompositionUndefinedError)(
-            *op.data, wires=op.wires, **op.hyperparameters
-        )
+        failure_comment = "If has_decomposition is False, then decomposition must raise a ``DecompositionUndefinedError``."
+        _assert_error_raised(
+            op.decomposition,
+            qml.operation.DecompositionUndefinedError,
+            failure_comment=failure_comment,
+        )()
+        _assert_error_raised(
+            op.expand, qml.operation.DecompositionUndefinedError, failure_comment=failure_comment
+        )()
+        _assert_error_raised(
+            op.compute_decomposition,
+            qml.operation.DecompositionUndefinedError,
+            failure_comment=failure_comment,
+        )(*op.data, wires=op.wires, **op.hyperparameters)
 
 
 def _check_matrix(op):
     """Check that if the operation says it has a matrix, it is. Otherwise a ``MatrixUndefinedError`` is raised."""
     if op.has_matrix:
         mat = op.matrix()
-        mat2 = qml.matrix(op)
-        assert qml.math.allclose(mat, mat2), "op.matrix must match qml.matrix"
+        assert isinstance(mat, qml.typing.TensorLike), "matrix must be a TensorLike"
+        l = 2 ** len(op.wires)
+        assert qml.math.shape(mat) == (
+            l,
+            l,
+        ), f"matrix must be two dimensional with shape ({l}, {l})"
     else:
-        _assert_error_raised(op.matrix, qml.operation.MatrixUndefinedError)()
+        failure_comment = (
+            "If has_matrix is False, the matrix method must raise a ``MatrixUndefinedError``."
+        )
+        _assert_error_raised(
+            op.matrix, qml.operation.MatrixUndefinedError, failure_comment=failure_comment
+        )()
 
 
 def _check_matrix_matches_decomp(op):
@@ -107,7 +125,10 @@ def _check_eigendecomposition(op):
         for op1, op2 in zip(dg, compute_dg):
             assert op1 == op2, "diagonalizing_gates and compute_diagonalizing_gates must match"
     else:
-        _assert_error_raised(op.diagonalizing_gates, qml.operation.DiagGatesUndefinedError)()
+        failure_comment = "If has_diagonalizing_gates is False, diagonalizing_gates must raise a DiagGatesUndefinedError"
+        _assert_error_raised(
+            op.diagonalizing_gates, qml.operation.DiagGatesUndefinedError, failure_comment
+        )()
 
     has_eigvals = True
     try:
@@ -191,12 +212,16 @@ def _check_wires(op):
     ), "wires must be mappable"
 
 
-def assert_valid(op: qml.operation.Operator) -> None:
+def assert_valid(op: qml.operation.Operator, skip_pickle=False) -> None:
     """Runs basic validation checks on an :class:`~.operation.Opeartor` to make
     sure it has been correctly defined.
 
     Args:
         op (qml.opeartion.Operator): a instance to validate
+
+    Keyword Args:
+        skip_pickle=False : If ``True``, pickling tests are not run. This can be used when
+            testing a locally defined operator, as pickle cannot handle local objects
 
     **Examples:**
 
@@ -241,7 +266,8 @@ def assert_valid(op: qml.operation.Operator) -> None:
     _check_wires(op)
     _check_copy(op)
     _check_pytree(op)
-    _check_pickle(op)
+    if not skip_pickle:
+        _check_pickle(op)
     _check_bind_new_parameters(op)
 
     _check_decomposition(op)
