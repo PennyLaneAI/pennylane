@@ -38,7 +38,15 @@
 
 <h3>Documentation 📝</h3>
 
+* Documentation page for `qml.measurements` now links top-level accessible functions (e.g. `qml.expval`) 
+  to their top-level pages (rather than their module-level pages, eg. `qml.measurements.expval`).
+  [(#4750)](https://github.com/PennyLaneAI/pennylane/pull/4750)
+
 <h3>Bug fixes 🐛</h3>
+
+* Any `ScalarSymbolicOp`, like `Evolution`, now states that it has a matrix if the target
+  is a `Hamiltonian`.
+  [(#4768)](https://github.com/PennyLaneAI/pennylane/pull/4768)
 
 <h3>Contributors ✍️</h3>
 
@@ -46,7 +54,9 @@ This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad,
 Amintor Dusko,
+Lillian Frederiksen,
 Ankit Khandelwal,
+Christina Lee,
 Anurav Modak,
 Matthew Silverman,
 David Wierichs,
