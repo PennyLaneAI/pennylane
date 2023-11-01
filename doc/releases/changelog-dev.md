@@ -34,7 +34,7 @@
 <h3>Bug fixes 🐛</h3>
 
 * `MottonenStatePreparation` now raises an error if decomposing a broadcasted state vector.
-  [(#)]()
+  [(#4767)](https://github.com/PennyLaneAI/pennylane/pull/4767)
 
 <h3>Contributors ✍️</h3>
 
