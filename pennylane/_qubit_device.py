@@ -1652,10 +1652,11 @@ class QubitDevice(Device):
         trainable_params = []
         for k in tape.trainable_params:
             # pylint: disable=protected-access
-            if hasattr(tape._par_info[k]["op"], "return_type"):
+            mp_or_op = tape[tape._par_info[k]["op_idx"]]
+            if isinstance(mp_or_op, MeasurementProcess):
                 warnings.warn(
                     "Differentiating with respect to the input parameters of "
-                    f"{tape._par_info[k]['op'].name} is not supported with the "
+                    f"{mp_or_op.obs.name} is not supported with the "
                     "adjoint differentiation method. Gradients are computed "
                     "only with regards to the trainable parameters of the circuit.\n\n Mark "
                     "the parameters of the measured observables as non-trainable "
