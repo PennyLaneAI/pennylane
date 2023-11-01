@@ -775,6 +775,42 @@ class TestShotsIntegration:
         # if we set the shots to None, backprop can now be used
         assert spy.call_args[1]["gradient_fn"] == "backprop"
 
+    @pytest.mark.parametrize("shots", [(10000, 10000), (10000, 10005)])
+    def test_shot_vectors_single_measurements(self, interface, shots):
+        """Test jax-jit can work with shot vectors."""
+
+        dev = qml.device("default.qubit", shots=shots, seed=49393)
+
+        @jax.jit
+        @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.var(qml.PauliZ(0))
+
+        res = circuit(0.5)
+        expected = 1 - np.cos(0.5) ** 2
+        assert qml.math.allclose(res[0], expected, atol=5e-3)
+        assert qml.math.allclose(res[1], expected, atol=5e-3)
+
+    @pytest.mark.parametrize("shots", [(10000, 10000), (10000, 10005)])
+    def test_shot_vectors_multiple_measurements(self, interface, shots):
+        """Test jax-jit can work with shot vectors."""
+
+        dev = qml.device("default.qubit", shots=shots, seed=987548)
+
+        @jax.jit
+        @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=0)
+
+        res = circuit(0.5)
+        assert qml.math.allclose(res[0][0], np.cos(0.5), atol=5e-3)
+        assert qml.math.allclose(res[1][0], np.cos(0.5), atol=5e-3)
+        expected_probs = np.array([np.cos(0.25) ** 2, np.sin(0.25) ** 2])
+        assert qml.math.allclose(res[0][1], expected_probs, atol=5e-3)
+        assert qml.math.allclose(res[1][1], expected_probs, atol=5e-3)
+
 
 @pytest.mark.parametrize(
     "interface,dev,diff_method,grad_on_execution", interface_and_qubit_device_and_diff_method

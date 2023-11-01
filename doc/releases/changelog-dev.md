@@ -33,12 +33,15 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Jax jit now works with shot vectors.
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Amintor Dusko,
 Ankit Khandelwal,
+Christina Lee,
 Anurav Modak,
 Matthew Silverman,
 David Wierichs,
