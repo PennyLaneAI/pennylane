@@ -92,16 +92,6 @@ class TestInitialization:
         """Test the num_preps property."""
         assert QuantumScript(ops).num_preps == num_preps
 
-    def test_prep_deprecation(self):
-        """Test that the prep keyword ~is deprecated and~ behaves as expected."""
-        prep = [qml.BasisState([1, 1], wires=(0, 1))]
-        ops = [qml.PauliX(0)]
-        with pytest.warns(UserWarning, match="`prep` keyword argument is being removed"):
-            qs = QuantumScript(ops=ops, prep=prep)
-            assert len(qs.operations) == len(qs._ops) == 2
-            assert qml.equal(qs.operations[0], prep[0])
-            assert qml.equal(qs.operations[1], ops[0])
-
 
 sample_measurements = [
     qml.sample(),
@@ -132,7 +122,7 @@ class TestUpdate:
         ops = [qml.S(0), qml.T("a"), qml.S(0)]
         measurement = [qml.probs(wires=("a"))]
 
-        qs = QuantumScript(ops, measurement, prep)
+        qs = QuantumScript(prep + ops, measurement)
         assert qs.wires == qml.wires.Wires([-1, -2, 0, "a"])
         assert qs.num_wires == 4
 
@@ -482,7 +472,7 @@ class TestScriptCopying:
         prep = [qml.BasisState(np.array([1, 0]), wires=(0, 1))]
         ops = [qml.RY(0.5, wires=1), qml.CNOT((0, 1))]
         m = [qml.expval(qml.PauliZ(0) @ qml.PauliY(1))]
-        qs = QuantumScript(ops, m, prep=prep)
+        qs = QuantumScript(prep + ops, m)
 
         copied_qs = qs.copy()
 
@@ -517,7 +507,7 @@ class TestScriptCopying:
         prep = [qml.BasisState(np.array([1, 0]), wires=(0, 1))]
         ops = [qml.RY(0.5, wires=1), qml.CNOT((0, 1))]
         m = [qml.expval(qml.PauliZ(0) @ qml.PauliY(1))]
-        qs = QuantumScript(ops, m, prep=prep)
+        qs = QuantumScript(prep + ops, m)
 
         copied_qs = copy_fn(qs)
 
@@ -546,7 +536,7 @@ class TestScriptCopying:
         prep = [qml.BasisState(np.array([1, 0]), wires=(0, 1))]
         ops = [qml.RY(0.5, wires=1), qml.CNOT((0, 1))]
         m = [qml.expval(qml.PauliZ(0) @ qml.PauliY(1))]
-        qs = QuantumScript(ops, m, prep=prep)
+        qs = QuantumScript(prep + ops, m)
 
         copied_qs = copy.deepcopy(qs)
 
