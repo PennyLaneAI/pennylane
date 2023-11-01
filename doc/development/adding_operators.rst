@@ -199,16 +199,16 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
             # the adjoint operator of this gate simply negates the angle
             return FlipAndRotate(-self.parameters[0], self.wires[0], self.wires[1], do_flip=self.hyperparameters["do_flip"])
 
-      @classmethod
-      def _unflatten(cls, data, metadata):
-          # as the class differs from the standard `__init__` call signature of
-          # (*data, wires=wires, **hyperparameters), the _unflatten method that
-          # must be defined as well
-          # _unflatten recreates a opeartion from the serialized data and metadata of ``Operator._flatten``
-          # copied_op = type(op)._unflatten(*op._flatten())
-          wires = metadata[0]
-          hyperparams = dict(metadata[1])
-          return cls(data[0], wire_rot=wires[0], wire_flip=wires[1], do_flip=hyperparams['do_flip'])
+        @classmethod
+        def _unflatten(cls, data, metadata):
+            # as the class differs from the standard `__init__` call signature of
+            # (*data, wires=wires, **hyperparameters), the _unflatten method that
+            # must be defined as well
+            # _unflatten recreates a opeartion from the serialized data and metadata of ``Operator._flatten``
+            # copied_op = type(op)._unflatten(*op._flatten())
+            wires = metadata[0]
+            hyperparams = dict(metadata[1])
+            return cls(data[0], wire_rot=wires[0], wire_flip=wires[1], do_flip=hyperparams['do_flip'])
 
 
 The new gate can now be created as follows:
@@ -221,12 +221,11 @@ FlipAndRotate(0.1, wires=['q3', 'q1'])
 >>> op.adjoint()
 FlipAndRotate(-0.1, wires=['q3', 'q1'])
 
-Once the class has been created, you can run a suite of validation checkis using :func:`pennylane.ops.functions.assert_valid`.
-This function will warn you of some common errors in custom operators. For example, 
-
+Once the class has been created, you can run a suite of validation checks using :func:`.ops.functions.assert_valid`.
+This function will warn you of some common errors in custom operators.
 >>> qml.ops.functions.assert_valid(op)
 
-For example, if the above operator ommitted the ``_unflatten`` custom definition, it would raise:
+If the above operator ommitted the ``_unflatten`` custom definition, it would raise:
 
 .. code-block::
 

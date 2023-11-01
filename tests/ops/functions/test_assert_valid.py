@@ -203,7 +203,7 @@ def test_bad_bind_new_parameters():
             self.data = (1.0,)  # different x will not change data attribute
 
     with pytest.raises(
-        AssertionError, match="bind_new_parameters must be able to update the operator"
+        AssertionError, match=r"bind_new_parameters must be able to update the operator"
     ):
         assert_valid(NoBindNewParameters(2.0, wires=0), skip_pickle=True)
 
