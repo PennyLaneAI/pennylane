@@ -32,6 +32,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* `QuantumScript.is_sampled` and `QuantumScript.all_sampled` are deprecated.
+  Users should now validate these properties manually.
+  [(#)]()
+
 <h3>Documentation 📝</h3>
 
 * Documentation page for `qml.measurements` now links top-level accessible functions (e.g. `qml.expval`) 
