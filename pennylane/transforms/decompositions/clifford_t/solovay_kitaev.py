@@ -384,6 +384,10 @@ def sk_decomposition(op, depth, basis_set=(), basis_depth=10, approximate_set=No
     Returns:
         list(~pennylane.operation.Operation): A list of gates in the Clifford+T basis set that approximates the given operation
 
+    Raises:
+        ValueError: If the given operator acts on more than one wires
+        UserWarning: If the ``approximate_set`` is provided but needs to be recomputed for given ``basis_set`` and ``basis_depth``
+
     **Example**
 
     Suppose one would like to decompose :class:`~.RZ` with rotation angle :math:`\phi = \pi/3`:
