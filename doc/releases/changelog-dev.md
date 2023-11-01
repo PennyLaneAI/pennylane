@@ -35,6 +35,7 @@
 
 * Any `ScalarSymbolicOp`, like `Evolution`, now states that it has a matrix if the target
   is a `Hamiltonian`.
+  [(#4768)](https://github.com/PennyLaneAI/pennylane/pull/4768)
 
 <h3>Contributors ✍️</h3>
 
