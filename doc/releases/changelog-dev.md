@@ -33,12 +33,16 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Any `ScalarSymbolicOp`, like `Evolution`, now states that it has a matrix if the target
+  is a `Hamiltonian`.
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Amintor Dusko,
 Ankit Khandelwal,
+Christina Lee,
 Anurav Modak,
 Matthew Silverman,
 David Wierichs,
