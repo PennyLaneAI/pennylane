@@ -41,7 +41,6 @@ The available measurement functions are
     ~pennylane.purity
     ~pennylane.classical_shadow
     ~pennylane.shadow_expval
-    ~pennylane.measure
 
 :html:`</div>`
 
