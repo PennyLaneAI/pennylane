@@ -23,6 +23,13 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `prep` keyword argument has been removed from `QuantumScript` and `QuantumTape`.
+  `StatePrepBase` operations should be placed at the beginning of the `ops` list instead.
+  [(#4756)](https://github.com/PennyLaneAI/pennylane/pull/4756)
+
+* `qml.gradients.pulse_generator` has become `qml.gradients.pulse_odegen` to adhere to paper naming conventions.
+  [(#4769)](https://github.com/PennyLaneAI/pennylane/pull/4769)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
@@ -41,5 +48,6 @@ Amintor Dusko,
 Lillian Frederiksen,
 Ankit Khandelwal,
 Anurav Modak,
+Matthew Silverman,
 David Wierichs,
 Justin Woodring,
