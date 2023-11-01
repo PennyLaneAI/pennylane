@@ -62,14 +62,13 @@ Pending deprecations
         some_qfunc(params)
         return qml.expval(Hamiltonian)
 
-* ``qml.gradients.pulse_generator`` becomes ``qml.gradients.pulse_odegen`` to adhere to paper naming conventions. During v0.33, ``pulse_generator``
-  is still available but raises a warning.
-
-  - Deprecated in v0.33
-  - Will be removed in v0.34
-
 Completed deprecation cycles
 ----------------------------
+
+* ``qml.gradients.pulse_generator`` has become ``qml.gradients.pulse_odegen`` to adhere to paper naming conventions.
+
+  - Deprecated in v0.33
+  - Removed in v0.34
 
 * The public methods of ``DefaultQubit`` are pending changes to
   follow the new device API.
@@ -115,7 +114,7 @@ Completed deprecation cycles
   - Behaviour changed in v0.33
 
 * The ``prep`` keyword argument in ``QuantumScript`` has been removed.
-  ``StatePrepBase`` operations should be placed at the beginning of the `ops` list instead.
+  ``StatePrepBase`` operations should be placed at the beginning of the ``ops`` list instead.
 
   - Deprecated in v0.33
   - Removed in v0.34

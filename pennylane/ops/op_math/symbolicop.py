@@ -196,6 +196,10 @@ class ScalarSymbolicOp(SymbolicOp):
         return scalar_size
 
     @property
+    def has_matrix(self):
+        return self.base.has_matrix or isinstance(self.base, qml.Hamiltonian)
+
+    @property
     def hash(self):
         return hash(
             (
