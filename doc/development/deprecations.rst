@@ -6,6 +6,20 @@ Deprecations
 Pending deprecations
 --------------------
 
+* ``single_tape_transform``, ``batch_transform``, ``qfunc_transform``, and ``op_transform`` are
+  deprecated. Instead switch to using the new ``qml.transform`` function. Please refer to
+  `the transform docs <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
+  to see how this can be done.
+
+  - Deprecated in v0.34
+  - Will be removed in v0.35
+
+* ``map_batch_transform`` is renamed to ``map_transform``. The old name is still available, but will be
+  removed in an upcoming release.
+
+  - Deprecated in v0.34
+  - Will be removed in v0.35
+
 * Passing additional arguments to a transform that decorates a QNode should now be done through use
   of ``functools.partial``. For example, the :func:`~pennylane.metric_tensor` transform has an
   optional ``approx`` argument which should now be set using:

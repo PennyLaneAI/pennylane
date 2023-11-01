@@ -25,6 +25,17 @@ from pennylane import numpy as np
 class TestBatchTransform:
     """Unit tests for the batch_transform class"""
 
+    def test_batch_transform_is_deprecated(self):
+        """Test that the batch_transform class is deprecated."""
+
+        def func(op):
+            return op
+
+        with pytest.warns(
+            UserWarning, match="Use of `batch_transform` to create a custom transform is deprecated"
+        ):
+            _ = qml.batch_transform(func)
+
     @staticmethod
     @qml.batch_transform
     def my_transform(tape, a, b):
@@ -672,7 +683,7 @@ class TestBatchTransformGradients:
         assert np.allclose(res, [0, -np.sin(weights[1])], atol=0.1)
 
 
-class TestMapBatchTransform:
+class TestMapTransform:
     """Tests for the map_transform function"""
 
     def test_result(self, mocker):
@@ -743,3 +754,15 @@ class TestMapBatchTransform:
         res = qml.grad(cost)(weights)
         expected = [-0.5 * np.sin(x) - 0.25 * np.cos(x / 2), -np.sin(y)]
         assert np.allclose(res, expected)
+
+    def test_map_batch_transform_is_deprecated(self):
+        """Test that map_batch_transform is deprecated."""
+
+        def my_transform(tape):
+            return [tape], lambda x: x[0]
+
+        qs = qml.tape.QuantumScript()
+        with pytest.warns(
+            UserWarning, match="`map_batch_transform` is being renamed to `map_transform`"
+        ):
+            _ = qml.transforms.map_batch_transform(my_transform, [qs, qs])
