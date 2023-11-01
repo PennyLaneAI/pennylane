@@ -1454,7 +1454,6 @@ class QubitDevice(Device):
 
         return outcome_dicts if batched else outcome_dicts[0]
 
-    # pylint:disable=too-many-arguments
     def sample(self, observable, shot_range=None, bin_size=None, counts=False):
         """Return samples of an observable.
 
