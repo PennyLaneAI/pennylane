@@ -34,17 +34,27 @@
 
 <h3>Documentation 📝</h3>
 
+* Documentation page for `qml.measurements` now links top-level accessible functions (e.g. `qml.expval`) 
+  to their top-level pages (rather than their module-level pages, eg. `qml.measurements.expval`).
+  [(#4750)](https://github.com/PennyLaneAI/pennylane/pull/4750)
+
 <h3>Bug fixes 🐛</h3>
 
 * Add a hard dependency on `setuptools` to support Python 3.12.
   [(#4771)](https://github.com/PennyLaneAI/pennylane/pull/4771)
+
+* Any `ScalarSymbolicOp`, like `Evolution`, now states that it has a matrix if the target
+  is a `Hamiltonian`.
+  [(#4768)](https://github.com/PennyLaneAI/pennylane/pull/4768)
 
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Amintor Dusko,
+Lillian Frederiksen,
 Ankit Khandelwal,
+Christina Lee,
 Anurav Modak,
 Lee J. O'Riordan,
 Matthew Silverman,
