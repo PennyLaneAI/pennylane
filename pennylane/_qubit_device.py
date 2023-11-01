@@ -632,13 +632,7 @@ class QubitDevice(Device):
                 result = self._asarray(qml.math.squeeze(samples))
 
             elif isinstance(m, CountsMP):
-                result = self.sample(
-                    obs,
-                    shot_range=shot_range,
-                    bin_size=bin_size,
-                    counts=True,
-                    all_outcomes=m.all_outcomes,
-                )
+                result = self.sample(m, shot_range=shot_range, bin_size=bin_size, counts=True)
 
             elif isinstance(m, ProbabilityMP):
                 result = self.probability(wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
@@ -1377,11 +1371,11 @@ class QubitDevice(Device):
         # TODO: do we need to squeeze here? Maybe remove with new return types
         return np.squeeze(np.var(samples, axis=axis))
 
-    def _samples_to_counts(self, samples, obs, num_wires, all_outcomes=False):
+    def _samples_to_counts(self, samples, mp: CountsMP, num_wires):
         """Groups the samples into a dictionary showing number of occurences for
         each possible outcome.
 
-        The format of the dictionary depends on obs.return_type, which is set when
+        The format of the dictionary depends on mp.return_type, which is set when
         calling measurements.counts by setting the kwarg all_outcomes (bool). By default,
         the dictionary will only contain the observed outcomes. Optionally (all_outcomes=True)
         the dictionary will instead contain all possible outcomes, with a count of 0
@@ -1389,15 +1383,11 @@ class QubitDevice(Device):
 
 
         Args:
-            samples: An array of samples, with the shape being ``(shots,len(wires))`` if an observable
+            samples: An array of samples, with the shape being ``(shots,len(wires))`` if no observable
                 is provided, with sample values being an array of 0s or 1s for each wire. Otherwise, it
                 has shape ``(shots,)``, with sample values being scalar eigenvalues of the observable
-            obs (Observable): the observable sampled
+            mp (~.measurements.CountsMP): the measurement process sampled
             num_wires (int): number of wires the sampled observable was performed on
-
-        Keyword Args:
-            all_outcomes (bool): determines whether the returned dict will contain only the observed
-                outcomes (default), or whether it will display all possible outcomes for the system
 
         Returns:
             dict: dictionary with format ``{'outcome': num_occurences}``, including all
@@ -1405,17 +1395,14 @@ class QubitDevice(Device):
 
         **Example**
 
-            >>> samples
-            tensor([[0, 0],
-                    [0, 0],
-                    [1, 0]], requires_grad=True)
-
-            By default, this will return:
-            >>> self._samples_to_counts(samples, obs, num_wires)
+            >>> >>> num_wires = 2
+            >>> dev = qml.device("default.qubit.legacy", wires=num_wires)
+            >>> mp = qml.counts()
+            >>> samples = pnp.array([[0, 0], [0, 0], [1, 0]])
+            >>> dev._samples_to_counts(samples, mp, num_wires)
             {'00': 2, '10': 1}
-
-            However, if obs.return_type is AllCounts, this will return:
-            >>> self._samples_to_counts(samples, obs, num_wires)
+            >>> mp = qml.counts(all_outcomes=True)
+            >>> dev._samples_to_counts(samples, mp, num_wires)
             {'00': 2, '01': 0, '10': 1, '11': 0}
 
             The variable all_outcomes can be set when running measurements.counts, i.e.:
@@ -1437,19 +1424,19 @@ class QubitDevice(Device):
         batched_ndims = 2
         shape = samples.shape
 
-        if isinstance(obs, CountsMP):
+        if mp.obs is None and mp.mv is None:
             # convert samples and outcomes (if using) from arrays to str for dict keys
             samples = np.array([sample for sample in samples if not np.any(np.isnan(sample))])
             samples = qml.math.cast_like(samples, qml.math.int8(0))
             samples = np.apply_along_axis(_sample_to_str, -1, samples)
             batched_ndims = 3  # no observable was provided, batched samples will have shape (batch_size, shots, len(wires))
-            if obs.all_outcomes:
+            if mp.all_outcomes:
                 outcomes = list(map(_sample_to_str, self.generate_basis_states(num_wires)))
-        elif all_outcomes:
+        elif mp.all_outcomes:
             outcomes = (
-                qml.eigvals(obs)
-                if not isinstance(obs, MeasurementValue)
-                else np.arange(0, 2 ** len(obs.wires), 1)
+                qml.eigvals(mp.obs)
+                if mp.obs is not None
+                else np.arange(0, 2 ** len(mp.mv.wires), 1)
             )
 
         batched = len(shape) == batched_ndims
@@ -1468,7 +1455,7 @@ class QubitDevice(Device):
         return outcome_dicts if batched else outcome_dicts[0]
 
     # pylint:disable=too-many-arguments
-    def sample(self, observable, shot_range=None, bin_size=None, counts=False, all_outcomes=False):
+    def sample(self, observable, shot_range=None, bin_size=None, counts=False):
         """Return samples of an observable.
 
         Args:
@@ -1489,6 +1476,16 @@ class QubitDevice(Device):
             Union[array[float], dict, list[dict]]: samples in an array of
             dimension ``(shots,)`` or counts
         """
+        mp = observable
+        no_observable_provided = False
+        if isinstance(mp, MeasurementProcess):
+            if mp.obs is not None:
+                observable = mp.obs
+            elif mp.mv is not None:
+                observable = mp.mv
+            else:
+                no_observable_provided = True
+
         # translate to wire labels used by device
         device_wires = self.map_wires(observable.wires)
         name = observable.name
@@ -1500,8 +1497,6 @@ class QubitDevice(Device):
             # colon (:) is required because shots is the second-to-last axis and the
             # Ellipsis (...) otherwise would take up broadcasting and shots axes.
             sub_samples = self._samples[..., slice(*shot_range), :]
-
-        no_observable_provided = isinstance(observable, MeasurementProcess)
 
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}
@@ -1536,13 +1531,13 @@ class QubitDevice(Device):
         num_wires = len(device_wires) if len(device_wires) > 0 else self.num_wires
         if bin_size is None:
             if counts:
-                return self._samples_to_counts(samples, observable, num_wires, all_outcomes)
+                return self._samples_to_counts(samples, mp, num_wires)
             return samples
 
         if counts:
             shape = (-1, bin_size, num_wires) if no_observable_provided else (-1, bin_size)
             return [
-                self._samples_to_counts(bin_sample, observable, num_wires, all_outcomes)
+                self._samples_to_counts(bin_sample, mp, num_wires)
                 for bin_sample in samples.reshape(shape)
             ]
 
