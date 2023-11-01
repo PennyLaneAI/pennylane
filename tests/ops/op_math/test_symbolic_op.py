@@ -139,7 +139,7 @@ class TestProperties:
         op = SymbolicOp(base)
         assert op.has_matrix == has_mat
 
-    def test_has_matrix_hamiltoanin(self):
+    def test_has_matrix_hamiltonian(self):
         """Test that it has a matrix if the base is a hamiltonian."""
 
         H = qml.Hamiltonian([1.0], [qml.PauliX(0)])
