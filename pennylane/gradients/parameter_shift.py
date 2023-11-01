@@ -673,10 +673,11 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
         expval_tape._measurements[i] = qml.expval(op=obs)
         if obs.name == "Hamiltonian":
             first_obs_idx = len(expval_tape.operations)
-            for par_info in reversed(expval_tape._par_info):
-                if par_info["op_idx"] < first_obs_idx:
+            for t_idx in reversed(range(len(expval_tape.trainable_params))):
+                op, op_idx, _ = expval_tape.get_operation(t_idx)
+                if op_idx < first_obs_idx:
                     break  # already seen all observables
-                if par_info["op"] is obs:
+                if op is obs:
                     raise ValueError(
                         "Can only differentiate Hamiltonian coefficients for expectations, not variances"
                     )
