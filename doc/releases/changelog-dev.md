@@ -36,6 +36,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Add a hard dependency on `setuptools` to support Python 3.12.
+  [(#4771)](https://github.com/PennyLaneAI/pennylane/pull/4771)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -43,6 +46,7 @@ This release contains contributions from (in alphabetical order):
 Amintor Dusko,
 Ankit Khandelwal,
 Anurav Modak,
+Lee J. O'Riordan,
 Matthew Silverman,
 David Wierichs,
 Justin Woodring,
