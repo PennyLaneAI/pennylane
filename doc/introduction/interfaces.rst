@@ -240,7 +240,7 @@ with the number of trainable circuit parameters.
 * :func:`qml.gradients.stoch_pulse_grad <~.stoch_pulse_grad>`: Use a stochastic variant of the
   parameter-shift rule for pulse programs.
 
-* :func:`qml.gradients.pulse_generator <~.pulse_generator>`: Combine classical processing with the parameter-shift rule for multivariate gates to differentiate pulse programs.
+* :func:`qml.gradients.pulse_odegen <~.pulse_odegen>`: Combine classical processing with the parameter-shift rule for multivariate gates to differentiate pulse programs.
 
 
 Device gradients
