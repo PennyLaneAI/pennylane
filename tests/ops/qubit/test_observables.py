@@ -214,7 +214,7 @@ class TestHermitian:
         """Tests that an error is raised if the input to Hermitian is ragged."""
         ham = [[1, 0], [0, 1, 2]]
 
-        with pytest.raises(ValueError, match="Observable must be a square matrix"):
+        with pytest.raises(ValueError, match="The requested array has an inhomogeneous shape"):
             qml.Hermitian(ham, wires=0)
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)

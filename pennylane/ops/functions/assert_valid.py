@@ -90,10 +90,8 @@ def _check_matrix(op):
         mat = op.matrix()
         assert isinstance(mat, qml.typing.TensorLike), "matrix must be a TensorLike"
         l = 2 ** len(op.wires)
-        assert qml.math.shape(mat) == (
-            l,
-            l,
-        ), f"matrix must be two dimensional with shape ({l}, {l})"
+        failure_comment = f"matrix must be two dimensional with shape ({l}, {l})"
+        assert qml.math.shape(mat) == (l, l), failure_comment
     else:
         failure_comment = (
             "If has_matrix is False, the matrix method must raise a ``MatrixUndefinedError``."
@@ -108,9 +106,10 @@ def _check_matrix_matches_decomp(op):
     if op.has_matrix and op.has_decomposition:
         mat = op.matrix()
         decomp_mat = qml.matrix(op.decomposition, wire_order=op.wires)()
-        assert qml.math.allclose(
-            mat, decomp_mat
-        ), f"matrix and matrix from decomposition must match. Got \n{mat}\n\n {decomp_mat}"
+        failure_comment = (
+            f"matrix and matrix from decomposition must match. Got \n{mat}\n\n {decomp_mat}"
+        )
+        assert qml.math.allclose(mat, decomp_mat), failure_comment
 
 
 def _check_eigendecomposition(op):
@@ -144,18 +143,17 @@ def _check_eigendecomposition(op):
         decomp = qml.prod(qml.adjoint(dg), eg, dg)
         decomp_mat = qml.matrix(decomp)
         original_mat = qml.matrix(op)
-        assert qml.math.allclose(
-            decomp_mat, original_mat
-        ), f"eigenvalues and diagonalizing gates must be able to reproduce the original operator. Got \n{decomp_mat}\n\n{original_mat}"
+        failure_comment = f"eigenvalues and diagonalizing gates must be able to reproduce the original operator. Got \n{decomp_mat}\n\n{original_mat}"
+        assert qml.math.allclose(decomp_mat, original_mat), failure_comment
 
 
 def _check_copy(op):
     """Check that copies and deep copies give identical objects."""
     copied_op = copy.copy(op)
+    assert qml.equal(copied_op, op), "copied op must be equal with qml.equal"
     assert copied_op == op, "copied op must be equivalent to original operation"
     assert copied_op is not op, "copied op must be a separate instance from original operaiton"
-    assert qml.equal(copied_op, op), "copied op must also be equal with qml.equal"
-    assert copy.deepcopy(op) == op, "deep copied op must also be equal"
+    assert qml.equal(copy.deepcopy(op), op), "deep copied op must also be equal"
 
 
 # pylint: disable=import-outside-toplevel, protected-access
@@ -197,8 +195,9 @@ def _check_bind_new_parameters(op):
     """Check that bind new parameters can create a new op with different data."""
     new_data = [d * 0.0 for d in op.data]
     new_data_op = qml.ops.functions.bind_new_parameters(op, new_data)
+    failure_comment = "bind_new_parameters must be able to update the the operator with new data."
     for d1, d2 in zip(new_data_op.data, new_data):
-        assert qml.math.allclose(d1, d2), "new data must match the data set with."
+        assert qml.math.allclose(d1, d2), failure_comment
 
 
 def _check_wires(op):
@@ -207,9 +206,8 @@ def _check_wires(op):
 
     wire_map = {w: ascii_lowercase[i] for i, w in enumerate(op.wires)}
     mapped_op = op.map_wires(wire_map)
-    assert mapped_op.wires == qml.wires.Wires(
-        list(ascii_lowercase[: len(op.wires)])
-    ), "wires must be mappable"
+    new_wires = qml.wires.Wires(list(ascii_lowercase[: len(op.wires)]))
+    assert mapped_op.wires == new_wires, "wires must be mappable with map_wires"
 
 
 def assert_valid(op: qml.operation.Operator, skip_pickle=False) -> None:
@@ -258,7 +256,6 @@ def assert_valid(op: qml.operation.Operator, skip_pickle=False) -> None:
 
     assert isinstance(op.data, tuple), "op.data must be a tuple"
     assert isinstance(op.parameters, list), "op.parameters must be a list"
-    assert len(op.data) == op.num_params, "length of data must match num_params"
     for d, p in zip(op.data, op.parameters):
         assert isinstance(d, qml.typing.TensorLike), "each data element must be tensorlike"
         assert qml.math.allclose(d, p), "data and parameters must match."

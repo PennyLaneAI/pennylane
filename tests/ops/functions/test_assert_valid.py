@@ -14,6 +14,7 @@
 """
 This module contains unit tests for ``qml.ops.functions.assert_valid``.
 """
+# pylint: disable=too-few-public-methods, unused-argument
 import pytest
 
 import numpy as np
@@ -24,6 +25,8 @@ from pennylane.ops.functions import assert_valid
 
 
 class TestDecompositionErrors:
+    """Test assertions involving decompositions."""
+
     def test_bad_decomposition_output(self):
         """Test decomposition output must be a list of operators."""
 
@@ -96,7 +99,6 @@ class TestBadMatrix:
         """Test that if has_matrix if False, then an error must be raised."""
 
         class BadMat(Operator):
-
             has_matrix = False
 
             def matrix(self):
@@ -130,6 +132,21 @@ class TestBadMatrix:
 
         with pytest.raises(AssertionError, match=r"matrix must be a TensorLike"):
             assert_valid(BadMat(0), skip_pickle=True)
+
+
+class TestBadCopyComparison:
+    """Check errors invovling copy, deepcopy, and comparison."""
+
+    def test_bad_comparison(self):
+        """Test an operator that cannot be compared with standard qml.equal."""
+
+        class BadComparison(Operator):
+            def __init__(self, wires, val):
+                self.hyperparameters["val"] = val
+                super().__init__(wires)
+
+        with pytest.raises(ValueError, match=r"The truth value of an array with more than one"):
+            assert_valid(BadComparison(0, val=np.eye(2)))
 
 
 def test_mismatched_mat_decomp():
@@ -175,6 +192,22 @@ def test_bad_pickling():
         assert_valid(BadPickling0(lambda x: x, wires=0))
 
 
+def test_bad_bind_new_parameters():
+    """Test a function that is not working with bind_new_parameters."""
+
+    class NoBindNewParameters(Operator):
+        num_params = 1
+
+        def __init__(self, x, wires):
+            super().__init__(x, wires)
+            self.data = (1.0,)  # different x will not change data attribute
+
+    with pytest.raises(
+        AssertionError, match="bind_new_parameters must be able to update the operator"
+    ):
+        assert_valid(NoBindNewParameters(2.0, wires=0), skip_pickle=True)
+
+
 def test_bad_wire_mapping():
     """Test that an error is raised if the wires cant be mapped with map_wires."""
 
@@ -189,3 +222,17 @@ def test_bad_wire_mapping():
 
     with pytest.raises(AssertionError, match=r"wires must be mappable"):
         assert_valid(BadWireMap(qml.PauliX(0)), skip_pickle=True)
+
+
+def test_data_is_tuple():
+    """Check that the data property is a tuple."""
+
+    class BadData(Operator):
+        num_params = 1
+
+        def __init__(self, x, wires):
+            super().__init__(x, wires)
+            self.data = [x]
+
+    with pytest.raises(AssertionError, match=r"op.data must be a tuple"):
+        assert_valid(BadData(2.0, wires=0))
