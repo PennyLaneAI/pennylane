@@ -31,10 +31,6 @@
   measurements instead of observables.
   [(#4762)](https://github.com/PennyLaneAI/pennylane/pull/4762)
 
-* `QubitDevice.sample` has a new keyword argument, `all_outcomes`, to indicate
-  whether a `Counts` result should include all outcomes.
-  [(#4762)](https://github.com/PennyLaneAI/pennylane/pull/4762)
-
 <h3>Deprecations 👋</h3>
 
 * `Observable.return_type` is deprecated. Instead, you should inspect the type
