@@ -33,5 +33,5 @@ requests~=2.28.1
 # navbar and header data to be updated at the source
 pennylane-sphinx-theme
 tomli~=2.0.0 # Drop once minimum Python version is 3.11
-sphinxext-opengraph
-matplotlib
+sphinxext-opengraph==0.9.0
+matplotlib==3.8.0
