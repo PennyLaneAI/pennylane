@@ -23,6 +23,8 @@ import pennylane as qml
 from pennylane import CircuitGraph
 from pennylane.measurements import (
     MeasurementProcess,
+    ExpectationMP,
+    ProbabilityMP,
     counts,
     expval,
     probs,
@@ -111,8 +113,8 @@ class TestConstruction:
         # test the public measurements property
         assert len(tape.measurements) == 2
         assert all(isinstance(m, MeasurementProcess) for m in tape.measurements)
-        assert tape.observables[0].return_type == qml.measurements.Expectation
-        assert tape.observables[1].return_type == qml.measurements.Probability
+        assert isinstance(tape.measurements[0], ExpectationMP)
+        assert isinstance(tape.measurements[1], ProbabilityMP)
 
     def test_tensor_observables_matmul(self):
         """Test that tensor observables are correctly processed from the annotated

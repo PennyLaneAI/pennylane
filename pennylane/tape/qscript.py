@@ -652,11 +652,12 @@ class QuantumScript:
         if trainable_only:
             params = []
             for p_idx in self.trainable_params:
-                op = self._par_info[p_idx]["op"]
-                if operations_only and hasattr(op, "return_type"):
+                par_info = self._par_info[p_idx]
+                if operations_only and isinstance(self[par_info["op_idx"]], MeasurementProcess):
                     continue
 
-                op_idx = self._par_info[p_idx]["p_idx"]
+                op = par_info["op"]
+                op_idx = par_info["p_idx"]
                 params.append(op.data[op_idx])
             return params
 
