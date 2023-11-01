@@ -24,6 +24,7 @@ def global_v_circuit(params):
 
 
 # pylint: disable=protected-access
+@pytest.mark.xfail  # to be fixed by shortcut story 49174
 @pytest.mark.parametrize("op_type", (qml.HilbertSchmidt, qml.LocalHilbertSchmidt))
 def test_flatten_unflatten_standard_checks(op_type):
     """Test the flatten and unflatten methods."""

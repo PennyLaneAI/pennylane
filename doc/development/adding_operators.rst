@@ -204,7 +204,8 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
           # as the class differs from the standard `__init__` call signature of
           # (*data, wires=wires, **hyperparameters), the _unflatten method that
           # must be defined as well
-          # _unflatten recreates a opeartion from the serialized data and 22metadata of ``Operator._flatten``
+          # _unflatten recreates a opeartion from the serialized data and metadata of ``Operator._flatten``
+          # copied_op = type(op)._unflatten(*op._flatten())
           wires = metadata[0]
           hyperparams = dict(metadata[1])
           return cls(data[0], wire_rot=wires[0], wire_flip=wires[1], do_flip=hyperparams['do_flip'])
@@ -227,7 +228,7 @@ This function will warn you of some common errors in custom operators. For examp
 
 For example, if the above operator ommitted the ``_unflatten`` custom definition, it would raise:
 
-.. code-block:: raw
+.. code-block::
 
     File /pennylane/operation.py:1599, in Operator._unflatten(cls, data, metadata)
       1575 """Recreate an operation from its serialized format.

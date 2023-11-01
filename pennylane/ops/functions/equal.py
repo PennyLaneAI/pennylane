@@ -30,16 +30,6 @@ from pennylane.operation import Observable, Operator, Tensor
 from pennylane.ops import Hamiltonian, Controlled, Pow, Adjoint, Exp, SProd, CompositeOp
 
 
-def _equal_tapes(tape1: qml.tape.QuantumScript, tape2: qml.tape.QuantumScript, **kwargs) -> bool:
-    if tape1.shots != tape2.shots:
-        return False
-    if tape1.trainable_params != tape2.trainable_params:
-        return False
-    if len(tape1) != len(tape2):
-        return False
-    return all(equal(obj1, obj2, **kwargs) for obj1, obj2 in zip(tape1, tape2))
-
-
 def equal(
     op1: Union[Operator, MeasurementProcess],
     op2: Union[Operator, MeasurementProcess],
@@ -254,16 +244,6 @@ def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
 
 
 @_equal.register
-def _equal_controlled(op1: qml.ControlledSequence, op2: qml.ControlledSequence, **kwargs):
-    """Determine whether two Controlled or ControlledOp objects are equal"""
-    # wires are ordered [control wires, operator wires, work wires]
-    # comparing op.wires and op.base.wires (in return) is sufficient to compare all wires
-    if op1.hyperparameters["control_wires"] != op2.hyperparameters["control_wires"]:
-        return False
-    return qml.equal(op1.base, op2.base, **kwargs)
-
-
-@_equal.register
 # pylint: disable=unused-argument
 def _equal_pow(op1: Pow, op2: Pow, **kwargs):
     """Determine whether two Pow objects are equal"""
@@ -343,45 +323,6 @@ def _equal_parametrized_evolution(op1: ParametrizedEvolution, op2: ParametrizedE
 
     # check that all the base operators on op1.H and op2.H match
     return all(equal(o1, o2, **kwargs) for o1, o2 in zip(op1.H.ops, op2.H.ops))
-
-
-@_equal.register
-def _equal_hilbert_schmidt(
-    op1: qml.HilbertSchmidt,
-    op2: qml.HilbertSchmidt,
-    check_interface=True,
-    check_trainability=True,
-    rtol=1e-5,
-    atol=1e-9,
-) -> bool:
-    if not all(
-        qml.math.allclose(d1, d2, rtol=rtol, atol=atol) for d1, d2 in zip(op1.data, op2.data)
-    ):
-        return False
-    if check_trainability:
-        for params_1, params_2 in zip(op1.data, op2.data):
-            if qml.math.requires_grad(params_1) != qml.math.requires_grad(params_2):
-                return False
-
-    if check_interface:
-        for params_1, params_2 in zip(op1.data, op2.data):
-            if qml.math.get_interface(params_1) != qml.math.get_interface(params_2):
-                return False
-
-    if op1.hyperparameters["v_function"] != op2.hyperparameters["v_function"]:
-        return False
-
-    if op1.hyperparameters["v_wires"] != op2.hyperparameters["v_wires"]:
-        return False
-
-    return _equal_tapes(
-        op1.hyperparameters["u_tape"],
-        op2.hyperparameters["u_tape"],
-        check_interface=check_interface,
-        check_trainability=check_trainability,
-        rtol=rtol,
-        atol=atol,
-    )
 
 
 @_equal.register

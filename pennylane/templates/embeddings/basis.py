@@ -91,8 +91,8 @@ class BasisEmbedding(Operation):
                 raise ValueError(
                     f"Features must be of length {len(wires)}, got features={features} which is >= {2 ** len(wires)}"
                 )
-            bin_values = 2 ** np.arange(len(wires))[::-1]
-            features = qml.math.where((features & bin_values) > 0, 1, 0)
+            bin = 2 ** np.arange(len(wires))[::-1]
+            features = qml.math.where((features & bin) > 0, 1, 0)
 
         wires = Wires(wires)
         shape = qml.math.shape(features)
