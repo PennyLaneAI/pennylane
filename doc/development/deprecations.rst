@@ -6,6 +6,12 @@ Deprecations
 Pending deprecations
 --------------------
 
+* `Observable.return_type` is deprecated. Instead, you should inspect the type
+  of the surrounding measurement process.
+
+  - Deprecated in v0.34
+  - Will be removed in v0.35
+
 * Passing additional arguments to a transform that decorates a QNode should now be done through use
   of ``functools.partial``. For example, the :func:`~pennylane.metric_tensor` transform has an
   optional ``approx`` argument which should now be set using:
