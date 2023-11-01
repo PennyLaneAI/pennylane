@@ -24,12 +24,19 @@
 <h3>Breaking changes 💔</h3>
 
 * The `prep` keyword argument has been removed from `QuantumScript` and `QuantumTape`.
-  ``StatePrepBase`` operations should be placed at the beginning of the `ops` list instead.
+  `StatePrepBase` operations should be placed at the beginning of the `ops` list instead.
   [(#4756)](https://github.com/PennyLaneAI/pennylane/pull/4756)
+
+* `qml.gradients.pulse_generator` has become `qml.gradients.pulse_odegen` to adhere to paper naming conventions.
+  [(#4769)](https://github.com/PennyLaneAI/pennylane/pull/4769)
 
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
+
+* Documentation page for `qml.measurements` now links top-level accessible functions (e.g. `qml.expval`) 
+  to their top-level pages (rather than their module-level pages, eg. `qml.measurements.expval`).
+  [(#4750)](https://github.com/PennyLaneAI/pennylane/pull/4750)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -42,6 +49,7 @@
 This release contains contributions from (in alphabetical order):
 
 Amintor Dusko,
+Lillian Frederiksen,
 Ankit Khandelwal,
 Christina Lee,
 Anurav Modak,
