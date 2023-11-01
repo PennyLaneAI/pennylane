@@ -139,6 +139,13 @@ class TestProperties:
         op = SymbolicOp(base)
         assert op.has_matrix == has_mat
 
+    def test_has_matrix_hamiltonian(self):
+        """Test that it has a matrix if the base is a hamiltonian."""
+
+        H = qml.Hamiltonian([1.0], [qml.PauliX(0)])
+        op = TempScalar(H, 2)
+        assert op.has_matrix
+
     @pytest.mark.parametrize("is_herm", (True, False))
     def test_is_hermitian(self, is_herm):
         """Test that symbolic op is hermitian if the base is hermitian."""
