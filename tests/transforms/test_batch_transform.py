@@ -673,7 +673,7 @@ class TestBatchTransformGradients:
 
 
 class TestMapBatchTransform:
-    """Tests for the map_batch_transform function"""
+    """Tests for the map_transform function"""
 
     def test_result(self, mocker):
         """Test that it correctly applies the transform to be mapped"""
@@ -697,9 +697,7 @@ class TestMapBatchTransform:
 
         tape2 = qml.tape.QuantumScript.from_queue(q2)
         spy = mocker.spy(qml.transforms, "hamiltonian_expand")
-        tapes, fn = qml.transforms.map_batch_transform(
-            qml.transforms.hamiltonian_expand, [tape1, tape2]
-        )
+        tapes, fn = qml.transforms.map_transform(qml.transforms.hamiltonian_expand, [tape1, tape2])
 
         spy.assert_called()
         assert len(tapes) == 5
@@ -710,7 +708,7 @@ class TestMapBatchTransform:
         assert np.allclose(fn(res), expected)
 
     def test_differentiation(self):
-        """Test that an execution using map_batch_transform can be differentiated"""
+        """Test that an execution using map_transform can be differentiated"""
         dev = qml.device("default.qubit.legacy", wires=2)
         H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
 
@@ -731,7 +729,7 @@ class TestMapBatchTransform:
                 qml.expval(H + 0.5 * qml.PauliY(0))
 
             tape2 = qml.tape.QuantumScript.from_queue(q2)
-            tapes, fn = qml.transforms.map_batch_transform(
+            tapes, fn = qml.transforms.map_transform(
                 qml.transforms.hamiltonian_expand, [tape1, tape2]
             )
             res = qml.execute(tapes, dev, qml.gradients.param_shift, device_batch_transform=False)

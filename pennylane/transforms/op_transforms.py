@@ -41,7 +41,10 @@ class op_transform:
 
     .. warning::
 
-        This is an experimental feature, and is subject to change.
+        Use of `op_transform` to create a custom transform is deprecated. Instead
+        switch to using the new qml.transform function. Follow the instructions
+        `here <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
+        for further details
 
     Args:
         fn (function): The function to register as the operator transform.
@@ -196,6 +199,12 @@ class op_transform:
                 "does not appear to be a valid Python function or callable."
             )
 
+        warnings.warn(
+            "Use of `op_transform` to create a custom transform is deprecated. Instead "
+            "switch to using the new qml.transform function. Follow the instructions here for "
+            "further details: https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms.",
+            UserWarning,
+        )
         self._fn = fn
         self._sig = inspect.signature(fn).parameters
         self._tape_fn = None

@@ -48,7 +48,7 @@ def compile(
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
-        pipeline (list[single_tape_transform, qfunc_transform]): A list of
+        pipeline (list[.transform]): A list of
             tape and/or quantum function transforms to apply.
         basis_set (list[str]): A list of basis gates. When expanding the tape,
             expansion will continue until gates in the specific set are
