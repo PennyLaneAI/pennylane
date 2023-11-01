@@ -50,9 +50,6 @@ extensions = [
 ]
 
 # Open Graph metadata
-ogp_title = "PennyLane Documentation"
-ogp_type = "website"
-ogp_description = "PennyLane is a cross-platform Python library for differentiable programming of quantum computers. Train a quantum computer the same way as a neural network."
 ogp_social_cards = {
     "image": "_static/logo.png",
     "enable": True,
