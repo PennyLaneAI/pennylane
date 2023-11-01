@@ -31,8 +31,6 @@
   to their top-level pages (rather than their module-level pages, eg. `qml.measurements.expval`).
   [(#4750)](https://github.com/PennyLaneAI/pennylane/pull/4750)
 
-
-
 <h3>Bug fixes 🐛</h3>
 
 <h3>Contributors ✍️</h3>
