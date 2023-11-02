@@ -22,8 +22,9 @@ import jax
 import jax.numpy as jnp
 
 import pennylane as qml
-from pennylane.interfaces.jax import _compute_jvps
 from pennylane.transforms import convert_to_numpy_parameters
+
+from .jacobian_products import _compute_jvps
 
 dtype = jnp.float64
 Zero = jax.custom_derivatives.SymbolicZero
@@ -203,7 +204,6 @@ def _grad_transform_jac_via_callback(
             jacs = execute_fn(jvp_tapes)[0]
             jacs = res_processing_fn(jacs)
             all_jacs.append(jacs)
-
         return tuple(all_jacs)
 
     expected_shapes = tuple(_jac_shape_dtype_struct(t, device) for t in tapes)
@@ -360,8 +360,7 @@ def _execute_bwd(
         tangents_trainable = tuple(
             tuple(t for t in tangent if not isinstance(t, Zero)) for tangent in tangents[0]
         )
-        multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
-        jvps = _compute_jvps(jacobians, tangents_trainable, multi_measurements)
+        jvps = _compute_jvps(jacobians, tangents_trainable, tapes)
 
         results = execute_wrapper(params)
         return results, jvps
@@ -431,9 +430,8 @@ def _execute_fwd(
         updated_jacs = updated_jacs[0] if len(tapes) == 1 else tuple(updated_jacs)
 
         # Get the jvps
-        multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
         tangents = [[t for t in tangent if not isinstance(t, Zero)] for tangent in tangents[0]]
-        jvps = _compute_jvps(jacs_, tangents, multi_measurements)
+        jvps = _compute_jvps(jacs_, tangents, tapes)
 
         return (res, updated_jacs), (jvps, updated_jacs)
 

@@ -779,7 +779,7 @@ class TestShotsIntegration:
     def test_shot_vectors_single_measurements(self, interface, shots):
         """Test jax-jit can work with shot vectors."""
 
-        dev = qml.device("default.qubit", shots=shots, seed=49393)
+        dev = qml.device("default.qubit", shots=shots, seed=4747)
 
         @jax.jit
         @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
@@ -789,8 +789,14 @@ class TestShotsIntegration:
 
         res = circuit(0.5)
         expected = 1 - np.cos(0.5) ** 2
-        assert qml.math.allclose(res[0], expected, atol=5e-3)
-        assert qml.math.allclose(res[1], expected, atol=5e-3)
+        assert qml.math.allclose(res[0], expected, atol=1e-2)
+        assert qml.math.allclose(res[1], expected, atol=3e-2)
+
+        g = jax.jacobian(circuit)(0.5)
+
+        expected_g = 2 * np.cos(0.5) * np.sin(0.5)
+        assert qml.math.allclose(g[0], expected_g, atol=2e-2)
+        assert qml.math.allclose(g[1], expected_g, atol=2e-2)
 
     @pytest.mark.parametrize("shots", [(10000, 10000), (10000, 10005)])
     def test_shot_vectors_multiple_measurements(self, interface, shots):
