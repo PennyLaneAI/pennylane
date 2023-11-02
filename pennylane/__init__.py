@@ -116,6 +116,7 @@ from pennylane.ops.functions import (
     map_wires,
     matrix,
     simplify,
+    iterative_qpe,
 )
 from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost
