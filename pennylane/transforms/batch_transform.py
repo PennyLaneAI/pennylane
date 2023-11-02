@@ -454,7 +454,7 @@ class batch_transform:
         return lambda tape: self.construct(tape, *targs, **tkwargs)
 
 
-def map_transform(
+def map_batch_transform(
     transform: batch_transform, tapes: QuantumTapeBatch
 ) -> Tuple[QuantumTapeBatch, PostprocessingFn]:
     """Map a batch transform over multiple tapes.
@@ -488,11 +488,11 @@ def map_transform(
         tape2 = qml.tape.QuantumTape(ops2, measurements2)
 
 
-    We can use ``map_transform`` to map a single
+    We can use ``map_batch_transform`` to map a single
     batch transform across both of the these tapes in such a way
     that allows us to submit a single job for execution:
 
-    >>> tapes, fn = map_transform(qml.transforms.hamiltonian_expand, [tape1, tape2])
+    >>> tapes, fn = map_batch_transform(qml.transforms.hamiltonian_expand, [tape1, tape2])
     >>> dev = qml.device("default.qubit", wires=2)
     >>> fn(qml.execute(tapes, dev, qml.gradients.param_shift))
     [array(0.99500417), array(0.8150893)]
@@ -536,29 +536,3 @@ def map_transform(
         return final_results
 
     return execution_tapes, processing_fn
-
-
-def map_batch_transform(
-    transform: batch_transform, tapes: QuantumTapeBatch
-) -> Tuple[QuantumTapeBatch, PostprocessingFn]:
-    """Map a batch transform over multiple tapes.
-
-    .. warning::
-
-        This function is being renamed to `map_transform`, and will be
-        removed in an upcoming PennyLane release.
-
-    Args:
-        transform (.batch_transform): the batch transform
-            to be mapped
-        tapes (Sequence[QuantumTape]): The sequence of tapes the batch
-            transform should be applied to. Each tape in the sequence
-            is transformed by the batch transform.
-
-    """
-    warnings.warn(
-        "`map_batch_transform` is being renamed to `map_transform`, "
-        "and will be removed in an upcoming PennyLane release.",
-        UserWarning,
-    )
-    return map_transform(transform, tapes)

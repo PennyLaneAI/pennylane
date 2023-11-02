@@ -242,7 +242,9 @@ class TransformJacobianProducts(JacobianProductCalculator):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("compute_jacobian called with %s", tapes)
         partial_gradient_fn = partial(self._gradient_transform, **self._gradient_kwargs)
-        jac_tapes, batch_post_processing = qml.transforms.map_transform(partial_gradient_fn, tapes)
+        jac_tapes, batch_post_processing = qml.transforms.map_batch_transform(
+            partial_gradient_fn, tapes
+        )
         results = self._inner_execute(jac_tapes)
         return tuple(batch_post_processing(results))
 
