@@ -223,7 +223,7 @@ class MidMeasureMP(MeasurementProcess):
         self.reset = reset
         self.postselect = postselect
 
-    def label(self, decimals=None, base_label=None, cache=None):  # pylint: disable=unused-arguments
+    def label(self, decimals=None, base_label=None, cache=None):  # pylint: disable=unused-argument
         r"""How the mid-circuit measurement is represented in diagrams and drawings.
 
         Args:
