@@ -27,6 +27,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.measurements import (
+    MeasurementProcess,
     CountsMP,
     Expectation,
     ExpectationMP,
@@ -421,7 +422,7 @@ class Device(abc.ABC):
 
         Args:
             queue (Iterable[~.operation.Operation]): operations to execute on the device
-            observables (Iterable[~.measurements.MeasurementProcess]): observables to measure and return
+            observables (Iterable[~.operation.Observable]): observables to measure and return
             parameters (dict[int, list[ParameterDependency]]): Mapping from free parameter index to the list of
                 :class:`Operations <pennylane.operation.Operation>` (in the queue) that depend on it.
 
@@ -461,7 +462,12 @@ class Device(abc.ABC):
             self.pre_measure()
 
             for mp in observables:
-                obs = mp if mp.obs is None else mp.obs
+                obs = mp
+                if isinstance(mp, MeasurementProcess):
+                    if mp.obs is not None:
+                        obs = mp.obs
+                    elif mp.mv is not None:
+                        obs = mp.mv
                 if isinstance(obs, Tensor):
                     wires = [ob.wires for ob in obs.obs]
                 else:
