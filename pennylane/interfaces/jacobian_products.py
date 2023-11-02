@@ -185,7 +185,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
         cache_full_jacobian=False (bool): Whether or not to compute the full jacobian and cache it,
             instead of treating each call as independent. This keyword argument is used to patch problematic
             autograd behavior when caching is turned off. In this case, caching will be based on the identity
-            of the batch, rather than the potentially expensive :property:`~.QuantumScript.hash` that is used
+            of the batch, rather than the potentially expensive :attr:`~.QuantumScript.hash` that is used
             by :func:`~.cache_execute`.
 
     >>> inner_execute = qml.device('default.qubit').execute
@@ -599,9 +599,9 @@ class DeviceJacobianProducts(JacobianProductCalculator):
     def __repr__(self):
         return f"<DeviceJacobianProducts: {self._device.name}, {self._execution_config}>"
 
-    def __init__(self, device: "qml.devices.Device", execution_config=None):
-        if execution_config is None:
-            execution_config = qml.devices.DefaultExecutionConfig
+    def __init__(
+        self, device: "qml.devices.Device", execution_config: "qml.devices.ExecutionConfig"
+    ):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("DeviceJacobianProducts created with (%s, %s)", device, execution_config)
         self._device = device

@@ -52,6 +52,34 @@ as the first argument to the primitive. Even though the primitive function
 does not use the parameters, that is how we communicate to autograd what parameters the derivatives
 belong to.
 
+**Jacobian Calculations and the need for caching:**
+
+Suppose we use the above function with an array and take the jacobian:
+
+>>> x = autograd.numpy.array([1.0, 2.0])
+>>> autograd.jacobian(f)(x)
+Calculating the gradient with [1. 2.], [1. 0.]
+Calculating the gradient with [1. 2.], [0. 1.]
+array([[2., 0.],
+       [0., 4.]])
+
+Here, the ``grad_fn`` was called once for each output quantity. Each time ``grad_fn``
+is called, we are forced to reproduce the calculation for ``exponent * x ** (exponent-1)``,
+only to multiply it by a different vector. When executing quantum circuits, that quantity
+can potentially be quite expensive. Autograd would naively
+request indepedent vjps for each entry in the output, even though the internal circuits will be
+exactly the same.
+
+When normal caching provided by :func:`~.cache_execute` is present, the expensive part (re-executing
+identical circuits) is avoided, but when normal caching is turned off, the above can lead to an explosion
+in the number of required circuit executions.
+
+To avoid this explosion in the number of executed circuits when caching is turned off, we will instead internally
+cache the full jacobian so that is is reused between different calls to the same ``grad_fn``. This behavior is toggled
+by the ``cache_full_jacobian`` keyword argument to :class:`~.TransformJacobianProducts`.
+
+Other interfaces are capable of calculating the full jacobian in one call, so this patch is only present for autograd.
+
 """
 # pylint: disable=too-many-arguments
 import logging

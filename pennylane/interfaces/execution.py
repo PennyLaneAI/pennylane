@@ -412,7 +412,7 @@ def execute(
     expand_fn="device",  # type: ignore
     max_expansion=10,
     device_batch_transform=True,
-    use_device_jacobian_product=False,
+    device_vjp=False,
 ) -> ResultBatch:
     """New function to execute a batch of tapes on a device in an autodifferentiable-compatible manner. More cases will be added,
     during the project. The current version is supporting forward execution for Numpy and does not support shot vectors.
@@ -457,7 +457,7 @@ def execute(
             (within :meth:`Device.batch_transform`) to each tape to be executed. The default behaviour
             of the device batch transform is to expand out Hamiltonian measurements into
             constituent terms if not supported on the device.
-        use_device_jacobian_product (Optional[bool]): whether or not to use the device provided jacobian
+        device_vjp=False (Optional[bool]): whether or not to use the device provided jacobian
             product if it is available.
 
     Returns:
@@ -561,14 +561,14 @@ def execute(
 
         interface = get_jax_interface_name(tapes)
 
-    if use_device_jacobian_product and isinstance(device, qml.Device):
+    if device_vjp and isinstance(device, qml.Device):
         raise qml.QuantumFunctionError(
             "device provided jacobian products are not compatible with the old device interface."
         )
 
     gradient_kwargs = gradient_kwargs or {}
     config = config or _get_execution_config(
-        gradient_fn, grad_on_execution, interface, device, use_device_jacobian_product
+        gradient_fn, grad_on_execution, interface, device, device_vjp
     )
 
     if isinstance(cache, bool) and cache:
@@ -762,8 +762,7 @@ def execute(
         # in this case would have ambiguous behaviour.
         raise ValueError("Gradient transforms cannot be used with grad_on_execution=True")
     elif interface in jpc_interfaces:
-        # autograd requests the jacobian too many times
-        # so we need to cache the full jacobian even when caching is turned off
+        # See autograd.py submodule docstring for explanation for ``cache_full_jacobian``
         cache_full_jacobian = (interface == "autograd") and not cache
 
         # we can have higher order derivatives when the `inner_execute` used to take
@@ -772,13 +771,12 @@ def execute(
         # its own jacobian product class
         # this mechanism unpacks the currently existing recursion
         jpc = TransformJacobianProducts(
-            execute_fn, gradient_fn, gradient_kwargs, cache_full_jacobian=cache_full_jacobian
+            execute_fn, gradient_fn, gradient_kwargs, cache_full_jacobian
         )
         for _ in range(1, max_diff):
             ml_boundary_execute = _get_ml_boundary_execute(interface, _grad_on_execution)
             execute_fn = partial(ml_boundary_execute, execute_fn=execute_fn, jpc=jpc)
             jpc = TransformJacobianProducts(execute_fn, gradient_fn, gradient_kwargs)
-            cache_full_jacobian = False
 
     ml_boundary_execute = _get_ml_boundary_execute(interface, _grad_on_execution)
 
@@ -792,9 +790,7 @@ def execute(
     return post_processing(results)
 
 
-def _get_execution_config(
-    gradient_fn, grad_on_execution, interface, device, use_device_jacobian_product
-):
+def _get_execution_config(gradient_fn, grad_on_execution, interface, device, device_vjp):
     """Helper function to get the execution config."""
     if gradient_fn is None:
         _gradient_method = None
@@ -806,7 +802,7 @@ def _get_execution_config(
         interface=interface,
         gradient_method=_gradient_method,
         grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
-        use_device_jacobian_product=use_device_jacobian_product,
+        use_device_jacobian_product=device_vjp,
     )
     if isinstance(device, qml.devices.Device):
         _, config = device.preprocess(config)
