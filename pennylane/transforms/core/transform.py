@@ -130,6 +130,7 @@ def transform(
         - :class:`pennylane.QNode`
         - a quantum function (callable)
         - :class:`pennylane.tape.QuantumTape`
+        - a sequence of :class:`pennylane.tape.QuantumTape` objects
         - :class:`pennylane.devices.Device`.
 
         For each object, the transform will be applied in a different way, but it always preserves the underlying
@@ -152,6 +153,10 @@ def transform(
         - For a :class:`~.QuantumTape`, the underlying quantum transform is directly applied on the
           :class:`~.QuantumTape`. It returns a sequence of :class:`~.QuantumTape` and a processing
           function to be applied after execution.
+
+        - For a sequence of :class:`~.QuantumTape` objects, the underlying quantum transform is
+          directly applied to each :class:`~.QuantumTape`. It returns a flat sequence of all resulting
+          :class:`~.QuantumTape` objects and a processing function to be applied after execution.
 
         - For a :class:`~.devices.Device`, the transform is added to the device's transform program
           and a transformed :class:`pennylane.devices.Device` is returned. The transform is added
