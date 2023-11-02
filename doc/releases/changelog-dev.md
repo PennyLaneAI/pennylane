@@ -44,6 +44,9 @@
   is a `Hamiltonian`.
   [(#4768)](https://github.com/PennyLaneAI/pennylane/pull/4768)
 
+* In `defualt.qubit`, initial states are now initialized with the simulation's wire order, not the circuit's
+  wire order.
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
