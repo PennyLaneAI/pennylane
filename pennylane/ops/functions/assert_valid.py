@@ -215,10 +215,10 @@ def assert_valid(op: qml.operation.Operator, skip_pickle=False) -> None:
     sure it has been correctly defined.
 
     Args:
-        op (qml.opeartion.Operator): a instance to validate
+        op (.Operator): an instance to validate
 
     Keyword Args:
-        skip_pickle=False : If ``True``, pickling tests are not run. This can be used when
+        skip_pickle=False : If ``True``, pickling tests are not run. Set to ``True`` when
             testing a locally defined operator, as pickle cannot handle local objects
 
     **Examples:**
@@ -239,6 +239,7 @@ def assert_valid(op: qml.operation.Operator, skip_pickle=False) -> None:
         AssertionError: op.data must be a tuple
 
     .. code-block:: python
+
         class MyOp(qml.operation.Operator):
 
             def __init__(self, wires):
