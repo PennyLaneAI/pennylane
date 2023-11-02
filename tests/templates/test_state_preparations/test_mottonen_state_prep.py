@@ -293,16 +293,13 @@ class TestDecomposition:
         """Test that attempting to decompose a MottonenStatePreparation operation with
         broadcasting raises an error."""
         state = np.array([[1 / 2, 1 / 2, 1 / 2, 1 / 2], [0.0, 0.0, 0.0, 1.0]])
-        batch_size = 2
 
         op = qml.MottonenStatePreparation(state, wires=[0, 1])
         with pytest.raises(ValueError, match="Broadcasting with MottonenStatePreparation"):
             _ = op.decomposition()
 
         with pytest.raises(ValueError, match="Broadcasting with MottonenStatePreparation"):
-            _ = qml.MottonenStatePreparation.compute_decomposition(
-                state, qml.wires.Wires([0, 1]), batch_size
-            )
+            _ = qml.MottonenStatePreparation.compute_decomposition(state, qml.wires.Wires([0, 1]))
 
 
 class TestInputs:

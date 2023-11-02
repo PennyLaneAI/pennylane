@@ -99,6 +99,7 @@ class BasisStatePreparation(Operation):
         Args:
             basis_state (array): Input array of shape ``(len(wires),)``
             wires (Any or Iterable[Any]): wires that the operator acts on
+            batch_size (Optional[int]): Size of batch, if any
 
         Returns:
             list[.Operator]: decomposition of the operator
@@ -109,6 +110,13 @@ class BasisStatePreparation(Operation):
         [PauliX(wires=['a']),
         PauliX(wires=['b'])]
         """
+        if len(qml.math.shape(basis_state)) > 1:
+            raise ValueError(
+                "Broadcasting with BasisStatePreparation is not supported. Please use the "
+                "qml.transforms.broadcast_expand transform to use broadcasting with "
+                "BasisStatePreparation."
+            )
+
         if not qml.math.is_abstract(basis_state):
             op_list = []
             for wire, state in zip(wires, basis_state):
