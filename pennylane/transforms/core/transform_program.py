@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the transform program class.
+This module contains the ``TransformProgram`` class.
 """
 from functools import partial
 from typing import Callable, List, Tuple, Optional, Sequence
@@ -101,14 +101,21 @@ def null_postprocessing(results: ResultBatch) -> ResultBatch:
 
 
 class TransformProgram:
-    """Class that contains a transform program and the methods to interact with it. The order of execution is the order
-    in the list containing the containers.
+    """Class that contains a transform program and the methods to interact with it.
+
+    The order of execution is the order in the list containing the containers.
+
+    The main case where one would have to interact directly with a transform program is when developing a
+    :class:`Device <pennylane.devices.Device>`. In this case, the pre-processing method of a device
+    returns a transform program. You should directly refer to the device API documentation for more details.
 
     .. warning::
 
-        This class is developer-facing and should not be used directly.
+        This class is developer-facing and should not be used directly. Instead, use
+        :func:`qml.transform <pennylane.transform>` if you would like to make a custom
+        transform.
 
-    .. seealso:: :func:`~.pennylane.transforms.core.transform`
+    .. seealso:: :func:`~.pennylane.transform`
 
     """
 
@@ -178,7 +185,7 @@ class TransformProgram:
         """Add a transform (dispatcher) to the end of the program.
 
         Note that this should be a function decorated with/called by
-        `qml.transforms.transform`, and not a `TransformContainer`.
+        ``qml.transforms.transform``, and not a ``TransformContainer``.
 
         Args:
             transform (TransformDispatcher): The transform to add to the transform program.
@@ -267,7 +274,7 @@ class TransformProgram:
 
     @property
     def is_informative(self) -> bool:
-        """Check if the transform program is informative or not.
+        """``True`` if the transform program is informative.
 
         Returns:
             bool: Boolean
@@ -276,7 +283,7 @@ class TransformProgram:
 
     @property
     def has_final_transform(self) -> bool:
-        """Check if the transform program has a terminal transform or not."""
+        """``True`` if the transform program has a terminal transform."""
         return self[-1].final_transform if self else False
 
     def has_classical_cotransform(self) -> bool:
@@ -434,7 +441,7 @@ class TransformProgram:
                     slices_classical.append(slice(start_classical, start_classical + 1))
                     start_classical += 1
 
-            if cotransform:
+            if cotransform and self._classical_jacobians:
                 batch_postprocessing_classical = partial(
                     _batch_postprocessing, individual_fns=classical_fns, slices=slices_classical
                 )

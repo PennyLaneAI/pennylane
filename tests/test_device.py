@@ -396,6 +396,16 @@ class TestInternalFunctions:
         with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
             dev.check_validity(queue, observables)
 
+    def test_check_validity_on_projector_as_operation(self, mock_device_with_operations):
+        """Test that an error is raised if the operation queue contains qml.Projector"""
+        dev = mock_device_with_operations(wires=1)
+
+        queue = [qml.PauliX(0), qml.Projector([0], wires=0), qml.PauliZ(0)]
+        observables = []
+
+        with pytest.raises(ValueError, match="Postselection is not supported"):
+            dev.check_validity(queue, observables)
+
     def test_args(self, mock_device):
         """Test that the device requires correct arguments"""
         with pytest.raises(
@@ -581,7 +591,7 @@ class TestInternalFunctions:
         ops = [qml.AngleEmbedding(features=[0.1], wires=[0], rotation="Z"), op, qml.PauliZ(wires=2)]
 
         dev = qml.device("default.qubit.legacy", wires=3)
-        tape = qml.tape.QuantumTape(ops=ops, measurements=[], prep=prep, shots=100)
+        tape = qml.tape.QuantumTape(ops=prep + ops, measurements=[], shots=100)
         new_tape = dev.default_expand_fn(tape)
 
         true_decomposition = []

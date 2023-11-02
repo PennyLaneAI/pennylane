@@ -198,7 +198,7 @@ class TestConvertersZX:
 
         I = qml.math.eye(2 ** len(operation.wires))
 
-        qs = QuantumScript([operation], [], [])
+        qs = QuantumScript([operation], [])
         matrix_qscript = qml.matrix(qs)
 
         zx_g = qml.transforms.to_zx(qs)
@@ -234,7 +234,7 @@ class TestConvertersZX:
             qml.SWAP(wires=[0, 1]),
         ]
 
-        qs = QuantumScript(operations, [], [])
+        qs = QuantumScript(operations, [])
         zx_g = qml.transforms.to_zx(qs)
 
         assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
@@ -315,7 +315,7 @@ class TestConvertersZX:
             qml.CNOT(wires=[0, 4]),
         ]
 
-        qs = QuantumScript(operations, [], [])
+        qs = QuantumScript(operations, [])
         zx_g = qml.transforms.to_zx(qs)
 
         assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
@@ -355,14 +355,14 @@ class TestConvertersZX:
         ]
         measurements = [qml.expval(qml.PauliZ(0) @ qml.PauliX(1))]
 
-        qs = QuantumScript(operations, measurements, [])
+        qs = QuantumScript(operations, measurements)
         zx_g = qml.transforms.to_zx(qs, expand_measurements=True)
         assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
 
         # Add rotation Hadamard because of PauliX
         operations.append(qml.Hadamard(wires=[1]))
         operations_with_rotations = operations
-        qscript_with_rot = QuantumScript(operations_with_rotations, [], [])
+        qscript_with_rot = QuantumScript(operations_with_rotations, [])
         matrix_qscript = qml.matrix(qscript_with_rot)
 
         matrix_zx = zx_g.to_matrix()
@@ -398,7 +398,7 @@ class TestConvertersZX:
             qml.SWAP(wires=[0, 1]),
         ]
 
-        qs = QuantumScript(operations, [], prep)
+        qs = QuantumScript(prep + operations, [])
         zx_g = qml.transforms.to_zx(qs)
 
         assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
@@ -478,7 +478,7 @@ class TestConvertersZX:
 
         operations = [qml.sum(qml.PauliX(0), qml.PauliZ(0))]
 
-        qs = QuantumScript(operations, [], [])
+        qs = QuantumScript(operations, [])
         with pytest.raises(
             qml.QuantumFunctionError,
             match="The expansion of the quantum tape failed, PyZX does not support",

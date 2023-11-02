@@ -24,7 +24,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.circuit_graph import LayerData
 from pennylane.queuing import WrappedObj
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 
 
 def _contract_metric_tensor_with_cjac(mt, cjac, tape):  # pylint: disable=unused-argument
@@ -118,7 +118,7 @@ def metric_tensor(  # pylint:disable=too-many-arguments
         This is the case for unitary single-parameter operations.
 
     Args:
-        tape (QuantumTape): quantum tape to find the metric tensor of
+        tape (QNode or QuantumTape): quantum circuit to find the metric tensor of
         argnum (int or Sequence[int] or None): Trainable tape-parameter indices with respect to which
             the metric tensor is computed. If ``argnum=None``, the metric tensor with respect to all
             trainable parameters is returned. Excluding tape-parameter indices from this list reduces
@@ -159,16 +159,10 @@ def metric_tensor(  # pylint:disable=too-many-arguments
               The output shape is a single two-dimensional tensor.
 
     Returns:
-        function or tuple[list[QuantumTape], function]:
+        qnode (QNode) or tuple[List[QuantumTape], function]:
 
-        - If the input is a QNode, an object representing the metric tensor (function) of the
-          QNode that takes the same arguments as the QNode and can be executed to obtain the
-          metric tensor (matrix).
-
-        - If the input is a tape, a tuple containing a
-          list of generated tapes, together with a post-processing
-          function to be applied to the results of the evaluated tapes
-          in order to obtain the metric tensor.
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the metric tensor in the form of a tensor.
 
     The block-diagonal part of the metric tensor always is computed using the
     covariance-based approach. If no approximation is selected,
@@ -290,9 +284,9 @@ def metric_tensor(  # pylint:disable=too-many-arguments
 
         >>> dev = qml.device("default.qubit", wires=3)
         >>> fn(qml.execute(tapes, dev, None))
-        array([[ 0.25      ,  0.        ,  0.42073549],
-               [ 0.        ,  0.00415023, -0.26517488],
-               [ 0.42073549, -0.26517488,  0.24878844]])
+        tensor([[ 0.25      ,  0.        ,  0.42073549],
+                [ 0.        ,  0.00415023, -0.26517488],
+                [ 0.42073549, -0.26517488,  0.24878844]], requires_grad=True)
 
         The first term of the off block-diagonal entries of the full metric tensor are
         computed with Hadamard tests. This first term reads
@@ -340,9 +334,9 @@ def metric_tensor(  # pylint:disable=too-many-arguments
             >>> mt = qml.metric_tensor(circuit, argnum=(0, 2, 3))(weights)
             >>> print(mt)
             [[ 0.          0.          0.          0.        ]
-            [ 0.          0.25       -0.02495835 -0.02495835]
-            [ 0.         -0.02495835  0.01226071  0.01226071]
-            [ 0.         -0.02495835  0.01226071  0.01226071]]
+             [ 0.          0.25       -0.02495835 -0.02495835]
+             [ 0.         -0.02495835  0.01226071  0.01226071]
+             [ 0.         -0.02495835  0.01226071  0.01226071]]
 
         Because the 0-th element of ``weights`` appears second in the QNode and therefore in the
         underlying tape, it is the 1st tape parameter.

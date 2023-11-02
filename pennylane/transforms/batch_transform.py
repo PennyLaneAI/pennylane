@@ -120,7 +120,7 @@ class batch_transform:
     >>> dev = qml.device("default.qubit", wires=1)
     >>> res = qml.execute(tapes, dev, interface="autograd", gradient_fn=qml.gradients.param_shift)
     >>> print(res)
-    [tensor([0.94765073], requires_grad=True), tensor([0.31532236], requires_grad=True)]
+    [0.9476507264148154, 0.31532236239526856]
 
     Applying the processing function, we retrieve the end result of the transform:
 
@@ -482,7 +482,7 @@ def map_batch_transform(
     >>> tapes, fn = map_batch_transform(qml.transforms.hamiltonian_expand, [tape1, tape2])
     >>> dev = qml.device("default.qubit", wires=2)
     >>> fn(qml.execute(tapes, dev, qml.gradients.param_shift))
-    [0.9950041652780257, 0.8150893013179248]
+    [array(0.99500417), array(0.8150893)]
     """
     execution_tapes = []
     batch_fns = []
