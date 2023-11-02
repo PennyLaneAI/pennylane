@@ -180,7 +180,7 @@ class TestAutogradExecuteUnitTests:
 
 class TestBatchTransformExecution:
     """Tests to ensure batch transforms can be correctly executed
-    via qml.execute and map_batch_transform"""
+    via qml.execute and a dispatched transform over many tapes."""
 
     def test_no_batch_transform(self, mocker):
         """Test that batch transforms can be disabled and enabled"""

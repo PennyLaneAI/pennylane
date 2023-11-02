@@ -36,6 +36,10 @@
   Instead switch to using the new `qml.transform` function.
   [(#4774)](https://github.com/PennyLaneAI/pennylane/pull/4774)
 
+* `map_batch_transform` is deprecated, as all transforms can now be applied to
+  a sequence of tapes to achieve the same functionality.
+  [(#4774)](https://github.com/PennyLaneAI/pennylane/pull/4774)
+
 <h3>Documentation 📝</h3>
 
 * Documentation page for `qml.measurements` now links top-level accessible functions (e.g. `qml.expval`) 

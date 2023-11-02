@@ -459,6 +459,11 @@ def map_batch_transform(
 ) -> Tuple[QuantumTapeBatch, PostprocessingFn]:
     """Map a batch transform over multiple tapes.
 
+    .. warning::
+
+        This function is deprecated, as all transforms can now be applied
+        to a sequence of tapes to achieve the same functionality.
+
     Args:
         transform (.batch_transform): the batch transform
             to be mapped
@@ -497,6 +502,11 @@ def map_batch_transform(
     >>> fn(qml.execute(tapes, dev, qml.gradients.param_shift))
     [array(0.99500417), array(0.8150893)]
     """
+    warnings.warn(
+        "`map_batch_transform` is deprecated, as all transforms can now be "
+        "applied to a sequence of tapes to achieve the same functionality.",
+        UserWarning,
+    )
     execution_tapes = []
     batch_fns = []
     tape_counts = []

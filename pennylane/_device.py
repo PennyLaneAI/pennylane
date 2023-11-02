@@ -802,9 +802,7 @@ class Device(abc.ABC):
             return circuits, hamiltonian_fn
 
         # Expand each of the broadcasted Hamiltonian-expanded circuits
-        expanded_tapes, expanded_fn = qml.transforms.map_batch_transform(
-            qml.transforms.broadcast_expand, circuits
-        )
+        expanded_tapes, expanded_fn = qml.transforms.broadcast_expand(circuits)
 
         # Chain the postprocessing functions of the broadcasted-tape expansions and the Hamiltonian
         # expansion. Note that the application order is reversed compared to the expansion order,
