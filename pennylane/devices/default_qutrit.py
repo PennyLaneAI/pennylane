@@ -94,6 +94,8 @@ class DefaultQutrit(QutritDevice):
         "GellMann",
         "Identity",
     }
+
+    # Static methods to use qml.math to allow for backprop differentiation
     _reshape = staticmethod(qnp.reshape)
     _flatten = staticmethod(qnp.flatten)
     _transpose = staticmethod(qnp.transpose)
@@ -380,7 +382,7 @@ class DefaultQutrit(QutritDevice):
                 "tf": "default.qutrit",
                 "torch": "default.qutrit",
                 "jax": "default.qutrit",
-            }
+            },
         )
         return capabilities
 

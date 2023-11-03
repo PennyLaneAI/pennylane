@@ -112,7 +112,7 @@ class TRX(Operation):
 
     @staticmethod
     def compute_matrix(
-            theta, subspace=(0, 1)
+        theta, subspace=(0, 1)
     ):  # pylint: disable=arguments-differ,dangerous-default-value
         r"""Representation of the operator as a canonical matrix in the computational basis.
 
@@ -153,12 +153,16 @@ class TRX(Operation):
         diags[subspace[1]] = c
 
         off_diags = [z, z, z]
-        off_diags[qml.math.sum(subspace)-1] = js
+        off_diags[qml.math.sum(subspace) - 1] = js
 
-        return qml.math.stack([
-            stack_last([diags[0], off_diags[0], off_diags[1]]),
-            stack_last([off_diags[0], diags[1], off_diags[2]]),
-            stack_last([off_diags[1], off_diags[2], diags[2]])], axis=-2)
+        return qml.math.stack(
+            [
+                stack_last([diags[0], off_diags[0], off_diags[1]]),
+                stack_last([off_diags[0], diags[1], off_diags[2]]),
+                stack_last([off_diags[1], off_diags[2], diags[2]]),
+            ],
+            axis=-2,
+        )
 
     def adjoint(self):
         return TRX(-self.data[0], wires=self.wires, subspace=self.subspace)
@@ -290,12 +294,16 @@ class TRY(Operation):
         diags[subspace[1]] = c
 
         off_diags = [z, z, z]
-        off_diags[qml.math.sum(subspace)-1] = s
+        off_diags[qml.math.sum(subspace) - 1] = s
 
-        return qml.math.stack([
-            stack_last([diags[0], -off_diags[0], -off_diags[1]]),
-            stack_last([off_diags[0], diags[1], -off_diags[2]]),
-            stack_last([off_diags[1], off_diags[2], diags[2]])], axis=-2)
+        return qml.math.stack(
+            [
+                stack_last([diags[0], -off_diags[0], -off_diags[1]]),
+                stack_last([off_diags[0], diags[1], -off_diags[2]]),
+                stack_last([off_diags[1], off_diags[2], diags[2]]),
+            ],
+            axis=-2,
+        )
 
     def adjoint(self):
         return TRY(-self.data[0], wires=self.wires, subspace=self.subspace)
@@ -427,7 +435,13 @@ class TRZ(Operation):
         diags[subspace[1]] = qml.math.conj(p)
 
         return qml.math.stack(
-            [stack_last([diags[0], z, z]), stack_last([z, diags[1], z]), stack_last([z, z, diags[2]])], axis=-2)
+            [
+                stack_last([diags[0], z, z]),
+                stack_last([z, diags[1], z]),
+                stack_last([z, z, diags[2]]),
+            ],
+            axis=-2,
+        )
 
     def adjoint(self):
         return TRZ(-self.data[0], wires=self.wires, subspace=self.subspace)

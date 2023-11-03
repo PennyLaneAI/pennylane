@@ -43,8 +43,8 @@ def test_analytic_deprecation():
     msg += "Please use shots=None instead of analytic=True."
 
     with pytest.raises(
-            DeviceError,
-            match=msg,
+        DeviceError,
+        match=msg,
     ):
         qml.device("default.qutrit", wires=1, shots=1, analytic=True)
 
@@ -54,7 +54,7 @@ def test_dtype_errors():
     with pytest.raises(DeviceError, match="Real datatype must be a floating point type."):
         qml.device("default.qutrit", wires=1, r_dtype=np.complex128)
     with pytest.raises(
-            DeviceError, match="Complex datatype must be a complex floating point type."
+        DeviceError, match="Complex datatype must be a complex floating point type."
     ):
         qml.device("default.qutrit", wires=1, c_dtype=np.float64)
 
@@ -87,13 +87,13 @@ class TestApply:
             np.array([1 / np.sqrt(2), 0.5, -0.5]),
             [1, 2],
         ),
-        (qml.THadamard, [0, 1, 0], np.array([1, OMEGA, OMEGA ** 2]) * (-1j / np.sqrt(3)), None),
-        (qml.THadamard, [0, 0, 1], np.array([1, OMEGA ** 2, OMEGA]) * (-1j / np.sqrt(3)), None),
+        (qml.THadamard, [0, 1, 0], np.array([1, OMEGA, OMEGA**2]) * (-1j / np.sqrt(3)), None),
+        (qml.THadamard, [0, 0, 1], np.array([1, OMEGA**2, OMEGA]) * (-1j / np.sqrt(3)), None),
     ]
 
     @pytest.mark.parametrize("operation, input, expected_output, subspace", test_data_no_parameters)
     def test_apply_operation_single_wire_no_parameters(
-            self, qutrit_device_1_wire, tol, operation, input, expected_output, subspace
+        self, qutrit_device_1_wire, tol, operation, input, expected_output, subspace
     ):
         """Tests that applying an operation yields the expected output state for single wire
         operations that have no parameters."""
@@ -108,7 +108,7 @@ class TestApply:
 
     @pytest.mark.parametrize("operation, expected_output, input, subspace", test_data_no_parameters)
     def test_apply_operation_single_wire_no_parameters_adjoint(
-            self, qutrit_device_1_wire, tol, operation, input, expected_output, subspace
+        self, qutrit_device_1_wire, tol, operation, input, expected_output, subspace
     ):
         """Tests that applying an adjoint operation yields the expected output state for single wire
         operations that have no parameters."""
@@ -162,7 +162,7 @@ class TestApply:
         "operation,input,expected_output, subspace", all_two_wires_no_parameters
     )
     def test_apply_operation_two_wires_no_parameters(
-            self, qutrit_device_2_wires, tol, operation, input, expected_output, subspace
+        self, qutrit_device_2_wires, tol, operation, input, expected_output, subspace
     ):
         """Tests that applying an operation yields the expected output state for two wire
         operations that have no parameters."""
@@ -187,7 +187,7 @@ class TestApply:
         "operation,expected_output,input, subspace", all_two_wires_no_parameters
     )
     def test_apply_operation_two_wires_no_parameters_adjoint(
-            self, qutrit_device_2_wires, tol, operation, input, expected_output, subspace
+        self, qutrit_device_2_wires, tol, operation, input, expected_output, subspace
     ):
         """Tests that applying an adjoint operation yields the expected output state for two wire
         operations that have no parameters."""
@@ -243,7 +243,7 @@ class TestApply:
         "operation, input, expected_output, par, subspace", test_data_single_wire_with_parameters
     )
     def test_apply_operation_single_wire_with_parameters(
-            self, qutrit_device_1_wire, tol, operation, input, expected_output, par, subspace
+        self, qutrit_device_1_wire, tol, operation, input, expected_output, par, subspace
     ):
         """Tests that applying an operation yields the expected output state for single wire
         operations that have parameters."""
@@ -260,7 +260,7 @@ class TestApply:
         "operation, expected_output, input, par, subspace", test_data_single_wire_with_parameters
     )
     def test_apply_operation_single_wire_with_parameters_adjoint(
-            self, qutrit_device_1_wire, tol, operation, input, expected_output, par, subspace
+        self, qutrit_device_1_wire, tol, operation, input, expected_output, par, subspace
     ):
         """Tests that applying an adjoint operation yields the expected output state for single wire
         operations that have parameters."""
@@ -297,7 +297,7 @@ class TestApply:
         "operation,input,expected_output,par", test_data_two_wires_with_parameters
     )
     def test_apply_operation_two_wires_with_parameters(
-            self, qutrit_device_2_wires, tol, operation, input, expected_output, par
+        self, qutrit_device_2_wires, tol, operation, input, expected_output, par
     ):
         """Tests that applying an operation yields the expected output state for two wire
         operations that have parameters."""
@@ -316,7 +316,7 @@ class TestApply:
         "operation,expected_output,input,par", test_data_two_wires_with_parameters
     )
     def test_apply_operation_two_wires_with_parameters_adjoint(
-            self, qutrit_device_2_wires, tol, operation, input, expected_output, par
+        self, qutrit_device_2_wires, tol, operation, input, expected_output, par
     ):
         """Tests that applying an adjoint operation yields the expected output state for two wire
         operations that have parameters."""
@@ -359,7 +359,7 @@ class TestApply:
         ],
     )
     def test_apply_operation_state_preparation(
-            self, qutrit_device_2_wires, tol, operation, expected_output, par
+        self, qutrit_device_2_wires, tol, operation, expected_output, par
     ):
         """Tests that applying an operation yields the expected output state for single wire
         operations that have no parameters."""
@@ -374,19 +374,19 @@ class TestApply:
 
     def test_apply_errors_basis_state(self, qutrit_device_2_wires):
         with pytest.raises(
-                ValueError, match="QutritBasisState parameter must consist of 0, 1 or 2 integers."
+            ValueError, match="QutritBasisState parameter must consist of 0, 1 or 2 integers."
         ):
             qutrit_device_2_wires.apply([qml.QutritBasisState(np.array([-0.2, 4.2]), wires=[0, 1])])
 
         with pytest.raises(
-                ValueError, match="QutritBasisState parameter and wires must be of equal length."
+            ValueError, match="QutritBasisState parameter and wires must be of equal length."
         ):
             qutrit_device_2_wires.apply([qml.QutritBasisState(np.array([0, 1]), wires=[0])])
 
         with pytest.raises(
-                DeviceError,
-                match="Operation QutritBasisState cannot be used after other operations have already been applied "
-                      "on a default.qutrit device.",
+            DeviceError,
+            match="Operation QutritBasisState cannot be used after other operations have already been applied "
+            "on a default.qutrit device.",
         ):
             qutrit_device_2_wires.reset()
             qutrit_device_2_wires.apply(
@@ -403,10 +403,10 @@ class TestExpval:
             (qml.THermitian, [1, 0, 0], 1, [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]]),
             (qml.THermitian, [0, 1, 0], -1, [[1, 0, 0], [0, -1, 0], [0, 0, 0]]),
             (
-                    qml.THermitian,
-                    [1 / math.sqrt(3), -1 / math.sqrt(3), 1j / math.sqrt(3)],
-                    0,
-                    [[0, -1j, 0], [1j, 0, 0], [0, 0, 0]],
+                qml.THermitian,
+                [1 / math.sqrt(3), -1 / math.sqrt(3), 1j / math.sqrt(3)],
+                0,
+                [[0, -1j, 0], [1j, 0, 0], [0, 0, 0]],
             ),
             (qml.GellMann, [1, 0, 0], 0, 1),
             (qml.GellMann, [0, 0, 1], 0, 1),
@@ -427,7 +427,7 @@ class TestExpval:
         ],
     )
     def test_expval_single_wire_with_parameters(
-            self, qutrit_device_1_wire, tol, observable, state, expected_output, par
+        self, qutrit_device_1_wire, tol, observable, state, expected_output, par
     ):
         """Tests that expectation values are properly calculated for single-wire observables with parameters."""
 
@@ -456,55 +456,55 @@ class TestExpval:
         "observable,state,expected_output,mat",
         [
             (
-                    qml.THermitian,
-                    [1 / math.sqrt(3), 0, 1 / math.sqrt(3), 1 / math.sqrt(3), 0, 0, 0, 0, 0],
-                    1 / 3,
-                    obs_1,
+                qml.THermitian,
+                [1 / math.sqrt(3), 0, 1 / math.sqrt(3), 1 / math.sqrt(3), 0, 0, 0, 0, 0],
+                1 / 3,
+                obs_1,
             ),
             (
-                    qml.THermitian,
-                    [0, 0, 0, 0, 0, 0, 0, 0, 1],
-                    2,
-                    obs_1,
+                qml.THermitian,
+                [0, 0, 0, 0, 0, 0, 0, 0, 1],
+                2,
+                obs_1,
             ),
             (
-                    qml.THermitian,
-                    [0.5, 0, 0, 0.5, 0, 0, 0, 0, 1 / math.sqrt(2)],
-                    1,
-                    obs_1,
+                qml.THermitian,
+                [0.5, 0, 0, 0.5, 0, 0, 0, 0, 1 / math.sqrt(2)],
+                1,
+                obs_1,
             ),
             (
-                    qml.THermitian,
-                    [
-                        3.73671170e-01 - 0.00000000e00j,
-                        3.73671170e-01 - 8.75889651e-19j,
-                        4.69829451e-01 + 7.59104364e-19j,
-                        -2.74458036e-17 - 3.73671170e-01j,
-                        -1.98254112e-18 - 3.73671170e-01j,
-                        1.04702953e-17 - 4.69829451e-01j,
-                        0.00000000e00 + 0.00000000e00j,
-                        0.00000000e00 + 0.00000000e00j,
-                        0.00000000e00 + 0.00000000e00j,
-                    ],
-                    -6.772,
-                    obs_2,
+                qml.THermitian,
+                [
+                    3.73671170e-01 - 0.00000000e00j,
+                    3.73671170e-01 - 8.75889651e-19j,
+                    4.69829451e-01 + 7.59104364e-19j,
+                    -2.74458036e-17 - 3.73671170e-01j,
+                    -1.98254112e-18 - 3.73671170e-01j,
+                    1.04702953e-17 - 4.69829451e-01j,
+                    0.00000000e00 + 0.00000000e00j,
+                    0.00000000e00 + 0.00000000e00j,
+                    0.00000000e00 + 0.00000000e00j,
+                ],
+                -6.772,
+                obs_2,
             ),
             (
-                    qml.THermitian,
-                    [1 / 3] * 9,
-                    0,
-                    obs_2,
+                qml.THermitian,
+                [1 / 3] * 9,
+                0,
+                obs_2,
             ),
             (
-                    qml.THermitian,
-                    [0, 0.5, 0, 0.5, 0, 0.5, 0, 0.5, 0],
-                    0,
-                    obs_2,
+                qml.THermitian,
+                [0, 0.5, 0, 0.5, 0, 0.5, 0, 0.5, 0],
+                0,
+                obs_2,
             ),
         ],
     )
     def test_expval_two_wires_with_parameters(
-            self, qutrit_device_2_wires, tol, observable, state, expected_output, mat
+        self, qutrit_device_2_wires, tol, observable, state, expected_output, mat
     ):
         """Tests that expectation values are properly calculated for two-wire observables with parameters."""
 
@@ -541,10 +541,10 @@ class TestVar:
             (qml.THermitian, [1, 0, 0], 1, [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]]),
             (qml.THermitian, [0, 1, 0], 1, [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]]),
             (
-                    qml.THermitian,
-                    [1 / math.sqrt(3), -1 / math.sqrt(3), 1j / math.sqrt(3)],
-                    2 / 3,
-                    [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]],
+                qml.THermitian,
+                [1 / math.sqrt(3), -1 / math.sqrt(3), 1j / math.sqrt(3)],
+                2 / 3,
+                [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]],
             ),
             (qml.GellMann, [1, 0, 0], 1, 1),
             (qml.GellMann, [0, 0, 1], 0, 1),
@@ -565,7 +565,7 @@ class TestVar:
         ],
     )
     def test_var_single_wire_with_parameters(
-            self, qutrit_device_1_wire, tol, observable, state, expected_output, par
+        self, qutrit_device_1_wire, tol, observable, state, expected_output, par
     ):
         """Tests that variances are properly calculated for single-wire observables with parameters."""
 
@@ -594,45 +594,45 @@ class TestVar:
         "observable,state,expected_output,mat",
         [
             (
-                    qml.THermitian,
-                    [1 / math.sqrt(3), 0, 1 / math.sqrt(3), 1 / math.sqrt(3), 0, 0, 0, 0, 0],
-                    10.88888889,
-                    obs_1,
+                qml.THermitian,
+                [1 / math.sqrt(3), 0, 1 / math.sqrt(3), 1 / math.sqrt(3), 0, 0, 0, 0, 0],
+                10.88888889,
+                obs_1,
             ),
             (
-                    qml.THermitian,
-                    [0, 0, 0, 0, 0, 0, 0, 0, 1],
-                    0,
-                    obs_1,
+                qml.THermitian,
+                [0, 0, 0, 0, 0, 0, 0, 0, 1],
+                0,
+                obs_1,
             ),
             (
-                    qml.THermitian,
-                    [0.5, 0, 0, 0.5, 0, 0, 0, 0, 1 / math.sqrt(2)],
-                    9,
-                    obs_1,
+                qml.THermitian,
+                [0.5, 0, 0, 0.5, 0, 0, 0, 0, 1 / math.sqrt(2)],
+                9,
+                obs_1,
             ),
             (
-                    qml.THermitian,
-                    [0, 0, 1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0, 0, 0, 0],
-                    18,
-                    obs_2,
+                qml.THermitian,
+                [0, 0, 1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0, 0, 0, 0],
+                18,
+                obs_2,
             ),
             (
-                    qml.THermitian,
-                    [1 / 3] * 9,
-                    30.22222,
-                    obs_2,
+                qml.THermitian,
+                [1 / 3] * 9,
+                30.22222,
+                obs_2,
             ),
             (
-                    qml.THermitian,
-                    [0, 1 / 2, 0, 1 / 2, 0, 1 / 2, 0, 1 / 2, 0],
-                    20,
-                    obs_2,
+                qml.THermitian,
+                [0, 1 / 2, 0, 1 / 2, 0, 1 / 2, 0, 1 / 2, 0],
+                20,
+                obs_2,
             ),
         ],
     )
     def test_var_two_wires_with_parameters(
-            self, qutrit_device_2_wires, tol, observable, state, expected_output, mat
+        self, qutrit_device_2_wires, tol, observable, state, expected_output, mat
     ):
         """Tests that variances are properly calculated for two-wire observables with parameters."""
 
@@ -714,7 +714,7 @@ class TestSample:
 
         # s1 should only contain 1 and -1, which is guaranteed if
         # they square to 1
-        assert np.allclose(s1 ** 2, 1, atol=tol, rtol=0)
+        assert np.allclose(s1**2, 1, atol=tol, rtol=0)
 
 
 class TestDefaultQutritIntegration:
@@ -740,7 +740,7 @@ class TestDefaultQutritIntegration:
                 "tf": "default.qutrit",
                 "torch": "default.qutrit",
                 "jax": "default.qutrit",
-            }
+            },
         }
         assert cap == capabilities
 
@@ -762,7 +762,7 @@ class TestDefaultQutritIntegration:
             TSWAP @ np.kron(U_thadamard_01, np.eye(3)),
             np.array([1, 1, 0, 0, 0, 0, 0, 0, 0]) / np.sqrt(2),
         ),
-        (1, TCLOCK @ TSHIFT @ U_thadamard_01, np.array([0, OMEGA, OMEGA ** 2]) / np.sqrt(2)),
+        (1, TCLOCK @ TSHIFT @ U_thadamard_01, np.array([0, OMEGA, OMEGA**2]) / np.sqrt(2)),
         (
             3,
             np.kron(np.eye(3), TADD) @ np.kron(np.eye(3), np.kron(U_thadamard_01, np.eye(3))),
@@ -947,7 +947,7 @@ class TestTensorVar:
         obs_mat = np.kron(GELL_MANN[index_1 - 1], GELL_MANN[index_2 - 1])
 
         expected = (
-                state.conj() @ obs_mat @ obs_mat @ state.T - (state.conj() @ obs_mat @ state.T) ** 2
+            state.conj() @ obs_mat @ obs_mat @ state.T - (state.conj() @ obs_mat @ state.T) ** 2
         )
         assert np.isclose(res, expected[0], atol=tol, rtol=0)
 
@@ -974,7 +974,7 @@ class TestTensorVar:
         obs_mat = np.kron(GELL_MANN[index - 1], A)
 
         expected = (
-                state.conj() @ obs_mat @ obs_mat @ state.T - (state.conj() @ obs_mat @ state.T) ** 2
+            state.conj() @ obs_mat @ obs_mat @ state.T - (state.conj() @ obs_mat @ state.T) ** 2
         )
         assert np.isclose(res, expected[0], atol=tol, rtol=0)
 
@@ -1008,7 +1008,7 @@ class TestTensorVar:
         obs_mat = np.kron(A1, A2)
 
         expected = (
-                state.conj() @ obs_mat @ obs_mat @ state.T - (state.conj() @ obs_mat @ state.T) ** 2
+            state.conj() @ obs_mat @ obs_mat @ state.T - (state.conj() @ obs_mat @ state.T) ** 2
         )
         assert np.isclose(res, expected, atol=tol, rtol=0)
 
@@ -1049,9 +1049,9 @@ class TestTensorSample:
         expected = state.conj().T @ obs_mat @ state
         assert np.allclose(mean, expected, atol=tol_stochastic, rtol=0)
 
-        var = (s1 ** 2) @ p - (s1 @ p) ** 2
+        var = (s1**2) @ p - (s1 @ p) ** 2
         expected = (
-                state.conj().T @ obs_mat @ obs_mat @ state - (state.conj().T @ obs_mat @ state) ** 2
+            state.conj().T @ obs_mat @ obs_mat @ state - (state.conj().T @ obs_mat @ state) ** 2
         )
         assert np.allclose(var, expected, atol=tol_stochastic, rtol=0)
 
@@ -1092,9 +1092,9 @@ class TestTensorSample:
         expected = state.conj().T @ obs_mat @ state
         assert np.allclose(mean, expected, atol=tol_stochastic, rtol=0)
 
-        var = (s1 ** 2) @ p - (s1 @ p) ** 2
+        var = (s1**2) @ p - (s1 @ p) ** 2
         expected = (
-                state.conj().T @ obs_mat @ obs_mat @ state - (state.conj().T @ obs_mat @ state) ** 2
+            state.conj().T @ obs_mat @ obs_mat @ state - (state.conj().T @ obs_mat @ state) ** 2
         )
         assert np.allclose(var, expected, atol=tol_stochastic, rtol=0)
 
@@ -1243,7 +1243,7 @@ class TestApplyOps:
     """Tests for special methods listed in _apply_ops that use array manipulation tricks to apply
     gates in DefaultQutrit."""
 
-    state = np.arange(3 ** 4, dtype=np.complex128).reshape((3, 3, 3, 3))
+    state = np.arange(3**4, dtype=np.complex128).reshape((3, 3, 3, 3))
     dev = qml.device("default.qutrit", wires=4)
 
     single_qutrit_ops = [
@@ -1426,7 +1426,7 @@ class TestQNodeIntegrationJax:
 
     def test_correct_state(self, tol):
         """Test that the device state is correct after evaluating a
-               quantum function on the device"""
+        quantum function on the device"""
         dev = qml.device("default.qutrit", wires=1)
 
         state = dev.state
@@ -1451,7 +1451,7 @@ class TestQNodeIntegrationJax:
 
 class TestDtypePreservedJax:
     """Test that the user-defined dtype of the device is preserved for QNode
-        evaluation"""
+    evaluation"""
 
     @pytest.mark.parametrize("enable_x64, r_dtype", [(False, np.float32), (True, np.float64)])
     @pytest.mark.parametrize(
@@ -1506,7 +1506,7 @@ class TestPassthruIntegrationJax:
         def circuit(a, b):
             qml.TRX(a, wires=0)
             qml.TAdd(wires=[0, 1])
-            qml.TRY(b, wires=1, subspace=[0,2])
+            qml.TRY(b, wires=1, subspace=[0, 2])
             return qml.expval(qml.GellMann(0, 3) @ qml.GellMann(1, 3))
 
         a = jnp.array(-0.234)
@@ -1517,9 +1517,11 @@ class TestPassthruIntegrationJax:
         assert jnp.allclose(res, expected_cost, atol=tol, rtol=0)
         res = jax.grad(circuit, argnums=(0, 1))(a, b)
         expected_grad = jnp.array(
-            [-0.25 * (jnp.sin(a) * jnp.cos(b) - jnp.sin(a)), -0.25 * (jnp.cos(a) * jnp.sin(b) + jnp.sin(b))]
+            [
+                -0.25 * (jnp.sin(a) * jnp.cos(b) - jnp.sin(a)),
+                -0.25 * (jnp.cos(a) * jnp.sin(b) + jnp.sin(b)),
+            ]
         )
-
 
         assert jnp.allclose(jnp.array(res), jnp.array(expected_grad), atol=tol, rtol=0)
 
@@ -1531,7 +1533,7 @@ class TestPassthruIntegrationJax:
         def circuit(a, b):
             qml.TRX(a, wires=0)
             qml.TAdd(wires=[0, 1])
-            qml.TRY(b, wires=1, subspace=[0,2])
+            qml.TRY(b, wires=1, subspace=[0, 2])
             return qml.expval(qml.GellMann(0, 3) @ qml.GellMann(1, 3))
 
         a = jnp.array(0.12)
@@ -1543,7 +1545,10 @@ class TestPassthruIntegrationJax:
 
         res = jax.jacobian(circuit, argnums=[0, 1])(a, b)
         expected = jnp.array(
-            [-0.25 * (jnp.sin(a) * jnp.cos(b) - jnp.sin(a)), -0.25 * (jnp.cos(a) * jnp.sin(b) + jnp.sin(b))]
+            [
+                -0.25 * (jnp.sin(a) * jnp.cos(b) - jnp.sin(a)),
+                -0.25 * (jnp.cos(a) * jnp.sin(b) + jnp.sin(b)),
+            ]
         )
         expected = (expected[0], jnp.diag(expected[1]))
         assert all(jnp.allclose(r, e, atol=tol, rtol=0) for r, e in zip(res, expected))
@@ -1575,7 +1580,7 @@ class TestQNodeIntegrationTF:
 
     def test_correct_state(self, tol):
         """Test that the device state is correct after evaluating a
-               quantum function on the device"""
+        quantum function on the device"""
         dev = qml.device("default.qutrit", wires=1)
 
         @qml.qnode(dev, interface="tf", diff_method="backprop")
@@ -1595,7 +1600,7 @@ class TestQNodeIntegrationTF:
 
 class TestDtypePreservedTF:
     """Test that the user-defined dtype of the device is preserved for QNode
-        evaluation"""
+    evaluation"""
 
     @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
     @pytest.mark.parametrize(
@@ -1666,7 +1671,10 @@ class TestPassthruIntegrationTF:
 
         # the analytic result of evaluating grad(circuit(a, b))
         expected_grad = np.array(
-            [-0.25 * (np.sin(a) * np.cos(b) - np.sin(a)), -0.25 * (np.cos(a) * np.sin(b) + np.sin(b))]
+            [
+                -0.25 * (np.sin(a) * np.cos(b) - np.sin(a)),
+                -0.25 * (np.cos(a) * np.sin(b) + np.sin(b)),
+            ]
         )
 
         # pylint:disable=no-member
@@ -1701,7 +1709,10 @@ class TestPassthruIntegrationTF:
 
         # the analytic result of evaluating grad(circuit(a, b))
         expected_jac = np.array(
-            [-0.25 * (np.sin(a) * np.cos(b) - np.sin(a)), -0.25 * (np.cos(a) * np.sin(b) + np.sin(b))]
+            [
+                -0.25 * (np.sin(a) * np.cos(b) - np.sin(a)),
+                -0.25 * (np.cos(a) * np.sin(b) + np.sin(b)),
+            ]
         )
 
         # pylint:disable=no-member
@@ -1738,7 +1749,7 @@ class TestQNodeIntegrationTorch:
 
     def test_correct_state(self, tol):
         """Test that the device state is correct after evaluating a
-               quantum function on the device"""
+        quantum function on the device"""
         dev = qml.device("default.qutrit", wires=1)
 
         @qml.qnode(dev, interface="torch", diff_method="backprop")
@@ -1758,7 +1769,7 @@ class TestQNodeIntegrationTorch:
 
 class TestDtypePreservedTorch:
     """Test that the user-defined dtype of the device is preserved for QNode
-        evaluation"""
+    evaluation"""
 
     @pytest.mark.parametrize(
         "r_dtype, r_dtype_torch", [(np.float32, "torch32"), (np.float64, "torch64")]
@@ -1841,7 +1852,7 @@ class TestPassthruIntegrationTorch:
         expected_cost = 0.25 * (torch.cos(a) * torch.cos(b) - torch.cos(a) + torch.cos(b) + 3)
         expected = [
             -0.25 * (torch.sin(a) * torch.cos(b) - torch.sin(a)),
-            -0.25 * (torch.cos(a) * torch.sin(b) + torch.sin(b))
+            -0.25 * (torch.cos(a) * torch.sin(b) + torch.sin(b)),
         ]
 
         assert torch.allclose(res, expected_cost, atol=tol, rtol=0)
@@ -1861,16 +1872,14 @@ class TestPassthruIntegrationTorch:
             return qml.expval(qml.GellMann(0, 3) @ qml.GellMann(1, 3))
 
         a = torch.tensor(-0.234, dtype=torch.float64, requires_grad=True)
-        b = torch.tensor(
-            [0.54, 0.32, 1.2], dtype=torch.float64, requires_grad=True
-        )
+        b = torch.tensor([0.54, 0.32, 1.2], dtype=torch.float64, requires_grad=True)
 
         res = circuit(a, b)
         # the analytic result of evaluating circuit(a, b)
         expected_cost = 0.25 * (torch.cos(a) * torch.cos(b) - torch.cos(a) + torch.cos(b) + 3)
         expected = [
             -0.25 * (torch.sin(a) * torch.cos(b) - torch.sin(a)),
-            -0.25 * (torch.cos(a) * torch.sin(b) + torch.sin(b))
+            -0.25 * (torch.cos(a) * torch.sin(b) + torch.sin(b)),
         ]
 
         assert torch.allclose(res, expected_cost, atol=tol, rtol=0)
