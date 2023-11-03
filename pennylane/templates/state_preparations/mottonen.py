@@ -334,7 +334,6 @@ class MottonenStatePreparation(Operation):
         Args:
             state_vector (tensor_like): Normalized state vector of shape ``(2^len(wires),)``
             wires (Any or Iterable[Any]): wires that the operator acts on
-            batch_size (Optional[int]): Size of batch, if any
 
         Returns:
             list[.Operator]: decomposition of the operator

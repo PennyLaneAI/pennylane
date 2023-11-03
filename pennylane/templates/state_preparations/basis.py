@@ -99,7 +99,6 @@ class BasisStatePreparation(Operation):
         Args:
             basis_state (array): Input array of shape ``(len(wires),)``
             wires (Any or Iterable[Any]): wires that the operator acts on
-            batch_size (Optional[int]): Size of batch, if any
 
         Returns:
             list[.Operator]: decomposition of the operator
