@@ -237,15 +237,11 @@ class MidMeasureMP(MeasurementProcess):
         Returns:
             str: label to use in drawings
         """
-        # _label = "┤"
-        _label = "◗"
-        # _label += "├"
-
+        _label = "┤↗"
         if self.postselect is not None:
             _label += "₁" if self.postselect == 1 else "₀"
 
-        if self.reset:
-            _label += "─┤0⟩"
+        _label += "├" if not self.reset else "│  │0⟩"
 
         return _label
 
