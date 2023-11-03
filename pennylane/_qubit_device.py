@@ -279,7 +279,8 @@ class QubitDevice(Device):
         self.apply(circuit.operations, rotations=self._get_diagonalizing_gates(circuit), **kwargs)
 
         # generate computational basis samples
-        if self.shots is not None or circuit.is_sampled:
+        sample_type = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
+        if self.shots is not None or any(isinstance(m, sample_type) for m in circuit.measurements):
             self._samples = self.generate_samples()
 
         # compute the required statistics
