@@ -462,12 +462,7 @@ class Device(abc.ABC):
             self.pre_measure()
 
             for mp in observables:
-                obs = mp
-                if isinstance(mp, MeasurementProcess):
-                    if mp.obs is not None:
-                        obs = mp.obs
-                    elif mp.mv is not None:
-                        obs = mp.mv
+                obs = mp.obs if isinstance(mp, MeasurementProcess) and mp.obs is not None else mp
                 if isinstance(obs, Tensor):
                     wires = [ob.wires for ob in obs.obs]
                 else:
