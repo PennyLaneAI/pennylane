@@ -85,7 +85,7 @@ def _check_decomposition(op):
 
 
 def _check_matrix(op):
-    """Check that if the operation says it has a matrix, it is. Otherwise a ``MatrixUndefinedError`` is raised."""
+    """Check that if the operation says it has a matrix, it does. Otherwise a ``MatrixUndefinedError`` should be raised."""
     if op.has_matrix:
         mat = op.matrix()
         assert isinstance(mat, qml.typing.TensorLike), "matrix must be a TensorLike"
@@ -158,7 +158,7 @@ def _check_copy(op):
 
 # pylint: disable=import-outside-toplevel, protected-access
 def _check_pytree(op):
-    """Check that the operator is property a pytree."""
+    """Check that the operator is a pytree."""
     data, metadata = op._flatten()
     try:
         assert hash(metadata), "metadata must be hashable"
@@ -211,11 +211,11 @@ def _check_wires(op):
 
 
 def assert_valid(op: qml.operation.Operator, skip_pickle=False) -> None:
-    """Runs basic validation checks on an :class:`~.operation.Opeartor` to make
+    """Runs basic validation checks on an :class:`~.operation.Operator` to make
     sure it has been correctly defined.
 
     Args:
-        op (.Operator): an instance to validate
+        op (.Operator): an operator instance to validate
 
     Keyword Args:
         skip_pickle=False : If ``True``, pickling tests are not run. Set to ``True`` when
