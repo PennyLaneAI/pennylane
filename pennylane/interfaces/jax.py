@@ -25,6 +25,8 @@ import jax.numpy as jnp
 import pennylane as qml
 from pennylane.transforms import convert_to_numpy_parameters
 
+from .jacobian_products import _compute_jvps
+
 dtype = jnp.float64
 
 logger = logging.getLogger(__name__)
@@ -212,8 +214,7 @@ def _execute_bwd(
             # Backward: Gradient function is a device method.
             new_tapes = set_parameters_on_copy_and_unwrap(tapes, primals[0], unwrap=False)
             jacs = gradient_fn(new_tapes, **gradient_kwargs)
-            multi_measurements = [len(tape.measurements) > 1 for tape in new_tapes]
-            jvps = _compute_jvps(jacs, tangents[0], multi_measurements)
+            jvps = _compute_jvps(jacs, tangents[0], new_tapes)
 
         return res, jvps
 
@@ -245,24 +246,12 @@ def _execute_fwd(
     def execute_wrapper_jvp(primals, tangents):
         """Primals[0] are parameters as Jax tracers and tangents[0] is a list of tangent vectors as Jax tracers."""
         res, jacs = execute_wrapper(primals[0])
-        multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
 
-        jvps = _compute_jvps(jacs, tangents[0], multi_measurements)
+        jvps = _compute_jvps(jacs, tangents[0], tapes)
         return (res, jacs), (jvps, jacs)
 
     res, _jacs = execute_wrapper(params)
     return res
-
-
-def _compute_jvps(jacs, tangents, multi_measurements):
-    """Compute the jvps of multiple tapes, directly for a Jacobian and tangents."""
-    jvps = []
-    for i, multi in enumerate(multi_measurements):
-        compute_func = (
-            qml.gradients.compute_jvp_multi if multi else qml.gradients.compute_jvp_single
-        )
-        jvps.append(compute_func(tangents[i], jacs[i]))
-    return tuple(jvps)
 
 
 def _is_count_result(r):

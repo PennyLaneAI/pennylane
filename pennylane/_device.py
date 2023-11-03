@@ -99,8 +99,6 @@ def _local_tape_expand(tape, depth, stop_at):
     # Update circuit info
     new_tape.wires = copy.copy(tape.wires)
     new_tape.num_wires = tape.num_wires
-    new_tape.is_sampled = tape.is_sampled
-    new_tape.all_sampled = tape.all_sampled
     new_tape._batch_size = tape.batch_size
     new_tape._output_dim = tape.output_dim
     return new_tape
