@@ -48,6 +48,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Jax jit now works with shot vectors.
+  [(#4772)](https://github.com/PennyLaneAI/pennylane/pull/4772/)
+
 * Any `ScalarSymbolicOp`, like `Evolution`, now states that it has a matrix if the target
   is a `Hamiltonian`.
   [(#4768)](https://github.com/PennyLaneAI/pennylane/pull/4768)
