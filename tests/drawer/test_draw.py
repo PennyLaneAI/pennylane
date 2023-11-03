@@ -301,6 +301,32 @@ def test_mid_circuit_measurement_device_api(device_name, mocker):
 
 
 @pytest.mark.parametrize(
+    "postselect, reset, mid_measure_label",
+    [
+        (None, False, "┤↗├"),
+        (None, True, "┤↗│  │0⟩"),
+        (0, False, "┤↗₀├"),
+        (0, True, "┤↗₀│  │0⟩"),
+        (1, False, "┤↗₁├"),
+        (1, True, "┤↗₁│  │0⟩"),
+    ],
+)
+def test_draw_mid_circuit_measurement(postselect, reset, mid_measure_label):
+    """Test that mid-circuit measurements are drawn correctly."""
+
+    def func():
+        qml.Hadamard(0)
+        qml.measure(0, reset=reset, postselect=postselect)
+        qml.PauliX(0)
+        return qml.expval(qml.PauliZ(0))
+
+    drawing = qml.draw(func)()
+    expected_drawing = "0: ──H──" + mid_measure_label + "──X─┤  <Z>"
+
+    assert drawing == expected_drawing
+
+
+@pytest.mark.parametrize(
     "transform",
     [
         qml.gradients.param_shift(shifts=[(0.2,)]),  # pylint:disable=no-value-for-parameter
