@@ -190,6 +190,7 @@ to help build custom QNode, quantum function, and tape transforms:
 
     ~transforms.make_tape
     ~transforms.map_transform
+    ~transforms.map_batch_transform
     ~transforms.create_expand_fn
     ~transforms.create_decomp_expand_fn
     ~transforms.expand_invalid_trainable

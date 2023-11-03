@@ -24,6 +24,7 @@ from typing import Callable, Tuple
 
 import pennylane as qml
 from pennylane.typing import ResultBatch
+from .core import TransformDispatcher
 
 PostprocessingFn = Callable[[ResultBatch], ResultBatch]
 QuantumTapeBatch = Tuple[qml.tape.QuantumScript]
@@ -455,16 +456,15 @@ class batch_transform:
 
 
 def map_transform(
-    transform: batch_transform, tapes: QuantumTapeBatch
+    transform: TransformDispatcher, tapes: QuantumTapeBatch
 ) -> Tuple[QuantumTapeBatch, PostprocessingFn]:
-    """Map a batch transform over multiple tapes.
+    """Map a transform over multiple tapes.
 
     Args:
-        transform (.batch_transform): the batch transform
-            to be mapped
-        tapes (Sequence[QuantumTape]): The sequence of tapes the batch
+        transform (TransformDispatcher): the transform to be mapped
+        tapes (Sequence[QuantumTape]): The sequence of tapes the
             transform should be applied to. Each tape in the sequence
-            is transformed by the batch transform.
+            is transformed by the transform.
 
     **Example**
 
@@ -489,7 +489,7 @@ def map_transform(
 
 
     We can use ``map_transform`` to map a single
-    batch transform across both of the these tapes in such a way
+    transform across both of the these tapes in such a way
     that allows us to submit a single job for execution:
 
     >>> tapes, fn = map_transform(qml.transforms.hamiltonian_expand, [tape1, tape2])
@@ -502,7 +502,7 @@ def map_transform(
     tape_counts = []
 
     for t in tapes:
-        # Preprocess the tapes by applying batch transforms
+        # Preprocess the tapes by applying transforms
         # to each tape, and storing corresponding tapes
         # for execution, processing functions, and list of tape lengths.
         new_tapes, fn = transform(t)
@@ -528,7 +528,7 @@ def map_transform(
         final_results = []
 
         for idx, s in enumerate(tape_counts):
-            # apply any batch transform post-processing
+            # apply any transform post-processing
             new_res = batch_fns[idx](res[count : count + s])
             final_results.append(new_res)
             count += s
@@ -541,11 +541,11 @@ def map_transform(
 def map_batch_transform(
     transform: batch_transform, tapes: QuantumTapeBatch
 ) -> Tuple[QuantumTapeBatch, PostprocessingFn]:
-    """Map a batch transform over multiple tapes.
+    """Deprecated way to map a batch transform over multiple tapes.
 
     .. warning::
 
-        This function is being renamed to `map_transform`, and will be
+        This function is being renamed to :func:`map_transform`, and will be
         removed in an upcoming PennyLane release.
 
     Args:
