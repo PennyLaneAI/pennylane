@@ -46,7 +46,7 @@ class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
             self.tracker.update(derivative_batches=1, derivatives=len(circuits))
             self.tracker.record()
 
-        diff_batch, fn = qml.transforms.map_transform(qml.gradients.param_shift, circuits)
+        diff_batch, fn = qml.transforms.map_batch_transform(qml.gradients.param_shift, circuits)
         diff_results = self.execute(diff_batch)
 
         jacs = fn(diff_results)
@@ -67,7 +67,7 @@ class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
             )
             self.tracker.record()
 
-        diff_batch, fn = qml.transforms.map_transform(qml.gradients.param_shift, circuits)
+        diff_batch, fn = qml.transforms.map_batch_transform(qml.gradients.param_shift, circuits)
         combined_batch = tuple(circuits) + tuple(diff_batch)
         all_results = self.execute(combined_batch)
         results = all_results[: len(circuits)]

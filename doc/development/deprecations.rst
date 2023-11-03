@@ -14,12 +14,6 @@ Pending deprecations
   - Deprecated in v0.34
   - Will be removed in v0.36
 
-* ``map_batch_transform`` is renamed to ``map_transform``. The old name is still available, but will be
-  removed in an upcoming release.
-
-  - Deprecated in v0.34
-  - Will be removed in v0.36
-
 * ``QuantumScript.is_sampled`` and ``QuantumScript.all_sampled`` are deprecated. Users should now validate
   these properties manually.
 
