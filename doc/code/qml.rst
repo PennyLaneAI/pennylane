@@ -6,4 +6,4 @@ qml
 .. automodapi:: pennylane
     :no-heading:
     :include-all-objects:
-    :skip: iter_entry_points, Version, SimpleSpec, plugin_devices, plugin_converters, default_config, reload
+    :skip: Version, SimpleSpec, plugin_devices, plugin_converters, default_config, reload, version_info
