@@ -32,6 +32,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* `QuantumScript.is_sampled` and `QuantumScript.all_sampled` are deprecated.
+  Users should now validate these properties manually.
+  [(#4773)](https://github.com/PennyLaneAI/pennylane/pull/4773)
+
 * `single_tape_transform`, `batch_transform`, `qfunc_transform`, and `op_transform` are deprecated.
   Instead switch to using the new `qml.transform` function.
   [(#4774)](https://github.com/PennyLaneAI/pennylane/pull/4774)
