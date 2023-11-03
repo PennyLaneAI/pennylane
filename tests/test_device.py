@@ -14,9 +14,9 @@
 """
 Unit tests for the :mod:`pennylane` :class:`Device` class.
 """
-import importlib
+from importlib import metadata, reload
 from collections import OrderedDict
-import pkg_resources
+from sys import version_info
 
 import pytest
 import numpy as np
@@ -956,10 +956,11 @@ class TestDeviceInit:
 
         with monkeypatch.context() as m:
             # remove all entry points
-            m.setattr(pkg_resources, "iter_entry_points", lambda name: [])
+            retval = {"pennylane.plugins": []} if version_info[:2] == (3, 9) else []
+            m.setattr(metadata, "entry_points", lambda *args: retval)
 
             # reimporting PennyLane within the context sets qml.plugin_devices to {}
-            importlib.reload(qml)
+            reload(qml)
 
             # since there are no entry points, there will be no plugin devices
             assert not qml.plugin_devices
@@ -971,7 +972,7 @@ class TestDeviceInit:
 
         # Test teardown: re-import PennyLane to revert all changes and
         # restore the plugin_device dictionary
-        importlib.reload(qml)
+        reload(qml)
 
     @pytest.mark.skip(reason="Reloading PennyLane messes with tape mode")
     def test_hot_refresh_entrypoints(self, monkeypatch):
@@ -980,10 +981,11 @@ class TestDeviceInit:
 
         with monkeypatch.context() as m:
             # remove all entry points
-            m.setattr(pkg_resources, "iter_entry_points", lambda name: [])
+            retval = {"pennylane.plugins": []} if version_info[:2] == (3, 9) else []
+            m.setattr(metadata, "entry_points", lambda *args: retval)
 
             # reimporting PennyLane within the context sets qml.plugin_devices to {}
-            importlib.reload(qml)
+            reload(qml)
 
             m.setattr(qml, "refresh_devices", lambda: None)
             assert not qml.plugin_devices
@@ -1000,7 +1002,7 @@ class TestDeviceInit:
 
         # Test teardown: re-import PennyLane to revert all changes and
         # restore the plugin_device dictionary
-        importlib.reload(qml)
+        reload(qml)
 
     def test_shot_vector_property(self):
         """Tests shot vector initialization."""
