@@ -92,18 +92,21 @@ class TestHelpers:
         ],
     )
     def test_tuple_to_word(self, tuple, expected_word):
+        """Test that tuples of indices are correctly mapped to words."""
         assert _tuple_to_word(tuple) == expected_word
 
 
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
-    def test_correct_gates_single_wire(self):
+    @pytest.mark.parametrize("batch_dim", [None, 1, 2])
+    def test_correct_gates_single_wire(self, batch_dim):
         """Test that the correct gates are applied on a single wire."""
-        weights = np.arange(3, dtype=float)
+        shape = (3,) if batch_dim is None else (batch_dim, 3)
+        weights = np.arange(np.prod(shape), dtype=float).reshape(shape)
 
         op = qml.ArbitraryUnitary(weights, wires=[0])
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         for gate in queue:
             assert gate.name == "PauliRot"
@@ -112,15 +115,17 @@ class TestDecomposition:
         pauli_words = ["X", "Y", "Z"]
 
         for i, op in enumerate(queue):
-            assert op.data[0] == weights[i]
+            assert np.allclose(op.data[0], weights[..., i])
             assert op.hyperparameters["pauli_word"] == pauli_words[i]
 
-    def test_correct_gates_two_wires(self):
+    @pytest.mark.parametrize("batch_dim", [None, 1, 2])
+    def test_correct_gates_two_wires(self, batch_dim):
         """Test that the correct gates are applied on two wires."""
-        weights = np.arange(15, dtype=float)
+        shape = (15,) if batch_dim is None else (batch_dim, 15)
+        weights = np.arange(np.prod(shape), dtype=float).reshape(shape)
 
         op = qml.ArbitraryUnitary(weights, wires=[0, 1])
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         for gate in queue:
             assert gate.name == "PauliRot"
@@ -145,7 +150,7 @@ class TestDecomposition:
         ]
 
         for i, op in enumerate(queue):
-            assert op.data[0] == weights[i]
+            assert np.allclose(op.data[0], weights[..., i])
             assert op.hyperparameters["pauli_word"] == pauli_words[i]
 
     def test_custom_wire_labels(self, tol):
@@ -175,7 +180,8 @@ class TestDecomposition:
 class TestInputs:
     """Test inputs and pre-processing."""
 
-    def test_exception_wrong_dim(self):
+    @pytest.mark.parametrize("shape", [(5,), (1, 2, 3), (15, 3)])
+    def test_exception_wrong_dim(self, shape):
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
         dev = qml.device("default.qubit", wires=2)
@@ -186,7 +192,7 @@ class TestInputs:
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Weights tensor must be of shape"):
-            weights = np.array([0, 1])
+            weights = np.zeros(shape)
             circuit(weights)
 
     def test_id(self):

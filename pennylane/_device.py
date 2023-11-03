@@ -99,8 +99,6 @@ def _local_tape_expand(tape, depth, stop_at):
     # Update circuit info
     new_tape.wires = copy.copy(tape.wires)
     new_tape.num_wires = tape.num_wires
-    new_tape.is_sampled = tape.is_sampled
-    new_tape.all_sampled = tape.all_sampled
     new_tape._batch_size = tape.batch_size
     new_tape._output_dim = tape.output_dim
     return new_tape
@@ -293,7 +291,7 @@ class Device(abc.ABC):
 
         **Example**
 
-        >>> dev = qml.device("default.qubit", wires=2, shots=[3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10])
+        >>> dev = qml.device("default.qubit.legacy", wires=2, shots=[3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10])
         >>> dev.shots
         57
         >>> dev.shot_vector
@@ -618,7 +616,7 @@ class Device(abc.ABC):
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit", wires=2)
+            dev = qml.device("default.qubit.legacy", wires=2)
 
             @dev.custom_expand
             def my_expansion_function(self, tape, max_expansion=10):
@@ -976,6 +974,9 @@ class Device(abc.ABC):
                     "Apply the @qml.defer_measurements decorator to your quantum function to "
                     "simulate the application of mid-circuit measurements on this device."
                 )
+
+            if isinstance(o, qml.Projector):
+                raise ValueError(f"Postselection is not supported on the {self.name} device.")
 
             if not self.stopping_condition(o):
                 raise DeviceError(

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the next generation successor to default qubit
+The default.qubit device is PennyLane's standard qubit-based device.
 """
 
 from dataclasses import replace
@@ -148,8 +148,11 @@ class DefaultQubit(Device):
     """A PennyLane device written in Python and capable of backpropagation derivatives.
 
     Args:
-        shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots to use in executions involving
-            this device.
+        wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
+            contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
+            (``['ancilla', 'q1', 'q2']``). Default ``None`` if not specified.
+        shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
+            to use in executions involving this device.
         seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator, jax.random.PRNGKey]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``, or
             a request to seed from numpy's global random number generator.
@@ -387,8 +390,8 @@ class DefaultQubit(Device):
         config = self._setup_execution_config(execution_config)
         transform_program = TransformProgram()
 
-        transform_program.add_transform(qml.defer_measurements)
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
+        transform_program.add_transform(qml.defer_measurements, device=self)
         transform_program.add_transform(
             decompose, stopping_condition=stopping_condition, name=self.name
         )

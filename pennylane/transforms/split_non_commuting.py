@@ -21,7 +21,7 @@ from functools import reduce
 import pennylane as qml
 from pennylane.measurements import ProbabilityMP, SampleMP
 
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 
 
 @transform
@@ -30,15 +30,11 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
     Splits a qnode measuring non-commuting observables into groups of commuting observables.
 
     Args:
-        qnode (pennylane.QNode or .QuantumTape): quantum tape or QNode that contains a list of
+        tape (QNode or QuantumTape or Callable): A circuit that contains a list of
             non-commuting observables to measure.
 
     Returns:
-        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: If a QNode is passed,
-        it returns a QNode capable of handling non-commuting groups.
-        If a tape is passed, returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions to restore the ordering of the inputs.
+        qnode (QNode) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
 
@@ -103,10 +99,7 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
     :math:`(\langle \sigma_x^0 \rangle, \langle \sigma_z^0 \rangle, \langle \sigma_y^1 \rangle, \langle \sigma_z^0\sigma_z^1 \rangle)`.
 
     >>> circuit0([np.pi/4, np.pi/4])
-    (tensor(0.70710678, requires_grad=True),
-    tensor(0.5, requires_grad=True),
-    tensor(0., requires_grad=True),
-    tensor(0.5, requires_grad=True))
+    [0.7071067811865475, 0.49999999999999994, 0.0, 0.49999999999999994]
 
 
     .. details::

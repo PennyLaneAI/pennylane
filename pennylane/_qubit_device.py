@@ -279,7 +279,8 @@ class QubitDevice(Device):
         self.apply(circuit.operations, rotations=self._get_diagonalizing_gates(circuit), **kwargs)
 
         # generate computational basis samples
-        if self.shots is not None or circuit.is_sampled:
+        sample_type = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
+        if self.shots is not None or any(isinstance(m, sample_type) for m in circuit.measurements):
             self._samples = self.generate_samples()
 
         # compute the required statistics
@@ -1437,6 +1438,8 @@ class QubitDevice(Device):
 
         if isinstance(obs, CountsMP):
             # convert samples and outcomes (if using) from arrays to str for dict keys
+            samples = np.array([sample for sample in samples if not np.any(np.isnan(sample))])
+            samples = qml.math.cast_like(samples, qml.math.int8(0))
             samples = np.apply_along_axis(_sample_to_str, -1, samples)
             batched_ndims = 3  # no observable was provided, batched samples will have shape (batch_size, shots, len(wires))
             if obs.all_outcomes:
@@ -1484,7 +1487,6 @@ class QubitDevice(Device):
             Union[array[float], dict, list[dict]]: samples in an array of
             dimension ``(shots,)`` or counts
         """
-
         # translate to wire labels used by device
         device_wires = self.map_wires(observable.wires)
         name = observable.name

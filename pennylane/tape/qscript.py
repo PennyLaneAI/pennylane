@@ -19,9 +19,9 @@ executed by a device.
 
 import contextlib
 import copy
-import warnings
 from collections import Counter
 from typing import List, Union, Optional, Sequence
+from warnings import warn
 
 import pennylane as qml
 from pennylane.measurements import (
@@ -89,9 +89,6 @@ class QuantumScript:
     Args:
         ops (Iterable[Operator]): An iterable of the operations to be performed
         measurements (Iterable[MeasurementProcess]): All the measurements to be performed
-        prep (Iterable[Operator]): Argument to specify state preparations to
-            perform at the start of the circuit. These should go at the beginning of ``ops``
-            instead.
 
     Keyword Args:
         shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
@@ -187,19 +184,10 @@ class QuantumScript:
         self,
         ops=None,
         measurements=None,
-        prep=None,
         shots: Optional[Union[int, Sequence, Shots]] = None,
         _update=True,
-    ):  # pylint: disable=too-many-arguments
+    ):
         self._ops = [] if ops is None else list(ops)
-        if prep is not None:
-            warnings.warn(
-                "The `prep` keyword argument is being removed from `QuantumScript`, and "
-                "`StatePrepBase` operations should be placed at the beginning of the `ops` list "
-                "instead.",
-                UserWarning,
-            )
-            self._ops = list(prep) + self._ops
         self._measurements = [] if measurements is None else list(measurements)
         self._shots = Shots(shots)
 
@@ -215,9 +203,6 @@ class QuantumScript:
 
         self.wires = _empty_wires
         self.num_wires = 0
-
-        self.is_sampled = False
-        self.all_sampled = False
 
         self._obs_sharing_wires = []
         """list[.Observable]: subset of the observables that share wires with another observable,
@@ -411,13 +396,41 @@ class QuantumScript:
         """Returns the wires that the tape operations act on."""
         return Wires.all_wires(op.wires for op in self.operations)
 
+    @property
+    def is_sampled(self) -> bool:
+        """Whether any measurements are of a type that requires samples."""
+        warn(
+            "QuantumScript.is_sampled is deprecated. This property should now be "
+            "validated manually:\n\n"
+            ">>> from pennylane.measurements import *\n"
+            ">>> sample_types = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)\n"
+            ">>> is_sampled = any(isinstance(m, sample_types) for m in tape.measurements)\n",
+            UserWarning,
+        )
+        sample_type = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
+        return any(isinstance(m, sample_type) for m in self.measurements)
+
+    @property
+    def all_sampled(self) -> bool:
+        """Whether all measurements are of a type that requires samples."""
+        warn(
+            "QuantumScript.all_sampled is deprecated. This property should now be "
+            "validated manually:\n\n"
+            ">>> from pennylane.measurements import *\n"
+            ">>> sample_types = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)\n"
+            ">>> all_sampled = all(isinstance(m, sample_types) for m in tape.measurements)\n",
+            UserWarning,
+        )
+        sample_type = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
+        return all(isinstance(m, sample_type) for m in self.measurements)
+
     ##### Update METHODS ###############
 
     def _update(self):
         """Update all internal metadata regarding processed operations and observables"""
         self._graph = None
         self._specs = None
-        self._update_circuit_info()  # Updates wires, num_wires, is_sampled, all_sampled; O(ops+obs)
+        self._update_circuit_info()  # Updates wires, num_wires; O(ops+obs)
         self._update_par_info()  # Updates _par_info; O(ops+obs)
 
         # The following line requires _par_info to be up to date
@@ -435,18 +448,9 @@ class QuantumScript:
         Sets:
             wires (~.Wires): Wires
             num_wires (int): Number of wires
-            is_sampled (bool): Whether any measurement is of type ``Sample`` or ``Counts``
-            all_sampled (bool): Whether all measurements are of type ``Sample`` or ``Counts``
         """
         self.wires = Wires.all_wires(dict.fromkeys(op.wires for op in self))
         self.num_wires = len(self.wires)
-
-        is_sample_type = [
-            isinstance(m, (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP))
-            for m in self.measurements
-        ]
-        self.is_sampled = any(is_sample_type)
-        self.all_sampled = all(is_sample_type)
 
     def _update_par_info(self):
         """Update the parameter information list. Each entry in the list with an operation and an index
@@ -824,7 +828,7 @@ class QuantumScript:
         if len(shapes) == 1:
             return shapes[0]
 
-        if len(shots.shot_vector) > 1:
+        if shots.num_copies > 1:
             # put the shot vector axis before the measurement axis
             shapes = tuple(zip(*shapes))
 
@@ -886,8 +890,6 @@ class QuantumScript:
         new_qscript._specs = None
         new_qscript.wires = copy.copy(self.wires)
         new_qscript.num_wires = self.num_wires
-        new_qscript.is_sampled = self.is_sampled
-        new_qscript.all_sampled = self.all_sampled
         new_qscript._update_par_info()
         new_qscript.trainable_params = self.trainable_params.copy()
         new_qscript._obs_sharing_wires = self._obs_sharing_wires

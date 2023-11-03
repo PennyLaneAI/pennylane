@@ -517,7 +517,7 @@ class Operator(abc.ABC):
 
     >>> a = np.array(3.14)
     >>> circuit(a)
-    -0.9999987318946099
+    tensor(-0.99999873, requires_grad=True)
 
     .. details::
         :title: Serialization and Pytree format
@@ -927,12 +927,17 @@ class Operator(abc.ABC):
         >>> op = qml.RX(1.23456, wires=0)
         >>> op.label()
         "RX"
-        >>> op.label(decimals=2)
-        "RX\n(1.23)"
         >>> op.label(base_label="my_label")
         "my_label"
+        >>> op = qml.RX(1.23456, wires=0, id="test_data")
+        >>> op.label()
+        "RX("test_data")"
+        >>> op.label(decimals=2)
+        "RX\n(1.23,"test_data")"
+        >>> op.label(base_label="my_label")
+        "my_label("test_data")"
         >>> op.label(decimals=2, base_label="my_label")
-        "my_label\n(1.23)"
+        "my_label\n(1.23,"test_data")"
 
         If the operation has a matrix-valued parameter and a cache dictionary is provided,
         unique matrices will be cached in the ``'matrices'`` key list. The label will contain
@@ -960,7 +965,7 @@ class Operator(abc.ABC):
         op_label = base_label or self.__class__.__name__
 
         if self.num_params == 0:
-            return op_label
+            return op_label if self._id is None else f'{op_label}("{self._id}")'
 
         params = self.parameters
 
@@ -974,21 +979,29 @@ class Operator(abc.ABC):
                 or not isinstance(cache.get("matrices", None), list)
                 or len(params) != 1
             ):
-                return op_label
+                return op_label if self._id is None else f'{op_label}("{self._id}")'
 
             for i, mat in enumerate(cache["matrices"]):
                 if qml.math.shape(params[0]) == qml.math.shape(mat) and qml.math.allclose(
                     params[0], mat
                 ):
-                    return f"{op_label}(M{i})"
+                    return (
+                        f"{op_label}(M{i})"
+                        if self._id is None
+                        else f'{op_label}(M{i},"{self._id}")'
+                    )
 
             # matrix not in cache
             mat_num = len(cache["matrices"])
             cache["matrices"].append(params[0])
-            return f"{op_label}(M{mat_num})"
+            return (
+                f"{op_label}(M{mat_num})"
+                if self._id is None
+                else f'{op_label}(M{mat_num},"{self._id}")'
+            )
 
         if decimals is None:
-            return op_label
+            return op_label if self._id is None else f'{op_label}("{self._id}")'
 
         def _format(x):
             try:
@@ -998,7 +1011,12 @@ class Operator(abc.ABC):
                 return format(x)
 
         param_string = ",\n".join(_format(p) for p in params)
-        return f"{op_label}\n({param_string})"
+
+        return (
+            f"{op_label}\n({param_string})"
+            if self._id is None
+            else f'{op_label}\n({param_string},"{self._id}")'
+        )
 
     def __init__(self, *params, wires=None, id=None):
         # pylint: disable=too-many-branches
@@ -1652,14 +1670,16 @@ class Operation(Operator):
     """
 
     # Attributes for compilation transforms
-    basis = None
-    """str or None: The basis of an operation, or for controlled gates, of the
-    target operation. If not ``None``, should take a value of ``"X"``, ``"Y"``,
-    or ``"Z"``.
+    @property
+    def basis(self):
+        """str or None: The basis of an operation, or for controlled gates, of the
+        target operation. If not ``None``, should take a value of ``"X"``, ``"Y"``,
+        or ``"Z"``.
 
-    For example, ``X`` and ``CNOT`` have ``basis = "X"``, whereas
-    ``ControlledPhaseShift`` and ``RZ`` have ``basis = "Z"``.
-    """
+        For example, ``X`` and ``CNOT`` have ``basis = "X"``, whereas
+        ``ControlledPhaseShift`` and ``RZ`` have ``basis = "Z"``.
+        """
+        return None
 
     @property
     def control_wires(self):  # pragma: no cover

@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the transform function, the transform dispatcher and the transform container.
+This module contains the transform dispatcher and the transform container.
 """
+import functools
+import os
 import copy
 import warnings
 import types
@@ -22,22 +24,41 @@ import pennylane as qml
 
 
 class TransformError(Exception):
-    """Raised when there is an error with the transform logic"""
+    """Raised when there is an error with the transform logic."""
 
 
 class TransformDispatcher:
-    r"""This object is developer facing and should not be used directly to create transforms. Use
-    :func:`~.pennylane.transforms.core.transform`.
-
-    Convert a transform that has the signature (tape -> Sequence(tape), fn) to a transform dispatcher that can act
-    on tape, qfunc and qnode.
+    r"""Converts a transform that has the signature ``(tape -> Sequence(tape), fn)`` to a transform dispatcher
+    that can act on :class:`pennylane.tape.QuantumTape`, quantum function, :class:`pennylane.QNode`,
+    :class:`pennylane.devices.Device`.
 
     .. warning::
 
-        This class is developer-facing and should not be used directly.
+        This class is developer-facing and should not be used directly. Instead, use
+        :func:`qml.transform <pennylane.transform>` if you would like to make a custom
+        transform.
 
-    .. seealso:: :func:`~.pennylane.transforms.core.transform`
+    .. seealso:: :func:`~.pennylane.transform`
     """
+
+    def __new__(cls, *args, **kwargs):  # pylint: disable=unused-argument
+        if os.environ.get("SPHINX_BUILD") == "1":
+            # If called during a Sphinx documentation build,
+            # simply return the original function rather than
+            # instantiating the object. This allows the signature to
+            # be correctly displayed in the documentation.
+
+            warnings.warn(
+                "Transforms have been disabled, as a Sphinx "
+                "build has been detected via SPHINX_BUILD='1'. If this is not the "
+                "case, please set the environment variable SPHINX_BUILD='0'.",
+                UserWarning,
+            )
+
+            args[0].custom_qnode_transform = lambda x: x
+            return args[0]
+
+        return super().__new__(cls)
 
     # pylint: disable=too-many-arguments
     def __init__(
@@ -48,15 +69,14 @@ class TransformDispatcher:
         is_informative=False,
         final_transform=False,
     ):  # pylint:disable=redefined-outer-name
-        self.__doc__ = transform.__doc__
         self._transform = transform
         self._expand_transform = expand_transform
         self._classical_cotransform = classical_cotransform
         self._is_informative = is_informative
         # is_informative supersedes final_transform
         self._final_transform = is_informative or final_transform
-
         self._qnode_transform = self.default_qnode_transform
+        functools.update_wrapper(self, transform)
 
     def __call__(self, *targs, **tkwargs):  # pylint: disable=too-many-return-statements
         obj = None
@@ -68,13 +88,22 @@ class TransformDispatcher:
 
         if isinstance(obj, qml.tape.QuantumScript):
             if self._expand_transform:
-                transformed_tapes, _ = self._expand_transform(obj, *targs, **tkwargs)
-                transformed_tapes, transform_processing_fn = self._transform(
-                    transformed_tapes[0], *targs, **tkwargs
-                )
+                expanded_tapes, expand_processing = self._expand_transform(obj, *targs, **tkwargs)
+                transformed_tapes = []
+                processing_and_sclices = []
+                start = 0
+                for tape in expanded_tapes:
+                    intermediate_tapes, post_processing_fn = self._transform(
+                        tape, *targs, **tkwargs
+                    )
+                    transformed_tapes.extend(intermediate_tapes)
+                    end = start + len(intermediate_tapes)
+                    processing_and_sclices.append(tuple([post_processing_fn, slice(start, end)]))
+                    start = end
 
                 def processing_fn(results):
-                    return transform_processing_fn(results)
+                    processed_results = [fn(results[slice]) for fn, slice in processing_and_sclices]
+                    return expand_processing(processed_results)
 
             else:
                 transformed_tapes, processing_fn = self._transform(obj, *targs, **tkwargs)
@@ -102,7 +131,9 @@ class TransformDispatcher:
             "Decorating a QNode with @transform_fn(**transform_kwargs) has been "
             "deprecated and will be removed in a future version. Please decorate "
             "with @functools.partial(transform_fn, **transform_kwargs) instead, "
-            "or call the transform directly using qnode = transform_fn(qnode, **transform_kwargs)",
+            "or call the transform directly using qnode = transform_fn(qnode, "
+            "**transform_kwargs). Visit the deprecations page for more details: "
+            "https://docs.pennylane.ai/en/stable/development/deprecations.html",
             UserWarning,
         )
 
@@ -119,36 +150,31 @@ class TransformDispatcher:
         return wrapper
 
     def __repr__(self):
-        return f"<transform: {self.__name__}>"
-
-    @property
-    def __name__(self):
-        """Return the quantum transform name."""
-        return self._transform.__name__
+        return f"<transform: {self._transform.__name__}>"
 
     @property
     def transform(self):
-        """Return the quantum transform."""
+        """The quantum transform."""
         return self._transform
 
     @property
     def expand_transform(self):
-        """Return the expand transform."""
+        """The expand transform."""
         return self._expand_transform
 
     @property
     def classical_cotransform(self):
-        """Return the classical co-transform."""
+        """The classical co-transform."""
         return self._classical_cotransform
 
     @property
     def is_informative(self):
-        """Return True is the transform is informative."""
+        """``True`` if the transform is informative."""
         return self._is_informative
 
     @property
     def final_transform(self):
-        """Return True if the transformed tapes must be executed."""
+        """``True`` if the transformed tapes must be executed."""
         return self._final_transform
 
     def custom_qnode_transform(self, fn):
@@ -187,16 +213,8 @@ class TransformDispatcher:
         The default method that takes in a QNode and returns another QNode
         with the transform applied.
         """
-        # pylint: disable=protected-access
-        if (
-            isinstance(qnode._original_device, qml.Device)
-            and hasattr(qnode._original_device, "_state")
-            and qml.math.is_abstract(qnode._original_device._state)
-        ):
-            qnode._original_device.reset()
-            qnode.device.reset()
 
-        qnode = copy.deepcopy(qnode)
+        qnode = copy.copy(qnode)
 
         if self.expand_transform:
             qnode.add_transform(TransformContainer(self._expand_transform, targs, tkwargs))
@@ -293,10 +311,11 @@ class TransformDispatcher:
                 return f"Transformed Device({original_device.__repr__()} with additional preprocess transform {self.transform})"
 
             def preprocess(
-                self, config: qml.devices.ExecutionConfig = qml.devices.DefaultExecutionConfig
+                self,
+                execution_config: qml.devices.ExecutionConfig = qml.devices.DefaultExecutionConfig,
             ):
                 """This function updates the original device transform program to be applied."""
-                program, config = self.original_device.preprocess(config)
+                program, config = self.original_device.preprocess(execution_config)
                 program.push_back(TransformContainer(self.transform, targs, tkwargs))
                 return program, config
 
@@ -309,14 +328,16 @@ class TransformDispatcher:
 
 
 class TransformContainer:
-    """Class to store a quantum transform with its args, kwargs and classical co-transforms.  Use
-    :func:`~.pennylane.transforms.core.transform`.
+    """Class to store a quantum transform with its ``args``, ``kwargs`` and classical co-transforms.  Use
+    :func:`~.pennylane.transform`.
 
     .. warning::
 
-        This class is developer-facing and should not be used directly.
+        This class is developer-facing and should not be used directly. Instead, use
+        :func:`qml.transform <pennylane.transform>` if you would like to make a custom
+        transform.
 
-    .. seealso:: :func:`~.pennylane.transforms.core.transform`
+    .. seealso:: :func:`~.pennylane.transform`
     """
 
     def __init__(
@@ -349,30 +370,30 @@ class TransformContainer:
 
     @property
     def transform(self):
-        """Return the stored quantum transform."""
+        """The stored quantum transform."""
         return self._transform
 
     @property
     def args(self):
-        """Return the stored quantum transform's args."""
+        """The stored quantum transform's ``args``."""
         return self._args
 
     @property
     def kwargs(self):
-        """Return the stored quantum transform's arkwgs."""
+        """The stored quantum transform's ``kwargs``."""
         return self._kwargs
 
     @property
     def classical_cotransform(self):
-        """Return the stored quantum transform's classical co-transform."""
+        """The stored quantum transform's classical co-transform."""
         return self._classical_cotransform
 
     @property
     def is_informative(self):
-        """Return True is the transform is informative."""
+        """``True`` if the transform is informative."""
         return self._is_informative
 
     @property
     def final_transform(self):
-        """Return True if the transform needs to be executed"""
+        """``True`` if the transform needs to be executed"""
         return self._final_transform

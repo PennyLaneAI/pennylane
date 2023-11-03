@@ -26,7 +26,7 @@ from pennylane import numpy as np
 from pennylane.measurements import SampleMP
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript, QuantumTape
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 from pennylane.wires import Wires
 
 from .cutstrategy import CutStrategy
@@ -87,7 +87,7 @@ def cut_circuit_mc(
     an expectation value will be evaluated.
 
     Args:
-        tape (QuantumTape): the tape of the full circuit to be cut
+        tape (QNode or QuantumTape): the quantum circuit to be cut.
         classical_processing_fn (callable): A classical postprocessing function to be applied to
             the reconstructed bitstrings. The expected input is a bitstring; a flat array of length ``wires``,
             and the output should be a single number within the interval :math:`[-1, 1]`.
@@ -111,9 +111,10 @@ def cut_circuit_mc(
             :func:`~.find_and_place_cuts` and :func:`~.kahypar_cut` for the available arguments.
 
     Returns:
-        Callable: Function which accepts the same arguments as the QNode.
-        When called, this function will sample from the partitioned circuit fragments
-        and combine the results using a Monte Carlo method.
+        qnode (QNode) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will sample from the partitioned circuit fragments and combine the results using a Monte Carlo method.
 
     **Example**
 
@@ -145,13 +146,13 @@ def cut_circuit_mc(
 
     >>> x = 0.3
     >>> circuit(x)
-    tensor([[1, 1],
-            [0, 1],
-            [0, 1],
-            ...,
-            [0, 1],
-            [0, 1],
-            [0, 1]], requires_grad=True)
+    array([[0., 0.],
+           [0., 1.],
+           [1., 0.],
+           ...,
+           [0., 0.],
+           [0., 0.],
+           [0., 1.]])
 
     Furthermore, the number of shots can be temporarily altered when calling
     the qnode:

@@ -81,7 +81,7 @@ class SquaredErrorLoss:
     >>> loss = qml.qnn.cost.SquaredErrorLoss(ansatz, obs, dev, interface="torch")
     >>> phis = np.ones(num_qubits)
     >>> loss(phis, target=np.array([1.0, 0.5, 0.1]))
-    tensor([0.2113, 0.2500, 0.0368], dtype=torch.float64)
+    array([0.21132197, 0.25      , 0.03683581])
 
     The loss function can be minimized using any gradient descent-based
     :doc:`optimizer </introduction/interfaces>`.

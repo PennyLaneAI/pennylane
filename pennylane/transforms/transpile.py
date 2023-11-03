@@ -5,14 +5,13 @@ from typing import List, Union, Sequence, Callable
 
 import networkx as nx
 
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 from pennylane import Hamiltonian
 from pennylane.operation import Tensor
 from pennylane.ops import __all__ as all_ops
 from pennylane.ops.qubit import SWAP
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumTape
-from pennylane.wires import Wires
 
 
 @transform
@@ -27,16 +26,12 @@ def transpile(
         is passed which contains these types of measurements, a ``NotImplementedError`` will be raised.
 
     Args:
-        tape (QuantumTape): A quantum tape.
+        tape (QNode or QuantumTape or Callable): A quantum tape.
         coupling_map (list[tuple(int, int)] or nx.Graph): Either a list of tuples(int, int) or an instance of
             `networkx.Graph` specifying the couplings between different qubits.
 
     Returns:
-        pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
-        it returns a QNode with the transform added to its transform program.
-        If a tape is passed, returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions.
+        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
 
@@ -74,7 +69,7 @@ def transpile(
     with the circuit, to the transpile function to get a circuit which can be executed for the specified coupling map:
 
     >>> dev = qml.device('default.qubit', wires=[0, 1, 2, 3])
-    >>> transpiled_circuit = qml.transforms.transpile(coupling_map=[(0, 1), (1, 3), (3, 2), (2, 0)])(circuit)
+    >>> transpiled_circuit = qml.transforms.transpile(circuit, coupling_map=[(0, 1), (1, 3), (3, 2), (2, 0)])
     >>> transpiled_qnode = qml.QNode(transpiled_circuit, dev)
     >>> print(qml.draw(transpiled_qnode)())
     0: ─╭●────────────────╭●─┤ ╭Probs
@@ -107,8 +102,6 @@ def transpile(
             "The transpile transform only supports gates acting on 1 or 2 qubits."
         )
 
-    gates = []
-
     # we wrap all manipulations inside stop_recording() so that we don't queue anything due to unrolling of templates
     # or newly applied swap gates
     with QueuingManager.stop_recording():
@@ -121,6 +114,7 @@ def transpile(
         # make copy of ops
         list_op_copy = expanded_tape.operations.copy()
         measurements = expanded_tape.measurements.copy()
+        gates = []
 
         while len(list_op_copy) > 0:
             op = list_op_copy[0]
@@ -141,7 +135,7 @@ def transpile(
                 continue
 
             # since in each iteration, we adjust indices of each op, we reset logical -> phyiscal mapping
-            map_wires = {w: w for w in tape.wires}
+            wire_map = {w: w for w in tape.wires}
 
             # to make sure two qubit gates which act on non-neighbouring qubits q1, q2 can be applied, we first look
             # for the shortest path between the two qubits in the connectivity graph. We then move the q2 into the
@@ -156,17 +150,16 @@ def transpile(
                 # swap wires
                 gates.append(SWAP(wires=[w0, w1]))
                 # update logical -> phyiscal mapping
-                map_wires = {
-                    k: (w0 if v == w1 else (w1 if v == w0 else v)) for k, v in map_wires.items()
+                wire_map = {
+                    k: (w0 if v == w1 else (w1 if v == w0 else v)) for k, v in wire_map.items()
                 }
 
             # append op to gates with adjusted indices and remove from list
-            gates.append(_adjust_op_indices(op, map_wires))
+            gates.append(op.map_wires(wire_map))
             list_op_copy.pop(0)
 
-            # adjust qubit indices in remaining ops + measurements to new mapping
-            list_op_copy = [_adjust_op_indices(op, map_wires) for op in list_op_copy]
-            measurements = [_adjust_mmt_indices(m, map_wires) for m in measurements]
+            list_op_copy = [op.map_wires(wire_map) for op in list_op_copy]
+            measurements = [m.map_wires(wire_map) for m in measurements]
     new_tape = type(tape)(gates, measurements, shots=tape.shots)
 
     def null_postprocessing(results):
@@ -176,24 +169,3 @@ def transpile(
         return results[0]
 
     return [new_tape], null_postprocessing
-
-
-def _adjust_op_indices(_op, _map_wires):
-    """helper function which adjusts wires in Operation according to the map _map_wires"""
-    _new_wires = Wires([_map_wires[w] for w in _op.wires])
-    _params = _op.parameters
-    if len(_params) == 0:
-        return type(_op)(wires=_new_wires)
-    return type(_op)(*_params, wires=_new_wires)
-
-
-def _adjust_mmt_indices(_m, _map_wires):
-    """helper function which adjusts wires in MeasurementProcess according to the map _map_wires"""
-    _new_wires = Wires([_map_wires[w] for w in _m.wires])
-
-    # change wires of observable
-    if _m.obs is None:
-        return type(_m)(eigvals=_m.eigvals(), wires=_new_wires)
-
-    _new_obs = type(_m.obs)(wires=_new_wires, id=_m.obs.id)
-    return type(_m)(obs=_new_obs)

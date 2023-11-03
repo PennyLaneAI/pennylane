@@ -181,6 +181,8 @@ class WrappedObj:
         return id(self.obj)
 
     def __eq__(self, other):
+        if not isinstance(other, WrappedObj):
+            return False
         return id(self.obj) == id(other.obj)
 
     def __repr__(self):

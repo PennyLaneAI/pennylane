@@ -328,6 +328,11 @@ class CompositeOp(Operator):
             )
         return self._hash
 
+    # pylint:disable = missing-function-docstring
+    @property
+    def basis(self):
+        return None
+
     @property
     def arithmetic_depth(self) -> int:
         return 1 + max(op.arithmetic_depth for op in self)
