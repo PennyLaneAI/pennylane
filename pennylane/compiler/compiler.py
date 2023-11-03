@@ -17,7 +17,14 @@ from typing import List, Optional
 from importlib import reload
 from collections import defaultdict
 import dataclasses
-import pkg_resources
+import sys
+
+if sys.version_info[:2] >= (3, 10):
+    import importlib.metadata as importlib_metadata
+else:
+    # This provides a consistent API for importlib.metadata
+    # for Python < 3.10 and Python >= 3.10
+    import importlib_metadata
 
 
 class CompileError(Exception):
@@ -41,9 +48,9 @@ def _refresh_compilers():
     AvailableCompilers.names_entrypoints = defaultdict(dict)
 
     # Iterator packages entry-points with the 'pennylane.compilers' group name
-    for entry in pkg_resources.iter_entry_points("pennylane.compilers"):
+    for entry in importlib_metadata.entry_points(group="pennylane.compilers"):
         # Only need name of the parent module
-        module_name = entry.module_name.split(".")[0]
+        module_name = entry.module.split(".")[0]
         AvailableCompilers.names_entrypoints[module_name][entry.name] = entry
 
     # Check whether available compilers follow the entry_point interface
@@ -64,7 +71,7 @@ def _reload_compilers():
     compilers names and entry points.
     """
 
-    reload(pkg_resources)
+    reload(importlib_metadata)
     _refresh_compilers()
 
 
@@ -114,7 +121,7 @@ def available(compiler="catalyst") -> bool:
 
     # It only refreshes the compilers names and entry points if the name
     # is not already stored. This reduces the number of re-importing
-    # ``pkg_resources`` as it can be a very slow operation on systems
+    # ``importlib_metadata`` as it can be a very slow operation on systems
     # with a large number of installed packages.
 
     if compiler not in AvailableCompilers.names_entrypoints:
