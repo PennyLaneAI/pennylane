@@ -30,10 +30,6 @@
 * `qml.gradients.pulse_generator` has become `qml.gradients.pulse_odegen` to adhere to paper naming conventions.
   [(#4769)](https://github.com/PennyLaneAI/pennylane/pull/4769)
 
-* `pennylane._device.Device.execute` (the old device API) now expects
-  measurements instead of observables.
-  [(#4762)](https://github.com/PennyLaneAI/pennylane/pull/4762)
-
 <h3>Deprecations 👋</h3>
 
 * `Observable.return_type` is deprecated. Instead, you should inspect the type
