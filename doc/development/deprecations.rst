@@ -6,6 +6,20 @@ Deprecations
 Pending deprecations
 --------------------
 
+* ``QuantumScript.is_sampled`` and ``QuantumScript.all_sampled`` are deprecated. Users should now validate
+  these properties manually.
+
+  .. code-block:: python
+
+    from pennylane.measurements import *
+    sample_types = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
+    is_sample_type = [isinstance(m, sample_types) for m in tape.measurements]
+    is_sampled = any(is_sample_type)
+    all_sampled = all(is_sample_type)
+
+  - Deprecated in v0.34
+  - Will be removed in v0.35
+
 * Passing additional arguments to a transform that decorates a QNode should now be done through use
   of ``functools.partial``. For example, the :func:`~pennylane.metric_tensor` transform has an
   optional ``approx`` argument which should now be set using:
@@ -64,6 +78,12 @@ Completed deprecation cycles
   - Deprecated in v0.33
   - Removed in v0.34
 
+* The ``prep`` keyword argument in ``QuantumScript`` has been removed.
+  ``StatePrepBase`` operations should be placed at the beginning of the ``ops`` list instead.
+
+  - Deprecated in v0.33
+  - Removed in v0.34
+
 * The public methods of ``DefaultQubit`` are pending changes to
   follow the new device API.
 
@@ -106,12 +126,6 @@ Completed deprecation cycles
 
   - Added in v0.32
   - Behaviour changed in v0.33
-
-* The ``prep`` keyword argument in ``QuantumScript`` has been removed.
-  ``StatePrepBase`` operations should be placed at the beginning of the ``ops`` list instead.
-
-  - Deprecated in v0.33
-  - Removed in v0.34
 
 * ``qml.qchem.jordan_wigner`` had been removed.
   Use ``qml.jordan_wigner`` instead. List input to define the fermionic operator
