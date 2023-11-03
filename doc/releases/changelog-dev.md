@@ -36,8 +36,8 @@
   Instead switch to using the new `qml.transform` function.
   [(#4774)](https://github.com/PennyLaneAI/pennylane/pull/4774)
 
-* `map_batch_transform` is deprecated, as all transforms can now be applied to
-  a sequence of tapes to achieve the same functionality.
+* `map_batch_transform` is renamed to `map_transform`. The old name is still available, but will be
+  removed in an upcoming release.
   [(#4774)](https://github.com/PennyLaneAI/pennylane/pull/4774)
 
 <h3>Documentation 📝</h3>

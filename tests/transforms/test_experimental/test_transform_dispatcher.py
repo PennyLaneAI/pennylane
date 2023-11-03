@@ -635,28 +635,3 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
                 tape = tape.copy()
                 tape._ops.pop(index)  # pylint:disable=protected-access
                 return [tape], lambda x: x
-
-    def test_map_single_tape_transform_to_many_tapes(self):
-        """Test that a transform can be applied to a batch of tapes"""
-        one_tape_transform = transform(first_valid_transform)
-        qs1 = qml.tape.QuantumScript([qml.PauliX(0), qml.PauliX(1)], [qml.expval(qml.PauliZ(0))])
-        qs2 = qml.tape.QuantumScript([qml.PauliX(1), qml.PauliX(0)], [qml.expval(qml.PauliZ(0))])
-
-        tapes, fn = one_tape_transform([qs1, qs2], 1)
-        assert len(tapes) == 2
-        assert tapes[0].operations == [qml.PauliX(0)]
-        assert tapes[1].operations == [qml.PauliX(1)]
-        assert fn(dev.execute(tapes)) == [(-1.0,), (1.0,)]
-
-    def test_map_many_tape_transform_to_many_tapes(self):
-        """Test that a transform can be applied to a batch of tapes"""
-        one_tape_transform = transform(second_valid_transform)
-        qs1 = qml.tape.QuantumScript([qml.PauliX(0), qml.PauliX(1)], [qml.expval(qml.PauliZ(0))])
-        qs2 = qml.tape.QuantumScript([qml.PauliX(1), qml.PauliX(0)], [qml.expval(qml.PauliZ(0))])
-
-        tapes, fn = one_tape_transform([qs1, qs2], 1)
-        assert len(tapes) == 4
-        # TODO: continue here
-        assert tapes[0].operations == tapes[1].operations == [qml.PauliX(0), qml.PauliX(1)]
-        assert tapes[2].operations == tapes[3].operations == [qml.PauliX(1), qml.PauliX(0)]
-        assert fn(dev.execute(tapes)) == [-2.0, -2.0]

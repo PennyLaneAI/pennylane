@@ -164,12 +164,7 @@ def _batch_transform(
     # TODO: Remove once old device are removed
     if device_batch_transform:
         dev_batch_transform = set_shots(device, override_shots)(device.batch_transform)
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", UserWarning)
-            tapes, postprocessing_fn = qml.transforms.map_batch_transform(
-                dev_batch_transform, tapes
-            )
-        return tapes, postprocessing_fn, config
+        return *qml.transforms.map_transform(dev_batch_transform, tapes), config
 
     def null_post_processing_fn(results):
         """A null post processing function used because the user requested not to use the device batch transform."""

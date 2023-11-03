@@ -198,7 +198,10 @@ def vjp(
 
         jacs = []
 
-        g_tapes, fn = gradient_fn(tapes, **gradient_kwargs)
+        def partial_gradient_fn(tape):
+            return gradient_fn(tape, **gradient_kwargs)
+
+        g_tapes, fn = qml.transforms.map_transform(partial_gradient_fn, tapes)
         res, _ = execute_fn(g_tapes, **gradient_kwargs)
 
         jacs = fn(res)

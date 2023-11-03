@@ -683,11 +683,10 @@ class TestBatchTransformGradients:
         assert np.allclose(res, [0, -np.sin(weights[1])], atol=0.1)
 
 
-@pytest.mark.parametrize("use_new_map_transform", [False, True])
-class TestMapBatchTransform:
-    """Tests for the map_batch_transform function"""
+class TestMapTransform:
+    """Tests for the map_transform function"""
 
-    def test_result(self, use_new_map_transform, mocker):
+    def test_result(self, mocker):
         """Test that it correctly applies the transform to be mapped"""
         dev = qml.device("default.qubit.legacy", wires=2)
         H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
@@ -709,13 +708,7 @@ class TestMapBatchTransform:
 
         tape2 = qml.tape.QuantumScript.from_queue(q2)
         spy = mocker.spy(qml.transforms, "hamiltonian_expand")
-        if use_new_map_transform:
-            with pytest.warns(UserWarning, match="`map_batch_transform` is deprecated"):
-                tapes, fn = qml.transforms.map_batch_transform(
-                    qml.transforms.hamiltonian_expand, [tape1, tape2]
-                )
-        else:
-            tapes, fn = qml.transforms.hamiltonian_expand([tape1, tape2])
+        tapes, fn = qml.transforms.map_transform(qml.transforms.hamiltonian_expand, [tape1, tape2])
 
         spy.assert_called()
         assert len(tapes) == 5
@@ -725,8 +718,8 @@ class TestMapBatchTransform:
 
         assert np.allclose(fn(res), expected)
 
-    def test_differentiation(self, use_new_map_transform):
-        """Test that an execution using map_batch_transform can be differentiated"""
+    def test_differentiation(self):
+        """Test that an execution using map_transform can be differentiated"""
         dev = qml.device("default.qubit.legacy", wires=2)
         H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
 
@@ -747,13 +740,9 @@ class TestMapBatchTransform:
                 qml.expval(H + 0.5 * qml.PauliY(0))
 
             tape2 = qml.tape.QuantumScript.from_queue(q2)
-            if use_new_map_transform:
-                with pytest.warns(UserWarning, match="`map_batch_transform` is deprecated"):
-                    tapes, fn = qml.transforms.map_batch_transform(
-                        qml.transforms.hamiltonian_expand, [tape1, tape2]
-                    )
-            else:
-                tapes, fn = qml.transforms.hamiltonian_expand([tape1, tape2])
+            tapes, fn = qml.transforms.map_transform(
+                qml.transforms.hamiltonian_expand, [tape1, tape2]
+            )
             res = qml.execute(tapes, dev, qml.gradients.param_shift, device_batch_transform=False)
             return np.sum(fn(res))
 
@@ -766,13 +755,14 @@ class TestMapBatchTransform:
         expected = [-0.5 * np.sin(x) - 0.25 * np.cos(x / 2), -np.sin(y)]
         assert np.allclose(res, expected)
 
+    def test_map_batch_transform_is_deprecated(self):
+        """Test that map_batch_transform is deprecated."""
 
-def test_map_batch_transform_is_deprecated():
-    """Test that map_batch_transform is deprecated."""
+        def my_transform(tape):
+            return [tape], lambda x: x[0]
 
-    def my_transform(tape):
-        return [tape], lambda x: x[0]
-
-    qs = qml.tape.QuantumScript()
-    with pytest.warns(UserWarning, match="`map_batch_transform` is deprecated"):
-        _ = qml.transforms.map_batch_transform(my_transform, [qs, qs])
+        qs = qml.tape.QuantumScript()
+        with pytest.warns(
+            UserWarning, match="`map_batch_transform` is being renamed to `map_transform`"
+        ):
+            _ = qml.transforms.map_batch_transform(my_transform, [qs, qs])

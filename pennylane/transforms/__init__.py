@@ -189,7 +189,7 @@ to help build custom QNode, quantum function, and tape transforms:
     :toctree: api
 
     ~transforms.make_tape
-    ~transforms.map_batch_transform
+    ~transforms.map_transform
     ~transforms.create_expand_fn
     ~transforms.create_decomp_expand_fn
     ~transforms.expand_invalid_trainable
@@ -230,7 +230,7 @@ for creation of custom transforms.
 """
 # Import the decorators first to prevent circular imports when used in other transforms
 from .core import transform, TransformError
-from .batch_transform import batch_transform, map_batch_transform
+from .batch_transform import batch_transform, map_transform, map_batch_transform
 from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
 from .op_transforms import op_transform
 from .batch_params import batch_params
