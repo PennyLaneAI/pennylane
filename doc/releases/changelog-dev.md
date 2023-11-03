@@ -32,6 +32,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* `QuantumScript.is_sampled` and `QuantumScript.all_sampled` are deprecated.
+  Users should now validate these properties manually.
+  [(#4773)](https://github.com/PennyLaneAI/pennylane/pull/4773)
+
 <h3>Documentation 📝</h3>
 
 * Documentation page for `qml.measurements` now links top-level accessible functions (e.g. `qml.expval`) 
@@ -39,6 +43,9 @@
   [(#4750)](https://github.com/PennyLaneAI/pennylane/pull/4750)
 
 <h3>Bug fixes 🐛</h3>
+
+* Jax jit now works with shot vectors.
+  [(#4772)](https://github.com/PennyLaneAI/pennylane/pull/4772/)
 
 * Any `ScalarSymbolicOp`, like `Evolution`, now states that it has a matrix if the target
   is a `Hamiltonian`.
