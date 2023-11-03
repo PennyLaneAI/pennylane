@@ -12,13 +12,13 @@ Pending deprecations
   to see how this can be done.
 
   - Deprecated in v0.34
-  - Will be removed in v0.35
+  - Will be removed in v0.36
 
 * ``map_batch_transform`` is renamed to ``map_transform``. The old name is still available, but will be
   removed in an upcoming release.
 
   - Deprecated in v0.34
-  - Will be removed in v0.35
+  - Will be removed in v0.36
 
 * Passing additional arguments to a transform that decorates a QNode should now be done through use
   of ``functools.partial``. For example, the :func:`~pennylane.metric_tensor` transform has an
