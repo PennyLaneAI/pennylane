@@ -41,8 +41,9 @@ class op_transform:
 
     .. warning::
 
-        Use of `op_transform` to create a custom transform is deprecated. Instead
-        switch to using the new qml.transform function. Follow the instructions
+        Use of ``op_transform`` to create a custom transform is deprecated. Instead
+        switch to using the new :func:`transform` function. Follow the instructions
+
         `here <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
         for further details
 

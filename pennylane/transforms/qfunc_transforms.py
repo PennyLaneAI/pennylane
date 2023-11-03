@@ -79,8 +79,9 @@ class single_tape_transform:
 
     .. warning::
 
-        Use of `single_tape_transform` to create a custom transform is deprecated. Instead
-        switch to using the new qml.transform function. Follow the instructions
+        Use of ``single_tape_transform`` to create a custom transform is deprecated. Instead
+
+        switch to using the new :func:`transform` function. Follow the instructions
         `here <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
         for further details
 
@@ -209,8 +210,10 @@ def qfunc_transform(tape_transform):
 
     .. warning::
 
-        Use of `qfunc_transform` to create a custom transform is deprecated. Instead
-        switch to using the new qml.transform function. Follow the instructions
+        Use of ``qfunc_transform`` to create a custom transform is deprecated. Instead
+
+        switch to using the new :func:`transform` function. Follow the instructions
+
         `here <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
         for further details
 
