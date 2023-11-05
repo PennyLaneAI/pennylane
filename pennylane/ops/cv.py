@@ -45,7 +45,7 @@ from pennylane import math as qml_math
 from pennylane.operation import AnyWires, CVObservable, CVOperation
 
 from .identity import Identity  # pylint: disable=unused-import
-from .meta import Snapshot
+# from .meta import Snapshot
 
 _two_term_shift_rule = [[0.5, 1, np.pi / 2], [-0.5, 1, -np.pi / 2]]
 
