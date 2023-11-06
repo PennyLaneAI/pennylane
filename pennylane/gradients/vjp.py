@@ -305,6 +305,25 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
         # is simply none.
         return [], lambda _, num=None: None
 
+    try:
+        if _all_close_to_zero(dy):
+            # If the dy vector is zero, then the
+            # corresponding element of the VJP will be zero,
+            # and we can avoid a quantum computation.
+
+            def func(_, num=None):  # pylint: disable=unused-argument
+                res = qml.math.convert_like(np.zeros([num_params]), dy)
+                multi = len(tape.measurements) > 1
+                if multi:
+                    multi_dy = dy[0]
+                    res = qml.math.convert_like(res, multi_dy)
+                    return qml.math.cast_like(res, multi_dy)
+                return qml.math.cast_like(res, dy)
+
+            return [], func
+    except (AttributeError, TypeError, NotImplementedError):
+        pass
+
     gradient_tapes, fn = gradient_fn(tape, **gradient_kwargs)
 
     def processing_fn(results, num=None):
