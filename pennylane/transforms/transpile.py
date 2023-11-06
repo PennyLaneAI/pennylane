@@ -45,9 +45,22 @@ def state_transposition(results, mps, new_wire_order, original_wire_order):
     return tuple(new_results)
 
 
+def _process_measurements(expanded_tape, device_wires, is_default_mixed):
+    measurements = expanded_tape.measurements.copy()
+    if device_wires:
+        for i, m in enumerate(measurements):
+            if isinstance(m, qml.measurements.StateMP):
+                if is_default_mixed:
+                    measurements[i] = qml.density_matrix(wires=device_wires)
+            elif not m.wires:
+                measurements[i] = type(m)(wires=device_wires)
+
+    return measurements
+
+
 @transform
 def transpile(
-    tape: QuantumTape, coupling_map: Union[List, nx.Graph], device_wires=None
+    tape: QuantumTape, coupling_map: Union[List, nx.Graph], device=None
 ) -> (Sequence[QuantumTape], Callable):
     """Transpile a circuit according to a desired coupling map
 
@@ -111,6 +124,8 @@ def transpile(
     A swap gate has been applied to wires 2 and 3, and the remaining gates have been adapted accordingly
 
     """
+    device_wires = device.wires
+    is_default_mixed = getattr(device, "short_name", "") == "default.mixed"
     # init connectivity graph
     coupling_graph = (
         nx.Graph(coupling_map) if not isinstance(coupling_map, nx.Graph) else coupling_map
@@ -144,12 +159,8 @@ def transpile(
 
         # make copy of ops
         list_op_copy = expanded_tape.operations.copy()
-        measurements = expanded_tape.measurements.copy()
         wire_order = device_wires or tape.wires
-        if device_wires:
-            for i, m in enumerate(measurements):
-                if not m.wires and not isinstance(m, qml.measurements.StateMP):
-                    measurements[i] = type(m)(wires=device_wires)
+        measurements = _process_measurements(expanded_tape, device_wires, is_default_mixed)
 
         gates = []
 
@@ -200,7 +211,9 @@ def transpile(
             measurements = [m.map_wires(wire_map) for m in measurements]
     new_tape = type(tape)(gates, measurements, shots=tape.shots)
 
-    any_state_mp = any(isinstance(m, qml.measurements.StateMP) for m in tape.measurements)
+    # note: no need for transposition with density matrix, so type must be `StateMP` but not `DensityMatrixMP`
+    # pylint: disable=unidiomatic-typecheck
+    any_state_mp = any(type(m) is qml.measurements.StateMP for m in measurements)
     if not any_state_mp or device_wires is None:
 
         def null_postprocessing(results):
@@ -228,5 +241,5 @@ def _transpile_qnode(self, qnode, targs, tkwargs):
             "when transforming a QNode."
         )
 
-    tkwargs.setdefault("device_wires", qnode.device.wires)
+    tkwargs.setdefault("device", qnode.device)
     return self.default_qnode_transform(qnode, targs, tkwargs)
