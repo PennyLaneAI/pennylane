@@ -467,6 +467,13 @@ class gradient_transform(qml.batch_transform):  # pragma: no cover
     a batch of tapes to be independently executed on a quantum device, alongside
     a post-processing function that returns the result.
 
+    .. warning::
+
+        Use of ``gradient_transform`` to create a custom transform is deprecated. Instead
+        switch to using the new :func:`transform` function. Follow the instructions
+        `here <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
+        for further details
+
     Args:
         expand_fn (function): An expansion function (if required) to be applied to the
             input tape before the gradient computation takes place. If not provided,
