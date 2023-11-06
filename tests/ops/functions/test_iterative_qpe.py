@@ -50,7 +50,7 @@ class TestResult:
             qml.PauliX(wires=[0])
 
             # Iterative QPE
-            qml.QuantumPhaseEstimation(qml.RZ(2.0, wires=[0]), estimation_wires=[1, 2, 3])
+            qml.QuantumPhaseEstimation(qml.RZ(phi, wires=[0]), estimation_wires=[1, 2, 3])
 
             return qml.probs(wires=[1, 2, 3])
 
@@ -58,16 +58,14 @@ class TestResult:
 
     def test_check_gradients(self):
         """Test to check that the gradients are correct comparing with the expanded circuit"""
-        dev1 = qml.device("default.qubit")
+        dev = qml.device("default.qubit")
 
-        @qml.qnode(dev1)
+        @qml.qnode(dev)
         def circuit(theta):
             m = qml.iterative_qpe(qml.RZ(theta, wires=[0]), [1], iters=2)
             return qml.expval(qml.PauliZ(0))
 
-        dev2 = qml.device("default.qubit")
-
-        @qml.qnode(dev2)
+        @qml.qnode(dev)
         def manual_circuit(phi):
             qml.Hadamard(wires=[1])
             qml.ctrl(qml.RZ(phi, wires=[0]) ** 2, control=[1])
