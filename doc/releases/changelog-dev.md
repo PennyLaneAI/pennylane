@@ -39,6 +39,7 @@
 * `single_tape_transform`, `batch_transform`, `qfunc_transform`, `gradient_transform` and
   `op_transform` are deprecated. Instead switch to using the new `qml.transform` function.
   [(#4774)](https://github.com/PennyLaneAI/pennylane/pull/4774)
+  [(#4794)](https://github.com/PennyLaneAI/pennylane/pull/4794)
 
 <h3>Documentation 📝</h3>
 
