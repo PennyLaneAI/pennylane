@@ -20,6 +20,7 @@ import numpy as np
 import autograd
 
 import pennylane as qml
+from opt_einsum import contract
 
 
 def _convert(jac, dy_row):
@@ -125,9 +126,12 @@ def compute_vjp_single(dy, jac, num=None):
         if num == 1:
             jac = qml.math.squeeze(jac)
         jac = qml.math.reshape(jac, (-1, 1))
-        res = qml.math.einsum("j,ji", dy_row, jac)  # qml.math.matmul(dy_row, jac)
-        # res = dy_row @ jac # this line is faster, but not supported by tensorflow
-        # res = qml.math.tensordot(jac, dy_row, [[0], [0]])
+        try:
+            res = dy_row @ jac
+
+        except:
+            res = qml.math.tensordot(jac, dy_row, [[0], [0]])
+
     # Single measurement with multiple params
     else:
         # No trainable parameters (adjoint)
@@ -137,14 +141,18 @@ def compute_vjp_single(dy, jac, num=None):
         # Single measurement with no dimension e.g. expval
         if num == 1:
             jac = qml.math.reshape(qml.math.stack(jac), (1, -1))
-            res = qml.math.einsum("j,ji", dy_row, jac)
-            # res = qml.math.tensordot(jac, dy_row, [[0], [0]])
+            try:
+                res = dy_row @ jac
+            except:
+                res = qml.math.tensordot(jac, dy_row, [[0], [0]])
 
         # Single measurement with dimension e.g. probs
         else:
             jac = qml.math.stack(jac)
-            res = qml.math.tensordot(jac, dy_row, [[1], [0]])
-            # res = qml.math.matmul(dy_row, jac)
+            try:
+                res = jac @ dy_row
+            except:
+                res = qml.math.tensordot(jac, dy_row, [[1], [0]])
 
     return res
 
