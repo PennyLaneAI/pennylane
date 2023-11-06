@@ -1503,7 +1503,7 @@ def test_custom_wire_labels_allowed_without_reset():
         qml.Hadamard("a")
         ma = qml.measure("a", reset=False)
         qml.cond(ma, qml.PauliX)("b")
-        qml.probs(wires="a")
+        qml.probs(wires="b")
 
     tape = qml.tape.QuantumScript.from_queue(q)
     tapes, _ = qml.defer_measurements(tape)
@@ -1512,7 +1512,7 @@ def test_custom_wire_labels_allowed_without_reset():
     assert len(tape) == 3
     assert qml.equal(tape[0], qml.Hadamard("a"))
     assert qml.equal(tape[1], qml.CNOT(["a", "b"]))
-    assert qml.equal(tape[2], qml.probs(wires="a"))
+    assert qml.equal(tape[2], qml.probs(wires="b"))
 
 
 def test_custom_wire_labels_fails_with_reset():
