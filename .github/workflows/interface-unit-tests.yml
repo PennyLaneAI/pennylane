@@ -15,7 +15,7 @@ on:
         description: The version of TensorFlow to install for any job that requires TensorFlow
         required: false
         type: string
-        default: 2.13.0
+        default: 2.14.0
       pytorch_version:
         description: The version of PyTorch to install for any job that requires PyTorch
         required: false
