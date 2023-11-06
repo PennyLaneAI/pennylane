@@ -264,18 +264,6 @@ class TestConstruction:
                 qml.RX(0.5, wires=0)
                 qml.expval(qml.PauliZ(wires=1))
 
-    def test_sampling(self):
-        """Test that the tape correctly marks itself as returning samples"""
-        with QuantumTape() as tape:
-            qml.expval(qml.PauliZ(wires=1))
-
-        assert not tape.is_sampled
-
-        with QuantumTape() as tape:
-            qml.sample(qml.PauliZ(wires=0))
-
-        assert tape.is_sampled
-
     def test_repr(self):
         """Test the string representation"""
 
@@ -1235,27 +1223,6 @@ class TestExpand:
         assert qml.equal(expanded.measurements[0], qml.expval(qml.PauliZ(0)))
         assert qml.equal(expanded.measurements[1], qml.expval(qml.PauliZ(0)))
         assert expanded.shots is tape.shots
-
-    def test_is_sampled_reserved_after_expansion(self):
-        """Test that the is_sampled property is correctly set when tape
-        expansion happens."""
-        dev = qml.device("default.qubit", wires=1, shots=10)
-
-        class UnsupportedT(qml.operation.Operation):
-            """A T gate that provides a decomposition, but no matrix."""
-
-            @staticmethod
-            def compute_decomposition(wires):  # pylint:disable=arguments-differ
-                return [qml.PhaseShift(np.pi / 4, wires=wires)]
-
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def circuit():
-            UnsupportedT(wires=0)
-            return sample(qml.PauliZ(0))
-
-        circuit()
-
-        assert circuit.qtape.is_sampled
 
 
 class TestExecution:

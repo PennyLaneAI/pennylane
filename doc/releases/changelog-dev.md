@@ -32,6 +32,14 @@
 
 <h3>Deprecations 👋</h3>
 
+* `QuantumScript.is_sampled` and `QuantumScript.all_sampled` are deprecated.
+  Users should now validate these properties manually.
+  [(#4773)](https://github.com/PennyLaneAI/pennylane/pull/4773)
+
+* `single_tape_transform`, `batch_transform`, `qfunc_transform`, and `op_transform` are deprecated.
+  Instead switch to using the new `qml.transform` function.
+  [(#4774)](https://github.com/PennyLaneAI/pennylane/pull/4774)
+
 * `Observable.return_type` is deprecated. Instead, you should inspect the type
   of the surrounding measurement process.
   [(#4762)](https://github.com/PennyLaneAI/pennylane/pull/4762)
@@ -50,6 +58,10 @@
 * Any `ScalarSymbolicOp`, like `Evolution`, now states that it has a matrix if the target
   is a `Hamiltonian`.
   [(#4768)](https://github.com/PennyLaneAI/pennylane/pull/4768)
+
+* In `default.qubit`, initial states are now initialized with the simulator's wire order, not the circuit's
+  wire order.
+  [(#4781)](https://github.com/PennyLaneAI/pennylane/pull/4781)
 
 <h3>Contributors ✍️</h3>
 

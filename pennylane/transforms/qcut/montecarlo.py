@@ -168,7 +168,9 @@ def cut_circuit_mc(
 
     .. code-block:: python
 
-        @qml.cut_circuit_mc(auto_cutter=True)
+        from functools import partial
+
+        @partial(qml.cut_circuit_mc, auto_cutter=True)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(0.89, wires=0)
@@ -388,12 +390,13 @@ def cut_circuit_mc(
 
         .. code-block::
 
+            from functools import partial
             dev = qml.device("default.qubit", wires=2, shots=10000)
 
             def observable(bitstring):
                 return (-1) ** np.sum(bitstring)
 
-            @qml.cut_circuit_mc(classical_processing_fn=observable)
+            @partial(qml.cut_circuit_mc, classical_processing_fn=observable)
             @qml.qnode(dev)
             def circuit(x):
                 qml.RX(0.89, wires=0)
