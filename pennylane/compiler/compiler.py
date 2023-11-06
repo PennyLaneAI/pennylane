@@ -42,7 +42,7 @@ def _refresh_compilers():
 
     # Iterator packages entry-points with the 'pennylane.compilers' group name
     entries = (
-        metadata.entry_points()["pennylane.compilers"]
+        defaultdict(dict, metadata.entry_points())["pennylane.compilers"]
         if version_info[:2] == (3, 9)
         # pylint:disable=unexpected-keyword-arg
         else metadata.entry_points(group="pennylane.compilers")
