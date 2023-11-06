@@ -71,6 +71,9 @@ def _reload_compilers():
     compilers names and entry points.
     """
 
+    # Note re-importing ``importlib.metadata`` can be a very slow operation
+    # on systems with a large number of installed packages.
+
     reload(metadata)
     _refresh_compilers()
 
@@ -119,10 +122,8 @@ def available(compiler="catalyst") -> bool:
     True
     """
 
-    # It only refreshes the compilers names and entry points if the name
-    # is not already stored. This reduces the number of re-importing
-    # ``importlib_metadata`` as it can be a very slow operation on systems
-    # with a large number of installed packages.
+    # It only refreshes the compilers names and entry points if
+    # the name is not already stored.
 
     if compiler not in AvailableCompilers.names_entrypoints:
         # Reload installed packages and updates
