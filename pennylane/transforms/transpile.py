@@ -124,8 +124,12 @@ def transpile(
     A swap gate has been applied to wires 2 and 3, and the remaining gates have been adapted accordingly
 
     """
-    device_wires = device.wires
-    is_default_mixed = getattr(device, "short_name", "") == "default.mixed"
+    if device:
+        device_wires = device.wires
+        is_default_mixed = getattr(device, "short_name", "") == "default.mixed"
+    else:
+        device_wires = None
+        is_default_mixed = False
     # init connectivity graph
     coupling_graph = (
         nx.Graph(coupling_map) if not isinstance(coupling_map, nx.Graph) else coupling_map

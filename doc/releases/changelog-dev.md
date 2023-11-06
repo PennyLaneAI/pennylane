@@ -59,6 +59,9 @@
   wire order.
   [(#4781)](https://github.com/PennyLaneAI/pennylane/pull/4781)
 
+* `transpile` can now handle measurements that are broadcasted onto all wires.
+  [(#4793)](https://github.com/PennyLaneAI/pennylane/pull/4793)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
