@@ -20,7 +20,6 @@ import numpy as np
 import autograd
 
 import pennylane as qml
-from opt_einsum import contract
 
 
 def _convert(jac, dy_row):
