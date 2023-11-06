@@ -201,6 +201,7 @@ class Snapshot(Operation):
     def label(self, decimals=None, base_label=None, cache=None):
         return "|Snap|"
 
+    # pylint: disable=W0613
     @staticmethod
     def compute_decomposition(*params, wires=None, **hyperparameters):
         return []
