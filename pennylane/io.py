@@ -15,10 +15,16 @@
 This module contains functions to load circuits from other frameworks as
 PennyLane templates.
 """
-import importlib_metadata
+from importlib import metadata
+from sys import version_info
 
 # get list of installed plugin converters
-plugin_converters = {e.name: e for e in importlib_metadata.entry_points(group="pennylane.io")}
+__plugin_devices = (
+    metadata.entry_points().get("pennylane.io", [])
+    if version_info[:2] == (3, 9)
+    else metadata.entry_points(group="pennylane.io")  # pylint:disable=unexpected-keyword-arg
+)
+plugin_converters = {entry.name: entry for entry in __plugin_devices}
 
 
 def load(quantum_circuit_object, format: str):

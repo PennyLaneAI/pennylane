@@ -15,8 +15,8 @@
 This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
-from importlib import reload
-import importlib_metadata
+from importlib import reload, metadata
+from sys import version_info
 
 
 import numpy as _np
@@ -140,7 +140,12 @@ class QuantumFunctionError(Exception):
 def _get_device_entrypoints():
     """Returns a dictionary mapping the device short name to the
     loadable entrypoint"""
-    entries = importlib_metadata.entry_points(group="pennylane.plugins")
+    entries = (
+        metadata.entry_points()["pennylane.plugins"]
+        if version_info[:2] == (3, 9)
+        # pylint:disable=unexpected-keyword-arg
+        else metadata.entry_points(group="pennylane.plugins")
+    )
     return {entry.name: entry for entry in entries}
 
 
@@ -151,11 +156,11 @@ def refresh_devices():
     # which is to update the global plugin_devices variable.
 
     # We wish to retain the behaviour of a global plugin_devices dictionary,
-    # as re-importing importlib_metadata can be a very slow operation on systems
+    # as re-importing metadata can be a very slow operation on systems
     # with a large number of installed packages.
     global plugin_devices  # pylint:disable=global-statement
 
-    reload(importlib_metadata)
+    reload(metadata)
     plugin_devices = _get_device_entrypoints()
 
 
