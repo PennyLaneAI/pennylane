@@ -15,12 +15,13 @@
 This module contains functions to load circuits from other frameworks as
 PennyLane templates.
 """
+from collections import defaultdict
 from importlib import metadata
 from sys import version_info
 
 # get list of installed plugin converters
 __plugin_devices = (
-    metadata.entry_points().get("pennylane.io", [])
+    defaultdict(tuple, metadata.entry_points())["pennylane.io"]
     if version_info[:2] == (3, 9)
     else metadata.entry_points(group="pennylane.io")  # pylint:disable=unexpected-keyword-arg
 )
