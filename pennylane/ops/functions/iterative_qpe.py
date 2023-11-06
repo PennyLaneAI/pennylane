@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This file contains the function which generates the iterative QPE subroutine.
+This module contains the qml.iterative_qpe function.
 """
 
 import pennylane as qml
