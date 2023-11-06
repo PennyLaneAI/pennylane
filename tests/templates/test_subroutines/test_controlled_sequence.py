@@ -283,8 +283,8 @@ class TestIntegration:
 
         dev = qml.device("default.qubit", wires=4)
 
+        @qml.compile
         @qml.qnode(dev)
-        @qml.compile()
         def circuit(thetas):
             qml.ControlledSequence(U(thetas), control=[2, 3])
             return qml.state()
