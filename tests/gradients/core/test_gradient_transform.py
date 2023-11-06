@@ -20,6 +20,7 @@ from pennylane.gradients.gradient_transform import (
     _gradient_analysis,
     choose_grad_methods,
     _grad_method_validation,
+    gradient_transform,
 )
 
 
@@ -730,3 +731,15 @@ class TestInterfaceIntegration:
         res = jax.grad(circuit)(x)
         expected = -2 * (4 * x**2 * np.cos(2 * x**2) + np.sin(2 * x**2))
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+def test_gradient_transform_is_deprecated():
+    """Test that the gradient_transform class is deprecated (being a child of batch_transform)."""
+
+    def func(op):
+        return op
+
+    with pytest.warns(
+        UserWarning, match="Use of `batch_transform` to create a custom transform is deprecated"
+    ):
+        _ = gradient_transform(func)
