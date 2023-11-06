@@ -847,11 +847,12 @@ def norm(tensor, like=None, **kwargs):
             kwargs["dim"] = axis_val
 
     elif like == "autograd":
-        # ord = kwargs.get("ord", None)
-        # if ord is not None and ord != "fro" and ord != "nuc":
-        #     norm = _autograd_norm
-        # else:
-        from autograd.numpy.linalg import norm
+        custom = _needs_custom_autograd_norm(tensor, **kwargs)
+        print(custom)
+        if custom:
+            norm = _autograd_norm
+        else:
+            from autograd.numpy.linalg import norm
 
     else:
         from scipy.linalg import norm
@@ -859,31 +860,44 @@ def norm(tensor, like=None, **kwargs):
     return norm(tensor, **kwargs)
 
 
+def _needs_custom_autograd_norm(tensor, **kwargs):
+    """Boolean helper function to check if we need to use a custom dispatcher for norm
+    of autograd arrays"""
+    shape = tensor.shape
+
+    if len(shape) <= 2:
+        if kwargs.get("axis", None) is None and not kwargs.get("keep_dims", False):
+            ord = kwargs.get("ord", None)
+
+            if ord is not None:
+                if ord == 2 and len(shape) == 2:
+                    return True
+                if float(ord) == float(np.inf):
+                    return True
+
+    return False
+
+
 def _autograd_norm(tensor, **kwargs):
     """Autograd differentiable norm"""
-    if kwargs.get("axis", None) is not None:
-        raise ValueError("Specifying axes is not currently supported.")
-    if kwargs.get("keep_dims", False):
-        raise ValueError("Setting keep_dims is not currently supported.")
 
     import autograd.numpy as anp
 
     ord = kwargs.get("ord", 2)
 
-    if ord == 0:
-        return anp.sum(tensor != 0)
+    shape = tensor.shape
+    if ord == 2 and len(shape) == 2:
+        intermediate_mat = tensor @ anp.conj(tensor).T
+        eigvals = anp.linalg.eigvals(intermediate_mat)
+        sqrt_eigvals = anp.sqrt(eigvals)
+        return anp.amax(sqrt_eigvals)
 
-    if ord == onp.inf:
-        _norm = 0.0
-        for val in tensor.flatten():
-            aval = anp.abs(val)
-            _norm = aval if aval > _norm else _norm
-        return _norm
+    if ord is onp.inf:
+        axis = 1 if len(shape) == 2 else None
+        abs_sum = anp.sum(anp.abs(tensor), axis=axis)
+        return anp.amax(abs_sum)
 
-    _norm = 0.0
-    for val in tensor.flatten():
-        _norm += anp.abs(val) ** ord
-    return _norm ** (1 / ord)
+    return anp.linalg.norm(tensor, **kwargs)
 
 
 @multi_dispatch(argnum=[1])
