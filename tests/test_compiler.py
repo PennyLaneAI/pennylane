@@ -339,3 +339,74 @@ class TestCatalystControlFlow:
 
         assert jnp.allclose(circuit(1.4), 0.16996714)
         assert jnp.allclose(circuit(1.6), 0.0)
+
+    def test_cond_with_elif(self):
+        """Test condition with a simple elif branch"""
+        dev = qml.device("lightning.qubit", wires=1)
+
+        @qml.qjit
+        @qml.qnode(dev)
+        def circuit(x):
+            def true_fn():
+                qml.RX(x, wires=0)
+
+            def elif_fn():
+                qml.RY(x, wires=0)
+
+            def false_fn():
+                qml.RX(x**2, wires=0)
+
+            qml.cond(x > 2.7, true_fn, false_fn, ((x > 1.4, elif_fn),))
+
+            return qml.expval(qml.PauliZ(0))
+
+        assert jnp.allclose(circuit(1.2), 0.13042371)
+        assert jnp.allclose(circuit(jnp.pi), -1.0)
+
+    def test_cond_with_elifs(self):
+        """Test condition with multiple elif branches"""
+        dev = qml.device("lightning.qubit", wires=1)
+
+        @qml.qjit
+        @qml.qnode(dev)
+        def circuit(x):
+            def true_fn():
+                qml.RX(x, wires=0)
+
+            def elif1_fn():
+                qml.RY(x, wires=0)
+
+            def elif2_fn():
+                qml.RZ(x, wires=0)
+
+            def false_fn():
+                qml.RX(x**2, wires=0)
+
+            qml.cond(x > 2.7, true_fn, false_fn, ((x > 2.4, elif1_fn), (x > 1.4, elif2_fn)))
+
+            return qml.expval(qml.PauliZ(0))
+
+        assert jnp.allclose(circuit(1.5), 1.0)
+        assert jnp.allclose(circuit(jnp.pi), -1.0)
+
+    def test_cond_with_elif_interpreted(self):
+        """Test condition with an elif branch in interpreted mode"""
+        dev = qml.device("lightning.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            def true_fn():
+                qml.RX(x, wires=0)
+
+            def elif_fn():
+                qml.RX(x**2, wires=0)
+
+            qml.cond(x > 2.7, true_fn, None, ((x > 1.4, elif_fn),))
+
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(
+            ValueError,
+            match="'elif' branches are not supported in interpreted mode",
+        ):
+            circuit(1.5)

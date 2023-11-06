@@ -60,19 +60,18 @@ class Conditional(Operation):
         super().__init__(wires=then_op.wires, id=id)
 
 
-def cond(condition, true_fn, false_fn=None):
+def cond(condition, true_fn, false_fn=None, elifs=()):
     """Quantum-compatible if-else conditionals --- condition quantum operations
     on parameters such as the results of mid-circuit qubit measurements.
 
+    This method is restricted to simply branching on mid-circuit measurement
+    results.
+
     When used with the :func:`~.qjit` decorator with a hybrid
     quantum-classical compiler, this function allows for general
-    if-else constructs. Both the ``true_fn`` and ``false_fn`` branches
+    if-else constructs. All ``true_fn``, ``false_fn`` and `elifs` branches
     will be captured by the compiler, with the executed branch determined
-    at runtime (similar to ``jax.lax.cond``). For more details, as well
-    as ``elseif`` support, please see :func:`catalyst.cond`.
-
-    Without the :func:`~.qjit` decorator (**interpreted mode**), it is
-    restricted to simply branching on mid-circuit measurement results.
+    at runtime. For more details, please see :func:`catalyst.cond`.
 
     .. note::
 
@@ -83,7 +82,7 @@ def cond(condition, true_fn, false_fn=None):
 
     .. note::
         When used with :func:`~.qjit`, this function only supports
-        the Catalyst compiler. Please see :func:`catalyst.cond` for more details.
+        the Catalyst compiler. See :func:`catalyst.cond` for more details.
 
         Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
@@ -95,6 +94,8 @@ def cond(condition, true_fn, false_fn=None):
             apply if ``condition`` is ``True``
         false_fn (callable): The quantum function of PennyLane operation to
             apply if ``condition`` is ``False``
+        elifs (List(Tuple(bool, callable))): A list of (bool, elif_fn) clauses only when
+            they used with :func:`~.qjit`
 
     Returns:
         function: A new function that applies the conditional equivalent of ``true_fn``. The returned
@@ -143,7 +144,7 @@ def cond(condition, true_fn, false_fn=None):
 
     In just-in-time (JIT) mode using the :func:`~.qjit` decorator,
 
-    .. code-block:: python
+    .. code-block:: python3
 
         dev = qml.device("lightning.qubit", wires=1)
 
@@ -165,6 +166,29 @@ def cond(condition, true_fn, false_fn=None):
     array(0.16996714)
     >>> circuit(1.6)
     array(0.)
+
+    Additional 'else-if' clauses can also be included via the ``else_if`` method:
+
+    .. code-block:: python3
+
+        @qml.qjit
+        @qml.qnode(dev)
+        def circuit(x):
+
+            def true_fn():
+                qml.RX(x, wires=0)
+
+            def elif_fn():
+                qml.RY(x, wires=0)
+
+            def false_fn():
+                qml.RX(x ** 2, wires=0)
+
+            qml.cond(x > 2.7, true_fn, false_fn, ((x > 1.4, elif_fn),))
+            return qml.expval(qml.PauliZ(0))
+
+    >>> circuit(1.2)
+    array(0.13042371)
 
     .. details::
         :title: Usage Details
@@ -286,9 +310,19 @@ def cond(condition, true_fn, false_fn=None):
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
         cond_func = ops_loader.cond(condition)(true_fn)
+
+        # Optional 'elif' branches
+        for cond_val, elif_fn in elifs:
+            cond_func.else_if(cond_val)(elif_fn)
+
+        # Optional 'else' branch
         if false_fn:
             cond_func.otherwise(false_fn)
+
         return cond_func()
+
+    if elifs:
+        raise ConditionalTransformError("'elif' branches are not supported in interpreted mode.")
 
     if callable(true_fn):
         # We assume that the callable is an operation or a quantum function
