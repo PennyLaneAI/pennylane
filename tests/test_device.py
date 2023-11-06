@@ -947,7 +947,6 @@ class TestDeviceInit:
             with pytest.raises(DeviceError, match="plugin requires PennyLane versions"):
                 qml.device("default.qubit.legacy", wires=0)
 
-    @pytest.mark.skip(reason="Reloading PennyLane messes with tape mode")
     def test_refresh_entrypoints(self, monkeypatch):
         """Test that new entrypoints are found by the refresh_devices function"""
         assert qml.plugin_devices
@@ -972,7 +971,6 @@ class TestDeviceInit:
         # restore the plugin_device dictionary
         reload(qml)
 
-    @pytest.mark.skip(reason="Reloading PennyLane messes with tape mode")
     def test_hot_refresh_entrypoints(self, monkeypatch):
         """Test that new entrypoints are found by the device loader if not currently present"""
         assert qml.plugin_devices
@@ -989,14 +987,14 @@ class TestDeviceInit:
             assert not qml.plugin_devices
 
             # since there are no entry points, there will be no plugin devices
-            with pytest.raises(DeviceError, match="Device does not exist"):
+            with pytest.raises(DeviceError, match="Device default.qubit does not exist"):
                 qml.device("default.qubit", wires=0)
 
         # outside of the context, entrypoints will now be found automatically
         assert not qml.plugin_devices
         dev = qml.device("default.qubit", wires=0)
         assert qml.plugin_devices
-        assert dev.short_name == "default.qubit"
+        assert dev.name == "default.qubit"
 
         # Test teardown: re-import PennyLane to revert all changes and
         # restore the plugin_device dictionary
