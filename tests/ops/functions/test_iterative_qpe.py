@@ -54,7 +54,7 @@ class TestResult:
 
             return qml.probs(wires=[1, 2, 3])
 
-        print(np.allclose(np.round(output, 2), np.round(circuit_qpe(), 2)))
+        assert np.allclose(np.round(output, 2), np.round(circuit_qpe(), 2))
 
     def test_check_gradients(self):
         """Test to check that the gradients are correct comparing with the expanded circuit"""
@@ -96,3 +96,40 @@ class TestResult:
             return [qml.sample(op=meas) for meas in m]
 
         assert len(circuit()) == iters
+
+    @pytest.mark.parametrize("wire", (1, "a", "abc", 6))
+    def test_wires_args(self, wire):
+        """Test to check that all types of wires are working"""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.iterative_qpe(qml.RZ(1.0, wires=[0]), wire, iters=3)
+
+        assert tape.wires == qml.Wires([0, wire])
+
+    @pytest.mark.parametrize("phi", (1.2, 2.3, 3.4))
+    def test_measurement_processes(self, phi):
+        """Test to check that the measurement processes the works correctly"""
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit_qpe():
+            # Initial state
+            qml.PauliX(wires=[0])
+
+            # Iterative QPE
+            qml.QuantumPhaseEstimation(qml.RZ(phi, wires=[0]), estimation_wires=[1, 2, 3])
+
+            return [qml.probs(wires=i) for i in [1, 2, 3]]
+
+        @qml.qnode(dev)
+        def circuit_iterative():
+            # Initial state
+            qml.PauliX(wires=[0])
+
+            # Iterative QPE
+            measurements = qml.iterative_qpe(qml.RZ(phi, wires=[0]), estimation_wire=[1], iters=3)
+
+            return [qml.probs(op=i) for i in measurements]
+
+        assert np.allclose(circuit_qpe(), circuit_iterative())
