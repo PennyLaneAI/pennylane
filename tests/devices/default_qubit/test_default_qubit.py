@@ -317,6 +317,17 @@ class TestBasicCircuit:
         assert qml.math.get_interface(res) == "tensorflow"
         assert qml.math.allclose(res, -1)
 
+    def test_basis_state_wire_order(self):
+        """Test that the wire order is correct with a basis state if the tape wires have a non standard order."""
+
+        dev = DefaultQubit()
+
+        tape = qml.tape.QuantumScript([qml.BasisState([1], wires=1), qml.PauliZ(0)], [qml.state()])
+
+        expected = np.array([0, 1, 0, 0], dtype=np.complex128)
+        res = dev.execute(tape)
+        assert qml.math.allclose(res, expected)
+
 
 class TestSampleMeasurements:
     """A copy of the `qubit.simulate` tests, but using the device"""
