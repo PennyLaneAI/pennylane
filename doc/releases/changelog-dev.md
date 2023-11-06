@@ -48,6 +48,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Gradient transforms now work with overridden shot vectors and default qubit.
+
 * Jax jit now works with shot vectors.
   [(#4772)](https://github.com/PennyLaneAI/pennylane/pull/4772/)
 
