@@ -14,17 +14,10 @@
 """Compiler developer functions"""
 
 from typing import List, Optional
-from importlib import reload
+from sys import version_info
+from importlib import reload, metadata
 from collections import defaultdict
 import dataclasses
-import sys
-
-if sys.version_info[:2] >= (3, 10):
-    import importlib.metadata as importlib_metadata
-else:
-    # This provides a consistent API for importlib.metadata
-    # for Python < 3.10 and Python >= 3.10
-    import importlib_metadata
 
 
 class CompileError(Exception):
@@ -48,7 +41,14 @@ def _refresh_compilers():
     AvailableCompilers.names_entrypoints = defaultdict(dict)
 
     # Iterator packages entry-points with the 'pennylane.compilers' group name
-    for entry in importlib_metadata.entry_points(group="pennylane.compilers"):
+    entries = (
+        metadata.entry_points()["pennylane.compilers"]
+        if version_info[:2] == (3, 9)
+        # pylint:disable=unexpected-keyword-arg
+        else metadata.entry_points(group="pennylane.compilers")
+    )
+
+    for entry in entries:
         # Only need name of the parent module
         module_name = entry.module.split(".")[0]
         AvailableCompilers.names_entrypoints[module_name][entry.name] = entry
@@ -71,7 +71,7 @@ def _reload_compilers():
     compilers names and entry points.
     """
 
-    reload(importlib_metadata)
+    reload(metadata)
     _refresh_compilers()
 
 
