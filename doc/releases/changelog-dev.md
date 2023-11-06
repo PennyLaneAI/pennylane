@@ -55,6 +55,10 @@
   is a `Hamiltonian`.
   [(#4768)](https://github.com/PennyLaneAI/pennylane/pull/4768)
 
+* In `default.qubit`, initial states are now initialized with the simulator's wire order, not the circuit's
+  wire order.
+  [(#4781)](https://github.com/PennyLaneAI/pennylane/pull/4781)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
