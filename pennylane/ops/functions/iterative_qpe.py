@@ -21,7 +21,9 @@ import numpy as np
 
 def iterative_qpe(base, estimation_wire, iters):
     r"""Performs the iterative quantum phase estimation circuit.
-    It returns a list of the mid-circuit measurements performed.
+
+    Given a unitary matrix :math:`U`, this function applies the circuit for iterative quantum phase
+    estimation and returns a list of the mid-circuit measurements.
 
     Args:
       base (Operator): the phase estimation unitary, specified as an :class:`~.Operator`
