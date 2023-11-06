@@ -29,7 +29,7 @@ def iterative_qpe(base, estimation_wire, iters):
       iters (int): the number of measurements to be performed
 
     Returns:
-      list[MidMeasureMP]: the list of measurements performed.
+      list[MidMeasureMP]: the list of measurements performed
 
     .. seealso:: :class:`~.QuantumPhaseEstimation`, :func:`~.measure`
 
