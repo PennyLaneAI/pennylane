@@ -1,10 +1,12 @@
 """
 Contains the transpiler transform.
 """
+from functools import partial
 from typing import List, Union, Sequence, Callable
 
 import networkx as nx
 
+import pennylane as qml
 from pennylane.transforms import transform
 from pennylane import Hamiltonian
 from pennylane.operation import Tensor
@@ -14,9 +16,38 @@ from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumTape
 
 
+def state_transposition(results, mps, new_wire_order, original_wire_order):
+    """Transpose the order of any state return.
+
+    Args:
+        results (ResultBatch): the result of executing a batch of length 1
+
+    Keyword Args:
+        mps (List[MeasurementProcess]): A list of measurements processes. At least one is a ``StateMP``
+        new_wire_order (Sequence[Any]): the wire order after transpile has been called
+        original_wire_order (.Wires): the devices wire order
+
+    Returns:
+        Result: The result object with state dimensions transposed.
+
+    """
+    if len(mps) == 1:
+        temp_mp = qml.measurements.StateMP(wires=original_wire_order)
+        return temp_mp.process_state(results[0], wire_order=qml.wires.Wires(new_wire_order))
+    new_results = list(results[0])
+    for i, mp in enumerate(mps):
+        if isinstance(mp, qml.measurements.StateMP):
+            temp_mp = qml.measurements.StateMP(wires=original_wire_order)
+            new_res = temp_mp.process_state(
+                new_results[i], wire_order=qml.wires.Wires(new_wire_order)
+            )
+            new_results[i] = new_res
+    return tuple(new_results)
+
+
 @transform
 def transpile(
-    tape: QuantumTape, coupling_map: Union[List, nx.Graph]
+    tape: QuantumTape, coupling_map: Union[List, nx.Graph], device_wires=None
 ) -> (Sequence[QuantumTape], Callable):
     """Transpile a circuit according to a desired coupling map
 
@@ -114,6 +145,12 @@ def transpile(
         # make copy of ops
         list_op_copy = expanded_tape.operations.copy()
         measurements = expanded_tape.measurements.copy()
+        wire_order = device_wires or tape.wires
+        if device_wires:
+            for i, m in enumerate(measurements):
+                if not m.wires and not isinstance(m, qml.measurements.StateMP):
+                    measurements[i] = type(m)(wires=device_wires)
+
         gates = []
 
         while len(list_op_copy) > 0:
@@ -135,7 +172,7 @@ def transpile(
                 continue
 
             # since in each iteration, we adjust indices of each op, we reset logical -> phyiscal mapping
-            wire_map = {w: w for w in tape.wires}
+            wire_map = {w: w for w in wire_order}
 
             # to make sure two qubit gates which act on non-neighbouring qubits q1, q2 can be applied, we first look
             # for the shortest path between the two qubits in the connectivity graph. We then move the q2 into the
@@ -159,13 +196,37 @@ def transpile(
             list_op_copy.pop(0)
 
             list_op_copy = [op.map_wires(wire_map) for op in list_op_copy]
+            wire_order = [wire_map[w] for w in wire_order]
             measurements = [m.map_wires(wire_map) for m in measurements]
     new_tape = type(tape)(gates, measurements, shots=tape.shots)
 
-    def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
-        into a result for a single ``QuantumTape``.
-        """
-        return results[0]
+    any_state_mp = any(isinstance(m, qml.measurements.StateMP) for m in tape.measurements)
+    if not any_state_mp or device_wires is None:
 
-    return [new_tape], null_postprocessing
+        def null_postprocessing(results):
+            """A postprocesing function returned by a transform that only converts the batch of results
+            into a result for a single ``QuantumTape``.
+            """
+            return results[0]
+
+        return (new_tape,), null_postprocessing
+
+    return (new_tape,), partial(
+        state_transposition,
+        mps=measurements,
+        new_wire_order=wire_order,
+        original_wire_order=device_wires,
+    )
+
+
+@transpile.custom_qnode_transform
+def _transpile_qnode(self, qnode, targs, tkwargs):
+    """Custom qnode transform for ``transpile``."""
+    if tkwargs.get("device", None):
+        raise ValueError(
+            "Cannot provide a 'device' value directly to the defer_measurements decorator "
+            "when transforming a QNode."
+        )
+
+    tkwargs.setdefault("device_wires", qnode.device.wires)
+    return self.default_qnode_transform(qnode, targs, tkwargs)
