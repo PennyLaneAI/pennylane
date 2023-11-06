@@ -20,7 +20,7 @@ import numpy as np
 
 
 def iterative_qpe(base, estimation_wire, iters):
-    r"""Function that is in charge of adding to the queue the necessary gates to implement iterative QPE.
+    r"""Performs the iterative quantum phase estimation circuit.
     It returns a list of the mid-circuit measurements performed.
 
     Args:
