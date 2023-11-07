@@ -17,7 +17,7 @@
 Contains the drawing function.
 """
 from functools import wraps
-from importlib.metadata import distribution, PackageNotFoundError
+from importlib.metadata import distribution
 import warnings
 
 import pennylane as qml
@@ -30,7 +30,7 @@ def catalyst_qjit(qnode):
     try:
         distribution("pennylane_catalyst")
         return qnode.__class__.__name__ == "QJIT"
-    except PackageNotFoundError:
+    except ImportError:
         return False
 
 
