@@ -130,23 +130,24 @@ def _check_eigendecomposition(op):
             op.diagonalizing_gates, qml.operation.DiagGatesUndefinedError, failure_comment
         )()
 
-    has_eigvals = True
     try:
         eg = op.eigvals()
     except EigvalsUndefinedError:
-        has_eigvals = False
         eg = None
 
+    has_eigvals = True
     try:
         compute_eg = type(op).compute_eigvals(*op.data, **op.hyperparameters)
     except EigvalsUndefinedError:
         compute_eg = eg
+        has_eigvals = False
 
-    assert qml.math.allclose(eg, compute_eg), "eigvals and compute_eigvals must match"
+    if has_eigvals:
+        assert qml.math.allclose(eg, compute_eg), "eigvals and compute_eigvals must match"
 
     if has_eigvals and op.has_diagonalizing_gates:
         dg = qml.prod(*dg) if len(dg) > 0 else qml.Identity(op.wires)
-        eg = qml.Hermitian(np.diag(eg), wires=op.wires)
+        eg = qml.QubitUnitary(np.diag(eg), wires=op.wires)
         decomp = qml.prod(qml.adjoint(dg), eg, dg)
         decomp_mat = qml.matrix(decomp)
         original_mat = qml.matrix(op)
