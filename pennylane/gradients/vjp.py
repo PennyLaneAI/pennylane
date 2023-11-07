@@ -216,7 +216,9 @@ def compute_vjp_multi(dy, jac, num=None):
     else:
         # return qml.math.einsum("j,ji", dy, jac) # better for small
         try:
-            return qml.math.tensordot(dy, jac, [[0], [0]])  # better for large
+            return qml.math.cast_like(
+                qml.math.tensordot(dy, jac, [[0], [0]]), dy
+            )  # better for large
         except:
             res = []
             for d, j_ in zip(dy, jac):
