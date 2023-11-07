@@ -22,6 +22,7 @@
   [(#4749)](https://github.com/PennyLaneAI/pennylane/pull/4749)
 
 * `default.qutrit` is now differentiable via backprop using TRX, TRY, and TRZ
+  [(#4790)](https://github.com/PennyLaneAI/pennylane/pull/4790)
 
 <h3>Breaking changes 💔</h3>
 
