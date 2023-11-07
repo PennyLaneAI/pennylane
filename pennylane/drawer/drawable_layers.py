@@ -94,6 +94,12 @@ def drawable_layers(ops, wire_map=None):
     measured_wires = {}
     measured_layers = {}
 
+    # Collect all mid-circuit measurements used for classical conditioning
+    cond_measurements = set()
+    for op in ops:
+        if op.__class__.__name__ == "Conditional":
+            cond_measurements.update(op.meas_val.measurements)
+
     # loop over operations
     for op in ops:
         is_mid_measure = is_conditional = False
@@ -104,18 +110,29 @@ def drawable_layers(ops, wire_map=None):
             is_mid_measure = True
             mapped_wire = wire_map[op.wires[0]]
             measured_wires[op.id] = mapped_wire
-            op_occupied_wires = {mapped_wire}
+
+            if op in cond_measurements:
+                min_wire = mapped_wire
+                max_wire = max(wire_map.values())
+                op_occupied_wires = set(range(min_wire, max_wire + 1))
+            else:
+                op_occupied_wires = {mapped_wire}
+
+        elif op.__class__.__name__ == "Conditional":
+            is_conditional = True
+            mapped_wires = [wire_map[wire] for wire in op.then_op.wires]
+            min_wire = min(mapped_wires)
+            max_wire = max(wire_map.values())
+            op_occupied_wires = set(range(min_wire, max_wire + 1))
 
         elif len(op.wires) == 0:
             # if no wires, then it acts on all wires
             # for example, qml.state and qml.sample
             mapped_wires = set(wire_map.values())
             op_occupied_wires = mapped_wires
+
         else:
             mapped_wires = {wire_map[wire] for wire in op.wires}
-            if op.__class__.__name__ == "Conditional":
-                is_conditional = True
-                mapped_wires.update(measured_wires[m.id] for m in op.meas_val.measurements)
             # get all integers from the minimum to the maximum
             min_wire = min(mapped_wires)
             max_wire = max(mapped_wires)
@@ -127,20 +144,8 @@ def drawable_layers(ops, wire_map=None):
             m_layers = [measured_layers[m.id] for m in op.meas_val.measurements]
             max_control_layer = max(m_layers)
 
-            for m, m_layer in zip(op.meas_val.measurements, m_layers):
-                # TODO: remove from measurement caches for qubit reuse
-                # Note that along with this, wire lines will need to be re-drawn if being reused
-                #
-                # del measured_layers[m_id]
-                # del measured_wires[m_id]
-
-                # measurements for a conditional should all be in the same layer
-                if m_layer < max_control_layer:
-                    for i, o in enumerate(ops_in_layer[m_layer]):
-                        if m.id == o.id:
-                            ops_in_layer[max_control_layer].append(o)  # add to cond. op. layer
-                            ops_in_layer[m_layer].pop(i)  # remove from original layer
-                            # no need to remove from previous occupied_wires_per_layer
+            if op_layer == max_control_layer:
+                op_layer += 1
 
         # see if need to add new layer
         if op_layer > max_layer:

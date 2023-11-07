@@ -58,6 +58,9 @@ class Conditional(Operation):
         self.then_op = then_op
         super().__init__(wires=then_op.wires, id=id)
 
+    def label(self, decimals=None, base_label=None, cache=None):
+        return self.then_op.label(decimals=decimals, base_label=base_label, cache=cache)
+
 
 def cond(condition, true_fn, false_fn=None):
     """Condition a quantum operation on the results of mid-circuit qubit measurements.

@@ -371,7 +371,12 @@ def _equal_mid_measure(
     rtol=1e-5,
     atol=1e-9,
 ):
-    return op1.wires == op2.wires and op1.id == op2.id and op1.reset == op2.reset
+    return (
+        op1.wires == op2.wires
+        and op1.id == op2.id
+        and op1.reset == op2.reset
+        and op1.postselect == op2.postselect
+    )
 
 
 @_equal.register
