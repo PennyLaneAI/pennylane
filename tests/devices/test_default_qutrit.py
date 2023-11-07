@@ -1398,8 +1398,7 @@ class TestDensityMatrix:
         assert np.allclose(qutrit_device_2_wires.density_matrix(wires), expected)
 
 
-# JAX
-# ======================================================================================================================
+"""JAX integration tests"""
 pytestmark = pytest.mark.jax
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
