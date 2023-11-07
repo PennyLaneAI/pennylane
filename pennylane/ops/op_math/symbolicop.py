@@ -97,6 +97,11 @@ class SymbolicOp(Operator):
     def wires(self):
         return self.base.wires
 
+    # pylint:disable = missing-function-docstring
+    @property
+    def basis(self):
+        return self.base.basis
+
     @property
     def num_wires(self):
         """Number of wires the operator acts on."""
@@ -189,6 +194,10 @@ class ScalarSymbolicOp(SymbolicOp):
                 f"do not match: {scalar_size}, {self.base.batch_size}."
             )
         return scalar_size
+
+    @property
+    def has_matrix(self):
+        return self.base.has_matrix or isinstance(self.base, qml.Hamiltonian)
 
     @property
     def hash(self):

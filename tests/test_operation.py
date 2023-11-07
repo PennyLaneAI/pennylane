@@ -883,7 +883,8 @@ class TestObservableConstruction:
             num_wires = 1
             grad_method = None
 
-        assert DummyObserv(0, wires=[1]).return_type is None
+        with pytest.warns(UserWarning, match="`Observable.return_type` is deprecated. Instead"):
+            assert DummyObserv(0, wires=[1]).return_type is None
 
     def test_construction_with_wires_pos_arg(self):
         """Test that the wires can be given as a positional argument"""
@@ -1243,6 +1244,16 @@ class TestOperatorIntegration:
         """Test that the __matmul__ dunder method raises an error when using a non-supported object."""
         with pytest.raises(TypeError, match="unsupported operand type"):
             _ = qml.PauliX(0) @ "dummy"
+
+    def test_label_for_operations_with_id(self):
+        """Test that the label is correctly generated for an operation with an id"""
+        op = qml.RX(1.344, wires=0, id="test_with_id")
+        assert '"test_with_id"' in op.label()
+        assert '"test_with_id"' in op.label(decimals=2)
+
+        op = qml.RX(1.344, wires=0)
+        assert '"test_with_id"' not in op.label()
+        assert '"test_with_id"' not in op.label(decimals=2)
 
 
 class TestTensor:

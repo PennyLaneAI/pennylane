@@ -14,6 +14,49 @@
 """
 This module contains functions for adding the PyTorch interface
 to a PennyLane Device class.
+
+**How to bind a custom derivative with torch.**
+
+Suppose I have a function ``f`` that I want to change how autograd takes the derivative of.
+
+I need to inherit from ``torch.autograd.Function`` and define ``forward`` and ``backward`` static
+methods.
+
+Since using the custom function definition involves the static ``apply`` method, we can wrap our
+custom function in ``f`` for user convenience.
+
+.. code-block:: python
+
+    class CustomFunction(torch.autograd.Function):
+
+        @staticmethod
+        def forward(ctx, x, exponent=2):
+            ctx.saved_info = {'x': x, 'exponent': exponent}
+            return x ** exponent
+
+        @staticmethod
+        def backward(ctx, dy):
+            x = ctx.saved_info['x']
+            exponent = ctx.saved_info['exponent']
+            print(f"Calculating the gradient with x={x}, dy={dy}, exponent={exponent}")
+            return dy * exponent * x ** (exponent-1), None
+
+    def f(x):
+        return CustomFunction.apply(x)
+
+>>> val = torch.tensor(2.0, requires_grad=True)
+>>> res = f(val)
+>>> res
+tensor(4., grad_fn=<CustomFunctionBackward>)
+>>> res.backward()
+>>> val.grad
+Calculating the gradient with x=2.0, dy=1.0, exponent=2
+tensor(4.)
+
+Setting properties directly on the context ``ctx`` is usually reserved for non-trainable metadata,
+with ``ctx.save_for_backward`` used for trainable tensors. Since we are storing the tapes and jacobian
+product calculator for the backward pass, 
+            
 """
 # pylint: disable=too-many-arguments,protected-access,abstract-method
 import inspect
@@ -104,10 +147,9 @@ class ExecuteTapes(torch.autograd.Function):
             )
 
         ctx.tapes = kwargs["tapes"]
-        ctx.execute_fn = kwargs["execute_fn"]
         ctx.jpc = kwargs["jpc"]
 
-        res = tuple(ctx.execute_fn(ctx.tapes))
+        res = tuple(kwargs["execute_fn"](ctx.tapes))
 
         # if any input tensor uses the GPU, the output should as well
         ctx.torch_device = None
@@ -141,8 +183,6 @@ class ExecuteTapes(torch.autograd.Function):
             if vjp_slice is not None and np.squeeze(vjp_slice).shape != (0,):
                 unpacked_vjps.extend(_res_to_torch(vjp_slice, ctx))
         vjps = tuple(unpacked_vjps)
-        # Remove empty vjps (from tape with non trainable params)
-        # vjps = tuple(vjp for vjp in vjps if list(vjp.shape) != [0])
         # The output of backward must match the input of forward.
         # Therefore, we return `None` for the gradient of `kwargs`.
         return (None,) + vjps

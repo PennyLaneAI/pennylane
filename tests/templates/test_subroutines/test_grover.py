@@ -62,6 +62,12 @@ def test_work_wires():
     assert ops[2].hyperparameters["work_wires"] == work_wire
 
 
+def test_work_wires_None():
+    """Test that work wires of None are not inpreted as work wires."""
+    op = qml.GroverOperator(wires=(0, 1, 2, 3), work_wires=None)
+    assert op.hyperparameters["work_wires"] == qml.wires.Wires([])
+
+
 @pytest.mark.parametrize("bad_wires", [0, (0,), tuple()])
 def test_single_wire_error(bad_wires):
     """Assert error raised when called with only a single wire"""

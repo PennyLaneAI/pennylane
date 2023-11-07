@@ -173,6 +173,7 @@ def execute(tapes, execute_fn, jpc, differentiable=False):
                         extended_vjps.extend(qml.math.unstack(vjp))
                 vjps = tuple(extended_vjps)
 
+
             variables = tfkwargs.get("variables")
             return (vjps, variables) if variables is not None else vjps
 

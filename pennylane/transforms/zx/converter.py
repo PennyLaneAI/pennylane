@@ -21,7 +21,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms.op_transforms import OperationTransformError
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 from pennylane.wires import Wires
 
 
@@ -54,9 +54,15 @@ def to_zx(tape, expand_measurements=False):  # pylint: disable=unused-argument
     The graph can be optimized and transformed by well-known ZX-calculus reductions.
 
     Args:
-        tape(QuantumTape, Operation): The PennyLane quantum circuit.
+        tape(QNode or QuantumTape or Callable or Operation): The PennyLane quantum circuit.
         expand_measurements(bool): The expansion will be applied on measurements that are not in the Z-basis and
             rotations will be added to the operations.
+
+    Returns:
+        graph (pyzx.Graph) or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the ZX graph in the form of a PyZX graph.
 
     **Example**
 
@@ -227,7 +233,8 @@ def to_zx(tape, expand_measurements=False):  # pylint: disable=unused-argument
 
             wires = qml.wires.Wires([4, 3, 0, 2, 1])
             wires_map = dict(zip(tape_opt.wires, wires))
-            tape_opt_reorder = qml.map_wires(input=tape_opt, wire_map=wires_map)
+            tapes_opt_reorder, fn = qml.map_wires(input=tape_opt, wire_map=wires_map)[0][0]
+            tape_opt_reorder = fn(tapes_opt_reorder)
 
             @qml.qnode(device=dev)
             def mod_5_4():
@@ -236,7 +243,7 @@ def to_zx(tape, expand_measurements=False):  # pylint: disable=unused-argument
                 return qml.expval(qml.PauliZ(wires=0))
 
         >>> mod_5_4()
-        -0.9999999999999989
+        tensor(1., requires_grad=True)
 
     .. note::
 
@@ -302,7 +309,8 @@ def _to_zx_transform(
 
         consecutive_wires = Wires(range(len(res[0].wires)))
         consecutive_wires_map = OrderedDict(zip(res[0].wires, consecutive_wires))
-        mapped_tape = qml.map_wires(input=res[0], wire_map=consecutive_wires_map)
+        mapped_tapes, fn = qml.map_wires(input=res[0], wire_map=consecutive_wires_map)
+        mapped_tape = fn(mapped_tapes)
 
         inputs = []
 
@@ -336,7 +344,7 @@ def _to_zx_transform(
             else:
                 expanded_operations.append(op)
 
-        expanded_tape = QuantumScript(expanded_operations, mapped_tape.measurements, [])
+        expanded_tape = QuantumScript(expanded_operations, mapped_tape.measurements)
 
         _add_operations_to_graph(expanded_tape, graph, gate_types, q_mapper, c_mapper)
 

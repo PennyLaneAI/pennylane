@@ -32,29 +32,33 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-def _compute_vjps(jacs, dys, multi_measurements, has_partitioned_shots):
+def _compute_vjps(jacs, dys, tapes):
     """Compute the vjps of multiple tapes, directly for a Jacobian and co-tangents dys."""
     f = {True: qml.gradients.compute_vjp_multi, False: qml.gradients.compute_vjp_single}
-    if not has_partitioned_shots:
-        return tuple(f[multi](dy, jac) for jac, dy, multi in zip(jacs, dys, multi_measurements))
 
     vjps = []
-    for i, multi in enumerate(multi_measurements):
-        shot_vjps = [f[multi](d, j) for d, j in zip(dys[i], jacs[i])]
-        vjps.append(qml.math.sum(qml.math.stack(shot_vjps), axis=0))
-
+    for jac, dy, t in zip(jacs, dys, tapes):
+        multi = len(t.measurements) > 1
+        if t.shots.has_partitioned_shots:
+            shot_vjps = [f[multi](d, j) for d, j in zip(dy, jac)]
+            vjps.append(qml.math.sum(qml.math.stack(shot_vjps), axis=0))
+        else:
+            vjps.append(f[multi](dy, jac))
     return tuple(vjps)
 
 
-def _compute_jvps(jacs, tangents, multi_measurements, has_partitioned_shots):
+def _compute_jvps(jacs, tangents, tapes):
     """Compute the jvps of multiple tapes, directly for a Jacobian and tangents."""
     f = {True: qml.gradients.compute_jvp_multi, False: qml.gradients.compute_jvp_single}
-    if has_partitioned_shots:
-        return tuple(
-            tuple(f[multi](dx, j) for j in jac)
-            for jac, dx, multi in zip(jacs, tangents, multi_measurements)
-        )
-    return tuple(f[multi](dx, jac) for jac, dx, multi in zip(jacs, tangents, multi_measurements))
+
+    jvps = []
+    for jac, dx, t in zip(jacs, tangents, tapes):
+        multi = len(t.measurements) > 1
+        if t.shots.has_partitioned_shots:
+            jvps.append(tuple(f[multi](dx, j) for j in jac))
+        else:
+            jvps.append(f[multi](dx, jac))
+    return tuple(jvps)
 
 
 class JacobianProductCalculator(abc.ABC):
@@ -168,13 +172,20 @@ class JacobianProductCalculator(abc.ABC):
 
 
 class TransformJacobianProducts(JacobianProductCalculator):
-    """Compute VJPs, JVPs and Jacobians via a :class:`~.gradient_transform`.
+    """Compute VJPs, JVPs and Jacobians via a gradient transform :class:`~.TransformDispatcher`.
 
     Args:
         inner_execute (Callable[[Tuple[QuantumTape]], ResultBatch]): a function that
             executes the batch of circuits and returns their results.
-        gradient_transform (pennylane.gradients.gradient_transform): the gradient transform to use.
+        gradient_transform (.TransformDispatcher): the gradient transform to use.
         gradient_kwargs (dict): Any keyword arguments for the gradient transform.
+
+    Keyword Args:
+        cache_full_jacobian=False (bool): Whether or not to compute the full jacobian and cache it,
+            instead of treating each call as independent. This keyword argument is used to patch problematic
+            autograd behavior when caching is turned off. In this case, caching will be based on the identity
+            of the batch, rather than the potentially expensive :attr:`~.QuantumScript.hash` that is used
+            by :func:`~.cache_execute`.
 
     >>> inner_execute = qml.device('default.qubit').execute
     >>> gradient_transform = qml.gradients.param_shift
@@ -184,32 +195,44 @@ class TransformJacobianProducts(JacobianProductCalculator):
     """
 
     def __repr__(self):
-        return f"TransformJacobianProducts({self._inner_execute}, gradient_transform={self._gradient_transform}, gradient_kwargs={self._gradient_kwargs})"
+        return (
+            f"TransformJacobianProducts({self._inner_execute}, gradient_transform={self._gradient_transform}, "
+            f"gradient_kwargs={self._gradient_kwargs}, cache_full_jacobian={self._cache_full_jacobian})"
+        )
 
     def __init__(
         self,
         inner_execute: Callable,
-        gradient_transform: "qml.gradients.gradient_transform",
+        gradient_transform: "pennylane.transforms.core.TransformDispatcher",
         gradient_kwargs: Optional[dict] = None,
+        cache_full_jacobian: bool = False,
     ):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug(
-                "TransformJacobianProduct being created with (%s, %s, %s)",
+                "TransformJacobianProduct being created with (%s, %s, %s, %s)",
                 inspect.getsource(inner_execute)
-                if logger.isEnabledFor(qml.logging.TRACE)
+                if (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(inner_execute))
                 else inner_execute,
                 gradient_transform,
                 gradient_kwargs,
+                cache_full_jacobian,
             )
         self._inner_execute = inner_execute
         self._gradient_transform = gradient_transform
         self._gradient_kwargs = gradient_kwargs or {}
+        self._cache_full_jacobian = cache_full_jacobian
+        self._cache = LRUCache(maxsize=10)
 
     def execute_and_compute_jvp(self, tapes: Batch, tangents: Tuple[Tuple[TensorLike]]):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("execute_and_compute_jvp called with (%s, %s)", tapes, tangents)
+
         num_result_tapes = len(tapes)
 
+        if self._cache_full_jacobian:
+            jacs = self.compute_jacobian(tapes)
+            jvps = _compute_jvps(jacs, tangents, tapes)
+            return self._inner_execute(tapes), jvps
         jvp_tapes, jvp_processing_fn = qml.gradients.batch_jvp(
             tapes, tangents, self._gradient_transform, gradient_kwargs=self._gradient_kwargs
         )
@@ -226,22 +249,31 @@ class TransformJacobianProducts(JacobianProductCalculator):
     def compute_vjp(self, tapes: Batch, dy: Tuple[Tuple[TensorLike]]):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("compute_vjp called with (%s, %s)", tapes, dy)
+
+        if self._cache_full_jacobian:
+            jacs = self.compute_jacobian(tapes)
+            return _compute_vjps(jacs, dy, tapes)
+
         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
             tapes, dy, self._gradient_transform, gradient_kwargs=self._gradient_kwargs
         )
 
-        vjp_results = self._inner_execute(vjp_tapes)
+        vjp_results = self._inner_execute(tuple(vjp_tapes))
         return tuple(processing_fn(vjp_results))
 
     def compute_jacobian(self, tapes: Batch):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("compute_jacobian called with %s", tapes)
+        if tapes in self._cache:
+            return self._cache[tapes]
         partial_gradient_fn = partial(self._gradient_transform, **self._gradient_kwargs)
         jac_tapes, batch_post_processing = qml.transforms.map_batch_transform(
             partial_gradient_fn, tapes
         )
         results = self._inner_execute(jac_tapes)
-        return tuple(batch_post_processing(results))
+        jacs = tuple(batch_post_processing(results))
+        self._cache[tapes] = jacs
+        return jacs
 
 
 class DeviceDerivatives(JacobianProductCalculator):
@@ -277,15 +309,15 @@ class DeviceDerivatives(JacobianProductCalculator):
     flexibility for future uses.
 
     Note that batches of identically looking :class:`~.QuantumScript` s that are different instances will be cached separately.
-    This is because the `hash` of  :class:`~.QuantumScript` is expensive, as it requires inspecting all its constituents,
+    This is because the ``hash`` of  :class:`~.QuantumScript` is expensive, as it requires inspecting all its constituents,
     which is not worth the effort in this case.
 
-    When a forward pass with :meth:`~.execute` is called, both the results and the jacobian for the object are stored.
+    When a forward pass with :meth:`~.execute_and_cache_jacobian` is called, both the results and the jacobian for the object are stored.
 
     >>> tape = qml.tape.QuantumScript([qml.RX(1.0, wires=0)], [qml.expval(qml.PauliZ(0))])
     >>> batch = (tape, )
     >>> with device.tracker:
-    ...     results = jpc.execute(batch )
+    ...     results = jpc.execute_and_cache_jacobian(batch )
     >>> results
     (0.5403023058681398,)
     >>> device.tracker.totals
@@ -367,7 +399,7 @@ class DeviceDerivatives(JacobianProductCalculator):
             return self._device.compute_derivatives(numpy_tapes, self._execution_config)
         return self._device.gradients(numpy_tapes, **self._gradient_kwargs)
 
-    def execute(self, tapes: Batch):
+    def execute_and_cache_jacobian(self, tapes: Batch):
         """Forward pass used to cache the results and jacobians.
 
         Args:
@@ -452,13 +484,7 @@ class DeviceDerivatives(JacobianProductCalculator):
                     "No path to cache results without caching jac. This branch should not occur."
                 )
 
-        multi_measurements = (len(t.measurements) > 1 for t in tapes)
-        jvps = _compute_jvps(
-            jacs,
-            tangents,
-            multi_measurements,
-            has_partitioned_shots=tapes[0].shots.has_partitioned_shots,
-        )
+        jvps = _compute_jvps(jacs, tangents, tapes)
         return results, jvps
 
     def compute_vjp(self, tapes, dy):
@@ -510,8 +536,7 @@ class DeviceDerivatives(JacobianProductCalculator):
             jacs = self._dev_compute_derivatives(tapes)
             self._jacs_cache[tapes] = jacs
 
-        multi_measurements = (len(t.measurements) > 1 for t in tapes)
-        return _compute_vjps(jacs, dy, multi_measurements, tapes[0].shots.has_partitioned_shots)
+        return _compute_vjps(jacs, dy, tapes)
 
     def compute_jacobian(self, tapes):
         """Compute the full Jacobian for a batch of tapes.
@@ -573,9 +598,9 @@ class DeviceJacobianProducts(JacobianProductCalculator):
     def __repr__(self):
         return f"<DeviceJacobianProducts: {self._device.name}, {self._execution_config}>"
 
-    def __init__(self, device: "qml.devices.Device", execution_config=None):
-        if execution_config is None:
-            execution_config = qml.devices.DefaultExecutionConfig
+    def __init__(
+        self, device: "qml.devices.Device", execution_config: "qml.devices.ExecutionConfig"
+    ):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("DeviceJacobianProducts created with (%s, %s)", device, execution_config)
         self._device = device

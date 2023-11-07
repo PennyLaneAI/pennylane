@@ -291,10 +291,7 @@ class MeasurementProcess(ABC):
             return f"{self.return_type.value}(eigvals={self._eigvals}, wires={self.wires.tolist()})"
 
         # Todo: when tape is core the return type will always be taken from the MeasurementProcess
-        if getattr(self.obs, "return_type", None) is None:
-            return f"{self.return_type.value}({self.obs})"
-
-        return f"{self.obs}"
+        return f"{self.return_type.value}({self.obs})"
 
     def __copy__(self):
         cls = self.__class__
@@ -512,7 +509,7 @@ class SampleMeasurement(MeasurementProcess):
     ...     qml.PauliX(0)
     ...     return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
     >>> circuit()
-    tensor([1000,    0], requires_grad=True)
+    (tensor(1000, requires_grad=True), tensor(0, requires_grad=True))
     """
 
     @abstractmethod

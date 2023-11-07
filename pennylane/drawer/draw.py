@@ -17,8 +17,8 @@
 Contains the drawing function.
 """
 from functools import wraps
+from importlib.metadata import distribution
 import warnings
-import pkg_resources
 
 import pennylane as qml
 from .tape_mpl import tape_mpl
@@ -28,9 +28,9 @@ from .tape_text import tape_text
 def catalyst_qjit(qnode):
     """The ``catalyst.while`` wrapper method"""
     try:
-        pkg_resources.get_distribution("pennylane_catalyst")
+        distribution("pennylane_catalyst")
         return qnode.__class__.__name__ == "QJIT"
-    except pkg_resources.DistributionNotFound:
+    except ImportError:
         return False
 
 
@@ -76,13 +76,13 @@ def draw(
         def circuit(a, w):
             qml.Hadamard(0)
             qml.CRX(a, wires=[0, 1])
-            qml.Rot(*w, wires=[1])
+            qml.Rot(*w, wires=[1], id="arbitrary")
             qml.CRX(-a, wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
     >>> print(qml.draw(circuit)(a=2.3, w=[1.2, 3.2, 0.7]))
-    0: ──H─╭●─────────────────────────────╭●─────────┤ ╭<Z@Z>
-    1: ────╰RX(2.30)──Rot(1.20,3.20,0.70)─╰RX(-2.30)─┤ ╰<Z@Z>
+    0: ──H─╭●─────────────────────────────────────────╭●─────────┤ ╭<Z@Z>
+    1: ────╰RX(2.30)──Rot(1.20,3.20,0.70,"arbitrary")─╰RX(-2.30)─┤ ╰<Z@Z>
 
     .. details::
         :title: Usage Details
@@ -91,14 +91,14 @@ def draw(
     By specifying the ``decimals`` keyword, parameters are displayed to the specified precision.
 
     >>> print(qml.draw(circuit, decimals=4)(a=2.3, w=[1.2, 3.2, 0.7]))
-    0: ──H─╭●─────────────────────────────────────╭●───────────┤ ╭<Z@Z>
-    1: ────╰RX(2.3000)──Rot(1.2000,3.2000,0.7000)─╰RX(-2.3000)─┤ ╰<Z@Z>
+    0: ──H─╭●─────────────────────────────────────────────────╭●───────────┤ ╭<Z@Z>
+    1: ────╰RX(2.3000)──Rot(1.2000,3.2000,0.7000,"arbitrary")─╰RX(-2.3000)─┤ ╰<Z@Z>
 
     Parameters can be omitted by requesting ``decimals=None``:
 
     >>> print(qml.draw(circuit, decimals=None)(a=2.3, w=[1.2, 3.2, 0.7]))
-    0: ──H─╭●───────╭●──┤ ╭<Z@Z>
-    1: ────╰RX──Rot─╰RX─┤ ╰<Z@Z>
+    0: ──H─╭●────────────────────╭●──┤ ╭<Z@Z>
+    1: ────╰RX──Rot("arbitrary")─╰RX─┤ ╰<Z@Z>
 
     If the parameters are not acted upon by classical processing like ``-a``, then
     ``qml.draw`` can handle string-valued parameters as well:
@@ -253,21 +253,33 @@ def _draw_qnode(
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-        if expansion_strategy == "device" and isinstance(qnode.device, qml.devices.Device):
+        if isinstance(qnode.device, qml.devices.Device) and (
+            expansion_strategy == "device" or getattr(qnode, "expansion_strategy", None) == "device"
+        ):
             qnode.construct(args, kwargs)
             program, _ = qnode.device.preprocess()
             tapes = program([qnode.tape])
-            _wire_order = wire_order or qnode.tape.wires
         else:
             original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
-
             try:
                 qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
                 tapes = qnode.construct(args, kwargs)
+                if isinstance(qnode.device, qml.devices.Device):
+                    program = qnode.transform_program
+                    if any(
+                        isinstance(op, qml.measurements.MidMeasureMP)
+                        for op in qnode.tape.operations
+                    ):
+                        tapes, _ = qml.defer_measurements(qnode.tape, device=qnode.device)
+                    else:
+                        tapes = [qnode.tape]
+
+                    tapes = program(tapes)
+
             finally:
                 qnode.expansion_strategy = original_expansion_strategy
 
-            _wire_order = wire_order or qnode.device.wires
+        _wire_order = wire_order or qnode.device.wires or qnode.tape.wires
 
         if tapes is not None:
             cache = {"tape_offset": 0, "matrices": []}
@@ -559,18 +571,30 @@ def _draw_mpl_qnode(
             program, _ = qnode.device.preprocess()
             tapes, _ = program([qnode.tape])
             tape = tapes[0]
-            _wire_order = wire_order or qnode.tape.wires
         else:
             original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
 
             try:
                 qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
                 qnode.construct(args, kwargs_qnode)
+                if isinstance(qnode.device, qml.devices.Device):
+                    program = qnode.transform_program
+                    if any(
+                        isinstance(op, qml.measurements.MidMeasureMP)
+                        for op in qnode.tape.operations
+                    ):
+                        tapes, _ = qml.defer_measurements(qnode.tape, device=qnode.device)
+                    else:
+                        tapes = [qnode.tape]
+
+                    tapes, _ = program(tapes)
+                    tape = tapes[0]
+                else:
+                    tape = qnode.tape
             finally:
                 qnode.expansion_strategy = original_expansion_strategy
 
-            tape = qnode.tape
-            _wire_order = wire_order or qnode.device.wires
+        _wire_order = wire_order or qnode.device.wires or tape.wires
 
         return tape_mpl(
             tape,

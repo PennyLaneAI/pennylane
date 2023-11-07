@@ -33,21 +33,6 @@ class TestCommutationDAG:
 
         assert len(dag) != 0
 
-    def test_dag_invalid_argument(self):
-        """Assert error raised when input is neither a tape, QNode, nor quantum function"""
-
-        with pytest.raises(ValueError, match="Input is not a tape, QNode, or quantum function"):
-            qml.transforms.commutation_dag(qml.PauliZ(0))()
-
-    def test_dag_wrong_function(self):
-        """Assert error raised when input function is not a quantum function"""
-
-        def test_function(x):
-            return x
-
-        with pytest.raises(ValueError, match="Function contains no quantum operation"):
-            qml.transforms.commutation_dag(test_function)(1)
-
     def test_dag_transform_simple_dag_function(self):
         """Test a simple DAG on 1 wire with a quantum function."""
 
@@ -80,7 +65,7 @@ class TestCommutationDAG:
             qml.PauliX(wires=0)
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        dag = qml.transforms.commutation_dag(tape)()
+        dag = qml.transforms.commutation_dag(tape)
 
         a = qml.PauliZ(wires=0)
         b = qml.PauliX(wires=0)
@@ -146,7 +131,6 @@ class TestCommutationDAG:
         assert dag.get_node(1).op.compare(b)
         assert dag.get_edge(0, 1) == {0: {"commute": False}}
         assert dag.get_edge(0, 2) is None
-        assert dag.observables[0].return_type.__repr__() == "expval"
         assert dag.observables[0].name == "PauliX"
         assert dag.observables[0].wires.tolist() == [0]
         for i, node in enumerate(dag.get_nodes()):

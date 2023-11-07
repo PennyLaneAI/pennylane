@@ -14,14 +14,16 @@
 """
 Contains the adjoint_metric_tensor.
 """
-import warnings
+from typing import Sequence, Callable
 from itertools import chain
+from functools import partial
 
 import pennylane as qml
 from pennylane import numpy as np
 
-# pylint: disable=too-many-statements
+# pylint: disable=too-many-statements,unused-argument
 from pennylane.transforms.metric_tensor import _contract_metric_tensor_with_cjac
+from pennylane.transforms import transform
 
 
 def _reshape_real_imag(state, dim):
@@ -52,7 +54,14 @@ def _group_operations(tape):
     return trainable_operations, group_after_trainable_op
 
 
-def adjoint_metric_tensor(circuit, device=None, hybrid=True):
+@partial(
+    transform,
+    classical_cotransform=_contract_metric_tensor_with_cjac,
+    is_informative=True,
+)
+def adjoint_metric_tensor(
+    tape: qml.tape.QuantumTape,
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Implements the adjoint method outlined in
     `Jones <https://arxiv.org/abs/2011.02991>`__ to compute the metric tensor.
 
@@ -71,14 +80,13 @@ def adjoint_metric_tensor(circuit, device=None, hybrid=True):
           Note also that this makes the metric tensor strictly real-valued.
 
     Args:
-        circuit (.QuantumTape or .QNode): Circuit to compute the metric tensor of
-        device (.Device): Device to use for the adjoint method
-        hybrid (bool): Whether to take classical preprocessing into account. Ignored if
-            ``circuit`` is a tape.
+        tape (QNode or QuantumTape): Circuit to compute the metric tensor of
 
     Returns:
-        array: the metric tensor of the tape with respect to its trainable parameters.
-        Dimensions are ``(tape.num_params, tape.num_params)``.
+        qnode (QNode) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the metric tensor in the form of a tensor. Dimensions are ``(tape.num_params, tape.num_params)``.
 
     .. seealso:: :func:`~.metric_tensor` for hardware-compatible metric tensor computations.
 
@@ -128,147 +136,101 @@ def adjoint_metric_tensor(circuit, device=None, hybrid=True):
     The drawback of the adjoint method is that it is only available on simulators and without
     shot simulations.
     """
-    if isinstance(circuit, qml.tape.QuantumScript):
-        return _adjoint_metric_tensor_tape(circuit)
-    if isinstance(circuit, (qml.QNode, qml.ExpvalCost)):
-        return _adjoint_metric_tensor_qnode(circuit, device, hybrid)
 
-    raise qml.QuantumFunctionError("The passed object is not a QuantumTape or QNode.")
-
-
-def _adjoint_metric_tensor_tape(tape):
-    """Computes the metric tensor of a tape using the adjoint method and a given device."""
-    # pylint: disable=protected-access
-    if tape.shots:
-        raise ValueError(
-            "The adjoint method for the metric tensor is only implemented for shots=None"
-        )
-    if set(tape.wires) != set(range(tape.num_wires)):
-        wire_map = {w: i for i, w in enumerate(tape.wires)}
-        tape = qml.map_wires(tape, wire_map)
-    tape = qml.transforms.expand_trainable_multipar(tape)
-
-    # Divide all operations of a tape into trainable operations and blocks
-    # of untrainable operations after each trainable one.
-    trainable_operations, group_after_trainable_op = _group_operations(tape)
-
-    dim = 2**tape.num_wires
-    # generate and extract initial state
-    prep = tape[0] if len(tape) > 0 and isinstance(tape[0], qml.operation.StatePrep) else None
-
-    interface = qml.math.get_interface(*tape.get_parameters(trainable_only=False))
-    psi = qml.devices.qubit.create_initial_state(tape.wires, prep, like=interface)
-
-    # initialize metric tensor components (which all will be real-valued)
-    like_real = qml.math.real(psi[0])
-    L = qml.math.convert_like(qml.math.zeros((tape.num_params, tape.num_params)), like_real)
-    T = qml.math.convert_like(qml.math.zeros((tape.num_params,)), like_real)
-
-    for op in group_after_trainable_op[-1]:
-        psi = qml.devices.qubit.apply_operation(op, psi)
-
-    for j, outer_op in enumerate(trainable_operations):
-        generator_1, prefactor_1 = qml.generator(outer_op)
-
-        # the state vector phi is missing a factor of 1j * prefactor_1
-        phi = qml.devices.qubit.apply_operation(generator_1, psi)
-
-        phi_real, phi_imag = _reshape_real_imag(phi, dim)
-        diag_value = prefactor_1**2 * (
-            qml.math.dot(phi_real, phi_real) + qml.math.dot(phi_imag, phi_imag)
-        )
-        L = qml.math.scatter_element_add(L, (j, j), diag_value)
-
-        lam = psi * 1.0
-        lam_real, lam_imag = _reshape_real_imag(lam, dim)
-
-        # this entry is missing a factor of 1j
-        value = prefactor_1 * (qml.math.dot(lam_real, phi_real) + qml.math.dot(lam_imag, phi_imag))
-        T = qml.math.scatter_element_add(T, (j,), value)
-
-        for i in range(j - 1, -1, -1):
-            # after first iteration of inner loop: apply U_{i+1}^\dagger
-            if i < j - 1:
-                phi = qml.devices.qubit.apply_operation(
-                    qml.adjoint(trainable_operations[i + 1], lazy=False), phi
-                )
-            # apply V_{i}^\dagger
-            for op in reversed(group_after_trainable_op[i]):
-                adj_op = qml.adjoint(op, lazy=False)
-                phi = qml.devices.qubit.apply_operation(adj_op, phi)
-                lam = qml.devices.qubit.apply_operation(adj_op, lam)
-
-            inner_op = trainable_operations[i]
-            # extract and apply G_i
-            generator_2, prefactor_2 = qml.generator(inner_op)
-            # this state vector is missing a factor of 1j * prefactor_2
-            mu = qml.devices.qubit.apply_operation(generator_2, lam)
-
-            phi_real, phi_imag = _reshape_real_imag(phi, dim)
-            mu_real, mu_imag = _reshape_real_imag(mu, dim)
-            # this entry is missing a factor of 1j * (-1j) = 1, i.e. none
-            value = (
-                prefactor_1
-                * prefactor_2
-                * (qml.math.dot(mu_real, phi_real) + qml.math.dot(mu_imag, phi_imag))
+    def processing_fn(tapes):
+        tape = tapes[0]
+        if tape.shots:
+            raise ValueError(
+                "The adjoint method for the metric tensor is only implemented for shots=None"
             )
-            L = qml.math.scatter_element_add(
-                L, [(i, j), (j, i)], value * qml.math.convert_like(qml.math.ones((2,)), value)
-            )
-            # apply U_i^\dagger
-            lam = qml.devices.qubit.apply_operation(qml.adjoint(inner_op, lazy=False), lam)
+        if set(tape.wires) != set(range(tape.num_wires)):
+            wire_map = {w: i for i, w in enumerate(tape.wires)}
+            tapes, fn = qml.map_wires(tape, wire_map)
+            tape = fn(tapes)
+        tape = qml.transforms.expand_trainable_multipar(tape)
 
-        # apply U_j and V_j
-        psi = qml.devices.qubit.apply_operation(outer_op, psi)
-        for op in group_after_trainable_op[j]:
+        # Divide all operations of a tape into trainable operations and blocks
+        # of untrainable operations after each trainable one.
+        trainable_operations, group_after_trainable_op = _group_operations(tape)
+
+        dim = 2**tape.num_wires
+        # generate and extract initial state
+        prep = tape[0] if len(tape) > 0 and isinstance(tape[0], qml.operation.StatePrep) else None
+
+        interface = qml.math.get_interface(*tape.get_parameters(trainable_only=False))
+        psi = qml.devices.qubit.create_initial_state(tape.wires, prep, like=interface)
+
+        # initialize metric tensor components (which all will be real-valued)
+        like_real = qml.math.real(psi[0])
+        L = qml.math.convert_like(qml.math.zeros((tape.num_params, tape.num_params)), like_real)
+        T = qml.math.convert_like(qml.math.zeros((tape.num_params,)), like_real)
+
+        for op in group_after_trainable_op[-1]:
             psi = qml.devices.qubit.apply_operation(op, psi)
 
-    # postprocessing: combine L and T into the metric tensor.
-    # We require outer(conj(T), T) here, but as we skipped the factor 1j above,
-    # the stored T is real-valued. Thus we have -1j*1j*outer(T, T) = outer(T, T)
-    metric_tensor = L - qml.math.tensordot(T, T, 0)
+        for j, outer_op in enumerate(trainable_operations):
+            generator_1, prefactor_1 = qml.generator(outer_op)
 
-    return metric_tensor
+            # the state vector phi is missing a factor of 1j * prefactor_1
+            phi = qml.devices.qubit.apply_operation(generator_1, psi)
 
+            phi_real, phi_imag = _reshape_real_imag(phi, dim)
+            diag_value = prefactor_1**2 * (
+                qml.math.dot(phi_real, phi_real) + qml.math.dot(phi_imag, phi_imag)
+            )
+            L = qml.math.scatter_element_add(L, (j, j), diag_value)
 
-def _adjoint_metric_tensor_qnode(qnode, device, hybrid):
-    """Computes the metric tensor of a qnode using the adjoint method and its device.
-    For ``hybrid==True`` this wrapper accounts for classical preprocessing within the
-    QNode.
-    """
-    if device is None:
-        if isinstance(qnode, qml.ExpvalCost):
-            if qnode._multiple_devices:  # pylint: disable=protected-access
-                warnings.warn(
-                    "ExpvalCost was instantiated with multiple devices. Only the first device "
-                    "will be used to evaluate the metric tensor with the adjoint method.",
-                    UserWarning,
+            lam = psi * 1.0
+            lam_real, lam_imag = _reshape_real_imag(lam, dim)
+
+            # this entry is missing a factor of 1j
+            value = prefactor_1 * (
+                qml.math.dot(lam_real, phi_real) + qml.math.dot(lam_imag, phi_imag)
+            )
+            T = qml.math.scatter_element_add(T, (j,), value)
+
+            for i in range(j - 1, -1, -1):
+                # after first iteration of inner loop: apply U_{i+1}^\dagger
+                if i < j - 1:
+                    phi = qml.devices.qubit.apply_operation(
+                        qml.adjoint(trainable_operations[i + 1], lazy=False), phi
+                    )
+                # apply V_{i}^\dagger
+                for op in reversed(group_after_trainable_op[i]):
+                    adj_op = qml.adjoint(op, lazy=False)
+                    phi = qml.devices.qubit.apply_operation(adj_op, phi)
+                    lam = qml.devices.qubit.apply_operation(adj_op, lam)
+
+                inner_op = trainable_operations[i]
+                # extract and apply G_i
+                generator_2, prefactor_2 = qml.generator(inner_op)
+                # this state vector is missing a factor of 1j * prefactor_2
+                mu = qml.devices.qubit.apply_operation(generator_2, lam)
+
+                phi_real, phi_imag = _reshape_real_imag(phi, dim)
+                mu_real, mu_imag = _reshape_real_imag(mu, dim)
+                # this entry is missing a factor of 1j * (-1j) = 1, i.e. none
+                value = (
+                    prefactor_1
+                    * prefactor_2
+                    * (qml.math.dot(mu_real, phi_real) + qml.math.dot(mu_imag, phi_imag))
                 )
-            qnode = qnode.qnodes[0]
-        device = qnode.device
+                L = qml.math.scatter_element_add(
+                    L, [(i, j), (j, i)], value * qml.math.convert_like(qml.math.ones((2,)), value)
+                )
+                # apply U_i^\dagger
+                lam = qml.devices.qubit.apply_operation(qml.adjoint(inner_op, lazy=False), lam)
 
-    def wrapper(*args, **kwargs):
-        old_interface = qnode.interface
-        if old_interface == "auto":
-            qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
+            # apply U_j and V_j
+            psi = qml.devices.qubit.apply_operation(outer_op, psi)
+            for op in group_after_trainable_op[j]:
+                psi = qml.devices.qubit.apply_operation(op, psi)
 
-        cjac_fn = qml.transforms.classical_jacobian(
-            qnode, expand_fn=qml.transforms.expand_trainable_multipar
-        )
+        # postprocessing: combine L and T into the metric tensor.
+        # We require outer(conj(T), T) here, but as we skipped the factor 1j above,
+        # the stored T is real-valued. Thus we have -1j*1j*outer(T, T) = outer(T, T)
+        metric_tensor = L - qml.math.tensordot(T, T, 0)
 
-        qnode.construct(args, kwargs)
-        program, _ = qml.devices.qubit.preprocess()
-        tapes, _ = program((qnode.tape,))
-        mt = _adjoint_metric_tensor_tape(tapes[0])
+        return metric_tensor
 
-        if old_interface == "auto":
-            qnode.interface = "auto"
-
-        if not hybrid:
-            return mt
-
-        cjac = cjac_fn(*args, **kwargs)
-
-        return _contract_metric_tensor_with_cjac(mt, cjac)
-
-    return wrapper
+    return [tape], processing_fn

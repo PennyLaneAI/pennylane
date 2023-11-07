@@ -14,7 +14,7 @@
 """Transform for merging AmplitudeEmbedding gates in a quantum circuit."""
 from typing import Sequence, Callable
 
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 from pennylane.tape import QuantumTape
 from pennylane import AmplitudeEmbedding
 from pennylane._device import DeviceError
@@ -26,41 +26,57 @@ def merge_amplitude_embedding(tape: QuantumTape) -> (Sequence[QuantumTape], Call
     r"""Quantum function transform to combine amplitude embedding templates that act on different qubits.
 
     Args:
-        tape (QuantumTape): A quantum tape.
+        tape (QNode or QuantumTape or Callable): A quantum circuit.
 
     Returns:
-        pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
-        it returns a QNode with the transform added to its transform program.
-        If a tape is passed, returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions.
+        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+
 
     **Example**
 
-    Consider the following quantum function.
+    >>> dev = qml.device('default.qubit', wires=4)
+
+    You can apply the transform directly on :class:`QNode`:
 
     .. code-block:: python
 
-        def qfunc():
+        @qml.transforms.merge_amplitude_embedding
+        @qml.qnode(device=dev)
+        def circuit():
             qml.CNOT(wires = [0,1])
             qml.AmplitudeEmbedding([0,1], wires = 2)
             qml.AmplitudeEmbedding([0,1], wires = 3)
             return qml.state()
 
-    The circuit before compilation will not work because of using two amplitude embedding.
+    >>> circuit()
+    [1.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j]
 
-    Using the transformation we can join the different amplitude embedding into a single one:
+    .. details::
+        :title: Usage Details
 
-    >>> dev = qml.device('default.qubit', wires=4)
-    >>> optimized_qfunc = qml.transforms.merge_amplitude_embedding(qfunc)
-    >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-    >>> print(qml.draw(optimized_qnode)())
-    0: ─╭●──────────────────────┤  State
-    1: ─╰X──────────────────────┤  State
-    2: ─╭AmplitudeEmbedding(M0)─┤  State
-    3: ─╰AmplitudeEmbedding(M0)─┤  State
-    M0 =
-    [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
+        You can also apply it on quantum function.
+
+        .. code-block:: python
+
+            def qfunc():
+                qml.CNOT(wires = [0,1])
+                qml.AmplitudeEmbedding([0,1], wires = 2)
+                qml.AmplitudeEmbedding([0,1], wires = 3)
+                return qml.state()
+
+        The circuit before compilation will not work because of using two amplitude embedding.
+
+        Using the transformation we can join the different amplitude embedding into a single one:
+
+        >>> optimized_qfunc = qml.transforms.merge_amplitude_embedding(qfunc)
+        >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        >>> print(qml.draw(optimized_qnode)())
+        0: ─╭●──────────────────────┤  State
+        1: ─╰X──────────────────────┤  State
+        2: ─╭AmplitudeEmbedding(M0)─┤  State
+        3: ─╰AmplitudeEmbedding(M0)─┤  State
+        M0 =
+        [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
 
     """
     # Make a working copy of the list to traverse
@@ -112,8 +128,7 @@ def merge_amplitude_embedding(tape: QuantumTape) -> (Sequence[QuantumTape], Call
     for gate in not_amplitude_embedding:
         new_operations.append(gate)
 
-    new_tape = QuantumTape(new_operations, tape.measurements, shots=tape.shots)
-    new_tape._qfunc_output = tape._qfunc_output  # pylint: disable=protected-access
+    new_tape = type(tape)(new_operations, tape.measurements, shots=tape.shots)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results

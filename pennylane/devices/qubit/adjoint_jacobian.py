@@ -138,7 +138,8 @@ def adjoint_jvp(tape: QuantumTape, tangents: Tuple[Number], state=None):
     # Map wires if custom wire labels used
     if set(tape.wires) != set(range(tape.num_wires)):
         wire_map = {w: i for i, w in enumerate(tape.wires)}
-        tape = qml.map_wires(tape, wire_map)
+        tapes, fn = qml.map_wires(tape, wire_map)
+        tape = fn(tapes)
 
     ket = state if state is not None else get_final_state(tape)[0]
 
@@ -212,7 +213,8 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
     # Map wires if custom wire labels used
     if set(tape.wires) != set(range(tape.num_wires)):
         wire_map = {w: i for i, w in enumerate(tape.wires)}
-        tape = qml.map_wires(tape, wire_map)
+        tapes, fn = qml.map_wires(tape, wire_map)
+        tape = fn(tapes)
 
     ket = state if state is not None else get_final_state(tape)[0]
 
@@ -241,8 +243,5 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
             param_number -= 1
 
         bra = apply_operation(adj_op, bra)
-
-    # if len(tape.trainable_params) == 1:
-    #    return cotangents_in[0]
 
     return tuple(cotangents_in)

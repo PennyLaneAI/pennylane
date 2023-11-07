@@ -15,10 +15,8 @@
 This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
-from importlib import reload
-import types
-import warnings
-import pkg_resources
+from importlib import reload, metadata
+from sys import version_info
 
 
 import numpy as _np
@@ -27,7 +25,6 @@ from semantic_version import SimpleSpec, Version
 from pennylane.boolean_fn import BooleanFn
 from pennylane.queuing import QueuingManager, apply
 
-import pennylane.fourier
 import pennylane.kernels
 import pennylane.math
 import pennylane.operation
@@ -83,6 +80,7 @@ from pennylane.templates.subroutines import *
 from pennylane import qaoa
 from pennylane.qnode import QNode, qnode
 from pennylane.transforms import (
+    transform,
     adjoint_metric_tensor,
     batch_params,
     batch_input,
@@ -123,8 +121,11 @@ from pennylane.debugging import snapshots
 from pennylane.shadows import ClassicalShadow
 import pennylane.pulse
 
+import pennylane.fourier
 import pennylane.gradients  # pylint:disable=wrong-import-order
-import pennylane.qinfo  # pylint:disable=wrong-import-order
+import pennylane.qinfo
+
+# pylint:disable=wrong-import-order
 from pennylane.interfaces import execute  # pylint:disable=wrong-import-order
 import pennylane.logging  # pylint:disable=wrong-import-order
 
@@ -141,7 +142,13 @@ class QuantumFunctionError(Exception):
 def _get_device_entrypoints():
     """Returns a dictionary mapping the device short name to the
     loadable entrypoint"""
-    return {entry.name: entry for entry in pkg_resources.iter_entry_points("pennylane.plugins")}
+    entries = (
+        metadata.entry_points()["pennylane.plugins"]
+        if version_info[:2] == (3, 9)
+        # pylint:disable=unexpected-keyword-arg
+        else metadata.entry_points(group="pennylane.plugins")
+    )
+    return {entry.name: entry for entry in entries}
 
 
 def refresh_devices():
@@ -151,11 +158,11 @@ def refresh_devices():
     # which is to update the global plugin_devices variable.
 
     # We wish to retain the behaviour of a global plugin_devices dictionary,
-    # as re-importing pkg_resources can be a very slow operation on systems
+    # as re-importing metadata can be a very slow operation on systems
     # with a large number of installed packages.
     global plugin_devices  # pylint:disable=global-statement
 
-    reload(pkg_resources)
+    reload(metadata)
     plugin_devices = _get_device_entrypoints()
 
 
@@ -163,9 +170,10 @@ def refresh_devices():
 plugin_devices = _get_device_entrypoints()
 
 
+# pylint: disable=protected-access
 def device(name, *args, **kwargs):
-    r"""device(name, wires=1, *args, **kwargs)
-    Load a :class:`~.Device` and return the instance.
+    r"""
+    Load a device and return the instance.
 
     This function is used to load a particular quantum device,
     which can then be used to construct QNodes.
@@ -175,36 +183,39 @@ def device(name, *args, **kwargs):
     * :mod:`'default.qubit' <pennylane.devices.default_qubit>`: a simple
       state simulator of qubit-based quantum circuit architectures.
 
+    * :mod:`'default.mixed' <pennylane.devices.default_mixed>`: a mixed-state
+      simulator of qubit-based quantum circuit architectures.
+
+    * ``'lightning.qubit'``: a more performant state simulator of qubit-based
+      quantum circuit architectures written in C++.
+
+    * :mod:`'default.qutrit' <pennylane.devices.default_qutrit>`: a simple
+      state simulator of qutrit-based quantum circuit architectures.
+
     * :mod:`'default.gaussian' <pennylane.devices.default_gaussian>`: a simple simulator
       of Gaussian states and operations on continuous-variable circuit architectures.
 
-    * :mod:`'default.qubit.tf' <pennylane.devices.default_qubit_tf>`: a state simulator
-      of qubit-based quantum circuit architectures written in TensorFlow, which allows
-      automatic differentiation through the simulation.
-
-    * :mod:`'default.qubit.autograd' <pennylane.devices.default_qubit_autograd>`: a state simulator
-      of qubit-based quantum circuit architectures which allows
-      automatic differentiation through the simulation via python's autograd library.
-
     Additional devices are supported through plugins — see
     the  `available plugins <https://pennylane.ai/plugins.html>`_ for more
-    details.
+    details. To list all currently installed devices, run
+    :func:`qml.about <pennylane.about>`.
 
     Args:
         name (str): the name of the device to load
         wires (int): the number of wires (subsystems) to initialise
-            the device with
+            the device with. Note that this is optional for certain
+            devices, such as ``default.qubit``
 
     Keyword Args:
         config (pennylane.Configuration): a PennyLane configuration object
             that contains global and/or device specific configurations.
-        custom_decomps (Dict[Union(str, qml.Operator), Callable]): Custom
+        custom_decomps (Dict[Union(str, Operator), Callable]): Custom
             decompositions to be applied by the device at runtime.
         decomp_depth (int): For when custom decompositions are specified,
             the maximum expansion depth used by the expansion function.
 
     All devices must be loaded by specifying their **short-name** as listed above,
-    followed by the **wires** (subsystems) you wish to initialize. The *wires*
+    followed by the **wires** (subsystems) you wish to initialize. The ``wires``
     argument can be an integer, in which case the wires of the device are addressed
     by consecutive integers:
 
@@ -218,7 +229,7 @@ def device(name, *args, **kwargs):
            qml.CNOT(wires=[3, 4])
            ...
 
-    The *wires* argument can also be a sequence of unique numbers or strings, specifying custom wire labels
+    The ``wires`` argument can also be a sequence of unique numbers or strings, specifying custom wire labels
     that the user employs to address the wires:
 
     .. code-block:: python
@@ -231,10 +242,16 @@ def device(name, *args, **kwargs):
            qml.CNOT(wires=['q12', -1])
            ...
 
+    On some newer devices, such as ``default.qubit``, the ``wires`` argument can be omitted altogether,
+    and instead the wires will be computed when executing a circuit depending on its contents.
+
+    >>> dev = qml.device("default.qubit")
+
     Most devices accept a ``shots`` argument which specifies how many circuit executions
-    are used to estimate stochastic return values. In particular, ``qml.sample()`` measurements
+    are used to estimate stochastic return values. As an example, ``qml.sample()`` measurements
     will return as many samples as specified in the shots argument. The shots argument can be
-    changed on a per-call basis using the built-in ``shots`` keyword argument.
+    changed on a per-call basis using the built-in ``shots`` keyword argument. Note that the
+    ``shots`` argument can be a single integer or a list of shot values.
 
     .. code-block:: python
 
@@ -246,11 +263,11 @@ def device(name, *args, **kwargs):
           return qml.sample(qml.PauliZ(wires=0))
 
     >>> circuit(0.8)  # 10 samples are returned
-    [ 1  1  1 -1 -1  1  1  1  1  1]
-    >>> circuit(0.8, shots=3)   # default is overwritten for this call
-    [1 1 1]
+    array([ 1,  1,  1,  1, -1,  1,  1, -1,  1,  1])
+    >>> circuit(0.8, shots=[3, 4, 4])   # default is overwritten for this call
+    (array([1, 1, 1]), array([ 1, -1,  1,  1]), array([1, 1, 1, 1]))
     >>> circuit(0.8)  # back to default of 10 samples
-    [ 1  1  1 -1 -1  1  1  1  1  1]
+    array([ 1, -1,  1,  1, -1,  1,  1,  1,  1,  1])
 
     When constructing a device, we may optionally pass a dictionary of custom
     decompositions to be applied to certain operations upon device execution.
@@ -348,10 +365,18 @@ def device(name, *args, **kwargs):
         # Once the device is constructed, we set its custom expansion function if
         # any custom decompositions were specified.
         if custom_decomps is not None:
-            custom_decomp_expand_fn = pennylane.transforms.create_decomp_expand_fn(
-                custom_decomps, dev, decomp_depth=decomp_depth
-            )
-            dev.custom_expand(custom_decomp_expand_fn)
+            if isinstance(dev, pennylane.Device):
+                custom_decomp_expand_fn = pennylane.transforms.create_decomp_expand_fn(
+                    custom_decomps, dev, decomp_depth=decomp_depth
+                )
+                dev.custom_expand(custom_decomp_expand_fn)
+            else:
+                custom_decomp_preprocess = (
+                    pennylane.transforms.tape_expand._create_decomp_preprocessing(
+                        custom_decomps, dev, decomp_depth=decomp_depth
+                    )
+                )
+                dev.preprocess = custom_decomp_preprocess
 
         return dev
 

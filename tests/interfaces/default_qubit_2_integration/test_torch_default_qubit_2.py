@@ -15,7 +15,7 @@
 import numpy as np
 import pytest
 
-from param_shift_device import ParamShiftDerivativesDevice
+from param_shift_dev import ParamShiftDerivativesDevice
 
 import pennylane as qml
 from pennylane.devices import DefaultQubit
@@ -136,7 +136,7 @@ test_matrix = [
     ({"gradient_fn": param_shift}, Shots(None), DefaultQubit()),
     ({"gradient_fn": "backprop"}, Shots(None), DefaultQubit()),
     (
-        {"gradient_fn": "adjoint", "grad_on_execution": True, "use_device_jacobian_product": False},
+        {"gradient_fn": "adjoint", "grad_on_execution": True, "device_vjp": False},
         Shots(None),
         DefaultQubit(),
     ),
@@ -144,19 +144,19 @@ test_matrix = [
         {
             "gradient_fn": "adjoint",
             "grad_on_execution": False,
-            "use_device_jacobian_product": False,
+            "device_vjp": False,
         },
         Shots(None),
         DefaultQubit(),
     ),
-    ({"gradient_fn": "adjoint", "use_device_jacobian_product": True}, Shots(None), DefaultQubit()),
+    ({"gradient_fn": "adjoint", "device_vjp": True}, Shots(None), DefaultQubit()),
     (
-        {"gradient_fn": "device", "use_device_jacobian_product": False},
+        {"gradient_fn": "device", "device_vjp": False},
         Shots((100000, 100000)),
         ParamShiftDerivativesDevice(),
     ),
     (
-        {"gradient_fn": "device", "use_device_jacobian_product": True},
+        {"gradient_fn": "device", "device_vjp": True},
         Shots((100000, 100000)),
         ParamShiftDerivativesDevice(),
     ),
@@ -201,22 +201,14 @@ class TestTorchExecuteIntegration:
         if not shots.has_partitioned_shots:
             assert res[0].shape == ()
             assert res[1].shape == ()
-
+        exp = torch.cos(a) * torch.cos(b)
         if shots.has_partitioned_shots:
-            for i in range(2):
-                assert qml.math.allclose(
-                    res[i][0], torch.cos(a) * torch.cos(b), atol=atol_for_shots(shots)
-                )
-                assert qml.math.allclose(
-                    res[i][1], torch.cos(a) * torch.cos(b), atol=atol_for_shots(shots)
-                )
+            for shot in range(2):
+                for wire in range(2):
+                    assert qml.math.allclose(res[shot][wire], exp, atol=atol_for_shots(shots))
         else:
-            assert qml.math.allclose(
-                res[0], torch.cos(a) * torch.cos(b), atol=atol_for_shots(shots)
-            )
-            assert qml.math.allclose(
-                res[1], torch.cos(a) * torch.cos(b), atol=atol_for_shots(shots)
-            )
+            for wire in range(2):
+                assert qml.math.allclose(res[wire], exp, atol=atol_for_shots(shots))
 
     def test_scalar_jacobian(self, execute_kwargs, shots, device):
         """Test scalar jacobian calculation"""
@@ -523,7 +515,20 @@ class TestTorchExecuteIntegration:
             tape = qml.tape.QuantumScript(
                 [qml.RX(a, wires=0), U3(*p, wires=0)], [qml.expval(qml.PauliX(0))]
             )
-            return execute([tape], device, **execute_kwargs)[0]
+            gradient_fn = execute_kwargs["gradient_fn"]
+            if gradient_fn is None:
+                _gradient_method = None
+            elif isinstance(gradient_fn, str):
+                _gradient_method = gradient_fn
+            else:
+                _gradient_method = "gradient-transform"
+            config = qml.devices.ExecutionConfig(
+                interface="autograd",
+                gradient_method=_gradient_method,
+                grad_on_execution=execute_kwargs.get("grad_on_execution", None),
+            )
+            program, _ = device.preprocess(execution_config=config)
+            return execute([tape], device, **execute_kwargs, transform_program=program)[0]
 
         a = torch.tensor(0.1, requires_grad=False)
         p = torch.tensor([0.1, 0.2, 0.3], requires_grad=True)
@@ -848,7 +853,8 @@ class TestHamiltonianWorkflows:
         res = torch.hstack(torch.autograd.functional.jacobian(cost_fn, (weights, coeffs1, coeffs2)))
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)
         if shots.has_partitioned_shots:
-            # ?
-            pass
+            pytest.xfail(
+                "multiple hamiltonians with shot vectors does not seem to be differentiable."
+            )
         else:
             assert torch.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)

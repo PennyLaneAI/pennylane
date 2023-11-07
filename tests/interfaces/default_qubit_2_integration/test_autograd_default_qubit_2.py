@@ -15,7 +15,7 @@
 import autograd
 import pytest
 
-from param_shift_device import ParamShiftDerivativesDevice
+from param_shift_dev import ParamShiftDerivativesDevice
 
 from pennylane import numpy as np
 
@@ -74,9 +74,18 @@ class TestCaching:
             assert np.allclose(expected, hess1)
 
         expected_runs = 1  # forward pass
-        expected_runs += 2 * N  # Jacobian
-        expected_runs += 4 * N + 1  # Hessian diagonal
-        expected_runs += 4 * N**2  # Hessian off-diagonal
+
+        # Jacobian of an involutory observable:
+        # ------------------------------------
+        #
+        # 2 * N execs: evaluate the analytic derivative of <A>
+        # 1 execs: Get <A>, the expectation value of the tape with unshifted parameters.
+        num_shifted_evals = 2 * N
+        runs_for_jacobian = num_shifted_evals + 1
+        expected_runs += runs_for_jacobian
+
+        # Each tape used to compute the Jacobian is then shifted again
+        expected_runs += runs_for_jacobian * num_shifted_evals
         assert tracker.totals["executions"] == expected_runs
 
         # Use caching: number of executions is ideal
@@ -123,7 +132,7 @@ test_matrix = [
     ({"gradient_fn": param_shift}, Shots(None), DefaultQubit()),
     ({"gradient_fn": "backprop"}, Shots(None), DefaultQubit()),
     (
-        {"gradient_fn": "adjoint", "grad_on_execution": True, "use_device_jacobian_product": False},
+        {"gradient_fn": "adjoint", "grad_on_execution": True, "device_vjp": False},
         Shots(None),
         DefaultQubit(),
     ),
@@ -131,21 +140,21 @@ test_matrix = [
         {
             "gradient_fn": "adjoint",
             "grad_on_execution": False,
-            "use_device_jacobian_product": False,
+            "device_vjp": False,
         },
         Shots(None),
         DefaultQubit(),
     ),
-    ({"gradient_fn": "adjoint", "use_device_jacobian_product": True}, Shots(None), DefaultQubit()),
+    ({"gradient_fn": "adjoint", "device_vjp": True}, Shots(None), DefaultQubit()),
     (
-        {"gradient_fn": "device", "use_device_jacobian_product": False},
+        {"gradient_fn": "device", "device_vjp": False},
         Shots((100000, 100000)),
-        ParamShiftDerivativesDevice(),
+        ParamShiftDerivativesDevice(seed=904747894),
     ),
     (
-        {"gradient_fn": "device", "use_device_jacobian_product": True},
+        {"gradient_fn": "device", "device_vjp": True},
         Shots((100000, 100000)),
-        ParamShiftDerivativesDevice(),
+        ParamShiftDerivativesDevice(seed=10490244),
     ),
 ]
 
@@ -259,8 +268,6 @@ class TestAutogradExecuteIntegration:
 
         if execute_kwargs["gradient_fn"] == "adjoint":
             pytest.skip("Adjoint differentiation does not yet support probabilities")
-        if shots.has_partitioned_shots:
-            pytest.skip("needs further investigation")
 
         def cost(params):
             tape1 = qml.tape.QuantumScript(
@@ -284,21 +291,24 @@ class TestAutogradExecuteIntegration:
                 [qml.probs(wires=[0, 1])],
                 shots=shots,
             )
-            return sum(
-                autograd.numpy.hstack(
-                    execute([tape1, tape2, tape3, tape4], device, **execute_kwargs)
-                )
-            )
+            res = qml.execute([tape1, tape2, tape3, tape4], device, **execute_kwargs)
+            if shots.has_partitioned_shots:
+                res = tuple(i for r in res for i in r)
+            return sum(autograd.numpy.hstack(res))
 
         params = np.array([0.1, 0.2], requires_grad=True)
         x, y = params
 
         res = cost(params)
         expected = 2 + np.cos(0.5) + np.cos(x) * np.cos(y)
+        if shots.has_partitioned_shots:
+            expected = shots.num_copies * expected
         assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
         grad = qml.grad(cost)(params)
-        expected = [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)]
+        expected = np.array([-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)])
+        if shots.has_partitioned_shots:
+            expected = shots.num_copies * expected
         assert np.allclose(grad, expected, atol=atol_for_shots(shots), rtol=0)
 
     @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
@@ -307,8 +317,6 @@ class TestAutogradExecuteIntegration:
 
         if execute_kwargs["gradient_fn"] == "backprop":
             pytest.xfail("backprop is not compatible with something about this situation.")
-        if shots.has_partitioned_shots:
-            pytest.xfail("needs further investigation.")
 
         def cost(params):
             tape1 = qml.tape.QuantumScript(
@@ -328,33 +336,64 @@ class TestAutogradExecuteIntegration:
                 [qml.expval(qml.PauliZ(0))],
                 shots=shots,
             )
-            return autograd.numpy.hstack(execute([tape1, tape2, tape3], device, **execute_kwargs))
+            res = execute([tape1, tape2, tape3], device, **execute_kwargs)
+            if shots.has_partitioned_shots:
+                res = tuple(i for r in res for i in r)
+            return autograd.numpy.hstack(res)
 
         params = np.array([0.1, 0.2], requires_grad=True)
         x, y = params
 
         res = cost(params)
         assert isinstance(res, np.ndarray)
-        assert res.shape == (4,)
+        if not shots:
+            assert res.shape == (4,)
 
-        assert np.allclose(res[0], np.cos(x) * np.cos(y), atol=atol_for_shots(shots))
-        assert np.allclose(res[1], 1, atol=atol_for_shots(shots))
-        assert np.allclose(res[2], np.cos(0.5), atol=atol_for_shots(shots))
-        assert np.allclose(res[3], np.cos(x) * np.cos(y), atol=atol_for_shots(shots))
+        if shots.has_partitioned_shots:
+            for i in (0, 1):
+                assert np.allclose(res[2 * i], np.cos(x) * np.cos(y), atol=atol_for_shots(shots))
+                assert np.allclose(res[2 * i + 1], 1, atol=atol_for_shots(shots))
+                assert np.allclose(res[4 + i], np.cos(0.5), atol=atol_for_shots(shots))
+                assert np.allclose(res[6 + i], np.cos(x) * np.cos(y), atol=atol_for_shots(shots))
+        else:
+            assert np.allclose(res[0], np.cos(x) * np.cos(y), atol=atol_for_shots(shots))
+            assert np.allclose(res[1], 1, atol=atol_for_shots(shots))
+            assert np.allclose(res[2], np.cos(0.5), atol=atol_for_shots(shots))
+            assert np.allclose(res[3], np.cos(x) * np.cos(y), atol=atol_for_shots(shots))
 
+        if shots.has_partitioned_shots:
+            pytest.xfail("autograd jacobians do not work with ragged results and shot vectors.")
+            # TODO: autograd jacobians with ragged results and shot vectors
         jac = qml.jacobian(cost)(params)
         assert isinstance(jac, np.ndarray)
-        assert jac.shape == (4, 2)  # pylint: disable=no-member
-
-        assert np.allclose(jac[1:3], 0, atol=atol_for_shots(shots))
+        if not shots.has_partitioned_shots:
+            assert jac.shape == (4, 2)  # pylint: disable=no-member
 
         d1 = -np.sin(x) * np.cos(y)
-        assert np.allclose(jac[0, 0], d1, atol=atol_for_shots(shots))
-        assert np.allclose(jac[3, 0], d1, atol=atol_for_shots(shots))
-
         d2 = -np.cos(x) * np.sin(y)
-        assert np.allclose(jac[0, 1], d2, atol=atol_for_shots(shots))
-        assert np.allclose(jac[3, 1], d2, atol=atol_for_shots(shots))
+
+        if shots.has_partitioned_shots:
+            assert np.allclose(jac[1], 0, atol=atol_for_shots(shots))
+            assert np.allclose(jac[3:4], 0, atol=atol_for_shots(shots))
+
+            assert np.allclose(jac[0, 0], d1, atol=atol_for_shots(shots))
+            assert np.allclose(jac[2, 0], d1, atol=atol_for_shots(shots))
+
+            assert np.allclose(jac[6, 0], d1, atol=atol_for_shots(shots))
+            assert np.allclose(jac[7, 0], d1, atol=atol_for_shots(shots))
+
+            assert np.allclose(jac[0, 1], d2, atol=atol_for_shots(shots))
+            assert np.allclose(jac[6, 1], d2, atol=atol_for_shots(shots))
+            assert np.allclose(jac[7, 1], d2, atol=atol_for_shots(shots))
+
+        else:
+            assert np.allclose(jac[1:3], 0, atol=atol_for_shots(shots))
+
+            assert np.allclose(jac[0, 0], d1, atol=atol_for_shots(shots))
+            assert np.allclose(jac[3, 0], d1, atol=atol_for_shots(shots))
+
+            assert np.allclose(jac[0, 1], d2, atol=atol_for_shots(shots))
+            assert np.allclose(jac[3, 1], d2, atol=atol_for_shots(shots))
 
     def test_reusing_quantum_tape(self, execute_kwargs, shots, device):
         """Test re-using a quantum tape by passing new parameters"""
@@ -485,7 +524,21 @@ class TestAutogradExecuteIntegration:
             tape = qml.tape.QuantumScript(
                 [qml.RX(a, wires=0), U3(*p, wires=0)], [qml.expval(qml.PauliX(0))]
             )
-            return execute([tape], device, **execute_kwargs)[0]
+            gradient_fn = execute_kwargs["gradient_fn"]
+
+            if gradient_fn is None:
+                _gradient_method = None
+            elif isinstance(gradient_fn, str):
+                _gradient_method = gradient_fn
+            else:
+                _gradient_method = "gradient-transform"
+            config = qml.devices.ExecutionConfig(
+                interface="autograd",
+                gradient_method=_gradient_method,
+                grad_on_execution=execute_kwargs.get("grad_on_execution", None),
+            )
+            program, _ = device.preprocess(execution_config=config)
+            return execute([tape], device, **execute_kwargs, transform_program=program)[0]
 
         a = np.array(0.1, requires_grad=False)
         p = np.array([0.1, 0.2, 0.3], requires_grad=True)
@@ -791,7 +844,8 @@ class TestHamiltonianWorkflows:
         res = np.hstack(qml.jacobian(cost_fn)(weights, coeffs1, coeffs2))
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)
         if shots.has_partitioned_shots:
-            # ?
-            pass
+            pytest.xfail(
+                "multiple hamiltonians with shot vectors does not seem to be differentiable."
+            )
         else:
             assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)

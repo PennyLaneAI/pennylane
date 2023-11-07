@@ -179,6 +179,7 @@ def measure_with_samples(
     Returns:
         List[TensorLike[Any]]: Sample measurement results
     """
+
     groups, indices = _group_measurements(mps)
 
     all_res = []
@@ -264,27 +265,37 @@ def _measure_with_samples_diagonalizing_gates(
             # currently we call sample_state for each shot entry, but it may be
             # better to call sample_state just once with total_shots, then use
             # the shot_range keyword argument
-            samples = sample_state(
-                state,
-                shots=s,
-                is_state_batched=is_state_batched,
-                wires=wires,
-                rng=rng,
-                prng_key=prng_key,
-            )
+            try:
+                samples = sample_state(
+                    state,
+                    shots=s,
+                    is_state_batched=is_state_batched,
+                    wires=wires,
+                    rng=rng,
+                    prng_key=prng_key,
+                )
+            except ValueError as e:
+                if str(e) != "probabilities contain NaN":
+                    raise e
+                samples = qml.math.full((s, len(wires)), 0)
 
             processed_samples.append(_process_single_shot(samples))
 
         return tuple(zip(*processed_samples))
 
-    samples = sample_state(
-        state,
-        shots=shots.total_shots,
-        is_state_batched=is_state_batched,
-        wires=wires,
-        rng=rng,
-        prng_key=prng_key,
-    )
+    try:
+        samples = sample_state(
+            state,
+            shots=shots.total_shots,
+            is_state_batched=is_state_batched,
+            wires=wires,
+            rng=rng,
+            prng_key=prng_key,
+        )
+    except ValueError as e:
+        if str(e) != "probabilities contain NaN":
+            raise e
+        samples = qml.math.full((shots.total_shots, len(wires)), 0)
 
     return _process_single_shot(samples)
 
@@ -352,7 +363,7 @@ def _measure_hamiltonian_with_samples(
         )
         return sum(c * res for c, res in zip(mp.obs.terms()[0], results))
 
-    unsqueezed_results = tuple(_sum_for_single_shot(Shots(s)) for s in shots)
+    unsqueezed_results = tuple(_sum_for_single_shot(type(shots)(s)) for s in shots)
     return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
 
 
@@ -380,7 +391,7 @@ def _measure_sum_with_samples(
         )
         return sum(results)
 
-    unsqueezed_results = tuple(_sum_for_single_shot(Shots(s)) for s in shots)
+    unsqueezed_results = tuple(_sum_for_single_shot(type(shots)(s)) for s in shots)
     return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
 
 
@@ -424,7 +435,8 @@ def sample_state(
     basis_states = np.arange(2**num_wires)
 
     flat_state = flatten_state(state, total_indices)
-    probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)
+    with qml.queuing.QueuingManager.stop_recording():
+        probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)
 
     if is_state_batched:
         # rng.choice doesn't support broadcasting
@@ -473,7 +485,8 @@ def _sample_state_jax(
     basis_states = np.arange(2**num_wires)
 
     flat_state = flatten_state(state, total_indices)
-    probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)
+    with qml.queuing.QueuingManager.stop_recording():
+        probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)
 
     if is_state_batched:
         # Produce separate keys for each of the probabilities along the broadcasted axis

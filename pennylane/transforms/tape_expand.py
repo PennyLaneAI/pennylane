@@ -13,7 +13,7 @@
 # limitations under the License.
 """This module contains tape expansion functions and stopping criteria to
 generate such functions from."""
-# pylint: disable=unused-argument,invalid-unary-operand-type, unsupported-binary-operation
+# pylint: disable=unused-argument,invalid-unary-operand-type, unsupported-binary-operation, no-member
 import contextlib
 
 import pennylane as qml
@@ -278,7 +278,7 @@ def _custom_decomp_context(custom_decomps):
             yield
 
         finally:
-            obj.compute_decomposition = original_decomp_method
+            obj.compute_decomposition = staticmethod(original_decomp_method)
 
     # Loop through the decomposition dictionary and create all the contexts
     try:
@@ -350,6 +350,80 @@ def create_decomp_expand_fn(custom_decomps, dev, decomp_depth=10):
     return custom_decomp_expand
 
 
+def _create_decomp_preprocessing(custom_decomps, dev, decomp_depth=10):
+    """Creates a custom preprocessing method for a device that applies
+    a set of specified custom decompositions.
+
+    Args:
+        custom_decomps (Dict[Union(str, qml.operation.Operation), Callable]): Custom
+            decompositions to be applied by the device at runtime.
+        dev (pennylane.devices.Device): A quantum device.
+        decomp_depth: The maximum depth of the expansion.
+
+    Returns:
+        Callable: A custom preprocessing method that a device can call to expand
+        its tapes.
+
+    **Example**
+
+    Suppose we would like a custom expansion function that decomposes all CNOTs
+    into CZs. We first define a decomposition function:
+
+    .. code-block:: python
+
+        def custom_cnot(wires):
+            return [
+                qml.Hadamard(wires=wires[1]),
+                qml.CZ(wires=[wires[0], wires[1]]),
+                qml.Hadamard(wires=wires[1])
+            ]
+
+    We then create the custom function (passing a device, in order to pick up any
+    additional stopping criteria the expansion should have), and then register the
+    result as a custom function of the device:
+
+    >>> custom_decomps = {qml.CNOT : custom_cnot}
+    >>> new_preprocessing = _create_decomp_preprocessing(custom_decomps, dev)
+    >>> dev.preprocess = new_preprocessing
+    """
+
+    def decomposer(op):
+        if isinstance(op, qml.ops.Controlled) and type(op.base) in custom_decomps:
+            op.base.compute_decomposition = custom_decomps[type(op.base)]
+            return op.decomposition()
+        if op.name in custom_decomps:
+            return custom_decomps[op.name](*op.data, wires=op.wires, **op.hyperparameters)
+        if type(op) in custom_decomps:
+            return custom_decomps[type(op)](*op.data, wires=op.wires, **op.hyperparameters)
+        return op.decomposition()
+
+    original_preprocess = dev.preprocess
+
+    # pylint: disable=cell-var-from-loop
+    def new_preprocess(execution_config=qml.devices.DefaultExecutionConfig):
+        program, config = original_preprocess(execution_config)
+
+        for container in program:
+            if container.transform == qml.devices.preprocess.decompose.transform:
+                container.kwargs["decomposer"] = decomposer
+                container.kwargs["max_expansion"] = decomp_depth
+
+                original_stopping_condition = container.kwargs["stopping_condition"]
+
+                def stopping_condition(obj):
+                    if obj.name in custom_decomps or type(obj) in custom_decomps:
+                        return False
+                    return original_stopping_condition(obj)
+
+                container.kwargs["stopping_condition"] = stopping_condition
+
+                break
+
+        return program, config
+
+    return new_preprocess
+
+
 @contextlib.contextmanager
 def set_decomposition(custom_decomps, dev, decomp_depth=10):
     """Context manager for setting custom decompositions.
@@ -393,23 +467,37 @@ def set_decomposition(custom_decomps, dev, decomp_depth=10):
     Now let's set up a context where the custom decomposition will be applied:
 
     >>> with qml.transforms.set_decomposition({qml.CNOT : custom_cnot}, dev):
-    ...     print(qml.draw(circuit)())
+    ...     print(qml.draw(circuit, wire_order=[0, 1])())
     0: ────╭●────┤  <Z>
     1: ──H─╰Z──H─┤
 
     """
-    original_custom_expand_fn = dev.custom_expand_fn
+    if isinstance(dev, qml.Device):
+        original_custom_expand_fn = dev.custom_expand_fn
 
-    # Create a new expansion function; stop at things that do not have
-    # custom decompositions, or that satisfy the regular device stopping criteria
-    new_custom_expand_fn = qml.transforms.create_decomp_expand_fn(
-        custom_decomps, dev, decomp_depth=decomp_depth
-    )
+        # Create a new expansion function; stop at things that do not have
+        # custom decompositions, or that satisfy the regular device stopping criteria
+        new_custom_expand_fn = create_decomp_expand_fn(
+            custom_decomps, dev, decomp_depth=decomp_depth
+        )
 
-    # Set the custom expand function within this context only
-    try:
-        dev.custom_expand(new_custom_expand_fn)
-        yield
+        # Set the custom expand function within this context only
+        try:
+            dev.custom_expand(new_custom_expand_fn)
+            yield
 
-    finally:
-        dev.custom_expand_fn = original_custom_expand_fn
+        finally:
+            dev.custom_expand_fn = original_custom_expand_fn
+
+    else:
+        original_preprocess = dev.preprocess
+        new_preprocess = _create_decomp_preprocessing(
+            custom_decomps, dev, decomp_depth=decomp_depth
+        )
+
+        try:
+            dev.preprocess = new_preprocess
+            yield
+
+        finally:
+            dev.preprocess = original_preprocess

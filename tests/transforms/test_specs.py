@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the specs transform"""
+from typing import Sequence, Callable
 from collections import defaultdict
 from contextlib import nullcontext
 import pytest
@@ -191,8 +192,8 @@ class TestSpecsTransform:
         """Test that a custom gradient transform is properly labelled"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.gradients.gradient_transform
-        def my_transform(tape):
+        @qml.transforms.core.transform
+        def my_transform(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
             return tape, None
 
         @qml.qnode(dev, diff_method=my_transform)

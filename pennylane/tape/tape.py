@@ -227,11 +227,8 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     # Update circuit info
     new_tape.wires = copy.copy(tape.wires)
     new_tape.num_wires = tape.num_wires
-    new_tape.is_sampled = tape.is_sampled
-    new_tape.all_sampled = tape.all_sampled
     new_tape._batch_size = tape.batch_size
     new_tape._output_dim = tape.output_dim
-    new_tape._qfunc_output = tape._qfunc_output
     return new_tape
 
 
@@ -281,11 +278,8 @@ def expand_tape_state_prep(tape, skip_first=True):
     # Update circuit info
     new_tape.wires = copy.copy(tape.wires)
     new_tape.num_wires = tape.num_wires
-    new_tape.is_sampled = tape.is_sampled
-    new_tape.all_sampled = tape.all_sampled
     new_tape._batch_size = tape.batch_size
     new_tape._output_dim = tape.output_dim
-    new_tape._qfunc_output = tape._qfunc_output
     return new_tape
 
 
@@ -425,12 +419,11 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         self,
         ops=None,
         measurements=None,
-        prep=None,
         shots=None,
         _update=True,
     ):  # pylint: disable=too-many-arguments
         AnnotatedQueue.__init__(self)
-        QuantumScript.__init__(self, ops, measurements, prep, shots, _update=_update)
+        QuantumScript.__init__(self, ops, measurements, shots, _update=_update)
 
     def __enter__(self):
         QuantumTape._lock.acquire()

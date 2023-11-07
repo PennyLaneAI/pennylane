@@ -276,6 +276,22 @@ ar.register_function("tensorflow", "flatten", lambda x: _i("tf").reshape(x, [-1]
 ar.register_function("tensorflow", "shape", lambda x: tuple(x.shape))
 ar.register_function(
     "tensorflow",
+    "full",
+    lambda shape, fill_value, **kwargs: _i("tf").fill(
+        shape if isinstance(shape, (tuple, list)) else (shape), fill_value, **kwargs
+    ),
+)
+ar.register_function(
+    "tensorflow",
+    "isnan",
+    lambda tensor, **kwargs: _i("tf").math.is_nan(_i("tf").math.real(tensor), **kwargs)
+    | _i("tf").math.is_nan(_i("tf").math.imag(tensor), **kwargs),
+)
+ar.register_function(
+    "tensorflow", "any", lambda tensor, **kwargs: _i("tf").reduce_any(tensor, **kwargs)
+)
+ar.register_function(
+    "tensorflow",
     "sqrt",
     lambda x: _i("tf").math.sqrt(
         _i("tf").cast(x, "float64") if x.dtype.name in ("int64", "int32") else x

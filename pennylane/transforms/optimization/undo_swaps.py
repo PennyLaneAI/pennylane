@@ -16,7 +16,7 @@
 # pylint: disable=too-many-branches
 from typing import Sequence, Callable
 
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 
 from pennylane.tape import QuantumTape
 from pennylane.wires import Wires
@@ -29,22 +29,22 @@ def undo_swaps(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
     to left through the circuit changing the position of the qubits accordingly.
 
     Args:
-        tape (QuantumTape): A quantum tape.
+        tape (QNode or QuantumTape or Callable): A quantum circuit.
 
     Returns:
-        pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
-        it returns a QNode with the transform added to its transform program.
-        If a tape is passed, returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
 
-    Consider the following quantum function:
+    >>> dev = qml.device('default.qubit', wires=3)
+
+    You can apply the transform directly on a :class:`QNode`
 
     .. code-block:: python
 
-        def qfunc():
+        @undo_swaps
+        @qml.qnode(device=dev)
+        def circuit():
             qml.Hadamard(wires=0)
             qml.PauliX(wires=1)
             qml.SWAP(wires=[0,1])
@@ -52,24 +52,41 @@ def undo_swaps(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
             qml.PauliY(wires=0)
             return qml.expval(qml.PauliZ(0))
 
-    The circuit before optimization:
+    The SWAP gates are removed before execution.
 
-    >>> dev = qml.device('default.qubit', wires=3)
-    >>> qnode = qml.QNode(qfunc, dev)
-    >>> print(qml.draw(qnode)())
-        0: ──H──╭SWAP──╭SWAP──Y──┤ ⟨Z⟩
-        1: ──X──╰SWAP──│─────────┤
-        2: ────────────╰SWAP─────┤
+    .. details::
+        :title: Usage Details
+
+        Consider the following quantum function:
+
+        .. code-block:: python
+
+            def qfunc():
+                qml.Hadamard(wires=0)
+                qml.PauliX(wires=1)
+                qml.SWAP(wires=[0,1])
+                qml.SWAP(wires=[0,2])
+                qml.PauliY(wires=0)
+                return qml.expval(qml.PauliZ(0))
+
+        The circuit before optimization:
+
+        >>> dev = qml.device('default.qubit', wires=3)
+        >>> qnode = qml.QNode(qfunc, dev)
+        >>> print(qml.draw(qnode)())
+            0: ──H──╭SWAP──╭SWAP──Y──┤ ⟨Z⟩
+            1: ──X──╰SWAP──│─────────┤
+            2: ────────────╰SWAP─────┤
 
 
-    We can remove the SWAP gates by running the ``undo_swap`` transform:
+        We can remove the SWAP gates by running the ``undo_swap`` transform:
 
-    >>> optimized_qfunc = undo_swaps(qfunc)
-    >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-    >>> print(qml.draw(optimized_qnode)())
-        0: ──Y──┤ ⟨Z⟩
-        1: ──H──┤
-        2: ──X──┤
+        >>> optimized_qfunc = undo_swaps(qfunc)
+        >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        >>> print(qml.draw(optimized_qnode)())
+            0: ──Y──┤ ⟨Z⟩
+            1: ──H──┤
+            2: ──X──┤
 
     """
     # Make a working copy of the list to traverse
@@ -108,8 +125,7 @@ def undo_swaps(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
 
         gates.reverse()
 
-    new_tape = QuantumTape(gates, tape.measurements, shots=tape.shots)
-    new_tape._qfunc_output = tape._qfunc_output  # pylint: disable=protected-access
+    new_tape = type(tape)(gates, tape.measurements, shots=tape.shots)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
