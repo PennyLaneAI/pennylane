@@ -128,7 +128,7 @@ def compute_vjp_single(dy, jac, num=None):
         try:
             res = dy_row @ jac
 
-        except:
+        except Exception:
             res = qml.math.tensordot(jac, dy_row, [[0], [0]])
 
     # Single measurement with multiple params
@@ -142,7 +142,7 @@ def compute_vjp_single(dy, jac, num=None):
             jac = qml.math.reshape(qml.math.stack(jac), (1, -1))
             try:
                 res = dy_row @ jac
-            except:
+            except Exception:
                 res = qml.math.tensordot(jac, dy_row, [[0], [0]])
 
         # Single measurement with dimension e.g. probs
@@ -150,7 +150,7 @@ def compute_vjp_single(dy, jac, num=None):
             jac = qml.math.stack(jac)
             try:
                 res = jac @ dy_row
-            except:
+            except Exception:
                 res = qml.math.tensordot(jac, dy_row, [[1], [0]])
 
     return res
@@ -207,11 +207,14 @@ def compute_vjp_multi(dy, jac, num=None):
             # dy  -> (i,j)      observables, entries per observable
             # jac -> (i,k,j)    observables, parameters, entries per observable
             # Contractions over observables and entries per observable
+            # from IPython import embed; embed()
             dy_shape = qml.math.shape(dy)
             if len(dy_shape) > 1:  # multiple values exist per observable output
-                return qml.math.einsum("ij,i...j", dy, jac)
-            return qml.math.einsum("i,i...", dy, jac)  # Scalar value per observable output
-        except Exception as e:
+                return qml.math.cast_like(qml.math.einsum("ij,i...j", dy, jac), dy[0])
+            return qml.math.cast_like(
+                qml.math.einsum("i,i...", dy, jac), dy
+            )  # Scalar value per observable output
+        except Exception:
             res = []
             for d, j_ in zip(dy, jac):
                 sub_res = []
