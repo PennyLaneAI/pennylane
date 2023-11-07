@@ -74,6 +74,16 @@ There are also utility functions that take a circuit and return a DAG.
     ~transforms.CommutationDAG
     ~transforms.CommutationDAGNode
 
+Transform for Clifford+T compilation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following function assist in decomposing operations to the Clifford+T basis.
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.sk_decomposition
+
 Transform for circuit cutting
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -243,6 +253,7 @@ from .compile import compile
 from .decompositions import (
     one_qubit_decomposition,
     two_qubit_decomposition,
+    sk_decomposition,
 )
 from .defer_measurements import defer_measurements
 from .sign_expand import sign_expand

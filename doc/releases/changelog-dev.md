@@ -7,6 +7,10 @@
 * Approximate Quantum Fourier Transform (AQFT) is now available from `qml.AQFT`.
   [(#4656)](https://github.com/PennyLaneAI/pennylane/pull/4656)
 
+* `qml.transforms.decomposition.sk_decomposition` method implements the Solovay-Kitaev algorithm for
+  approximately decomposing any single-qubit operation to Clifford+T basis.
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+
 <h3>Improvements 🛠</h3>
 
 * Updates to some relevant Pytests to enable its use as a suite of benchmarks.
