@@ -323,7 +323,6 @@ class TestCompileIntegration:
             Wires([2, 0]),
         ] * 4
 
-        print(len(transformed_qnode.qtape.operations), len(names_expected))
         compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
 
 
