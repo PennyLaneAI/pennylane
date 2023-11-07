@@ -69,7 +69,7 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
 
     When used with the :func:`~.qjit` decorator with a hybrid
     quantum-classical compiler, this function allows for general
-    if-else constructs. All ``true_fn``, ``false_fn`` and `elifs` branches
+    if-else constructs. All ``true_fn``, ``false_fn`` and ``elifs`` branches
     will be captured by the compiler, with the executed branch determined
     at runtime. For more details, please see :func:`catalyst.cond`.
 
@@ -167,7 +167,7 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
     >>> circuit(1.6)
     array(0.)
 
-    Additional 'else-if' clauses can also be included via the ``else_if`` method:
+    Additional 'else-if' clauses can also be included via the ``elif`` argument:
 
     .. code-block:: python3
 
