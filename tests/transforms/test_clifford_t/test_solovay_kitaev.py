@@ -108,6 +108,7 @@ def test_approximate_sets():
 @pytest.mark.parametrize(
     ("op"),
     [
+        qml.U3(0.0, 0.0, 0.0, wires=[0]),
         qml.U3(1.0, 2.0, 3.0, wires=[1]),
         qml.U3(-1.0, 2.0, 3.0, wires=["b"]),
         qml.U3(1.0, 2.0, -3.0, wires=[0]),

@@ -258,8 +258,9 @@ def sk_decomposition(op, depth, basis_set=(), basis_length=10):
         # Build the k-d tree with the current approximation set for querying in the base case
         kd_tree = sp.spatial.KDTree(qml.math.array(approx_set_qat))
 
-        # Obtain the SU(2) for the operation
+        # Obtain the SU(2) and quaternion for the operation
         gate_mat, _ = _SU2_transform(op.matrix())
+        gate_qat = _quaternion_transform(gate_mat)
 
         def _solovay_kitaev(umat, n):
             """Recursive method as given in the Section 3 of arXiv:0505030"""
@@ -295,12 +296,10 @@ def sk_decomposition(op, depth, basis_set=(), basis_length=10):
             return approx_ids, approx_mat
 
         # If we have it already, use that, otherwise proceed for deocomposition
-        gate_qat = _quaternion_transform(gate_mat)
         dist, index = kd_tree.query(qml.math.array([gate_qat]), workers=-1)
-        if dist < 1e-8:
+        if qml.math.isclose(dist, 0.0, atol=1e-8):
             decomposition = approx_set_ids[index[0]]
         else:
-            # Get the decomposition for the given operation
             decomposition, _ = _solovay_kitaev(gate_mat, depth)
 
         # Remove inverses if any in the decomposition and handle trivial case
