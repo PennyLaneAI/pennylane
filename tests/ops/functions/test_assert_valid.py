@@ -224,6 +224,58 @@ def test_bad_wire_mapping():
         assert_valid(BadWireMap(qml.PauliX(0)), skip_pickle=True)
 
 
+class TestPytree:
+    def test_not_hashable_metadata(self):
+        """Assert that an error is raised if metadata is not hashable."""
+
+        class BadMetadata(Operator):
+            def __init__(self, wires):
+                super().__init__(wires)
+                self.hyperparameters["test"] = ["a"]
+
+        op = BadMetadata(0)
+        with pytest.raises(AssertionError, match=r"metadata output from _flatten must be hashable"):
+            assert_valid(op, skip_pickle=True)
+
+    def test_badpytree(self):
+        """Assert that an unpacking and repacking a pytree reproduces the original operation."""
+
+        class BadPytree(Operator):
+            def _flatten(self):
+                return tuple(), (self.wires, tuple())
+
+            def __init__(self, wires, val="a"):
+                super().__init__(wires)
+                self.hyperparameters["val"] = val
+
+        op = BadPytree(wires=0, val="b")
+        with pytest.raises(
+            AssertionError,
+            match=r"metadata and data must be able to reproduce the original operation",
+        ):
+            assert_valid(op)
+
+        op = qml.adjoint(BadPytree(wires=0, val="b"))
+        with pytest.raises(AssertionError, match=r"op must be a valid pytree."):
+            assert_valid(op)
+
+    def test_bad_leaves_ordering(self):
+        """Test an error is raised if data and pytree leaves have a different ordering convention."""
+
+        class BadLeavesOrdering(qml.ops.op_math.SProd):
+            def _flatten(self):
+                return (self.base, self.scalar), tuple()
+
+            @classmethod
+            def _unflatten(cls, data, _):
+                return cls(data[1], data[0])
+
+        op = BadLeavesOrdering(2.0, qml.RX(1.2, wires=0))
+
+        with pytest.raises(AssertionError, match=r"data must be the terminal leaves of the pytree"):
+            assert_valid(op)
+
+
 def test_data_is_tuple():
     """Check that the data property is a tuple."""
 

@@ -43,15 +43,12 @@ def _check_decomposition(op):
     if op.has_decomposition:
         decomp = op.decomposition()
         try:
-            compute_decomp = op.compute_decomposition(
+            compute_decomp = type(op).compute_decomposition(
                 *op.data, wires=op.wires, **op.hyperparameters
             )
-        except qml.operation.DecompositionUndefinedError:
+        except (qml.operation.DecompositionUndefinedError, TypeError):
             # sometimes decomposition is defined but not compute_decomposition
-            compute_decomp = decomp
-        except TypeError as e:
-            if type(op).decomposition == qml.operation.Operator.decomposition:
-                raise e
+            # Also  sometimes compute_decomposition can have a different signature
             compute_decomp = decomp
         with qml.queuing.AnnotatedQueue() as queued_decomp:
             op.decomposition()
@@ -117,8 +114,12 @@ def _check_eigendecomposition(op):
     if op.has_diagonalizing_gates:
         dg = op.diagonalizing_gates()
         try:
-            compute_dg = op.compute_diagonalizing_gates(*op.data, op.wires, **op.hyperparameters)
-        except qml.operation.DiagGatesUndefinedError:
+            compute_dg = type(op).compute_diagonalizing_gates(
+                *op.data, wires=op.wires, **op.hyperparameters
+            )
+        except (qml.operation.DiagGatesUndefinedError, TypeError):
+            # sometimes diagonalizing gates is defined but not compute_diagonalizing_gates
+            # compute_diagonalizing_gates might also have a different call signature
             compute_dg = dg
 
         for op1, op2 in zip(dg, compute_dg):
@@ -132,10 +133,16 @@ def _check_eigendecomposition(op):
     has_eigvals = True
     try:
         eg = op.eigvals()
-        compute_eg = op.compute_eigvals(*op.data, **op.hyperparameters)
-        assert qml.math.allclose(eg, compute_eg), "eigvals and compute_eigvals must match"
     except EigvalsUndefinedError:
         has_eigvals = False
+        eg = None
+
+    try:
+        compute_eg = type(op).compute_eigvals(*op.data, **op.hyperparameters)
+    except EigvalsUndefinedError:
+        compute_eg = eg
+
+    assert qml.math.allclose(eg, compute_eg), "eigvals and compute_eigvals must match"
 
     if has_eigvals and op.has_diagonalizing_gates:
         dg = qml.prod(*dg) if len(dg) > 0 else qml.Identity(op.wires)
@@ -163,11 +170,11 @@ def _check_pytree(op):
     try:
         assert hash(metadata), "metadata must be hashable"
     except Exception as e:
-        raise ValueError(
+        raise AssertionError(
             f"metadata output from _flatten must be hashable. Got metadata {metadata}"
         ) from e
     new_op = type(op)._unflatten(data, metadata)
-    assert op == new_op, "metadata and data must be able to replicate the original operation"
+    assert op == new_op, "metadata and data must be able to reproduce the original operation"
 
     try:
         import jax

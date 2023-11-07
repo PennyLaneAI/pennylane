@@ -87,6 +87,17 @@ ops_hermitian_status = (  # computed manually
 )
 
 
+# currently failing due to has_diagonalizing_gates logic
+@pytest.mark.xfail  # TODO: fix with story 49608
+def test_basic_validity():
+    """Run basic validity checks on a prod operator."""
+    op1 = qml.PauliZ(0)
+    op2 = qml.Rot(1.2, 2.3, 3.4, wires=0)
+    op3 = qml.IsingZZ(4.32, wires=("a", "b"))
+    op = qml.prod(op1, op2, op3)
+    qml.ops.functions.assert_valid(op)
+
+
 def compare_and_expand_mat(mat1, mat2):
     """Helper function which takes two square matrices (of potentially different sizes)
     and expands the smaller matrix until their shapes match."""
