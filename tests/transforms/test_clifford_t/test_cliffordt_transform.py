@@ -117,9 +117,7 @@ class TestCliffordCompile:
         with qml.tape.QuantumTape() as old_tape:
             circuit()
 
-        [new_tape], tape_fn = clifford_t_decomposition(
-            old_tape, max_depth=max_depth, depth = 3
-        )
+        [new_tape], tape_fn = clifford_t_decomposition(old_tape, max_depth=max_depth, depth=3)
 
         assert all(
             any(
