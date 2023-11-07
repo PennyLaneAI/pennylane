@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+    # Copyright 2018-2023 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -314,7 +314,7 @@ def clifford_t_decomposition(
     Keyword Args:
         Options (*):
 
-            * **depth** (int), **basis_set** (list(str)), **basis_depth** (int):
+            * **depth** (int), **basis_set** (list(str)), **basis_length** (int):
               arguments for using the ``"sk"`` method, i.e., for performing Solovay-Kitaev decomposition using :func:`~.sk_decomposition`
 
     Returns:
@@ -426,11 +426,11 @@ def clifford_t_decomposition(
         if method == "sk":
             _depth = kwargs.get("depth", 3)
             _basis_set = kwargs.get("basis_set", ("T", "T*", "H"))
-            _basis_depth = kwargs.get("basis_depth", 10)
+            _basis_length = kwargs.get("basis_length", 10)
 
             # Get the decompose function for sk
             decompose_fn = partial(
-                sk_decomposition, depth=_depth, basis_set=_basis_set, basis_depth=_basis_depth
+                sk_decomposition, depth=_depth, basis_set=_basis_set, basis_length=_basis_length
             )
 
         # TODO: Add RZ conversion with the newsynth method
