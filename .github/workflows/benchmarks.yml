@@ -24,12 +24,12 @@ jobs:
       # If needed, this workflow will create a cached benchmark reference.
       # This reference will be used for comparative analyses with all PRs benchmarks.
       - name: Check for cached reference benchmark data
-          id: benchmark-cache
-          uses: actions/cache@v3
-          with:
-            path: ${{ github.workspace}}/benchmark_reference
-            key: ${{ inputs.benchmarks_name }}
-            lookup-only: true
+        id: benchmark-cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ github.workspace}}/benchmark_reference
+          key: ${{ inputs.benchmarks_name }}
+          lookup-only: true
 
       - name: Run reference benchmarks
         if: ${{ (steps.benchmark-cache.outputs.cache-hit != 'true') }}
