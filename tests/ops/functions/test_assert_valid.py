@@ -253,11 +253,11 @@ class TestPytree:
             AssertionError,
             match=r"metadata and data must be able to reproduce the original operation",
         ):
-            assert_valid(op)
+            assert_valid(op, skip_pickle=True)
 
         op = qml.adjoint(BadPytree(wires=0, val="b"))
         with pytest.raises(AssertionError, match=r"op must be a valid pytree."):
-            assert_valid(op)
+            assert_valid(op, skip_pickle=True)
 
     def test_bad_leaves_ordering(self):
         """Test an error is raised if data and pytree leaves have a different ordering convention."""
@@ -273,7 +273,7 @@ class TestPytree:
         op = BadLeavesOrdering(2.0, qml.RX(1.2, wires=0))
 
         with pytest.raises(AssertionError, match=r"data must be the terminal leaves of the pytree"):
-            assert_valid(op)
+            assert_valid(op, skip_pickle=True)
 
 
 def test_data_is_tuple():
