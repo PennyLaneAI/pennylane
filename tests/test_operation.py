@@ -888,6 +888,7 @@ class TestObservableConstruction:
 
         obs = DummyObserv(0, wires=[1])
         with pytest.warns(UserWarning, match="`Observable.return_type` is deprecated. Instead"):
+            # pylint:disable=attribute-defined-outside-init
             obs.return_type = qml.measurements.Sample
 
     def test_construction_with_wires_pos_arg(self):
