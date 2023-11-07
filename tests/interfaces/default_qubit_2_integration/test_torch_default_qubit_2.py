@@ -201,22 +201,14 @@ class TestTorchExecuteIntegration:
         if not shots.has_partitioned_shots:
             assert res[0].shape == ()
             assert res[1].shape == ()
-
+        exp = torch.cos(a) * torch.cos(b)
         if shots.has_partitioned_shots:
-            for i in range(2):
-                assert qml.math.allclose(
-                    res[i][0], torch.cos(a) * torch.cos(b), atol=atol_for_shots(shots)
-                )
-                assert qml.math.allclose(
-                    res[i][1], torch.cos(a) * torch.cos(b), atol=atol_for_shots(shots)
-                )
-        else:
-            assert qml.math.allclose(
-                res[0], torch.cos(a) * torch.cos(b), atol=atol_for_shots(shots)
-            )
-            assert qml.math.allclose(
-                res[1], torch.cos(a) * torch.cos(b), atol=atol_for_shots(shots)
-            )
+            for shot in range(2):
+                for wire in range(2):
+                    assert qml.math.allclose(res[shot][wire], exp, atol=atol_for_shots(shots))
+        else:  
+            for wire in range(2):
+                assert qml.math.allclose(res[wire], exp, atol=atol_for_shots(shots))
 
     def test_scalar_jacobian(self, execute_kwargs, shots, device):
         """Test scalar jacobian calculation"""
