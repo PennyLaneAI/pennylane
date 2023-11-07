@@ -47,6 +47,7 @@
 * `Observable.return_type` is deprecated. Instead, you should inspect the type
   of the surrounding measurement process.
   [(#4762)](https://github.com/PennyLaneAI/pennylane/pull/4762)
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
 
 <h3>Documentation 📝</h3>
 
