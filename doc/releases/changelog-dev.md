@@ -10,7 +10,7 @@
 <h3>Improvements 🛠</h3>
 
 * Autograd can now use vjps provided by the device from the new device API. If a device provides
-  a vector Jacobian product, this can be selected by providing `use_device_jacobian_product=True` to
+  a vector Jacobian product, this can be selected by providing `device_vjp=True` to
   `qml.execute`.
   [(#4557)](https://github.com/PennyLaneAI/pennylane/pull/4557)
 
