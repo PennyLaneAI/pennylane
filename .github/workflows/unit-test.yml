@@ -14,7 +14,7 @@ on:
         description: Name of the artifact file that will contain the coverage file for codevoc
         required: true
         type: string
-      benchmarks_artifact_name:
+      benchmarks_name:
         description: Name of the artifact file that will contain the Pytest-benchmarks report.
         required: true
         type: string
@@ -175,9 +175,23 @@ jobs:
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
         run: python -m pytest  ${{ inputs.pytest_test_directory }} ${{ inputs.pytest_benchmark_flags }} ${{ inputs.pytest_additional_args }} ${{ env.PYTEST_MARKER }}
 
-      - name: Upload Pytest-benchmark file
-        if: ${{ inputs.pytest_benchmark_flags != '' }}
+      # If this is a PR benchmark, upload the data as an artifact.
+      - name: Upload PR pytest benchmark file
+        if: ${{ inputs.pytest_benchmark_flags != '' && inputs.branch == github.ref}}
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ inputs.benchmarks_artifact_name }}
+          name: ${{ inputs.benchmarks_name }}
           path: benchmarks.json
+
+      - name: Cache reference benchmarks
+        if: ${{ inputs.pytest_benchmark_flags != '' && inputs.branch != github.ref }}
+        id: benchmark-cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ github.workspace}}/benchmark_reference
+          key: ${{ inputs.benchmarks_name }}
+
+      # If this is a reference benchmark and we don't hit the cache, move file to the cached directory.
+      - name: Upload reference pytest benchmark file
+        if: ${{ inputs.pytest_benchmark_flags != '' && inputs.branch != github.ref && (steps.benchmark-cache.outputs.cache-hit != 'true') }}
+        run: mkdir -p ${{ github.workspace}}/benchmark_reference && cp benchmarks.json "$_"
