@@ -18,7 +18,8 @@ e.g., OS, version, `Numpy` and `Scipy` versions, installation method.
 import platform
 import sys
 from subprocess import check_output
-from pkg_resources import iter_entry_points
+from importlib import metadata
+from sys import version_info
 import numpy
 import scipy
 
@@ -27,7 +28,16 @@ def about():
     """
     Prints the information for pennylane installation.
     """
-    plugin_devices = iter_entry_points("pennylane.plugins")
+    if version_info[:2] == (3, 9):
+        from pkg_resources import iter_entry_points  # pylint:disable=import-outside-toplevel
+
+        plugin_devices = iter_entry_points("pennylane.plugins")
+        dist_name = "project_name"
+    else:
+        plugin_devices = metadata.entry_points(  # pylint:disable=unexpected-keyword-arg
+            group="pennylane.plugins"
+        )
+        dist_name = "name"
     print(check_output([sys.executable, "-m", "pip", "show", "pennylane"]).decode())
     print(f"Platform info:           {platform.platform(aliased=True)}")
     print(
@@ -39,7 +49,7 @@ def about():
     print("Installed devices:")
 
     for d in plugin_devices:
-        print(f"- {d.name} ({d.dist.project_name}-{d.dist.version})")
+        print(f"- {d.name} ({getattr(d.dist, dist_name)}-{d.dist.version})")
 
 
 if __name__ == "__main__":
