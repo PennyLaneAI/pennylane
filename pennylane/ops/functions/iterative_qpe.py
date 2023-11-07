@@ -15,8 +15,8 @@
 This module contains the qml.iterative_qpe function.
 """
 
-import pennylane as qml
 import numpy as np
+import pennylane as qml
 
 
 def iterative_qpe(base, estimation_wire, iters):

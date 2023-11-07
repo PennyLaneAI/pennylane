@@ -16,8 +16,8 @@ Unit tests for the iterative_qpe function
 """
 import pytest
 
-import pennylane as qml
 import numpy as np
+import pennylane as qml
 
 
 class TestResult:
@@ -108,7 +108,7 @@ class TestResult:
         with qml.tape.QuantumTape() as tape:
             qml.iterative_qpe(qml.RZ(1.0, wires=[0]), wire, iters=3)
 
-        assert tape.wires == qml.Wires([0, wire])
+        assert tape.wires == qml.wires.Wires([0, wire])
 
     @pytest.mark.parametrize("phi", (1.2, 2.3, 3.4))
     def test_measurement_processes(self, phi):
