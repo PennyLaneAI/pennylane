@@ -14,10 +14,10 @@
 """Compiler developer functions"""
 
 from typing import List, Optional
-from importlib import reload
+from sys import version_info
+from importlib import reload, metadata
 from collections import defaultdict
 import dataclasses
-import pkg_resources
 
 
 class CompileError(Exception):
@@ -41,9 +41,16 @@ def _refresh_compilers():
     AvailableCompilers.names_entrypoints = defaultdict(dict)
 
     # Iterator packages entry-points with the 'pennylane.compilers' group name
-    for entry in pkg_resources.iter_entry_points("pennylane.compilers"):
+    entries = (
+        defaultdict(dict, metadata.entry_points())["pennylane.compilers"]
+        if version_info[:2] == (3, 9)
+        # pylint:disable=unexpected-keyword-arg
+        else metadata.entry_points(group="pennylane.compilers")
+    )
+
+    for entry in entries:
         # Only need name of the parent module
-        module_name = entry.module_name.split(".")[0]
+        module_name = entry.module.split(".")[0]
         AvailableCompilers.names_entrypoints[module_name][entry.name] = entry
 
     # Check whether available compilers follow the entry_point interface
@@ -64,7 +71,10 @@ def _reload_compilers():
     compilers names and entry points.
     """
 
-    reload(pkg_resources)
+    # Note re-importing ``importlib.metadata`` can be a very slow operation
+    # on systems with a large number of installed packages.
+
+    reload(metadata)
     _refresh_compilers()
 
 
@@ -112,10 +122,8 @@ def available(compiler="catalyst") -> bool:
     True
     """
 
-    # It only refreshes the compilers names and entry points if the name
-    # is not already stored. This reduces the number of re-importing
-    # ``pkg_resources`` as it can be a very slow operation on systems
-    # with a large number of installed packages.
+    # It only refreshes the compilers names and entry points if
+    # the name is not already stored.
 
     if compiler not in AvailableCompilers.names_entrypoints:
         # Reload installed packages and updates
