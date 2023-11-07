@@ -136,7 +136,7 @@ test_matrix = [
     ({"gradient_fn": param_shift}, Shots(None), DefaultQubit()),
     ({"gradient_fn": "backprop"}, Shots(None), DefaultQubit()),
     (
-        {"gradient_fn": "adjoint", "grad_on_execution": True, "use_device_jacobian_product": False},
+        {"gradient_fn": "adjoint", "grad_on_execution": True, "device_vjp": False},
         Shots(None),
         DefaultQubit(),
     ),
@@ -144,19 +144,19 @@ test_matrix = [
         {
             "gradient_fn": "adjoint",
             "grad_on_execution": False,
-            "use_device_jacobian_product": False,
+            "device_vjp": False,
         },
         Shots(None),
         DefaultQubit(),
     ),
-    ({"gradient_fn": "adjoint", "use_device_jacobian_product": True}, Shots(None), DefaultQubit()),
+    ({"gradient_fn": "adjoint", "device_vjp": True}, Shots(None), DefaultQubit()),
     (
-        {"gradient_fn": "device", "use_device_jacobian_product": False},
+        {"gradient_fn": "device", "device_vjp": False},
         Shots((100000, 100000)),
         ParamShiftDerivativesDevice(),
     ),
     (
-        {"gradient_fn": "device", "use_device_jacobian_product": True},
+        {"gradient_fn": "device", "device_vjp": True},
         Shots((100000, 100000)),
         ParamShiftDerivativesDevice(),
     ),
