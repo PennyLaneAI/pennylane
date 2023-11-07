@@ -212,7 +212,7 @@ def compute_vjp_multi(dy, jac, num=None):
             if len(dy_shape) > 1:  # multiple values exist per observable output
                 return qml.math.array(qml.math.einsum("ij,i...j", dy, jac), like=dy[0])
             return qml.math.array(
-                qml.math.einsum("i,i...", dy, jac), like=dy[0]
+                qml.math.einsum("i,i...", qml.math.vstack(dy), jac), like=dy[0]
             )  # Scalar value per observable output
         except Exception:
             res = []
