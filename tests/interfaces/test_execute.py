@@ -25,4 +25,4 @@ def test_old_interface_no_device_jacobian_products():
     dev = qml.device("default.qubit.legacy", wires=2)
     tape = qml.tape.QuantumScript([qml.RX(1.0, wires=0)], [qml.expval(qml.PauliZ(0))])
     with pytest.raises(qml.QuantumFunctionError):
-        qml.execute((tape,), dev, use_device_jacobian_product=True)
+        qml.execute((tape,), dev, device_vjp=True)
