@@ -32,6 +32,9 @@ jobs:
           key: ${{ inputs.benchmarks_name }}
           lookup-only: true
 
+      - name: Checkout PennyLane
+        uses: actions/checkout@v3
+
       - name: Run reference benchmarks
         if: ${{ (steps.benchmark-cache.outputs.cache-hit != 'true') }}
         uses: ./.github/workflows/interface-unit-tests.yml
