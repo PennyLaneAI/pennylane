@@ -7,6 +7,11 @@
 * Approximate Quantum Fourier Transform (AQFT) is now available from `qml.AQFT`.
   [(#4656)](https://github.com/PennyLaneAI/pennylane/pull/4656)
 
+* `qml.transforms.clifford_t_decomposition` method implements a transform for
+  approximately decomposing any circuit to the Clifford+T basis.
+  [(#4801)](https://github.com/PennyLaneAI/pennylane/pull/4801)
+
+
 <h3>Improvements 🛠</h3>
 
 * Updates to some relevant Pytests to enable its use as a suite of benchmarks.
