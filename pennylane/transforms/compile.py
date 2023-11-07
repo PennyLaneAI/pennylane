@@ -191,7 +191,7 @@ def compile(
             def stop_at(obj):
                 return (obj.name in all_ops) and (not getattr(obj, "only_visual", False))
 
-            expanded_tape = tape.expand(stop_at=stop_at)
+            expanded_tape = tape.expand(stop_at=stop_at, depth=expand_depth)
 
         # Apply the full set of compilation transforms num_passes times
         for _ in range(num_passes):
