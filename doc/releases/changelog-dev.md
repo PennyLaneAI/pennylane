@@ -30,11 +30,23 @@
 * `qml.gradients.pulse_generator` has become `qml.gradients.pulse_odegen` to adhere to paper naming conventions.
   [(#4769)](https://github.com/PennyLaneAI/pennylane/pull/4769)
 
+* `QuantumScript.graph` is now built using `tape.measurements` instead of `tape.observables`
+  because it depended on the now-deprecated `Observable.return_type` property.
+  [(#4762)](https://github.com/PennyLaneAI/pennylane/pull/4762)
+
 <h3>Deprecations 👋</h3>
 
 * `QuantumScript.is_sampled` and `QuantumScript.all_sampled` are deprecated.
   Users should now validate these properties manually.
   [(#4773)](https://github.com/PennyLaneAI/pennylane/pull/4773)
+
+* `single_tape_transform`, `batch_transform`, `qfunc_transform`, and `op_transform` are deprecated.
+  Instead switch to using the new `qml.transform` function.
+  [(#4774)](https://github.com/PennyLaneAI/pennylane/pull/4774)
+
+* `Observable.return_type` is deprecated. Instead, you should inspect the type
+  of the surrounding measurement process.
+  [(#4762)](https://github.com/PennyLaneAI/pennylane/pull/4762)
 
 <h3>Documentation 📝</h3>
 
@@ -43,6 +55,10 @@
   [(#4750)](https://github.com/PennyLaneAI/pennylane/pull/4750)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qml.defer_measurements` now correctly transforms circuits when terminal measurements include wires
+  used in mid-circuit measurements.
+  [(#4787)](https://github.com/PennyLaneAI/pennylane/pull/4787)
 
 * Jax jit now works with shot vectors.
   [(#4772)](https://github.com/PennyLaneAI/pennylane/pull/4772/)
