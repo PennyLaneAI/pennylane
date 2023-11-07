@@ -652,7 +652,7 @@ class DefaultMixed(QubitDevice):
         the ``QNode`` hash that can be used later for parametric compilation.
 
         Args:
-            circuit (~.CircuitGraph): circuit to execute on the device
+            circuit (QuantumTape): circuit to execute on the device
 
         Raises:
             QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported

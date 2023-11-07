@@ -131,14 +131,17 @@ def _gradient_analysis(tape, use_graph=True, grad_fn=None):
             # non-trainable parameters do not require a grad_method
             info["grad_method"] = None
         else:
-            op = tape._par_info[idx]["op"]
+            par_info = tape._par_info[idx]
+            op = par_info["op"]
 
             if not qml.operation.has_grad_method(op):
                 # no differentiation method is registered for this operation
                 info["grad_method"] = None
 
             elif (tape._graph is not None) or use_graph:
-                if not any(tape.graph.has_path(op, ob) for ob in tape.observables):
+                # if `op` is an observable, we want the associated MP that's in the graph
+                op_or_mp = tape[par_info["op_idx"]]
+                if not any(tape.graph.has_path(op_or_mp, mp) for mp in tape.measurements):
                     # there is no influence of this operation on any of the observables
                     info["grad_method"] = "0"
                     continue
