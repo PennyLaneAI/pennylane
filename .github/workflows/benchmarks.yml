@@ -20,52 +20,53 @@ jobs:
         )
       }}
 
-    # If needed, this workflow will create a cached benchmark reference.
-    # This reference will be used for comparative analyses with all PRs benchmarks.
-    - name: Check for cached reference benchmark data
-        id: benchmark-cache
-        uses: actions/cache@v3
+    steps:
+      # If needed, this workflow will create a cached benchmark reference.
+      # This reference will be used for comparative analyses with all PRs benchmarks.
+      - name: Check for cached reference benchmark data
+          id: benchmark-cache
+          uses: actions/cache@v3
+          with:
+            path: ${{ github.workspace}}/benchmark_reference
+            key: ${{ inputs.benchmarks_name }}
+            lookup-only: true
+
+      - name: Run reference benchmarks
+        if: ${{ (steps.benchmark-cache.outputs.cache-hit != 'true') }}
+        uses: ./.github/workflows/interface-unit-tests.yml
         with:
-          path: ${{ github.workspace}}/benchmark_reference
-          key: ${{ inputs.benchmarks_name }}
-          lookup-only: true
+          branch: v0.33.0
 
-    - name: Run reference benchmarks
-      if: ${{ (steps.benchmark-cache.outputs.cache-hit != 'true') }}
-      uses: ./.github/workflows/interface-unit-tests.yml
-      with:
-        branch: v0.33.0
+          run_benchmarks_ci: true
 
-        run_benchmarks_ci: true
+          # Run a 'lightened' version of the CI on Pull Requests by default
+          # Unless the label `ci:run-full-test-suite` is attached to the PR.
+          # Always runs the full suite for push events.
+          run_lightened_ci: >-
+            ${{
+              github.event_name == 'pull_request'
+              && !contains(github.event.pull_request.labels.*.name, 'ci:run-full-test-suite')
+              || false
+            }}
 
-        # Run a 'lightened' version of the CI on Pull Requests by default
-        # Unless the label `ci:run-full-test-suite` is attached to the PR.
-        # Always runs the full suite for push events.
-        run_lightened_ci: >-
-          ${{
-            github.event_name == 'pull_request'
-            && !contains(github.event.pull_request.labels.*.name, 'ci:run-full-test-suite')
-            || false
-          }}
+          skip_ci_test_jobs: torch-tests, autograd-tests, tf-tests, core-tests, all-interfaces-tests, external-libraries-tests, qcut-tests, qchem-tests, gradients-tests, data-tests
 
-        skip_ci_test_jobs: torch-tests, autograd-tests, tf-tests, core-tests, all-interfaces-tests, external-libraries-tests, qcut-tests, qchem-tests, gradients-tests, data-tests
+      - name: Run PR benchmarks
+        uses: ./.github/workflows/interface-unit-tests.yml
+        with:
+          branch: ${{ github.ref }}
 
-    - name: Run PR benchmarks
-      uses: ./.github/workflows/interface-unit-tests.yml
-      with:
-        branch: ${{ github.ref }}
+          run_benchmarks_ci: true
 
-        run_benchmarks_ci: true
+          # Run a 'lightened' version of the CI on Pull Requests by default
+          # Unless the label `ci:run-full-test-suite` is attached to the PR.
+          # Always runs the full suite for push events.
+          run_lightened_ci: >-
+            ${{
+              github.event_name == 'pull_request'
+              && !contains(github.event.pull_request.labels.*.name, 'ci:run-full-test-suite')
+              || false
+            }}
 
-        # Run a 'lightened' version of the CI on Pull Requests by default
-        # Unless the label `ci:run-full-test-suite` is attached to the PR.
-        # Always runs the full suite for push events.
-        run_lightened_ci: >-
-          ${{
-            github.event_name == 'pull_request'
-            && !contains(github.event.pull_request.labels.*.name, 'ci:run-full-test-suite')
-            || false
-          }}
-
-        skip_ci_test_jobs: torch-tests, autograd-tests, tf-tests, core-tests, all-interfaces-tests, external-libraries-tests, qcut-tests, qchem-tests, gradients-tests, data-tests
+          skip_ci_test_jobs: torch-tests, autograd-tests, tf-tests, core-tests, all-interfaces-tests, external-libraries-tests, qcut-tests, qchem-tests, gradients-tests, data-tests
 
