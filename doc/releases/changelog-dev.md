@@ -30,6 +30,10 @@
 * `qml.gradients.pulse_generator` has become `qml.gradients.pulse_odegen` to adhere to paper naming conventions.
   [(#4769)](https://github.com/PennyLaneAI/pennylane/pull/4769)
 
+* Non-parametric-ops such as `Barrier`, `Snapshot` and `Wirecut` have been grouped together and moved to `pennylane/ops/meta.py`.
+  Additionally, the relevant tests have been organized and placed in a new file, `tests/ops/test_meta.py` .
+  [(#4789)](https://github.com/PennyLaneAI/pennylane/pull/4789)
+  
 <h3>Deprecations 👋</h3>
 
 * `QuantumScript.is_sampled` and `QuantumScript.all_sampled` are deprecated.
