@@ -635,7 +635,7 @@ def execute(
 
     if config.use_device_jacobian_product and interface in jpc_interfaces:
             if max_diff > 1:
-            raise NotImplementedError("no higher order derivatives with device derivatives")
+                raise NotImplementedError("no higher order derivatives with device derivatives")
         jpc = DeviceJacobianProducts(device, config)
 
     elif config.use_device_gradient:
