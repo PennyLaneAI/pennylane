@@ -1399,12 +1399,12 @@ class TestDensityMatrix:
 
 
 """JAX integration tests"""
-pytestmark = pytest.mark.jax
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 config = pytest.importorskip("jax.config")
 
 
+@pytest.mark.jax
 class TestQNodeIntegrationJax:
     def test_qutrit_circuit(self, tol):
         """Test that the device provides the correct
@@ -1448,6 +1448,7 @@ class TestQNodeIntegrationJax:
         assert jnp.allclose(state, expected, atol=tol, rtol=0)
 
 
+@pytest.mark.jax
 class TestDtypePreservedJax:
     """Test that the user-defined dtype of the device is preserved for QNode
     evaluation"""
@@ -1494,6 +1495,7 @@ class TestDtypePreservedJax:
         assert res.dtype == c_dtype
 
 
+@pytest.mark.jax
 class TestPassthruIntegrationJax:
     """Tests for integration with the PassthruQNode"""
 
@@ -1553,12 +1555,11 @@ class TestPassthruIntegrationJax:
         assert all(jnp.allclose(r, e, atol=tol, rtol=0) for r, e in zip(res, expected))
 
 
-# TENSORFLOW
-# ======================================================================================================================
-mark_tf = pytest.mark.tf
+"""TENSORFLOW integration tests"""
+
 tf = pytest.importorskip("tensorflow", minversion="2.1")
 
-
+@pytest.mark.tf
 class TestQNodeIntegrationTF:
     def test_qutrit_circuit(self, tol):
         """Test that the device provides the correct
@@ -1597,6 +1598,8 @@ class TestQNodeIntegrationTF:
         assert np.allclose(state, expected, atol=tol, rtol=0)
 
 
+
+@pytest.mark.tf
 class TestDtypePreservedTF:
     """Test that the user-defined dtype of the device is preserved for QNode
     evaluation"""
@@ -1641,6 +1644,8 @@ class TestDtypePreservedTF:
         assert res.dtype == c_dtype
 
 
+
+@pytest.mark.tf
 class TestPassthruIntegrationTF:
     """Tests for integration with the PassthruQNode"""
 
@@ -1722,12 +1727,12 @@ class TestPassthruIntegrationTF:
         assert np.allclose(qml.math.diag(jac[1].numpy()), expected_jac[1], atol=tol, rtol=0)
 
 
-# TORCH
-# ======================================================================================================================
-mark_torch = pytest.mark.torch
+"""TORCH integration tests"""
+
 torch = pytest.importorskip("torch")
 
 
+@pytest.mark.torch
 class TestQNodeIntegrationTorch:
     def test_qutrit_circuit(self, tol):
         """Test that the device provides the correct
@@ -1766,6 +1771,7 @@ class TestQNodeIntegrationTorch:
         assert np.allclose(state, expected, atol=tol, rtol=0)
 
 
+@pytest.mark.torch
 class TestDtypePreservedTorch:
     """Test that the user-defined dtype of the device is preserved for QNode
     evaluation"""
@@ -1827,6 +1833,7 @@ class TestDtypePreservedTorch:
         assert res.dtype == c_dtype_torch
 
 
+@pytest.mark.torch
 class TestPassthruIntegrationTorch:
     """Tests for integration with the PassthruQNode"""
 
