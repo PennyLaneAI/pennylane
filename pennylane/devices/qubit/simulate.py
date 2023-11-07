@@ -118,7 +118,7 @@ def _postselection_postprocess(state, is_state_batched, shots):
         # Clip the number of shots using a binomial distribution using the probability of
         # measuring the postselected state.
         postselected_shots = (
-            [np.random.binomial(s, float(norm)) for s in shots]
+            [np.random.binomial(s, float(norm**2)) for s in shots]
             if not qml.math.is_abstract(norm)
             else shots
         )
@@ -153,7 +153,7 @@ def get_final_state(circuit, debugger=None, interface=None):
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         prep = circuit[0]
 
-    state = create_initial_state(circuit.op_wires, prep, like=INTERFACE_TO_LIKE[interface])
+    state = create_initial_state(sorted(circuit.op_wires), prep, like=INTERFACE_TO_LIKE[interface])
 
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)

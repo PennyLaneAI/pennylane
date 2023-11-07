@@ -883,7 +883,8 @@ class TestObservableConstruction:
             num_wires = 1
             grad_method = None
 
-        assert DummyObserv(0, wires=[1]).return_type is None
+        with pytest.warns(UserWarning, match="`Observable.return_type` is deprecated. Instead"):
+            assert DummyObserv(0, wires=[1]).return_type is None
 
     def test_construction_with_wires_pos_arg(self):
         """Test that the wires can be given as a positional argument"""

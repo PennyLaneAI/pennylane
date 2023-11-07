@@ -126,7 +126,11 @@ class TrotterProduct(Operation):
     .. details::
         :title: Usage Details
 
-        One can recover the behaviour of :class:`~.ApproxTimeEvolution` by setting :code:`order=1`.
+        This operation is similar to the :class:`~.ApproxTimeEvolution`. One can recover the behaviour
+        of :class:`~.ApproxTimeEvolution` by taking the adjoint:
+
+        >>> qml.adjoint(qml.TrotterProduct(hamiltonian, time, order=1, n=n))
+
         We can also compute the gradient with respect to the coefficients of the Hamiltonian and the
         evolution time:
 

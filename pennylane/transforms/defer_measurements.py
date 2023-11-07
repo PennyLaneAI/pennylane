@@ -18,7 +18,7 @@ from pennylane.measurements import MidMeasureMP, ProbabilityMP, SampleMP, Counts
 from pennylane.ops.op_math import ctrl
 
 from pennylane.tape import QuantumTape
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 
 from pennylane.wires import Wires
 from pennylane.queuing import QueuingManager
@@ -66,7 +66,7 @@ def _collect_mid_measure_info(tape: QuantumTape):
     any_repeated_measurements = False
     is_postselecting = False
 
-    for op in tape.operations:
+    for op in tape:
         if isinstance(op, MidMeasureMP):
             if op.postselect is not None:
                 is_postselecting = True
@@ -140,14 +140,10 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
         or an observable are explicitly specified.
 
     Args:
-        tape (.QuantumTape): a quantum tape
+        tape (QNode or QuantumTape or Callable): a quantum circuit.
 
     Returns:
-        pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
-        it returns a QNode with the transform added to its transform program.
-        If a tape is passed, returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
 
