@@ -10,67 +10,59 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  benchmarks:
-    runs-on: ubuntu-latest
-    if: >-
-      ${{
-        github.event_name == 'push' ||
-        (
-          github.event_name == 'pull_request' &&
-          contains(github.event.pull_request.labels.*.name, 'ci:run-benchmarks')
-        )
-      }}
+    # If needed, this workflow will create a cached benchmark reference.
+    # This reference will be used for comparative analyses with all PRs benchmarks.
+    reference_benchmarks:
+      if: >-
+        ${{
+          github.event_name == 'push' ||
+          (
+            github.event_name == 'pull_request' &&
+            contains(github.event.pull_request.labels.*.name, 'ci:run-benchmarks')
+          )
+        }}
+      uses: ./.github/workflows/interface-unit-tests.yml
+      with:
+        branch: v0.33.0
 
-    steps:
-      # If needed, this workflow will create a cached benchmark reference.
-      # This reference will be used for comparative analyses with all PRs benchmarks.
-      - name: Check for cached reference benchmark data
-        id: benchmark-cache
-        uses: actions/cache@v3
-        with:
-          path: ${{ github.workspace}}/benchmark_reference
-          key: ${{ inputs.benchmarks_name }}
-          lookup-only: true
+        run_benchmarks_ci: true
 
-      - name: Checkout PennyLane
-        uses: actions/checkout@v3
+        # Run a 'lightened' version of the CI on Pull Requests by default
+        # Unless the label `ci:run-full-test-suite` is attached to the PR.
+        # Always runs the full suite for push events.
+        run_lightened_ci: >-
+          ${{
+            github.event_name == 'pull_request'
+            && !contains(github.event.pull_request.labels.*.name, 'ci:run-full-test-suite')
+            || false
+          }}
 
-      - name: Run reference benchmarks
-        if: ${{ (steps.benchmark-cache.outputs.cache-hit != 'true') }}
-        uses: ./.github/workflows/interface-unit-tests.yml
-        with:
-          branch: v0.33.0
+        skip_ci_test_jobs: torch-tests, autograd-tests, tf-tests, core-tests, all-interfaces-tests, external-libraries-tests, qcut-tests, qchem-tests, gradients-tests, data-tests
 
-          run_benchmarks_ci: true
+    benchmarks:
+      if: >-
+        ${{
+          github.event_name == 'push' ||
+          (
+            github.event_name == 'pull_request' &&
+            contains(github.event.pull_request.labels.*.name, 'ci:run-benchmarks')
+          )
+        }}
+      uses: ./.github/workflows/interface-unit-tests.yml
+      with:
+        branch: ${{ github.ref }}
 
-          # Run a 'lightened' version of the CI on Pull Requests by default
-          # Unless the label `ci:run-full-test-suite` is attached to the PR.
-          # Always runs the full suite for push events.
-          run_lightened_ci: >-
-            ${{
-              github.event_name == 'pull_request'
-              && !contains(github.event.pull_request.labels.*.name, 'ci:run-full-test-suite')
-              || false
-            }}
+        run_benchmarks_ci: true
 
-          skip_ci_test_jobs: torch-tests, autograd-tests, tf-tests, core-tests, all-interfaces-tests, external-libraries-tests, qcut-tests, qchem-tests, gradients-tests, data-tests
+        # Run a 'lightened' version of the CI on Pull Requests by default
+        # Unless the label `ci:run-full-test-suite` is attached to the PR.
+        # Always runs the full suite for push events.
+        run_lightened_ci: >-
+          ${{
+            github.event_name == 'pull_request'
+            && !contains(github.event.pull_request.labels.*.name, 'ci:run-full-test-suite')
+            || false
+          }}
 
-      - name: Run PR benchmarks
-        uses: ./.github/workflows/interface-unit-tests.yml
-        with:
-          branch: ${{ github.ref }}
-
-          run_benchmarks_ci: true
-
-          # Run a 'lightened' version of the CI on Pull Requests by default
-          # Unless the label `ci:run-full-test-suite` is attached to the PR.
-          # Always runs the full suite for push events.
-          run_lightened_ci: >-
-            ${{
-              github.event_name == 'pull_request'
-              && !contains(github.event.pull_request.labels.*.name, 'ci:run-full-test-suite')
-              || false
-            }}
-
-          skip_ci_test_jobs: torch-tests, autograd-tests, tf-tests, core-tests, all-interfaces-tests, external-libraries-tests, qcut-tests, qchem-tests, gradients-tests, data-tests
+        skip_ci_test_jobs: torch-tests, autograd-tests, tf-tests, core-tests, all-interfaces-tests, external-libraries-tests, qcut-tests, qchem-tests, gradients-tests, data-tests
 
