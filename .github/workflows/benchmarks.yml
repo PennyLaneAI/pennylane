@@ -23,7 +23,7 @@ jobs:
         }}
       uses: ./.github/workflows/interface-unit-tests.yml
       with:
-        branch: v0.33.0
+        branch: add-pytest-benchmarks-CI
 
         run_benchmarks_ci: true
 
