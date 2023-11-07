@@ -57,9 +57,10 @@ class ExecutionConfig:
     use_device_jacobian_product: Optional[bool] = None
     """Whether or not to use the device provided vjp or jvp to compute gradients.
 
-    ``None`` indicates to use the device if possible, but to fall back to device jacobian or pennylane behavior if it isn't.
+    ``None`` indicates to use the device if possible, but to fall back to the device Jacobian
+    or PennyLane behaviour if it isn't.
 
-    True indicates a request to either use the device jacobian products fail.
+    ``True`` indicates to either use the device Jacobian products or fail.
     """
 
     gradient_method: Optional[str] = None
