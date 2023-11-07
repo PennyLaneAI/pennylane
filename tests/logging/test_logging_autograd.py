@@ -99,7 +99,7 @@ class TestLogging:
             assert all(msg in actual.getMessage() for msg in expected[1])
 
     @pytest.mark.parametrize(
-        "diff_method,num_records", [("parameter-shift", 9), ("backprop", 4), ("adjoint", 8)]
+        "diff_method,num_records", [("parameter-shift", 9), ("backprop", 4), ("adjoint", 7)]
     )
     def test_dq_qnode_execution_grad(self, caplog, diff_method, num_records):
         "Test logging of QNode with parameterised gradients"

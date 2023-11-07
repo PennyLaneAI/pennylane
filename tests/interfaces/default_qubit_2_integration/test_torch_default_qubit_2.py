@@ -15,7 +15,7 @@
 import numpy as np
 import pytest
 
-from param_shift_device import ParamShiftDerivativesDevice
+from param_shift_dev import ParamShiftDerivativesDevice
 
 import pennylane as qml
 from pennylane.devices import DefaultQubit
@@ -206,7 +206,7 @@ class TestTorchExecuteIntegration:
             for shot in range(2):
                 for wire in range(2):
                     assert qml.math.allclose(res[shot][wire], exp, atol=atol_for_shots(shots))
-        else:  
+        else:
             for wire in range(2):
                 assert qml.math.allclose(res[wire], exp, atol=atol_for_shots(shots))
 
@@ -853,7 +853,8 @@ class TestHamiltonianWorkflows:
         res = torch.hstack(torch.autograd.functional.jacobian(cost_fn, (weights, coeffs1, coeffs2)))
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)
         if shots.has_partitioned_shots:
-            # ?
-            pass
+            pytest.xfail(
+                "multiple hamiltonians with shot vectors does not seem to be differentiable."
+            )
         else:
             assert torch.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
