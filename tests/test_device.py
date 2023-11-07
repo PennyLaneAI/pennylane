@@ -954,7 +954,7 @@ class TestDeviceInit:
         with monkeypatch.context() as m:
             # remove all entry points
             retval = {"pennylane.plugins": []} if version_info[:2] == (3, 9) else []
-            m.setattr(metadata, "entry_points", lambda *args: retval)
+            m.setattr(metadata, "entry_points", lambda **kwargs: retval)
 
             # reimporting PennyLane within the context sets qml.plugin_devices to {}
             reload(qml)
@@ -978,7 +978,7 @@ class TestDeviceInit:
         with monkeypatch.context() as m:
             # remove all entry points
             retval = {"pennylane.plugins": []} if version_info[:2] == (3, 9) else []
-            m.setattr(metadata, "entry_points", lambda *args: retval)
+            m.setattr(metadata, "entry_points", lambda **kwargs: retval)
 
             # reimporting PennyLane within the context sets qml.plugin_devices to {}
             reload(qml)
