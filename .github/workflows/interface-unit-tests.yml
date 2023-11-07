@@ -164,7 +164,7 @@ jobs:
       job_name: torch-tests (${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-torch-${{ matrix.python-version }}
-      benchmarks_artifact_name: core-interfaces-benchmarks-torch-${{ matrix.python-version }}
+      benchmarks_name: core-interfaces-benchmarks-torch-${{ matrix.python-version }}
       python_version: ${{ matrix.python-version }}
       install_jax: false
       install_tensorflow: false
@@ -197,7 +197,7 @@ jobs:
       job_name: autograd-tests (${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-autograd-${{ matrix.python-version }}
-      benchmarks_artifact_name: core-interfaces-benchmarks-autograd-${{ matrix.python-version }}
+      benchmarks_name: core-interfaces-benchmarks-autograd-${{ matrix.python-version }}
       python_version: ${{ matrix.python-version }}
       install_jax: false
       install_tensorflow: false
@@ -230,7 +230,7 @@ jobs:
       job_name: tf-tests (${{ matrix.group }}, ${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-tf-${{ matrix.python-version }}-${{ matrix.group }}
-      benchmarks_artifact_name: core-interfaces-benchmarks-tf-${{ matrix.python-version }}-${{ matrix.group }}
+      benchmarks_name: core-interfaces-benchmarks-tf-${{ matrix.python-version }}-${{ matrix.group }}
       python_version: ${{ matrix.python-version }}
       install_jax: false
       install_tensorflow: true
@@ -266,7 +266,7 @@ jobs:
       job_name: jax-tests (${{ matrix.group }}, ${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-jax-${{ matrix.python-version }}-${{ matrix.group }}
-      benchmarks_artifact_name: core-interfaces-benchmarks-jax-${{ matrix.python-version }}-${{ matrix.group }}
+      benchmarks_name: core-interfaces-benchmarks-jax-${{ matrix.python-version }}-${{ matrix.group }}
       python_version: ${{ matrix.python-version }}
       install_jax: true
       jax_version: ${{ inputs.jax_version }}
@@ -304,7 +304,7 @@ jobs:
       job_name: core-tests (${{ matrix.group }}, ${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-core-${{ matrix.python-version }}-${{ matrix.group }}
-      benchmarks_artifact_name: core-interfaces-benchmarks-core-${{ matrix.python-version }}-${{ matrix.group }}
+      benchmarks_name: core-interfaces-benchmarks-core-${{ matrix.python-version }}-${{ matrix.group }}
       python_version: ${{ matrix.python-version }}
       install_jax: false
       install_tensorflow: false
@@ -338,7 +338,7 @@ jobs:
       job_name: all-interfaces-tests (${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: all-interfaces-coverage
-      benchmarks_artifact_name: all-interfaces-benchmarks
+      benchmarks_name: all-interfaces-benchmarks
       python_version: ${{ matrix.python-version }}
       install_jax: true
       jax_version: ${{ inputs.jax_version }}
@@ -373,7 +373,7 @@ jobs:
       job_name: external-libraries-tests (${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: external-libraries-tests-coverage
-      benchmarks_artifact_name: external-libraries-tests-benchmarks
+      benchmarks_name: external-libraries-tests-benchmarks
       python_version: ${{ matrix.python-version }}
       install_jax: true
       jax_version: ${{ inputs.jax_version }}
@@ -408,7 +408,7 @@ jobs:
       job_name: qcut-tests (${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: qcut-coverage
-      benchmarks_artifact_name: qcut-benchmarks
+      benchmarks_name: qcut-benchmarks
       python_version: ${{ matrix.python-version }}
       install_jax: true
       jax_version: ${{ inputs.jax_version }}
@@ -444,7 +444,7 @@ jobs:
       job_name: qchem-tests (${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: qchem-coverage
-      benchmarks_artifact_name: qchem-benchmarks
+      benchmarks_name: qchem-benchmarks
       python_version: ${{ matrix.python-version }}
       install_jax: false
       install_tensorflow: false
@@ -479,7 +479,7 @@ jobs:
       job_name: gradients-tests (${{ matrix.config.suite }}, ${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: gradients-${{ matrix.config.suite }}-coverage
-      benchmarks_artifact_name: gradients-${{ matrix.config.suite }}-benchmarks
+      benchmarks_name: gradients-${{ matrix.config.suite }}-benchmarks
       python_version: ${{ matrix.python-version }}
       install_jax: true
       jax_version: ${{ inputs.jax_version }}
@@ -514,7 +514,7 @@ jobs:
       job_name: data-tests (${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: data-coverage
-      benchmarks_artifact_name: data-benchmarks
+      benchmarks_name: data-benchmarks
       python_version: ${{ matrix.python-version }}
       install_jax: false
       install_tensorflow: false
@@ -558,7 +558,7 @@ jobs:
       job_name: device-tests (${{ matrix.config.device }}, ${{ matrix.config.shots }}, ${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: devices-coverage-${{ matrix.config.device }}-${{ matrix.config.shots }}
-      benchmarks_artifact_name: devices-benchmarks-${{ matrix.config.device }}-${{ matrix.config.shots }}
+      benchmarks_name: devices-benchmarks-${{ matrix.config.device }}-${{ matrix.config.shots }}
       python_version: ${{ matrix.python-version }}
       install_jax: ${{ contains(matrix.config.device, 'jax') }}
       jax_version: ${{ inputs.jax_version }}
