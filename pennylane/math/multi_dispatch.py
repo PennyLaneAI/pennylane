@@ -454,6 +454,13 @@ def ones_like(tensor, dtype=None):
     return np.ones_like(tensor)
 
 
+def zeros_like(tensor, dtype=None):
+    if dtype is not None:
+        return cast(np.zeros_like(tensor), dtype)
+
+    return np.zeros_like(tensor)
+
+
 @multi_dispatch(argnum=[0], tensor_list=[0])
 def stack(values, axis=0, like=None):
     """Stack a sequence of tensors along the specified axis.

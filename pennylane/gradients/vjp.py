@@ -47,7 +47,7 @@ def _all_close_to_zero(dy):
         return qml.math.allclose(dy, 0)
 
     # call this method recursively
-    return qml.math.all(qml.math.stack([_all_close_to_zero(dy_) for dy_ in dy]))
+    return all(_all_close_to_zero(dy_) for dy_ in dy)
 
 
 def compute_vjp_single(dy, jac, num=None):
@@ -75,7 +75,7 @@ def compute_vjp_single(dy, jac, num=None):
         >>> compute_vjp_single(dy, jac)
         np.array([0.2])
 
-    2. For a single parameter and a single measurment with shape (e.g. probs):
+    2. For a single parameter and a single measurement with shape (e.g. probs):
 
     .. code-block:: pycon
 
@@ -106,6 +106,17 @@ def compute_vjp_single(dy, jac, num=None):
     """
     if jac is None:
         return None
+    # print(f"compute_vjp_single:={jac}, {dy}")
+    # from IPython import embed; embed()
+    # try:
+    #    if _all_close_to_zero(dy):
+    # If the dy vector is zero, then the
+    # corresponding element of the VJP will be zero.
+    # print("I AM ZERO")
+    #        res = qml.math.zeros_like(dy)
+    #        return res
+    # except (AttributeError, TypeError):
+    #    pass
 
     dy_row = qml.math.reshape(dy, [-1])
 
@@ -203,14 +214,18 @@ def compute_vjp_multi(dy, jac, num=None):
         res = qml.math.sum(qml.math.stack(res), axis=0)
     # Multiple parameters
     else:
-        res = []
-        for d, j_ in zip(dy, jac):
-            sub_res = []
-            for j in j_:
-                sub_res.append(qml.math.squeeze(compute_vjp_single(d, j, num=num)))
-            res.append(sub_res)
-        res = qml.math.stack([qml.math.stack(r) for r in res])
-        res = qml.math.sum(res, axis=0)
+        # return qml.math.einsum("j,ji", dy, jac) # better for small
+        try:
+            return qml.math.tensordot(dy, jac, [[0], [0]])  # better for large
+        except:
+            res = []
+            for d, j_ in zip(dy, jac):
+                sub_res = []
+                for j in j_:
+                    sub_res.append(qml.math.squeeze(compute_vjp_single(d, j, num=num)))
+                res.append(sub_res)
+            res = qml.math.stack([qml.math.stack(r) for r in res])
+            res = qml.math.sum(res, axis=0)
     return res
 
 
