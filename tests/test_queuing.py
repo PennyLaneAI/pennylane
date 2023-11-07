@@ -464,6 +464,13 @@ class TestWrappedObj:
         wo2 = WrappedObj(obj2)
         assert wo1 != wo2
 
+    def test_wrapped_obj_eq_false_other_obj(self):
+        """Test that WrappedObj.__eq__ returns False when the object being compared is not
+        a WrappedObj."""
+        op = qml.PauliX(0)
+        wo = WrappedObj(op)
+        assert wo != op
+
     def test_wrapped_obj_eq_true(self):
         """Test that ``WrappedObj.__eq__`` returns True when expected."""
         op = qml.PauliX(0)

@@ -25,6 +25,17 @@ from pennylane import numpy as np
 class TestBatchTransform:
     """Unit tests for the batch_transform class"""
 
+    def test_batch_transform_is_deprecated(self):
+        """Test that the batch_transform class is deprecated."""
+
+        def func(op):
+            return op
+
+        with pytest.warns(
+            UserWarning, match="Use of `batch_transform` to create a custom transform is deprecated"
+        ):
+            _ = qml.batch_transform(func)
+
     @staticmethod
     @qml.batch_transform
     def my_transform(tape, a, b):

@@ -23,7 +23,7 @@ import scipy
 
 import pennylane as qml
 from pennylane.transforms.op_transforms import OperationTransformError
-from pennylane.transforms.core import transform
+from pennylane import transform
 from pennylane.typing import TensorLike
 
 
@@ -41,7 +41,7 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
         `documentation <https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigsh.html#scipy.sparse.linalg.eigsh>`_.
 
     Args:
-        op (.Operator or .QuantumTape): A quantum operator or tape.
+        op (Operator or QNode or QuantumTape or Callable): A quantum operator or quantum circuit.
         k (int): The number of eigenvalues to be returned for a :class:`~.SparseHamiltonian`.
         which (str): Method for computing the eigenvalues of a :class:`~.SparseHamiltonian`. The
             possible methods are ``'LM'`` (largest in magnitude), ``'SM'`` (smallest in magnitude),
@@ -49,10 +49,11 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
             from each end of the spectrum).
 
     Returns:
-        TensorLike or (Sequence[.QuantumTape], Callable): If an operator is provided as input, the eigenvalues
-        are returned directly. If a quantum tape is provided as input, a list of transformed tapes and a post-processing
-        function are returned. When called, this function will return the unitary matrix in the appropriate autodiff
-        framework (Autograd, TensorFlow, PyTorch, JAX) given its parameters.
+        TensorLike or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+
+        If an operator is provided as input, the eigenvalues are returned directly in the form of a tensor.
+        Otherwise, the transformed circuit is returned as described in :func:`qml.transform <pennylane.transform>`.
+        Executing this circuit will provide the eigenvalues as a tensor.
 
     **Example**
 
