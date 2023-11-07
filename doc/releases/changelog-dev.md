@@ -34,6 +34,10 @@
   because it depended on the now-deprecated `Observable.return_type` property.
   [(#4762)](https://github.com/PennyLaneAI/pennylane/pull/4762)
 
+* Non-parametric-ops such as `Barrier`, `Snapshot` and `Wirecut` have been grouped together and moved to `pennylane/ops/meta.py`.
+  Additionally, the relevant tests have been organized and placed in a new file, `tests/ops/test_meta.py` .
+  [(#4789)](https://github.com/PennyLaneAI/pennylane/pull/4789)
+
 <h3>Deprecations 👋</h3>
 
 * `QuantumScript.is_sampled` and `QuantumScript.all_sampled` are deprecated.
