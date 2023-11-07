@@ -106,17 +106,6 @@ def compute_vjp_single(dy, jac, num=None):
     """
     if jac is None:
         return None
-    # print(f"compute_vjp_single:={jac}, {dy}")
-    # from IPython import embed; embed()
-    # try:
-    #    if _all_close_to_zero(dy):
-    # If the dy vector is zero, then the
-    # corresponding element of the VJP will be zero.
-    # print("I AM ZERO")
-    #        res = qml.math.zeros_like(dy)
-    #        return res
-    # except (AttributeError, TypeError):
-    #    pass
 
     dy_row = qml.math.reshape(dy, [-1])
 
@@ -215,10 +204,14 @@ def compute_vjp_multi(dy, jac, num=None):
     # Multiple parameters
     else:
         try:
-            return qml.math.cast_like(
-                qml.math.tensordot(dy, jac, [reversed(range(len(dy[0]))), range(len(jac[0]))]), dy
-            )
-        except:
+            # dy  -> (i,j)      observables, entries per observable
+            # jac -> (i,k,j)    observables, parameters, entries per observable
+            # Contractions over observables and entries per observable
+            dy_shape = qml.math.shape(dy)
+            if len(dy_shape) > 1:  # multiple values exist per observable output
+                return qml.math.einsum("ij,i...j", dy, jac)
+            return qml.math.einsum("i,i...", dy, jac)  # Scalar value per observable output
+        except Exception as e:
             res = []
             for d, j_ in zip(dy, jac):
                 sub_res = []
