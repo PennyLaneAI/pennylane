@@ -11,6 +11,7 @@ concurrency:
 
 jobs:
   benchmarks:
+    runs-on: ubuntu-latest
     if: >-
       ${{
         github.event_name == 'push' ||
