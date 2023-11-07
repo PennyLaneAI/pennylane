@@ -39,7 +39,7 @@ def iterative_qpe(base, estimation_wire, iters):
 
     .. code-block:: python
 
-          dev = qml.device("default.qubit", shots = 1)
+          dev = qml.device("default.qubit", shots = 5)
 
           @qml.qnode(dev)
           def circuit():
@@ -53,7 +53,7 @@ def iterative_qpe(base, estimation_wire, iters):
               return [qml.sample(op = meas) for meas in measurements]
 
     >>> print(circuit())
-    [array(0), array(0), array(1)]
+    [array([0, 0, 0, 0, 0]), array([1, 0, 0, 0, 0]), array([0, 1, 1, 1, 1])]
     """
 
     measurements = []

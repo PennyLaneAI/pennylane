@@ -18,7 +18,6 @@ import pytest
 
 import pennylane as qml
 import numpy as np
-import jax
 
 
 class TestResult:
@@ -28,6 +27,7 @@ class TestResult:
     def test_compare_qpe(self, phi):
         """Test to check that the results obtained are equivalent to those of QuantumPhaseEstimation"""
 
+        # TODO: When we have general statistics on measurements we can calculate it exactly with qml.probs
         dev = qml.device("default.qubit", shots=10000000)
 
         @qml.qnode(dev)
@@ -56,13 +56,17 @@ class TestResult:
 
         assert np.allclose(np.round(output, 2), np.round(circuit_qpe(), 2))
 
+    @pytest.mark.jax
     def test_check_gradients(self):
         """Test to check that the gradients are correct comparing with the expanded circuit"""
+
+        import jax
+
         dev = qml.device("default.qubit")
 
         @qml.qnode(dev)
         def circuit(theta):
-            m = qml.iterative_qpe(qml.RZ(theta, wires=[0]), [1], iters=2)
+            _ = qml.iterative_qpe(qml.RZ(theta, wires=[0]), [1], iters=2)
             return qml.expval(qml.PauliZ(0))
 
         @qml.qnode(dev)
