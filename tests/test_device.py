@@ -678,7 +678,6 @@ class TestOperations:
             qml.var(qml.PauliZ(1)),
             qml.sample(qml.PauliZ(2)),
         ]
-        observables = [o.obs for o in observables]
 
         queue_at_pre_measure = []
 
@@ -707,8 +706,6 @@ class TestOperations:
             qml.var(qml.PauliZ(1)),
             qml.sample(qml.PauliZ(2)),
         ]
-
-        observables = [o.obs for o in observables]
 
         call_history = []
         with monkeypatch.context() as m:
@@ -739,8 +736,6 @@ class TestOperations:
             qml.sample(qml.PauliZ(2)),
         ]
 
-        observables = [o.obs for o in observables]
-
         with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
             dev.execute(queue, observables)
 
@@ -748,8 +743,7 @@ class TestOperations:
         """Tests that the execute function raises an error if probabilities are
         not supported by the device"""
         dev = mock_device_with_observables()
-        obs = qml.PauliZ(0)
-        obs.return_type = qml.measurements.ObservableReturnTypes.Probability
+        obs = qml.probs(op=qml.PauliZ(0))
         with pytest.raises(NotImplementedError):
             dev.execute([], [obs])
 
@@ -808,7 +802,6 @@ class TestObservables:
             qml.var(qml.PauliZ(1)),
             qml.sample(qml.PauliZ(2)),
         ]
-        observables = [o.obs for o in observables]
 
         queue_at_pre_measure = []
 
@@ -826,10 +819,7 @@ class TestObservables:
         """Tests that the operations are properly applied and queued"""
         dev = mock_device_with_paulis_and_methods(wires=3)
 
-        observables = []
-        for m in [qml.expval(qml.PauliX(0)), qml.var(qml.PauliY(1)), qml.sample(qml.PauliZ(2))]:
-            m.obs.return_type = m.return_type
-            observables.append(m.obs)
+        observables = [qml.expval(qml.PauliX(0)), qml.var(qml.PauliY(1)), qml.sample(qml.PauliZ(2))]
 
         # capture the arguments passed to dev methods
         expval_args = []
@@ -860,7 +850,6 @@ class TestObservables:
             qml.var(qml.PauliZ(1)),
             qml.sample(qml.PauliZ(2)),
         ]
-        observables = [o.obs for o in observables]
 
         with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
             dev.execute(queue, observables)
@@ -874,9 +863,7 @@ class TestObservables:
         queue = [qml.PauliX(wires=0)]
 
         # Make a observable without specifying a return operation upon measuring
-        obs = qml.PauliZ(0)
-        obs.return_type = "SomeUnsupportedReturnType"
-        observables = [obs]
+        observables = [qml.counts(op=qml.PauliZ(0))]
 
         with pytest.raises(
             qml.QuantumFunctionError, match="Unsupported return type specified for observable"
@@ -919,7 +906,6 @@ class TestParameters:
             qml.var(qml.PauliZ(1)),
             qml.sample(qml.PauliZ(2)),
         ]
-        observables = [o.obs for o in observables]
 
         p_mapping = {}
 
@@ -1065,10 +1051,10 @@ class TestBatchExecution:
 
         assert len(res) == 2
         assert np.allclose(
-            res[0], dev.execute(self.tape1.operations, self.tape1.observables), rtol=tol, atol=0
+            res[0], dev.execute(self.tape1.operations, self.tape1.measurements), rtol=tol, atol=0
         )
         assert np.allclose(
-            res[1], dev.execute(self.tape2.operations, self.tape2.observables), rtol=tol, atol=0
+            res[1], dev.execute(self.tape2.operations, self.tape2.measurements), rtol=tol, atol=0
         )
 
     def test_result_empty_tape(self, mock_device_with_paulis_and_methods, tol):
@@ -1082,7 +1068,7 @@ class TestBatchExecution:
 
         assert len(res) == 3
         assert np.allclose(
-            res[0], dev.execute(empty_tape.operations, empty_tape.observables), rtol=tol, atol=0
+            res[0], dev.execute(empty_tape.operations, empty_tape.measurements), rtol=tol, atol=0
         )
 
 
