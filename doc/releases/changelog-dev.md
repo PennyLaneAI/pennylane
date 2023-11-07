@@ -62,6 +62,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Gabriel Bottrill,
 Amintor Dusko,
 Lillian Frederiksen,
 Ankit Khandelwal,
