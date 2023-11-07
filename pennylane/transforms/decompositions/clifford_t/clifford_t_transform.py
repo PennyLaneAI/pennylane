@@ -425,7 +425,7 @@ def clifford_t_decomposition(
         # Build the approximation set for Solovay-Kitaev decomposition
         if method == "sk":
             _depth = kwargs.get("depth", 3)
-            _basis_set = kwargs.get("basis_set", ("T", "Tdg", "H"))
+            _basis_set = kwargs.get("basis_set", ("T", "T*", "H"))
             _basis_depth = kwargs.get("basis_depth", 10)
 
             # Get the decompose function for sk

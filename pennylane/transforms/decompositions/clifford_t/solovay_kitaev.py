@@ -33,9 +33,9 @@ _CLIFFORD_T_BASIS = {
     "Z": qml.PauliZ(0),
     "H": qml.Hadamard(0),
     "T": qml.T(0),
-    "TDG": qml.adjoint(qml.T(0)),
+    "T*": qml.adjoint(qml.T(0)),
     "S": qml.S(0),
-    "SDG": qml.adjoint(qml.S(0)),
+    "S*": qml.adjoint(qml.S(0)),
 }
 
 
@@ -102,9 +102,9 @@ def _approximate_set(basis_gates, max_length=10):
 
     Args:
         basis_set (list(str)): Basis set to be used for Solovay-Kitaev decomposition build using
-            following terms, ``['X', 'Y', 'Z', 'H', 'T', 'Tdg', 'S', 'Sdg']``, where `dg` refers
-            to the gate adjoint. Default is ``["T", "Tdg", "H"]``
-        basis_depth (int): Maximum expansion length of Clifford+T sequences in the approximation set. Default is `10`
+            following terms, ``['X', 'Y', 'Z', 'H', 'T', 'T*', 'S', 'S*']``, where `*` refers
+            to the gate adjoint. Default is ``["T", "T*", "H"]``
+        basis_length (int): Maximum expansion length of Clifford+T sequences in the approximation set. Default is `10`
 
     Returns:
         Tuple(list[list[~pennylane.operation.Operation]], list[TensorLike], list[TensorLike]): A tuple containing the list of
@@ -163,7 +163,7 @@ def _approximate_set(basis_gates, max_length=10):
     return approx_set_ids, approx_set_mat, approx_set_qat
 
 
-def _group_commutator_decompose(matrix):
+def _group_commutator_decompose(matrix, tol=1e-5):
     r"""Performs a group commutator decomposition :math:`U = V' \times W' \times V'^{\dagger}. \times W'^{\dagger}`
     as given in the Section 4.1 of `arXiv:0505030 <https://arxiv.org/abs/quant-ph/0505030>`_."""
     # Use the quaternion form to get the rotation axis and angle on the Bloch sphere.
@@ -171,7 +171,7 @@ def _group_commutator_decompose(matrix):
     theta, axis = 2 * qml.math.arccos(quaternion[0]), quaternion[1:]
 
     # Early return for the case where matrix is I or -I, where I is Identity
-    if qml.math.allclose(axis, [0, 0, 0]) and qml.math.isclose(theta % math.pi, 0.0, atol=1e-5):
+    if qml.math.allclose(axis, 0.0, atol=tol) and qml.math.isclose(theta % math.pi, 0.0, atol=tol):
         return qml.math.eye(2, dtype=complex), qml.math.eye(2, dtype=complex)
 
     # The angle phi comes from the Eq. 10 in the Solovay-Kitaev algorithm paper (arXiv:0505030)
@@ -194,7 +194,7 @@ def _group_commutator_decompose(matrix):
     return w_hat, v_hat
 
 
-def sk_decomposition(op, depth, basis_set=(), basis_depth=10):
+def sk_decomposition(op, depth, basis_set=(), basis_length=10):
     r"""Approximate an arbitrary single-qubit gate in the Clifford+T basis using the `Solovay-Kitaev algorithm <https://arxiv.org/abs/quant-ph/0505030>`_.
 
     This method implements a recursive Solovay-Kitaev decomposition that approximates any :math:`U \in \text{SU}(2)`
@@ -206,9 +206,9 @@ def sk_decomposition(op, depth, basis_set=(), basis_depth=10):
         op (~pennylane.operation.Operation): A single-qubit gate operation
         depth (int): Depth until which the recursion occurs
         basis_set (list(str)): Basis set to be used for the decomposition and building an approximate set internally.
-            It accepts the following gate terms: ``['X', 'Y', 'Z', 'H', 'T', 'Tdg', 'S', 'Sdg']``, where `dg` refers
-            to the gate adjoint. Default value is ``['T', 'Tdg', 'H']``
-        basis_depth (int): Maximum expansion length of Clifford+T sequences in the internally built approximate set.
+            It accepts the following gate terms: ``['X', 'Y', 'Z', 'H', 'T', 'T*', 'S', 'S*']``, where `*` refers
+            to the gate adjoint. Default value is ``['T', 'T*', 'H']``
+        basis_length (int): Maximum expansion length of Clifford+T sequences in the internally built approximate set.
             Default is `10`
 
     Returns:
@@ -228,7 +228,7 @@ def sk_decomposition(op, depth, basis_set=(), basis_depth=10):
 
         op  = qml.RZ(np.pi/3, wires=0)
 
-        # Get the gate decomposition in ['T', 'Tdg', 'H']
+        # Get the gate decomposition in ['T', 'T*', 'H']
         ops = qml.transforms.decompositions.sk_decomposition(op, depth=5)
 
         # Get SU2 matrix from the ops
@@ -250,16 +250,17 @@ def sk_decomposition(op, depth, basis_set=(), basis_depth=10):
             )
 
         # Build the approximate set with caching
-        basis_gates = (gate for gate in basis_set) if basis_set else ("T", "Tdg", "H")
+        basis_gates = (gate for gate in basis_set) if basis_set else ("T", "T*", "H")
         approx_set_ids, approx_set_mat, approx_set_qat = _approximate_set(
-            basis_gates, max_length=basis_depth
+            basis_gates, max_length=basis_length
         )
 
         # Build the k-d tree with the current approximation set for querying in the base case
         kd_tree = sp.spatial.KDTree(qml.math.array(approx_set_qat))
 
-        # Obtain the SU(2) for the operation
+        # Obtain the SU(2) and quaternion for the operation
         gate_mat, _ = _SU2_transform(op.matrix())
+        gate_qat = _quaternion_transform(gate_mat)
 
         def _solovay_kitaev(umat, n):
             """Recursive method as given in the Section 3 of arXiv:0505030"""
@@ -294,8 +295,12 @@ def sk_decomposition(op, depth, basis_set=(), basis_depth=10):
 
             return approx_ids, approx_mat
 
-        # Get the decomposition for the given operation
-        decomposition, _ = _solovay_kitaev(gate_mat, depth)
+        # If we have it already, use that, otherwise proceed for deocomposition
+        dist, index = kd_tree.query(qml.math.array([gate_qat]), workers=-1)
+        if qml.math.isclose(dist, 0.0, atol=1e-8):
+            decomposition = approx_set_ids[index[0]]
+        else:
+            decomposition, _ = _solovay_kitaev(gate_mat, depth)
 
         # Remove inverses if any in the decomposition and handle trivial case
         [new_tape], _ = cancel_inverses(QuantumScript(decomposition or [qml.Identity(0)]))

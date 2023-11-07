@@ -77,7 +77,7 @@ def test_contains_SU2():
     op = qml.prod(qml.T(0), qml.T(0), qml.T(0), qml.T(0), qml.T(0))
     target = _SU2_transform(op.matrix())[0]
 
-    approx_ids, _, approx_vec = _approximate_set(("t", "tdg", "h"), max_length=3)
+    approx_ids, _, approx_vec = _approximate_set(("T", "T*", "H"), max_length=3)
 
     assert _contains_SU2(target, approx_vec)[0]
 
@@ -99,8 +99,8 @@ def test_approximate_sets():
     assert len(approx_set2) == 3
 
     # Verify exist-check reduce redundancy via GP-like summation
-    approx_set3, _, _ = _approximate_set(("t", "tdg", "h"), max_length=3)
-    approx_set4, _, _ = _approximate_set(("t", "tdg", "h"), max_length=5)
+    approx_set3, _, _ = _approximate_set(("t", "t*", "h"), max_length=3)
+    approx_set4, _, _ = _approximate_set(("t", "t*", "h"), max_length=5)
     assert len(approx_set3) < 39 and len(approx_set3) == 22  # 3 + 3x3 + 3x3x3
     assert len(approx_set4) < 263 and len(approx_set4) == 89  # 3 + ... + 3x3x3x3x3
 
@@ -108,6 +108,7 @@ def test_approximate_sets():
 @pytest.mark.parametrize(
     ("op"),
     [
+        qml.U3(0.0, 0.0, 0.0, wires=[0]),
         qml.U3(1.0, 2.0, 3.0, wires=[1]),
         qml.U3(-1.0, 2.0, 3.0, wires=["b"]),
         qml.U3(1.0, 2.0, -3.0, wires=[0]),
@@ -141,7 +142,7 @@ def test_solovay_kitaev(op):
     """Test Solovay-Kitaev decomposition method"""
 
     with qml.queuing.AnnotatedQueue() as q:
-        gates = sk_decomposition(op, depth=5, basis_set=("T", "Tdg", "H"))
+        gates = sk_decomposition(op, depth=5, basis_set=("T", "T*", "H"))
     assert q.queue == gates
 
     matrix_sk, phase = _SU2_transform(qml.prod(*reversed(gates)).matrix())
@@ -151,13 +152,13 @@ def test_solovay_kitaev(op):
 
 
 @pytest.mark.parametrize(
-    ("basis_depth", "basis_set"),
+    ("basis_length", "basis_set"),
     [(10, ()), (8, (("H", "T"))), (10, ("H", "S", "T"))],
 )
-def test_solovay_kitaev_with_basis_gates(basis_depth, basis_set):
+def test_solovay_kitaev_with_basis_gates(basis_length, basis_set):
     """Test Solovay-Kitaev decomposition method without providing approximation set"""
     op = qml.PhaseShift(math.pi / 4, 0)
-    gates = sk_decomposition(op, depth=3, basis_set=basis_set, basis_depth=basis_depth)
+    gates = sk_decomposition(op, depth=3, basis_set=basis_set, basis_length=basis_length)
 
     matrix_sk = qml.prod(*gates[::-1]).matrix()
 
