@@ -21,7 +21,7 @@
 * `qml.draw` and `qml.draw_mpl` now render operator ids.
   [(#4749)](https://github.com/PennyLaneAI/pennylane/pull/4749)
 
-* `default.qutrit` is now differentiable via backprop using TRX, TRY, and TRZ
+*   `TRX`, `TRY`, and `TRZ` are now differentiable via backprop on `default.qutrit`
   [(#4790)](https://github.com/PennyLaneAI/pennylane/pull/4790)
 
 <h3>Breaking changes 💔</h3>
