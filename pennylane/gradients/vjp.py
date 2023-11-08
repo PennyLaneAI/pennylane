@@ -204,6 +204,7 @@ def compute_vjp_multi(dy, jac, num=None):
     # Multiple parameters
     else:
         try:
+            dy_interface = qml.math.get_interface(dy[0])
             # dy  -> (i,j)      observables, entries per observable
             # jac -> (i,k,j)    observables, parameters, entries per observable
             # Contractions over observables and entries per observable
@@ -211,8 +212,13 @@ def compute_vjp_multi(dy, jac, num=None):
             if len(dy_shape) > 1:  # multiple values exist per observable output
                 return qml.math.array(qml.math.einsum("ij,i...j", dy, jac), like=dy[0])
 
+            if dy_interface == "tensorflow":
+                # TF needs a different path for Hessian support
+                return qml.math.array(
+                    qml.math.einsum("i,i...", dy, jac, like=dy[0]), like=dy[0]
+                )  # Scalar value per observable output
             return qml.math.array(
-                qml.math.einsum("i,i...", dy, jac, like=dy[0]), like=dy[0]
+                qml.math.einsum("i,i...", dy, jac), like=dy[0]
             )  # Scalar value per observable output
         except Exception:
             res = []
