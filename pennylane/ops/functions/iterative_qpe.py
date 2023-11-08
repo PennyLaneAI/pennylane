@@ -23,7 +23,7 @@ def iterative_qpe(base, estimation_wire, iters):
     r"""Performs the `iterative quantum phase estimation <https://arxiv.org/pdf/quant-ph/0610214.pdf>`_ circuit.
 
     Given a unitary matrix :math:`U`, this function applies the circuit for iterative quantum phase
-    estimation and returns a list of the mid-circuit measurements.
+    estimation and returns a list of the mid-circuit measurements with qubit reset.
 
     Args:
       base (Operator): the phase estimation unitary, specified as an :class:`~.Operator`
