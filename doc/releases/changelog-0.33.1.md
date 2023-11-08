@@ -14,6 +14,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fix gradient performance regression due to expansion of VJP products.
+  [(#4806)](https://github.com/PennyLaneAI/pennylane/pull/4806)
+
 * `qml.defer_measurements` now correctly transforms circuits when terminal measurements include wires
   used in mid-circuit measurements.
   [(#4787)](https://github.com/PennyLaneAI/pennylane/pull/4787)
@@ -31,4 +34,5 @@
 This release contains contributions from (in alphabetical order):
 
 Christina Lee,
+Lee James O'Riordan,
 Mudit Pandey
