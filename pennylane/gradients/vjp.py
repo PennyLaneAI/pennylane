@@ -115,6 +115,9 @@ def compute_vjp_single(dy, jac, num=None):
     if not isinstance(dy_row, np.ndarray):
         jac = _convert(jac, dy_row)
 
+    # Note: For generality, all exception type warnings are disabled.
+    # TODO: Excplictly catalogue and update raises for known types.
+
     # Single measurement with a single param
     if not isinstance(jac, (tuple, autograd.builtins.SequenceBox)):
         # No trainable parameters
@@ -128,7 +131,7 @@ def compute_vjp_single(dy, jac, num=None):
         try:
             res = dy_row @ jac
 
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             res = qml.math.tensordot(jac, dy_row, [[0], [0]])
 
     # Single measurement with multiple params
@@ -142,7 +145,7 @@ def compute_vjp_single(dy, jac, num=None):
             jac = qml.math.reshape(qml.math.stack(jac), (1, -1))
             try:
                 res = dy_row @ jac
-            except Exception:
+            except Exception:  # pylint: disable=broad-exception-caught
                 res = qml.math.tensordot(jac, dy_row, [[0], [0]])
 
         # Single measurement with dimension e.g. probs
@@ -150,7 +153,7 @@ def compute_vjp_single(dy, jac, num=None):
             jac = qml.math.stack(jac)
             try:
                 res = jac @ dy_row
-            except Exception:
+            except Exception:  # pylint: disable=broad-exception-caught
                 res = qml.math.tensordot(jac, dy_row, [[1], [0]])
 
     return res
@@ -220,7 +223,9 @@ def compute_vjp_multi(dy, jac, num=None):
             return qml.math.array(
                 qml.math.einsum("i,i...", dy, jac), like=dy[0]
             )  # Scalar value per observable output
-        except Exception:
+        # NOTE: We want any potential failure to fall back here, so catch every exception type
+        # TODO: Catalogue and update for expected exception types
+        except Exception:  # pylint: disable=broad-exception-caught
             res = []
             for d, j_ in zip(dy, jac):
                 sub_res = []
