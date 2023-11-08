@@ -86,7 +86,7 @@
 
 * Parametrized circuits whose operators do not act on all wires return pennylane tensors as
   expected, instead of numpy arrays.
-  [(#)]()
+  [(#4811)](https://github.com/PennyLaneAI/pennylane/pull/4811)
 
 <h3>Contributors ✍️</h3>
 
