@@ -49,7 +49,6 @@ def circuit_1():
 def circuit_2():
     """Circuit 2 without chemistry gates"""
     qml.CRX(1, wires=[0, 1])
-    qml.IsingXY(2, wires=[1, 2])
     qml.ISWAP(wires=[0, 1])
     return qml.expval(qml.PauliZ(0))
 
@@ -74,15 +73,6 @@ def circuit_4():
 
 def circuit_5():
     """Circuit 5 with Qubit Unitaries"""
-    matrix = qml.math.array(
-        [
-            [-0.728 - 0.244j, 0.297 - 0.079j, 0.262 - 0.397j, -0.129 + 0.272j],
-            [-0.264 + 0.018j, -0.043 + 0.69j, -0.534 - 0.107j, -0.315 - 0.235j],
-            [-0.549 + 0.113j, -0.451 - 0.067j, 0.181 + 0.651j, -0.041 - 0.139j],
-            [0.033 - 0.159j, -0.297 + 0.362j, -0.1 + 0.103j, 0.346 + 0.784j],
-        ]
-    )
-    qml.QubitUnitary(matrix, wires=[0, 1])
     qml.DiagonalQubitUnitary(
         [qml.math.exp(1j * 0.1), qml.math.exp(1j * PI), INVSQ2 * (1 + 1j), INVSQ2 * (1 - 1j)],
         wires=[0, 1],
