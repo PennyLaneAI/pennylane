@@ -48,7 +48,7 @@ def iterative_qpe(base, estimation_wire, iters):
               qml.PauliX(wires = [0])
 
               # Iterative QPE
-              measurements = qml.iterative_qpe(qml.RZ(2., wires = [0]), estimation_wire = [1], iters = 3)
+              measurements = qml.iterative_qpe(qml.RZ(2., wires = [0]), estimation_wire = 1, iters = 3)
 
               return [qml.sample(op = meas) for meas in measurements]
 
