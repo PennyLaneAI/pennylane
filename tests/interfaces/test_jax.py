@@ -152,7 +152,9 @@ class TestJaxExecuteUnitTests:
         """Test that no grad on execution uses the `device.batch_execute` and `device.gradients` pathway"""
         dev = qml.device("default.qubit.legacy", wires=1)
         spy_execute = mocker.spy(qml.devices.DefaultQubitLegacy, "batch_execute")
-        spy_gradients = mocker.spy(qml.devices.DefaultQubitLegacy, "gradients")
+        spy_execute_and_gradients = mocker.spy(
+            qml.devices.DefaultQubitLegacy, "execute_and_gradients"
+        )
 
         def cost(a):
             with qml.queuing.AnnotatedQueue() as q:
@@ -174,10 +176,10 @@ class TestJaxExecuteUnitTests:
 
         assert dev.num_executions == 1
         spy_execute.assert_called()
-        spy_gradients.assert_not_called()
+        spy_execute_and_gradients.assert_not_called()
 
         jax.grad(cost)(a)
-        spy_gradients.assert_called()
+        spy_execute_and_gradients.assert_called()
 
 
 class TestCaching:

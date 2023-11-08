@@ -15,11 +15,11 @@
 import pytest
 import numpy as np
 
-
 import pennylane as qml
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import param_shift
 from pennylane.interfaces import execute
+from pennylane.measurements import Shots
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
@@ -122,10 +122,18 @@ class TestCaching:
 # add tests for lightning 2 when possible
 # set rng for device when possible
 test_matrix = [
-    ({"gradient_fn": param_shift}, 100000, DefaultQubit(seed=42)),
-    ({"gradient_fn": param_shift}, None, DefaultQubit()),
-    ({"gradient_fn": "backprop"}, None, DefaultQubit()),
-    ({"gradient_fn": "adjoint"}, None, DefaultQubit()),
+    ({"gradient_fn": param_shift}, Shots(100000), DefaultQubit(seed=42)),
+    ({"gradient_fn": param_shift}, Shots(None), DefaultQubit()),
+    ({"gradient_fn": "backprop"}, Shots(None), DefaultQubit()),
+    (
+        {
+            "gradient_fn": "adjoint",
+            "device_vjp": False,
+        },
+        Shots(None),
+        DefaultQubit(),
+    ),
+    ({"gradient_fn": "adjoint", "device_vjp": True}, Shots(None), DefaultQubit()),
 ]
 
 
@@ -156,15 +164,13 @@ class TestJaxExecuteIntegration:
         with device.tracker:
             res = cost(a, b)
 
-        if execute_kwargs.get("gradient_fn", None) == "adjoint":
-            assert device.tracker.totals["execute_and_derivative_batches"] == 1
-        else:
-            assert device.tracker.totals["batches"] == 1
+        assert device.tracker.totals["batches"] == 1
         assert device.tracker.totals["executions"] == 2  # different wires so different hashes
 
         assert len(res) == 2
-        assert res[0].shape == ()
-        assert res[1].shape == ()
+        if not shots.has_partitioned_shots:
+            assert res[0].shape == ()
+            assert res[1].shape == ()
 
         assert qml.math.allclose(res[0], jnp.cos(a) * jnp.cos(b), atol=atol_for_shots(shots))
         assert qml.math.allclose(res[1], jnp.cos(a) * jnp.cos(b), atol=atol_for_shots(shots))
@@ -178,7 +184,8 @@ class TestJaxExecuteIntegration:
             return execute([tape], device, **execute_kwargs)[0]
 
         res = jax.jacobian(cost)(a)
-        assert res.shape == ()  # pylint: disable=no-member
+        if not shots.has_partitioned_shots:
+            assert res.shape == ()  # pylint: disable=no-member
 
         # compare to standard tape jacobian
         tape = qml.tape.QuantumScript([qml.RY(a, wires=0)], [qml.expval(qml.PauliZ(0))])

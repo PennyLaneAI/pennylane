@@ -168,7 +168,7 @@ class TestJaxExecuteUnitTests:
         spy_execute.assert_called()
         spy_gradients.assert_not_called()
 
-        jax.grad(cost)(a)
+        jax.grad(jax.jit(cost))(a)
         spy_gradients.assert_called()
 
 
