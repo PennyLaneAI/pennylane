@@ -23,7 +23,7 @@ jobs:
         }}
       uses: ./.github/workflows/interface-benchmarks.yml
       with:
-        branch: add-pytest-benchmarks-CI
+        branch: add-pytest-benchmarks
 
         # Run a 'lightened' version of the CI on Pull Requests by default
         # Unless the label `ci:run-full-test-suite` is attached to the PR.
