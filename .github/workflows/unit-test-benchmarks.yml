@@ -105,7 +105,7 @@ jobs:
           reference_benchmarks: ${{ inputs.branch != github.ref && (steps.benchmark-cache.outputs.cache-hit != 'true') }}
           local_benchmarks: ${{ inputs.branch == github.ref }}
         run: |
-          echo "check=$( ${{ (env.reference_benchmarks == true) || (env.local_benchmarks == true) }})" >> $GITHUB_OUTPUT
+          echo "check=$( ${{ (env.reference_benchmarks == 'true') || (env.local_benchmarks == 'true') }})" >> $GITHUB_OUTPUT
 
       - name: Checkout
         if: ${{ steps.continue.outputs.check == true }}
