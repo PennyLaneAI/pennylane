@@ -326,6 +326,34 @@ def test_draw_mid_circuit_measurement(postselect, reset, mid_measure_label):
     assert drawing == expected_drawing
 
 
+def test_draw_mid_circuit_measurement_multiple_wires():
+    """Test that mid-circuit measurements are correctly drawn in circuits
+    with multiple wires."""
+
+    def circuit(weights):
+        qml.RX(weights[0], 0)
+        qml.measure(0, reset=True)
+        qml.RX(weights[1], 1)
+        qml.measure(1)
+        qml.CNOT([0, 3])
+        qml.measure(3, postselect=0, reset=True)
+        qml.RY(weights[2], 2)
+        qml.CNOT([1, 2])
+        qml.measure(2, postselect=1)
+        qml.MultiRZ(0.5, [0, 2])
+        return qml.expval(qml.PauliZ(2))
+
+    drawing = qml.draw(circuit)(np.array([np.pi, 3.124, 0.456]))
+    expected_drawing = (
+        "0: ──RX(3.14)──┤↗│  │0⟩─╭●─────────────────────╭MultiRZ(0.50)─┤     \n"
+        "1: ──RX(3.12)──┤↗├──────│─────────────╭●───────│──────────────┤     \n"
+        "3: ─────────────────────╰X──┤↗₀│  │0⟩─│────────│──────────────┤     \n"
+        "2: ──RY(0.46)─────────────────────────╰X──┤↗₁├─╰MultiRZ(0.50)─┤  <Z>"
+    )
+
+    assert drawing == expected_drawing
+
+
 @pytest.mark.parametrize(
     "transform",
     [
