@@ -9,6 +9,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* Autograd can now use vjps provided by the device from the new device API. If a device provides
+  a vector Jacobian product, this can be selected by providing `device_vjp=True` to
+  `qml.execute`.
+  [(#4557)](https://github.com/PennyLaneAI/pennylane/pull/4557)
+
 * Updates to some relevant Pytests to enable its use as a suite of benchmarks.
   [(#4703)](https://github.com/PennyLaneAI/pennylane/pull/4703)
 
@@ -30,6 +35,10 @@
 * `qml.gradients.pulse_generator` has become `qml.gradients.pulse_odegen` to adhere to paper naming conventions.
   [(#4769)](https://github.com/PennyLaneAI/pennylane/pull/4769)
 
+* Non-parametric-ops such as `Barrier`, `Snapshot` and `Wirecut` have been grouped together and moved to `pennylane/ops/meta.py`.
+  Additionally, the relevant tests have been organized and placed in a new file, `tests/ops/test_meta.py` .
+  [(#4789)](https://github.com/PennyLaneAI/pennylane/pull/4789)
+  
 * `QuantumScript.graph` is now built using `tape.measurements` instead of `tape.observables`
   because it depended on the now-deprecated `Observable.return_type` property.
   [(#4762)](https://github.com/PennyLaneAI/pennylane/pull/4762)
