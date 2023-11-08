@@ -540,6 +540,13 @@ def einsum(indices, *operands, like=None, optimize=None):
     if optimize is None or like == "torch":
         # torch einsum doesn't support the optimize keyword argument
         return np.einsum(indices, *operands, like=like)
+    if like == "tensorflow":
+        # Unpacking and casting necessary for higher order derivatives,
+        # and avoiding implicit fp32 down-conversions.
+        op1, op2 = operands
+        op1 = array(op1, like=op1[0], dtype=op1[0].dtype)
+        op2 = array(op2, like=op2[0], dtype=op2[0].dtype)
+        return np.einsum(indices, op1, op2, like=like)
     return np.einsum(indices, *operands, like=like, optimize=optimize)
 
 

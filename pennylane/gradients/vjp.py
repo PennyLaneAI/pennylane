@@ -47,7 +47,7 @@ def _all_close_to_zero(dy):
         return qml.math.allclose(dy, 0)
 
     # call this method recursively
-    return qml.math.all(qml.math.stack([_all_close_to_zero(dy_) for dy_ in dy]))
+    return all(_all_close_to_zero(dy_) for dy_ in dy)
 
 
 def compute_vjp_single(dy, jac, num=None):
@@ -75,7 +75,7 @@ def compute_vjp_single(dy, jac, num=None):
         >>> compute_vjp_single(dy, jac)
         np.array([0.2])
 
-    2. For a single parameter and a single measurment with shape (e.g. probs):
+    2. For a single parameter and a single measurement with shape (e.g. probs):
 
     .. code-block:: pycon
 
@@ -115,16 +115,8 @@ def compute_vjp_single(dy, jac, num=None):
     if not isinstance(dy_row, np.ndarray):
         jac = _convert(jac, dy_row)
 
-    try:
-        if _all_close_to_zero(dy):
-            # If the dy vector is zero, then the
-            # corresponding element of the VJP will be zero.
-            num_params = len(jac) if isinstance(jac, tuple) else 1
-
-            res = qml.math.convert_like(np.zeros(num_params), dy)
-            return qml.math.cast_like(res, dy)
-    except (AttributeError, TypeError):
-        pass
+    # Note: For generality, all exception type warnings are disabled.
+    # TODO: Excplictly catalogue and update raises for known types.
 
     # Single measurement with a single param
     if not isinstance(jac, (tuple, autograd.builtins.SequenceBox)):
@@ -136,7 +128,12 @@ def compute_vjp_single(dy, jac, num=None):
         if num == 1:
             jac = qml.math.squeeze(jac)
         jac = qml.math.reshape(jac, (-1, 1))
-        res = qml.math.tensordot(jac, dy_row, [[0], [0]])
+        try:
+            res = dy_row @ jac
+
+        except Exception:  # pylint: disable=broad-exception-caught
+            res = qml.math.tensordot(jac, dy_row, [[0], [0]])
+
     # Single measurement with multiple params
     else:
         # No trainable parameters (adjoint)
@@ -146,12 +143,19 @@ def compute_vjp_single(dy, jac, num=None):
         # Single measurement with no dimension e.g. expval
         if num == 1:
             jac = qml.math.reshape(qml.math.stack(jac), (1, -1))
-            res = qml.math.tensordot(jac, dy_row, [[0], [0]])
+            try:
+                res = dy_row @ jac
+            except Exception:  # pylint: disable=broad-exception-caught
+                res = qml.math.tensordot(jac, dy_row, [[0], [0]])
 
         # Single measurement with dimension e.g. probs
         else:
             jac = qml.math.stack(jac)
-            res = qml.math.tensordot(jac, dy_row, [[1], [0]])
+            try:
+                res = jac @ dy_row
+            except Exception:  # pylint: disable=broad-exception-caught
+                res = qml.math.tensordot(jac, dy_row, [[1], [0]])
+
     return res
 
 
@@ -202,14 +206,34 @@ def compute_vjp_multi(dy, jac, num=None):
         res = qml.math.sum(qml.math.stack(res), axis=0)
     # Multiple parameters
     else:
-        res = []
-        for d, j_ in zip(dy, jac):
-            sub_res = []
-            for j in j_:
-                sub_res.append(qml.math.squeeze(compute_vjp_single(d, j, num=num)))
-            res.append(sub_res)
-        res = qml.math.stack([qml.math.stack(r) for r in res])
-        res = qml.math.sum(res, axis=0)
+        try:
+            dy_interface = qml.math.get_interface(dy[0])
+            # dy  -> (i,j)      observables, entries per observable
+            # jac -> (i,k,j)    observables, parameters, entries per observable
+            # Contractions over observables and entries per observable
+            dy_shape = qml.math.shape(dy)
+            if len(dy_shape) > 1:  # multiple values exist per observable output
+                return qml.math.array(qml.math.einsum("ij,i...j", dy, jac), like=dy[0])
+
+            if dy_interface == "tensorflow":
+                # TF needs a different path for Hessian support
+                return qml.math.array(
+                    qml.math.einsum("i,i...", dy, jac, like=dy[0]), like=dy[0]
+                )  # Scalar value per observable output
+            return qml.math.array(
+                qml.math.einsum("i,i...", dy, jac), like=dy[0]
+            )  # Scalar value per observable output
+        # NOTE: We want any potential failure to fall back here, so catch every exception type
+        # TODO: Catalogue and update for expected exception types
+        except Exception:  # pylint: disable=broad-exception-caught
+            res = []
+            for d, j_ in zip(dy, jac):
+                sub_res = []
+                for j in j_:
+                    sub_res.append(qml.math.squeeze(compute_vjp_single(d, j, num=num)))
+                res.append(sub_res)
+            res = qml.math.stack([qml.math.stack(r) for r in res])
+            res = qml.math.sum(res, axis=0)
     return res
 
 
