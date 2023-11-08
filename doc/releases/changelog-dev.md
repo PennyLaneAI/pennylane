@@ -10,7 +10,7 @@
 * Iterative Quantum Phase Estimation is now available from `qml.iterative_qpe`.
   [(#4804)](https://github.com/PennyLaneAI/pennylane/pull/4804)
 
-  To use it, the function is expected to return a list of Measurements.
+  The subroutine can be used similarly to mid-circuit measurements: 
 
   ```python
   
