@@ -84,6 +84,10 @@
   wire order.
   [(#4781)](https://github.com/PennyLaneAI/pennylane/pull/4781)
 
+* Parametrized circuits whose operators do not act on all wires return pennylane tensors as
+  expected, instead of numpy arrays.
+  [(#)]()
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):

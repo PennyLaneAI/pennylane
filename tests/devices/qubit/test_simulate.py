@@ -189,6 +189,16 @@ class TestBasicCircuit:
         assert qml.math.get_interface(res) == "jax"
         assert qml.math.allclose(res, -1)
 
+    def test_expand_state_keeps_autograd_interface(self):
+        """Test that expand_state doesn't convert autograd to numpy."""
+
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def circuit(x):
+            qml.RX(x, 0)
+            return qml.probs(wires=[0, 1])
+
+        assert qml.math.get_interface(circuit(1.5)) == "autograd"
+
 
 class TestBroadcasting:
     """Test that simulate works with broadcasted parameters"""
