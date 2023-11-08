@@ -20,10 +20,10 @@ import pennylane as qml
 
 from pennylane import numpy as np
 
-pytestmark = pytest.mark.external
-
 catalyst = pytest.importorskip("catalyst")
 jax = pytest.importorskip("jax")
+
+pytestmark = pytest.mark.external
 
 from jax import numpy as jnp  # pylint:disable=wrong-import-order, wrong-import-position
 from jax.core import ShapedArray  # pylint:disable=wrong-import-order, wrong-import-position
