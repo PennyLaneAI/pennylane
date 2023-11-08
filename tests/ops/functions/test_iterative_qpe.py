@@ -20,8 +20,8 @@ import numpy as np
 import pennylane as qml
 
 
-class TestResult:
-    """Test to check that the results obtained with iterative_qpe are equivalent to those of QuantumPhaseEstimation"""
+class TestIQPE:
+    """Test to check that the iterative quantum phase estimation function works as expected."""
 
     @pytest.mark.parametrize("phi", (1.0, 2.0, 3.0))
     def test_compare_qpe(self, phi):
