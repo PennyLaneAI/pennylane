@@ -183,8 +183,10 @@ def _check_pytree(op):
         return
     leaves, struct = jax.tree_util.tree_flatten(op)
     unflattened_op = jax.tree_util.tree_unflatten(struct, leaves)
+    print(unflattened_op, op)
     assert unflattened_op == op, f"op must be a valid pytree. Got {unflattened_op} instead of {op}."
 
+    print(op.data, leaves)
     for d1, d2 in zip(op.data, leaves):
         assert qml.math.allclose(
             d1, d2
