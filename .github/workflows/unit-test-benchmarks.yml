@@ -97,7 +97,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{ github.workspace}}/benchmark_reference
-          key: ${{ inputs.benchmarks_name }}
+          key: ${{ inputs.benchmarks_name }}-${{ inputs.branch }}
 
       - name: Check if the job will continue
         id: continue
@@ -105,65 +105,67 @@ jobs:
           reference_benchmarks: ${{ inputs.branch != github.ref && (steps.benchmark-cache.outputs.cache-hit != 'true') }}
           local_benchmarks: ${{ inputs.branch == github.ref }}
         run: |
-          echo "check=$( ${{ (env.reference_benchmarks == 'true') || (env.local_benchmarks == 'true') }})" >> $GITHUB_OUTPUT
+          echo "reference_benchmarks=$( echo ${{ (env.reference_benchmarks) }} )" >> $GITHUB_OUTPUT
+          echo "local_benchmarks=$( echo ${{ (env.local_benchmarks) }} )" >> $GITHUB_OUTPUT
+          echo "confirm=$( echo ${{ (env.reference_benchmarks == 'true') || (env.local_benchmarks == 'true') }} )" >> $GITHUB_OUTPUT
 
       - name: Checkout
-        if: ${{ steps.continue.outputs.check == 'true' }}
+        if: ${{ steps.continue.outputs.confirm == 'true' }}
         uses: actions/checkout@v3
         with:
           ref: ${{ inputs.branch }}
           fetch-depth: ${{ inputs.checkout_fetch_depth }}
 
       - name: Setup Python
-        if: ${{ steps.continue.outputs.check == 'true' }}
+        if: ${{ steps.continue.outputs.confirm == 'true' }}
         uses: actions/setup-python@v4
         with:
           python-version: '${{ inputs.python_version }}'
 
       - name: Upgrade PIP
-        if: ${{ steps.continue.outputs.check == 'true' }}
+        if: ${{ steps.continue.outputs.confirm == 'true' }}
         run: pip install --upgrade pip && pip install wheel --upgrade
 
       - name: Install PennyLane dependencies
-        if: ${{ steps.continue.outputs.check == 'true' }}
+        if: ${{ steps.continue.outputs.confirm == 'true' }}
         run: |
           pip install -r requirements-ci.txt --upgrade
           pip install -r requirements-dev.txt --upgrade
 
       - name: Install PyTorch
-        if: ${{ (inputs.install_pytorch == 'true') && (steps.continue.outputs.check == 'true') }}
+        if: ${{ (inputs.install_pytorch == true) && (steps.continue.outputs.confirm == 'true') }}
         env:
           TORCH_VERSION: ${{ inputs.pytorch_version != '' && format('=={0}', inputs.pytorch_version) || '' }}
         run: pip install "torch${{ env.TORCH_VERSION }}" -f https://download.pytorch.org/whl/torch_stable.html
 
       - name: Install TensorFlow
-        if: ${{ (inputs.install_tensorflow == 'true') && (steps.continue.outputs.check == 'true') }}
+        if: ${{ (inputs.install_tensorflow == true) && (steps.continue.outputs.confirm == 'true') }}
         env:
           TF_VERSION: ${{ inputs.tensorflow_version != '' && format('~={0}', inputs.tensorflow_version) || '' }}
         run: pip install "tensorflow${{ env.TF_VERSION }}" "keras${{ env.TF_VERSION }}"
 
       - name: Install JAX
-        if: ${{ (inputs.install_jax == 'true') && (steps.continue.outputs.check == 'true') }}
+        if: ${{ (inputs.install_jax == true) && (steps.continue.outputs.confirm == 'true') }}
         env:
           JAX_VERSION: ${{ inputs.jax_version != '' && format('=={0}', inputs.jax_version) || '' }}
         run: pip install "jax${{ env.JAX_VERSION}}" "jaxlib${{ env.JAX_VERSION }}"
 
       - name: Install additional PIP packages
-        if: ${{ (inputs.additional_pip_packages != '') && (steps.continue.outputs.check == 'true') }}
+        if: ${{ (inputs.additional_pip_packages != '') && (steps.continue.outputs.confirm == 'true') }}
         run: pip install ${{ inputs.additional_pip_packages }}
 
       - name: Install PennyLane
-        if: ${{ steps.continue.outputs.check == 'true' }}
+        if: ${{ steps.continue.outputs.confirm == 'true' }}
         run: |
           python setup.py bdist_wheel
           pip install dist/PennyLane*.whl
 
       - name: Install PennyLane-Lightning master
-        if: ${{ (inputs.install_pennylane_lightning_master == 'true') && (steps.continue.outputs.check == 'true') }}
+        if: ${{ (inputs.install_pennylane_lightning_master == true) && (steps.continue.outputs.confirm == 'true') }}
         run: pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
 
       - name: Run PennyLane Benchmarks
-        if: ${{ steps.continue.outputs.check == 'true' }}
+        if: ${{ steps.continue.outputs.confirm == 'true' }}
         env:
           PYTEST_MARKER: ${{ inputs.pytest_markers != '' && format('-m "{0}"', inputs.pytest_markers) || '' }}
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
@@ -171,7 +173,7 @@ jobs:
 
       # If this is a PR benchmark, upload the data as an artifact.
       - name: Upload PR pytest benchmark file
-        if: ${{ steps.continue.outputs.local_benchmarks == 'true' }}
+        if: ${{ steps.continue.outputs.local_benchmarks == 'true'}}
         uses: actions/upload-artifact@v3
         with:
           name: ${{ inputs.benchmarks_name }}
@@ -179,5 +181,5 @@ jobs:
 
       # If this is a reference benchmark and we don't hit the cache, move file to the cached directory.
       - name: Upload reference pytest benchmark file
-        if: ${{ steps.continue.outputs.reference_benchmarks == 'true' }}
+        if: ${{ steps.continue.outputs.reference_benchmarks == 'true'}}
         run: mkdir -p ${{ github.workspace}}/benchmark_reference && cp benchmarks.json "$_"
