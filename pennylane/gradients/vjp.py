@@ -131,7 +131,7 @@ def compute_vjp_single(dy, jac, num=None):
         try:
             res = dy_row @ jac
 
-        except Exception:  # pylint: disable=broad-exception-caught
+        except Exception:  # pylint: disable=broad-except
             res = qml.math.tensordot(jac, dy_row, [[0], [0]])
 
     # Single measurement with multiple params
@@ -145,7 +145,7 @@ def compute_vjp_single(dy, jac, num=None):
             jac = qml.math.reshape(qml.math.stack(jac), (1, -1))
             try:
                 res = dy_row @ jac
-            except Exception:  # pylint: disable=broad-exception-caught
+            except Exception:  # pylint: disable=broad-except
                 res = qml.math.tensordot(jac, dy_row, [[0], [0]])
 
         # Single measurement with dimension e.g. probs
@@ -153,7 +153,7 @@ def compute_vjp_single(dy, jac, num=None):
             jac = qml.math.stack(jac)
             try:
                 res = jac @ dy_row
-            except Exception:  # pylint: disable=broad-exception-caught
+            except Exception:  # pylint: disable=broad-except
                 res = qml.math.tensordot(jac, dy_row, [[1], [0]])
 
     return res
@@ -225,7 +225,7 @@ def compute_vjp_multi(dy, jac, num=None):
             )  # Scalar value per observable output
         # NOTE: We want any potential failure to fall back here, so catch every exception type
         # TODO: Catalogue and update for expected exception types
-        except Exception:  # pylint: disable=broad-exception-caught
+        except Exception:  # pylint: disable=broad-except
             res = []
             for d, j_ in zip(dy, jac):
                 sub_res = []
