@@ -2,16 +2,6 @@
 
 # Release 0.33.1 (current release)
 
-<h3>New features since last release</h3>
-
-<h3>Improvements 🛠</h3>
-
-<h3>Breaking changes 💔</h3>
-
-<h3>Deprecations 👋</h3>
-
-<h3>Documentation 📝</h3>
-
 <h3>Bug fixes 🐛</h3>
 
 * Fix gradient performance regression due to expansion of VJP products.
