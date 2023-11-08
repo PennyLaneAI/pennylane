@@ -47,6 +47,7 @@ jobs:
           )
         }}
       uses: ./.github/workflows/interface-benchmarks.yml
+      needs: reference_benchmarks
       with:
         branch: ${{ github.ref }}
 
