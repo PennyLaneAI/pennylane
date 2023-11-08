@@ -96,7 +96,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{ github.workspace}}/benchmark_reference
-          key: ${{ inputs.benchmarks_name }}-${{ inputs.branch }}
+          key: ${{ inputs.benchmarks_name }}-reference
 
       - name: Check if the job will continue
         id: continue
