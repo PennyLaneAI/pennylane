@@ -28,7 +28,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
         Currently, only the :doc:`Catalyst <catalyst:index>` hybrid quantum-classical
         compiler is supported. The Catalyst compiler works with the JAX interface
 
-        For more details, please see the Catalyst documentation and :func:`catalyst:.qjit`
+        For more details, see the Catalyst documentation and :func:`catalyst:.qjit`
         docstring.
 
     .. note::
@@ -41,14 +41,13 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
         supported devices, operations, and measurements.
 
     Args:
-        compiler (str): name of the compiler to use for just-in-time compilation
-        fn (Callable): the quantum or classical function to compile
+        compiler (str): Name of the compiler to use for just-in-time compilation
+        fn (Callable): Hybrid (quantum-classical) function to compile
         autograph (bool): Experimental support for automatically converting Python control
             flow statements to Catalyst-compatible control flow. Currently supports Python ``if``,
             ``elif``, ``else``, and ``for`` statements. Note that this feature requires an
-            available TensorFlow installation. Please see the
+            available TensorFlow installation. See the
             :doc:`AutoGraph guide <catalyst:dev/autograph>` for more information.
-        target (str): the compilation target
         keep_intermediate (bool): Whether or not to store the intermediate files throughout the
             compilation. If ``True``, intermediate representations are available via the
             :attr:`~.QJIT.mlir`, :attr:`~.QJIT.jaxpr`, and :attr:`~.QJIT.qir`, representing
@@ -56,14 +55,14 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
         verbosity (bool): If ``True``, the tools and flags used by Catalyst behind the scenes are
             printed out.
         logfile (TextIOWrapper): File object to write verbose messages to (default is
-            ``sys.stderr``).
+            ``sys.stderr``)
         pipelines (List[Tuple[str, List[str]]]): A list of pipelines to be executed. The
             elements of this list are named sequences of MLIR passes to be executed. A ``None``
             value (the default) results in the execution of the default pipeline. This option is
             considered to be used by advanced users for low-level debugging purposes.
 
     Returns:
-        catalyst.QJIT: a class that, when executed, just-in-time compiles and executes the
+        catalyst.QJIT: A class that, when executed, just-in-time compiles and executes the
         decorated function
 
     Raises:

@@ -32,13 +32,14 @@ autodifferentiation.
 
 .. note::
 
-    Catalyst currently only supports the JAX interface of PennyLane.
+    `Catalyst <https://github.com/pennylaneai/catalyst>`__ currently only
+    supports the JAX interface of PennyLane.
 
 Overview
 --------
 
 The main entry point to hybrid compilation in PennyLane
-is via the qjit decorator.
+is via the :func:`~.qjit` decorator.
 
 .. autosummary::
     :toctree: api
@@ -69,15 +70,14 @@ to incorporate additional compilers in the near future.
 
 .. note::
 
-    Catalyst is officially supported on Linux (x86_64) and macOS (aarch64) platforms.
-    To install it, simply run the following ``pip`` command:
+    To install Catalyst, simply run the following ``pip`` command:
 
     .. code-block:: console
 
       pip install pennylane-catalyst
 
-    Please see the :doc:`installation <catalyst:dev/installation>`
-    guide for more information.
+    See the :doc:`installation <catalyst:dev/installation>`
+    guide for more information and supported platforms.
 
 Basic usage
 -----------
@@ -88,7 +88,7 @@ Basic usage
     ``lightning.kokkos``, ``braket.local.qubit``, and ``braket.aws.qubit``
     devices. It does not support ``default.qubit``.
 
-    Please see the :doc:`Catalyst documentation <catalyst:index>` for more details on supported
+    See the :doc:`Catalyst documentation <catalyst:index>` for more details on supported
     devices, operations, and measurements.
 
 When using just-in-time (JIT) compilation, the compilation is triggered at the call site the
@@ -200,7 +200,7 @@ In order to support applying the ``qjit`` decorator with and without arguments,
     def function(x, y):
         ...
 
-you should ensure that the ``qjit`` decorator itself returns a decorator
+You should ensure that the ``qjit`` decorator itself returns a decorator
 if no function is provided:
 
 .. code-block:: python

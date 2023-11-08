@@ -28,7 +28,18 @@ class CompileError(Exception):
 class AvailableCompilers:
     """This contains data of installed PennyLane compiler packages."""
 
-    entrypoints_interface = ("qjit", "context", "ops")
+    # The collection of entry points that compiler packages must export.
+    # This is used for validity checks of installed packages entry points.
+    # For any compiler packages seeking to be registered, it is imperative
+    # that they expose the ``entry_points`` metadata under the designated
+    # group name ``pennylane.compilers``, with the following entry points:
+    # - ``context``: Path to the compilation evaluation context manager.
+    # - ``ops``: Path to the compiler operations module.
+    # - ``qjit``: Path to the JIT decorator provided by the compiler.
+    entrypoints_interface = ("context", "qjit", "ops")
+
+    # The dictionary of installed compiler packages
+    # and their entry point loaders.
     names_entrypoints = {}
 
 
@@ -79,7 +90,7 @@ def _reload_compilers():
 
 
 def available_compilers() -> List[str]:
-    """Loads and returns a list of available compilers that are
+    """Load and return a list of available compilers that are
     installed and compatible with the :func:`~.qjit` decorator.
 
     **Example**
@@ -104,7 +115,7 @@ def available(compiler="catalyst") -> bool:
     """Check the availability of the given compiler package.
 
     Args:
-        compiler (str): name of the compiler package (default value is ``catalyst``)
+        compiler (str): Name of the compiler package (default value is ``catalyst``)
 
     Return:
         bool: ``True`` if the compiler package is installed on the system
@@ -186,7 +197,7 @@ def active() -> bool:
     just-in-time compiled versus those that are not.
 
     Return:
-        bool: True if the caller is inside a QJIT evaluation context
+        bool: ``True`` if the caller is inside a QJIT evaluation context
 
     **Example**
 
