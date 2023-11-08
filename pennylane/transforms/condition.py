@@ -65,13 +65,12 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
     on parameters such as the results of mid-circuit qubit measurements.
 
     This method is restricted to simply branching on mid-circuit measurement
-    results.
+    results when it is not used with the :func:`~.qjit` decorator.
 
-    When used with the :func:`~.qjit` decorator with a hybrid
-    quantum-classical compiler, this function allows for general
-    if-else constructs. All ``true_fn``, ``false_fn`` and ``elifs`` branches
-    will be captured by the compiler, with the executed branch determined
-    at runtime. For more details, please see :func:`catalyst.cond`.
+    When used with the :func:`~.qjit` decorator, this function allows for general
+    if-elif-else constructs. All ``true_fn``, ``false_fn`` and ``elifs`` branches
+    will be captured by Catalyst, the just-in-time (JIT) compiler, with the executed
+    branch determined at runtime. For more details, please see :func:`catalyst.cond`.
 
     .. note::
 
@@ -85,7 +84,7 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
         the Catalyst compiler. See :func:`catalyst.cond` for more details.
 
         Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
-        as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
+        as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`.
 
     Args:
         condition (.MeasurementValue): a conditional expression involving a mid-circuit
@@ -94,8 +93,8 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
             apply if ``condition`` is ``True``
         false_fn (callable): The quantum function of PennyLane operation to
             apply if ``condition`` is ``False``
-        elifs (List(Tuple(bool, callable))): A list of (bool, elif_fn) clauses only when
-            they used with :func:`~.qjit`
+        elifs (List(Tuple(bool, callable))): A list of (bool, elif_fn) clauses. Can only
+            be used when is decorated by :func:`~.qjit`.
 
     Returns:
         function: A new function that applies the conditional equivalent of ``true_fn``. The returned

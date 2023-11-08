@@ -13,11 +13,11 @@
 # limitations under the License.
 """Compiler developer functions"""
 
-from typing import List
-from importlib import reload
+from typing import List, Optional
+from sys import version_info
+from importlib import reload, metadata
 from collections import defaultdict
 import dataclasses
-import pkg_resources
 
 
 class CompileError(Exception):
@@ -41,9 +41,16 @@ def _refresh_compilers():
     AvailableCompilers.names_entrypoints = defaultdict(dict)
 
     # Iterator packages entry-points with the 'pennylane.compilers' group name
-    for entry in pkg_resources.iter_entry_points("pennylane.compilers"):
+    entries = (
+        defaultdict(dict, metadata.entry_points())["pennylane.compilers"]
+        if version_info[:2] == (3, 9)
+        # pylint:disable=unexpected-keyword-arg
+        else metadata.entry_points(group="pennylane.compilers")
+    )
+
+    for entry in entries:
         # Only need name of the parent module
-        module_name = entry.module_name.split(".")[0]
+        module_name = entry.module.split(".")[0]
         AvailableCompilers.names_entrypoints[module_name][entry.name] = entry
 
     # Check whether available compilers follow the entry_point interface
@@ -64,7 +71,10 @@ def _reload_compilers():
     compilers names and entry points.
     """
 
-    reload(pkg_resources)
+    # Note re-importing ``importlib.metadata`` can be a very slow operation
+    # on systems with a large number of installed packages.
+
+    reload(metadata)
     _refresh_compilers()
 
 
@@ -112,10 +122,8 @@ def available(compiler="catalyst") -> bool:
     True
     """
 
-    # It only refreshes the compilers names and entry points if the name
-    # is not already stored. This reduces the number of re-importing
-    # ``pkg_resources`` as it can be a very slow operation on systems
-    # with a large number of installed packages.
+    # It only refreshes the compilers names and entry points if
+    # the name is not already stored.
 
     if compiler not in AvailableCompilers.names_entrypoints:
         # Reload installed packages and updates
@@ -125,21 +133,23 @@ def available(compiler="catalyst") -> bool:
     return compiler in AvailableCompilers.names_entrypoints
 
 
-def active_compiler() -> str:
+def active_compiler() -> Optional[str]:
     """Check which compiler is activated inside a :func:`~.qjit` evaluation context.
 
     This helper function may be used during implementation
-    to allow differing logic for circuits or operations that are
-    just-in-time compiled versus those that are not.
+    to allow differing logic for transformations or operations that are
+    just-in-time compiled, versus those that are not.
 
     Return:
-        str or None: Name of the active compiler inside a :func:`~.qjit` evaluation context.
+        Optional[str]: Name of the active compiler inside a :func:`~.qjit`
+            evaluation context. If there is no active compiler, ``None``
+            will be returned.
 
     **Example**
 
-    For example, you can use this method in your hybrid program to execute it
-    conditionally whether is called inside :func:`~.qjit` with ``"catalyst"``
-    as the activate compiler or not.
+    This method can be used to execute logical
+    branches that are conditioned on whether hybrid compilation with a specific
+    compiler is occurring.
 
     .. code-block:: python
 
@@ -147,7 +157,7 @@ def active_compiler() -> str:
 
         @qml.qnode(dev)
         def circuit(phi, theta):
-            if qml.compiler.active() == "catalyst":
+            if qml.compiler.active_compiler() == "catalyst":
                 qml.RX(phi, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.PhaseShift(theta, wires=0)
