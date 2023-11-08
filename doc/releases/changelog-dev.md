@@ -37,6 +37,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.draw` now supports drawing mid-circuit measurements.
+  [(#4775)](https://github.com/PennyLaneAI/pennylane/pull/4775)
+
 * Autograd can now use vjps provided by the device from the new device API. If a device provides
   a vector Jacobian product, this can be selected by providing `device_vjp=True` to
   `qml.execute`.
@@ -84,6 +87,7 @@
 * `Observable.return_type` is deprecated. Instead, you should inspect the type
   of the surrounding measurement process.
   [(#4762)](https://github.com/PennyLaneAI/pennylane/pull/4762)
+  [(#4798)](https://github.com/PennyLaneAI/pennylane/pull/4798)
 
 <h3>Documentation 📝</h3>
 

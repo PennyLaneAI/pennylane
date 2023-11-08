@@ -1887,6 +1887,16 @@ class Observable(Operator):
         )
         return self._return_type
 
+    @return_type.setter
+    def return_type(self, value):
+        """Change the return type of an Observable. Note that this property is deprecated."""
+        warnings.warn(
+            "`Observable.return_type` is deprecated. Instead, you should "
+            "create a measurement process containing this Observable.",
+            UserWarning,
+        )
+        self._return_type = value
+
     def __matmul__(self, other):
         if active_new_opmath():
             return super().__matmul__(other=other)
