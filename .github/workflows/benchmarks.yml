@@ -21,7 +21,7 @@ jobs:
             contains(github.event.pull_request.labels.*.name, 'ci:run-benchmarks')
           )
         }}
-      uses: ./.github/workflows/interface-unit-tests.yml
+      uses: ./.github/workflows/interface-benchmarks.yml
       with:
         branch: add-pytest-benchmarks-CI
 
@@ -48,7 +48,7 @@ jobs:
             contains(github.event.pull_request.labels.*.name, 'ci:run-benchmarks')
           )
         }}
-      uses: ./.github/workflows/interface-unit-tests.yml
+      uses: ./.github/workflows/interface-benchmarks.yml
       with:
         branch: ${{ github.ref }}
 
