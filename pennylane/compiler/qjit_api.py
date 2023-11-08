@@ -119,8 +119,7 @@ def while_loop(*args, **kwargs):
 
     .. note::
 
-        When used with :func:`~.qjit`, this function only supports
-        the Catalyst compiler. See
+        This function only supports the Catalyst compiler. See
         :func:`catalyst.while_loop` for more details.
 
         Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
@@ -199,15 +198,14 @@ def for_loop(*args, **kwargs):
 
     .. note::
 
-        When used with :func:`~.qjit`, this function only supports
-        the Catalyst compiler. See
+        This function only supports the Catalyst compiler. See
         :func:`catalyst.for_loop` for more details.
 
         Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
         page for an overview of the differences between Catalyst and PennyLane.
 
-    This for-loop representation is a functional version of the traditional
+    This decorator provides a functional version of the traditional
     for-loop, similar to ``jax.cond.fori_loop``. That is, any variables that
     are modified across iterations need to be provided as inputs/outputs to
     the loop body function:
@@ -257,10 +255,11 @@ def for_loop(*args, **kwargs):
 
         dev = qml.device("lightning.qubit", wires=1)
 
-        @qjit.qjit
+        @qml.qjit
         @qml.qnode(dev)
         def circuit(n: int, x: float):
 
+            @qml.for_loop(0, n, 1)
             def loop_rx(i, x):
                 # perform some work and update (some of) the arguments
                 qml.RX(x, wires=0)
@@ -269,7 +268,7 @@ def for_loop(*args, **kwargs):
                 return jnp.sin(x)
 
             # apply the for loop
-            final_x = qml.for_loop(0, n, 1)(loop_rx)(x)
+            final_x = loop_rx(x)
 
             return qml.expval(qml.PauliZ(0)), final_x
 
