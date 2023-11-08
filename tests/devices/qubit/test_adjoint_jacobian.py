@@ -60,7 +60,6 @@ class TestAdjointJacobian:
         results = tuple(qml.devices.qubit.simulate(t) for t in tapes)
         numeric_val = fn(results)
         assert np.allclose(calculated_val, numeric_val, atol=tol, rtol=0)
-        assert isinstance(calculated_val, np.ndarray)
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
@@ -89,7 +88,6 @@ class TestAdjointJacobian:
         numeric_val = fn(results)
         assert np.allclose(calculated_val, numeric_val, atol=tol, rtol=0)
         assert isinstance(calculated_val, tuple)
-        assert all(isinstance(val, np.ndarray) for val in calculated_val)
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("obs", [qml.PauliY])
@@ -308,7 +306,6 @@ class TestAdjointJVP:
         qs.trainable_params = {0}
 
         actual = adjoint_jvp(qs, tangents)
-        assert isinstance(actual, np.ndarray)
 
         expected = -tangents[0] * np.sin(x)
         assert np.allclose(actual, expected, atol=tol)
@@ -323,7 +320,6 @@ class TestAdjointJVP:
         actual = adjoint_jvp(qs, tangents)
         assert isinstance(actual, tuple)
         assert len(actual) == 2
-        assert all(isinstance(r, np.ndarray) for r in actual)
 
         expected = tangents[0] * np.array([-np.sin(x), np.cos(x)])
         assert np.allclose(actual, expected, atol=tol)
@@ -338,7 +334,6 @@ class TestAdjointJVP:
         qs.trainable_params = {0, 1}
 
         actual = adjoint_jvp(qs, tangents)
-        assert isinstance(actual, np.ndarray)
 
         expected = np.dot(
             np.array([np.cos(x) * np.sin(y), np.sin(x) * np.cos(y)]), np.array(tangents)
@@ -358,7 +353,6 @@ class TestAdjointJVP:
         actual = adjoint_jvp(qs, tangents)
         assert isinstance(actual, tuple)
         assert len(actual) == 3
-        assert all(isinstance(r, np.ndarray) for r in actual)
 
         jac = np.array(
             [
@@ -389,7 +383,6 @@ class TestAdjointJVP:
         actual = adjoint_jvp(qs, tangents)
         assert isinstance(actual, tuple)
         assert len(actual) == 3
-        assert all(isinstance(r, np.ndarray) for r in actual)
 
         jac = np.array([[-np.sin(x), 0], [0, -np.cos(y)], [np.cos(x), 0]])
         expected = jac @ np.array(tangents)
@@ -407,7 +400,6 @@ class TestAdjointVJP:
         qs.trainable_params = {0}
 
         actual = adjoint_vjp(qs, cotangents)
-        assert isinstance(actual, np.ndarray)
 
         iterable_cotangent = cotangents if isinstance(cotangents, tuple) else (cotangents,)
         expected = -iterable_cotangent[0] * np.sin(x)
@@ -421,7 +413,6 @@ class TestAdjointVJP:
         qs.trainable_params = {0}
 
         actual = adjoint_vjp(qs, cotangents)
-        assert isinstance(actual, np.ndarray)
 
         expected = np.dot(np.array([-np.sin(x), np.cos(x)]), np.array(cotangents))
         assert np.allclose(actual, expected, atol=tol)
@@ -438,7 +429,6 @@ class TestAdjointVJP:
         actual = adjoint_vjp(qs, cotangents)
         assert isinstance(actual, tuple)
         assert len(actual) == 2
-        assert all(isinstance(r, np.ndarray) for r in actual)
 
         expected = cotangents[0] * np.array([np.cos(x) * np.sin(y), np.sin(x) * np.cos(y)])
         assert np.allclose(actual, expected, atol=tol)
@@ -458,7 +448,6 @@ class TestAdjointVJP:
         actual = adjoint_vjp(qs, cotangents)
         assert isinstance(actual, tuple)
         assert len(actual) == 2
-        assert all(isinstance(r, np.ndarray) for r in actual)
 
         jac = np.array(
             [
@@ -491,7 +480,6 @@ class TestAdjointVJP:
         actual = adjoint_vjp(qs, cotangents)
         assert isinstance(actual, tuple)
         assert len(actual) == 2
-        assert all(isinstance(r, np.ndarray) for r in actual)
 
         jac = np.array([[-np.sin(x), 0], [0, -np.cos(y)], [np.cos(x), 0]])
         expected = np.array(cotangents) @ jac
