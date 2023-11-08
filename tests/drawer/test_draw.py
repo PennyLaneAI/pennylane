@@ -330,7 +330,7 @@ def test_draw_mid_circuit_measurement_multiple_wires():
     """Test that mid-circuit measurements are correctly drawn in circuits
     with multiple wires."""
 
-    def circuit(weights):
+    def circ(weights):
         qml.RX(weights[0], 0)
         qml.measure(0, reset=True)
         qml.RX(weights[1], 1)
@@ -343,7 +343,7 @@ def test_draw_mid_circuit_measurement_multiple_wires():
         qml.MultiRZ(0.5, [0, 2])
         return qml.expval(qml.PauliZ(2))
 
-    drawing = qml.draw(circuit)(np.array([np.pi, 3.124, 0.456]))
+    drawing = qml.draw(circ)(np.array([np.pi, 3.124, 0.456]))
     expected_drawing = (
         "0: ──RX(3.14)──┤↗│  │0⟩─╭●─────────────────────╭MultiRZ(0.50)─┤     \n"
         "1: ──RX(3.12)──┤↗├──────│─────────────╭●───────│──────────────┤     \n"
