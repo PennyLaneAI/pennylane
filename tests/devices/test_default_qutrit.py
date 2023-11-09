@@ -1399,6 +1399,7 @@ class TestDensityMatrix:
 
 
 # JAX integration tests
+# pylint: disable=no-member
 @pytest.fixture(scope="class")
 def jax_import_init(request):
     request.cls.jax = pytest.importorskip("jax")
@@ -1666,7 +1667,6 @@ class TestDtypePreservedTF(TFIntegrationTest):
 class TestPassthruIntegrationTF(TFIntegrationTest):
     """Tests for integration with the PassthruQNode"""
 
-    # pylint: disable=E1101
     def test_backprop_gradient(self, tol):
         """Tests that the gradient of the qnode is correct"""
         dev = qml.device("default.qutrit", wires=2)
