@@ -22,6 +22,7 @@ from collections import namedtuple
 import numpy as np
 import rustworkx as rx
 
+from pennylane.measurements import MeasurementProcess
 from pennylane.resource import ResourcesOperation
 
 
@@ -48,7 +49,7 @@ def _is_observable(x):
     Returns:
         bool: True iff x is an observable
     """
-    return getattr(x, "return_type", None) is not None
+    return isinstance(x, MeasurementProcess)
 
 
 Layer = namedtuple("Layer", ["ops", "param_inds"])
@@ -206,8 +207,9 @@ class CircuitGraph:
         # name of the operation and wires
         serialization_string += "|||"
 
-        for obs in self.observables_in_order:
-            serialization_string += str(obs.return_type)
+        for mp in self.observables_in_order:
+            obs = mp.obs or mp
+            serialization_string += str(mp.return_type)
             serialization_string += delimiter
             serialization_string += str(obs.name)
             for param in obs.data:

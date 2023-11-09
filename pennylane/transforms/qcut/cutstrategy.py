@@ -23,7 +23,7 @@ from typing import Any, ClassVar, Dict, List, Sequence, Union
 from networkx import MultiDiGraph
 
 import pennylane as qml
-from pennylane.ops.qubit.non_parametric_ops import WireCut
+from pennylane.ops.meta import WireCut
 
 
 @dataclass()
