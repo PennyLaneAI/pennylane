@@ -31,6 +31,7 @@ This module contains functions that act on operators and tapes.
     ~map_wires
     ~matrix
     ~simplify
+    ~iterative_qpe
 
 """
 from .bind_new_parameters import bind_new_parameters

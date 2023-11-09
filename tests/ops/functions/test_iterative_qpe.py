@@ -111,8 +111,8 @@ class TestIQPE:
         assert wire in tape.wires
 
     @pytest.mark.parametrize("phi", (1.2, 2.3, 3.4))
-    def test_measurement_processes(self, phi):
-        """Test to check that the measurement processes the works correctly"""
+    def test_measurement_processes_probs(self, phi):
+        """Test to check that the measurement process prob works correctly"""
 
         dev = qml.device("default.qubit")
 
@@ -135,5 +135,34 @@ class TestIQPE:
             measurements = qml.iterative_qpe(qml.RZ(phi, wires=[0]), estimation_wire=[1], iters=3)
 
             return [qml.probs(op=i) for i in measurements]
+
+        assert np.allclose(circuit_qpe(), circuit_iterative())
+
+    @pytest.mark.parametrize("phi", (1.2, 2.3, 3.4))
+    def test_measurement_processes_expval(self, phi):
+        """Test to check that the measurement process expval works correctly"""
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit_qpe():
+            # Initial state
+            qml.PauliX(wires=[0])
+
+            # Iterative QPE
+            qml.QuantumPhaseEstimation(qml.RZ(phi, wires=[0]), estimation_wires=[1, 2, 3])
+
+            # We will use the projector as an observable
+            return [qml.expval(qml.Hermitian([[0, 0], [0, 1]], wires=i)) for i in [1, 2, 3]]
+
+        @qml.qnode(dev)
+        def circuit_iterative():
+            # Initial state
+            qml.PauliX(wires=[0])
+
+            # Iterative QPE
+            measurements = qml.iterative_qpe(qml.RZ(phi, wires=[0]), estimation_wire=[1], iters=3)
+
+            return [qml.expval(op=i) for i in measurements]
 
         assert np.allclose(circuit_qpe(), circuit_iterative())
