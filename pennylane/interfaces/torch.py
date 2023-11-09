@@ -23,7 +23,7 @@ information.
 Suppose I have a function ``f`` that I want to define a custom vjp for.
 
 We need to inherit from ``torch.autograd.Function`` and define ``forward`` and ``backward`` static
-methods. 
+methods.
 
 .. code-block:: python
 
@@ -41,7 +41,7 @@ methods.
             print(f"Calculating the gradient with x={x}, dy={dy}, exponent={exponent}")
             return dy * exponent * x ** (exponent-1), None
 
-To use the ``CustomFunction`` class, we call it with the static ``apply`` method. 
+To use the ``CustomFunction`` class, we call it with the static ``apply`` method.
 
 >>> val = torch.tensor(2.0, requires_grad=True)
 >>> res = CustomFunction.apply(val)
@@ -52,12 +52,12 @@ tensor(4., grad_fn=<CustomFunctionBackward>)
 Calculating the gradient with x=2.0, dy=1.0, exponent=2
 tensor(4.)
 
-Note that for custom functions, the output of ``forward`` and the output of ``backward`` are flattened iterables of 
+Note that for custom functions, the output of ``forward`` and the output of ``backward`` are flattened iterables of
 Torch arrays.  While autograd and jax can handle nested result objects like ``((np.array(1), np.array(2)), np.array(3))``,
-torch requires that it be flattened like ``(np.array(1), np.array(2), np.array(3))``.  The ``pytreeify`` class decorator 
+torch requires that it be flattened like ``(np.array(1), np.array(2), np.array(3))``.  The ``pytreeify`` class decorator
 modifies the output of ``forward`` and the input to ``backward`` to unpack and repack the nested structure of the pennylane
 result object.
-            
+
 """
 # pylint: disable=too-many-arguments,protected-access,abstract-method
 import inspect
