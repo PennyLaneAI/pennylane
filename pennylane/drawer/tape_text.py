@@ -53,8 +53,11 @@ def _add_cond_grouping_symbols(op, layer_str, wire_map, bit_map, decimals, cache
 
     layer_str[max_b] = "═╝"
 
-    for w in range(max_w + 1, max_b):
+    for w in range(max_w + 1, max(wire_map.values()) + 1):
         layer_str[w] = "─║"
+
+    for b in range(n_wires, max_b):
+        layer_str[b] = "═║" if b - n_wires not in mapped_bits else "═╣"
 
     return layer_str
 
@@ -62,6 +65,10 @@ def _add_cond_grouping_symbols(op, layer_str, wire_map, bit_map, decimals, cache
 def _add_mid_measure_grouping_symbols(op, layer_str, wire_map, bit_map):
     """Adds symbols indicating the extent of a given object for mid-measure
     operators"""
+
+    if op not in bit_map:
+        return layer_str
+
     n_wires = len(wire_map)
     mapped_wire = wire_map[op.wires[0]]
     bit = bit_map[op] + n_wires
@@ -69,8 +76,10 @@ def _add_mid_measure_grouping_symbols(op, layer_str, wire_map, bit_map):
 
     for w in range(mapped_wire + 1, n_wires):
         layer_str[w] += "─║"
+
     for b in range(n_wires, bit):
-        layer_str[b] += " ║"
+        filler = " " if layer_str[b][-1] == " " else "═"
+        layer_str[b] += filler + "║"
 
     return layer_str
 
@@ -435,7 +444,7 @@ def tape_text(
             layer_str = [w_filler] * n_wires + [""] * n_bits
             for b in bit_map.values():
                 cur_b_filler = (
-                    b_filler if bit_measurements_reached[b] and bit_terminal_layers[b] > i else " "
+                    "a" if bit_measurements_reached[b] and bit_terminal_layers[b] > i else "b"
                 )
                 layer_str[b + n_wires] = cur_b_filler
 
@@ -465,7 +474,7 @@ def tape_text(
                 if cur_layer_mid_measure is not None:
                     # This condition is needed to pad the filler on the bits under MidMeasureMPs
                     # correctly
-                    cur_b_filler = b_filler
+                    cur_b_filler = b_filler if bit_map[cur_layer_mid_measure] >= b else " "
                 else:
                     cur_b_filler = (
                         b_filler
@@ -488,9 +497,7 @@ def tape_text(
             wire_totals = [w_filler.join([t, s]) for t, s in zip(wire_totals, layer_str[:n_wires])]
             for j, (bt, s) in enumerate(zip(bit_totals, layer_str[n_wires : n_wires + n_bits])):
                 cur_b_filler = (
-                    b_filler
-                    if bit_measurements_reached[j] and bit_terminal_layers[j] + 1 > i
-                    else " "
+                    b_filler if bit_measurements_reached[j] and bit_terminal_layers[j] >= i else " "
                 )
                 bit_totals[j] = cur_b_filler.join([bt, s])
 
