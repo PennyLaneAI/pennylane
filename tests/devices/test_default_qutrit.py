@@ -1701,7 +1701,6 @@ class TestPassthruIntegrationTF(TFIntegrationTest):
             ]
         )
 
-        # pylint:disable=no-member
         assert np.allclose(res.numpy(), expected_cost, atol=tol, rtol=0)
 
         res = tape.gradient(res, [a_tf, b_tf])
@@ -1740,7 +1739,6 @@ class TestPassthruIntegrationTF(TFIntegrationTest):
             ]
         )
 
-        # pylint:disable=no-member
         assert np.allclose(res.numpy(), expected_cost, atol=tol, rtol=0)
 
         jac = tape.jacobian(res, [a_tf, b_tf])
@@ -1877,7 +1875,7 @@ class TestPassthruIntegrationTorch(TorchIntegrationTest):
         b = self.torch.tensor(0.654, dtype=self.torch.float64, requires_grad=True)
 
         res = circuit(a, b)
-        res.backward()  # pylint:disable=no-member
+        res.backward()
 
         # the analytic result of evaluating circuit(a, b)
         expected_cost = 0.25 * (
