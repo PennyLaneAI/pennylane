@@ -780,7 +780,7 @@ class MPLDrawer:
         self._ax.add_line(l1)
         self._ax.add_line(l2)
 
-    def measure(self, layer, wires, box_options=None, lines_options=None):
+    def measure(self, layer, wires, text=None, box_options=None, lines_options=None):
         """Draw a Measurement graphic at designated layer, wire combination.
 
         Args:
@@ -858,6 +858,10 @@ class MPLDrawer:
             head_width=self._box_length / 8.0,
             **lines_options,
         )
+        if text:
+            text_obj = self._ax.text(
+                layer + 0.05 * self._box_length, wires + 0.2, text, fontsize=15
+            )
 
     def cond(self, layer, measured_layer, wires, wires_target, options=None):
         """Add classical communication double-lines for conditional operations
