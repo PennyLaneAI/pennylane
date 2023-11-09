@@ -42,7 +42,7 @@ def _add_grouping_symbols(op, layer_str, wire_map, bit_map):
     return layer_str
 
 
-def _add_cond_grouping_symbols(op, layer_str, wire_map, bit_map, decimals, cache):
+def _add_cond_grouping_symbols(op, layer_str, wire_map, bit_map):
     """Adds symbols indicating the extent of a given object for conditional
     operators"""
     n_wires = len(wire_map)
@@ -87,7 +87,7 @@ def _add_mid_measure_grouping_symbols(op, layer_str, wire_map, bit_map):
 def _add_op(op, layer_str, wire_map, bit_map, decimals, cache):
     """Updates ``layer_str`` with ``op`` operation."""
     if op.name == "Conditional":
-        layer_str = _add_cond_grouping_symbols(op, layer_str, wire_map, bit_map, decimals, cache)
+        layer_str = _add_cond_grouping_symbols(op, layer_str, wire_map, bit_map)
         return _add_op(op.then_op, layer_str, wire_map, bit_map, decimals, cache)
 
     if isinstance(op, MidMeasureMP):
