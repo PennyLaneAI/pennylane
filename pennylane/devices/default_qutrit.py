@@ -104,6 +104,7 @@ class DefaultQutrit(QutritDevice):
     _conj = staticmethod(qnp.conj)
     _roll = staticmethod(qnp.roll)
     _cast = staticmethod(qnp.cast)
+    _tensordot = staticmethod(qnp.tensordot)
     _real = staticmethod(qnp.real)
     _imag = staticmethod(qnp.imag)
 
