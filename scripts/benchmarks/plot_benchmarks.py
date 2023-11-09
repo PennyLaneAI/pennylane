@@ -1,7 +1,7 @@
 """
 This module includes functionality to plot the branch benchmarks normalized by the reference.
 """
-import argparse, json
+import argparse, json, os, sys
 import numpy as np
 
 ########################################################################
@@ -37,28 +37,32 @@ def parse_args():
 
     return parser.parse_args()
 
-def format_plot_data(ref_data, data):
+def format_plot_data(_ref_data, _data):
     """Here we format the data coming from JSON files in two arrays with graph data.
 
     Args:
-        ref_data (JSON-XUBM): reference benchmarks data
-        data (JSON-XUBM): local (or branch) benchmarks data
+        _ref_data (JSON-XUBM): reference benchmarks data
+        _data (JSON-XUBM): local (or branch) benchmarks data
 
     Returns:
         tuple: data for x and y axis
     """
 
-    benchmark_ratios= []
-    benchmark_names=[]
-    for ref_benchmark, benchmark in zip(ref_data["xubm"], data["xubm"]):
+    ratios= []
+    names=[]
+    for ref_benchmark, benchmark in zip(_ref_data["xubm"], _data["xubm"]):
         if [ref_benchmark["name"] == benchmark["name"]]:
-            benchmark_names += [benchmark["name"], ]
-            benchmark_ratios += [benchmark["runtime"] / ref_benchmark["runtime"], ]
+            names += [benchmark["name"], ]
+            ratios += [benchmark["runtime"] / ref_benchmark["runtime"], ]
 
-    return benchmark_names, benchmark_ratios
+    return names, ratios
 
 if __name__ == "__main__":
     args = parse_args()
+
+    if ((os.stat(args.filename_XUBM_ref).st_size == 0) or (os.stat(args.filename_XUBM).st_size == 0)):
+        print(args.filename_XUBM_ref + " or " + args.filename_XUBM + " is empty. Interrupting program.")
+        sys.exit(0)
 
     with open(args.filename_XUBM_ref, 'r', encoding="utf-8") as file:
         ref_data = json.load(file)

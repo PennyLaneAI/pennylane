@@ -177,18 +177,15 @@ jobs:
       - name: Convert pytest benchmark JSON files to XUBM-JSON
         if: ${{ steps.continue.outputs.local_benchmarks == 'true' }}
         run: |
-          python ${{ github.workspace }}/scripts/benchmarks/convert_pytest_JSON_to_XUBM.py --author ${{ github.event.pull_request.user.login }}
+          mkdir ${{ github.workspace }}/benchmark_results
+          python ${{ github.workspace }}/scripts/benchmarks/convert_pytest_JSON_to_XUBM.py --filename_XUBM benchmark_results/benchmarks_xubm.json --author ${{ github.event.pull_request.user.login }}
           cd benchmark_reference
           python ${{ github.workspace }}/scripts/benchmarks/convert_pytest_JSON_to_XUBM.py --author ${{ github.event.pull_request.user.login }}
 
       - name: Plotting benchmark graphs
         if: ${{ steps.continue.outputs.local_benchmarks == 'true' }}
         run: |
-          python ${{ github.workspace }}/scripts/benchmarks/plot_benchmarks.py --graph_name ${{ inputs.benchmarks_name }}
-
-      - name: create directorie and move data to pe updated to an artifact
-        if: ${{ steps.continue.outputs.local_benchmarks == 'true' }}
-        run: mkdir -p ${{ github.workspace }}/benchmark_results && cp benchmarks_xubm.json ${{ inputs.benchmarks_name }}.png "$_"
+          python ${{ github.workspace }}/scripts/benchmarks/plot_benchmarks.py --graph_name benchmark_results/${{ inputs.benchmarks_name }}
 
       # If this is a PR benchmark, upload the data as an artifact.
       - name: Upload PR pytest benchmark file
