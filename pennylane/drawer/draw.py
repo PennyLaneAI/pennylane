@@ -18,7 +18,6 @@ Contains the drawing function.
 """
 from functools import wraps
 import warnings
-import pkg_resources
 
 import pennylane as qml
 from .tape_mpl import tape_mpl
@@ -26,7 +25,7 @@ from .tape_text import tape_text
 
 
 def catalyst_qjit(qnode):
-    """The ``catalyst.qjit`` wrapper method"""
+    """Check if Catalyst is available and if the QNode is qjitted."""
     if "catalyst" in qml.compiler.available_compilers():
         return qnode.__class__.__name__ == "QJIT"
     else:
