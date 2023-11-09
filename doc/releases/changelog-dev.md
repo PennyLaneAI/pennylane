@@ -46,6 +46,9 @@
   because it depended on the now-deprecated `Observable.return_type` property.
   [(#4762)](https://github.com/PennyLaneAI/pennylane/pull/4762)
 
+* Specifying `control_values` passed to `qml.ctrl` as a string is no longer supported.
+  [(#)]()
+
 <h3>Deprecations 👋</h3>
 
 * `QuantumScript.is_sampled` and `QuantumScript.all_sampled` are deprecated.

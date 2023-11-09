@@ -156,14 +156,6 @@ class TestInitialization:
         op = Controlled(self.temp_op, (0, 1), control_values=[0, 1])
         assert op.control_values == [False, True]
 
-    def test_string_control_values(self):
-        """Test warning and conversion of string control_values."""
-
-        with pytest.warns(UserWarning, match="Specifying control values as a string"):
-            op = Controlled(self.temp_op, (0, 1), "01")
-
-        assert op.control_values == [False, True]
-
     def test_non_boolean_control_values(self):
         """Test control values are converted to booleans."""
         op = Controlled(self.temp_op, (0, 1, 2), control_values=["", None, 5])
