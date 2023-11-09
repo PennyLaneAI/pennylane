@@ -63,18 +63,15 @@ class grad:
             to determine differentiability, by examining the ``requires_grad``
             property.
 
-        method (str): Specifies the gradient method when used with the :func:`~.qjit` decorator.
-            Outside of the :func:`~.qjit`, this keyword argument has no effect and should not be
-            set. In just-in-time (JIT) mode, this can be any of ``["auto", "fd"]``, where:
+        method (str): Specifies the gradient method when used with the :func:`~.qjit` decorator. Outside of the :func:`~.qjit`, this keyword argument has no effect and should not be set. In just-in-time (JIT) mode, this can be any of ``["auto", "fd"]``, where:
 
-                - ``"auto"`` represents deferring the quantum differentiation to the method
-                specified by the QNode, while the classical computation is differentiated
-                using traditional auto-diff. Catalyst supports ``"parameter-shift"`` and
-                ``"adjoint"`` on internal QNodes. Notably, QNodes with
-                ``diff_method="finite-diff"`` are not supported with ``"auto"``.
+            - ``"auto"`` represents deferring the quantum differentiation to the method
+            specified by the QNode, while the classical computation is differentiated
+            using traditional auto-diff. Catalyst supports ``"parameter-shift"`` and
+            ``"adjoint"`` on internal QNodes. Notably, QNodes with
+            ``diff_method="finite-diff"`` are not supported with ``"auto"``.
 
-                - ``"fd"`` represents first-order finite-differences for the entire hybrid
-                function.
+            - ``"fd"`` represents first-order finite-differences for the entire hybrid function.
 
         step_size (float): The step-size value for the finite-difference (``"fd"``) method within
             :func:`~.qjit` decorated functions. This value has no effect in non-compiled functions.
