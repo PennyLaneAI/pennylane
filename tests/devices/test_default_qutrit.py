@@ -1398,7 +1398,7 @@ class TestDensityMatrix:
         assert np.allclose(qutrit_device_2_wires.density_matrix(wires), expected)
 
 
-# pylint: disable=no-member
+# pylint:disable=no-member
 
 
 # JAX integration tests
