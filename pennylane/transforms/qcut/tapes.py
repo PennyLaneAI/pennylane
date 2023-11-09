@@ -25,7 +25,7 @@ import pennylane as qml
 from pennylane import apply, expval
 from pennylane.measurements import ExpectationMP, MeasurementProcess, SampleMP
 from pennylane.operation import Operator, Tensor
-from pennylane.ops.qubit.non_parametric_ops import WireCut
+from pennylane.ops.meta import WireCut
 from pennylane.pauli import string_to_pauli_word
 from pennylane.queuing import AnnotatedQueue, WrappedObj
 from pennylane.tape import QuantumScript, QuantumTape

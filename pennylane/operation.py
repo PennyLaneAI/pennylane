@@ -1853,6 +1853,8 @@ class Observable(Operator):
             can be useful for some applications where the instance has to be identified
     """
 
+    _return_type = None
+
     @property
     def _queue_category(self):
         """Used for sorting objects into their respective lists in `QuantumTape` objects.
@@ -1875,22 +1877,25 @@ class Observable(Operator):
         """All observables must be hermitian"""
         return True
 
-    # pylint: disable=abstract-method
-    return_type = None
-    """None or ObservableReturnTypes: Measurement type that this observable is called with."""
-
-    def __repr__(self):
-        """Constructor-call-like representation."""
-        temp = super().__repr__()
-
-        if self.return_type is None:
-            return temp
-
-        return (
-            f"{repr(self.return_type)}(wires={self.wires.tolist()})"
-            if self.return_type is qml.measurements.Probability
-            else f"{repr(self.return_type)}({temp})"
+    @property
+    def return_type(self):
+        """None or ObservableReturnTypes: Measurement type that this observable is called with."""
+        warnings.warn(
+            "`Observable.return_type` is deprecated. Instead, you should "
+            "inspect the type of the surrounding measurement process.",
+            UserWarning,
         )
+        return self._return_type
+
+    @return_type.setter
+    def return_type(self, value):
+        """Change the return type of an Observable. Note that this property is deprecated."""
+        warnings.warn(
+            "`Observable.return_type` is deprecated. Instead, you should "
+            "create a measurement process containing this Observable.",
+            UserWarning,
+        )
+        self._return_type = value
 
     def __matmul__(self, other):
         if active_new_opmath():
@@ -2023,7 +2028,6 @@ class Tensor(Observable):
     """
 
     # pylint: disable=abstract-method
-    return_type = None
     tensor = True
     has_matrix = True
 
@@ -2109,17 +2113,7 @@ class Tensor(Observable):
 
     def __repr__(self):
         """Constructor-call-like representation."""
-
-        s = " @ ".join([repr(o) for o in self.obs])
-
-        if self.return_type is None:
-            return s
-
-        return (
-            f"{repr(self.return_type)}(wires={self.wires.tolist()})"
-            if self.return_type is qml.measurements.Probability
-            else f"{repr(self.return_type)}({s})"
-        )
+        return " @ ".join([repr(o) for o in self.obs])
 
     @property
     def name(self):
@@ -2525,7 +2519,7 @@ class Tensor(Observable):
         else:
             obs = Tensor(*self.non_identity_obs)
 
-        obs.return_type = self.return_type
+        obs._return_type = self._return_type
         return obs
 
     def map_wires(self, wire_map: dict):

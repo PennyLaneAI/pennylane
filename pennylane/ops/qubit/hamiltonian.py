@@ -209,8 +209,6 @@ class Hamiltonian(Observable):
 
         self._wires = qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
 
-        self.return_type = None
-
         # attribute to store indices used to form groups of
         # commuting observables, since recomputation is costly
         self._grouping_indices = None

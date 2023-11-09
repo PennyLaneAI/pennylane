@@ -161,7 +161,9 @@ def cut_circuit(
 
     .. code-block:: python
 
-        @qml.cut_circuit(auto_cutter=True)
+        from functools import partial
+
+        @partial(qml.cut_circuit, auto_cutter=True)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
