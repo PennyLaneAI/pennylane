@@ -201,6 +201,43 @@ def test_mottonenstate_preparation(mocker):
     assert np.allclose(res, indiv_res)
 
 
+def test_basis_state_preparation(mocker):
+    """Test that batching works for BasisStatePreparation"""
+    dev = qml.device("default.qubit", wires=3)
+
+    @partial(qml.batch_input, argnum=0)
+    @qml.qnode(dev, interface="autograd")
+    def circuit(data, weights):
+        qml.templates.BasisStatePreparation(data, wires=[0, 1, 2])
+        qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
+        return qml.probs(wires=[0, 1, 2])
+
+    batch_size = 3
+
+    # create a batched input statevector
+    data = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], requires_grad=False)
+
+    # weights is not batched
+    weights = np.random.random((10, 3, 3), requires_grad=True)
+
+    spy = mocker.spy(circuit.device, "execute")
+    res = circuit(data, weights)
+    assert res.shape == (batch_size, 2**3)
+    assert len(spy.call_args[0][0]) == batch_size
+
+    # check the results against individually executed circuits (no batching)
+    @qml.qnode(dev)
+    def circuit2(data, weights):
+        qml.templates.BasisStatePreparation(data, wires=[0, 1, 2])
+        qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
+        return qml.probs(wires=[0, 1, 2])
+
+    indiv_res = []
+    for state in data:
+        indiv_res.append(circuit2(state, weights))
+    assert np.allclose(res, indiv_res)
+
+
 def test_qubit_state_prep(mocker):
     """Test that batching works for StatePrep"""
 

@@ -69,6 +69,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `MottonenStatePreparation` now raises an error if decomposing a broadcasted state vector.
+  [(#4767)](https://github.com/PennyLaneAI/pennylane/pull/4767)
+
+* `BasisStatePreparation` now raises an error if decomposing a broadcasted state vector.
+  [(#4767)](https://github.com/PennyLaneAI/pennylane/pull/4767)
+
 * Gradient transforms now work with overridden shot vectors and default qubit.
   [(#4795)](https://github.com/PennyLaneAI/pennylane/pull/4795)
 
@@ -87,6 +93,9 @@
   wire order.
   [(#4781)](https://github.com/PennyLaneAI/pennylane/pull/4781)
 
+* `transpile` can now handle measurements that are broadcasted onto all wires.
+  [(#4793)](https://github.com/PennyLaneAI/pennylane/pull/4793)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -96,6 +105,7 @@ Lillian Frederiksen,
 Ankit Khandelwal,
 Christina Lee,
 Anurav Modak,
+Mudit Pandey,
 Matthew Silverman,
 David Wierichs,
 Justin Woodring,
