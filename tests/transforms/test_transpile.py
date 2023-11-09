@@ -406,3 +406,17 @@ class TestTranspile:
 
         assert len(transformed_qnode.transform_program) == 1
         assert transformed_qnode.transform_program[0].kwargs["device"] is dev
+
+    def test_qnode_transform_raises_if_device_kwarg(self):
+        """Test an error is raised if a device is provided as a keyword argument to a qnode transform."""
+
+        dev = qml.device("default.qubit", wires=[0, 1, 2, 3])
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.state()
+
+        with pytest.raises(ValueError, match=r"Cannot provide a "):
+            qml.transforms.transpile(
+                circuit, coupling_map=[(0, 1), (1, 3), (3, 2), (2, 0)], device=dev
+            )
