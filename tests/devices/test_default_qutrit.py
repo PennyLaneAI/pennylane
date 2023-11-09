@@ -1399,14 +1399,18 @@ class TestDensityMatrix:
 
 
 """JAX integration tests"""
+
+
 @pytest.fixture
 def jax():
     yield pytest.importorskip("jax")
 
+
 @pytest.fixture
 def jnp():
     yield pytest.importorskip("jax.numpy")
-    
+
+
 @pytest.fixture
 def config():
     yield pytest.importorskip("jax.config").config
@@ -1457,7 +1461,9 @@ class TestQNodeIntegrationJax:
         state = dev.state
 
         amplitude = self._jnp.exp(-1j * np.pi / 8)
-        expected = (-1j / self._jnp.sqrt(3)) * self._jnp.array([amplitude, self._jnp.conj(amplitude), 1])
+        expected = (-1j / self._jnp.sqrt(3)) * self._jnp.array(
+            [amplitude, self._jnp.conj(amplitude), 1]
+        )
 
         assert self._jnp.allclose(state, expected, atol=tol, rtol=0)
 
@@ -1538,7 +1544,9 @@ class TestPassthruIntegrationJax:
         b = self._jnp.array(0.654)
 
         res = circuit(a, b)
-        expected_cost = 0.25 * (self._jnp.cos(a) * self._jnp.cos(b) - self._jnp.cos(a) + self._jnp.cos(b) + 3)
+        expected_cost = 0.25 * (
+            self._jnp.cos(a) * self._jnp.cos(b) - self._jnp.cos(a) + self._jnp.cos(b) + 3
+        )
         assert self._jnp.allclose(res, expected_cost, atol=tol, rtol=0)
         res = self._jax.grad(circuit, argnums=(0, 1))(a, b)
         expected_grad = self._jnp.array(
@@ -1548,7 +1556,9 @@ class TestPassthruIntegrationJax:
             ]
         )
 
-        assert self._jnp.allclose(self._jnp.array(res), self._jnp.array(expected_grad), atol=tol, rtol=0)
+        assert self._jnp.allclose(
+            self._jnp.array(res), self._jnp.array(expected_grad), atol=tol, rtol=0
+        )
 
     def test_backprop_gradient_broadcasted(self, tol):
         """Tests that the gradient of the broadcasted qnode is correct"""
@@ -1565,7 +1575,9 @@ class TestPassthruIntegrationJax:
         b = self._jnp.array([0.54, 0.32, 1.2])
 
         res = circuit(a, b)
-        expected_cost = 0.25 * (self._jnp.cos(a) * self._jnp.cos(b) - self._jnp.cos(a) + self._jnp.cos(b) + 3)
+        expected_cost = 0.25 * (
+            self._jnp.cos(a) * self._jnp.cos(b) - self._jnp.cos(a) + self._jnp.cos(b) + 3
+        )
         assert self._jnp.allclose(res, expected_cost, atol=tol, rtol=0)
 
         res = self._jax.jacobian(circuit, argnums=[0, 1])(a, b)
@@ -1581,9 +1593,11 @@ class TestPassthruIntegrationJax:
 
 """TENSORFLOW integration tests"""
 
+
 @pytest.fixture
 def tf():
     yield pytest.importorskip("tensorflow", minversion="2.1")
+
 
 @pytest.mark.tf
 class TestQNodeIntegrationTF:
@@ -1626,7 +1640,6 @@ class TestQNodeIntegrationTF:
         expected = (-1j / np.sqrt(3)) * np.array([amplitude, np.conj(amplitude), 1])
 
         assert np.allclose(state, expected, atol=tol, rtol=0)
-
 
 
 @pytest.mark.tf
@@ -1676,7 +1689,6 @@ class TestDtypePreservedTF:
 
         res = circuit(p)
         assert res.dtype == c_dtype
-
 
 
 @pytest.mark.tf
@@ -1768,6 +1780,7 @@ class TestPassthruIntegrationTF:
 
 """TORCH integration tests"""
 
+
 @pytest.fixture
 def torch():
     yield pytest.importorskip("torch")
@@ -1778,6 +1791,7 @@ class TestQNodeIntegrationTorch:
     @pytest.fixture(autouse=True)
     def add_info(self, torch):
         self._torch = torch
+
     def test_qutrit_circuit(self, tol):
         """Test that the device provides the correct
         result for a simple circuit."""
@@ -1907,7 +1921,9 @@ class TestPassthruIntegrationTorch:
         res.backward()  # pylint:disable=no-member
 
         # the analytic result of evaluating circuit(a, b)
-        expected_cost = 0.25 * (self._torch.cos(a) * self._torch.cos(b) - self._torch.cos(a) + self._torch.cos(b) + 3)
+        expected_cost = 0.25 * (
+            self._torch.cos(a) * self._torch.cos(b) - self._torch.cos(a) + self._torch.cos(b) + 3
+        )
         expected = [
             -0.25 * (self._torch.sin(a) * self._torch.cos(b) - self._torch.sin(a)),
             -0.25 * (self._torch.cos(a) * self._torch.sin(b) + self._torch.sin(b)),
@@ -1934,7 +1950,9 @@ class TestPassthruIntegrationTorch:
 
         res = circuit(a, b)
         # the analytic result of evaluating circuit(a, b)
-        expected_cost = 0.25 * (self._torch.cos(a) * self._torch.cos(b) - self._torch.cos(a) + self._torch.cos(b) + 3)
+        expected_cost = 0.25 * (
+            self._torch.cos(a) * self._torch.cos(b) - self._torch.cos(a) + self._torch.cos(b) + 3
+        )
         expected = [
             -0.25 * (self._torch.sin(a) * self._torch.cos(b) - self._torch.sin(a)),
             -0.25 * (self._torch.cos(a) * self._torch.sin(b) + self._torch.sin(b)),
