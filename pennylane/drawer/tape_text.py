@@ -24,7 +24,7 @@ from .utils import convert_wire_order, unwrap_controls
 
 def _add_grouping_symbols(op, layer_str, wire_map, bit_map):
     """Adds symbols indicating the extent of a given object."""
-    if op.__class__.__name__ == "Conditional":
+    if op.name == "Conditional":
         return _add_cond_grouping_symbols(op, layer_str, wire_map, bit_map)
 
     if isinstance(op, MidMeasureMP):
@@ -81,7 +81,7 @@ def _add_mid_measure_grouping_symbols(op, layer_str, wire_map, bit_map):
 
 def _add_op(op, layer_str, wire_map, bit_map, decimals, cache):
     """Updates ``layer_str`` with ``op`` operation."""
-    if op.__class__.__name__ == "Conditional":
+    if op.name == "Conditional":
         return _add_cond_op(op, layer_str, wire_map, bit_map, decimals, cache)
     if isinstance(op, MidMeasureMP):
         return _add_mid_measure_op(op, layer_str, wire_map, bit_map, decimals, cache)
@@ -150,7 +150,10 @@ def _add_measurement(m, layer_str, wire_map, bit_map, decimals, cache):
         obs_label = None
     else:
         obs_label = m.obs.label(decimals=decimals, cache=cache).replace("\n", "")
-    meas_label = measurement_label_map[m.return_type](obs_label)
+    if m.return_type in measurement_label_map:
+        meas_label = measurement_label_map[m.return_type](obs_label)
+    else:
+        meas_label = m.return_type.value
 
     if len(m.wires) == 0:  # state or probability across all wires
         for i, s in enumerate(layer_str):
@@ -183,7 +186,7 @@ def _find_mid_measure_cond_connections(operations, wire_map, layers):
     measurements_for_conds = set()
     conditional_ops = []
     for op in operations:
-        if op.__class__.__name__ == "Conditional":
+        if op.name == "Conditional":
             measurements_for_conds.update(op.meas_val.measurements)
             conditional_ops.append(op)
 
@@ -203,7 +206,7 @@ def _find_mid_measure_cond_connections(operations, wire_map, layers):
         #         bit_terminal_ops[bit_map[mid_measure]] = cond
         for i, layer in enumerate(layers):
             for op in layer:
-                if op.__class__.__name__ == "Conditional":
+                if op.name == "Conditional":
                     for mid_measure in op.meas_val.measurements:
                         bit_terminal_layers[bit_map[mid_measure]] = i
 

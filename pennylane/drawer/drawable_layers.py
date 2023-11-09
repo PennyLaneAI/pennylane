@@ -49,6 +49,38 @@ def _recursive_find_layer(layer_to_check, op_occupied_wires, occupied_wires_per_
     return _recursive_find_layer(layer_to_check - 1, op_occupied_wires, occupied_wires_per_layer)
 
 
+def _get_op_occupied_wires(op, wire_map, cond_measurements):
+    """Helper function to find wires that would be used by an operator in a drawable layer."""
+    if isinstance(op, MidMeasureMP):
+        mapped_wire = wire_map[op.wires[0]]
+
+        if op in cond_measurements:
+            min_wire = mapped_wire
+            max_wire = max(wire_map.values())
+            return set(range(min_wire, max_wire + 1))
+
+        return {mapped_wire}
+
+    if op.name == "Conditional":
+        mapped_wires = [wire_map[wire] for wire in op.then_op.wires]
+        min_wire = min(mapped_wires)
+        max_wire = max(wire_map.values())
+        return set(range(min_wire, max_wire + 1))
+
+    if len(op.wires) == 0:
+        # if no wires, then it acts on all wires
+        # for example, qml.state and qml.sample
+        mapped_wires = set(wire_map.values())
+        return mapped_wires
+
+    mapped_wires = {wire_map[wire] for wire in op.wires}
+    # get all integers from the minimum to the maximum
+    min_wire = min(mapped_wires)
+    max_wire = max(mapped_wires)
+
+    return set(range(min_wire, max_wire + 1))
+
+
 def drawable_layers(ops, wire_map=None):
     """Determine non-overlapping yet dense placement of operations into layers for drawing.
 
@@ -97,47 +129,23 @@ def drawable_layers(ops, wire_map=None):
     # Collect all mid-circuit measurements used for classical conditioning
     cond_measurements = set()
     for op in ops:
-        if op.__class__.__name__ == "Conditional":
+        if op.name == "Conditional":
             cond_measurements.update(op.meas_val.measurements)
 
     # loop over operations
     for op in ops:
         is_mid_measure = is_conditional = False
+
         if isinstance(op, MidMeasureMP):
             if len(op.wires) > 1:
                 raise ValueError("Cannot draw mid-circuit measurements with more than one wire.")
 
-            is_mid_measure = True
-            mapped_wire = wire_map[op.wires[0]]
-            measured_wires[op.id] = mapped_wire
+            measured_wires[op.id] = wire_map[op.wires[0]]
 
-            if op in cond_measurements:
-                min_wire = mapped_wire
-                max_wire = max(wire_map.values())
-                op_occupied_wires = set(range(min_wire, max_wire + 1))
-            else:
-                op_occupied_wires = {mapped_wire}
-
-        elif op.__class__.__name__ == "Conditional":
+        elif op.name == "Conditional":
             is_conditional = True
-            mapped_wires = [wire_map[wire] for wire in op.then_op.wires]
-            min_wire = min(mapped_wires)
-            max_wire = max(wire_map.values())
-            op_occupied_wires = set(range(min_wire, max_wire + 1))
 
-        elif len(op.wires) == 0:
-            # if no wires, then it acts on all wires
-            # for example, qml.state and qml.sample
-            mapped_wires = set(wire_map.values())
-            op_occupied_wires = mapped_wires
-
-        else:
-            mapped_wires = {wire_map[wire] for wire in op.wires}
-            # get all integers from the minimum to the maximum
-            min_wire = min(mapped_wires)
-            max_wire = max(mapped_wires)
-            op_occupied_wires = set(range(min_wire, max_wire + 1))
-
+        op_occupied_wires = _get_op_occupied_wires(op, wire_map, cond_measurements)
         op_layer = _recursive_find_layer(max_layer, op_occupied_wires, occupied_wires_per_layer)
 
         if is_conditional:

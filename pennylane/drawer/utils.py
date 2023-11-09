@@ -100,17 +100,3 @@ def unwrap_controls(op):
 
     control_values = [bool(int(i)) for i in control_values] if control_values else control_values
     return control_wires, control_values
-
-
-def get_classical_controls(op, bit_map):
-    """Gets the wires covered by classical conditional operator as well as condition values and
-    classical bits.
-
-    Args:
-        op (.Operation): Conditional operator
-        bit_map (dict): Dictionary of the classical bit map
-
-    Returns:
-        List, List: Bits that are covered by the condition, along with associated control values
-    """
-    return [bit_map[m] for m in op.meas_val.measurements]
