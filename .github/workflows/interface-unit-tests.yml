@@ -358,7 +358,7 @@ jobs:
       install_pennylane_lightning_master: false
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: external
-      additional_pip_packages: git+https://github.com/Quantomatic/pyzx.git@master pennylane-catalyst
+      additional_pip_packages: git+https://github.com/Quantomatic/pyzx.git@master pennylane-catalyst matplotlib
 
 
   qcut-tests:
