@@ -1666,7 +1666,7 @@ class TestDtypePreservedTF(TFIntegrationTest):
 class TestPassthruIntegrationTF(TFIntegrationTest):
     """Tests for integration with the PassthruQNode"""
 
-    # pylint: disable=no-member
+    # pylint: disable=E1101
     def test_backprop_gradient(self, tol):
         """Tests that the gradient of the qnode is correct"""
         dev = qml.device("default.qutrit", wires=2)
