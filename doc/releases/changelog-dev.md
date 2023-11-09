@@ -29,6 +29,9 @@
 * `qml.draw` and `qml.draw_mpl` now render operator ids.
   [(#4749)](https://github.com/PennyLaneAI/pennylane/pull/4749)
 
+* Simplified the logic for re-arranging states before returning.
+  [(#)]()
+
 <h3>Breaking changes 💔</h3>
 
 * The `prep` keyword argument has been removed from `QuantumScript` and `QuantumTape`.

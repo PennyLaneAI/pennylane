@@ -1187,19 +1187,19 @@ class QuantumScript:
         **Example:**
 
         >>> circuit = qml.tape.QuantumScript([qml.PauliX("a")], [qml.expval(qml.PauliZ("b"))])
-        >>> map_circuit_to_standard_wires(circuit).circuit
+        >>> circuit.map_to_standard_wires().circuit
         [PauliX(wires=[0]), expval(PauliZ(wires=[1]))]
 
         If any measured wires are not in any operations, they will be mapped last:
 
         >>> circuit = qml.tape.QuantumScript([qml.PauliX(1)], [qml.probs(wires=[0, 1])])
-        >>> qml.devices.qubit.map_circuit_to_standard_wires(circuit).circuit
+        >>> circuit.map_to_standard_wires().circuit
         [PauliX(wires=[0]), probs(wires=[1, 0])]
 
         If no wire-mapping is needed, then the returned circuit *is* the inputted circuit:
 
         >>> circuit = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliZ(1))])
-        >>> qml.devices.qubit.map_circuit_to_standard_wires(circuit) is circuit
+        >>> circuit.map_to_standard_wires() is circuit
         True
 
         """
