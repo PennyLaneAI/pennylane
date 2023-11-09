@@ -316,6 +316,7 @@ class DefaultQubit(Device):
             self._prng_key = None
             self._rng = np.random.default_rng(seed)
         self._debugger = None
+        self._state_cache = None
 
     def supports_derivatives(
         self,
@@ -469,6 +470,8 @@ class DefaultQubit(Device):
             circuits = [circuits]
 
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
+        if execution_config.use_device_jacobian_product:
+            self._state_cache = {}
         interface = (
             execution_config.interface
             if execution_config.gradient_method in {"backprop", None}
@@ -482,6 +485,7 @@ class DefaultQubit(Device):
                     prng_key=self._prng_key,
                     debugger=self._debugger,
                     interface=interface,
+                    state_cache=self._state_cache,
                 )
                 for c in circuits
             )
@@ -736,7 +740,10 @@ class DefaultQubit(Device):
 
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
-            res = tuple(adjoint_vjp(circuit, cots) for circuit, cots in zip(circuits, cotangents))
+            res = tuple(
+                adjoint_vjp(circuit, cots, state=self._state_cache.get(circuit, None))
+                for circuit, cots in zip(circuits, cotangents)
+            )
         else:
             vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:

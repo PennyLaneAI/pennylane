@@ -393,6 +393,7 @@ class QNode:
         cache=True,
         cachesize=10000,
         max_diff=1,
+        device_vjp=False,
         **gradient_kwargs,
     ):
         if logger.isEnabledFor(logging.DEBUG):
@@ -463,6 +464,7 @@ class QNode:
             "cachesize": cachesize,
             "max_diff": max_diff,
             "max_expansion": max_expansion,
+            "device_vjp": device_vjp,
         }
 
         if self.expansion_strategy == "device":
@@ -991,7 +993,7 @@ class QNode:
                 interface=self.interface,
                 gradient_method=_gradient_method,
                 grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
-                use_device_jacobian_product=False,
+                use_device_jacobian_product=self.execute_kwargs["device_vjp"],
             )
             device_transform_program, config = self.device.preprocess(execution_config=config)
             full_transform_program = self.transform_program + device_transform_program

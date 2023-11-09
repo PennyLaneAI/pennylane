@@ -13,6 +13,8 @@
 # limitations under the License.
 """Simulate a quantum script."""
 # pylint: disable=protected-access
+from typing import Optional
+
 from numpy.random import default_rng
 import numpy as np
 
@@ -236,7 +238,12 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
 
 
 def simulate(
-    circuit: qml.tape.QuantumScript, rng=None, prng_key=None, debugger=None, interface=None
+    circuit: qml.tape.QuantumScript,
+    rng=None,
+    prng_key=None,
+    debugger=None,
+    interface=None,
+    state_cache: Optional[dict] = None,
 ) -> Result:
     """Simulate a single quantum script.
 
@@ -252,6 +259,7 @@ def simulate(
             generated. Only for simulation using JAX.
         debugger (_Debugger): The debugger to use
         interface (str): The machine learning interface to create the initial state with
+        state_cache=None (Optional[dict])
 
     Returns:
         tuple(TensorLike): The results of the simulation
@@ -267,4 +275,6 @@ def simulate(
 
     """
     state, is_state_batched = get_final_state(circuit, debugger=debugger, interface=interface)
+    if state_cache is not None:
+        state_cache[circuit] = state
     return measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key)
