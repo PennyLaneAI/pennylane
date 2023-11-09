@@ -139,7 +139,7 @@ def _count_resources(tape) -> Resources:
     num_wires = len(tape.wires)
     shots = tape.shots
     depth = tape.graph.get_depth()
-    error = OperatorError()
+    error = []
 
     num_gates = 0
     gate_types = defaultdict(int)
@@ -154,7 +154,11 @@ def _count_resources(tape) -> Resources:
                 gate_sizes[n] += op_resource.gate_sizes[n]
 
             num_gates += sum(op_resource.gate_types.values())
-            error += op_resource.error
+            
+            if len(error) == 0:
+                error.append(op_resource.error)
+            else:
+                error[0] += op_resource.error
 
         else:
             gate_types[op.name] += 1

@@ -1,18 +1,18 @@
-import numpy as np
+import abc
 
-
-class OperatorError():
+class OperatorError(abc.ABC):
     """A general class to represent the Operator Norm Error"""
 
     def __init__(self, error=0):
         self.error = error
     
+    @abc.abstractclassmethod
     def __add__(self, other):
-        """Simple case, its additive"""
-        return OperatorError(self.error + other.error)
+        """How errors are combined"""
+        return NotImplemented
     
     @staticmethod
-    def get_error(op):
+    def get_error(*args, **kwargs):
         """Compute the operator error for a given operator"""
         raise NotImplemented
     
