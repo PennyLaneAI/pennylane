@@ -47,7 +47,7 @@
   [(#4762)](https://github.com/PennyLaneAI/pennylane/pull/4762)
 
 * Specifying `control_values` passed to `qml.ctrl` as a string is no longer supported.
-  [(#)]()
+  [(#4816)](https://github.com/PennyLaneAI/pennylane/pull/4816)
 
 <h3>Deprecations 👋</h3>
 
