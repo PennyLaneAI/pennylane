@@ -451,7 +451,7 @@ class DefaultQutrit(QutritDevice):
         device_wires = self.map_wires(wires)
 
         mat = self._cast(self._reshape(mat, [3] * len(device_wires) * 2), dtype=self.C_DTYPE)
-        axes = (qnp.arange(len(device_wires), 2 * len(device_wires)), device_wires)
+        axes = (list(range(len(device_wires), 2 * len(device_wires))), device_wires)
         tdot = self._tensordot(mat, state, axes=axes)
 
         # tensordot causes the axes given in `wires` to end up in the first positions
