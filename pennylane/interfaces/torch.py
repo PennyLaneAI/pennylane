@@ -56,8 +56,8 @@ Note that for custom functions, the output of ``forward`` and the output of ``ba
 Torch arrays.  While autograd and jax can handle nested result objects like ``((np.array(1), np.array(2)), np.array(3))``,
 torch requires that it be flattened like ``(np.array(1), np.array(2), np.array(3))``.  The ``pytreeify`` class decorator
 modifies the output of ``forward`` and the input to ``backward`` to unpack and repack the nested structure of the PennyLane
-
 result object.
+
 
 """
 # pylint: disable=too-many-arguments,protected-access,abstract-method
