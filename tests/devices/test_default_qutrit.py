@@ -1398,31 +1398,21 @@ class TestDensityMatrix:
         assert np.allclose(qutrit_device_2_wires.density_matrix(wires), expected)
 
 
-"""JAX integration tests"""
-
-
-@pytest.fixture(name="jax")
-def jax_import():
-    yield pytest.importorskip("jax")
-
-
-@pytest.fixture(name="jnp")
-def jnp_import():
-    yield pytest.importorskip("jax.numpy")
-
-
-@pytest.fixture(name="config")
-def config_import():
-    yield pytest.importorskip("jax.config").config
+# JAX integration tests
+@pytest.fixture(scope="class")
+def jax_import_init(request):
+    request.cls.jax = pytest.importorskip("jax")
+    request.cls.jnp = pytest.importorskip("jax.numpy")
+    request.cls.config = pytest.importorskip("jax.config").config
 
 
 @pytest.mark.jax
-class TestQNodeIntegrationJax:
-    @pytest.fixture(autouse=True)
-    def setup_jax(self, jax, jnp):
-        self.jax = jax
-        self.jnp = jnp
+@pytest.mark.usefixtures("jax_import_init")
+class JaxIntegrationTest:
+    pass
 
+
+class TestQNodeIntegrationJax(JaxIntegrationTest):
     def test_qutrit_circuit(self, tol):
         """Test that the device provides the correct
         result for a simple circuit."""
@@ -1467,16 +1457,9 @@ class TestQNodeIntegrationJax:
         assert self.jnp.allclose(state, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.jax
-class TestDtypePreservedJax:
+class TestDtypePreservedJax(JaxIntegrationTest):
     """Test that the user-defined dtype of the device is preserved for QNode
     evaluation"""
-
-    @pytest.fixture(autouse=True)
-    def setup_jax(self, jax, jnp, config):
-        self.jax = jax
-        self.jnp = jnp
-        self.config = config
 
     @pytest.mark.parametrize("enable_x64, r_dtype", [(False, np.float32), (True, np.float64)])
     @pytest.mark.parametrize(
@@ -1520,14 +1503,8 @@ class TestDtypePreservedJax:
         assert res.dtype == c_dtype
 
 
-@pytest.mark.jax
-class TestPassthruIntegrationJax:
+class TestPassthruIntegrationJax(JaxIntegrationTest):
     """Tests for integration with the PassthruQNode"""
-
-    @pytest.fixture(autouse=True)
-    def setup_jax(self, jax, jnp):
-        self.jax = jax
-        self.jnp = jnp
 
     def test_backprop_gradient(self, tol):
         """Tests that the gradient of the qnode is correct"""
@@ -1591,20 +1568,20 @@ class TestPassthruIntegrationJax:
         assert all(self.jnp.allclose(r, e, atol=tol, rtol=0) for r, e in zip(res, expected))
 
 
-"""TENSORFLOW integration tests"""
-
-
-@pytest.fixture(name="tf")
-def import_tf():
-    yield pytest.importorskip("tensorflow", minversion="2.1")
+# TENSORFLOW integration tests
+@pytest.fixture(scope="class")
+def tf_import_init(request):
+    request.cls.tf = pytest.importorskip("tensorflow", minversion="2.1")
 
 
 @pytest.mark.tf
-class TestQNodeIntegrationTF:
-    @pytest.fixture(autouse=True)
-    def setup_tf(self, tf):
-        self.tf = tf
+@pytest.mark.usefixtures("tf_import_init")
+class TFIntegrationTest:
+    pass
 
+
+@pytest.mark.tf
+class TestQNodeIntegrationTF(TFIntegrationTest):
     def test_qutrit_circuit(self, tol):
         """Test that the device provides the correct
         result for a simple circuit."""
@@ -1642,14 +1619,9 @@ class TestQNodeIntegrationTF:
         assert np.allclose(state, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.tf
-class TestDtypePreservedTF:
+class TestDtypePreservedTF(TFIntegrationTest):
     """Test that the user-defined dtype of the device is preserved for QNode
     evaluation"""
-
-    @pytest.fixture(autouse=True)
-    def setup_tf(self, tf):
-        self.tf = tf
 
     @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
     @pytest.mark.parametrize(
@@ -1691,13 +1663,8 @@ class TestDtypePreservedTF:
         assert res.dtype == c_dtype
 
 
-@pytest.mark.tf
-class TestPassthruIntegrationTF:
+class TestPassthruIntegrationTF(TFIntegrationTest):
     """Tests for integration with the PassthruQNode"""
-
-    @pytest.fixture(autouse=True)
-    def setup_tf(self, tf):
-        self.tf = tf
 
     def test_backprop_gradient(self, tol):
         """Tests that the gradient of the qnode is correct"""
@@ -1778,20 +1745,19 @@ class TestPassthruIntegrationTF:
         assert np.allclose(qml.math.diag(jac[1].numpy()), expected_jac[1], atol=tol, rtol=0)
 
 
-"""TORCH integration tests"""
-
-
-@pytest.fixture(name="torch")
-def import_torch():
-    yield pytest.importorskip("torch")
+# TORCH integration tests
+@pytest.fixture(scope="class")
+def torch_import_init(request):
+    request.cls.torch = pytest.importorskip("torch")
 
 
 @pytest.mark.torch
-class TestQNodeIntegrationTorch:
-    @pytest.fixture(autouse=True)
-    def setup_torch(self, torch):
-        self.torch = torch
+@pytest.mark.usefixtures("torch_import_init")
+class TorchIntegrationTest:
+    pass
 
+
+class TestQNodeIntegrationTorch(TorchIntegrationTest):
     def test_qutrit_circuit(self, tol):
         """Test that the device provides the correct
         result for a simple circuit."""
@@ -1829,14 +1795,9 @@ class TestQNodeIntegrationTorch:
         assert np.allclose(state, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.torch
-class TestDtypePreservedTorch:
+class TestDtypePreservedTorch(TorchIntegrationTest):
     """Test that the user-defined dtype of the device is preserved for QNode
     evaluation"""
-
-    @pytest.fixture(autouse=True)
-    def setup_torch(self, torch):
-        self.torch = torch
 
     @pytest.mark.parametrize(
         "r_dtype, r_dtype_torch", [(np.float32, "torch32"), (np.float64, "torch64")]
@@ -1895,13 +1856,8 @@ class TestDtypePreservedTorch:
         assert res.dtype == c_dtype_torch
 
 
-@pytest.mark.torch
-class TestPassthruIntegrationTorch:
+class TestPassthruIntegrationTorch(TorchIntegrationTest):
     """Tests for integration with the PassthruQNode"""
-
-    @pytest.fixture(autouse=True)
-    def setup_torch(self, torch):
-        self.torch = torch
 
     def test_backprop_gradient(self, tol):
         """Tests that the gradient of the qnode is correct"""
