@@ -26,8 +26,6 @@ from .utils import convert_wire_order, unwrap_controls
 
 def _add_grouping_symbols(op, layer_str, wire_map, bit_map):
     """Adds symbols indicating the extent of a given object."""
-    if op.name == "Conditional":
-        return _add_cond_grouping_symbols(op, layer_str, wire_map, bit_map)
 
     if isinstance(op, MidMeasureMP):
         return _add_mid_measure_grouping_symbols(op, layer_str, wire_map, bit_map)
@@ -44,22 +42,19 @@ def _add_grouping_symbols(op, layer_str, wire_map, bit_map):
     return layer_str
 
 
-def _add_cond_grouping_symbols(op, layer_str, wire_map, bit_map):
+def _add_cond_grouping_symbols(op, layer_str, wire_map, bit_map, decimals, cache):
     """Adds symbols indicating the extent of a given object for conditional
     operators"""
     n_wires = len(wire_map)
     mapped_wires = [wire_map[w] for w in op.wires]
     mapped_bits = [bit_map[m] for m in op.meas_val.measurements]
-    min_w = min(mapped_wires)
+    max_w = max(mapped_wires)
     max_b = max(mapped_bits) + n_wires
-    layer_str[min_w] = "╓"
-    layer_str[max_b] = "╝"
 
-    for w in range(min_w + 1, n_wires):
-        layer_str[w] = "╟" if w in mapped_wires else "║"
+    layer_str[max_b] = "═╝"
 
-    for b in range(n_wires, max_b):
-        layer_str[b] = "╠" if b in mapped_bits else "║"
+    for w in range(max_w + 1, max_b):
+        layer_str[w] = "─║"
 
     return layer_str
 
@@ -83,7 +78,9 @@ def _add_mid_measure_grouping_symbols(op, layer_str, wire_map, bit_map):
 def _add_op(op, layer_str, wire_map, bit_map, decimals, cache):
     """Updates ``layer_str`` with ``op`` operation."""
     if op.name == "Conditional":
-        return _add_cond_op(op, layer_str, wire_map, bit_map, decimals, cache)
+        layer_str = _add_cond_grouping_symbols(op, layer_str, wire_map, bit_map, decimals, cache)
+        return _add_op(op.then_op, layer_str, wire_map, bit_map, decimals, cache)
+
     if isinstance(op, MidMeasureMP):
         return _add_mid_measure_op(op, layer_str, wire_map, bit_map, decimals, cache)
 
@@ -106,18 +103,6 @@ def _add_op(op, layer_str, wire_map, bit_map, decimals, cache):
         for w in op.wires:
             if w not in control_wires:
                 layer_str[wire_map[w]] += label
-
-    return layer_str
-
-
-def _add_cond_op(op, layer_str, wire_map, bit_map, decimals, cache):
-    """Updates ``layer_str`` with ``op`` operation when ``op`` is a
-    ``qml.transforms.Conditional``."""
-    layer_str = _add_grouping_symbols(op, layer_str, wire_map, bit_map)
-
-    label = op.label(decimals=decimals, cache=cache).replace("\n", "")
-    for w in op.wires:
-        layer_str[wire_map[w]] += label
 
     return layer_str
 
@@ -488,7 +473,6 @@ def tape_text(
                         else " "
                     )
                 layer_str[b + n_wires] = layer_str[b + n_wires].ljust(max_label_len, cur_b_filler)
-            # layer_str, max_label_len = _pad_layer(layer_str, n_wires, n_bits, cur_layer_mid_measure)
 
             line_length += max_label_len + 1  # one for the filler character
             if line_length > max_length:
