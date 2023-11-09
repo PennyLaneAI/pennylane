@@ -1,8 +1,13 @@
-import argparse, json
+"""
+This module includes functionality to convert the provided pytest-benchmark JSON file to
+JSON-XUBM (XanadU BenchMarks) format.
+"""
+import argparse, json, os, sys
 ########################################################################
 # Parsing arguments
 ########################################################################
 def parse_args():
+    """Parse external arguments provided to the script."""
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -31,7 +36,16 @@ def parse_args():
     return parser.parse_args()
 
 def create_benchmark_XUBM(data, args):
-    XUBM_data = {"xubm": []}
+    """This function converts the JSON file provided by pytest-benchmark to the JSON-XUBM (XanadU BenchMark) format.
+
+    Args:
+        data: Pytest-benchmark JSON data
+        args: customization arguments
+
+    Returns:
+        JSON-XUBM: XUBM data
+    """
+    new_data = {"xubm": []}
 
     hash_commit = hash(data["commit_info"]["time"]) + hash(data["commit_info"]["branch"])
     for benchmark in data["benchmarks"]:
@@ -61,16 +75,20 @@ def create_benchmark_XUBM(data, args):
         # Pytest-benchmark provides a reach variety of statistics, I'm storing it as metadata.
         benchmark_xubm["metadata"] = {"stats": benchmark["stats"]}
 
-        XUBM_data["xubm"] += [benchmark_xubm, ]
-    return XUBM_data
+        new_data["xubm"] += [benchmark_xubm, ]
+    return new_data
 
 if __name__ == "__main__":
-    args = parse_args()
+    parsed_args = parse_args()
 
-    file = open(args.filename)
-    data = json.load(file)
+    if os.stat(parsed_args.filename).st_size == 0:
+        print(parsed_args.filename+" is empty. Interrupting program.")
+        sys.exit(0)
 
-    XUBM_data = create_benchmark_XUBM(data, args)
+    with open(parsed_args.filename, 'r', encoding="utf-8") as file:
+        pytest_data = json.load(file)
 
-    with open(args.filename_XUBM, 'w') as file:
+    XUBM_data = create_benchmark_XUBM(pytest_data, parsed_args)
+
+    with open(parsed_args.filename_XUBM, 'w', encoding="utf-8") as file:
         json.dump(XUBM_data, fp=file)

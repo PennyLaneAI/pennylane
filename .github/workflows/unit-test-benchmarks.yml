@@ -91,6 +91,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.branch }}
+          fetch-depth: ${{ inputs.checkout_fetch_depth }}
+
       - name: Cache reference benchmarks
         id: benchmark-cache
         uses: actions/cache@v3
@@ -107,13 +113,6 @@ jobs:
           echo "reference_benchmarks=$( echo ${{ (env.reference_benchmarks) }} )" >> $GITHUB_OUTPUT
           echo "local_benchmarks=$( echo ${{ (env.local_benchmarks) }} )" >> $GITHUB_OUTPUT
           echo "confirm=$( echo ${{ (env.reference_benchmarks == 'true') || (env.local_benchmarks == 'true') }} )" >> $GITHUB_OUTPUT
-
-      - name: Checkout
-        if: ${{ steps.continue.outputs.confirm == 'true' }}
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ inputs.branch }}
-          fetch-depth: ${{ inputs.checkout_fetch_depth }}
 
       - name: Setup Python
         if: ${{ steps.continue.outputs.confirm == 'true' }}
@@ -170,19 +169,35 @@ jobs:
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
         run: python -m pytest  ${{ inputs.pytest_test_directory }} ${{ inputs.pytest_benchmark_flags }} ${{ inputs.pytest_additional_args }} ${{ env.PYTEST_MARKER }}
 
-      - name: Convert pytest benchmark JSON to XUBM-JSON
-        if: ${{ steps.continue.outputs.confirm == 'true' }}
-        run: python benchmark_scripts/convert_pytest_JSON_to_XUBM.py --author ${{ github.event.pull_request.user.login }}
+        # If this is a reference benchmark and we don't hit the cache, move file to the cached directory.
+      - name: Move reference pytest benchmark file to cache
+        if: ${{ steps.continue.outputs.reference_benchmarks == 'true' && hashFiles('benchmarks.json') != ''}}
+        run: mkdir -p ${{ github.workspace}}/benchmark_reference && cp benchmarks.json "$_"
+
+      - name: Convert pytest benchmark JSON files to XUBM-JSON
+        if: ${{ steps.continue.outputs.local_benchmarks == 'true' }}
+        run: |
+          python ${{ github.workspace}}/scripts/benchmarks/convert_pytest_JSON_to_XUBM.py --author ${{ github.event.pull_request.user.login }}
+          cd benchmark_reference
+          python ${{ github.workspace}}/scripts/benchmarks/convert_pytest_JSON_to_XUBM.py --author ${{ github.event.pull_request.user.login }}
+
+      - name: checking 1
+        if: ${{ steps.continue.outputs.local_benchmarks == 'true' }}
+        run: |
+          ls
+
+      - name: checking 2
+        if: ${{ steps.continue.outputs.local_benchmarks == 'true' }}
+        run: |
+          cd benchmark_reference
+          ls
 
       # If this is a PR benchmark, upload the data as an artifact.
       - name: Upload PR pytest benchmark file
-        if: ${{ steps.continue.outputs.local_benchmarks == 'true'}}
+        if: ${{ steps.continue.outputs.local_benchmarks == 'true' && hashFiles('benchmarks_xubm.json') != ''}}
         uses: actions/upload-artifact@v3
         with:
           name: ${{ inputs.benchmarks_name }}
           path: benchmarks_xubm.json
 
-      # If this is a reference benchmark and we don't hit the cache, move file to the cached directory.
-      - name: Move reference pytest benchmark file to cache
-        if: ${{ steps.continue.outputs.reference_benchmarks == 'true'}}
-        run: mkdir -p ${{ github.workspace}}/benchmark_reference && cp benchmarks.json "$_"
+
