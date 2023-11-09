@@ -38,6 +38,7 @@ class TestCatalyst:
         """Test compiler active and available methods"""
 
         assert not qml.compiler.active()
+        assert not qml.compiler.available("SomeRandomCompiler")
 
         assert qml.compiler.available("catalyst")
         assert qml.compiler.available_compilers() == ["catalyst"]
@@ -333,10 +334,8 @@ class TestCatalyst:
             return g(x)
 
         result = qml.qjit(workflow)(np.array([2.0, 1.0]))
-        print(result)
-
         reference = np.array([[-0.37120096, -0.45467246], [0.37120096, 0.45467246]])
-        print(jnp.allclose(result, reference))
+        assert jnp.allclose(result, reference)
 
         with pytest.raises(
             ValueError,
