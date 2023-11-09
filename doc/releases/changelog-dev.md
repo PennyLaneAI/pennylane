@@ -99,6 +99,10 @@
 * `transpile` can now handle measurements that are broadcasted onto all wires.
   [(#4793)](https://github.com/PennyLaneAI/pennylane/pull/4793)
 
+* Parametrized circuits whose operators do not act on all wires return pennylane tensors as
+  expected, instead of numpy arrays.
+  [(#4811)](https://github.com/PennyLaneAI/pennylane/pull/4811)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
