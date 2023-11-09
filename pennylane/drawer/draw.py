@@ -26,12 +26,11 @@ from .tape_text import tape_text
 
 
 def catalyst_qjit(qnode):
-    """The ``catalyst.while`` wrapper method"""
-    try:
-        pkg_resources.get_distribution("pennylane_catalyst")
+    """The ``catalyst.qjit`` wrapper method"""
+    if "catalyst" in qml.compiler.available_compilers():
         return qnode.__class__.__name__ == "QJIT"
-    except pkg_resources.DistributionNotFound:
-        return False
+    else:
+        False
 
 
 def draw(
@@ -514,6 +513,8 @@ def draw_mpl(
                 :target: javascript:void(0);
 
     """
+    if catalyst_qjit(qnode):
+        qnode = qnode.user_function
     if hasattr(qnode, "construct"):
         return _draw_mpl_qnode(
             qnode,
