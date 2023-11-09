@@ -307,6 +307,17 @@ class MPLDrawer:
         """Set ``fontsize`` property as provided value."""
         self._fontsize = value
 
+    def block_wire(self, layer, wire, length):
+
+        rect = patches.Rectangle(
+            (layer, wire - 0.1),
+            length,
+            0.2,
+            facecolor=plt.rcParams["figure.facecolor"],
+            edgecolor=plt.rcParams["figure.facecolor"],
+        )
+        self.ax.add_patch(rect)
+
     def label(self, labels, text_options=None):
         """Label each wire.
 
@@ -788,6 +799,7 @@ class MPLDrawer:
             wires (int): wire to draw on
 
         Keyword Args:
+            text=None (str): an annotation for the lower right corner.
             box_options=None (dict): dictionary to format a matplotlib rectangle
             lines_options=None (dict): dictionary to format matplotlib arc and arrow
 
@@ -859,8 +871,8 @@ class MPLDrawer:
             **lines_options,
         )
         if text:
-            text_obj = self._ax.text(
-                layer + 0.05 * self._box_length, wires + 0.2, text, fontsize=15
+            self._ax.text(
+                layer + 0.05 * self._box_length, wires + 0.2, text, fontsize=self.fontsize
             )
 
     def cond(self, layer, measured_layer, wires, wires_target, options=None):

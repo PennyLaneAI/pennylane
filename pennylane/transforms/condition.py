@@ -15,48 +15,14 @@
 Contains the condition transform.
 """
 from functools import wraps
-from typing import Type
 
-from pennylane.measurements import MeasurementValue
-from pennylane.operation import AnyWires, Operation
+from pennylane.ops.op_math import Conditional
+
 from pennylane.tape import make_qscript
 
 
 class ConditionalTransformError(ValueError):
     """Error for using qml.cond incorrectly"""
-
-
-class Conditional(Operation):
-    """A Conditional Operation.
-
-    Unless you are a Pennylane plugin developer, **you should NOT directly use this class**,
-    instead, use the :func:`qml.cond <.cond>` function.
-
-    The ``Conditional`` class is a container class that defines an operation
-    that should by applied relative to a single measurement value.
-
-    Support for executing ``Conditional`` operations is device-dependent. If a
-    device doesn't support mid-circuit measurements natively, then the QNode
-    will apply the :func:`defer_measurements` transform.
-
-    Args:
-        expr (MeasurementValue): the measurement outcome value to consider
-        then_op (Operation): the PennyLane operation to apply conditionally
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified
-    """
-
-    num_wires = AnyWires
-
-    def __init__(
-        self,
-        expr: MeasurementValue[bool],
-        then_op: Type[Operation],
-        id=None,
-    ):
-        self.meas_val = expr
-        self.then_op = then_op
-        super().__init__(wires=then_op.wires, id=id)
 
 
 def cond(condition, true_fn, false_fn=None):

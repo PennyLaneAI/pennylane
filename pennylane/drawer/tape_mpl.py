@@ -20,6 +20,7 @@ images.  If you change the docstring examples, please update this file.
 """
 from functools import singledispatch
 
+import pennylane as qml
 from pennylane import ops
 from pennylane.measurements import MidMeasureMP
 from pennylane.wires import Wires
@@ -137,10 +138,32 @@ def add_wirecut(op: ops.WireCut, drawer, layer, wire_map, decimals, active_wire_
 def add_mcm(op: MidMeasureMP, drawer, layer, wire_map, decimals, active_wire_notches):
     mapped_wires = [wire_map[w] for w in op.wires] if len(op.wires) != 0 else wire_map.values()
     _measured_layers[op.id] = layer
-    drawer.measure(layer, mapped_wires[0])  # assume one wire
-    line = drawer._wire_lines[mapped_wires[0]]  # pylint:disable=protected-access
-    start_x = line.get_xdata()[0]
-    line.set_xdata((start_x, layer))
+    text = None if op.postselect is None else str(int(op.postselect))
+    drawer.measure(layer, mapped_wires[0], text=text)  # assume one wire
+
+    if op.reset:
+        drawer.block_wire(layer, mapped_wires[0], 1)
+        drawer.box_gate(
+            layer + 1,
+            mapped_wires[0],
+            "|0⟩",
+            box_options={"zorder": 4},
+            text_options={"zorder": 5},
+        )
+
+
+@add_operation_to_drawer.register
+def add_conditional(
+    op: qml.ops.op_math.Conditional, drawer, layer, wire_map, decimals, active_wire_notches
+):
+    target_wires = [wire_map[w] for w in op.wires]
+    drawer.box_gate(
+        layer,
+        target_wires,
+        op.then_op.label(decimals=decimals),
+        box_options={"zorder": 4, "linestyle": "dashed"},
+        text_options={"zorder": 5},
+    )
 
 
 # pylint: disable=too-many-branches
@@ -154,6 +177,9 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
     wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
 
     layers = drawable_layers(tape.operations, wire_map=wire_map)
+    for i, layer in enumerate(layers):
+        if any(isinstance(o, qml.measurements.MidMeasureMP) and o.reset for o in layer):
+            layers.insert(i + 1, [])
 
     n_layers = len(layers)
     n_wires = len(wire_map)
@@ -177,17 +203,8 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
                     wire_map[o.wires[0]] for o in layers[measured_layer] if o.id in m_ids
                 ]
                 target_wires = [wire_map[w] for w in op.wires]
-                drawer.cond(layer, measured_layer, control_wires, target_wires)
-                drawer.box_gate(
-                    layer,
-                    target_wires,
-                    op.then_op.label(decimals=decimals),
-                    box_options={"zorder": 4, "linestyle": "dashed"},
-                    text_options={"zorder": 5},
-                )
-
-            else:
-                add_operation_to_drawer(op, drawer, layer, wire_map, decimals, active_wire_notches)
+                # drawer.cond(layer, measured_layer, control_wires, target_wires)
+            add_operation_to_drawer(op, drawer, layer, wire_map, decimals, active_wire_notches)
 
     measured_wires = set()
     for m in tape.measurements:
