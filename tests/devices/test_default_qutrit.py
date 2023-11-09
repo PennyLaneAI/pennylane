@@ -1401,32 +1401,32 @@ class TestDensityMatrix:
 """JAX integration tests"""
 
 
-@pytest.fixture
-def jax():
+@pytest.fixture(name="jax")
+def jax_import():
     yield pytest.importorskip("jax")
 
 
-@pytest.fixture
-def jnp():
+@pytest.fixture(name="jnp")
+def jnp_import():
     yield pytest.importorskip("jax.numpy")
 
 
-@pytest.fixture
-def config():
+@pytest.fixture(name="config")
+def config_import():
     yield pytest.importorskip("jax.config").config
 
 
 @pytest.mark.jax
 class TestQNodeIntegrationJax:
     @pytest.fixture(autouse=True)
-    def add_info(self, jax, jnp):
-        self._jax = jax
-        self._jnp = jnp
+    def setup_jax(self, jax, jnp):
+        self.jax = jax
+        self.jnp = jnp
 
     def test_qutrit_circuit(self, tol):
         """Test that the device provides the correct
         result for a simple circuit."""
-        p = self._jnp.array(0.543)
+        p = self.jnp.array(0.543)
 
         dev = qml.device("default.qutrit", wires=1)
 
@@ -1456,15 +1456,15 @@ class TestQNodeIntegrationJax:
             qml.TRZ(a, wires=0)
             return qml.expval(qml.GellMann(0, 3))
 
-        circuit(self._jnp.array(np.pi / 4))
+        circuit(self.jnp.array(np.pi / 4))
         state = dev.state
 
-        amplitude = self._jnp.exp(-1j * np.pi / 8)
-        expected = (-1j / self._jnp.sqrt(3)) * self._jnp.array(
-            [amplitude, self._jnp.conj(amplitude), 1]
+        amplitude = self.jnp.exp(-1j * np.pi / 8)
+        expected = (-1j / self.jnp.sqrt(3)) * self.jnp.array(
+            [amplitude, self.jnp.conj(amplitude), 1]
         )
 
-        assert self._jnp.allclose(state, expected, atol=tol, rtol=0)
+        assert self.jnp.allclose(state, expected, atol=tol, rtol=0)
 
 
 @pytest.mark.jax
@@ -1473,10 +1473,10 @@ class TestDtypePreservedJax:
     evaluation"""
 
     @pytest.fixture(autouse=True)
-    def add_info(self, jax, jnp, config):
-        self._jax = jax
-        self._jnp = jnp
-        self._config = config
+    def setup_jax(self, jax, jnp, config):
+        self.jax = jax
+        self.jnp = jnp
+        self.config = config
 
     @pytest.mark.parametrize("enable_x64, r_dtype", [(False, np.float32), (True, np.float64)])
     @pytest.mark.parametrize(
@@ -1491,8 +1491,8 @@ class TestDtypePreservedJax:
     def test_real_dtype(self, enable_x64, r_dtype, measurement):
         """Test that the user-defined dtype of the device is preserved
         for QNodes with real-valued outputs"""
-        self._config.update("jax_enable_x64", enable_x64)
-        p = self._jnp.array(0.543)
+        self.config.update("jax_enable_x64", enable_x64)
+        p = self.jnp.array(0.543)
         dev = qml.device("default.qutrit", wires=3, r_dtype=r_dtype)
 
         @qml.qnode(dev, interface="jax", diff_method="backprop")
@@ -1507,8 +1507,8 @@ class TestDtypePreservedJax:
     def test_complex_dtype(self, enable_x64, c_dtype):
         """Test that the user-defined dtype of the device is preserved
         for QNodes with complex-valued outputs"""
-        self._config.update("jax_enable_x64", enable_x64)
-        p = self._jnp.array(0.543)
+        self.config.update("jax_enable_x64", enable_x64)
+        p = self.jnp.array(0.543)
         dev = qml.device("default.qutrit", wires=3, c_dtype=c_dtype)
 
         @qml.qnode(dev, interface="jax", diff_method="backprop")
@@ -1525,9 +1525,9 @@ class TestPassthruIntegrationJax:
     """Tests for integration with the PassthruQNode"""
 
     @pytest.fixture(autouse=True)
-    def add_info(self, jax, jnp):
-        self._jax = jax
-        self._jnp = jnp
+    def setup_jax(self, jax, jnp):
+        self.jax = jax
+        self.jnp = jnp
 
     def test_backprop_gradient(self, tol):
         """Tests that the gradient of the qnode is correct"""
@@ -1540,24 +1540,24 @@ class TestPassthruIntegrationJax:
             qml.TRY(b, wires=1, subspace=[0, 2])
             return qml.expval(qml.GellMann(0, 3) @ qml.GellMann(1, 3))
 
-        a = self._jnp.array(-0.234)
-        b = self._jnp.array(0.654)
+        a = self.jnp.array(-0.234)
+        b = self.jnp.array(0.654)
 
         res = circuit(a, b)
         expected_cost = 0.25 * (
-            self._jnp.cos(a) * self._jnp.cos(b) - self._jnp.cos(a) + self._jnp.cos(b) + 3
+            self.jnp.cos(a) * self.jnp.cos(b) - self.jnp.cos(a) + self.jnp.cos(b) + 3
         )
-        assert self._jnp.allclose(res, expected_cost, atol=tol, rtol=0)
-        res = self._jax.grad(circuit, argnums=(0, 1))(a, b)
-        expected_grad = self._jnp.array(
+        assert self.jnp.allclose(res, expected_cost, atol=tol, rtol=0)
+        res = self.jax.grad(circuit, argnums=(0, 1))(a, b)
+        expected_grad = self.jnp.array(
             [
-                -0.25 * (self._jnp.sin(a) * self._jnp.cos(b) - self._jnp.sin(a)),
-                -0.25 * (self._jnp.cos(a) * self._jnp.sin(b) + self._jnp.sin(b)),
+                -0.25 * (self.jnp.sin(a) * self.jnp.cos(b) - self.jnp.sin(a)),
+                -0.25 * (self.jnp.cos(a) * self.jnp.sin(b) + self.jnp.sin(b)),
             ]
         )
 
-        assert self._jnp.allclose(
-            self._jnp.array(res), self._jnp.array(expected_grad), atol=tol, rtol=0
+        assert self.jnp.allclose(
+            self.jnp.array(res), self.jnp.array(expected_grad), atol=tol, rtol=0
         )
 
     def test_backprop_gradient_broadcasted(self, tol):
@@ -1571,44 +1571,44 @@ class TestPassthruIntegrationJax:
             qml.TRY(b, wires=1, subspace=[0, 2])
             return qml.expval(qml.GellMann(0, 3) @ qml.GellMann(1, 3))
 
-        a = self._jnp.array(0.12)
-        b = self._jnp.array([0.54, 0.32, 1.2])
+        a = self.jnp.array(0.12)
+        b = self.jnp.array([0.54, 0.32, 1.2])
 
         res = circuit(a, b)
         expected_cost = 0.25 * (
-            self._jnp.cos(a) * self._jnp.cos(b) - self._jnp.cos(a) + self._jnp.cos(b) + 3
+            self.jnp.cos(a) * self.jnp.cos(b) - self.jnp.cos(a) + self.jnp.cos(b) + 3
         )
-        assert self._jnp.allclose(res, expected_cost, atol=tol, rtol=0)
+        assert self.jnp.allclose(res, expected_cost, atol=tol, rtol=0)
 
-        res = self._jax.jacobian(circuit, argnums=[0, 1])(a, b)
-        expected = self._jnp.array(
+        res = self.jax.jacobian(circuit, argnums=[0, 1])(a, b)
+        expected = self.jnp.array(
             [
-                -0.25 * (self._jnp.sin(a) * self._jnp.cos(b) - self._jnp.sin(a)),
-                -0.25 * (self._jnp.cos(a) * self._jnp.sin(b) + self._jnp.sin(b)),
+                -0.25 * (self.jnp.sin(a) * self.jnp.cos(b) - self.jnp.sin(a)),
+                -0.25 * (self.jnp.cos(a) * self.jnp.sin(b) + self.jnp.sin(b)),
             ]
         )
-        expected = (expected[0], self._jnp.diag(expected[1]))
-        assert all(self._jnp.allclose(r, e, atol=tol, rtol=0) for r, e in zip(res, expected))
+        expected = (expected[0], self.jnp.diag(expected[1]))
+        assert all(self.jnp.allclose(r, e, atol=tol, rtol=0) for r, e in zip(res, expected))
 
 
 """TENSORFLOW integration tests"""
 
 
-@pytest.fixture
-def tf():
+@pytest.fixture(name="tf")
+def import_tf():
     yield pytest.importorskip("tensorflow", minversion="2.1")
 
 
 @pytest.mark.tf
 class TestQNodeIntegrationTF:
     @pytest.fixture(autouse=True)
-    def add_info(self, tf):
-        self._tf = tf
+    def setup_tf(self, tf):
+        self.tf = tf
 
     def test_qutrit_circuit(self, tol):
         """Test that the device provides the correct
         result for a simple circuit."""
-        p = self._tf.Variable(0.543)
+        p = self.tf.Variable(0.543)
 
         dev = qml.device("default.qutrit", wires=1)
 
@@ -1633,7 +1633,7 @@ class TestQNodeIntegrationTF:
             qml.TRZ(a, wires=0)
             return qml.expval(qml.GellMann(0, 3))
 
-        circuit(self._tf.constant(np.pi / 4))
+        circuit(self.tf.constant(np.pi / 4))
         state = dev.state
 
         amplitude = np.exp(-1j * np.pi / 8)
@@ -1648,8 +1648,8 @@ class TestDtypePreservedTF:
     evaluation"""
 
     @pytest.fixture(autouse=True)
-    def add_info(self, tf):
-        self._tf = tf
+    def setup_tf(self, tf):
+        self.tf = tf
 
     @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
     @pytest.mark.parametrize(
@@ -1664,7 +1664,7 @@ class TestDtypePreservedTF:
     def test_real_dtype(self, r_dtype, measurement):
         """Test that the user-defined dtype of the device is preserved
         for QNodes with real-valued outputs"""
-        p = self._tf.constant(0.543)
+        p = self.tf.constant(0.543)
         dev = qml.device("default.qutrit", wires=3, r_dtype=r_dtype)
 
         @qml.qnode(dev, interface="tf", diff_method="backprop")
@@ -1679,7 +1679,7 @@ class TestDtypePreservedTF:
     def test_complex_dtype(self, c_dtype):
         """Test that the user-defined dtype of the device is preserved
         for QNodes with complex-valued outputs"""
-        p = self._tf.constant(0.543)
+        p = self.tf.constant(0.543)
         dev = qml.device("default.qutrit", wires=3, c_dtype=c_dtype)
 
         @qml.qnode(dev, interface="tf", diff_method="backprop")
@@ -1696,8 +1696,8 @@ class TestPassthruIntegrationTF:
     """Tests for integration with the PassthruQNode"""
 
     @pytest.fixture(autouse=True)
-    def add_info(self, tf):
-        self._tf = tf
+    def setup_tf(self, tf):
+        self.tf = tf
 
     def test_backprop_gradient(self, tol):
         """Tests that the gradient of the qnode is correct"""
@@ -1713,10 +1713,10 @@ class TestPassthruIntegrationTF:
         a = -0.234
         b = 0.654
 
-        a_tf = self._tf.Variable(a, dtype=self._tf.float64)
-        b_tf = self._tf.Variable(b, dtype=self._tf.float64)
+        a_tf = self.tf.Variable(a, dtype=self.tf.float64)
+        b_tf = self.tf.Variable(b, dtype=self.tf.float64)
 
-        with self._tf.GradientTape() as tape:
+        with self.tf.GradientTape() as tape:
             tape.watch([a_tf, b_tf])
             res = circuit(a_tf, b_tf)
 
@@ -1752,10 +1752,10 @@ class TestPassthruIntegrationTF:
         a = np.array(0.12)
         b = np.array([0.54, 0.32, 1.2])
 
-        a_tf = self._tf.Variable(a, dtype=self._tf.float64)
-        b_tf = self._tf.Variable(b, dtype=self._tf.float64)
+        a_tf = self.tf.Variable(a, dtype=self.tf.float64)
+        b_tf = self.tf.Variable(b, dtype=self.tf.float64)
 
-        with self._tf.GradientTape() as tape:
+        with self.tf.GradientTape() as tape:
             tape.watch([a_tf, b_tf])
             res = circuit(a_tf, b_tf)
 
@@ -1781,21 +1781,21 @@ class TestPassthruIntegrationTF:
 """TORCH integration tests"""
 
 
-@pytest.fixture
-def torch():
+@pytest.fixture(name="torch")
+def import_torch():
     yield pytest.importorskip("torch")
 
 
 @pytest.mark.torch
 class TestQNodeIntegrationTorch:
     @pytest.fixture(autouse=True)
-    def add_info(self, torch):
-        self._torch = torch
+    def setup_torch(self, torch):
+        self.torch = torch
 
     def test_qutrit_circuit(self, tol):
         """Test that the device provides the correct
         result for a simple circuit."""
-        p = self._torch.tensor(0.543)
+        p = self.torch.tensor(0.543)
 
         dev = qml.device("default.qutrit", wires=1)
 
@@ -1820,7 +1820,7 @@ class TestQNodeIntegrationTorch:
             qml.TRZ(a, wires=0)
             return qml.expval(qml.GellMann(0, 3))
 
-        circuit(self._torch.tensor(np.pi / 4))
+        circuit(self.torch.tensor(np.pi / 4))
         state = dev.state
 
         amplitude = np.exp(-1j * np.pi / 8)
@@ -1835,8 +1835,8 @@ class TestDtypePreservedTorch:
     evaluation"""
 
     @pytest.fixture(autouse=True)
-    def add_info(self, torch):
-        self._torch = torch
+    def setup_torch(self, torch):
+        self.torch = torch
 
     @pytest.mark.parametrize(
         "r_dtype, r_dtype_torch", [(np.float32, "torch32"), (np.float64, "torch64")]
@@ -1853,12 +1853,12 @@ class TestDtypePreservedTorch:
     def test_real_dtype(self, r_dtype, r_dtype_torch, measurement):
         """Test that the user-defined dtype of the device is preserved
         for QNodes with real-valued outputs"""
-        p = self._torch.tensor(0.543)
+        p = self.torch.tensor(0.543)
 
         if r_dtype_torch == "torch32":
-            r_dtype_torch = self._torch.float32
+            r_dtype_torch = self.torch.float32
         else:
-            r_dtype_torch = self._torch.float64
+            r_dtype_torch = self.torch.float64
 
         dev = qml.device("default.qutrit", wires=3, r_dtype=r_dtype)
 
@@ -1878,11 +1878,11 @@ class TestDtypePreservedTorch:
         """Test that the user-defined dtype of the device is preserved
         for QNodes with complex-valued outputs"""
         if c_dtype_torch == "torchc64":
-            c_dtype_torch = self._torch.complex64
+            c_dtype_torch = self.torch.complex64
         else:
-            c_dtype_torch = self._torch.complex128
+            c_dtype_torch = self.torch.complex128
 
-        p = self._torch.tensor(0.543)
+        p = self.torch.tensor(0.543)
 
         dev = qml.device("default.qutrit", wires=3, c_dtype=c_dtype)
 
@@ -1900,8 +1900,8 @@ class TestPassthruIntegrationTorch:
     """Tests for integration with the PassthruQNode"""
 
     @pytest.fixture(autouse=True)
-    def add_info(self, torch):
-        self._torch = torch
+    def setup_torch(self, torch):
+        self.torch = torch
 
     def test_backprop_gradient(self, tol):
         """Tests that the gradient of the qnode is correct"""
@@ -1914,25 +1914,25 @@ class TestPassthruIntegrationTorch:
             qml.TRY(b, wires=1, subspace=[0, 2])
             return qml.expval(qml.GellMann(0, 3) @ qml.GellMann(1, 3))
 
-        a = self._torch.tensor(-0.234, dtype=self._torch.float64, requires_grad=True)
-        b = self._torch.tensor(0.654, dtype=self._torch.float64, requires_grad=True)
+        a = self.torch.tensor(-0.234, dtype=self.torch.float64, requires_grad=True)
+        b = self.torch.tensor(0.654, dtype=self.torch.float64, requires_grad=True)
 
         res = circuit(a, b)
         res.backward()  # pylint:disable=no-member
 
         # the analytic result of evaluating circuit(a, b)
         expected_cost = 0.25 * (
-            self._torch.cos(a) * self._torch.cos(b) - self._torch.cos(a) + self._torch.cos(b) + 3
+            self.torch.cos(a) * self.torch.cos(b) - self.torch.cos(a) + self.torch.cos(b) + 3
         )
         expected = [
-            -0.25 * (self._torch.sin(a) * self._torch.cos(b) - self._torch.sin(a)),
-            -0.25 * (self._torch.cos(a) * self._torch.sin(b) + self._torch.sin(b)),
+            -0.25 * (self.torch.sin(a) * self.torch.cos(b) - self.torch.sin(a)),
+            -0.25 * (self.torch.cos(a) * self.torch.sin(b) + self.torch.sin(b)),
         ]
 
-        assert self._torch.allclose(res, expected_cost, atol=tol, rtol=0)
+        assert self.torch.allclose(res, expected_cost, atol=tol, rtol=0)
 
-        assert self._torch.allclose(a.grad, expected[0], atol=tol, rtol=0)
-        assert self._torch.allclose(b.grad, expected[1])
+        assert self.torch.allclose(a.grad, expected[0], atol=tol, rtol=0)
+        assert self.torch.allclose(b.grad, expected[1])
 
     def test_backprop_gradient_broadcasted(self, tol):
         """Tests that the gradient of the broadcasted qnode is correct"""
@@ -1945,21 +1945,21 @@ class TestPassthruIntegrationTorch:
             qml.TRY(b, wires=1, subspace=[0, 2])
             return qml.expval(qml.GellMann(0, 3) @ qml.GellMann(1, 3))
 
-        a = self._torch.tensor(-0.234, dtype=self._torch.float64, requires_grad=True)
-        b = self._torch.tensor([0.54, 0.32, 1.2], dtype=self._torch.float64, requires_grad=True)
+        a = self.torch.tensor(-0.234, dtype=self.torch.float64, requires_grad=True)
+        b = self.torch.tensor([0.54, 0.32, 1.2], dtype=self.torch.float64, requires_grad=True)
 
         res = circuit(a, b)
         # the analytic result of evaluating circuit(a, b)
         expected_cost = 0.25 * (
-            self._torch.cos(a) * self._torch.cos(b) - self._torch.cos(a) + self._torch.cos(b) + 3
+            self.torch.cos(a) * self.torch.cos(b) - self.torch.cos(a) + self.torch.cos(b) + 3
         )
         expected = [
-            -0.25 * (self._torch.sin(a) * self._torch.cos(b) - self._torch.sin(a)),
-            -0.25 * (self._torch.cos(a) * self._torch.sin(b) + self._torch.sin(b)),
+            -0.25 * (self.torch.sin(a) * self.torch.cos(b) - self.torch.sin(a)),
+            -0.25 * (self.torch.cos(a) * self.torch.sin(b) + self.torch.sin(b)),
         ]
 
-        assert self._torch.allclose(res, expected_cost, atol=tol, rtol=0)
+        assert self.torch.allclose(res, expected_cost, atol=tol, rtol=0)
 
-        jac = self._torch.autograd.functional.jacobian(circuit, (a, b))
-        assert self._torch.allclose(jac[0], expected[0], atol=tol, rtol=0)
-        assert self._torch.allclose(qml.math.diag(jac[1]), expected[1])
+        jac = self.torch.autograd.functional.jacobian(circuit, (a, b))
+        assert self.torch.allclose(jac[0], expected[0], atol=tol, rtol=0)
+        assert self.torch.allclose(qml.math.diag(jac[1]), expected[1])
