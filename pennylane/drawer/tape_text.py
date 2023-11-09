@@ -14,6 +14,7 @@
 """
 This module contains logic for the text based circuit drawer through the ``tape_text`` function.
 """
+# pylint: disable=too-many-arguments
 
 import pennylane as qml
 from pennylane.measurements import Expectation, Probability, Sample, Variance, State, MidMeasureMP
@@ -49,8 +50,7 @@ def _add_cond_grouping_symbols(op, layer_str, wire_map, bit_map):
     mapped_wires = [wire_map[w] for w in op.wires]
     mapped_bits = [bit_map[m] for m in op.meas_val.measurements]
     min_w = min(mapped_wires)
-    max_w = max(mapped_wires)
-    max_b = max(mapped_bits)
+    max_b = max(mapped_bits) + n_wires
     layer_str[min_w] = "╓"
     layer_str[max_b] = "╝"
 
@@ -68,7 +68,7 @@ def _add_mid_measure_grouping_symbols(op, layer_str, wire_map, bit_map):
     operators"""
     n_wires = len(wire_map)
     mapped_wire = wire_map[op.wires[0]]
-    bit = bit_map[op]
+    bit = bit_map[op] + n_wires
     layer_str[bit] += " ╚"
 
     for w in range(mapped_wire + 1, n_wires):
@@ -176,13 +176,12 @@ def _find_mid_measure_cond_connections(operations, wire_map, layers):
 
     # Map between classical bit positions and whether we have reached the mid-circuit
     # measurement of that bit. This is needed to know when to start drawing the bit line.
-    bit_measurements_reached = {}
+    bit_measurements_reached = []
 
     # Map between classical bit positions and the final layer where the bit is used.
     # This is needed to know when to stop drawing a bit line.
-    bit_terminal_layers = {}
+    all_bit_terminal_layers = []
 
-    n_wires = len(wire_map)
     measurements_for_conds = set()
     conditional_ops = []
     for op in operations:
@@ -194,23 +193,28 @@ def _find_mid_measure_cond_connections(operations, wire_map, layers):
         cond_mid_measures = [
             op for op in operations if isinstance(op, MidMeasureMP) if op in measurements_for_conds
         ]
-        cond_mid_measures.sort(key=lambda mp: operations.index(mp))
+        cond_mid_measures.sort(
+            key=lambda mp: operations.index(mp)
+        )  # pylint: disable=unnecessary-lambda
 
-        bit_map = dict(zip(cond_mid_measures, range(n_wires, n_wires + len(cond_mid_measures))))
+        bit_map = dict(zip(cond_mid_measures, range(len(cond_mid_measures))))
 
         n_bits = len(bit_map)
-        bit_measurements_reached = dict(zip(bit_map.values(), [False] * n_bits))
+        bit_measurements_reached = [False for _ in range(n_bits)]
 
-        # for cond in conditional_ops:
-        #     for mid_measure in cond.meas_val.measurements:
-        #         bit_terminal_ops[bit_map[mid_measure]] = cond
-        for i, layer in enumerate(layers):
+        # Terminal layers in ops
+        all_bit_terminal_layers.append([None for _ in range(n_bits)])
+        # Terminal layers in meas
+        all_bit_terminal_layers.append([-1 for _ in range(n_bits)])
+        # Only iterating through operation layers because bits are only determined
+        # using those layers
+        for i, layer in enumerate(layers[0]):
             for op in layer:
                 if op.name == "Conditional":
                     for mid_measure in op.meas_val.measurements:
-                        bit_terminal_layers[bit_map[mid_measure]] = i
+                        all_bit_terminal_layers[0][bit_map[mid_measure]] = i
 
-    return bit_map, bit_measurements_reached, bit_terminal_layers
+    return bit_map, bit_measurements_reached, all_bit_terminal_layers
 
 
 # pylint: disable=too-many-arguments
@@ -425,8 +429,8 @@ def tape_text(
     bit_fillers = ["═", " "]
     enders = [True, False]  # add "─┤" after all operations
 
-    bit_map, bit_measurements_reached, bit_terminal_layers = _find_mid_measure_cond_connections(
-        tape.operations, wire_map, layers_list[0]
+    bit_map, bit_measurements_reached, all_bit_terminal_layers = _find_mid_measure_cond_connections(
+        tape.operations, wire_map, layers_list
     )
     n_bits = len(bit_map)
 
@@ -437,8 +441,8 @@ def tape_text(
     wire_totals = [s.rjust(line_length, " ") for s in wire_totals]
     bit_totals = [s.rjust(line_length, " ") for s in bit_totals]
 
-    for layers, add, w_filler, b_filler, ender in zip(
-        layers_list, add_list, wire_fillers, bit_fillers, enders
+    for layers, add, w_filler, b_filler, bit_terminal_layers, ender in zip(
+        layers_list, add_list, wire_fillers, bit_fillers, all_bit_terminal_layers, enders
     ):
         for i, layer in enumerate(layers):
             # Add filler before current layer
@@ -447,9 +451,11 @@ def tape_text(
                 cur_b_filler = (
                     b_filler if bit_measurements_reached[b] and bit_terminal_layers[b] > i else " "
                 )
-                layer_str[b] = cur_b_filler
+                layer_str[b + n_wires] = cur_b_filler
 
+            # Keep track of mid-circuit measurements in each layer, if any
             cur_layer_mid_measure = None
+
             for op in layer:
                 if isinstance(op, qml.tape.QuantumScript):
                     layer_str = _add_grouping_symbols(op, layer_str, wire_map, bit_map)
@@ -462,7 +468,6 @@ def tape_text(
 
                     if isinstance(op, MidMeasureMP) and bit_map.get(op, None) is not None:
                         cur_layer_mid_measure = op
-                        # bit_measurements_reached[bit_map[op]] = True
 
             # Adjust width for wire filler on unused wires
             max_label_len = max(len(s) for s in layer_str)
@@ -470,7 +475,7 @@ def tape_text(
                 layer_str[w] = layer_str[w].ljust(max_label_len, w_filler)
 
             # Adjust width for bit filler on unused bits
-            for b in range(n_wires, n_wires + n_bits):
+            for b in range(n_bits):
                 if cur_layer_mid_measure is not None:
                     # This condition is needed to pad the filler on the bits under MidMeasureMPs
                     # correctly
@@ -481,7 +486,8 @@ def tape_text(
                         if bit_measurements_reached[b] and bit_terminal_layers[b] > i
                         else " "
                     )
-                layer_str[b] = layer_str[b].ljust(max_label_len, cur_b_filler)
+                layer_str[b + n_wires] = layer_str[b + n_wires].ljust(max_label_len, cur_b_filler)
+            # layer_str, max_label_len = _pad_layer(layer_str, n_wires, n_bits, cur_layer_mid_measure)
 
             line_length += max_label_len + 1  # one for the filler character
             if line_length > max_length:
@@ -498,8 +504,7 @@ def tape_text(
             for j, (bt, s) in enumerate(zip(bit_totals, layer_str[n_wires : n_wires + n_bits])):
                 cur_b_filler = (
                     b_filler
-                    if bit_measurements_reached[j + n_wires]
-                    and bit_terminal_layers[j + n_wires] + 1 > i
+                    if bit_measurements_reached[j] and bit_terminal_layers[j] + 1 > i
                     else " "
                 )
                 bit_totals[j] = cur_b_filler.join([bt, s])

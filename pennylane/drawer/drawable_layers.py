@@ -140,6 +140,7 @@ def drawable_layers(ops, wire_map=None):
             if len(op.wires) > 1:
                 raise ValueError("Cannot draw mid-circuit measurements with more than one wire.")
 
+            is_mid_measure = True
             measured_wires[op.id] = wire_map[op.wires[0]]
 
         elif op.name == "Conditional":
