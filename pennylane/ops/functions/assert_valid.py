@@ -174,7 +174,15 @@ def _check_pytree(op):
         raise AssertionError(
             f"metadata output from _flatten must be hashable. Got metadata {metadata}"
         ) from e
-    new_op = type(op)._unflatten(data, metadata)
+    try:
+        new_op = type(op)._unflatten(data, metadata)
+    except Exception as e:
+        message = (
+            f"{type(op).__name__}._unflatten must be able to reproduce the original operation from "
+            f"{data} and {metadata}. You may need to override either the _unflatten or _flatten method. "
+            f"\nFor local testing, try type(op)._unflatten(*op._flatten())"
+        )
+        raise AssertionError(message) from e
     assert op == new_op, "metadata and data must be able to reproduce the original operation"
 
     try:

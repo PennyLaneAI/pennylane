@@ -229,17 +229,16 @@ If the above operator ommitted the ``_unflatten`` custom definition, it would ra
 
 .. code-block::
 
-    File /pennylane/operation.py:1599, in Operator._unflatten(cls, data, metadata)
-      1575 """Recreate an operation from its serialized format.
-      1576 
-      1577 Args:
-      (...)
-      1596 
-      1597 """
-      1598 hyperparameters_dict = dict(metadata[1])
-    -> 1599 return cls(*data, wires=metadata[0], **hyperparameters_dict)
 
     TypeError: FlipAndRotate.__init__() got an unexpected keyword argument 'wires'
+
+
+    The above exception was the direct cause of the following exception:
+
+    AssertionError: FlipAndRotate._unflatten must be able to reproduce the original operation
+    from (0.1,) and (<Wires = ['q3', 'q1']>, (('do_flip', True),)). You may need to override
+    either the _unflatten or _flatten method. 
+    For local testing, try type(op)._unflatten(*op._flatten())
 
 
 The new gate can be used with PennyLane devices. Device support for an operation can be checked via
