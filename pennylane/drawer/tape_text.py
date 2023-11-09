@@ -14,7 +14,8 @@
 """
 This module contains logic for the text based circuit drawer through the ``tape_text`` function.
 """
-# pylint: disable=too-many-arguments
+# TODO: Fix the latter two pylint warnings
+# pylint: disable=too-many-arguments, too-many-branches, too-many-statements
 
 import pennylane as qml
 from pennylane.measurements import Expectation, Probability, Sample, Variance, State, MidMeasureMP
@@ -164,7 +165,7 @@ def _add_measurement(m, layer_str, wire_map, bit_map, decimals, cache):
     return layer_str
 
 
-def _find_mid_measure_cond_connections(operations, wire_map, layers):
+def _find_mid_measure_cond_connections(operations, layers):
     """Create dictionaries with various mappings needed for drawing
     mid-circuit measurements and classically controlled operators
     correctly."""
@@ -194,8 +195,8 @@ def _find_mid_measure_cond_connections(operations, wire_map, layers):
             op for op in operations if isinstance(op, MidMeasureMP) if op in measurements_for_conds
         ]
         cond_mid_measures.sort(
-            key=lambda mp: operations.index(mp)
-        )  # pylint: disable=unnecessary-lambda
+            key=lambda mp: operations.index(mp)  # pylint: disable=unnecessary-lambda
+        )
 
         bit_map = dict(zip(cond_mid_measures, range(len(cond_mid_measures))))
 
@@ -430,7 +431,7 @@ def tape_text(
     enders = [True, False]  # add "─┤" after all operations
 
     bit_map, bit_measurements_reached, all_bit_terminal_layers = _find_mid_measure_cond_connections(
-        tape.operations, wire_map, layers_list
+        tape.operations, layers_list
     )
     n_bits = len(bit_map)
 
