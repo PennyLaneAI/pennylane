@@ -15,6 +15,7 @@
 This module contains the QNode class and qnode decorator.
 """
 # pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access,unnecessary-lambda-assignment, too-many-branches, too-many-statements
+import copy
 import functools
 import inspect
 import warnings
@@ -842,6 +843,7 @@ class QNode:
 
     def construct(self, args, kwargs):  # pylint: disable=too-many-branches
         """Call the quantum function with a tape context, ensuring the operations get queued."""
+        kwargs = copy.copy(kwargs)
         old_interface = self.interface
 
         if self._qfunc_uses_shots_arg:
