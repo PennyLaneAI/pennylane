@@ -225,7 +225,7 @@ Once the class has been created, you can run a suite of validation checks using 
 This function will warn you of some common errors in custom operators.
 >>> qml.ops.functions.assert_valid(op)
 
-If the above operator ommitted the ``_unflatten`` custom definition, it would raise:
+If the above operator omitted the ``_unflatten`` custom definition, it would raise:
 
 .. code-block::
 
