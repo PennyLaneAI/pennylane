@@ -225,6 +225,8 @@ def test_bad_wire_mapping():
 
 
 class TestPytree:
+    """Pytree related checks."""
+
     def test_not_hashable_metadata(self):
         """Assert that an error is raised if metadata is not hashable."""
 
@@ -237,7 +239,19 @@ class TestPytree:
         with pytest.raises(AssertionError, match=r"metadata output from _flatten must be hashable"):
             assert_valid(op, skip_pickle=True)
 
-    def test_badpytree(self):
+    def test_bad_pytree(self):
+        """Check an operation that errors out of the _unflatten call."""
+
+        class BadPytree(qml.operation.Operator):
+            def __init__(self, wires1, wires2):
+                super().__init__(wires=wires1 + wires2)
+
+        op = BadPytree([0], [1])
+
+        with pytest.raises(AssertionError, match=r"BadPytree._unflatten must be able to reproduce"):
+            assert_valid(op, skip_pickle=True)
+
+    def test_badpytree_incomplete_info(self):
         """Assert that an unpacking and repacking a pytree reproduces the original operation."""
 
         class BadPytree(Operator):
