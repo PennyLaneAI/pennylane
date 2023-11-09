@@ -66,7 +66,7 @@ def _collect_mid_measure_info(tape: QuantumTape):
     any_repeated_measurements = False
     is_postselecting = False
 
-    for op in tape.operations:
+    for op in tape:
         if isinstance(op, MidMeasureMP):
             if op.postselect is not None:
                 is_postselecting = True

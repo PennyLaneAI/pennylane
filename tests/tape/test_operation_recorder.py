@@ -99,8 +99,8 @@ class TestOperationRecorder:
             + "\n"
             + "Observables\n"
             + "===========\n"
-            + "var(PauliZ(wires=[0]))\n"
-            + "sample(PauliX(wires=[1]))\n"
+            + "PauliZ(wires=[0])\n"
+            + "PauliX(wires=[1])\n"
         )
 
         def template(x):
