@@ -1419,10 +1419,9 @@ def config():
 @pytest.mark.jax
 class TestQNodeIntegrationJax:
     @pytest.fixture(autouse=True)
-    def add_info(self, jax, jnp, config):
+    def add_info(self, jax, jnp):
         self._jax = jax
         self._jnp = jnp
-        self._config = config
 
     def test_qutrit_circuit(self, tol):
         """Test that the device provides the correct
@@ -1474,9 +1473,10 @@ class TestDtypePreservedJax:
     evaluation"""
 
     @pytest.fixture(autouse=True)
-    def add_info(self, jax, jnp):
+    def add_info(self, jax, jnp, config):
         self._jax = jax
         self._jnp = jnp
+        self._config = config
 
     @pytest.mark.parametrize("enable_x64, r_dtype", [(False, np.float32), (True, np.float64)])
     @pytest.mark.parametrize(
