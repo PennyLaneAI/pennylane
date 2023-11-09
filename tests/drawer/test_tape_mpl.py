@@ -478,22 +478,6 @@ class TestControlledGates:
         assert ax.texts[2].get_text() == "RX\n(1.23)"
         plt.close()
 
-    @pytest.mark.filterwarnings("ignore:Specifying control values as a string")
-    @pytest.mark.filterwarnings("ignore:The control_wires keyword will be removed soon")
-    def test_control_values_str(self):
-        """Test control values get displayed correctly when they are provided as a string."""
-
-        with qml.queuing.AnnotatedQueue() as q_tape:
-            qml.ControlledQubitUnitary(
-                qml.matrix(qml.RX)(0, 0),
-                control_wires=[0, 1, 2, 3],
-                wires=[4],
-                control_values="1010",
-            )
-
-        tape = QuantumScript.from_queue(q_tape)
-        self.check_tape_controlled_qubit_unitary(tape)
-
     def test_control_values_bool(self):
         """Test control_values get displayed correctly when they are provided as a list of bools."""
 
