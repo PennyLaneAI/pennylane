@@ -86,7 +86,7 @@ on:
         default: ''
 
 jobs:
-  test:
+  benchmark:
     name: ${{ inputs.job_name }}
     runs-on: ubuntu-latest
 
@@ -170,13 +170,17 @@ jobs:
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
         run: python -m pytest  ${{ inputs.pytest_test_directory }} ${{ inputs.pytest_benchmark_flags }} ${{ inputs.pytest_additional_args }} ${{ env.PYTEST_MARKER }}
 
+      - name: Convert pytest benchmark JSON to XUBM-JSON
+        if: ${{ steps.continue.outputs.confirm == 'true' }}
+        run: python benchmark_scripts/convert_pytest_JSON_to_XUBM.py --author ${{ github.event.pull_request.user.login }}
+
       # If this is a PR benchmark, upload the data as an artifact.
       - name: Upload PR pytest benchmark file
         if: ${{ steps.continue.outputs.local_benchmarks == 'true'}}
         uses: actions/upload-artifact@v3
         with:
           name: ${{ inputs.benchmarks_name }}
-          path: benchmarks.json
+          path: benchmarks_xubm.json
 
       # If this is a reference benchmark and we don't hit the cache, move file to the cached directory.
       - name: Move reference pytest benchmark file to cache
