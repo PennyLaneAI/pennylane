@@ -53,6 +53,24 @@ class TestMeasure:
         assert m1.hash != m3.hash
         assert m1.hash == m4.hash
 
+    @pytest.mark.parametrize(
+        "postselect, reset, expected",
+        [
+            (None, False, "┤↗├"),
+            (None, True, "┤↗│  │0⟩"),
+            (0, False, "┤↗₀├"),
+            (0, True, "┤↗₀│  │0⟩"),
+            (1, False, "┤↗₁├"),
+            (1, True, "┤↗₁│  │0⟩"),
+        ],
+    )
+    def test_label(self, postselect, reset, expected):
+        """Test that the label for a MidMeasureMP is correct"""
+        mp = MidMeasureMP(0, postselect=postselect, reset=reset)
+
+        label = mp.label()
+        assert label == expected
+
 
 mp1 = MidMeasureMP(Wires(0), id="m0")
 mp2 = MidMeasureMP(Wires(1), id="m1")

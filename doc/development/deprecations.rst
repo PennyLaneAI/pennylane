@@ -6,6 +6,12 @@ Deprecations
 Pending deprecations
 --------------------
 
+* `Observable.return_type` is deprecated. Instead, you should inspect the type
+  of the surrounding measurement process.
+
+  - Deprecated in v0.34
+  - Will be removed in v0.35
+
 * ``single_tape_transform``, ``batch_transform``, ``qfunc_transform``, and ``op_transform`` are
   deprecated. Instead switch to using the new ``qml.transform`` function. Please refer to
   `the transform docs <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
