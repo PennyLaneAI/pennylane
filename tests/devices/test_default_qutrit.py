@@ -1400,6 +1400,7 @@ class TestDensityMatrix:
 
 # pylint: disable=no-member
 
+
 # JAX integration tests
 @pytest.fixture(scope="class")
 def jax_import_init(request):
