@@ -172,25 +172,23 @@ jobs:
         # If this is a reference benchmark and we don't hit the cache, move file to the cached directory.
       - name: Move reference pytest benchmark file to cache
         if: ${{ steps.continue.outputs.reference_benchmarks == 'true' && hashFiles('benchmarks.json') != ''}}
-        run: mkdir -p ${{ github.workspace}}/benchmark_reference && cp benchmarks.json "$_"
+        run: mkdir -p ${{ github.workspace }}/benchmark_reference && cp benchmarks.json "$_"
 
       - name: Convert pytest benchmark JSON files to XUBM-JSON
         if: ${{ steps.continue.outputs.local_benchmarks == 'true' }}
         run: |
-          python ${{ github.workspace}}/scripts/benchmarks/convert_pytest_JSON_to_XUBM.py --author ${{ github.event.pull_request.user.login }}
+          python ${{ github.workspace }}/scripts/benchmarks/convert_pytest_JSON_to_XUBM.py --author ${{ github.event.pull_request.user.login }}
           cd benchmark_reference
-          python ${{ github.workspace}}/scripts/benchmarks/convert_pytest_JSON_to_XUBM.py --author ${{ github.event.pull_request.user.login }}
+          python ${{ github.workspace }}/scripts/benchmarks/convert_pytest_JSON_to_XUBM.py --author ${{ github.event.pull_request.user.login }}
 
-      - name: checking 1
+      - name: Plotting benchmark graphs
         if: ${{ steps.continue.outputs.local_benchmarks == 'true' }}
         run: |
-          ls
+          python ${{ github.workspace }}/scripts/benchmarks/plot_benchmarks.py --graph_name ${{ inputs.benchmarks_name }}
 
-      - name: checking 2
+      - name: create directorie and move data to pe updated to an artifact
         if: ${{ steps.continue.outputs.local_benchmarks == 'true' }}
-        run: |
-          cd benchmark_reference
-          ls
+        run: mkdir -p ${{ github.workspace }}/benchmark_results && cp benchmarks_xubm.json ${{ inputs.benchmarks_name }}.png "$_"
 
       # If this is a PR benchmark, upload the data as an artifact.
       - name: Upload PR pytest benchmark file
@@ -198,6 +196,6 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ${{ inputs.benchmarks_name }}
-          path: benchmarks_xubm.json
+          path: ${{ github.workspace }}/benchmark_results
 
 

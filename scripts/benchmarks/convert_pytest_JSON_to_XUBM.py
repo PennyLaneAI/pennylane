@@ -63,7 +63,6 @@ def create_benchmark_XUBM(data, args):
         benchmark_xubm["gitID"] = data["commit_info"]["id"]
         benchmark_xubm["runs"] = benchmark["stats"]["iterations"]
         benchmark_xubm["params"] = benchmark["params"]
-        # benchmark_xubm["runtime"] = benchmark["stats"]["mean"] * (1 + random.uniform(-0.25, 0.25))
         benchmark_xubm["runtime"] = benchmark["stats"]["mean"]
         #Results are always in second:
         benchmark_xubm["timeUnit"] = "seconds"
