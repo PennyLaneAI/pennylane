@@ -30,7 +30,7 @@
   [(#4749)](https://github.com/PennyLaneAI/pennylane/pull/4749)
 
 * Simplified the logic for re-arranging states before returning.
-  [(#)]()
+  [(#4817)](https://github.com/PennyLaneAI/pennylane/pull/4817)
 
 <h3>Breaking changes 💔</h3>
 
