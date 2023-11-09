@@ -275,6 +275,18 @@ def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debu
     return state
 
 
+@apply_operation.register
+def apply_sparse_hamiltonian(
+    op: qml.SparseHamiltonian, state, is_state_batched: bool = False, debugger=None
+):
+    """Apply a sparse hamiltonian to a state."""
+
+    total_wires = len(state.shape) - is_state_batched
+    mat = op.sparse_matrix(wire_order=list(range(total_wires)))
+
+    return math.reshape(mat * state.flatten(), [2] * total_wires)
+
+
 # pylint:disable = no-value-for-parameter, import-outside-toplevel
 @apply_operation.register
 def apply_parametrized_evolution(
