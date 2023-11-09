@@ -286,6 +286,7 @@ class MottonenStatePreparation(Operation):
 
     num_wires = AnyWires
     grad_method = None
+    ndim_params = (1,)
 
     def __init__(self, state_vector, wires, id=None):
         # check if the `state_vector` param is batched

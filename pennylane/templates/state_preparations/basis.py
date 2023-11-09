@@ -54,6 +54,7 @@ class BasisStatePreparation(Operation):
     num_params = 1
     num_wires = AnyWires
     grad_method = None
+    ndim_params = (1,)
 
     def __init__(self, basis_state, wires, id=None):
         basis_state = qml.math.stack(basis_state)
