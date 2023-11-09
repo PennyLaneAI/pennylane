@@ -183,9 +183,9 @@ jobs:
           python ${{ github.workspace }}/scripts/benchmarks/convert_pytest_JSON_to_XUBM.py --author ${{ github.event.pull_request.user.login }}
 
       - name: Plotting benchmark graphs
-        if: ${{ steps.continue.outputs.local_benchmarks == 'true' }}
+        if: ${{ steps.continue.outputs.local_benchmarks == 'true' && hashFiles('benchmarks_xubm.json') != '' && hashFiles('benchmark_reference/benchmarks_xubm.json') != '' }}
         run: |
-          python ${{ github.workspace }}/scripts/benchmarks/plot_benchmarks.py --graph_name benchmark_results/${{ inputs.benchmarks_name }}
+          python ${{ github.workspace }}/scripts/benchmarks/plot_benchmarks.py --graph_name ${{ inputs.benchmarks_name }}
 
       # If this is a PR benchmark, upload the data as an artifact.
       - name: Upload PR pytest benchmark file

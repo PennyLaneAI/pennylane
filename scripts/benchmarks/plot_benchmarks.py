@@ -92,4 +92,4 @@ if __name__ == "__main__":
 
     plt.legend(title='Performance', handles=[regr_patch, prog_patch])
 
-    plt.savefig(args.graph_name+'.png', bbox_inches='tight')
+    plt.savefig('benchmark_results/'+args.graph_name+'.png', bbox_inches='tight')
