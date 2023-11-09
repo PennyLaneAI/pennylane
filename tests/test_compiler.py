@@ -239,12 +239,12 @@ class TestCatalystControlFlow:
         @qml.qnode(dev)
         def circuit(n, m):
             @qml.while_loop(lambda i, _: i < n)
-            def outer(i, sum):
+            def outer(i, sm):
                 @qml.while_loop(lambda j: j < m)
                 def inner(j):
                     return j + 1
 
-                return i + 1, sum + inner(0)
+                return i + 1, sm + inner(0)
 
             return outer(0, 0)[1]
 
