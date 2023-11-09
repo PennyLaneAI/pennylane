@@ -49,11 +49,11 @@
 <h3>Bug fixes 🐛</h3>
 
 * Gradient transforms now work with overridden shot vectors and default qubit.
+  [(#4795)](https://github.com/PennyLaneAI/pennylane/pull/4795)
 
 * `qml.defer_measurements` now correctly transforms circuits when terminal measurements include wires
   used in mid-circuit measurements.
   [(#4787)](https://github.com/PennyLaneAI/pennylane/pull/4787)
-
 
 * Jax jit now works with shot vectors.
   [(#4772)](https://github.com/PennyLaneAI/pennylane/pull/4772/)
