@@ -30,7 +30,7 @@ def parse_args():
     parser.add_argument(
         "--filename_XUBM",
         type=str,
-        default="benchmarks_xubm.json",
+        default="benchmark_results/benchmarks_xubm.json",
         nargs="?",
         help="Name of the JSON-XUBM file with most recent benchmarks.",
     )
