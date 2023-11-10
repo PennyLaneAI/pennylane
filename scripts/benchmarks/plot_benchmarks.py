@@ -14,7 +14,7 @@ def parse_args():
     parser.add_argument(
         "--graph_name",
         type=str,
-        default="Benchmark set",
+        default="Benchmarks",
         nargs="?",
         help="Name of the set of benchmarks.",
     )
@@ -76,7 +76,9 @@ if __name__ == "__main__":
     import matplotlib.patches as mpatches
     import matplotlib.pyplot as plt
 
-    fig, ax = plt.subplots()
+    number_of_benchmarks = len(benchmark_names)
+
+    fig, ax = plt.subplots(figsize=(6.4, 0.5*number_of_benchmarks))
 
     colormat=np.where(np.array(benchmark_ratios)>1.0, 'r','b')
 
