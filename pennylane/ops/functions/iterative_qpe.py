@@ -60,10 +60,10 @@ def iterative_qpe(base, estimation_wire, iters):
 
     for i in range(iters):
         qml.Hadamard(wires=estimation_wire)
-        qml.ctrl(qml.pow(base, z=2 ** (iters - i - 1)), control=estimation_wire)
+        qml.ctrl(qml.pow(base, z=2.0 ** (iters - i - 1)), control=estimation_wire)
 
         for ind, meas in enumerate(measurements):
-            qml.cond(meas, qml.PhaseShift)(-2 * np.pi / 2 ** (ind + 2), wires=estimation_wire)
+            qml.cond(meas, qml.PhaseShift)(-2.0 * np.pi / 2 ** (ind + 2), wires=estimation_wire)
 
         qml.Hadamard(wires=estimation_wire)
         measurements.insert(0, qml.measure(wires=estimation_wire, reset=True))

@@ -131,7 +131,7 @@ class TestIQPE:
                 with tf.GradientTape() as tape:
                     y = f(x)
 
-                return tape.gradients(y, x)
+                return tape.gradient(y, x)
 
             return wrapper
 
