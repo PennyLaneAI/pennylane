@@ -320,32 +320,27 @@ all_features = [
 ]
 
 
-class TestNoInterface:
-    """Tests that the template is compatible with Python iterables as inputs."""
-
-    @pytest.mark.parametrize("features", all_features)
-    def test_list_and_tuples(self, tol, features):
-        """Tests common iterables as inputs."""
-
-        dev = qml.device("default.qubit", wires=3)
-
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
-
-        res = circuit(features)
-        res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-
-        res = circuit(tuple(features))
-        res2 = circuit2(tuple(features))
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-
-
 @pytest.mark.parametrize("features", all_features)
 @pytest.mark.parametrize("pad_with", [None, 0.0, 0.1])
 @pytest.mark.parametrize("normalize", [False, True])
 class TestInterfaces:
     """Tests that the template is compatible with all interfaces."""
+
+    def test_list_and_tuples(self, tol, features, pad_with, normalize):
+        """Tests common iterables as inputs."""
+
+        dev = qml.device("default.qubit")
+
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
+
+        res = circuit(features, pad_with, normalize)
+        res2 = circuit2(features, pad_with)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        res = circuit(tuple(features), pad_with, normalize)
+        res2 = circuit2(tuple(features), pad_with)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.autograd
     def test_autograd(self, tol, features, pad_with, normalize):
@@ -370,8 +365,6 @@ class TestInterfaces:
 
         features = jnp.array(features)
 
-        padding = pad_with is not None
-
         dev = qml.device("default.qubit")
 
         circuit = qml.QNode(circuit_template, dev, interface="jax")
@@ -390,8 +383,6 @@ class TestInterfaces:
 
         features = jnp.array(features)
 
-        padding = pad_with is not None
-
         dev = qml.device("default.qubit")
 
         circuit = jax.jit(qml.QNode(circuit_template, dev, interface="jax"), static_argnums=[1, 2])
@@ -409,8 +400,6 @@ class TestInterfaces:
 
         features = tf.Variable(features)
 
-        padding = pad_with is not None
-
         dev = qml.device("default.qubit")
 
         circuit = qml.QNode(circuit_template, dev, interface="tensorflow")
@@ -427,8 +416,6 @@ class TestInterfaces:
         import tensorflow as tf
 
         features = tf.Variable(features)
-
-        padding = pad_with is not None
 
         dev = qml.device("default.qubit")
 
@@ -448,8 +435,6 @@ class TestInterfaces:
         import torch
 
         features = torch.tensor(features, requires_grad=True)
-
-        padding = pad_with is not None
 
         dev = qml.device("default.qubit")
 
