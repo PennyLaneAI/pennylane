@@ -106,6 +106,10 @@
   expected, instead of numpy arrays.
   [(#4811)](https://github.com/PennyLaneAI/pennylane/pull/4811)
 
+* `qml.pow(op)` and `qml.QubitUnitary.pow()` now also work with Tensorflow data raised to an
+  integer power.
+  [(#)]()
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):

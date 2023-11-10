@@ -188,6 +188,16 @@ class TestQubitUnitary:
         with pytest.raises(ValueError, match="must be of shape"):
             qml.QubitUnitary(U, wires=range(num_wires + 1)).matrix()
 
+    @pytest.mark.tf
+    def test_qubit_unitary_int_pow_tf(self):
+        """Test that QubitUnitary.pow works with tf and int z values."""
+        import tensorflow as tf
+
+        mat = tf.Variable([[1, 0], [0, tf.exp(1j)]])
+        expected = tf.Variable([[1, 0], [0, tf.exp(3j)]])
+        [op] = qml.QubitUnitary(mat, wires=[0]).pow(3)
+        assert qml.math.allclose(op.matrix(), expected)
+
     @pytest.mark.jax
     @pytest.mark.parametrize(
         "U,num_wires", [(H, 1), (np.kron(H, H), 2), (np.tensordot([1j, -1, 1], H, axes=0), 1)]

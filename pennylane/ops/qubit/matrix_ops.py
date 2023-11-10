@@ -20,6 +20,7 @@ import warnings
 from itertools import product
 
 import numpy as np
+from scipy.linalg import fractional_matrix_power
 from pennylane.math import norm, cast, eye, zeros, transpose, conj, sqrt, sqrt_matrix
 from pennylane import numpy as pnp
 
@@ -232,9 +233,13 @@ class QubitUnitary(Operation):
         return QubitUnitary(qml.math.moveaxis(qml.math.conj(U), -2, -1), wires=self.wires)
 
     def pow(self, z):
-        if isinstance(z, int):
-            return [QubitUnitary(qml.math.linalg.matrix_power(self.matrix(), z), wires=self.wires)]
-        return super().pow(z)
+        mat = self.matrix()
+        pow_mat = (
+            qml.math.linalg.matrix_power(mat, z)
+            if isinstance(z, int) and qml.math.get_deep_interface(mat) != "tensorflow"
+            else qml.math.convert_like(fractional_matrix_power(mat, z), mat)
+        )
+        return [QubitUnitary(pow_mat, wires=self.wires)]
 
     def _controlled(self, wire):
         return qml.ControlledQubitUnitary(*self.parameters, control_wires=wire, wires=self.wires)

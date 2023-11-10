@@ -744,6 +744,15 @@ class TestMatrix:
         param = tf.Variable(2.34)
         assert self.check_matrix(param, z)
 
+    @pytest.mark.tf
+    def test_matrix_tf_int_z(self):
+        """Test that matrix works with integer power."""
+        import tensorflow as tf
+
+        theta = tf.Variable(1.0)
+        mat = qml.pow(qml.RX(theta, wires=0), z=3).matrix()
+        assert qml.math.allclose(mat, qml.RX.compute_matrix(3))
+
     def test_matrix_wire_order(self):
         """Test that the wire_order keyword rearranges ording."""
 
