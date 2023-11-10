@@ -134,7 +134,7 @@ class TransformDispatcher:
             "or call the transform directly using qnode = transform_fn(qnode, "
             "**transform_kwargs). Visit the deprecations page for more details: "
             "https://docs.pennylane.ai/en/stable/development/deprecations.html",
-            UserWarning,
+            qml.PennyLaneDeprecationWarning,
         )
 
         if obj is not None:
