@@ -15,8 +15,6 @@ r"""
 Contains the AmplitudeEmbedding template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-import numpy as np
-
 import pennylane as qml
 from pennylane.ops import StatePrep
 from pennylane.wires import Wires
