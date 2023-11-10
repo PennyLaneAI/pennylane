@@ -444,7 +444,7 @@ def tape_text(
             layer_str = [w_filler] * n_wires + [""] * n_bits
             for b in bit_map.values():
                 cur_b_filler = (
-                    "a" if bit_measurements_reached[b] and bit_terminal_layers[b] > i else "b"
+                    b_filler if bit_measurements_reached[b] and bit_terminal_layers[b] > i else " "
                 )
                 layer_str[b + n_wires] = cur_b_filler
 
