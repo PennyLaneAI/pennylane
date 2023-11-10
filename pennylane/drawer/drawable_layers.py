@@ -16,7 +16,6 @@ This module contains a helper function to sort operations into layers.
 """
 
 from pennylane.measurements import MidMeasureMP
-from pennylane.tape import QuantumScript
 from .utils import default_wire_map
 
 
@@ -135,7 +134,7 @@ def drawable_layers(ops, wire_map=None):
 
     # loop over operations
     for op in ops:
-        is_mid_measure = is_conditional = False
+        is_mid_measure = False
 
         if isinstance(op, MidMeasureMP):
             if len(op.wires) > 1:
@@ -144,18 +143,8 @@ def drawable_layers(ops, wire_map=None):
             is_mid_measure = True
             measured_wires[op.id] = wire_map[op.wires[0]]
 
-        elif op.__class__.__name__ == "Conditional":
-            is_conditional = True
-
         op_occupied_wires = _get_op_occupied_wires(op, wire_map, cond_measurements)
         op_layer = _recursive_find_layer(max_layer, op_occupied_wires, occupied_wires_per_layer)
-
-        if is_conditional:
-            m_layers = [measured_layers[m.id] for m in op.meas_val.measurements]
-            max_control_layer = max(m_layers)
-
-            if op_layer == max_control_layer:
-                op_layer += 1
 
         # see if need to add new layer
         if op_layer > max_layer:

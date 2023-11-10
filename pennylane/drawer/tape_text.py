@@ -19,7 +19,6 @@ This module contains logic for the text based circuit drawer through the ``tape_
 
 import pennylane as qml
 from pennylane.measurements import Expectation, Probability, Sample, Variance, State, MidMeasureMP
-from pennylane.tape import QuantumScript
 
 from .drawable_layers import drawable_layers
 from .utils import convert_wire_order, unwrap_controls
@@ -58,7 +57,11 @@ def _add_cond_grouping_symbols(op, layer_str, wire_map, bit_map):
         layer_str[w] = "─║"
 
     for b in range(n_wires, max_b):
-        layer_str[b] = "═║" if b - n_wires not in mapped_bits else "═╣"
+        if b - n_wires in mapped_bits:
+            layer_str[b] = "═╣"
+        else:
+            filler = " " if layer_str[b][-1] == " " else "═"
+            layer_str[b] = filler + "║"
 
     return layer_str
 
