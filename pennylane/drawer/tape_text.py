@@ -174,8 +174,9 @@ def _find_mid_measure_cond_connections(operations, layers):
     bit_measurements_reached = []
 
     # Map between classical bit positions and the final layer where the bit is used.
-    # This is needed to know when to stop drawing a bit line.
-    all_bit_terminal_layers = []
+    # This is needed to know when to stop drawing a bit line. The bit is the index,
+    # so each of the two lists must have the same length as the number of bits
+    all_bit_terminal_layers = [[], []]
 
     measurements_for_conds = set()
     conditional_ops = []
@@ -198,9 +199,9 @@ def _find_mid_measure_cond_connections(operations, layers):
         bit_measurements_reached = [False for _ in range(n_bits)]
 
         # Terminal layers in ops
-        all_bit_terminal_layers.append([None for _ in range(n_bits)])
+        all_bit_terminal_layers[0] = [None for _ in range(n_bits)]
         # Terminal layers in meas
-        all_bit_terminal_layers.append([-1 for _ in range(n_bits)])
+        all_bit_terminal_layers[1] = [-1 for _ in range(n_bits)]
         # Only iterating through operation layers because bits are only determined
         # using those layers
         for i, layer in enumerate(layers[0]):
