@@ -201,15 +201,11 @@ class AmplitudeEmbedding(StatePrep):
 
         if qml.math.is_abstract(norm):
             if normalize or pad_with:
-                features = features / qml.math.reshape(
-                    qml.math.sqrt(norm), (*qml.math.shape(norm), 1)
-                )
+                features = features / qml.math.reshape(qml.math.sqrt(norm), (*shape[:-1], 1))
 
         elif not qml.math.allclose(norm, 1.0, atol=TOLERANCE):
             if normalize or pad_with:
-                features = features / qml.math.reshape(
-                    qml.math.sqrt(norm), (*qml.math.shape(norm), 1)
-                )
+                features = features / qml.math.reshape(qml.math.sqrt(norm), (*shape[:-1], 1))
             else:
                 raise ValueError(
                     f"Features must be a vector of norm 1.0; got norm {norm}. "
