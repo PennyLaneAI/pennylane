@@ -127,8 +127,7 @@ class ExecuteTapes(torch.autograd.Function):
     ``tapes``; this function should always be called
     with the parameters extracted directly from the tapes as follows:
 
-    >>> parameters = []
-    >>> [parameters.extend(t.get_parameters()) for t in tapes]
+    >>> parameters = [p for t in tapes for p in t.get_parameters()]
     >>> kwargs = {"tapes": tapes, "execute_fn": execute_fn, "jpc": jpc}
     >>> ExecuteTapes.apply(kwargs, *parameters)
 
@@ -204,7 +203,7 @@ def execute(tapes, execute_fn, jpc):
     """
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(
-            "Entry with args=(tapes=%s, execute-fn=%s, jpc=%s",
+            "Entry with args=(tapes=%s, execute_fn=%s, jpc=%s",
             tapes,
             f"\n{inspect.getsource(execute_fn)}\n"
             if logger.isEnabledFor(qml.logging.TRACE)

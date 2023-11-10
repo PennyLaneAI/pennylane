@@ -246,7 +246,7 @@ class TestTorchExecuteIntegration:
             ops = [qml.RY(a, wires=0), qml.RX(b, wires=1), qml.CNOT(wires=[0, 1])]
             m = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
             tape = qml.tape.QuantumScript(ops, m, shots=shots)
-            res = execute([tape], device, **execute_kwargs)[0]
+            [res] = execute([tape], device, **execute_kwargs)
             if shots.has_partitioned_shots:
                 return torch.hstack(res[0] + res[1])
             return torch.hstack(res)
