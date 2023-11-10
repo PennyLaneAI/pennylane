@@ -19,6 +19,7 @@ This module contains logic for the text based circuit drawer through the ``tape_
 
 import pennylane as qml
 from pennylane.measurements import Expectation, Probability, Sample, Variance, State, MidMeasureMP
+from pennylane.tape import QuantumScript
 
 from .drawable_layers import drawable_layers
 from .utils import convert_wire_order, unwrap_controls
@@ -86,7 +87,7 @@ def _add_mid_measure_grouping_symbols(op, layer_str, wire_map, bit_map):
 
 def _add_op(op, layer_str, wire_map, bit_map, decimals, cache):
     """Updates ``layer_str`` with ``op`` operation."""
-    if op.name == "Conditional":
+    if op.__class__.__name__ == "Conditional":
         layer_str = _add_cond_grouping_symbols(op, layer_str, wire_map, bit_map)
         return _add_op(op.then_op, layer_str, wire_map, bit_map, decimals, cache)
 
@@ -181,7 +182,7 @@ def _find_mid_measure_cond_connections(operations, layers):
     measurements_for_conds = set()
     conditional_ops = []
     for op in operations:
-        if op.name == "Conditional":
+        if op.__class__.__name__ == "Conditional":
             measurements_for_conds.update(op.meas_val.measurements)
             conditional_ops.append(op)
 
@@ -206,7 +207,7 @@ def _find_mid_measure_cond_connections(operations, layers):
         # using those layers
         for i, layer in enumerate(layers[0]):
             for op in layer:
-                if op.name == "Conditional":
+                if op.__class__.__name__ == "Conditional":
                     for mid_measure in op.meas_val.measurements:
                         all_bit_terminal_layers[0][bit_map[mid_measure]] = i
 

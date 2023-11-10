@@ -16,6 +16,7 @@ This module contains a helper function to sort operations into layers.
 """
 
 from pennylane.measurements import MidMeasureMP
+from pennylane.tape import QuantumScript
 from .utils import default_wire_map
 
 
@@ -61,7 +62,7 @@ def _get_op_occupied_wires(op, wire_map, cond_measurements):
 
         return {mapped_wire}
 
-    if op.name == "Conditional":
+    if op.__class__.__name__ == "Conditional":
         mapped_wires = [wire_map[wire] for wire in op.then_op.wires]
         min_wire = min(mapped_wires)
         max_wire = max(wire_map.values())
@@ -129,7 +130,7 @@ def drawable_layers(ops, wire_map=None):
     # Collect all mid-circuit measurements used for classical conditioning
     cond_measurements = set()
     for op in ops:
-        if op.name == "Conditional":
+        if op.__class__.__name__ == "Conditional":
             cond_measurements.update(op.meas_val.measurements)
 
     # loop over operations
@@ -143,7 +144,7 @@ def drawable_layers(ops, wire_map=None):
             is_mid_measure = True
             measured_wires[op.id] = wire_map[op.wires[0]]
 
-        elif op.name == "Conditional":
+        elif op.__class__.__name__ == "Conditional":
             is_conditional = True
 
         op_occupied_wires = _get_op_occupied_wires(op, wire_map, cond_measurements)

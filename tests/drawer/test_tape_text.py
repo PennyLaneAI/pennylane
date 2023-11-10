@@ -25,6 +25,7 @@ from pennylane.drawer.tape_text import _add_grouping_symbols, _add_measurement, 
 from pennylane.tape import QuantumScript, QuantumTape
 
 default_wire_map = {0: 0, 1: 1, 2: 2, 3: 3}
+default_bit_map = {}
 
 with qml.queuing.AnnotatedQueue() as q_tape:
     qml.RX(1.23456, wires=0)
@@ -48,7 +49,7 @@ class TestHelperFunctions:
     )
     def test_add_grouping_symbols(self, op, out):
         """Test private _add_grouping_symbols function renders as expected."""
-        assert out == _add_grouping_symbols(op, ["", "", "", ""], default_wire_map)
+        assert out == _add_grouping_symbols(op, ["", "", "", ""], default_wire_map, default_bit_map)
 
     @pytest.mark.parametrize(
         "op, out",
@@ -62,19 +63,25 @@ class TestHelperFunctions:
     )
     def test_add_measurements(self, op, out):
         """Test private _add_measurement function renders as expected."""
-        assert out == _add_measurement(op, [""] * 4, default_wire_map, None, None)
+        assert out == _add_measurement(op, [""] * 4, default_wire_map, default_bit_map, None, None)
 
     def test_add_measurements_cache(self):
         """Test private _add_measurement function with a matrix cache."""
         cache = {"matrices": []}
         op = qml.expval(qml.Hermitian(np.eye(2), wires=0))
-        assert _add_measurement(op, ["", ""], {0: 0, 1: 1}, None, cache) == ["<𝓗(M0)>", ""]
+        assert _add_measurement(op, ["", ""], {0: 0, 1: 1}, default_bit_map, None, cache) == [
+            "<𝓗(M0)>",
+            "",
+        ]
 
         assert qml.math.allclose(cache["matrices"][0], np.eye(2))
 
         op2 = qml.expval(qml.Hermitian(np.eye(2), wires=1))
         # new op with same matrix, should have same M0 designation
-        assert _add_measurement(op2, ["", ""], {0: 0, 1: 1}, None, cache) == ["", "<𝓗(M0)>"]
+        assert _add_measurement(op2, ["", ""], {0: 0, 1: 1}, default_bit_map, None, cache) == [
+            "",
+            "<𝓗(M0)>",
+        ]
 
     @pytest.mark.parametrize(
         "op, out",
@@ -90,7 +97,7 @@ class TestHelperFunctions:
     )
     def test_add_op(self, op, out):
         """Test adding the first operation to array of strings"""
-        assert out == _add_op(op, ["─"] * 4, default_wire_map, None, None)
+        assert out == _add_op(op, ["─"] * 4, default_wire_map, default_bit_map, None, None)
 
     @pytest.mark.parametrize(
         "op, out",
@@ -102,18 +109,18 @@ class TestHelperFunctions:
     )
     def test_add_second_op(self, op, out):
         """Test adding a second operation to the array of strings"""
-        start = _add_op(qml.PauliX(0), ["─"] * 4, default_wire_map, None, None)
-        assert out == _add_op(op, start, default_wire_map, None, None)
+        start = _add_op(qml.PauliX(0), ["─"] * 4, default_wire_map, default_bit_map, None, None)
+        assert out == _add_op(op, start, default_wire_map, default_bit_map, None, None)
 
     def test_add_op_cache(self):
         """Test private _add_op method functions with a matrix cache."""
         cache = {"matrices": []}
         op1 = qml.QubitUnitary(np.eye(2), wires=0)
-        assert _add_op(op1, ["", ""], {0: 0, 1: 1}, None, cache) == ["U(M0)", ""]
+        assert _add_op(op1, ["", ""], {0: 0, 1: 1}, default_bit_map, None, cache) == ["U(M0)", ""]
 
         assert qml.math.allclose(cache["matrices"][0], np.eye(2))
         op2 = qml.QubitUnitary(np.eye(2), wires=1)
-        assert _add_op(op2, ["", ""], {0: 0, 1: 1}, None, cache) == ["", "U(M0)"]
+        assert _add_op(op2, ["", ""], {0: 0, 1: 1}, default_bit_map, None, cache) == ["", "U(M0)"]
 
 
 class TestEmptyTapes:

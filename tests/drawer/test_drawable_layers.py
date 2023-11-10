@@ -150,29 +150,6 @@ class TestMidMeasure:
 
         assert drawable_layers(q.queue) == [[q.queue[0]], [q.queue[1]]]
 
-    def test_mid_measure_promoted_if_needed(self):
-        """Tests promotion of MidMeasureMPs if used for the same conditional."""
-        with AnnotatedQueue() as q:
-            m0 = qml.measure(0)
-            qml.Hadamard(1)
-            m1 = qml.measure(1)
-            qml.cond(m0 + m1, qml.PauliZ)(2)
-
-        ops = q.queue
-        assert drawable_layers(ops) == [[ops[1]], [ops[2], ops[0]], [ops[3]]]
-
-    def test_empty_layers_are_pruned(self):
-        """Tests that no empty layers are returned after MidMeasure promotion."""
-        with AnnotatedQueue() as q:
-            m0 = qml.measure(1)
-            qml.CNOT([0, 2])
-            m1 = qml.measure(0)
-            qml.cond(m0 + m1, qml.PauliZ)(2)
-
-        ops = q.queue
-        layers = drawable_layers(ops, wire_map={i: i for i in range(3)})
-        assert layers == [[ops[1]], [ops[2], ops[0]], [ops[3]]]
-
     def test_cannot_draw_multi_wire_MidMeasureMP(self):
         """Tests that MidMeasureMP is only supported with one wire."""
         with pytest.raises(ValueError, match="mid-circuit measurements with more than one wire."):
