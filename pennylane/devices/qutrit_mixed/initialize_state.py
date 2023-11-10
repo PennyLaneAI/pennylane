@@ -71,6 +71,6 @@ def _create_basis_state(num_wires, index, dtype):  # function is easy to abstrac
         array[complex]: complex array of shape ``[3] * (2 * num_wires)``
         representing the density matrix of the basis state.
     """
-    rho = qml.math.zeros((3 ** num_wires, 3 ** num_wires), dtype=dtype)
+    rho = qml.math.zeros((3**num_wires, 3**num_wires), dtype=dtype)
     rho[index, index] = 1
     return qml.math.reshape(rho, [qudit_dim] * (2 * num_wires))
