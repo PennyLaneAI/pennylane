@@ -72,6 +72,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug where the adjoint method differentiation with `DefaultQubitLegacy` would fail if
+  an operation with `grad_method=None` but with parameters is present.
+  [(#4820)](https://github.com/PennyLaneAI/pennylane/pull/4820)
+  
 * `MottonenStatePreparation` now raises an error if decomposing a broadcasted state vector.
   [(#4767)](https://github.com/PennyLaneAI/pennylane/pull/4767)
 
