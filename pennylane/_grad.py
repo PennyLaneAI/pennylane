@@ -68,17 +68,17 @@ class grad:
         the arguments in ``argnum``.
     """
 
-    def __new__(cls, func, argnum=None, method=None, step_size=None):
+    def __new__(cls, func, argnum=None, method=None, h=None):
         """Patch to the proper grad function"""
 
         if active_jit := compiler.active_compiler():
             available_eps = compiler.AvailableCompilers.names_entrypoints
             ops_loader = available_eps[active_jit]["ops"].load()
-            return ops_loader.graddd(func, method=method, h=step_size, argnum=argnum)
+            return ops_loader.grad(func, method=method, h=h, argnum=argnum)
 
-        if method or step_size:
+        if method or h:
             raise ValueError(
-                f"Invalid values for 'method={method}' and 'step_size={step_size}' in interpreted mode"
+                f"Invalid values for 'method={method}' and 'h={h}' in interpreted mode"
             )
 
         return super().__new__(cls)
@@ -171,7 +171,7 @@ class grad:
         return grad_value, ans
 
 
-def jacobian(func, argnum=None, method=None, step_size=None):
+def jacobian(func, argnum=None, method=None, h=None):
     """Returns the Jacobian as a callable function of vector-valued
     (functions of) QNodes.
 
@@ -361,7 +361,7 @@ def jacobian(func, argnum=None, method=None, step_size=None):
                 qml.RY(x[1], wires=0)
                 return qml.probs()
 
-            g = qml.jacobian(circuit, method="fd", step_size=0.3)
+            g = qml.jacobian(circuit, method="fd", h=0.3)
             return g(x)
 
     >>> qml.qjit(workflow)(np.array([2.0, 1.0]))
@@ -373,12 +373,10 @@ def jacobian(func, argnum=None, method=None, step_size=None):
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
-        return ops_loader.jacobian(func, method=method, h=step_size, argnum=argnum)
+        return ops_loader.jacobian(func, method=method, h=h, argnum=argnum)
 
-    if method or step_size:
-        raise ValueError(
-            f"Invalid values for 'method={method}' and 'step_size={step_size}' in interpreted mode"
-        )
+    if method or h:
+        raise ValueError(f"Invalid values for 'method={method}' and 'h={h}' in interpreted mode")
 
     def _get_argnum(args):
         """Inspect the arguments for differentiability and return the

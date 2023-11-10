@@ -118,7 +118,7 @@ def available(compiler="catalyst") -> bool:
     Args:
         compiler (str): Name of the compiler package (default value is ``catalyst``)
 
-    Return:
+    Returns:
         bool: ``True`` if the compiler package is installed on the system
 
     **Example**
@@ -152,10 +152,9 @@ def active_compiler() -> Optional[str]:
     to allow differing logic for transformations or operations that are
     just-in-time compiled, versus those that are not.
 
-    Return:
-        Optional[str]: Name of the active compiler inside a :func:`~.qjit`
-            evaluation context. If there is no active compiler, ``None``
-            will be returned.
+    Returns:
+        Optional[str]: Name of the active compiler inside a :func:`~.qjit` evaluation
+        context. If there is no active compiler, ``None`` will be returned.
 
     **Example**
 
@@ -197,7 +196,7 @@ def active() -> bool:
     to allow differing logic for circuits or operations that are
     just-in-time compiled versus those that are not.
 
-    Return:
+    Returns:
         bool: ``True`` if the caller is inside a QJIT evaluation context
 
     **Example**

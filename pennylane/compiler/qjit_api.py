@@ -28,7 +28,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
         Currently, only the :doc:`Catalyst <catalyst:index>` hybrid quantum-classical
         compiler is supported. The Catalyst compiler works with the JAX interface
 
-        For more details, see the Catalyst documentation and :func:`catalyst:.qjit`
+        For more details, see the Catalyst documentation and :func:`catalyst.qjit`
         docstring.
 
     .. note::

@@ -330,7 +330,7 @@ class TestCatalyst:
                 qml.RY(x[1], wires=0)
                 return qml.probs()
 
-            g = qml.jacobian(circuit, method="fd", step_size=0.3)
+            g = qml.jacobian(circuit, method="fd", h=0.3)
             return g(x)
 
         result = qml.qjit(workflow)(np.array([2.0, 1.0]))
@@ -339,6 +339,6 @@ class TestCatalyst:
 
         with pytest.raises(
             ValueError,
-            match="Invalid values for 'method=fd' and 'step_size=0.3' in interpreted mode",
+            match="Invalid values for 'method=fd' and 'h=0.3' in interpreted mode",
         ):
             workflow(np.array([2.0, 1.0]))
