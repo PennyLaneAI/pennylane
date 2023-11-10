@@ -1,10 +1,8 @@
 from typing import Iterable, Union
-from functools import singledispatch
 import pennylane as qml
 
 
-@singledispatch
-def create_initial_state(
+def create_initial_rho(
     wires: Union[qml.wires.Wires, Iterable],
     prep_operation: qml.QutritBasisState = None,
     like: str = None,
@@ -23,13 +21,13 @@ def create_initial_state(
     """
     if not prep_operation:
         num_wires = len(wires)
-        rho = _create_basis_state(num_wires, index, dtype)
+        rho = _create_basis_state(num_wires, 0)
     else:
         rho = _apply_basis_state(prep_operation, wires)
     return qml.math.asarray(rho, like=like)
 
 
-def _apply_basis_state(state, wires, dtype):
+def _apply_basis_state(state, wires):
     """Initialize the device in a specified computational basis state.
 
     Args:
@@ -37,7 +35,7 @@ def _apply_basis_state(state, wires, dtype):
             consisting of 0s and 1s.
         wires (Wires): wires that the provided computational state should be initialized on
     """
-    num_wires = 1 #TODO???
+    num_wires = len(wires)
     # length of basis state parameter
     n_basis_state = len(state)
 
@@ -51,7 +49,7 @@ def _apply_basis_state(state, wires, dtype):
     basis_states = 3 ** (num_wires - 1 - wires.toarray())
     num = int(qml.math.dot(state, basis_states))
 
-    return _create_basis_state(num_wires, num, dtype)
+    return _create_basis_state(num_wires, num)
 
 
 def _create_basis_state(num_wires, index, dtype):
