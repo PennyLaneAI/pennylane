@@ -1,8 +1,7 @@
 name: Benchmarks
 on:
-  push:
-    branches:
-      - master
+  schedule:
+    - cron: "0 0 * * 1-7"  # Run daily at 0am
   pull_request:
 
 concurrency:
