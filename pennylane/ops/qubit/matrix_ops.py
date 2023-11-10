@@ -234,11 +234,12 @@ class QubitUnitary(Operation):
 
     def pow(self, z):
         mat = self.matrix()
-        pow_mat = (
-            qml.math.linalg.matrix_power(mat, z)
-            if isinstance(z, int) and qml.math.get_deep_interface(mat) != "tensorflow"
-            else qml.math.convert_like(fractional_matrix_power(mat, z), mat)
-        )
+        if isinstance(z, int) and qml.math.get_deep_interface(mat) != "tensorflow":
+            pow_mat = qml.math.linalg.matrix_power(mat, z)
+        elif self.batch_size is not None or qml.math.shape(z) != ():
+            return super().pow(z)
+        else:
+            pow_mat = qml.math.convert_like(fractional_matrix_power(mat, z), mat)
         return [QubitUnitary(pow_mat, wires=self.wires)]
 
     def _controlled(self, wire):
