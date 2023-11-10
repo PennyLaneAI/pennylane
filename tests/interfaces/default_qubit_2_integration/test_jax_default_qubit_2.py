@@ -15,6 +15,8 @@
 import pytest
 import numpy as np
 
+from param_shift_dev import ParamShiftDerivativesDevice
+
 import pennylane as qml
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import param_shift
@@ -134,6 +136,16 @@ test_matrix = [
         DefaultQubit(),
     ),
     ({"gradient_fn": "adjoint", "device_vjp": True}, Shots(None), DefaultQubit()),
+    (
+        {"gradient_fn": "device", "device_vjp": False},
+        Shots((100000, 100000)),
+        ParamShiftDerivativesDevice(seed=904747894),
+    ),
+    (
+        {"gradient_fn": "device", "device_vjp": True},
+        Shots((100000, 100000)),
+        ParamShiftDerivativesDevice(seed=10490244),
+    ),
 ]
 
 

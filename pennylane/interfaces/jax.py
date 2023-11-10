@@ -132,7 +132,9 @@ def vjp_fwd(tapes, execute_fn, jpc):
     """
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug("Entry with (tapes=%s, execute_fn=%s, jpc=%s)", tapes, execute_fn, jpc)
-    return _to_jax(execute_fn(tapes)), tapes
+    res = _to_jax(execute_fn(tapes))
+    print(res)
+    return res, tapes
 
 
 def vjp_bwd(_, jpc, tapes, dy):
@@ -151,6 +153,7 @@ def vjp_bwd(_, jpc, tapes, dy):
     """
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug("Entry with (tapes=%s, jpc=%s)", tapes, jpc)
+    print("call: ", dy)
     return _to_jax(jpc.compute_vjp(tapes, dy))
 
 

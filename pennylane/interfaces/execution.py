@@ -565,6 +565,8 @@ def execute(
             ) from e  # pragma: no-cover
 
         interface = get_jax_interface_name(tapes)
+        # Only need to calculate derivatives with jax when we know it will be executed later.
+        grad_on_execution = False
 
     if device_vjp and isinstance(device, qml.Device):
         raise qml.QuantumFunctionError(
