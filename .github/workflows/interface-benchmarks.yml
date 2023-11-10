@@ -26,6 +26,11 @@ on:
         required: false
         type: string
         default: --benchmark-enable --benchmark-only --benchmark-json=benchmarks.json
+      reference_benchmarks:
+        description: If the CI will run the reference benchmarks.
+        required: false
+        type: boolean
+        default: false
       run_lightened_ci:
         description: |
           Indicate if a lightened version of the CI should be run instead of the entire suite.
@@ -159,6 +164,7 @@ jobs:
       pytorch_version: ${{ inputs.pytorch_version }}
       install_pennylane_lightning_master: true
       pytest_benchmark_flags: ${{ inputs.pytest_benchmark_flags }}
+      reference_benchmarks: ${{ inputs.reference_benchmarks }}
       pytest_markers: torch and not qcut and not finite-diff and not param-shift
 
 
@@ -189,6 +195,7 @@ jobs:
       install_pytorch: false
       install_pennylane_lightning_master: true
       pytest_benchmark_flags: ${{ inputs.pytest_benchmark_flags }}
+      reference_benchmarks: ${{ inputs.reference_benchmarks }}
       pytest_markers: autograd and not qcut and not finite-diff and not param-shift
 
 
@@ -221,6 +228,7 @@ jobs:
       install_pytorch: false
       install_pennylane_lightning_master: true
       pytest_benchmark_flags: ${{ inputs.pytest_benchmark_flags }}
+      reference_benchmarks: ${{ inputs.reference_benchmarks }}
       pytest_markers: tf and not qcut and not finite-diff and not param-shift
       pytest_additional_args: --splits 3 --group ${{ matrix.group }} --durations-path='.github/workflows/tf_tests_durations.json'
       additional_pip_packages: pytest-split
@@ -255,6 +263,7 @@ jobs:
       install_pytorch: false
       install_pennylane_lightning_master: true
       pytest_benchmark_flags: ${{ inputs.pytest_benchmark_flags }}
+      reference_benchmarks: ${{ inputs.reference_benchmarks }}
       pytest_markers: jax and not qcut and not finite-diff and not param-shift
       pytest_additional_args: --splits 5 --group ${{ matrix.group }} --durations-path='.github/workflows/jax_tests_durations.json'
       additional_pip_packages: pytest-split
@@ -290,6 +299,7 @@ jobs:
       install_pytorch: false
       install_pennylane_lightning_master: true
       pytest_benchmark_flags: ${{ inputs.pytest_benchmark_flags }}
+      reference_benchmarks: ${{ inputs.reference_benchmarks }}
       pytest_markers: core and not qcut and not finite-diff and not param-shift
       pytest_additional_args: --splits 2 --group ${{ matrix.group }}
       additional_pip_packages: pytest-split
@@ -325,6 +335,7 @@ jobs:
       pytorch_version: ${{ inputs.pytorch_version }}
       install_pennylane_lightning_master: false
       pytest_benchmark_flags: ${{ inputs.pytest_benchmark_flags }}
+      reference_benchmarks: ${{ inputs.reference_benchmarks }}
       pytest_markers: all_interfaces
 
 
@@ -357,6 +368,7 @@ jobs:
       install_pytorch: false
       install_pennylane_lightning_master: false
       pytest_benchmark_flags: ${{ inputs.pytest_benchmark_flags }}
+      reference_benchmarks: ${{ inputs.reference_benchmarks }}
       pytest_markers: external
       additional_pip_packages: git+https://github.com/Quantomatic/pyzx.git@master pennylane-catalyst
 
@@ -391,6 +403,7 @@ jobs:
       pytorch_version: ${{ inputs.pytorch_version }}
       install_pennylane_lightning_master: false
       pytest_benchmark_flags: ${{ inputs.pytest_benchmark_flags }}
+      reference_benchmarks: ${{ inputs.reference_benchmarks }}
       pytest_markers: qcut
       additional_pip_packages: kahypar==1.1.7 opt_einsum
 
@@ -422,6 +435,7 @@ jobs:
       install_pytorch: false
       install_pennylane_lightning_master: false
       pytest_benchmark_flags: ${{ inputs.pytest_benchmark_flags }}
+      reference_benchmarks: ${{ inputs.reference_benchmarks }}
       pytest_markers: qchem
       additional_pip_packages: openfermionpyscf basis-set-exchange
 
@@ -458,6 +472,7 @@ jobs:
       pytorch_version: ${{ inputs.pytorch_version }}
       install_pennylane_lightning_master: false
       pytest_benchmark_flags: ${{ inputs.pytest_benchmark_flags }}
+      reference_benchmarks: ${{ inputs.reference_benchmarks }}
       pytest_markers: ${{ matrix.config.suite }}
 
 
@@ -488,6 +503,7 @@ jobs:
       install_pytorch: false
       install_pennylane_lightning_master: false
       pytest_benchmark_flags: ${{ inputs.pytest_benchmark_flags }}
+      reference_benchmarks: ${{ inputs.reference_benchmarks }}
       pytest_markers: data
       additional_pip_packages: h5py
 
@@ -534,4 +550,5 @@ jobs:
       install_pennylane_lightning_master: false
       pytest_test_directory: pennylane/devices/tests
       pytest_benchmark_flags: ${{ inputs.pytest_benchmark_flags }}
+      reference_benchmarks: ${{ inputs.reference_benchmarks }}
       pytest_additional_args: --device=${{ matrix.config.device }} --shots=${{ matrix.config.shots }}
