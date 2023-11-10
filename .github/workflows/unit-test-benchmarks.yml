@@ -108,11 +108,11 @@ jobs:
         id: continue
         env:
           reference_benchmarks: ${{ inputs.branch != github.ref && (steps.benchmark-cache.outputs.cache-hit != 'true') }}
-          local_benchmarks: ${{ inputs.branch == github.ref }}
+          assessment_benchmarks: ${{ inputs.branch == github.ref }}
         run: |
           echo "reference_benchmarks=$( echo ${{ (env.reference_benchmarks) }} )" >> $GITHUB_OUTPUT
-          echo "local_benchmarks=$( echo ${{ (env.local_benchmarks) }} )" >> $GITHUB_OUTPUT
-          echo "confirm=$( echo ${{ (env.reference_benchmarks == 'true') || (env.local_benchmarks == 'true') }} )" >> $GITHUB_OUTPUT
+          echo "assessment_benchmarks=$( echo ${{ (env.assessment_benchmarks) }} )" >> $GITHUB_OUTPUT
+          echo "confirm=$( echo ${{ (env.reference_benchmarks == 'true') || (env.assessment_benchmarks == 'true') }} )" >> $GITHUB_OUTPUT
 
       - name: Setup Python
         if: ${{ steps.continue.outputs.confirm == 'true' }}
@@ -175,7 +175,7 @@ jobs:
         run: mkdir -p ${{ github.workspace }}/benchmark_reference && cp benchmarks.json "$_"
 
       - name: Convert pytest benchmark JSON files to XUBM-JSON
-        if: ${{ steps.continue.outputs.local_benchmarks == 'true' && hashFiles('benchmarks.json') != '' && hashFiles('benchmark_reference/benchmarks.json') != '' }}
+        if: ${{ steps.continue.outputs.assessment_benchmarks == 'true' && hashFiles('benchmarks.json') != '' && hashFiles('benchmark_reference/benchmarks.json') != '' }}
         run: |
           mkdir ${{ github.workspace }}/benchmark_results
           python ${{ github.workspace }}/scripts/benchmarks/convert_pytest_JSON_to_XUBM.py --filename_XUBM benchmark_results/benchmarks_xubm.json --author ${{ github.event.pull_request.user.login }}
@@ -183,13 +183,13 @@ jobs:
           python ${{ github.workspace }}/scripts/benchmarks/convert_pytest_JSON_to_XUBM.py --author ${{ github.event.pull_request.user.login }}
 
       - name: Plotting benchmark graphs
-        if: ${{ steps.continue.outputs.local_benchmarks == 'true' && hashFiles('benchmark_results/benchmarks_xubm.json') != '' && hashFiles('benchmark_reference/benchmarks_xubm.json') != '' }}
+        if: ${{ steps.continue.outputs.assessment_benchmarks == 'true' && hashFiles('benchmark_results/benchmarks_xubm.json') != '' && hashFiles('benchmark_reference/benchmarks_xubm.json') != '' }}
         run: |
           python ${{ github.workspace }}/scripts/benchmarks/plot_benchmarks.py --graph_name ${{ inputs.benchmarks_name }}
 
-      # If this is a PR benchmark, upload the data as an artifact.
-      - name: Upload PR pytest benchmark file
-        if: ${{ steps.continue.outputs.local_benchmarks == 'true' }}
+      # If this is an assessment benchmark, upload the data as an artifact.
+      - name: Upload pytest benchmark results
+        if: ${{ steps.continue.outputs.assessment_benchmarks == 'true' }}
         uses: actions/upload-artifact@v3
         with:
           name: ${{ inputs.benchmarks_name }}
