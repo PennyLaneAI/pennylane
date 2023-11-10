@@ -1,7 +1,7 @@
 name: Benchmarks
 on:
   schedule:
-    - cron: "0 0 * * 1-7"  # Run daily at 0am
+    - cron: "0 0 * * 0-6"  # Run daily at 0am
   pull_request:
 
 concurrency:
@@ -14,7 +14,6 @@ jobs:
     reference_benchmarks:
       if: >-
         ${{
-          github.event_name == 'push' ||
           (
             github.event_name == 'pull_request' &&
             contains(github.event.pull_request.labels.*.name, 'ci:run-benchmarks')
@@ -40,7 +39,6 @@ jobs:
     benchmarks:
       if: >-
         ${{
-          github.event_name == 'push' ||
           (
             github.event_name == 'pull_request' &&
             contains(github.event.pull_request.labels.*.name, 'ci:run-benchmarks')
