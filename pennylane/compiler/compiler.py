@@ -29,7 +29,8 @@ class AvailableCompilers:
     """This contains data of installed PennyLane compiler packages."""
 
     # The collection of entry points that compiler packages must export.
-    # This is used for validity checks of installed packages entry points.
+    # Note that this is still an experimental interface and is subject to change.
+    # This variable is used for validity checks of installed packages entry points.
     # For any compiler packages seeking to be registered, it is imperative
     # that they expose the ``entry_points`` metadata under the designated
     # group name ``pennylane.compilers``, with the following entry points:

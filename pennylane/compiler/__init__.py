@@ -57,6 +57,15 @@ available hybrid compilers.
     ~compiler.active_compiler
     ~compiler.active
 
+Presented below is the list of :func:`~.qjit` compatible
+PennyLane primitives.
+    
+.. autosummary::
+    :toctree: api
+
+    ~grad
+    ~jacobian
+
 Compiler
 --------
 
@@ -170,9 +179,10 @@ using Catalyst.
 Adding a compiler
 -----------------
 
-For any compiler packages seeking to be registered, it is imperative that they
-expose the ``entry_points`` metadata under the designated group name
-``pennylane.compilers``, with the following entry points:
+To register any compiler packages, an experimental interface is available,
+and it is subject to further change. This interface exposes the ``entry_points``
+metadata under the designated group name ``pennylane.compilers``, including the
+following entry points:
 
 - ``context``: Path to the compilation evaluation context manager.
   This context manager should have the method ``context.is_tracing()``,

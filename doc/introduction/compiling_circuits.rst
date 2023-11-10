@@ -441,6 +441,3 @@ with PennyLane, please refer to the Catalyst
 bits and debugging tips <catalyst:dev/sharp_bits>` page for an overview of
 the differences between Catalyst and PennyLane, and how to best structure
 your workflows to improve performance when using Catalyst.
-
-To make your own compiler compatible with PennyLane, please see
-the :mod:`~.compiler` module documentation.
