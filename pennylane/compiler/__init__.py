@@ -59,7 +59,7 @@ available hybrid compilers.
 
 Presented below is the list of :func:`~.qjit` compatible
 PennyLane primitives.
-    
+
 .. autosummary::
     :toctree: api
 
