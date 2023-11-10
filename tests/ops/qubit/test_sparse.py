@@ -306,9 +306,8 @@ class TestSparse:
         H = csr_matrix(SPARSEHAMILTONIAN_TEST_MATRIX)
         H_multiplied = csr_matrix(SPARSEHAMILTONIAN_TEST_MATRIX * value)
 
-        H_sparse_mul_method = (
-            value * qml.SparseHamiltonian(H, wires=range(num_wires)).sparse_matrix()
-        )
+        H_sparse_mul_method = qml.SparseHamiltonian(H, wires=range(num_wires)) * value
+        H_sparse_mul_method = H_sparse_mul_method.sparse_matrix()
         H_sparse_multiplied_before = qml.SparseHamiltonian(
             H_multiplied, wires=range(num_wires)
         ).sparse_matrix()
