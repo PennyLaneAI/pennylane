@@ -105,7 +105,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
     """
 
     if not available(compiler):
-        raise CompileError(f"The {compiler} package is not installed.")
+        raise CompileError(f"The {compiler} package is not installed.")  # pragma: no cover
 
     compilers = AvailableCompilers.names_entrypoints
     qjit_loader = compilers[compiler]["qjit"].load()
