@@ -27,7 +27,7 @@ def iterative_qpe(base, estimation_wire, iters):
 
     Args:
       base (Operator): the phase estimation unitary, specified as an :class:`~.Operator`
-      estimation_wire (Union[Wire, int, str]): the wire to be used for the estimation.
+      estimation_wire (Union[Wires, int, str]): the wire to be used for the estimation.
       iters (int): the number of measurements to be performed
 
     Returns:
