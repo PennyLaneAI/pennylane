@@ -9,6 +9,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `AmplitudeEmbedding` now also supports batching when used with Tensorflow.
+  [(#4818)](https://github.com/PennyLaneAI/pennylane/pull/4818)
+
 * `qml.draw` now supports drawing mid-circuit measurements.
   [(#4775)](https://github.com/PennyLaneAI/pennylane/pull/4775)
 

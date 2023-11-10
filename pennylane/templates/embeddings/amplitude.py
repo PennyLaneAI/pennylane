@@ -15,8 +15,6 @@ r"""
 Contains the AmplitudeEmbedding template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-import numpy as np
-
 import pennylane as qml
 from pennylane.ops import StatePrep
 from pennylane.wires import Wires
@@ -167,63 +165,51 @@ class AmplitudeEmbedding(StatePrep):
         * If normalize is false, check that last dimension of features is normalised to one. Else, normalise the
           features tensor.
         """
+        shape = qml.math.shape(features)
 
-        # check if features is batched
-        batched = qml.math.ndim(features) > 1
+        # check shape
+        if len(shape) not in (1, 2):
+            raise ValueError(
+                f"Features must be a one-dimensional tensor, or two-dimensional with batching; got shape {shape}."
+            )
 
-        if batched and qml.math.get_interface(features) == "tensorflow":
-            raise ValueError("AmplitudeEmbedding does not support batched Tensorflow features.")
+        n_features = shape[-1]
+        dim = 2 ** len(wires)
+        if pad_with is None and n_features != dim:
+            raise ValueError(
+                f"Features must be of length {dim}; got length {n_features}. "
+                f"Use the 'pad_with' argument for automated padding."
+            )
 
-        features_batch = features if batched else [features]
-
-        new_features_batch = []
-        # apply pre-processing to each features tensor in the batch
-        for feature_set in features_batch:
-            shape = qml.math.shape(feature_set)
-
-            # check shape
-            if len(shape) != 1:
-                raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
-
-            n_features = shape[0]
-            dim = 2 ** len(wires)
-            if pad_with is None and n_features != dim:
+        if pad_with is not None:
+            if n_features > dim:
                 raise ValueError(
-                    f"Features must be of length {dim}; got length {n_features}. "
-                    f"Use the 'pad_with' argument for automated padding."
+                    f"Features must be of length {dim} or "
+                    f"smaller to be padded; got length {n_features}."
                 )
 
-            if pad_with is not None:
-                if n_features > dim:
-                    raise ValueError(
-                        f"Features must be of length {dim} or "
-                        f"smaller to be padded; got length {n_features}."
-                    )
+            # pad
+            if n_features < dim:
+                padding = [pad_with] * (dim - n_features)
+                if len(shape) > 1:
+                    padding = [padding] * shape[0]
+                padding = qml.math.convert_like(padding, features)
+                features = qml.math.hstack([features, padding])
 
-                # pad
-                if n_features < dim:
-                    padding = [pad_with] * (dim - n_features)
-                    padding = qml.math.convert_like(padding, feature_set)
-                    feature_set = qml.math.hstack([feature_set, padding])
+        # normalize
+        norm = qml.math.sum(qml.math.abs(features) ** 2, axis=-1)
 
-            # normalize
-            norm = qml.math.sum(qml.math.abs(feature_set) ** 2)
+        if qml.math.is_abstract(norm):
+            if normalize or pad_with:
+                features = features / qml.math.reshape(qml.math.sqrt(norm), (*shape[:-1], 1))
 
-            if qml.math.is_abstract(norm):
-                if normalize or pad_with:
-                    feature_set = feature_set / qml.math.sqrt(norm)
+        elif not qml.math.allclose(norm, 1.0, atol=TOLERANCE):
+            if normalize or pad_with:
+                features = features / qml.math.reshape(qml.math.sqrt(norm), (*shape[:-1], 1))
+            else:
+                raise ValueError(
+                    f"Features must be a vector of norm 1.0; got norm {norm}. "
+                    "Use 'normalize=True' to automatically normalize."
+                )
 
-            elif not qml.math.allclose(norm, 1.0, atol=TOLERANCE):
-                if normalize or pad_with:
-                    feature_set = feature_set / qml.math.sqrt(norm)
-                else:
-                    raise ValueError(
-                        f"Features must be a vector of norm 1.0; got norm {norm}. "
-                        "Use 'normalize=True' to automatically normalize."
-                    )
-
-            new_features_batch.append(feature_set)
-
-        return qml.math.cast(
-            qml.math.stack(new_features_batch) if batched else new_features_batch[0], np.complex128
-        )
+        return features
