@@ -32,6 +32,10 @@
 * `qml.draw` and `qml.draw_mpl` now render operator ids.
   [(#4749)](https://github.com/PennyLaneAI/pennylane/pull/4749)
 
+* When multiplying `SparseHamiltonian`s by a scalar value, the result stays as a 
+  `SparseHamiltonian`.
+  [(#4828)](https://github.com/PennyLaneAI/pennylane/pull/4828)
+
 <h3>Breaking changes 💔</h3>
 
 * The `prep` keyword argument has been removed from `QuantumScript` and `QuantumTape`.
