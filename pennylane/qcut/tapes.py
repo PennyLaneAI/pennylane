@@ -31,7 +31,7 @@ from pennylane.queuing import AnnotatedQueue, WrappedObj
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.wires import Wires
 
-from .qcut import (
+from .utils import (
     MeasureNode,
     PrepareNode,
     _prep_iplus_state,

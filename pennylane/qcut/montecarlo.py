@@ -32,7 +32,12 @@ from pennylane.wires import Wires
 from .cutstrategy import CutStrategy
 from .kahypar import kahypar_cut
 from .processing import qcut_processing_fn_mc, qcut_processing_fn_sample
-from .qcut import (
+
+from .tapes import _qcut_expand_fn, graph_to_tape, tape_to_graph
+from .utils import (
+    find_and_place_cuts,
+    fragment_graph,
+    replace_wire_cut_nodes,
     MeasureNode,
     PrepareNode,
     _prep_iminus_state,
@@ -42,8 +47,6 @@ from .qcut import (
     _prep_plus_state,
     _prep_zero_state,
 )
-from .tapes import _qcut_expand_fn, graph_to_tape, tape_to_graph
-from .utils import find_and_place_cuts, fragment_graph, replace_wire_cut_nodes
 
 
 def _cut_circuit_mc_expand(

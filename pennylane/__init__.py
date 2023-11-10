@@ -86,8 +86,6 @@ from pennylane.transforms import (
     batch_input,
     batch_transform,
     batch_partial,
-    cut_circuit,
-    cut_circuit_mc,
     compile,
     cond,
     defer_measurements,
@@ -119,6 +117,7 @@ from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost
 from pennylane.debugging import snapshots
 from pennylane.shadows import ClassicalShadow
+from pennylane.qcut import cut_circuit, cut_circuit_mc
 import pennylane.pulse
 
 import pennylane.fourier

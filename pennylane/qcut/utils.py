@@ -17,19 +17,72 @@ Support functions for cut_circuit and cut_circuit_mc.
 
 
 import warnings
+import uuid
 from typing import Any, Callable, Sequence, Tuple
 from networkx import MultiDiGraph, has_path, weakly_connected_components
 
+import pennylane as qml
 from pennylane import numpy as np
 from pennylane.measurements import MeasurementProcess
-from pennylane.operation import Operation
 from pennylane.ops.meta import WireCut
 from pennylane.queuing import WrappedObj
+from pennylane.operation import Operation
 
 from .kahypar import kahypar_cut
 from .cutstrategy import CutStrategy
 from .tapes import graph_to_tape
-from .qcut import MeasureNode, PrepareNode
+
+
+class MeasureNode(Operation):
+    """Placeholder node for measurement operations"""
+
+    num_wires = 1
+    grad_method = None
+
+    def __init__(self, *params, wires=None, id=None):
+        id = id or str(uuid.uuid4())
+
+        super().__init__(*params, wires=wires, id=id)
+
+
+class PrepareNode(Operation):
+    """Placeholder node for state preparations"""
+
+    num_wires = 1
+    grad_method = None
+
+    def __init__(self, *params, wires=None, id=None):
+        id = id or str(uuid.uuid4())
+
+        super().__init__(*params, wires=wires, id=id)
+
+
+def _prep_zero_state(wire):
+    qml.Identity(wire)
+
+
+def _prep_one_state(wire):
+    qml.PauliX(wire)
+
+
+def _prep_plus_state(wire):
+    qml.Hadamard(wire)
+
+
+def _prep_minus_state(wire):
+    qml.PauliX(wire)
+    qml.Hadamard(wire)
+
+
+def _prep_iplus_state(wire):
+    qml.Hadamard(wire)
+    qml.S(wires=wire)
+
+
+def _prep_iminus_state(wire):
+    qml.PauliX(wire)
+    qml.Hadamard(wire)
+    qml.S(wires=wire)
 
 
 def find_and_place_cuts(
