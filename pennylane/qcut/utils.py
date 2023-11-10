@@ -30,7 +30,6 @@ from pennylane.operation import Operation
 
 from .kahypar import kahypar_cut
 from .cutstrategy import CutStrategy
-from .tapes import graph_to_tape
 
 
 class MeasureNode(Operation):
@@ -704,7 +703,7 @@ def _is_valid_cut(
     best_candidate_yet = (key not in cut_candidates) or (len(cut_candidates[key]) > num_cuts)
     # pylint: disable=no-member
     all_fragments_fit = all(
-        len(graph_to_tape(f).wires) <= max_free_wires for j, f in enumerate(fragments)
+        len(qml.qcut.graph_to_tape(f).wires) <= max_free_wires for j, f in enumerate(fragments)
     )
 
     return correct_num_fragments and best_candidate_yet and all_fragments_fit

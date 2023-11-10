@@ -22,7 +22,7 @@ from networkx import MultiDiGraph
 import pennylane as qml
 from pennylane import numpy as np
 
-from .qcut import MeasureNode, PrepareNode
+from .utils import MeasureNode, PrepareNode
 
 
 def qcut_processing_fn(
