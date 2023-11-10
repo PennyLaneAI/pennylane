@@ -57,8 +57,8 @@ class TestIQPE:
         assert np.allclose(np.round(output, 2), np.round(circuit_qpe(), 2))
 
     @pytest.mark.jax
-    def test_check_gradients(self):
-        """Test to check that the gradients are correct comparing with the expanded circuit"""
+    def test_check_gradients_jax(self):
+        """Test to check that the gradients are correct comparing with the expanded circuit using JAX"""
 
         import jax
 
@@ -87,6 +87,79 @@ class TestIQPE:
 
         phi = jax.numpy.array(1.0)
         assert jax.numpy.isclose(jax.grad(circuit)(phi), jax.grad(manual_circuit)(phi))
+
+    @pytest.mark.torch
+    def test_check_gradients_torch(self):
+        """Test to check that the gradients are correct comparing with the expanded circuit using PyTorch"""
+
+        import torch
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit(theta):
+            _ = qml.iterative_qpe(qml.RZ(theta, wires=[0]), [1], iters=2)
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev)
+        def manual_circuit(phi):
+            qml.Hadamard(wires=[1])
+            qml.ctrl(qml.RZ(phi, wires=[0]) ** 2, control=[1])
+            qml.Hadamard(wires=[1])
+            qml.CNOT(wires=[1, 2])
+            qml.CNOT(wires=[2, 1])
+            qml.Hadamard(wires=[1])
+            qml.ctrl(qml.RZ(phi, wires=[0]), control=[1])
+            qml.ctrl(qml.PhaseShift(-np.pi / 2, wires=[1]), control=[2])
+            qml.Hadamard(wires=[1])
+            qml.CNOT(wires=[1, 3])
+            qml.CNOT(wires=[3, 1])
+
+            return qml.expval(qml.PauliZ(0))
+
+        phi = torch.tensor(1.0, requires_grad=True)
+        assert torch.isclose(torch.func.grad(circuit)(phi), torch.func.grad(manual_circuit)(phi))
+
+    @pytest.mark.tensorflow
+    def test_check_gradients_tf(self):
+        """Test to check that the gradients are correct comparing with the expanded circuit using TensorFlow"""
+
+        import tensorflow as tf
+
+        def grad(f):
+            def wrapper(x):
+                with tf.GradientTape() as tape:
+                    y = f(x)
+
+                return tape.gradients(y, x)
+
+            return wrapper
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit(theta):
+            _ = qml.iterative_qpe(qml.RZ(theta, wires=[0]), [1], iters=2)
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev)
+        def manual_circuit(phi):
+            qml.Hadamard(wires=[1])
+            qml.ctrl(qml.RZ(phi, wires=[0]) ** 2, control=[1])
+            qml.Hadamard(wires=[1])
+            qml.CNOT(wires=[1, 2])
+            qml.CNOT(wires=[2, 1])
+            qml.Hadamard(wires=[1])
+            qml.ctrl(qml.RZ(phi, wires=[0]), control=[1])
+            qml.ctrl(qml.PhaseShift(-np.pi / 2, wires=[1]), control=[2])
+            qml.Hadamard(wires=[1])
+            qml.CNOT(wires=[1, 3])
+            qml.CNOT(wires=[3, 1])
+
+            return qml.expval(qml.PauliZ(0))
+
+        phi = tf.Variable(1.0)
+        assert np.isclose(grad(circuit)(phi), grad(manual_circuit)(phi))
 
     @pytest.mark.parametrize("iters", (1, 2, 3, 4))
     def test_size_return(self, iters):
