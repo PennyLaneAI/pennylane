@@ -4,7 +4,9 @@ from pennylane import (
     QutritBasisState,
 )
 
+
 qudit_dim = 3  # specifies qudit dimension
+qubit_setup_operators = qml.ops.qubit.state_prep_ops
 
 
 def create_initial_state(
@@ -27,10 +29,17 @@ def create_initial_state(
     if not prep_operation:
         num_wires = len(wires)
         rho = _create_basis_state(num_wires, 0)
+
     elif isinstance(prep_operation, QutritBasisState):
         rho = _apply_basis_state(prep_operation.parameters[0], wires)
+
+    elif prep_operation.name in qubit_setup_operators:
+        raise ValueError("Input qubit prep operation")
+
     else:
-        raise NotImplementedError(f"{prep_operation} has not been implemented for qutrit.mixed")
+        raise NotImplementedError(
+            f"{prep_operation.name} has not been implemented for qutrit.mixed"
+        )
 
     return qml.math.asarray(rho, like=like)
 
