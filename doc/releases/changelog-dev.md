@@ -10,7 +10,7 @@
   [(#4703)](https://github.com/PennyLaneAI/pennylane/pull/4703)
 
 * Registers a new comparison function to _equal for ControlledSequence operators.
-
+  [(#4829)](https://github.com/PennyLaneAI/pennylane/pull/4829)
 
 <h3>Breaking changes 💔</h3>
 
