@@ -28,6 +28,7 @@ from pennylane.measurements.counts import CountsMP
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.operation import Observable, Operator, Tensor
 from pennylane.ops import Hamiltonian, Controlled, Pow, Adjoint, Exp, SProd, CompositeOp
+from pennylane.templates.subroutines import ControlledSequence
 
 
 def equal(
@@ -236,6 +237,19 @@ def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
     if [op1.wires, op1.control_values, op1.arithmetic_depth] != [
         op2.wires,
         op2.control_values,
+        op2.arithmetic_depth,
+    ]:
+        return False
+
+    return qml.equal(op1.base, op2.base, **kwargs)
+
+@_equal.register
+def _equal_controlled_sequence(op1: ControlledSequence, op2: ControlledSequence, **kwargs):
+    """Determine whether two ControlledSequences are equal"""
+    # wires are ordered [control wires, operator wires]
+    # comparing op.wires and op.base.wires (in return) is sufficient to compare all wires
+    if [op1.wires, op1.arithmetic_depth] != [
+        op2.wires,
         op2.arithmetic_depth,
     ]:
         return False
