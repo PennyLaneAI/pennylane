@@ -18,14 +18,17 @@ Tests are divided by number of parameters and wires different operators take.
 # pylint: disable=too-many-arguments
 import itertools
 
+from copy import deepcopy
 import numpy as np
 import pytest
+
 
 import pennylane as qml
 from pennylane import numpy as npp
 from pennylane.measurements import ExpectationMP
 from pennylane.measurements.probs import ProbabilityMP
 from pennylane.ops.op_math import SymbolicOp, Controlled
+from pennylane.templates.subroutines import ControlledSequence
 
 PARAMETRIZED_OPERATIONS_1P_1W = [
     qml.RX,
@@ -1316,6 +1319,11 @@ class TestSymbolicOpComparison:
     """Test comparison for subclasses of SymbolicOp"""
 
     WIRES = [(5, 5, True), (6, 7, False)]
+    WIRES_SEQUENCE = [
+        ([1, 2], [1, 2], True),
+        ([1, 2], [1, 3], False),
+        ([1, 2, 3], [3, 2, 1], False),
+    ]
 
     BASES = [
         (qml.PauliX(0), qml.PauliX(0), True),
@@ -1333,8 +1341,16 @@ class TestSymbolicOpComparison:
         """Test that comparing SymoblicOp operators of mismatched arithmetic depth returns False"""
         base1 = qml.PauliX(0)
         base2 = qml.prod(qml.PauliX(0), qml.PauliY(1))
+
         op1 = Controlled(base1, control_wires=2)
         op2 = Controlled(base2, control_wires=2)
+
+        assert op1.arithmetic_depth == 1
+        assert op2.arithmetic_depth == 2
+        assert qml.equal(op1, op2) is False
+
+        op1 = ControlledSequence(base1, control=2)
+        op2 = ControlledSequence(base2, control=2)
 
         assert op1.arithmetic_depth == 1
         assert op2.arithmetic_depth == 2
@@ -1345,6 +1361,11 @@ class TestSymbolicOpComparison:
         base = SymbolicOp(qml.RX(1.2, 0))
         op1 = Controlled(base, control_wires=2)
         op2 = Controlled(base, control_wires=2)
+
+        assert not qml.equal(op1, op2)
+
+        op1 = ControlledSequence(base, control=2)
+        op2 = ControlledSequence(base, control=2)
 
         assert not qml.equal(op1, op2)
 
@@ -1364,12 +1385,31 @@ class TestSymbolicOpComparison:
         assert not qml.equal(op1, op2)
         assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
 
+        op1 = ControlledSequence(base1, control=1)
+        op2 = ControlledSequence(base2, control=1)
+
+        assert not qml.equal(op1, op2)
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
+
     @pytest.mark.parametrize("base", PARAMETRIZED_OPERATIONS)
     def test_controlled_comparison(self, base):
         """Test that Controlled operators can be compared"""
         op1 = Controlled(base, control_wires=7, control_values=0)
         op2 = Controlled(base, control_wires=7, control_values=0)
         assert qml.equal(op1, op2)
+
+    @pytest.mark.parametrize("base", PARAMETRIZED_OPERATIONS)
+    def test_controlled_sequence_comparison(self, base):
+        """Test that ControlledSequence operators can be compared"""
+        op1 = ControlledSequence(base, control=7)
+        op2 = ControlledSequence(base, control=7)
+        assert qml.equal(op1, op2)
+
+    @pytest.mark.parametrize("base", PARAMETRIZED_OPERATIONS)
+    def test_controlled_sequence_deepcopy_comparison(self, base):
+        """Test that equal is compatible with deepcopy"""
+        op1 = ControlledSequence(base, control=7)
+        assert qml.equal(op1, deepcopy(op1))
 
     @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)
     def test_controlled_base_operator_wire_comparison(self, wire1, wire2, res):
@@ -1380,14 +1420,27 @@ class TestSymbolicOpComparison:
         op2 = Controlled(base2, control_wires=1)
         assert qml.equal(op1, op2) == res
 
-    @pytest.mark.parametrize(
-        ("base1", "base2", "res"),
-        [(qml.PauliX(0), qml.PauliX(0), True), (qml.PauliX(0), qml.PauliY(0), False)],
-    )
+    @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)
+    def test_controlled_sequence_base_operator_wire_comparison(self, wire1, wire2, res):
+        """Test that equal compares operator wires for ControlledSequence operators"""
+        base1 = qml.PauliX(wire1)
+        base2 = qml.PauliX(wire2)
+        op1 = ControlledSequence(base1, control=1)
+        op2 = ControlledSequence(base2, control=1)
+        assert qml.equal(op1, op2) == res
+
+    @pytest.mark.parametrize(("base1", "base2", "res"), BASES)
     def test_controlled_base_operator_comparison(self, base1, base2, res):
         """Test that equal compares base operators for Controlled operators"""
-        op1 = Controlled(base1, control_wires=1)
-        op2 = Controlled(base2, control_wires=1)
+        op1 = Controlled(base1, control_wires=2)
+        op2 = Controlled(base2, control_wires=2)
+        assert qml.equal(op1, op2) == res
+
+    @pytest.mark.parametrize(("base1", "base2", "res"), BASES)
+    def test_controlled_sequence_base_operator_comparison(self, base1, base2, res):
+        """Test that equal compares base operators for ControlledSequence operators"""
+        op1 = ControlledSequence(base1, control=2)
+        op2 = ControlledSequence(base2, control=2)
         assert qml.equal(op1, op2) == res
 
     @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)
@@ -1397,6 +1450,15 @@ class TestSymbolicOpComparison:
         base2 = qml.Hadamard(0)
         op1 = Controlled(base1, control_wires=wire1)
         op2 = Controlled(base2, control_wires=wire2)
+        assert qml.equal(op1, op2) == res
+
+    @pytest.mark.parametrize(("wires1", "wires2", "res"), WIRES_SEQUENCE)
+    def test_control_sequence_wires_comparison(self, wires1, wires2, res):
+        """Test that equal compares control for ControlledSequence operators"""
+        base1 = qml.Hadamard(0)
+        base2 = qml.Hadamard(0)
+        op1 = ControlledSequence(base1, control=wires1)
+        op2 = ControlledSequence(base2, control=wires2)
         assert qml.equal(op1, op2) == res
 
     @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)

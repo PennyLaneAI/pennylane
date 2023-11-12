@@ -243,6 +243,7 @@ def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
 
     return qml.equal(op1.base, op2.base, **kwargs)
 
+
 @_equal.register
 def _equal_controlled_sequence(op1: ControlledSequence, op2: ControlledSequence, **kwargs):
     """Determine whether two ControlledSequences are equal"""
