@@ -23,7 +23,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.measurements import VarianceMP
-from pennylane.transforms.core import transform
+from pennylane import transform
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 
@@ -376,14 +376,14 @@ def expval_param_shift(
             gradient_data.append((0, [], None, None, 0))
             continue
 
-        op, *_ = tape.get_operation(idx)
+        op, op_idx, _ = tape.get_operation(idx)
 
         if op.name == "Hamiltonian":
             # operation is a Hamiltonian
-            if op.return_type is not qml.measurements.Expectation:
+            if tape[op_idx].return_type is not qml.measurements.Expectation:
                 raise ValueError(
                     "Can only differentiate Hamiltonian "
-                    f"coefficients for expectations, not {op.return_type.value}"
+                    f"coefficients for expectations, not {tape[op_idx].return_type.value}"
                 )
 
             g_tapes, h_fn = qml.gradients.hamiltonian_grad(tape, idx)
@@ -671,6 +671,16 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
     for i in var_indices:
         obs = expval_tape.measurements[i].obs
         expval_tape._measurements[i] = qml.expval(op=obs)
+        if obs.name == "Hamiltonian":
+            first_obs_idx = len(expval_tape.operations)
+            for t_idx in reversed(range(len(expval_tape.trainable_params))):
+                op, op_idx, _ = expval_tape.get_operation(t_idx)
+                if op_idx < first_obs_idx:
+                    break  # already seen all observables
+                if op is obs:
+                    raise ValueError(
+                        "Can only differentiate Hamiltonian coefficients for expectations, not variances"
+                    )
 
     # evaluate the analytic derivative of <A>
     pdA_tapes, pdA_fn = expval_param_shift(
@@ -759,11 +769,11 @@ def param_shift(
     f0=None,
     broadcast=False,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
-    r"""Transform a QNode to compute the parameter-shift gradient of all gate
+    r"""Transform a circuit to compute the parameter-shift gradient of all gate
     parameters with respect to its inputs.
 
     Args:
-        qnode (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
+        tape (QNode or QuantumTape): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivative with respect to all
             trainable indices are returned.
@@ -794,17 +804,11 @@ def param_shift(
             a single broadcasted tape per operation instead of one tape per shift angle.
 
     Returns:
-        function or tuple[list[QuantumTape], function]:
+        qnode (QNode) or tuple[List[QuantumTape], function]:
 
-        - If the input is a QNode, an object representing the Jacobian (function) of the QNode
-          that can be executed to obtain the Jacobian.
-          The type of the Jacobian returned is either a tensor, a tuple or a
-          nested tuple depending on the nesting structure of the original QNode output.
-
-        - If the input is a tape, a tuple containing a
-          list of generated tapes, together with a post-processing
-          function to be applied to the results of the evaluated tapes
-          in order to obtain the Jacobian.
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple depending upon the nesting
+        structure of measurements in the original circuit.
 
     For a variational evolution :math:`U(\mathbf{p}) \vert 0\rangle` with
     :math:`N` parameters :math:`\mathbf{p}`,
@@ -928,7 +932,9 @@ def param_shift(
     .. details::
         :title: Usage Details
 
-        This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects:
+        This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects.
+        However, for performance reasons, we recommend providing the gradient transform as the ``diff_method`` argument
+        of the QNode decorator, and differentiating with your preferred machine learning framework.
 
         >>> @qml.qnode(dev)
         ... def circuit(params):

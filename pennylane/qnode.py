@@ -15,6 +15,7 @@
 This module contains the QNode class and qnode decorator.
 """
 # pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access,unnecessary-lambda-assignment, too-many-branches, too-many-statements
+import copy
 import functools
 import inspect
 import warnings
@@ -100,9 +101,9 @@ class QNode:
             * ``"auto"``: The QNode automatically detects the interface from the input values of
               the quantum function.
 
-        diff_method (str or .gradient_transform): The method of differentiation to use in the created QNode.
-            Can either be a :class:`~.gradient_transform`, which includes all quantum gradient
-            transforms in the :mod:`qml.gradients <.gradients>` module, or a string. The following
+        diff_method (str or .TransformDispatcher): The method of differentiation to use in
+            the created QNode. Can either be a :class:`~.TransformDispatcher`, which includes all
+            quantum gradient transforms in the :mod:`qml.gradients <.gradients>` module, or a string. The following
             strings are allowed:
 
             * ``"best"``: Best available method. Uses classical backpropagation or the
@@ -130,7 +131,6 @@ class QNode:
             * ``"hadamard"``: Use the analytic hadamard gradient test
               rule for all supported quantum operation arguments. More info is in the documentation
               :func:`qml.gradients.hadamard_grad <.gradients.hadamard_grad>`.
-
 
             * ``"finite-diff"``: Uses numerical finite-differences for all quantum operation
               arguments.
@@ -482,6 +482,19 @@ class QNode:
         functools.update_wrapper(self, func)
         self._transform_program = qml.transforms.core.TransformProgram()
 
+    def __copy__(self):
+        copied_qnode = QNode.__new__(QNode)
+        for attr, value in vars(self).items():
+            if attr not in {"execute_kwargs", "_transform_program", "gradient_kwargs"}:
+                setattr(copied_qnode, attr, value)
+
+        copied_qnode.execute_kwargs = dict(self.execute_kwargs)
+        copied_qnode._transform_program = qml.transforms.core.TransformProgram(
+            self.transform_program
+        )  # pylint: disable=protected-access
+        copied_qnode.gradient_kwargs = dict(self.gradient_kwargs)
+        return copied_qnode
+
     def __repr__(self):
         """String representation."""
         if isinstance(self.device, qml.devices.Device):
@@ -512,16 +525,13 @@ class QNode:
 
     @property
     def transform_program(self):
-        """The transform program used by the QNode.
-
-        .. warning:: This is an experimental feature.
-        """
+        """The transform program used by the QNode."""
         return self._transform_program
 
     def add_transform(self, transform_container):
-        """Add a transform container to the transform program.
+        """Add a transform (container) to the transform program.
 
-        .. warning:: This is an experimental feature.
+        .. warning:: This is a developer facing feature and is called when a transform is applied on a QNode.
         """
         self._transform_program.push_back(transform_container=transform_container)
 
@@ -575,13 +585,13 @@ class QNode:
         Args:
             device (.Device): PennyLane device
             interface (str): name of the requested interface
-            diff_method (str or .gradient_transform): The requested method of differentiation.
+            diff_method (str or .TransformDispatcher): The requested method of differentiation.
                 If a string, allowed options are ``"best"``, ``"backprop"``, ``"adjoint"``,
                 ``"device"``, ``"parameter-shift"``, ``"hadamard"``, ``"finite-diff"``, or ``"spsa"``.
                 A gradient transform may also be passed here.
 
         Returns:
-            tuple[str or .gradient_transform, dict, .Device: Tuple containing the ``gradient_fn``,
+            tuple[str or .TransformDispatcher, dict, .Device: Tuple containing the ``gradient_fn``,
             ``gradient_kwargs``, and the device to use when calling the execute function.
         """
         if diff_method == "best":
@@ -644,7 +654,7 @@ class QNode:
             interface (str): name of the requested interface
 
         Returns:
-            tuple[str or .gradient_transform, dict, .Device: Tuple containing the ``gradient_fn``,
+            tuple[str or .TransformDispatcher, dict, .Device: Tuple containing the ``gradient_fn``,
             ``gradient_kwargs``, and the device to use when calling the execute function.
         """
         try:
@@ -833,6 +843,7 @@ class QNode:
 
     def construct(self, args, kwargs):  # pylint: disable=too-many-branches
         """Call the quantum function with a tape context, ensuring the operations get queued."""
+        kwargs = copy.copy(kwargs)
         old_interface = self.interface
 
         if self._qfunc_uses_shots_arg:
@@ -982,6 +993,7 @@ class QNode:
                 interface=self.interface,
                 gradient_method=_gradient_method,
                 grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
+                use_device_jacobian_product=False,
             )
             device_transform_program, config = self.device.preprocess(execution_config=config)
             full_transform_program = self.transform_program + device_transform_program

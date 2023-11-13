@@ -156,7 +156,7 @@ class ExpvalCost:
             "ExpvalCost is deprecated, use qml.expval() instead. "
             "For optimizing Hamiltonian measurements with measuring commuting "
             "terms in parallel, use the grouping_type keyword in qml.Hamiltonian.",
-            UserWarning,
+            qml.PennyLaneDeprecationWarning,
         )
 
         if kwargs.get("measure", "expval") != "expval":

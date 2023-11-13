@@ -36,11 +36,14 @@ from pennylane.tape import QuantumTape
 from pennylane.typing import ResultBatch
 
 from .set_shots import set_shots
+from .jacobian_products import TransformJacobianProducts, DeviceDerivatives, DeviceJacobianProducts
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 device_type = Union[qml.Device, "qml.devices.Device"]
+
+jpc_interfaces = {"autograd", "numpy"}
 
 INTERFACE_MAP = {
     None: "Numpy",
@@ -108,7 +111,7 @@ def _get_ml_boundary_execute(interface: str, grad_on_execution: bool) -> Callabl
     mapped_interface = INTERFACE_MAP[interface]
     try:
         if mapped_interface == "autograd":
-            from .autograd import execute as ml_boundary
+            from .autograd import autograd_execute as ml_boundary
 
         elif mapped_interface == "tf":
             import tensorflow as tf
@@ -409,6 +412,7 @@ def execute(
     expand_fn="device",  # type: ignore
     max_expansion=10,
     device_batch_transform=True,
+    device_vjp=False,
 ) -> ResultBatch:
     """New function to execute a batch of tapes on a device in an autodifferentiable-compatible manner. More cases will be added,
     during the project. The current version is supporting forward execution for Numpy and does not support shot vectors.
@@ -424,7 +428,7 @@ def execute(
         interface (str): The interface that will be used for classical autodifferentiation.
             This affects the types of parameters that can exist on the input tapes.
             Available options include ``autograd``, ``torch``, ``tf``, ``jax`` and ``auto``.
-        transform_program(qml.transforms.core.TransformProgram): A transform program to be applied to the initial tape.
+        transform_program(.TransformProgram): A transform program to be applied to the initial tape.
         config (qml.devices.ExecutionConfig): A datastructure describing the parameters needed to fully describe the execution.
         grad_on_execution (bool, str): Whether the gradients should be computed on the execution or not. Only applies
             if the device is queried for the gradient; gradient transform
@@ -453,6 +457,8 @@ def execute(
             (within :meth:`Device.batch_transform`) to each tape to be executed. The default behaviour
             of the device batch transform is to expand out Hamiltonian measurements into
             constituent terms if not supported on the device.
+        device_vjp=False (Optional[bool]): whether or not to use the device provided jacobian
+            product if it is available.
 
     Returns:
         list[tensor_like[float]]: A nested list of tape results. Each element in
@@ -555,8 +561,15 @@ def execute(
 
         interface = get_jax_interface_name(tapes)
 
+    if device_vjp and isinstance(device, qml.Device):
+        raise qml.QuantumFunctionError(
+            "device provided jacobian products are not compatible with the old device interface."
+        )
+
     gradient_kwargs = gradient_kwargs or {}
-    config = config or _get_execution_config(gradient_fn, grad_on_execution, interface, device)
+    config = config or _get_execution_config(
+        gradient_fn, grad_on_execution, interface, device, device_vjp
+    )
 
     if isinstance(cache, bool) and cache:
         # cache=True: create a LRUCache object
@@ -587,8 +600,10 @@ def execute(
     def inner_execute_with_empty_jac(tapes, **_):
         return (inner_execute(tapes), [])
 
-    execute_fn = inner_execute_with_empty_jac
-
+    if interface in jpc_interfaces:
+        execute_fn = inner_execute
+    else:
+        execute_fn = inner_execute_with_empty_jac
     #### Executing the configured setup #####
 
     if isinstance(device, qml.devices.Device):
@@ -618,11 +633,21 @@ def execute(
 
     _grad_on_execution = False
 
-    if config.use_device_gradient:
+    if config.use_device_jacobian_product and interface in jpc_interfaces:
+        jpc = DeviceJacobianProducts(device, config)
+
+    elif config.use_device_gradient:
+        jpc = DeviceDerivatives(device, config)
+
         # must be new device if this is specified as true
         _grad_on_execution = config.grad_on_execution
 
-        if config.grad_on_execution:
+        if interface in jpc_interfaces:
+            execute_fn = (
+                jpc.execute_and_cache_jacobian if config.grad_on_execution else inner_execute
+            )
+
+        elif config.grad_on_execution:
 
             def execute_fn(internal_tapes):
                 """A partial function that wraps the execute_and_compute_derivatives method of the device.
@@ -673,11 +698,17 @@ def execute(
         # autodiff frameworks.
         tapes = [expand_fn(t) for t in tapes]
 
+        jpc = DeviceDerivatives(device, config, gradient_kwargs=gradient_kwargs)
+
         if gradient_kwargs.get("method", "") == "adjoint_jacobian":
             tapes = _adjoint_jacobian_expansion(tapes, grad_on_execution, interface, max_expansion)
 
-        # grad on execution or best was chosen
-        if grad_on_execution is True or grad_on_execution == "best":
+        _grad_on_execution = grad_on_execution
+
+        if interface in jpc_interfaces:
+            execute_fn = jpc.execute_and_cache_jacobian if grad_on_execution else inner_execute
+
+        elif grad_on_execution is True or grad_on_execution == "best":
             # replace the forward execution function to return
             # both results and gradients
             def device_execute_and_gradients(internal_tapes, **gradient_kwargs):
@@ -690,7 +721,6 @@ def execute(
 
             execute_fn = device_execute_and_gradients
             gradient_fn = None
-            _grad_on_execution = True
 
         else:
             # need to override to have no cache
@@ -731,16 +761,36 @@ def execute(
         # within execute_and_gradients, so providing a gradient_fn
         # in this case would have ambiguous behaviour.
         raise ValueError("Gradient transforms cannot be used with grad_on_execution=True")
+    elif interface in jpc_interfaces:
+        # See autograd.py submodule docstring for explanation for ``cache_full_jacobian``
+        cache_full_jacobian = (interface == "autograd") and not cache
+
+        # we can have higher order derivatives when the `inner_execute` used to take
+        # transform gradients is itself differentiable
+        # To make the inner execute itself differentiable, we make it an interface boundary with
+        # its own jacobian product class
+        # this mechanism unpacks the currently existing recursion
+        jpc = TransformJacobianProducts(
+            execute_fn, gradient_fn, gradient_kwargs, cache_full_jacobian
+        )
+        for _ in range(1, max_diff):
+            ml_boundary_execute = _get_ml_boundary_execute(interface, _grad_on_execution)
+            execute_fn = partial(ml_boundary_execute, execute_fn=execute_fn, jpc=jpc)
+            jpc = TransformJacobianProducts(execute_fn, gradient_fn, gradient_kwargs)
 
     ml_boundary_execute = _get_ml_boundary_execute(interface, _grad_on_execution)
-    results = ml_boundary_execute(
-        tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
-    )
+
+    if interface in jpc_interfaces:
+        results = ml_boundary_execute(tapes, execute_fn, jpc)
+    else:
+        results = ml_boundary_execute(
+            tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
+        )
 
     return post_processing(results)
 
 
-def _get_execution_config(gradient_fn, grad_on_execution, interface, device):
+def _get_execution_config(gradient_fn, grad_on_execution, interface, device, device_vjp):
     """Helper function to get the execution config."""
     if gradient_fn is None:
         _gradient_method = None
@@ -752,6 +802,7 @@ def _get_execution_config(gradient_fn, grad_on_execution, interface, device):
         interface=interface,
         gradient_method=_gradient_method,
         grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
+        use_device_jacobian_product=device_vjp,
     )
     if isinstance(device, qml.devices.Device):
         _, config = device.preprocess(config)
