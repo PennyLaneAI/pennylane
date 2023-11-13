@@ -273,17 +273,8 @@ def apply_multicontrolledx(
     composing transpositions, rolling of control axes and the CNOT logic above."""
 
     ndim = math.ndim(state)
-    len_op = len(op.wires)
-    if len_op < EINSUM_OP_WIRECOUNT_PERF_THRESHOLD and ndim < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD:
-        return apply_operation_einsum(op, state, is_state_batched)
-    if len_op < 9:
-        return apply_operation_tensordot(op, state, is_state_batched)
-    return _apply_multicontrolledx(op, state, is_state_batched)
-
-
-def _apply_multicontrolledx(op, state, is_state_batched):
-    r"""Apply MultiControlledX to state by composing transpositions, rolling of control axes
-    and the CNOT logic above."""
+    if len(op.wires) < 9:
+        return _apply_operation_default(op, state, is_state_batched, debugger)
     ctrl_wires = [w + is_state_batched for w in op.control_wires]
     # apply x on all "wrong" controls
     roll_axes = [
