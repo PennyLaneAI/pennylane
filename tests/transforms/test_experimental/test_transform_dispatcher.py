@@ -19,7 +19,6 @@ import pytest
 import pennylane as qml
 from pennylane.transforms.core import transform, TransformError
 
-# TODO: Replace with default qubit 2
 dev = qml.device("default.qubit", wires=2)
 
 with qml.tape.QuantumTape() as tape_circuit:
@@ -110,7 +109,7 @@ def second_valid_transform(
     """A valid trasnform."""
     tape1 = tape.copy()
     tape2 = tape.copy()
-    tape2 = tape._ops.pop(index)  # pylint:disable=protected-access
+    tape._ops.pop(index)  # pylint:disable=protected-access
 
     def fn(results):
         return qml.math.sum(results)
@@ -182,6 +181,12 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
 
         qnode_transformed = dispatched_transform(qnode_circuit, 0)
         assert not qnode_circuit.transform_program
+
+        assert qnode_transformed.device is qnode_circuit.device
+
+        with dev.tracker:
+            qnode_circuit(0.1)
+        assert dev.tracker.totals["executions"] == 1
 
         assert isinstance(qnode_transformed, qml.QNode)
         assert isinstance(qnode_transformed.transform_program, qml.transforms.core.TransformProgram)
@@ -352,6 +357,15 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         with pytest.raises(TransformError):
             transform(non_valid_transform)
 
+    @pytest.mark.parametrize("valid_transform", valid_transforms)
+    def test_dispatcher_signature_classical_cotransform(self, valid_transform):
+        """Test that  valid transforms with non-valid co transform raises a Transform error."""
+
+        with pytest.raises(
+            TransformError, match="The classical co-transform must be a valid Python function."
+        ):
+            transform(valid_transform, classical_cotransform=3)
+
     def test_error_not_callable_transform(self):
         """Test that a non-callable is not a valid transforms."""
 
@@ -410,14 +424,6 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
             match="The expand transform must have the same signature as the transform",
         ):
             transform(first_valid_transform, expand_transform=non_valid_expand_transform)
-
-    def test_cotransform_not_implemented(self):
-        """Test that a co-transform must be a callable."""
-
-        with pytest.raises(
-            NotImplementedError, match="Classical cotransforms are not yet integrated."
-        ):
-            transform(first_valid_transform, classical_cotransform=non_callable)
 
     def test_qfunc_transform_multiple_tapes(self):
         """Test that quantum function is not compatible with multiple tapes."""
@@ -530,3 +536,102 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         qnode = qml.QNode(transformed_qfunc, qml.device("default.qubit"))
         result = qnode()
         assert isinstance(result, type_)
+
+    @pytest.mark.parametrize("valid_transform", valid_transforms)
+    def test_device_transform(self, valid_transform):
+        """Test a device transform."""
+        dispatched_transform = transform(valid_transform)
+        new_dev = dispatched_transform(dev, index=0)
+
+        assert new_dev.original_device is dev
+        assert repr(new_dev).startswith("Transformed Device")
+
+        program, _ = dev.preprocess()
+        new_program, _ = new_dev.preprocess()
+
+        assert isinstance(program, qml.transforms.core.TransformProgram)
+        assert isinstance(new_program, qml.transforms.core.TransformProgram)
+
+        assert len(program) == 5
+        assert len(new_program) == 6
+
+        assert new_program[-1].transform is valid_transform
+
+        @qml.qnode(new_dev)
+        def circuit():
+            qml.PauliX(0)
+            return qml.state()
+
+        circuit()
+
+    @pytest.mark.parametrize("valid_transform", valid_transforms)
+    def test_old_device_transform(self, valid_transform):
+        """Test a device transform on old device."""
+        dispatched_transform = transform(valid_transform)
+        device = qml.device("default.mixed", wires=2)
+        new_dev = dispatched_transform(device, index=0)
+
+        assert isinstance(new_dev, type(device))
+        assert new_dev.custom_expand_fn
+        assert repr(device).startswith("<DefaultMixed device (wires=2, shots=None)")
+        assert repr(new_dev).startswith("<DefaultMixed device (wires=2, shots=None)")
+
+    @pytest.mark.parametrize("valid_transform", valid_transforms)
+    def test_device_transform_error(self, valid_transform):
+        """Test that the device transform returns errors."""
+
+        with pytest.raises(
+            TransformError, match="Device transform does not support informative transforms."
+        ):
+            dispatched_transform = transform(valid_transform, is_informative=True)
+            dispatched_transform(dev, index=0)
+
+        with pytest.raises(
+            TransformError, match="Device transform does not support final transforms."
+        ):
+            dispatched_transform = transform(valid_transform, final_transform=True)
+            dispatched_transform(dev, index=0)
+
+        with pytest.raises(
+            TransformError, match="Device transform does not support expand transforms."
+        ):
+            dispatched_transform = transform(valid_transform, expand_transform=valid_transform)
+            dispatched_transform(dev, index=0)
+
+    @pytest.mark.parametrize("valid_transform", valid_transforms)
+    def test_old_device_transform_error(self, valid_transform):
+        """Test that the old device transform returns errors."""
+        device = qml.device("default.mixed", wires=2)
+
+        with pytest.raises(
+            TransformError, match="Device transform does not support informative transforms."
+        ):
+            dispatched_transform = transform(valid_transform, is_informative=True)
+            dispatched_transform(device, index=0)
+
+        with pytest.raises(
+            TransformError, match="Device transform does not support final transforms."
+        ):
+            dispatched_transform = transform(valid_transform, final_transform=True)
+            dispatched_transform(device, index=0)
+
+        with pytest.raises(
+            TransformError, match="Device transform does not support expand transforms."
+        ):
+            dispatched_transform = transform(valid_transform, expand_transform=valid_transform)
+            dispatched_transform(device, index=0)
+
+    def test_sphinx_build(self, monkeypatch):
+        """Test that transforms are not created during Sphinx builds"""
+        monkeypatch.setenv("SPHINX_BUILD", "1")
+
+        with pytest.warns(UserWarning, match="Transforms have been disabled, as a Sphinx"):
+
+            @qml.transforms.core.transform
+            def custom_transform(  # pylint:disable=unused-variable
+                tape: qml.tape.QuantumTape, index: int
+            ) -> (Sequence[qml.tape.QuantumTape], Callable):
+                """A valid transform."""
+                tape = tape.copy()
+                tape._ops.pop(index)  # pylint:disable=protected-access
+                return [tape], lambda x: x

@@ -55,7 +55,7 @@ class TestStatePrepBase:
     def test_basis_state(self):
         """Test that the BasisState operator prepares the desired state."""
         qs = qml.tape.QuantumScript(
-            measurements=[qml.probs(wires=(0, 1, 2))], prep=[qml.BasisState([0, 1], wires=(0, 1))]
+            ops=[qml.BasisState([0, 1], wires=(0, 1))], measurements=[qml.probs(wires=(0, 1, 2))]
         )
         probs = simulate(qs)
         expected = np.zeros(8)
@@ -189,6 +189,16 @@ class TestBasicCircuit:
         assert qml.math.get_interface(res) == "jax"
         assert qml.math.allclose(res, -1)
 
+    def test_expand_state_keeps_autograd_interface(self):
+        """Test that expand_state doesn't convert autograd to numpy."""
+
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def circuit(x):
+            qml.RX(x, 0)
+            return qml.probs(wires=[0, 1])
+
+        assert qml.math.get_interface(circuit(1.5)) == "autograd"
+
 
 class TestBroadcasting:
     """Test that simulate works with broadcasted parameters"""
@@ -202,7 +212,7 @@ class TestBroadcasting:
         measurements = [qml.expval(qml.PauliZ(i)) for i in range(2)]
         prep = [qml.StatePrep(np.eye(4), wires=[0, 1])]
 
-        qs = qml.tape.QuantumScript(ops, measurements, prep)
+        qs = qml.tape.QuantumScript(prep + ops, measurements)
         res = simulate(qs)
 
         assert isinstance(res, tuple)
@@ -267,7 +277,7 @@ class TestBroadcasting:
         measurements = [qml.expval(qml.PauliZ(i)) for i in range(2)]
         prep = [qml.StatePrep(np.eye(4), wires=[0, 1])]
 
-        qs = qml.tape.QuantumScript(ops, measurements, prep, shots=qml.measurements.Shots(10000))
+        qs = qml.tape.QuantumScript(prep + ops, measurements, shots=qml.measurements.Shots(10000))
         res = simulate(qs, rng=123)
 
         assert isinstance(res, tuple)
@@ -349,6 +359,43 @@ class TestBroadcasting:
         assert np.allclose(res[1], np.cos(x))
         assert np.allclose(res[2], -np.cos(x))
         assert spy.call_args_list[0].args == (qs, {2: 0, 1: 1, 0: 2})
+
+
+class TestPostselection:
+    """Tests for applying projectors as operations."""
+
+    def test_projector_norm(self):
+        """Test that the norm of the state is maintained after applying a projector"""
+        tape = qml.tape.QuantumScript(
+            [qml.PauliX(0), qml.RX(0.123, 1), qml.Projector([0], wires=1)], [qml.state()]
+        )
+        res = simulate(tape)
+        assert np.isclose(np.linalg.norm(res), 1.0)
+
+    @pytest.mark.parametrize("shots", [None, 10, [10, 10]])
+    def test_broadcasting_with_projector(self, shots):
+        """Test that postselecting a broadcasted state raises an error"""
+        tape = qml.tape.QuantumScript(
+            [
+                qml.RX([0.1, 0.2], 0),
+                qml.Projector([0], wires=0),
+            ],
+            [qml.state()],
+            shots=shots,
+        )
+
+        with pytest.raises(ValueError, match="Cannot postselect on circuits with broadcasting"):
+            _ = simulate(tape)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "torch", "jax", "tensorflow", "autograd"])
+    def test_nan_state(self, interface):
+        """Test that a state with nan values is returned if the probability of a postselection state
+        is 0."""
+        tape = qml.tape.QuantumScript([qml.PauliX(0), qml.Projector([0], 0)])
+
+        res, _ = get_final_state(tape, interface=interface)
+        assert qml.math.all(qml.math.isnan(res))
 
 
 class TestDebugger:

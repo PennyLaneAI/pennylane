@@ -295,3 +295,128 @@ class TestTranspile:
         assert qml.math.allclose(
             original_expectation, transpiled_expectation, atol=np.finfo(float).eps
         )
+
+    def test_transpile_state(self):
+        """Test that transpile works with state measurement process."""
+
+        tape = qml.tape.QuantumScript([qml.PauliX(0), qml.CNOT((0, 2))], [qml.state()], shots=100)
+        batch, fn = qml.transforms.transpile(tape, coupling_map=[(0, 1), (1, 2)])
+
+        assert len(batch) == 1
+        assert fn(("a",)) == "a"
+
+        assert batch[0][0] == qml.PauliX(0)
+        assert batch[0][1] == qml.SWAP((1, 2))
+        assert batch[0][2] == qml.CNOT((0, 1))
+        assert batch[0][3] == qml.state()
+        assert batch[0].shots == tape.shots
+
+    def test_transpile_state_with_device(self):
+        """Test that if a device is provided and a state is measured, then the state will be transposed during post processing."""
+
+        dev = qml.device("default.qubit", wires=(0, 1, 2))
+
+        tape = qml.tape.QuantumScript([qml.PauliX(0), qml.CNOT(wires=(0, 2))], [qml.state()])
+        batch, fn = qml.transforms.transpile(tape, coupling_map=[(0, 1), (1, 2)], device=dev)
+
+        original_mat = np.arange(8)
+        new_mat = fn((original_mat,))
+        expected_new_mat = np.swapaxes(np.reshape(original_mat, [2, 2, 2]), 1, 2).flatten()
+        assert qml.math.allclose(new_mat, expected_new_mat)
+
+        assert batch[0][0] == qml.PauliX(0)
+        assert batch[0][1] == qml.SWAP((1, 2))
+        assert batch[0][2] == qml.CNOT((0, 1))
+        assert batch[0][3] == qml.state()
+
+        pre, post = dev.preprocess()[0]((tape,))
+        original_results = post(dev.execute(pre))
+        transformed_results = fn(dev.execute(batch))
+        assert qml.math.allclose(original_results, transformed_results)
+
+    def test_transpile_state_with_device_multiple_measurements(self):
+        """Test that if a device is provided and a state is measured, then the state will be transposed during post processing."""
+
+        dev = qml.device("default.qubit", wires=(0, 1, 2))
+
+        tape = qml.tape.QuantumScript(
+            [qml.PauliX(0), qml.CNOT(wires=(0, 2))], [qml.state(), qml.expval(qml.PauliZ(2))]
+        )
+        batch, fn = qml.transforms.transpile(tape, coupling_map=[(0, 1), (1, 2)], device=dev)
+
+        original_mat = np.arange(8)
+        new_mat, _ = fn(((original_mat, 2.0),))
+        expected_new_mat = np.swapaxes(np.reshape(original_mat, [2, 2, 2]), 1, 2).flatten()
+        assert qml.math.allclose(new_mat, expected_new_mat)
+
+        assert batch[0][0] == qml.PauliX(0)
+        assert batch[0][1] == qml.SWAP((1, 2))
+        assert batch[0][2] == qml.CNOT((0, 1))
+        assert batch[0][3] == qml.state()
+        assert batch[0][4] == qml.expval(qml.PauliZ(1))
+
+        pre, post = dev.preprocess()[0]((tape,))
+        original_results = post(dev.execute(pre))
+        transformed_results = fn(dev.execute(batch))
+        assert qml.math.allclose(original_results[0][0], transformed_results[0])
+        assert qml.math.allclose(original_results[0][1], transformed_results[1])
+
+    def test_transpile_with_state_default_mixed(self):
+        """Test that if the state is default mixed, state measurements are converted in to density measurements with the device wires."""
+
+        dev = qml.device("default.mixed", wires=(0, 1, 2))
+
+        tape = qml.tape.QuantumScript([qml.PauliX(0), qml.CNOT(wires=(0, 2))], [qml.state()])
+        batch, fn = qml.transforms.transpile(tape, coupling_map=[(0, 1), (1, 2)], device=dev)
+
+        assert batch[0][-1] == qml.density_matrix(wires=(0, 2, 1))
+
+        original_results = dev.execute(tape)
+        transformed_results = fn(dev.batch_execute(batch))
+        assert qml.math.allclose(original_results, transformed_results)
+
+    def test_transpile_probs_sample_filled_in_wires(self):
+        """Test that if probs or sample are requested broadcasted over all wires, transpile fills in the device wires."""
+        dev = qml.device("default.qubit", wires=(0, 1, 2))
+
+        tape = qml.tape.QuantumScript(
+            [qml.PauliX(0), qml.CNOT(wires=(0, 2))], [qml.probs(), qml.sample()], shots=100
+        )
+        batch, fn = qml.transforms.transpile(tape, coupling_map=[(0, 1), (1, 2)], device=dev)
+
+        assert batch[0].measurements[0] == qml.probs(wires=(0, 2, 1))
+        assert batch[0].measurements[1] == qml.sample(wires=(0, 2, 1))
+
+        pre, post = dev.preprocess()[0]((tape,))
+        original_results = post(dev.execute(pre))[0]
+        transformed_results = fn(dev.execute(batch))
+        assert qml.math.allclose(original_results[0], transformed_results[0])
+        assert qml.math.allclose(original_results[1], transformed_results[1])
+
+    def test_custom_qnode_transform(self):
+        """Test that applying the transform to a qnode adds the device to the transform kwargs."""
+
+        dev = qml.device("default.qubit", wires=(0, 1, 2))
+
+        def qfunc():
+            return qml.state()
+
+        original_qnode = qml.QNode(qfunc, dev)
+        transformed_qnode = transpile(original_qnode, coupling_map=[(0, 1), (1, 2)])
+
+        assert len(transformed_qnode.transform_program) == 1
+        assert transformed_qnode.transform_program[0].kwargs["device"] is dev
+
+    def test_qnode_transform_raises_if_device_kwarg(self):
+        """Test an error is raised if a device is provided as a keyword argument to a qnode transform."""
+
+        dev = qml.device("default.qubit", wires=[0, 1, 2, 3])
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.state()
+
+        with pytest.raises(ValueError, match=r"Cannot provide a "):
+            qml.transforms.transpile(
+                circuit, coupling_map=[(0, 1), (1, 3), (3, 2), (2, 0)], device=dev
+            )

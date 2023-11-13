@@ -47,8 +47,8 @@ def compile(
       (:func:`~pennylane.transforms.merge_rotations`)
 
     Args:
-        qfunc (function): A quantum function.
-        pipeline (list[single_tape_transform, qfunc_transform]): A list of
+        tape (QNode or QuantumTape or Callable): A quantum circuit.
+        pipeline (list[Callable]): A list of
             tape and/or quantum function transforms to apply.
         basis_set (list[str]): A list of basis gates. When expanding the tape,
             expansion will continue until gates in the specific set are
@@ -62,13 +62,35 @@ def compile(
             for tape expansion into the basis gates.
 
     Returns:
-        pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
-        it returns a QNode with the transform added to its transform program.
-        If a tape is passed, returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The compiled circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
+
+    >>> dev = qml.device('default.qubit', wires=[0, 1, 2])
+
+    You can apply the transform directly on a :class:`QNode`:
+
+    .. code-block:: python
+
+        @compile
+        @qml.qnode(device=dev)
+        def circuit(x, y, z):
+            qml.Hadamard(wires=0)
+            qml.Hadamard(wires=1)
+            qml.Hadamard(wires=2)
+            qml.RZ(z, wires=2)
+            qml.CNOT(wires=[2, 1])
+            qml.RX(z, wires=0)
+            qml.CNOT(wires=[1, 0])
+            qml.RX(x, wires=0)
+            qml.CNOT(wires=[1, 0])
+            qml.RZ(-z, wires=2)
+            qml.RX(y, wires=2)
+            qml.PauliY(wires=2)
+            qml.CY(wires=[1, 2])
+            return qml.expval(qml.PauliZ(wires=0))
+
+    The default compilation pipeline is applied before execution.
 
     Consider the following quantum function:
 
@@ -92,7 +114,6 @@ def compile(
 
     Visually, the original function looks like this:
 
-    >>> dev = qml.device('default.qubit', wires=[0, 1, 2])
     >>> qnode = qml.QNode(qfunc, dev)
     >>> print(qml.draw(qnode)(0.2, 0.3, 0.4))
     0: ──H──RX(0.40)────╭X──────────RX(0.20)─╭X────┤  <Z>
@@ -102,7 +123,7 @@ def compile(
     We can compile it down to a smaller set of gates using the ``qml.compile``
     transform.
 
-    >>> compiled_qfunc = qml.compile()(qfunc)
+    >>> compiled_qfunc = qml.compile(qfunc)
     >>> compiled_qnode = qml.QNode(compiled_qfunc, dev)
     >>> print(qml.draw(compiled_qnode)(0.2, 0.3, 0.4))
     0: ──H──RX(0.60)─────────────────┤  <Z>
@@ -119,8 +140,8 @@ def compile(
 
         compiled_qfunc = qml.compile(
             pipeline=[
-                qml.transforms.commute_controlled(direction="left"),
-                qml.transforms.merge_rotations(atol=1e-6),
+                partial(qml.transforms.commute_controlled, direction="left"),
+                partial(qml.transforms.merge_rotations, atol=1e-6),
                 qml.transforms.cancel_inverses
             ],
             basis_set=["CNOT", "RX", "RY", "RZ"],

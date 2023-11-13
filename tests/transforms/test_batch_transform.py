@@ -25,6 +25,17 @@ from pennylane import numpy as np
 class TestBatchTransform:
     """Unit tests for the batch_transform class"""
 
+    def test_batch_transform_is_deprecated(self):
+        """Test that the batch_transform class is deprecated."""
+
+        def func(op):
+            return op
+
+        with pytest.warns(
+            UserWarning, match="Use of `batch_transform` to create a custom transform is deprecated"
+        ):
+            _ = qml.batch_transform(func)
+
     @staticmethod
     @qml.batch_transform
     def my_transform(tape, a, b):
@@ -648,7 +659,7 @@ class TestBatchTransformGradients:
         for g, e in zip(grad, expected):
             assert qml.math.allclose(g, e)
 
-    def test_batch_transforms_qnode(self, diff_method, mocker):
+    def test_batch_transforms_qnode(self, diff_method):
         """Test that batch transforms can be applied to a QNode
         without affecting device batch transforms"""
         if diff_method == "backprop":
@@ -667,10 +678,8 @@ class TestBatchTransformGradients:
             qml.CNOT(wires=[0, 1])
             return qml.expval(H)
 
-        spy = mocker.spy(dev, "preprocess")
-
         res = circuit(weights)
-        spy.assert_called()
+
         assert np.allclose(res, [0, -np.sin(weights[1])], atol=0.1)
 
 

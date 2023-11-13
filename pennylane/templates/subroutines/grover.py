@@ -111,7 +111,10 @@ class GroverOperator(Operation):
         if (not hasattr(wires, "__len__")) or (len(wires) < 2):
             raise ValueError("GroverOperator must have at least two wires provided.")
 
-        self._hyperparameters = {"n_wires": len(wires), "work_wires": Wires(work_wires)}
+        self._hyperparameters = {
+            "n_wires": len(wires),
+            "work_wires": Wires(work_wires) if work_wires is not None else Wires([]),
+        }
 
         super().__init__(wires=wires, id=id)
 

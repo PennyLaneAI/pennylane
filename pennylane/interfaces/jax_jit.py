@@ -22,8 +22,9 @@ import jax
 import jax.numpy as jnp
 
 import pennylane as qml
-from pennylane.interfaces.jax import _compute_jvps
 from pennylane.transforms import convert_to_numpy_parameters
+
+from .jacobian_products import _compute_jvps
 
 dtype = jnp.float64
 Zero = jax.custom_derivatives.SymbolicZero
@@ -62,9 +63,15 @@ def _create_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.Devi
     shape = tape.shape(device)
     if len(tape.measurements) == 1:
         tape_dtype = _numeric_type_to_dtype(tape.numeric_type)
+        if tape.shots.has_partitioned_shots:
+            return tuple(jax.ShapeDtypeStruct(s, tape_dtype) for s in shape)
         return jax.ShapeDtypeStruct(tuple(shape), tape_dtype)
 
     tape_dtype = tuple(_numeric_type_to_dtype(elem) for elem in tape.numeric_type)
+    if tape.shots.has_partitioned_shots:
+        return tuple(
+            tuple(jax.ShapeDtypeStruct(tuple(s), d) for s, d in zip(si, tape_dtype)) for si in shape
+        )
     return tuple(jax.ShapeDtypeStruct(tuple(s), d) for s, d in zip(shape, tape_dtype))
 
 
@@ -197,7 +204,6 @@ def _grad_transform_jac_via_callback(
             jacs = execute_fn(jvp_tapes)[0]
             jacs = res_processing_fn(jacs)
             all_jacs.append(jacs)
-
         return tuple(all_jacs)
 
     expected_shapes = tuple(_jac_shape_dtype_struct(t, device) for t in tapes)
@@ -340,7 +346,7 @@ def _execute_bwd(
                 idx for idx, t in enumerate(tangent) if not isinstance(t, Zero)
             )
 
-        if not isinstance(gradient_fn, qml.gradients.gradient_transform):
+        if not isinstance(gradient_fn, qml.transforms.core.TransformDispatcher):
             jacobians_func = _device_method_jac_via_callback
         elif _n == max_diff:
             jacobians_func = _grad_transform_jac_via_callback
@@ -354,8 +360,7 @@ def _execute_bwd(
         tangents_trainable = tuple(
             tuple(t for t in tangent if not isinstance(t, Zero)) for tangent in tangents[0]
         )
-        multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
-        jvps = _compute_jvps(jacobians, tangents_trainable, multi_measurements)
+        jvps = _compute_jvps(jacobians, tangents_trainable, tapes)
 
         results = execute_wrapper(params)
         return results, jvps
@@ -425,9 +430,8 @@ def _execute_fwd(
         updated_jacs = updated_jacs[0] if len(tapes) == 1 else tuple(updated_jacs)
 
         # Get the jvps
-        multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
         tangents = [[t for t in tangent if not isinstance(t, Zero)] for tangent in tangents[0]]
-        jvps = _compute_jvps(jacs_, tangents, multi_measurements)
+        jvps = _compute_jvps(jacs_, tangents, tapes)
 
         return (res, updated_jacs), (jvps, updated_jacs)
 

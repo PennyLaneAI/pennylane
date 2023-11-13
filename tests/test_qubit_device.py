@@ -1426,7 +1426,7 @@ class TestResourcesTracker:
         ):
             assert tracked_r == expected_r
 
-    @pytest.mark.all_interfaces
+    @pytest.mark.autograd
     def test_tracker_grad(self):
         """Test that the tracker can track resources through a gradient computation"""
         dev = qml.device("default.qubit.legacy", wires=1, shots=100)
@@ -1456,3 +1456,29 @@ class TestResourcesTracker:
             expected_resources,
             expected_resources,
         ]
+
+
+def test_samples_to_counts_with_nan():
+    """Test that the counts function disregards failed measurements (samples including
+    NaN values) when totalling counts"""
+    # generate 1000 samples for 2 wires, randomly distributed between 0 and 1
+    device = qml.device("default.qubit.legacy", wires=2, shots=1000)
+    device._state = [0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j]
+    device._samples = device.generate_samples()
+    samples = device.sample(qml.measurements.CountsMP())
+
+    # imitate hardware return with NaNs (requires dtype float)
+    samples = qml.math.cast_like(samples, np.array([1.2]))
+    samples[0][0] = np.NaN
+    samples[17][1] = np.NaN
+    samples[850][0] = np.NaN
+
+    result = device._samples_to_counts(samples, mp=qml.measurements.CountsMP(), num_wires=2)
+
+    # no keys with NaNs
+    assert len(result) == 4
+    assert set(result.keys()) == {"00", "01", "10", "11"}
+
+    # # NaNs were not converted into "0", but were excluded from the counts
+    total_counts = sum(count for count in result.values())
+    assert total_counts == 997

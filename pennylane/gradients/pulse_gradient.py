@@ -15,11 +15,14 @@
 This module contains functions for computing the stochastic parameter-shift gradient
 of pulse sequences in a qubit-based quantum tape.
 """
+from typing import Sequence, Callable
+from functools import partial
 import warnings
 import numpy as np
 
 import pennylane as qml
 from pennylane.pulse import ParametrizedEvolution, HardwareHamiltonian
+from pennylane import transform
 
 from .parameter_shift import _make_zero_rep
 from .general_shift_rules import eigvals_to_frequencies, generate_shift_rule
@@ -30,7 +33,6 @@ from .gradient_transform import (
     assert_no_variance,
     choose_grad_methods,
     gradient_analysis_and_validation,
-    gradient_transform,
     _no_trainable_grad,
     reorder_grads,
 )
@@ -281,9 +283,14 @@ def _parshift_and_integrate(
 
 
 # pylint: disable=too-many-arguments
-def _stoch_pulse_grad(
-    tape, argnum=None, num_split_times=1, sampler_seed=None, use_broadcasting=False
-):
+@partial(transform, final_transform=True)
+def stoch_pulse_grad(
+    tape: qml.tape.QuantumTape,
+    argnum=None,
+    num_split_times=1,
+    sampler_seed=None,
+    use_broadcasting=False,
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Compute the gradient of a quantum circuit composed of pulse sequences by applying the
     stochastic parameter shift rule.
 
@@ -327,7 +334,7 @@ def _stoch_pulse_grad(
     of the envelopes :math:`\partial f_j / \partial v_k` at the sampled times suitably.
 
     Args:
-        tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
+        tape (QuantumTape): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
@@ -341,17 +348,11 @@ def _stoch_pulse_grad(
             tapes is created, increasing performance on simulators.
 
     Returns:
-        function or tuple[list[QuantumTape], function]:
+        tuple[List[QuantumTape], function]:
 
-        - If the input is a QNode, an object representing the Jacobian (function) of the QNode
-          that can be executed to obtain the Jacobian.
-          The type of the Jacobian returned is either a tensor, a tuple or a
-          nested tuple depending on the nesting structure of the original QNode output.
-
-        - If the input is a tape, a tuple containing a
-          list of generated tapes, together with a post-processing
-          function to be applied to the results of the evaluated tapes
-          in order to obtain the Jacobian.
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple depending upon the nesting
+        structure of measurements in the original circuit.
 
     This transform realizes the stochastic parameter-shift rule for pulse sequences, as introduced
     in `Banchi and Crooks (2018) <https://quantum-journal.org/papers/q-2021-01-25-386/>`_ and
@@ -854,21 +855,7 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, use_broadcastin
     return tapes, processing_fn
 
 
-def expand_invalid_trainable_stoch_pulse_grad(x, *args, **kwargs):
-    r"""Do not expand any operation. We expect the ``stoch_pulse_grad`` to be used
-    on pulse programs and we do not expect decomposition pipelines between pulses
-    and gate-based circuits yet.
-    """
-    # pylint:disable=unused-argument
-    return x
-
-
-stoch_pulse_grad = gradient_transform(
-    _stoch_pulse_grad, expand_fn=expand_invalid_trainable_stoch_pulse_grad
-)
-
-
-@stoch_pulse_grad.custom_qnode_wrapper
+@stoch_pulse_grad.custom_qnode_transform
 def stoch_pulse_grad_qnode_wrapper(self, qnode, targs, tkwargs):
     """A custom QNode wrapper for the gradient transform :func:`~.stoch_pulse_grad`.
     It raises an error, so that applying ``stoch_pulse_grad`` to a ``QNode`` directly

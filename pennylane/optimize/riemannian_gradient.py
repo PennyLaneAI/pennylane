@@ -19,7 +19,7 @@ import numpy as np
 from scipy.sparse.linalg import expm
 import pennylane as qml
 
-from pennylane.transforms.core import transform
+from pennylane import transform
 from pennylane.tape import QuantumTape
 from pennylane.queuing import QueuingManager
 
@@ -56,17 +56,14 @@ def append_time_evolution(
     and append this unitary.
 
     Args:
-        tape (QuantumTape or .QNode): circuit to transform.
+        tape (QuantumTape or QNode or Callable): circuit to transform.
         riemannian_gradient (.Hamiltonian): Hamiltonian object representing the Riemannian gradient.
         t (float): time evolution parameter.
         n (int): number of Trotter steps.
 
     Returns:
-        pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
-        it returns a QNode with the transform added to its transform program.
-        If a tape is passed, returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+
 
     """
     new_operations = tape.operations
@@ -390,7 +387,24 @@ class RiemannianGradientOptimizer:
             self.lie_algebra_basis_names,
             self.nqubits,
         )
-        circuits = qml.execute(circuits, self.circuit.device, gradient_fn=None)
+
+        if isinstance(self.circuit.device, qml.devices.Device):
+            program, config = self.circuit.device.preprocess()
+
+            circuits = qml.execute(
+                circuits,
+                self.circuit.device,
+                transform_program=program,
+                config=config,
+                gradient_fn=None,
+            )
+        else:
+            circuits = qml.execute(
+                circuits, self.circuit.device, gradient_fn=None
+            )  # pragma: no cover
+
+        program, _ = self.circuit.device.preprocess()
+
         circuits_plus = np.array(circuits[: len(circuits) // 2]).reshape(
             len(self.coeffs), len(self.lie_algebra_basis_names)
         )

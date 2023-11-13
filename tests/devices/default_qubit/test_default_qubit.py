@@ -11,18 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for default qubit 2."""
-# pylint: disable=import-outside-toplevel, no-member
+"""Tests for default qubit."""
+# pylint: disable=import-outside-toplevel, no-member, too-many-arguments
 
+from unittest import mock
 import pytest
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.measurements import SampleMP, StateMP, ProbabilityMP
 
 from pennylane.devices import DefaultQubit, ExecutionConfig
-from pennylane.devices.qubit.preprocess import validate_and_expand_adjoint
 
 
 def test_name():
@@ -58,135 +57,23 @@ def test_debugger_attribute():
     assert dev._debugger is None
 
 
-class TestSnapshotMulti:
-    def test_snapshot_multiprocessing_execute(self):
-        """DefaultQubit cannot execute tapes with Snapshot if `max_workers` is not `None`"""
-        dev = DefaultQubit(max_workers=2)
+def test_snapshot_multiprocessing_qnode():
+    """DefaultQubit cannot execute tapes with Snapshot if `max_workers` is not `None`"""
+    dev = DefaultQubit(max_workers=2)
 
-        tape = qml.tape.QuantumScript(
-            [
-                qml.Snapshot(),
-                qml.Hadamard(wires=0),
-                qml.Snapshot("very_important_state"),
-                qml.CNOT(wires=[0, 1]),
-                qml.Snapshot(),
-            ],
-            [qml.expval(qml.PauliX(0))],
-        )
-        with pytest.raises(
-            RuntimeError, match="ProcessPoolExecutor cannot execute a QuantumScript"
-        ):
-            program, _ = dev.preprocess()
-            program([tape])
+    @qml.qnode(dev)
+    def circuit():
+        qml.Snapshot("tag")
+        qml.Hadamard(wires=0)
+        qml.CNOT(wires=[0, 1])
+        qml.Snapshot()
+        return qml.expval(qml.PauliX(0) + qml.PauliY(0))
 
-    def test_snapshot_multiprocessing_qnode(self):
-        """DefaultQubit cannot execute tapes with Snapshot if `max_workers` is not `None`"""
-        dev = DefaultQubit(max_workers=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.Snapshot("tag")
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.Snapshot()
-            return qml.expval(qml.PauliX(0) + qml.PauliY(0))
-
-        with pytest.raises(
-            qml.DeviceError,
-            match="Debugging with ``Snapshots`` is not available with multiprocessing.",
-        ):
-            qml.snapshots(circuit)()
-
-
-# pylint: disable=too-few-public-methods
-class TestPreprocessing:
-    """Unit tests for the preprocessing method."""
-
-    def test_chooses_best_gradient_method(self):
-        """Test that preprocessing chooses backprop as the best gradient method."""
-        dev = DefaultQubit()
-
-        config = ExecutionConfig(
-            gradient_method="best", use_device_gradient=None, grad_on_execution=None
-        )
-
-        _, new_config = dev.preprocess(config)
-
-        assert new_config.gradient_method == "backprop"
-        assert new_config.use_device_gradient
-        assert not new_config.grad_on_execution
-
-    def test_config_choices_for_adjoint(self):
-        """Test that preprocessing request grad on execution and says to use the device gradient if adjoint is requested."""
-        dev = DefaultQubit()
-
-        config = ExecutionConfig(
-            gradient_method="adjoint", use_device_gradient=None, grad_on_execution=None
-        )
-
-        _, new_config = dev.preprocess(config)
-
-        assert new_config.use_device_gradient
-        assert new_config.grad_on_execution
-
-    @pytest.mark.parametrize("max_workers", [None, 1, 2, 3])
-    def test_config_choices_for_threading(self, max_workers):
-        """Test that preprocessing request grad on execution and says to use the device gradient if adjoint is requested."""
-        dev = DefaultQubit()
-
-        config = ExecutionConfig(device_options={"max_workers": max_workers})
-        _, new_config = dev.preprocess(config)
-
-        assert new_config.device_options["max_workers"] == max_workers
-
-    def test_circuit_wire_validation(self):
-        """Test that preprocessing validates wires on the circuits being executed."""
-        dev = DefaultQubit(wires=3)
-        circuit_valid_0 = qml.tape.QuantumScript([qml.PauliX(0)])
-        program, _ = dev.preprocess()
-        circuits, _ = program([circuit_valid_0])
-        assert circuits == (circuit_valid_0,)
-
-        circuit_valid_1 = qml.tape.QuantumScript([qml.PauliX(1)])
-        program, _ = dev.preprocess()
-        circuits, _ = program([circuit_valid_0, circuit_valid_1])
-        assert circuits == tuple([circuit_valid_0, circuit_valid_1])
-
-        invalid_circuit = qml.tape.QuantumScript([qml.PauliX(4)])
-        with pytest.raises(qml.wires.WireError, match=r"Cannot run circuit\(s\) on"):
-            program, _ = dev.preprocess()
-            program(
-                [
-                    invalid_circuit,
-                ]
-            )
-
-        with pytest.raises(qml.wires.WireError, match=r"Cannot run circuit\(s\) on"):
-            program, _ = dev.preprocess()
-            program([circuit_valid_0, invalid_circuit])
-
-    @pytest.mark.parametrize(
-        "mp_fn,mp_cls,shots",
-        [
-            (qml.sample, SampleMP, 10),
-            (qml.state, StateMP, None),
-            (qml.probs, ProbabilityMP, None),
-        ],
-    )
-    def test_measurement_is_swapped_out(self, mp_fn, mp_cls, shots):
-        """Test that preprocessing swaps out any MP with no wires or obs"""
-        dev = DefaultQubit(wires=3)
-        original_mp = mp_fn()
-        exp_z = qml.expval(qml.PauliZ(0))
-        qs = qml.tape.QuantumScript([qml.Hadamard(0)], [original_mp, exp_z], shots=shots)
-        program, _ = dev.preprocess()
-        tapes, _ = program([qs])
-        assert len(tapes) == 1
-        tape = tapes[0]
-        assert tape.operations == qs.operations
-        assert tape.measurements != qs.measurements
-        assert qml.equal(tape.measurements[0], mp_cls(wires=[0, 1, 2]))
-        assert tape.measurements[1] is exp_z
+    with pytest.raises(
+        qml.DeviceError,
+        match="Debugging with ``Snapshots`` is not available with multiprocessing.",
+    ):
+        qml.snapshots(circuit)()
 
 
 class TestSupportsDerivatives:
@@ -429,6 +316,17 @@ class TestBasicCircuit:
         res = circuit(param)
         assert qml.math.get_interface(res) == "tensorflow"
         assert qml.math.allclose(res, -1)
+
+    def test_basis_state_wire_order(self):
+        """Test that the wire order is correct with a basis state if the tape wires have a non standard order."""
+
+        dev = DefaultQubit()
+
+        tape = qml.tape.QuantumScript([qml.BasisState([1], wires=1), qml.PauliZ(0)], [qml.state()])
+
+        expected = np.array([0, 1, 0, 0], dtype=np.complex128)
+        res = dev.execute(tape)
+        assert qml.math.allclose(res, expected)
 
 
 class TestSampleMeasurements:
@@ -1009,8 +907,10 @@ class TestAdjointDifferentiation:
         dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-        qs, _ = validate_and_expand_adjoint(qs)
-        qs = qs[0]
+
+        config = ExecutionConfig(gradient_method="adjoint")
+        batch, _ = dev.preprocess(config)[0]((qs,))
+        qs = batch[0]
         expected_grad = -qml.math.sin(x)
         actual_grad = dev.compute_derivatives(qs, self.ec)
         assert isinstance(actual_grad, np.ndarray)
@@ -1027,8 +927,9 @@ class TestAdjointDifferentiation:
         dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-        qs, _ = validate_and_expand_adjoint(qs)
-        qs = qs[0]
+        config = ExecutionConfig(gradient_method="adjoint")
+        batch, _ = dev.preprocess(config)[0]((qs,))
+        qs = batch[0]
         expected_grad = -qml.math.sin(x)
         actual_grad = dev.compute_derivatives([qs], self.ec)
         assert isinstance(actual_grad, tuple)
@@ -1083,8 +984,9 @@ class TestAdjointDifferentiation:
 
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
 
-        qs, _ = validate_and_expand_adjoint(qs)
-        qs = qs[0]
+        config = ExecutionConfig(gradient_method="adjoint")
+        batch, _ = dev.preprocess(config)[0]((qs,))
+        qs = batch[0]
 
         expected_grad = -qml.math.sin(x) * tangent[0]
         actual_grad = dev.compute_jvp(qs, tangent, self.ec)
@@ -1105,8 +1007,9 @@ class TestAdjointDifferentiation:
 
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
 
-        qs, _ = validate_and_expand_adjoint(qs)
-        qs = qs[0]
+        config = ExecutionConfig(gradient_method="adjoint")
+        batch, _ = dev.preprocess(config)[0]((qs,))
+        qs = batch[0]
 
         expected_grad = -qml.math.sin(x) * tangent[0]
         actual_grad = dev.compute_jvp([qs], [tangent], self.ec)
@@ -1180,13 +1083,12 @@ class TestAdjointDifferentiation:
         cotangent = (0.456,)
 
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-        qs, _ = validate_and_expand_adjoint(qs)
-        qs = qs[0]
+        config = ExecutionConfig(gradient_method="adjoint")
+        batch, _ = dev.preprocess(config)[0]((qs,))
+        qs = batch[0]
 
         expected_grad = -qml.math.sin(x) * cotangent[0]
         actual_grad = dev.compute_vjp(qs, cotangent, self.ec)
-        assert isinstance(actual_grad, np.ndarray)
-        assert actual_grad.shape == ()  # pylint: disable=no-member
         assert np.isclose(actual_grad, expected_grad)
 
         expected_val = qml.math.cos(x)
@@ -1201,13 +1103,13 @@ class TestAdjointDifferentiation:
         cotangent = (0.456,)
 
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-        qs, _ = validate_and_expand_adjoint(qs)
-        qs = qs[0]
+        config = ExecutionConfig(gradient_method="adjoint")
+        batch, _ = dev.preprocess(config)[0]((qs,))
+        qs = batch[0]
 
         expected_grad = -qml.math.sin(x) * cotangent[0]
         actual_grad = dev.compute_vjp([qs], [cotangent], self.ec)
         assert isinstance(actual_grad, tuple)
-        assert isinstance(actual_grad[0], np.ndarray)
         assert np.isclose(actual_grad[0], expected_grad)
 
         expected_val = qml.math.cos(x)
@@ -1267,131 +1169,6 @@ class TestAdjointDifferentiation:
 
         assert np.isclose(actual_grad[0], expected_grad[0])
         assert np.isclose(actual_grad[1], expected_grad[1])
-
-
-class TestPreprocessingIntegration:
-    """Test preprocess produces output that can be executed by the device."""
-
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
-    def test_preprocess_single_circuit(self, max_workers):
-        """Test integration between preprocessing and execution with numpy parameters."""
-
-        # pylint: disable=too-few-public-methods
-        class MyTemplate(qml.operation.Operation):
-            """Temp operator."""
-
-            num_wires = 2
-
-            # pylint: disable=missing-function-docstring
-            def decomposition(self):
-                return [
-                    qml.RX(self.data[0], self.wires[0]),
-                    qml.RY(self.data[1], self.wires[1]),
-                    qml.CNOT(self.wires),
-                ]
-
-        x = 0.928
-        y = -0.792
-        qscript = qml.tape.QuantumScript(
-            [MyTemplate(x, y, ("a", "b"))],
-            [qml.expval(qml.PauliY("a")), qml.expval(qml.PauliZ("a")), qml.expval(qml.PauliX("b"))],
-        )
-
-        dev = DefaultQubit(max_workers=max_workers)
-        tapes = tuple([qscript])
-        program, config = dev.preprocess()
-        tapes, pre_processing_fn = program(tapes)
-
-        assert len(tapes) == 1
-        execute_circuit = tapes[0]
-        assert qml.equal(execute_circuit[0], qml.RX(x, "a"))
-        assert qml.equal(execute_circuit[1], qml.RY(y, "b"))
-        assert qml.equal(execute_circuit[2], qml.CNOT(("a", "b")))
-        assert qml.equal(execute_circuit[3], qml.expval(qml.PauliY("a")))
-        assert qml.equal(execute_circuit[4], qml.expval(qml.PauliZ("a")))
-        assert qml.equal(execute_circuit[5], qml.expval(qml.PauliX("b")))
-
-        results = dev.execute(tapes, config)
-        assert len(results) == 1
-        assert len(results[0]) == 3
-
-        processed_results = pre_processing_fn(results)
-        processed_result = processed_results[0]
-        assert len(processed_result) == 3
-        assert qml.math.allclose(processed_result[0], -np.sin(x) * np.sin(y))
-        assert qml.math.allclose(processed_result[1], np.cos(x))
-        assert qml.math.allclose(processed_result[2], np.sin(y))
-
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
-    def test_preprocess_batch_circuit(self, max_workers):
-        """Test preprocess integrates with default qubit when we start with a batch of circuits."""
-
-        # pylint: disable=too-few-public-methods
-        class CustomIsingXX(qml.operation.Operation):
-            """Temp operator."""
-
-            num_wires = 2
-
-            # pylint: disable=missing-function-docstring
-            def decomposition(self):
-                return [qml.IsingXX(self.data[0], self.wires)]
-
-        x = 0.692
-
-        measurements1 = [qml.density_matrix("a"), qml.vn_entropy("a")]
-        qs1 = qml.tape.QuantumScript([CustomIsingXX(x, ("a", "b"))], measurements1)
-
-        y = -0.923
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.PauliX(wires=1)
-            m_0 = qml.measure(1)
-            qml.cond(m_0, qml.RY)(y, wires=0)
-            qml.expval(qml.PauliZ(0))
-
-        qs2 = qml.tape.QuantumScript.from_queue(q)
-
-        initial_batch = [qs1, qs2]
-
-        dev = DefaultQubit(max_workers=max_workers)
-
-        program, config = dev.preprocess()
-        batch, pre_processing_fn = program(initial_batch)
-
-        results = dev.execute(batch, config)
-        processed_results = pre_processing_fn(results)
-
-        assert len(processed_results) == 2
-        assert len(processed_results[0]) == 2
-
-        expected_density_mat = np.array([[np.cos(x / 2) ** 2, 0], [0, np.sin(x / 2) ** 2]])
-        assert qml.math.allclose(processed_results[0][0], expected_density_mat)
-
-        eig_1 = (1 + np.sqrt(1 - 4 * np.cos(x / 2) ** 2 * np.sin(x / 2) ** 2)) / 2
-        eig_2 = (1 - np.sqrt(1 - 4 * np.cos(x / 2) ** 2 * np.sin(x / 2) ** 2)) / 2
-        eigs = [eig_1, eig_2]
-        eigs = [eig for eig in eigs if eig > 0]
-
-        expected_entropy = -np.sum(eigs * np.log(eigs))
-        assert qml.math.allclose(processed_results[0][1], expected_entropy)
-
-        expected_expval = np.cos(y)
-        assert qml.math.allclose(expected_expval, processed_results[1])
-
-    def test_preprocess_defer_measurements(self, mocker):
-        """Test that a QNode with mid-circuit measurements is transformed
-        using defer_measurements."""
-        dev = DefaultQubit()
-
-        tape = qml.tape.QuantumScript(
-            [qml.PauliX(0), qml.measurements.MidMeasureMP(qml.wires.Wires(0))],
-            [qml.expval(qml.PauliZ(0))],
-        )
-        spy = mocker.spy(qml, "defer_measurements")
-
-        program, _ = dev.preprocess()
-        program([tape])
-        spy.assert_called_once()
 
 
 class TestRandomSeed:
@@ -1852,24 +1629,281 @@ class TestClassicalShadows:
             assert np.all(np.logical_or(np.logical_or(r[1] == 0, r[1] == 1), r[1] == 2))
 
 
-class TestDynamicType:
-    """Tests the compatibility with dynamic type classes such as `qml.Projector`."""
+@pytest.mark.parametrize("n_wires", [1, 2, 3])
+@pytest.mark.parametrize("max_workers", [None, 1, 2])
+def test_projector_dynamic_type(max_workers, n_wires):
+    """Test that qml.Projector yields the expected results for both of its subclasses."""
+    wires = list(range(n_wires))
+    dev = DefaultQubit(max_workers=max_workers)
+    ops = [qml.adjoint(qml.Hadamard(q)) for q in wires]
+    basis_state = np.zeros((n_wires,))
+    state_vector = np.zeros((2**n_wires,))
+    state_vector[0] = 1
 
-    @pytest.mark.parametrize("n_wires", [1, 2, 3])
-    @pytest.mark.parametrize("max_workers", [None, 1, 2])
-    def test_projector(self, max_workers, n_wires):
-        """Test that qml.Projector yields the expected results for both of its subclasses."""
-        wires = list(range(n_wires))
-        dev = DefaultQubit(max_workers=max_workers)
-        ops = [qml.adjoint(qml.Hadamard(q)) for q in wires]
-        basis_state = np.zeros((n_wires,))
-        state_vector = np.zeros((2**n_wires,))
-        state_vector[0] = 1
+    for state in [basis_state, state_vector]:
+        qs = qml.tape.QuantumScript(ops, [qml.expval(qml.Projector(state, wires))])
+        res = dev.execute(qs)
+        assert np.isclose(res, 1 / 2**n_wires)
 
-        for state in [basis_state, state_vector]:
-            qs = qml.tape.QuantumScript(ops, [qml.expval(qml.Projector(state, wires))])
-            res = dev.execute(qs)
-            assert np.isclose(res, 1 / 2**n_wires)
+
+@pytest.mark.all_interfaces
+@pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "jax", "tensorflow"])
+@pytest.mark.parametrize("use_jit", [True, False])
+class TestPostselection:
+    """Various integration tests for postselection of mid-circuit measurements."""
+
+    @pytest.mark.parametrize(
+        "mp",
+        [
+            qml.expval(qml.PauliZ(0)),
+            qml.var(qml.PauliZ(0)),
+            qml.probs(wires=[0, 1]),
+            qml.density_matrix(wires=0),
+            qml.purity(0),
+            qml.vn_entropy(0),
+            qml.mutual_info(0, 1),
+        ],
+    )
+    @pytest.mark.parametrize("param", np.linspace(np.pi / 4, 3 * np.pi / 4, 3))
+    def test_postselection_valid_analytic(self, param, mp, interface, use_jit):
+        """Test that the results of a circuit with postselection is expected
+        with analytic execution."""
+        if use_jit and interface != "jax":
+            pytest.skip("Cannot JIT in non-JAX interfaces.")
+
+        dev = qml.device("default.qubit")
+        param = qml.math.asarray(param, like=interface)
+
+        @qml.qnode(dev, interface=interface)
+        def circ_postselect(theta):
+            qml.RX(theta, 0)
+            qml.CNOT([0, 1])
+            qml.measure(0, postselect=1)
+            return qml.apply(mp)
+
+        @qml.qnode(dev, interface=interface)
+        def circ_expected():
+            qml.RX(np.pi, 0)
+            qml.CNOT([0, 1])
+            return qml.apply(mp)
+
+        if use_jit:
+            import jax
+
+            circ_postselect = jax.jit(circ_postselect)
+
+        res = circ_postselect(param)
+        expected = circ_expected()
+
+        assert qml.math.allclose(res, expected)
+        assert qml.math.get_interface(res) == qml.math.get_interface(expected)
+
+    @pytest.mark.parametrize(
+        "mp",
+        [
+            qml.expval(qml.PauliZ(0)),
+            qml.var(qml.PauliZ(0)),
+            qml.probs(wires=[0, 1]),
+            qml.shadow_expval(qml.Hamiltonian([1.0, -1.0], [qml.PauliZ(0), qml.PauliX(0)])),
+            # qml.sample, qml.classical_shadow, qml.counts are not included because their
+            # shape/values are dependent on the number of shots, which will be changed
+            # randomly per the binomial distribution and the probability of the postselected
+            # state
+        ],
+    )
+    @pytest.mark.parametrize("param", np.linspace(np.pi / 4, 3 * np.pi / 4, 3))
+    @pytest.mark.parametrize("shots", [50000, (50000, 50000)])
+    def test_postselection_valid_finite_shots(
+        self, param, mp, shots, interface, use_jit, tol_stochastic
+    ):
+        """Test that the results of a circuit with postselection is expected with
+        finite shots."""
+        if use_jit and (interface != "jax" or isinstance(shots, tuple)):
+            pytest.skip("Cannot JIT in non-JAX interfaces, or with shot vectors.")
+
+        dev = qml.device("default.qubit")
+        param = qml.math.asarray(param, like=interface)
+
+        @qml.qnode(dev, interface=interface)
+        def circ_postselect(theta):
+            qml.RX(theta, 0)
+            qml.CNOT([0, 1])
+            qml.measure(0, postselect=1)
+            return qml.apply(mp)
+
+        @qml.qnode(dev, interface=interface)
+        def circ_expected():
+            qml.RX(np.pi, 0)
+            qml.CNOT([0, 1])
+            return qml.apply(mp)
+
+        if use_jit:
+            import jax
+
+            circ_postselect = jax.jit(circ_postselect, static_argnames=["shots"])
+
+        res = circ_postselect(param, shots=shots)
+        expected = circ_expected(shots=shots)
+
+        if not isinstance(shots, tuple):
+            assert qml.math.allclose(res, expected, atol=tol_stochastic, rtol=0)
+            assert qml.math.get_interface(res) == qml.math.get_interface(expected)
+
+        else:
+            assert isinstance(res, tuple)
+            for r, e in zip(res, expected):
+                assert qml.math.allclose(r, e, atol=tol_stochastic, rtol=0)
+                assert qml.math.get_interface(r) == qml.math.get_interface(e)
+
+    @pytest.mark.parametrize(
+        "mp, expected_shape",
+        [(qml.sample(wires=[0]), (5,)), (qml.classical_shadow(wires=[0]), (2, 5, 1))],
+    )
+    @pytest.mark.parametrize("param", np.linspace(np.pi / 4, 3 * np.pi / 4, 3))
+    @pytest.mark.parametrize("shots", [10, (10, 10)])
+    def test_postselection_valid_finite_shots_varied_shape(
+        self, mp, param, expected_shape, shots, interface, use_jit
+    ):
+        """Test that qml.sample and qml.classical_shadow work correctly.
+        Separate test because their shape is non-deterministic."""
+
+        if use_jit:
+            pytest.skip("Cannot JIT while mocking function.")
+
+        dev = qml.device("default.qubit", seed=42)
+        param = qml.math.asarray(param, like=interface)
+
+        with mock.patch("numpy.random.binomial", lambda *args, **kwargs: 5):
+
+            @qml.qnode(dev, interface=interface)
+            def circ_postselect(theta):
+                qml.RX(theta, 0)
+                qml.CNOT([0, 1])
+                qml.measure(0, postselect=1)
+                return qml.apply(mp)
+
+            if use_jit:
+                import jax
+
+                circ_postselect = jax.jit(circ_postselect, static_argnames=["shots"])
+
+            res = circ_postselect(param, shots=shots)
+
+        if not isinstance(shots, tuple):
+            assert qml.math.get_interface(res) == interface if interface != "autograd" else "numpy"
+            assert qml.math.shape(res) == expected_shape
+
+        else:
+            assert isinstance(res, tuple)
+            for r in res:
+                assert (
+                    qml.math.get_interface(r) == interface if interface != "autograd" else "numpy"
+                )
+                assert qml.math.shape(r) == expected_shape
+
+    @pytest.mark.parametrize(
+        "mp, autograd_interface, is_nan",
+        [
+            (qml.expval(qml.PauliZ(0)), "autograd", True),
+            (qml.var(qml.PauliZ(0)), "autograd", True),
+            (qml.probs(wires=[0, 1]), "autograd", True),
+            (qml.density_matrix(wires=0), "autograd", True),
+            (qml.purity(0), "numpy", True),
+            (qml.vn_entropy(0), "numpy", False),
+            (qml.mutual_info(0, 1), "numpy", False),
+        ],
+    )
+    def test_postselection_invalid_analytic(
+        self, mp, autograd_interface, is_nan, interface, use_jit
+    ):
+        """Test that the results of a qnode are nan values of the correct shape if the state
+        that we are postselecting has a zero probability of occurring."""
+
+        if (isinstance(mp, qml.measurements.MutualInfoMP) and interface != "jax") or (
+            isinstance(mp, qml.measurements.VnEntropyMP) and interface == "tensorflow"
+        ):
+            pytest.skip("Unsupported measurements and interfaces.")
+
+        if use_jit and interface != "jax":
+            pytest.skip("Can't jit with non-jax interfaces.")
+
+        # Wires are specified so that the shape for measurements can be determined correctly
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface=interface)
+        def circ():
+            qml.RX(np.pi, 0)
+            qml.CNOT([0, 1])
+            qml.measure(0, postselect=0)
+            return qml.apply(mp)
+
+        if use_jit:
+            import jax
+
+            circ = jax.jit(circ)
+
+        res = circ()
+        if interface == "autograd":
+            assert qml.math.get_interface(res) == autograd_interface
+        else:
+            assert qml.math.get_interface(res) == interface
+        assert qml.math.shape(res) == mp.shape(dev, qml.measurements.Shots(None))
+        if is_nan:
+            assert qml.math.all(qml.math.isnan(res))
+        else:
+            assert qml.math.allclose(res, 0.0)
+
+    @pytest.mark.parametrize(
+        "mp, expected_shape",
+        [
+            (qml.expval(qml.PauliZ(0)), ()),
+            (qml.var(qml.PauliZ(0)), ()),
+            (qml.sample(qml.PauliZ(0)), (0,)),
+            (qml.classical_shadow(wires=0), (2, 0, 1)),
+            (qml.shadow_expval(qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliX(0)])), ()),
+            # qml.probs and qml.counts are not tested because they fail in this case
+        ],
+    )
+    @pytest.mark.parametrize("shots", [10, (10, 10)])
+    def test_postselection_invalid_finite_shots(
+        self, mp, expected_shape, shots, interface, use_jit
+    ):
+        """Test that the results of a qnode are nan values of the correct shape if the state
+        that we are postselecting has a zero probability of occurring with finite shots."""
+
+        if use_jit and interface != "jax":
+            pytest.skip("Can't jit with non-jax interfaces.")
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev, interface=interface)
+        def circ():
+            qml.RX(np.pi, 0)
+            qml.CNOT([0, 1])
+            qml.measure(0, postselect=0)
+            return qml.apply(mp)
+
+        if use_jit:
+            import jax
+
+            circ = jax.jit(circ, static_argnames=["shots"])
+
+        res = circ(shots=shots)
+
+        if not isinstance(shots, tuple):
+            assert qml.math.shape(res) == expected_shape
+            assert qml.math.get_interface(res) == interface if interface != "autograd" else "numpy"
+            if not 0 in expected_shape:  # No nan values if array is empty
+                assert qml.math.all(qml.math.isnan(res))
+        else:
+            assert isinstance(res, tuple)
+            for r in res:
+                assert qml.math.shape(r) == expected_shape
+                assert (
+                    qml.math.get_interface(r) == interface if interface != "autograd" else "numpy"
+                )
+                if not 0 in expected_shape:  # No nan values if array is empty
+                    assert qml.math.all(qml.math.isnan(r))
 
 
 class TestIntegration:

@@ -21,7 +21,7 @@ from typing import Callable, Optional, Union, Sequence
 import pennylane as qml
 from pennylane.measurements import ExpectationMP
 from pennylane.tape import QuantumTape
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 from pennylane.wires import Wires
 
 from .cutstrategy import CutStrategy
@@ -50,7 +50,7 @@ def _cut_circuit_expand(
 
     # Expand the tapes for handling Hamiltonian with two or more terms
     tape_meas_ops = tape.measurements
-    if isinstance(tape_meas_ops[0].obs, qml.Hamiltonian):
+    if tape_meas_ops and isinstance(tape_meas_ops[0].obs, qml.Hamiltonian):
         if len(tape_meas_ops) > 1:
             raise NotImplementedError(
                 "Hamiltonian expansion is supported only with a single Hamiltonian"
@@ -90,7 +90,7 @@ def cut_circuit(
         Only circuits that return a single expectation value are supported.
 
     Args:
-        tape (QuantumTape): the tape of the full circuit to be cut
+        tape (QNode or QuantumTape): the quantum circuit to be cut
         auto_cutter (Union[bool, Callable]): Toggle for enabling automatic cutting with the default
             :func:`~.kahypar_cut` partition method. Can also pass a graph partitioning function that
             takes an input graph and returns a list of edges to be cut based on a given set of
@@ -112,10 +112,10 @@ def cut_circuit(
             :func:`~.find_and_place_cuts` and :func:`~.kahypar_cut` for the available arguments.
 
     Returns:
-        Callable: Function which accepts the same arguments as the QNode.
-        When called, this function will perform a process tomography of the
-        partitioned circuit fragments and combine the results via tensor
-        contractions.
+        qnode (QNode) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will perform a process tomography of the partitioned circuit fragments and combine the results via tensor contractions.
 
     **Example**
 
@@ -161,7 +161,9 @@ def cut_circuit(
 
     .. code-block:: python
 
-        @qml.cut_circuit(auto_cutter=True)
+        from functools import partial
+
+        @partial(qml.cut_circuit, auto_cutter=True)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -298,7 +300,7 @@ def cut_circuit(
         Additionally, we must remap the tape wires to match those available on our device.
 
         >>> dev = qml.device("default.qubit", wires=2)
-        >>> fragment_tapes = [qml.map_wires(t, dict(zip(t.wires, dev.wires))) for t in fragment_tapes]
+        >>> fragment_tapes = [qml.map_wires(t, dict(zip(t.wires, dev.wires)))[0][0] for t in fragment_tapes]
 
         Next, each circuit fragment is expanded over :class:`~.MeasureNode` and
         :class:`~.PrepareNode` configurations and a flat list of tapes is created:
@@ -406,7 +408,9 @@ def cut_circuit(
 
     # convert decomposed DAGs into tapes, remap their wires for device and expand them
     fragment_tapes = [graph_to_tape(f) for f in fragments]
-    fragment_tapes = [qml.map_wires(t, dict(zip(t.wires, device_wires))) for t in fragment_tapes]
+    fragment_tapes = [
+        qml.map_wires(t, dict(zip(t.wires, device_wires)))[0][0] for t in fragment_tapes
+    ]
     expanded = [expand_fragment_tape(t) for t in fragment_tapes]
 
     # store the data necessary for classical post processing of results

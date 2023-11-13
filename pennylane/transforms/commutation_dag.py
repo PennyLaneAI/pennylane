@@ -16,17 +16,20 @@ A transform to obtain the commutation DAG of a quantum circuit.
 """
 import heapq
 from collections import OrderedDict
-from functools import wraps
+from functools import partial
+from typing import Sequence, Callable
 
 import networkx as nx
 from networkx.drawing.nx_pydot import to_pydot
 
 import pennylane as qml
-from pennylane.tape import QuantumScript, make_qscript, QuantumTape
+from pennylane.tape import QuantumTape
 from pennylane.wires import Wires
+from pennylane.transforms import transform
 
 
-def commutation_dag(circuit):
+@partial(transform, is_informative=True)
+def commutation_dag(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
     r"""Construct the pairwise-commutation DAG (directed acyclic graph) representation of a quantum circuit.
 
     In the DAG, each node represents a quantum operation, and edges represent
@@ -36,17 +39,21 @@ def commutation_dag(circuit):
     operations can be moved next to each other by pairwise commutation.
 
     Args:
-        circuit (pennylane.QNode, .QuantumTape, or Callable): A quantum node, tape,
-            or function that applies quantum operations.
+        tape (QNode or QuantumTape or Callable): The quantum circuit.
 
     Returns:
-         function: Function which accepts the same arguments as the :class:`qml.QNode`, :class:`qml.tape.QuantumTape`
-         or quantum function. When called, this function will return the commutation DAG representation of the circuit.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the commutation DAG.
 
     **Example**
 
+    >>> dev = qml.device("default.qubit")
+
     .. code-block:: python
 
+        @qml.qnode(device=dev)
         def circuit(x, y, z):
             qml.RX(x, wires=0)
             qml.RX(y, wires=0)
@@ -91,35 +98,13 @@ def commutation_dag(circuit):
 
     """
 
-    # pylint: disable=protected-access
-
-    @wraps(circuit)
-    def wrapper(*args, **kwargs):
-        if isinstance(circuit, qml.QNode):
-            # user passed a QNode, get the tape
-            circuit.construct(args, kwargs)
-            tape = circuit.qtape
-
-        elif isinstance(circuit, QuantumScript):
-            # user passed a tape
-            tape = circuit
-
-        elif callable(circuit):
-            # user passed something that is callable but not a tape or qnode.
-            tape = make_qscript(circuit)(*args, **kwargs)
-            # raise exception if it is not a quantum function
-            if len(tape.operations) == 0:
-                raise ValueError("Function contains no quantum operation")
-
-        else:
-            raise ValueError("Input is not a tape, QNode, or quantum function")
-
+    def processing_fn(res):
+        """Processing function that returns the circuit as a commutation DAG."""
         # Initialize DAG
-        dag = CommutationDAG(tape)
-
+        dag = CommutationDAG(res[0])
         return dag
 
-    return wrapper
+    return [tape], processing_fn
 
 
 def _merge_no_duplicates(*iterables):
