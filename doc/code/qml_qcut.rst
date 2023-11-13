@@ -7,4 +7,4 @@ Overview
 .. currentmodule:: pennylane.qcut
 
 
-.. automodapi:: pennylane.qcut
+.. automodule:: pennylane.qcut
