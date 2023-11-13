@@ -44,7 +44,6 @@ def _compute_vjps(jacs, dys, tapes):
             vjps.append(qml.math.sum(qml.math.stack(shot_vjps), axis=0))
         else:
             vjps.append(f[multi](dy, jac))
-
     return tuple(vjps)
 
 
