@@ -271,8 +271,13 @@ def apply_grover(op: qml.GroverOperator, state, is_state_batched: bool = False, 
     over all axes on which the operation acts, and "filling in" the all-plus state
     in the resulting lower-dimensional state via a Kronecker product.
     """
-    if len(op.wires) < 8:
+    if (
+        len(op.wires) < EINSUM_OP_WIRECOUNT_PERF_THRESHOLD
+        and math.ndim(state) < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD
+    ):
         return apply_operation_einsum(op, state, is_state_batched)
+    elif len(op.wires) < 9:
+        return apply_operation_tensordot(op, state, is_state_batched)
 
     # The axes to sum over in order to obtain <+|\psi>, where <+| only acts on the op wires.
     sum_axes = [w + is_state_batched for w in op.wires]
@@ -287,6 +292,8 @@ def apply_grover(op: qml.GroverOperator, state, is_state_batched: bool = False, 
     # After the Kronecker product (realized with tensordot with axes=0), we need to move
     # the new axes to the summed-away axes' positions. Finally, subtract the original state.
     source = list(range(math.ndim(collapsed), math.ndim(state)))
+    # Probably it will be better to use math.full or math.tile to create the outer product
+    # here computed with math.tensordot. However, Tensorflow and Torch do not have full support
     return math.moveaxis(math.tensordot(collapsed, all_plus, axes=0), source, sum_axes) - state
 
 

@@ -861,14 +861,19 @@ class TestLargerOperations:
         assert qml.math.allclose(expected_state, new_state)
 
 
-@pytest.mark.parametrize("num_wires, einsum_called", [(3, True), (8, False)])
-def test_grover_dispatching(num_wires, einsum_called, mocker):
+@pytest.mark.parametrize(
+    "num_wires, einsum_called, tensordot_called",
+    [(2, True, False), (3, False, True), (9, False, False)],
+)
+def test_grover_dispatching(num_wires, einsum_called, tensordot_called, mocker):
     """Test that apply_grover dispatches to einsum correctly for small numbers of wires."""
     op = qml.GroverOperator(list(range(num_wires)))
     state = np.zeros([2] * num_wires, dtype=complex)
-    spy = mocker.spy(qml.math, "einsum")
+    spy_einsum = mocker.spy(qml.math, "einsum")
+    spy_tensordot = mocker.spy(qml.math, "argsort")
     apply_operation(op, state, is_state_batched=False, debugger=None)
-    assert spy.call_count == int(einsum_called)
+    assert spy_einsum.call_count == int(einsum_called)
+    assert spy_tensordot.call_count == int(tensordot_called)
 
 
 @pytest.mark.tf
