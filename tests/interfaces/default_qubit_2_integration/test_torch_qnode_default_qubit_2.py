@@ -1330,7 +1330,7 @@ class TestSample:
     def test_counts_expval(self):
         """Test counts works as expected if combined with expectation values"""
 
-        @qnode(DefaultQubit(), diff_method="parameter-shift", interface="torch")
+        @qnode(qml.device("default.qubit"), diff_method="parameter-shift", interface="torch")
         def circuit():
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
