@@ -299,7 +299,7 @@ class TestSparse:
 
     @pytest.mark.parametrize("sparse_hamiltonian", SPARSEHAMILTONIAN_TEST_MATRIX)
     def test_scalar_multipication(self, sparse_hamiltonian):
-        """Tests that the eigvals property of the StateVectorProjector class returns the correct results."""
+        """Tests if the __mul__ method of SparseHamiltonian gives the correct result."""
 
         value = 0.1234
         num_wires = int(np.log2(len(sparse_hamiltonian)))
@@ -316,7 +316,7 @@ class TestSparse:
 
     @pytest.mark.parametrize("sparse_hamiltonian", SPARSEHAMILTONIAN_TEST_MATRIX)
     def test_scalar_multipication_typeerror(self, sparse_hamiltonian):
-        """Tests that the eigvals property of the StateVectorProjector class returns the correct results."""
+        """Tests if the __mul__ method of SparseHamiltonian throws the correct error."""
         value = [0.1234]
         num_wires = int(np.log2(len(sparse_hamiltonian)))
         H = csr_matrix(SPARSEHAMILTONIAN_TEST_MATRIX)
