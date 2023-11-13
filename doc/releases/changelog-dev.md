@@ -24,7 +24,7 @@
 * Updates to some relevant Pytests to enable its use as a suite of benchmarks.
   [(#4703)](https://github.com/PennyLaneAI/pennylane/pull/4703)
 
-* Registers a new comparison function to _equal for ControlledSequence operators.
+* The function ``qml.equal`` now supports ``ControlledSequence`` operators.
   [(#4829)](https://github.com/PennyLaneAI/pennylane/pull/4829)
 
 * Added `__iadd__` method to PauliSentence, which enables inplace-addition using `+=`, we no longer need to perform a copy, leading to performance improvements.
