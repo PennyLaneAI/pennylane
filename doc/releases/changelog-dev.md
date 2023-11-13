@@ -113,7 +113,7 @@
 
 * `merge_amplitude_embeddings` no longer depends on queuing, allowing it to work as expected
   with QNodes.
-  [(#)]()
+  [(#4831)](https://github.com/PennyLaneAI/pennylane/pull/4831)
 
 <h3>Contributors ✍️</h3>
 
