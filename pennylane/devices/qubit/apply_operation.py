@@ -269,16 +269,16 @@ def apply_multicontrolledx(
     op: qml.MultiControlledX, state, is_state_batched: bool = False, debugger=None
 ):
     r"""Apply MultiControlledX to a state with the default einsum/tensordot choice
-    for 12 operation wires or less. Otherwise, apply a custom kernel based on
+    for 8 operation wires or less. Otherwise, apply a custom kernel based on
     composing transpositions, rolling of control axes and the CNOT logic above."""
 
     ndim = math.ndim(state)
     len_op = len(op.wires)
-    if len_op >= MATRIX_TOO_LARGE_THRESHOLD or ndim < 12:
-        return _apply_multicontrolledx(op, state, is_state_batched)
     if len_op < EINSUM_OP_WIRECOUNT_PERF_THRESHOLD and ndim < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD:
         return apply_operation_einsum(op, state, is_state_batched)
-    return apply_operation_tensordot(op, state, is_state_batched)
+    if len_op < 9:
+        return apply_operation_tensordot(op, state, is_state_batched)
+    return _apply_multicontrolledx(op, state, is_state_batched)
 
 
 def _apply_multicontrolledx(op, state, is_state_batched):
@@ -311,8 +311,8 @@ def _apply_multicontrolledx(op, state, is_state_batched):
     # Reshape the state into 3-dimensional array with axes [batch+other, target, controls]
     state = math.reshape(state, (-1, 2, 2 ** (len(op.wires) - 1)))
 
-    # The part of the state to which we want to apply PauliX is now in the last entry along
-    # the third axis. Extract it, apply the PauliX along the target axis, and append a dummy axis
+    # The part of the state to which we want to apply PauliX is now in the last entry along the
+    # third axis. Extract it, apply the PauliX along the target axis (1), and append a dummy axis
     state_x = math.roll(state[:, :, -1], 1, 1)[:, :, np.newaxis]
 
     # Stack the transformed part of the state with the unmodified rest of the state

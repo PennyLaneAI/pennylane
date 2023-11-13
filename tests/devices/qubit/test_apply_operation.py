@@ -838,11 +838,11 @@ class TestMultiControlledXKernel:
     @pytest.mark.parametrize(
         "num_op_wires, num_state_wires, einsum_called, tdot_called",
         [
-            # state small -> kernel
-            (2, 2, 0, 0),
             # state small and matrix huge -> not possible because num_op_wires<=num_state_wires
-            # matrix huge -> kernel
-            (14, 14, 0, 0),
+            # matrix large -> kernel
+            (9, 9, 0, 0),
+            # matrix large, state huge -> still kernel, not tensordot
+            (9, 9, 0, 0),
             # matrix tiny, state not huge -> einsum
             (2, 12, 1, 0),
             # matrix small, state not huge -> tensordot
