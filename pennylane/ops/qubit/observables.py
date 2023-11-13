@@ -253,10 +253,10 @@ class SparseHamiltonian(Observable):
 
     def __mul__(self, value):
         r"""The scalar multiplication operation between a scalar and a SparseHamiltonian."""
-        if isinstance(value, (int, float)):
-            return qml.SparseHamiltonian(csr_matrix.multiply(self.H, value), wires=self.wires)
-        else:
+        if not isinstance(value, (int, float)):
             raise TypeError(f"Scalar value must be an int or float. Got {type(value)}")
+
+        return qml.SparseHamiltonian(csr_matrix.multiply(self.H, value), wires=self.wires)
 
     __rmul__ = __mul__
 
