@@ -111,6 +111,10 @@
   expected, instead of numpy arrays.
   [(#4811)](https://github.com/PennyLaneAI/pennylane/pull/4811)
 
+* `merge_amplitude_embeddings` no longer depends on queuing, allowing it to work as expected
+  with QNodes.
+  [(#)]()
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
