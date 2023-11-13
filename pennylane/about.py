@@ -33,7 +33,7 @@ def about():
 
         plugin_devices = iter_entry_points("pennylane.plugins")
         dist_name = "project_name"
-    else:
+    else:  # pragma: no cover
         plugin_devices = metadata.entry_points(  # pylint:disable=unexpected-keyword-arg
             group="pennylane.plugins"
         )
