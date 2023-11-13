@@ -15,10 +15,11 @@
 * `qml.draw` now supports drawing mid-circuit measurements.
   [(#4775)](https://github.com/PennyLaneAI/pennylane/pull/4775)
 
-* Autograd can now use vjps provided by the device from the new device API. If a device provides
+* Autograd and torch can now use vjps provided by the device from the new device API. If a device provides
   a vector Jacobian product, this can be selected by providing `device_vjp=True` to
   `qml.execute`.
   [(#4557)](https://github.com/PennyLaneAI/pennylane/pull/4557)
+  [(#4654)](https://github.com/PennyLaneAI/pennylane/pull/4654)
 
 * Updates to some relevant Pytests to enable its use as a suite of benchmarks.
   [(#4703)](https://github.com/PennyLaneAI/pennylane/pull/4703)
@@ -75,6 +76,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug where the adjoint method differentiation would fail if
+  an operation with `grad_method=None` that has a parameter is present.
+  [(#4820)](https://github.com/PennyLaneAI/pennylane/pull/4820)
+  
 * `MottonenStatePreparation` now raises an error if decomposing a broadcasted state vector.
   [(#4767)](https://github.com/PennyLaneAI/pennylane/pull/4767)
 
