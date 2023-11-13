@@ -313,3 +313,15 @@ class TestSparse:
         ).sparse_matrix()
 
         assert np.allclose(H_sparse_mul_method.toarray(), H_sparse_multiplied_before.toarray())
+
+    @pytest.mark.parametrize("sparse_hamiltonian", SPARSEHAMILTONIAN_TEST_MATRIX)
+    def test_scalar_multipication_typeerror(self, sparse_hamiltonian):
+        """Tests that the eigvals property of the StateVectorProjector class returns the correct results."""
+        value = [0.1234]
+        num_wires = int(np.log2(len(sparse_hamiltonian)))
+        H = csr_matrix(SPARSEHAMILTONIAN_TEST_MATRIX)
+
+        with pytest.raises(
+            TypeError, match="Scalar value must be an int or float. Got <class 'list'>"
+        ):
+            qml.SparseHamiltonian(H, wires=range(num_wires)) * value
