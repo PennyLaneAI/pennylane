@@ -276,7 +276,7 @@ def apply_grover(op: qml.GroverOperator, state, is_state_batched: bool = False, 
         and math.ndim(state) < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD
     ):
         return apply_operation_einsum(op, state, is_state_batched)
-    elif len(op.wires) < 9:
+    if len(op.wires) < 9:
         return apply_operation_tensordot(op, state, is_state_batched)
 
     # The axes to sum over in order to obtain <+|\psi>, where <+| only acts on the op wires.
