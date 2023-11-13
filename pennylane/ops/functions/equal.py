@@ -247,7 +247,7 @@ def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
 @_equal.register
 def _equal_controlled_sequence(op1: ControlledSequence, op2: ControlledSequence, **kwargs):
     """Determine whether two ControlledSequences are equal"""
-    # wires are ordered [control wires, operator wires]
+    # wires are ordered [control wires, base operator wires]
     # comparing op.wires and op.base.wires (in return) is sufficient to compare all wires
     if [op1.wires, op1.arithmetic_depth] != [
         op2.wires,
