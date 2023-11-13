@@ -15,7 +15,6 @@
 Tests for the gradients.hadamard_gradient module.
 """
 
-import warnings
 import pytest
 
 import pennylane as qml
@@ -518,29 +517,6 @@ class TestHadamardGrad:
             for r in res_hadamard:
                 assert isinstance(r, qml.numpy.ndarray)
                 assert len(r) == expected_shape[1]
-
-    def test_multi_measure_no_warning(self):
-        """Test computing the gradient of a tape that contains multiple
-        measurements omits no warnings."""
-
-        dev = qml.device("default.qubit", wires=4)
-
-        par1 = qml.numpy.array(0.3)
-        par2 = qml.numpy.array(0.1)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RY(par1, wires=0)
-            qml.RX(par2, wires=1)
-            qml.probs(wires=[1, 2])
-            qml.expval(qml.PauliZ(0))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-
-        with warnings.catch_warnings(record=True) as record:
-            warnings.warn("foobar", UserWarning)
-            grad_fn(tape, dev=dev)
-
-        assert len(record) == 0, "warnings: " + str([r.message for r in record])
 
     @pytest.mark.parametrize("shots", [None, 100])
     def test_shots_attribute(self, shots):

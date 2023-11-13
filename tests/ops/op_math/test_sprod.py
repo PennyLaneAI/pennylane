@@ -22,7 +22,7 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 import pennylane.numpy as qnp
-from pennylane import QuantumFunctionError, math
+from pennylane import math
 from pennylane.operation import AnyWires, DecompositionUndefinedError, MatrixUndefinedError
 from pennylane.ops.op_math.sprod import SProd, s_prod
 from pennylane.wires import Wires
@@ -977,7 +977,7 @@ class TestIntegration:
             return qml.probs(op=sprod_op)
 
         with pytest.raises(
-            QuantumFunctionError,
+            qml.QuantumFunctionError,
             match="Symbolic Operations are not supported for rotating probabilities yet.",
         ):
             my_circ()
