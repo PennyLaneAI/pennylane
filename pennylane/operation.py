@@ -1883,7 +1883,7 @@ class Observable(Operator):
         warnings.warn(
             "`Observable.return_type` is deprecated. Instead, you should "
             "inspect the type of the surrounding measurement process.",
-            UserWarning,
+            qml.PennyLaneDeprecationWarning,
         )
         return self._return_type
 
@@ -1893,7 +1893,7 @@ class Observable(Operator):
         warnings.warn(
             "`Observable.return_type` is deprecated. Instead, you should "
             "create a measurement process containing this Observable.",
-            UserWarning,
+            qml.PennyLaneDeprecationWarning,
         )
         self._return_type = value
 

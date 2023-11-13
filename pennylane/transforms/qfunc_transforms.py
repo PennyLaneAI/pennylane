@@ -150,7 +150,7 @@ class single_tape_transform:
             "Use of `single_tape_transform` to create a custom transform is deprecated. Instead "
             "switch to using the new qml.transform function. Follow the instructions here for "
             "further details: https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms.",
-            UserWarning,
+            qml.PennyLaneDeprecationWarning,
         )
         self.transform_fn = transform_fn
         functools.update_wrapper(self, transform_fn)
@@ -405,11 +405,11 @@ def qfunc_transform(tape_transform):
         "Use of `qfunc_transform` to create a custom transform is deprecated. Instead "
         "switch to using the new qml.transform function. Follow the instructions here for "
         "further details: https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms.",
-        UserWarning,
+        qml.PennyLaneDeprecationWarning,
     )
     if not isinstance(tape_transform, single_tape_transform):
         with warnings.catch_warnings():
-            warnings.simplefilter("ignore", UserWarning)
+            warnings.simplefilter("ignore", qml.PennyLaneDeprecationWarning)
             tape_transform = single_tape_transform(tape_transform)
 
     sig = inspect.signature(tape_transform)
