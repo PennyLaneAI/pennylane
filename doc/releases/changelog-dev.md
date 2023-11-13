@@ -118,6 +118,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Isaac De Vlugt,
 Amintor Dusko,
 Lillian Frederiksen,
 Ankit Khandelwal,
