@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Test the pennylane drawer with Catalyst."""
-# pylint: disable=import-outside-toplevel
+# pylint: disable=import-outside-toplevel,protected-access
 import pytest
 import pennylane as qml
 
