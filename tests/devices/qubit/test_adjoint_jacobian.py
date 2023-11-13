@@ -294,6 +294,23 @@ class TestAdjointJacobian:
         ]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_with_nontrainable_parametrized(self):
+        """Test that a parametrized `QubitUnitary` is accounted for correctly
+        when it is not trainable."""
+
+        par = np.array(0.6)
+
+        ops = [
+            qml.RY(par, wires=0),
+            qml.QubitUnitary(np.eye(2), wires=0),
+        ]
+        qs = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+        qs.trainable_params = [0]
+
+        grad_adjoint = adjoint_jacobian(qs)
+        expected = [-np.sin(par)]
+        assert np.allclose(grad_adjoint, expected)
+
 
 class TestAdjointJVP:
     """Test for adjoint_jvp"""
@@ -387,6 +404,24 @@ class TestAdjointJVP:
         jac = np.array([[-np.sin(x), 0], [0, -np.cos(y)], [np.cos(x), 0]])
         expected = jac @ np.array(tangents)
         assert np.allclose(actual, expected, atol=tol)
+
+    def test_with_nontrainable_parametrized(self):
+        """Test that a parametrized `QubitUnitary` is accounted for correctly
+        when it is not trainable."""
+
+        par = np.array(0.6)
+        tangents = (0.45,)
+
+        ops = [
+            qml.RY(par, wires=0),
+            qml.QubitUnitary(np.eye(2), wires=0),
+        ]
+        qs = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+        qs.trainable_params = [0]
+
+        jvp_adjoint = adjoint_jvp(qs, tangents)
+        expected = [-np.sin(par) * tangents[0]]
+        assert np.allclose(jvp_adjoint, expected)
 
 
 class TestAdjointVJP:
@@ -484,3 +519,21 @@ class TestAdjointVJP:
         jac = np.array([[-np.sin(x), 0], [0, -np.cos(y)], [np.cos(x), 0]])
         expected = np.array(cotangents) @ jac
         assert np.allclose(actual, expected, atol=tol)
+
+    def test_with_nontrainable_parametrized(self):
+        """Test that a parametrized `QubitUnitary` is accounted for correctly
+        when it is not trainable."""
+
+        par = np.array(0.6)
+        cotangents = (0.45,)
+
+        ops = [
+            qml.RY(par, wires=0),
+            qml.QubitUnitary(np.eye(2), wires=0),
+        ]
+        qs = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+        qs.trainable_params = [0]
+
+        vjp_adjoint = adjoint_vjp(qs, cotangents)
+        expected = [-np.sin(par) * cotangents[0]]
+        assert np.allclose(vjp_adjoint, expected)
