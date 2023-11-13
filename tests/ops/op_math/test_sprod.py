@@ -978,7 +978,7 @@ class TestIntegration:
 
         with pytest.raises(
             QuantumFunctionError,
-            match="Symbolic Operations are not supported for " "rotating probabilities yet.",
+            match="Symbolic Operations are not supported for rotating probabilities yet.",
         ):
             my_circ()
 

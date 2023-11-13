@@ -537,9 +537,10 @@ class TestHadamardGrad:
         tape = qml.tape.QuantumScript.from_queue(q)
 
         with warnings.catch_warnings(record=True) as record:
+            warnings.warn("foobar", UserWarning)
             grad_fn(tape, dev=dev)
 
-        assert len(record) == 0
+        assert len(record) == 0, "warnings: " + str([r.message for r in record])
 
     @pytest.mark.parametrize("shots", [None, 100])
     def test_shots_attribute(self, shots):
