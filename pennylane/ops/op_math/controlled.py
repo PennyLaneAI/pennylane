@@ -268,7 +268,7 @@ class Controlled(SymbolicOp):
             if isinstance(control_values, str):
                 warnings.warn(
                     "Specifying control values as a string is deprecated. Please use Sequence[Bool]",
-                    UserWarning,
+                    qml.PennyLaneDeprecationWarning,
                 )
                 # All values not 0 are cast as true. Assumes a string of 1s and 0s.
                 control_values = [(x != "0") for x in control_values]

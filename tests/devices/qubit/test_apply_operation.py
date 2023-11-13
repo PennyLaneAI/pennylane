@@ -653,10 +653,9 @@ class TestRXCalcGrad:
         phi = torch.tensor(0.325, requires_grad=True)
 
         new_state = f(phi)
-        g = torch.autograd.functional.jacobian(f, phi + 0j)
-
-        # torch takes gradient with respect to conj(z), so we need to conj the gradient
-        g = torch.conj(g).resolve_conj()
+        # forward-mode needed with complex results.
+        # See bug: https://github.com/pytorch/pytorch/issues/94397
+        g = torch.autograd.functional.jacobian(f, phi + 0j, strategy="forward-mode", vectorize=True)
 
         self.compare_expected_result(
             phi.detach().numpy(),

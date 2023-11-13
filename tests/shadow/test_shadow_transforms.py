@@ -299,6 +299,7 @@ class TestStateBackward:
             assert qml.math.allclose(act, expected, atol=1e-1)
 
     @pytest.mark.torch
+    @pytest.mark.xfail(reason="see pytorch/pytorch/issues/94397")
     def test_backward_torch(self):
         """Test the gradient of the state for the torch interface"""
         import torch
