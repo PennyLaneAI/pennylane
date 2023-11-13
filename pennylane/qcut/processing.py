@@ -298,7 +298,7 @@ def contract_tensors(
 
     The network can then be contracted using:
 
-    >>> qml.transforms.qcut.contract_tensors(tensors, graph, prep, meas)
+    >>> qml.qcut.contract_tensors(tensors, graph, prep, meas)
     38
     """
     # pylint: disable=import-outside-toplevel

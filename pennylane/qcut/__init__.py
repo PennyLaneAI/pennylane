@@ -44,19 +44,19 @@ There are also low-level functions that can be used to build up the circuit cutt
 .. autosummary::
     :toctree: api
 
-    ~transforms.qcut.tape_to_graph
-    ~transforms.qcut.replace_wire_cut_nodes
-    ~transforms.qcut.fragment_graph
-    ~transforms.qcut.graph_to_tape
-    ~transforms.qcut.expand_fragment_tape
-    ~transforms.qcut.expand_fragment_tapes_mc
-    ~transforms.qcut.qcut_processing_fn
-    ~transforms.qcut.qcut_processing_fn_sample
-    ~transforms.qcut.qcut_processing_fn_mc
-    ~transforms.qcut.CutStrategy
-    ~transforms.qcut.kahypar_cut
-    ~transforms.qcut.place_wire_cuts
-    ~transforms.qcut.find_and_place_cuts
+    ~qcut.tape_to_graph
+    ~qcut.replace_wire_cut_nodes
+    ~qcut.fragment_graph
+    ~qcut.graph_to_tape
+    ~qcut.expand_fragment_tape
+    ~qcut.expand_fragment_tapes_mc
+    ~qcut.qcut_processing_fn
+    ~qcut.qcut_processing_fn_sample
+    ~qcut.qcut_processing_fn_mc
+    ~qcut.CutStrategy
+    ~qcut.kahypar_cut
+    ~qcut.place_wire_cuts
+    ~qcut.find_and_place_cuts
 
 """
 
@@ -88,7 +88,7 @@ from .tapes import (
     _add_operator_node,
 )
 from .cutcircuit import cut_circuit, _cut_circuit_expand
-from .montecarlo import (
+from .cutcircuit_mc import (
     cut_circuit_mc,
     _cut_circuit_mc_expand,
     expand_fragment_tapes_mc,
