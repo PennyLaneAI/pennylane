@@ -28,8 +28,7 @@ def catalyst_qjit(qnode):
     """Check if Catalyst is available and if the QNode is qjitted."""
     if "catalyst" in qml.compiler.available_compilers():
         return qnode.__class__.__name__ == "QJIT"
-    else:
-        False
+    return False
 
 
 def draw(
