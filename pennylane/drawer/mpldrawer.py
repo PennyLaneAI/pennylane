@@ -307,17 +307,6 @@ class MPLDrawer:
         """Set ``fontsize`` property as provided value."""
         self._fontsize = value
 
-    def block_wire(self, layer, wire, length):
-
-        rect = patches.Rectangle(
-            (layer, wire - 0.1),
-            length,
-            0.2,
-            facecolor=plt.rcParams["figure.facecolor"],
-            edgecolor=plt.rcParams["figure.facecolor"],
-        )
-        self.ax.add_patch(rect)
-
     def label(self, labels, text_options=None):
         """Label each wire.
 
@@ -359,6 +348,25 @@ class MPLDrawer:
 
         for wire, ii_label in enumerate(labels):
             self._ax.text(-1.5, wire, ii_label, **text_options)
+
+    def erase_wire(self, layer: int, wire: int, length: int) -> None:
+        """Erases a portion of a wire by adding a rectangle that matches the background.
+
+        Args:
+            layer (int): starting x coordinate for erasing the wire
+            wire (int): y location to to erase the wire from
+            length (float, int): horizontal distance from ``layer`` to erase the background.
+
+        """
+
+        rect = patches.Rectangle(
+            (layer, wire - 0.1),
+            length,
+            0.2,
+            facecolor=plt.rcParams["figure.facecolor"],
+            edgecolor=plt.rcParams["figure.facecolor"],
+        )
+        self.ax.add_patch(rect)
 
     def box_gate(self, layer, wires, text="", box_options=None, text_options=None, **kwargs):
         """Draws a box and adds label text to its center.

@@ -388,7 +388,7 @@ class TestSpecialGates:
             qml.measure(0)
         tape = QuantumScript.from_queue(q)
         _, ax = tape_mpl(tape)
-        assert [l.get_data() for l in ax.lines] == [((-1, 0), (0, 0))]
+        assert [l.get_data() for l in ax.lines] == [((-1, 1), (0, 0))]
 
     def test_Conditional(self, mocker):
         """Tests Conditional has correct special handling."""

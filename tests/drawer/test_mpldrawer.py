@@ -444,6 +444,7 @@ class TestCTRL:
         drawer = MPLDrawer(1, 4)
         with pytest.warns(UserWarning, match="control indicators are hidden behind an operator"):
             drawer.ctrl(0, control_wires, target_wires)
+        plt.close()
 
     @pytest.mark.parametrize("control_wires,target_wires", [((0,), (1, 2)), ((2,), (0, 1))])
     def test_ctrl_no_warning_without_overlap(self, control_wires, target_wires):
@@ -451,6 +452,7 @@ class TestCTRL:
         with warnings.catch_warnings(record=True) as w:
             drawer.ctrl(0, control_wires, target_wires)
         assert len(w) == 0
+        plt.close()
 
     def test_target_x(self):
         """Tests hidden target_x drawing method"""
@@ -782,6 +784,7 @@ class TestCond:
             ((0.97, 0.97), (0.03, 1)),
         ]
         assert [line.get_data() for line in drawer._wire_lines] == wire_data_before
+        plt.close()
 
     def test_cond_two_ctrl_wires(self):
         """Tests cond from two separated wires."""
@@ -802,6 +805,7 @@ class TestCond:
             ((0.375, 0.97), (1.97, 1.97)),
             ((0.375, 0.97), (2.03, 2.03)),
         ]
+        plt.close()
 
     def test_cond_two_ctrl_wires_upward(self):
         """Test cond when the conditional operation is above the control wires."""
@@ -820,6 +824,7 @@ class TestCond:
             ((0.375, 0.97), (0.97, 0.97)),
             ((0.375, 0.97), (1.03, 1.03)),
         ]
+        plt.close()
 
     @pytest.mark.parametrize(
         "ctrl_wires, target_wires",
@@ -835,3 +840,4 @@ class TestCond:
         drawer = MPLDrawer(n_wires=4, n_layers=2)
         with pytest.raises(ValueError, match="Cannot draw interspersed mid-circuit measurements"):
             drawer.cond(layer=1, measured_layer=0, wires=ctrl_wires, wires_target=target_wires)
+        plt.close()
