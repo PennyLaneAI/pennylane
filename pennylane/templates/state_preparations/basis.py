@@ -54,6 +54,7 @@ class BasisStatePreparation(Operation):
     num_params = 1
     num_wires = AnyWires
     grad_method = None
+    ndim_params = (1,)
 
     def __init__(self, basis_state, wires, id=None):
         basis_state = qml.math.stack(basis_state)
@@ -109,6 +110,13 @@ class BasisStatePreparation(Operation):
         [PauliX(wires=['a']),
         PauliX(wires=['b'])]
         """
+        if len(qml.math.shape(basis_state)) > 1:
+            raise ValueError(
+                "Broadcasting with BasisStatePreparation is not supported. Please use the "
+                "qml.transforms.broadcast_expand transform to use broadcasting with "
+                "BasisStatePreparation."
+            )
+
         if not qml.math.is_abstract(basis_state):
             op_list = []
             for wire, state in zip(wires, basis_state):
