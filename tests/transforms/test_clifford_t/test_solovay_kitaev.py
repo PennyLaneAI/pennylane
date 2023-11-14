@@ -108,8 +108,8 @@ def test_approximate_sets():
     # Verify exist-check reduce redundancy via GP-like summation
     approx_set3, _, _ = _approximate_set(("t", "t*", "h"), max_length=3)
     approx_set4, _, _ = _approximate_set(("t", "t*", "h"), max_length=5)
-    assert len(approx_set3) < 39 and len(approx_set3) == 21  # 3 + 3x3 + 3x3x3
-    assert len(approx_set4) < 263 and len(approx_set4) == 88  # 3 + ... + 3x3x3x3x3
+    assert len(approx_set3) == 21  # should be <  39 = 3 + 3x3 + 3x3x3
+    assert len(approx_set4) == 88  # should be < 263 = 3 + ... + 3x3x3x3x3
 
 
 @pytest.mark.parametrize(
