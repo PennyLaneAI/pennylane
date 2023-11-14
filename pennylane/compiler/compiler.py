@@ -202,7 +202,7 @@ def active() -> bool:
     **Example**
 
     For example, you can use this method in your hybrid program to execute it
-    conditionally whether is called inside :func:`~.qjit` or not.
+    conditionally whether called inside :func:`~.qjit` or not.
 
     .. code-block:: python
 
