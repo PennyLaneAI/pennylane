@@ -66,8 +66,8 @@ class TestIQPE:
 
         @qml.qnode(dev)
         def circuit(theta):
-            _ = qml.iterative_qpe(qml.RZ(theta, wires=[0]), [1], iters=2)
-            return qml.expval(qml.PauliZ(0))
+            meas = qml.iterative_qpe(qml.RZ(theta, wires=[0]), [1], iters=2)
+            return qml.expval(meas[0])
 
         @qml.qnode(dev)
         def manual_circuit(phi):
@@ -83,7 +83,7 @@ class TestIQPE:
             qml.CNOT(wires=[1, 3])
             qml.CNOT(wires=[3, 1])
 
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Hermitian([[0, 0], [0, 1]], wires=3))
 
         phi = jax.numpy.array(1.0)
         assert jax.numpy.isclose(jax.grad(circuit)(phi), jax.grad(manual_circuit)(phi))
@@ -98,8 +98,8 @@ class TestIQPE:
 
         @qml.qnode(dev)
         def circuit(theta):
-            _ = qml.iterative_qpe(qml.RZ(theta, wires=[0]), [1], iters=2)
-            return qml.expval(qml.PauliZ(0))
+            meas = qml.iterative_qpe(qml.RZ(theta, wires=[0]), [1], iters=2)
+            return qml.expval(meas[0])
 
         @qml.qnode(dev)
         def manual_circuit(phi):
@@ -115,7 +115,7 @@ class TestIQPE:
             qml.CNOT(wires=[1, 3])
             qml.CNOT(wires=[3, 1])
 
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Hermitian([[0, 0], [0, 1]], wires=3))
 
         phi = torch.tensor(1.0, requires_grad=True)
         assert torch.isclose(torch.func.grad(circuit)(phi), torch.func.grad(manual_circuit)(phi))
@@ -140,8 +140,8 @@ class TestIQPE:
 
         @qml.qnode(dev)
         def circuit(theta):
-            _ = qml.iterative_qpe(qml.RZ(theta, wires=[0]), [1], iters=2)
-            return qml.expval(qml.PauliZ(0))
+            meas = qml.iterative_qpe(qml.RZ(theta, wires=[0]), [1], iters=2)
+            return qml.expval(meas[0])
 
         @qml.qnode(dev)
         def manual_circuit(phi):
@@ -157,7 +157,7 @@ class TestIQPE:
             qml.CNOT(wires=[1, 3])
             qml.CNOT(wires=[3, 1])
 
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Hermitian([[0, 0], [0, 1]], wires=3))
 
         phi = tf.Variable(1.0)
         assert np.isclose(grad(circuit)(phi), grad(manual_circuit)(phi))
