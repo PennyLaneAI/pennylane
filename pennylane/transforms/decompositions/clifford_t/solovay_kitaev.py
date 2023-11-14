@@ -113,24 +113,21 @@ def _approximate_set(basis_gates, max_length=10):
 
     .. seealso:: :func:`~.sk_decomposition` for performing Solovay-Kitaev decomposition.
     """
-    # Initial gate to begin with - Identity
-    gate = _CLIFFORD_T_BASIS["I"]
-
-    # Maintains a trie-like structure for each depth
-    gtrie_ids = [[[gate]]]
-    gtrie_mat = [[_SU2_transform(gate.matrix())[0]]]
-
-    # Maintains the approximate set for gates' names, SU(2)s and quaternions
-    approx_set_ids = [gtrie_ids[0][0]]
-    approx_set_mat = [gtrie_mat[0][0]]
-    approx_set_qat = [_quaternion_transform(gtrie_mat[0][0])]
-
     # Maintains basis gates and their SU(2)s
     basis = [_CLIFFORD_T_BASIS[gate.upper()] for gate in basis_gates]
     basis_su2 = {op: _SU2_transform(op.matrix())[0] for op in basis}
 
+    # Maintains a trie-like structure for each depth
+    gtrie_ids = [[[gate] for gate in basis]]
+    gtrie_mat = [[_SU2_transform(gate.matrix())[0] for gate in basis]]
+
+    # Maintains the approximate set for gates' names, SU(2)s and quaternions
+    approx_set_ids = list(gtrie_ids[0])
+    approx_set_mat = list(gtrie_mat[0])
+    approx_set_qat = [_quaternion_transform(mat) for mat in approx_set_mat]
+
     # We will perform a breadth-first search (BFS) style set building for the set
-    for depth in range(max_length):
+    for depth in range(max_length-1):
         # Add the containers for next depth while we explore the current
         gtrie_id, gtrie_mt = [], []
         for node, su2m in zip(gtrie_ids[depth], gtrie_mat[depth]):
@@ -147,8 +144,7 @@ def _approximate_set(basis_gates, max_length=10):
                 su2_op = basis_su2[op] @ su2m
                 exists, quaternion = _contains_SU2(su2_op, approx_set_qat)
                 if not exists:
-                    # Add to the approximate set while removing Identity
-                    approx_set_ids.append(node[1:] + [op])
+                    approx_set_ids.append(node + [op])
                     approx_set_mat.append(su2_op)
                     approx_set_qat.append(quaternion)
 
