@@ -523,9 +523,7 @@ class TestMatrix:
         prod_op = Prod(qml.QFT(wires=wires), qml.GroverOperator(wires=wires), qml.PauliX(wires=0))
         mat = prod_op.matrix()
 
-        grov_mat = -(1 / 4) * math.ones((8, 8), dtype="complex128") + math.eye(
-            8, dtype="complex128"
-        )
+        grov_mat = (1 / 4) * math.ones((8, 8), dtype="complex128") - math.eye(8, dtype="complex128")
         qft_mat = get_qft_mat(3)
         x = math.array([[0.0 + 0j, 1.0 + 0j], [1.0 + 0j, 0.0 + 0j]])
         x_mat = math.kron(x, math.eye(4, dtype="complex128"))
@@ -867,6 +865,7 @@ class TestProperties:
         assert np.allclose(eig_vals, cached_vals)
         assert np.allclose(eig_vecs, cached_vecs)
 
+    # pylint: disable=use-implicit-booleaness-not-comparison
     def test_diagonalizing_gates(self):
         """Test that the diagonalizing gates are correct."""
         diag_prod_op = Prod(qml.PauliZ(wires=0), qml.PauliZ(wires=1))

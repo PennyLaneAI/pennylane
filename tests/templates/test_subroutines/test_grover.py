@@ -22,13 +22,6 @@ import pennylane as qml
 from pennylane.ops import Hadamard, PauliZ, MultiControlledX
 
 
-@pytest.mark.xfail
-def test_standard_validity():
-    """Check the operation using the assert_valid function."""
-    op = qml.GroverOperator(wires=(0, 1, 2), work_wires=(3, 4))
-    qml.ops.functions.assert_valid(op)
-
-
 def test_repr():
     """Tests the repr method for GroverOperator."""
     op = qml.GroverOperator(wires=(0, 1, 2), work_wires=(3, 4))
@@ -245,7 +238,7 @@ def test_matrix(tol):
     res_dynamic = qml.GroverOperator(wires=[0, 1]).matrix()
     res_reordered = qml.GroverOperator(wires=[0, 1]).matrix([1, 0])
 
-    expected = -np.array(
+    expected = np.array(
         [[-0.5, 0.5, 0.5, 0.5], [0.5, -0.5, 0.5, 0.5], [0.5, 0.5, -0.5, 0.5], [0.5, 0.5, 0.5, -0.5]]
     )
 
