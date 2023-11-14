@@ -350,6 +350,8 @@ def is_pauli_sentence(op):
     """Returns True of the operator is a PauliSentence and False otherwise."""
     if op._pauli_rep is not None:  # pylint: disable=protected-access
         return True
+    if not hasattr(op, "ops"):
+        return False
     return all(is_pauli_word(o) for o in op.ops)
 
 

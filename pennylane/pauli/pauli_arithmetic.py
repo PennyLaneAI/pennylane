@@ -286,6 +286,51 @@ class PauliWord(dict):
         matrix.data, matrix.indices, matrix.indptr = data, indices, indptr
         return matrix
 
+    def _get_csr_data(self, wire_order, coeff):
+        """Compute the sparse matrix of the Pauli word times a coefficient, given a wire order.
+        See pauli_sparse_matrices.md for the technical details of the implementation."""
+        full_word = [self[wire] for wire in wire_order]
+        matrix_size = 2 ** len(wire_order)
+        data = np.empty(matrix_size, dtype=np.complex128)  # Non-zero values
+
+        current_size = 2
+        data[:current_size], _ = _cached_sparse_data(full_word[-1])
+        data[:current_size] *= coeff  # Multiply initial term better than the full matrix
+        for s in full_word[-2::-1]:
+            if s == "I":
+                data[current_size : 2 * current_size] = data[:current_size]
+            elif s == "X":
+                data[current_size : 2 * current_size] = data[:current_size]
+            elif s == "Y":
+                data[current_size : 2 * current_size] = 1j * data[:current_size]
+                data[:current_size] *= -1j
+            elif s == "Z":
+                data[current_size : 2 * current_size] = -data[:current_size]
+            current_size *= 2
+        return data
+
+    def _get_csr_indices(self, wire_order):
+        """Compute the sparse matrix of the Pauli word times a coefficient, given a wire order.
+        See pauli_sparse_matrices.md for the technical details of the implementation."""
+        full_word = [self[wire] for wire in wire_order]
+        matrix_size = 2 ** len(wire_order)
+        indices = np.empty(matrix_size, dtype=np.int64)  # Column index of non-zero values
+        current_size = 2
+        _, indices[:current_size] = _cached_sparse_data(full_word[-1])
+        for s in full_word[-2::-1]:
+            if s == "I":
+                indices[current_size : 2 * current_size] = indices[:current_size] + current_size
+            elif s == "X":
+                indices[current_size : 2 * current_size] = indices[:current_size]
+                indices[:current_size] += current_size
+            elif s == "Y":
+                indices[current_size : 2 * current_size] = indices[:current_size]
+                indices[:current_size] += current_size
+            elif s == "Z":
+                indices[current_size : 2 * current_size] = indices[:current_size] + current_size
+            current_size *= 2
+        return indices
+
     def operation(self, wire_order=None, get_as_tensor=False):
         """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliWord."""
         if len(self) == 0:
@@ -509,9 +554,22 @@ class PauliSentence(dict):
         mv = np.zeros_like(vector, dtype=vector.dtype)
         for sparse_structure in unique_sparse_structures:
             indices, *_ = np.nonzero(pw_sparse_structures == sparse_structure)
-            mat = self._sum_same_structure_pws([pauli_words[i] for i in indices], wire_order)
-            mv += vector[mat.indices] * mat.data
+            entries, data = self._get_same_structure_csr(
+                [pauli_words[i] for i in indices], wire_order
+            )
+            mv += vector[entries] * data
         return mv
+
+    # pylint: disable=protected-access
+    def _get_same_structure_csr(self, pauli_words, wire_order):
+        """Sums Pauli words with the same sparse structure."""
+        indices = pauli_words[0]._get_csr_indices(wire_order)
+        data = pauli_words[0]._get_csr_data(
+            wire_order, coeff=qml.math.to_numpy(self[pauli_words[0]])
+        )
+        for word in pauli_words[1:]:
+            data += word._get_csr_data(wire_order, coeff=qml.math.to_numpy(self[word]))
+        return indices, data
 
     def _sum_same_structure_pws(self, pauli_words, wire_order):
         """Sums Pauli words with the same sparse structure."""
