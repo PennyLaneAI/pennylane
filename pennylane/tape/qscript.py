@@ -405,7 +405,7 @@ class QuantumScript:
             ">>> from pennylane.measurements import *\n"
             ">>> sample_types = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)\n"
             ">>> is_sampled = any(isinstance(m, sample_types) for m in tape.measurements)\n",
-            UserWarning,
+            qml.PennyLaneDeprecationWarning,
         )
         sample_type = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
         return any(isinstance(m, sample_type) for m in self.measurements)
@@ -419,7 +419,7 @@ class QuantumScript:
             ">>> from pennylane.measurements import *\n"
             ">>> sample_types = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)\n"
             ">>> all_sampled = all(isinstance(m, sample_types) for m in tape.measurements)\n",
-            UserWarning,
+            qml.PennyLaneDeprecationWarning,
         )
         sample_type = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
         return all(isinstance(m, sample_type) for m in self.measurements)
