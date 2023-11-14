@@ -42,10 +42,6 @@
   `StatePrepBase` operations should be placed at the beginning of the `ops` list instead.
   [(#4756)](https://github.com/PennyLaneAI/pennylane/pull/4756)
 
-* The matrix for the `GroverOperator` is now the negative of what it was before. The matrix
-  now matches the decomposition.
-  [(#4764)](https://github.com/PennyLaneAI/pennylane/pull/4764)
-
 * `qml.gradients.pulse_generator` has become `qml.gradients.pulse_odegen` to adhere to paper naming conventions.
   [(#4769)](https://github.com/PennyLaneAI/pennylane/pull/4769)
 
