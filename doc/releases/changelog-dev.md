@@ -38,6 +38,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The decomposition of `GroverOperator` now has an additional global phase operation.
+  [(#4666)](https://github.com/PennyLaneAI/pennylane/pull/4666)
+
 * The `prep` keyword argument has been removed from `QuantumScript` and `QuantumTape`.
   `StatePrepBase` operations should be placed at the beginning of the `ops` list instead.
   [(#4756)](https://github.com/PennyLaneAI/pennylane/pull/4756)

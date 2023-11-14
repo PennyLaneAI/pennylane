@@ -92,6 +92,7 @@ decomp_3wires = [
     qml.PauliZ,
     qml.Hadamard,
     qml.Hadamard,
+    qml.GlobalPhase,
 ]
 
 
@@ -104,6 +105,7 @@ def decomposition_wires(wires):
         wires[2],
         wires[0],
         wires[1],
+        wires,
     ]
     return wire_order
 
@@ -149,7 +151,9 @@ def test_grover_diffusion_matrix(n_wires):
 
 
 def test_grover_diffusion_matrix_results():
-    """Test that the matrix gives the same result as when running the example in the documentation `here <https://pennylane.readthedocs.io/en/stable/code/api/pennylane.templates.subroutines.GroverOperator.html>`_"""
+    """Test that the matrix gives the same result as when running the example in the documentation
+    `here <https://pennylane.readthedocs.io/en/stable/code/api/pennylane.templates.subroutines.GroverOperator.html>`_
+    """
     n_wires = 3
     wires = list(range(n_wires))
 
@@ -201,9 +205,11 @@ def test_expand(wires):
 
     expected_wires = decomposition_wires(wires)
 
-    for actual_op, expected_class, expected_wires in zip(decomp, decomp_3wires, expected_wires):
+    assert len(decomp) == len(decomp_3wires) == len(expected_wires)
+
+    for actual_op, expected_class, expected_wire in zip(decomp, decomp_3wires, expected_wires):
         assert isinstance(actual_op, expected_class)
-        assert actual_op.wires == qml.wires.Wires(expected_wires)
+        assert actual_op.wires == qml.wires.Wires(expected_wire)
 
 
 @pytest.mark.parametrize("n_wires", [6, 13])
