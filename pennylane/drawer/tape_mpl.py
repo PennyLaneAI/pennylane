@@ -33,7 +33,7 @@ from .style import _set_style
 has_mpl = True
 try:
     import matplotlib as mpl
-except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
+except (ModuleNotFoundError, ImportError):  # pragma: no cover
     has_mpl = False
 
 
@@ -41,7 +41,9 @@ _Config = namedtuple("_Config", ("wire_map", "decimals", "active_wire_notches"))
 
 
 @singledispatch
-def _add_operation_to_drawer(op, drawer, layer, config) -> None:
+def _add_operation_to_drawer(
+    op: qml.operation.Operator, drawer: MPLDrawer, layer: int, config: _Config
+) -> None:
     """Adds the ``op`` to an ``MPLDrawer`` at the designated location.
 
     Args:
@@ -165,7 +167,7 @@ def _(op: qml.ops.op_math.Conditional, drawer, layer, config) -> None:
         layer,
         target_wires,
         op.then_op.label(decimals=config.decimals),
-        box_options={"zorder": 4, "linestyle": "dashed"},
+        box_options={"zorder": 4},
         text_options={"zorder": 5},
     )
 

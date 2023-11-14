@@ -365,6 +365,7 @@ class MPLDrawer:
             0.2,
             facecolor=plt.rcParams["figure.facecolor"],
             edgecolor=plt.rcParams["figure.facecolor"],
+            zorder=1.1,
         )
         self.ax.add_patch(rect)
 

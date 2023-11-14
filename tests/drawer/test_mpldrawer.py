@@ -146,6 +146,21 @@ class TestLabels:
         plt.close()
 
 
+def test_erase_wire():
+    """Test the erase wire method."""
+
+    drawer = MPLDrawer(5, 1)
+    drawer.erase_wire(1, 0, 3)
+
+    assert len(drawer.ax.patches) == 1
+    assert drawer.ax.patches[0].get_xy() == (1, -0.1)
+    assert drawer.ax.patches[0].get_width() == 3
+    assert drawer.ax.patches[0].get_height() == 0.2
+    assert drawer.ax.patches[0].get_facecolor() == drawer.fig.get_facecolor()
+    assert drawer.ax.patches[0].get_edgecolor() == drawer.fig.get_facecolor()
+    assert drawer.ax.patches[0].zorder > drawer.ax.lines[0].zorder
+
+
 class TestBoxGate:
     """Tests relating to box gate."""
 
@@ -618,7 +633,7 @@ class TestMeasure:
         assert box.get_width() == drawer._box_length - 2 * drawer._pad
 
         arc = drawer.ax.patches[1]
-        assert arc.center == (0, drawer._box_length / 16)
+        assert arc.center == (0, 0.15 * drawer._box_length)
         assert arc.theta1 == 180
         assert arc.theta2 == 0
         assert allclose(arc.height, 0.55 * drawer._box_length)
@@ -626,7 +641,16 @@ class TestMeasure:
 
         arrow = drawer.ax.patches[2]
         assert isinstance(arrow, FancyArrow)
+        assert len(drawer.ax.texts) == 0
+        plt.close()
 
+    def test_measure_text(self):
+        """Test adding a postselection label to a measure box."""
+        drawer = MPLDrawer(1, 1)
+        drawer.measure(0, 0, text="0")
+        assert len(drawer.ax.texts) == 1
+        assert drawer.ax.texts[0].get_text() == "0"
+        assert drawer.ax.texts[0].get_position() == (0.05 * 0.75, 0.2)
         plt.close()
 
     def test_measure_formatted(self):
