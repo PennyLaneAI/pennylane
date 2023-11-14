@@ -57,6 +57,8 @@ def iterative_qpe(base, estimation_wire, iters):
         >>> print(circuit())
         [array([0, 0, 0, 0, 0]), array([1, 0, 0, 0, 0]), array([0, 1, 1, 1, 1])]
 
+    The output structure of the example is an array of size (number of iterations, number of shots).
+
     .. code-block:: pycon
 
         >>> print(qml.draw(circuit)())
