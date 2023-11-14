@@ -394,6 +394,7 @@ class TestSpecialGates:
 
         assert ax.patches[0].get_x() == -0.175
         assert ax.patches[0].get_y() == -0.175
+        plt.close()
 
     def test_MidMeasure_reset(self):
         """Test that a reset mid circuit measurement is correct."""
@@ -425,6 +426,7 @@ class TestSpecialGates:
 
         assert len(ax.texts) == 2
         assert ax.texts[1].get_text() == "|0⟩"
+        plt.close()
 
     def test_MidMeasure_postselect(self):
         """Test that a mid circuit measurement with postselection gets a label."""
@@ -438,6 +440,7 @@ class TestSpecialGates:
         assert len(ax.texts) == 2
         assert ax.texts[0].get_text() == "0"
         assert ax.texts[1].get_text() == "1"
+        plt.close()
 
     def test_Conditional(self, mocker):
         """Tests Conditional has correct special handling."""
@@ -462,6 +465,7 @@ class TestSpecialGates:
             box_options={"zorder": 4},
             text_options={"zorder": 5},
         )
+        plt.close()
 
 
 controlled_data = [
