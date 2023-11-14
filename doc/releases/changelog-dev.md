@@ -55,6 +55,8 @@
 
 <h3>Deprecations 👋</h3>
 
+* `qml.grad` and `qml.jacobian` now explicitly raise errors if trainable parameters are integers.
+
 * All deprecations now raise a `qml.PennyLaneDeprecationWarning` instead of a `UserWarning`.
   [(#4814)](https://github.com/PennyLaneAI/pennylane/pull/4814)
 
