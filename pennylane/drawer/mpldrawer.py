@@ -854,7 +854,7 @@ class MPLDrawer:
         self._ax.add_patch(box)
 
         arc = patches.Arc(
-            (layer, wires + self._box_length / 16),
+            (layer, wires + 0.15 * self._box_length),
             0.6 * self._box_length,
             0.55 * self._box_length,
             theta1=180,
@@ -864,8 +864,8 @@ class MPLDrawer:
         self._ax.add_patch(arc)
 
         # can experiment with the specific numbers to make it look decent
-        arrow_start_x = layer - 0.165 * self._box_length
-        arrow_start_y = wires + 0.25 * self._box_length
+        arrow_start_x = layer - 0.15 * self._box_length
+        arrow_start_y = wires + 0.3 * self._box_length
         arrow_width = 0.3 * self._box_length
         arrow_height = -0.5 * self._box_length
 
