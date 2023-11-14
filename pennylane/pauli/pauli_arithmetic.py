@@ -287,8 +287,7 @@ class PauliWord(dict):
         return matrix
 
     def _get_csr_data(self, wire_order, coeff):
-        """Compute the sparse matrix of the Pauli word times a coefficient, given a wire order.
-        See pauli_sparse_matrices.md for the technical details of the implementation."""
+        """Computes the sparse matrix data of the Pauli word times a coefficient, given a wire order."""
         full_word = [self[wire] for wire in wire_order]
         matrix_size = 2 ** len(wire_order)
         data = np.empty(matrix_size, dtype=np.complex128)  # Non-zero values
@@ -310,8 +309,7 @@ class PauliWord(dict):
         return data
 
     def _get_csr_indices(self, wire_order):
-        """Compute the sparse matrix of the Pauli word times a coefficient, given a wire order.
-        See pauli_sparse_matrices.md for the technical details of the implementation."""
+        """Computes the sparse matrix indices of the Pauli word times a coefficient, given a wire order."""
         full_word = [self[wire] for wire in wire_order]
         matrix_size = 2 ** len(wire_order)
         indices = np.empty(matrix_size, dtype=np.int64)  # Column index of non-zero values
@@ -536,8 +534,8 @@ class PauliSentence(dict):
         return matrix
 
     def dot(self, vector, wire_order=None):
-        """Compute the sparse matrix of the Pauli sentence by efficiently adding the Pauli words
-        that it is composed of. See pauli_sparse_matrices.md for the technical details."""
+        """Computes the matrix-vector product of the Pauli sentence with a state vector.
+        See pauli_sparse_matrices.md for the technical details."""
         wire_order = self.wires if wire_order is None else Wires(wire_order)
         if not wire_order.contains_wires(self.wires):
             raise ValueError(
@@ -562,7 +560,7 @@ class PauliSentence(dict):
 
     # pylint: disable=protected-access
     def _get_same_structure_csr(self, pauli_words, wire_order):
-        """Sums Pauli words with the same sparse structure."""
+        """Returns the CSR indices and data for Pauli words with the same sparse structure."""
         indices = pauli_words[0]._get_csr_indices(wire_order)
         data = pauli_words[0]._get_csr_data(
             wire_order, coeff=qml.math.to_numpy(self[pauli_words[0]])
