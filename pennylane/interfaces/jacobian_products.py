@@ -59,6 +59,9 @@ def _compute_jvps(jacs, tangents, tapes):
             jvps.append(tuple(f[multi](dx, j) for j in jac))
         else:
             jvps.append(f[multi](dx, jac))
+        print("in _compute_jvps")
+        print(jac, dx)
+        print(f[multi](dx, jac), "\n")
     return tuple(jvps)
 
 
@@ -621,6 +624,7 @@ class DeviceJacobianProducts(JacobianProductCalculator):
             logger.debug("compute_vjp called with (%s, %s)", tapes, dy)
         numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
         dy = qml.math.unwrap(dy)
+        print("dy right before device: ", dy)
         return self._device.compute_vjp(numpy_tapes, dy, self._execution_config)
 
     def compute_jacobian(self, tapes: Batch):

@@ -137,6 +137,8 @@ class TestJaxExecuteUnitTests:
 
         # adjoint method only performs a single device execution, but gets both result and gradient
         assert dev.num_executions == 1
+        spy.assert_not_called()
+        jax.jacobian(cost)(a)
         spy.assert_called()
 
     def test_no_gradients_on_execution(self, mocker):

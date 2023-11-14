@@ -214,6 +214,9 @@ class TestJaxExecuteIntegration:
         a = jnp.array(0.1)
         b = jnp.array(0.2)
 
+        if execute_kwargs.get("device_vjp", False):
+            pytest.xfail("adjoint vjp does not yet support jax jacobians.")
+
         def cost(a, b):
             ops = [qml.RY(a, wires=0), qml.RX(b, wires=1), qml.CNOT(wires=[0, 1])]
             m = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
@@ -222,7 +225,11 @@ class TestJaxExecuteIntegration:
 
         res = cost(a, b)
         expected = [jnp.cos(a), -jnp.cos(a) * jnp.sin(b)]
-        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+        if shots.has_partitioned_shots:
+            assert np.allclose(res[0:2], expected, atol=atol_for_shots(shots), rtol=0)
+            assert np.allclose(res[2:], expected, atol=atol_for_shots(shots), rtol=0)
+        else:
+            assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
         res = jax.jacobian(cost, argnums=[0, 1])(a, b)
         assert isinstance(res, tuple) and len(res) == 2

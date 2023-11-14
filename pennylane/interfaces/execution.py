@@ -566,7 +566,7 @@ def execute(
 
         interface = get_jax_interface_name(tapes)
         # Only need to calculate derivatives with jax when we know it will be executed later.
-        grad_on_execution = False
+        grad_on_execution = grad_on_execution if isinstance(gradient_fn, Callable) else False
 
     if device_vjp and isinstance(device, qml.Device):
         raise qml.QuantumFunctionError(

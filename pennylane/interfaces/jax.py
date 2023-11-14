@@ -113,8 +113,16 @@ def jax_execute_and_compute_jvp(_, jpc, primals, tangents):
     """
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug("Entry with (tapes=%s, jpc=%s)", primals[0], jpc)
+
+    for t in primals[0]:
+        print(t.trainable_params)
     tangents = tuple(t.get_parameters() for t in tangents[0])
-    return _to_jax(jpc.execute_and_compute_jvp(primals[0], tangents))
+    print(tangents)
+    out = _to_jax(jpc.execute_and_compute_jvp(primals[0], tangents))
+    print("results: ", out[0])
+    print("\n")
+    print("jvp: ", out[1])
+    return out
 
 
 def vjp_fwd(tapes, execute_fn, jpc):
@@ -132,9 +140,7 @@ def vjp_fwd(tapes, execute_fn, jpc):
     """
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug("Entry with (tapes=%s, execute_fn=%s, jpc=%s)", tapes, execute_fn, jpc)
-    res = _to_jax(execute_fn(tapes))
-    print(res)
-    return res, tapes
+    return _to_jax(execute_fn(tapes)), tapes
 
 
 def vjp_bwd(_, jpc, tapes, dy):
@@ -153,8 +159,11 @@ def vjp_bwd(_, jpc, tapes, dy):
     """
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug("Entry with (tapes=%s, jpc=%s)", tapes, jpc)
-    print("call: ", dy)
-    return _to_jax(jpc.compute_vjp(tapes, dy))
+    vjp_params = _to_jax(jpc.compute_vjp(tapes, dy))
+    output_tapes = tuple(
+        t.bind_new_parameters(p, t.trainable_params) for p, t in zip(vjp_params, tapes)
+    )
+    return (tuple(output_tapes),)
 
 
 jax_jvp_execute = jax.custom_jvp(jax_execute, nondiff_argnums=[1, 2])
