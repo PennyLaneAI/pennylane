@@ -144,7 +144,7 @@ def while_loop(*args, **kwargs):
 
     .. code-block:: python
 
-        def while_loop(cond_fun, body_fun, *args):
+        def while_loop(cond_fn, body_fn, *args):
             while cond_fun(*args):
                 args = body_fn(*args)
             return args
