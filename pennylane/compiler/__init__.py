@@ -179,8 +179,12 @@ using Catalyst.
 Adding a compiler
 -----------------
 
-To register any compiler packages, an experimental interface is available,
-and it is subject to further change. This interface exposes the ``entry_points``
+.. warning::
+
+    The PennyLane compiler API is experimental and subject to change.
+
+To register any compiler packages, an experimental interface is available.
+This interface exposes the ``entry_points``
 metadata under the designated group name ``pennylane.compilers``, including the
 following entry points:
 

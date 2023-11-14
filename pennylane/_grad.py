@@ -27,7 +27,8 @@ make_vjp = unary_to_nary(_make_vjp)
 
 
 class grad:
-    """Returns the gradient as a callable function of (functions of) QNodes.
+    """A :func:`~.qjit` compatible gradient transformation that returns the gradient
+    as a callable function of (functions of) QNodes.
 
 
     By default, gradients are computed for arguments which contain
@@ -56,12 +57,25 @@ class grad:
     Args:
         func (function): a plain QNode, or a Python function that contains
             a combination of quantum and classical nodes
-
         argnum (int, list(int), None): Which argument(s) to take the gradient
             with respect to. By default, the arguments themselves are used
             to determine differentiability, by examining the ``requires_grad``
             property.
-
+        method (str): Specifies the gradient method when used with
+            the :func:`~.qjit` decorator. Outside of the
+            :func:`~.qjit`, this keyword argument has no effect.
+            and should not be set.
+            In just-in-time (JIT) mode, this can be any of ``["auto", "fd"]``, where:
+                  - ``"auto"`` represents deferring the quantum differentiation to the method
+                specified by the QNode, while the classical computation is differentiated
+                using traditional auto-diff. Catalyst supports ``"parameter-shift"`` and
+                ``"adjoint"`` on internal QNodes. Notably, QNodes with
+                ``diff_method="finite-diff"`` are not supported with ``"auto"``.
+                  - ``"fd"`` represents first-order finite-differences for the entire hybrid
+                function.
+        step_size (float): The step-size value for the finite-difference (``"fd"``) method within
+                :func:`~.qjit` decorated functions. This value has
+                no effect in non-compiled functions.
     Returns:
         function: The function that returns the gradient of the input
         function with respect to the differentiable arguments, or, if specified,
@@ -172,8 +186,8 @@ class grad:
 
 
 def jacobian(func, argnum=None, method=None, h=None):
-    """Returns the Jacobian as a callable function of vector-valued
-    (functions of) QNodes.
+    """A :func:`~.qjit` compatible Jacobian transformation that returns the Jacobian
+    as a callable function of vector-valued (functions of) QNodes.
 
 
     By default, this is a wrapper around the :mod:`autograd.jacobian` function.
@@ -192,11 +206,24 @@ def jacobian(func, argnum=None, method=None, h=None):
             a combination of quantum and classical nodes. The output of the computation
             must consist of a single NumPy array (if classical) or a tuple of
             expectation values (if a quantum node)
-
         argnum (int or Sequence[int]): Which argument to take the gradient
             with respect to. If a sequence is given, the Jacobian corresponding
             to all marked inputs and all output elements is returned.
-
+        method (str): Specifies the gradient method when used with
+            the :func:`~.qjit` decorator. Outside of the
+            :func:`~.qjit`, this keyword argument has no effect.
+            and should not be set.
+            In just-in-time (JIT) mode, this can be any of ``["auto", "fd"]``, where:
+                  - ``"auto"`` represents deferring the quantum differentiation to the method
+                specified by the QNode, while the classical computation is differentiated
+                using traditional auto-diff. Catalyst supports ``"parameter-shift"`` and
+                ``"adjoint"`` on internal QNodes. Notably, QNodes with
+                ``diff_method="finite-diff"`` are not supported with ``"auto"``.
+                  - ``"fd"`` represents first-order finite-differences for the entire hybrid
+                function.
+        step_size (float): The step-size value for the finite-difference (``"fd"``) method within
+                :func:`~.qjit` decorated functions. This value has no effect in non-compiled
+                functions.
     Returns:
         function: the function that returns the Jacobian of the input
         function with respect to the arguments in argnum
