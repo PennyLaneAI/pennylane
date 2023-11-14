@@ -19,6 +19,7 @@ from typing import Callable
 from scipy.sparse import csr_matrix
 
 from pennylane import math
+from pennylane import numpy as np
 from pennylane.ops import Sum, Hamiltonian
 from pennylane.measurements import (
     StateMeasurement,
@@ -26,6 +27,7 @@ from pennylane.measurements import (
     MeasurementValue,
     ExpectationMP,
 )
+from pennylane.pauli.conversion import is_pauli_sentence, pauli_sentence
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
@@ -86,7 +88,10 @@ def csr_dot_products(
         TensorLike: the result of the measurement
     """
     total_wires = len(state.shape) - is_state_batched
-    Hmat = measurementprocess.obs.sparse_matrix(wire_order=list(range(total_wires)))
+    if not is_state_batched and is_pauli_sentence(measurementprocess.obs):
+        ps = pauli_sentence(measurementprocess.obs)
+    else:
+        Hmat = measurementprocess.obs.sparse_matrix(wire_order=list(range(total_wires)))
 
     if is_state_batched:
         state = math.toarray(state).reshape(math.shape(state)[0], -1)
@@ -95,7 +100,10 @@ def csr_dot_products(
         ket = csr_matrix(state)
         new_bra = bra.dot(Hmat)
         res = new_bra.multiply(ket).sum(axis=1).getA()
-
+    elif is_pauli_sentence(measurementprocess.obs):
+        state = math.toarray(state).flatten()
+        ps = pauli_sentence(measurementprocess.obs)
+        res = np.dot(math.conj(state), ps.dot(state, wire_order=list(range(total_wires))))
     else:
         state = math.toarray(state).flatten()
 

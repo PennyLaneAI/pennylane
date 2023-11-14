@@ -410,7 +410,7 @@ class PauliSentence(dict):
         Returns:
             (Union[NumpyArray, ScipySparseArray]): Matrix representation of the Pauli sentence.
 
-        Rasies:
+        Raises:
             ValueError: Can't get the matrix of an empty PauliSentence.
         """
         wire_order = self.wires if wire_order is None else Wires(wire_order)
@@ -489,6 +489,29 @@ class PauliSentence(dict):
         )
         matrix.eliminate_zeros()
         return matrix
+
+    def dot(self, vector, wire_order=None):
+        """Compute the sparse matrix of the Pauli sentence by efficiently adding the Pauli words
+        that it is composed of. See pauli_sparse_matrices.md for the technical details."""
+        wire_order = self.wires if wire_order is None else Wires(wire_order)
+        if not wire_order.contains_wires(self.wires):
+            raise ValueError(
+                "Can't get the matrix for the specified wire order because it "
+                f"does not contain all the Pauli sentence's wires {self.wires}"
+            )
+        pauli_words = list(self)  # Ensure consistent ordering
+        op_sparse_idx = _ps_to_sparse_index(pauli_words, wire_order)
+        _, unique_sparse_structures, unique_invs = np.unique(
+            op_sparse_idx, axis=0, return_index=True, return_inverse=True
+        )
+        pw_sparse_structures = unique_sparse_structures[unique_invs]
+
+        mv = np.zeros_like(vector, dtype=vector.dtype)
+        for sparse_structure in unique_sparse_structures:
+            indices, *_ = np.nonzero(pw_sparse_structures == sparse_structure)
+            mat = self._sum_same_structure_pws([pauli_words[i] for i in indices], wire_order)
+            mv += vector[mat.indices] * mat.data
+        return mv
 
     def _sum_same_structure_pws(self, pauli_words, wire_order):
         """Sums Pauli words with the same sparse structure."""
