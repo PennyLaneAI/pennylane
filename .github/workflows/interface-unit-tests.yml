@@ -10,7 +10,7 @@ on:
         description: The version of JAX to install for any job that requires JAX
         required: false
         type: string
-        default: 0.4.19
+        default: 0.4.20
       tensorflow_version:
         description: The version of TensorFlow to install for any job that requires TensorFlow
         required: false
@@ -74,7 +74,7 @@ jobs:
             "qcut-tests": ["3.9"],
             "qchem-tests": ["3.9"],
             "gradients-tests": ["3.9"],
-            "data-tests": ["3.10"],
+            "data-tests": ["3.9", "3.10"],
             "device-tests": ["3.9"]
           }
           EOF

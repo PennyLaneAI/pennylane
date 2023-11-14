@@ -24,7 +24,13 @@ import warnings
 import numpy as np
 
 import pennylane as qml
-from pennylane.measurements import ExpectationMP, ProbabilityMP, StateMP, VarianceMP
+from pennylane.measurements import (
+    ExpectationMP,
+    ProbabilityMP,
+    StateMP,
+    VarianceMP,
+    MeasurementProcess,
+)
 from pennylane import transform
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
@@ -54,7 +60,8 @@ def _grad_method(tape, idx):
             or ``"0"`` (constant parameter).
     """
 
-    op = tape._par_info[idx]["op"]
+    par_info = tape._par_info[idx]
+    op = par_info["op"]
 
     if op.grad_method in (None, "F"):
         return op.grad_method
@@ -74,7 +81,8 @@ def _grad_method(tape, idx):
             continue
 
         # get the set of operations betweens the operation and the observable
-        ops_between = tape.graph.nodes_between(op, m.obs)
+        op_or_mp = tape[par_info["op_idx"]]
+        ops_between = tape.graph.nodes_between(op_or_mp, m)
 
         if not ops_between:
             # if there is no path between the operation and the observable,
@@ -86,6 +94,7 @@ def _grad_method(tape, idx):
         # intervening gates, and the type of the observable.
         best_method = "A"
 
+        ops_between = [o.obs if isinstance(o, MeasurementProcess) else o for o in ops_between]
         if any(not k.supports_heisenberg for k in ops_between):
             # non-Gaussian operators present in-between the operation
             # and the observable. Must fallback to numeric differentiation.
@@ -392,7 +401,8 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
         # transform the descendant observables into their derivatives using Z
         transformed_obs_idx = []
 
-        for obs in observable_descendents:
+        for mp in observable_descendents:
+            obs = mp if mp.obs is None else mp.obs
             # get the index of the descendent observable
             # pylint:disable=undefined-loop-variable
             for obs_idx, tape_obs in enumerate(tape.observables):

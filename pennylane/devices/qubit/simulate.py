@@ -75,8 +75,9 @@ def expand_state_over_wires(state, state_wires, all_wires, is_state_batched):
     Returns:
         TensorLike: The state in the new desired size and order
     """
+    interface = qml.math.get_interface(state)
     pad_width = 2 ** len(all_wires) - 2 ** len(state_wires)
-    pad = (pad_width, 0) if qml.math.get_interface(state) == "torch" else (0, pad_width)
+    pad = (pad_width, 0) if interface == "torch" else (0, pad_width)
     shape = (2,) * len(all_wires)
     if is_state_batched:
         pad = ((0, 0), pad)
@@ -87,7 +88,7 @@ def expand_state_over_wires(state, state_wires, all_wires, is_state_batched):
         pad = (pad,)
         state = qml.math.flatten(state)
 
-    state = qml.math.pad(state, pad, mode="constant")
+    state = qml.math.pad(state, pad, mode="constant", like=interface)
     state = qml.math.reshape(state, shape)
 
     # re-order
@@ -153,7 +154,7 @@ def get_final_state(circuit, debugger=None, interface=None):
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         prep = circuit[0]
 
-    state = create_initial_state(circuit.op_wires, prep, like=INTERFACE_TO_LIKE[interface])
+    state = create_initial_state(sorted(circuit.op_wires), prep, like=INTERFACE_TO_LIKE[interface])
 
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)

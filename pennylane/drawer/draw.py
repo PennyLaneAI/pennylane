@@ -17,8 +17,8 @@
 Contains the drawing function.
 """
 from functools import wraps
+from importlib.metadata import distribution
 import warnings
-import pkg_resources
 
 import pennylane as qml
 from .tape_mpl import tape_mpl
@@ -28,9 +28,9 @@ from .tape_text import tape_text
 def catalyst_qjit(qnode):
     """The ``catalyst.while`` wrapper method"""
     try:
-        pkg_resources.get_distribution("pennylane_catalyst")
+        distribution("pennylane_catalyst")
         return qnode.__class__.__name__ == "QJIT"
-    except pkg_resources.DistributionNotFound:
+    except ImportError:
         return False
 
 

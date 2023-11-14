@@ -754,14 +754,20 @@ def unwrap(values, max_depth=None):
     """
 
     def convert(val):
-        if isinstance(val, list):
+        if isinstance(val, (tuple, list)):
             return unwrap(val)
         new_val = (
             np.to_numpy(val, max_depth=max_depth) if isinstance(val, ArrayBox) else np.to_numpy(val)
         )
         return new_val.tolist() if isinstance(new_val, ndarray) and not new_val.shape else new_val
 
-    return [convert(val) for val in values]
+    if isinstance(values, (tuple, list)):
+        return type(values)(convert(val) for val in values)
+    return (
+        np.to_numpy(values, max_depth=max_depth)
+        if isinstance(values, ArrayBox)
+        else np.to_numpy(values)
+    )
 
 
 @multi_dispatch(argnum=[0, 1])

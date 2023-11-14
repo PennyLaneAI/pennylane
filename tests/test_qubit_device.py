@@ -1473,7 +1473,7 @@ def test_samples_to_counts_with_nan():
     samples[17][1] = np.NaN
     samples[850][0] = np.NaN
 
-    result = device._samples_to_counts(samples, obs=qml.measurements.CountsMP(), num_wires=2)
+    result = device._samples_to_counts(samples, mp=qml.measurements.CountsMP(), num_wires=2)
 
     # no keys with NaNs
     assert len(result) == 4

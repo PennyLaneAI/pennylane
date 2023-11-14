@@ -225,15 +225,15 @@ class TestControlledQubitUnitary:
     @pytest.mark.parametrize(
         "control_wires,wires,control_values",
         [
-            ([0], 1, "0"),
-            ([0, 1], 2, "00"),
-            ([0, 1], 2, "10"),
-            ([0, 1], 2, "11"),
-            ([1, 0], 2, "01"),
-            ([0, 1], [2, 3], "11"),
-            ([0, 2], [3, 1], "10"),
-            ([1, 2, 0], [3, 4], "100"),
-            ([1, 0, 2], [4, 3], "110"),
+            ([0], 1, [0]),
+            ([0, 1], 2, [0, 0]),
+            ([0, 1], 2, [1, 0]),
+            ([0, 1], 2, [1, 1]),
+            ([1, 0], 2, [0, 1]),
+            ([0, 1], [2, 3], [1, 1]),
+            ([0, 2], [3, 1], [1, 0]),
+            ([1, 2, 0], [3, 4], [1, 0, 0]),
+            ([1, 0, 2], [4, 3], [1, 1, 0]),
         ],
     )
     def test_mixed_polarity_controls(self, control_wires, wires, control_values):
@@ -264,7 +264,7 @@ class TestControlledQubitUnitary:
         # if we conjugated the specified control wires with Pauli X and applied the
         # "regular" ControlledQubitUnitary in between.
 
-        x_locations = [x for x in range(len(control_values)) if control_values[x] == "0"]
+        x_locations = [x for x in range(len(control_values)) if control_values[x] == 0]
 
         @qml.qnode(dev)
         def circuit_pauli_x():

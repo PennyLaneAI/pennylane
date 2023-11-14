@@ -317,6 +317,17 @@ class TestBasicCircuit:
         assert qml.math.get_interface(res) == "tensorflow"
         assert qml.math.allclose(res, -1)
 
+    def test_basis_state_wire_order(self):
+        """Test that the wire order is correct with a basis state if the tape wires have a non standard order."""
+
+        dev = DefaultQubit()
+
+        tape = qml.tape.QuantumScript([qml.BasisState([1], wires=1), qml.PauliZ(0)], [qml.state()])
+
+        expected = np.array([0, 1, 0, 0], dtype=np.complex128)
+        res = dev.execute(tape)
+        assert qml.math.allclose(res, expected)
+
 
 class TestSampleMeasurements:
     """A copy of the `qubit.simulate` tests, but using the device"""
@@ -1078,8 +1089,6 @@ class TestAdjointDifferentiation:
 
         expected_grad = -qml.math.sin(x) * cotangent[0]
         actual_grad = dev.compute_vjp(qs, cotangent, self.ec)
-        assert isinstance(actual_grad, np.ndarray)
-        assert actual_grad.shape == ()  # pylint: disable=no-member
         assert np.isclose(actual_grad, expected_grad)
 
         expected_val = qml.math.cos(x)
@@ -1101,7 +1110,6 @@ class TestAdjointDifferentiation:
         expected_grad = -qml.math.sin(x) * cotangent[0]
         actual_grad = dev.compute_vjp([qs], [cotangent], self.ec)
         assert isinstance(actual_grad, tuple)
-        assert isinstance(actual_grad[0], np.ndarray)
         assert np.isclose(actual_grad[0], expected_grad)
 
         expected_val = qml.math.cos(x)
