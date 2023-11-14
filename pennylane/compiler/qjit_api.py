@@ -41,8 +41,8 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
         supported devices, operations, and measurements.
 
     Args:
-        compiler (str): Name of the compiler to use for just-in-time compilation
         fn (Callable): Hybrid (quantum-classical) function to compile
+        compiler (str): Name of the compiler to use for just-in-time compilation
         autograph (bool): Experimental support for automatically converting Python control
             flow statements to Catalyst-compatible control flow. Currently supports Python ``if``,
             ``elif``, ``else``, and ``for`` statements. Note that this feature requires an
