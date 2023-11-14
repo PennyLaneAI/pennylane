@@ -324,5 +324,4 @@ class TestSparse:
         with pytest.raises(
             TypeError, match="Scalar value must be an int or float. Got <class 'list'>"
         ):
-            # pylint: disable=unused-argument
-            mul_sparse = qml.SparseHamiltonian(H, wires=range(num_wires)) * value
+            _ = qml.SparseHamiltonian(H, wires=range(num_wires)) * value
