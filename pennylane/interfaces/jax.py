@@ -114,15 +114,8 @@ def jax_execute_and_compute_jvp(_, jpc, primals, tangents):
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug("Entry with (tapes=%s, jpc=%s)", primals[0], jpc)
 
-    for t in primals[0]:
-        print(t.trainable_params)
     tangents = tuple(t.get_parameters() for t in tangents[0])
-    print(tangents)
-    out = _to_jax(jpc.execute_and_compute_jvp(primals[0], tangents))
-    print("results: ", out[0])
-    print("\n")
-    print("jvp: ", out[1])
-    return out
+    return _to_jax(jpc.execute_and_compute_jvp(primals[0], tangents))
 
 
 def vjp_fwd(tapes, execute_fn, jpc):
