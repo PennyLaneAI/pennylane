@@ -153,6 +153,18 @@ class TestDecomposition:
         assert np.allclose(res1, res2, atol=tol, rtol=0)
         assert np.allclose(state1, state2, atol=tol, rtol=0)
 
+    def test_batched_decomposition_fails(self):
+        """Test that attempting to decompose a BasisStatePreparation operation with
+        broadcasting raises an error."""
+        state = np.array([[1, 0], [1, 1]])
+
+        op = qml.BasisStatePreparation(state, wires=[0, 1])
+        with pytest.raises(ValueError, match="Broadcasting with BasisStatePreparation"):
+            _ = op.decomposition()
+
+        with pytest.raises(ValueError, match="Broadcasting with BasisStatePreparation"):
+            _ = qml.BasisStatePreparation.compute_decomposition(state, qml.wires.Wires([0, 1]))
+
 
 class TestInputs:
     """Test inputs and pre-processing."""
