@@ -39,28 +39,32 @@ def iterative_qpe(base, estimation_wire, iters):
 
     .. code-block:: python
 
-          dev = qml.device("default.qubit", shots = 5)
+        dev = qml.device("default.qubit", shots = 5)
 
-          @qml.qnode(dev)
-          def circuit():
+        @qml.qnode(dev)
+        def circuit():
 
-              # Initial state
-              qml.PauliX(wires = [0])
+          # Initial state
+          qml.PauliX(wires = [0])
 
-              # Iterative QPE
-              measurements = qml.iterative_qpe(qml.RZ(2., wires = [0]), estimation_wire = 1, iters = 3)
+          # Iterative QPE
+          measurements = qml.iterative_qpe(qml.RZ(2., wires = [0]), estimation_wire = 1, iters = 3)
 
-              return [qml.sample(op = meas) for meas in measurements]
+          return [qml.sample(op = meas) for meas in measurements]
 
-    >>> print(circuit())
-    [array([0, 0, 0, 0, 0]), array([1, 0, 0, 0, 0]), array([0, 1, 1, 1, 1])]
+    .. code-block:: pycon
 
-    >>> print(qml.draw(circuit)())
+        >>> print(circuit())
+        [array([0, 0, 0, 0, 0]), array([1, 0, 0, 0, 0]), array([0, 1, 1, 1, 1])]
 
-    1: ──H─╭●────────────H──┤↗│  │0⟩──H─╭●────────────Rϕ(-1.57)──H──┤↗│  │0⟩──H─╭●────────────Rϕ(-1.57)──Rϕ(-0.79)──H──┤↗│  │0⟩─┤  Sample  Sample  Sample
-    0: ──X─╰RZ(2.00)⁴⋅⁰──────║──────────╰RZ(2.00)²⋅⁰──║──────────────║──────────╰RZ(2.00)¹⋅⁰──║──────────║──────────────────────┤
-                             ╚════════════════════════╝══════════════║════════════════════════║══════════╝
-                                                                     ╚════════════════════════╝
+    .. code-block:: pycon
+
+        >>> print(qml.draw(circuit)())
+
+        1: ──H─╭●────────────H──┤↗│  │0⟩──H─╭●────────────Rϕ(-1.57)──H──┤↗│  │0⟩──H─╭●────────────Rϕ(-1.57)──Rϕ(-0.79)──H──┤↗│  │0⟩─┤  Sample  Sample  Sample
+        0: ──X─╰RZ(2.00)⁴⋅⁰──────║──────────╰RZ(2.00)²⋅⁰──║──────────────║──────────╰RZ(2.00)¹⋅⁰──║──────────║──────────────────────┤
+                                 ╚════════════════════════╝══════════════║════════════════════════║══════════╝
+                                                                         ╚════════════════════════╝
     """
 
     measurements = []
