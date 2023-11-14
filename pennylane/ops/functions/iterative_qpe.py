@@ -54,13 +54,20 @@ def iterative_qpe(base, estimation_wire, iters):
 
     >>> print(circuit())
     [array([0, 0, 0, 0, 0]), array([1, 0, 0, 0, 0]), array([0, 1, 1, 1, 1])]
+
+    >>> print(qml.draw(circuit)())
+
+    1: ──H─╭●────────────H──┤↗│  │0⟩──H─╭●────────────Rϕ(-1.57)──H──┤↗│  │0⟩──H─╭●────────────Rϕ(-1.57)──Rϕ(-0.79)──H──┤↗│  │0⟩─┤  Sample  Sample  Sample
+    0: ──X─╰RZ(2.00)⁴⋅⁰──────║──────────╰RZ(2.00)²⋅⁰──║──────────────║──────────╰RZ(2.00)¹⋅⁰──║──────────║──────────────────────┤
+                             ╚════════════════════════╝══════════════║════════════════════════║══════════╝
+                                                                     ╚════════════════════════╝
     """
 
     measurements = []
 
     for i in range(iters):
         qml.Hadamard(wires=estimation_wire)
-        qml.ctrl(qml.pow(base, z=2.0 ** (iters - i - 1)), control=estimation_wire)
+        qml.ctrl(qml.pow(base, z= 2 ** (iters - i - 1)), control=estimation_wire)
 
         for ind, meas in enumerate(measurements):
             qml.cond(meas, qml.PhaseShift)(-2.0 * np.pi / 2 ** (ind + 2), wires=estimation_wire)
