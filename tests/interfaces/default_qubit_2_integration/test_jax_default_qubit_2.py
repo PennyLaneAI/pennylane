@@ -250,19 +250,12 @@ class TestJaxExecuteIntegration:
         expected = 2 + jnp.cos(0.5) + jnp.cos(x) * jnp.cos(y)
         assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
-        # TODO: jax does not allow computing tapes with different gradient
-        # shapes like [None, None, *, None] here
-
-        # grad = jax.grad(cost)(params)
-        # expected = [-jnp.cos(y) * jnp.sin(x), -jnp.cos(x) * jnp.sin(y)]
-        # assert np.allclose(grad, expected, atol=atol_for_shots(shots), rtol=0)
+        grad = jax.grad(cost)(params)
+        expected = [-jnp.cos(y) * jnp.sin(x), -jnp.cos(x) * jnp.sin(y)]
+        assert np.allclose(grad, expected, atol=atol_for_shots(shots), rtol=0)
 
     def test_tapes_with_different_return_size(self, execute_kwargs, shots, device):
         """Test that tapes wit different can be executed and differentiated."""
-
-        # TODO: Will probably fail if we update jax to fix this test
-        # if execute_kwargs["gradient_fn"] == "backprop":
-        #     pytest.xfail("backprop is not compatible with something about this situation.")
 
         def cost(params):
             tape1 = qml.tape.QuantumScript(
@@ -294,21 +287,19 @@ class TestJaxExecuteIntegration:
         assert np.allclose(res[2], jnp.cos(0.5), atol=atol_for_shots(shots))
         assert np.allclose(res[3], jnp.cos(x) * jnp.cos(y), atol=atol_for_shots(shots))
 
-        # TODO: jax does not allow computing tapes with different gradient shapes
+        jac = jax.jacobian(cost)(params)
+        assert isinstance(jac, jnp.ndarray)
+        assert jac.shape == (4, 2)  # pylint: disable=no-member
 
-        # jac = jax.jacobian(cost)(params)
-        # assert isinstance(jac, jnp.ndarray)
-        # assert jac.shape == (4, 2)  # pylint: disable=no-member
+        assert np.allclose(jac[1:3], 0, atol=atol_for_shots(shots))
 
-        # assert np.allclose(jac[1:3], 0, atol=atol_for_shots(shots))
+        d1 = -jnp.sin(x) * jnp.cos(y)
+        assert np.allclose(jac[0, 0], d1, atol=atol_for_shots(shots))
+        assert np.allclose(jac[3, 0], d1, atol=atol_for_shots(shots))
 
-        # d1 = -jnp.sin(x) * jnp.cos(y)
-        # assert np.allclose(jac[0, 0], d1, atol=atol_for_shots(shots))
-        # assert np.allclose(jac[3, 0], d1, atol=atol_for_shots(shots))
-
-        # d2 = -jnp.cos(x) * jnp.sin(y)
-        # assert np.allclose(jac[0, 1], d2, atol=atol_for_shots(shots))
-        # assert np.allclose(jac[3, 1], d2, atol=atol_for_shots(shots))
+        d2 = -jnp.cos(x) * jnp.sin(y)
+        assert np.allclose(jac[0, 1], d2, atol=atol_for_shots(shots))
+        assert np.allclose(jac[3, 1], d2, atol=atol_for_shots(shots))
 
     def test_reusing_quantum_tape(self, execute_kwargs, shots, device):
         """Test re-using a quantum tape by passing new parameters"""

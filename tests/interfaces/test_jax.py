@@ -148,6 +148,13 @@ class TestJaxExecuteUnitTests:
         assert dev.num_executions == 3
         spy.assert_called()
 
+        g = jax.jacobian(cost)(a)
+        expected_g = (-np.sin(x) * np.cos(y), -np.cos(x) * np.sin(y))
+        assert qml.math.allclose(g[0][0], expected_g)
+        assert qml.math.allclose(g[0][1], np.zeros(2))
+        assert qml.math.allclose(g[1], np.zeros(2))
+        assert qml.math.allclose(g[2], expected_g)
+
     def test_no_grad_on_execution(self, mocker):
         """Test that no grad on execution uses the `device.batch_execute` and `device.gradients` pathway"""
         dev = qml.device("default.qubit.legacy", wires=1)
@@ -592,7 +599,7 @@ class TestJaxExecuteIntegration:
         res = cost(a, U, device=dev)
         assert np.allclose(res, -np.cos(a), atol=tol, rtol=0)
 
-        jac_fn = jax.grad(cost, argnums=(0))
+        jac_fn = jax.grad(cost, argnums=0)
         res = jac_fn(a, U, device=dev)
         assert np.allclose(res, np.sin(a), atol=tol, rtol=0)
 
@@ -629,7 +636,7 @@ class TestJaxExecuteIntegration:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        jac_fn = jax.grad(cost_fn, argnums=(1))
+        jac_fn = jax.grad(cost_fn, argnums=1)
         res = jac_fn(a, p, device=dev)
         expected = jax.numpy.array(
             [

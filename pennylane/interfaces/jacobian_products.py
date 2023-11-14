@@ -21,6 +21,7 @@ import logging
 from typing import Tuple, Callable, Optional, Union
 
 from cachetools import LRUCache
+import numpy as np
 
 import pennylane as qml
 from pennylane.tape import QuantumScript
@@ -54,7 +55,14 @@ def _compute_jvps(jacs, tangents, tapes):
     jvps = []
     for jac, dx, t in zip(jacs, tangents, tapes):
         multi = len(t.measurements) > 1
-        if t.shots.has_partitioned_shots:
+        if len(t.trainable_params) == 0:
+            zeros_jvp = tuple(np.zeros(mp.shape(None, t.shots)) for mp in t.measurements)
+            zeros_jvp = zeros_jvp[0] if len(t.measurements) == 1 else zeros_jvp
+            if t.shots.has_partitioned_shots:
+                jvps.extend(zeros_jvp for _ in t.shots.num_copies)
+            else:
+                jvps.append(zeros_jvp)
+        elif t.shots.has_partitioned_shots:
             jvps.append(tuple(f[multi](dx, j) for j in jac))
         else:
             jvps.append(f[multi](dx, jac))
