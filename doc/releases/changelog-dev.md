@@ -35,6 +35,7 @@
 
 * `has_matrix` will now automatically be `True` if `Operator.matrix` is overridden, even if
   `Operator.compute_matrix` is not.
+   [(#4844)](https://github.com/PennyLaneAI/pennylane/pull/4844)
 
 <h3>Breaking changes 💔</h3>
 
