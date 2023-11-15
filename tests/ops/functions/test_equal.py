@@ -1319,7 +1319,7 @@ class TestSymbolicOpComparison:
     """Test comparison for subclasses of SymbolicOp"""
 
     WIRES = [(5, 5, True), (6, 7, False)]
-    WIRES_SEQUENCE = [
+    CONTROL_WIRES_SEQUENCE = [
         ([1, 2], [1, 2], True),
         ([1, 2], [1, 3], False),
         ([1, 2, 3], [3, 2, 1], False),
@@ -1452,7 +1452,7 @@ class TestSymbolicOpComparison:
         op2 = Controlled(base2, control_wires=wire2)
         assert qml.equal(op1, op2) == res
 
-    @pytest.mark.parametrize(("wires1", "wires2", "res"), WIRES_SEQUENCE)
+    @pytest.mark.parametrize(("wires1", "wires2", "res"), CONTROL_WIRES_SEQUENCE)
     def test_control_sequence_wires_comparison(self, wires1, wires2, res):
         """Test that equal compares control for ControlledSequence operators"""
         base1 = qml.Hadamard(0)
