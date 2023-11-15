@@ -225,10 +225,11 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
             new_cotangents.append(c)
             new_observables.append(o)
     obs = qml.dot(new_cotangents, new_observables)
-    if len(obs.wires) > 9:
-        obs_sparse_mat = obs.sparse_matrix(wire_order=list(range(tape.num_wires)))
-        obs = qml.SparseHamiltonian(obs_sparse_mat, wires=list(range(tape.num_wires)))
-    bra = apply_operation(obs, ket)
+    if len(obs.wires) > 9 and obs._pauli_rep is not None:
+        flat_bra = obs._pauli_rep.dot(ket.flatten())
+        bra = flat_bra.reshape(ket.shape)
+    else:
+        bra = apply_operation(obs, ket)
 
     param_number = len(tape.get_parameters(trainable_only=False, operations_only=True)) - 1
     trainable_param_number = len(tape.trainable_params) - 1
