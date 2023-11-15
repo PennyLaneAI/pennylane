@@ -143,6 +143,7 @@ class PauliWord(dict):
         for wire, op in mapping.copy().items():
             if op == I:
                 del mapping[wire]
+        mapping = dict(sorted(mapping.items(), key=lambda item: str(item[0])))
         super().__init__(mapping)
 
     def __reduce__(self):
@@ -549,7 +550,8 @@ class PauliSentence(dict):
         )
         pw_sparse_structures = unique_sparse_structures[unique_invs]
 
-        mv = np.zeros_like(vector, dtype=vector.dtype)
+        dtype = np.complex64 if vector.dtype in (np.float32, np.complex64) else np.complex128
+        mv = np.zeros_like(vector, dtype=dtype)
         for sparse_structure in unique_sparse_structures:
             indices, *_ = np.nonzero(pw_sparse_structures == sparse_structure)
             entries, data = self._get_same_structure_csr(

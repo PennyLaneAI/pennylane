@@ -416,7 +416,6 @@ def _(op: Hamiltonian):
             pw = dict([(t.wires[0], t.name[-1])])
         else:
             pw = dict((obs.wires[0], obs.name[-1]) for obs in t.non_identity_obs)
-        pw = dict(sorted(pw.items(), key=lambda item: item[0]))
         return PauliWord(pw)
 
     coeffs, tensors = op.terms()
