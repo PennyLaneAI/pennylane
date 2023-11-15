@@ -409,25 +409,21 @@ def _(op: Hamiltonian):
     if not all(is_pauli_word(o) for o in op.ops):
         raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
 
-    def tensor_2_pauli_word(t):
-        if t.name == "Identity":
-            pw = {0: "I"}
-        elif t.name in ("PauliX", "PauliY", "PauliZ"):
-            pw = dict([(t.wires[0], t.name[-1])])
+    def term_2_pauli_word(term):
+        if isinstance(term, Tensor):
+            pw = dict((obs.wires[0], obs.name[-1]) for obs in term.non_identity_obs)
+        elif isinstance(term, Identity):
+            pw = {}
         else:
-            pw = dict((obs.wires[0], obs.name[-1]) for obs in t.non_identity_obs)
+            pw = dict([(term.wires[0], term.name[-1])])
         return PauliWord(pw)
 
-    coeffs, tensors = op.terms()
-    if len(coeffs) == 0:
-        return PauliSentence()
-    ps = {}
-    pws = (tensor_2_pauli_word(t) for t in tensors)
-    for pw, c in zip(pws, coeffs):
-        coeff = ps.setdefault(pw, 0)
-        ps[pw] = coeff + c
+    ps = PauliSentence()
+    for coeff, term in zip(*op.terms()):
+        sub_ps = PauliSentence({term_2_pauli_word(term): coeff})
+        ps += sub_ps
 
-    return PauliSentence(ps)
+    return ps
 
 
 @_pauli_sentence.register
