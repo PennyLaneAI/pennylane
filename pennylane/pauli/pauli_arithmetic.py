@@ -15,6 +15,7 @@
 from copy import copy
 from functools import reduce, lru_cache
 from typing import Iterable
+from warnings import warn
 
 import numpy as np
 from scipy import sparse
@@ -201,6 +202,18 @@ class PauliWord(dict):
                 result[wire] = term
 
         return PauliWord(result), coeff
+    
+    def __or__(self, other):
+        """Commutator between two PauliWords"""
+        new_word, coeff = self * other
+        if np.allclose(np.imag(coeff), 0.):
+            return None, 0.
+        return new_word, 2*coeff
+    
+    def __lt__(self, other):
+        return self.__str__() < other.__str__()
+    def __gt__(self, other):
+        return self.__str__() > other.__str__()
 
     def __str__(self):
         """String representation of a PauliWord."""
@@ -381,6 +394,42 @@ class PauliSentence(dict):
                 final_ps[prod_pw] = final_ps[prod_pw] + coeff * self[pw1] * other[pw2]
 
         return final_ps
+    
+    def __or__(self, other):
+        """commute two Pauli sentences by iterating over each sentence and commuting
+        the Pauli words pair-wise"""
+        final_ps = PauliSentence()
+
+        if len(self) == 0:
+            return copy(other)
+
+        if len(other) == 0:
+            return copy(self)
+
+        for pw1 in self:
+            for pw2 in other:
+                comm_pw, coeff = pw1 | pw2
+                if comm_pw is not None:
+                    final_ps[comm_pw] = final_ps[comm_pw] + coeff * self[pw1] * other[pw2]
+
+        return final_ps
+
+    # def __hash__(self):
+    #     return hash(str())
+
+    def __eq__(self, other):
+        """Loose definition of equality: proportionality"""
+        # Step 1: Check if keys are the same
+        if set(self.keys()) != set(other.keys()):
+            return False
+
+        # Step 2: Check if values are proportional
+        # Find the proportionality factor by comparing the first pair of values
+        key = next(iter(self.keys()))
+        factor = other[key] / self[key]
+
+        # Check if all values are proportional by the same factor
+        return all(np.isclose(v1 * factor, other[k]) for k, v1 in self.items())
 
     def __str__(self):
         """String representation of the PauliSentence."""
@@ -556,3 +605,67 @@ class PauliSentence(dict):
     def map_wires(self, wire_map: dict) -> "PauliSentence":
         """Return a new PauliSentence with the wires mapped."""
         return self.__class__({pw.map_wires(wire_map): coeff for pw, coeff in self.items()})
+
+
+def all_commutators(oplist):
+    '''
+    Compute the commutator of all elements with all elements and keep only the unique ones (up to proportionality constants)
+
+    Args:
+        oplist: A list of PauliSentence operators
+
+    Returns:
+        List: A list of all unique operators and their commutators.
+    '''
+    # TODO: implement for pure PauliWords
+    out = copy(oplist)
+    empty_keys = PauliSentence().keys() # hacky
+
+    for i, pauli1 in enumerate(oplist[:-1]):
+        for pauli2 in oplist[i+1:]:
+            q = pauli1 | pauli2
+            if q.keys() == empty_keys or q in out:
+                continue
+            out.append(q)
+
+    return out
+
+def lie_closure(
+        oplist,
+        size_limit=1e5,
+        print_progress=False
+    ):
+    '''
+    Repeatedly compute all commutators of the operator set until no new elements are added
+    and the set is algebraically closed.
+
+    Args:
+        oplist: list of ``PauliSentence``
+        size_limit (int):
+        max_batch_size (bool | int): Batch over generators to reduce memory requirements. This is
+            only relevant for large DLAs. A good value to start testing is 200, but for very large
+            sytems smaller values might be necessary.
+
+    Kwargs:
+        print_progress(bool): Print size of dla after each iteration.
+    '''
+
+    numpaulis = len(oplist)
+    counter = 0
+    while True:
+        oplist = all_commutators(oplist)
+
+        numpaulis_new = len(oplist)
+        if numpaulis_new == numpaulis:
+            break
+        if numpaulis_new > size_limit:
+            warn('Size limit was reached. Aborting.', UserWarning)
+            break
+        numpaulis = numpaulis_new
+        counter += 1
+
+        if print_progress:
+            print(f'Iteration {counter} done. {numpaulis = }')
+
+    return oplist
+
