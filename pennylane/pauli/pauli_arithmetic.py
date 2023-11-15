@@ -202,16 +202,17 @@ class PauliWord(dict):
                 result[wire] = term
 
         return PauliWord(result), coeff
-    
+
     def __or__(self, other):
         """Commutator between two PauliWords"""
         new_word, coeff = self * other
-        if np.allclose(np.imag(coeff), 0.):
-            return None, 0.
-        return new_word, 2*coeff
-    
+        if np.allclose(np.imag(coeff), 0.0):
+            return None, 0.0
+        return new_word, 2 * coeff
+
     def __lt__(self, other):
         return self.__str__() < other.__str__()
+
     def __gt__(self, other):
         return self.__str__() > other.__str__()
 
@@ -394,7 +395,7 @@ class PauliSentence(dict):
                 final_ps[prod_pw] = final_ps[prod_pw] + coeff * self[pw1] * other[pw2]
 
         return final_ps
-    
+
     def __or__(self, other):
         """commute two Pauli sentences by iterating over each sentence and commuting
         the Pauli words pair-wise"""
@@ -608,7 +609,7 @@ class PauliSentence(dict):
 
 
 def all_commutators(oplist):
-    '''
+    """
     Compute the commutator of all elements with all elements and keep only the unique ones (up to proportionality constants)
 
     Args:
@@ -616,13 +617,13 @@ def all_commutators(oplist):
 
     Returns:
         List: A list of all unique operators and their commutators.
-    '''
+    """
     # TODO: implement for pure PauliWords
     out = copy(oplist)
-    empty_keys = PauliSentence().keys() # hacky
+    empty_keys = PauliSentence().keys()  # hacky
 
     for i, pauli1 in enumerate(oplist[:-1]):
-        for pauli2 in oplist[i+1:]:
+        for pauli2 in oplist[i + 1 :]:
             q = pauli1 | pauli2
             if q.keys() == empty_keys or q in out:
                 continue
@@ -630,12 +631,9 @@ def all_commutators(oplist):
 
     return out
 
-def lie_closure(
-        oplist,
-        size_limit=1e5,
-        print_progress=False
-    ):
-    '''
+
+def lie_closure(oplist, size_limit=1e5, print_progress=False):
+    """
     Repeatedly compute all commutators of the operator set until no new elements are added
     and the set is algebraically closed.
 
@@ -648,7 +646,7 @@ def lie_closure(
 
     Kwargs:
         print_progress(bool): Print size of dla after each iteration.
-    '''
+    """
 
     numpaulis = len(oplist)
     counter = 0
@@ -659,13 +657,12 @@ def lie_closure(
         if numpaulis_new == numpaulis:
             break
         if numpaulis_new > size_limit:
-            warn('Size limit was reached. Aborting.', UserWarning)
+            warn("Size limit was reached. Aborting.", UserWarning)
             break
         numpaulis = numpaulis_new
         counter += 1
 
         if print_progress:
-            print(f'Iteration {counter} done. {numpaulis = }')
+            print(f"Iteration {counter} done. {numpaulis = }")
 
     return oplist
-
