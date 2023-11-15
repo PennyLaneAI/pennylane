@@ -416,16 +416,19 @@ def _(op: Hamiltonian):
             pw = dict([(t.wires[0], t.name[-1])])
         else:
             pw = dict((obs.wires[0], obs.name[-1]) for obs in t.non_identity_obs)
+        pw = dict(sorted(pw.items(), key=lambda item: item[0]))
         return PauliWord(pw)
 
-    def ham_2_pauli_sentence(ham):
-        coeffs, tensors = ham.terms()
-        if len(coeffs) == 0:
-            return PauliSentence()
-        ps = dict((tensor_2_pauli_word(t), c) for t, c in zip(tensors, coeffs))
-        return PauliSentence(ps)
+    coeffs, tensors = op.terms()
+    if len(coeffs) == 0:
+        return PauliSentence()
+    ps = {}
+    pws = (tensor_2_pauli_word(t) for t in tensors)
+    for pw, c in zip(pws, coeffs):
+        coeff = ps.setdefault(pw, 0)
+        ps[pw] = coeff + c
 
-    return ham_2_pauli_sentence(op)
+    return PauliSentence(ps)
 
 
 @_pauli_sentence.register
