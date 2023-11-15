@@ -342,6 +342,23 @@ class TestSpecialGates:
 
         plt.close()
 
+    def test_CCZ(self):
+        """Test that CCZ gets correct special call."""
+
+        tape = QuantumScript([qml.CCZ(wires=(0, 1, 2))])
+        _, ax = tape_mpl(tape)
+        layer = 0
+
+        # three wires and one control line
+        assert len(ax.lines) == 4
+
+        assert ax.lines[3].get_data() == ((layer, layer), (0, 2))
+
+        # three control circles
+        assert len(ax.patches) == 3
+        for i in range(3):
+            assert ax.patches[i].center == (layer, i)
+
     def test_Barrier(self):
         """Test Barrier gets correct special call."""
 

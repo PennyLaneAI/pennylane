@@ -53,6 +53,8 @@
 * Specifying `control_values` passed to `qml.ctrl` as a string is no longer supported.
   [(#4816)](https://github.com/PennyLaneAI/pennylane/pull/4816)
 
+* The `Conditional` operator is moved from `transforms` to `ops.op_math` to prevent circular import issues.
+
 <h3>Deprecations 👋</h3>
 
 * All deprecations now raise a `qml.PennyLaneDeprecationWarning` instead of a `UserWarning`.
