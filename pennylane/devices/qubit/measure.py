@@ -88,12 +88,9 @@ def csr_dot_products(
         TensorLike: the result of the measurement
     """
     total_wires = len(state.shape) - is_state_batched
-    if not is_state_batched and is_pauli_sentence(measurementprocess.obs):
-        ps = pauli_sentence(measurementprocess.obs)
-    else:
-        Hmat = measurementprocess.obs.sparse_matrix(wire_order=list(range(total_wires)))
 
     if is_state_batched:
+        Hmat = measurementprocess.obs.sparse_matrix(wire_order=list(range(total_wires)))
         state = math.toarray(state).reshape(math.shape(state)[0], -1)
 
         bra = csr_matrix(math.conj(state))
@@ -105,6 +102,7 @@ def csr_dot_products(
         ps = pauli_sentence(measurementprocess.obs)
         res = np.dot(math.conj(state), ps.dot(state, wire_order=list(range(total_wires))))
     else:
+        Hmat = measurementprocess.obs.sparse_matrix(wire_order=list(range(total_wires)))
         state = math.toarray(state).flatten()
 
         # Find the expectation value using the <\psi|H|\psi> matrix contraction
