@@ -207,7 +207,7 @@ class TestTwoQubitStateSpecialCases:
         assert qml.math.allclose(initial1[0], new1[1])
 
     def test_grover(self, method, wire, ml_framework):
-        """Test the application of a cnot gate on a two qubit state."""
+        """Test the application of GroverOperator on a two qubit state."""
 
         initial_state = np.array(
             [
@@ -861,19 +861,96 @@ class TestLargerOperations:
         assert qml.math.allclose(expected_state, new_state)
 
 
-@pytest.mark.parametrize(
-    "num_wires, einsum_called, tensordot_called",
-    [(2, True, False), (3, False, True), (9, False, False)],
-)
-def test_grover_dispatching(num_wires, einsum_called, tensordot_called, mocker):
-    """Test that apply_grover dispatches to einsum correctly for small numbers of wires."""
-    op = qml.GroverOperator(list(range(num_wires)))
-    state = np.zeros([2] * num_wires, dtype=complex)
-    spy_einsum = mocker.spy(qml.math, "einsum")
-    spy_tensordot = mocker.spy(qml.math, "argsort")
-    apply_operation(op, state, is_state_batched=False, debugger=None)
-    assert spy_einsum.call_count == int(einsum_called)
-    assert spy_tensordot.call_count == int(tensordot_called)
+class TestGroverOperator:
+    """Test that GroverOperator is applied correctly."""
+
+    def grover_kernel_full_wires(self, state, op_wires, batched):
+        """Additional kernel to apply GroverOperator to all state wires."""
+        prefactor = 2 ** (1 - len(op_wires))
+        collapsed = np.sum(state, axis=tuple(range(batched, np.ndim(state))))
+        new_shape = (-1,) + (1,) * len(op_wires) if batched else (1,) * len(op_wires)
+        return prefactor * collapsed.reshape(new_shape) - state
+
+    def grover_kernel_partial_wires(self, state, op_wires, batched):
+        """Additional kernel to apply GroverOperator to some of all state wires."""
+        num_wires = len(op_wires)
+        sum_axes = [w + batched for w in op_wires]
+        collapsed = np.sum(state, tuple(sum_axes))
+        prefactor = 2 ** (1 - num_wires)
+        bcast_shape = [2] * num_wires + list(state.shape[:-num_wires])
+        expanded = np.broadcast_to(prefactor * collapsed, bcast_shape)
+        source = list(range(num_wires))
+        expanded = np.moveaxis(expanded, source, sum_axes)
+        return expanded - state
+
+    @pytest.mark.parametrize(
+        "op_wires, state_wires, einsum_called, tensordot_called",
+        [
+            (2, 2, True, False),
+            (3, 3, False, True),
+            (9, 9, False, False),
+            (2, 13, False, True),
+            (3, 9, False, True),
+            (9, 13, False, False),
+        ],
+    )
+    def test_dispatching(self, op_wires, state_wires, einsum_called, tensordot_called, mocker):
+        """Test that apply_operation dispatches to einsum, tensordot and the kernel correctly."""
+        # pylint: disable=too-many-arguments
+        np.random.seed(752)
+        state = np.random.random([2] * state_wires) + 1j * np.random.random([2] * state_wires)
+
+        op = qml.GroverOperator(list(range(op_wires)))
+        spy_einsum = mocker.spy(qml.math, "einsum")
+        spy_tensordot = mocker.spy(qml.math, "argsort")
+        apply_operation(op, state, is_state_batched=False, debugger=None)
+        assert spy_einsum.call_count == int(einsum_called)
+        assert spy_tensordot.call_count == int(tensordot_called)
+
+    @pytest.mark.parametrize(
+        "op_wires, state_wires",
+        [(2, 2), (3, 3), (9, 9)],
+    )
+    @pytest.mark.parametrize("batch_dim", [None, 1, 3])
+    def test_correctness_full_wires(self, op_wires, state_wires, batch_dim):
+        """Test that apply_operation is correct for GroverOperator for all dispatch branches
+        when applying it to all wires of a state."""
+        np.random.seed(752)
+        batched = batch_dim is not None
+        shape = [batch_dim] + [2] * state_wires if batched else [2] * state_wires
+        flat_shape = (batch_dim, 2**state_wires) if batched else (2**state_wires,)
+        state = np.random.random(shape) + 1j * np.random.random(shape)
+
+        op = qml.GroverOperator(list(range(op_wires)))
+        out = apply_operation(op, state, is_state_batched=batched, debugger=None)
+        # Double transpose to accomodate for batching
+        expected_via_mat = (op.matrix() @ state.reshape(flat_shape).T).T.reshape(shape)
+        expected_via_kernel = self.grover_kernel_full_wires(state, op.wires, batched)
+        assert np.allclose(out, expected_via_mat)
+        assert np.allclose(out, expected_via_kernel)
+
+    @pytest.mark.parametrize(
+        "op_wires, state_wires",
+        [(3, 5), (9, 13)],
+    )
+    @pytest.mark.parametrize("batch_dim", [None, 1, 3])
+    def test_correctness_partial_wires(self, op_wires, state_wires, batch_dim):
+        """Test that apply_operation is correct for GroverOperator for all dispatch branches
+        but einsum (because Grover can't act on a single wire)
+        when applying it only to some of the wires of a state."""
+        np.random.seed(752)
+        batched = batch_dim is not None
+        shape = [batch_dim] + [2] * state_wires if batched else [2] * state_wires
+        state = np.random.random(shape) + 1j * np.random.random(shape)
+
+        for start_wire in [0, 1, state_wires - op_wires]:
+            wires = list(range(start_wire, start_wire + op_wires))
+            op = qml.GroverOperator(wires)
+            out = apply_operation(op, state, is_state_batched=batched, debugger=None)
+            expected_via_mat = apply_operation_tensordot(op, state, batched)
+            expected_via_kernel = self.grover_kernel_partial_wires(state, wires, batched)
+            assert np.allclose(out, expected_via_mat)
+            assert np.allclose(out, expected_via_kernel)
 
 
 @pytest.mark.tf
