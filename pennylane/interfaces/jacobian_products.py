@@ -56,10 +56,11 @@ def _compute_jvps(jacs, tangents, tapes):
     for jac, dx, t in zip(jacs, tangents, tapes):
         multi = len(t.measurements) > 1
         if len(t.trainable_params) == 0:
-            zeros_jvp = tuple(np.zeros(mp.shape(None, t.shots)) for mp in t.measurements)
+            empty_shots = qml.measurements.Shots(None)
+            zeros_jvp = tuple(np.zeros(mp.shape(None, empty_shots)) for mp in t.measurements)
             zeros_jvp = zeros_jvp[0] if len(t.measurements) == 1 else zeros_jvp
             if t.shots.has_partitioned_shots:
-                jvps.extend(zeros_jvp for _ in t.shots.num_copies)
+                jvps.append(tuple(zeros_jvp for _ in range(t.shots.num_copies)))
             else:
                 jvps.append(zeros_jvp)
         elif t.shots.has_partitioned_shots:
