@@ -21,7 +21,7 @@ import numpy as np
 import semantic_version
 from scipy.linalg import block_diag as _scipy_block_diag
 
-from .utils import get_deep_interface
+from .utils import get_deep_interface, is_abstract
 
 
 def _i(name):
@@ -335,13 +335,7 @@ ar.register_function("tensorflow", "round", _round_tf)
 
 
 def _ndim_tf(tensor):
-    try:
-        ndim = _i("tf").experimental.numpy.ndim(tensor)
-        if ndim is None:
-            return len(tensor.shape)
-        return ndim
-    except AttributeError:
-        return len(tensor.shape)
+    return len(tensor.shape) if is_abstract(tensor) else int(_i("tf").rank(tensor))
 
 
 ar.register_function("tensorflow", "ndim", _ndim_tf)
