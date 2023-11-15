@@ -36,7 +36,7 @@ class TestIQPE:
             qml.PauliX(wires=[0])
 
             # Iterative QPE
-            measurements = qml.iterative_qpe(qml.RZ(phi, wires=[0]), estimation_wire=[1], iters=3)
+            measurements = qml.iterative_qpe(qml.RZ(phi, wires=[0]), ancilla=[1], iters=3)
 
             return [qml.sample(op=meas) for meas in measurements]
 
@@ -206,7 +206,7 @@ class TestIQPE:
             qml.PauliX(wires=[0])
 
             # Iterative QPE
-            measurements = qml.iterative_qpe(qml.RZ(phi, wires=[0]), estimation_wire=[1], iters=3)
+            measurements = qml.iterative_qpe(qml.RZ(phi, wires=[0]), ancilla=[1], iters=3)
 
             return [qml.probs(op=i) for i in measurements]
 
@@ -235,7 +235,7 @@ class TestIQPE:
             qml.PauliX(wires=[0])
 
             # Iterative QPE
-            measurements = qml.iterative_qpe(qml.RZ(phi, wires=[0]), estimation_wire=[1], iters=3)
+            measurements = qml.iterative_qpe(qml.RZ(phi, wires=[0]), ancilla=[1], iters=3)
 
             return [qml.expval(op=i) for i in measurements]
 

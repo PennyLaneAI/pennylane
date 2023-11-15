@@ -19,7 +19,7 @@ import numpy as np
 import pennylane as qml
 
 
-def iterative_qpe(base, estimation_wire, iters):
+def iterative_qpe(base, ancilla, iters):
     r"""Performs the `iterative quantum phase estimation <https://arxiv.org/pdf/quant-ph/0610214.pdf>`_ circuit.
 
     Given a unitary :math:`U`, this function applies the circuit for iterative quantum phase
@@ -27,7 +27,7 @@ def iterative_qpe(base, estimation_wire, iters):
 
     Args:
       base (Operator): the phase estimation unitary, specified as an :class:`~.Operator`
-      estimation_wire (Union[Wires, int, str]): the wire to be used for the estimation.
+      ancilla (Union[Wires, int, str]): the wire to be used for the estimation.
       iters (int): the number of measurements to be performed
 
     Returns:
@@ -48,7 +48,7 @@ def iterative_qpe(base, estimation_wire, iters):
           qml.PauliX(wires = [0])
 
           # Iterative QPE
-          measurements = qml.iterative_qpe(qml.RZ(2., wires = [0]), estimation_wire = 1, iters = 3)
+          measurements = qml.iterative_qpe(qml.RZ(2., wires = [0]), ancilla = 1, iters = 3)
 
           return [qml.sample(op = meas) for meas in measurements]
 
@@ -72,13 +72,13 @@ def iterative_qpe(base, estimation_wire, iters):
     measurements = []
 
     for i in range(iters):
-        qml.Hadamard(wires=estimation_wire)
-        qml.ctrl(qml.pow(base, z=2 ** (iters - i - 1)), control=estimation_wire)
+        qml.Hadamard(wires=ancilla)
+        qml.ctrl(qml.pow(base, z=2 ** (iters - i - 1)), control=ancilla)
 
         for ind, meas in enumerate(measurements):
-            qml.cond(meas, qml.PhaseShift)(-2.0 * np.pi / 2 ** (ind + 2), wires=estimation_wire)
+            qml.cond(meas, qml.PhaseShift)(-2.0 * np.pi / 2 ** (ind + 2), wires=ancilla)
 
-        qml.Hadamard(wires=estimation_wire)
-        measurements.insert(0, qml.measure(wires=estimation_wire, reset=True))
+        qml.Hadamard(wires=ancilla)
+        measurements.insert(0, qml.measure(wires=ancilla, reset=True))
 
     return measurements
