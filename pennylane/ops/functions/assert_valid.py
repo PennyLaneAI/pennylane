@@ -248,10 +248,10 @@ def assert_valid(op: qml.operation.Operator, skip_pickle=False) -> None:
                 super().__init__(wires=wires)
 
         op = MyOp(qml.numpy.array(0.5), wires=0)
-        assert_valid(op)
 
     .. code-block::
 
+        >>> assert_valid(op)
         AssertionError: op.data must be a tuple
 
     .. code-block:: python
