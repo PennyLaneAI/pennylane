@@ -9,6 +9,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.expval` with large `Hamiltonian` objects is now faster and has a significantly lower memory footprint (and constant with respect to the number of `Hamiltonian` terms) when the `Hamiltonian` is a `PauliSentence`. That is due to the introduction of a specialized `dot` method in the `PauliSentence` class which performs `PauliSentence`-`state` products.
+  [(#4839)](https://github.com/PennyLaneAI/pennylane/pull/4839)
+
 * `AmplitudeEmbedding` now also supports batching when used with Tensorflow.
   [(#4818)](https://github.com/PennyLaneAI/pennylane/pull/4818)
 
@@ -122,6 +125,7 @@ Amintor Dusko,
 Lillian Frederiksen,
 Ankit Khandelwal,
 Christina Lee,
+Vincent Michaud-Rioux,
 Anurav Modak,
 Mudit Pandey,
 Matthew Silverman,
