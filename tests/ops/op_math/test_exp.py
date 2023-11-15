@@ -840,7 +840,7 @@ class TestIntegration:
     def test_autograd_measurement(self):
         """Test exp in a measurement with gradient and autograd."""
 
-        x = qml.numpy.array(2)
+        x = qml.numpy.array(2.0)
 
         @qml.qnode(qml.device("default.qubit", wires=1))
         def circuit(x):

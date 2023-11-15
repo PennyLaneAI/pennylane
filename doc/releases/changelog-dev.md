@@ -53,7 +53,13 @@
   because it depended on the now-deprecated `Observable.return_type` property.
   [(#4762)](https://github.com/PennyLaneAI/pennylane/pull/4762)
 
+* Specifying `control_values` passed to `qml.ctrl` as a string is no longer supported.
+  [(#4816)](https://github.com/PennyLaneAI/pennylane/pull/4816)
+
 <h3>Deprecations 👋</h3>
+
+* `qml.grad` and `qml.jacobian` now explicitly raise errors if trainable parameters are integers.
+  [(#4836)](https://github.com/PennyLaneAI/pennylane/pull/4836)
 
 * All deprecations now raise a `qml.PennyLaneDeprecationWarning` instead of a `UserWarning`.
   [(#4814)](https://github.com/PennyLaneAI/pennylane/pull/4814)
