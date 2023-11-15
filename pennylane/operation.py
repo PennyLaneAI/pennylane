@@ -750,7 +750,7 @@ class Operator(abc.ABC):
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
-        return cls.compute_matrix != Operator.compute_matrix
+        return cls.compute_matrix != Operator.compute_matrix or cls.matrix != Operator.matrix
 
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
