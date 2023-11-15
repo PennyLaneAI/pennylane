@@ -22,7 +22,7 @@ import pennylane as qml
 def iterative_qpe(base, estimation_wire, iters):
     r"""Performs the `iterative quantum phase estimation <https://arxiv.org/pdf/quant-ph/0610214.pdf>`_ circuit.
 
-    Given a unitary matrix :math:`U`, this function applies the circuit for iterative quantum phase
+    Given a unitary :math:`U`, this function applies the circuit for iterative quantum phase
     estimation and returns a list of the mid-circuit measurements with qubit reset.
 
     Args:
