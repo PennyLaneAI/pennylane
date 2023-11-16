@@ -120,6 +120,9 @@ QNodes can be executed as usual when collecting mid-circuit measurement statisti
 >>> circ(1.0, 2.0, shots=5)
 (0.6, array([1, 1, 1, 0, 1]))
 
+PennyLane also supports postselecting on mid-circuit measurement outcomes. To learn more, refer to the documentation
+of :func:`~.pennylane.measure`.
+
 Creating custom measurements
 ----------------------------
 A custom measurement process can be created by inheriting from any of the classes mentioned above.

@@ -21,6 +21,14 @@ import pennylane as qml
 from pennylane.wires import WireError
 
 
+def test_standard_validity():
+    """Check the operation using the assert_valid function."""
+
+    op = qml.CosineWindow(wires=[0, 1])
+
+    qml.ops.functions.assert_valid(op)
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 

@@ -383,7 +383,7 @@ def qnode_circuit(theta):
     qml.CZ(wires=[1, 0])
     qml.RY(theta[1], wires=2)
     qml.CZ(wires=[0, 1])
-    return qml.expval(qml.PauliX(0) @ qml.PauliX(2))
+    return qml.expval(qml.PauliZ(0) @ qml.PauliZ(2))
 
 
 class TestTransformDispatch:
@@ -412,8 +412,10 @@ class TestTransformDispatch:
         transformed_qnode = cancel_inverses(qnode_circuit)
         assert not transformed_qnode.transform_program.is_empty()
         assert len(transformed_qnode.transform_program) == 1
-        res = transformed_qnode(([0.1, 0.2]))
-        assert np.allclose(res, 0.0)
+        params = [0.1, 0.2]
+        res = transformed_qnode(params)
+        expected = qnode_circuit(params)
+        assert np.allclose(res, expected)
 
     @pytest.mark.jax
     def test_qnode_diff_jax(self):
@@ -423,4 +425,5 @@ class TestTransformDispatch:
         a = jax.numpy.array([0.1, 0.2])
         transformed_qnode = cancel_inverses(qnode_circuit)
         res = jax.jacobian(transformed_qnode)(a)
-        assert jax.numpy.allclose(res, jax.numpy.array([0.0, 0.0]))
+        expected = jax.jacobian(qnode_circuit)(a)
+        assert jax.numpy.allclose(res, expected)
