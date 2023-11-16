@@ -89,7 +89,6 @@ def csr_dot_products(
     total_wires = len(state.shape) - is_state_batched
 
     if is_pauli_sentence(measurementprocess.obs):
-        Hmat = measurementprocess.obs.sparse_matrix(wire_order=list(range(total_wires)))
         state = math.toarray(state)
         if is_state_batched:
             state = state.reshape(math.shape(state)[0], -1)
