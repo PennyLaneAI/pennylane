@@ -256,35 +256,13 @@ class PauliWord(dict):
     def _to_sparse_mat(self, wire_order, coeff):
         """Compute the sparse matrix of the Pauli word times a coefficient, given a wire order.
         See pauli_sparse_matrices.md for the technical details of the implementation."""
-        full_word = [self[wire] for wire in wire_order]
         matrix_size = 2 ** len(wire_order)
-        data = np.empty(matrix_size, dtype=np.complex128)  # Non-zero values
-        indices = np.empty(matrix_size, dtype=np.int64)  # Column index of non-zero values
         indptr = _cached_arange(matrix_size + 1)  # Non-zero entries by row (starting from 0)
-
-        current_size = 2
-        data[:current_size], indices[:current_size] = _cached_sparse_data(full_word[-1])
-        data[:current_size] *= coeff  # Multiply initial term better than the full matrix
-        for s in full_word[-2::-1]:
-            if s == "I":
-                data[current_size : 2 * current_size] = data[:current_size]
-                indices[current_size : 2 * current_size] = indices[:current_size] + current_size
-            elif s == "X":
-                data[current_size : 2 * current_size] = data[:current_size]
-                indices[current_size : 2 * current_size] = indices[:current_size]
-                indices[:current_size] += current_size
-            elif s == "Y":
-                data[current_size : 2 * current_size] = 1j * data[:current_size]
-                data[:current_size] *= -1j
-                indices[current_size : 2 * current_size] = indices[:current_size]
-                indices[:current_size] += current_size
-            elif s == "Z":
-                data[current_size : 2 * current_size] = -data[:current_size]
-                indices[current_size : 2 * current_size] = indices[:current_size] + current_size
-            current_size *= 2
         # Avoid checks and copies in __init__ by directly setting the attributes of an empty matrix
         matrix = sparse.csr_matrix((matrix_size, matrix_size), dtype="complex128")
-        matrix.data, matrix.indices, matrix.indptr = data, indices, indptr
+        matrix.data = self._get_csr_data(wire_order, coeff)
+        matrix.indices = self._get_csr_indices(wire_order)
+        matrix.indptr = indptr
         return matrix
 
     def _get_csr_data(self, wire_order, coeff):
@@ -551,14 +529,16 @@ class PauliSentence(dict):
         pw_sparse_structures = unique_sparse_structures[unique_invs]
 
         dtype = np.complex64 if vector.dtype in (np.float32, np.complex64) else np.complex128
+        if vector.ndim == 1:
+            vector = vector.reshape(1, -1)
         mv = np.zeros_like(vector, dtype=dtype)
         for sparse_structure in unique_sparse_structures:
             indices, *_ = np.nonzero(pw_sparse_structures == sparse_structure)
             entries, data = self._get_same_structure_csr(
                 [pauli_words[i] for i in indices], wire_order
             )
-            mv += vector[entries] * data
-        return mv
+            mv += vector[:, entries] * data.reshape(1, -1)
+        return mv.reshape(vector.shape)
 
     # pylint: disable=protected-access
     def _get_same_structure_csr(self, pauli_words, wire_order):

@@ -350,9 +350,11 @@ def is_pauli_sentence(op):
     """Returns True of the operator is a PauliSentence and False otherwise."""
     if op._pauli_rep is not None:  # pylint: disable=protected-access
         return True
-    if not hasattr(op, "ops"):
+    if not isinstance(op, (Hamiltonian, Sum)):
         return False
-    return all(is_pauli_word(o) for o in op.ops)
+    if isinstance(op, Hamiltonian):
+        return all(is_pauli_word(o) for o in op.ops)
+    return all(is_pauli_word(o) for o in op)
 
 
 @singledispatch
@@ -428,5 +430,7 @@ def _(op: Hamiltonian):
 
 @_pauli_sentence.register
 def _(op: Sum):
-    summands = (_pauli_sentence(summand) for summand in op)
-    return reduce(lambda a, b: a + b, summands)
+    ps = PauliSentence()
+    for term in op:
+        ps += _pauli_sentence(term)
+    return ps
