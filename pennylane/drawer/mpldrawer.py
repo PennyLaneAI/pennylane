@@ -249,6 +249,9 @@ class MPLDrawer:
     _cond_shift = 0.03
     """The shift value from the centre axis for classical double-lines."""
 
+    _cwire_scaling = 0.15
+    """The distance between successive control wires."""
+
     def __init__(self, n_layers, n_wires, c_wires=0, wire_options=None, figsize=None):
         if not has_mpl:  # pragma: no cover
             raise ImportError(
@@ -262,13 +265,13 @@ class MPLDrawer:
         ## Creating figure and ax
 
         if figsize is None:
-            figsize = (self.n_layers + 3, self.n_wires + c_wires + 1)
+            figsize = (self.n_layers + 3, self.n_wires + self._cwire_scaling * c_wires + 1)
 
         self._fig = plt.figure(figsize=figsize)
         self._ax = self._fig.add_axes(
             [0, 0, 1, 1],
             xlim=(-2, self.n_layers + 1),
-            ylim=(-1, self.n_wires + c_wires),
+            ylim=(-1, self.n_wires + self._cwire_scaling * c_wires),
             xticks=[],
             yticks=[],
         )
@@ -895,9 +898,9 @@ class MPLDrawer:
 
         """
         x_locs = (start_layer - self._cond_shift, end_layer + self._cond_shift)
-        y_pos = self.n_wires + c_wire - self._cond_shift
+        y_pos = self.n_wires + self._cwire_scaling * c_wire - self._cond_shift
         self.ax.add_line(plt.Line2D(x_locs, (y_pos, y_pos), zorder=1))
-        y_pos = self.n_wires + c_wire + self._cond_shift
+        y_pos = self.n_wires + self._cwire_scaling * c_wire + self._cond_shift
         self.ax.add_line(plt.Line2D(x_locs, (y_pos, y_pos), zorder=1))
 
     def classical_control(self, c_wire, layer, wire) -> None:
@@ -910,7 +913,7 @@ class MPLDrawer:
             wire (int): The quantum wire to target.
 
         """
-        ys = (wire, self.n_wires + c_wire + self._cond_shift)
+        ys = (wire, self.n_wires + self._cwire_scaling * c_wire + self._cond_shift)
         self.ax.add_line(
             plt.Line2D((layer - self._cond_shift, layer - self._cond_shift), ys, zorder=1)
         )
