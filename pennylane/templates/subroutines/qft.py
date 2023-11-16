@@ -71,6 +71,9 @@ class QFT(Operation):
         self.hyperparameters["n_wires"] = len(wires)
         super().__init__(wires=wires, id=id)
 
+    def _flatten(self):
+        return tuple(), (self.wires, tuple())
+
     @property
     def num_params(self):
         return 0

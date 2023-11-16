@@ -41,7 +41,7 @@ def _sample_decomposition(coeffs, ops, time, n=1, seed=None):
     ]
 
     choice_rng = qml.math.random.default_rng(seed)
-    return choice_rng.choice(exps, p=probs, size=n, replace=True)
+    return tuple(choice_rng.choice(exps, p=probs, size=n, replace=True))
 
 
 class QDrift(Operation):
@@ -246,7 +246,7 @@ class QDrift(Operation):
             for op in decomp:
                 qml.apply(op)
 
-        return decomp
+        return list(decomp)
 
     @staticmethod
     def error(hamiltonian, time, n=1):
