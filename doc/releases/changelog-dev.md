@@ -36,6 +36,9 @@
 * Added `ops.functions.assert_valid` for checking if an `Operator` class is defined correctly.
   [(#4764)](https://github.com/PennyLaneAI/pennylane/pull/4764)
 
+* Simplified the logic for re-arranging states before returning.
+  [(#4817)](https://github.com/PennyLaneAI/pennylane/pull/4817)
+
 <h3>Breaking changes 💔</h3>
 
 * The `prep` keyword argument has been removed from `QuantumScript` and `QuantumTape`.
@@ -119,6 +122,7 @@
 * Parametrized circuits whose operators do not act on all wires return pennylane tensors as
   expected, instead of numpy arrays.
   [(#4811)](https://github.com/PennyLaneAI/pennylane/pull/4811)
+  [(#4817)](https://github.com/PennyLaneAI/pennylane/pull/4817)
 
 <h3>Contributors ✍️</h3>
 
