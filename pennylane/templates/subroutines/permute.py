@@ -23,7 +23,7 @@ class Permute(Operation):
     r"""Applies a permutation to a set of wires.
 
     Args:
-        permutation (list): A list of wire labels that represents the new ordering of wires
+        permutation (Sequence): A list of wire labels that represents the new ordering of wires
             after the permutation. The list may consist of integers or strings, so long as
             they match the labels of ``wires``.
         wires (Iterable or Wires): Wires that the permutation acts on. Accepts an iterable
@@ -158,7 +158,7 @@ class Permute(Operation):
             if label not in wires:
                 raise ValueError(f"Cannot permute wire {label} not present in wire set.")
 
-        self._hyperparameters = {"permutation": permutation}
+        self._hyperparameters = {"permutation": tuple(permutation)}
         super().__init__(wires=wires, id=id)
 
     @property
