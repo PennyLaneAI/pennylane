@@ -249,7 +249,7 @@ class MPLDrawer:
     _cond_shift = 0.03
     """The shift value from the centre axis for classical double-lines."""
 
-    def __init__(self, n_layers, n_wires, wire_options=None, figsize=None):
+    def __init__(self, n_layers, n_wires, c_wires=0, wire_options=None, figsize=None):
         if not has_mpl:  # pragma: no cover
             raise ImportError(
                 "Module matplotlib is required for ``MPLDrawer`` class. "
@@ -262,13 +262,13 @@ class MPLDrawer:
         ## Creating figure and ax
 
         if figsize is None:
-            figsize = (self.n_layers + 3, self.n_wires + 1)
+            figsize = (self.n_layers + 3, self.n_wires + c_wires + 1)
 
         self._fig = plt.figure(figsize=figsize)
         self._ax = self._fig.add_axes(
             [0, 0, 1, 1],
             xlim=(-2, self.n_layers + 1),
-            ylim=(-1, self.n_wires),
+            ylim=(-1, self.n_wires + c_wires),
             xticks=[],
             yticks=[],
         )
