@@ -128,6 +128,10 @@
   with QNodes.
   [(#4831)](https://github.com/PennyLaneAI/pennylane/pull/4831)
 
+* `qml.pow(op)` and `qml.QubitUnitary.pow()` now also work with Tensorflow data raised to an
+  integer power.
+  [(#4827)](https://github.com/PennyLaneAI/pennylane/pull/4827)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
