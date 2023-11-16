@@ -99,6 +99,14 @@ def csr_dot_products(
         ps = pauli_sentence(measurementprocess.obs)
         new_ket = ps.dot(state, wire_order=list(range(total_wires)))
         res = (bra * new_ket).sum(axis=1)
+    elif is_state_batched:
+        Hmat = measurementprocess.obs.sparse_matrix(wire_order=list(range(total_wires)))
+        state = math.toarray(state).reshape(math.shape(state)[0], -1)
+
+        bra = csr_matrix(math.conj(state))
+        ket = csr_matrix(state)
+        new_bra = bra.dot(Hmat)
+        res = new_bra.multiply(ket).sum(axis=1).getA()
     else:
         Hmat = measurementprocess.obs.sparse_matrix(wire_order=list(range(total_wires)))
         state = math.toarray(state).flatten()

@@ -257,12 +257,11 @@ class PauliWord(dict):
         """Compute the sparse matrix of the Pauli word times a coefficient, given a wire order.
         See pauli_sparse_matrices.md for the technical details of the implementation."""
         matrix_size = 2 ** len(wire_order)
-        indptr = _cached_arange(matrix_size + 1)  # Non-zero entries by row (starting from 0)
-        # Avoid checks and copies in __init__ by directly setting the attributes of an empty matrix
         matrix = sparse.csr_matrix((matrix_size, matrix_size), dtype="complex128")
+        # Avoid checks and copies in __init__ by directly setting the attributes of an empty matrix
         matrix.data = self._get_csr_data(wire_order, coeff)
         matrix.indices = self._get_csr_indices(wire_order)
-        matrix.indptr = indptr
+        matrix.indptr = _cached_arange(matrix_size + 1)  # Non-zero entries by row (starting from 0)
         return matrix
 
     def _get_csr_data(self, wire_order, coeff):

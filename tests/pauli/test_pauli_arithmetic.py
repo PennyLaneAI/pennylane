@@ -661,16 +661,21 @@ class TestPauliSentence:
         ):
             ps.dot(vector, wire_order=wire_order)
 
+    @pytest.mark.parametrize("batch_size", [None, 1, 2, 3])
     @pytest.mark.parametrize("wire_order", [None, range(8)])
-    def test_dot(self, wire_order):
+    def test_dot(self, wire_order, batch_size):
         """Check that paulisentences can be dotted with a vector."""
         word1 = PauliWord({2: "X", 3: "Y", 4: "Z"})
         word2 = PauliWord({2: "Y", 3: "Z"})
         ps = PauliSentence({word1: 1.5, word2: -0.5})
         psmat = ps.to_mat(wire_order=wire_order)
-        vector = np.random.rand(psmat.shape[0])
+        vector = (
+            np.random.rand(psmat.shape[0])
+            if batch_size is None
+            else np.random.rand(batch_size, psmat.shape[0])
+        )
         v0 = ps.dot(vector, wire_order=wire_order)
-        v1 = psmat @ vector
+        v1 = (psmat @ vector.T).T
         assert np.allclose(v0, v1)
 
     def test_map_wires(self):
