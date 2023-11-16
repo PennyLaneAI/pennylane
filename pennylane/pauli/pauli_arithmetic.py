@@ -220,7 +220,7 @@ class PauliWord(dict):
         """String representation of a PauliWord."""
         if len(self) == 0:
             return "I"
-        return " @ ".join(f"{op}({w})" for w, op in self.items())
+        return " @ ".join(f"{op}({w})" for w, op in sorted(self.items()))
 
     def __repr__(self):
         """Terminal representation for PauliWord"""
