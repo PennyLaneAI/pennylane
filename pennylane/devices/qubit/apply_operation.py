@@ -271,13 +271,8 @@ def apply_grover(op: qml.GroverOperator, state, is_state_batched: bool = False, 
     over all axes on which the operation acts, and "filling in" the all-plus state
     in the resulting lower-dimensional state via a Kronecker product.
     """
-    if (
-        len(op.wires) < EINSUM_OP_WIRECOUNT_PERF_THRESHOLD
-        and math.ndim(state) < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD
-    ):
-        return apply_operation_einsum(op, state, is_state_batched)
     if len(op.wires) < 9:
-        return apply_operation_tensordot(op, state, is_state_batched)
+        return _apply_operation_default(op, state, is_state_batched, debugger)
 
     # The axes to sum over in order to obtain <+|\psi>, where <+| only acts on the op wires.
     sum_axes = [w + is_state_batched for w in op.wires]
