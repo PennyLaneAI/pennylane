@@ -111,7 +111,7 @@ jobs:
         if: ${{ inputs.pipeline_mode != 'unit-tests' }}
         id: benchmark_name
         run: |
-          job_name=${{ inputs.job_name }}
+          job_name="${{ inputs.job_name }}"
           _benchmark_name=${job_name//[(,)]/""}
           _benchmark_name=${_benchmark_name//[(" ")]/"-"}
           echo 'benchmark_name=$_benchmark_name >> $GITHUB_OUTPUT
