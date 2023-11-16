@@ -11,12 +11,12 @@ concurrency:
 jobs:
     # If needed, this workflow will create a cached benchmark reference.
     # This reference will be used for comparative analyses with all PRs benchmarks.
-    reference_benchmarks:
+    reference-benchmarks:
       if: ${{(github.event_name == 'schedule' || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:run-benchmarks')))}}
-      uses: ./.github/workflows/interface-benchmarks.yml
+      uses: ./.github/workflows/interface-unit-tests.yml
       with:
-        reference_benchmarks: true
         branch: add-pytest-benchmarks
+        pipeline_mode: 'reference-benchmarks'
 
         # Run a 'lightened' version of the CI on Pull Requests by default
         # Unless the label `ci:run-full-test-suite` is attached to the PR.
@@ -32,12 +32,13 @@ jobs:
 
     benchmarks:
       if: ${{(github.event_name == 'schedule' || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:run-benchmarks')))}}
-      uses: ./.github/workflows/interface-benchmarks.yml
-      needs: reference_benchmarks
+      uses: ./.github/workflows/interface-unit-tests.yml
+      needs: reference-benchmarks
       with:
         # If runnning on schedule will compare master with the reference data.
         # If not, will compare the branch defined by github.ref (PRs, for example)
         branch: ${{github.event_name == 'schedule' && 'master' || github.ref }}
+        pipeline_mode: 'benchmarks'
 
         # Run a 'lightened' version of the CI on Pull Requests by default
         # Unless the label `ci:run-full-test-suite` is attached to the PR.
