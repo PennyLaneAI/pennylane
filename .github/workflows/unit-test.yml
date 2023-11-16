@@ -114,7 +114,7 @@ jobs:
           job_name="${{ inputs.job_name }}"
           _benchmark_name=${job_name//[(,)]/""}
           _benchmark_name=${_benchmark_name//[(" ")]/"-"}
-          echo 'benchmark_name=$_benchmark_name >> $GITHUB_OUTPUT
+          echo "benchmark_name=$_benchmark_name" >> $GITHUB_OUTPUT
 
       - name: Cache reference benchmarks
         if: ${{ inputs.pipeline_mode != 'unit-tests' }}
