@@ -128,9 +128,9 @@ jobs:
         id: continue
         run: >-
           echo "confirm=$( echo
-          ${{
-            ( (inputs.pipeline_mode == 'unit-tests')
-            || ((inputs.pipeline_mode == 'benchmarks')
+          ${{ (
+            (inputs.pipeline_mode == 'unit-tests')
+            || (inputs.pipeline_mode == 'benchmarks')
             || ((inputs.pipeline_mode == 'reference-benchmarks') && (steps.benchmark-cache.outputs.cache-hit != 'true')) )
           }}
           )" >> $GITHUB_OUTPUT
