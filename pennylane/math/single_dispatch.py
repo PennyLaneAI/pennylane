@@ -335,13 +335,7 @@ ar.register_function("tensorflow", "round", _round_tf)
 
 
 def _ndim_tf(tensor):
-    try:
-        ndim = _i("tf").experimental.numpy.ndim(tensor)
-        if ndim is None:
-            return len(tensor.shape)
-        return ndim
-    except AttributeError:
-        return len(tensor.shape)
+    return len(tensor.shape)
 
 
 ar.register_function("tensorflow", "ndim", _ndim_tf)

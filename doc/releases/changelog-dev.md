@@ -33,6 +33,9 @@
 * `qml.draw` and `qml.draw_mpl` now render operator ids.
   [(#4749)](https://github.com/PennyLaneAI/pennylane/pull/4749)
 
+* Added `ops.functions.assert_valid` for checking if an `Operator` class is defined correctly.
+  [(#4764)](https://github.com/PennyLaneAI/pennylane/pull/4764)
+
 * Simplified the logic for re-arranging states before returning.
   [(#4817)](https://github.com/PennyLaneAI/pennylane/pull/4817)
 
@@ -57,6 +60,9 @@
   [(#4816)](https://github.com/PennyLaneAI/pennylane/pull/4816)
 
 <h3>Deprecations 👋</h3>
+
+* `qml.grad` and `qml.jacobian` now explicitly raise errors if trainable parameters are integers.
+  [(#4836)](https://github.com/PennyLaneAI/pennylane/pull/4836)
 
 * All deprecations now raise a `qml.PennyLaneDeprecationWarning` instead of a `UserWarning`.
   [(#4814)](https://github.com/PennyLaneAI/pennylane/pull/4814)
