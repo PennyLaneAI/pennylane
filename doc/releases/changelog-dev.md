@@ -33,6 +33,12 @@
 * `qml.draw` and `qml.draw_mpl` now render operator ids.
   [(#4749)](https://github.com/PennyLaneAI/pennylane/pull/4749)
 
+* Added `ops.functions.assert_valid` for checking if an `Operator` class is defined correctly.
+  [(#4764)](https://github.com/PennyLaneAI/pennylane/pull/4764)
+
+* Simplified the logic for re-arranging states before returning.
+  [(#4817)](https://github.com/PennyLaneAI/pennylane/pull/4817)
+
 <h3>Breaking changes 💔</h3>
 
 * The `prep` keyword argument has been removed from `QuantumScript` and `QuantumTape`.
@@ -50,7 +56,13 @@
   because it depended on the now-deprecated `Observable.return_type` property.
   [(#4762)](https://github.com/PennyLaneAI/pennylane/pull/4762)
 
+* Specifying `control_values` passed to `qml.ctrl` as a string is no longer supported.
+  [(#4816)](https://github.com/PennyLaneAI/pennylane/pull/4816)
+
 <h3>Deprecations 👋</h3>
+
+* `qml.grad` and `qml.jacobian` now explicitly raise errors if trainable parameters are integers.
+  [(#4836)](https://github.com/PennyLaneAI/pennylane/pull/4836)
 
 * All deprecations now raise a `qml.PennyLaneDeprecationWarning` instead of a `UserWarning`.
   [(#4814)](https://github.com/PennyLaneAI/pennylane/pull/4814)
@@ -110,6 +122,11 @@
 * Parametrized circuits whose operators do not act on all wires return pennylane tensors as
   expected, instead of numpy arrays.
   [(#4811)](https://github.com/PennyLaneAI/pennylane/pull/4811)
+  [(#4817)](https://github.com/PennyLaneAI/pennylane/pull/4817)
+
+* `merge_amplitude_embeddings` no longer depends on queuing, allowing it to work as expected
+  with QNodes.
+  [(#4831)](https://github.com/PennyLaneAI/pennylane/pull/4831)
 
 * `qml.pow(op)` and `qml.QubitUnitary.pow()` now also work with Tensorflow data raised to an
   integer power.
