@@ -867,9 +867,9 @@ class TestGroverOperator:
     def grover_kernel_full_wires(self, state, op_wires, batched):
         """Additional kernel to apply GroverOperator to all state wires."""
         prefactor = 2 ** (1 - len(op_wires))
-        collapsed = np.sum(state, axis=tuple(range(batched, np.ndim(state))))
-        new_shape = (-1,) + (1,) * len(op_wires) if batched else (1,) * len(op_wires)
-        return prefactor * collapsed.reshape(new_shape) - state
+        sum_axes = tuple(range(batched, np.ndim(state)))
+        collapsed = np.sum(state, axis=sum_axes)
+        return prefactor * np.expand_dims(collapsed, sum_axes) - state
 
     def grover_kernel_partial_wires(self, state, op_wires, batched):
         """Additional kernel to apply GroverOperator to some of all state wires."""
@@ -907,10 +907,7 @@ class TestGroverOperator:
         assert spy_einsum.call_count == int(einsum_called)
         assert spy_tensordot.call_count == int(tensordot_called)
 
-    @pytest.mark.parametrize(
-        "op_wires, state_wires",
-        [(2, 2), (3, 3), (9, 9)],
-    )
+    @pytest.mark.parametrize("op_wires, state_wires", [(2, 2), (3, 3), (9, 9)])
     @pytest.mark.parametrize("batch_dim", [None, 1, 3])
     def test_correctness_full_wires(self, op_wires, state_wires, batch_dim):
         """Test that apply_operation is correct for GroverOperator for all dispatch branches
@@ -929,10 +926,7 @@ class TestGroverOperator:
         assert np.allclose(out, expected_via_mat)
         assert np.allclose(out, expected_via_kernel)
 
-    @pytest.mark.parametrize(
-        "op_wires, state_wires",
-        [(3, 5), (9, 13)],
-    )
+    @pytest.mark.parametrize("op_wires, state_wires", [(3, 5), (9, 13)])
     @pytest.mark.parametrize("batch_dim", [None, 1, 3])
     def test_correctness_partial_wires(self, op_wires, state_wires, batch_dim):
         """Test that apply_operation is correct for GroverOperator for all dispatch branches
@@ -951,6 +945,120 @@ class TestGroverOperator:
             expected_via_kernel = self.grover_kernel_partial_wires(state, wires, batched)
             assert np.allclose(out, expected_via_mat)
             assert np.allclose(out, expected_via_kernel)
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("op_wires, state_wires", [(2, 2), (3, 3), (9, 9), (3, 5), (9, 13)])
+    @pytest.mark.parametrize("batch_dim", [None, 1, 3])
+    def test_correctness_autograd(self, op_wires, state_wires, batch_dim):
+        """Test that apply_operation is correct for GroverOperator for all dispatch branches
+        when applying it to an Autograd state."""
+        batched = batch_dim is not None
+        shape = [batch_dim] + [2] * state_wires if batched else [2] * state_wires
+        # Input state
+        np.random.seed(752)
+        state = np.random.random(shape) + 1j * np.random.random(shape)
+
+        wires = list(range(op_wires))
+        op = qml.GroverOperator(wires)
+        expected_via_mat = apply_operation_tensordot(op, state, batched)
+        if op_wires == state_wires:
+            expected_via_kernel = self.grover_kernel_full_wires(state, wires, batched)
+        else:
+            expected_via_kernel = self.grover_kernel_partial_wires(state, wires, batched)
+
+        # Cast to interface and apply operation
+        state = qml.numpy.array(state)
+        out = apply_operation(op, state, is_state_batched=batched, debugger=None)
+
+        assert qml.math.allclose(out, expected_via_mat)
+        assert qml.math.allclose(out, expected_via_kernel)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("op_wires, state_wires", [(2, 2), (3, 3), (9, 9), (3, 5), (9, 13)])
+    @pytest.mark.parametrize("batch_dim", [None, 1, 3])
+    def test_correctness_tf(self, op_wires, state_wires, batch_dim):
+        """Test that apply_operation is correct for GroverOperator for all dispatch branches
+        when applying it to a Tensorflow state."""
+        import tensorflow as tf
+
+        batched = batch_dim is not None
+        shape = [batch_dim] + [2] * state_wires if batched else [2] * state_wires
+        # Input state
+        np.random.seed(752)
+        state = np.random.random(shape) + 1j * np.random.random(shape)
+
+        wires = list(range(op_wires))
+        op = qml.GroverOperator(wires)
+        expected_via_mat = apply_operation_tensordot(op, state, batched)
+        if op_wires == state_wires:
+            expected_via_kernel = self.grover_kernel_full_wires(state, wires, batched)
+        else:
+            expected_via_kernel = self.grover_kernel_partial_wires(state, wires, batched)
+
+        # Cast to interface and apply operation
+        state = tf.Variable(state)
+        out = apply_operation(op, state, is_state_batched=batched, debugger=None)
+
+        assert qml.math.allclose(out, expected_via_mat)
+        assert qml.math.allclose(out, expected_via_kernel)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("op_wires, state_wires", [(2, 2), (3, 3), (9, 9), (3, 5), (9, 13)])
+    @pytest.mark.parametrize("batch_dim", [None, 1, 3])
+    def test_correctness_jax(self, op_wires, state_wires, batch_dim):
+        """Test that apply_operation is correct for GroverOperator for all dispatch branches
+        when applying it to a Jax state."""
+        import jax
+
+        batched = batch_dim is not None
+        shape = [batch_dim] + [2] * state_wires if batched else [2] * state_wires
+        # Input state
+        np.random.seed(752)
+        state = np.random.random(shape) + 1j * np.random.random(shape)
+
+        wires = list(range(op_wires))
+        op = qml.GroverOperator(wires)
+        expected_via_mat = apply_operation_tensordot(op, state, batched)
+        if op_wires == state_wires:
+            expected_via_kernel = self.grover_kernel_full_wires(state, wires, batched)
+        else:
+            expected_via_kernel = self.grover_kernel_partial_wires(state, wires, batched)
+
+        # Cast to interface and apply operation
+        state = jax.numpy.array(state)
+        out = apply_operation(op, state, is_state_batched=batched, debugger=None)
+
+        assert qml.math.allclose(out, expected_via_mat)
+        assert qml.math.allclose(out, expected_via_kernel)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("op_wires, state_wires", [(2, 2), (3, 3), (9, 9), (3, 5), (9, 13)])
+    @pytest.mark.parametrize("batch_dim", [None, 1, 3])
+    def test_correctness_torch(self, op_wires, state_wires, batch_dim):
+        """Test that apply_operation is correct for GroverOperator for all dispatch branches
+        when applying it to a Torch state."""
+        import torch
+
+        batched = batch_dim is not None
+        shape = [batch_dim] + [2] * state_wires if batched else [2] * state_wires
+        # Input state
+        np.random.seed(752)
+        state = np.random.random(shape) + 1j * np.random.random(shape)
+
+        wires = list(range(op_wires))
+        op = qml.GroverOperator(wires)
+        expected_via_mat = apply_operation_tensordot(op, state, batched)
+        if op_wires == state_wires:
+            expected_via_kernel = self.grover_kernel_full_wires(state, wires, batched)
+        else:
+            expected_via_kernel = self.grover_kernel_partial_wires(state, wires, batched)
+
+        # Cast to interface and apply operation
+        state = torch.tensor(state, requires_grad=True)
+        out = apply_operation(op, state, is_state_batched=batched, debugger=None)
+
+        assert qml.math.allclose(out, expected_via_mat)
+        assert qml.math.allclose(out, expected_via_kernel)
 
 
 @pytest.mark.tf

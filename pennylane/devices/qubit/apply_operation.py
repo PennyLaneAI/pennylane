@@ -271,19 +271,27 @@ def apply_grover(op: qml.GroverOperator, state, is_state_batched: bool = False, 
     over all axes on which the operation acts, and "filling in" the all-plus state
     in the resulting lower-dimensional state via a Kronecker product.
     """
-    if len(op.wires) < 9:
+    n_wires = len(op.wires)
+    if n_wires < 9:
         return _apply_operation_default(op, state, is_state_batched, debugger)
-
-    # The axes to sum over in order to obtain <+|\psi>, where <+| only acts on the op wires.
-    sum_axes = [w + is_state_batched for w in op.wires]
-    n_wires = len(sum_axes)
-    collapsed = math.sum(state, axis=tuple(sum_axes))
 
     # 2 * Squared normalization of the all-plus state on the op wires
     # (squared, because we skipped the normalization when summing, 2* because of the def of Grover)
     prefactor = 2 ** (1 - n_wires)
-    all_plus = math.cast_like(math.full([2] * n_wires, prefactor), state)
 
+    # The axes to sum over in order to obtain <+|\psi>, where <+| only acts on the op wires.
+    sum_axes = [w + is_state_batched for w in op.wires]
+    collapsed = math.sum(state, axis=tuple(sum_axes))
+
+    if n_wires == (len(qml.math.shape(state)) - is_state_batched):
+        # If the operation acts on all wires, we can skip the tensor product with all-ones state
+        new_shape = (-1,) + (1,) * n_wires if is_state_batched else (1,) * n_wires
+        return prefactor * math.reshape(collapsed, new_shape) - state
+        # [todo]: Once Tensorflow support expand_dims with multiple axes in the second argument,
+        # use the following line instead of the two above.
+        # return prefactor * math.expand_dims(collapsed, sum_axes) - state
+
+    all_plus = math.cast_like(math.full([2] * n_wires, prefactor), state)
     # After the Kronecker product (realized with tensordot with axes=0), we need to move
     # the new axes to the summed-away axes' positions. Finally, subtract the original state.
     source = list(range(math.ndim(collapsed), math.ndim(state)))
