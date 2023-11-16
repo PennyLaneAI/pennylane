@@ -884,6 +884,40 @@ class MPLDrawer:
                 layer + 0.05 * self._box_length, wires + 0.2, text, fontsize=self.fontsize
             )
 
+    def classical_wire(self, c_wire, start_layer, end_layer) -> None:
+        """Draw a horizontal classical control wire.
+
+        Args:
+            c_wire (int):  The integer label for the control wire.  ``0`` indicates a line
+                1 below the last quantum wire
+            start_layer (int): The layer to start the classical wire in
+            end_layer (int): The last layer to include for the classical wire.
+
+        """
+        x_locs = (start_layer - self._cond_shift, end_layer + self._cond_shift)
+        y_pos = self.n_wires + c_wire - self._cond_shift
+        self.ax.add_line(plt.Line2D(x_locs, (y_pos, y_pos), zorder=1))
+        y_pos = self.n_wires + c_wire + self._cond_shift
+        self.ax.add_line(plt.Line2D(x_locs, (y_pos, y_pos), zorder=1))
+
+    def classical_control(self, c_wire, layer, wire) -> None:
+        """Draw a vertical connection between a quantum operation and a classical wire.
+
+        Args:
+            c_wire (int): The integer label for the control wire.  ``0`` indicates a line
+                1 below the last quantum wire
+            layer (int): The x position for the classical control lines.
+            wire (int): The quantum wire to target.
+
+        """
+        ys = (wire, self.n_wires + c_wire + self._cond_shift)
+        self.ax.add_line(
+            plt.Line2D((layer - self._cond_shift, layer - self._cond_shift), ys, zorder=1)
+        )
+        self.ax.add_line(
+            plt.Line2D((layer + self._cond_shift, layer + self._cond_shift), ys, zorder=1)
+        )
+
     def cond(self, layer, measured_layer, wires, wires_target, options=None):
         """Add classical communication double-lines for conditional operations
 

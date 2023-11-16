@@ -27,7 +27,7 @@ from pennylane import ops
 from pennylane.measurements import MidMeasureMP
 from .mpldrawer import MPLDrawer
 from .drawable_layers import drawable_layers
-from .utils import convert_wire_order, unwrap_controls
+from .utils import convert_wire_order, unwrap_controls, find_mid_measure_cond_connections
 from .style import _set_style
 
 has_mpl = True
@@ -37,7 +37,9 @@ except (ModuleNotFoundError, ImportError):  # pragma: no cover
     has_mpl = False
 
 
-_Config = namedtuple("_Config", ("wire_map", "decimals", "active_wire_notches"))
+_Config = namedtuple(
+    "_Config", ("wire_map", "decimals", "active_wire_notches", "bit_map", "terminal_layers")
+)
 
 
 @singledispatch
@@ -159,6 +161,10 @@ def _(op: MidMeasureMP, drawer, layer, config):
             text_options={"zorder": 5},
         )
 
+    c_wire = config.bit_map[op]
+    drawer.classical_control(c_wire, layer, config.wire_map[op.wires[0]])
+    drawer.classical_wire(c_wire, layer, config.terminal_layers[0][c_wire])
+
 
 @_add_operation_to_drawer.register
 def _(op: qml.ops.op_math.Conditional, drawer, layer, config) -> None:
@@ -170,6 +176,8 @@ def _(op: qml.ops.op_math.Conditional, drawer, layer, config) -> None:
         box_options={"zorder": 4},
         text_options={"zorder": 5},
     )
+    c_wire = config.bit_map[op.meas_val.measurements[0]]
+    drawer.classical_control(c_wire, layer, min(target_wires))
 
 
 def _get_measured_wires(measurements, wires) -> set:
@@ -193,8 +201,6 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
 
     wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
 
-    config = _Config(wire_map, decimals, active_wire_notches=active_wire_notches)
-
     layers = drawable_layers(tape.operations, wire_map=wire_map)
     for i, layer in enumerate(layers):
         if any(isinstance(o, qml.measurements.MidMeasureMP) and o.reset for o in layer):
@@ -203,7 +209,19 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
     n_layers = len(layers)
     n_wires = len(wire_map)
 
-    drawer = MPLDrawer(n_layers=n_layers, n_wires=n_wires, wire_options=wire_options)
+    bit_map, _, terminal_layers = find_mid_measure_cond_connections(tape.operations, [layers, []])
+
+    drawer = MPLDrawer(
+        n_layers=n_layers, n_wires=n_wires, c_wires=len(bit_map), wire_options=wire_options
+    )
+
+    config = _Config(
+        wire_map,
+        decimals,
+        active_wire_notches=active_wire_notches,
+        bit_map=bit_map,
+        terminal_layers=terminal_layers,
+    )
 
     if n_wires == 0:
         return drawer.fig, drawer.ax

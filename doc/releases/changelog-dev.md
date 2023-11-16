@@ -12,7 +12,7 @@
 * `AmplitudeEmbedding` now also supports batching when used with Tensorflow.
   [(#4818)](https://github.com/PennyLaneAI/pennylane/pull/4818)
 
-* `qml.draw` and `qml.draw_mpl` now support drawing mid-circuit measurements.
+* `qml.draw` and `qml.draw_mpl` now support drawing mid-circuit measurements and classical conditions.
   [(#4775)](https://github.com/PennyLaneAI/pennylane/pull/4775)
 
 * Autograd and torch can now use vjps provided by the device from the new device API. If a device provides
