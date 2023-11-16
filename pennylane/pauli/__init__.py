@@ -13,7 +13,7 @@
 # limitations under the License.
 """A module containing utility functions and reduced representation classes for working with Pauli operators. """
 
-from .pauli_arithmetic import PauliWord, PauliSentence
+from .pauli_arithmetic import PauliWord, PauliSentence, all_commutators, lie_closure
 
 from .utils import (
     is_pauli_word,
