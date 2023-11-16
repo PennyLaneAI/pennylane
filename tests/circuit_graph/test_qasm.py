@@ -679,7 +679,7 @@ class TestQNodeQasmIntegrationTests:
 
         assert res == expected
 
-    @pytest.mark.all_interfaces
+    @pytest.mark.tf
     def test_tf_interface_information_removed(self):
         """Test that interface information from tensorflow is not included in the
         parameter string for parameterized operators"""
