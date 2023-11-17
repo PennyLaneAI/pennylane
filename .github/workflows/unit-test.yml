@@ -136,7 +136,7 @@ jobs:
           }}" >> $GITHUB_OUTPUT
 
       - name: Setup Python
-        if: ${{ steps.continue.outputs.confirm == 'true' }}
+        if: steps.continue.outputs.confirm == 'true'
         uses: actions/setup-python@v4
         with:
           python-version: '${{ inputs.python_version }}'
