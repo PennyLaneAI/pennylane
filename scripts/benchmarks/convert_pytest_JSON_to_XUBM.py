@@ -2,7 +2,7 @@
 This module includes functionality to convert the provided pytest-benchmark JSON file to
 JSON-XUBM (XanadU BenchMarks) format.
 """
-import argparse, json, os, sys
+import argparse, json, os
 ########################################################################
 # Parsing arguments
 ########################################################################
@@ -35,59 +35,61 @@ def parse_args():
 
     return parser.parse_args()
 
-def create_benchmark_XUBM(data, args):
+def create_benchmark_XUBM(stored_data, data, args):
     """This function converts the JSON file provided by pytest-benchmark to the JSON-XUBM (XanadU BenchMark) format.
 
     Args:
+        stored_data: data we already have in-place or an empty dictionary.
         data: Pytest-benchmark JSON data
         args: customization arguments
 
     Returns:
-        JSON-XUBM: XUBM data
+        JSON-XUBM: JSON data
     """
-    new_data = {"xubm": []}
+    if data["commit_info"]["branch"] not in stored_data:
+        stored_data[data["commit_info"]["branch"]] = {}
+    else:
+        print("data already exist. doing nothing.")
+        return stored_data
 
     hash_commit = hash(data["commit_info"]["time"]) + hash(data["commit_info"]["branch"])
     for benchmark in data["benchmarks"]:
         benchmark_xubm = {}
-        #I propose an alternative way of calcuting the unique identifier with information provided by pytest:
         benchmark_xubm["uid"] = hash_commit + hash(benchmark["fullname"]) + hash(json.dumps(benchmark["params"]))
         benchmark_xubm["date"] = data["commit_info"]["time"]
-        benchmark_xubm["name"] = benchmark["name"]
-        # pytest provide more complete information than what we defined for "suite" ["Directory & filename"].
-        # It will provide the full address of the test, relative to the tests folder.
-        # Ex: "devices/test_default_qubit_jax.py::TestQNodeIntegration::test_qubit_circuit_with_jit"
-        # Because of how Pennylane structure its test suite, the reference position will vary (we have more than one tests directory.)
-        # I will follow pytest and call its fullname for now:
         benchmark_xubm["fullname"] = benchmark["fullname"]
         benchmark_xubm["gitID"] = data["commit_info"]["id"]
         benchmark_xubm["runs"] = benchmark["stats"]["iterations"]
         benchmark_xubm["params"] = benchmark["params"]
         benchmark_xubm["runtime"] = benchmark["stats"]["mean"]
-        #Results are always in second:
         benchmark_xubm["timeUnit"] = "seconds"
         benchmark_xubm["project"] = data["commit_info"]["project"]
-        #Pytest provides a lot of machine info, we may consider filter it:
         benchmark_xubm["machine"] = data["machine_info"]
-
         benchmark_xubm["users"] = args.author
-        # Pytest-benchmark provides a reach variety of statistics, I'm storing it as metadata.
+        # Pytest-benchmark provides a reach variety of statistics. This will be stored as metadata.
         benchmark_xubm["metadata"] = {"stats": benchmark["stats"]}
 
-        new_data["xubm"] += [benchmark_xubm, ]
-    return new_data
+        stored_data[data["commit_info"]["branch"]][benchmark["name"]] = benchmark_xubm
+    return stored_data
 
 if __name__ == "__main__":
     parsed_args = parse_args()
 
     if os.stat(parsed_args.filename).st_size == 0:
-        print(parsed_args.filename+" is empty. Interrupting program.")
-        sys.exit(0)
-
+        raise IOError(
+            parsed_args.filename+f" is empty."
+        )
     with open(parsed_args.filename, 'r', encoding="utf-8") as file:
         pytest_data = json.load(file)
 
-    XUBM_data = create_benchmark_XUBM(pytest_data, parsed_args)
+    # Check if the JSON-XUBM file already exist, or if we'll start with and empty dictionary.
+    if os.path.isfile(parsed_args.filename_XUBM):
+        with open(parsed_args.filename_XUBM, 'r', encoding="utf-8") as file:
+            xubm_database = json.load(file)
+    else:
+        xubm_database = {}
+
+    XUBM_data = create_benchmark_XUBM(xubm_database, pytest_data, parsed_args)
 
     with open(parsed_args.filename_XUBM, 'w', encoding="utf-8") as file:
         json.dump(XUBM_data, fp=file)
