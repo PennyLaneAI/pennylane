@@ -332,11 +332,10 @@ class TestCaching:
                 interface="torch",
             )[0]
 
-        # Without caching, 3 evaluations are required.
-        # 1 for the forward pass, and one per output dimension
-        # on the backward pass.
+        # Without caching, 2 evaluations are required.
+        # 1 for the forward pass, and one for the backward pass
         torch_functional.jacobian(lambda x: cost(x, cache=None), params)
-        assert dev.num_executions == 3
+        assert dev.num_executions == 2
 
         # With caching, only 2 evaluations are required. One
         # for the forward pass, and one for the backward pass.

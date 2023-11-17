@@ -22,6 +22,24 @@ from pennylane import numpy as pnp
 import pennylane as qml
 
 
+def test_standard_checks():
+    """Run standard validity tests."""
+    ops = [qml.PauliX(0), qml.PauliY(0)]
+    control = [1]
+
+    op = qml.Select(ops, control)
+    qml.ops.functions.assert_valid(op)
+
+
+def test_repr():
+    """Test the repr method."""
+    ops = [qml.PauliX(0), qml.PauliY(0)]
+    control = [1]
+
+    op = qml.Select(ops, control)
+    assert repr(op) == "Select(ops=(PauliX(wires=[0]), PauliY(wires=[0])), control=<Wires = [1]>)"
+
+
 class TestSelect:
     """Tests that the template defines the correct decomposition."""
 

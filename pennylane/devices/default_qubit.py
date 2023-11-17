@@ -434,6 +434,10 @@ class DefaultQubit(Device):
                 "adjoint",
                 "backprop",
             }
+        if execution_config.use_device_jacobian_product is None:
+            updated_values["use_device_jacobian_product"] = (
+                execution_config.gradient_method == "adjoint"
+            )
         if execution_config.grad_on_execution is None:
             updated_values["grad_on_execution"] = execution_config.gradient_method == "adjoint"
         updated_values["device_options"] = dict(execution_config.device_options)  # copy
