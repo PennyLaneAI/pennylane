@@ -170,7 +170,7 @@ jobs:
         run: pip install "jax${{ env.JAX_VERSION}}" "jaxlib${{ env.JAX_VERSION }}"
 
       - name: Install additional PIP packages
-        if: ${{ (inputs.additional_pip_packages != '') && (steps.continue.outputs.confirm == 'true') }}
+        if: inputs.additional_pip_packages != '' && steps.continue.outputs.confirm == 'true'
         run: pip install ${{ inputs.additional_pip_packages }}
 
       - name: Install PennyLane
