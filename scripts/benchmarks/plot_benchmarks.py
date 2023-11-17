@@ -50,10 +50,9 @@ def format_plot_data(_ref_data, _data):
 
     ratios= []
     names=[]
-    for ref_benchmark, benchmark in zip(_ref_data["xubm"], _data["xubm"]):
-        if [ref_benchmark["name"] == benchmark["name"]]:
-            names += [benchmark["name"], ]
-            ratios += [benchmark["runtime"] / ref_benchmark["runtime"], ]
+    for test_name in _ref_data:
+        names += [test_name, ]
+        ratios += [_data[test_name]["runtime"] / _ref_data[test_name]["runtime"], ]
 
     return names, ratios
 
@@ -66,9 +65,11 @@ if __name__ == "__main__":
 
     with open(args.filename_XUBM_ref, 'r', encoding="utf-8") as file:
         ref_data = json.load(file)
+    ref_commit, ref_data = next(reversed(ref_data.items())) # last stored reference benchmark
 
     with open(args.filename_XUBM, 'r', encoding="utf-8") as file:
         data = json.load(file)
+    commit, data = next(reversed(data.items())) # last stored local benchmark
 
     benchmark_names, benchmark_ratios = format_plot_data(ref_data, data)
 
@@ -87,7 +88,7 @@ if __name__ == "__main__":
     ax.axvline(x = 1.0, color = 'k', linestyle = '--', zorder=0)
 
     ax.set_xlabel('runtime / reference runtime')
-    ax.set_title(args.graph_name)
+    ax.set_title(args.graph_name+" (branchs/tags: "+commit+" vs "+ref_commit+")")
 
     regr_patch = mpatches.Patch(color='red', label='Regression')
     prog_patch = mpatches.Patch(color='blue', label='Improvement')
