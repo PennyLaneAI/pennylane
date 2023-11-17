@@ -22,6 +22,17 @@ from pennylane import numpy as pnp
 from pennylane.templates.state_preparations.mottonen import gray_code, _get_alpha_y
 
 
+def test_standard_validity():
+    """Check the operation using the assert_valid function."""
+
+    state = np.array([1, 2j, 3, 4j, 5, 6j, 7, 8j])
+    state = state / np.linalg.norm(state)
+
+    op = qml.MottonenStatePreparation(state_vector=state, wires=range(3))
+
+    qml.ops.functions.assert_valid(op)
+
+
 class TestHelpers:
     """Tests the helper functions for classical pre-processsing."""
 
