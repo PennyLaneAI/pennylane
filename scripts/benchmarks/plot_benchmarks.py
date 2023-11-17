@@ -88,7 +88,7 @@ if __name__ == "__main__":
     ax.axvline(x = 1.0, color = 'k', linestyle = '--', zorder=0)
 
     ax.set_xlabel('runtime / reference runtime')
-    ax.set_title(args.graph_name+" (branchs/tags: "+commit+" vs "+ref_commit+")")
+    ax.set_title(args.graph_name+" (reference: "+ref_commit+")")
 
     regr_patch = mpatches.Patch(color='red', label='Regression')
     prog_patch = mpatches.Patch(color='blue', label='Improvement')
