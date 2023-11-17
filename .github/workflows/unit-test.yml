@@ -127,13 +127,13 @@ jobs:
       - name: Check if the shared part of the job will continue
         id: continue
         run: >-
-          echo "confirm=$( echo
-          ${{ (
-            (inputs.pipeline_mode == 'unit-tests')
-            || (inputs.pipeline_mode == 'benchmarks')
-            || ((inputs.pipeline_mode == 'reference-benchmarks') && (steps.benchmark-cache.outputs.cache-hit != 'true')) )
-          }}
-          )" >> $GITHUB_OUTPUT
+          echo "confirm=${{
+            contains(fromJSON('["unit-tests", "benchmarks"]'), inputs.pipeline_mode ||
+            (
+              inputs.pipeline_mode == 'reference-benchmarks' && 
+              steps.benchmark-cache.outputs.cache-hit != 'true'
+            ) 
+          }}" >> $GITHUB_OUTPUT
 
       - name: Setup Python
         if: ${{ steps.continue.outputs.confirm == 'true' }}
