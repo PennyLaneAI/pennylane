@@ -152,7 +152,7 @@ jobs:
           pip install -r requirements-dev.txt --upgrade
 
       - name: Install PyTorch
-        if: ${{ (inputs.install_pytorch == true) && (steps.continue.outputs.confirm == 'true') }}
+        if: inputs.install_pytorch == true && steps.continue.outputs.confirm == 'true'
         env:
           TORCH_VERSION: ${{ inputs.pytorch_version != '' && format('=={0}', inputs.pytorch_version) || '' }}
         run: pip install "torch${{ env.TORCH_VERSION }}" -f https://download.pytorch.org/whl/torch_stable.html
