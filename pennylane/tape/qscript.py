@@ -765,7 +765,6 @@ class QuantumScript:
 
         new_tape = self.__class__(new_operations, new_measurements, shots=self.shots)
         new_tape.trainable_params = self.trainable_params
-        print(new_tape.circuit)
         return new_tape
 
     # ========================================================
