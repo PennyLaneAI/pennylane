@@ -13,7 +13,7 @@
   [(#4703)](https://github.com/PennyLaneAI/pennylane/pull/4703)
 
 * Added `__iadd__` method to PauliSentence, which enables inplace-addition using `+=`, we no longer need to perform a copy, leading to performance improvements.
-[(#4662)](https://github.com/PennyLaneAI/pennylane/pull/4662) 
+  [(#4662)](https://github.com/PennyLaneAI/pennylane/pull/4662) 
 
 * `qml.ArbitraryUnitary` now supports batching.
   [(#4745)](https://github.com/PennyLaneAI/pennylane/pull/4745)
@@ -43,6 +43,10 @@
 * Any `ScalarSymbolicOp`, like `Evolution`, now states that it has a matrix if the target
   is a `Hamiltonian`.
   [(#4768)](https://github.com/PennyLaneAI/pennylane/pull/4768)
+
+* The `tape.to_openqasm` method no longer mistakenly includes interface information in the parameter 
+  string when converting tapes using non-numpy interfaces.
+  [(#4849)](https://github.com/PennyLaneAI/pennylane/pull/4849)
 
 <h3>Contributors ✍️</h3>
 
