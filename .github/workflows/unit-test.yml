@@ -164,7 +164,7 @@ jobs:
         run: pip install "tensorflow${{ env.TF_VERSION }}" "keras${{ env.TF_VERSION }}"
 
       - name: Install JAX
-        if: ${{ (inputs.install_jax == true) && (steps.continue.outputs.confirm == 'true') }}
+        if: inputs.install_jax == true && steps.continue.outputs.confirm == 'true'
         env:
           JAX_VERSION: ${{ inputs.jax_version != '' && format('=={0}', inputs.jax_version) || '' }}
         run: pip install "jax${{ env.JAX_VERSION}}" "jaxlib${{ env.JAX_VERSION }}"
