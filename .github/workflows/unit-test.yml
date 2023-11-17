@@ -195,7 +195,7 @@ jobs:
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
 
       - name: Upload Coverage File
-        if: ${{ inputs.pipeline_mode == 'unit-tests' }}
+        if: inputs.pipeline_mode == 'unit-tests'
         uses: actions/upload-artifact@v3
         with:
           name: ${{ inputs.coverage_artifact_name }}
