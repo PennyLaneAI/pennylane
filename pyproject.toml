@@ -93,3 +93,4 @@ networkx = "~2.6.2"
 # we do not pin the sphinx theme, to allow the
 # navbar and header data to be updated at the source
 pennylane-sphinx-theme = "*"
+matplotlib = "*"
