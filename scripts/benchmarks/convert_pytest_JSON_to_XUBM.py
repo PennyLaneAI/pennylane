@@ -77,7 +77,7 @@ if __name__ == "__main__":
 
     if os.stat(parsed_args.filename).st_size == 0:
         raise IOError(
-            parsed_args.filename+f" is empty."
+            parsed_args.filename+" is empty."
         )
     with open(parsed_args.filename, 'r', encoding="utf-8") as file:
         pytest_data = json.load(file)
