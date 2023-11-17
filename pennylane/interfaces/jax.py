@@ -109,7 +109,6 @@ def jax_execute_and_compute_jvp(_, jpc, primals, tangents):
 
     Returns:
         ResultBatch, TensorLike: The results of executing the tapes and the jacobian vector products.
-
     """
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug("Entry with (tapes=%s, jpc=%s)", primals[0], jpc)

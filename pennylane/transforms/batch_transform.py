@@ -224,7 +224,7 @@ class batch_transform:
             "Use of `batch_transform` to create a custom transform is deprecated. Instead "
             "switch to using the new qml.transform function. Follow the instructions here for "
             "further details: https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms.",
-            UserWarning,
+            qml.PennyLaneDeprecationWarning,
         )
         self.transform_fn = transform_fn
         self.expand_fn = expand_fn
