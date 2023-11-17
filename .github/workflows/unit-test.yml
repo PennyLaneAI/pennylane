@@ -158,7 +158,7 @@ jobs:
         run: pip install "torch${{ env.TORCH_VERSION }}" -f https://download.pytorch.org/whl/torch_stable.html
 
       - name: Install TensorFlow
-        if: ${{ (inputs.install_tensorflow == true) && (steps.continue.outputs.confirm == 'true') }}
+        if: inputs.install_tensorflow == true && steps.continue.outputs.confirm == 'true'
         env:
           TF_VERSION: ${{ inputs.tensorflow_version != '' && format('~={0}', inputs.tensorflow_version) || '' }}
         run: pip install "tensorflow${{ env.TF_VERSION }}" "keras${{ env.TF_VERSION }}"
