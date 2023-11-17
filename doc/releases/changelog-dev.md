@@ -25,13 +25,19 @@
   [(#4703)](https://github.com/PennyLaneAI/pennylane/pull/4703)
 
 * Added `__iadd__` method to PauliSentence, which enables inplace-addition using `+=`, we no longer need to perform a copy, leading to performance improvements.
-[(#4662)](https://github.com/PennyLaneAI/pennylane/pull/4662) 
+  [(#4662)](https://github.com/PennyLaneAI/pennylane/pull/4662) 
 
 * `qml.ArbitraryUnitary` now supports batching.
   [(#4745)](https://github.com/PennyLaneAI/pennylane/pull/4745)
 
 * `qml.draw` and `qml.draw_mpl` now render operator ids.
   [(#4749)](https://github.com/PennyLaneAI/pennylane/pull/4749)
+
+* Added `ops.functions.assert_valid` for checking if an `Operator` class is defined correctly.
+  [(#4764)](https://github.com/PennyLaneAI/pennylane/pull/4764)
+
+* Simplified the logic for re-arranging states before returning.
+  [(#4817)](https://github.com/PennyLaneAI/pennylane/pull/4817)
 
 <h3>Breaking changes 💔</h3>
 
@@ -109,6 +115,10 @@
   is a `Hamiltonian`.
   [(#4768)](https://github.com/PennyLaneAI/pennylane/pull/4768)
 
+* The `tape.to_openqasm` method no longer mistakenly includes interface information in the parameter 
+  string when converting tapes using non-numpy interfaces.
+  [(#4849)](https://github.com/PennyLaneAI/pennylane/pull/4849)
+
 * In `default.qubit`, initial states are now initialized with the simulator's wire order, not the circuit's
   wire order.
   [(#4781)](https://github.com/PennyLaneAI/pennylane/pull/4781)
@@ -119,6 +129,16 @@
 * Parametrized circuits whose operators do not act on all wires return pennylane tensors as
   expected, instead of numpy arrays.
   [(#4811)](https://github.com/PennyLaneAI/pennylane/pull/4811)
+  [(#4817)](https://github.com/PennyLaneAI/pennylane/pull/4817)
+
+* `merge_amplitude_embeddings` no longer depends on queuing, allowing it to work as expected
+  with QNodes.
+  [(#4831)](https://github.com/PennyLaneAI/pennylane/pull/4831)
+
+* `qml.pow(op)` and `qml.QubitUnitary.pow()` now also work with Tensorflow data raised to an
+  integer power.
+  [(#4827)](https://github.com/PennyLaneAI/pennylane/pull/4827)
+
 
 <h3>Contributors ✍️</h3>
 

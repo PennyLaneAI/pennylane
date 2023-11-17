@@ -1113,8 +1113,8 @@ class QuantumScript:
         qasm_str += f"qreg q[{len(wires)}];\n"
         qasm_str += f"creg c[{len(wires)}];\n"
 
-        # get the user applied circuit operations
-        operations = self.operations.copy()
+        # get the user applied circuit operations without interface information
+        operations = qml.transforms.convert_to_numpy_parameters(self).operations
 
         if rotations:
             # if requested, append diagonalizing gates corresponding
@@ -1187,19 +1187,19 @@ class QuantumScript:
         **Example:**
 
         >>> circuit = qml.tape.QuantumScript([qml.PauliX("a")], [qml.expval(qml.PauliZ("b"))])
-        >>> map_circuit_to_standard_wires(circuit).circuit
+        >>> circuit.map_to_standard_wires().circuit
         [PauliX(wires=[0]), expval(PauliZ(wires=[1]))]
 
         If any measured wires are not in any operations, they will be mapped last:
 
         >>> circuit = qml.tape.QuantumScript([qml.PauliX(1)], [qml.probs(wires=[0, 1])])
-        >>> qml.devices.qubit.map_circuit_to_standard_wires(circuit).circuit
+        >>> circuit.map_to_standard_wires().circuit
         [PauliX(wires=[0]), probs(wires=[1, 0])]
 
         If no wire-mapping is needed, then the returned circuit *is* the inputted circuit:
 
         >>> circuit = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliZ(1))])
-        >>> qml.devices.qubit.map_circuit_to_standard_wires(circuit) is circuit
+        >>> circuit.map_to_standard_wires() is circuit
         True
 
         """
