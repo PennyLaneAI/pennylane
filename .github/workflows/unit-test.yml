@@ -146,7 +146,7 @@ jobs:
         run: pip install --upgrade pip && pip install wheel --upgrade
 
       - name: Install PennyLane dependencies
-        if: ${{ steps.continue.outputs.confirm == 'true' }}
+        if: steps.continue.outputs.confirm == 'true'
         run: |
           pip install -r requirements-ci.txt --upgrade
           pip install -r requirements-dev.txt --upgrade
