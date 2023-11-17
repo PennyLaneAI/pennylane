@@ -65,6 +65,7 @@ class MPLDrawer:
         n_wires (int): the number of wires
 
     Keyword Args:
+        c_wires=0 (int): the number of classical wires to leave space for.
         wire_options=None (dict): matplotlib configuration options for drawing the wire lines
         figsize=None (Iterable): Allows users to specify the size of the figure manually. Defaults
             to scale with the size of the circuit via ``n_layers`` and ``n_wires``.
@@ -249,7 +250,7 @@ class MPLDrawer:
     _cond_shift = 0.03
     """The shift value from the centre axis for classical double-lines."""
 
-    _cwire_scaling = 0.15
+    _cwire_scaling = 0.25
     """The distance between successive control wires."""
 
     def __init__(self, n_layers, n_wires, c_wires=0, wire_options=None, figsize=None):
