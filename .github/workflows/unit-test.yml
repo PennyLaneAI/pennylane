@@ -130,9 +130,9 @@ jobs:
           echo "confirm=${{
             contains(fromJSON('["unit-tests", "benchmarks"]'), inputs.pipeline_mode ||
             (
-              inputs.pipeline_mode == 'reference-benchmarks' && 
+              inputs.pipeline_mode == 'reference-benchmarks' &&
               steps.benchmark-cache.outputs.cache-hit != 'true'
-            ) 
+            )
           }}" >> $GITHUB_OUTPUT
 
       - name: Setup Python
@@ -184,7 +184,7 @@ jobs:
         run: pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
 
       - name: Run PennyLane Unit Tests
-        if: ${{ inputs.pipeline_mode == 'unit-tests' }}
+        if: inputs.pipeline_mode == 'unit-tests'
         env:
           PYTEST_MARKER: ${{ inputs.pytest_markers != '' && format('-m "{0}"', inputs.pytest_markers) || '' }}
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
@@ -202,7 +202,7 @@ jobs:
           path: coverage.xml
 
       - name: Run PennyLane Benchmarks
-        if: ${{ (steps.continue.outputs.confirm == 'true') && (inputs.pipeline_mode != 'unit-tests') }}
+        if: steps.continue.outputs.confirm == 'true' && inputs.pipeline_mode != 'unit-tests'
         env:
           PYTEST_MARKER: ${{ inputs.pytest_markers != '' && format('-m "{0}"', inputs.pytest_markers) || '' }}
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
@@ -210,11 +210,11 @@ jobs:
 
         # If this is a reference benchmark move file to the cached directory, and we have a non-empty reference benchmark file.
       - name: Move reference pytest benchmark file to cache
-        if: ${{ (inputs.pipeline_mode == 'reference-benchmarks') && (hashFiles('benchmarks.json') != '')}}
+        if: inputs.pipeline_mode == 'reference-benchmarks' && hashFiles('benchmarks.json') != ''
         run: mkdir -p ${{ github.workspace }}/benchmark_reference && cp benchmarks.json "$_"
 
       - name: Convert pytest benchmark JSON files to XUBM-JSON
-        if: ${{ (inputs.pipeline_mode == 'benchmarks') && (hashFiles('benchmarks.json') != '') && (hashFiles('benchmark_reference/benchmarks.json') != '') }}
+        if: inputs.pipeline_mode == 'benchmarks' && hashFiles('benchmarks.json') != '' && hashFiles('benchmark_reference/benchmarks.json') != ''
         run: |
           mkdir ${{ github.workspace }}/benchmark_results
           python ${{ github.workspace }}/scripts/benchmarks/convert_pytest_JSON_to_XUBM.py --filename_XUBM benchmark_results/benchmarks_xubm.json --author ${{ github.event.pull_request.user.login }} --github_reference ${{ github.ref }}
@@ -222,13 +222,13 @@ jobs:
           python ${{ github.workspace }}/scripts/benchmarks/convert_pytest_JSON_to_XUBM.py --author ${{ github.event.pull_request.user.login }}
 
       - name: Plotting benchmark graphs
-        if: ${{ (inputs.pipeline_mode == 'benchmarks') && (hashFiles('benchmark_results/benchmarks_xubm.json') != '') && (hashFiles('benchmark_reference/benchmarks_xubm.json') != '') }}
+        if: inputs.pipeline_mode == 'benchmarks' && hashFiles('benchmark_results/benchmarks_xubm.json') != '' && hashFiles('benchmark_reference/benchmarks_xubm.json') != ''
         run: |
           python ${{ github.workspace }}/scripts/benchmarks/plot_benchmarks.py --graph_name ${{ steps.benchmark_name.outputs.benchmark_name }}
 
       # If this is an assessment benchmark, upload the data as an artifact.
       - name: Upload pytest benchmark results
-        if: ${{ inputs.pipeline_mode == 'benchmarks' }}
+        if: inputs.pipeline_mode == 'benchmarks'
         uses: actions/upload-artifact@v3
         with:
           name: ${{ steps.benchmark_name.outputs.benchmark_name }}
