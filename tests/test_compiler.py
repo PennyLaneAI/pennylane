@@ -13,9 +13,6 @@
 # limitations under the License.
 """
 Unit tests for the compiler subpackage.
-TODO: Uncomment 'pytest.mark.external' to check these tests in GitHub actions with
-    the 'pennylane-catalyst' v0.3.2 release. These tests require the installation
-    of Catalyst from the main branch at the moment.
 """
 # pylint: disable=import-outside-toplevel
 import pytest
@@ -26,7 +23,7 @@ from pennylane import numpy as np
 catalyst = pytest.importorskip("catalyst")
 jax = pytest.importorskip("jax")
 
-# pytestmark = pytest.mark.external
+pytestmark = pytest.mark.external
 
 from jax import numpy as jnp  # pylint:disable=wrong-import-order, wrong-import-position
 from jax.core import ShapedArray  # pylint:disable=wrong-import-order, wrong-import-position
@@ -41,9 +38,7 @@ class TestCatalyst:
         """Test compiler active and available methods"""
 
         assert not qml.compiler.active()
-
-        assert qml.compiler.available("catalyst")
-        assert qml.compiler.available_compilers() == ["catalyst"]
+        assert not qml.compiler.available("SomeRandomCompiler")
 
         assert qml.compiler.available("catalyst")
         assert qml.compiler.available_compilers() == ["catalyst"]
@@ -97,13 +92,18 @@ class TestCatalyst:
 
         dev = qml.device("lightning.qubit", wires=2)
 
-        @qml.qjit  # compilation happens at definition
+        @qml.qjit
         @qml.qnode(dev)
         def circuit(x: complex, z: ShapedArray(shape=(3,), dtype=jnp.float64)):
             theta = jnp.abs(x)
             qml.RY(theta, wires=0)
             qml.Rot(z[0], z[1], z[2], wires=0)
             return qml.state()
+
+        # Check that the compilation happens at definition
+        assert circuit.jaxpr
+        assert circuit.mlir
+        assert circuit.qir
 
         result = circuit(0.2j, jnp.array([0.3, 0.6, 0.9]))
         expected = jnp.array(
@@ -330,17 +330,15 @@ class TestCatalyst:
                 qml.RY(x[1], wires=0)
                 return qml.probs()
 
-            g = qml.jacobian(circuit, method="fd", step_size=0.3)
+            g = qml.jacobian(circuit, method="fd", h=0.3)
             return g(x)
 
         result = qml.qjit(workflow)(np.array([2.0, 1.0]))
-        print(result)
-
         reference = np.array([[-0.37120096, -0.45467246], [0.37120096, 0.45467246]])
-        print(jnp.allclose(result, reference))
+        assert jnp.allclose(result, reference)
 
         with pytest.raises(
             ValueError,
-            match="Invalid values for 'method=fd' and 'step_size=0.3' in interpreted mode",
+            match="Invalid values for 'method=fd' and 'h=0.3' in interpreted mode",
         ):
             workflow(np.array([2.0, 1.0]))
