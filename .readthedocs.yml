@@ -11,6 +11,17 @@ build:
     python: "3.9"
   apt_packages:
     - graphviz
+  jobs:
+    post_create_environment:
+      # Install poetry
+      # https://python-poetry.org/docs/#installing-manually
+      - pip install poetry
+      # Tell poetry to not use a virtual environment
+      - poetry config virtualenvs.create false
+    post_install:
+      # Install dependencies with 'docs' dependency group
+      # https://python-poetry.org/docs/managing-dependencies/#dependency-groups
+      - poetry install --with doc
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
@@ -23,10 +34,3 @@ sphinx:
 # Optionally build your docs in additional formats such as PDF and ePub
 formats:
   - htmlzip
-
-# Optionally set the version of Python and requirements required to build your docs
-python:
-  install:
-    - requirements: doc/requirements.txt
-    - method: pip
-      path: .
