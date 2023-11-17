@@ -33,6 +33,14 @@ def parse_args():
         help="User associated with the commit.",
     )
 
+    parser.add_argument(
+        "--github_reference",
+        type=str,
+        default="",
+        nargs="?",
+        help="The fully-formed ref of the branch or tag that triggered the workflow run.",
+    )
+
     return parser.parse_args()
 
 def create_benchmark_XUBM(stored_data, data, args):
@@ -46,13 +54,14 @@ def create_benchmark_XUBM(stored_data, data, args):
     Returns:
         JSON-XUBM: JSON data
     """
-    if data["commit_info"]["branch"] not in stored_data:
-        stored_data[data["commit_info"]["branch"]] = {}
+    commit_reference = args.github_reference if (args.github_reference != "") else data["commit_info"]["branch"]
+    if commit_reference not in stored_data:
+        stored_data[commit_reference] = {}
     else:
         print("data already exist. doing nothing.")
         return stored_data
 
-    hash_commit = hash(data["commit_info"]["time"]) + hash(data["commit_info"]["branch"])
+    hash_commit = hash(data["commit_info"]["time"]) + hash(commit_reference)
     for benchmark in data["benchmarks"]:
         benchmark_xubm = {}
         benchmark_xubm["uid"] = hash_commit + hash(benchmark["fullname"]) + hash(json.dumps(benchmark["params"]))
@@ -69,7 +78,7 @@ def create_benchmark_XUBM(stored_data, data, args):
         # Pytest-benchmark provides a reach variety of statistics. This will be stored as metadata.
         benchmark_xubm["metadata"] = {"stats": benchmark["stats"]}
 
-        stored_data[data["commit_info"]["branch"]][benchmark["name"]] = benchmark_xubm
+        stored_data[commit_reference][benchmark["name"]] = benchmark_xubm
     return stored_data
 
 if __name__ == "__main__":
