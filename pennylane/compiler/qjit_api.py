@@ -49,7 +49,8 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
             available TensorFlow installation. See the
             :doc:`AutoGraph guide <catalyst:dev/autograph>` for more information.
         keep_intermediate (bool): Whether or not to store the intermediate files throughout the
-            compilation. If ``True``, intermediate representations are available via the
+            compilation. The files are stored at the location where the Python script is called.
+            If ``True``, intermediate representations are available via the
             :attr:`~.QJIT.mlir`, :attr:`~.QJIT.jaxpr`, and :attr:`~.QJIT.qir`, representing
             different stages in the optimization process.
         verbosity (bool): If ``True``, the tools and flags used by Catalyst behind the scenes are

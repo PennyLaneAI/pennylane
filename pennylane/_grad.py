@@ -27,8 +27,8 @@ make_vjp = unary_to_nary(_make_vjp)
 
 
 class grad:
-    """A :func:`~.qjit` compatible gradient transformation that returns the gradient
-    as a callable function of (functions of) QNodes.
+    """Returns the gradient as a callable function of hybrid quantum-classical functions.
+    :func:`~.qjit` and Autograd compatible.
 
 
     By default, gradients are computed for arguments which contain
@@ -191,11 +191,8 @@ class grad:
 
 
 def jacobian(func, argnum=None, method=None, h=None):
-    """A :func:`~.qjit` compatible Jacobian transformation that returns the Jacobian
-    as a callable function of vector-valued (functions of) QNodes.
-
-
-    By default, this is a wrapper around the :mod:`autograd.jacobian` function.
+    """Returns the Jacobian as a callable function of vector-valued (functions of) QNodes.
+    :func:`~.qjit` and Autograd compatible.
 
     .. note::
 

@@ -102,7 +102,7 @@ Basic usage
 
 When using just-in-time (JIT) compilation, the compilation is triggered at the call site the
 first time the quantum function is executed. For example, ``circuit`` is
-compiled as early as the first call.
+compiled in the first call.
 
 .. code-block:: python
 
