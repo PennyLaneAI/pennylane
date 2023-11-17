@@ -86,7 +86,7 @@ tensornetwork = "0.3"
 #     { version = "2.1.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'" },
 #     { version = "2.1.0+cpu", source = "pytorch-cpu", markers = "platform_machine == 'x86_64'" }
 # ]
-torch = "2.1.0"
+torch = { version = "2.1.0", source = "pytorch-cpu" }
 jinja2 = "3.0.3"
 rustworkx = "0.12.1"
 networkx = "~2.6.2"
