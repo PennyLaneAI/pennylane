@@ -1411,12 +1411,13 @@ def jax_import_init(request):
 
 @pytest.mark.jax
 @pytest.mark.usefixtures("jax_import_init")
+@pytest.mark.parametrize('use_jit', [True, False])
 class JaxIntegrationTest:
     pass
 
 
 class TestQNodeIntegrationJax(JaxIntegrationTest):
-    def test_qutrit_circuit(self, tol):
+    def test_qutrit_circuit(self, tol, use_jit):
         """Test that the device provides the correct
         result for a simple circuit."""
         p = self.jnp.array(0.543)
@@ -1428,12 +1429,15 @@ class TestQNodeIntegrationJax(JaxIntegrationTest):
             qml.TRX(x, wires=0, subspace=[0, 2])
             return qml.expval(qml.GellMann(0, 5))
 
+        if use_jit:
+            circuit = self.jax.jit(circuit)
+
         expected = -np.sin(p)
 
         assert circuit.gradient_fn == "backprop"
         assert np.isclose(circuit(p), expected, atol=tol, rtol=0)
 
-    def test_correct_state(self, tol):
+    def test_correct_state(self, tol, use_jit):
         """Test that the device state is correct after evaluating a
         quantum function on the device"""
         dev = qml.device("default.qutrit", wires=1)
@@ -1448,6 +1452,9 @@ class TestQNodeIntegrationJax(JaxIntegrationTest):
             qml.THadamard(wires=0)
             qml.TRZ(a, wires=0)
             return qml.expval(qml.GellMann(0, 3))
+
+        if use_jit:
+            circuit = self.jax.jit(circuit)
 
         circuit(self.jnp.array(np.pi / 4))
         state = dev.state
@@ -1474,7 +1481,7 @@ class TestDtypePreservedJax(JaxIntegrationTest):
             qml.probs(wires=[2, 0]),
         ],
     )
-    def test_real_dtype(self, enable_x64, r_dtype, measurement):
+    def test_real_dtype(self, enable_x64, r_dtype, measurement, use_jit):
         """Test that the user-defined dtype of the device is preserved
         for QNodes with real-valued outputs"""
         self.config.update("jax_enable_x64", enable_x64)
@@ -1486,11 +1493,14 @@ class TestDtypePreservedJax(JaxIntegrationTest):
             qml.TRX(x, wires=0)
             return qml.apply(measurement)
 
+        if use_jit:
+            circuit = self.jax.jit(circuit)
+
         res = circuit(p)
         assert res.dtype == r_dtype
 
     @pytest.mark.parametrize("enable_x64, c_dtype", [(False, np.complex64), (True, np.complex128)])
-    def test_complex_dtype(self, enable_x64, c_dtype):
+    def test_complex_dtype(self, enable_x64, c_dtype, use_jit):
         """Test that the user-defined dtype of the device is preserved
         for QNodes with complex-valued outputs"""
         self.config.update("jax_enable_x64", enable_x64)
@@ -1502,6 +1512,9 @@ class TestDtypePreservedJax(JaxIntegrationTest):
             qml.TRX(x, wires=0)
             return qml.state()
 
+        if use_jit:
+            circuit = self.jax.jit(circuit)
+
         res = circuit(p)
         assert res.dtype == c_dtype
 
@@ -1509,7 +1522,7 @@ class TestDtypePreservedJax(JaxIntegrationTest):
 class TestPassthruIntegrationJax(JaxIntegrationTest):
     """Tests for integration with the PassthruQNode"""
 
-    def test_backprop_gradient(self, tol):
+    def test_backprop_gradient(self, tol, use_jit):
         """Tests that the gradient of the qnode is correct"""
         dev = qml.device("default.qutrit", wires=2)
 
@@ -1519,6 +1532,9 @@ class TestPassthruIntegrationJax(JaxIntegrationTest):
             qml.TAdd(wires=[0, 1])
             qml.TRY(b, wires=1, subspace=[0, 2])
             return qml.expval(qml.GellMann(0, 3) @ qml.GellMann(1, 3))
+
+        if use_jit:
+            circuit = self.jax.jit(circuit)
 
         a = self.jnp.array(-0.234)
         b = self.jnp.array(0.654)
@@ -1540,7 +1556,7 @@ class TestPassthruIntegrationJax(JaxIntegrationTest):
             self.jnp.array(res), self.jnp.array(expected_grad), atol=tol, rtol=0
         )
 
-    def test_backprop_gradient_broadcasted(self, tol):
+    def test_backprop_gradient_broadcasted(self, tol, use_jit):
         """Tests that the gradient of the broadcasted qnode is correct"""
         dev = qml.device("default.qutrit", wires=2)
 
@@ -1550,6 +1566,9 @@ class TestPassthruIntegrationJax(JaxIntegrationTest):
             qml.TAdd(wires=[0, 1])
             qml.TRY(b, wires=1, subspace=[0, 2])
             return qml.expval(qml.GellMann(0, 3) @ qml.GellMann(1, 3))
+
+        if use_jit:
+            circuit = self.jax.jit(circuit)
 
         a = self.jnp.array(0.12)
         b = self.jnp.array([0.54, 0.32, 1.2])
