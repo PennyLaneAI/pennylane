@@ -133,6 +133,12 @@ def autograd_execute(
         logger.debug("Entry with (tapes=%s, execute_fn=%s, jpc=%s)", tapes, execute_fn, jpc)
     # pylint: disable=unused-argument
 
+    tapes = tuple(tapes)
+    for tape in tapes:
+        # set the trainable parameters
+        params = tape.get_parameters(trainable_only=False)
+        tape.trainable_params = qml.math.get_trainable_indices(params)
+
     # pylint misidentifies autograd.builtins as a dict
     # pylint: disable=no-member
     parameters = autograd.builtins.tuple(

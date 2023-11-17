@@ -20,6 +20,7 @@ from copy import copy
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
+from pennylane.pytrees import register_pytree
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
@@ -208,6 +209,23 @@ class ParametrizedHamiltonian:
 
     """
 
+    def _flatten(self):
+        return (self.coeffs_fixed, self.ops_fixed, self.ops_parametrized), (
+            self.coeffs_parametrized,
+        )
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        new_obj = object.__new__(cls)
+        new_obj.coeffs_fixed = data[0]
+        new_obj.coeffs_parametrized = metadata[0]
+        new_obj.ops_fixed = data[1]
+        new_obj.ops_parametrized = data[2]
+        new_obj.wires = Wires.all_wires(
+            [op.wires for op in new_obj.ops_fixed] + [op.wires for op in new_obj.ops_parametrized]
+        )
+        return new_obj
+
     def __init__(self, coeffs, observables):
         if len(coeffs) != len(observables):
             raise ValueError(
@@ -380,3 +398,8 @@ class ParametrizedHamiltonian:
         return NotImplemented
 
     __rmul__ = __mul__
+
+
+register_pytree(
+    ParametrizedHamiltonian, ParametrizedHamiltonian._flatten, ParametrizedHamiltonian._unflatten
+)

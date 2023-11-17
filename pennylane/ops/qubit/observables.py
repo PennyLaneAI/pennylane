@@ -420,10 +420,11 @@ class BasisStateProjector(Projector, Operation):
     # arguments, but with free key word arguments.
     def __init__(self, state, wires, id=None):
         wires = Wires(wires)
-        state = list(qml.math.toarray(state).astype(int))
+        if not qml.math.is_abstract(state):
+            state = list(qml.math.toarray(state).astype(int))
 
-        if not set(state).issubset({0, 1}):
-            raise ValueError(f"Basis state must only consist of 0s and 1s; got {state}")
+            if not set(state).issubset({0, 1}):
+                raise ValueError(f"Basis state must only consist of 0s and 1s; got {state}")
 
         super().__init__(state, wires=wires, id=id)
 

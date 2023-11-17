@@ -75,7 +75,7 @@ def _to_jax(result: ResultBatch) -> ResultBatch:
     if isinstance(result, dict):
         return result
     if isinstance(result, (list, tuple)):
-        return tuple(_to_jax(r) for r in result)
+        return type(result)(_to_jax(r) for r in result)
     return jnp.array(result)
 
 
@@ -138,12 +138,12 @@ def vjp_fwd(tapes, execute_fn, jpc):
 def vjp_bwd(_, jpc, tapes, dy):
     """Perform the backward pass of a vjp calculation.
 
-        Args:
-        execute_fn (Callable[[Tuple[.QuantumTape]], ResultBatch]): a function that turns a batch of circuits into results
-        jpc (JacobianProductCalculator): a class that can compute the vector Jacobian product (VJP)
-            for the input tapes.
-        tapes (Tuple[.QuantumTape]): the residuals returned as the second output of ``vjp_fwd``
-        dy (ResultBatch): The derivatives of the output
+    Args:
+    execute_fn (Callable[[Tuple[.QuantumTape]], ResultBatch]): a function that turns a batch of circuits into results
+    jpc (JacobianProductCalculator): a class that can compute the vector Jacobian product (VJP)
+        for the input tapes.
+    tapes (Tuple[.QuantumTape]): the residuals returned as the second output of ``vjp_fwd``
+    dy (ResultBatch): The derivatives of the output
 
     Returns:
         TensorLike: the vector jacobian product.

@@ -22,6 +22,7 @@ import pennylane as qml
 from pennylane.wires import Wires
 from pennylane.operation import Operator
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
+from pennylane.pytrees import register_pytree
 
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
@@ -301,6 +302,22 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
 
     """
 
+    def _flatten(self):
+        return (self.coeffs_fixed, self.ops_fixed, self.ops_parametrized), (
+            self.coeffs_parametrized,
+            self.settings,
+            tuple(self.pulses),
+            self.reorder_fn,
+        )
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        new_obj = super()._unflatten(data, metadata)
+        new_obj.settings = metadata[1]
+        new_obj.pulses = list(metadata[2])
+        new_obj.reorder_fn = metadata[3]
+        return new_obj
+
     # pylint: disable=too-many-arguments
     def __init__(
         self,
@@ -487,3 +504,6 @@ class AmplitudeAndPhase:
 
     def __call__(self, params, t):
         return self.func(params, t)
+
+
+register_pytree(HardwareHamiltonian, HardwareHamiltonian._flatten, HardwareHamiltonian._unflatten)

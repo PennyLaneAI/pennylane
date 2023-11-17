@@ -367,6 +367,32 @@ class ParametrizedEvolution(Operation):
 
     # pylint: disable=too-many-arguments
 
+    def _flatten(self):
+        hashable_odeint_kwargs = tuple((key, value) for key, value in self.odeint_kwargs.items())
+        metadata = (
+            hashable_odeint_kwargs,
+            self.hyperparameters["return_intermediate"],
+            self.hyperparameters["complementary"],
+        )
+        return (self.H, self.data, self.t), metadata
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        H = data[0]
+        params = data[1]
+        t = data[2]
+        odeint_kwargs = dict(metadata[0])
+        return_intermediate = metadata[1]
+        complementary = metadata[2]
+        return cls(
+            H,
+            params,
+            t,
+            return_intermediate=return_intermediate,
+            complementary=complementary,
+            **odeint_kwargs,
+        )
+
     def __init__(
         self,
         H: ParametrizedHamiltonian,
