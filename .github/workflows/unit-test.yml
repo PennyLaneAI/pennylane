@@ -128,12 +128,9 @@ jobs:
         id: continue
         run: >-
           echo "confirm=${{
-            contains(fromJSON('["unit-tests", "benchmarks"]'), inputs.pipeline_mode ||
-            (
-              inputs.pipeline_mode == 'reference-benchmarks' &&
-              steps.benchmark-cache.outputs.cache-hit != 'true'
-            )
-          }}" >> $GITHUB_OUTPUT
+            contains(fromJSON('["unit-tests", "benchmarks"]'), inputs.pipeline_mode)
+            || (inputs.pipeline_mode == 'reference-benchmarks'
+            && steps.benchmark-cache.outputs.cache-hit != 'true' )}}" >> $GITHUB_OUTPUT
 
       - name: Setup Python
         if: steps.continue.outputs.confirm == 'true'
