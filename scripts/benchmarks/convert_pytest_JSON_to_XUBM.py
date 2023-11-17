@@ -2,7 +2,7 @@
 This module includes functionality to convert the provided pytest-benchmark JSON file to
 JSON-XUBM (XanadU BenchMarks) format.
 """
-import argparse, json, os
+import argparse, json, os, sys
 ########################################################################
 # Parsing arguments
 ########################################################################
@@ -76,9 +76,9 @@ if __name__ == "__main__":
     parsed_args = parse_args()
 
     if os.stat(parsed_args.filename).st_size == 0:
-        raise IOError(
-            parsed_args.filename+" is empty."
-        )
+        print(parsed_args.filename+" is empty. Interrupting program.")
+        sys.exit(0)
+
     with open(parsed_args.filename, 'r', encoding="utf-8") as file:
         pytest_data = json.load(file)
 
