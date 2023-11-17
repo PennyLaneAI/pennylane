@@ -44,7 +44,7 @@
   [(#4817)](https://github.com/PennyLaneAI/pennylane/pull/4817)
 
 * `GlobalPhase` now decomposes to nothing, in case devices do not support global phases.
-  [(#)]()
+  [(#4855)](https://github.com/PennyLaneAI/pennylane/pull/4855)
 
 <h3>Breaking changes 💔</h3>
 
