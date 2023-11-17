@@ -28,13 +28,17 @@
   [(#4829)](https://github.com/PennyLaneAI/pennylane/pull/4829)
 
 * Added `__iadd__` method to PauliSentence, which enables inplace-addition using `+=`, we no longer need to perform a copy, leading to performance improvements.
-[(#4662)](https://github.com/PennyLaneAI/pennylane/pull/4662) 
+  [(#4662)](https://github.com/PennyLaneAI/pennylane/pull/4662) 
 
 * `qml.ArbitraryUnitary` now supports batching.
   [(#4745)](https://github.com/PennyLaneAI/pennylane/pull/4745)
 
 * `qml.draw` and `qml.draw_mpl` now render operator ids.
   [(#4749)](https://github.com/PennyLaneAI/pennylane/pull/4749)
+
+* `has_matrix` will now automatically be `True` if `Operator.matrix` is overridden, even if
+  `Operator.compute_matrix` is not.
+  [(#4844)](https://github.com/PennyLaneAI/pennylane/pull/4844)
 
 * Added `ops.functions.assert_valid` for checking if an `Operator` class is defined correctly.
   [(#4764)](https://github.com/PennyLaneAI/pennylane/pull/4764)
@@ -115,6 +119,10 @@
   is a `Hamiltonian`.
   [(#4768)](https://github.com/PennyLaneAI/pennylane/pull/4768)
 
+* The `tape.to_openqasm` method no longer mistakenly includes interface information in the parameter 
+  string when converting tapes using non-numpy interfaces.
+  [(#4849)](https://github.com/PennyLaneAI/pennylane/pull/4849)
+
 * In `default.qubit`, initial states are now initialized with the simulator's wire order, not the circuit's
   wire order.
   [(#4781)](https://github.com/PennyLaneAI/pennylane/pull/4781)
@@ -134,6 +142,7 @@
 * `qml.pow(op)` and `qml.QubitUnitary.pow()` now also work with Tensorflow data raised to an
   integer power.
   [(#4827)](https://github.com/PennyLaneAI/pennylane/pull/4827)
+
 
 <h3>Contributors ✍️</h3>
 
