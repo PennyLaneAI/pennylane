@@ -122,6 +122,12 @@ _map_Z = {
 }
 
 mul_map = {I: _map_I, X: _map_X, Y: _map_Y, Z: _map_Z}
+anticom_map = {
+    I: {I: 0, X: 0, Y: 0, Z: 0},
+    X: {I: 0, X: 0, Y: 1, Z: 1},
+    Y: {I: 0, X: 1, Y: 0, Z: 1},
+    Z: {I: 0, X: 1, Y: 1, Z: 0},
+}
 
 
 class PauliWord(dict):
@@ -203,11 +209,22 @@ class PauliWord(dict):
 
         return PauliWord(result), coeff
 
+    def commutes_with(self, other):
+        base, iterator = (
+            (self, other) if len(self) > len(other) else (other, self)
+        )
+        anticom_count = sum([
+            anticom_map[term][base[wire]]
+            for wire, term in iterator.items() if wire in base
+        ])
+        return (anticom_count % 2) == 0
+
+
     def __or__(self, other):
         """Commutator between two PauliWords"""
-        new_word, coeff = self * other
-        if np.allclose(np.imag(coeff), 0.0):
+        if self.commutes_with(other):
             return None, 0.0
+        new_word, coeff = self * other
         return new_word, 2 * coeff
 
     def __lt__(self, other):
