@@ -43,6 +43,9 @@
 * Simplified the logic for re-arranging states before returning.
   [(#4817)](https://github.com/PennyLaneAI/pennylane/pull/4817)
 
+* `GlobalPhase` now decomposes to nothing, in case devices do not support global phases.
+  [(#)]()
+
 <h3>Breaking changes 💔</h3>
 
 * The `prep` keyword argument has been removed from `QuantumScript` and `QuantumTape`.

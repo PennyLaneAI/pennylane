@@ -328,6 +328,29 @@ class GlobalPhase(Operation):
         """
         return []
 
+    @staticmethod
+    def compute_decomposition(phi, wires=None):  # pylint:disable=arguments-differ,unused-argument
+        r"""Representation of the operator as a product of other operators (static method).
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        .. seealso:: :meth:`~.Identity.decomposition`.
+
+        Args:
+            phi (TensorLike): the global phase
+            wires (Any, Wires): A single wire that the operator acts on.
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.GlobalPhase.compute_decomposition(wires=0)
+        []
+
+        """
+        return []
+
     def matrix(self, wire_order=None):
         n_wires = len(wire_order) if wire_order else len(self.wires)
         return self.compute_matrix(self.data[0], n_wires=n_wires)
