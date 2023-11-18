@@ -1,17 +1,21 @@
 from typing import Iterable, Union
 import pennylane as qml
+import numpy as np
 from pennylane import (
     QutritBasisState,
 )
-
+from pennylane.operation import (
+    StatePrepBase,
+    Operation,
+)
+from pennylane.wires import Wires
 
 qudit_dim = 3  # specifies qudit dimension
-qubit_setup_operators = qml.ops.qubit.state_prep_ops
 
 
 def create_initial_state(
     wires: Union[qml.wires.Wires, Iterable],
-    prep_operation: qml.Operation = None,
+    prep_operation: Operation = None,
     like: str = None,
 ):
     r"""
@@ -33,15 +37,26 @@ def create_initial_state(
     elif isinstance(prep_operation, QutritBasisState):
         rho = _apply_basis_state(prep_operation.parameters[0], wires)
 
-    elif prep_operation.name in qubit_setup_operators:
-        raise ValueError("Input qubit prep operation")
+    elif isinstance(prep_operation, StatePrepBase):
+        rho = _apply_state_vector(prep_operation.state_vector(wire_order=list(wires)), wires)
 
-    else:
-        raise NotImplementedError(
-            f"{prep_operation.name} has not been implemented for qutrit.mixed"
-        )
+    # TODO: add instance for prep_operations as added
 
     return qml.math.asarray(rho, like=like)
+
+def _apply_state_vector(state, wires):  # function is easy to abstract for qudit
+    """Initialize the internal state in a specified pure state.
+
+    Args:
+        state (array[complex]): normalized input state of length
+            ``3**len(wires)``
+        device_wires (Wires): wires that get initialized in the state
+    """
+    num_wires = len(wires)
+
+    # Initialize the entire wires with the state
+    rho = qml.math.outer(state, qml.math.conj(state))
+    return qml.math.reshape(rho, [3] * 2 * num_wires)
 
 
 def _apply_basis_state(state, wires):  # function is easy to abstract for qudit
@@ -54,23 +69,20 @@ def _apply_basis_state(state, wires):  # function is easy to abstract for qudit
 
     """
     num_wires = len(wires)
-    # length of basis state parameter
-    n_basis_state = len(state)
 
-    if not set(state).issubset({0, 1}):
-        raise ValueError("BasisState parameter must consist of 0 or 1 integers.")
-
-    if n_basis_state != len(wires):
-        raise ValueError("BasisState parameter and wires must be of equal length.")
-
+    if isinstance(wires, Wires):
+        wire_array = wires.toarray()
+    else:
+        wire_array = np.array(wires)
     # get computational basis state number
-    basis_states = qudit_dim ** (num_wires - 1 - wires.toarray())
+    basis_states = qudit_dim ** (num_wires - 1 - wire_array)
+    print(qml.math.dot(state, basis_states))
     num = int(qml.math.dot(state, basis_states))
 
     return _create_basis_state(num_wires, num)
 
 
-def _create_basis_state(num_wires, index, dtype):  # function is easy to abstract for qudit
+def _create_basis_state(num_wires, index):  # function is easy to abstract for qudit
     """Return the density matrix representing a computational basis state over all wires.
 
     Args:
@@ -80,6 +92,6 @@ def _create_basis_state(num_wires, index, dtype):  # function is easy to abstrac
         array[complex]: complex array of shape ``[3] * (2 * num_wires)``
         representing the density matrix of the basis state.
     """
-    rho = qml.math.zeros((3**num_wires, 3**num_wires), dtype=dtype)
+    rho = np.zeros((3**num_wires, 3**num_wires))
     rho[index, index] = 1
     return qml.math.reshape(rho, [qudit_dim] * (2 * num_wires))
