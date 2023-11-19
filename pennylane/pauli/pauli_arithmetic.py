@@ -65,6 +65,7 @@ anticom_map = {
     Z: {I: 0, X: 1, Y: 1, Z: 0},
 }
 
+
 @lru_cache
 def _cached_sparse_data(op):
     """Returns the sparse data and indices of a Pauli operator."""
