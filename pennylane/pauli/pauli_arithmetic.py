@@ -19,7 +19,6 @@ from warnings import warn
 
 import numpy as np
 from scipy import sparse
-from scipy.linalg import svd
 
 import pennylane as qml
 from pennylane import math
@@ -65,8 +64,6 @@ anticom_map = {
     Y: {I: 0, X: 1, Y: 0, Z: 1},
     Z: {I: 0, X: 1, Y: 1, Z: 0},
 }
-anticom_set = {"XY", "YX", "YZ", "ZY", "XZ", "ZX"}
-
 
 @lru_cache
 def _cached_sparse_data(op):
@@ -183,7 +180,6 @@ class PauliWord(dict):
 
     def __hash__(self):
         return self._hash
-        return hash(frozenset(self.items()))
 
     @lru_cache
     def __mul__(self, other):
@@ -217,11 +213,11 @@ class PauliWord(dict):
         return PauliWord(result), coeff
 
     def commutes_with(self, other):
+        r"""Determine whether the ``PauliWord`` commutes with another PauliWord instance."""
         wires = set(self) & set(other)
         if not wires:
             return True
-        anticom_count = sum([anticom_map[self[wire]][other[wire]] for wire in wires])
-        # anticom_count = sum((self[wire] + other[wire] in anticom_set) for wire in wires)
+        anticom_count = sum(anticom_map[self[wire]][other[wire]] for wire in wires)
         return 1 - (anticom_count % 2)
 
     def __or__(self, other):
@@ -641,7 +637,6 @@ def all_commutators(oplist):
     """
     # TODO: implement for pure PauliWords
     out = copy(oplist)
-    empty_keys = PauliSentence().keys()  # hacky
 
     for i, pauli1 in enumerate(oplist[:-1]):
         for pauli2 in oplist[i + 1 :]:
@@ -690,7 +685,7 @@ def lie_closure(oplist, size_limit=1e5, print_progress=False):
 
 
 def _add_if_independent(M, pauli_sentence, pw_to_idx, rank, num_pw):
-    """Utility function for ``lie_closure_alt``.
+    r"""Utility function for ``lie_closure_alt``.
     Adds a column, corresponding to a new PauliSentence in the linearly independent set (LIS),
     to the matrix ``M`` if it is linearly independent from the existing columns.
 
@@ -807,7 +802,7 @@ def lie_closure_alt(generating_set, clean_input=True, orthonormalize=False):
 
     # Add the values of all other PauliSentence objects from the input to the sparse array,
     # but only if they are linearly independent from the previous objects.
-    for ps_idx, ps in enumerate(generating_set[1:]):
+    for ps in generating_set[1:]:
         M, pw_to_idx, rank, num_pw, added = _add_if_independent(M, ps, pw_to_idx, rank, num_pw)
         if added:
             # After adding a linearly independent PauliSentence to the matrix, remember it.
@@ -850,8 +845,8 @@ def lie_closure_alt(generating_set, clean_input=True, orthonormalize=False):
 
 
 def compact_str(ps_list, decimals=1):
-    """Write a compact string representation of a list of ``PauliSentence``\ s."""
-    max_wire = max([max(ps.wires) for ps in ps_list])
+    r"""Write a compact string representation of a list of ``PauliSentence``\ s."""
+    max_wire = max(max(ps.wires) for ps in ps_list)
     wire_map = {i: i for i in range(max_wire + 1)}
     out = "[\n"
     for ps in ps_list:
