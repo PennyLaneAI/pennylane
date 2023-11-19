@@ -21,7 +21,15 @@ from scipy import sparse
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.wires import Wires
-from pennylane.pauli.pauli_arithmetic import PauliWord, PauliSentence, I, X, Y, Z, _add_if_independent
+from pennylane.pauli.pauli_arithmetic import (
+    PauliWord,
+    PauliSentence,
+    I,
+    X,
+    Y,
+    Z,
+    _add_if_independent,
+)
 
 
 matI = np.eye(2)
@@ -657,28 +665,50 @@ class TestPauliSentence:
             }
         )
 
+
 add_if_indep_square_cases = [
     (np.eye(3), PauliSentence({pw1: 0.2, pw3: 0.7}), {pw1: 0, pw2: 1, pw3: 2}),
     (np.array([[1, 0.4], [0.8, 1]]), PauliSentence({pw2: 0.2}), {pw1: 0, pw2: 1}),
 ]
 
 add_if_indep_new_pw_cases = [
-    (np.array([[1, 0.2], [0.5, 0.2], [0.2, 0.9]]), PauliSentence({pw1: 0.2, pw3: 0.7, pw4: 1.2}), {pw1: 0, pw2: 1, pw3: 2}),
+    (
+        np.array([[1, 0.2], [0.5, 0.2], [0.2, 0.9]]),
+        PauliSentence({pw1: 0.2, pw3: 0.7, pw4: 1.2}),
+        {pw1: 0, pw2: 1, pw3: 2},
+    ),
     (np.array([[1], [0.2]]), PauliSentence({pw1: 0.2, pw3: 0.7}), {pw1: 1, pw2: 0}),
     (np.eye(2), PauliSentence({pw2: 0.2, pw3: 0.7}), {pw1: 0, pw3: 1}),
 ]
 
 add_if_indep_lin_dep_cases = [
-    (np.array([[1, 0], [0, 1], [1, 1]]), PauliSentence({pw1: 0.2, pw3: 0.7, pw2: 0.9}), {pw1: 0, pw3: 1, pw2: 2}),
+    (
+        np.array([[1, 0], [0, 1], [1, 1]]),
+        PauliSentence({pw1: 0.2, pw3: 0.7, pw2: 0.9}),
+        {pw1: 0, pw3: 1, pw2: 2},
+    ),
     (np.array([[0.3], [0.9]]), PauliSentence({pw2: 0.2, pw3: 0.6}), {pw2: 0, pw3: 1}),
-    (np.array([[1, 0], [0, 1], [0.5, -0.5]]), PauliSentence({pw1: 0.2, pw3: 0.7, pw2: -0.25}), {pw1: 0, pw3: 1, pw2: 2}),
+    (
+        np.array([[1, 0], [0, 1], [0.5, -0.5]]),
+        PauliSentence({pw1: 0.2, pw3: 0.7, pw2: -0.25}),
+        {pw1: 0, pw3: 1, pw2: 2},
+    ),
 ]
 
 add_if_indep_lin_indep_cases = [
-    (np.array([[1, 0], [0, 1], [1, 1]]), PauliSentence({pw1: 0.2, pw3: 0.7, pw2: 0.8}), {pw1: 0, pw3: 1, pw2: 2}),
+    (
+        np.array([[1, 0], [0, 1], [1, 1]]),
+        PauliSentence({pw1: 0.2, pw3: 0.7, pw2: 0.8}),
+        {pw1: 0, pw3: 1, pw2: 2},
+    ),
     (np.array([[0.3], [0.9]]), PauliSentence({pw2: 0.2, pw3: 0.4}), {pw2: 0, pw3: 1}),
-    (np.array([[1, 0], [0, 1], [0.5, -0.5]]), PauliSentence({pw1: 0.3, pw3: 0.7, pw2: -0.25}), {pw1: 0, pw3: 1, pw2: 2}),
+    (
+        np.array([[1, 0], [0, 1], [0.5, -0.5]]),
+        PauliSentence({pw1: 0.3, pw3: 0.7, pw2: -0.25}),
+        {pw1: 0, pw3: 1, pw2: 2},
+    ),
 ]
+
 
 class TestLieClosureAltHelpers:
     """Test utility functions for the alternative Lie closure function ``lie_closure_alt``."""
@@ -692,9 +722,11 @@ class TestLieClosureAltHelpers:
         spy_pad = mocker.spy(onp, "pad")
         spy_matrix_rank = mocker.spy(onp.linalg, "matrix_rank")
         num_pw, rank = M.shape
-        M = M.astype(float) # The code is written for float-formatted matrices
-        new_M, new_pw_to_idx, new_rank, new_num_pw, added = _add_if_independent(M, ps, pw_to_idx, rank, num_pw)
-        assert new_M.shape==M.shape and np.allclose(new_M, M)
+        M = M.astype(float)  # The code is written for float-formatted matrices
+        new_M, new_pw_to_idx, new_rank, new_num_pw, added = _add_if_independent(
+            M, ps, pw_to_idx, rank, num_pw
+        )
+        assert new_M.shape == M.shape and np.allclose(new_M, M)
         assert new_pw_to_idx is pw_to_idx
         assert new_rank == rank
         assert new_num_pw == num_pw
@@ -711,8 +743,10 @@ class TestLieClosureAltHelpers:
         spy_pad = mocker.spy(onp, "pad")
         spy_matrix_rank = mocker.spy(onp.linalg, "matrix_rank")
         num_pw, rank = M.shape
-        M = M.astype(float) # The code is written for float-formatted matrices
-        new_M, new_pw_to_idx, new_rank, new_num_pw, added = _add_if_independent(M, ps, pw_to_idx, rank, num_pw)
+        M = M.astype(float)  # The code is written for float-formatted matrices
+        new_M, new_pw_to_idx, new_rank, new_num_pw, added = _add_if_independent(
+            M, ps, pw_to_idx, rank, num_pw
+        )
         assert new_rank == rank + 1
         new_pws = [pw for pw in ps if pw not in pw_to_idx]
         assert new_num_pw == num_pw + len(new_pws)
@@ -721,9 +755,9 @@ class TestLieClosureAltHelpers:
             assert new_pw_to_idx[pw] == idx
         for idx, pw in enumerate(new_pws, start=num_pw):
             assert new_pw_to_idx[pw] == idx
-        assert new_M.shape==(new_num_pw, new_rank)
+        assert new_M.shape == (new_num_pw, new_rank)
         assert np.allclose(new_M[:num_pw, :rank], M)
-        assert np.allclose(new_M[num_pw:, :rank], 0.)
+        assert np.allclose(new_M[num_pw:, :rank], 0.0)
         exp_new_col = [ps[pw] for pw, _ in sorted(new_pw_to_idx.items(), key=lambda x: x[1])]
         assert np.allclose(new_M[:, rank], exp_new_col)
         assert added is True
@@ -739,9 +773,11 @@ class TestLieClosureAltHelpers:
         spy_pad = mocker.spy(onp, "pad")
         spy_matrix_rank = mocker.spy(onp.linalg, "matrix_rank")
         num_pw, rank = M.shape
-        M = M.astype(float) # The code is written for float-formatted matrices
-        new_M, new_pw_to_idx, new_rank, new_num_pw, added = _add_if_independent(M, ps, pw_to_idx, rank, num_pw)
-        assert new_M.shape==M.shape and np.allclose(new_M, M)
+        M = M.astype(float)  # The code is written for float-formatted matrices
+        new_M, new_pw_to_idx, new_rank, new_num_pw, added = _add_if_independent(
+            M, ps, pw_to_idx, rank, num_pw
+        )
+        assert new_M.shape == M.shape and np.allclose(new_M, M)
         assert new_pw_to_idx is pw_to_idx
         assert new_rank == rank
         assert new_num_pw == num_pw
@@ -758,15 +794,17 @@ class TestLieClosureAltHelpers:
         spy_pad = mocker.spy(onp, "pad")
         spy_matrix_rank = mocker.spy(onp.linalg, "matrix_rank")
         num_pw, rank = M.shape
-        M = M.astype(float) # The code is written for float-formatted matrices
-        new_M, new_pw_to_idx, new_rank, new_num_pw, added = _add_if_independent(M, ps, pw_to_idx, rank, num_pw)
+        M = M.astype(float)  # The code is written for float-formatted matrices
+        new_M, new_pw_to_idx, new_rank, new_num_pw, added = _add_if_independent(
+            M, ps, pw_to_idx, rank, num_pw
+        )
         assert new_rank == rank + 1
         # If there was a new PauliWord, the second return statement would have caught that
         assert new_num_pw == num_pw
         assert new_pw_to_idx is pw_to_idx
-        assert new_M.shape==(num_pw, new_rank)
+        assert new_M.shape == (num_pw, new_rank)
         assert np.allclose(new_M[:num_pw, :rank], M)
-        assert np.allclose(new_M[num_pw:, :rank], 0.)
+        assert np.allclose(new_M[num_pw:, :rank], 0.0)
         exp_new_col = [ps[pw] for pw, _ in sorted(new_pw_to_idx.items(), key=lambda x: x[1])]
         assert np.allclose(new_M[:, rank], exp_new_col)
         assert added is True

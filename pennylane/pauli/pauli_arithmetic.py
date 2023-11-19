@@ -65,7 +65,7 @@ anticom_map = {
     Y: {I: 0, X: 1, Y: 0, Z: 1},
     Z: {I: 0, X: 1, Y: 1, Z: 0},
 }
-anticom_set = {"XY", "YX", "YZ", "ZY","XZ", "ZX"}
+anticom_set = {"XY", "YX", "YZ", "ZY", "XZ", "ZX"}
 
 
 @lru_cache
@@ -221,7 +221,7 @@ class PauliWord(dict):
         if not wires:
             return True
         anticom_count = sum([anticom_map[self[wire]][other[wire]] for wire in wires])
-        #anticom_count = sum((self[wire] + other[wire] in anticom_set) for wire in wires)
+        # anticom_count = sum((self[wire] + other[wire] in anticom_set) for wire in wires)
         return 1 - (anticom_count % 2)
 
     def __or__(self, other):
@@ -722,7 +722,6 @@ def _add_if_independent(M, pauli_sentence, pw_to_idx, rank, num_pw):
 
     M = np.pad(M, ((0, new_num_pw - num_pw), (0, 1)))
     # M = np.concatenate([np.concatenate([M, np.zeros((num_pw, 1))], axis=1), np.zeros((new_num_pw-num_pw, rank+1))], axis=0)
-
 
     # If we actually had to add PauliWords (rows) to our basis, the new PauliSentence must have been
     # linearly independent from all others
