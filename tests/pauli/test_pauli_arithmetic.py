@@ -21,7 +21,7 @@ from scipy import sparse
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.wires import Wires
-from pennylane.pauli.pauli_arithmetic import PauliWord, PauliSentence, I, X, Y, Z
+from pennylane.pauli.pauli_arithmetic import PauliWord, PauliSentence, I, X, Y, Z, _add_if_independent
 
 
 matI = np.eye(2)
@@ -656,3 +656,119 @@ class TestPauliSentence:
                 PauliWord({0: Z, 2: Z, 3: Z}): -0.5,
             }
         )
+
+add_if_indep_square_cases = [
+    (np.eye(3), PauliSentence({pw1: 0.2, pw3: 0.7}), {pw1: 0, pw2: 1, pw3: 2}),
+    (np.array([[1, 0.4], [0.8, 1]]), PauliSentence({pw2: 0.2}), {pw1: 0, pw2: 1}),
+]
+
+add_if_indep_new_pw_cases = [
+    (np.array([[1, 0.2], [0.5, 0.2], [0.2, 0.9]]), PauliSentence({pw1: 0.2, pw3: 0.7, pw4: 1.2}), {pw1: 0, pw2: 1, pw3: 2}),
+    (np.array([[1], [0.2]]), PauliSentence({pw1: 0.2, pw3: 0.7}), {pw1: 1, pw2: 0}),
+    (np.eye(2), PauliSentence({pw2: 0.2, pw3: 0.7}), {pw1: 0, pw3: 1}),
+]
+
+add_if_indep_lin_dep_cases = [
+    (np.array([[1, 0], [0, 1], [1, 1]]), PauliSentence({pw1: 0.2, pw3: 0.7, pw2: 0.9}), {pw1: 0, pw3: 1, pw2: 2}),
+    (np.array([[0.3], [0.9]]), PauliSentence({pw2: 0.2, pw3: 0.6}), {pw2: 0, pw3: 1}),
+    (np.array([[1, 0], [0, 1], [0.5, -0.5]]), PauliSentence({pw1: 0.2, pw3: 0.7, pw2: -0.25}), {pw1: 0, pw3: 1, pw2: 2}),
+]
+
+add_if_indep_lin_indep_cases = [
+    (np.array([[1, 0], [0, 1], [1, 1]]), PauliSentence({pw1: 0.2, pw3: 0.7, pw2: 0.8}), {pw1: 0, pw3: 1, pw2: 2}),
+    (np.array([[0.3], [0.9]]), PauliSentence({pw2: 0.2, pw3: 0.4}), {pw2: 0, pw3: 1}),
+    (np.array([[1, 0], [0, 1], [0.5, -0.5]]), PauliSentence({pw1: 0.3, pw3: 0.7, pw2: -0.25}), {pw1: 0, pw3: 1, pw2: 2}),
+]
+
+class TestLieClosureAltHelpers:
+    """Test utility functions for the alternative Lie closure function ``lie_closure_alt``."""
+
+    @pytest.mark.parametrize("M, ps, pw_to_idx", add_if_indep_square_cases)
+    def test_add_if_independent_square_and_no_new_pw(self, M, ps, pw_to_idx, mocker):
+        """Test that for a square matrix and _no_ added PauliWords in the new PauliSentence,
+        the PauliSentence is not added. This is the first return statement."""
+        import numpy as onp
+
+        spy_pad = mocker.spy(onp, "pad")
+        spy_matrix_rank = mocker.spy(onp.linalg, "matrix_rank")
+        num_pw, rank = M.shape
+        M = M.astype(float) # The code is written for float-formatted matrices
+        new_M, new_pw_to_idx, new_rank, new_num_pw, added = _add_if_independent(M, ps, pw_to_idx, rank, num_pw)
+        assert new_M.shape==M.shape and np.allclose(new_M, M)
+        assert new_pw_to_idx is pw_to_idx
+        assert new_rank == rank
+        assert new_num_pw == num_pw
+        assert added is False
+        assert spy_pad.call_count == 0
+        assert spy_matrix_rank.call_count == 0
+
+    @pytest.mark.parametrize("M, ps, pw_to_idx", add_if_indep_new_pw_cases)
+    def test_add_if_independent_new_pw(self, M, ps, pw_to_idx, mocker):
+        """Test that for new PauliWord(s) in the new PauliSentence, the PauliSentence is added.
+        This is the second return statement."""
+        import numpy as onp
+
+        spy_pad = mocker.spy(onp, "pad")
+        spy_matrix_rank = mocker.spy(onp.linalg, "matrix_rank")
+        num_pw, rank = M.shape
+        M = M.astype(float) # The code is written for float-formatted matrices
+        new_M, new_pw_to_idx, new_rank, new_num_pw, added = _add_if_independent(M, ps, pw_to_idx, rank, num_pw)
+        assert new_rank == rank + 1
+        new_pws = [pw for pw in ps if pw not in pw_to_idx]
+        assert new_num_pw == num_pw + len(new_pws)
+        assert len(new_pw_to_idx) == new_num_pw
+        for pw, idx in pw_to_idx.items():
+            assert new_pw_to_idx[pw] == idx
+        for idx, pw in enumerate(new_pws, start=num_pw):
+            assert new_pw_to_idx[pw] == idx
+        assert new_M.shape==(new_num_pw, new_rank)
+        assert np.allclose(new_M[:num_pw, :rank], M)
+        assert np.allclose(new_M[num_pw:, :rank], 0.)
+        exp_new_col = [ps[pw] for pw, _ in sorted(new_pw_to_idx.items(), key=lambda x: x[1])]
+        assert np.allclose(new_M[:, rank], exp_new_col)
+        assert added is True
+        assert spy_pad.call_count == 1
+        assert spy_matrix_rank.call_count == 0
+
+    @pytest.mark.parametrize("M, ps, pw_to_idx", add_if_indep_lin_dep_cases)
+    def test_add_if_independent_lin_dep(self, M, ps, pw_to_idx, mocker):
+        """Test that the new PauliSentence is not added if it is linearly dependent of the
+        previous terms. This is the third return statement."""
+        import numpy as onp
+
+        spy_pad = mocker.spy(onp, "pad")
+        spy_matrix_rank = mocker.spy(onp.linalg, "matrix_rank")
+        num_pw, rank = M.shape
+        M = M.astype(float) # The code is written for float-formatted matrices
+        new_M, new_pw_to_idx, new_rank, new_num_pw, added = _add_if_independent(M, ps, pw_to_idx, rank, num_pw)
+        assert new_M.shape==M.shape and np.allclose(new_M, M)
+        assert new_pw_to_idx is pw_to_idx
+        assert new_rank == rank
+        assert new_num_pw == num_pw
+        assert added is False
+        assert spy_pad.call_count == 1
+        assert spy_matrix_rank.call_count == 1
+
+    @pytest.mark.parametrize("M, ps, pw_to_idx", add_if_indep_lin_indep_cases)
+    def test_add_if_independent_lin_indep(self, M, ps, pw_to_idx, mocker):
+        """Test that the new PauliSentence is added if it is linearly independent from the
+        previous terms. This is the fourth return statement."""
+        import numpy as onp
+
+        spy_pad = mocker.spy(onp, "pad")
+        spy_matrix_rank = mocker.spy(onp.linalg, "matrix_rank")
+        num_pw, rank = M.shape
+        M = M.astype(float) # The code is written for float-formatted matrices
+        new_M, new_pw_to_idx, new_rank, new_num_pw, added = _add_if_independent(M, ps, pw_to_idx, rank, num_pw)
+        assert new_rank == rank + 1
+        # If there was a new PauliWord, the second return statement would have caught that
+        assert new_num_pw == num_pw
+        assert new_pw_to_idx is pw_to_idx
+        assert new_M.shape==(num_pw, new_rank)
+        assert np.allclose(new_M[:num_pw, :rank], M)
+        assert np.allclose(new_M[num_pw:, :rank], 0.)
+        exp_new_col = [ps[pw] for pw, _ in sorted(new_pw_to_idx.items(), key=lambda x: x[1])]
+        assert np.allclose(new_M[:, rank], exp_new_col)
+        assert added is True
+        assert spy_pad.call_count == 1
+        assert spy_matrix_rank.call_count == 1
