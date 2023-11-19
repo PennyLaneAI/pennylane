@@ -26,6 +26,7 @@ from pennylane.wires import Wires
 from pennylane.operation import Tensor
 from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, prod, s_prod
 
+
 I = "I"
 X = "X"
 Y = "Y"
@@ -55,6 +56,13 @@ mat_map = {
     X: matX,
     Y: matY,
     Z: matZ,
+}
+
+anticom_map = {
+    I: {I: 0, X: 0, Y: 0, Z: 0},
+    X: {I: 0, X: 0, Y: 1, Z: 1},
+    Y: {I: 0, X: 1, Y: 0, Z: 1},
+    Z: {I: 0, X: 1, Y: 1, Z: 0},
 }
 
 
@@ -145,6 +153,7 @@ class PauliWord(dict):
             if op == I:
                 del mapping[wire]
         super().__init__(mapping)
+        self._hash = hash(frozenset(self.items()))
 
     def __reduce__(self):
         """Defines how to pickle and unpickle a PauliWord. Otherwise, un-pickling
@@ -171,8 +180,9 @@ class PauliWord(dict):
         raise TypeError("PauliWord object does not support assignment")
 
     def __hash__(self):
-        return hash(frozenset(self.items()))
+        return self._hash
 
+    @lru_cache
     def __mul__(self, other):
         """Multiply two Pauli words together using the matrix product if wires overlap
         and the tensor product otherwise.
@@ -192,22 +202,30 @@ class PauliWord(dict):
 
         for wire, term in iterator.items():
             if wire in base:
-                factor, new_op = mul_map[term][base[wire]] if swapped else mul_map[base[wire]][term]
+                factor, new_op = mul_map[base[wire]][term]
                 if new_op == I:
                     del result[wire]
                 else:
-                    coeff *= factor
+                    coeff *= -factor if swapped else factor
                     result[wire] = new_op
-            elif term != I:
+            else:
                 result[wire] = term
 
         return PauliWord(result), coeff
 
+    def commutes_with(self, other):
+        r"""Determine whether the ``PauliWord`` commutes with another PauliWord instance."""
+        wires = set(self) & set(other)
+        if not wires:
+            return True
+        anticom_count = sum(anticom_map[self[wire]][other[wire]] for wire in wires)
+        return 1 - (anticom_count % 2)
+
     def __or__(self, other):
         """Commutator between two PauliWords"""
-        new_word, coeff = self * other
-        if np.allclose(np.imag(coeff), 0.0):
+        if self.commutes_with(other):
             return None, 0.0
+        new_word, coeff = self.__mul__(other)
         return new_word, 2 * coeff
 
     def __lt__(self, other):
@@ -620,12 +638,11 @@ def all_commutators(oplist):
     """
     # TODO: implement for pure PauliWords
     out = copy(oplist)
-    empty_keys = PauliSentence().keys()  # hacky
 
     for i, pauli1 in enumerate(oplist[:-1]):
         for pauli2 in oplist[i + 1 :]:
             q = pauli1 | pauli2
-            if q.keys() == empty_keys or q in out:
+            if len(q) == 0 or q in out:
                 continue
             out.append(q)
 
@@ -666,3 +683,178 @@ def lie_closure(oplist, size_limit=1e5, print_progress=False):
             print(f"Iteration {counter} done. {numpaulis = }")
 
     return oplist
+
+
+def _add_if_independent(M, pauli_sentence, pw_to_idx, rank, num_pw):
+    r"""Utility function for ``lie_closure_alt``.
+    Adds a column, corresponding to a new PauliSentence in the linearly independent set (LIS),
+    to the matrix ``M`` if it is linearly independent from the existing columns.
+
+    Args:
+        M (ndarray): coefficient matrix for current LIS
+        pauli_sentence (`~.PauliSentence`): Pauli sentence for which to add a column if independent
+        pw_to_idx (dict): map from ``PauliWord`` to row index in ``M``
+        rank (int): current rank of ``M``, equal to its number of columns
+        num_pw (int): current number of ``PauliWord``\ s, equal to the number of rows in ``M``
+
+    Returns:
+        ndarray: updated coefficient matrix for the LIS
+        dict: updated map from ``PauliWord`` to row index in ``M``. Includes new ``PauliWord`` keys
+            from the input ``pauli_sentence`` if it was linearly independent
+        int: updated rank/number of columns of ``M``
+        int: updated number of ``PauliWord``\ s/number of rows of ``M``
+        bool: whether ``pauli_sentence`` was linearly independent and its column was added to ``M``
+    """
+    new_pws = [pw for pw in pauli_sentence.keys() if pw not in pw_to_idx]
+    new_num_pw = num_pw + len(new_pws)
+
+    if new_num_pw < rank + 1:
+        # Can't span rank+1 independent vectors in fewer than rank+1 dimensions
+        # The input PauliSentence must have been linearly dependent
+        return M, pw_to_idx, rank, num_pw, False
+
+    # Sparse alternative
+    # M.resize((new_num_pw, rank + 1))
+
+    M = np.pad(M, ((0, new_num_pw - num_pw), (0, 1)))
+    # M = np.concatenate([np.concatenate([M, np.zeros((num_pw, 1))], axis=1), np.zeros((new_num_pw-num_pw, rank+1))], axis=0)
+
+    # If we actually had to add PauliWords (rows) to our basis, the new PauliSentence must have been
+    # linearly independent from all others
+    if new_num_pw > num_pw:
+        new_pw_to_idx = copy(pw_to_idx)
+        for i, pw in enumerate(new_pws, start=num_pw):
+            new_pw_to_idx[pw] = i
+        # Add new PauliSentence entries to matrix
+        for pw, value in pauli_sentence.items():
+            M[new_pw_to_idx[pw], rank] = value
+
+        return M, new_pw_to_idx, rank + 1, new_num_pw, True
+
+    # Add new PauliSentence entries to matrix
+    for pw, value in pauli_sentence.items():
+        M[pw_to_idx[pw], rank] = value
+
+    # Sparse alternative
+    # sing_value = svds(M, k=1, which="SM", return_singular_vectors=False)
+    # if np.allclose(sing_value, 0.):
+
+    new_rank = np.linalg.matrix_rank(M)
+    # Manual singular value alternative, probably slower than ``matrix_rank``
+    # sing_value = np.min(np.abs(svd(M, compute_uv=False, lapack_driver="gesdd", check_finite=False)))
+    if new_rank == rank:
+        # Sparse alternative
+        # M.resize((num_pw, rank))
+        M = M[:num_pw, :rank]
+        return M, pw_to_idx, rank, num_pw, False
+
+    return M, pw_to_idx, rank + 1, new_num_pw, True
+
+
+def _simplify_and_remove_empty(ps_list):
+    """Clean a list of PauliSentences by removing empty Sentences. Used in ``lie_closure_alt``."""
+    new_ps_list = []
+    for ps in ps_list:
+        ps.simplify()
+        if len(ps) > 0:
+            new_ps_list.append(ps)
+    return new_ps_list
+
+
+def lie_closure_alt(generating_set, clean_input=True, orthonormalize=False):
+    r"""Compute the Lie closure of a set of ``PauliSentence``\ s, using a representation in a
+    Pauli sub-basis.
+    Sparsified version of Algorithm 1 in `arXiv:1012.5256<https://arxiv.org/abs/1012.5256>`__.
+
+    Args:
+        generating_set (list[`~.PauliSentence`]): generating set for which to compute the
+            Lie closure
+        clean_input (bool): whether to remove empty instances from ``generating_set``
+        orthonormalize (bool): whether to form an orthonormal basis from the Lie closure.
+            If ``True``, the Pauli sentences in the output will be orthonormal with respect to
+            the inner product defined below.
+
+    Returns:
+        list[`~.PauliSentence`]: a basis of ``PauliSentence`` instances that is closed under
+        commutators (Lie closure). If ``orthonormalize=True``, it is an orthonormal basis (ONB).
+
+    """
+    if clean_input:
+        # Simplify PauliSentences and remove the empty ones if desired
+        generating_set = _simplify_and_remove_empty(generating_set)
+
+    # Get all Pauli words that are present in at least one Pauli sentence
+    all_pws = list(reduce(set.__or__, [set(ps.keys()) for ps in generating_set]))
+    num_pw = len(all_pws)
+    # Create a dictionary mapping from PauliWord to row index
+    pw_to_idx = {pw: i for i, pw in enumerate(all_pws)}
+
+    # List all linearly independent ``PauliSentence`` objects. The first element
+    # always is independent, and the initial rank will be 1, correspondingly.
+    basis = [generating_set[0]]
+    rank = 1
+
+    # Sparse alternative
+    # M = dok_array((num_pw, rank), dtype=float)
+    M = np.zeros((num_pw, rank), dtype=float)
+    # Add the values of the first PauliSentence to the sparse array.
+    for pw, value in generating_set[0].items():
+        M[pw_to_idx[pw], 0] = value
+
+    # Add the values of all other PauliSentence objects from the input to the sparse array,
+    # but only if they are linearly independent from the previous objects.
+    for ps in generating_set[1:]:
+        M, pw_to_idx, rank, num_pw, added = _add_if_independent(M, ps, pw_to_idx, rank, num_pw)
+        if added:
+            # After adding a linearly independent PauliSentence to the matrix, remember it.
+            basis.append(ps)
+
+    # Dummy initial value for some comparison length
+    old_length = 0
+    # Current number of linearly independent PauliSentences
+    new_length = len(basis)
+    while new_length > old_length:  # Should add a maximal length criterion here.
+        for idx1 in range(new_length - 1):
+            ps1 = basis[idx1]
+            for idx2 in range(max([idx1 + 1, old_length]), new_length):
+                ps2 = basis[idx2]
+                com = ps1 | ps2
+                if len(com) == 0:
+                    continue
+                # The commutator is taken per pair of PauliWords, which collect purely imaginary
+                # coefficients. We will only consider the real-value imaginary part here.
+                for pw, val in com.items():
+                    com[pw] = np.imag(val)
+                # Add commutator to sparse array if it is linearly independent
+                M, pw_to_idx, rank, num_pw, added = _add_if_independent(
+                    M, com, pw_to_idx, rank, num_pw
+                )
+                # After adding a linearly independent commutator to the matrix, remember it.
+                if added:
+                    basis.append(com)
+
+        # Updated number of linearly independent PauliSentences from previous and current step
+        old_length = new_length
+        new_length = len(basis)
+
+    if orthonormalize:
+        # Use the matrix M and the fact that the Pauli basis is orthonormal to orthonormalize
+        # the basis
+        raise NotImplementedError("to do")
+
+    return basis
+
+
+def compact_str(ps_list, decimals=1):
+    r"""Write a compact string representation of a list of ``PauliSentence``\ s."""
+    max_wire = max(max(ps.wires) for ps in ps_list)
+    wire_map = {i: i for i in range(max_wire + 1)}
+    out = "[\n"
+    for ps in ps_list:
+        terms = [
+            f"{val: 2.{decimals}f} {qml.pauli.pauli_word_to_string(pw.operation(wire_map), wire_map).replace('I', '_')}"
+            for pw, val in sorted(ps.items())
+        ]
+        out += " " * 4 + " + ".join(terms) + "\n"
+    out += "]"
+    return out
