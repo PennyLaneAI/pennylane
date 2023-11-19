@@ -87,9 +87,9 @@ class TestPauliWord:
         pw_3 = PauliWord({1: X, 2: Y, 0: I})  # same as 1 but reordered
         pw_4 = PauliWord({1: Z, 2: Z})  # distinct from above
 
-        assert pw_1.__hash__() == pw_2.__hash__()
-        assert pw_1.__hash__() == pw_3.__hash__()
-        assert pw_1.__hash__() != pw_4.__hash__()
+        assert hash(pw_1) == hash(pw_2)
+        assert hash(pw_1) == hash(pw_3)
+        assert hash(pw_1) != hash(pw_4)
 
     @pytest.mark.parametrize("pw", (pw1, pw2, pw3, pw4))
     def test_copy(self, pw):
