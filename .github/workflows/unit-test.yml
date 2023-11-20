@@ -191,7 +191,6 @@ jobs:
         run: echo "args=-n auto" >> $GITHUB_OUTPUT
 
       - name: Run PennyLane Unit Tests
-        if: inputs.pipeline_mode == 'unit-tests'
         env:
           PYTEST_MARKER: ${{ inputs.pytest_markers != '' && format('-m "{0}"', inputs.pytest_markers) || '' }}
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
@@ -207,13 +206,6 @@ jobs:
         with:
           name: ${{ inputs.coverage_artifact_name }}
           path: coverage.xml
-
-      - name: Run PennyLane Benchmarks
-        if: steps.continue.outputs.confirm == 'true' && inputs.pipeline_mode != 'unit-tests'
-        env:
-          PYTEST_MARKER: ${{ inputs.pytest_markers != '' && format('-m "{0}"', inputs.pytest_markers) || '' }}
-        # Calling PyTest by invoking Python first as that adds the current directory to sys.path
-        run: python -m pytest  ${{ inputs.pytest_test_directory }} --benchmark-enable --benchmark-only --benchmark-json=benchmarks.json ${{ inputs.pytest_additional_args }} ${{ env.PYTEST_MARKER }}
 
         # If this is a reference benchmark move file to the cached directory, and we have a non-empty reference benchmark file.
       - name: Move reference pytest benchmark file to cache
