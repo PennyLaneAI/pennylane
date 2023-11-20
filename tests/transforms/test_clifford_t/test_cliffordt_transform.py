@@ -30,7 +30,7 @@ from pennylane.transforms.decompositions.clifford_t.clifford_t_transform import 
 
 from pennylane.transforms.optimization.optimization_utils import _fuse_global_phases
 
-_SKIP_GATES = [qml.Barrier, qml.Snapshot, qml.WireCut, qml.GlobalPhase]
+_SKIP_GATES = (qml.Barrier, qml.Snapshot, qml.WireCut)
 _CLIFFORD_PHASE_GATES = _CLIFFORD_T_GATES + _SKIP_GATES
 
 INVSQ2 = 1 / math.sqrt(2)
@@ -104,23 +104,18 @@ class TestCliffordCompile:
     def test_decomposition(self, circuit, max_depth):
         """Test decomposition for the Clifford transform."""
 
-        with qml.tape.QuantumTape() as old_tape:
-            circuit()
+        old_tape = qml.tape.make_qscript(circuit)()
 
         [new_tape], tape_fn = clifford_t_decomposition(old_tape, max_depth=max_depth, depth=3)
 
         assert all(
-            any(
-                (
-                    isinstance(op, gate) or isinstance(getattr(op, "base", None), gate)
-                    for gate in _CLIFFORD_PHASE_GATES
-                )
-            )
+            isinstance(op, _CLIFFORD_PHASE_GATES)
+            or isinstance(getattr(op, "base", None), _CLIFFORD_PHASE_GATES)
             for op in new_tape.operations
         )
 
         dev = qml.device("default.qubit")
-        transform_program = dev.preprocess()[0]
+        transform_program, _ = dev.preprocess()
         res1, res2 = qml.execute(
             [old_tape, new_tape], device=dev, transform_program=transform_program
         )
@@ -144,17 +139,13 @@ class TestCliffordCompile:
         assert qml.math.isclose(res1, res2, atol=1e-2)
 
         assert all(
-            any(
-                (
-                    isinstance(op, gate) or isinstance(getattr(op, "base", None), gate)
-                    for gate in _CLIFFORD_PHASE_GATES
-                )
-            )
+            isinstance(op, _CLIFFORD_PHASE_GATES)
+            or isinstance(getattr(op, "base", None), _CLIFFORD_PHASE_GATES)
             for op in transfmd_qnode.tape.operations
         )
 
     @pytest.mark.parametrize(
-        ("op"), [qml.RX(1.0, wires="a"), qml.U3(1, 2, 3, wires=[1]), qml.PhaseShift(1.0, wires=[2])]
+        "op", [qml.RX(1.0, wires="a"), qml.U3(1, 2, 3, wires=[1]), qml.PhaseShift(1.0, wires=[2])]
     )
     def test_one_qubit_decomposition(self, op):
         """Test decomposition for the Clifford transform."""
@@ -162,22 +153,18 @@ class TestCliffordCompile:
         decomp_ops, global_ops = _one_qubit_decompose(op)
         decomp_ops = _fuse_global_phases(decomp_ops + [global_ops])
 
+        valid_gates = _CLIFFORD_PHASE_GATES + (qml.RZ,)
         assert all(
-            any(
-                (
-                    isinstance(op, gate) or isinstance(getattr(op, "base", None), gate)
-                    for gate in _CLIFFORD_PHASE_GATES + [qml.RZ]
-                )
-            )
+            isinstance(op, valid_gates) or isinstance(getattr(op, "base", None), valid_gates)
             for op in decomp_ops
         )
 
-        global_ops = decomp_ops.pop()
-        assert isinstance(global_ops, qml.GlobalPhase)
+        global_op = decomp_ops.pop()
+        assert isinstance(global_op, qml.GlobalPhase)
 
         matrix_op = reduce(
             lambda x, y: x @ y, [qml.matrix(op) for op in decomp_ops][::-1]
-        ) * qml.matrix(global_ops)
+        ) * qml.matrix(global_op)
 
         # check for matrice equivalence up to global phase
         phase = qml.math.divide(
@@ -191,7 +178,7 @@ class TestCliffordCompile:
         )
 
     @pytest.mark.parametrize(
-        ("op"),
+        "op",
         [
             qml.PSWAP(1.0, wires=["a", "b"]),
             qml.SingleExcitation(1, wires=[1, 2]),
@@ -203,22 +190,18 @@ class TestCliffordCompile:
 
         decomp_ops = _fuse_global_phases(_two_qubit_decompose(op))
 
+        valid_gates = _CLIFFORD_PHASE_GATES + (qml.RZ,)
         assert all(
-            any(
-                (
-                    isinstance(op, gate) or isinstance(getattr(op, "base", None), gate)
-                    for gate in _CLIFFORD_PHASE_GATES + [qml.RZ]
-                )
-            )
+            isinstance(op, valid_gates) or isinstance(getattr(op, "base", None), valid_gates)
             for op in decomp_ops
         )
 
-        decomp_ops, global_ops = decomp_ops[:-1], decomp_ops[-1]
+        global_op = decomp_ops.pop()
         wire_map = {wire: idx for idx, wire in enumerate(op.wires)}
         mapped_op = [qml.map_wires(op, wire_map=wire_map) for op in decomp_ops][::-1]
         matrix_op = reduce(
             lambda x, y: x @ y, [qml.matrix(op, wire_order=[0, 1]) for op in mapped_op]
-        ) * qml.matrix(global_ops, wire_order=[0, 1])
+        ) * qml.matrix(global_op, wire_order=[0, 1])
 
         # check for matrice equivalence up to global phase
         phase = qml.math.divide(
@@ -230,7 +213,7 @@ class TestCliffordCompile:
         assert qml.math.allclose(phase / phase[0], qml.math.ones(qml.math.shape(phase)[0]))
 
     @pytest.mark.parametrize(
-        ("op"),
+        "op",
         [
             qml.adjoint(qml.RX(1.0, wires=["b"])),
             qml.Rot(1, 2, 3, wires=[2]),
@@ -243,13 +226,9 @@ class TestCliffordCompile:
 
         decomp_ops = _fuse_global_phases(_rot_decompose(op))
 
+        valid_gates = _CLIFFORD_PHASE_GATES + (qml.RZ,)
         assert all(
-            any(
-                (
-                    isinstance(op, gate) or isinstance(getattr(op, "base", None), gate)
-                    for gate in _CLIFFORD_PHASE_GATES + [qml.RZ]
-                )
-            )
+            isinstance(op, valid_gates) or isinstance(getattr(op, "base", None), valid_gates)
             for op in decomp_ops
         )
 
@@ -270,38 +249,32 @@ class TestCliffordCompile:
     def test_raise_with_cliffordt_decomposition(self):
         """Test that exception is correctly raise when decomposing gates without any decomposition"""
 
-        with qml.tape.QuantumTape() as tape:
-            qml.QubitUnitary(qml.math.eye(8), wires=[0, 1, 2])
+        tape = qml.tape.QuantumScript([qml.QubitUnitary(qml.math.eye(8), wires=[0, 1, 2])])
 
         with pytest.raises(ValueError, match="Cannot unroll"):
             clifford_t_decomposition(tape, max_depth=0)
 
-    @pytest.mark.parametrize(
-        ("op"),
-        [
-            qml.U1(1.0, wires=["b"]),
-        ],
-    )
+    @pytest.mark.parametrize("op", [qml.U1(1.0, wires=["b"])])
     def test_raise_with_rot_decomposition(self, op):
-        """Test that exception is correctly raise when decomposing parameterized gates for which we already don't have a recipie"""
+        """Test that exception is correctly raise when decomposing parameterized gates for which we already don't have a recipe"""
 
         with pytest.raises(
             ValueError,
             match="qml.RX, qml.RY, qml.RZ, qml.Rot and qml.PhaseShift",
         ):
-            _fuse_global_phases(_rot_decompose(op))
+            _rot_decompose(op)
 
     def test_raise_with_decomposition_method(self):
         """Test that exception is correctly raise when using incorrect decomposing method"""
+
+        def qfunc():
+            qml.RX(1.0, wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        decomposed_qfunc = clifford_t_decomposition(qfunc, method="fast")
 
         with pytest.raises(
             NotImplementedError,
             match=r"Currently we only support Solovay-Kitaev \('sk'\) decompostion",
         ):
-            dev = qml.device("default.qubit")
-
-            def qfunc():
-                qml.RX(1.0, wires=[0])
-                return qml.expval(qml.PauliZ(0))
-
-            qml.QNode(clifford_t_decomposition(qfunc, method="synth"), dev)()
+            decomposed_qfunc()

@@ -53,10 +53,10 @@ _CLIFFORD_T_TWO_GATES = [
 ]
 
 # Single-parameter gates in PL
-_PARAMETER_GATES = [qml.RX, qml.RY, qml.RZ, qml.Rot, qml.PhaseShift, qml.GlobalPhase]
+_PARAMETER_GATES = (qml.RX, qml.RY, qml.RZ, qml.Rot, qml.PhaseShift)
 
 # Clifford+T gate set
-_CLIFFORD_T_GATES = _CLIFFORD_T_ONE_GATES + _CLIFFORD_T_TWO_GATES
+_CLIFFORD_T_GATES = tuple(_CLIFFORD_T_ONE_GATES + _CLIFFORD_T_TWO_GATES) + (qml.GlobalPhase,)
 
 
 def check_clifford_op(op):
@@ -89,24 +89,24 @@ def check_clifford_op(op):
         qml.pauli.pauli_sentence(qml.prod(*pauli))
         for pauli in product(*(pauli_group(idx) for idx in op.wires))
     ]
-    pauli_word = [list(word.keys())[0] for word in pauli_sens]
-    pauli_hams = [pauli_sen.hamiltonian(wire_order=op.wires) for pauli_sen in pauli_sens]
+    pauli_word = [list(word)[0] for word in pauli_sens]
+    pauli_hams = (pauli_sen.hamiltonian(wire_order=op.wires) for pauli_sen in pauli_sens)
 
     # Perform U@P@U^\dagger and check if the result exists in set P
-    pauli_coves = []
     for prod in product([pauli_terms], pauli_hams, [pauli_terms]):
         # hopefully op_math.prod scales better than matrix multiplication, i.e., O((2^N)^3)
         upu = qml.pauli.pauli_sentence(qml.prod(*prod))
         upu.simplify()
 
-        if not len(upu) == 1:  # Pauli sum always lie outisde set P
+        if len(upu) != 1:  # Pauli sum always lie outside set P
             return False  # early stopping
 
-        op_word = list(upu.keys())[0]  # Get the Pauli Word in the sentence
-        if op_word != pauli_word[0]:  # Identity always lie in set P
-            pauli_coves.append(any(op_word == word for word in pauli_word[1:]))
+        op_word = list(upu)[0]  # Get the Pauli Word in the sentence
+        if all(op_word != word for word in pauli_word):
+            # Identity always lie in set P
+            return False
 
-    return all(pauli_coves)
+    return True
 
 
 def check_clifford_t(op):
@@ -123,23 +123,14 @@ def check_clifford_t(op):
     Returns:
         Bool that represents whether the provided operator is Clifford+T or not.
     """
+    base = getattr(op, "base", None)
 
     # Save time and check from the pre-computed list
-    if any(
-        (
-            isinstance(op, gate) or isinstance(getattr(op, "base", None), gate)
-            for gate in _CLIFFORD_T_GATES + [qml.GlobalPhase]
-        )
-    ):
+    if isinstance(op, _CLIFFORD_T_GATES) or isinstance(base, _CLIFFORD_T_GATES):
         return True
 
     # Save time and check from the parameter of rotation gates
-    if any(
-        (
-            isinstance(op, gate) or isinstance(getattr(op, "base", None), gate)
-            for gate in _PARAMETER_GATES[:-1]  # don't check for GlobalPhase
-        )
-    ):
+    if isinstance(op, _PARAMETER_GATES) or isinstance(base, _PARAMETER_GATES):
         return qml.math.isclose(op.data[0] % math.pi, 0.0)
 
     return check_clifford_op(op)
@@ -149,7 +140,7 @@ def _simplify_param(theta, gate):
     r"""Check if the parameter allows simplification for the rotation gate.
 
     For the cases where theta is an integer multiple of π: (a) returns a global phase
-    when even, and (b) reutrns combination of provided gate with global phase when odd.
+    when even, and (b) returns combination of provided gate with global phase when odd.
     In rest of the other cases it returns None.
     """
     if qml.math.isclose(theta, 0.0, atol=1e-6):
@@ -220,12 +211,12 @@ def _one_qubit_decompose(op):
         qml.matrix(op), op.wires, "ZXZ", return_global_phase=True
     )
 
+    gphase_op = sd_ops.pop()
     d_ops = []
-    for sd_op in sd_ops[:-1]:
-        if sd_op.num_params:
-            d_ops.extend(_rot_decompose(sd_op) if sd_op.num_params else [sd_op])
+    for sd_op in sd_ops:
+        d_ops.extend(_rot_decompose(sd_op) if sd_op.num_params else [sd_op])
 
-    return d_ops, sd_ops[-1]
+    return d_ops, gphase_op
 
 
 def _two_qubit_decompose(op):
@@ -249,37 +240,34 @@ def _merge_pauli_rotations(operations, merge_ops=None):
     merged_ops = []
 
     while len(copied_ops) > 0:
-        curr_gate = copied_ops[0]
+        curr_gate = copied_ops.pop(0)
 
         # if gate is not to be merged, let it go
         if merge_ops is not None and curr_gate.name not in merge_ops:
             merged_ops.append(curr_gate)
-            copied_ops.pop(0)
             continue
 
         # Find the next gate that acts on the same wires
-        next_gate_idx = find_next_gate(curr_gate.wires, copied_ops[1:])
+        next_gate_idx = find_next_gate(curr_gate.wires, copied_ops)
         if next_gate_idx is None:
             merged_ops.append(curr_gate)
-            copied_ops.pop(0)
             continue
 
         # Initialize the current angle and iterate until end of merge
         cumulative_angles = 1.0 * qml.math.array(curr_gate.parameters)
         while next_gate_idx is not None:
             # If next gate is of the same type, we can merge the angles
-            next_gate = copied_ops[next_gate_idx + 1]
+            next_gate = copied_ops[next_gate_idx]
             if curr_gate.name == next_gate.name and curr_gate.wires == next_gate.wires:
-                copied_ops.pop(next_gate_idx + 1)
+                copied_ops.pop(next_gate_idx)
                 cumulative_angles = cumulative_angles + qml.math.array(next_gate.parameters)
             else:
                 break
 
-            next_gate_idx = find_next_gate(curr_gate.wires, copied_ops[1:])
+            next_gate_idx = find_next_gate(curr_gate.wires, copied_ops)
 
         # Replace the current gate, add it to merged list and pop it from orginal one
         merged_ops.append(curr_gate.__class__(*cumulative_angles, wires=curr_gate.wires))
-        copied_ops.pop(0)
 
     return merged_ops
 
@@ -342,11 +330,10 @@ def clifford_t_decomposition(
 
         # Now iterate over the expanded tape operations
         decomp_ops, gphase_ops = [], []
+        SKIP_OP_TYPES = (qml.Barrier, qml.Snapshot, qml.WireCut)
         for op in expanded_tape.operations:
             # Check whether operation is to be skipped
-            if any(
-                (isinstance(op, skip_op) for skip_op in [qml.Barrier, qml.Snapshot, qml.WireCut])
-            ):
+            if isinstance(op, SKIP_OP_TYPES):
                 decomp_ops.append(op)
 
             # Check whether the operation is a global phase
@@ -367,8 +354,8 @@ def clifford_t_decomposition(
                     if op.name in basis_set:
                         d_ops = _rot_decompose(op)
                     else:
-                        d_ops, g_ops = _one_qubit_decompose(op)
-                        gphase_ops.append(g_ops)
+                        d_ops, g_op = _one_qubit_decompose(op)
+                        gphase_ops.append(g_op)
                     decomp_ops.extend(d_ops)
 
                 # Two qubit unitary decomposition with SU(4) rotations
@@ -391,8 +378,8 @@ def clifford_t_decomposition(
                                     if md_op.name in basis_set:  # For known recipe
                                         d_ops = _rot_decompose(md_op)
                                     else:  # Resort to decomposing manually
-                                        d_ops, g_ops = _one_qubit_decompose(md_op)
-                                        gphase_ops.append(g_ops)
+                                        d_ops, g_op = _one_qubit_decompose(md_op)
+                                        gphase_ops.append(g_op)
 
                                 # For the gates acting on two qubits
                                 elif len(md_op.wires) == 2:
@@ -401,7 +388,8 @@ def clifford_t_decomposition(
 
                                 # Final resort (should not enter in an ideal situtation)
                                 else:  # pragma: no cover
-                                    d_ops = md_op.decomposition()
+                                    # d_ops = md_op.decomposition()
+                                    raise TypeError(f"Found unexpected operator {md_op}")
 
                                 # Expand the list and iterate over
                                 del md_ops[idx]
