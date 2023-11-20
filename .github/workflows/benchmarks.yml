@@ -16,7 +16,9 @@ jobs:
 
       uses: ./.github/workflows/interface-unit-tests.yml
       with:
+        # TODO: Update this in the future to a stable release or master branch
         branch: add-pytest-benchmarks
+
         pipeline_mode: 'reference-benchmarks'
 
         # Run a 'lightened' version of the CI on Pull Requests by default
