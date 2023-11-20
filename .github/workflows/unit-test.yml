@@ -191,6 +191,7 @@ jobs:
           fi
 
       - name: Run PennyLane Unit Tests
+        if: steps.continue.outputs.confirm == 'true'
         env:
           PYTEST_MARKER: ${{ inputs.pytest_markers != '' && format('-m "{0}"', inputs.pytest_markers) || '' }}
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
