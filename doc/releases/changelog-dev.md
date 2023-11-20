@@ -98,6 +98,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Jax can now differeniate a batch of circuits where one tape does not have trainable parameters.
+  [(#4837)](https://github.com/PennyLaneAI/pennylane/pull/4837)
+
 * Fixes a bug where the adjoint method differentiation would fail if
   an operation with `grad_method=None` that has a parameter is present.
   [(#4820)](https://github.com/PennyLaneAI/pennylane/pull/4820)
