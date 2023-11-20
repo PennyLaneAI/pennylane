@@ -26,7 +26,7 @@ files.
 import pytest
 
 import pennylane as qml
-from pennylane.transforms.condition import ConditionalTransformError
+from pennylane.ops.op_math.condition import ConditionalTransformError
 
 terminal_meas = [
     qml.probs(wires=[1, 0]),

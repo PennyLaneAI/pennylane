@@ -30,6 +30,17 @@ Constructor Functions
     ~prod
     ~s_prod
 
+Functions that act on quantum functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+These functions accept quantum functions (Python functions
+containing quantum operations) that are used to construct QNodes.
+
+.. autosummary::
+    :toctree: api
+
+    ~cond
+
 Symbolic Classes
 ~~~~~~~~~~~~~~~~
 
@@ -40,6 +51,7 @@ Symbolic Classes
 
     ~Adjoint
     ~CompositeOp
+    ~Conditional
     ~Controlled
     ~ControlledOp
     ~Evolution
@@ -78,6 +90,7 @@ Decompositions
 
 from .adjoint import Adjoint, adjoint
 from .composite import CompositeOp
+from .condition import cond, Conditional
 from .controlled import Controlled, ControlledOp, ctrl
 from .controlled_ops import ControlledQubitUnitary, CY, CZ
 from .evolution import Evolution
