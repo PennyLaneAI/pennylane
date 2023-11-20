@@ -24,7 +24,7 @@ from .drawable_layers import drawable_layers
 from .utils import convert_wire_order, unwrap_controls, find_mid_measure_cond_connections
 
 
-def _add_grouping_symbols(op, layer_str, wire_map, bit_map):
+def _add_grouping_symbols(op, layer_str, wire_map, bit_map):  # pylint: disable=unused-argument
     """Adds symbols indicating the extent of a given object."""
 
     if len(op.wires) > 1:
