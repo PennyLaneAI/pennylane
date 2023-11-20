@@ -193,7 +193,7 @@ jobs:
         env:
           PYTEST_MARKER: ${{ inputs.pytest_markers != '' && format('-m "{0}"', inputs.pytest_markers) || '' }}
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
-        run: python -m pytest  ${{ inputs.pytest_test_directory }} ${{ steps.coverage_args.outputs.args }} ${{ inputs.pytest_additional_args }} ${{ steps.benchmark_args.outputs.args }} ${{ env.PYTEST_MARKER }} ${{ steps.parallel_args.outputs.args }}
+        run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }}
 
       - name: Adjust coverage file for Codecov
         if: inputs.pipeline_mode == 'unit-tests'
