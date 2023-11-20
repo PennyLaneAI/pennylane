@@ -113,10 +113,6 @@ def find_mid_measure_cond_connections(operations, layers):
     # classical conditions.
     bit_map = {}
 
-    # Map between classical bit positions and whether we have reached the mid-circuit
-    # measurement of that bit. This is needed to know when to start drawing the bit line.
-    bit_measurements_reached = []
-
     # Map between classical bit positions and the layer of their corresponding mid-circuit
     # measurements.
     measurement_layers = []
