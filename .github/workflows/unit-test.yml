@@ -175,21 +175,20 @@ jobs:
         if: inputs.install_pennylane_lightning_master == true && steps.continue.outputs.confirm == 'true'
         run: pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
 
-      - name: Set Benchmark Args
-        id: benchmark_args
-        if: contains(inputs.pipeline_mode, 'benchmarks')
-        run: echo "args=--benchmark-enable --benchmark-only --benchmark-json=benchmarks.json" >> $GITHUB_OUTPUT
-
-      - name: Set Coverage Args
-        id: coverage_args
-        if: inputs.pipeline_mode == 'unit-tests'
-        run: echo "args=${{ inputs.pytest_coverage_flags }}" >> $GITHUB_OUTPUT
-
-      - name: Set Parallelization Args
-        id: parallel_args
-        if: inputs.pipeline_mode == 'unit-tests'
-        run: echo "args=-n auto" >> $GITHUB_OUTPUT
-
+      - name: Set PyTest Args
+        id: pytest_args
+        env:
+          PIPELINE_MODE: ${{ inputs.pipeline_mode }}
+          PYTEST_COVERAGE_ARGS: ${{ inputs.pytest_coverage_flags }}
+	  PYTEST_PARALLELISE_ARGS: -n auto
+	  PYTEST_BENCHMARKS_ARGS: --benchmark-enable --benchmark-only --benchmark-json=benchmarks.json
+	  PYTEST_ADDITIONAL_ARGS: ${{ inputs.pytest_additional_args }}
+        run: |
+          if [[ "$PIPELINE_MODE" =~ .*"benchmarks".* ]]; then
+	    echo "args=$PYTEST_COVERAGE_ARGS $PYTEST_PARALLELISE_ARGS $PYTEST_ADDITIONAL_ARGS" >> $GITHUB_OUTPUT
+	  else
+	    echo "args=$PYTEST_BENCHMARKS_ARGS $PYTEST_ADDITIONAL_ARGS" >> $GITHUB_OUTPUT
+	  fi
       - name: Run PennyLane Unit Tests
         env:
           PYTEST_MARKER: ${{ inputs.pytest_markers != '' && format('-m "{0}"', inputs.pytest_markers) || '' }}
