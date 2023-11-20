@@ -39,7 +39,8 @@ jobs:
       with:
         # If runnning on schedule will compare master with the reference data.
         # If not, will compare the branch defined by github.ref (PRs, for example)
-        branch: ${{github.event_name == 'schedule' && 'master' || github.ref }}
+        branch: ${{ github.ref }}
+
         pipeline_mode: 'benchmarks'
 
         # Run a 'lightened' version of the CI on Pull Requests by default
