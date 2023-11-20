@@ -21,6 +21,19 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 
+def test_standard_validity():
+    """Check the operation using the assert_valid function."""
+
+    n_wires = 2
+    weight_shape = (1, 2, 3)
+
+    weights = np.random.random(size=weight_shape)
+
+    op = qml.StronglyEntanglingLayers(weights, wires=range(n_wires))
+
+    qml.ops.functions.assert_valid(op)
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 

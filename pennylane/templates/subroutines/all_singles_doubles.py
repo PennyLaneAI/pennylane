@@ -140,14 +140,17 @@ class AllSinglesDoubles(Operation):
         if weights_shape != exp_shape:
             raise ValueError(f"'weights' tensor must be of shape {exp_shape}; got {weights_shape}.")
 
+        if hf_state[0].dtype != np.dtype("int"):
+            raise ValueError(f"Elements of 'hf_state' must be integers; got {hf_state.dtype}")
+
+        singles = tuple(tuple(s) for s in singles)
+        doubles = tuple(tuple(d) for d in doubles)
+
         self._hyperparameters = {
-            "hf_state": qml.math.toarray(hf_state),
+            "hf_state": tuple(hf_state),
             "singles": singles,
             "doubles": doubles,
         }
-
-        if hf_state.dtype != np.dtype("int"):
-            raise ValueError(f"Elements of 'hf_state' must be integers; got {hf_state.dtype}")
 
         super().__init__(weights, wires=wires, id=id)
 

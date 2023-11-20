@@ -427,7 +427,7 @@ class BasisStateProjector(Projector, Operation):
 
         super().__init__(state, wires=wires, id=id)
 
-    def __new__(cls):  # pylint: disable=arguments-differ
+    def __new__(cls, *_, **__):  # pylint: disable=arguments-differ
         return object.__new__(cls)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -555,7 +555,7 @@ class StateVectorProjector(Projector):
 
         super().__init__(state, wires=wires, id=id)
 
-    def __new__(cls):  # pylint: disable=arguments-differ
+    def __new__(cls, *_, **__):  # pylint: disable=arguments-differ
         return object.__new__(cls)
 
     def label(self, decimals=None, base_label=None, cache=None):
