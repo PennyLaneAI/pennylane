@@ -9,6 +9,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `default.qubit` no longer uses a dense matrix for `MultiControlledX` for more than 8 operation wires.
+  [(#4673)](https://github.com/PennyLaneAI/pennylane/pull/4673)
+
 * `AmplitudeEmbedding` now also supports batching when used with Tensorflow.
   [(#4818)](https://github.com/PennyLaneAI/pennylane/pull/4818)
 
