@@ -372,8 +372,8 @@ def tape_text(
     bit_fillers = ["═", " "]
     enders = [True, False]  # add "─┤" after all operations
 
-    bit_map, measurement_layers, final_bit_layers = find_mid_measure_cond_connections(
-        tape.operations, layers_list
+    bit_map, measurement_layers, final_cond_layers = find_mid_measure_cond_connections(
+        tape.operations, layers_list[0]
     )
     n_bits = len(bit_map)
     bit_maps = [bit_map, {}]
@@ -392,7 +392,7 @@ def tape_text(
             # Add filler before current layer
             layer_str = [w_filler] * n_wires + [" "] * n_bits
             for b in bit_map.values():
-                cur_b_filler = b_filler if measurement_layers[b] < i < final_bit_layers[b] else " "
+                cur_b_filler = b_filler if measurement_layers[b] < i < final_cond_layers[b] else " "
                 layer_str[b + n_wires] = cur_b_filler
 
             # Keep track of mid-circuit measurements in each layer that are used
@@ -425,7 +425,7 @@ def tape_text(
                     cur_b_filler = b_filler if bit_map[cur_layer_mid_measure] >= b else " "
                 else:
                     cur_b_filler = (
-                        b_filler if measurement_layers[b] < i < final_bit_layers[b] else " "
+                        b_filler if measurement_layers[b] < i < final_cond_layers[b] else " "
                     )
                 layer_str[b + n_wires] = layer_str[b + n_wires].ljust(max_label_len, cur_b_filler)
 
@@ -444,7 +444,9 @@ def tape_text(
             wire_totals = [w_filler.join([t, s]) for t, s in zip(wire_totals, layer_str[:n_wires])]
 
             for j, (bt, s) in enumerate(zip(bit_totals, layer_str[n_wires : n_wires + n_bits])):
-                cur_b_filler = b_filler if measurement_layers[j] < i <= final_bit_layers[j] else " "
+                cur_b_filler = (
+                    b_filler if measurement_layers[j] < i <= final_cond_layers[j] else " "
+                )
                 bit_totals[j] = cur_b_filler.join([bt, s])
 
         if ender:

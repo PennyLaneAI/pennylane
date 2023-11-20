@@ -358,11 +358,64 @@ class TestMidCircuitMeasurements:
         """Test that a circuit with a single classical condition and a single measurement
         is drawn correctly."""
 
-        def circ(weights):
-            qml.RX(weights[0], 0)
-            qml.measure(0, reset=True)
+        def circ(phi):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            qml.cond(m0, qml.PauliX)(wires=1)
 
-        drawing = qml.draw(circ)(np.array([np.pi, 3.124, 0.456]))
+        drawing = qml.draw(circ)(np.pi)
+        expected_drawing = (
+            "0: ──RX(3.14)──┤↗├────┤  \n" "1: ─────────────║───X─┤  \n" "                ╚═══╝    "
+        )
+
+        assert drawing == expected_drawing
+
+    def test_single_meas_single_cond_multi_wire(self):
+        """Test that a multi-wire conditional operator relying on a single
+        mid-circuit measurement is drawn correctly."""
+
+        def circ(phi, theta):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            qml.RY(theta, 2)
+            qml.cond(m0, qml.CNOT)(wires=[1, 0])
+
+        drawing = qml.draw(circ)(np.pi, np.pi / 2)
+        expected_drawing = (
+            "0: ──RX(3.14)──┤↗├───────────╭X─┤  \n"
+            "2: ─────────────║───RY(1.57)─│──┤  \n"
+            "1: ─────────────║────────────╰●─┤  \n"
+            "                ╚═════════════╝    "
+        )
+
+        assert drawing == expected_drawing
+
+    def test_single_meas_multi_cond(self):
+        """Test that a circuit where a single mid-circuit measurement is used for multiple
+        conditions is drawn correctly"""
+
+        def circ():
+            qml.RX(0.5, 0)
+            qml.RX(0.5, 1)
+            m0 = qml.measure(1, reset=True, postselect=1)
+            qml.cond(m0, qml.MultiControlledX)(wires=[1, 2, 0], control_values="10")
+            qml.CNOT([3, 2])
+            qml.cond(m0, qml.ctrl(qml.MultiRZ, control=[1, 2], control_values=[True, False]))(
+                0.5, wires=[0, 3]
+            )
+            qml.cond(m0, qml.PauliX)(0)
+            return qml.expval(qml.PauliZ(0))
+
+        drawing = qml.draw(circ)()
+        expected_drawing = (
+            "0: ──RX(0.50)────────────╭X────╭MultiRZ(0.50)──X─┤  <Z>\n"
+            "1: ──RX(0.50)──┤↗₁│  │0⟩─├●────├●──────────────║─┤     \n"
+            "2: ─────────────║────────╰○─╭X─├○──────────────║─┤     \n"
+            "3: ─────────────║─────────║─╰●─╰MultiRZ(0.50)──║─┤     \n"
+            "                ╚═════════╝═════╝══════════════╝       "
+        )
+
+        assert drawing == expected_drawing
 
 
 @pytest.mark.parametrize(

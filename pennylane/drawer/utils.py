@@ -104,9 +104,28 @@ def unwrap_controls(op):
 
 
 def find_mid_measure_cond_connections(operations, layers):
-    """Create dictionaries with various mappings needed for drawing
-    mid-circuit measurements and classically controlled operators
-    correctly."""
+    """Collect and return information about connections between mid-circuit measurements
+    and classical conditions.
+
+    This utility function returns three items needed for processing mid-circuit measurements
+    and classical conditions for drawing:
+
+    * A dictionary mapping each mid-circuit measurement to a corresponding bit index.
+        This map only contains mid-circuit measurements that are used for classical conditioning.
+    * A list where each index is a bit and the values are the indices  of the layers containing
+        the mid-circuit measurement corresponding to the bits.
+    * A list where each index is a bit and the values are the indices of the last layers that
+        use those bits for classical conditions.
+
+    Args:
+        operations (list[~.Operation]): List of operations on the tape
+        layers (list[list[~.Operation]]): List of drawable layers containing list of operations
+            for each layer
+
+    Returns:
+        tuple[dict, list, list]: Data structures needed for correctly drawing classical conditions
+        as described above.
+    """
 
     # Map between mid-circuit measurements and their position on the drawing
     # The bit map only contains mid-circuit measurements that are used in
@@ -120,7 +139,7 @@ def find_mid_measure_cond_connections(operations, layers):
     # Map between classical bit positions and the final layer where the bit is used.
     # This is needed to know when to stop drawing a bit line. The bit is the index,
     # so each of the two lists must have the same length as the number of bits
-    final_bit_layers = []
+    final_cond_layers = []
 
     measurements_for_conds = set()
     conditional_ops = []
@@ -143,17 +162,17 @@ def find_mid_measure_cond_connections(operations, layers):
 
         # Set lists to correct size
         measurement_layers = [None] * n_bits
-        final_bit_layers = [None] * n_bits
+        final_cond_layers = [None] * n_bits
 
         # Only iterating through operation layers because bits are only determined
         # using those layers
-        for i, layer in enumerate(layers[0]):
+        for i, layer in enumerate(layers):
             for op in layer:
                 if isinstance(op, MidMeasureMP) and op in bit_map:
                     measurement_layers[bit_map[op]] = i
 
                 if op.__class__.__name__ == "Conditional":
                     for mid_measure in op.meas_val.measurements:
-                        final_bit_layers[bit_map[mid_measure]] = i
+                        final_cond_layers[bit_map[mid_measure]] = i
 
-    return bit_map, measurement_layers, final_bit_layers
+    return bit_map, measurement_layers, final_cond_layers
