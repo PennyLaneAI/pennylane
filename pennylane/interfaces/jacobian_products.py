@@ -643,7 +643,7 @@ class LightningVJPs(JacobianProductCalculator):
             raise NotImplementedError
         tape = tapes[0]
         numpy_tape = qml.transforms.convert_to_numpy_parameters(tape)
-        dy = qml.math.unwrap(dy)
+        dy = qml.math.hstack(qml.math.unwrap(dy))
         vjp_f = self._device.vjp(numpy_tape.measurements, dy)
         out = vjp_f(numpy_tape)
         if len(tape.trainable_params) == 1:
