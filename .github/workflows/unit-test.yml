@@ -209,14 +209,14 @@ jobs:
         if: inputs.pipeline_mode == 'benchmarks' && hashFiles('benchmarks.json') != '' && hashFiles('benchmark_reference/benchmarks.json') != ''
         run: |
           mkdir ${{ github.workspace }}/benchmark_results
-          python ${{ github.workspace }}/scripts/benchmarks/convert_pytest_JSON_to_XUBM.py --filename_XUBM benchmark_results/benchmarks_xubm.json --author ${{ github.event.pull_request.user.login }} --github_reference ${{ github.ref }}
+          python ./.github/workflows/scripts/benchmarks/convert_pytest_JSON_to_XUBM.py --filename_XUBM benchmark_results/benchmarks_xubm.json --author ${{ github.event.pull_request.user.login }} --github_reference ${{ github.ref }}
           cd benchmark_reference
-          python ${{ github.workspace }}/scripts/benchmarks/convert_pytest_JSON_to_XUBM.py --author ${{ github.event.pull_request.user.login }}
+          python ./.github/workflows/scripts/benchmarks/convert_pytest_JSON_to_XUBM.py --author ${{ github.event.pull_request.user.login }}
 
       - name: Plotting benchmark graphs
         if: inputs.pipeline_mode == 'benchmarks' && hashFiles('benchmark_results/benchmarks_xubm.json') != '' && hashFiles('benchmark_reference/benchmarks_xubm.json') != ''
         run: |
-          python ${{ github.workspace }}/scripts/benchmarks/plot_benchmarks.py --graph_name ${{ steps.benchmark_name.outputs.benchmark_name }}
+          python ./.github/workflows/scripts/benchmarks/plot_benchmarks.py --graph_name ${{ steps.benchmark_name.outputs.benchmark_name }}
 
       # If this is an assessment benchmark, upload the data as an artifact.
       - name: Upload pytest benchmark results
