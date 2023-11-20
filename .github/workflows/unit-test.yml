@@ -185,10 +185,11 @@ jobs:
           PYTEST_ADDITIONAL_ARGS: ${{ inputs.pytest_additional_args }}
         run: |
           if [[ "$PIPELINE_MODE" =~ .*"benchmarks".* ]]; then
-            echo "args=$PYTEST_COVERAGE_ARGS $PYTEST_PARALLELISE_ARGS $PYTEST_ADDITIONAL_ARGS" >> $GITHUB_OUTPUT
-          else
             echo "args=$PYTEST_BENCHMARKS_ARGS $PYTEST_ADDITIONAL_ARGS" >> $GITHUB_OUTPUT
+          else
+            echo "args=$PYTEST_COVERAGE_ARGS $PYTEST_PARALLELISE_ARGS $PYTEST_ADDITIONAL_ARGS" >> $GITHUB_OUTPUT
           fi
+
       - name: Run PennyLane Unit Tests
         env:
           PYTEST_MARKER: ${{ inputs.pytest_markers != '' && format('-m "{0}"', inputs.pytest_markers) || '' }}
