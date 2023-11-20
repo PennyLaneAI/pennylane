@@ -788,6 +788,41 @@ class TestAutosize:
         plt.close()
 
 
+class TestClassicalWires:
+    def test_classical_wire(self):
+        """Test the addition of horiziontal classical wires."""
+        drawer = MPLDrawer(n_wires=1, n_layers=4, c_wires=3)
+        drawer.classical_wire(c_wire=2, start_layer=1, end_layer=3)
+
+        assert drawer._cond_shift == 0.03
+        assert drawer._cwire_scaling == 0.25
+
+        assert len(drawer.ax.lines) == 3
+
+        base_y = 1 + 2 * 0.25  # number of wires + scaling * classical wire
+
+        assert drawer.ax.lines[1].get_xdata() == (1 - 0.03, 3 + 0.03)
+        assert drawer.ax.lines[1].get_ydata() == (base_y - 0.03, base_y - 0.03)
+
+        assert drawer.ax.lines[2].get_xdata() == (1 - 0.03, 3 + 0.03)
+        assert drawer.ax.lines[2].get_ydata() == (base_y + 0.03, base_y + 0.03)
+
+        plt.close()
+
+    def test_classical_control(self):
+        """Test the addition of classical control wires."""
+
+        drawer = MPLDrawer(n_wires=2, n_layers=4, c_wires=3)
+        drawer.classical_control(c_wire=2, layer=1, wire=1)
+
+        assert len(drawer.ax.lines) == 4
+
+        assert drawer.ax.lines[2].get_xdata() == (1 - 0.03, 1 - 0.03)
+        assert drawer.ax.lines[3].get_xdata() == (1 + 0.03, 1 + 0.03)
+        assert drawer.ax.lines[2].get_ydata() == (1, 2 + 2 * 0.25 + 0.03)
+        assert drawer.ax.lines[3].get_ydata() == (1, 2 + 2 * 0.25 + 0.03)
+
+
 class TestCond:
     """Test the cond double-wire drawing function."""
 
