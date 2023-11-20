@@ -36,7 +36,12 @@ from pennylane.tape import QuantumTape
 from pennylane.typing import ResultBatch
 
 from .set_shots import set_shots
-from .jacobian_products import TransformJacobianProducts, DeviceDerivatives, DeviceJacobianProducts
+from .jacobian_products import (
+    TransformJacobianProducts,
+    DeviceDerivatives,
+    DeviceJacobianProducts,
+    LightningVJPs,
+)
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -561,11 +566,6 @@ def execute(
 
         interface = get_jax_interface_name(tapes)
 
-    if device_vjp and isinstance(device, qml.Device):
-        raise qml.QuantumFunctionError(
-            "device provided jacobian products are not compatible with the old device interface."
-        )
-
     gradient_kwargs = gradient_kwargs or {}
     config = config or _get_execution_config(
         gradient_fn, grad_on_execution, interface, device, device_vjp
@@ -633,7 +633,10 @@ def execute(
 
     _grad_on_execution = False
 
-    if config.use_device_jacobian_product and interface in jpc_interfaces:
+    if device_vjp and getattr(device, "short_name", "") == "lightning.qubit":
+        jpc = LightningVJPs(device)
+
+    elif config.use_device_jacobian_product and interface in jpc_interfaces:
         jpc = DeviceJacobianProducts(device, config)
 
     elif config.use_device_gradient:

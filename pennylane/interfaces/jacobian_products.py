@@ -627,3 +627,29 @@ class DeviceJacobianProducts(JacobianProductCalculator):
             logger.debug("compute_jacobian called with %s", tapes)
         numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
         return self._device.compute_derivatives(numpy_tapes, self._execution_config)
+
+
+class LightningVJPs(JacobianProductCalculator):
+    """Binds lightning vjps."""
+
+    def __init__(self, device):
+        self._device = device
+
+    def execute_and_compute_jvp(self, tapes, tangents):
+        raise NotImplementedError
+
+    def compute_vjp(self, tapes, dy):
+        if len(tapes) > 1:
+            raise NotImplementedError
+        tape = tapes[0]
+        numpy_tape = qml.transforms.convert_to_numpy_parameters(tape)
+        dy = qml.math.unwrap(dy)
+        vjp_f = self._device.vjp(numpy_tape.measurements, dy)
+        out = vjp_f(numpy_tape)
+        if len(tape.trainable_params) == 1:
+            out = (out,)
+        out = (out,)
+        return out
+
+    def compute_jacobian(self, tapes):
+        raise NotImplementedError
