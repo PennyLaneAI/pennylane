@@ -53,6 +53,8 @@ class TestInitialization:
         h = qml.dot(coeffs, ops)
         op = qml.QDrift(h, time, n=n, seed=seed)
 
+        qml.ops.functions.assert_valid(op)
+
         assert op.wires == h.wires
         assert op.parameters == [time]
         assert op.data == (time,)
@@ -137,7 +139,7 @@ class TestInitialization:
             "n": n,
             "seed": seed,
             "base": hamiltonian,
-            "decomposition": decomp,
+            "decomposition": tuple(decomp),
         }
 
         new_op = type(op)._unflatten(data, metadata)  # pylint: disable=protected-access
@@ -192,8 +194,8 @@ class TestDecomposition:
         with qml.tape.QuantumTape() as tape:
             decomp = op.compute_decomposition(*op.parameters, **op.hyperparameters)
 
-        assert all(decomp == tape.operations)  # queue matches decomp with circuit ordering
-        assert all(decomp == expected_decomp)  # sample the same ops
+        assert decomp == tape.operations  # queue matches decomp with circuit ordering
+        assert decomp == list(expected_decomp)  # sample the same ops
 
 
 class TestIntegration:
