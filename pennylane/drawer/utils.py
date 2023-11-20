@@ -117,10 +117,14 @@ def find_mid_measure_cond_connections(operations, layers):
     # measurement of that bit. This is needed to know when to start drawing the bit line.
     bit_measurements_reached = []
 
+    # Map between classical bit positions and the layer of their corresponding mid-circuit
+    # measurements.
+    measurement_layers = []
+
     # Map between classical bit positions and the final layer where the bit is used.
     # This is needed to know when to stop drawing a bit line. The bit is the index,
     # so each of the two lists must have the same length as the number of bits
-    all_bit_terminal_layers = [[], []]
+    final_bit_layers = []
 
     measurements_for_conds = set()
     conditional_ops = []
@@ -140,18 +144,20 @@ def find_mid_measure_cond_connections(operations, layers):
         bit_map = dict(zip(cond_mid_measures, range(len(cond_mid_measures))))
 
         n_bits = len(bit_map)
-        bit_measurements_reached = [False for _ in range(n_bits)]
 
-        # Terminal layers in ops
-        all_bit_terminal_layers[0] = [None for _ in range(n_bits)]
-        # Terminal layers in meas
-        all_bit_terminal_layers[1] = [-1 for _ in range(n_bits)]
+        # Set lists to correct size
+        measurement_layers = [None] * n_bits
+        final_bit_layers = [None] * n_bits
+
         # Only iterating through operation layers because bits are only determined
         # using those layers
         for i, layer in enumerate(layers[0]):
             for op in layer:
+                if isinstance(op, MidMeasureMP) and op in bit_map:
+                    measurement_layers[bit_map[op]] = i
+
                 if op.__class__.__name__ == "Conditional":
                     for mid_measure in op.meas_val.measurements:
-                        all_bit_terminal_layers[0][bit_map[mid_measure]] = i
+                        final_bit_layers[bit_map[mid_measure]] = i
 
-    return bit_map, bit_measurements_reached, all_bit_terminal_layers
+    return bit_map, measurement_layers, final_bit_layers

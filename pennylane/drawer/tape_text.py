@@ -27,9 +27,6 @@ from .utils import convert_wire_order, unwrap_controls, find_mid_measure_cond_co
 def _add_grouping_symbols(op, layer_str, wire_map, bit_map):
     """Adds symbols indicating the extent of a given object."""
 
-    if isinstance(op, MidMeasureMP):
-        return _add_mid_measure_grouping_symbols(op, layer_str, wire_map, bit_map)
-
     if len(op.wires) > 1:
         mapped_wires = [wire_map[w] for w in op.wires]
         min_w, max_w = min(mapped_wires), max(mapped_wires)
@@ -123,7 +120,7 @@ def _add_op(op, layer_str, wire_map, bit_map, decimals, cache):
 def _add_mid_measure_op(op, layer_str, wire_map, bit_map, decimals, cache):
     """Updates ``layer_str`` with ``op`` operation when ``op`` is a
     ``qml.measurements.MidMeasureMP``."""
-    layer_str = _add_grouping_symbols(op, layer_str, wire_map, bit_map)
+    layer_str = _add_mid_measure_grouping_symbols(op, layer_str, wire_map, bit_map)
     label = op.label(decimals=decimals, cache=cache).replace("\n", "")
 
     for w in op.wires:

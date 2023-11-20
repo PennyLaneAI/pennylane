@@ -281,77 +281,88 @@ class TestLayering:
         assert draw(circ)() == expected
 
 
-@pytest.mark.parametrize("device_name", ["default.qubit"])
-def test_mid_circuit_measurement_device_api(device_name, mocker):
-    """Test that a circuit containing mid-circuit measurements is transformed by the drawer
-    to use deferred measurements if the device uses the new device API."""
-    dev = qml.device(device_name)
+class TestMidCircuitMeasurements:
+    """Tests for drawing mid-circuit measurements and classical conditions."""
 
-    @qml.qnode(dev)
-    def circ():
-        qml.PauliX(0)
-        qml.measure(0)
-        return qml.probs(wires=0)
+    @pytest.mark.parametrize("device_name", ["default.qubit"])
+    def test_mid_circuit_measurement_device_api(self, device_name, mocker):
+        """Test that a circuit containing mid-circuit measurements is transformed by the drawer
+        to use deferred measurements if the device uses the new device API."""
+        dev = qml.device(device_name)
 
-    draw_qnode = qml.draw(circ)
-    spy = mocker.spy(qml.defer_measurements, "_transform")
+        @qml.qnode(dev)
+        def circ():
+            qml.PauliX(0)
+            qml.measure(0)
+            return qml.probs(wires=0)
 
-    _ = draw_qnode()
-    spy.assert_called_once()
+        draw_qnode = qml.draw(circ)
+        spy = mocker.spy(qml.defer_measurements, "_transform")
 
+        _ = draw_qnode()
+        spy.assert_called_once()
 
-@pytest.mark.parametrize(
-    "postselect, reset, mid_measure_label",
-    [
-        (None, False, "┤↗├"),
-        (None, True, "┤↗│  │0⟩"),
-        (0, False, "┤↗₀├"),
-        (0, True, "┤↗₀│  │0⟩"),
-        (1, False, "┤↗₁├"),
-        (1, True, "┤↗₁│  │0⟩"),
-    ],
-)
-def test_draw_mid_circuit_measurement(postselect, reset, mid_measure_label):
-    """Test that mid-circuit measurements are drawn correctly."""
-
-    def func():
-        qml.Hadamard(0)
-        qml.measure(0, reset=reset, postselect=postselect)
-        qml.PauliX(0)
-        return qml.expval(qml.PauliZ(0))
-
-    drawing = qml.draw(func)()
-    expected_drawing = "0: ──H──" + mid_measure_label + "──X─┤  <Z>"
-
-    assert drawing == expected_drawing
-
-
-def test_draw_mid_circuit_measurement_multiple_wires():
-    """Test that mid-circuit measurements are correctly drawn in circuits
-    with multiple wires."""
-
-    def circ(weights):
-        qml.RX(weights[0], 0)
-        qml.measure(0, reset=True)
-        qml.RX(weights[1], 1)
-        qml.measure(1)
-        qml.CNOT([0, 3])
-        qml.measure(3, postselect=0, reset=True)
-        qml.RY(weights[2], 2)
-        qml.CNOT([1, 2])
-        qml.measure(2, postselect=1)
-        qml.MultiRZ(0.5, [0, 2])
-        return qml.expval(qml.PauliZ(2))
-
-    drawing = qml.draw(circ)(np.array([np.pi, 3.124, 0.456]))
-    expected_drawing = (
-        "0: ──RX(3.14)──┤↗│  │0⟩─╭●─────────────────────╭MultiRZ(0.50)─┤     \n"
-        "1: ──RX(3.12)──┤↗├──────│─────────────╭●───────│──────────────┤     \n"
-        "3: ─────────────────────╰X──┤↗₀│  │0⟩─│────────│──────────────┤     \n"
-        "2: ──RY(0.46)─────────────────────────╰X──┤↗₁├─╰MultiRZ(0.50)─┤  <Z>"
+    @pytest.mark.parametrize(
+        "postselect, reset, mid_measure_label",
+        [
+            (None, False, "┤↗├"),
+            (None, True, "┤↗│  │0⟩"),
+            (0, False, "┤↗₀├"),
+            (0, True, "┤↗₀│  │0⟩"),
+            (1, False, "┤↗₁├"),
+            (1, True, "┤↗₁│  │0⟩"),
+        ],
     )
+    def test_draw_mid_circuit_measurement(self, postselect, reset, mid_measure_label):
+        """Test that mid-circuit measurements are drawn correctly."""
 
-    assert drawing == expected_drawing
+        def func():
+            qml.Hadamard(0)
+            qml.measure(0, reset=reset, postselect=postselect)
+            qml.PauliX(0)
+            return qml.expval(qml.PauliZ(0))
+
+        drawing = qml.draw(func)()
+        expected_drawing = "0: ──H──" + mid_measure_label + "──X─┤  <Z>"
+
+        assert drawing == expected_drawing
+
+    def test_draw_mid_circuit_measurement_multiple_wires(self):
+        """Test that mid-circuit measurements are correctly drawn in circuits
+        with multiple wires."""
+
+        def circ(weights):
+            qml.RX(weights[0], 0)
+            qml.measure(0, reset=True)
+            qml.RX(weights[1], 1)
+            qml.measure(1)
+            qml.CNOT([0, 3])
+            qml.measure(3, postselect=0, reset=True)
+            qml.RY(weights[2], 2)
+            qml.CNOT([1, 2])
+            qml.measure(2, postselect=1)
+            qml.MultiRZ(0.5, [0, 2])
+            return qml.expval(qml.PauliZ(2))
+
+        drawing = qml.draw(circ)(np.array([np.pi, 3.124, 0.456]))
+        expected_drawing = (
+            "0: ──RX(3.14)──┤↗│  │0⟩─╭●─────────────────────╭MultiRZ(0.50)─┤     \n"
+            "1: ──RX(3.12)──┤↗├──────│─────────────╭●───────│──────────────┤     \n"
+            "3: ─────────────────────╰X──┤↗₀│  │0⟩─│────────│──────────────┤     \n"
+            "2: ──RY(0.46)─────────────────────────╰X──┤↗₁├─╰MultiRZ(0.50)─┤  <Z>"
+        )
+
+        assert drawing == expected_drawing
+
+    def test_single_meas_single_cond(self):
+        """Test that a circuit with a single classical condition and a single measurement
+        is drawn correctly."""
+
+        def circ(weights):
+            qml.RX(weights[0], 0)
+            qml.measure(0, reset=True)
+
+        drawing = qml.draw(circ)(np.array([np.pi, 3.124, 0.456]))
 
 
 @pytest.mark.parametrize(
