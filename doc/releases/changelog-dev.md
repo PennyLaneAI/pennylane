@@ -93,6 +93,9 @@
   to their top-level pages (rather than their module-level pages, eg. `qml.measurements.expval`).
   [(#4750)](https://github.com/PennyLaneAI/pennylane/pull/4750)
 
+* The mentioning of QNodecollection has been removed from the Installation and dependencies page because 
+  the `collections` module has been removed from PennyLane since v0.31.
+
 <h3>Bug fixes 🐛</h3>
 
 * Fixes a bug where the adjoint method differentiation would fail if
