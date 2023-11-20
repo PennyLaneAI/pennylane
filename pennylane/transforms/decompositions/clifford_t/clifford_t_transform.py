@@ -14,6 +14,7 @@
 """Transform function for the Clifford+T decomposition."""
 
 import math
+import warnings
 from functools import partial
 from itertools import product
 from typing import Sequence, Callable
@@ -89,7 +90,6 @@ def check_clifford_op(op):
         qml.pauli.pauli_sentence(qml.prod(*pauli))
         for pauli in product(*(pauli_group(idx) for idx in op.wires))
     ]
-    pauli_word = [list(word)[0] for word in pauli_sens]
     pauli_hams = (pauli_sen.hamiltonian(wire_order=op.wires) for pauli_sen in pauli_sens)
 
     # Perform U@P@U^\dagger and check if the result exists in set P
@@ -99,11 +99,6 @@ def check_clifford_op(op):
         upu.simplify()
 
         if len(upu) != 1:  # Pauli sum always lie outside set P
-            return False  # early stopping
-
-        op_word = list(upu)[0]  # Get the Pauli Word in the sentence
-        if all(op_word != word for word in pauli_word):
-            # Identity always lie in set P
             return False
 
     return True
@@ -207,9 +202,11 @@ def _rot_decompose(op):
 def _one_qubit_decompose(op):
     """Decomposition for single qubit operations using combination of RZ and Hadamard"""
 
-    sd_ops = qml.transforms.one_qubit_decomposition(
-        qml.matrix(op), op.wires, "ZXZ", return_global_phase=True
-    )
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        sd_ops = qml.transforms.one_qubit_decomposition(
+            qml.matrix(op), op.wires, "ZXZ", return_global_phase=True
+        )
 
     gphase_op = sd_ops.pop()
     d_ops = []
@@ -222,7 +219,9 @@ def _one_qubit_decompose(op):
 def _two_qubit_decompose(op):
     """Decomposition for two qubit operations using combination of RZ, Hadamard, S and CNOT"""
 
-    td_ops = qml.transforms.two_qubit_decomposition(qml.matrix(op), op.wires)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        td_ops = qml.transforms.two_qubit_decomposition(qml.matrix(op), op.wires)
 
     d_ops = []
     for td_op in td_ops:
@@ -255,16 +254,14 @@ def _merge_pauli_rotations(operations, merge_ops=None):
 
         # Initialize the current angle and iterate until end of merge
         cumulative_angles = 1.0 * qml.math.array(curr_gate.parameters)
-        while next_gate_idx is not None:
-            # If next gate is of the same type, we can merge the angles
-            next_gate = copied_ops[next_gate_idx]
-            if curr_gate.name == next_gate.name and curr_gate.wires == next_gate.wires:
-                copied_ops.pop(next_gate_idx)
-                cumulative_angles = cumulative_angles + qml.math.array(next_gate.parameters)
-            else:
-                break
-
+        next_gate = copied_ops[next_gate_idx]
+        while curr_gate.name == next_gate.name and curr_gate.wires == next_gate.wires:
+            copied_ops.pop(next_gate_idx)
+            cumulative_angles = cumulative_angles + qml.math.array(next_gate.parameters)
             next_gate_idx = find_next_gate(curr_gate.wires, copied_ops)
+            if next_gate_idx is None:
+                break
+            next_gate = copied_ops[next_gate_idx]
 
         # Replace the current gate, add it to merged list and pop it from orginal one
         merged_ops.append(curr_gate.__class__(*cumulative_angles, wires=curr_gate.wires))
