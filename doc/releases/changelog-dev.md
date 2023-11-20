@@ -95,7 +95,7 @@
 
 * The mentioning of QNodecollection has been removed from the Installation and dependencies page because 
   the `collections` module has been removed from PennyLane since v0.31.
-
+  [(#4857)](https://github.com/PennyLaneAI/pennylane/pull/4857)
 <h3>Bug fixes 🐛</h3>
 
 * Fixes a bug where the adjoint method differentiation would fail if
