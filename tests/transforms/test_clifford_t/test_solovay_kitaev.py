@@ -30,44 +30,50 @@ from pennylane.transforms.decompositions.clifford_t.solovay_kitaev import (
 
 
 @pytest.mark.parametrize(
-    ("op", "su2", "quaternion"),
+    ("op", "matrix", "phase"),
     [
         (
             qml.Identity(0),  # computed manually
-            (qml.math.array([[1.0 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 1.0 + 0.0j]]), 0.0),
-            qml.math.array([1.0, 0.0, 0.0, 0.0]),
+            qml.math.array([[1.0 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 1.0 + 0.0j]]),
+            0.0,
         ),
         (
             qml.T(0),  # computed manually
-            (
-                qml.math.array(
-                    [[0.92387953 - 0.38268343j, 0.0 + 0.0j], [0.0 + 0.0j, 0.92387953 + 0.38268343j]]
-                ),
-                0.3926990817,
+            qml.math.array(
+                [[0.92387953 - 0.38268343j, 0.0 + 0.0j], [0.0 + 0.0j, 0.92387953 + 0.38268343j]]
             ),
-            qml.math.array([0.92387953, 0.0, 0.0, 0.38268343]),
+            0.3926990817,
         ),
         (
             qml.Hadamard(0),  # computed manually
-            (
-                qml.math.array(
-                    [
-                        [-0.70710678j, -0.70710678j],
-                        [-0.70710678j, 0.70710678j],
-                    ]
-                ),
-                1.5707963268,
+            qml.math.array(
+                [
+                    [-0.70710678j, -0.70710678j],
+                    [-0.70710678j, 0.70710678j],
+                ]
             ),
-            qml.math.array([0, 0.707106781, 0, 0.707106781]),
+            1.5707963268,
         ),
     ],
 )
-def test_su2_and_quaternion_transforms(op, su2, quaternion):
-    """Test the functionality to create SU(2) and quaternion representations"""
+def test_su2_transform(op, matrix, phase):
+    """Test the functionality to create SU(2) representation"""
     su2_matrix, su2_phase = _SU2_transform(op.matrix())
-    assert qml.math.allclose(su2_matrix, su2[0])
-    assert qml.math.isclose(su2_phase, su2[1])
+    assert qml.math.allclose(su2_matrix, matrix)
+    assert qml.math.isclose(su2_phase, phase)
 
+
+@pytest.mark.parametrize(
+    "op,quaternion",
+    [
+        (qml.Identity(0), qml.math.array([1.0, 0.0, 0.0, 0.0])),
+        (qml.T(0), qml.math.array([0.92387953, 0.0, 0.0, 0.38268343])),
+        (qml.Hadamard(0), qml.math.array([0, 0.707106781, 0, 0.707106781])),
+    ],
+)
+def test_quaternion_transform(op, quaternion):
+    """Test the functionality to create quaternion representation"""
+    su2_matrix, _ = _SU2_transform(op.matrix())
     op_quaternion = _quaternion_transform(su2_matrix)
     assert qml.math.allclose(op_quaternion, quaternion)
 
@@ -79,15 +85,16 @@ def test_contains_SU2():
 
     approx_ids, _, approx_vec = _approximate_set(("T", "T*", "H"), max_length=3)
 
-    assert _contains_SU2(target, approx_vec)[0]
+    exists, quaternion = _contains_SU2(target, approx_vec)
+    assert exists
 
     result = [qml.adjoint(qml.T(0)), qml.adjoint(qml.T(0)), qml.adjoint(qml.T(0))]
 
     node_points = qml.math.array(approx_vec)
-    seq_node = qml.math.array([_quaternion_transform(target)])
-    _, index = sp.spatial.KDTree(node_points).query(seq_node, workers=-1)
+    seq_node = qml.math.array([quaternion])
+    _, [index] = sp.spatial.KDTree(node_points).query(seq_node, workers=-1)
 
-    assert approx_ids[index[0]] == result
+    assert approx_ids[index] == result
 
 
 def test_approximate_sets():
@@ -95,14 +102,14 @@ def test_approximate_sets():
     # Check length of approximated sets with gate depths
     approx_set1, _, _ = _approximate_set((), max_length=0)
     approx_set2, _, _ = _approximate_set(("t", "h"), max_length=1)
-    assert len(approx_set1) == 1
-    assert len(approx_set2) == 3
+    assert len(approx_set1) == 0
+    assert len(approx_set2) == 2
 
     # Verify exist-check reduce redundancy via GP-like summation
     approx_set3, _, _ = _approximate_set(("t", "t*", "h"), max_length=3)
     approx_set4, _, _ = _approximate_set(("t", "t*", "h"), max_length=5)
-    assert len(approx_set3) < 39 and len(approx_set3) == 22  # 3 + 3x3 + 3x3x3
-    assert len(approx_set4) < 263 and len(approx_set4) == 89  # 3 + ... + 3x3x3x3x3
+    assert len(approx_set3) == 21  # should be <  39 = 3 + 3x3 + 3x3x3
+    assert len(approx_set4) == 88  # should be < 263 = 3 + ... + 3x3x3x3x3
 
 
 @pytest.mark.parametrize(
@@ -156,7 +163,7 @@ def test_solovay_kitaev(op):
     [(10, ()), (8, (("H", "T"))), (10, ("H", "S", "T"))],
 )
 def test_solovay_kitaev_with_basis_gates(basis_length, basis_set):
-    """Test Solovay-Kitaev decomposition method without providing approximation set"""
+    """Test Solovay-Kitaev decomposition method with additional basis information provided."""
     op = qml.PhaseShift(math.pi / 4, 0)
     gates = sk_decomposition(op, depth=3, basis_set=basis_set, basis_length=basis_length)
 

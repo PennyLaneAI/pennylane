@@ -205,6 +205,15 @@ Other
     ~AllWires
     ~AnyWires
 
+.. currentmodule:: pennylane
+
+PennyLane also provides a function for checking the consistency and correctness of an operator instance.
+
+.. autosummary::
+    :toctree: api
+
+    ~ops.functions.assert_valid
+
 Operation attributes
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -750,7 +759,7 @@ class Operator(abc.ABC):
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
-        return cls.compute_matrix != Operator.compute_matrix
+        return cls.compute_matrix != Operator.compute_matrix or cls.matrix != Operator.matrix
 
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
@@ -1883,9 +1892,19 @@ class Observable(Operator):
         warnings.warn(
             "`Observable.return_type` is deprecated. Instead, you should "
             "inspect the type of the surrounding measurement process.",
-            UserWarning,
+            qml.PennyLaneDeprecationWarning,
         )
         return self._return_type
+
+    @return_type.setter
+    def return_type(self, value):
+        """Change the return type of an Observable. Note that this property is deprecated."""
+        warnings.warn(
+            "`Observable.return_type` is deprecated. Instead, you should "
+            "create a measurement process containing this Observable.",
+            qml.PennyLaneDeprecationWarning,
+        )
+        self._return_type = value
 
     def __matmul__(self, other):
         if active_new_opmath():

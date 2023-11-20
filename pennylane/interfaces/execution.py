@@ -43,7 +43,7 @@ logger.addHandler(logging.NullHandler())
 
 device_type = Union[qml.Device, "qml.devices.Device"]
 
-jpc_interfaces = {"autograd", "numpy"}
+jpc_interfaces = {"autograd", "numpy", "torch", "pytorch"}
 
 INTERFACE_MAP = {
     None: "Numpy",

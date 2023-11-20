@@ -419,3 +419,21 @@ class TestAdjointJacobian:
             assert all(isinstance(g, np.ndarray) for g in expected)
 
             assert np.allclose(grad_D[i], expected)
+
+    def test_with_nontrainable_parametrized(self):
+        """Test that a parametrized `QubitUnitary` is accounted for correctly
+        when it is not trainable."""
+
+        dev = qml.device("default.qubit.legacy", wires=1)
+        par = np.array(0.6)
+
+        def circuit(x):
+            qml.RY(x, wires=0)
+            qml.QubitUnitary(np.eye(2, requires_grad=False), wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        circ = qml.QNode(circuit, dev, diff_method="adjoint")
+        grad_adjoint = qml.jacobian(circ)(par)
+        circ = qml.QNode(circuit, dev, diff_method="parameter-shift")
+        grad_psr = qml.jacobian(circ)(par)
+        assert np.allclose(grad_adjoint, grad_psr)

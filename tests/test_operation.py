@@ -470,6 +470,16 @@ class TestHasReprProperties:
         assert MyOp.has_matrix is True
         assert MyOp(wires=0).has_matrix is True
 
+    def test_has_matrix_true_overridden_matrix(self):
+        """Test has_matrix is true if `matrix` is overridden instead of `compute_matrix`."""
+
+        class MyOp(qml.operation.Operator):
+            def matrix(self, _=None):
+                return np.eye(2)
+
+        assert MyOp.has_matrix is True
+        assert MyOp(wires=0).has_matrix is True
+
     def test_has_matrix_false(self):
         """Test has_matrix property defaults to false if `compute_matrix` not overwritten."""
 
@@ -885,6 +895,11 @@ class TestObservableConstruction:
 
         with pytest.warns(UserWarning, match="`Observable.return_type` is deprecated. Instead"):
             assert DummyObserv(0, wires=[1]).return_type is None
+
+        obs = DummyObserv(0, wires=[1])
+        with pytest.warns(UserWarning, match="`Observable.return_type` is deprecated. Instead"):
+            # pylint:disable=attribute-defined-outside-init
+            obs.return_type = qml.measurements.Sample
 
     def test_construction_with_wires_pos_arg(self):
         """Test that the wires can be given as a positional argument"""
