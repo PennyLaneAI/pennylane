@@ -122,7 +122,12 @@ _map_Z = {
 }
 
 mul_map = {I: _map_I, X: _map_X, Y: _map_Y, Z: _map_Z}
-
+anticom_map = {
+    I: {I: 0, X: 0, Y: 0, Z: 0},
+    X: {I: 0, X: 0, Y: 1, Z: 1},
+    Y: {I: 0, X: 1, Y: 0, Z: 1},
+    Z: {I: 0, X: 1, Y: 1, Z: 0},
+}
 
 class PauliWord(dict):
     """Immutable dictionary used to represent a Pauli Word,
@@ -145,6 +150,7 @@ class PauliWord(dict):
             if op == I:
                 del mapping[wire]
         super().__init__(mapping)
+        #self._hash = hash(frozenset(self.items()))
 
     def __reduce__(self):
         """Defines how to pickle and unpickle a PauliWord. Otherwise, un-pickling
@@ -172,7 +178,9 @@ class PauliWord(dict):
 
     def __hash__(self):
         return hash(frozenset(self.items()))
+        #return self._hash
 
+    #@lru_cache
     def __mul__(self, other):
         """Multiply two Pauli words together using the matrix product if wires overlap
         and the tensor product otherwise.
@@ -203,11 +211,19 @@ class PauliWord(dict):
 
         return PauliWord(result), coeff
 
+    def commutes_with(self, other):
+        wires = set(self) & set(other)
+        if not wires:
+            return True
+        anticom_count = sum([anticom_map[self[wire]][other[wire]] for wire in wires])
+        return (anticom_count % 2) == 0
+
+
     def __or__(self, other):
         """Commutator between two PauliWords"""
-        new_word, coeff = self * other
-        if np.allclose(np.imag(coeff), 0.0):
+        if self.commutes_with(other):
             return None, 0.0
+        new_word, coeff = self * other
         return new_word, 2 * coeff
 
     def __lt__(self, other):
@@ -411,7 +427,7 @@ class PauliSentence(dict):
             for pw2 in other:
                 comm_pw, coeff = pw1 | pw2
                 if comm_pw is not None:
-                    final_ps[comm_pw] = final_ps[comm_pw] + coeff * self[pw1] * other[pw2]
+                    final_ps[comm_pw] += coeff * self[pw1] * other[pw2]
 
         return final_ps
 
