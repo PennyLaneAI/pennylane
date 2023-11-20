@@ -176,10 +176,11 @@ class StatePrep(StatePrepBase):
             raise ValueError("State vector must have shape (2**wires,) or (batch_size, 2**wires).")
 
         param = math.cast(state, np.complex128)
-        if not math.is_abstract(param):
-            norm = math.linalg.norm(param, axis=-1, ord=2)
-            if not math.allclose(norm, 1.0, atol=1e-10):
-                raise ValueError("Sum of amplitudes-squared does not equal one.")
+        print(type(param), param)
+        # if not math.is_abstract(param):
+        #    norm = math.linalg.norm(param, axis=-1, ord=2)
+        #    if not math.allclose(norm, 1.0, atol=1e-10):
+        #        raise ValueError("Sum of amplitudes-squared does not equal one.")
 
     @staticmethod
     def compute_decomposition(state, wires):

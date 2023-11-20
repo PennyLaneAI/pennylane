@@ -93,6 +93,8 @@ def jax_execute(tapes, execute_fn, jpc) -> ResultBatch:
     """
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug("Entry with (tapes=%s, execute_fn=%s, jpc=%s)", tapes, execute_fn, jpc)
+    print("in jax execute: ")
+    print([t.trainable_params for t in tapes])
     return _to_jax(execute_fn(tapes))
 
 
@@ -112,6 +114,10 @@ def jax_execute_and_compute_jvp(_, jpc, primals, tangents):
     """
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug("Entry with (tapes=%s, jpc=%s)", primals[0], jpc)
+
+    print("in execute and compute jvp")
+    print([t.trainable_params for t in primals[0]])
+    print([t.trainable_params for t in tangents[0]])
 
     tangents = tuple(t.get_parameters() for t in tangents[0])
     return _to_jax(jpc.execute_and_compute_jvp(primals[0], tangents))
