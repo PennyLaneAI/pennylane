@@ -24,22 +24,12 @@ Constructor Functions
 
     ~adjoint
     ~ctrl
+    ~cond
     ~exp
     ~sum
     ~pow
     ~prod
     ~s_prod
-
-Functions that act on quantum functions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-These functions accept quantum functions (Python functions
-containing quantum operations) that are used to construct QNodes.
-
-.. autosummary::
-    :toctree: api
-
-    ~cond
 
 Symbolic Classes
 ~~~~~~~~~~~~~~~~
