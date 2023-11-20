@@ -89,11 +89,6 @@ on:
         required: false
         type: string
         default: ''
-      pytest_benchmark_flags:
-        description: Benchmark arguments to pass to PyTest
-        required: false
-        type: string
-        default: --benchmark-enable --benchmark-only --benchmark-json=benchmarks.json
 
 jobs:
   test:
@@ -203,7 +198,7 @@ jobs:
         env:
           PYTEST_MARKER: ${{ inputs.pytest_markers != '' && format('-m "{0}"', inputs.pytest_markers) || '' }}
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
-        run: python -m pytest  ${{ inputs.pytest_test_directory }} ${{ inputs.pytest_benchmark_flags }} ${{ inputs.pytest_additional_args }} ${{ env.PYTEST_MARKER }}
+        run: python -m pytest  ${{ inputs.pytest_test_directory }} --benchmark-enable --benchmark-only --benchmark-json=benchmarks.json ${{ inputs.pytest_additional_args }} ${{ env.PYTEST_MARKER }}
 
         # If this is a reference benchmark move file to the cached directory, and we have a non-empty reference benchmark file.
       - name: Move reference pytest benchmark file to cache
