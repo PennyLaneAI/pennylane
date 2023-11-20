@@ -787,7 +787,6 @@ class TestHamiltonianWorkflows:
 
         res = jax.jacobian(cost_fn)(weights, coeffs1, coeffs2)
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)[:, :2]
-        print(res, expected)
         if shots.has_partitioned_shots:
             assert np.allclose(res[:2, :], expected, atol=atol_for_shots(shots), rtol=0)
             assert np.allclose(res[2:, :], expected, atol=atol_for_shots(shots), rtol=0)
