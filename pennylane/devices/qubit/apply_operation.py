@@ -264,6 +264,58 @@ def apply_cnot(op: qml.CNOT, state, is_state_batched: bool = False, debugger=Non
 
 
 @apply_operation.register
+def apply_multicontrolledx(
+    op: qml.MultiControlledX, state, is_state_batched: bool = False, debugger=None
+):
+    r"""Apply MultiControlledX to a state with the default einsum/tensordot choice
+    for 8 operation wires or less. Otherwise, apply a custom kernel based on
+    composing transpositions, rolling of control axes and the CNOT logic above."""
+    if len(op.wires) < 9:
+        return _apply_operation_default(op, state, is_state_batched, debugger)
+    ctrl_wires = [w + is_state_batched for w in op.control_wires]
+    # apply x on all control wires with control value 0
+    roll_axes = [
+        w for val, w in zip(op.hyperparameters["control_values"], ctrl_wires) if val == "0"
+    ]
+    for ax in roll_axes:
+        state = math.roll(state, 1, ax)
+
+    orig_shape = math.shape(state)
+    # Move the axes into the order [(batch), other, target, controls]
+    transpose_axes = (
+        np.array(
+            [
+                w - is_state_batched
+                for w in range(len(orig_shape))
+                if w - is_state_batched not in op.wires
+            ]
+            + [op.wires[-1]]
+            + op.wires[:-1].tolist()
+        )
+        + is_state_batched
+    )
+    state = math.transpose(state, transpose_axes)
+
+    # Reshape the state into 3-dimensional array with axes [batch+other, target, controls]
+    state = math.reshape(state, (-1, 2, 2 ** (len(op.wires) - 1)))
+
+    # The part of the state to which we want to apply PauliX is now in the last entry along the
+    # third axis. Extract it, apply the PauliX along the target axis (1), and append a dummy axis
+    state_x = math.roll(state[:, :, -1], 1, 1)[:, :, np.newaxis]
+
+    # Stack the transformed part of the state with the unmodified rest of the state
+    state = math.concatenate([state[:, :, :-1], state_x], axis=2)
+
+    # Reshape into original shape and undo the transposition
+    state = math.transpose(math.reshape(state, orig_shape), np.argsort(transpose_axes))
+
+    # revert x on all "wrong" controls
+    for ax in roll_axes:
+        state = math.roll(state, 1, ax)
+    return state
+
+
+@apply_operation.register
 def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None):
     """Take a snapshot of the state"""
     if debugger is not None and debugger.active:

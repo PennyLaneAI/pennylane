@@ -92,6 +92,8 @@ class grad:
         for idx, arg in enumerate(args):
             trainable = getattr(arg, "requires_grad", None) or isinstance(arg, ArrayBox)
             if trainable:
+                if arg.dtype.name[:3] == "int":
+                    raise ValueError("Autograd does not support differentiation of ints.")
                 argnum.append(idx)
 
         if len(argnum) == 1:
@@ -135,7 +137,7 @@ class grad:
         value."""
         vjp, ans = _make_vjp(fun, x)
 
-        if not vspace(ans).size == 1:
+        if vspace(ans).size != 1:
             raise TypeError(
                 "Grad only applies to real scalar-output functions. "
                 "Try jacobian, elementwise_grad or holomorphic_grad."
@@ -299,6 +301,8 @@ def jacobian(func, argnum=None):
         for idx, arg in enumerate(args):
             trainable = getattr(arg, "requires_grad", None) or isinstance(arg, ArrayBox)
             if trainable:
+                if arg.dtype.name[:3] == "int":
+                    raise ValueError("Autograd does not support differentiation of ints.")
                 argnum.append(idx)
 
         return argnum

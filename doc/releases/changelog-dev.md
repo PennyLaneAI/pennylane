@@ -13,19 +13,26 @@
   [(#4775)](https://github.com/PennyLaneAI/pennylane/pull/4775)
   [(#4803)](https://github.com/PennyLaneAI/pennylane/pull/4803)
 
+* `default.qubit` no longer uses a dense matrix for `MultiControlledX` for more than 8 operation wires.
+  [(#4673)](https://github.com/PennyLaneAI/pennylane/pull/4673)
+
 * `AmplitudeEmbedding` now also supports batching when used with Tensorflow.
   [(#4818)](https://github.com/PennyLaneAI/pennylane/pull/4818)
 
 * `qml.draw` now supports drawing mid-circuit measurements.
   [(#4775)](https://github.com/PennyLaneAI/pennylane/pull/4775)
 
-* Autograd can now use vjps provided by the device from the new device API. If a device provides
+* Autograd and torch can now use vjps provided by the device from the new device API. If a device provides
   a vector Jacobian product, this can be selected by providing `device_vjp=True` to
   `qml.execute`.
   [(#4557)](https://github.com/PennyLaneAI/pennylane/pull/4557)
+  [(#4654)](https://github.com/PennyLaneAI/pennylane/pull/4654)
 
 * Updates to some relevant Pytests to enable its use as a suite of benchmarks.
   [(#4703)](https://github.com/PennyLaneAI/pennylane/pull/4703)
+
+* The function ``qml.equal`` now supports ``ControlledSequence`` operators.
+  [(#4829)](https://github.com/PennyLaneAI/pennylane/pull/4829)
 
 * Added `__iadd__` method to PauliSentence, which enables inplace-addition using `+=`, we no longer need to perform a copy, leading to performance improvements.
   [(#4662)](https://github.com/PennyLaneAI/pennylane/pull/4662) 
@@ -35,6 +42,16 @@
 
 * `qml.draw` and `qml.draw_mpl` now render operator ids.
   [(#4749)](https://github.com/PennyLaneAI/pennylane/pull/4749)
+
+* `has_matrix` will now automatically be `True` if `Operator.matrix` is overridden, even if
+  `Operator.compute_matrix` is not.
+  [(#4844)](https://github.com/PennyLaneAI/pennylane/pull/4844)
+
+* Added `ops.functions.assert_valid` for checking if an `Operator` class is defined correctly.
+  [(#4764)](https://github.com/PennyLaneAI/pennylane/pull/4764)
+
+* Simplified the logic for re-arranging states before returning.
+  [(#4817)](https://github.com/PennyLaneAI/pennylane/pull/4817)
 
 <h3>Breaking changes 💔</h3>
 
@@ -53,7 +70,13 @@
   because it depended on the now-deprecated `Observable.return_type` property.
   [(#4762)](https://github.com/PennyLaneAI/pennylane/pull/4762)
 
+* Specifying `control_values` passed to `qml.ctrl` as a string is no longer supported.
+  [(#4816)](https://github.com/PennyLaneAI/pennylane/pull/4816)
+
 <h3>Deprecations 👋</h3>
+
+* `qml.grad` and `qml.jacobian` now explicitly raise errors if trainable parameters are integers.
+  [(#4836)](https://github.com/PennyLaneAI/pennylane/pull/4836)
 
 * All deprecations now raise a `qml.PennyLaneDeprecationWarning` instead of a `UserWarning`.
   [(#4814)](https://github.com/PennyLaneAI/pennylane/pull/4814)
@@ -79,6 +102,13 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Jax can now differeniate a batch of circuits where one tape does not have trainable parameters.
+  [(#4837)](https://github.com/PennyLaneAI/pennylane/pull/4837)
+
+* Fixes a bug where the adjoint method differentiation would fail if
+  an operation with `grad_method=None` that has a parameter is present.
+  [(#4820)](https://github.com/PennyLaneAI/pennylane/pull/4820)
+  
 * `MottonenStatePreparation` now raises an error if decomposing a broadcasted state vector.
   [(#4767)](https://github.com/PennyLaneAI/pennylane/pull/4767)
 
@@ -99,6 +129,10 @@
   is a `Hamiltonian`.
   [(#4768)](https://github.com/PennyLaneAI/pennylane/pull/4768)
 
+* The `tape.to_openqasm` method no longer mistakenly includes interface information in the parameter 
+  string when converting tapes using non-numpy interfaces.
+  [(#4849)](https://github.com/PennyLaneAI/pennylane/pull/4849)
+
 * In `default.qubit`, initial states are now initialized with the simulator's wire order, not the circuit's
   wire order.
   [(#4781)](https://github.com/PennyLaneAI/pennylane/pull/4781)
@@ -109,6 +143,16 @@
 * Parametrized circuits whose operators do not act on all wires return pennylane tensors as
   expected, instead of numpy arrays.
   [(#4811)](https://github.com/PennyLaneAI/pennylane/pull/4811)
+  [(#4817)](https://github.com/PennyLaneAI/pennylane/pull/4817)
+
+* `merge_amplitude_embeddings` no longer depends on queuing, allowing it to work as expected
+  with QNodes.
+  [(#4831)](https://github.com/PennyLaneAI/pennylane/pull/4831)
+
+* `qml.pow(op)` and `qml.QubitUnitary.pow()` now also work with Tensorflow data raised to an
+  integer power.
+  [(#4827)](https://github.com/PennyLaneAI/pennylane/pull/4827)
+
 
 <h3>Contributors ✍️</h3>
 
@@ -116,6 +160,7 @@ This release contains contributions from (in alphabetical order):
 
 Amintor Dusko,
 Lillian Frederiksen,
+Emiliano Godinez Ramirez,
 Ankit Khandelwal,
 Christina Lee,
 Anurav Modak,
