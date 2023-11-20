@@ -231,5 +231,5 @@ jobs:
         if: inputs.pipeline_mode == 'benchmarks'
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ steps.benchmark_name.outputs.benchmark_name }}
+          name: ${{ steps.benchmark_name.outputs.benchmark_name }}-benchmark
           path: ${{ github.workspace }}/benchmark_results
