@@ -180,15 +180,15 @@ jobs:
         env:
           PIPELINE_MODE: ${{ inputs.pipeline_mode }}
           PYTEST_COVERAGE_ARGS: ${{ inputs.pytest_coverage_flags }}
-	  PYTEST_PARALLELISE_ARGS: -n auto
-	  PYTEST_BENCHMARKS_ARGS: --benchmark-enable --benchmark-only --benchmark-json=benchmarks.json
-	  PYTEST_ADDITIONAL_ARGS: ${{ inputs.pytest_additional_args }}
+          PYTEST_PARALLELISE_ARGS: -n auto
+          PYTEST_BENCHMARKS_ARGS: --benchmark-enable --benchmark-only --benchmark-json=benchmarks.json
+          PYTEST_ADDITIONAL_ARGS: ${{ inputs.pytest_additional_args }}
         run: |
           if [[ "$PIPELINE_MODE" =~ .*"benchmarks".* ]]; then
-	    echo "args=$PYTEST_COVERAGE_ARGS $PYTEST_PARALLELISE_ARGS $PYTEST_ADDITIONAL_ARGS" >> $GITHUB_OUTPUT
-	  else
-	    echo "args=$PYTEST_BENCHMARKS_ARGS $PYTEST_ADDITIONAL_ARGS" >> $GITHUB_OUTPUT
-	  fi
+            echo "args=$PYTEST_COVERAGE_ARGS $PYTEST_PARALLELISE_ARGS $PYTEST_ADDITIONAL_ARGS" >> $GITHUB_OUTPUT
+          else
+            echo "args=$PYTEST_BENCHMARKS_ARGS $PYTEST_ADDITIONAL_ARGS" >> $GITHUB_OUTPUT
+          fi
       - name: Run PennyLane Unit Tests
         env:
           PYTEST_MARKER: ${{ inputs.pytest_markers != '' && format('-m "{0}"', inputs.pytest_markers) || '' }}
