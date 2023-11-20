@@ -9,6 +9,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `default.qubit` no longer uses a dense matrix for `MultiControlledX` for more than 8 operation wires.
+  [(#4673)](https://github.com/PennyLaneAI/pennylane/pull/4673)
+
 * `AmplitudeEmbedding` now also supports batching when used with Tensorflow.
   [(#4818)](https://github.com/PennyLaneAI/pennylane/pull/4818)
 
@@ -24,6 +27,9 @@
 * Updates to some relevant Pytests to enable its use as a suite of benchmarks.
   [(#4703)](https://github.com/PennyLaneAI/pennylane/pull/4703)
 
+* The function ``qml.equal`` now supports ``ControlledSequence`` operators.
+  [(#4829)](https://github.com/PennyLaneAI/pennylane/pull/4829)
+
 * Added `__iadd__` method to PauliSentence, which enables inplace-addition using `+=`, we no longer need to perform a copy, leading to performance improvements.
   [(#4662)](https://github.com/PennyLaneAI/pennylane/pull/4662) 
 
@@ -32,6 +38,10 @@
 
 * `qml.draw` and `qml.draw_mpl` now render operator ids.
   [(#4749)](https://github.com/PennyLaneAI/pennylane/pull/4749)
+
+* `has_matrix` will now automatically be `True` if `Operator.matrix` is overridden, even if
+  `Operator.compute_matrix` is not.
+  [(#4844)](https://github.com/PennyLaneAI/pennylane/pull/4844)
 
 * Added `ops.functions.assert_valid` for checking if an `Operator` class is defined correctly.
   [(#4764)](https://github.com/PennyLaneAI/pennylane/pull/4764)
@@ -146,6 +156,7 @@ This release contains contributions from (in alphabetical order):
 
 Amintor Dusko,
 Lillian Frederiksen,
+Emiliano Godinez Ramirez,
 Ankit Khandelwal,
 Christina Lee,
 Anurav Modak,
