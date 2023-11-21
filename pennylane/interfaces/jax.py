@@ -215,7 +215,6 @@ def _execute_bwd(
             new_tapes = set_parameters_on_copy_and_unwrap(tapes, primals[0], unwrap=False)
             jacs = gradient_fn(new_tapes, **gradient_kwargs)
             jvps = _compute_jvps(jacs, tangents[0], new_tapes)
-
         return res, jvps
 
     return execute_wrapper(params)
