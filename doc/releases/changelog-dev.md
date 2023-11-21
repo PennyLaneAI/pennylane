@@ -51,6 +51,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Moved `qml.cond` and the `Conditional` operation from the `transforms` folder to the `ops/op_math` folder.
+  `qml.transforms.Conditional` will now be available as `qml.ops.Conditional`.
+  [(#4860)](https://github.com/PennyLaneAI/pennylane/pull/4860)
+
 * The `prep` keyword argument has been removed from `QuantumScript` and `QuantumTape`.
   `StatePrepBase` operations should be placed at the beginning of the `ops` list instead.
   [(#4756)](https://github.com/PennyLaneAI/pennylane/pull/4756)
