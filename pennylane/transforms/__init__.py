@@ -215,9 +215,9 @@ instead to the documentation of :func:`qml.transform <pennylane.transform>`.
 Old transforms framework
 ------------------------
 
-These utility functions were previously used to create transforms in PennyLane and will be
-deprecated soon. It is now recommended to use :class:`qml.transform <pennylane.transform>`
-for creation of custom transforms.
+These utility functions were previously used to create transforms in PennyLane and are now
+deprecated. It is now recommended to use :class:`qml.transform <pennylane.transform>`
+for the creation of custom transforms.
 
 .. autosummary::
     :toctree: api

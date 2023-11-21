@@ -3,8 +3,25 @@
 Deprecations
 ============
 
+All PennyLane deprecations will raise a ``qml.PennyLaneDeprecationWarning``. Pending and completed
+deprecations are listed below.
+
 Pending deprecations
 --------------------
+
+* `Observable.return_type` is deprecated. Instead, you should inspect the type
+  of the surrounding measurement process.
+
+  - Deprecated in v0.34
+  - Will be removed in v0.35
+
+* ``single_tape_transform``, ``batch_transform``, ``qfunc_transform``, and ``op_transform`` are
+  deprecated. Instead switch to using the new ``qml.transform`` function. Please refer to
+  `the transform docs <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
+  to see how this can be done.
+
+  - Deprecated in v0.34
+  - Will be removed in v0.36
 
 * ``QuantumScript.is_sampled`` and ``QuantumScript.all_sampled`` are deprecated. Users should now validate
   these properties manually.
@@ -72,6 +89,11 @@ Pending deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+* Specifying ``control_values`` passed to ``qml.ctrl`` as a string is no longer supported.
+
+  - Deprecated in v0.25
+  - Removed in v0.34
 
 * ``qml.gradients.pulse_generator`` has become ``qml.gradients.pulse_odegen`` to adhere to paper naming conventions.
 

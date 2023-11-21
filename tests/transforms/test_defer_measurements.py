@@ -1348,6 +1348,25 @@ class TestQubitReuseAndReset:
             for actual, expected in zip(qnode2.qtape.circuit, expected_circuit)
         )
 
+    def test_measurements_add_new_qubits(self):
+        """Test that qubit reuse related logic is applied if a wire with mid-circuit
+        measurements is included in terminal measurements."""
+        tape = qml.tape.QuantumScript(
+            ops=[qml.Hadamard(0), MidMeasureMP(0)], measurements=[qml.density_matrix(wires=[0])]
+        )
+        expected = np.eye(2) / 2
+
+        tapes, _ = qml.defer_measurements(tape)
+
+        dev = qml.device("default.qubit")
+        res = qml.execute(tapes, dev)
+
+        assert np.allclose(res, expected)
+
+        deferred_tape = tapes[0]
+        assert deferred_tape.operations == [qml.Hadamard(0), qml.CNOT([0, 1])]
+        assert deferred_tape.measurements == [qml.density_matrix(wires=[0])]
+
     def test_wire_is_reset(self):
         """Test that a wire is reset to the |0> state without any local phases
         after measurement if reset is requested."""
@@ -1484,7 +1503,7 @@ def test_custom_wire_labels_allowed_without_reset():
         qml.Hadamard("a")
         ma = qml.measure("a", reset=False)
         qml.cond(ma, qml.PauliX)("b")
-        qml.probs(wires="a")
+        qml.probs(wires="b")
 
     tape = qml.tape.QuantumScript.from_queue(q)
     tapes, _ = qml.defer_measurements(tape)
@@ -1493,7 +1512,7 @@ def test_custom_wire_labels_allowed_without_reset():
     assert len(tape) == 3
     assert qml.equal(tape[0], qml.Hadamard("a"))
     assert qml.equal(tape[1], qml.CNOT(["a", "b"]))
-    assert qml.equal(tape[2], qml.probs(wires="a"))
+    assert qml.equal(tape[2], qml.probs(wires="b"))
 
 
 def test_custom_wire_labels_fails_with_reset():

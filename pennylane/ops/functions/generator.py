@@ -88,7 +88,7 @@ def _generator_backcompatibility(op):
         "The Operator.generator property is deprecated. Please update the operator so that "
         "\n\t1. Operator.generator() is a method, and"
         "\n\t2. Operator.generator() returns an Operator instance representing the operator.",
-        UserWarning,
+        qml.PennyLaneDeprecationWarning,
     )
     gen = op.generator
 

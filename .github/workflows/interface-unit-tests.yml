@@ -15,7 +15,7 @@ on:
         description: The version of TensorFlow to install for any job that requires TensorFlow
         required: false
         type: string
-        default: 2.13.0
+        default: 2.15.0
       pytorch_version:
         description: The version of PyTorch to install for any job that requires PyTorch
         required: false
@@ -74,7 +74,7 @@ jobs:
             "qcut-tests": ["3.9"],
             "qchem-tests": ["3.9"],
             "gradients-tests": ["3.9"],
-            "data-tests": ["3.10"],
+            "data-tests": ["3.9", "3.10"],
             "device-tests": ["3.9"]
           }
           EOF

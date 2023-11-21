@@ -20,6 +20,14 @@ from pennylane import numpy as pnp
 import pennylane as qml
 
 
+def test_standard_validity():
+    """Run standard tests of operation validity."""
+    H = 2.0 * qml.PauliX(0) + 3.0 * qml.PauliY(0)
+    t = 0.1
+    op = qml.ApproxTimeEvolution(H, t, n=20)
+    qml.ops.functions.assert_valid(op)
+
+
 # pylint: disable=protected-access
 def test_flatten_unflatten():
     """Tests the _flatten and _unflatten methods."""
