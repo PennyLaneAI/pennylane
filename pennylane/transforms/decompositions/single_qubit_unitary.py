@@ -269,7 +269,7 @@ def _xzx_decomposition(U, wire, return_global_phase=False):
     Args:
         U (tensor): A :math:`2 \times 2` unitary matrix.
         wire (Union[Wires, Sequence[int] or int]): The wire on which to apply the operation.
-        return_global_phase (bool): Whether to return the global phase ``qml.GlobalPhase(-alpha)``
+        return_global_phase (bool): Whether to return the global phase ``qml.GlobalPhase(-gamma)``
             as the last element of the returned list of operations.
 
     Returns:
@@ -302,19 +302,19 @@ def _xzx_decomposition(U, wire, return_global_phase=False):
 
     # Compute \phi, \theta and \lambda after analytically solving for them from
     # U_det1 = RX(\phi) RZ(\theta) RX(\lambda)
-    sum_diagonal = math.real(U_det1[:, 0, 0] + U_det1[:, 1, 1])
+    sum_diagonal_real = math.real(U_det1[:, 0, 0] + U_det1[:, 1, 1])
     sum_off_diagonal_imag = math.imag(U_det1[:, 0, 1] + U_det1[:, 1, 0])
-    phi_plus_lambdas_d2 = math.arctan2(-sum_off_diagonal_imag, sum_diagonal + EPS)
+    phi_plus_lambdas_d2 = math.arctan2(-sum_off_diagonal_imag, sum_diagonal_real + EPS)
     diff_diagonal_imag = math.imag(U_det1[:, 0, 0] - U_det1[:, 1, 1])
-    diff_off_diagonal = math.real(U_det1[:, 0, 1] - U_det1[:, 1, 0])
-    phi_minus_lambdas_d2 = math.arctan2(diff_off_diagonal, -diff_diagonal_imag + EPS)
+    diff_off_diagonal_real = math.real(U_det1[:, 0, 1] - U_det1[:, 1, 0])
+    phi_minus_lambdas_d2 = math.arctan2(diff_off_diagonal_real, -diff_diagonal_imag + EPS)
     lams = phi_plus_lambdas_d2 - phi_minus_lambdas_d2
     phis = phi_plus_lambdas_d2 + phi_minus_lambdas_d2
 
     # Compute \theta
     thetas = math.where(
         math.isclose(math.sin(phi_plus_lambdas_d2), math.zeros_like(phi_plus_lambdas_d2)),
-        2 * math.arccos(sum_diagonal / (2 * math.cos(phi_plus_lambdas_d2) + EPS)),
+        2 * math.arccos(sum_diagonal_real / (2 * math.cos(phi_plus_lambdas_d2) + EPS)),
         2 * math.arccos(-sum_off_diagonal_imag / (2 * math.sin(phi_plus_lambdas_d2) + EPS)),
     )
 
