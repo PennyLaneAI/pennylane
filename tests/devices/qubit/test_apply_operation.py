@@ -242,18 +242,11 @@ class TestTwoQubitStateSpecialCases:
         assert qml.math.allclose(shift * initial_state, new_state_no_wire)
 
 
-# pylint:disable = unused-argument
 def time_independent_hamiltonian():
     """Create a time-independent Hamiltonian on two qubits."""
     ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0), qml.PauliX(1)]
 
-    def f1(params, t):
-        return params  # constant
-
-    def f2(params, t):
-        return params  # constant
-
-    coeffs = [f1, f2, 4, 9]
+    coeffs = [qml.pulse.constant, qml.pulse.constant, 0.4, 0.9]
 
     return qml.pulse.ParametrizedHamiltonian(coeffs, ops)
 
@@ -275,10 +268,10 @@ def time_dependent_hamiltonian():
 
 
 @pytest.mark.jax
-class TestApplyParameterizedEvolution:
+class TestApplyParametrizedEvolution:
     @pytest.mark.parametrize("method", methods)
     def test_parameterized_evolution_time_independent(self, method):
-        """Test that applying a ParameterizedEvolution gives the expected state
+        """Test that applying a ParametrizedEvolution gives the expected state
         for a time-independent hamiltonian"""
 
         import jax.numpy as jnp
@@ -292,7 +285,7 @@ class TestApplyParameterizedEvolution:
 
         H = time_independent_hamiltonian()
         params = jnp.array([1.0, 2.0])
-        t = 4
+        t = 0.4
 
         op = qml.pulse.ParametrizedEvolution(H=H, params=params, t=t)
 
@@ -306,7 +299,7 @@ class TestApplyParameterizedEvolution:
 
     @pytest.mark.parametrize("method", methods)
     def test_parameterized_evolution_time_dependent(self, method):
-        """Test that applying a ParameterizedEvolution gives the expected state
+        """Test that applying a ParametrizedEvolution gives the expected state
         for a time dependent Hamiltonian"""
 
         import jax
@@ -321,7 +314,7 @@ class TestApplyParameterizedEvolution:
 
         H = time_dependent_hamiltonian()
         params = jnp.array([1.0, 2.0])
-        t = 4
+        t = 0.4
 
         op = qml.pulse.ParametrizedEvolution(H=H, params=params, t=t)
 
@@ -340,7 +333,7 @@ class TestApplyParameterizedEvolution:
         assert np.allclose(new_state, new_state_expected, atol=0.002)
 
     def test_large_state_small_matrix_evolves_matrix(self, mocker):
-        """Test that applying a ParameterizedEvolution operating on less
+        """Test that applying a ParametrizedEvolution operating on less
         than half of the wires in the state uses the default function to evolve
         the matrix"""
 
@@ -357,7 +350,7 @@ class TestApplyParameterizedEvolution:
 
         H = time_independent_hamiltonian()
         params = jnp.array([1.0, 2.0])
-        t = 4
+        t = 0.4
 
         op = qml.pulse.ParametrizedEvolution(H=H, params=params, t=t)
 
@@ -374,7 +367,7 @@ class TestApplyParameterizedEvolution:
         assert spy.call_count == 1
 
     def test_small_evolves_state(self, mocker):
-        """Test that applying a ParameterizedEvolution operating on less
+        """Test that applying a ParametrizedEvolution operating on less
         than half of the wires in the state uses the default function to evolve
         the matrix"""
 
@@ -433,7 +426,7 @@ class TestApplyParameterizedEvolution:
 
         H = time_independent_hamiltonian()
         params = jnp.array([1.0, 2.0])
-        t = 4
+        t = 0.4
 
         op = qml.pulse.ParametrizedEvolution(H=H, params=params, t=t)
 
@@ -480,11 +473,17 @@ class TestApplyParameterizedEvolution:
         assert spy.call_count == 2
         assert qml.math.allclose(state_ev, state_rx, atol=1e-6)
 
-    def test_batched_state_raises_an_error(self):
-        """Test that if is_state_batche=True, an error is raised"""
+    @pytest.mark.parametrize("num_state_wires", [2, 4])
+    def test_with_batched_state(self, num_state_wires, mocker):
+        """Test that a ParametrizedEvolution is applied correctly to a batched state.
+        Note that the branching logic is different for batched input states, because
+        evolving the state vector does not support batching of the state. Instead,
+        the evolved matrix is used always."""
+        spy_tdot = mocker.spy(qml.math, "tensordot")
+        spy_einsum = mocker.spy(qml.math, "einsum")
         H = time_independent_hamiltonian()
         params = np.array([1.0, 2.0])
-        t = 4
+        t = 0.1
 
         op = qml.pulse.ParametrizedEvolution(H=H, params=params, t=t)
 
@@ -492,11 +491,22 @@ class TestApplyParameterizedEvolution:
             [
                 [[0.81677345 + 0.0j, 0.0 + 0.0j], [0.0 - 0.57695852j, 0.0 + 0.0j]],
                 [[0.33894597 + 0.0j, 0.0 + 0.0j], [0.0 - 0.94080584j, 0.0 + 0.0j]],
+                [[0.33894597 + 0.0j, 0.0 + 0.0j], [0.0 - 0.94080584j, 0.0 + 0.0j]],
             ]
         )
+        if num_state_wires == 4:
+            zero_state_two_wires = np.eye(4)[0].reshape((2, 2))
+            initial_state = np.tensordot(initial_state, zero_state_two_wires, axes=0)
 
-        with pytest.raises(RuntimeError, match="does not support standard broadcasting"):
-            _ = apply_operation(op, initial_state, is_state_batched=True)
+        true_mat = qml.math.expm(-1j * qml.matrix(H(params, t=t)) * t)
+        U = qml.QubitUnitary(U=true_mat, wires=[0, 1])
+
+        new_state = apply_operation(op, initial_state, is_state_batched=True)
+        new_state_expected = apply_operation(U, initial_state, is_state_batched=True)
+        assert np.allclose(new_state, new_state_expected, atol=0.002)
+
+        assert spy_einsum.call_count == 2
+        assert spy_tdot.call_count == 0
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
