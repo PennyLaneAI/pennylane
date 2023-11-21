@@ -29,7 +29,7 @@ from .symbolicop import SymbolicOp
 
 # pylint: disable=no-member
 def adjoint(fn, lazy=True):
-    """A :func:`~.qjit` compatible adjoint transformation that creates the adjoint of an Operator or a function
+    """A :func:`~.qjit` compatible transformation that creates the adjoint of an Operator or a function
 
     Args:
         fn (function or :class:`~.operation.Operator`): A single operator or a quantum function that
@@ -38,7 +38,7 @@ def adjoint(fn, lazy=True):
     Keyword Args:
         lazy=True (bool): If the transform is behaving lazily, all operations are wrapped in a ``Adjoint`` class
             and handled later. If ``lazy=False``, operation-specific adjoint decompositions are first attempted.
-            This argument is not supported when used with :func:`~.qjit`.
+            Setting ``lazy=False`` is not supported when used with :func:`~.qjit`.
 
     Returns:
         (function or :class:`~.operation.Operator`): If an Operator is provided, returns an Operator that is the adjoint.
@@ -160,7 +160,7 @@ def adjoint(fn, lazy=True):
     """
     if active_jit := compiler.active_compiler():
         if lazy is False:
-            raise CompileError("Lazy kwarg is not support with qjit.")
+            raise CompileError("Setting lazy=False is not supported with qjit.")
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
         return ops_loader.adjoint(fn)
