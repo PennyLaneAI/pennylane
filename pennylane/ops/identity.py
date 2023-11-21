@@ -331,6 +331,15 @@ class GlobalPhase(Operation):
     @staticmethod
     def compute_decomposition(phi, wires=None):  # pylint:disable=arguments-differ,unused-argument
         r"""Representation of the operator as a product of other operators (static method).
+        
+        .. note::
+        
+            The ``GlobalPhase`` operation decomposes to an empty list of operations.
+            Support for global phase
+            was added in v0.33 and was ignored in earlier versions of PennyLane. Setting
+            global phase to decompose to nothing allows existing devices to maintain
+            current support for operations which now have ``GlobalPhase`` in the
+            decomposition pipeline.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
