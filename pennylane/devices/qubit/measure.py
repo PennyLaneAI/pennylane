@@ -127,7 +127,7 @@ def full_dot_products(
     flattened_state = flatten_state(state, total_indices)
     flattened_ket = flatten_state(ket, total_indices)
     dot_product = math.sum(math.conj(flattened_state) * flattened_ket, axis=int(is_state_batched))
-    return math.real_if_close(dot_product)
+    return math.real(dot_product)
 
 
 def sum_of_terms_method(
