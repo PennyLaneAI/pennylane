@@ -130,7 +130,7 @@ class TestCatalystDrawMpl:
         """Test a simple circuit that does not use Catalyst features."""
         import catalyst
 
-        @catalyst.qjit
+        @qml.qjit
         @qml.qnode(qml.device("lightning.qubit", wires=(0, "a", 1.234)))
         def circuit(x, y, z):
             """A quantum circuit on three wires."""
@@ -148,7 +148,7 @@ class TestCatalystDrawMpl:
         """Test a circuit with a Catalyst conditional."""
         import catalyst
 
-        @catalyst.qjit
+        @qml.qjit
         @qml.qnode(qml.device("lightning.qubit", wires=(0, "a", 1.234)))
         def circuit(x, y, z, c):
             """A quantum circuit on three wires."""
@@ -172,7 +172,7 @@ class TestCatalystDrawMpl:
         """Test a circuit with a Catalyst for_loop"""
         import catalyst
 
-        @catalyst.qjit
+        @qml.qjit
         @qml.qnode(qml.device("lightning.qubit", wires=3))
         def circuit(x, y, z, c):
             """A quantum circuit on three wires."""
@@ -196,7 +196,7 @@ class TestCatalystDrawMpl:
         """Test a circuit with a Catalyst while_loop"""
         import catalyst
 
-        @catalyst.qjit
+        @qml.qjit
         @qml.qnode(qml.device("lightning.qubit", wires=3))
         def circuit(x, y, z, c):
             """A quantum circuit on three wires."""
