@@ -46,6 +46,7 @@ def create_initial_state(
 
     return qml.math.asarray(rho, like=like)
 
+
 def _apply_state_vector(state, wires):  # function is easy to abstract for qudit
     """Initialize the internal state in a specified pure state.
 
