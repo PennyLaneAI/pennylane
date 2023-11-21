@@ -347,14 +347,14 @@ class GlobalPhase(Operation):
 
         Args:
             phi (TensorLike): the global phase
-            wires (Any, Wires): A single wire that the operator acts on.
+            wires (Iterable[Any] or Any): unused argument - the operator is applied to all wires
 
         Returns:
             list[Operator]: decomposition into lower level operations
 
         **Example:**
 
-        >>> qml.GlobalPhase.compute_decomposition(wires=0)
+        >>> qml.GlobalPhase.compute_decomposition(1.23)
         []
 
         """
