@@ -125,7 +125,7 @@ def _add_adjoint_transforms(program: TransformProgram) -> None:
         return obs.has_matrix
 
     def accepted_adjoint_measurement(m: qml.measurements.MeasurementProcess) -> bool:
-        return isinstance(m, qml.measurements.ExpectationMP)
+        return isinstance(m, (qml.measurements.ExpectationMP, qml.measurements.StateMP))
 
     name = "adjoint + default.qubit"
     program.add_transform(no_sampling, name=name)
