@@ -6,6 +6,7 @@
 
 * Approximate Quantum Fourier Transform (AQFT) is now available from `qml.AQFT`.
   [(#4656)](https://github.com/PennyLaneAI/pennylane/pull/4656)
+* XZX decomposition is added to the list of supported single-qubit unitary decompositions.
 
 <h3>Improvements 🛠</h3>
 
@@ -148,6 +149,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Astral Cai,
 Amintor Dusko,
 Lillian Frederiksen,
 Emiliano Godinez Ramirez,
