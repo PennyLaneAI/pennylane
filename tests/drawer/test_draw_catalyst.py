@@ -16,7 +16,7 @@
 import pytest
 import pennylane as qml
 
-pyzx = pytest.importorskip("catalyst")
+catalyst = pytest.importorskip("catalyst")
 mpl = pytest.importorskip("matplotlib")
 
 pytestmark = pytest.mark.external
