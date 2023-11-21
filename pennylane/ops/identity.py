@@ -343,7 +343,7 @@ class GlobalPhase(Operation):
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        .. seealso:: :meth:`~.Identity.decomposition`.
+        .. seealso:: :meth:`~.GlobalPhase.decomposition`.
 
         Args:
             phi (TensorLike): the global phase
