@@ -27,6 +27,7 @@ from pennylane.drawer.tape_text import (
     _add_mid_measure_grouping_symbols,
     _add_measurement,
     _add_op,
+    _Config,
 )
 from pennylane.tape import QuantumScript, QuantumTape
 
@@ -76,7 +77,9 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments
     )
     def test_add_grouping_symbols(self, op, out):
         """Test private _add_grouping_symbols function renders as expected."""
-        assert out == _add_grouping_symbols(op, ["", "", "", ""], default_wire_map, default_bit_map)
+        assert out == _add_grouping_symbols(
+            op, ["", "", "", ""], _Config(wire_map=default_wire_map, bit_map=default_bit_map)
+        )
 
     @pytest.mark.parametrize(
         "op, bit_map, layer_str, out",
@@ -98,7 +101,9 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments
     )
     def test_add_mid_measure_grouping_symbols(self, op, layer_str, bit_map, out):
         """Test private _add_grouping_symbols function renders as expected for MidMeasureMPs."""
-        assert out == _add_mid_measure_grouping_symbols(op, layer_str, default_wire_map, bit_map)
+        assert out == _add_mid_measure_grouping_symbols(
+            op, layer_str, _Config(wire_map=default_wire_map, bit_map=bit_map)
+        )
 
     @pytest.mark.parametrize(
         "cond_op, args, kwargs, out, bit_map, mv",
@@ -107,7 +112,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments
                 qml.PauliX,
                 [],
                 {"wires": 0},
-                ["─", "─║", "─║", "─║", "═╝"],
+                ["─", "─║", "─║", "─║", "═╩"],
                 cond_bit_map_1,
                 default_measurement_value_1,
             ),
@@ -115,7 +120,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments
                 qml.MultiRZ,
                 [0.5],
                 {"wires": [0, 1]},
-                ["─", "─", "─║", "─║", "═╝"],
+                ["─", "─", "─║", "─║", "═╩"],
                 cond_bit_map_1,
                 default_measurement_value_1,
             ),
@@ -142,7 +147,13 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments
         op = get_conditional_op(mv, cond_op, *args, **kwargs)
         layer_str = ["─", "─", "─", ""] + [" "] * len(bit_map)
 
-        assert out == _add_cond_grouping_symbols(op, layer_str, default_wire_map, bit_map)
+        assert out == _add_cond_grouping_symbols(
+            op,
+            layer_str,
+            _Config(
+                wire_map=default_wire_map, bit_map=bit_map, cur_layer=1, final_cond_layers=[0, 1]
+            ),
+        )
 
     @pytest.mark.parametrize(
         "op, out",
@@ -159,13 +170,17 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments
     )
     def test_add_measurements(self, op, out):
         """Test private _add_measurement function renders as expected."""
-        assert out == _add_measurement(op, [""] * 4, default_wire_map, default_bit_map, None, None)
+        assert out == _add_measurement(
+            op, [""] * 4, _Config(wire_map=default_wire_map, bit_map=default_bit_map)
+        )
 
     def test_add_measurements_cache(self):
         """Test private _add_measurement function with a matrix cache."""
         cache = {"matrices": []}
         op = qml.expval(qml.Hermitian(np.eye(2), wires=0))
-        assert _add_measurement(op, ["", ""], {0: 0, 1: 1}, default_bit_map, None, cache) == [
+        assert _add_measurement(
+            op, ["", ""], _Config(wire_map={0: 0, 1: 1}, bit_map=default_bit_map, cache=cache)
+        ) == [
             "<𝓗(M0)>",
             "",
         ]
@@ -174,7 +189,9 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments
 
         op2 = qml.expval(qml.Hermitian(np.eye(2), wires=1))
         # new op with same matrix, should have same M0 designation
-        assert _add_measurement(op2, ["", ""], {0: 0, 1: 1}, default_bit_map, None, cache) == [
+        assert _add_measurement(
+            op2, ["", ""], _Config(wire_map={0: 0, 1: 1}, bit_map=default_bit_map, cache=cache)
+        ) == [
             "",
             "<𝓗(M0)>",
         ]
@@ -193,7 +210,9 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments
     )
     def test_add_op(self, op, out):
         """Test adding the first operation to array of strings"""
-        assert out == _add_op(op, ["─"] * 4, default_wire_map, default_bit_map, None, None)
+        assert out == _add_op(
+            op, ["─"] * 4, _Config(wire_map=default_wire_map, bit_map=default_bit_map)
+        )
 
     @pytest.mark.parametrize(
         "op, bit_map, layer_str, out",
@@ -215,7 +234,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments
     )
     def test_add_mid_measure_op(self, op, layer_str, bit_map, out):
         """Test adding the first MidMeasureMP to array of strings"""
-        assert out == _add_op(op, layer_str, default_wire_map, bit_map, None, None)
+        assert out == _add_op(op, layer_str, _Config(wire_map=default_wire_map, bit_map=bit_map))
 
     @pytest.mark.parametrize(
         "cond_op, args, kwargs, out, bit_map, mv",
@@ -224,7 +243,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments
                 qml.MultiRZ,
                 [0.5],
                 {"wires": [0, 1]},
-                ["╭MultiRZ", "╰MultiRZ", "─║", "─║", "═╝"],
+                ["╭MultiRZ", "╰MultiRZ", "─║", "─║", "═╩"],
                 cond_bit_map_1,
                 default_measurement_value_1,
             ),
@@ -232,7 +251,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments
                 qml.Toffoli,
                 [],
                 {"wires": [0, 1, 2]},
-                ["╭●", "├●", "╰X", "─║", "═╝"],
+                ["╭●", "├●", "╰X", "─║", "═╩"],
                 cond_bit_map_1,
                 default_measurement_value_1,
             ),
@@ -251,7 +270,13 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments
         op = get_conditional_op(mv, cond_op, *args, **kwargs)
         layer_str = ["─", "─", "─", ""] + [" "] * len(bit_map)
 
-        assert out == _add_op(op, layer_str, default_wire_map, bit_map, None, None)
+        assert out == _add_op(
+            op,
+            layer_str,
+            _Config(
+                wire_map=default_wire_map, bit_map=bit_map, cur_layer=1, final_cond_layers=[0, 1]
+            ),
+        )
 
     @pytest.mark.parametrize(
         "op, out",
@@ -263,18 +288,26 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments
     )
     def test_add_second_op(self, op, out):
         """Test adding a second operation to the array of strings"""
-        start = _add_op(qml.PauliX(0), ["─"] * 4, default_wire_map, default_bit_map, None, None)
-        assert out == _add_op(op, start, default_wire_map, default_bit_map, None, None)
+        start = _add_op(
+            qml.PauliX(0), ["─"] * 4, _Config(wire_map=default_wire_map, bit_map=default_bit_map)
+        )
+        assert out == _add_op(
+            op, start, _Config(wire_map=default_wire_map, bit_map=default_bit_map)
+        )
 
     def test_add_op_cache(self):
         """Test private _add_op method functions with a matrix cache."""
         cache = {"matrices": []}
         op1 = qml.QubitUnitary(np.eye(2), wires=0)
-        assert _add_op(op1, ["", ""], {0: 0, 1: 1}, default_bit_map, None, cache) == ["U(M0)", ""]
+        assert _add_op(
+            op1, ["", ""], _Config(wire_map={0: 0, 1: 1}, bit_map=default_bit_map, cache=cache)
+        ) == ["U(M0)", ""]
 
         assert qml.math.allclose(cache["matrices"][0], np.eye(2))
         op2 = qml.QubitUnitary(np.eye(2), wires=1)
-        assert _add_op(op2, ["", ""], {0: 0, 1: 1}, default_bit_map, None, cache) == ["", "U(M0)"]
+        assert _add_op(
+            op2, ["", ""], _Config(wire_map={0: 0, 1: 1}, bit_map=default_bit_map, cache=cache)
+        ) == ["", "U(M0)"]
 
 
 class TestEmptyTapes:
