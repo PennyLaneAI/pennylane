@@ -9,6 +9,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `default.qubit` no longer uses a dense matrix for `MultiControlledX` for more than 8 operation wires.
+  [(#4673)](https://github.com/PennyLaneAI/pennylane/pull/4673)
+
 * `AmplitudeEmbedding` now also supports batching when used with Tensorflow.
   [(#4818)](https://github.com/PennyLaneAI/pennylane/pull/4818)
 
@@ -23,6 +26,9 @@
 
 * Updates to some relevant Pytests to enable its use as a suite of benchmarks.
   [(#4703)](https://github.com/PennyLaneAI/pennylane/pull/4703)
+
+* The function ``qml.equal`` now supports ``ControlledSequence`` operators.
+  [(#4829)](https://github.com/PennyLaneAI/pennylane/pull/4829)
 
 * Added `__iadd__` method to PauliSentence, which enables inplace-addition using `+=`, we no longer need to perform a copy, leading to performance improvements.
   [(#4662)](https://github.com/PennyLaneAI/pennylane/pull/4662) 
@@ -47,6 +53,10 @@
   [(#4855)](https://github.com/PennyLaneAI/pennylane/pull/4855)
 
 <h3>Breaking changes 💔</h3>
+
+* Moved `qml.cond` and the `Conditional` operation from the `transforms` folder to the `ops/op_math` folder.
+  `qml.transforms.Conditional` will now be available as `qml.ops.Conditional`.
+  [(#4860)](https://github.com/PennyLaneAI/pennylane/pull/4860)
 
 * The `prep` keyword argument has been removed from `QuantumScript` and `QuantumTape`.
   `StatePrepBase` operations should be placed at the beginning of the `ops` list instead.
@@ -94,6 +104,9 @@
   [(#4750)](https://github.com/PennyLaneAI/pennylane/pull/4750)
 
 <h3>Bug fixes 🐛</h3>
+
+* Jax can now differeniate a batch of circuits where one tape does not have trainable parameters.
+  [(#4837)](https://github.com/PennyLaneAI/pennylane/pull/4837)
 
 * Fixes a bug where the adjoint method differentiation would fail if
   an operation with `grad_method=None` that has a parameter is present.
@@ -150,6 +163,7 @@ This release contains contributions from (in alphabetical order):
 
 Amintor Dusko,
 Lillian Frederiksen,
+Emiliano Godinez Ramirez,
 Ankit Khandelwal,
 Christina Lee,
 Anurav Modak,
