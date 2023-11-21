@@ -69,7 +69,7 @@ from pennylane.measurements import (
     shadow_expval,
 )
 from pennylane.ops import *
-from pennylane.ops import adjoint, ctrl, exp, sum, pow, prod, s_prod
+from pennylane.ops import adjoint, ctrl, cond, exp, sum, pow, prod, s_prod
 from pennylane.templates import broadcast, layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
@@ -89,7 +89,6 @@ from pennylane.transforms import (
     cut_circuit,
     cut_circuit_mc,
     compile,
-    cond,
     defer_measurements,
     metric_tensor,
     specs,

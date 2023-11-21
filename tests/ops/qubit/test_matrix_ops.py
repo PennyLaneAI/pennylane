@@ -25,7 +25,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.wires import Wires
-from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
+from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform, fractional_matrix_power
 
 
 class TestQubitUnitary:
@@ -38,9 +38,10 @@ class TestQubitUnitary:
         )
 
         op = qml.QubitUnitary(U, wires="a")
+        [pow_op] = op.pow(0.123)
+        expected = fractional_matrix_power(U, 0.123)
 
-        with pytest.raises(qml.operation.PowUndefinedError):
-            op.pow(0.123)
+        assert qml.math.allclose(pow_op.matrix(), expected)
 
     def test_qubit_unitary_noninteger_pow_broadcasted(self):
         """Test broadcasted QubitUnitary raised to a non-integer power raises an error."""
@@ -187,6 +188,16 @@ class TestQubitUnitary:
         # test an error is thrown when constructed with incorrect number of wires
         with pytest.raises(ValueError, match="must be of shape"):
             qml.QubitUnitary(U, wires=range(num_wires + 1)).matrix()
+
+    @pytest.mark.tf
+    def test_qubit_unitary_int_pow_tf(self):
+        """Test that QubitUnitary.pow works with tf and int z values."""
+        import tensorflow as tf
+
+        mat = tf.Variable([[1, 0], [0, tf.exp(1j)]])
+        expected = tf.Variable([[1, 0], [0, tf.exp(3j)]])
+        [op] = qml.QubitUnitary(mat, wires=[0]).pow(3)
+        assert qml.math.allclose(op.matrix(), expected)
 
     @pytest.mark.jax
     @pytest.mark.parametrize(

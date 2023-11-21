@@ -470,6 +470,16 @@ class TestHasReprProperties:
         assert MyOp.has_matrix is True
         assert MyOp(wires=0).has_matrix is True
 
+    def test_has_matrix_true_overridden_matrix(self):
+        """Test has_matrix is true if `matrix` is overridden instead of `compute_matrix`."""
+
+        class MyOp(qml.operation.Operator):
+            def matrix(self, _=None):
+                return np.eye(2)
+
+        assert MyOp.has_matrix is True
+        assert MyOp(wires=0).has_matrix is True
+
     def test_has_matrix_false(self):
         """Test has_matrix property defaults to false if `compute_matrix` not overwritten."""
 

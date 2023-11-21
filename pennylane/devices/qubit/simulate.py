@@ -18,7 +18,6 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.typing import Result
-from pennylane.wires import Wires
 
 from .initialize_state import create_initial_state
 from .apply_operation import apply_operation
@@ -59,44 +58,6 @@ class _FlexShots(qml.measurements.Shots):
             self.__all_tuple_init__([s if isinstance(s, tuple) else (s, 1) for s in shots])
 
         self._frozen = True
-
-
-def expand_state_over_wires(state, state_wires, all_wires, is_state_batched):
-    """
-    Expand and re-order a state given some initial and target wire orders, setting
-    all additional wires to the 0 state.
-
-    Args:
-        state (~pennylane.typing.TensorLike): The state to re-order and expand
-        state_wires (.Wires): The wire order of the inputted state
-        all_wires (.Wires): The desired wire order
-        is_state_batched (bool): Whether the state has a batch dimension or not
-
-    Returns:
-        TensorLike: The state in the new desired size and order
-    """
-    interface = qml.math.get_interface(state)
-    pad_width = 2 ** len(all_wires) - 2 ** len(state_wires)
-    pad = (pad_width, 0) if interface == "torch" else (0, pad_width)
-    shape = (2,) * len(all_wires)
-    if is_state_batched:
-        pad = ((0, 0), pad)
-        batch_size = qml.math.shape(state)[0]
-        shape = (batch_size,) + shape
-        state = qml.math.reshape(state, (batch_size, -1))
-    else:
-        pad = (pad,)
-        state = qml.math.flatten(state)
-
-    state = qml.math.pad(state, pad, mode="constant", like=interface)
-    state = qml.math.reshape(state, shape)
-
-    # re-order
-    new_wire_order = Wires.unique_wires([all_wires, state_wires]) + state_wires
-    desired_axes = [new_wire_order.index(w) for w in all_wires]
-    if is_state_batched:
-        desired_axes = [0] + [i + 1 for i in desired_axes]
-    return qml.math.transpose(state, desired_axes)
 
 
 def _postselection_postprocess(state, is_state_batched, shots):
@@ -170,13 +131,10 @@ def get_final_state(circuit, debugger=None, interface=None):
         # new state is batched if i) the old state is batched, or ii) the new op adds a batch dim
         is_state_batched = is_state_batched or op.batch_size is not None
 
-    if set(circuit.op_wires) < set(circuit.wires):
-        state = expand_state_over_wires(
-            state,
-            Wires(range(len(circuit.op_wires))),
-            Wires(range(circuit.num_wires)),
-            is_state_batched,
-        )
+    for _ in range(len(circuit.wires) - len(circuit.op_wires)):
+        # if any measured wires are not operated on, we pad the state with zeros.
+        # We know they belong at the end because the circuit is in standard wire-order
+        state = qml.math.stack([state, qml.math.zeros_like(state)], axis=-1)
 
     return state, is_state_batched
 
