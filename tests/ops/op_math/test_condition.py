@@ -208,6 +208,7 @@ def test_conditional_label(op_class):
     """Test that the label for conditional oeprators is correct."""
     base_op = op_class(wires=range(op_class.num_wires))
 
+    # Need to use queue because `qml.cond` doesn't return `Conditional` operators
     with qml.queuing.AnnotatedQueue() as q:
         m0 = qml.measure(0)
         qml.cond(m0, op_class)(wires=range(op_class.num_wires))
