@@ -24,6 +24,7 @@ from pennylane.devices.qubit.measure import (
     measure,
     state_diagonalizing_gates,
     csr_dot_products,
+    full_dot_products,
     get_measurement_function,
     sum_of_terms_method,
 )
@@ -61,6 +62,11 @@ class TestMeasurementDispatch:
         """Test that the state_diagonalizing gates are used when there's an observable has diagonalizing
         gates and allows the measurement to be efficiently computed with them."""
         assert get_measurement_function(m, state=1) is state_diagonalizing_gates
+
+    def test_hermitian_full_dot_product(self):
+        """Test that the expectation value of a hermitian uses the full dot products method."""
+        mp = qml.expval(qml.Hermitian(np.eye(2), wires=0))
+        assert get_measurement_function(mp, state=1) is full_dot_products
 
     def test_hamiltonian_sparse_method(self):
         """Check that the sparse expectation value method is used if the state is numpy."""

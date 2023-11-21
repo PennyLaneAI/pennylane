@@ -49,6 +49,8 @@
 * Simplified the logic for re-arranging states before returning.
   [(#4817)](https://github.com/PennyLaneAI/pennylane/pull/4817)
 
+* `default.qubit` now uses calculates the expectation value of Hermitians in a differentiable manner.
+
 <h3>Breaking changes 💔</h3>
 
 * Moved `qml.cond` and the `Conditional` operation from the `transforms` folder to the `ops/op_math` folder.
