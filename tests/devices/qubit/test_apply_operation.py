@@ -867,7 +867,7 @@ class TestLargerOperations:
         assert qml.math.allclose(expected_state, new_state)
 
 
-class TestGroverOperator:
+class TestApplyGroverOperator:
     """Test that GroverOperator is applied correctly."""
 
     def grover_kernel_full_wires(self, state, op_wires, batched):
