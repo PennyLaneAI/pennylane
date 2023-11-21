@@ -264,6 +264,57 @@ def apply_cnot(op: qml.CNOT, state, is_state_batched: bool = False, debugger=Non
 
 
 @apply_operation.register
+def apply_multicontrolledx(
+    op: qml.MultiControlledX, state, is_state_batched: bool = False, debugger=None
+):
+    r"""Apply MultiControlledX to a state with the default einsum/tensordot choice
+    for 8 operation wires or less. Otherwise, apply a custom kernel based on
+    composing transpositions, rolling of control axes and the CNOT logic above."""
+    if len(op.wires) < 9:
+        return _apply_operation_default(op, state, is_state_batched, debugger)
+    ctrl_wires = [w + is_state_batched for w in op.control_wires]
+    # apply x on all control wires with control value 0
+    roll_axes = [
+        w for val, w in zip(op.hyperparameters["control_values"], ctrl_wires) if val == "0"
+    ]
+    for ax in roll_axes:
+        state = math.roll(state, 1, ax)
+
+    orig_shape = math.shape(state)
+    # Move the axes into the order [(batch), other, target, controls]
+    transpose_axes = (
+        np.array(
+            [
+                w - is_state_batched
+                for w in range(len(orig_shape))
+                if w - is_state_batched not in op.wires
+            ]
+            + [op.wires[-1]]
+            + op.wires[:-1].tolist()
+        )
+        + is_state_batched
+    )
+    state = math.transpose(state, transpose_axes)
+
+    # Reshape the state into 3-dimensional array with axes [batch+other, target, controls]
+    state = math.reshape(state, (-1, 2, 2 ** (len(op.wires) - 1)))
+
+    # The part of the state to which we want to apply PauliX is now in the last entry along the
+    # third axis. Extract it, apply the PauliX along the target axis (1), and append a dummy axis
+    state_x = math.roll(state[:, :, -1], 1, 1)[:, :, np.newaxis]
+
+    # Stack the transformed part of the state with the unmodified rest of the state
+    state = math.concatenate([state[:, :, :-1], state_x], axis=2)
+
+    # Reshape into original shape and undo the transposition
+    state = math.transpose(math.reshape(state, orig_shape), np.argsort(transpose_axes))
+
+    # revert x on all "wrong" controls
+    for ax in roll_axes:
+        state = math.roll(state, 1, ax)
+    return state
+
+@apply_operation.register
 def apply_grover(op: qml.GroverOperator, state, is_state_batched: bool = False, debugger=None):
     r"""Apply GroverOperator to state. This method uses that this operator
     is :math:`2*P-\mathbb{I}`, where :math:`P` is the projector onto the
@@ -298,6 +349,7 @@ def apply_grover(op: qml.GroverOperator, state, is_state_batched: bool = False, 
     # Probably it will be better to use math.full or math.tile to create the outer product
     # here computed with math.tensordot. However, Tensorflow and Torch do not have full support
     return math.moveaxis(math.tensordot(collapsed, all_plus, axes=0), source, sum_axes) - state
+=======
 
 
 @apply_operation.register
