@@ -244,5 +244,5 @@ class TestCatalyst:
             qml.adjoint(func, lazy=True)()
             return qml.probs()
 
-        with pytest.raises(CompileError, match="Lazy kwarg is not supported with qjit."):
+        with pytest.raises(CompileError, match="Setting lazy=False is not supported with qjit."):
             workflow(0.1, [1])
