@@ -14,7 +14,7 @@
 """
 This module contains some useful utility functions for circuit drawing.
 """
-from pennylane.ops import Controlled
+from pennylane.ops import Controlled, Conditional
 from pennylane.measurements import MidMeasureMP
 
 
@@ -144,7 +144,7 @@ def find_mid_measure_cond_connections(operations, layers):
     measurements_for_conds = set()
     conditional_ops = []
     for op in operations:
-        if op.__class__.__name__ == "Conditional":
+        if isinstance(op, Conditional):
             measurements_for_conds.update(op.meas_val.measurements)
             conditional_ops.append(op)
 
@@ -169,7 +169,7 @@ def find_mid_measure_cond_connections(operations, layers):
                 if isinstance(op, MidMeasureMP) and op in bit_map:
                     measurement_layers[bit_map[op]] = i
 
-                if op.__class__.__name__ == "Conditional":
+                if isinstance(op, Conditional):
                     for mid_measure in op.meas_val.measurements:
                         final_cond_layers[bit_map[mid_measure]] = i
 

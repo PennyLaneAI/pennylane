@@ -87,7 +87,7 @@ def _add_mid_measure_grouping_symbols(op, layer_str, wire_map, bit_map):
 
 def _add_op(op, layer_str, wire_map, bit_map, decimals, cache):
     """Updates ``layer_str`` with ``op`` operation."""
-    if op.__class__.__name__ == "Conditional":
+    if isinstance(op, qml.ops.Conditional):
         layer_str = _add_cond_grouping_symbols(op, layer_str, wire_map, bit_map)
         return _add_op(op.then_op, layer_str, wire_map, bit_map, decimals, cache)
 

@@ -227,7 +227,6 @@ class TestOtherTransforms:
         qml.adjoint."""
         r = 1.234
 
-        # Need to use queue because `qml.cond` doesn't return `Conditional` operators
         with qml.queuing.AnnotatedQueue() as q:
             m_0 = qml.measure(0)
             qml.cond(m_0, qml.adjoint(qml.RX), qml.RX)(r, wires=1)

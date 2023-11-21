@@ -15,6 +15,7 @@
 This module contains a helper function to sort operations into layers.
 """
 
+from pennylane.ops import Conditional
 from pennylane.measurements import MidMeasureMP
 from .utils import default_wire_map
 
@@ -61,7 +62,7 @@ def _get_op_occupied_wires(op, wire_map, cond_measurements):
 
         return {mapped_wire}
 
-    if op.__class__.__name__ == "Conditional":
+    if isinstance(op, Conditional):
         mapped_wires = [wire_map[wire] for wire in op.then_op.wires]
         min_wire = min(mapped_wires)
         max_wire = max(wire_map.values())
@@ -129,7 +130,7 @@ def drawable_layers(ops, wire_map=None):
     # Collect all mid-circuit measurements used for classical conditioning
     cond_measurements = set()
     for op in ops:
-        if op.__class__.__name__ == "Conditional":
+        if isinstance(op, Conditional):
             cond_measurements.update(op.meas_val.measurements)
 
     # loop over operations
