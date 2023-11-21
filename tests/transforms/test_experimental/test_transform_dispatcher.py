@@ -17,7 +17,7 @@ from functools import partial
 
 import pytest
 import pennylane as qml
-from pennylane.transforms.core import transform, TransformError
+from pennylane.transforms.core import transform, TransformError, TransformContainer
 
 dev = qml.device("default.qubit", wires=2)
 
@@ -281,6 +281,30 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert isinstance(
             qnode_circuit.transform_program.pop_front(), qml.transforms.core.TransformContainer
         )
+
+    def test_equality(self):
+        """Tests that we can compare TransformContainer objects with the '==' and '!=' operators."""
+
+        t1 = TransformContainer(
+            qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 1}
+        )
+        t2 = TransformContainer(
+            qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 1}
+        )
+        t3 = TransformContainer(
+            qml.transforms.transpile.transform, kwargs={"coupling_map": [(0, 1), (1, 2)]}
+        )
+        t4 = TransformContainer(
+            qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 2}
+        )
+        # test for equality of identical transformers
+        assert t1 == t2
+
+        # test for inequality of different transformers
+        assert t1 != t3
+        assert t2 != t3
+        assert t1 != 2
+        assert t1 != t4
 
     def test_queuing_qfunc_transform(self):
         """Test that queuing works with the transformed quantum function."""

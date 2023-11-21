@@ -482,6 +482,28 @@ class TestTransformProgram:
         ):
             transform_program.push_back(transform2)
 
+        def test_equality(self):
+            """Tests that we can compare TransformProgram objects with the '==' and '!=' operators."""
+            t1 = TransformContainer(
+                qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 1}
+            )
+            t2 = TransformContainer(
+                qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 1}
+            )
+            t3 = TransformContainer(
+                qml.transforms.transpile.transform, kwargs={"coupling_map": [(0, 1), (1, 2)]}
+            )
+
+            p1 = TransformProgram([t1, t3])
+            p2 = TransformProgram([t2, t3])
+            p3 = TransformProgram([t3, t2])
+
+            # test for equality of identical objects
+            assert p1 == p2
+            # test for inequality of different objects
+            assert p1 != p3
+            assert p1 != t1
+
 
 class TestTransformProgramCall:
     """Tests for calling a TransformProgram on a batch of quantum tapes."""
