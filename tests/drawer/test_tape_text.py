@@ -63,7 +63,7 @@ with qml.queuing.AnnotatedQueue() as q_tape:
 tape = qml.tape.QuantumScript.from_queue(q_tape)
 
 
-class TestHelperFunctions:
+class TestHelperFunctions:  # pylint: disable=too-many-arguments
     """Test helper functions for the tape text."""
 
     @pytest.mark.parametrize(

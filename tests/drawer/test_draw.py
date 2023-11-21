@@ -365,7 +365,7 @@ class TestMidCircuitMeasurements:
 
         drawing = qml.draw(circ)(np.pi)
         expected_drawing = (
-            "0: ──RX(3.14)──┤↗├────┤  \n" "1: ─────────────║───X─┤  \n" "                ╚═══╝    "
+            "0: ──RX(3.14)──┤↗├────┤  \n1: ─────────────║───X─┤  \n                ╚═══╝    "
         )
 
         assert drawing == expected_drawing
