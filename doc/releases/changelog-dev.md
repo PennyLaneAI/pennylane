@@ -10,6 +10,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `default.qubit` no longer uses a dense matrix for `MultiControlledX` for more than 8 operation wires.
+  [(#4673)](https://github.com/PennyLaneAI/pennylane/pull/4673)
+
 * `AmplitudeEmbedding` now also supports batching when used with Tensorflow.
   [(#4818)](https://github.com/PennyLaneAI/pennylane/pull/4818)
 
@@ -95,6 +98,9 @@
   [(#4750)](https://github.com/PennyLaneAI/pennylane/pull/4750)
 
 <h3>Bug fixes 🐛</h3>
+
+* Jax can now differeniate a batch of circuits where one tape does not have trainable parameters.
+  [(#4837)](https://github.com/PennyLaneAI/pennylane/pull/4837)
 
 * Fixes a bug where the adjoint method differentiation would fail if
   an operation with `grad_method=None` that has a parameter is present.
