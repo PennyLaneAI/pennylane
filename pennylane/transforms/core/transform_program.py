@@ -156,23 +156,14 @@ class TransformProgram:
         return f"TransformProgram({contents})"
 
     def __eq__(self, other):
-        if type(self) != type(other):
+        if not isinstance(other, TransformProgram):
             return False
 
-        # Check if transform is not null
-        if self._transform_program and other._transform_program:
-            true = True
-            for i in range(len(self._transform_program)):
-                t = true and (self._transform_program[i] == other._transform_program[i])
-            return t
-
-        else:
-            # If its null, compare references
-            return (
-                self._transform_program == other._transform_program
-                and self._args == other._args
-                and self._classical_jacobians == other._classical_jacobians
-            )
+        return (
+            self._transform_program == other._transform_program
+            and self._argnums == other._argnums
+            and self._classical_jacobians == other._classical_jacobians
+        )
 
     def push_back(self, transform_container: TransformContainer):
         """Add a transform (container) to the end of the program.
