@@ -338,7 +338,11 @@ def apply_parametrized_evolution(
     # shape(state) is static (not a tracer), we can use an if statement
     num_wires = len(qml.math.shape(state)) - is_state_batched
     state = qml.math.cast(state, complex)
-    if not is_state_batched and 2 * len(op.wires) > num_wires and not op.hyperparameters["complementary"]:
+    if (
+        not is_state_batched
+        and 2 * len(op.wires) > num_wires
+        and not op.hyperparameters["complementary"]
+    ):
         # the subsystem operated is more than half of the system based on the state vector
         # --> evolve state
         return _evolve_state_vector_under_parametrized_evolution(op, state, num_wires)
