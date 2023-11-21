@@ -34,7 +34,7 @@ from .symbolicop import SymbolicOp
 
 
 def ctrl(op, control, control_values=None, work_wires=None):
-    """A :func:`~.qjit` compatible control transformation that creates the control of an Operator or a function
+    """A :func:`~.qjit` compatible transformation that creates the control of an Operator or a function
 
     .. note::
 
