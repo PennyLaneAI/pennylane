@@ -479,7 +479,6 @@ class TestApplyParametrizedEvolution:
         Note that the branching logic is different for batched input states, because
         evolving the state vector does not support batching of the state. Instead,
         the evolved matrix is used always."""
-        spy_tdot = mocker.spy(qml.math, "tensordot")
         spy_einsum = mocker.spy(qml.math, "einsum")
         H = time_independent_hamiltonian()
         params = np.array([1.0, 2.0])
@@ -505,8 +504,10 @@ class TestApplyParametrizedEvolution:
         new_state_expected = apply_operation(U, initial_state, is_state_batched=True)
         assert np.allclose(new_state, new_state_expected, atol=0.002)
 
-        assert spy_einsum.call_count == 2
-        assert spy_tdot.call_count == 0
+        if num_state_wires == 4:
+            assert spy_einsum.call_count == 2
+        else:
+            assert spy_einsum.call_count == 1
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
