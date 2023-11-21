@@ -26,7 +26,7 @@ from .tape_text import tape_text
 
 def catalyst_qjit(qnode):
     """Check if Catalyst is available and if the QNode is qjitted."""
-    if "catalyst" in qml.compiler.available_compilers():
+    if qml.compiler.available("catalyst"):
         return qnode.__class__.__name__ == "QJIT"
     return False
 
