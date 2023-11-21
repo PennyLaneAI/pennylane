@@ -54,7 +54,7 @@ class TestInitializeState:
         state[1, 2, 0, 1, 2, 0] = 0  # set to zero to make test below simple
         assert qml.math.allequal(state, np.zeros(([3] * 6)))
 
-    @pytest.mark.parametrize("wires", [(0, 1), qml.Wires([0, 1])])
+    @pytest.mark.parametrize("wires", [(0, 1), qml.wires.Wires([0, 1])])
     def test_create_initial_state_wires(self, wires):
         """Tests that create_initial_state works with qml.Wires object and list."""
         state = create_initial_state(wires)
