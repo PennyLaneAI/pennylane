@@ -314,6 +314,7 @@ def apply_multicontrolledx(
         state = math.roll(state, 1, ax)
     return state
 
+
 @apply_operation.register
 def apply_grover(op: qml.GroverOperator, state, is_state_batched: bool = False, debugger=None):
     """Apply GroverOperator either via a custom matrix-free method (more than 8 operation
@@ -321,6 +322,7 @@ def apply_grover(op: qml.GroverOperator, state, is_state_batched: bool = False, 
     if len(op.wires) < 9:
         return _apply_operation_default(op, state, is_state_batched, debugger)
     return _apply_grover_without_matrix(state, op.wires, is_state_batched)
+
 
 def _apply_grover_without_matrix(state, op_wires, is_state_batched):
     r"""Apply GroverOperator to state. This method uses that this operator
