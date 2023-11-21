@@ -843,6 +843,14 @@ class TestHelperMethod:
         decomp_mat = qml.matrix(op.decomposition, wire_order=op.wires)()
         assert qml.math.allclose(op.matrix(), decomp_mat)
 
+    def test_global_phase_decomp_raises_warning(self):
+        """Test that ctrl(GlobalPhase).decomposition() raises a warning."""
+        op = qml.ctrl(qml.GlobalPhase(1.23), control=[0])
+        with pytest.warns(
+            UserWarning, match="Controlled-GlobalPhase currently decomposes to nothing"
+        ):
+            assert op.decomposition() == []
+
 
 @pytest.mark.parametrize("test_expand", (False, True))
 class TestDecomposition:

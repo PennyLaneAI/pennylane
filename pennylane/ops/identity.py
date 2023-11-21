@@ -328,6 +328,38 @@ class GlobalPhase(Operation):
         """
         return []
 
+    @staticmethod
+    def compute_decomposition(phi, wires=None):  # pylint:disable=arguments-differ,unused-argument
+        r"""Representation of the operator as a product of other operators (static method).
+
+        .. note::
+
+            The ``GlobalPhase`` operation decomposes to an empty list of operations.
+            Support for global phase
+            was added in v0.33 and was ignored in earlier versions of PennyLane. Setting
+            global phase to decompose to nothing allows existing devices to maintain
+            current support for operations which now have ``GlobalPhase`` in the
+            decomposition pipeline.
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        .. seealso:: :meth:`~.GlobalPhase.decomposition`.
+
+        Args:
+            phi (TensorLike): the global phase
+            wires (Iterable[Any] or Any): unused argument - the operator is applied to all wires
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.GlobalPhase.compute_decomposition(1.23)
+        []
+
+        """
+        return []
+
     def matrix(self, wire_order=None):
         n_wires = len(wire_order) if wire_order else len(self.wires)
         return self.compute_matrix(self.data[0], n_wires=n_wires)

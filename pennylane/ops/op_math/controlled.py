@@ -594,6 +594,13 @@ def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Op
         return None
 
     base_decomp = op.base.decomposition()
+    if len(base_decomp) == 0 and isinstance(op.base, qml.GlobalPhase):
+        warnings.warn(
+            "Controlled-GlobalPhase currently decomposes to nothing, and this will likely "
+            "produce incorrect results. Consider implementing your circuit with a different set "
+            "of operations, or use a device that natively supports GlobalPhase.",
+            UserWarning,
+        )
 
     return [Controlled(newop, op.control_wires, work_wires=op.work_wires) for newop in base_decomp]
 
