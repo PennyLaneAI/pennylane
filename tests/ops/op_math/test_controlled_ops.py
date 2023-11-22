@@ -19,6 +19,7 @@ import copy
 
 import numpy as np
 import pytest
+from scipy.linalg import fractional_matrix_power
 from scipy.sparse import csr_matrix
 from scipy.stats import unitary_group
 
@@ -393,7 +394,7 @@ class TestControlledQubitUnitary:
         assert qml.math.allclose(pow_ops[0].data[0], op_mat_to_pow)
 
     def test_noninteger_pow(self):
-        """Test that a ControlledQubitUnitary raised to a non-integer power raises an error."""
+        """Test that a ControlledQubitUnitary raised to a non-integer power evalutes."""
         U1 = np.array(
             [
                 [0.73708696 + 0.61324932j, 0.27034258 + 0.08685028j],
@@ -403,8 +404,11 @@ class TestControlledQubitUnitary:
 
         op = qml.ControlledQubitUnitary(U1, control_wires=("b", "c"), wires="a")
 
-        with pytest.raises(qml.operation.PowUndefinedError):
-            op.pow(0.12)
+        z = 0.12
+        [pow_op] = op.pow(z)
+        expected = np.eye(8, dtype=complex)
+        expected[-2:, -2:] = fractional_matrix_power(U1, z)
+        assert qml.math.allequal(pow_op.matrix(), expected)
 
     def test_noninteger_pow_broadcasted(self):
         """Test that a ControlledQubitUnitary raised to a non-integer power raises an error."""

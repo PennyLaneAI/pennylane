@@ -44,6 +44,13 @@ TOO_MANY_FEATURES = [
 TOO_MANY_BROADCASTED_FEATURES = [np.eye(6)[:3, :5], np.ones((3, 8)) / np.sqrt(8)]
 
 
+def test_standard_validity():
+    """Check the operation using the assert_valid function."""
+
+    op = qml.AmplitudeEmbedding(features=FEATURES[0], wires=range(2))
+    qml.ops.functions.assert_valid(op)
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 

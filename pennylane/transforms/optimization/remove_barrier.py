@@ -78,19 +78,7 @@ def remove_barrier(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
            1: ──H─────┤
 
     """
-    # Make a working copy of the list to traverse
-    list_copy = tape.operations.copy()
-    operations = []
-    while len(list_copy) > 0:
-        current_gate = list_copy[0]
-
-        # Remove Barrier gate
-        if current_gate.name != "Barrier":
-            operations.append(current_gate)
-
-        list_copy.pop(0)
-        continue
-
+    operations = filter(lambda op: op.name != "Barrier", tape.operations)
     new_tape = type(tape)(operations, tape.measurements, shots=tape.shots)
 
     def null_postprocessing(results):
