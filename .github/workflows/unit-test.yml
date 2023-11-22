@@ -117,7 +117,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: benchmark_reference
-          key: ${{ steps.benchmark_name.outputs.benchmark_name }}-reference
+          key: ${{ steps.benchmark_name.outputs.benchmark_name }}-benchmarks_references
 
       - name: Check if the shared part of the job will continue
         id: continue
@@ -231,5 +231,5 @@ jobs:
         if: inputs.pipeline_mode == 'benchmarks'
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ steps.benchmark_name.outputs.benchmark_name }}-benchmark
+          name: ${{ steps.benchmark_name.outputs.benchmark_name }}-benchmarks
           path: ${{ github.workspace }}/benchmark_results
