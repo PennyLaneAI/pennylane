@@ -75,6 +75,10 @@
 * `qml.draw` and `qml.draw_mpl` now render operator ids.
   [(#4749)](https://github.com/PennyLaneAI/pennylane/pull/4749)
 
+* When multiplying `SparseHamiltonian`s by a scalar value, the result stays as a 
+  `SparseHamiltonian`.
+  [(#4828)](https://github.com/PennyLaneAI/pennylane/pull/4828)
+
 * `has_matrix` will now automatically be `True` if `Operator.matrix` is overridden, even if
   `Operator.compute_matrix` is not.
   [(#4844)](https://github.com/PennyLaneAI/pennylane/pull/4844)
@@ -202,6 +206,7 @@ This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
 Astral Cai,
+Isaac De Vlugt,
 Amintor Dusko,
 Lillian Frederiksen,
 Emiliano Godinez Ramirez,
