@@ -149,9 +149,7 @@ def find_mid_measure_cond_connections(operations, layers):
             conditional_ops.append(op)
 
     if len(measurements_for_conds) > 0:
-        cond_mid_measures = [
-            op for op in operations if isinstance(op, MidMeasureMP) if op in measurements_for_conds
-        ]
+        cond_mid_measures = [op for op in operations if op in measurements_for_conds]
         cond_mid_measures.sort(key=operations.index)
 
         bit_map = dict(zip(cond_mid_measures, range(len(cond_mid_measures))))
