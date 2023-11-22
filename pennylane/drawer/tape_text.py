@@ -473,7 +473,16 @@ def tape_text(
                 finished_lines += wire_totals + bit_totals
                 finished_lines[-1] += "\n"
                 wire_totals = [w_filler] * n_wires
-                bit_totals = [b_filler] * n_bits
+
+                # Bit totals for new lines for warped drawings need to be consistent with the
+                # current bit filler
+                bit_totals = []
+                for b in range(n_bits):
+                    cur_b_filler = (
+                        b_filler if measurement_layers[b] < i <= final_cond_layers[b] else " "
+                    )
+                    bit_totals.append(cur_b_filler)
+
                 line_length = 2 + max_label_len
 
             # Join current layer with lines for previous layers. Joining is done by adding a filler at
