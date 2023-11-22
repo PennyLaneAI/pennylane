@@ -125,7 +125,6 @@ def drawable_layers(ops, wire_map=None):
     occupied_wires_per_layer = [set()]
     ops_in_layer = [[]]
     measured_wires = {}
-    measured_layers = {}
 
     # Collect all mid-circuit measurements used for classical conditioning
     cond_measurements = set()
@@ -135,13 +134,10 @@ def drawable_layers(ops, wire_map=None):
 
     # loop over operations
     for op in ops:
-        is_mid_measure = False
-
         if isinstance(op, MidMeasureMP):
             if len(op.wires) > 1:
                 raise ValueError("Cannot draw mid-circuit measurements with more than one wire.")
 
-            is_mid_measure = True
             measured_wires[op.id] = wire_map[op.wires[0]]
 
         op_occupied_wires = _get_op_occupied_wires(op, wire_map, cond_measurements)
@@ -156,7 +152,5 @@ def drawable_layers(ops, wire_map=None):
         # add to op_layer
         ops_in_layer[op_layer].append(op)
         occupied_wires_per_layer[op_layer].update(op_occupied_wires)
-        if is_mid_measure:
-            measured_layers[op.id] = op_layer
 
     return list(filter(None, ops_in_layer[:-1])) + ops_in_layer[-1:]

@@ -160,8 +160,6 @@ def find_mid_measure_cond_connections(operations, layers):
         measurement_layers = [None] * n_bits
         final_cond_layers = [None] * n_bits
 
-        # Only iterating through operation layers because bits are only determined
-        # using those layers
         for i, layer in enumerate(layers):
             for op in layer:
                 if isinstance(op, MidMeasureMP) and op in bit_map:

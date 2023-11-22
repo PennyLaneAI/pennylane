@@ -390,14 +390,14 @@ class TestMidCircuitMeasurements:
 
         assert drawing == expected_drawing
 
-    def test_single_meas_multi_cond(self):
+    def test_single_meas_multi_cond_with_reset(self):
         """Test that a circuit where a single mid-circuit measurement is used for multiple
         conditions is drawn correctly"""
 
         def circ():
             qml.RX(0.5, 0)
             qml.RX(0.5, 1)
-            m0 = qml.measure(1, reset=True, postselect=1)
+            m0 = qml.measure(1, reset=True)
             qml.cond(m0, qml.MultiControlledX)(wires=[1, 2, 0], control_values="10")
             qml.CNOT([3, 2])
             qml.cond(m0, qml.ctrl(qml.MultiRZ, control=[1, 2], control_values=[True, False]))(
@@ -408,11 +408,38 @@ class TestMidCircuitMeasurements:
 
         drawing = qml.draw(circ)()
         expected_drawing = (
-            "0: ──RX(0.50)────────────╭X────╭MultiRZ(0.50)──X─┤  <Z>\n"
-            "1: ──RX(0.50)──┤↗₁│  │0⟩─├●────├●──────────────║─┤     \n"
-            "2: ─────────────║────────╰○─╭X─├○──────────────║─┤     \n"
-            "3: ─────────────║─────────║─╰●─╰MultiRZ(0.50)──║─┤     \n"
-            "                ╚═════════╩═════╩══════════════╝       "
+            "0: ──RX(0.50)───────────╭X────╭MultiRZ(0.50)──X─┤  <Z>\n"
+            "1: ──RX(0.50)──┤↗│  │0⟩─├●────├●──────────────║─┤     \n"
+            "2: ─────────────║───────╰○─╭X─├○──────────────║─┤     \n"
+            "3: ─────────────║────────║─╰●─╰MultiRZ(0.50)──║─┤     \n"
+            "                ╚════════╩═════╩══════════════╝       "
+        )
+
+        assert drawing == expected_drawing
+
+    def test_single_meas_multi_cond_with_postselection(self):
+        """Test that a circuit where a single mid-circuit measurement is used for multiple
+        conditions is drawn correctly"""
+
+        def circ():
+            qml.RX(0.5, 0)
+            qml.RX(0.5, 1)
+            m0 = qml.measure(1, postselect=1)
+            qml.cond(m0, qml.MultiControlledX)(wires=[1, 2, 0], control_values="10")
+            qml.CNOT([3, 2])
+            qml.cond(m0, qml.ctrl(qml.MultiRZ, control=[1, 2], control_values=[True, False]))(
+                0.5, wires=[0, 3]
+            )
+            qml.cond(m0, qml.PauliX)(0)
+            return qml.expval(qml.PauliZ(0))
+
+        drawing = qml.draw(circ)()
+        expected_drawing = (
+            "0: ──RX(0.50)───────╭X────╭MultiRZ(0.50)──X─┤  <Z>\n"
+            "1: ──RX(0.50)──┤↗₁├─├●────├●──────────────║─┤     \n"
+            "2: ─────────────║───╰○─╭X─├○──────────────║─┤     \n"
+            "3: ─────────────║────║─╰●─╰MultiRZ(0.50)──║─┤     \n"
+            "                ╚════╩═════╩══════════════╝       "
         )
 
         assert drawing == expected_drawing
