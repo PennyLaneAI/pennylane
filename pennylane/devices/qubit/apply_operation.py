@@ -334,23 +334,26 @@ def apply_parametrized_evolution(
 ):
     """Apply ParametrizedEvolution by evolving the state rather than the operator matrix
     if we are operating on more than half of the subsystem"""
-    if is_state_batched and op.batch_size is None:
-        raise RuntimeError(
-            "ParameterizedEvolution does not support standard broadcasting, but received a batched state"
-        )
 
     # shape(state) is static (not a tracer), we can use an if statement
-    num_wires = len(qml.math.shape(state))
+    num_wires = len(qml.math.shape(state)) - is_state_batched
     state = qml.math.cast(state, complex)
-    if 2 * len(op.wires) > num_wires and not op.hyperparameters["complementary"]:
-        # the subsystem operated is more than half of the system based on the state vector --> evolve state
-        return _evolve_state_vector_under_parametrized_evolution(op, state, num_wires)
-    # otherwise --> evolve matrix
-    return _apply_operation_default(op, state, is_state_batched, debugger)
+    if (
+        2 * len(op.wires) <= num_wires
+        or op.hyperparameters["complementary"]
+        or (is_state_batched and op.hyperparameters["return_intermediate"])
+    ):
+        # the subsystem operated on is half as big as the total system, or less
+        # or we want complementary time evolution
+        # or both the state and the operation have a batch dimension
+        # --> evolve matrix
+        return _apply_operation_default(op, state, is_state_batched, debugger)
+    # otherwise --> evolve state
+    return _evolve_state_vector_under_parametrized_evolution(op, state, num_wires, is_state_batched)
 
 
 def _evolve_state_vector_under_parametrized_evolution(
-    operation: qml.pulse.ParametrizedEvolution, state, num_wires
+    operation: qml.pulse.ParametrizedEvolution, state, num_wires, is_state_batched
 ):
     """Uses an odeint solver to compute the evolution of the input ``state`` under the given
     ``ParametrizedEvolution`` operation.
@@ -385,7 +388,13 @@ def _evolve_state_vector_under_parametrized_evolution(
             "You can update these values by calling the ParametrizedEvolution class: EV(params, t)."
         )
 
-    state = state.flatten()
+    if is_state_batched:
+        batch_dim = state.shape[0]
+        state = qml.math.moveaxis(state.reshape((batch_dim, 2**num_wires)), 1, 0)
+        out_shape = [2] * num_wires + [batch_dim]  # this shape is before moving the batch_dim back
+    else:
+        state = state.flatten()
+        out_shape = [2] * num_wires
 
     with jax.ensure_compile_time_eval():
         H_jax = ParametrizedHamiltonianPytree.from_hamiltonian(  # pragma: no cover
@@ -399,7 +408,9 @@ def _evolve_state_vector_under_parametrized_evolution(
         return (-1j * H_jax(operation.data, t=t)) @ y
 
     result = odeint(fun, state, operation.t, **operation.odeint_kwargs)
-    out_shape = [2] * num_wires
     if operation.hyperparameters["return_intermediate"]:
         return qml.math.reshape(result, [-1] + out_shape)
-    return qml.math.reshape(result[-1], out_shape)
+    result = qml.math.reshape(result[-1], out_shape)
+    if is_state_batched:
+        return qml.math.moveaxis(result, -1, 0)
+    return result
