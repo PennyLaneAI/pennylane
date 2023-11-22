@@ -135,7 +135,7 @@ class TestMeasurements:
         ],
     )
     def test_hamiltonian_expval(self, obs, expected):
-        """Test that measurements of hamiltonian/ sparse hamilotnian/ hermitians work correctly."""
+        """Test that measurements of hamiltonian/ sparse hamiltonian/ hermitians work correctly."""
         # Create RX(0.123)|0> state
         state = np.array([np.cos(0.123 / 2), -1j * np.sin(0.123 / 2)])
         res = measure(qml.expval(obs), state)
