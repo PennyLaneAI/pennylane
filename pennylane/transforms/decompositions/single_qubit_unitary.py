@@ -46,13 +46,6 @@ def _convert_to_su2(U, return_global_phase=False):
     return (U, phase) if return_global_phase else U
 
 
-def _normalize_rotation_angles(angles):
-    r"""Convert rotation angles to the range :math:`[-2\pi, 2\pi]`"""
-
-    angles = angles % (4 * np.pi)
-    return math.where(angles > 2 * np.pi, angles - 4 * np.pi, angles)
-
-
 def _zyz_get_rotation_angles(U):
     r"""Computes the rotation angles :math:`\phi`, :math:`\theta`, :math:`\omega`
     for a unitary :math:`U` that is :math:`SU(2)`
@@ -131,7 +124,7 @@ def _rot_decomposition(U, wire, return_global_phase=False):
 
     >>> decompositions = _rot_decomposition(U, 0)
     >>> decompositions
-    [Rot(-0.24209530281458314, 1.1493817771511354, 1.733058145303424, wires=[0])]
+    [Rot(12.32427531154459, 1.1493817771511354, 1.733058145303424, wires=[0])]
     """
 
     # Cast to batched format for more consistent code
@@ -144,7 +137,8 @@ def _rot_decomposition(U, wire, return_global_phase=False):
     # statement that will check if the off-diagonal elements are 0; if so, just use one RZ
     if len(U_det1) == 1 and not math.is_abstract(U_det1[0]):
         if math.allclose(U_det1[0, 0, 1], 0.0):
-            operations = [qml.RZ(2 * math.angle(U_det1[0, 1, 1]), wires=wire)]
+            angle = 2 * math.angle(U_det1[0, 1, 1]) % (4 * np.pi)
+            operations = [qml.RZ(angle, wires=wire)]
             if return_global_phase:
                 operations.append(qml.GlobalPhase(-alphas))
             return operations
@@ -152,9 +146,9 @@ def _rot_decomposition(U, wire, return_global_phase=False):
     # Compute the zyz rotation angles
     phis, thetas, omegas = _zyz_get_rotation_angles(U_det1)
 
-    phis = _normalize_rotation_angles(phis)
-    thetas = _normalize_rotation_angles(thetas)
-    omegas = _normalize_rotation_angles(omegas)
+    phis = phis % (4 * np.pi)
+    thetas = thetas % (4 * np.pi)
+    omegas = omegas % (4 * np.pi)
 
     operations = [qml.Rot(phis, thetas, omegas, wires=wire)]
     if return_global_phase:
@@ -193,7 +187,7 @@ def _zyz_decomposition(U, wire, return_global_phase=False):
     ... ])
     >>> decompositions = _zyz_decomposition(U, 0, return_global_phase=True)
     >>> decompositions
-    [RZ(-0.24209530281458314, wires=[0]),
+    [RZ(12.32427531154459, wires=[0]),
      RY(1.1493817771511354, wires=[0]),
      RZ(1.733058145303424, wires=[0]),
      GlobalPhase(1.1759220332464762, wires=[])]
@@ -210,9 +204,9 @@ def _zyz_decomposition(U, wire, return_global_phase=False):
     phis, thetas, omegas = _zyz_get_rotation_angles(U_det1)
 
     # Convert to positive angles
-    phis = _normalize_rotation_angles(phis)
-    thetas = _normalize_rotation_angles(thetas)
-    omegas = _normalize_rotation_angles(omegas)
+    phis = phis % (4 * np.pi)
+    thetas = thetas % (4 * np.pi)
+    omegas = omegas % (4 * np.pi)
 
     operations = [qml.RZ(phis, wire), qml.RY(thetas, wire), qml.RZ(omegas, wire)]
     if return_global_phase:
@@ -247,7 +241,7 @@ def _xyx_decomposition(U, wire, return_global_phase=False):
     ... ])
     >>> decompositions = _xyx_decomposition(U, 0, return_global_phase=True)
     >>> decompositions
-    [RX(-1.721019247953464, wires=[0]),
+    [RX(10.845351366405708, wires=[0]),
      RY(1.3974974118006183, wires=[0]),
      RX(0.45246583660683803, wires=[0]),
      GlobalPhase(1.1759220332464762, wires=[])]
@@ -277,9 +271,9 @@ def _xyx_decomposition(U, wire, return_global_phase=False):
 
     phis, thetas, lams, gammas = map(math.squeeze, [phis, thetas, lams, gammas])
 
-    phis = _normalize_rotation_angles(phis)
-    thetas = _normalize_rotation_angles(thetas)
-    lams = _normalize_rotation_angles(lams)
+    phis = phis % (4 * np.pi)
+    thetas = thetas % (4 * np.pi)
+    lams = lams % (4 * np.pi)
 
     operations = [qml.RX(lams, wire), qml.RY(thetas, wire), qml.RX(phis, wire)]
     if return_global_phase:
@@ -313,9 +307,9 @@ def _xzx_decomposition(U, wire, return_global_phase=False):
     ... ])
     >>> decompositions = _xzx_decomposition(U, 0, return_global_phase=True)
     >>> decompositions
-    [RX(-0.15022292069414078, wires=[0]),
+    [RX(12.416147693665032, wires=[0]),
      RZ(1.3974974090935608, wires=[0]),
-     RX(-1.118330495160107, wires=[0]),
+     RX(11.448040119199066, wires=[0]),
      GlobalPhase(1.1759220332464762, wires=[])]
 
     """
@@ -347,9 +341,9 @@ def _xzx_decomposition(U, wire, return_global_phase=False):
 
     phis, thetas, lams, gammas = map(math.squeeze, [phis, thetas, lams, gammas])
 
-    phis = _normalize_rotation_angles(phis)
-    thetas = _normalize_rotation_angles(thetas)
-    lams = _normalize_rotation_angles(lams)
+    phis = phis % (4 * np.pi)
+    thetas = thetas % (4 * np.pi)
+    lams = lams % (4 * np.pi)
 
     operations = [qml.RX(lams, wire), qml.RZ(thetas, wire), qml.RX(phis, wire)]
     if return_global_phase:
@@ -371,9 +365,9 @@ def _zxz_decomposition(U, wire, return_global_phase=False):
 
     Returns:
         list[Operation]: Returns a list of gates, an ``RZ``, an ``RX`` and
-        another ``RZ`` gate, which when applied in the order of appearance in the list is
-        equivalent to the unitary :math:`U` up to a global phase. If `return_global_phase=True`,
-        the global phase is returned as the last element of the list.
+            another ``RZ`` gate, which when applied in the order of appearance in the list is
+            equivalent to the unitary :math:`U` up to a global phase. If `return_global_phase=True`,
+            the global phase is returned as the last element of the list.
 
     **Example**
 
@@ -383,7 +377,7 @@ def _zxz_decomposition(U, wire, return_global_phase=False):
     ... ])
     >>> decompositions = _zxz_decomposition(U, 0, return_global_phase=True)
     >>> decompositions
-    [RZ(-1.8128916324243889, wires=[0]),
+    [RZ(10.753478981934784, wires=[0]),
      RX(1.1493817777940707, wires=[0]),
      RZ(3.3038544749132295, wires=[0]),
      GlobalPhase(1.1759220332464762, wires=[])]
@@ -417,9 +411,9 @@ def _zxz_decomposition(U, wire, return_global_phase=False):
 
     phis, thetas, psis, alphas = map(math.squeeze, [phis, thetas, psis, alphas])
 
-    phis = _normalize_rotation_angles(phis)
-    thetas = _normalize_rotation_angles(thetas)
-    psis = _normalize_rotation_angles(psis)
+    phis = phis % (4 * np.pi)
+    thetas = thetas % (4 * np.pi)
+    psis = psis % (4 * np.pi)
 
     # Return gates in the order they will be applied on the qubit
     operations = [qml.RZ(psis, wire), qml.RX(thetas, wire), qml.RZ(phis, wire)]
@@ -457,7 +451,7 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
     ... ])
     >>> decompositions = one_qubit_decomposition(U, 0, "ZXZ", return_global_phase=True)
     >>> decompositions
-    [RZ(-1.8128916324243889, wires=[0]),
+    [RZ(10.753478981934784, wires=[0]),
      RX(1.1493817777940707, wires=[0]),
      RZ(3.3038544749132295, wires=[0]),
      GlobalPhase(1.1759220332464762, wires=[])]

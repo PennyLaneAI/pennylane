@@ -32,14 +32,14 @@ single_qubit_decompositions = [
     (S, typeof_gates_zyz, [np.pi / 4, 0.0, np.pi / 4]),
     (T, typeof_gates_zyz, [np.pi / 8, 0.0, np.pi / 8]),
     (H, typeof_gates_zyz, [np.pi, np.pi / 2, 0.0]),
-    (X, typeof_gates_zyz, [np.pi / 2, np.pi, -np.pi / 2]),
+    (X, typeof_gates_zyz, [np.pi / 2, np.pi, 7 * np.pi / 2]),
     (qml.RZ(0.3, wires=0).matrix(), typeof_gates_zyz, [0.15, 0.0, 0.15]),
     (
         qml.RZ(-0.5, wires=0).matrix(),
         typeof_gates_zyz,
-        [-0.25, 0.0, -0.25],
+        [4 * np.pi - 0.25, 0.0, 4 * np.pi - 0.25],
     ),
-    (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), typeof_gates_zyz, [0.2, 0.5, -0.3]),
+    (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), typeof_gates_zyz, [0.2, 0.5, 4 * np.pi - 0.3]),
     (
         np.array(
             [
@@ -48,12 +48,12 @@ single_qubit_decompositions = [
             ]
         ),
         typeof_gates_zyz,
-        [-0.18409714468526417, np.pi, 0.18409714468526417],
+        [12.382273469673908, np.pi, 0.18409714468526417],
     ),
     (
         np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix(),
         typeof_gates_zyz,
-        [-1.0, 2.0, -3.0],
+        [4 * np.pi - 1.0, 2.0, 4 * np.pi - 3.0],
     ),
 ]
 

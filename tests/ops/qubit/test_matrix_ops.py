@@ -267,7 +267,7 @@ class TestQubitUnitary:
             (
                 qml.matrix(qml.RZ(-0.5, wires=0)),
                 (qml.RZ, qml.RY, qml.RZ),
-                [-0.25, 0.0, -0.25],
+                [4 * np.pi - 0.25, 0.0, 4 * np.pi - 0.25],
             ),
             (
                 np.array(
@@ -277,19 +277,19 @@ class TestQubitUnitary:
                     ]
                 ),
                 (qml.RZ, qml.RY, qml.RZ),
-                [-0.18409714468526372, np.pi, 0.18409714468526372],
+                [12.382273469673908, np.pi, 0.18409714468526372],
             ),
             (H, (qml.RZ, qml.RY, qml.RZ), [np.pi, np.pi / 2, 0.0]),
-            (X, (qml.RZ, qml.RY, qml.RZ), [np.pi / 2, np.pi, -np.pi / 2]),
+            (X, (qml.RZ, qml.RY, qml.RZ), [np.pi / 2, np.pi, 7 * np.pi / 2]),
             (
                 qml.matrix(qml.Rot(0.2, 0.5, -0.3, wires=0)),
                 (qml.RZ, qml.RY, qml.RZ),
-                [0.2, 0.5, -0.3],
+                [0.2, 0.5, 4 * np.pi - 0.3],
             ),
             (
                 np.exp(1j * 0.02) * qml.matrix(qml.Rot(-1.0, 2.0, -3.0, wires=0)),
                 (qml.RZ, qml.RY, qml.RZ),
-                [-1.0, 2.0, -3.0],
+                [4 * np.pi - 1.0, 2.0, 4 * np.pi - 3.0],
             ),
             # An instance of a broadcast unitary
             (

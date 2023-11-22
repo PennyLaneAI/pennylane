@@ -697,7 +697,7 @@ class TestAdjointDiffTapeValidation:
         assert len(res.operations) == 7
         assert qml.equal(res[0], qml.RZ(np.pi / 2, 0))
         assert qml.equal(res[1], qml.RY(np.pi, 0))
-        assert qml.equal(res[2], qml.RZ(-np.pi / 2, 0))
+        assert qml.equal(res[2], qml.RZ(7 * np.pi / 2, 0))
         assert qml.equal(res[3], qml.CNOT([0, 1]))
         assert qml.equal(res[4], qml.RZ(0.1, 0))
         assert qml.equal(res[5], qml.RY(0.2, 0))
@@ -711,7 +711,7 @@ class TestAdjointDiffTapeValidation:
         assert len(res.operations) == 7
         assert qml.equal(res[0], qml.RZ(np.pi / 2, 0))
         assert qml.equal(res[1], qml.RY(np.pi, 0))
-        assert qml.equal(res[2], qml.RZ(-np.pi / 2, 0))
+        assert qml.equal(res[2], qml.RZ(7 * np.pi / 2, 0))
         assert qml.equal(res[3], qml.CNOT([0, 1]))
         assert qml.equal(res[4], qml.RZ(0.1, 0))
         assert qml.equal(res[5], qml.RY(0.2, 0))

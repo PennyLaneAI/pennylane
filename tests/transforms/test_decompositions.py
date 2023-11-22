@@ -89,11 +89,11 @@ test_cases_zyz = [
     (S, [np.pi / 4, 0.0, np.pi / 4, -np.pi / 4]),
     (T, [np.pi / 8, 0.0, np.pi / 8, -np.pi / 8]),
     (H, [np.pi, np.pi / 2, 0.0, -np.pi / 2]),
-    (X, [np.pi / 2, np.pi, -np.pi / 2, -np.pi / 2]),
+    (X, [np.pi / 2, np.pi, 7 * np.pi / 2, -np.pi / 2]),
     # Single rotations
     (qml.RZ(0.3, wires=0).matrix(), [0.15, 0.0, 0.15, 0]),
-    (qml.RZ(-0.5, wires=0).matrix(), [-0.25, 0.0, -0.25, 0]),
-    (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), [0.2, 0.5, -0.3, 0]),
+    (qml.RZ(-0.5, wires=0).matrix(), [4 * np.pi - 0.25, 0.0, 4 * np.pi - 0.25, 0]),
+    (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), [0.2, 0.5, 4 * np.pi - 0.3, 0]),
     # Other random unitaries
     (
         np.array(
@@ -102,11 +102,11 @@ test_cases_zyz = [
                 [9.831019270939975e-01 + 0.1830590094588862j, 0],
             ]
         ),
-        [-0.18409714468526372, np.pi, 0.18409714468526372, 0],
+        [12.382273469673908, np.pi, 0.18409714468526372, 0],
     ),
     (
         np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix(),
-        [-1.0, 2.0, -3.0, -0.02],
+        [4 * np.pi - 1.0, 2.0, 4 * np.pi - 3.0, -0.02],
     ),
     # Broadcasted unitaries, one coming from RZ and another from Rot
     (
@@ -179,23 +179,23 @@ test_cases_xyx = [
                 [0.53396245 - 0.10177564j, 0.76279558 - 0.35024096j],
             ]
         ),
-        [-1.721019247953464, 1.3974974118006183, 0.45246583660683803, 1.1759220332464762],
+        [10.845351366405708, 1.3974974118006183, 0.45246583660683803, 1.1759220332464762],
     ),
     # Try a few specific special unitaries
     (I, [0, 0, 0, 0]),  # This triggers the if-conditional trivially
-    (X, [np.pi * 3 / 2, 0.0, -np.pi / 2, -np.pi / 2]),
+    (X, [np.pi * 3 / 2, 0.0, 7 * np.pi / 2, -np.pi / 2]),
     (Y, [np.pi / 2, np.pi, np.pi / 2, -np.pi / 2]),
-    (Z, [-np.pi / 2, np.pi, np.pi / 2, -np.pi / 2]),
+    (Z, [7 * np.pi / 2, np.pi, np.pi / 2, -np.pi / 2]),
     # Add two instances of broadcasted unitaries, one coming from RZ and another from Rot
     (
         qml.QubitUnitary(qml.RZ.compute_matrix(np.array([np.pi, np.pi / 2])), wires=0).matrix(),
-        [[-np.pi / 2, -np.pi / 2], [np.pi, np.pi / 2], [np.pi / 2, np.pi / 2], [0, 0]],
+        [[7 * np.pi / 2, 7 * np.pi / 2], [np.pi, np.pi / 2], [np.pi / 2, np.pi / 2], [0, 0]],
     ),
     (
         # This triggers the if-conditional non-trivially
         qml.Rot(np.array([1.2, 1.5]), np.array([1.2, 1.5]), np.array([1.2, 1.5]), wires=0).matrix(),
         [
-            [-0.93760008, -0.81954528],
+            [11.62877054, 11.74682533],
             [2.53416365, 3.03803113],
             [0.93760008, 0.81954528],
             [0, 0],
@@ -262,11 +262,11 @@ test_cases_xzx = [
                 [0.53396245 - 0.10177564j, 0.76279558 - 0.35024096j],
             ]
         ),
-        [-0.15022292069414078, 1.3974974090935608, -1.118330495160107, 1.1759220332464762],
+        [12.416147693665032, 1.3974974090935608, 11.448040119199066, 1.1759220332464762],
     ),
     (I, [0, 0, 0, 0]),
     (X, [np.pi / 2, 0, np.pi / 2, -np.pi / 2]),
-    (Y, [np.pi / 2, np.pi, -np.pi / 2, -np.pi / 2]),
+    (Y, [np.pi / 2, np.pi, 7 * np.pi / 2, -np.pi / 2]),
     (Z, [0, np.pi, 0, -np.pi / 2]),
     (H, [np.pi / 2, np.pi / 2, np.pi / 2, -np.pi / 2]),
     (
@@ -278,7 +278,7 @@ test_cases_xzx = [
         [
             [0.63319625, 0.75125105],
             [2.53416365, 3.03803113],
-            [-0.63319625, -0.75125105],
+            [11.93317436, 11.81511957],
             [0, 0],
         ],
     ),
@@ -341,10 +341,10 @@ test_cases_zxz = [
     (S, [np.pi / 4, 0.0, np.pi / 4, -np.pi / 4]),
     (T, [np.pi / 8, 0.0, np.pi / 8, -np.pi / 8]),
     (H, [np.pi / 2, np.pi / 2, np.pi / 2, -np.log(1j) / 1j]),
-    (X, [0, np.pi, 0, -np.log(1j) / 1j]),
+    (X, [0, np.pi, 4 * np.pi, -np.log(1j) / 1j]),
     (qml.RZ(0.3, wires=0).matrix(), [0.15, 0.0, 0.15, 0]),
-    (qml.RZ(-0.5, wires=0).matrix(), [-0.25, 0.0, -0.25, 0]),
-    (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), [-1.3707963267948973, 0.5, 1.2707963267948965, 0]),
+    (qml.RZ(-0.5, wires=0).matrix(), [4 * np.pi - 0.25, 0.0, 4 * np.pi - 0.25, 0]),
+    (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), [11.195574287564275, 0.5, 1.2707963267948965, 0]),
     (
         np.array(
             [
@@ -352,14 +352,14 @@ test_cases_zxz = [
                 [9.831019270939975e-01 + 0.1830590094588862j, 0],
             ]
         ),
-        [-1.7548934714801607, np.pi, 1.7548934714801607, 0],
+        [10.811477142879012, np.pi, 1.7548934714801607, 0],
     ),
     (
         np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix(),
         [
-            -2.5707963267948966,
+            9.995574287564276,
             2.0,
-            -1.4292036732051034,
+            11.137166941154069,
             -np.log(0.9998000066665778 + 0.019998666693333122j) / 1j,
         ],
     ),
@@ -371,7 +371,7 @@ test_cases_zxz = [
     (
         qml.Rot(np.array([1.2, 2.3]), np.array([1.2, 2.3]), np.array([1.2, 2.3]), wires=0).matrix(),
         [
-            [-0.37079633, 0.72920367],
+            [12.19557429, 0.72920367],
             [1.2, 2.3],
             [2.77079633, 3.87079633],
             [0, 0],
@@ -436,12 +436,12 @@ test_cases_rot = [
     (S, [qml.RZ, qml.GlobalPhase], [np.pi / 2, -np.pi / 4]),
     (T, [qml.RZ, qml.GlobalPhase], [np.pi / 4, -np.pi / 8]),
     (qml.RZ(0.3, wires=0).matrix(), [qml.RZ, qml.GlobalPhase], [0.3, 0.0]),
-    (qml.RZ(-0.5, wires=0).matrix(), [qml.RZ, qml.GlobalPhase], [-0.5, 0.0]),
+    (qml.RZ(-0.5, wires=0).matrix(), [qml.RZ, qml.GlobalPhase], [4 * np.pi - 0.5, 0.0]),
     # # This will be decomposed to Rot
     (
         qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(),
         [qml.Rot, qml.GlobalPhase],
-        [[0.2, 0.5, -0.3], 0.0],
+        [[0.2, 0.5, 4 * np.pi - 0.3], 0.0],
     ),
 ]
 

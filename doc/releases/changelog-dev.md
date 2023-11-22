@@ -90,7 +90,7 @@
 * `GlobalPhase` now decomposes to nothing, in case devices do not support global phases.
   [(#4855)](https://github.com/PennyLaneAI/pennylane/pull/4855)
 
-* All single qubit unitary decompositions now return rotation angles normalized to the range `[-2*pi, 2*pi]` for consistency.
+* The `rot` decomposition will normalize its rotation angles to the range `[0, 4pi]` for consistency.
   [(#4869)](https://github.com/PennyLaneAI/pennylane/pull/4869)
 
 <h3>Breaking changes 💔</h3>
