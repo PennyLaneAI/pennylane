@@ -776,7 +776,7 @@ class TestIntegration:
 
 @pytest.mark.jax
 def test_map_wires():
-    """Test that map wires returns a new ParameterizedEvolution, with wires updated on
+    """Test that map wires returns a new ParametrizedEvolution, with wires updated on
     both the operator and the corresponding Hamiltonian"""
 
     def f1(p, t):
