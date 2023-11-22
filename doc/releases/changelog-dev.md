@@ -45,6 +45,8 @@
 
 <h3>Improvements 🛠</h3>
 
+<h4>New contributors 🥳</h4>
+
 <h4>Better support for batching</h4>
 
 * `default.qubit` now can evolve already batched states with `ParametrizedEvolution`
@@ -53,14 +55,15 @@
 * `AmplitudeEmbedding` now also supports batching when used with Tensorflow.
   [(#4818)](https://github.com/PennyLaneAI/pennylane/pull/4818)
 
-
+* `qml.ArbitraryUnitary` now supports batching.
+  [(#4745)](https://github.com/PennyLaneAI/pennylane/pull/4745)
 
 
 
 
 
 * Approximate Quantum Fourier Transform (AQFT) is now available from `qml.AQFT`.
-  [(#4656)](https://github.com/PennyLaneAI/pennylane/pull/4656)
+  [(#4715)](https://github.com/PennyLaneAI/pennylane/pull/4715)
 
 * XZX decomposition is added to the list of supported single-qubit unitary decompositions.
   [(#4862)](https://github.com/PennyLaneAI/pennylane/pull/4862)
@@ -82,9 +85,6 @@
 
 * Added `__iadd__` method to PauliSentence, which enables inplace-addition using `+=`, we no longer need to perform a copy, leading to performance improvements.
   [(#4662)](https://github.com/PennyLaneAI/pennylane/pull/4662) 
-
-* `qml.ArbitraryUnitary` now supports batching.
-  [(#4745)](https://github.com/PennyLaneAI/pennylane/pull/4745)
 
 * `qml.draw` and `qml.draw_mpl` now render operator ids.
   [(#4749)](https://github.com/PennyLaneAI/pennylane/pull/4749)
