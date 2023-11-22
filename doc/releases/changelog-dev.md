@@ -45,7 +45,19 @@
 
 <h3>Improvements 🛠</h3>
 
-<h4>New contributors 🥳</h4>
+<h4>Community contributions 🥳</h4>
+
+* Approximate Quantum Fourier Transform (AQFT) is now available from `qml.AQFT`.
+  [(#4715)](https://github.com/PennyLaneAI/pennylane/pull/4715)
+
+* `qml.draw` and `qml.draw_mpl` now render operator ids.
+  [(#4749)](https://github.com/PennyLaneAI/pennylane/pull/4749)
+
+* XZX decomposition is added to the list of supported single-qubit unitary decompositions.
+  [(#4862)](https://github.com/PennyLaneAI/pennylane/pull/4862)
+
+* The function ``qml.equal`` now supports ``ControlledSequence`` operators.
+  [(#4829)](https://github.com/PennyLaneAI/pennylane/pull/4829)
 
 <h4>Better support for batching</h4>
 
@@ -58,15 +70,7 @@
 * `qml.ArbitraryUnitary` now supports batching.
   [(#4745)](https://github.com/PennyLaneAI/pennylane/pull/4745)
 
-
-
-
-
-* Approximate Quantum Fourier Transform (AQFT) is now available from `qml.AQFT`.
-  [(#4715)](https://github.com/PennyLaneAI/pennylane/pull/4715)
-
-* XZX decomposition is added to the list of supported single-qubit unitary decompositions.
-  [(#4862)](https://github.com/PennyLaneAI/pennylane/pull/4862)
+<h4>Performance improvements and benchmarking</h4>
 
 * `default.qubit` no longer uses a dense matrix for `MultiControlledX` for more than 8 operation wires.
   [(#4673)](https://github.com/PennyLaneAI/pennylane/pull/4673)
@@ -80,27 +84,23 @@
 * Updates to some relevant Pytests to enable its use as a suite of benchmarks.
   [(#4703)](https://github.com/PennyLaneAI/pennylane/pull/4703)
 
-* The function ``qml.equal`` now supports ``ControlledSequence`` operators.
-  [(#4829)](https://github.com/PennyLaneAI/pennylane/pull/4829)
-
 * Added `__iadd__` method to PauliSentence, which enables inplace-addition using `+=`, we no longer need to perform a copy, leading to performance improvements.
   [(#4662)](https://github.com/PennyLaneAI/pennylane/pull/4662) 
 
-* `qml.draw` and `qml.draw_mpl` now render operator ids.
-  [(#4749)](https://github.com/PennyLaneAI/pennylane/pull/4749)
+<h4>Other improvements</h4>
+
+* Added `ops.functions.assert_valid` for checking if an `Operator` class is defined correctly.
+  [(#4764)](https://github.com/PennyLaneAI/pennylane/pull/4764)
+
+* `GlobalPhase` now decomposes to nothing, in case devices do not support global phases.
+  [(#4855)](https://github.com/PennyLaneAI/pennylane/pull/4855)
 
 * `has_matrix` will now automatically be `True` if `Operator.matrix` is overridden, even if
   `Operator.compute_matrix` is not.
   [(#4844)](https://github.com/PennyLaneAI/pennylane/pull/4844)
 
-* Added `ops.functions.assert_valid` for checking if an `Operator` class is defined correctly.
-  [(#4764)](https://github.com/PennyLaneAI/pennylane/pull/4764)
-
 * Simplified the logic for re-arranging states before returning.
   [(#4817)](https://github.com/PennyLaneAI/pennylane/pull/4817)
-
-* `GlobalPhase` now decomposes to nothing, in case devices do not support global phases.
-  [(#4855)](https://github.com/PennyLaneAI/pennylane/pull/4855)
 
 <h3>Breaking changes 💔</h3>
 
