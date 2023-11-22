@@ -7,6 +7,9 @@
 * Approximate Quantum Fourier Transform (AQFT) is now available from `qml.AQFT`.
   [(#4656)](https://github.com/PennyLaneAI/pennylane/pull/4656)
 
+* XZX decomposition is added to the list of supported single-qubit unitary decompositions.
+  [(#4862)](https://github.com/PennyLaneAI/pennylane/pull/4862)
+
 * Iterative Quantum Phase Estimation is now available from `qml.iterative_qpe`.
   [(#4804)](https://github.com/PennyLaneAI/pennylane/pull/4804)
 
@@ -85,6 +88,9 @@
 
 * Simplified the logic for re-arranging states before returning.
   [(#4817)](https://github.com/PennyLaneAI/pennylane/pull/4817)
+
+* `default.qubit` now calculates the expectation value of Hermitians in a differentiable manner.
+  [(#4866)](https://github.com/PennyLaneAI/pennylane/pull/4866)
 
 * `GlobalPhase` now decomposes to nothing, in case devices do not support global phases.
   [(#4855)](https://github.com/PennyLaneAI/pennylane/pull/4855)
@@ -203,6 +209,7 @@
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
+Astral Cai,
 Amintor Dusko,
 Lillian Frederiksen,
 Emiliano Godinez Ramirez,
