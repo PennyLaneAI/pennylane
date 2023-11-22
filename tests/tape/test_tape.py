@@ -89,7 +89,7 @@ class TestConstruction:
         assert tape.batch_size is None
         assert tape.interface is None
 
-        assert tape.wires == qml.wires.Wires([0, "a", 4])
+        assert tape.wires == qml.wires.Wires([0, 4, "a"])
         assert tape._output_dim == len(obs[0].wires) + 2 ** len(obs[1].wires)
         assert tape._batch_size is None
 
