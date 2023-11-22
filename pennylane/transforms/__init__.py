@@ -177,18 +177,6 @@ that compute the desired quantity.
     ~draw
     ~draw_mpl
 
-
-Transforms that act on quantum functions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-These transforms accept quantum functions (Python functions
-containing quantum operations) that are used to construct QNodes.
-
-.. autosummary::
-    :toctree: api
-
-    ~transforms.cond
-
 Decorators and utility functions
 --------------------------------
 
@@ -247,7 +235,6 @@ from .batch_params import batch_params
 from .batch_input import batch_input
 from .batch_partial import batch_partial
 from .classical_jacobian import classical_jacobian
-from .condition import cond, Conditional
 from .convert_to_numpy_parameters import convert_to_numpy_parameters
 from .compile import compile
 from .decompositions import (
