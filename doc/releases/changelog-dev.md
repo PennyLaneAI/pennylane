@@ -84,6 +84,9 @@
 * `GlobalPhase` now decomposes to nothing, in case devices do not support global phases.
   [(#4855)](https://github.com/PennyLaneAI/pennylane/pull/4855)
 
+* All single qubit unitary decompositions now return rotation angles normalized to the range `[-2*pi, 2*pi]` for consistency.
+  [(#4869)](https://github.com/PennyLaneAI/pennylane/pull/4869)
+
 <h3>Breaking changes 💔</h3>
 
 * Moved `qml.cond` and the `Conditional` operation from the `transforms` folder to the `ops/op_math` folder.
