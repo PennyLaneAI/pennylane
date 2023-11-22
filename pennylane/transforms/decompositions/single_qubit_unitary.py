@@ -26,80 +26,41 @@ def _convert_to_su2(U, return_global_phase=False):
 
     Args:
         U (array[complex]): A matrix with a batch dimension, presumed to be
-        of shape :math:`n \times 2 \times 2` and unitary for any positive integer n.
-        return_global_phase (bool): If `True`, the return will include
-        the global phase. If `False`, only the :math:`SU(2)` representative
-        is returned.
+            of shape :math:`n \times 2 \times 2` and unitary for any positive integer n.
+        return_global_phase (bool): If `True`, the return will include the global phase.
+            If `False`, only the :math:`SU(2)` representation is returned.
 
     Returns:
         array[complex]: A :math:`n \times 2 \times 2` matrix in :math:`SU(2)` that is
-        equivalent to U up to a global phase. If ``return_global_phase=True``,
-        a 2-element tuple is returned, with the first element being the
-        :math:`SU(2)` equivalent and the second, the global phase.
+            equivalent to U up to a global phase. If ``return_global_phase=True``, a
+            2-element tuple is returned, with the first element being the :math:`SU(2)`
+            equivalent and the second, the global phase.
     """
+
     # Compute the determinants
     U = qml.math.cast(U, "complex128")
-    dets = math.linalg.det(U)
-    exp_angles = math.angle(dets) / 2
-    U_SU2 = math.cast_like(U, dets) * math.exp(-1j * math.cast_like(exp_angles, 1j))[:, None, None]
+    determinants = math.linalg.det(U)
+    phase = math.angle(determinants) / 2
+    U = math.cast_like(U, determinants) * math.exp(-1j * math.cast_like(phase, 1j))[:, None, None]
 
-    return (U_SU2, exp_angles) if return_global_phase else U_SU2
+    return (U, phase) if return_global_phase else U
 
 
-def _rot_decomposition(U, wire):
-    r"""Recover the decomposition of a single-qubit matrix :math:`U` in terms of
-    elementary operations.
-
-    Diagonal operations can be converted to a single :class:`.RZ` gate, while non-diagonal
-    operations will be converted to a :class:`.Rot` gate that implements the original operation
-    up to a global phase in the form :math:`RZ(\omega) RY(\theta) RZ(\phi)`.
-
-    .. warning::
-
-        When used with ``jax.jit``, all unitaries will be converted to :class:`.Rot` gates,
-        including those that are diagonal.
+def _zyz_get_rotation_angles(U):
+    r"""Computes the rotation angles :math:`\phi`, :math:`\theta`, :math:`\omega`
+    for a unitary :math:`U` that is :math:`SU(2)`
 
     Args:
-        U (tensor): A 2 x 2 unitary matrix.
-        wire (Union[Wires, Sequence[int] or int]): The wire on which to apply the operation.
+        U (array[complex]): A matrix that is :math:`SU(2)`
 
     Returns:
-        list[qml.Operation]: A ``Rot`` gate on the specified wire that implements ``U``
-        up to a global phase, or an equivalent ``RZ`` gate if ``U`` is diagonal.
+        tuple[array[float]]: A tuple containing the rotation angles
+            :math:`\phi`, :math:`\theta`, :math:`\omega`
 
-    **Example**
-
-    Suppose we would like to apply the following unitary operation:
-
-    .. code-block:: python3
-
-        U = np.array([
-            [-0.28829348-0.78829734j,  0.30364367+0.45085995j],
-            [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]
-        ])
-
-    For PennyLane devices that cannot natively implement ``QubitUnitary``, we
-    can instead recover a ``Rot`` gate that implements the same operation, up
-    to a global phase:
-
-    >>> decomp = _rot_decomposition(U, 0)
-    >>> decomp
-    [Rot(-0.24209529417800013, 1.14938178234275, 1.7330581433950871, wires=[0])]
     """
 
-    # Cast to batched format for more consistent code
-    U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
-
-    U = _convert_to_su2(U)
-
-    # If U is only one unitary and its value is not abstract, we can include a conditional
-    # statement that will check if the off-diagonal elements are 0; if so, just use one RZ
-    if len(U) == 1 and not math.is_abstract(U[0]):
-        if math.allclose(U[0, 0, 1], 0.0):
-            return [qml.RZ(2 * math.angle(U[0, 1, 1]), wires=wire)]
-
     # For batched U or single U with non-zero off-diagonal, compute the
-    # Rot operator decomposition instead
+    # normal decomposition instead
     off_diagonal_elements = math.clip(math.abs(U[:, 0, 1]), 0, 1)
     thetas = 2 * math.arcsin(off_diagonal_elements)
 
@@ -121,7 +82,74 @@ def _rot_decomposition(U, wire):
 
     phis, thetas, omegas = map(math.squeeze, [phis, thetas, omegas])
 
-    return [qml.Rot(phis, thetas, omegas, wires=wire)]
+    return phis, thetas, omegas
+
+
+def _rot_decomposition(U, wire, return_global_phase=False):
+    r"""Compute the decomposition of a single-qubit matrix :math:`U` in terms of
+    elementary operations, as a single :class:`.RZ` gate or a :class:`.Rot` gate.
+
+    Diagonal operations can be converted to a single :class:`.RZ` gate, while non-diagonal
+    operations will be converted to a :class:`.Rot` gate that implements the original operation
+    up to a global phase in the form :math:`RZ(\omega) RY(\theta) RZ(\phi)`.
+
+    .. warning::
+
+        When used with ``jax.jit``, all unitaries will be converted to :class:`.Rot` gates,
+        including those that are diagonal.
+
+    Args:
+        U (tensor): A 2 x 2 unitary matrix.
+        wire (Union[Wires, Sequence[int] or int]): The wire on which to apply the operation.
+        return_global_phase (bool): Whether to return the global phase ``qml.GlobalPhase(-alpha)``
+            as the last element of the returned list of operations.
+
+    Returns:
+        list[qml.Operation]: A ``Rot`` gate on the specified wire that implements ``U``
+            up to a global phase, or an equivalent ``RZ`` gate if ``U`` is diagonal. If
+            `return_global_phase=True`, the global phase is included as the last element.
+
+    **Example**
+
+    Suppose we would like to apply the following unitary operation:
+
+    >>> U = np.array([
+    ...     [-0.28829348-0.78829734j, 0.30364367+0.45085995j],
+    ...     [ 0.53396245-0.10177564j, 0.76279558-0.35024096j]
+    ... ])
+
+    For PennyLane devices that cannot natively implement ``QubitUnitary``, we
+    can instead recover a ``Rot`` gate that implements the same operation, up
+    to a global phase:
+
+    >>> ops = _rot_decomposition(U, 0)
+    >>> ops
+    [Rot(-0.24209530281458358, 1.1493817771511354, 1.733058145303424, wires=[0])]
+    """
+
+    # Cast to batched format for more consistent code
+    U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
+
+    # Convert to SU(2) format and extract global phase
+    U_det1, alphas = _convert_to_su2(U, return_global_phase=True)
+
+    # If U is only one unitary and its value is not abstract, we can include a conditional
+    # statement that will check if the off-diagonal elements are 0; if so, just use one RZ
+    if len(U_det1) == 1 and not math.is_abstract(U_det1[0]):
+        if math.allclose(U_det1[0, 0, 1], 0.0):
+            operations = [qml.RZ(2 * math.angle(U_det1[0, 1, 1]), wires=wire)]
+            if return_global_phase:
+                operations.append(qml.GlobalPhase(-alphas))
+            return operations
+
+    # Compute the zyz rotation angles
+    phis, thetas, omegas = _zyz_get_rotation_angles(U_det1)
+
+    operations = [qml.Rot(phis, thetas, omegas, wires=wire)]
+    if return_global_phase:
+        alphas = math.squeeze(alphas)
+        operations.append(qml.GlobalPhase(-alphas))
+    return operations
 
 
 def _zyz_decomposition(U, wire, return_global_phase=False):
@@ -141,57 +169,43 @@ def _zyz_decomposition(U, wire, return_global_phase=False):
             as the last element of the returned list of operations.
 
     Returns:
-        list[Operation]: Returns a list of gates, an ``RZ``, an ``RY`` and
-        another ``RZ`` gate, which when applied in the order of appearance in the list is
-        equivalent to the unitary :math:`U` up to a global phase. If `return_global_phase=True`,
-        the global phase is returned as the last element of the list.
+        list[Operation]: Returns a list of gates, an ``RZ``, an ``RY`` and another ``RZ`` gate,
+            which when applied in the order of appearance in the list is equivalent to the
+            unitary :math:`U` up to a global phase. If `return_global_phase=True`, the global
+            phase is returned as the last element of the list.
 
     **Example**
 
-    >>> U = np.array([[-0.28829348-0.78829734j,  0.30364367+0.45085995j],
-    ...               [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]])
-    >>> decomp = _zyz_decomposition(U, 0, return_global_phase=True)
-    >>> decomp
+    >>> U = np.array([
+    ...     [-0.28829348-0.78829734j, 0.30364367+0.45085995j],
+    ...     [ 0.53396245-0.10177564j, 0.76279558-0.35024096j]
+    ... ])
+    >>> ops = _zyz_decomposition(U, 0, return_global_phase=True)
+    >>> ops
     [RZ(12.32427531154459, wires=[0]),
      RY(1.1493817771511352, wires=[0]),
      RZ(1.733058145303424, wires=[0]),
-     GlobalPhase((1.1759220332464762-0j), wires=[0])]
+     GlobalPhase(1.1759220332464762-0j, wires=[])]
+
     """
 
     # Cast to batched format for more consistent code
     U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
 
+    # Convert to SU(2) format and extract global phase
     U_det1, alphas = _convert_to_su2(U, return_global_phase=True)
 
-    # For batched U or single U with non-zero off-diagonal, compute the
-    # normal decomposition instead
-    off_diagonal_elements = math.clip(math.abs(U_det1[:, 0, 1]), 0, 1)
-    thetas = 2 * math.arcsin(off_diagonal_elements)
+    # Compute the zyz rotation angles
+    phis, thetas, omegas = _zyz_get_rotation_angles(U_det1)
 
-    # Compute phi and omega from the angles of the top row; use atan2 to keep
-    # the angle within -np.pi and np.pi, and add very small value to the real
-    # part to avoid division by zero.
-    epsilon = 1e-64
-    angles_U00 = math.arctan2(
-        math.imag(U_det1[:, 0, 0]),
-        math.real(U_det1[:, 0, 0]) + epsilon,
-    )
-    angles_U10 = math.arctan2(
-        math.imag(U_det1[:, 1, 0]),
-        math.real(U_det1[:, 1, 0]) + epsilon,
-    )
-
-    phis = -angles_U10 - angles_U00
-    omegas = angles_U10 - angles_U00
-
-    phis, thetas, omegas, alphas = map(math.squeeze, [phis, thetas, omegas, alphas])
-
+    # Convert to positive angles
     phis = phis % (4 * np.pi)
     thetas = thetas % (4 * np.pi)
     omegas = omegas % (4 * np.pi)
 
     operations = [qml.RZ(phis, wire), qml.RY(thetas, wire), qml.RZ(omegas, wire)]
     if return_global_phase:
+        alphas = math.squeeze(alphas)
         operations.append(qml.GlobalPhase(-alphas))
 
     return operations
@@ -209,21 +223,23 @@ def _xyx_decomposition(U, wire, return_global_phase=False):
             as the last element of the returned list of operations.
 
     Returns:
-        list[Operation]: Returns a list of of gates, an ``RX``, an ``RY`` and
-        another ``RX`` gate, which when applied in the order of appearance in the list is equivalent
-        to the unitary :math:`U` up to global phase. If `return_global_phase=True`,
-        the global phase is returned as the last element of the list.
+        list[Operation]: Returns a list of gates, an ``RX``, an ``RY`` and another ``RX`` gate,
+            which when applied in the order of appearance in the list is equivalent to the unitary
+            :math:`U` up to global phase. If `return_global_phase=True`, the global phase is returned
+            as the last element of the list.
 
     **Example**
 
-    >>> U = np.array([[-0.28829348-0.78829734j,  0.30364367+0.45085995j],
-    ...               [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]])
-    >>> decomp = _xyx_decomposition(U, 0, return_global_phase=True)
-    >>> decomp
+    >>> U = np.array([
+    ...     [-0.28829348-0.78829734j, 0.30364367+0.45085995j],
+    ...     [ 0.53396245-0.10177564j, 0.76279558-0.35024096j]
+    ... ])
+    >>> ops = _xyx_decomposition(U, 0, return_global_phase=True)
+    >>> ops
     [RX(10.845351366405708, wires=[0]),
      RY(1.3974974118006174, wires=[0]),
      RX(0.45246583660683803, wires=[0]),
-     GlobalPhase((1.1759220332464762-0j), wires=[0])]
+     GlobalPhase(1.1759220332464762-0j, wires=[])]
     """
 
     # Small number to add to denominators to avoid division by zero
@@ -280,16 +296,16 @@ def _xzx_decomposition(U, wire, return_global_phase=False):
 
     **Example**
 
-    >>> U = np.array(
-    ...     [[-0.28829348-0.78829734j,  0.30364367+0.45085995j],
-    ...      [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]]
-    ... )
+    >>> U = np.array([
+    ...     [-0.28829348-0.78829734j, 0.30364367+0.45085995j],
+    ...     [ 0.53396245-0.10177564j, 0.76279558-0.35024096j]
+    ... ])
     >>> decompositions = _xzx_decomposition(U, 0, return_global_phase=True)
     >>> decompositions
     [RX(12.416147693665032, wires=[0]),
      RZ(1.3974974090935608, wires=[0]),
      RX(11.448040119199066, wires=[0]),
-     GlobalPhase((1.1759220332464762-0j), wires=[0])]
+     GlobalPhase((1.1759220332464762-0j), wires=[])]
 
     """
 
@@ -298,7 +314,7 @@ def _xzx_decomposition(U, wire, return_global_phase=False):
 
     # Choose gamma such that exp(-i*gamma)*U is special unitary (detU==1).
     U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
-    U_det1, gammas = _convert_to_su2(U, return_global_phase=return_global_phase)
+    U_det1, gammas = _convert_to_su2(U, return_global_phase=True)
 
     # Compute \phi, \theta and \lambda after analytically solving for them from
     # U_det1 = RX(\phi) RZ(\theta) RX(\lambda)
@@ -350,14 +366,17 @@ def _zxz_decomposition(U, wire, return_global_phase=False):
 
     **Example**
 
-    >>> U = np.array([[-0.28829348-0.78829734j,  0.30364367+0.45085995j],
-    ...               [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]])
-    >>> decomp = _zxz_decomposition(U, 0, return_global_phase=True)
-    >>> decomp
-        [RZ(10.753478981934784, wires=[0]),
-         RX(1.1493817777940705, wires=[0]),
-         RZ(3.3038544749132295, wires=[0]),
-         GlobalPhase((1.1759220332464762-0j), wires=[0])]
+    >>> U = np.array([
+    ...     [-0.28829348-0.78829734j, 0.30364367+0.45085995j],
+    ...     [ 0.53396245-0.10177564j, 0.76279558-0.35024096j]
+    ... ])
+    >>> ops = _zxz_decomposition(U, 0, return_global_phase=True)
+    >>> ops
+    [RZ(10.753478981934784, wires=[0]),
+     RX(1.1493817777940705, wires=[0]),
+     RZ(3.3038544749132295, wires=[0]),
+     GlobalPhase((1.1759220332464762-0j), wires=[])]
+
     """
 
     # Small number to add to denominators to avoid division by zero
@@ -405,7 +424,7 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
     Any one qubit unitary operation can be implemented up to a global phase by composing RX, RY,
     and RZ gates.
 
-    Currently supported values for ``rotations`` are "ZYZ", "XYX", "XZX", and "ZXZ".
+    Currently supported values for ``rotations`` are "rot", "ZYZ", "XYX", "XZX", and "ZXZ".
 
     Args:
         U (tensor): A :math:`2 \times 2` unitary matrix.
@@ -416,20 +435,23 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
 
     Returns:
         list[Operation]: Returns a list of gates which when applied in the order of appearance in
-        the list is equivalent to the unitary :math:`U` up to a global phase. If ``return_global_phase=True``,
-        the global phase is returned as the last element of the list.
+            the list is equivalent to the unitary :math:`U` up to a global phase. If
+            ``return_global_phase=True``, the global phase is returned as the last element of the list.
 
     **Example**
 
-    >>> U = np.array([[-0.28829348-0.78829734j,  0.30364367+0.45085995j],
-    ...               [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]])
-    >>> decomp = one_qubit_decomposition(U, 0, "ZXZ", return_global_phase=True)
-    >>> decomp
-        [RZ(10.753478981934784, wires=[0]),
-         RX(1.1493817777940705, wires=[0]),
-         RZ(3.3038544749132295, wires=[0]),
-        (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
+    >>> U = np.array([
+    ...     [-0.28829348-0.78829734j, 0.30364367+0.45085995j],
+    ...     [ 0.53396245-0.10177564j, 0.76279558-0.35024096j]
+    ... ])
+    >>> ops = one_qubit_decomposition(U, 0, "ZXZ", return_global_phase=True)
+    >>> ops
+    [RZ(10.753478981934784, wires=[0]),
+     RX(1.1493817777940705, wires=[0]),
+     RZ(3.3038544749132295, wires=[0]),
+     GlobalPhase(1.1759220332464762, wires=[])]
     """
+
     supported_rotations = {
         "rot": _rot_decomposition,
         "ZYZ": _zyz_decomposition,
@@ -439,8 +461,6 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
     }
 
     if rotations in supported_rotations:
-        if rotations == "rot":
-            return supported_rotations[rotations](U, wire)
         return supported_rotations[rotations](U, wire, return_global_phase)
 
     raise ValueError(
