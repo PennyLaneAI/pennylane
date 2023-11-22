@@ -157,8 +157,19 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Jax can now differeniate a batch of circuits where one tape does not have trainable parameters.
+* JAX JIT now works with shot vectors.
+  [(#4772)](https://github.com/PennyLaneAI/pennylane/pull/4772/)
+
+* JAX can now differentiate a batch of circuits where one tape does not have trainable parameters.
   [(#4837)](https://github.com/PennyLaneAI/pennylane/pull/4837)
+
+* The `tape.to_openqasm` method no longer mistakenly includes interface information in the parameter 
+  string when converting tapes using non-numpy interfaces.
+  [(#4849)](https://github.com/PennyLaneAI/pennylane/pull/4849)
+
+* `qml.defer_measurements` now correctly transforms circuits when terminal measurements include wires
+  used in mid-circuit measurements.
+  [(#4787)](https://github.com/PennyLaneAI/pennylane/pull/4787)
 
 * Fixes a bug where the adjoint method differentiation would fail if
   an operation with `grad_method=None` that has a parameter is present.
@@ -173,20 +184,9 @@
 * Gradient transforms now work with overridden shot vectors and default qubit.
   [(#4795)](https://github.com/PennyLaneAI/pennylane/pull/4795)
 
-* `qml.defer_measurements` now correctly transforms circuits when terminal measurements include wires
-  used in mid-circuit measurements.
-  [(#4787)](https://github.com/PennyLaneAI/pennylane/pull/4787)
-
-* Jax jit now works with shot vectors.
-  [(#4772)](https://github.com/PennyLaneAI/pennylane/pull/4772/)
-
 * Any `ScalarSymbolicOp`, like `Evolution`, now states that it has a matrix if the target
   is a `Hamiltonian`.
   [(#4768)](https://github.com/PennyLaneAI/pennylane/pull/4768)
-
-* The `tape.to_openqasm` method no longer mistakenly includes interface information in the parameter 
-  string when converting tapes using non-numpy interfaces.
-  [(#4849)](https://github.com/PennyLaneAI/pennylane/pull/4849)
 
 * In `default.qubit`, initial states are now initialized with the simulator's wire order, not the circuit's
   wire order.
@@ -208,12 +208,12 @@
   integer power.
   [(#4827)](https://github.com/PennyLaneAI/pennylane/pull/4827)
 
-
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
+Thomas Bromley,
 Astral Cai,
 Amintor Dusko,
 Lillian Frederiksen,
