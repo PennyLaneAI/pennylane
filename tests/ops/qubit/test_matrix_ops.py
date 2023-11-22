@@ -33,6 +33,7 @@ class TestQubitUnitary:
 
     def test_qubit_unitary_noninteger_pow(self):
         """Test QubitUnitary raised to a non-integer power raises an error."""
+
         U = np.array(
             [[0.98877108 + 0.0j, 0.0 - 0.14943813j], [0.0 - 0.14943813j, 0.98877108 + 0.0j]]
         )
@@ -45,6 +46,7 @@ class TestQubitUnitary:
 
     def test_qubit_unitary_noninteger_pow_broadcasted(self):
         """Test broadcasted QubitUnitary raised to a non-integer power raises an error."""
+
         U = np.array(
             [
                 [[0.98877108 + 0.0j, 0.0 - 0.14943813j], [0.0 - 0.14943813j, 0.98877108 + 0.0j]],
@@ -60,6 +62,7 @@ class TestQubitUnitary:
     @pytest.mark.parametrize("n", (1, 3, -1, -3))
     def test_qubit_unitary_pow(self, n):
         """Test qubit unitary raised to an integer power."""
+
         U = np.array(
             [[0.98877108 + 0.0j, 0.0 - 0.14943813j], [0.0 - 0.14943813j, 0.98877108 + 0.0j]]
         )
@@ -78,6 +81,7 @@ class TestQubitUnitary:
     @pytest.mark.parametrize("n", (1, 3, -1, -3))
     def test_qubit_unitary_pow_broadcasted(self, n):
         """Test broadcasted qubit unitary raised to an integer power."""
+
         U = np.array(
             [
                 [[0.98877108 + 0.0j, 0.0 - 0.14943813j], [0.0 - 0.14943813j, 0.98877108 + 0.0j]],
@@ -133,6 +137,7 @@ class TestQubitUnitary:
     def test_qubit_unitary_torch(self, U, num_wires):
         """Test that the unitary operator produces the correct output and
         catches incorrect input with torch."""
+
         import torch
 
         U = torch.tensor(U)
@@ -165,6 +170,7 @@ class TestQubitUnitary:
     def test_qubit_unitary_tf(self, U, num_wires):
         """Test that the unitary operator produces the correct output and
         catches incorrect input with tensorflow."""
+
         import tensorflow as tf
 
         U = tf.Variable(U)
@@ -192,6 +198,7 @@ class TestQubitUnitary:
     @pytest.mark.tf
     def test_qubit_unitary_int_pow_tf(self):
         """Test that QubitUnitary.pow works with tf and int z values."""
+
         import tensorflow as tf
 
         mat = tf.Variable([[1, 0], [0, tf.exp(1j)]])
@@ -206,6 +213,7 @@ class TestQubitUnitary:
     def test_qubit_unitary_jax(self, U, num_wires):
         """Test that the unitary operator produces the correct output and
         catches incorrect input with jax."""
+
         from jax import numpy as jnp
 
         U = jnp.array(U)
@@ -236,6 +244,7 @@ class TestQubitUnitary:
     )
     def test_qubit_unitary_jax_jit(self, U, num_wires):
         """Tests that QubitUnitary works with jitting."""
+
         import jax
         from jax import numpy as jnp
 
@@ -258,7 +267,7 @@ class TestQubitUnitary:
             (
                 qml.matrix(qml.RZ(-0.5, wires=0)),
                 (qml.RZ, qml.RY, qml.RZ),
-                [12.316370614359172, 0.0, 12.316370614359172],
+                [-0.25, 0.0, -0.25],
             ),
             (
                 np.array(
@@ -268,19 +277,19 @@ class TestQubitUnitary:
                     ]
                 ),
                 (qml.RZ, qml.RY, qml.RZ),
-                [12.382273469673908, np.pi, 0.18409714468526372],
+                [-0.18409714468526372, np.pi, 0.18409714468526372],
             ),
             (H, (qml.RZ, qml.RY, qml.RZ), [np.pi, np.pi / 2, 0.0]),
-            (X, (qml.RZ, qml.RY, qml.RZ), [np.pi / 2, np.pi, 10.995574287564276]),
+            (X, (qml.RZ, qml.RY, qml.RZ), [np.pi / 2, np.pi, -np.pi / 2]),
             (
                 qml.matrix(qml.Rot(0.2, 0.5, -0.3, wires=0)),
                 (qml.RZ, qml.RY, qml.RZ),
-                [0.2, 0.5, 12.266370614359172],
+                [0.2, 0.5, -0.3],
             ),
             (
                 np.exp(1j * 0.02) * qml.matrix(qml.Rot(-1.0, 2.0, -3.0, wires=0)),
                 (qml.RZ, qml.RY, qml.RZ),
-                [11.566370614359172, 2.0, 9.566370614359172],
+                [-1.0, 2.0, -3.0],
             ),
             # An instance of a broadcast unitary
             (
@@ -295,6 +304,7 @@ class TestQubitUnitary:
     )
     def test_qubit_unitary_decomposition(self, U, expected_gates, expected_params):
         """Tests that single-qubit QubitUnitary decompositions are performed."""
+
         decomp = qml.QubitUnitary.compute_decomposition(U, wires=0)
         decomp2 = qml.QubitUnitary(U, wires=0).decomposition()
 
