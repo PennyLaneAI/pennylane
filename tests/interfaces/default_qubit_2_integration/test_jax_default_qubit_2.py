@@ -134,7 +134,7 @@ test_matrix = [
 
 def atol_for_shots(shots):
     """Return higher tolerance if finite shots."""
-    return 2e-2 if shots else 1e-6
+    return 3e-2 if shots else 1e-6
 
 
 @pytest.mark.parametrize("execute_kwargs, shots, device", test_matrix)

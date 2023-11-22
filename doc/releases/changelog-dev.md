@@ -42,6 +42,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `default.qubit` now can evolve already batched states with `ParametrizedEvolution`
+  [(#4863)](https://github.com/PennyLaneAI/pennylane/pull/4863)
+
 * `default.qubit` no longer uses a dense matrix for `MultiControlledX` for more than 8 operation wires.
   [(#4673)](https://github.com/PennyLaneAI/pennylane/pull/4673)
 
