@@ -449,7 +449,7 @@ class QuantumScript:
             wires (~.Wires): Wires
             num_wires (int): Number of wires
         """
-        self.wires = Wires.all_wires(dict.fromkeys(op.wires for op in self))
+        self.wires = Wires.all_wires(dict.fromkeys(op.wires for op in self), sort=True)
         self.num_wires = len(self.wires)
 
     def _update_par_info(self):
