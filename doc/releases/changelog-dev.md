@@ -53,11 +53,11 @@
 * `qml.draw` and `qml.draw_mpl` now render operator ids.
   [(#4749)](https://github.com/PennyLaneAI/pennylane/pull/4749)
 
-* XZX decomposition is added to the list of supported single-qubit unitary decompositions.
-  [(#4862)](https://github.com/PennyLaneAI/pennylane/pull/4862)
-
 * The function ``qml.equal`` now supports ``ControlledSequence`` operators.
   [(#4829)](https://github.com/PennyLaneAI/pennylane/pull/4829)
+
+* XZX decomposition is added to the list of supported single-qubit unitary decompositions.
+  [(#4862)](https://github.com/PennyLaneAI/pennylane/pull/4862)
 
 <h4>Better support for batching</h4>
 
@@ -95,7 +95,9 @@
 * `GlobalPhase` now decomposes to nothing, in case devices do not support global phases.
   [(#4855)](https://github.com/PennyLaneAI/pennylane/pull/4855)
 
-* `has_matrix` will now automatically be `True` if `Operator.matrix` is overridden, even if
+* Custom operations can now provide their matrix directly through the `Operator.matrix()` method
+  without requiring `Operator.compute_matrix()` to be provided. Behind the scenes,
+  `has_matrix` will now automatically be `True` if `Operator.matrix` is overridden, even if
   `Operator.compute_matrix` is not.
   [(#4844)](https://github.com/PennyLaneAI/pennylane/pull/4844)
 
