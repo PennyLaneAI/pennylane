@@ -15,7 +15,6 @@
 
 import math
 import warnings
-from functools import partial
 from itertools import product
 from typing import Sequence, Callable
 
@@ -273,9 +272,10 @@ def _merge_pauli_rotations(operations, merge_ops=None):
 @transform
 def clifford_t_decomposition(
     tape: QuantumTape,
-    max_depth=6,
+    epsilon=1e-4,
+    max_expansion=6,
     method="sk",
-    **kwargs,
+    **method_kwargs,
 ) -> (Sequence[QuantumTape], Callable):
     r"""Unrolls a circuit into the Clifford+T basis using the optimal ancilla-free approximation of :class:`~.RZ` operations.
 
@@ -291,15 +291,16 @@ def clifford_t_decomposition(
     `Dawson and Nielsen (2005) <https://arxiv.org/abs/quant-ph/0505030>`_.
 
     Args:
-        qfunc (function): A quantum function
-        max_depth (int): The depth to use for tape expansion before manual decomposition to Clifford+T basis is applied
+        tape (QuantumTape): A quantum tape
+        epsilon (float): The maximum error in the approximation. Default to :math:10^-4
+        max_expansion (int): The depth to use for tape expansion before manual decomposition to Clifford+T basis is applied
         method (str): Method to be used for Clifford+T decomposition. Default value is ``"sk"`` for Solovay-Kitaev
-        **kwargs: Keyword argument to pass options for the ``method`` used for decompositions
+        **method_kwargs: Keyword argument to pass options for the ``method`` used for decompositions
 
     Keyword Args:
         Options (*):
 
-            * **depth** (int), **basis_set** (list(str)), **basis_length** (int):
+            * **max_depth** (int), **basis_set** (list(str)), **basis_length** (int):
               arguments for using the ``"sk"`` method, i.e., for performing Solovay-Kitaev decomposition using :func:`~.sk_decomposition`
 
     Returns:
@@ -321,7 +322,7 @@ def clifford_t_decomposition(
         pipelines = [remove_barrier, commute_controlled, cancel_inverses, merge_rotations]
 
         # Expand the tape according to depth provided by the user and try simplifying it
-        expanded_tape = tape.expand(depth=max_depth, stop_at=lambda op: op.name in basis_set)
+        expanded_tape = tape.expand(depth=max_expansion, stop_at=lambda op: op.name in basis_set)
         for transf in pipelines:
             [expanded_tape], _ = transf(expanded_tape)
 
@@ -407,18 +408,14 @@ def clifford_t_decomposition(
         # Squeeze global phases into a single global phase
         new_operations = _fuse_global_phases(gphase_ops + merged_ops)
 
+        # compute the per-gate epsilon value
+        num_calls_needed = len([o for o in new_operations if isinstance(o, qml.RZ)]) or 1
+        epsilon /= num_calls_needed
+
         # Build the approximation set for Solovay-Kitaev decomposition
         if method == "sk":
-            _depth = kwargs.get("depth", 3)
-            _basis_set = kwargs.get("basis_set", ("T", "T*", "H"))
-            _basis_length = kwargs.get("basis_length", 10)
+            decompose_fn = sk_decomposition
 
-            # Get the decompose function for sk
-            decompose_fn = partial(
-                sk_decomposition, depth=_depth, basis_set=_basis_set, basis_length=_basis_length
-            )
-
-        # TODO: Add RZ conversion with the newsynth method
         else:
             raise NotImplementedError(
                 f"Currently we only support Solovay-Kitaev ('sk') decompostion, got {method}"
@@ -427,7 +424,7 @@ def clifford_t_decomposition(
         new_ops = []
         for op in new_operations:
             if isinstance(op, qml.RZ):
-                clifford_ops = decompose_fn(op)
+                clifford_ops = decompose_fn(op, epsilon, **method_kwargs)
                 new_ops.extend(clifford_ops)
             else:
                 new_ops.append(op)

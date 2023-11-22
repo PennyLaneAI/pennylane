@@ -98,15 +98,17 @@ class TestCliffordCompile:
         assert check_clifford_t(op) == res
 
     @pytest.mark.parametrize(
-        ("circuit, max_depth"),
+        ("circuit, max_expansion"),
         [(circuit_1, 1), (circuit_2, 0), (circuit_3, 0), (circuit_4, 1), (circuit_5, 0)],
     )
-    def test_decomposition(self, circuit, max_depth):
+    def test_decomposition(self, circuit, max_expansion):
         """Test decomposition for the Clifford transform."""
 
         old_tape = qml.tape.make_qscript(circuit)()
 
-        [new_tape], tape_fn = clifford_t_decomposition(old_tape, max_depth=max_depth, depth=3)
+        [new_tape], tape_fn = clifford_t_decomposition(
+            old_tape, max_expansion=max_expansion, max_depth=3
+        )
 
         assert all(
             isinstance(op, _CLIFFORD_PHASE_GATES)
@@ -133,7 +135,9 @@ class TestCliffordCompile:
             return qml.expval(qml.PauliZ(0))
 
         original_qnode = qml.QNode(qfunc, dev)
-        transfmd_qnode = qml.QNode(clifford_t_decomposition(qfunc, depth=3, basis_length=10), dev)
+        transfmd_qnode = qml.QNode(
+            clifford_t_decomposition(qfunc, max_depth=3, basis_length=10), dev
+        )
 
         res1, res2 = original_qnode(), transfmd_qnode()
         assert qml.math.isclose(res1, res2, atol=1e-2)
@@ -252,7 +256,7 @@ class TestCliffordCompile:
         tape = qml.tape.QuantumScript([qml.QubitUnitary(qml.math.eye(8), wires=[0, 1, 2])])
 
         with pytest.raises(ValueError, match="Cannot unroll"):
-            clifford_t_decomposition(tape, max_depth=0)
+            clifford_t_decomposition(tape, max_expansion=0)
 
     @pytest.mark.parametrize("op", [qml.U1(1.0, wires=["b"])])
     def test_raise_with_rot_decomposition(self, op):
