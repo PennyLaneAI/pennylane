@@ -55,7 +55,7 @@ class TestTranspile:
         transpiled_qfunc = transpile(original_qfunc, coupling_map=[(0, 1)])
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
         err_msg = (
-            r"Not all wires present in coupling map! wires: \[0, 2, 1\], coupling map: \[0, 1\]"
+            r"Not all wires present in coupling map! wires: \[0, 1, 2\], coupling map: \[0, 1\]"
         )
         with pytest.raises(ValueError, match=err_msg):
             transpiled_qnode(0.1, 0.2, 0.3)

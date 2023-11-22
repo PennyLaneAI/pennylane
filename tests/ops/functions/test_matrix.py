@@ -506,7 +506,7 @@ class TestValidation:
 
         with pytest.raises(
             OperationTransformError,
-            match=r"Wires in circuit \[1, 0\] are inconsistent with those in wire_order \[0, 'b'\]",
+            match=r"Wires in circuit \[0, 1\] are inconsistent with those in wire_order \[0, 'b'\]",
         ):
             qml.matrix(circuit, wire_order=wires)()
 

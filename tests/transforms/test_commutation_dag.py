@@ -14,9 +14,7 @@
 """
 Unit tests for CommutationDAG
 """
-from collections import OrderedDict
 import pytest
-from pennylane.wires import Wires
 import pennylane.numpy as np
 import pennylane as qml
 
@@ -158,10 +156,6 @@ class TestCommutationDAG:
 
         dag = qml.transforms.commutation_dag(circuit)()
 
-        wires = [3, 0, 4, 2, 1]
-        consecutive_wires = Wires(range(len(wires)))
-        wires_map = OrderedDict(zip(wires, consecutive_wires))
-
         nodes = [
             qml.CNOT(wires=[3, 0]),
             qml.PauliX(wires=4),
@@ -176,9 +170,6 @@ class TestCommutationDAG:
             qml.CNOT(wires=[1, 2]),
             qml.CNOT(wires=[0, 3]),
         ]
-
-        for node in nodes:
-            node._wires = Wires([wires_map[wire] for wire in node.wires.tolist()])
 
         edges = [
             (0, 2, {"commute": False}),

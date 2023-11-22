@@ -1231,7 +1231,7 @@ class TestGraphToTape:
         tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
 
         assert tapes[0].wires == Wires([0, 1, 2, 3])
-        assert tapes[1].wires == Wires([1, 2, 0])
+        assert tapes[1].wires == Wires([0, 1, 2])
 
         for tape in tapes:
             for i, op in enumerate(tape.operations):
