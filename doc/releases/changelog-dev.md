@@ -130,16 +130,6 @@
 
 <h3>Deprecations 👋</h3>
 
-* `qml.grad` and `qml.jacobian` now explicitly raise errors if trainable parameters are integers.
-  [(#4836)](https://github.com/PennyLaneAI/pennylane/pull/4836)
-
-* All deprecations now raise a `qml.PennyLaneDeprecationWarning` instead of a `UserWarning`.
-  [(#4814)](https://github.com/PennyLaneAI/pennylane/pull/4814)
-
-* `QuantumScript.is_sampled` and `QuantumScript.all_sampled` are deprecated.
-  Users should now validate these properties manually.
-  [(#4773)](https://github.com/PennyLaneAI/pennylane/pull/4773)
-
 * `single_tape_transform`, `batch_transform`, `qfunc_transform`, and `op_transform` are deprecated.
   Instead switch to using the new `qml.transform` function.
   [(#4774)](https://github.com/PennyLaneAI/pennylane/pull/4774)
@@ -148,6 +138,16 @@
   of the surrounding measurement process.
   [(#4762)](https://github.com/PennyLaneAI/pennylane/pull/4762)
   [(#4798)](https://github.com/PennyLaneAI/pennylane/pull/4798)
+
+* All deprecations now raise a `qml.PennyLaneDeprecationWarning` instead of a `UserWarning`.
+  [(#4814)](https://github.com/PennyLaneAI/pennylane/pull/4814)
+
+* `qml.grad` and `qml.jacobian` now explicitly raise errors if trainable parameters are integers.
+  [(#4836)](https://github.com/PennyLaneAI/pennylane/pull/4836)
+
+* `QuantumScript.is_sampled` and `QuantumScript.all_sampled` are deprecated.
+  Users should now validate these properties manually.
+  [(#4773)](https://github.com/PennyLaneAI/pennylane/pull/4773)
 
 <h3>Documentation 📝</h3>
 
