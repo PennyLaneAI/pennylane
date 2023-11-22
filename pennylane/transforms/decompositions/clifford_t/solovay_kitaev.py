@@ -162,7 +162,7 @@ def _group_commutator_decompose(matrix, tol=1e-5):
     as given in the Section 4.1 of `arXiv:0505030 <https://arxiv.org/abs/quant-ph/0505030>`_."""
     # Use the quaternion form to get the rotation axis and angle on the Bloch sphere.
     quaternion = _quaternion_transform(matrix)
-    theta, axis = 2 * qml.math.arccos(quaternion[0]), quaternion[1:]
+    theta, axis = 2 * qml.math.arccos(qml.math.clip(quaternion[0], -1, 1)), quaternion[1:]
 
     # Early return for the case where matrix is I or -I, where I is Identity
     if qml.math.allclose(axis, 0.0, atol=tol) and qml.math.isclose(theta % math.pi, 0.0, atol=tol):
@@ -186,6 +186,11 @@ def _group_commutator_decompose(matrix, tol=1e-5):
     w_hat = s @ w.matrix() @ sdg
 
     return w_hat, v_hat
+
+
+def _op_error(diff):
+    """Compute the operator error."""
+    return qml.math.sqrt(qml.math.real(qml.math.trace(qml.math.conj(diff).T @ diff)) / 2)
 
 
 def sk_decomposition(op, depth, *, basis_set=(), basis_length=10):
@@ -257,7 +262,7 @@ def sk_decomposition(op, depth, *, basis_set=(), basis_length=10):
         gate_mat, _ = _SU2_transform(op.matrix())
         gate_qat = _quaternion_transform(gate_mat)
 
-        def _solovay_kitaev(umat, n):
+        def _solovay_kitaev(umat, n, u_n1_ids, u_n1_mat):
             """Recursive method as given in the Section 3 of arXiv:0505030"""
 
             if not n:
@@ -266,17 +271,17 @@ def sk_decomposition(op, depth, *, basis_set=(), basis_length=10):
                 _, index = kd_tree.query(seq_node, workers=-1)
                 return approx_set_ids[index[0]], approx_set_mat[index[0]]
 
-            # get the approximation for the given unitary: U --> U'
-            u_n1_ids, u_n1_mat = _solovay_kitaev(umat, n - 1)
-
             # get the decomposition for the remaining unitary: U @ U'.adjoint()
             v_n, w_n = _group_commutator_decompose(
                 umat @ qml.math.conj(qml.math.transpose(u_n1_mat))
             )
 
             # get the approximation for the remaining unitaries: V, W --> V', W'
-            v_n1_ids, v_n1_mat = _solovay_kitaev(v_n, n - 1)
-            w_n1_ids, w_n1_mat = _solovay_kitaev(w_n, n - 1)
+            v_n1_ids, v_n1_mat = None, None
+            w_n1_ids, w_n1_mat = None, None
+            for i in range(n):
+                v_n1_ids, v_n1_mat = _solovay_kitaev(v_n, i, v_n1_ids, v_n1_mat)
+                w_n1_ids, w_n1_mat = _solovay_kitaev(w_n, i, w_n1_ids, w_n1_mat)
 
             # get the adjoints for return: V', W' --> V'.adjoint(), W'.adjoint()
             v_n1_ids_adj = [qml.adjoint(gate, lazy=False) for gate in reversed(v_n1_ids)]
@@ -290,12 +295,14 @@ def sk_decomposition(op, depth, *, basis_set=(), basis_length=10):
 
             return approx_ids, approx_mat
 
-        # If we have it already, use that, otherwise proceed for deocomposition
-        dist, index = kd_tree.query(qml.math.array([gate_qat]), workers=-1)
-        if qml.math.isclose(dist, 0.0, atol=1e-8):
-            decomposition = approx_set_ids[index[0]]
-        else:
-            decomposition, _ = _solovay_kitaev(gate_mat, depth)
+        # If we have it already, use that, otherwise proceed for decomposition
+        _, index = kd_tree.query(qml.math.array([gate_qat]), workers=-1)
+        decomposition, u_prime = approx_set_ids[index[0]], approx_set_mat[index[0]]
+        n = 1
+        while n <= depth and _op_error(gate_mat - u_prime) > 1e-8:
+            # get the approximation for the given unitary: U --> U' for each iteration
+            decomposition, u_prime = _solovay_kitaev(gate_mat, n, decomposition, u_prime)
+            n += 1
 
         # Remove inverses if any in the decomposition and handle trivial case
         [new_tape], _ = cancel_inverses(QuantumScript(decomposition or [qml.Identity(0)]))

@@ -172,6 +172,26 @@ def test_solovay_kitaev_with_basis_gates(basis_length, basis_set):
     assert qml.math.allclose(qml.matrix(op), matrix_sk, atol=1e-5)
 
 
+@pytest.mark.parametrize(
+    "op,query_count",
+    [
+        (qml.Hadamard(0), 1),
+        (qml.prod(qml.Hadamard(0), qml.T(0)), 1),
+        (qml.prod(qml.Hadamard(0), qml.T(0), qml.RX(1e-9, 0)), 1),
+        (qml.RZ(1.23, 0), 27),
+    ],
+)
+def test_close_approximations_do_not_go_deep(op, query_count, mocker):
+    """Test that the recursive solver is only used when necessary."""
+    basis_set = ("H", "T", "T*")
+    basis_length = 10
+    _ = _approximate_set(basis_set, max_length=basis_length)  # pre-compute so spy is accurate
+
+    spy = mocker.spy(sp.spatial.KDTree, "query")
+    _ = sk_decomposition(op, 3, basis_set=basis_set, basis_length=basis_length)
+    assert spy.call_count == query_count
+
+
 def test_exception():
     """Test operation wire exception in Solovay-Kitaev"""
     op = qml.SingleExcitation(1.0, wires=[1, 2])
