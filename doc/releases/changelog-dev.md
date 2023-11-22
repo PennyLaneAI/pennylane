@@ -85,6 +85,9 @@
 * Simplified the logic for re-arranging states before returning.
   [(#4817)](https://github.com/PennyLaneAI/pennylane/pull/4817)
 
+* `default.qubit` now calculates the expectation value of Hermitians in a differentiable manner.
+  [(#4866)](https://github.com/PennyLaneAI/pennylane/pull/4866)
+
 * `GlobalPhase` now decomposes to nothing, in case devices do not support global phases.
   [(#4855)](https://github.com/PennyLaneAI/pennylane/pull/4855)
 
