@@ -8,6 +8,9 @@
 
 <h4>Drawing and statistics for mid-circuit measurements 🎨</h4>
 
+* `qml.draw` now supports drawing mid-circuit measurements.
+  [(#4775)](https://github.com/PennyLaneAI/pennylane/pull/4775)
+
 <h4>Use an iterative approach for quantum phase estimation 🔄</h4>
 
 * Iterative Quantum Phase Estimation is now available from `qml.iterative_qpe`.
@@ -42,23 +45,28 @@
 
 <h3>Improvements 🛠</h3>
 
+<h4>Better support for batching</h4>
+
+* `default.qubit` now can evolve already batched states with `ParametrizedEvolution`
+  [(#4863)](https://github.com/PennyLaneAI/pennylane/pull/4863)
+
+* `AmplitudeEmbedding` now also supports batching when used with Tensorflow.
+  [(#4818)](https://github.com/PennyLaneAI/pennylane/pull/4818)
+
+
+
+
+
+
+
 * Approximate Quantum Fourier Transform (AQFT) is now available from `qml.AQFT`.
   [(#4656)](https://github.com/PennyLaneAI/pennylane/pull/4656)
 
 * XZX decomposition is added to the list of supported single-qubit unitary decompositions.
   [(#4862)](https://github.com/PennyLaneAI/pennylane/pull/4862)
 
-* `default.qubit` now can evolve already batched states with `ParametrizedEvolution`
-  [(#4863)](https://github.com/PennyLaneAI/pennylane/pull/4863)
-
 * `default.qubit` no longer uses a dense matrix for `MultiControlledX` for more than 8 operation wires.
   [(#4673)](https://github.com/PennyLaneAI/pennylane/pull/4673)
-
-* `AmplitudeEmbedding` now also supports batching when used with Tensorflow.
-  [(#4818)](https://github.com/PennyLaneAI/pennylane/pull/4818)
-
-* `qml.draw` now supports drawing mid-circuit measurements.
-  [(#4775)](https://github.com/PennyLaneAI/pennylane/pull/4775)
 
 * Autograd and torch can now use vjps provided by the device from the new device API. If a device provides
   a vector Jacobian product, this can be selected by providing `device_vjp=True` to
