@@ -14,16 +14,14 @@
 """Solovay-Kitaev implementation for approximate single-qubit unitary decomposition."""
 import math
 import warnings
-import functools as ft
+from functools import lru_cache
 
-import scipy as sp
+from scipy.spatial import KDTree
 
 import pennylane as qml
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript
-from pennylane.transforms.optimization import (
-    cancel_inverses,
-)
+from pennylane.transforms.optimization import cancel_inverses
 
 # Defining Clifford+T basis
 _CLIFFORD_T_BASIS = {
@@ -90,20 +88,20 @@ def _contains_SU2(op_mat, ops_vecs, tol=1e-8):
     node_points = qml.math.array(ops_vecs)
     gate_points = qml.math.array([_quaternion_transform(op_mat)])
 
-    tree = sp.spatial.KDTree(node_points)
+    tree = KDTree(node_points)
     dist = tree.query(gate_points, workers=-1)[0][0]
 
     return (dist < tol, gate_points[0])
 
 
-@ft.lru_cache()
+@lru_cache()
 def _approximate_set(basis_gates, max_length=10):
     r"""Builds an approximate unitary set required for the `Solovay-Kitaev algorithm <https://arxiv.org/abs/quant-ph/0505030>`_.
 
     Args:
-        basis_set (list(str)): Basis set to be used for Solovay-Kitaev decomposition build using
+        basis_gates (list(str)): Basis set to be used for Solovay-Kitaev decomposition build using
             following terms, ``['X', 'Y', 'Z', 'H', 'T', 'T*', 'S', 'S*']``, where `*` refers
-            to the gate adjoint. Default is ``["T", "T*", "H"]``
+            to the gate adjoint.
         max_length (int): Maximum expansion length of Clifford+T sequences in the approximation set. Default is `10`
 
     Returns:
@@ -189,11 +187,11 @@ def _group_commutator_decompose(matrix, tol=1e-5):
 
 
 def _op_error(diff):
-    """Compute the operator error."""
+    """Compute the operator error (Hilbert-Schmidt norm)."""
     return qml.math.sqrt(qml.math.real(qml.math.trace(qml.math.conj(diff).T @ diff)) / 2)
 
 
-def sk_decomposition(op, depth, *, basis_set=(), basis_length=10):
+def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), basis_length=10):
     r"""Approximate an arbitrary single-qubit gate in the Clifford+T basis using the `Solovay-Kitaev algorithm <https://arxiv.org/abs/quant-ph/0505030>`_.
 
     This method implements a recursive Solovay-Kitaev decomposition that approximates any :math:`U \in \text{SU}(2)`
@@ -203,7 +201,10 @@ def sk_decomposition(op, depth, *, basis_set=(), basis_length=10):
 
     Args:
         op (~pennylane.operation.Operation): A single-qubit gate operation
-        depth (int): Depth until which the recursion occurs
+        epsilon (float): The maximum error in the approximation. Default to :math:10^-4
+
+    Keyword Args:
+        max_depth (int): Depth until which the recursion occurs. Defaults to 5
         basis_set (list(str)): Basis set to be used for the decomposition and building an approximate set internally.
             It accepts the following gate terms: ``['X', 'Y', 'Z', 'H', 'T', 'T*', 'S', 'S*']``, where ``*`` refers
             to the gate adjoint. Default value is ``['T', 'T*', 'H']``
@@ -242,21 +243,20 @@ def sk_decomposition(op, depth, *, basis_set=(), basis_length=10):
     True
 
     """
-    with QueuingManager.stop_recording():
-        # Check for length of wires in the operation
-        if len(op.wires) != 1:
-            raise ValueError(
-                f"Operator must be a single qubit operation, got {op} acting on {op.wires} wires."
-            )
+    # Check for length of wires in the operation
+    if len(op.wires) != 1:
+        raise ValueError(
+            f"Operator must be a single qubit operation, got {op} acting on {op.wires} wires."
+        )
 
+    with QueuingManager.stop_recording():
         # Build the approximate set with caching
-        basis_gates = tuple(gate for gate in basis_set) if basis_set else ("T", "T*", "H")
         approx_set_ids, approx_set_mat, approx_set_qat = _approximate_set(
-            basis_gates, max_length=basis_length
+            basis_set, max_length=basis_length
         )
 
         # Build the k-d tree with the current approximation set for querying in the base case
-        kd_tree = sp.spatial.KDTree(qml.math.array(approx_set_qat))
+        kd_tree = KDTree(qml.math.array(approx_set_qat))
 
         # Obtain the SU(2) and quaternion for the operation
         gate_mat, _ = _SU2_transform(op.matrix())
@@ -299,7 +299,7 @@ def sk_decomposition(op, depth, *, basis_set=(), basis_length=10):
         _, index = kd_tree.query(qml.math.array([gate_qat]), workers=-1)
         decomposition, u_prime = approx_set_ids[index[0]], approx_set_mat[index[0]]
         n = 1
-        while n <= depth and _op_error(gate_mat - u_prime) > 1e-8:
+        while n <= max_depth and _op_error(gate_mat - u_prime) > epsilon:
             # get the approximation for the given unitary: U --> U' for each iteration
             decomposition, u_prime = _solovay_kitaev(gate_mat, n, decomposition, u_prime)
             n += 1
