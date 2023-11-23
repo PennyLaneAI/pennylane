@@ -211,8 +211,9 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
     r"""Approximate an arbitrary single-qubit gate in the Clifford+T basis using the `Solovay-Kitaev algorithm <https://arxiv.org/abs/quant-ph/0505030>`_.
 
     This method implements the Solovay-Kitaev decomposition algorithm that approximates any single-qubit
-    operation with :math:`\epsilon > 0` error. The decomposition exits when the approximation error is less
-    than :math:`\epsilon`, or when more than `max_depth` approximation passes have been made.
+    operation with :math:`\epsilon > 0` error. The procedure exits when the approximation error
+    becomes less than :math:`\epsilon`, or when ``max_depth`` approximation passes have been made. In the
+    latter case, the approximation error could be :math:`\geq \epsilon`.
 
     This algorithm produces a decomposition with :math:`O(\text{log}^{3.97}(1/\epsilon))` operations.
 
@@ -222,7 +223,7 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
 
     Keyword Args:
         max_depth (int): The maximum number of approximation passes. A smaller :math:`\epsilon` would generally require
-            more passes. Default is ``5``.
+            more number of passes. Default is ``5``.
         basis_set (list[str]): Basis set to be used for the decomposition and building an approximate set internally.
             It accepts the following gate terms: ``['X', 'Y', 'Z', 'H', 'T', 'T*', 'S', 'S*']``, where ``*`` refers
             to the gate adjoint. Default value is ``['T', 'T*', 'H']``.
