@@ -21,6 +21,7 @@ import contextlib
 import copy
 from collections import Counter
 from typing import List, Union, Optional, Sequence
+from warnings import warn
 
 import pennylane as qml
 from pennylane.measurements import (
@@ -203,9 +204,6 @@ class QuantumScript:
         self.wires = _empty_wires
         self.num_wires = 0
 
-        self.is_sampled = False
-        self.all_sampled = False
-
         self._obs_sharing_wires = []
         """list[.Observable]: subset of the observables that share wires with another observable,
         i.e., that do not have their own unique set of wires."""
@@ -306,7 +304,7 @@ class QuantumScript:
 
         for m in self.measurements:
             if m.obs is not None:
-                m.obs.return_type = m.return_type
+                m.obs._return_type = m.return_type
                 obs.append(m.obs)
             else:
                 obs.append(m)
@@ -398,13 +396,41 @@ class QuantumScript:
         """Returns the wires that the tape operations act on."""
         return Wires.all_wires(op.wires for op in self.operations)
 
+    @property
+    def is_sampled(self) -> bool:
+        """Whether any measurements are of a type that requires samples."""
+        warn(
+            "QuantumScript.is_sampled is deprecated. This property should now be "
+            "validated manually:\n\n"
+            ">>> from pennylane.measurements import *\n"
+            ">>> sample_types = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)\n"
+            ">>> is_sampled = any(isinstance(m, sample_types) for m in tape.measurements)\n",
+            qml.PennyLaneDeprecationWarning,
+        )
+        sample_type = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
+        return any(isinstance(m, sample_type) for m in self.measurements)
+
+    @property
+    def all_sampled(self) -> bool:
+        """Whether all measurements are of a type that requires samples."""
+        warn(
+            "QuantumScript.all_sampled is deprecated. This property should now be "
+            "validated manually:\n\n"
+            ">>> from pennylane.measurements import *\n"
+            ">>> sample_types = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)\n"
+            ">>> all_sampled = all(isinstance(m, sample_types) for m in tape.measurements)\n",
+            qml.PennyLaneDeprecationWarning,
+        )
+        sample_type = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
+        return all(isinstance(m, sample_type) for m in self.measurements)
+
     ##### Update METHODS ###############
 
     def _update(self):
         """Update all internal metadata regarding processed operations and observables"""
         self._graph = None
         self._specs = None
-        self._update_circuit_info()  # Updates wires, num_wires, is_sampled, all_sampled; O(ops+obs)
+        self._update_circuit_info()  # Updates wires, num_wires; O(ops+obs)
         self._update_par_info()  # Updates _par_info; O(ops+obs)
 
         # The following line requires _par_info to be up to date
@@ -422,18 +448,9 @@ class QuantumScript:
         Sets:
             wires (~.Wires): Wires
             num_wires (int): Number of wires
-            is_sampled (bool): Whether any measurement is of type ``Sample`` or ``Counts``
-            all_sampled (bool): Whether all measurements are of type ``Sample`` or ``Counts``
         """
         self.wires = Wires.all_wires(dict.fromkeys(op.wires for op in self))
         self.num_wires = len(self.wires)
-
-        is_sample_type = [
-            isinstance(m, (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP))
-            for m in self.measurements
-        ]
-        self.is_sampled = any(is_sample_type)
-        self.all_sampled = all(is_sample_type)
 
     def _update_par_info(self):
         """Update the parameter information list. Each entry in the list with an operation and an index
@@ -652,11 +669,12 @@ class QuantumScript:
         if trainable_only:
             params = []
             for p_idx in self.trainable_params:
-                op = self._par_info[p_idx]["op"]
-                if operations_only and hasattr(op, "return_type"):
+                par_info = self._par_info[p_idx]
+                if operations_only and isinstance(self[par_info["op_idx"]], MeasurementProcess):
                     continue
 
-                op_idx = self._par_info[p_idx]["p_idx"]
+                op = par_info["op"]
+                op_idx = par_info["p_idx"]
                 params.append(op.data[op_idx])
             return params
 
@@ -811,7 +829,7 @@ class QuantumScript:
         if len(shapes) == 1:
             return shapes[0]
 
-        if len(shots.shot_vector) > 1:
+        if shots.num_copies > 1:
             # put the shot vector axis before the measurement axis
             shapes = tuple(zip(*shapes))
 
@@ -873,8 +891,6 @@ class QuantumScript:
         new_qscript._specs = None
         new_qscript.wires = copy.copy(self.wires)
         new_qscript.num_wires = self.num_wires
-        new_qscript.is_sampled = self.is_sampled
-        new_qscript.all_sampled = self.all_sampled
         new_qscript._update_par_info()
         new_qscript.trainable_params = self.trainable_params.copy()
         new_qscript._obs_sharing_wires = self._obs_sharing_wires
@@ -976,7 +992,11 @@ class QuantumScript:
         """
         if self._graph is None:
             self._graph = qml.CircuitGraph(
-                self.operations, self.observables, self.wires, self._par_info, self.trainable_params
+                self.operations,
+                self.measurements,
+                self.wires,
+                self._par_info,
+                self.trainable_params,
             )
 
         return self._graph
@@ -1093,8 +1113,8 @@ class QuantumScript:
         qasm_str += f"qreg q[{len(wires)}];\n"
         qasm_str += f"creg c[{len(wires)}];\n"
 
-        # get the user applied circuit operations
-        operations = self.operations.copy()
+        # get the user applied circuit operations without interface information
+        operations = qml.transforms.convert_to_numpy_parameters(self).operations
 
         if rotations:
             # if requested, append diagonalizing gates corresponding
@@ -1167,19 +1187,19 @@ class QuantumScript:
         **Example:**
 
         >>> circuit = qml.tape.QuantumScript([qml.PauliX("a")], [qml.expval(qml.PauliZ("b"))])
-        >>> map_circuit_to_standard_wires(circuit).circuit
+        >>> circuit.map_to_standard_wires().circuit
         [PauliX(wires=[0]), expval(PauliZ(wires=[1]))]
 
         If any measured wires are not in any operations, they will be mapped last:
 
         >>> circuit = qml.tape.QuantumScript([qml.PauliX(1)], [qml.probs(wires=[0, 1])])
-        >>> qml.devices.qubit.map_circuit_to_standard_wires(circuit).circuit
+        >>> circuit.map_to_standard_wires().circuit
         [PauliX(wires=[0]), probs(wires=[1, 0])]
 
         If no wire-mapping is needed, then the returned circuit *is* the inputted circuit:
 
         >>> circuit = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliZ(1))])
-        >>> qml.devices.qubit.map_circuit_to_standard_wires(circuit) is circuit
+        >>> circuit.map_to_standard_wires() is circuit
         True
 
         """

@@ -3,8 +3,39 @@
 Deprecations
 ============
 
+All PennyLane deprecations will raise a ``qml.PennyLaneDeprecationWarning``. Pending and completed
+deprecations are listed below.
+
 Pending deprecations
 --------------------
+
+* `Observable.return_type` is deprecated. Instead, you should inspect the type
+  of the surrounding measurement process.
+
+  - Deprecated in v0.34
+  - Will be removed in v0.35
+
+* ``single_tape_transform``, ``batch_transform``, ``qfunc_transform``, and ``op_transform`` are
+  deprecated. Instead switch to using the new ``qml.transform`` function. Please refer to
+  `the transform docs <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
+  to see how this can be done.
+
+  - Deprecated in v0.34
+  - Will be removed in v0.36
+
+* ``QuantumScript.is_sampled`` and ``QuantumScript.all_sampled`` are deprecated. Users should now validate
+  these properties manually.
+
+  .. code-block:: python
+
+    from pennylane.measurements import *
+    sample_types = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
+    is_sample_type = [isinstance(m, sample_types) for m in tape.measurements]
+    is_sampled = any(is_sample_type)
+    all_sampled = all(is_sample_type)
+
+  - Deprecated in v0.34
+  - Will be removed in v0.35
 
 * Passing additional arguments to a transform that decorates a QNode should now be done through use
   of ``functools.partial``. For example, the :func:`~pennylane.metric_tensor` transform has an
@@ -59,7 +90,18 @@ Pending deprecations
 Completed deprecation cycles
 ----------------------------
 
+* Specifying ``control_values`` passed to ``qml.ctrl`` as a string is no longer supported.
+
+  - Deprecated in v0.25
+  - Removed in v0.34
+
 * ``qml.gradients.pulse_generator`` has become ``qml.gradients.pulse_odegen`` to adhere to paper naming conventions.
+
+  - Deprecated in v0.33
+  - Removed in v0.34
+
+* The ``prep`` keyword argument in ``QuantumScript`` has been removed.
+  ``StatePrepBase`` operations should be placed at the beginning of the ``ops`` list instead.
 
   - Deprecated in v0.33
   - Removed in v0.34
@@ -106,12 +148,6 @@ Completed deprecation cycles
 
   - Added in v0.32
   - Behaviour changed in v0.33
-
-* The ``prep`` keyword argument in ``QuantumScript`` has been removed.
-  ``StatePrepBase`` operations should be placed at the beginning of the ``ops`` list instead.
-
-  - Deprecated in v0.33
-  - Removed in v0.34
 
 * ``qml.qchem.jordan_wigner`` had been removed.
   Use ``qml.jordan_wigner`` instead. List input to define the fermionic operator

@@ -23,7 +23,7 @@ from networkx import MultiDiGraph, has_path, weakly_connected_components
 from pennylane import numpy as np
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operation
-from pennylane.ops.qubit.non_parametric_ops import WireCut
+from pennylane.ops.meta import WireCut
 from pennylane.queuing import WrappedObj
 
 from .kahypar import kahypar_cut
