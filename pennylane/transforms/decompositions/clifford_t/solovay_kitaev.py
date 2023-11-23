@@ -50,8 +50,12 @@ def _SU2_transform(matrix):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)
         factor = qml.math.linalg.det(matrix)
+
+    # We put the phase first in [0, \pi] and then convert it to [0, \pi)
     gphase = qml.math.mod(qml.math.angle(factor), 2 * math.pi) / 2
     rphase = (-1) ** qml.math.isclose(gphase, math.pi)
+
+    # Get the final matrix form using the phase information
     s2_mat = rphase * matrix * qml.math.exp(-1j * qml.math.cast_like(gphase, 1j))
     return s2_mat, gphase if rphase == 1 else 0.0
 
@@ -110,10 +114,10 @@ def _approximate_set(basis_gates, max_length=10):
         Clifford+T sequences that will be used for approximating a matrix in the base case of recursive implementation of
         Solovay-Kitaev algorithm, with their corresponding SU(2) and quaternion representations.
     """
-    # Maintains basis gates
+    # Maintains the basis gates
     basis = [_CLIFFORD_T_BASIS[gate.upper()] for gate in basis_gates]
 
-    # Get SU(2) data for the gates in basis set
+    # Get the SU(2) data for the gates in basis set
     basis_mat, basis_gph = {}, {}
     for gate in basis:
         su2_mat, su2_gph = _SU2_transform(gate.matrix())
@@ -125,7 +129,7 @@ def _approximate_set(basis_gates, max_length=10):
     gtrie_mat = [list(basis_mat.values())]
     gtrie_gph = [list(basis_gph.values())]
 
-    # Maintains the approximate set for gates' names, SU(2)s and quaternions
+    # Maintains the approximate set for gates' names, SU(2)s, global phases and quaternions
     approx_set_ids = list(gtrie_ids[0])
     approx_set_mat = list(gtrie_mat[0])
     approx_set_gph = list(gtrie_gph[0])
@@ -152,13 +156,16 @@ def _approximate_set(basis_gates, max_length=10):
                 if not exists:
                     approx_set_ids.append(node + [op])
                     approx_set_mat.append(su2_op)
-                    approx_set_gph.append(qml.math.mod(su2_gp, math.pi))
                     approx_set_qat.append(quaternion)
 
                     # Add to the containers for next depth
                     gtrie_id.append(node + [op])
                     gtrie_mt.append(su2_op)
-                    gtrie_gp.append(qml.math.mod(su2_gp, math.pi))
+
+                    # Add the global phase data
+                    global_phase = qml.math.mod(su2_gp, math.pi)
+                    approx_set_gph.append(global_phase)
+                    gtrie_gp.append(global_phase)
 
         # Add to the next depth for next iteration
         gtrie_ids.append(gtrie_id)
@@ -171,28 +178,29 @@ def _approximate_set(basis_gates, max_length=10):
 def _group_commutator_decompose(matrix, tol=1e-5):
     r"""Performs a group commutator decomposition :math:`U = V' \times W' \times V'^{\dagger} \times W'^{\dagger}`
     as given in the Section 4.1 of `arXiv:0505030 <https://arxiv.org/abs/quant-ph/0505030>`_."""
-    # Use the quaternion form to get the rotation axis and angle on the Bloch sphere.
+    # Use the quaternion form to get the rotation axis and angle on the Bloch sphere,
+    # while using clipping for dealing with floating point precision errors.
     quaternion = _quaternion_transform(matrix)
     theta, axis = 2 * qml.math.arccos(qml.math.clip(quaternion[0], -1.0, 1.0)), quaternion[1:]
 
-    # Early return for the case where matrix is I or -I, where I is Identity
+    # Early return for the case where matrix is I or -I, where I is Identity.
     if qml.math.allclose(axis, 0.0, atol=tol) and qml.math.isclose(theta % math.pi, 0.0, atol=tol):
         return qml.math.eye(2, dtype=complex), qml.math.eye(2, dtype=complex)
 
-    # The angle phi comes from the Eq. 10 in the Solovay-Kitaev algorithm paper (arXiv:0505030)
+    # The angle phi comes from the Eq. 10 in the Solovay-Kitaev algorithm paper (arXiv:0505030).
     phi = 2.0 * qml.math.arcsin(qml.math.sqrt(qml.math.sqrt((0.5 - 0.5 * qml.math.cos(theta / 2)))))
 
-    # Begin decomposition by computing the rotation operations V and W
+    # Begin decomposition by computing the rotation operations V and W.
     v = qml.RX(phi, [0])
     w = qml.RY(2 * math.pi - phi, [0]) if axis[2] > 0 else qml.RY(phi, [0])
 
-    # Get the similarity transormation matrices S and Sdg
+    # Get the similarity transormation matrices S and S.adjoint().
     ud = qml.math.linalg.eig(matrix)[1]
     vwd = qml.math.linalg.eig(qml.matrix(v @ w @ v.adjoint() @ w.adjoint()))[1]
     s = ud @ qml.math.conj(qml.math.transpose(vwd))
     sdg = vwd @ qml.math.conj(qml.math.transpose(ud))
 
-    # Get the required matrices V' and W'
+    # Get the required matrices V' and W'.
     v_hat = s @ v.matrix() @ sdg
     w_hat = s @ w.matrix() @ sdg
 
@@ -241,7 +249,7 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
         # Get the gate decomposition in ['T', 'T*', 'H']
         ops, phase = qml.transforms.decompositions.sk_decomposition(op, epsilon=1e-3)
 
-        # Get SU2 matrix from the ops
+        # Get the approximate matrix from the ops
         matrix_sk = qml.prod(*reversed(ops)).matrix()
         matrix_op = matrix_sk * qml.matrix(phase)
 
@@ -280,31 +288,31 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
                 _, [index] = kd_tree.query(seq_node, workers=-1)
                 return approx_set_ids[index], approx_set_mat[index]
 
-            # get the decomposition for the remaining unitary: U @ U'.adjoint()
+            # Get the decomposition for the remaining unitary: U @ U'.adjoint()
             v_n, w_n = _group_commutator_decompose(
                 umat @ qml.math.conj(qml.math.transpose(u_n1_mat))
             )
 
-            # get the approximation for the residual commutator unitaries: V and W
+            # Get the approximation for the residual commutator unitaries: V and W
             c_ids_mats = []
             for c_n in [v_n, w_n]:
-                # get the approximation for each commutator iteratively: C --> C'
+                # Get the approximation for each commutator iteratively: C --> C'
                 c_n1_ids, c_n1_mat = None, None
                 for i in range(n):
                     c_n1_ids, c_n1_mat = _solovay_kitaev(c_n, i, c_n1_ids, c_n1_mat)
 
-                # get the adjoints C' --> C'.adjoint()
+                # Get the adjoints C' --> C'.adjoint()
                 c_n1_ids_adj = [qml.adjoint(gate, lazy=False) for gate in reversed(c_n1_ids)]
                 c_n1_mat_adj = qml.math.conj(qml.math.transpose(c_n1_mat))
 
-                # store the decompositions and matrices for C'
+                # Store the decompositions and matrices for C'
                 c_ids_mats.append([c_n1_ids, c_n1_mat, c_n1_ids_adj, c_n1_mat_adj])
 
-            # get the V' and W'
+            # Get the V' and W'
             v_n1_ids, v_n1_mat, v_n1_ids_adj, v_n1_mat_adj = c_ids_mats[0]
             w_n1_ids, w_n1_mat, w_n1_ids_adj, w_n1_mat_adj = c_ids_mats[1]
 
-            # build the operations and their SU(2) for return
+            # Build the operations and their SU(2) for return
             approx_ids = u_n1_ids + w_n1_ids_adj + v_n1_ids_adj + w_n1_ids + v_n1_ids
             approx_mat = v_n1_mat @ w_n1_mat @ v_n1_mat_adj @ w_n1_mat_adj @ u_n1_mat
 
@@ -320,11 +328,13 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
             # which is simply the L2-norm for the first row of the matrix.
             if qml.math.norm(gate_mat[0] - u_prime[0]) <= epsilon:
                 break
-
+            # Approximate the residual with the approximation from previous iteration
             decomposition, u_prime = _solovay_kitaev(gate_mat, depth + 1, decomposition, u_prime)
 
         # Get phase information based on the decomposition effort
-        global_phase = qml.GlobalPhase(approx_set_gph[index] - gate_gph if depth else 0.0)
+        global_phase = qml.GlobalPhase(
+            approx_set_gph[index] - gate_gph if depth or qml.math.isclose(gate_gph, 0.0) else 0.0
+        )
 
         # Remove inverses if any in the decomposition and handle trivial case
         [new_tape], _ = cancel_inverses(QuantumScript(decomposition or [qml.Identity(0)]))
