@@ -280,20 +280,20 @@ def clifford_t_decomposition(
 ) -> (Sequence[QuantumTape], Callable):
     r"""Unrolls a circuit into the Clifford+T basis using the optimal ancilla-free approximation of :class:`~.RZ` operations.
 
-    This method first decomposes the gate operations to a basis comprised of Clifford, :class:`~.RZ` and
+    This method first decomposes the gate operations to a basis comprised of Clifford+T, :class:`~.RZ` and
     :class:`~.GlobalPhase` operations (and their adjoints). The Clifford gates include the following PennyLane operations:
 
     - Single qubit gates - :class:`~.Identity`, :class:`~.PauliX`, :class:`~.PauliY`, :class:`~.PauliZ`,
       :class:`~.SX`, :class:`~.S`, and :class:`~.Hadamard`.
     - Two qubit gates - :class:`~.CNOT`, :class:`~.CY`, :class:`~.CZ`, :class:`~.SWAP`, and :class:`~.ISWAP`.
 
-    Then the leftover single qubit :class:`~.pennylane.RZ` operations are approximated in the Clifford+T basis with
+    Then the leftover single qubit :class:`~.RZ` operations are approximated in the Clifford+T basis with
     :math:`\epsilon > 0` error using the Solovay-Kitaev algorithm described in
     `Dawson and Nielsen (2005) <https://arxiv.org/abs/quant-ph/0505030>`_.
 
     Args:
         tape (QuantumTape): A quantum tape
-        epsilon (float): The maximum error in the approximation. Default to :math:``1e-4``.
+        epsilon (float): The maximum permissible error. Default to :math:``1e-4``.
         max_expansion (int): The depth to use for tape expansion before manual decomposition to Clifford+T basis is applied.
         method (str): Method to be used for Clifford+T decomposition. Default value is ``"sk"`` for Solovay-Kitaev
         **method_kwargs: Keyword argument to pass options for the ``method`` used for decompositions.
@@ -301,7 +301,7 @@ def clifford_t_decomposition(
     Keyword Args:
         Options (*):
 
-            * **max_depth** (int), **basis_set** (list(str)), **basis_length** (int):
+            * **max_depth** (int), **basis_set** (list[str]), **basis_length** (int):
               arguments for using the ``"sk"`` method, i.e., for performing Solovay-Kitaev decomposition using :func:`~.sk_decomposition`
 
     Returns:
@@ -315,6 +315,25 @@ def clifford_t_decomposition(
         NotImplementedError: If chosen decomposition is not supported
 
     .. seealso:: :func:`~.sk_decomposition` for Solovay-Kitaev decomposition.
+
+    **Example**
+
+    .. code-block:: python3
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit(x, y):
+            qml.RX(x, 0)
+            qml.CNOT([0, 1])
+            qml.RY(y, 0)
+            return qml.expval(qml.PauliZ(0))
+
+        x, y = 1.1, 2.2
+        decomposed_circuit = qml.transforms.clifford_t_decomposition(circuit)
+        result = circuit(x, y)
+        approx = decomposed_circuit(x, y)
+
+    >>> qml.math.allclose(result, approx, atol=1e-4)
+    True
     """
     with QueuingManager.stop_recording():
         # Build the basis set and the pipeline for intial compilation pass
