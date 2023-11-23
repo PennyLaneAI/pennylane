@@ -47,6 +47,7 @@
 
 * `qml.draw` and `qml.draw_mpl` now support drawing mid-circuit measurements.
   [(#4775)](https://github.com/PennyLaneAI/pennylane/pull/4775)
+  [(#4832)](https://github.com/PennyLaneAI/pennylane/pull/4832)
 
 * Autograd and torch can now use vjps provided by the device from the new device API. If a device provides
   a vector Jacobian product, this can be selected by providing `device_vjp=True` to
