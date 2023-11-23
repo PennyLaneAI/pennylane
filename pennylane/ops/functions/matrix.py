@@ -123,6 +123,41 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
         1.9775421558720845
         >>> qml.grad(cost)(theta)
         -0.14943813247359922
+
+        .. note::
+
+            When using ``qml.matrix`` with a ``QNode``, unless specified, the device wire order will
+            be used if ``device.wires`` is not ``None``. Otherwise, the wire order will be inferred
+            from the quantum function used to create the ``QNode``. Consider the following ``QNode``:
+
+            .. code-block:: python
+
+                def circuit():
+                    qml.Hadamard(wires=1)
+                    qml.CZ(wires=[0, 1])
+                    qml.Hadamard(wires=1)
+                    return qml.state()
+
+                dev_with_wires = qml.device("default.qubit", wires=[0, 1])
+                dev_without_wires = qml.device("default.qubit")
+
+                qnode_with_wires = qml.QNode(circuit, dev_with_wires)
+                qnode_without_wires = qml.QNode(circuit, dev_without_wires)
+
+            >>> qml.matrix(qnode_with_wires)().round(2)
+            array([[ 1.+0.j, -0.+0.j,  0.+0.j,  0.+0.j],
+                   [-0.+0.j,  1.+0.j,  0.+0.j,  0.+0.j],
+                   [ 0.+0.j,  0.+0.j, -0.+0.j,  1.+0.j],
+                   [ 0.+0.j,  0.+0.j,  1.+0.j, -0.+0.j]])
+            >>> qml.matrix(qnode_without_wires)().round(2)
+            array([[ 1.+0.j,  0.+0.j, -0.+0.j,  0.+0.j],
+                   [ 0.+0.j, -0.+0.j,  0.+0.j,  1.+0.j],
+                   [-0.+0.j,  0.+0.j,  1.+0.j,  0.+0.j],
+                   [ 0.+0.j,  1.+0.j,  0.+0.j, -0.+0.j]])
+
+            The second matrix above uses  wire order ``[1, 0]`` as that is the wire order of
+            as the wires aren't specified when creating the device and the first operation
+            in ``circuit`` is applied to wire ``1``.
     """
     if not isinstance(op, qml.operation.Operator):
         if not isinstance(op, (qml.tape.QuantumScript, qml.QNode)) and not callable(op):

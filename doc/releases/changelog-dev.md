@@ -153,6 +153,10 @@
   to their top-level pages (rather than their module-level pages, eg. `qml.measurements.expval`).
   [(#4750)](https://github.com/PennyLaneAI/pennylane/pull/4750)
 
+* Added information to documentation of `qml.matrix` about wire ordering when using `qml.matrix` on a
+  `QNode` which uses a device with `device.wires=None`.
+  [(#)]()
+
 <h3>Bug fixes 🐛</h3>
 
 * The decomposition of `GroverOperator` now has the same global phase as its matrix.
