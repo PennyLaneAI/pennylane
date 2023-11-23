@@ -425,7 +425,9 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         _update=True,
     ):  # pylint: disable=too-many-arguments
         AnnotatedQueue.__init__(self)
-        QuantumScript.__init__(self, ops, measurements, shots, trainable_params=trainable_params, _update=_update)
+        QuantumScript.__init__(
+            self, ops, measurements, shots, trainable_params=trainable_params, _update=_update
+        )
 
     def __enter__(self):
         QuantumTape._lock.acquire()
