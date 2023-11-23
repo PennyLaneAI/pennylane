@@ -383,8 +383,7 @@ class TestLayering:
 
 
 tape_matrices = qml.tape.QuantumScript(
-    prep=[qml.StatePrep([1.0, 0.0, 0.0, 0.0], wires=(0, 1))],
-    ops=[qml.QubitUnitary(np.eye(2), wires=0)],
+    ops=[qml.StatePrep([1.0, 0.0, 0.0, 0.0], wires=(0, 1)), qml.QubitUnitary(np.eye(2), wires=0)],
     measurements=[qml.expval(qml.Hermitian(np.eye(2), wires=0))],
 )
 

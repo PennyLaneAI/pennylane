@@ -156,14 +156,6 @@ class TestInitialization:
         op = Controlled(self.temp_op, (0, 1), control_values=[0, 1])
         assert op.control_values == [False, True]
 
-    def test_string_control_values(self):
-        """Test warning and conversion of string control_values."""
-
-        with pytest.warns(UserWarning, match="Specifying control values as a string"):
-            op = Controlled(self.temp_op, (0, 1), "01")
-
-        assert op.control_values == [False, True]
-
     def test_non_boolean_control_values(self):
         """Test control values are converted to booleans."""
         op = Controlled(self.temp_op, (0, 1, 2), control_values=["", None, 5])
@@ -850,6 +842,14 @@ class TestHelperMethod:
 
         decomp_mat = qml.matrix(op.decomposition, wire_order=op.wires)()
         assert qml.math.allclose(op.matrix(), decomp_mat)
+
+    def test_global_phase_decomp_raises_warning(self):
+        """Test that ctrl(GlobalPhase).decomposition() raises a warning."""
+        op = qml.ctrl(qml.GlobalPhase(1.23), control=[0])
+        with pytest.warns(
+            UserWarning, match="Controlled-GlobalPhase currently decomposes to nothing"
+        ):
+            assert op.decomposition() == []
 
 
 @pytest.mark.parametrize("test_expand", (False, True))

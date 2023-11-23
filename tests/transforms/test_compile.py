@@ -168,6 +168,13 @@ class TestCompileIntegration:
 
         assert np.allclose(qfun_res, qnode_res)
 
+    def test_compile_default_pipeline_removes_barrier(self):
+        """Test that the default pipeline removes Barriers."""
+
+        tape = qml.tape.QuantumScript([qml.PauliX(0), qml.Barrier([0, 1]), qml.CNOT([0, 1])])
+        [compiled_tape], _ = qml.compile(tape)
+        assert compiled_tape.operations == [qml.PauliX(0), qml.CNOT([0, 1])]
+
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
     def test_compile_pipeline_with_non_default_arguments(self, wires):
         """Test that using non-default arguments returns the correct results."""

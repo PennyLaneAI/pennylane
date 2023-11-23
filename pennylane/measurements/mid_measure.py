@@ -158,7 +158,7 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
 
         .. note::
 
-            Currently, postselection support is only available on ``"default.qubit"``. Using postselection
+            Currently, postselection support is only available on ``default.qubit``. Using postselection
             on other devices will raise an error.
 
         .. warning::
@@ -222,6 +222,28 @@ class MidMeasureMP(MeasurementProcess):
         super().__init__(wires=Wires(wires), id=id)
         self.reset = reset
         self.postselect = postselect
+
+    def label(self, decimals=None, base_label=None, cache=None):  # pylint: disable=unused-argument
+        r"""How the mid-circuit measurement is represented in diagrams and drawings.
+
+        Args:
+            decimals=None (Int): If ``None``, no parameters are included. Else,
+                how to round the parameters.
+            base_label=None (Iterable[str]): overwrite the non-parameter component of the label.
+                Must be same length as ``obs`` attribute.
+            cache=None (dict): dictionary that carries information between label calls
+                in the same drawing
+
+        Returns:
+            str: label to use in drawings
+        """
+        _label = "┤↗"
+        if self.postselect is not None:
+            _label += "₁" if self.postselect == 1 else "₀"
+
+        _label += "├" if not self.reset else "│  │0⟩"
+
+        return _label
 
     @property
     def return_type(self):

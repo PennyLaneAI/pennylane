@@ -23,7 +23,7 @@ from pennylane.operation import Operator
 from pennylane.qnode import QNode
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumTape
-from pennylane.transforms.core import transform
+from pennylane import transform
 
 
 def map_wires(
@@ -36,15 +36,16 @@ def map_wires(
     wire map.
 
     Args:
-        input (.Operator, pennylane.QNode, .QuantumTape, or Callable): an operator, quantum node,
-            quantum tape, or function that applies quantum operations
+        input (Operator or QNode or QuantumTape or Callable): an operator or a quantum circuit.
         wire_map (dict): dictionary containing the old wires as keys and the new wires as values
         queue (bool): Whether or not to queue the object when recording. Defaults to False.
         replace (bool): When ``queue=True``, if ``replace=True`` the input operators will be
             replaced by its mapped version. Defaults to False.
 
     Returns:
-        (.Operator, pennylane.QNode, .QuantumTape, or Callable): input with changed wires
+        operator (Operator) or qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]:
+
+        The transformed circuit or operator with updated wires in :func:`qml.transform <pennylane.transform>`.
 
     .. note::
 

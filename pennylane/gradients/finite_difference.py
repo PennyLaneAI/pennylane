@@ -26,7 +26,7 @@ from scipy.special import factorial
 
 import pennylane as qml
 from pennylane.measurements import ProbabilityMP
-from pennylane.transforms.core import transform
+from pennylane import transform
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 
@@ -210,10 +210,10 @@ def finite_diff(
     f0=None,
     validate_params=True,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
-    r"""Transform a QNode to compute the finite-difference gradient of all gate parameters with respect to its inputs.
+    r"""Transform a circuit to compute the finite-difference gradient of all gate parameters with respect to its inputs.
 
     Args:
-        tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
+        tape (QNode or QuantumTape): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
@@ -237,17 +237,11 @@ def finite_diff(
             If ``False``, the finite-difference method will be applied to all parameters.
 
     Returns:
-        function or tuple[list[QuantumTape], function]:
+        qnode (QNode) or tuple[List[QuantumTape], function]:
 
-        - If the input is a QNode, an object representing the Jacobian (function) of the QNode
-          that can be executed to obtain the Jacobian.
-          The type of the Jacobian returned is either a tensor, a tuple or a
-          nested tuple depending on the nesting structure of the original QNode output.
-
-        - If the input is a tape, a tuple containing a
-          list of generated tapes, together with a post-processing
-          function to be applied to the results of the evaluated tapes
-          in order to obtain the Jacobian.
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple depending upon the nesting
+        structure of measurements in the original circuit.
 
     **Example**
 
@@ -287,7 +281,9 @@ def finite_diff(
     .. details::
         :title: Usage Details
 
-        This gradient transform can also be applied directly to :class:`QNode <pennylane.QNode>` objects:
+        This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects.
+        However, for performance reasons, we recommend providing the gradient transform as the ``diff_method`` argument
+        of the QNode decorator, and differentiating with your preferred machine learning framework.
 
         >>> @qml.qnode(dev)
         ... def circuit(params):

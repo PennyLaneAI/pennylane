@@ -55,12 +55,14 @@ def broadcast_expand(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
         Currently, not all templates have been updated to support broadcasting.
 
     Args:
-        tape (.QuantumTape): Broadcasted tape to be expanded
+        tape (QNode or QuantumTape or Callable): Broadcasted tape to be expanded
 
     Returns:
-        function or tuple[list[.QuantumTape], function]:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
 
-        - If the input is a QNode, an object resembling the (broadcasted) input QNode
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+
+        - If the input is a QNode, the broadcasted input QNode
           that computes the QNode output serially with multiple circuit evaluations and
           stacks (and squeezes) the results into one batch of results.
 
