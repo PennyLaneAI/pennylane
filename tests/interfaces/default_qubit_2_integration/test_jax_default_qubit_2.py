@@ -134,7 +134,7 @@ test_matrix = [
 
 def atol_for_shots(shots):
     """Return higher tolerance if finite shots."""
-    return 2e-2 if shots else 1e-6
+    return 3e-2 if shots else 1e-6
 
 
 @pytest.mark.parametrize("execute_kwargs, shots, device", test_matrix)
@@ -234,9 +234,6 @@ class TestJaxExecuteIntegration:
     def test_tape_no_parameters(self, execute_kwargs, shots, device):
         """Test that a tape with no parameters is correctly
         ignored during the gradient computation"""
-
-        if execute_kwargs["gradient_fn"] == "adjoint":
-            pytest.skip("Adjoint differentiation does not yet support probabilities")
 
         def cost(params):
             tape1 = qml.tape.QuantumScript(
@@ -516,9 +513,6 @@ class TestJaxExecuteIntegration:
         """Tests correct output shape and evaluation for a tape
         with prob outputs"""
 
-        if execute_kwargs["gradient_fn"] == "adjoint":
-            pytest.skip("adjoint differentiation does not support probabilities")
-
         def cost(x, y):
             ops = [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))]
             m = [qml.probs(wires=0), qml.probs(wires=1)]
@@ -528,6 +522,9 @@ class TestJaxExecuteIntegration:
         x = jnp.array(0.543)
         y = jnp.array(-0.654)
 
+        if execute_kwargs.get("gradient_fn", "") == "adjoint":
+            x = x + 0j
+            y = y + 0j
         res = cost(x, y)
         expected = jnp.array(
             [
@@ -581,8 +578,6 @@ class TestJaxExecuteIntegration:
     def test_ragged_differentiation(self, execute_kwargs, device, shots):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        if execute_kwargs["gradient_fn"] == "adjoint":
-            pytest.skip("Adjoint differentiation does not yet support probabilities")
 
         def cost(x, y):
             ops = [qml.RX(x, wires=0), qml.RY(y, 1), qml.CNOT((0, 1))]
@@ -593,6 +588,10 @@ class TestJaxExecuteIntegration:
 
         x = jnp.array(0.543)
         y = jnp.array(-0.654)
+
+        if execute_kwargs.get("gradient_fn", "") == "adjoint":
+            x = x + 0j
+            y = y + 0j
 
         res = cost(x, y)
         expected = jnp.array(

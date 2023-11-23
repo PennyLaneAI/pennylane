@@ -105,19 +105,35 @@ def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
 
 
 def null_postprocessing(results):
+    """An empty post-processing function."""
     return results[0]
 
 
 def all_state_postprocessing(results, measurements, wire_order):
+    """Process a state measurement back into the original measurements."""
     result = tuple(m.process_state(results[0], wire_order=wire_order) for m in measurements)
     return result[0] if len(measurements) == 1 else result
 
 
 @qml.transform
 def adjoint_state_measurements(tape: QuantumTape) -> (Tuple[QuantumTape], Callable):
-    """ """
+    """Perform adjoint measurement preprocessing.
+
+    * Allows a tape with only expectation values through unmodified
+    * Raises an error if non-expectation value measurements exist and any have diagonalizing gates
+    * Turns the circuit into a state measurement + classical postprocesssing for arbitrary measurements
+
+    Args:
+        tape (QuantumTape): the input circuit
+
+    """
     if all(isinstance(m, qml.measurements.ExpectationMP) for m in tape.measurements):
         return (tape,), null_postprocessing
+
+    if any(len(m.diagonalizing_gates()) > 0 for m in tape.measurements):
+        raise qml.DeviceError(
+            "adjoint diff supports either all expectation values or only measurements without observables."
+        )
 
     state_tape = qml.tape.QuantumScript(
         tape.operations, [qml.measurements.StateMP(wires=tape.wires)]

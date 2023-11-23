@@ -344,14 +344,17 @@ class TestVectorValuedQNode:
         kwargs = dict(
             diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
         )
-        if diff_method == "adjoint":
-            pytest.skip("Adjoint does not support probs")
-        elif diff_method == "spsa":
+        if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
+
+        if diff_method == "adjoint":
+            # TODO: figure out how to perform this casting internally
+            x = x + 0j
+            y = y + 0j
 
         @qnode(dev, **kwargs)
         def circuit(x, y):
@@ -388,14 +391,17 @@ class TestVectorValuedQNode:
             diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
         )
 
-        if diff_method == "adjoint":
-            pytest.skip("Adjoint does not support probs")
-        elif diff_method == "spsa":
+        if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
+
+        if diff_method == "adjoint":
+            # TODO: figure out how to fix this internally
+            x = x + 0j
+            y = y + 0j
 
         @qnode(dev, **kwargs)
         def circuit(x, y):
@@ -464,14 +470,16 @@ class TestVectorValuedQNode:
         kwargs = dict(
             diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
         )
-        if diff_method == "adjoint":
-            pytest.skip("Adjoint does not support probs")
-        elif diff_method == "spsa":
+        if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
+
+        if diff_method == "adjoint":
+            x = x + 0j
+            y = y + 0j
 
         @qnode(dev, **kwargs)
         def circuit(x, y):
@@ -529,14 +537,16 @@ class TestVectorValuedQNode:
         """Tests correct output shape and evaluation for a tape with prob and expval outputs with less
         trainable parameters (argnums) than parameters."""
         kwargs = {}
-        if diff_method == "adjoint":
-            pytest.skip("Adjoint does not support probs")
-        elif diff_method == "spsa":
+        if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
+
+        if diff_method == "adjoint":
+            x = x + 0j
+            y = y + 0j
 
         @qnode(
             dev,
@@ -582,9 +592,7 @@ class TestVectorValuedQNode:
             diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
         )
 
-        if diff_method == "adjoint":
-            pytest.skip("Adjoint does not support probs")
-        elif diff_method == "hadamard":
+        if diff_method == "hadamard":
             pytest.skip("Hadamard does not support var")
         elif diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
@@ -592,6 +600,10 @@ class TestVectorValuedQNode:
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
+
+        if diff_method == "adjoint":
+            x = x + 0j
+            y = y + 0j
 
         @qnode(dev, **kwargs)
         def circuit(x, y):
@@ -1103,8 +1115,6 @@ class TestQubitIntegrationHigherOrder:
 
     def test_state(self, dev, diff_method, grad_on_execution, interface, tol):
         """Test that the state can be returned and differentiated"""
-        if diff_method == "adjoint":
-            pytest.skip("Adjoint does not support states")
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
@@ -1138,8 +1148,8 @@ class TestQubitIntegrationHigherOrder:
         """Test that the variance of a projector is correctly returned"""
         gradient_kwargs = {}
         if diff_method == "adjoint":
-            pytest.skip("Adjoint does not support projectors")
-        elif diff_method == "hadamard":
+            pytest.skip("adjoint supports all expvals or only diagonal measurements.")
+        if diff_method == "hadamard":
             pytest.skip("Hadamard does not support var.")
         elif diff_method == "spsa":
             gradient_kwargs = {"h": H_FOR_SPSA, "sampler_rng": np.random.default_rng(SEED_FOR_SPSA)}
@@ -1603,8 +1613,8 @@ class TestReturn:  # pylint:disable=too-many-public-methods
     ):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
         if diff_method == "adjoint":
-            pytest.skip("Test does not supports adjoint because of var.")
-        elif diff_method == "hadamard":
+            pytest.skip("adjoint supports either all measurements or only diagonal measurements.")
+        if diff_method == "hadamard":
             pytest.skip("Test does not support Hadamard because of var.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
@@ -1650,8 +1660,8 @@ class TestReturn:  # pylint:disable=too-many-public-methods
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
         if diff_method == "adjoint":
-            pytest.skip("Test does not supports adjoint because of var.")
-        elif diff_method == "hadamard":
+            pytest.skip("adjoint supports either all expvals or all diagonal measurements.")
+        if diff_method == "hadamard":
             pytest.skip("Test does not support Hadamard because of var.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
@@ -1685,8 +1695,8 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        if diff_method == "adjoint":
-            pytest.skip("Test does not supports adjoint because of probabilities.")
+        if diff_method == "adjoint" and jacobian == jax.jacfwd:
+            pytest.skip("jacfwd doesnt like complex numbers")
 
         @qnode(
             dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
@@ -1697,6 +1707,9 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
         a = jax.numpy.array(0.1)
+
+        if diff_method == "adjoint":
+            a = a + 0j
 
         jac = jacobian(circuit)(a, shots=shots)
 
@@ -1714,10 +1727,11 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         self, dev, diff_method, grad_on_execution, jacobian, shots, interface
     ):
         """The jacobian of multiple measurements with a multiple params return a tuple of arrays."""
-        if diff_method == "adjoint":
-            pytest.skip("Test does not supports adjoint because of probabilities.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
+
+        if diff_method == "adjoint" and jacobian == jax.jacfwd:
+            pytest.skip("jacfwd doesnt like complex numbers")
 
         @qnode(
             dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
@@ -1729,6 +1743,10 @@ class TestReturn:  # pylint:disable=too-many-public-methods
 
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
+
+        if diff_method == "adjoint":
+            a = a + 0j
+            b = b + 0j
 
         jac = jacobian(circuit, argnums=[0, 1])(a, b, shots=shots)
 
@@ -1754,10 +1772,11 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         self, dev, diff_method, grad_on_execution, jacobian, shots, interface
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
-        if diff_method == "adjoint":
-            pytest.skip("Test does not supports adjoint because of probabilities.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
+
+        if diff_method == "adjoint" and jacobian == jax.jacfwd:
+            pytest.skip("jacfwd doesnt like complex numbers")
 
         @qnode(
             dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
@@ -1768,6 +1787,8 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
         a = jax.numpy.array([0.1, 0.2])
+        if diff_method == "adjoint":
+            a = a + 0j
 
         jac = jacobian(circuit)(a, shots=shots)
 
