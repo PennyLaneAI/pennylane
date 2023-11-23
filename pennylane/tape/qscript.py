@@ -197,7 +197,7 @@ class QuantumScript:
         """list[dict[str, Operator or int]]: Parameter information.
         Values are dictionaries containing the corresponding operation and operation parameter index."""
 
-        self._trainable_params = "unset" if trainable_params is None else trainable_params
+        self._trainable_params = trainable_params
         self._graph = None
         self._specs = None
         self._output_dim = 0
@@ -472,7 +472,6 @@ class QuantumScript:
                     for i, d in enumerate(m.obs.data)
                 )
 
-
     def _update_observables(self):
         """Update information about observables, including the wires that are acted upon and
         identifying any observables that share wires.
@@ -582,7 +581,7 @@ class QuantumScript:
         >>> qscript.get_parameters()
         [0.432]
         """
-        if self._trainable_params == "unset":
+        if self._trainable_params is None:
             self._update_par_info()
             self._trainable_params = list(range(len(self._par_info)))
         return self._trainable_params

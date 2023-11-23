@@ -34,7 +34,7 @@ class TestInitialization:
         assert len(qs._ops) == 0
         assert len(qs._measurements) == 0
         assert len(qs._par_info) == 0
-        assert qs._trainable_params == "unset"
+        assert qs._trainable_params is None
         assert qs.trainable_params == []
         assert qs._trainable_params == []
         assert qs._graph is None

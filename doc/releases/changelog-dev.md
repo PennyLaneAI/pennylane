@@ -123,6 +123,10 @@
   `SparseHamiltonian`.
   [(#4828)](https://github.com/PennyLaneAI/pennylane/pull/4828)
 
+* `trainable_params` can now be set on initialization of `QuantumScript`, instead of having to set the
+  parameter after initialization.
+  [(#4877)](https://github.com/PennyLaneAI/pennylane/pull/4877)
+
 <h3>Breaking changes 💔</h3>
 
 * `default.qubit` now calculates the expectation value of Hermitians in a differentiable manner.
