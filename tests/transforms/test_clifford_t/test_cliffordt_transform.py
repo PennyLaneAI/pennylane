@@ -149,15 +149,25 @@ class TestCliffordCompile:
         )
 
     @pytest.mark.parametrize("epsilon", [2e-2, 5e-2, 9e-2])
-    def test_total_error(self, epsilon):
+    @pytest.mark.parametrize("circuit", [circuit_2, circuit_3, circuit_4, circuit_5])
+    def test_total_error(self, epsilon, circuit):
         """Ensure that given a certain epsilon, the total operator error is below the threshold."""
         dev = qml.device("default.qubit")
 
-        qnode_basic = qml.QNode(circuit_4, dev)
-        qnode_transformed = clifford_t_decomposition(qnode_basic, epsilon=epsilon)
-        mat_exact = qml.matrix(qnode_basic)()
-        mat_approx = qml.matrix(qnode_transformed)()
-        assert qml.math.norm(mat_exact[0] - mat_approx[0]) < epsilon
+        qnode_basic = qml.QNode(circuit, dev)
+        qnode_transformed = clifford_t_decomposition(qnode_basic, epsilon=epsilon, max_depth=10)
+        mat_exact = qml.matrix(qnode_basic, wire_order=[0, 1])()
+        mat_approx = qml.matrix(qnode_transformed, wire_order=[0, 1])()
+        phase = qml.math.divide(
+            mat_exact,
+            mat_approx,
+            out=qml.math.zeros_like(mat_exact, dtype=complex),
+            where=mat_exact != 0,
+        )[qml.math.nonzero(qml.math.round(mat_exact, 10))][0]
+        mat_exact /= phase
+        diff = mat_exact - mat_approx
+        error = qml.math.sqrt(qml.math.real(qml.math.trace(qml.math.conj(diff).T @ diff)) / 2)
+        assert error < epsilon
 
     @pytest.mark.parametrize(
         "op", [qml.RX(1.0, wires="a"), qml.U3(1, 2, 3, wires=[1]), qml.PhaseShift(1.0, wires=[2])]
