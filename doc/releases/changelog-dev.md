@@ -104,7 +104,7 @@
 * Added `ops.functions.assert_valid` for checking if an `Operator` class is defined correctly.
   [(#4764)](https://github.com/PennyLaneAI/pennylane/pull/4764)
 
-* Added `__eq__` method for TransformProgram and TransformContainers allowing the comparision of respective objects with `==` and `!=` operators.
+* Added `__eq__` method for TransformProgram and TransformContainers allowing the comparison of respective objects using `==` and `!=` operators.
   [(#4858)](https://github.com/PennyLaneAI/pennylane/pull/4858)
 
 * `GlobalPhase` now decomposes to nothing, in case devices do not support global phases.
