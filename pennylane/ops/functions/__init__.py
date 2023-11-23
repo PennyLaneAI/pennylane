@@ -32,6 +32,7 @@ This module contains functions that act on operators and tapes.
     ~map_wires
     ~matrix
     ~simplify
+    ~iterative_qpe
 
 """
 from .bind_new_parameters import bind_new_parameters
@@ -46,4 +47,5 @@ from .is_unitary import is_unitary
 from .map_wires import map_wires
 from .matrix import matrix
 from .simplify import simplify
+from .iterative_qpe import iterative_qpe
 from .assert_valid import assert_valid

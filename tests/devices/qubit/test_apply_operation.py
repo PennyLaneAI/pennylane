@@ -242,18 +242,11 @@ class TestTwoQubitStateSpecialCases:
         assert qml.math.allclose(shift * initial_state, new_state_no_wire)
 
 
-# pylint:disable = unused-argument
 def time_independent_hamiltonian():
     """Create a time-independent Hamiltonian on two qubits."""
     ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0), qml.PauliX(1)]
 
-    def f1(params, t):
-        return params  # constant
-
-    def f2(params, t):
-        return params  # constant
-
-    coeffs = [f1, f2, 4, 9]
+    coeffs = [qml.pulse.constant, qml.pulse.constant, 0.4, 0.9]
 
     return qml.pulse.ParametrizedHamiltonian(coeffs, ops)
 
@@ -275,10 +268,10 @@ def time_dependent_hamiltonian():
 
 
 @pytest.mark.jax
-class TestApplyParameterizedEvolution:
+class TestApplyParametrizedEvolution:
     @pytest.mark.parametrize("method", methods)
     def test_parameterized_evolution_time_independent(self, method):
-        """Test that applying a ParameterizedEvolution gives the expected state
+        """Test that applying a ParametrizedEvolution gives the expected state
         for a time-independent hamiltonian"""
 
         import jax.numpy as jnp
@@ -292,7 +285,7 @@ class TestApplyParameterizedEvolution:
 
         H = time_independent_hamiltonian()
         params = jnp.array([1.0, 2.0])
-        t = 4
+        t = 0.4
 
         op = qml.pulse.ParametrizedEvolution(H=H, params=params, t=t)
 
@@ -306,7 +299,7 @@ class TestApplyParameterizedEvolution:
 
     @pytest.mark.parametrize("method", methods)
     def test_parameterized_evolution_time_dependent(self, method):
-        """Test that applying a ParameterizedEvolution gives the expected state
+        """Test that applying a ParametrizedEvolution gives the expected state
         for a time dependent Hamiltonian"""
 
         import jax
@@ -321,7 +314,7 @@ class TestApplyParameterizedEvolution:
 
         H = time_dependent_hamiltonian()
         params = jnp.array([1.0, 2.0])
-        t = 4
+        t = 0.4
 
         op = qml.pulse.ParametrizedEvolution(H=H, params=params, t=t)
 
@@ -340,7 +333,7 @@ class TestApplyParameterizedEvolution:
         assert np.allclose(new_state, new_state_expected, atol=0.002)
 
     def test_large_state_small_matrix_evolves_matrix(self, mocker):
-        """Test that applying a ParameterizedEvolution operating on less
+        """Test that applying a ParametrizedEvolution operating on less
         than half of the wires in the state uses the default function to evolve
         the matrix"""
 
@@ -357,7 +350,7 @@ class TestApplyParameterizedEvolution:
 
         H = time_independent_hamiltonian()
         params = jnp.array([1.0, 2.0])
-        t = 4
+        t = 0.4
 
         op = qml.pulse.ParametrizedEvolution(H=H, params=params, t=t)
 
@@ -374,7 +367,7 @@ class TestApplyParameterizedEvolution:
         assert spy.call_count == 1
 
     def test_small_evolves_state(self, mocker):
-        """Test that applying a ParameterizedEvolution operating on less
+        """Test that applying a ParametrizedEvolution operating on less
         than half of the wires in the state uses the default function to evolve
         the matrix"""
 
@@ -433,7 +426,7 @@ class TestApplyParameterizedEvolution:
 
         H = time_independent_hamiltonian()
         params = jnp.array([1.0, 2.0])
-        t = 4
+        t = 0.4
 
         op = qml.pulse.ParametrizedEvolution(H=H, params=params, t=t)
 
@@ -480,11 +473,16 @@ class TestApplyParameterizedEvolution:
         assert spy.call_count == 2
         assert qml.math.allclose(state_ev, state_rx, atol=1e-6)
 
-    def test_batched_state_raises_an_error(self):
-        """Test that if is_state_batche=True, an error is raised"""
+    @pytest.mark.parametrize("num_state_wires", [2, 4])
+    def test_with_batched_state(self, num_state_wires, mocker):
+        """Test that a ParametrizedEvolution is applied correctly to a batched state.
+        Note that the branching logic is different for batched input states, because
+        evolving the state vector does not support batching of the state. Instead,
+        the evolved matrix is used always."""
+        spy_einsum = mocker.spy(qml.math, "einsum")
         H = time_independent_hamiltonian()
         params = np.array([1.0, 2.0])
-        t = 4
+        t = 0.1
 
         op = qml.pulse.ParametrizedEvolution(H=H, params=params, t=t)
 
@@ -492,11 +490,24 @@ class TestApplyParameterizedEvolution:
             [
                 [[0.81677345 + 0.0j, 0.0 + 0.0j], [0.0 - 0.57695852j, 0.0 + 0.0j]],
                 [[0.33894597 + 0.0j, 0.0 + 0.0j], [0.0 - 0.94080584j, 0.0 + 0.0j]],
+                [[0.33894597 + 0.0j, 0.0 + 0.0j], [0.0 - 0.94080584j, 0.0 + 0.0j]],
             ]
         )
+        if num_state_wires == 4:
+            zero_state_two_wires = np.eye(4)[0].reshape((2, 2))
+            initial_state = np.tensordot(initial_state, zero_state_two_wires, axes=0)
 
-        with pytest.raises(RuntimeError, match="does not support standard broadcasting"):
-            _ = apply_operation(op, initial_state, is_state_batched=True)
+        true_mat = qml.math.expm(-1j * qml.matrix(H(params, t=t)) * t)
+        U = qml.QubitUnitary(U=true_mat, wires=[0, 1])
+
+        new_state = apply_operation(op, initial_state, is_state_batched=True)
+        new_state_expected = apply_operation(U, initial_state, is_state_batched=True)
+        assert np.allclose(new_state, new_state_expected, atol=0.002)
+
+        if num_state_wires == 4:
+            assert spy_einsum.call_count == 2
+        else:
+            assert spy_einsum.call_count == 1
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
@@ -800,14 +811,20 @@ class TestLargerOperations:
         ]
     )
 
-    def test_multicontrolledx(self, method):
+    @pytest.mark.parametrize("control_values", ["111", "010", None, "100"])
+    def test_multicontrolledx(self, method, control_values):
         """Tests a four qubit multi-controlled x gate."""
 
-        new_state = method(qml.MultiControlledX(wires=(0, 1, 2, 3)), self.state)
+        op = qml.MultiControlledX(wires=(0, 1, 2, 3), control_values=control_values)
+        new_state = method(op, self.state)
 
         expected_state = np.copy(self.state)
-        expected_state[1, 1, 1, 1] = self.state[1, 1, 1, 0]
-        expected_state[1, 1, 1, 0] = self.state[1, 1, 1, 1]
+        if control_values is None:
+            values = (1, 1, 1)
+        else:
+            values = tuple(map(int, control_values))
+        expected_state[values + (1,)] = self.state[values + (0,)]
+        expected_state[values + (0,)] = self.state[values + (1,)]
 
         assert qml.math.allclose(new_state, expected_state)
 
@@ -823,6 +840,114 @@ class TestLargerOperations:
             state_v2 = method(d_op, state_v2)
 
         assert qml.math.allclose(state_v1, state_v2)
+
+
+class TestMultiControlledXKernel:
+    """Test the specialized kernel for MultiControlledX and its dispatching."""
+
+    # pylint: disable=too-many-arguments
+    @pytest.mark.parametrize(
+        "num_op_wires, num_state_wires, einsum_called, tdot_called",
+        [
+            # state small and matrix huge -> not possible because num_op_wires<=num_state_wires
+            # matrix large -> kernel
+            (9, 9, 0, 0),
+            # matrix large, state huge -> still kernel, not tensordot
+            (9, 9, 0, 0),
+            # matrix tiny, state not huge -> einsum
+            (2, 12, 1, 0),
+            # matrix small, state not huge -> tensordot
+            (5, 12, 0, 1),
+            # matrix tiny, state huge -> tensordot
+            (2, 13, 0, 1),
+            # matrix small, state huge -> tensordot
+            (5, 13, 0, 1),
+        ],
+    )
+    def test_multicontrolledx_dispatching(
+        self, num_op_wires, num_state_wires, einsum_called, tdot_called, mocker
+    ):
+        """Test that apply_multicontrolledx dispatches to the right method and is correct."""
+        np.random.seed(2751)
+        op = qml.MultiControlledX(wires=list(range(num_op_wires)))
+        state = np.random.random([2] * num_state_wires).astype(complex)
+        spies = [mocker.spy(qml.math, "einsum"), mocker.spy(qml.math, "tensordot")]
+        out = apply_operation(op, state, is_state_batched=False, debugger=None)
+        # Compute expected output
+        exp_out = state.copy()
+        idx = (1,) * (num_op_wires - 1)
+        exp_out[idx] = np.roll(exp_out[idx], 1, 0)
+        assert spies[0].call_count == einsum_called
+        assert spies[1].call_count == tdot_called
+        assert np.allclose(out, exp_out)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("batch_dim", [None, 1, 3])
+    def test_with_jax(self, batch_dim):
+        """Test that the custom kernel works with JAX."""
+        from jax import numpy as jnp
+
+        np.random.seed(2751)
+        op = qml.MultiControlledX(wires=[0, 4, 3, 1])
+        state_shape = ([batch_dim] if batch_dim is not None else []) + [2] * 5
+        state = np.random.random(state_shape).astype(complex)
+        jax_state = jnp.array(state)
+        out = apply_operation(op, jax_state, is_state_batched=batch_dim is not None, debugger=None)
+        # Compute expected output
+        exp_out = state.copy()
+        exp_out[..., 1, :, :, 1, 1] = np.roll(exp_out[..., 1, :, :, 1, 1], 1, -2)
+        assert qml.math.allclose(out, exp_out)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("batch_dim", [None, 1, 3])
+    def test_with_tf(self, batch_dim):
+        """Test that the custom kernel works with Tensorflow."""
+        import tensorflow as tf
+
+        np.random.seed(2751)
+        op = qml.MultiControlledX(wires=[0, 4, 3, 1])
+        state_shape = ([batch_dim] if batch_dim is not None else []) + [2] * 5
+        state = np.random.random(state_shape).astype(complex)
+        tf_state = tf.Variable(state)
+        out = apply_operation(op, tf_state, is_state_batched=batch_dim is not None, debugger=None)
+        # Compute expected output
+        exp_out = state.copy()
+        exp_out[..., 1, :, :, 1, 1] = np.roll(exp_out[..., 1, :, :, 1, 1], 1, -2)
+        assert qml.math.allclose(out, exp_out)
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("batch_dim", [None, 1, 3])
+    def test_with_autograd(self, batch_dim):
+        """Test that the custom kernel works with Autograd."""
+        np.random.seed(2751)
+        op = qml.MultiControlledX(wires=[0, 4, 3, 1])
+        state_shape = ([batch_dim] if batch_dim is not None else []) + [2] * 5
+        state = np.random.random(state_shape).astype(complex)
+        ag_state = qml.numpy.array(state)
+        out = apply_operation(op, ag_state, is_state_batched=batch_dim is not None, debugger=None)
+        # Compute expected output
+        exp_out = state.copy()
+        exp_out[..., 1, :, :, 1, 1] = np.roll(exp_out[..., 1, :, :, 1, 1], 1, -2)
+        assert qml.math.allclose(out, exp_out)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("batch_dim", [None, 1, 3])
+    def test_with_torch(self, batch_dim):
+        """Test that the custom kernel works with Torch."""
+        import torch
+
+        np.random.seed(2751)
+        op = qml.MultiControlledX(wires=[0, 4, 3, 1])
+        state_shape = ([batch_dim] if batch_dim is not None else []) + [2] * 5
+        state = np.random.random(state_shape).astype(complex)
+        torch_state = torch.tensor(state, requires_grad=True)
+        out = apply_operation(
+            op, torch_state, is_state_batched=batch_dim is not None, debugger=None
+        )
+        # Compute expected output
+        exp_out = state.copy()
+        exp_out[..., 1, :, :, 1, 1] = np.roll(exp_out[..., 1, :, :, 1, 1], 1, -2)
+        assert qml.math.allclose(out, exp_out)
 
 
 @pytest.mark.tf

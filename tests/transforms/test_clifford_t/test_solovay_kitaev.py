@@ -25,6 +25,7 @@ from pennylane.transforms.decompositions.clifford_t.solovay_kitaev import (
     _contains_SU2,
     _approximate_set,
     _group_commutator_decompose,
+    _op_error,
     sk_decomposition,
 )
 
@@ -149,7 +150,7 @@ def test_solovay_kitaev(op):
     """Test Solovay-Kitaev decomposition method"""
 
     with qml.queuing.AnnotatedQueue() as q:
-        gates = sk_decomposition(op, depth=5, basis_set=("T", "T*", "H"))
+        gates = sk_decomposition(op, epsilon=1e-4, max_depth=5, basis_set=("T", "T*", "H"))
     assert q.queue == gates
 
     matrix_sk, phase = _SU2_transform(qml.prod(*reversed(gates)).matrix())
@@ -161,12 +162,12 @@ def test_solovay_kitaev(op):
 
 @pytest.mark.parametrize(
     ("basis_length", "basis_set"),
-    [(10, ()), (8, (("H", "T"))), (10, ("H", "S", "T"))],
+    [(10, ("T*", "T", "H")), (8, ("H", "T")), (10, ("H", "S", "T"))],
 )
 def test_solovay_kitaev_with_basis_gates(basis_length, basis_set):
     """Test Solovay-Kitaev decomposition method with additional basis information provided."""
     op = qml.PhaseShift(math.pi / 4, 0)
-    gates = sk_decomposition(op, depth=3, basis_set=basis_set, basis_length=basis_length)
+    gates = sk_decomposition(op, 1e-4, max_depth=3, basis_set=basis_set, basis_length=basis_length)
 
     matrix_sk = qml.prod(*gates[::-1]).matrix()
 
@@ -190,8 +191,26 @@ def test_close_approximations_do_not_go_deep(op, query_count, mocker):
     _ = _approximate_set(basis_set, max_length=basis_length)  # pre-compute so spy is accurate
 
     spy = mocker.spy(sp.spatial.KDTree, "query")
-    _ = sk_decomposition(op, 3, basis_set=basis_set, basis_length=basis_length)
+    _ = sk_decomposition(op, 1e-4, max_depth=3, basis_set=basis_set, basis_length=basis_length)
     assert spy.call_count == query_count
+
+
+@pytest.mark.parametrize("epsilon", [2e-2, 3e-2, 7e-2])
+def test_epsilon_value_respected(epsilon):
+    """Test that resulting decompositions are within an epsilon value."""
+    op = qml.RZ(1.234, 0)
+    ops = sk_decomposition(op, epsilon, max_depth=5)
+    mat = qml.prod(*reversed(ops)).matrix()
+    su2_mat, _ = _SU2_transform(mat)
+    assert _op_error(op.matrix() - su2_mat) < epsilon
+
+
+def test_epsilon_value_effect():
+    """Test that different epsilon values create different decompositions."""
+    op = qml.RZ(math.pi / 5, 0)
+    decomp_with_error = sk_decomposition(op, 3e-2, max_depth=5)
+    decomp_less_error = sk_decomposition(op, 1e-2, max_depth=5)
+    assert len(decomp_with_error) < len(decomp_less_error)
 
 
 def test_exception():
@@ -202,4 +221,4 @@ def test_exception():
         ValueError,
         match=r"Operator must be a single qubit operation",
     ):
-        sk_decomposition(op, depth=1)
+        sk_decomposition(op, epsilon=1e-4, max_depth=1)
