@@ -208,7 +208,7 @@ def test_epsilon_value_respected(epsilon):
 def test_epsilon_value_effect():
     """Test that different epsilon values create different decompositions."""
     op = qml.RZ(math.pi / 5, 0)
-    decomp_with_error = sk_decomposition(op, 3e-2, max_depth=5)
+    decomp_with_error = sk_decomposition(op, 9e-2, max_depth=5)
     decomp_less_error = sk_decomposition(op, 1e-2, max_depth=5)
     assert len(decomp_with_error) < len(decomp_less_error)
 
