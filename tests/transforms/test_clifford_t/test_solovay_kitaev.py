@@ -150,12 +150,12 @@ def test_solovay_kitaev(op):
     """Test Solovay-Kitaev decomposition method"""
 
     with qml.queuing.AnnotatedQueue() as q:
-        gates, gphase = sk_decomposition(op, epsilon=1e-4, max_depth=5, basis_set=("T", "T*", "H"))
+        gates = sk_decomposition(op, epsilon=1e-4, max_depth=5, basis_set=("T", "T*", "H"))
     assert q.queue == gates
 
     matrix_sk = qml.prod(*reversed(gates)).matrix()
 
-    assert qml.math.allclose(qml.matrix(op), matrix_sk * qml.matrix(gphase), atol=1e-2)
+    assert qml.math.allclose(qml.matrix(op), matrix_sk, atol=1e-2)
     assert qml.prod(*gates, lazy=False).wires == op.wires
 
 
@@ -166,13 +166,11 @@ def test_solovay_kitaev(op):
 def test_solovay_kitaev_with_basis_gates(basis_length, basis_set):
     """Test Solovay-Kitaev decomposition method with additional basis information provided."""
     op = qml.PhaseShift(math.pi / 4, 0)
-    gates, gphase = sk_decomposition(
-        op, 1e-4, max_depth=3, basis_set=basis_set, basis_length=basis_length
-    )
+    gates = sk_decomposition(op, 1e-4, max_depth=3, basis_set=basis_set, basis_length=basis_length)
 
     matrix_sk = qml.prod(*reversed(gates)).matrix()
 
-    assert qml.math.allclose(qml.matrix(op), matrix_sk * qml.matrix(gphase), atol=1e-5)
+    assert qml.math.allclose(qml.matrix(op), matrix_sk, atol=1e-5)
 
 
 @pytest.mark.parametrize(
@@ -200,16 +198,16 @@ def test_close_approximations_do_not_go_deep(op, query_count, mocker):
 def test_epsilon_value_respected(epsilon):
     """Test that resulting decompositions are within an epsilon value."""
     op = qml.RX(1.234, 0)
-    gates, gphase = sk_decomposition(op, epsilon, max_depth=5)
+    gates = sk_decomposition(op, epsilon, max_depth=5)
     matrix_sk = qml.prod(*reversed(gates)).matrix()
-    assert qml.math.norm(qml.matrix(op)[0] - matrix_sk[0] * qml.matrix(gphase)) < epsilon
+    assert qml.math.norm(qml.matrix(op)[0] - matrix_sk[0]) < epsilon
 
 
 def test_epsilon_value_effect():
     """Test that different epsilon values create different decompositions."""
     op = qml.RZ(math.pi / 5, 0)
-    decomp_with_error, _ = sk_decomposition(op, 9e-2, max_depth=5)
-    decomp_less_error, _ = sk_decomposition(op, 1e-2, max_depth=5)
+    decomp_with_error = sk_decomposition(op, 9e-2, max_depth=5)
+    decomp_less_error = sk_decomposition(op, 1e-2, max_depth=5)
     assert len(decomp_with_error) < len(decomp_less_error)
 
 

@@ -211,13 +211,15 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
     r"""Approximate an arbitrary single-qubit gate in the Clifford+T basis using the `Solovay-Kitaev algorithm <https://arxiv.org/abs/quant-ph/0505030>`_.
 
     This method implements a recursive Solovay-Kitaev decomposition that approximates any :math:`U \in \text{SU}(2)`
-    operation with :math:`\epsilon > 0` error with a global phase. Increasing the recursion ``depth`` should
-    reduce this error. In general, this algorithm runs in :math:`O(\text{log}^{2.71}(1/\epsilon))` time and produces
-    a decomposition with :math:`O(\text{log}^{3.97}(1/\epsilon))` operations.
+    operation with :math:`\epsilon > 0` error. The decomposition exits early if greater than ``max_depth`` operations
+    are required.
+
+    This algorithm runs in :math:`O(\text{log}^{2.71}(1/\epsilon))` time and produces a decomposition with
+    :math:`O(\text{log}^{3.97}(1/\epsilon))` operations.
 
     Args:
         op (~pennylane.operation.Operation): A single-qubit gate operation.
-        epsilon (float): The maximum permissible error, :math:`\epsilon > 0`, for the approximation.
+        epsilon (float): The maximum permissible error.
 
     Keyword Args:
         max_depth (int): Depth until which the recursion occurs. A smaller :math:`\epsilon` would generally require a
@@ -229,8 +231,8 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
             Default is ``10``.
 
     Returns:
-        Tuple(list(~pennylane.operation.Operation), ~pennylane.operation.Operation): A list of gates in the Clifford+T
-        basis set that approximates the given operation and a global phase. The operations are given in circuit-order.
+        list(~pennylane.operation.Operation): A list of gates in the Clifford+T basis set that approximates the given
+        operation along with a final global phase operation. The operations are in the circuit-order.
 
     Raises:
         ValueError: If the given operator acts on more than one wires.
@@ -247,16 +249,15 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
         op  = qml.RZ(np.pi/3, wires=0)
 
         # Get the gate decomposition in ['T', 'T*', 'H']
-        ops, phase = qml.transforms.decompositions.sk_decomposition(op, epsilon=1e-3)
+        ops = qml.transforms.decompositions.sk_decomposition(op, epsilon=1e-3)
 
         # Get the approximate matrix from the ops
         matrix_sk = qml.prod(*reversed(ops)).matrix()
-        matrix_op = matrix_sk * qml.matrix(phase)
 
     When the function is run for a sufficient ``depth`` with a good enough approximate set,
     the output gate sequence should implement the same operation approximately.
 
-    >>> qml.math.allclose(op.matrix(), matrix_op, atol=1e-3)
+    >>> qml.math.allclose(op.matrix(), matrix_sk, atol=1e-3)
     True
 
     """
@@ -331,16 +332,16 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
             # Approximate the residual with the approximation from previous iteration
             decomposition, u_prime = _solovay_kitaev(gate_mat, depth + 1, decomposition, u_prime)
 
-        # Get phase information based on the decomposition effort
-        global_phase = qml.GlobalPhase(
-            approx_set_gph[index] - gate_gph if depth or qml.math.isclose(gate_gph, 0.0) else 0.0
-        )
-
         # Remove inverses if any in the decomposition and handle trivial case
         [new_tape], _ = cancel_inverses(QuantumScript(decomposition or [qml.Identity(0)]))
 
     # Map the wires to that of the operation and queue
     [map_tape], _ = qml.map_wires(new_tape, wire_map={0: op.wires[0]}, queue=True)
 
+    # Get phase information based on the decomposition effort
+    global_phase = qml.GlobalPhase(
+        approx_set_gph[index] - gate_gph if depth or qml.math.isclose(gate_gph, 0.0) else 0.0
+    )
+
     # Return the gates from the mapped tape and global phase
-    return map_tape.operations, global_phase
+    return map_tape.operations + [global_phase]
