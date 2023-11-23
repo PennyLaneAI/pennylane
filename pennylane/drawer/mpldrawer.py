@@ -881,7 +881,7 @@ class MPLDrawer:
         )
         if text:
             self._ax.text(
-                layer + 0.05 * self._box_length, wires + 0.2, text, fontsize=self.fontsize
+                layer + 0.05 * self._box_length, wires + 0.225, text, fontsize=(self.fontsize - 2)
             )
 
     def cond(self, layer, measured_layer, wires, wires_target, options=None):

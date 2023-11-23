@@ -650,7 +650,7 @@ class TestMeasure:
         drawer.measure(0, 0, text="0")
         assert len(drawer.ax.texts) == 1
         assert drawer.ax.texts[0].get_text() == "0"
-        assert drawer.ax.texts[0].get_position() == (0.05 * 0.75, 0.2)
+        assert drawer.ax.texts[0].get_position() == (0.05 * 0.75, 0.225)
         plt.close()
 
     def test_measure_formatted(self):
