@@ -308,8 +308,6 @@ class TestSupportedConfs:
                     msg = "not accepted with finite shots"
                 else:
                     msg = "Finite shots are not supported with"
-            elif return_type not in ("Hermitian", "Projector", Expectation):
-                msg = "not accepted for analytic simulation"
         elif shots and return_type in (
             VnEntropy,
             MutualInfo,
@@ -366,15 +364,13 @@ class TestSupportedConfs:
     def test_all_adjoint_nonexp(self, interface, return_type, shots, wire_specs):
         """Test diff_method=adjoint raises an error for non-expectation
         measurements for all interfaces"""
-        msg = (
-            ""  # two options of message both along the lines of "no shots"
-            if shots
-            else "not accepted for analytic simulation on adjoint"
-        )
 
         circuit = get_qnode(interface, "adjoint", return_type, shots, wire_specs)
         x = get_variable(interface, wire_specs)
-        with pytest.raises(qml.DeviceError, match=msg):
+        if shots:
+            with pytest.raises(qml.DeviceError):
+                compute_gradient(x, interface, circuit, return_type)
+        else:
             compute_gradient(x, interface, circuit, return_type)
 
     @pytest.mark.parametrize("interface", diff_interfaces)

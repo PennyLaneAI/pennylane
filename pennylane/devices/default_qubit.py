@@ -104,6 +104,26 @@ def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
     )
 
 
+def null_postprocessing(results):
+    return results[0]
+
+def all_state_postprocessing(results, measurements, wire_order):
+    result = tuple(m.process_state(results[0], wire_order=wire_order) for m in measurements)
+    return result[0] if len(measurements) == 1 else result
+
+@qml.transform
+def adjoint_state_measurements(tape: QuantumTape) -> (Tuple[QuantumTape], Callable):
+    """
+    
+    
+    """
+    if all(isinstance(m, qml.measurements.ExpectationMP) for m in tape.measurements):
+        return (tape, ), null_postprocessing
+        
+    state_tape = qml.tape.QuantumScript(tape.operations, [qml.measurements.StateMP(wires=tape.wires)])
+    return (state_tape, ), partial(all_state_postprocessing, measurements=tape.measurements, wire_order=tape.wires)
+
+
 def _add_adjoint_transforms(program: TransformProgram) -> None:
     """Private helper function for ``preprocess`` that adds the transforms specific
     for adjoint differentiation.
@@ -124,9 +144,6 @@ def _add_adjoint_transforms(program: TransformProgram) -> None:
         """Specifies whether or not an observable is compatible with adjoint differentiation on DefaultQubit."""
         return obs.has_matrix
 
-    def accepted_adjoint_measurement(m: qml.measurements.MeasurementProcess) -> bool:
-        return isinstance(m, (qml.measurements.ExpectationMP, qml.measurements.StateMP))
-
     name = "adjoint + default.qubit"
     program.add_transform(no_sampling, name=name)
     program.add_transform(
@@ -137,9 +154,9 @@ def _add_adjoint_transforms(program: TransformProgram) -> None:
     program.add_transform(validate_observables, adjoint_observables, name=name)
     program.add_transform(
         validate_measurements,
-        analytic_measurements=accepted_adjoint_measurement,
         name=name,
     )
+    program.add_transform(adjoint_state_measurements)
     program.add_transform(qml.transforms.broadcast_expand)
     program.add_transform(warn_about_trainable_observables)
 

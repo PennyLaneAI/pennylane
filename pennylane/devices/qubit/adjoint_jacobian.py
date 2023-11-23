@@ -46,11 +46,12 @@ def _adjoint_jacobian_state(tape: QuantumTape):
 
         jacobian = [apply_operation(op, jac) for jac in jacobian]
 
-        if param_idx in tape.trainable_params:
-            d_op_matrix = operation_derivative(op)
-            jacobian.append(apply_operation(qml.QubitUnitary(d_op_matrix, wires=op.wires), state))
+        if op.num_params == 1:
+            if param_idx in tape.trainable_params:
+                d_op_matrix = operation_derivative(op)
+                jacobian.append(apply_operation(qml.QubitUnitary(d_op_matrix, wires=op.wires), state))
 
-        param_idx += 1
+            param_idx += 1
         state = apply_operation(op, state)
 
     return tuple(jac.flatten() for jac in jacobian)

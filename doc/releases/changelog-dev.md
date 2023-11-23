@@ -9,6 +9,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* `default.qubit` now supports adjoint differentiation for any state-based measurement.  Please note that
+  improved perfromance is not guaranteed for non-expectation values.
+  [(#4865)](https://github.com/PennyLaneAI/pennylane/pull/4865)
+
 * `default.qubit` no longer uses a dense matrix for `MultiControlledX` for more than 8 operation wires.
   [(#4673)](https://github.com/PennyLaneAI/pennylane/pull/4673)
 
