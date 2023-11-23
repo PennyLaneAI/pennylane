@@ -316,6 +316,48 @@ def apply_multicontrolledx(
 
 
 @apply_operation.register
+def apply_grover(op: qml.GroverOperator, state, is_state_batched: bool = False, debugger=None):
+    """Apply GroverOperator either via a custom matrix-free method (more than 8 operation
+    wires) or via standard matrix based methods (else)."""
+    if len(op.wires) < 9:
+        return _apply_operation_default(op, state, is_state_batched, debugger)
+    return _apply_grover_without_matrix(state, op.wires, is_state_batched)
+
+
+def _apply_grover_without_matrix(state, op_wires, is_state_batched):
+    r"""Apply GroverOperator to state. This method uses that this operator
+    is :math:`2*P-\mathbb{I}`, where :math:`P` is the projector onto the
+    all-plus state. This allows us to compute the new state by replacing summing
+    over all axes on which the operation acts, and "filling in" the all-plus state
+    in the resulting lower-dimensional state via a Kronecker product.
+    """
+    num_wires = len(op_wires)
+    # 2 * Squared normalization of the all-plus state on the op wires
+    # (squared, because we skipped the normalization when summing, 2* because of the def of Grover)
+    prefactor = 2 ** (1 - num_wires)
+
+    # The axes to sum over in order to obtain <+|\psi>, where <+| only acts on the op wires.
+    sum_axes = [w + is_state_batched for w in op_wires]
+    collapsed = math.sum(state, axis=tuple(sum_axes))
+
+    if num_wires == (len(qml.math.shape(state)) - is_state_batched):
+        # If the operation acts on all wires, we can skip the tensor product with all-ones state
+        new_shape = (-1,) + (1,) * num_wires if is_state_batched else (1,) * num_wires
+        return prefactor * math.reshape(collapsed, new_shape) - state
+        # [todo]: Once Tensorflow support expand_dims with multiple axes in the second argument,
+        # use the following line instead of the two above.
+        # return prefactor * math.expand_dims(collapsed, sum_axes) - state
+
+    all_plus = math.cast_like(math.full([2] * num_wires, prefactor), state)
+    # After the Kronecker product (realized with tensordot with axes=0), we need to move
+    # the new axes to the summed-away axes' positions. Finally, subtract the original state.
+    source = list(range(math.ndim(collapsed), math.ndim(state)))
+    # Probably it will be better to use math.full or math.tile to create the outer product
+    # here computed with math.tensordot. However, Tensorflow and Torch do not have full support
+    return math.moveaxis(math.tensordot(collapsed, all_plus, axes=0), source, sum_axes) - state
+
+
+@apply_operation.register
 def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None):
     """Take a snapshot of the state"""
     if debugger is not None and debugger.active:
