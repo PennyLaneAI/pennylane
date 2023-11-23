@@ -199,11 +199,6 @@ def _group_commutator_decompose(matrix, tol=1e-5):
     return w_hat, v_hat
 
 
-def _op_error(diff):
-    """Compute the operator error (Hilbert-Schmidt norm)."""
-    return qml.math.sqrt(qml.math.real(qml.math.trace(qml.math.conj(diff).T @ diff)) / 2)
-
-
 def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), basis_length=10):
     r"""Approximate an arbitrary single-qubit gate in the Clifford+T basis using the `Solovay-Kitaev algorithm <https://arxiv.org/abs/quant-ph/0505030>`_.
 
@@ -214,13 +209,14 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
 
     Args:
         op (~pennylane.operation.Operation): A single-qubit gate operation
-        epsilon (float): The maximum error in the approximation. Default to :math:10^-4
+        epsilon (float): The maximum error :math:`\epsilon > 0` in the approximation.
 
     Keyword Args:
-        max_depth (int): Depth until which the recursion occurs. Defaults to 5
+        max_depth (int): Depth until which the recursion occurs. A smaller :math:`\epsilon` would generally require a
+            higher recursion depth. Default is ``5``.
         basis_set (list(str)): Basis set to be used for the decomposition and building an approximate set internally.
             It accepts the following gate terms: ``['X', 'Y', 'Z', 'H', 'T', 'T*', 'S', 'S*']``, where ``*`` refers
-            to the gate adjoint. Default value is ``['T', 'T*', 'H']``
+            to the gate adjoint. Default value is ``['T', 'T*', 'H']``.
         basis_length (int): Maximum expansion length of Clifford+T sequences in the internally-built approximate set.
             Default is ``10``.
 
@@ -229,7 +225,7 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
             basis set that approximates the given operation and a global phase. The operations are given in circuit-order.
 
     Raises:
-        ValueError: If the given operator acts on more than one wires
+        ValueError: If the given operator acts on more than one wires.
 
     **Example**
 
@@ -243,14 +239,14 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
         op  = qml.RZ(np.pi/3, wires=0)
 
         # Get the gate decomposition in ['T', 'T*', 'H']
-        ops, phase = qml.transforms.decompositions.sk_decomposition(op, depth=5)
+        ops, phase = qml.transforms.decompositions.sk_decomposition(op, epsilon=1e-3)
 
         # Get SU2 matrix from the ops
         matrix_sk = qml.prod(*reversed(ops)).matrix()
         matrix_op = matrix_sk * qml.matrix(phase)
 
     When the function is run for a sufficient ``depth`` with a good enough approximate set,
-    the output gate sequence should implement the same operation approximately up to a global phase.
+    the output gate sequence should implement the same operation approximately.
 
     >>> qml.math.allclose(op.matrix(), matrix_op, atol=1e-3)
     True
@@ -317,14 +313,18 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
         # If we have it already, use that, otherwise proceed for decomposition
         _, [index] = kd_tree.query(qml.math.array([gate_qat]), workers=-1)
         decomposition, u_prime = approx_set_ids[index], approx_set_mat[index]
-        n = 1
-        while n <= max_depth and _op_error(gate_mat - u_prime) > epsilon:
-            # get the approximation for the given unitary: U --> U' for each iteration
-            decomposition, u_prime = _solovay_kitaev(gate_mat, n, decomposition, u_prime)
-            n += 1
+
+        # Iterate until max_depth while doing an epsilon-error comparision
+        for depth in range(max_depth):
+            # For a SU(2) matrix Hilbert-Schmidt norm is √(|α|^2 + |β|^2),
+            # which is simply the L2-norm for the first row of the matrix.
+            if qml.math.norm(gate_mat[0] - u_prime[0]) <= epsilon:
+                break
+
+            decomposition, u_prime = _solovay_kitaev(gate_mat, depth + 1, decomposition, u_prime)
 
         # Get phase information based on decomposition effort
-        global_phase = qml.GlobalPhase(gate_gph + approx_set_gph[index] if n > 1 else 0.0)
+        global_phase = qml.GlobalPhase(gate_gph + approx_set_gph[index] if depth else 0.0)
 
         # Remove inverses if any in the decomposition and handle trivial case
         [new_tape], _ = cancel_inverses(QuantumScript(decomposition or [qml.Identity(0)]))

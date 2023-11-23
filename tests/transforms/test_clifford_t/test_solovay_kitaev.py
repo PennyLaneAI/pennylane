@@ -25,7 +25,6 @@ from pennylane.transforms.decompositions.clifford_t.solovay_kitaev import (
     _contains_SU2,
     _approximate_set,
     _group_commutator_decompose,
-    _op_error,
     sk_decomposition,
 )
 
@@ -202,7 +201,7 @@ def test_epsilon_value_respected(epsilon):
     op = qml.RX(1.234, 0)
     gates, gphase = sk_decomposition(op, epsilon, max_depth=5)
     matrix_sk = qml.prod(*reversed(gates)).matrix()
-    assert _op_error(qml.matrix(op) - matrix_sk * qml.matrix(gphase)) < epsilon
+    assert qml.math.norm(qml.matrix(op)[0] - matrix_sk[0] * qml.matrix(gphase)) < epsilon
 
 
 def test_epsilon_value_effect():
