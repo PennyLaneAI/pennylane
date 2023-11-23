@@ -96,8 +96,8 @@ Adjoint differentiation
 
 PennyLane implements the adjoint differentiation method from
 `2009.02823 <https://arxiv.org/pdf/2009.02823.pdf>`__, which only discusses
-the gradient of expectation of observables. The implementation is specific to the paper, hence the return statement
-of the quantum function wrapped in ``qml.qnode`` can only contain :func:`~.pennylane.expval` as a measurement.
+the gradient of expectation of observables. The implementation is specific to the paper, hence the best performance
+will occur when only using expectation values of observables.
 
 In particular, the following code works as expected:
 
@@ -117,34 +117,22 @@ In particular, the following code works as expected:
 >>> print_grad()
 [-0.09983342]
 
-But the following code raises an error:
+PennyLane can now use adjoint differentation for any state based measurement on `default.qubit`. `lightning.qubit`
+still only supports expectation values.
 
-.. code-block:: python
+.. code-block:: python 
 
-    def print_grad_bad():
-        dev = qml.device('default.qubit', wires=1, shots=None)
+    @qml.qnode(qml.device('default.qubit'), diff_method="adjoint")
+    def circuit(x):
+        qml.IsingXX(x, wires=(0,1))
+        return qml.vn_entropy(wires=0)
 
-        @qml.qnode(dev, diff_method='adjoint')
-        def circuit(x):
-            qml.RX(x[0], wires=0)
-            return qml.state()
+>>> qml.grad(circuit)(qml.numpy.array(0.1)
+(0.2989909451499196+0j)
 
-        def cost_fn(x):
-            out = circuit(x)
-            return np.abs(out[0])
-
-        x = np.array([0.1], requires_grad=True)
-        print(qml.grad(cost_fn)(x))
-
->>> print_grad_bad()
-Traceback (most recent call last):
-  ...
-  File "C:\pennylane\pennylane\_qubit_device.py", line 951, in adjoint_jacobian
-    raise qml.QuantumFunctionError(
-pennylane.QuantumFunctionError: Adjoint differentiation method does not support measurement state
 
 Furthermore, the adjoint differentiation algorithm is analytic by nature. If the user creates a device
-with ``shots>0``, a warning is raised and gradients are computed analytically:
+with ``shots>0``, an error is raised:
 
 .. code-block:: python
 
@@ -160,11 +148,7 @@ with ``shots>0``, a warning is raised and gradients are computed analytically:
         print(qml.grad(circuit)(x))
 
 >>> print_grad_ok()
-C:\pennylane\pennylane\qnode.py:434: UserWarning: Requested adjoint differentiation to be computed with finite shots. Adjoint differentiation always calculated exactly.
-  warnings.warn(
-C:\pennylane\pennylane\_qubit_device.py:965: UserWarning: Requested adjoint differentiation to be computed with finite shots. The derivative is always exact when using the adjoint differentiation method.
-  warnings.warn(
-[-0.09983342]
+DeviceError: Finite shots are not supported with adjoint + default.qubit
 
 .. _State gradients:
 

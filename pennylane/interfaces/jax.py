@@ -245,7 +245,6 @@ def _execute_fwd(
     def execute_wrapper_jvp(primals, tangents):
         """Primals[0] are parameters as Jax tracers and tangents[0] is a list of tangent vectors as Jax tracers."""
         res, jacs = execute_wrapper(primals[0])
-
         jvps = _compute_jvps(jacs, tangents[0], tapes)
         return (res, jacs), (jvps, jacs)
 
