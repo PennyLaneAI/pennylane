@@ -88,6 +88,9 @@
 * Add a new repository CI/CD pipeline to run benchmarks and plot graphs comparing with a fixed reference. This pipeline will run on a schedule and can be activated on a PR with the label ``ci:run_benchmarks``.
   [(#4741)](https://github.com/PennyLaneAI/pennylane/pull/4741)
 
+* Expand the benchmarks CI/CD pipeline to export all benchmark data in a single JSON file and a CSV file with runtimes. This includes all references and local benchmarks.
+  [(#4873)](https://github.com/PennyLaneAI/pennylane/pull/4873)
+
 <h3>Breaking changes 💔</h3>
 
 * Moved `qml.cond` and the `Conditional` operation from the `transforms` folder to the `ops/op_math` folder.
