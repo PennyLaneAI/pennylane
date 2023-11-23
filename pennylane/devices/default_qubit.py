@@ -107,21 +107,24 @@ def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
 def null_postprocessing(results):
     return results[0]
 
+
 def all_state_postprocessing(results, measurements, wire_order):
     result = tuple(m.process_state(results[0], wire_order=wire_order) for m in measurements)
     return result[0] if len(measurements) == 1 else result
 
+
 @qml.transform
 def adjoint_state_measurements(tape: QuantumTape) -> (Tuple[QuantumTape], Callable):
-    """
-    
-    
-    """
+    """ """
     if all(isinstance(m, qml.measurements.ExpectationMP) for m in tape.measurements):
-        return (tape, ), null_postprocessing
-        
-    state_tape = qml.tape.QuantumScript(tape.operations, [qml.measurements.StateMP(wires=tape.wires)])
-    return (state_tape, ), partial(all_state_postprocessing, measurements=tape.measurements, wire_order=tape.wires)
+        return (tape,), null_postprocessing
+
+    state_tape = qml.tape.QuantumScript(
+        tape.operations, [qml.measurements.StateMP(wires=tape.wires)]
+    )
+    return (state_tape,), partial(
+        all_state_postprocessing, measurements=tape.measurements, wire_order=tape.wires
+    )
 
 
 def _add_adjoint_transforms(program: TransformProgram) -> None:
