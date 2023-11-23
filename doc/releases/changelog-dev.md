@@ -63,6 +63,10 @@
 * XZX decomposition is added to the list of supported single-qubit unitary decompositions.
   [(#4862)](https://github.com/PennyLaneAI/pennylane/pull/4862)
 
+* Non-parametric-ops such as `Barrier`, `Snapshot` and `Wirecut` have been grouped together and moved to `pennylane/ops/meta.py`.
+  Additionally, the relevant tests have been organized and placed in a new file, `tests/ops/test_meta.py` .
+  [(#4789)](https://github.com/PennyLaneAI/pennylane/pull/4789)
+
 <h4>Better support for batching</h4>
 
 * `default.qubit` now can evolve already batched states with `ParametrizedEvolution`
@@ -124,10 +128,6 @@
   `qml.transforms.Conditional` will now be available as `qml.ops.Conditional`.
   [(#4860)](https://github.com/PennyLaneAI/pennylane/pull/4860)
 
-* Non-parametric-ops such as `Barrier`, `Snapshot` and `Wirecut` have been grouped together and moved to `pennylane/ops/meta.py`.
-  Additionally, the relevant tests have been organized and placed in a new file, `tests/ops/test_meta.py` .
-  [(#4789)](https://github.com/PennyLaneAI/pennylane/pull/4789)
-  
 * `QuantumScript.graph` is now built using `tape.measurements` instead of `tape.observables`
   because it depended on the now-deprecated `Observable.return_type` property.
   [(#4762)](https://github.com/PennyLaneAI/pennylane/pull/4762)
