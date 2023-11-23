@@ -296,16 +296,16 @@ class TestConstruction:
         assert len(tape.circuit) == 5
         assert tape.circuit[0].return_type == qml.measurements.MidMeasure
 
-        assert isinstance(tape.circuit[1], qml.transforms.condition.Conditional)
+        assert isinstance(tape.circuit[1], qml.ops.Conditional)
         assert isinstance(tape.circuit[1].then_op, qml.PauliX)
         assert tape.circuit[1].then_op.wires == target_wire
 
-        assert isinstance(tape.circuit[2], qml.transforms.condition.Conditional)
+        assert isinstance(tape.circuit[2], qml.ops.Conditional)
         assert isinstance(tape.circuit[2].then_op, qml.RY)
         assert tape.circuit[2].then_op.wires == target_wire
         assert tape.circuit[2].then_op.data == (r,)
 
-        assert isinstance(tape.circuit[3], qml.transforms.condition.Conditional)
+        assert isinstance(tape.circuit[3], qml.ops.Conditional)
         assert isinstance(tape.circuit[3].then_op, qml.PauliZ)
         assert tape.circuit[3].then_op.wires == target_wire
 
