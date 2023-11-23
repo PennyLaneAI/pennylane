@@ -297,6 +297,10 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         t4 = TransformContainer(
             qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 2}
         )
+
+        t5 = TransformContainer(qml.transforms.merge_rotations.transform, args=(1e-6,))
+        t6 = TransformContainer(qml.transforms.merge_rotations.transform, args=(1e-7,))
+
         # test for equality of identical transformers
         assert t1 == t2
 
@@ -305,6 +309,12 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert t2 != t3
         assert t1 != 2
         assert t1 != t4
+        assert t5 != t6
+        assert t5 != t1
+
+        # Test equality with the same args
+        t5_copy = TransformContainer(qml.transforms.merge_rotations.transform, args=(1e-6,))
+        assert t5 == t5_copy
 
     def test_queuing_qfunc_transform(self):
         """Test that queuing works with the transformed quantum function."""

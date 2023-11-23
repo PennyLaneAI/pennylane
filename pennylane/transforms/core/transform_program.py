@@ -159,11 +159,7 @@ class TransformProgram:
         if not isinstance(other, TransformProgram):
             return False
 
-        return (
-            self._transform_program == other._transform_program
-            and self._argnums == other._argnums
-            and self._classical_jacobians == other._classical_jacobians
-        )
+        return self._transform_program == other._transform_program
 
     def push_back(self, transform_container: TransformContainer):
         """Add a transform (container) to the end of the program.

@@ -504,6 +504,13 @@ class TestTransformProgram:
         assert p1 != p3
         assert p1 != t1
 
+        # Test inequality with different transforms
+        t4 = TransformContainer(
+            qml.transforms.transpile.transform, kwargs={"coupling_map": [(0, 1), (2, 3)]}
+        )
+        p4 = TransformProgram([t1, t4])
+        assert p1 != p4
+
 
 class TestTransformProgramCall:
     """Tests for calling a TransformProgram on a batch of quantum tapes."""
