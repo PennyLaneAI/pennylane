@@ -95,6 +95,10 @@
 * Added `__iadd__` method to PauliSentence, which enables inplace-addition using `+=`, we no longer need to perform a copy, leading to performance improvements.
   [(#4662)](https://github.com/PennyLaneAI/pennylane/pull/4662) 
 
+* `default.qubit` now applies `GroverOperator` faster by not using its matrix representation but a
+  custom rule for `apply_operation`. Also, the matrix representation of `GroverOperator` runs faster now.
+  [(#4666)](https://github.com/PennyLaneAI/pennylane/pull/4666)
+
 <h4>Other improvements</h4>
 
 * Added `ops.functions.assert_valid` for checking if an `Operator` class is defined correctly.
@@ -112,7 +116,29 @@
 * Simplified the logic for re-arranging states before returning.
   [(#4817)](https://github.com/PennyLaneAI/pennylane/pull/4817)
 
+* When multiplying `SparseHamiltonian`s by a scalar value, the result stays as a 
+  `SparseHamiltonian`.
+  [(#4828)](https://github.com/PennyLaneAI/pennylane/pull/4828)
+
 <h3>Breaking changes 💔</h3>
+
+* `default.qubit` now calculates the expectation value of Hermitians in a differentiable manner.
+  [(#4866)](https://github.com/PennyLaneAI/pennylane/pull/4866)
+
+* `GlobalPhase` now decomposes to nothing, in case devices do not support global phases.
+  [(#4855)](https://github.com/PennyLaneAI/pennylane/pull/4855)
+
+* The `rot` decomposition now has support for returning a global phase.
+  [(#4869)](https://github.com/PennyLaneAI/pennylane/pull/4869)
+
+<h3>Breaking changes 💔</h3>
+
+* The decomposition of `GroverOperator` now has an additional global phase operation.
+  [(#4666)](https://github.com/PennyLaneAI/pennylane/pull/4666)
+
+* Moved `qml.cond` and the `Conditional` operation from the `transforms` folder to the `ops/op_math` folder.
+  `qml.transforms.Conditional` will now be available as `qml.ops.Conditional`.
+  [(#4860)](https://github.com/PennyLaneAI/pennylane/pull/4860)
 
 * The `prep` keyword argument has been removed from `QuantumScript` and `QuantumTape`.
   `StatePrepBase` operations should be placed at the beginning of the `ops` list instead.
@@ -124,9 +150,10 @@
 * Specifying `control_values` passed to `qml.ctrl` as a string is no longer supported.
   [(#4816)](https://github.com/PennyLaneAI/pennylane/pull/4816)
 
-* Moved `qml.cond` and the `Conditional` operation from the `transforms` folder to the `ops/op_math` folder.
-  `qml.transforms.Conditional` will now be available as `qml.ops.Conditional`.
-  [(#4860)](https://github.com/PennyLaneAI/pennylane/pull/4860)
+* The `rot` decomposition will now normalize its rotation angles to the range `[0, 4pi]` for consistency
+  [(#4869)](https://github.com/PennyLaneAI/pennylane/pull/4869)
+
+<h3>Deprecations 👋</h3>
 
 * `QuantumScript.graph` is now built using `tape.measurements` instead of `tape.observables`
   because it depended on the now-deprecated `Observable.return_type` property.
@@ -166,6 +193,9 @@
 
 * JAX can now differentiate a batch of circuits where one tape does not have trainable parameters.
   [(#4837)](https://github.com/PennyLaneAI/pennylane/pull/4837)
+
+* The decomposition of `GroverOperator` now has the same global phase as its matrix.
+  [(#4666)](https://github.com/PennyLaneAI/pennylane/pull/4666)
 
 * The `tape.to_openqasm` method no longer mistakenly includes interface information in the parameter 
   string when converting tapes using non-numpy interfaces.
@@ -219,6 +249,7 @@ This release contains contributions from (in alphabetical order):
 Guillermo Alonso,
 Thomas Bromley,
 Astral Cai,
+Isaac De Vlugt,
 Amintor Dusko,
 Lillian Frederiksen,
 Emiliano Godinez Ramirez,
