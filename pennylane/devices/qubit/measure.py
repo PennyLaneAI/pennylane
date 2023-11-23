@@ -108,6 +108,28 @@ def csr_dot_products(
     return math.real(math.squeeze(res))
 
 
+def full_dot_products(
+    measurementprocess: ExpectationMP, state: TensorLike, is_state_batched: bool = False
+) -> TensorLike:
+    """Measure the expectation value of an observable using the dot product between full matrix
+    representations.
+
+    Args:
+        measurementprocess (ExpectationMP): measurement process to apply to the state
+        state (TensorLike): the state to measure
+        is_state_batched (bool): whether the state is batched or not
+
+    Returns:
+        TensorLike: the result of the measurement
+    """
+    ket = apply_operation(measurementprocess.obs, state, is_state_batched=is_state_batched)
+    total_indices = len(state.shape) - is_state_batched
+    flattened_state = flatten_state(state, total_indices)
+    flattened_ket = flatten_state(ket, total_indices)
+    dot_product = math.sum(math.conj(flattened_state) * flattened_ket, axis=int(is_state_batched))
+    return math.real(dot_product)
+
+
 def sum_of_terms_method(
     measurementprocess: ExpectationMP, state: TensorLike, is_state_batched: bool = False
 ) -> TensorLike:
@@ -136,6 +158,7 @@ def sum_of_terms_method(
     )
 
 
+# pylint: disable=too-many-return-statements
 def get_measurement_function(
     measurementprocess: MeasurementProcess, state: TensorLike
 ) -> Callable[[MeasurementProcess, TensorLike], TensorLike]:
@@ -156,6 +179,9 @@ def get_measurement_function(
         if isinstance(measurementprocess, ExpectationMP):
             if measurementprocess.obs.name == "SparseHamiltonian":
                 return csr_dot_products
+
+            if measurementprocess.obs.name == "Hermitian":
+                return full_dot_products
 
             backprop_mode = math.get_interface(state, *measurementprocess.obs.data) != "numpy"
             if isinstance(measurementprocess.obs, Hamiltonian):

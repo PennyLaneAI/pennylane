@@ -24,6 +24,7 @@ Constructor Functions
 
     ~adjoint
     ~ctrl
+    ~cond
     ~exp
     ~sum
     ~pow
@@ -40,6 +41,7 @@ Symbolic Classes
 
     ~Adjoint
     ~CompositeOp
+    ~Conditional
     ~Controlled
     ~ControlledOp
     ~Evolution
@@ -78,6 +80,7 @@ Decompositions
 
 from .adjoint import Adjoint, adjoint
 from .composite import CompositeOp
+from .condition import cond, Conditional
 from .controlled import Controlled, ControlledOp, ctrl
 from .controlled_ops import ControlledQubitUnitary, CY, CZ
 from .evolution import Evolution
