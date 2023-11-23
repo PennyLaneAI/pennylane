@@ -354,7 +354,7 @@ class MPLDrawer:
 
         Args:
             layer (int): starting x coordinate for erasing the wire
-            wire (int): y location to to erase the wire from
+            wire (int): y location to erase the wire from
             length (float, int): horizontal distance from ``layer`` to erase the background.
 
         """
