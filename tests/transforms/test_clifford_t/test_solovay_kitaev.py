@@ -141,8 +141,9 @@ def test_group_commutator_decompose(op):
     ("op"),
     [
         qml.RX(math.pi / 42, wires=[1]),
-        qml.RZ(math.pi / 128, wires=[0]),
         qml.RY(math.pi / 7, wires=["a"]),
+        qml.prod(*[qml.RX(1.0, "a"), qml.T("a")]),
+        qml.prod(*[qml.T(0), qml.Hadamard(0)] * 5),
     ],
 )
 def test_solovay_kitaev(op):

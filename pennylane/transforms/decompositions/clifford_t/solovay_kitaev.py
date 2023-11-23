@@ -203,13 +203,13 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
     r"""Approximate an arbitrary single-qubit gate in the Clifford+T basis using the `Solovay-Kitaev algorithm <https://arxiv.org/abs/quant-ph/0505030>`_.
 
     This method implements a recursive Solovay-Kitaev decomposition that approximates any :math:`U \in \text{SU}(2)`
-    operation with :math:`\epsilon > 0` error up to a global phase. Increasing the recursion ``depth`` should
+    operation with :math:`\epsilon > 0` error with a global phase. Increasing the recursion ``depth`` should
     reduce this error. In general, this algorithm runs in :math:`O(\text{log}^{2.71}(1/\epsilon))` time and produces
     a decomposition with :math:`O(\text{log}^{3.97}(1/\epsilon))` operations.
 
     Args:
-        op (~pennylane.operation.Operation): A single-qubit gate operation
-        epsilon (float): The maximum error :math:`\epsilon > 0` in the approximation.
+        op (~pennylane.operation.Operation): A single-qubit gate operation.
+        epsilon (float): The maximum permissible error, :math:`\epsilon > 0`, for the approximation.
 
     Keyword Args:
         max_depth (int): Depth until which the recursion occurs. A smaller :math:`\epsilon` would generally require a
@@ -222,7 +222,7 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
 
     Returns:
         Tuple(list(~pennylane.operation.Operation), ~pennylane.operation.Operation): A list of gates in the Clifford+T
-            basis set that approximates the given operation and a global phase. The operations are given in circuit-order.
+        basis set that approximates the given operation and a global phase. The operations are given in circuit-order.
 
     Raises:
         ValueError: If the given operator acts on more than one wires.
@@ -323,8 +323,8 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
 
             decomposition, u_prime = _solovay_kitaev(gate_mat, depth + 1, decomposition, u_prime)
 
-        # Get phase information based on decomposition effort
-        global_phase = qml.GlobalPhase(gate_gph + approx_set_gph[index] if depth else 0.0)
+        # Get phase information based on the decomposition effort
+        global_phase = qml.GlobalPhase(approx_set_gph[index] - gate_gph if depth else 0.0)
 
         # Remove inverses if any in the decomposition and handle trivial case
         [new_tape], _ = cancel_inverses(QuantumScript(decomposition or [qml.Identity(0)]))
