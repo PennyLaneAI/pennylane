@@ -42,6 +42,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* `default.qubit` now applies `GroverOperator` faster by not using its matrix representation but a
+  custom rule for `apply_operation`. Also, the matrix representation of `GroverOperator` runs faster now.
+  [(#4666)](https://github.com/PennyLaneAI/pennylane/pull/4666)
+
 * `default.qubit` now can evolve already batched states with `ParametrizedEvolution`
   [(#4863)](https://github.com/PennyLaneAI/pennylane/pull/4863)
 
@@ -97,6 +101,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The decomposition of `GroverOperator` now has an additional global phase operation.
+  [(#4666)](https://github.com/PennyLaneAI/pennylane/pull/4666)
+
 * Moved `qml.cond` and the `Conditional` operation from the `transforms` folder to the `ops/op_math` folder.
   `qml.transforms.Conditional` will now be available as `qml.ops.Conditional`.
   [(#4860)](https://github.com/PennyLaneAI/pennylane/pull/4860)
@@ -147,6 +154,9 @@
   [(#4750)](https://github.com/PennyLaneAI/pennylane/pull/4750)
 
 <h3>Bug fixes 🐛</h3>
+
+* The decomposition of `GroverOperator` now has the same global phase as its matrix.
+  [(#4666)](https://github.com/PennyLaneAI/pennylane/pull/4666)
 
 * Jax can now differeniate a batch of circuits where one tape does not have trainable parameters.
   [(#4837)](https://github.com/PennyLaneAI/pennylane/pull/4837)
