@@ -201,8 +201,9 @@ class CommutationDAG:
         self.node_id = -1
         self._multi_graph = nx.MultiDiGraph()
 
-        consecutive_wires = Wires(range(len(tape.wires)))
-        wires_map = OrderedDict(zip(tape.wires, consecutive_wires))
+        tape_wires = Wires.all_wires(dict.fromkeys(op.wires for op in tape))
+        consecutive_wires = Wires(range(len(tape_wires)))
+        wires_map = OrderedDict(zip(tape_wires, consecutive_wires))
 
         for operation in tape.operations:
             operation = qml.map_wires(operation, wire_map=wires_map)
