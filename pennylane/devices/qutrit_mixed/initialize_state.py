@@ -45,7 +45,9 @@ def create_initial_state(
         rho = _apply_basis_state(prep_operation.parameters[0], wire_array)
 
     elif isinstance(prep_operation, StatePrepBase):
-        rho = _apply_state_vector(prep_operation.state_vector(wire_order=list(wire_array)), num_wires)
+        rho = _apply_state_vector(
+            prep_operation.state_vector(wire_order=list(wire_array)), num_wires
+        )
 
     # TODO: add instance for prep_operations as added
 
