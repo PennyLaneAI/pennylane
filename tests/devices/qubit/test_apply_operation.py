@@ -860,7 +860,7 @@ class TestLargerOperations:
         op = qml.GroverOperator(apply_wires)
         new_state = method(op, self.state)
 
-        expected_state = np.copy(self.state)
+        expected_state = self.state
         for _op in op.decomposition():
             expected_state = method(_op, expected_state)
 
