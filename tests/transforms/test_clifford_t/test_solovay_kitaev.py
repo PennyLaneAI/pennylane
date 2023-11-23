@@ -109,7 +109,7 @@ def test_approximate_sets():
     approx_set3, _, _ = _approximate_set(("t", "t*", "h"), max_length=3)
     approx_set4, _, _ = _approximate_set(("t", "t*", "h"), max_length=5)
     assert len(approx_set3) == 21  # should be <  39 = 3 + 3x3 + 3x3x3
-    assert len(approx_set4) == 88  # should be < 263 = 3 + ... + 3x3x3x3x3
+    assert len(approx_set4) == 84  # should be < 263 = 3 + ... + 3x3x3x3x3
 
 
 @pytest.mark.parametrize(
@@ -153,8 +153,9 @@ def test_solovay_kitaev(op):
     assert q.queue == gates
 
     matrix_sk, phase = _SU2_transform(qml.prod(*reversed(gates)).matrix())
+    reverse = qml.math.isclose(phase, math.pi) or bool(phase > math.pi)
 
-    assert qml.math.allclose(qml.matrix(op), matrix_sk * qml.math.exp(-1j * phase), atol=1e-2)
+    assert qml.math.allclose(qml.matrix(op), (-1) ** reverse * matrix_sk, atol=1e-2)
     assert qml.prod(*gates, lazy=False).wires == op.wires
 
 
@@ -179,6 +180,7 @@ def test_solovay_kitaev_with_basis_gates(basis_length, basis_set):
         (qml.prod(qml.Hadamard(0), qml.T(0)), 1),
         (qml.prod(qml.Hadamard(0), qml.T(0), qml.RX(1e-9, 0)), 1),
         (qml.RZ(1.23, 0), 27),
+        (qml.prod(*[qml.T(0), qml.Hadamard(0)]*5), 1)
     ],
 )
 def test_close_approximations_do_not_go_deep(op, query_count, mocker):
