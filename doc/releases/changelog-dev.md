@@ -120,8 +120,6 @@
   `SparseHamiltonian`.
   [(#4828)](https://github.com/PennyLaneAI/pennylane/pull/4828)
 
-<h3>Breaking changes 💔</h3>
-
 * `default.qubit` now calculates the expectation value of Hermitians in a differentiable manner.
   [(#4866)](https://github.com/PennyLaneAI/pennylane/pull/4866)
 
