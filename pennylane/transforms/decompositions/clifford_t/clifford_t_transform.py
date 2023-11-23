@@ -79,6 +79,7 @@ def check_clifford_op(op):
 
     # Compute the LCUs for the operator in Pauli basis
     pauli_terms = qml.pauli_decompose(qml.matrix(op), wire_order=op.wires, check_hermitian=False)
+    pauli_terms_adj = qml.Hamiltonian(qml.math.conj(pauli_terms.coeffs), pauli_terms.ops)
 
     # Build Pauli tensor products P in Hamiltonian form
     def pauli_group(x):
@@ -92,7 +93,7 @@ def check_clifford_op(op):
     pauli_hams = (pauli_sen.hamiltonian(wire_order=op.wires) for pauli_sen in pauli_sens)
 
     # Perform U@P@U^\dagger and check if the result exists in set P
-    for prod in product([pauli_terms], pauli_hams, [pauli_terms]):
+    for prod in product([pauli_terms], pauli_hams, [pauli_terms_adj]):
         # hopefully op_math.prod scales better than matrix multiplication, i.e., O((2^N)^3)
         upu = qml.pauli.pauli_sentence(qml.prod(*prod))
         upu.simplify()
@@ -280,22 +281,22 @@ def clifford_t_decomposition(
     r"""Unrolls a circuit into the Clifford+T basis using the optimal ancilla-free approximation of :class:`~.RZ` operations.
 
     This method first decomposes the gate operations to a basis comprised of Clifford, :class:`~.RZ` and
-    :class:`~.GlobalPhase` operations (and their adjoint). The Clifford gates include the following PennyLane operations:
+    :class:`~.GlobalPhase` operations (and their adjoints). The Clifford gates include the following PennyLane operations:
 
     - Single qubit gates - :class:`~.Identity`, :class:`~.PauliX`, :class:`~.PauliY`, :class:`~.PauliZ`,
       :class:`~.SX`, :class:`~.S`, and :class:`~.Hadamard`.
     - Two qubit gates - :class:`~.CNOT`, :class:`~.CY`, :class:`~.CZ`, :class:`~.SWAP`, and :class:`~.ISWAP`.
 
     Then the leftover single qubit :class:`~.pennylane.RZ` operations are approximated in the Clifford+T basis with
-    :math:`\epsilon > 0` error using the recursive Solovay-Kitaev algorithm described in
+    :math:`\epsilon > 0` error using the Solovay-Kitaev algorithm described in
     `Dawson and Nielsen (2005) <https://arxiv.org/abs/quant-ph/0505030>`_.
 
     Args:
         tape (QuantumTape): A quantum tape
-        epsilon (float): The maximum error in the approximation. Default to :math:10^-4
-        max_expansion (int): The depth to use for tape expansion before manual decomposition to Clifford+T basis is applied
+        epsilon (float): The maximum error in the approximation. Default to :math:``1e-4``.
+        max_expansion (int): The depth to use for tape expansion before manual decomposition to Clifford+T basis is applied.
         method (str): Method to be used for Clifford+T decomposition. Default value is ``"sk"`` for Solovay-Kitaev
-        **method_kwargs: Keyword argument to pass options for the ``method`` used for decompositions
+        **method_kwargs: Keyword argument to pass options for the ``method`` used for decompositions.
 
     Keyword Args:
         Options (*):
@@ -305,10 +306,9 @@ def clifford_t_decomposition(
 
     Returns:
         pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
-        it returns a QNode with the transform added to its transform program.
-        If a tape is passed, returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions.
+        it returns a QNode with the transform added to its transform program. If a tape is passed,
+        returns a tuple containing a list of quantum tapes to be evaluated, and a function to be
+        applied to these tape executions.
 
     Raises:
         ValueError: If any gate operation does not have a rule for its decomposition
@@ -418,7 +418,6 @@ def clifford_t_decomposition(
 
         # Build the approximation set for Solovay-Kitaev decomposition
         if method == "sk":
-
             decompose_fn = sk_decomposition
 
         else:
@@ -426,20 +425,19 @@ def clifford_t_decomposition(
                 f"Currently we only support Solovay-Kitaev ('sk') decompostion, got {method}"
             )
 
-        new_ops = []
-        phase = 0
+        decomp_ops = []
+        phase = new_operations.pop().data[0]
         for op in new_operations:
             if isinstance(op, qml.RZ):
                 clifford_ops = decompose_fn(op, epsilon, **method_kwargs)
-                gphase_op = clifford_ops.pop()
-                new_ops.extend(clifford_ops)
-                phase += gphase_op.data[0]
+                phase += clifford_ops.pop().data[0]
+                decomp_ops.extend(clifford_ops)
             else:
-                new_ops.append(op)
-        new_ops.append(qml.GlobalPhase(phase))
+                decomp_ops.append(op)
+        decomp_ops.append(qml.GlobalPhase(phase))
 
     # Construct a new tape with the expanded set of operations
-    new_tape = type(tape)(new_ops, expanded_tape.measurements, shots=tape.shots)
+    new_tape = type(tape)(decomp_ops, expanded_tape.measurements, shots=tape.shots)
 
     # Perform a final attempt of simplification before return
     [new_tape], _ = cancel_inverses(new_tape)
