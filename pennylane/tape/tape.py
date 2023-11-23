@@ -439,7 +439,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         QueuingManager.remove_active_queue()
         QuantumTape._lock.release()
         self._process_queue()
-        self._trainable_params = "unset"
+        self._trainable_params = None
 
     def adjoint(self):
         adjoint_tape = super().adjoint()
