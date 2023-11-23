@@ -116,8 +116,8 @@ def _approximate_set(basis_gates, max_length=10):
     basis_mat, basis_gph = {}, {}
     for gate in basis:
         su2_mat, su2_gph = _SU2_transform(gate.matrix())
-        basis_mat.update({gate : su2_mat})
-        basis_gph.update({gate : su2_gph})
+        basis_mat.update({gate: su2_mat})
+        basis_gph.update({gate: su2_gph})
 
     # Maintains a trie-like structure for each depth
     gtrie_ids = [[[gate] for gate in basis]]
@@ -170,7 +170,7 @@ def _group_commutator_decompose(matrix, tol=1e-5):
     as given in the Section 4.1 of `arXiv:0505030 <https://arxiv.org/abs/quant-ph/0505030>`_."""
     # Use the quaternion form to get the rotation axis and angle on the Bloch sphere.
     quaternion = _quaternion_transform(matrix)
-    theta, axis = 2 * qml.math.arccos(qml.math.clip(quaternion[0], -1., 1.)), quaternion[1:]
+    theta, axis = 2 * qml.math.arccos(qml.math.clip(quaternion[0], -1.0, 1.0)), quaternion[1:]
 
     # Early return for the case where matrix is I or -I, where I is Identity
     if qml.math.allclose(axis, 0.0, atol=tol) and qml.math.isclose(theta % math.pi, 0.0, atol=tol):

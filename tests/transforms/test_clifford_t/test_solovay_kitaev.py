@@ -181,7 +181,7 @@ def test_solovay_kitaev_with_basis_gates(basis_length, basis_set):
         (qml.prod(qml.Hadamard(0), qml.T(0)), 1),
         (qml.prod(qml.Hadamard(0), qml.T(0), qml.RX(1e-9, 0)), 1),
         (qml.RZ(1.23, 0), 27),
-        (qml.prod(*[qml.T(0), qml.Hadamard(0)]*5), 1)
+        (qml.prod(*[qml.T(0), qml.Hadamard(0)] * 5), 1),
     ],
 )
 def test_close_approximations_do_not_go_deep(op, query_count, mocker):
