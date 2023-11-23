@@ -412,12 +412,13 @@ def clifford_t_decomposition(
         num_calls_needed = len([o for o in new_operations if isinstance(o, qml.RZ)]) or 1
         epsilon /= num_calls_needed
 
+        # every decomposition implementation should have the following shape:
+        # def decompose_fn(op: Operator, epsilon: float, **method_kwargs) -> Tuple[List[Operator], GlobalPhase]
+
         # Build the approximation set for Solovay-Kitaev decomposition
         if method == "sk":
 
-            def decompose_fn(op, epsilon, **kwargs):
-                decomp, g_phase = sk_decomposition(op, epsilon, **kwargs)
-                return decomp + [g_phase]
+            decompose_fn = sk_decomposition
 
         else:
             raise NotImplementedError(
@@ -425,12 +426,15 @@ def clifford_t_decomposition(
             )
 
         new_ops = []
+        phase = 0
         for op in new_operations:
             if isinstance(op, qml.RZ):
-                clifford_ops = decompose_fn(op, epsilon, **method_kwargs)
+                clifford_ops, gphase_op = decompose_fn(op, epsilon, **method_kwargs)
                 new_ops.extend(clifford_ops)
+                phase += gphase_op.data[0]
             else:
                 new_ops.append(op)
+        new_ops.append(qml.GlobalPhase(phase))
 
     # Construct a new tape with the expanded set of operations
     new_tape = type(tape)(new_ops, expanded_tape.measurements, shots=tape.shots)

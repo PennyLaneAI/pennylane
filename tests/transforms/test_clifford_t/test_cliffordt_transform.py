@@ -148,6 +148,17 @@ class TestCliffordCompile:
             for op in transfmd_qnode.tape.operations
         )
 
+    @pytest.mark.parametrize("epsilon", [2e-2, 5e-2, 9e-2])
+    def test_total_error(self, epsilon):
+        """Ensure that given a certain epsilon, the total operator error is below the threshold."""
+        dev = qml.device("default.qubit")
+
+        qnode_basic = qml.QNode(circuit_4, dev)
+        qnode_transformed = clifford_t_decomposition(qnode_basic, epsilon=epsilon)
+        mat_exact = qml.matrix(qnode_basic)()
+        mat_approx = qml.matrix(qnode_transformed)()
+        assert qml.math.norm(mat_exact[0] - mat_approx[0]) < epsilon
+
     @pytest.mark.parametrize(
         "op", [qml.RX(1.0, wires="a"), qml.U3(1, 2, 3, wires=[1]), qml.PhaseShift(1.0, wires=[2])]
     )
