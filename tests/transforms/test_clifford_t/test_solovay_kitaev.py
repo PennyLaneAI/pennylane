@@ -84,7 +84,7 @@ def test_contains_SU2():
     op = qml.prod(qml.T(0), qml.T(0), qml.T(0), qml.T(0), qml.T(0))
     target = _SU2_transform(op.matrix())[0]
 
-    approx_ids, _, approx_vec = _approximate_set(("T", "T*", "H"), max_length=3)
+    approx_ids, _, _, approx_vec = _approximate_set(("T", "T*", "H"), max_length=3)
 
     exists, quaternion = _contains_SU2(target, approx_vec)
     assert exists
@@ -101,14 +101,14 @@ def test_contains_SU2():
 def test_approximate_sets():
     """Test the functionality to create approximate set"""
     # Check length of approximated sets with gate depths
-    approx_set1, _, _ = _approximate_set((), max_length=0)
-    approx_set2, _, _ = _approximate_set(("t", "h"), max_length=1)
+    approx_set1, _, _, _ = _approximate_set((), max_length=0)
+    approx_set2, _, _, _ = _approximate_set(("t", "h"), max_length=1)
     assert len(approx_set1) == 0
     assert len(approx_set2) == 2
 
     # Verify exist-check reduce redundancy via GP-like summation
-    approx_set3, _, _ = _approximate_set(("t", "t*", "h"), max_length=3)
-    approx_set4, _, _ = _approximate_set(("t", "t*", "h"), max_length=5)
+    approx_set3, _, _, _ = _approximate_set(("t", "t*", "h"), max_length=3)
+    approx_set4, _, _, _ = _approximate_set(("t", "t*", "h"), max_length=5)
     assert len(approx_set3) == 21  # should be <  39 = 3 + 3x3 + 3x3x3
     assert len(approx_set4) == 84  # should be < 263 = 3 + ... + 3x3x3x3x3
 
@@ -150,13 +150,12 @@ def test_solovay_kitaev(op):
     """Test Solovay-Kitaev decomposition method"""
 
     with qml.queuing.AnnotatedQueue() as q:
-        gates = sk_decomposition(op, epsilon=1e-4, max_depth=5, basis_set=("T", "T*", "H"))
+        gates, gphase = sk_decomposition(op, epsilon=1e-4, max_depth=5, basis_set=("T", "T*", "H"))
     assert q.queue == gates
 
-    matrix_sk, phase = _SU2_transform(qml.prod(*reversed(gates)).matrix())
-    reverse = qml.math.isclose(phase, math.pi) or bool(phase > math.pi)
+    matrix_sk = qml.prod(*reversed(gates)).matrix()
 
-    assert qml.math.allclose(qml.matrix(op), (-1) ** reverse * matrix_sk, atol=1e-2)
+    assert qml.math.allclose(qml.matrix(op), matrix_sk * qml.matrix(gphase), atol=1e-2)
     assert qml.prod(*gates, lazy=False).wires == op.wires
 
 
@@ -167,11 +166,13 @@ def test_solovay_kitaev(op):
 def test_solovay_kitaev_with_basis_gates(basis_length, basis_set):
     """Test Solovay-Kitaev decomposition method with additional basis information provided."""
     op = qml.PhaseShift(math.pi / 4, 0)
-    gates = sk_decomposition(op, 1e-4, max_depth=3, basis_set=basis_set, basis_length=basis_length)
+    gates, gphase = sk_decomposition(
+        op, 1e-4, max_depth=3, basis_set=basis_set, basis_length=basis_length
+    )
 
-    matrix_sk = qml.prod(*gates[::-1]).matrix()
+    matrix_sk = qml.prod(*reversed(gates)).matrix()
 
-    assert qml.math.allclose(qml.matrix(op), matrix_sk, atol=1e-5)
+    assert qml.math.allclose(qml.matrix(op), matrix_sk * qml.matrix(gphase), atol=1e-5)
 
 
 @pytest.mark.parametrize(
@@ -198,18 +199,17 @@ def test_close_approximations_do_not_go_deep(op, query_count, mocker):
 @pytest.mark.parametrize("epsilon", [2e-2, 3e-2, 7e-2])
 def test_epsilon_value_respected(epsilon):
     """Test that resulting decompositions are within an epsilon value."""
-    op = qml.RZ(1.234, 0)
-    ops = sk_decomposition(op, epsilon, max_depth=5)
-    mat = qml.prod(*reversed(ops)).matrix()
-    su2_mat, _ = _SU2_transform(mat)
-    assert _op_error(op.matrix() - su2_mat) < epsilon
+    op = qml.RX(1.234, 0)
+    gates, gphase = sk_decomposition(op, epsilon, max_depth=5)
+    matrix_sk = qml.prod(*reversed(gates)).matrix()
+    assert _op_error(qml.matrix(op) - matrix_sk * qml.matrix(gphase)) < epsilon
 
 
 def test_epsilon_value_effect():
     """Test that different epsilon values create different decompositions."""
     op = qml.RZ(math.pi / 5, 0)
-    decomp_with_error = sk_decomposition(op, 9e-2, max_depth=5)
-    decomp_less_error = sk_decomposition(op, 1e-2, max_depth=5)
+    decomp_with_error, _ = sk_decomposition(op, 9e-2, max_depth=5)
+    decomp_less_error, _ = sk_decomposition(op, 1e-2, max_depth=5)
     assert len(decomp_with_error) < len(decomp_less_error)
 
 

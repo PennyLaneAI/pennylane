@@ -51,8 +51,9 @@ def _SU2_transform(matrix):
         warnings.simplefilter("ignore", RuntimeWarning)
         factor = qml.math.linalg.det(matrix)
     gphase = qml.math.mod(qml.math.angle(factor), 2 * math.pi) / 2
-    s2_mat = matrix * qml.math.exp(-1j * qml.math.cast_like(gphase, 1j))
-    return s2_mat, gphase
+    rphase = (-1) ** qml.math.isclose(gphase, math.pi)
+    s2_mat = rphase * matrix * qml.math.exp(-1j * qml.math.cast_like(gphase, 1j))
+    return s2_mat, gphase if rphase == 1 else 0.0
 
 
 def _quaternion_transform(matrix):
@@ -127,6 +128,7 @@ def _approximate_set(basis_gates, max_length=10):
     # Maintains the approximate set for gates' names, SU(2)s and quaternions
     approx_set_ids = list(gtrie_ids[0])
     approx_set_mat = list(gtrie_mat[0])
+    approx_set_gph = list(gtrie_gph[0])
     approx_set_qat = [_quaternion_transform(mat) for mat in approx_set_mat]
 
     # We will perform a breadth-first search (BFS) style set building for the set
@@ -150,6 +152,7 @@ def _approximate_set(basis_gates, max_length=10):
                 if not exists:
                     approx_set_ids.append(node + [op])
                     approx_set_mat.append(su2_op)
+                    approx_set_gph.append(qml.math.mod(su2_gp, math.pi))
                     approx_set_qat.append(quaternion)
 
                     # Add to the containers for next depth
@@ -162,7 +165,7 @@ def _approximate_set(basis_gates, max_length=10):
         gtrie_mat.append(gtrie_mt)
         gtrie_gph.append(gtrie_gp)
 
-    return approx_set_ids, approx_set_mat, approx_set_qat
+    return approx_set_ids, approx_set_mat, approx_set_gph, approx_set_qat
 
 
 def _group_commutator_decompose(matrix, tol=1e-5):
@@ -222,8 +225,8 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
             Default is ``10``.
 
     Returns:
-        list(~pennylane.operation.Operation): A list of gates in the Clifford+T basis set that approximates the given
-            operation. The operations are given in circuit-order, and global phase is accounted for.
+        Tuple(list(~pennylane.operation.Operation), ~pennylane.operation.Operation): A list of gates in the Clifford+T
+            basis set that approximates the given operation and a global phase. The operations are given in circuit-order.
 
     Raises:
         ValueError: If the given operator acts on more than one wires
@@ -240,16 +243,16 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
         op  = qml.RZ(np.pi/3, wires=0)
 
         # Get the gate decomposition in ['T', 'T*', 'H']
-        ops = qml.transforms.decompositions.sk_decomposition(op, depth=5)
+        ops, phase = qml.transforms.decompositions.sk_decomposition(op, depth=5)
 
         # Get SU2 matrix from the ops
-        op_matrix = qml.prod(*reversed(ops)).matrix()
-        su2_matrix = op_matrix / np.sqrt((1 + 0j) * np.linalg.det(op_matrix))
+        matrix_sk = qml.prod(*reversed(ops)).matrix()
+        matrix_op = matrix_sk * qml.matrix(phase)
 
     When the function is run for a sufficient ``depth`` with a good enough approximate set,
     the output gate sequence should implement the same operation approximately up to a global phase.
 
-    >>> qml.math.allclose(op.matrix(), su2_matrix, atol=1e-3)
+    >>> qml.math.allclose(op.matrix(), matrix_op, atol=1e-3)
     True
 
     """
@@ -261,7 +264,7 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
 
     with QueuingManager.stop_recording():
         # Build the approximate set with caching
-        approx_set_ids, approx_set_mat, approx_set_qat = _approximate_set(
+        approx_set_ids, approx_set_mat, approx_set_gph, approx_set_qat = _approximate_set(
             basis_set, max_length=basis_length
         )
 
@@ -269,7 +272,7 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
         kd_tree = KDTree(qml.math.array(approx_set_qat))
 
         # Obtain the SU(2) and quaternion for the operation
-        gate_mat, _ = _SU2_transform(op.matrix())
+        gate_mat, gate_gph = _SU2_transform(op.matrix())
         gate_qat = _quaternion_transform(gate_mat)
 
         def _solovay_kitaev(umat, n, u_n1_ids, u_n1_mat):
@@ -320,11 +323,14 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
             decomposition, u_prime = _solovay_kitaev(gate_mat, n, decomposition, u_prime)
             n += 1
 
+        # Get phase information based on decomposition effort
+        global_phase = qml.GlobalPhase(gate_gph + approx_set_gph[index] if n > 1 else 0.0)
+
         # Remove inverses if any in the decomposition and handle trivial case
         [new_tape], _ = cancel_inverses(QuantumScript(decomposition or [qml.Identity(0)]))
 
     # Map the wires to that of the operation and queue
     [map_tape], _ = qml.map_wires(new_tape, wire_map={0: op.wires[0]}, queue=True)
 
-    # Return the gates from the mapped tape
-    return map_tape.operations
+    # Return the gates from the mapped tape and global phase
+    return map_tape.operations, global_phase
