@@ -332,7 +332,9 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
             decomposition, u_prime = _solovay_kitaev(gate_mat, depth + 1, decomposition, u_prime)
 
         # Get phase information based on the decomposition effort
-        global_phase = qml.GlobalPhase(approx_set_gph[index] - gate_gph if depth else 0.0)
+        global_phase = qml.GlobalPhase(
+            approx_set_gph[index] - gate_gph if depth or qml.math.isclose(gate_gph, 0.0) else 0.0
+        )
 
         # Remove inverses if any in the decomposition and handle trivial case
         [new_tape], _ = cancel_inverses(QuantumScript(decomposition or [qml.Identity(0)]))
