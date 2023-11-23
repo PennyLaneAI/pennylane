@@ -99,6 +99,9 @@
 * `GlobalPhase` now decomposes to nothing, in case devices do not support global phases.
   [(#4855)](https://github.com/PennyLaneAI/pennylane/pull/4855)
 
+* The `rot` decomposition now has support for returning a global phase.
+  [(#4869)](https://github.com/PennyLaneAI/pennylane/pull/4869)
+
 <h3>Breaking changes 💔</h3>
 
 * The decomposition of `GroverOperator` now has an additional global phase operation.
@@ -125,6 +128,9 @@
 
 * Specifying `control_values` passed to `qml.ctrl` as a string is no longer supported.
   [(#4816)](https://github.com/PennyLaneAI/pennylane/pull/4816)
+
+* The `rot` decomposition will now normalize its rotation angles to the range `[0, 4pi]` for consistency
+  [(#4869)](https://github.com/PennyLaneAI/pennylane/pull/4869)
 
 <h3>Deprecations 👋</h3>
 
