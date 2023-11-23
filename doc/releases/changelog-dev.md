@@ -108,8 +108,8 @@
   [(#4855)](https://github.com/PennyLaneAI/pennylane/pull/4855)
 
 * Custom operations can now provide their matrix directly through the `Operator.matrix()` method
-  without requiring `Operator.compute_matrix()` to be provided. Behind the scenes,
-  `has_matrix` will now automatically be `True` if `Operator.matrix` is overridden, even if
+  without needing to update the `has_matrix` property. `has_matrix` will now automatically be
+  `True` if `Operator.matrix` is overridden, even if
   `Operator.compute_matrix` is not.
   [(#4844)](https://github.com/PennyLaneAI/pennylane/pull/4844)
 
