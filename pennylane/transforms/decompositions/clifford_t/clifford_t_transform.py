@@ -413,7 +413,8 @@ def clifford_t_decomposition(
         epsilon /= num_calls_needed
 
         # every decomposition implementation should have the following shape:
-        # def decompose_fn(op: Operator, epsilon: float, **method_kwargs) -> Tuple[List[Operator], GlobalPhase]
+        # def decompose_fn(op: Operator, epsilon: float, **method_kwargs) -> List[Operator]
+        # note that the last operator in the decomposition must be a GlobalPhase
 
         # Build the approximation set for Solovay-Kitaev decomposition
         if method == "sk":
@@ -429,7 +430,8 @@ def clifford_t_decomposition(
         phase = 0
         for op in new_operations:
             if isinstance(op, qml.RZ):
-                clifford_ops, gphase_op = decompose_fn(op, epsilon, **method_kwargs)
+                clifford_ops = decompose_fn(op, epsilon, **method_kwargs)
+                gphase_op = clifford_ops.pop()
                 new_ops.extend(clifford_ops)
                 phase += gphase_op.data[0]
             else:
