@@ -414,7 +414,10 @@ def clifford_t_decomposition(
 
         # Build the approximation set for Solovay-Kitaev decomposition
         if method == "sk":
-            decompose_fn = sk_decomposition
+
+            def decompose_fn(op, epsilon, **kwargs):
+                decomp, g_phase = sk_decomposition(op, epsilon, **kwargs)
+                return decomp + [g_phase]
 
         else:
             raise NotImplementedError(
