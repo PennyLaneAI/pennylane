@@ -82,6 +82,11 @@ def _zyz_get_rotation_angles(U):
 
     phis, thetas, omegas = map(math.squeeze, [phis, thetas, omegas])
 
+    # Normalize the angles
+    phis = phis % (4 * np.pi)
+    thetas = thetas % (4 * np.pi)
+    omegas = omegas % (4 * np.pi)
+
     return phis, thetas, omegas
 
 
@@ -146,10 +151,6 @@ def _rot_decomposition(U, wire, return_global_phase=False):
     # Compute the zyz rotation angles
     phis, thetas, omegas = _zyz_get_rotation_angles(U_det1)
 
-    phis = phis % (4 * np.pi)
-    thetas = thetas % (4 * np.pi)
-    omegas = omegas % (4 * np.pi)
-
     operations = [qml.Rot(phis, thetas, omegas, wires=wire)]
     if return_global_phase:
         alphas = math.squeeze(alphas)
@@ -202,11 +203,6 @@ def _zyz_decomposition(U, wire, return_global_phase=False):
 
     # Compute the zyz rotation angles
     phis, thetas, omegas = _zyz_get_rotation_angles(U_det1)
-
-    # Convert to positive angles
-    phis = phis % (4 * np.pi)
-    thetas = thetas % (4 * np.pi)
-    omegas = omegas % (4 * np.pi)
 
     operations = [qml.RZ(phis, wire), qml.RY(thetas, wire), qml.RZ(omegas, wire)]
     if return_global_phase:
