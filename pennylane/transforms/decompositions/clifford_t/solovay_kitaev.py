@@ -110,9 +110,9 @@ def _approximate_set(basis_gates, max_length=10):
         max_length (int): Maximum expansion length of Clifford+T sequences in the approximation set. Default is `10`
 
     Returns:
-        Tuple(list[list[~pennylane.operation.Operation]], list[TensorLike], list[TensorLike]): A tuple containing the list of
+        Tuple(list[list[~pennylane.operation.Operation]], list[TensorLike], list[float], list[TensorLike]): A tuple containing the list of
         Clifford+T sequences that will be used for approximating a matrix in the base case of recursive implementation of
-        Solovay-Kitaev algorithm, with their corresponding SU(2) and quaternion representations.
+        Solovay-Kitaev algorithm, with their corresponding SU(2) representations, global phases, and quaternion representations.
     """
     # Maintains the basis gates
     basis = [_CLIFFORD_T_BASIS[gate.upper()] for gate in basis_gates]
@@ -210,28 +210,28 @@ def _group_commutator_decompose(matrix, tol=1e-5):
 def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), basis_length=10):
     r"""Approximate an arbitrary single-qubit gate in the Clifford+T basis using the `Solovay-Kitaev algorithm <https://arxiv.org/abs/quant-ph/0505030>`_.
 
-    This method implements a recursive Solovay-Kitaev decomposition that approximates any :math:`U \in \text{SU}(2)`
-    operation with :math:`\epsilon > 0` error. The decomposition exits early if greater than ``max_depth`` operations
-    are required.
+    This method implements the Solovay-Kitaev decomposition algorithm that approximates any single-qubit
+    operation with :math:`\epsilon > 0` error. The procedure exits when the approximation error
+    becomes less than :math:`\epsilon`, or when ``max_depth`` approximation passes have been made. In the
+    latter case, the approximation error could be :math:`\geq \epsilon`.
 
-    This algorithm runs in :math:`O(\text{log}^{2.71}(1/\epsilon))` time and produces a decomposition with
-    :math:`O(\text{log}^{3.97}(1/\epsilon))` operations.
+    This algorithm produces a decomposition with :math:`O(\text{log}^{3.97}(1/\epsilon))` operations.
 
     Args:
         op (~pennylane.operation.Operation): A single-qubit gate operation.
         epsilon (float): The maximum permissible error.
 
     Keyword Args:
-        max_depth (int): Depth until which the recursion occurs. A smaller :math:`\epsilon` would generally require a
-            higher recursion depth. Default is ``5``.
-        basis_set (list(str)): Basis set to be used for the decomposition and building an approximate set internally.
+        max_depth (int): The maximum number of approximation passes. A smaller :math:`\epsilon` would generally require
+            more number of passes. Default is ``5``.
+        basis_set (list[str]): Basis set to be used for the decomposition and building an approximate set internally.
             It accepts the following gate terms: ``['X', 'Y', 'Z', 'H', 'T', 'T*', 'S', 'S*']``, where ``*`` refers
             to the gate adjoint. Default value is ``['T', 'T*', 'H']``.
         basis_length (int): Maximum expansion length of Clifford+T sequences in the internally-built approximate set.
             Default is ``10``.
 
     Returns:
-        list(~pennylane.operation.Operation): A list of gates in the Clifford+T basis set that approximates the given
+        list[~pennylane.operation.Operation]: A list of gates in the Clifford+T basis set that approximates the given
         operation along with a final global phase operation. The operations are in the circuit-order.
 
     Raises:
