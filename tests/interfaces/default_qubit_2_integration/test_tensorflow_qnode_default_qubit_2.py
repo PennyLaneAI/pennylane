@@ -932,7 +932,9 @@ class TestQubitIntegration:
             qml.RX(theta, wires=1)
             return qml.expval(qml.PauliZ(1))
 
-        @qml.qnode(dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution)
+        @qml.qnode(
+            dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
+        )
         def expected_circuit(theta):
             qml.PauliX(1)
             qml.RX(theta, wires=1)
