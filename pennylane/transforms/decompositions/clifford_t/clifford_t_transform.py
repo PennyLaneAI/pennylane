@@ -155,7 +155,8 @@ def _simplify_param(theta, gate):
 # pylint: disable= too-many-branches,
 def _rot_decompose(op):
     r"""Decomposes a rotation operation: :class:`~.Rot`, :class:`~.RX`, :class:`~.RY`, :class:`~.RZ`,
-    :class:`~.PhaseShift` into a basis composed of :class:`~.RZ`, :class:`~.S`, and :class:`~.Hadamard`."""
+    :class:`~.PhaseShift` into a basis composed of :class:`~.RZ`, :class:`~.S`, and :class:`~.Hadamard`.
+    """
     d_ops = []
     # Extend for Rot operation with Rz.Ry.Rz decompositions
     if isinstance(op, qml.Rot):
