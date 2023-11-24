@@ -46,8 +46,9 @@
 
 <h4>Drawing and statistics for mid-circuit measurements 🎨</h4>
 
-* `qml.draw` now supports drawing mid-circuit measurements.
+* `qml.draw` now supports drawing mid-circuit measurements and conditional operators.
   [(#4775)](https://github.com/PennyLaneAI/pennylane/pull/4775)
+  [(#4803)](https://github.com/PennyLaneAI/pennylane/pull/4803)
 
 <h4>Catalyst is seamlessly integrated with PennyLane ⚗️</h4>
 
@@ -245,6 +246,10 @@
 * `qml.pow(op)` and `qml.QubitUnitary.pow()` now also work with Tensorflow data raised to an
   integer power.
   [(#4827)](https://github.com/PennyLaneAI/pennylane/pull/4827)
+
+* Fixed text drawer to correctly label qinfo measurements, as well as `qml.classical_shadow`
+  `qml.shadow_expval`.
+  [(#4803)](https://github.com/PennyLaneAI/pennylane/pull/4803)
 
 <h3>Contributors ✍️</h3>
 
