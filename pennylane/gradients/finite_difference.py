@@ -359,7 +359,8 @@ def finite_diff(
             "Finite differences with float32 detected. Answers may be inaccurate. float64 is recommended.",
             UserWarning,
         )
-    number_parameter = len(tape.trainable_params)
+    number_parameters = len(tape.trainable_params)
+    number_measurements = len(tape.measurements)
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
 
@@ -442,13 +443,13 @@ def finite_diff(
 
             pre_grads = []
 
-            if len(tape.measurements) == 1:
+            if number_measurements == 1:
                 res = qml.math.stack(res)
                 c = qml.math.convert_like(coeffs, res)
                 lin_comb = qml.math.tensordot(res, c, [[0], [0]])
                 pre_grads.append(lin_comb)
             else:
-                for i in range(len(tape.measurements)):
+                for i in range(number_measurements):
                     r = qml.math.stack([r[i] for r in res])
                     c = qml.math.convert_like(coeffs, r)
                     lin_comb = qml.math.tensordot(r, c, [[0], [0]])
@@ -456,11 +457,11 @@ def finite_diff(
 
             # Add on the unshifted term
             if c0 is not None:
-                if len(tape.measurements) == 1:
+                if number_measurements == 1:
                     c = qml.math.convert_like(c0, r0)
                     pre_grads = [pre_grads[0] + r0 * c]
                 else:
-                    for i in range(len(tape.measurements)):
+                    for i in range(number_measurements):
                         r_i = r0[i]
                         c = qml.math.convert_like(c0, r_i)
                         pre_grads[i] = pre_grads[i] + r_i * c
@@ -478,19 +479,19 @@ def finite_diff(
 
             grads.append(pre_grads)
         # Single measurement
-        if len(tape.measurements) == 1:
-            if len(tape.trainable_params) == 1:
+        if number_measurements == 1:
+            if number_parameters == 1:
                 return grads[0]
             return tuple(grads)
 
         # Reordering to match the right shape for multiple measurements
-        grads_reorder = [[0] * number_parameter for _ in range(len(tape.measurements))]
-        for i in range(len(tape.measurements)):
-            for j in range(number_parameter):
+        grads_reorder = [[0] * number_parameters for _ in range(len(tape.measurements))]
+        for i in range(number_measurements):
+            for j in range(number_parameters):
                 grads_reorder[i][j] = grads[j][i]
 
         # To tuple
-        if len(tape.trainable_params) == 1:
+        if number_parameters == 1:
             return tuple(elem[0] for elem in grads_reorder)
         return tuple(tuple(elem) for elem in grads_reorder)
 
