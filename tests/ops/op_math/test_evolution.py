@@ -19,6 +19,13 @@ from pennylane import numpy as np
 from pennylane.ops.op_math import Evolution, Exp
 
 
+def test_basic_validity():
+    """Assert the basic validity of an evolution op."""
+    base = qml.prod(qml.PauliX(0), qml.PauliY(1))
+    op = Evolution(base, 5.2)
+    qml.ops.functions.assert_valid(op)
+
+
 class TestEvolution:
     """Test Evolution(Exp) class that takes a parameter x and a generator G and defines an evolution exp(ixG)"""
 

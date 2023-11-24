@@ -19,6 +19,7 @@ from pennylane.tape import QuantumTape
 from pennylane import AmplitudeEmbedding
 from pennylane._device import DeviceError
 from pennylane.math import flatten, reshape
+from pennylane.queuing import QueuingManager
 
 
 @transform
@@ -79,19 +80,15 @@ def merge_amplitude_embedding(tape: QuantumTape) -> (Sequence[QuantumTape], Call
         [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
 
     """
-    # Make a working copy of the list to traverse
-    list_copy = tape.operations.copy()
-    not_amplitude_embedding = []
+    new_operations = []
     visited_wires = set()
     input_wires, input_vectors, input_batch_size = [], [], []
-    while len(list_copy) > 0:
-        current_gate = list_copy[0]
+    for current_gate in tape.operations:
         wires_set = set(current_gate.wires)
 
         # Check if the current gate is an AmplitudeEmbedding.
         if not isinstance(current_gate, AmplitudeEmbedding):
-            not_amplitude_embedding.append(current_gate)
-            list_copy.pop(0)
+            new_operations.append(current_gate)
             visited_wires = visited_wires.union(wires_set)
             continue
 
@@ -103,7 +100,6 @@ def merge_amplitude_embedding(tape: QuantumTape) -> (Sequence[QuantumTape], Call
         input_wires.append(current_gate.wires)
         input_vectors.append(current_gate.parameters[0])
         input_batch_size.append(current_gate.batch_size)
-        list_copy.pop(0)
         visited_wires = visited_wires.union(wires_set)
 
     if len(input_wires) > 0:
@@ -122,11 +118,8 @@ def merge_amplitude_embedding(tape: QuantumTape) -> (Sequence[QuantumTape], Call
             else:
                 final_vector = flatten(final_vector)
 
-        AmplitudeEmbedding(final_vector, wires=final_wires)
-
-    new_operations = []
-    for gate in not_amplitude_embedding:
-        new_operations.append(gate)
+        with QueuingManager.stop_recording():
+            new_operations.insert(0, AmplitudeEmbedding(final_vector, wires=final_wires))
 
     new_tape = type(tape)(new_operations, tape.measurements, shots=tape.shots)
 

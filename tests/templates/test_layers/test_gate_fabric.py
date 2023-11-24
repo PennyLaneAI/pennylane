@@ -21,6 +21,21 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 
+@pytest.mark.parametrize("include_pi", (True, False))
+def test_standard_validity(include_pi):
+    """Check the operation using the assert_valid function."""
+
+    layers = 2
+    qubits = 6
+    init_state = qml.math.array([1, 1, 0, 0, 0, 0])
+
+    weights = np.random.normal(0, 2 * np.pi, (layers, qubits // 2 - 1, 2))
+
+    op = qml.GateFabric(weights, wires=range(qubits), init_state=init_state, include_pi=include_pi)
+
+    qml.ops.functions.assert_valid(op)
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 

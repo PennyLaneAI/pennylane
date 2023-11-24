@@ -3106,6 +3106,27 @@ class TestHamiltonianExpvalGradients:
         with pytest.raises(ValueError, match="for expectations, not var"):
             qml.gradients.param_shift(tape, broadcast=broadcast)
 
+    def test_not_expval_pass_if_not_trainable_hamiltonian(self, broadcast):
+        """Test that if the variance of a non-trainable Hamiltonian is requested,
+        no error is raised"""
+        obs = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
+        coeffs = np.array([0.1, 0.2, 0.3])
+        H = qml.Hamiltonian(coeffs, obs)
+
+        weights = np.array([0.4, 0.5])
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.var(H)
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        tape.trainable_params = {0, 1}  # different from previous test
+
+        tapes, _ = qml.gradients.param_shift(tape, broadcast=broadcast)
+        assert len(tapes) == (3 if broadcast else 5)
+
     def test_no_trainable_coeffs(self, mocker, tol, broadcast):
         """Test no trainable Hamiltonian coefficients"""
         dev = qml.device("default.qubit", wires=2)

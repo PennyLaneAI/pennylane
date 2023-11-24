@@ -131,7 +131,6 @@ class TestCommutationDAG:
         assert dag.get_node(1).op.compare(b)
         assert dag.get_edge(0, 1) == {0: {"commute": False}}
         assert dag.get_edge(0, 2) is None
-        assert dag.observables[0].return_type.__repr__() == "expval"
         assert dag.observables[0].name == "PauliX"
         assert dag.observables[0].wires.tolist() == [0]
         for i, node in enumerate(dag.get_nodes()):

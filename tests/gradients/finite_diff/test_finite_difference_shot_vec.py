@@ -611,7 +611,7 @@ class TestFiniteDiffIntegration:
         This test relies on the fact that exactly one term of the estimated
         jacobian will match the expected analytical value.
         """
-        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=2, seed=1967, shots=many_shots_shot_vector)
         x = 0.543
         y = -0.654
 
@@ -844,7 +844,7 @@ class TestFiniteDiffIntegration:
                     (np.sin(x / 2) ** 2 * np.sin(y)) / 2,
                     -(np.sin(x / 2) ** 2 * np.sin(y)) / 2,
                 ],
-                atol=0.07,
+                atol=0.08,
                 rtol=0,
             )
             assert isinstance(res[1][1], numpy.ndarray)

@@ -20,6 +20,19 @@ import numpy as np
 import pennylane as qml
 
 
+@pytest.mark.xfail  # to be fixed by shortcut story 49160
+def test_standard_validity():
+    """Run standard tests of operation validity."""
+    weights = np.array(
+        [
+            [-0.618452, -0.68369054 - 0.38740723j],
+            [-0.78582258, 0.53807284 + 0.30489424j],
+        ]
+    )
+    op = qml.BasisRotation(wires=range(2), unitary_matrix=weights)
+    qml.ops.functions.assert_valid(op)
+
+
 class TestDecomposition:
     """Test that the template defines the correct decomposition."""
 

@@ -315,9 +315,6 @@ during autodifferentiation.
 For more details, please see the :func:`qml.transform <pennylane.transform>`
 documentation.
 """
-import pennylane as qml
-from pennylane.gradients.pulse_gradient_odegen import pulse_generator
-
 from . import parameter_shift
 from . import parameter_shift_cv
 from . import parameter_shift_hessian
