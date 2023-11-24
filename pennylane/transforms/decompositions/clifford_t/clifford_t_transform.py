@@ -60,7 +60,7 @@ _CLIFFORD_T_GATES = tuple(_CLIFFORD_T_ONE_GATES + _CLIFFORD_T_TWO_GATES) + (qml.
 
 
 def check_clifford_op(op):
-    r"""Check if an operator is Clifford or not.
+    r"""Checks if an operator is Clifford or not.
 
     For a given unitary operator :math:`U` acting on :math:`N` qubits, this method checks that the
     transformation :math:`UPU^{\dagger}` maps the Pauli tensor products :math:`P = {I, X, Y, Z}^{\otimes N}`
@@ -85,7 +85,7 @@ def check_clifford_op(op):
     def pauli_group(x):
         return [qml.Identity(x), qml.PauliX(x), qml.PauliY(x), qml.PauliZ(x)]
 
-    # Build PauliSentence, PauliWord and Hamiltonians representations for set P
+    # Build PauliSentence and Hamiltonians representations for set P
     pauli_sens = [
         qml.pauli.pauli_sentence(qml.prod(*pauli))
         for pauli in product(*(pauli_group(idx) for idx in op.wires))
@@ -93,9 +93,9 @@ def check_clifford_op(op):
     pauli_hams = (pauli_sen.hamiltonian(wire_order=op.wires) for pauli_sen in pauli_sens)
 
     # Perform U@P@U^\dagger and check if the result exists in set P
-    for prod in product([pauli_terms], pauli_hams, [pauli_terms_adj]):
+    for pauli_prod in product([pauli_terms], pauli_hams, [pauli_terms_adj]):
         # hopefully op_math.prod scales better than matrix multiplication, i.e., O((2^N)^3)
-        upu = qml.pauli.pauli_sentence(qml.prod(*prod))
+        upu = qml.pauli.pauli_sentence(qml.prod(*pauli_prod))
         upu.simplify()
 
         if len(upu) != 1:  # Pauli sum always lie outside set P
@@ -118,6 +118,7 @@ def check_clifford_t(op):
     Returns:
         Bool that represents whether the provided operator is Clifford+T or not.
     """
+    # Get the base operation for an adjointed operation
     base = getattr(op, "base", None)
 
     # Save time and check from the pre-computed list
@@ -136,7 +137,7 @@ def _simplify_param(theta, gate):
 
     For the cases where theta is an integer multiple of π: (a) returns a global phase
     when even, and (b) returns combination of provided gate with global phase when odd.
-    In rest of the other cases it returns None.
+    In rest of the other cases it would return None.
     """
     if qml.math.isclose(theta, 0.0, atol=1e-6):
         return [qml.GlobalPhase(0.0)]
@@ -153,9 +154,10 @@ def _simplify_param(theta, gate):
 
 # pylint: disable= too-many-branches,
 def _rot_decompose(op):
-    """Decompose a rotation operation using combination of RZ, S and Hadamard"""
+    r"""Decomposes a rotation operation: :class:`~.Rot`, :class:`~.RX`, :class:`~.RY`, :class:`~.RZ`,
+    :class:`~.PhaseShift` into a basis composed of :class:`~.RZ`, :class:`~.S`, and :class:`~.Hadamard`."""
     d_ops = []
-    # Extend for Rot operation with RzRyRz decompositions
+    # Extend for Rot operation with Rz.Ry.Rz decompositions
     if isinstance(op, qml.Rot):
         (phi, theta, omega), wires = op.parameters, op.wires
         for dec in [qml.RZ(phi, wires), qml.RY(theta, wires), qml.RZ(omega, wires)]:
@@ -171,7 +173,7 @@ def _rot_decompose(op):
             ops_ = [qml.Hadamard(wires), qml.RZ(theta, wires), qml.Hadamard(wires)]
     elif isinstance(op, qml.RY):
         ops_ = _simplify_param(theta, qml.PauliY(wires=wires))
-        if ops_ is None:  # Use Ry = S @ H @ Rz @ H @ S.dag
+        if ops_ is None:  # Use Ry = S @ H @ Rz @ H @ S.adjoint()
             ops_ = [
                 qml.S(wires),
                 qml.Hadamard(wires),
@@ -192,7 +194,7 @@ def _rot_decompose(op):
 
     else:
         raise ValueError(
-            f"Operation {op} is not a valid Pauli rotation: qml.RX, qml.RY, qml.RZ, qml.Rot and qml.PhaseShift"
+            f"Operation {op} is not a supported Pauli rotation: qml.RX, qml.RY, qml.RZ, qml.Rot and qml.PhaseShift."
         )
 
     d_ops.extend(ops_)
@@ -200,15 +202,17 @@ def _rot_decompose(op):
 
 
 def _one_qubit_decompose(op):
-    """Decomposition for single qubit operations using combination of RZ and Hadamard"""
+    r"""Decomposition for single qubit operations using combination of :class:`~.RZ` and :class:`~.Hadamard`."""
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)
         sd_ops = qml.transforms.one_qubit_decomposition(
             qml.matrix(op), op.wires, "ZXZ", return_global_phase=True
         )
-
+    # Get the global phase
     gphase_op = sd_ops.pop()
+
+    # Decompose the rotation gates
     d_ops = []
     for sd_op in sd_ops:
         d_ops.extend(_rot_decompose(sd_op) if sd_op.num_params else [sd_op])
@@ -217,7 +221,8 @@ def _one_qubit_decompose(op):
 
 
 def _two_qubit_decompose(op):
-    """Decomposition for two qubit operations using combination of RZ, Hadamard, S and CNOT"""
+    r"""Decomposition for two qubit operations using combination of :class:`~.RZ`, :class:`~.S`,
+    :class:`~.Hadamard`, and :class:`~.CNOT`."""
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)
@@ -253,11 +258,12 @@ def _merge_pauli_rotations(operations, merge_ops=None):
             continue
 
         # Initialize the current angle and iterate until end of merge
-        cumulative_angles = 1.0 * qml.math.array(curr_gate.parameters)
+        cumulative_angles = qml.math.array(curr_gate.parameters, dtype=float)
         next_gate = copied_ops[next_gate_idx]
         while curr_gate.name == next_gate.name and curr_gate.wires == next_gate.wires:
-            copied_ops.pop(next_gate_idx)
             cumulative_angles = cumulative_angles + qml.math.array(next_gate.parameters)
+            # Check if the subsequent gate exists in the vicinity
+            copied_ops.pop(next_gate_idx)
             next_gate_idx = find_next_gate(curr_gate.wires, copied_ops)
             if next_gate_idx is None:
                 break
@@ -280,7 +286,7 @@ def clifford_t_decomposition(
 ) -> (Sequence[QuantumTape], Callable):
     r"""Unrolls a circuit into the Clifford+T basis using the optimal ancilla-free approximation of :class:`~.RZ` operations.
 
-    This method first decomposes the gate operations to a basis comprised of Clifford+T, :class:`~.RZ` and
+    This method first decomposes the gate operations to a basis comprised of Clifford, :class:`~.T`, :class:`~.RZ` and
     :class:`~.GlobalPhase` operations (and their adjoints). The Clifford gates include the following PennyLane operations:
 
     - Single qubit gates - :class:`~.Identity`, :class:`~.PauliX`, :class:`~.PauliY`, :class:`~.PauliZ`,
@@ -293,8 +299,8 @@ def clifford_t_decomposition(
 
     Args:
         tape (QuantumTape): A quantum tape
-        epsilon (float): The maximum permissible error. Default to :math:``1e-4``.
-        max_expansion (int): The depth to use for tape expansion before manual decomposition to Clifford+T basis is applied.
+        epsilon (float): The maximum permissible error. Defaults to ``0.0001``.
+        max_expansion (int): The depth to be used for tape expansion before manual decomposition to Clifford+T basis is applied.
         method (str): Method to be used for Clifford+T decomposition. Default value is ``"sk"`` for Solovay-Kitaev
         **method_kwargs: Keyword argument to pass options for the ``method`` used for decompositions.
 
@@ -302,7 +308,7 @@ def clifford_t_decomposition(
         Options (*):
 
             * **max_depth** (int), **basis_set** (list[str]), **basis_length** (int):
-              arguments for using the ``"sk"`` method, i.e., for performing Solovay-Kitaev decomposition using :func:`~.sk_decomposition`
+              arguments for the ``"sk"`` method, i.e., for performing Solovay-Kitaev decomposition using :func:`~.sk_decomposition`
 
     Returns:
         pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
@@ -385,7 +391,7 @@ def clifford_t_decomposition(
                     try:
                         # Attempt decomposing the operation
                         md_ops = op.decomposition()
-
+                        print("md_ops: ", md_ops)
                         idx = 0  # might not be fast but at least is not recursive
                         while idx < len(md_ops):
                             md_op = md_ops[idx]
@@ -404,9 +410,8 @@ def clifford_t_decomposition(
                                     d_ops = _two_qubit_decompose(md_op)
 
                                 # Final resort (should not enter in an ideal situtation)
-                                else:  # pragma: no cover
-                                    # d_ops = md_op.decomposition()
-                                    raise TypeError(f"Found unexpected operator {md_op}")
+                                else:
+                                    d_ops = md_op.decomposition()
 
                                 # Expand the list and iterate over
                                 del md_ops[idx]

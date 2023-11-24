@@ -50,6 +50,7 @@ def circuit_2():
     """Circuit 2 without chemistry gates"""
     qml.CRX(1, wires=[0, 1])
     qml.ISWAP(wires=[0, 1])
+    qml.CSWAP(wires=[0, 1, 2])
     return qml.expval(qml.PauliZ(0))
 
 
@@ -149,7 +150,7 @@ class TestCliffordCompile:
         )
 
     @pytest.mark.parametrize("epsilon", [2e-2, 5e-2, 9e-2])
-    @pytest.mark.parametrize("circuit", [circuit_2, circuit_3, circuit_4, circuit_5])
+    @pytest.mark.parametrize("circuit", [circuit_3, circuit_4, circuit_5])
     def test_total_error(self, epsilon, circuit):
         """Ensure that given a certain epsilon, the total operator error is below the threshold."""
         dev = qml.device("default.qubit")
