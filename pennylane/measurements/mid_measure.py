@@ -305,6 +305,19 @@ class MeasurementValue(Generic[T]):
             ret_dict[branch] = self.processing_fn(*branch)
         return ret_dict
 
+    def map_wires(self, wire_map):
+        """Returns a copy of the current MeasurementValue with the wires of each measurement changed
+        according to the given wire map.
+
+        Args:
+            wire_map (dict): dictionary containing the old wires as keys and the new wires as values
+
+        Returns:
+            MeasurementValue: new MeasurementValue instance with measurement wires mapped
+        """
+        mapped_measurements = [m.map_wires(wire_map) for m in self.measurements]
+        return MeasurementValue(mapped_measurements, self.processing_fn)
+
     def _transform_bin_op(self, base_bin, other):
         """Helper function for defining dunder binary operations."""
         if isinstance(other, MeasurementValue):
