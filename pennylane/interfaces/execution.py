@@ -43,7 +43,7 @@ logger.addHandler(logging.NullHandler())
 
 device_type = Union[qml.Device, "qml.devices.Device"]
 
-jpc_interfaces = {"autograd", "numpy", "torch", "pytorch"}
+jpc_interfaces = {"autograd", "numpy", "torch", "pytorch", "jax", "jax-python"}
 
 INTERFACE_MAP = {
     None: "Numpy",
@@ -94,7 +94,9 @@ def _adjoint_jacobian_expansion(
     return tapes
 
 
-def _get_ml_boundary_execute(interface: str, grad_on_execution: bool) -> Callable:
+def _get_ml_boundary_execute(
+    interface: str, grad_on_execution: bool, device_vjp: bool = False
+) -> Callable:
     """Imports and returns the function that binds derivatives of the required ml framework.
 
     Args:
@@ -130,7 +132,10 @@ def _get_ml_boundary_execute(interface: str, grad_on_execution: bool) -> Callabl
         elif interface == "jax-jit":
             from .jax_jit import execute as ml_boundary
         else:  # interface in {"jax", "jax-python", "JAX"}:
-            from .jax import execute as ml_boundary
+            if device_vjp:
+                from .jax import jax_vjp_execute as ml_boundary
+            else:
+                from .jax import jax_jvp_execute as ml_boundary
 
     except ImportError as e:  # pragma: no-cover
         raise qml.QuantumFunctionError(
@@ -560,6 +565,8 @@ def execute(
             ) from e  # pragma: no-cover
 
         interface = get_jax_interface_name(tapes)
+        # Only need to calculate derivatives with jax when we know it will be executed later.
+        grad_on_execution = grad_on_execution if isinstance(gradient_fn, Callable) else False
 
     if device_vjp and isinstance(device, qml.Device):
         raise qml.QuantumFunctionError(
@@ -778,7 +785,9 @@ def execute(
             execute_fn = partial(ml_boundary_execute, execute_fn=execute_fn, jpc=jpc)
             jpc = TransformJacobianProducts(execute_fn, gradient_fn, gradient_kwargs)
 
-    ml_boundary_execute = _get_ml_boundary_execute(interface, _grad_on_execution)
+    ml_boundary_execute = _get_ml_boundary_execute(
+        interface, _grad_on_execution, config.use_device_jacobian_product
+    )
 
     if interface in jpc_interfaces:
         results = ml_boundary_execute(tapes, execute_fn, jpc)

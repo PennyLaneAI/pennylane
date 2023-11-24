@@ -124,11 +124,23 @@ class TestCaching:
 # add tests for lightning 2 when possible
 # set rng for device when possible
 test_matrix = [
-    ({"gradient_fn": param_shift}, Shots(100000), DefaultQubit(seed=42)),
-    ({"gradient_fn": param_shift}, Shots(None), DefaultQubit()),
-    ({"gradient_fn": "backprop"}, Shots(None), DefaultQubit()),
-    ({"gradient_fn": "adjoint"}, Shots(None), DefaultQubit()),
-    ({"gradient_fn": "device"}, Shots((10000, 10000)), ParamShiftDerivativesDevice(seed=54353453)),
+    ({"gradient_fn": param_shift}, Shots(100000), DefaultQubit(seed=42)),  # 0
+    ({"gradient_fn": param_shift}, Shots(None), DefaultQubit()),  # 1
+    ({"gradient_fn": "backprop"}, Shots(None), DefaultQubit()),  # 2
+    ({"gradient_fn": "adjoint"}, Shots(None), DefaultQubit()),  # 3
+    (  # 4
+        {
+            "gradient_fn": "adjoint",
+            "device_vjp": True,
+        },
+        Shots(None),
+        DefaultQubit(),
+    ),
+    (
+        {"gradient_fn": "device"},
+        Shots((10000, 10000)),
+        ParamShiftDerivativesDevice(seed=54353453),
+    ),  # 5
 ]
 
 
@@ -160,7 +172,7 @@ class TestJaxExecuteIntegration:
             res = cost(a, b)
 
         if execute_kwargs.get("gradient_fn", None) == "adjoint":
-            assert device.tracker.totals["execute_and_derivative_batches"] == 1
+            assert device.tracker.totals.get("execute_and_derivative_batches", 0) == 0
         else:
             assert device.tracker.totals["batches"] == 1
         assert device.tracker.totals["executions"] == 2  # different wires so different hashes
@@ -197,6 +209,11 @@ class TestJaxExecuteIntegration:
 
     def test_jacobian(self, execute_kwargs, shots, device):
         """Test jacobian calculation"""
+        if execute_kwargs.get("gradient_fn", "") == "adjoint" and execute_kwargs.get(
+            "device_vjp", False
+        ):
+            pytest.xfail("adjoint_vjp does not yet support jax jacobians.")
+
         a = jnp.array(0.1)
         b = jnp.array(0.2)
 
@@ -280,6 +297,11 @@ class TestJaxExecuteIntegration:
     def test_tapes_with_different_return_size(self, execute_kwargs, shots, device):
         """Test that tapes wit different can be executed and differentiated."""
 
+        if execute_kwargs.get("gradient_fn", "") == "adjoint" and execute_kwargs.get(
+            "device_vjp", False
+        ):
+            pytest.xfail("adjoint_vjp does not yet support jax jacobians.")
+
         def cost(params):
             tape1 = qml.tape.QuantumScript(
                 [qml.RY(params[0], 0), qml.RX(params[1], 0)],
@@ -358,6 +380,10 @@ class TestJaxExecuteIntegration:
         """Test re-using a quantum tape by passing new parameters"""
         if execute_kwargs["gradient_fn"] == param_shift:
             pytest.skip("Basic QNode execution wipes out trainable params with param-shift")
+        if execute_kwargs.get("gradient_fn", "") == "adjoint" and execute_kwargs.get(
+            "device_vjp", False
+        ):
+            pytest.xfail("adjoint_vjp does not yet support jax jacobians.")
 
         a = jnp.array(0.1)
         b = jnp.array(0.2)
@@ -446,7 +472,10 @@ class TestJaxExecuteIntegration:
         res = cost(a, U)
         assert np.allclose(res, -jnp.cos(a), atol=atol_for_shots(shots), rtol=0)
 
-        jac_fn = jax.jacobian(cost)
+        if shots.has_partitioned_shots:
+            jac_fn = jax.jacobian(cost)
+        else:
+            jac_fn = jax.grad(cost)
         jac = jac_fn(a, U)
         if not shots.has_partitioned_shots:
             assert isinstance(jac, jnp.ndarray)
@@ -772,6 +801,8 @@ class TestHamiltonianWorkflows:
 
         if execute_kwargs["gradient_fn"] == "adjoint" and not use_new_op_math:
             pytest.skip("adjoint differentiation does not suppport hamiltonians.")
+        if execute_kwargs["gradient_fn"] == "adjoint" and execute_kwargs.get("device_vjp", False):
+            pytest.xfail("adjoint vjp does not yet support jax jacobians.")
 
         coeffs1 = jnp.array([0.1, 0.2, 0.3])
         coeffs2 = jnp.array([0.7])
@@ -787,6 +818,7 @@ class TestHamiltonianWorkflows:
 
         res = jax.jacobian(cost_fn)(weights, coeffs1, coeffs2)
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)[:, :2]
+        print(res, expected)
         if shots.has_partitioned_shots:
             assert np.allclose(res[:2, :], expected, atol=atol_for_shots(shots), rtol=0)
             assert np.allclose(res[2:, :], expected, atol=atol_for_shots(shots), rtol=0)
