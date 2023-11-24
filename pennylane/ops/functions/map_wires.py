@@ -100,17 +100,17 @@ def map_wires(
             return new_op
         return input.map_wires(wire_map=wire_map)
     if isinstance(input, (QuantumScript, QNode)) or callable(input):
-        return _map_wires_transform(input, wire_map=wire_map)
+        return _map_wires_transform(input, wire_map=wire_map, queue=queue)
 
     raise ValueError(f"Cannot map wires of object {input} of type {type(input)}.")
 
 
 @partial(transform)
 def _map_wires_transform(
-    tape: qml.tape.QuantumTape, wire_map=None
+    tape: qml.tape.QuantumTape, wire_map=None, queue=False
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
-    ops = [map_wires(op, wire_map) for op in tape.operations]
-    measurements = [map_wires(m, wire_map) for m in tape.measurements]
+    ops = [map_wires(op, wire_map, queue=queue) for op in tape.operations]
+    measurements = [map_wires(m, wire_map, queue=queue) for m in tape.measurements]
 
     out = tape.__class__(ops=ops, measurements=measurements, shots=tape.shots)
     out.trainable_params = tape.trainable_params
