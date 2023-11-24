@@ -1308,7 +1308,9 @@ class TestQubitIntegration:
         if diff_method in ["adjoint", "spsa", "hadamard"]:
             pytest.skip("Diff method does not support postselection.")
 
-        @qml.qnode(dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution)
+        @qml.qnode(
+            dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
+        )
         def circuit(phi, theta):
             qml.RX(phi, wires=0)
             qml.CNOT([0, 1])
