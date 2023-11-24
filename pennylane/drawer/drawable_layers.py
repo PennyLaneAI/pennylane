@@ -86,7 +86,6 @@ def drawable_layers(ops, wire_map=None):
 
     if not wire_map:
         wire_map = default_wire_map(ops)
-
     # initialize
     max_layer = 0
     occupied_wires_per_layer = [set()]

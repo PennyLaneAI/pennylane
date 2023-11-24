@@ -14,4 +14,5 @@
 """This module contains methods related to Clifford+T decomposition"""
 
 from .clifford_t_transform import clifford_t_decomposition
+
 from .solovay_kitaev import sk_decomposition

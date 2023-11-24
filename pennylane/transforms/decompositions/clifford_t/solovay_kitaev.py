@@ -223,7 +223,7 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
 
     Keyword Args:
         max_depth (int): The maximum number of approximation passes. A smaller :math:`\epsilon` would generally require
-            more number of passes. Default is ``5``.
+            a greater number of passes. Default is ``5``.
         basis_set (list[str]): Basis set to be used for the decomposition and building an approximate set internally.
             It accepts the following gate terms: ``['X', 'Y', 'Z', 'H', 'T', 'T*', 'S', 'S*']``, where ``*`` refers
             to the gate adjoint. Default value is ``['T', 'T*', 'H']``.
