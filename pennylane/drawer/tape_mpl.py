@@ -154,7 +154,7 @@ def _(op: MidMeasureMP, drawer, layer, config):
         )
 
     c_wire = config.bit_map[op]
-    drawer.classical_control(c_wire, layer, config.wire_map[op.wires[0]])
+    drawer.classical_control(c_wire, layer, op.wires[0])
     drawer.classical_wire(c_wire, layer, config.terminal_layers[0][c_wire])
 
 
