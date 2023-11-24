@@ -99,6 +99,12 @@
   custom rule for `apply_operation`. Also, the matrix representation of `GroverOperator` runs faster now.
   [(#4666)](https://github.com/PennyLaneAI/pennylane/pull/4666)
 
+* Add a new repository CI/CD pipeline to run benchmarks and plot graphs comparing with a fixed reference. This pipeline will run on a schedule and can be activated on a PR with the label ``ci:run_benchmarks``.
+  [(#4741)](https://github.com/PennyLaneAI/pennylane/pull/4741)
+
+* Expand the benchmarks CI/CD pipeline to export all benchmark data in a single JSON file and a CSV file with runtimes. This includes all references and local benchmarks.
+  [(#4873)](https://github.com/PennyLaneAI/pennylane/pull/4873)
+
 <h4>Other improvements</h4>
 
 * Added `ops.functions.assert_valid` for checking if an `Operator` class is defined correctly.
@@ -119,7 +125,7 @@
 * Simplified the logic for re-arranging states before returning.
   [(#4817)](https://github.com/PennyLaneAI/pennylane/pull/4817)
 
-* When multiplying `SparseHamiltonian`s by a scalar value, the result stays as a 
+* When multiplying `SparseHamiltonian`s by a scalar value, the result stays as a
   `SparseHamiltonian`.
   [(#4828)](https://github.com/PennyLaneAI/pennylane/pull/4828)
 
@@ -128,12 +134,6 @@
 
 * The `rot` decomposition now has support for returning a global phase.
   [(#4869)](https://github.com/PennyLaneAI/pennylane/pull/4869)
-
-* Add a new repository CI/CD pipeline to run benchmarks and plot graphs comparing with a fixed reference. This pipeline will run on a schedule and can be activated on a PR with the label ``ci:run_benchmarks``.
-  [(#4741)](https://github.com/PennyLaneAI/pennylane/pull/4741)
-
-* Expand the benchmarks CI/CD pipeline to export all benchmark data in a single JSON file and a CSV file with runtimes. This includes all references and local benchmarks.
-  [(#4873)](https://github.com/PennyLaneAI/pennylane/pull/4873)
 
 <h3>Breaking changes 💔</h3>
 
@@ -199,7 +199,7 @@
 * The decomposition of `GroverOperator` now has the same global phase as its matrix.
   [(#4666)](https://github.com/PennyLaneAI/pennylane/pull/4666)
 
-* The `tape.to_openqasm` method no longer mistakenly includes interface information in the parameter 
+* The `tape.to_openqasm` method no longer mistakenly includes interface information in the parameter
   string when converting tapes using non-numpy interfaces.
   [(#4849)](https://github.com/PennyLaneAI/pennylane/pull/4849)
 
