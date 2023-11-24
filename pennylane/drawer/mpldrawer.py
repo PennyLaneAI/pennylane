@@ -349,6 +349,26 @@ class MPLDrawer:
         for wire, ii_label in enumerate(labels):
             self._ax.text(-1.5, wire, ii_label, **text_options)
 
+    def erase_wire(self, layer: int, wire: int, length: int) -> None:
+        """Erases a portion of a wire by adding a rectangle that matches the background.
+
+        Args:
+            layer (int): starting x coordinate for erasing the wire
+            wire (int): y location to erase the wire from
+            length (float, int): horizontal distance from ``layer`` to erase the background.
+
+        """
+
+        rect = patches.Rectangle(
+            (layer, wire - 0.1),
+            length,
+            0.2,
+            facecolor=plt.rcParams["figure.facecolor"],
+            edgecolor=plt.rcParams["figure.facecolor"],
+            zorder=1.1,
+        )
+        self.ax.add_patch(rect)
+
     def box_gate(self, layer, wires, text="", box_options=None, text_options=None, **kwargs):
         """Draws a box and adds label text to its center.
 
@@ -780,7 +800,7 @@ class MPLDrawer:
         self._ax.add_line(l1)
         self._ax.add_line(l2)
 
-    def measure(self, layer, wires, box_options=None, lines_options=None):
+    def measure(self, layer, wires, text=None, box_options=None, lines_options=None):
         """Draw a Measurement graphic at designated layer, wire combination.
 
         Args:
@@ -788,6 +808,7 @@ class MPLDrawer:
             wires (int): wire to draw on
 
         Keyword Args:
+            text=None (str): an annotation for the lower right corner.
             box_options=None (dict): dictionary to format a matplotlib rectangle
             lines_options=None (dict): dictionary to format matplotlib arc and arrow
 
@@ -834,7 +855,7 @@ class MPLDrawer:
         self._ax.add_patch(box)
 
         arc = patches.Arc(
-            (layer, wires + self._box_length / 16),
+            (layer, wires + 0.15 * self._box_length),
             0.6 * self._box_length,
             0.55 * self._box_length,
             theta1=180,
@@ -844,8 +865,8 @@ class MPLDrawer:
         self._ax.add_patch(arc)
 
         # can experiment with the specific numbers to make it look decent
-        arrow_start_x = layer - 0.165 * self._box_length
-        arrow_start_y = wires + 0.25 * self._box_length
+        arrow_start_x = layer - 0.15 * self._box_length
+        arrow_start_y = wires + 0.3 * self._box_length
         arrow_width = 0.3 * self._box_length
         arrow_height = -0.5 * self._box_length
 
@@ -858,6 +879,10 @@ class MPLDrawer:
             head_width=self._box_length / 8.0,
             **lines_options,
         )
+        if text:
+            self._ax.text(
+                layer + 0.05 * self._box_length, wires + 0.225, text, fontsize=(self.fontsize - 2)
+            )
 
     def cond(self, layer, measured_layer, wires, wires_target, options=None):
         """Add classical communication double-lines for conditional operations

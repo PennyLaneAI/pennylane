@@ -146,6 +146,21 @@ class TestLabels:
         plt.close()
 
 
+def test_erase_wire():
+    """Test the erase wire method."""
+
+    drawer = MPLDrawer(5, 1)
+    drawer.erase_wire(1, 0, 3)
+
+    assert len(drawer.ax.patches) == 1
+    assert drawer.ax.patches[0].get_xy() == (1, -0.1)
+    assert drawer.ax.patches[0].get_width() == 3
+    assert drawer.ax.patches[0].get_height() == 0.2
+    assert drawer.ax.patches[0].get_facecolor() == drawer.fig.get_facecolor()
+    assert drawer.ax.patches[0].get_edgecolor() == drawer.fig.get_facecolor()
+    assert drawer.ax.patches[0].zorder > drawer.ax.lines[0].zorder
+
+
 class TestBoxGate:
     """Tests relating to box gate."""
 
@@ -444,6 +459,7 @@ class TestCTRL:
         drawer = MPLDrawer(1, 4)
         with pytest.warns(UserWarning, match="control indicators are hidden behind an operator"):
             drawer.ctrl(0, control_wires, target_wires)
+        plt.close()
 
     @pytest.mark.parametrize("control_wires,target_wires", [((0,), (1, 2)), ((2,), (0, 1))])
     def test_ctrl_no_warning_without_overlap(self, control_wires, target_wires):
@@ -451,6 +467,7 @@ class TestCTRL:
         with warnings.catch_warnings(record=True) as w:
             drawer.ctrl(0, control_wires, target_wires)
         assert len(w) == 0
+        plt.close()
 
     def test_target_x(self):
         """Tests hidden target_x drawing method"""
@@ -616,7 +633,7 @@ class TestMeasure:
         assert box.get_width() == drawer._box_length - 2 * drawer._pad
 
         arc = drawer.ax.patches[1]
-        assert arc.center == (0, drawer._box_length / 16)
+        assert arc.center == (0, 0.15 * drawer._box_length)
         assert arc.theta1 == 180
         assert arc.theta2 == 0
         assert allclose(arc.height, 0.55 * drawer._box_length)
@@ -624,7 +641,16 @@ class TestMeasure:
 
         arrow = drawer.ax.patches[2]
         assert isinstance(arrow, FancyArrow)
+        assert len(drawer.ax.texts) == 0
+        plt.close()
 
+    def test_measure_text(self):
+        """Test adding a postselection label to a measure box."""
+        drawer = MPLDrawer(1, 1)
+        drawer.measure(0, 0, text="0")
+        assert len(drawer.ax.texts) == 1
+        assert drawer.ax.texts[0].get_text() == "0"
+        assert drawer.ax.texts[0].get_position() == (0.05 * 0.75, 0.225)
         plt.close()
 
     def test_measure_formatted(self):
@@ -782,6 +808,7 @@ class TestCond:
             ((0.97, 0.97), (0.03, 1)),
         ]
         assert [line.get_data() for line in drawer._wire_lines] == wire_data_before
+        plt.close()
 
     def test_cond_two_ctrl_wires(self):
         """Tests cond from two separated wires."""
@@ -802,6 +829,7 @@ class TestCond:
             ((0.375, 0.97), (1.97, 1.97)),
             ((0.375, 0.97), (2.03, 2.03)),
         ]
+        plt.close()
 
     def test_cond_two_ctrl_wires_upward(self):
         """Test cond when the conditional operation is above the control wires."""
@@ -820,6 +848,7 @@ class TestCond:
             ((0.375, 0.97), (0.97, 0.97)),
             ((0.375, 0.97), (1.03, 1.03)),
         ]
+        plt.close()
 
     @pytest.mark.parametrize(
         "ctrl_wires, target_wires",
@@ -835,3 +864,4 @@ class TestCond:
         drawer = MPLDrawer(n_wires=4, n_layers=2)
         with pytest.raises(ValueError, match="Cannot draw interspersed mid-circuit measurements"):
             drawer.cond(layer=1, measured_layer=0, wires=ctrl_wires, wires_target=target_wires)
+        plt.close()
