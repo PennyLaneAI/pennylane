@@ -392,7 +392,6 @@ def clifford_t_decomposition(
                     try:
                         # Attempt decomposing the operation
                         md_ops = op.decomposition()
-                        print("md_ops: ", md_ops)
                         idx = 0  # might not be fast but at least is not recursive
                         while idx < len(md_ops):
                             md_op = md_ops[idx]
