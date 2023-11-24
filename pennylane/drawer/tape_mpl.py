@@ -202,7 +202,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
     n_layers = len(layers)
     n_wires = len(wire_map)
 
-    bit_map, _, terminal_layers = find_mid_measure_cond_connections(tape.operations, [layers, []])
+    bit_map, _, terminal_layers = find_mid_measure_cond_connections(tape.operations, layers])
 
     drawer = MPLDrawer(
         n_layers=n_layers, n_wires=n_wires, c_wires=len(bit_map), wire_options=wire_options
