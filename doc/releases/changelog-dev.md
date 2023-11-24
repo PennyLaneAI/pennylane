@@ -127,8 +127,6 @@
   `SparseHamiltonian`.
   [(#4828)](https://github.com/PennyLaneAI/pennylane/pull/4828)
 
-<h3>Breaking changes 💔</h3>
-
 * `default.qubit` now calculates the expectation value of Hermitians in a differentiable manner.
   [(#4866)](https://github.com/PennyLaneAI/pennylane/pull/4866)
 
@@ -156,8 +154,6 @@
 
 * The `rot` decomposition will now normalize its rotation angles to the range `[0, 4pi]` for consistency
   [(#4869)](https://github.com/PennyLaneAI/pennylane/pull/4869)
-
-<h3>Deprecations 👋</h3>
 
 * `QuantumScript.graph` is now built using `tape.measurements` instead of `tape.observables`
   because it depended on the now-deprecated `Observable.return_type` property.
