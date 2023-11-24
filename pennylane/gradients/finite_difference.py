@@ -359,7 +359,7 @@ def finite_diff(
             "Finite differences with float32 detected. Answers may be inaccurate. float64 is recommended.",
             UserWarning,
         )
-
+    number_parameter = len(tape.trainable_params)
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
 
@@ -408,7 +408,6 @@ def finite_diff(
     def _single_shot_batch_result(results):
         """Auxiliary function for post-processing one batch of results corresponding to finite shots or a single
         component of a shot vector"""
-
         grads = []
         start = 1 if c0 is not None and f0 is None else 0
         r0 = f0 or results[0]
@@ -485,9 +484,9 @@ def finite_diff(
             return tuple(grads)
 
         # Reordering to match the right shape for multiple measurements
-        grads_reorder = [[0] * len(tape.trainable_params) for _ in range(len(tape.measurements))]
+        grads_reorder = [[0] * number_parameter for _ in range(len(tape.measurements))]
         for i in range(len(tape.measurements)):
-            for j in range(len(tape.trainable_params)):
+            for j in range(number_parameter):
                 grads_reorder[i][j] = grads[j][i]
 
         # To tuple
