@@ -358,7 +358,7 @@ class MPLDrawer:
 
         Args:
             layer (int): starting x coordinate for erasing the wire
-            wire (int): y location to to erase the wire from
+            wire (int): y location to erase the wire from
             length (float, int): horizontal distance from ``layer`` to erase the background.
 
         """
@@ -885,7 +885,7 @@ class MPLDrawer:
         )
         if text:
             self._ax.text(
-                layer + 0.05 * self._box_length, wires + 0.2, text, fontsize=self.fontsize
+                layer + 0.05 * self._box_length, wires + 0.225, text, fontsize=(self.fontsize - 2)
             )
 
     def classical_wire(self, c_wire, start_layer, end_layer) -> None:

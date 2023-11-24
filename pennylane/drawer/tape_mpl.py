@@ -37,9 +37,7 @@ except (ModuleNotFoundError, ImportError):  # pragma: no cover
     has_mpl = False
 
 
-_Config = namedtuple(
-    "_Config", ("wire_map", "decimals", "active_wire_notches", "bit_map", "terminal_layers")
-)
+_Config = namedtuple("_Config", ("decimals", "active_wire_notches", "bit_map", "terminal_layers"))
 
 
 @singledispatch
@@ -60,20 +58,19 @@ def _add_operation_to_drawer(
     """
     op_control_wires, control_values = unwrap_controls(op)
 
-    control_wires = [config.wire_map[w] for w in op_control_wires]
     target_wires = (
-        [config.wire_map[w] for w in op.wires if w not in op_control_wires]
+        [w for w in op.wires if w not in op_control_wires]
         if len(op.wires) != 0
-        else config.wire_map.values()
+        else list(range(drawer.n_wires))
     )
 
     if control_values is None:
-        control_values = [True for _ in control_wires]
+        control_values = [True for _ in op_control_wires]
 
-    if control_wires:
+    if op_control_wires:
         drawer.ctrl(
             layer,
-            control_wires,
+            op_control_wires,
             wires_target=target_wires,
             control_values=control_values,
         )
@@ -88,48 +85,44 @@ def _add_operation_to_drawer(
 
 
 @_add_operation_to_drawer.register
-def _(op: ops.SWAP, drawer, layer, config) -> None:
-    drawer.SWAP(layer, [config.wire_map[w] for w in op.wires])
+def _(op: ops.SWAP, drawer, layer, _) -> None:
+    drawer.SWAP(layer, list(op.wires))
+
+@_add_operation_to_drawer.register
+def _(op: ops.CSWAP, drawer, layer, _):
+    drawer.ctrl(layer, wires=op.wires[0], wires_target=op.wires[1:])
+    drawer.SWAP(layer, wires=list(op.wires[1:]))
 
 
 @_add_operation_to_drawer.register
-def _(op: ops.CSWAP, drawer, layer, config):
-    mapped_wires = [config.wire_map[w] for w in op.wires]
-    drawer.ctrl(layer, wires=mapped_wires[0], wires_target=mapped_wires[1:])
-    drawer.SWAP(layer, wires=mapped_wires[1:])
+def _(op: ops.CNOT, drawer, layer, _):
+    drawer.CNOT(layer, op.wires)
 
 
 @_add_operation_to_drawer.register
-def _(op: ops.CNOT, drawer, layer, config):
-    drawer.CNOT(layer, [config.wire_map[w] for w in op.wires])
+def _(op: ops.Toffoli, drawer, layer, _):
+    drawer.CNOT(layer, op.wires)
 
 
 @_add_operation_to_drawer.register
-def _(op: ops.Toffoli, drawer, layer, config):
-    drawer.CNOT(layer, [config.wire_map[w] for w in op.wires])
-
-
-@_add_operation_to_drawer.register
-def _(op: ops.MultiControlledX, drawer, layer, config):
+def _(op: ops.MultiControlledX, drawer, layer, _):
     control_values = [(i == "1") for i in op.hyperparameters["control_values"]]
-    drawer.CNOT(layer, [config.wire_map[w] for w in op.wires], control_values=control_values)
+    drawer.CNOT(layer, op.wires, control_values=control_values)
 
 
 @_add_operation_to_drawer.register
-def _(op: ops.CZ, drawer, layer, config):
-    drawer.ctrl(layer, [config.wire_map[w] for w in op.wires])
+def _(op: ops.CZ, drawer, layer, _):
+    drawer.ctrl(layer, op.wires)
 
 
 @_add_operation_to_drawer.register
-def _(op: ops.CCZ, drawer, layer, config):
-    drawer.ctrl(layer, [config.wire_map[w] for w in op.wires])
+def _(op: ops.CCZ, drawer, layer, _):
+    drawer.ctrl(layer, op.wires)
 
 
 @_add_operation_to_drawer.register
-def _(op: ops.Barrier, drawer, layer, config):
-    mapped_wires = (
-        [config.wire_map[w] for w in op.wires] if len(op.wires) != 0 else config.wire_map.values()
-    )
+def _(op: ops.Barrier, drawer, layer, _):
+    mapped_wires = op.wires if len(op.wires) != 0 else list(range(drawer.n_wires))
     ymin = min(mapped_wires) - 0.5
     ymax = max(mapped_wires) + 0.5
     drawer.ax.vlines(layer - 0.05, ymin=ymin, ymax=ymax)
@@ -137,11 +130,10 @@ def _(op: ops.Barrier, drawer, layer, config):
 
 
 @_add_operation_to_drawer.register
-def _(op: ops.WireCut, drawer, layer, config):
-    mapped_wires = [config.wire_map[w] for w in op.wires]
-    ymin = min(mapped_wires) - 0.5
-    ymax = max(mapped_wires) + 0.5
-    drawer.ax.text(layer - 0.35, y=max(mapped_wires), s="✂", fontsize=40)
+def _(op: ops.WireCut, drawer, layer, _):
+    ymin = min(op.wires) - 0.5
+    ymax = max(op.wires) + 0.5
+    drawer.ax.text(layer - 0.35, y=max(op.wires), s="✂", fontsize=40)
     drawer.ax.vlines(layer, ymin=ymin, ymax=ymax, linestyle="--")
 
 
@@ -149,13 +141,13 @@ def _(op: ops.WireCut, drawer, layer, config):
 def _(op: MidMeasureMP, drawer, layer, config):
     mapped_wires = [config.wire_map[w] for w in op.wires]
     text = None if op.postselect is None else str(int(op.postselect))
-    drawer.measure(layer, mapped_wires[0], text=text)  # assume one wire
+    drawer.measure(layer, op.wires[0], text=text)  # assume one wire
 
     if op.reset:
-        drawer.erase_wire(layer, mapped_wires[0], 1)
+        drawer.erase_wire(layer, op.wires[0], 1)
         drawer.box_gate(
             layer + 1,
-            mapped_wires[0],
+            op.wires[0],
             "|0⟩",
             box_options={"zorder": 4},
             text_options={"zorder": 5},
@@ -168,17 +160,15 @@ def _(op: MidMeasureMP, drawer, layer, config):
 
 @_add_operation_to_drawer.register
 def _(op: qml.ops.op_math.Conditional, drawer, layer, config) -> None:
-    target_wires = [config.wire_map[w] for w in op.wires]
     drawer.box_gate(
         layer,
-        target_wires,
+        list(op.wires),
         op.then_op.label(decimals=config.decimals),
         box_options={"zorder": 4},
         text_options={"zorder": 5},
     )
     c_wire = config.bit_map[op.meas_val.measurements[0]]
-    drawer.classical_control(c_wire, layer, min(target_wires))
-
+    drawer.classical_control(c_wire, layer, min(op.wires))
 
 def _get_measured_wires(measurements, wires) -> set:
     measured_wires = set()
@@ -200,8 +190,11 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
     fontsize = kwargs.get("fontsize", None)
 
     wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
+    tape = qml.map_wires(tape, wire_map=wire_map)[0][0]
 
-    layers = drawable_layers(tape.operations, wire_map=wire_map)
+    config = _Config(decimals, active_wire_notches=active_wire_notches)
+    layers = drawable_layers(tape.operations, {i: i for i in tape.wires})
+
     for i, layer in enumerate(layers):
         if any(isinstance(o, qml.measurements.MidMeasureMP) and o.reset for o in layer):
             layers.insert(i + 1, [])
@@ -235,8 +228,8 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
         for op in layer_ops:
             _add_operation_to_drawer(op, drawer, layer, config)
 
-    for wire in _get_measured_wires(tape.measurements, wire_map):
-        drawer.measure(n_layers, wire_map[wire])
+    for wire in _get_measured_wires(tape.measurements, list(range(n_wires))):
+        drawer.measure(n_layers, wire)
 
     return drawer.fig, drawer.ax
 
