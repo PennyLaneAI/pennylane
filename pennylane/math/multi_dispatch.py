@@ -861,7 +861,6 @@ def norm(tensor, like=None, **kwargs):
 def _flat_autograd_norm(tensor, **kwargs):  # pylint: disable=unused-argument
     """Helper function for computing the norm of an autograd tensor when the order or axes are not
     specified. This is used for differentiability."""
-    print("here")
     x = np.ravel(tensor)
     sq_norm = np.dot(x, np.conj(x))
     return np.real(np.sqrt(sq_norm))
