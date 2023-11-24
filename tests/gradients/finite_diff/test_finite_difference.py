@@ -1067,7 +1067,7 @@ class TestFiniteDiffGradients:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("dev_name", ["default.qubit"])
-    def test_jax_probs(self, dev_name, approx_order, strategy, tol):
+    def test_jax_probs(self, dev_name, tol):
         """Tests that the output of the finite-difference transform
         can be differentiated using JAX, yielding second derivatives."""
         import jax
