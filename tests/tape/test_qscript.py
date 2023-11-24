@@ -1449,7 +1449,7 @@ def test_flatten_unflatten(qscript_type):
     assert all(o1 is o2 for o1, o2 in zip(new_tape.operations, tape.operations))
     assert all(o1 is o2 for o1, o2 in zip(new_tape.measurements, tape.measurements))
     assert new_tape.shots == qml.measurements.Shots(100)
-    assert new_tape.trainable_params == [0]
+    assert new_tape.trainable_params == (0,)
 
 
 @pytest.mark.jax
