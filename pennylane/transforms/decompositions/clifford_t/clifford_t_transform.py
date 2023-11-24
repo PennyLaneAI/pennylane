@@ -238,19 +238,23 @@ def _two_qubit_decompose(op):
     return d_ops
 
 
-def _merge_pauli_rotations(operations, merge_ops=None):
-    """Merge the provided single qubit rotations gates on the same wires that are adjacent to each other"""
+def _merge_param_gates(operations, merge_ops=None):
+    """Merge the provided parameterized gates on the same wires that are adjacent to each other"""
 
     copied_ops = operations.copy()
-    merged_ops = []
+    merged_ops, number_ops = [], 0
 
     while len(copied_ops) > 0:
         curr_gate = copied_ops.pop(0)
 
-        # if gate is not to be merged, let it go
+        # If gate is not to be merged, let it go
         if merge_ops is not None and curr_gate.name not in merge_ops:
             merged_ops.append(curr_gate)
             continue
+
+        # If gate is not to be merged, update counter
+        if curr_gate.name in merge_ops:
+            number_ops += 1
 
         # Find the next gate that acts on the same wires
         next_gate_idx = find_next_gate(curr_gate.wires, copied_ops)
@@ -273,7 +277,7 @@ def _merge_pauli_rotations(operations, merge_ops=None):
         # Replace the current gate, add it to merged list and pop it from orginal one
         merged_ops.append(curr_gate.__class__(*cumulative_angles, wires=curr_gate.wires))
 
-    return merged_ops
+    return merged_ops, number_ops
 
 
 # pylint: disable= too-many-nested-blocks, too-many-branches, too-many-statements, unnecessary-lambda-assignment
@@ -427,18 +431,17 @@ def clifford_t_decomposition(
                         ) from exc
 
         # Merge RZ rotations together
-        merged_ops = _merge_pauli_rotations(decomp_ops, merge_ops=["RZ"])
+        merged_ops, number_ops = _merge_param_gates(decomp_ops, merge_ops=["RZ"])
 
         # Squeeze global phases into a single global phase
-        new_operations = _fuse_global_phases(gphase_ops + merged_ops)
+        new_operations = _fuse_global_phases(merged_ops + gphase_ops)
 
-        # compute the per-gate epsilon value
-        num_calls_needed = len([o for o in new_operations if isinstance(o, qml.RZ)]) or 1
-        epsilon /= num_calls_needed
+        # Compute the per-gate epsilon value
+        epsilon /= number_ops or 1
 
-        # every decomposition implementation should have the following shape:
+        # Every decomposition implementation should have the following shape:
         # def decompose_fn(op: Operator, epsilon: float, **method_kwargs) -> List[Operator]
-        # note that the last operator in the decomposition must be a GlobalPhase
+        # note: the last operator in the decomposition must be a GlobalPhase
 
         # Build the approximation set for Solovay-Kitaev decomposition
         if method == "sk":
