@@ -657,17 +657,10 @@ class QuantumScript:
         >>> qscript.get_parameters(trainable_only=False)
         [0.432, 0.543, 0.133]
         """
-        self.trainable_params  # trigger creation
         if trainable_only:
             params = []
             for p_idx in self.trainable_params:
-                try:
-                    par_info = self._par_info[p_idx]
-                except IndexError as e:
-                    print(self.circuit)
-                    print(self.trainable_params)
-                    print(self._par_info)
-                    raise e
+                par_info = self._par_info[p_idx]
                 if operations_only and isinstance(self[par_info["op_idx"]], MeasurementProcess):
                     continue
 
