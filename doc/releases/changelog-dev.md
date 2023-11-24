@@ -6,6 +6,10 @@
 
 <h4>Decompose circuits into the Clifford+T gateset 🧩</h4>
 
+* `qml.transforms.decompositions.sk_decomposition` method implements the Solovay-Kitaev algorithm for
+  approximately decomposing any single-qubit operation to Clifford+T basis.
+  [(#4801)](https://github.com/PennyLaneAI/pennylane/pull/4801)
+
 <h4>Transforms (TODO: better title) 🤖</h4>
 
 <h4>Use an iterative approach for quantum phase estimation 🔄</h4>
