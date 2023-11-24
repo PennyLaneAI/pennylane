@@ -127,8 +127,8 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
         .. note::
 
             When using ``qml.matrix`` with a ``QNode``, unless specified, the device wire order will
-            be used if ``device.wires`` is not ``None``. Otherwise, the wire order will be inferred
-            from the quantum function used to create the ``QNode``. Consider the following ``QNode``:
+            be used. If the device wires are not set, the wire order will be inferred
+            from the quantum function used to create the ``QNode``. Consider the following example:
 
             .. code-block:: python
 
@@ -155,9 +155,8 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
                    [-0.+0.j,  0.+0.j,  1.+0.j,  0.+0.j],
                    [ 0.+0.j,  1.+0.j,  0.+0.j, -0.+0.j]])
 
-            The second matrix above uses  wire order ``[1, 0]`` as that is the wire order of
-            as the wires aren't specified when creating the device and the first operation
-            in ``circuit`` is applied to wire ``1``.
+            The second matrix above uses wire order ``[1, 0]`` because the device does not have
+            wires specified, and this is the order in which wires appear in `circuit()`.
     """
     if not isinstance(op, qml.operation.Operator):
         if not isinstance(op, (qml.tape.QuantumScript, qml.QNode)) and not callable(op):
