@@ -30,7 +30,15 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
     Args:
         op (Operator or QNode or QuantumTape or Callable): A quantum operator or quantum circuit.
         wire_order (Sequence[Any], optional): Order of the wires in the quantum circuit.
-            Defaults to the order in which the wires appear in the quantum function.
+            The default wire order depends on the type of ``op``:
+
+            - If ``op`` is a :class:`~.QNode`, then the wire order is determined by the
+              associated device's wires, if provided.
+
+            - Otherwise, the wire order is determined by the order in which wires
+              appear in the circuit.
+
+            - See the usage details for more information.
 
     Returns:
         TensorLike or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
