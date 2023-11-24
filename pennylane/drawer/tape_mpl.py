@@ -88,6 +88,7 @@ def _add_operation_to_drawer(
 def _(op: ops.SWAP, drawer, layer, _) -> None:
     drawer.SWAP(layer, list(op.wires))
 
+
 @_add_operation_to_drawer.register
 def _(op: ops.CSWAP, drawer, layer, _):
     drawer.ctrl(layer, wires=op.wires[0], wires_target=op.wires[1:])
@@ -139,7 +140,6 @@ def _(op: ops.WireCut, drawer, layer, _):
 
 @_add_operation_to_drawer.register
 def _(op: MidMeasureMP, drawer, layer, config):
-    mapped_wires = [config.wire_map[w] for w in op.wires]
     text = None if op.postselect is None else str(int(op.postselect))
     drawer.measure(layer, op.wires[0], text=text)  # assume one wire
 
@@ -170,6 +170,7 @@ def _(op: qml.ops.op_math.Conditional, drawer, layer, config) -> None:
     c_wire = config.bit_map[op.meas_val.measurements[0]]
     drawer.classical_control(c_wire, layer, min(op.wires))
 
+
 def _get_measured_wires(measurements, wires) -> set:
     measured_wires = set()
     for m in measurements:
@@ -192,7 +193,6 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
     wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
     tape = qml.map_wires(tape, wire_map=wire_map)[0][0]
 
-    config = _Config(decimals, active_wire_notches=active_wire_notches)
     layers = drawable_layers(tape.operations, {i: i for i in tape.wires})
 
     for i, layer in enumerate(layers):
