@@ -74,6 +74,16 @@ There are also utility functions that take a circuit and return a DAG.
     ~transforms.CommutationDAG
     ~transforms.CommutationDAGNode
 
+Transform for Clifford+T compilation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following functions assist in decomposing operations to the Clifford+T basis.
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.sk_decomposition
+
 Transform for circuit cutting
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -167,18 +177,6 @@ that compute the desired quantity.
     ~draw
     ~draw_mpl
 
-
-Transforms that act on quantum functions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-These transforms accept quantum functions (Python functions
-containing quantum operations) that are used to construct QNodes.
-
-.. autosummary::
-    :toctree: api
-
-    ~transforms.cond
-
 Decorators and utility functions
 --------------------------------
 
@@ -215,9 +213,9 @@ instead to the documentation of :func:`qml.transform <pennylane.transform>`.
 Old transforms framework
 ------------------------
 
-These utility functions were previously used to create transforms in PennyLane and will be
-deprecated soon. It is now recommended to use :class:`qml.transform <pennylane.transform>`
-for creation of custom transforms.
+These utility functions were previously used to create transforms in PennyLane and are now
+deprecated. It is now recommended to use :class:`qml.transform <pennylane.transform>`
+for the creation of custom transforms.
 
 .. autosummary::
     :toctree: api
@@ -237,12 +235,12 @@ from .batch_params import batch_params
 from .batch_input import batch_input
 from .batch_partial import batch_partial
 from .classical_jacobian import classical_jacobian
-from .condition import cond, Conditional
 from .convert_to_numpy_parameters import convert_to_numpy_parameters
 from .compile import compile
 from .decompositions import (
     one_qubit_decomposition,
     two_qubit_decomposition,
+    sk_decomposition,
 )
 from .defer_measurements import defer_measurements
 from .sign_expand import sign_expand

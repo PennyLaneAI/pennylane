@@ -15,15 +15,15 @@
 This module contains functions for adding the PyTorch interface
 to a PennyLane Device class.
 
-**How to bind a custom derivative with torch.**
+**How to bind a custom derivative with Torch.**
 
-Suppose I have a function ``f`` that I want to change how autograd takes the derivative of.
+See `the Torch documentation <https://pytorch.org/docs/stable/notes/extending.html>`_ for more complete
+information.
 
-I need to inherit from ``torch.autograd.Function`` and define ``forward`` and ``backward`` static
+Suppose I have a function ``f`` that I want to define a custom vjp for.
+
+We need to inherit from ``torch.autograd.Function`` and define ``forward`` and ``backward`` static
 methods.
-
-Since using the custom function definition involves the static ``apply`` method, we can wrap our
-custom function in ``f`` for user convenience.
 
 .. code-block:: python
 
@@ -41,11 +41,10 @@ custom function in ``f`` for user convenience.
             print(f"Calculating the gradient with x={x}, dy={dy}, exponent={exponent}")
             return dy * exponent * x ** (exponent-1), None
 
-    def f(x):
-        return CustomFunction.apply(x)
+To use the ``CustomFunction`` class, we call it with the static ``apply`` method.
 
 >>> val = torch.tensor(2.0, requires_grad=True)
->>> res = f(val)
+>>> res = CustomFunction.apply(val)
 >>> res
 tensor(4., grad_fn=<CustomFunctionBackward>)
 >>> res.backward()
@@ -53,10 +52,12 @@ tensor(4., grad_fn=<CustomFunctionBackward>)
 Calculating the gradient with x=2.0, dy=1.0, exponent=2
 tensor(4.)
 
-Setting properties directly on the context ``ctx`` is usually reserved for non-trainable metadata,
-with ``ctx.save_for_backward`` used for trainable tensors. Since we are storing the tapes and jacobian
-product calculator for the backward pass, 
-            
+Note that for custom functions, the output of ``forward`` and the output of ``backward`` are flattened iterables of
+Torch arrays.  While autograd and jax can handle nested result objects like ``((np.array(1), np.array(2)), np.array(3))``,
+torch requires that it be flattened like ``(np.array(1), np.array(2), np.array(3))``.  The ``pytreeify`` class decorator
+modifies the output of ``forward`` and the input to ``backward`` to unpack and repack the nested structure of the PennyLane
+result object.
+
 """
 # pylint: disable=too-many-arguments,protected-access,abstract-method
 import inspect
@@ -125,8 +126,7 @@ class ExecuteTapes(torch.autograd.Function):
     ``tapes``; this function should always be called
     with the parameters extracted directly from the tapes as follows:
 
-    >>> parameters = []
-    >>> [parameters.extend(t.get_parameters()) for t in tapes]
+    >>> parameters = [p for t in tapes for p in t.get_parameters()]
     >>> kwargs = {"tapes": tapes, "execute_fn": execute_fn, "jpc": jpc}
     >>> ExecuteTapes.apply(kwargs, *parameters)
 
@@ -188,8 +188,7 @@ class ExecuteTapes(torch.autograd.Function):
         return (None,) + vjps
 
 
-# pylint: disable=unused-argument
-def execute(tapes, execute_fn, jpc, differentiable=False):
+def execute(tapes, execute_fn, jpc):
     """Execute a batch of tapes with Torch parameters on a device.
 
     Args:
@@ -203,7 +202,7 @@ def execute(tapes, execute_fn, jpc, differentiable=False):
     """
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(
-            "Entry with args=(tapes=%s, execute-fn=%s, jpc=%s",
+            "Entry with args=(tapes=%s, execute_fn=%s, jpc=%s",
             tapes,
             f"\n{inspect.getsource(execute_fn)}\n"
             if logger.isEnabledFor(qml.logging.TRACE)

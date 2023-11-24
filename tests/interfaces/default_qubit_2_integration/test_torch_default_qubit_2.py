@@ -30,9 +30,9 @@ pytestmark = pytest.mark.torch
 
 @pytest.fixture(autouse=True)
 def run_before_and_after_tests():
-    torch.set_default_tensor_type(torch.DoubleTensor)
+    torch.set_default_dtype(torch.float64)
     yield
-    torch.set_default_tensor_type(torch.FloatTensor)
+    torch.set_default_dtype(torch.float32)
 
 
 # pylint: disable=too-few-public-methods
@@ -245,8 +245,8 @@ class TestTorchExecuteIntegration:
         def cost(a, b):
             ops = [qml.RY(a, wires=0), qml.RX(b, wires=1), qml.CNOT(wires=[0, 1])]
             m = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
-            tape = qml.tape.QuantumScript(ops, m, shots=shots)
-            res = execute([tape], device, **execute_kwargs)[0]
+            tape = qml.tape.QuantumScript(ops, m, shots=shots
+            [res] = execute([tape], device, **execute_kwargs)
             if shots.has_partitioned_shots:
                 return torch.hstack(res[0] + res[1])
             return torch.hstack(res)
