@@ -293,3 +293,11 @@ class TestNorm:
         computed_norm = fn.norm(arr, ord=np.inf, **kwargs)
         assert np.allclose(computed_norm, expected_norm)
         assert fn.get_interface(computed_norm) == expected_intrf
+
+    @pytest.mark.parametrize
+    def test_autograd_custom_norm(self, arr):
+        """Test that qml.math.norm dispatches to a custom implementation for autograd
+        when the order and axis are not specified and that the norm is correct."""
+        norm = fn.norm(arr)
+        expected_norm = np.linalg.norm(arr)
+        assert np.isclose(norm, expected_norm)
