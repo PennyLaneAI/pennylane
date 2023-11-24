@@ -189,6 +189,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fix a bug where trainable parameters in the post-processing of finite diff were incorrect for Jax.
+  [(#4879)](https://github.com/PennyLaneAI/pennylane/pull/4879)
+
 * `qml.grad` and `qml.jacobian` now explicitly raise errors if trainable parameters are integers.
   [(#4836)](https://github.com/PennyLaneAI/pennylane/pull/4836)
 
@@ -259,6 +262,7 @@ Lillian Frederiksen,
 Emiliano Godinez Ramirez,
 Ankit Khandelwal,
 Christina Lee,
+Romain Moyard,
 Anurav Modak,
 Mudit Pandey,
 Matthew Silverman,
