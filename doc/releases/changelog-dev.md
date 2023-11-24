@@ -6,6 +6,10 @@
 
 <h4>Decompose circuits into the Clifford+T gateset 🧩</h4>
 
+* `qml.transforms.decompositions.sk_decomposition` method implements the Solovay-Kitaev algorithm for
+  approximately decomposing any single-qubit operation to Clifford+T basis.
+  [(#4801)](https://github.com/PennyLaneAI/pennylane/pull/4801)
+
 <h4>Transforms (TODO: better title) 🤖</h4>
 
 <h4>Use an iterative approach for quantum phase estimation 🔄</h4>
@@ -74,6 +78,10 @@
 
 * `AmplitudeEmbedding` now also supports batching when used with Tensorflow.
   [(#4818)](https://github.com/PennyLaneAI/pennylane/pull/4818)
+
+* `qml.draw` and `qml.draw_mpl` now support drawing mid-circuit measurements.
+  [(#4775)](https://github.com/PennyLaneAI/pennylane/pull/4775)
+  [(#4832)](https://github.com/PennyLaneAI/pennylane/pull/4832)
 
 * `qml.ArbitraryUnitary` now supports batching.
   [(#4745)](https://github.com/PennyLaneAI/pennylane/pull/4745)
