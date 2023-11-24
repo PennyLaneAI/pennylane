@@ -177,9 +177,7 @@ class QuantumScript:
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        new_tape = cls(*data, shots=metadata[0])
-        new_tape.trainable_params = metadata[1]
-        return new_tape
+        return cls(*data, shots=metadata[0], trainable_params=metadata[1])
 
     def __init__(
         self,
@@ -879,13 +877,17 @@ class QuantumScript:
             _ops = self.operations.copy()
             _measurements = self.measurements.copy()
 
-        new_qscript = self.__class__(ops=_ops, measurements=_measurements, shots=self.shots)
+        new_qscript = self.__class__(
+            ops=_ops,
+            measurements=_measurements,
+            shots=self.shots,
+            trainable_params=list(self.trainable_params),
+        )
         new_qscript._graph = None if copy_operations else self._graph
         new_qscript._specs = None
         new_qscript.wires = copy.copy(self.wires)
         new_qscript.num_wires = self.num_wires
         new_qscript._update_par_info()
-        new_qscript.trainable_params = self.trainable_params.copy()
         new_qscript._obs_sharing_wires = self._obs_sharing_wires
         new_qscript._obs_sharing_wires_id = self._obs_sharing_wires_id
         new_qscript._batch_size = self.batch_size
