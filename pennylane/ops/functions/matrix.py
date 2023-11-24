@@ -164,7 +164,8 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
                    [ 0.+0.j,  1.+0.j,  0.+0.j, -0.+0.j]])
 
             The second matrix above uses wire order ``[1, 0]`` because the device does not have
-            wires specified, and this is the order in which wires appear in `circuit()`.
+            wires specified, and this is the order in which wires appear in ``circuit()``.
+
     """
     if not isinstance(op, qml.operation.Operator):
         if not isinstance(op, (qml.tape.QuantumScript, qml.QNode)) and not callable(op):
