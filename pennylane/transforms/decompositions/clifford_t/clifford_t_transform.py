@@ -203,7 +203,8 @@ def _rot_decompose(op):
 
 
 def _one_qubit_decompose(op):
-    r"""Decomposition for single qubit operations using combination of :class:`~.RZ` and :class:`~.Hadamard`."""
+    r"""Decomposition for single qubit operations using combination of :class:`~.RZ`, :class:`~.S`, and
+    :class:`~.Hadamard`."""
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)
@@ -351,15 +352,15 @@ def clifford_t_decomposition(
         basis_set = [op.__name__ for op in _PARAMETER_GATES + _CLIFFORD_T_GATES]
         pipelines = [remove_barrier, commute_controlled, cancel_inverses, merge_rotations]
 
-        # Expand the tape according to depth provided by the user and try simplifying it
-        expanded_tape = tape.expand(depth=max_expansion, stop_at=lambda op: op.name in basis_set)
-        for transf in pipelines:
-            [expanded_tape], _ = transf(expanded_tape)
+        # Compile the tape according to depth provided by the user and expand it
+        [compiled_tape], _ = qml.compile(
+            tape, pipelines, basis_set=basis_set, expand_depth=max_expansion
+        )
 
         # Now iterate over the expanded tape operations
         decomp_ops, gphase_ops = [], []
         SKIP_OP_TYPES = (qml.Barrier, qml.Snapshot, qml.WireCut)
-        for op in expanded_tape.operations:
+        for op in compiled_tape.operations:
             # Check whether operation is to be skipped
             if isinstance(op, SKIP_OP_TYPES):
                 decomp_ops.append(op)
@@ -464,7 +465,7 @@ def clifford_t_decomposition(
         decomp_ops.append(qml.GlobalPhase(phase))
 
     # Construct a new tape with the expanded set of operations
-    new_tape = type(tape)(decomp_ops, expanded_tape.measurements, shots=tape.shots)
+    new_tape = type(tape)(decomp_ops, compiled_tape.measurements, shots=tape.shots)
 
     # Perform a final attempt of simplification before return
     [new_tape], _ = cancel_inverses(new_tape)
