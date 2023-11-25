@@ -131,6 +131,12 @@ _map_Z = {
 
 mul_map = {I: _map_I, X: _map_X, Y: _map_Y, Z: _map_Z}
 
+#@lru_cache(maxsize=4**10)
+def _pauli_word_commutator(a, b):
+    if a.commutes_with(b):
+        return None, 0.0
+    new_word, coeff = a.__mul__(b)
+    return new_word, 2 * coeff
 
 class PauliWord(dict):
     """Immutable dictionary used to represent a Pauli Word,
@@ -182,7 +188,6 @@ class PauliWord(dict):
     def __hash__(self):
         return self._hash
 
-    @lru_cache
     def __mul__(self, other):
         """Multiply two Pauli words together using the matrix product if wires overlap
         and the tensor product otherwise.
@@ -219,14 +224,11 @@ class PauliWord(dict):
         if not wires:
             return True
         anticom_count = sum(anticom_map[self[wire]][other[wire]] for wire in wires)
-        return 1 - (anticom_count % 2)
+        return bool(1 - (anticom_count % 2))
 
     def __or__(self, other):
         """Commutator between two PauliWords"""
-        if self.commutes_with(other):
-            return None, 0.0
-        new_word, coeff = self.__mul__(other)
-        return new_word, 2 * coeff
+        return _pauli_word_commutator(self, other)
 
     def __lt__(self, other):
         return self.__str__() < other.__str__()
@@ -401,11 +403,11 @@ class PauliSentence(dict):
         the Pauli words pair-wise"""
         final_ps = PauliSentence()
 
-        if len(self) == 0:
-            return copy(other)
+        #if len(self) == 0:
+            #return copy(self)
 
-        if len(other) == 0:
-            return copy(self)
+        #if len(other) == 0:
+            #return copy(other)
 
         for pw1 in self:
             for pw2 in other:
@@ -417,21 +419,27 @@ class PauliSentence(dict):
     def __or__(self, other):
         """commute two Pauli sentences by iterating over each sentence and commuting
         the Pauli words pair-wise"""
+        #final_ps = dict()
         final_ps = PauliSentence()
 
-        if len(self) == 0:
-            return copy(other)
+        #if len(self) == 0:
+            #return copy(other)
 
-        if len(other) == 0:
-            return copy(self)
+        #if len(other) == 0:
+            #return copy(self)
 
-        for pw1 in self:
-            for pw2 in other:
+        for pw1, val1 in self.items():
+            for pw2, val2 in other.items():
                 comm_pw, coeff = pw1 | pw2
                 if comm_pw is not None:
-                    final_ps[comm_pw] = final_ps[comm_pw] + coeff * self[pw1] * other[pw2]
+                    final_ps[comm_pw] = final_ps[comm_pw] + coeff * val1 * val2
+                    #if comm_pw in final_ps:
+                        #final_ps[comm_pw] = final_ps[comm_pw] + coeff * self[pw1] * other[pw2]
+                    #else:
+                        #final_ps[comm_pw] = coeff * self[pw1] * other[pw2]
 
         return final_ps
+        #return PauliSentence(final_ps)
 
     # def __hash__(self):
     #     return hash(str())
@@ -819,12 +827,13 @@ def lie_closure_alt(generating_set, clean_input=True, orthonormalize=False):
             for idx2 in range(max([idx1 + 1, old_length]), new_length):
                 ps2 = basis[idx2]
                 com = ps1 | ps2
+                com.simplify()
                 if len(com) == 0:
                     continue
                 # The commutator is taken per pair of PauliWords, which collect purely imaginary
-                # coefficients. We will only consider the real-value imaginary part here.
+                # coefficients. We will only consider the (real-valued) imaginary part here.
                 for pw, val in com.items():
-                    com[pw] = np.imag(val)
+                    com[pw] = val.imag
                 # Add commutator to sparse array if it is linearly independent
                 M, pw_to_idx, rank, num_pw, added = _add_if_independent(
                     M, com, pw_to_idx, rank, num_pw
