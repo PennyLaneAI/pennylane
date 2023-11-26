@@ -611,18 +611,18 @@ class Hamiltonian(Observable):
         >>> ob1.compare(ob2)
         False
         """
+        self.simplify()
+        self_co, self_op = zip(*self._obs_data())
         if isinstance(other, Hamiltonian):
-            self.simplify()
             other.simplify()
-            return self._obs_data() == other._obs_data()  # pylint: disable=protected-access
+            other_co, other_op = zip(*other._obs_data())
+            all_close = [qml.math.isclose(i, j) for i, j in zip(self_co, other_co)]  # pylint: disable=protected-access
+            return all(all_close) and (other_op == self_op)
 
         if isinstance(other, (Tensor, Observable)):
-            self.simplify()
-            return self._obs_data() == {
-                (1, frozenset(other._obs_data()))  # pylint: disable=protected-access
-            }
-
-        raise ValueError("Can only compare a Hamiltonian, and a Hamiltonian/Observable/Tensor.")
+            other_co, other_op = [1.0], other._obs_data()
+            all_close = [qml.math.isclose(i, j) for i, j in zip(self_co, other_co)]  # pylint: disable=protected-access
+            return all(all_close) and other._obs_data() == next(iter(self_op))
 
     def __matmul__(self, H):
         r"""The tensor product operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
