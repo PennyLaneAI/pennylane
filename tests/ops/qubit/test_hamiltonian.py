@@ -842,7 +842,8 @@ class TestHamiltonian:
         assert H1.compare(H2) is False
 
     def test_hamiltonian_compare_tensor_observables(self):
-        """Test that Hamiltonian.compare correctly compares Hamiltonians with Tensors/Observables."""
+        """Test that Hamiltonian.compare correctly compares Hamiltonians
+        with Tensors/Observables."""
         ob1 = qml.Hamiltonian([1], [qml.PauliX(0)])
         ob2 = qml.Hermitian(np.array([[0, 1], [1, 0]]), 0)
         assert ob1.compare(ob2) is False
