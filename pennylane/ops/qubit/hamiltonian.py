@@ -615,14 +615,14 @@ class Hamiltonian(Observable):
         self_co, self_op = zip(*self._obs_data())
         if isinstance(other, Hamiltonian):
             other.simplify()
-            other_co, other_op = zip(*other._obs_data())
-            all_close = [qml.math.isclose(i, j) for i, j in zip(self_co, other_co)]  # pylint: disable=protected-access
+            other_co, other_op = zip(*other._obs_data())  # pylint: disable=protected-access
+            all_close = [qml.math.isclose(i, j) for i, j in zip(self_co, other_co)]
             return all(all_close) and (other_op == self_op)
 
         if isinstance(other, (Tensor, Observable)):
-            other_co, other_op = [1.0], other._obs_data()
-            all_close = [qml.math.isclose(i, j) for i, j in zip(self_co, other_co)]  # pylint: disable=protected-access
-            return all(all_close) and other._obs_data() == next(iter(self_op))
+            other_co, other_op = [1.0], other._obs_data()  # pylint: disable=protected-access
+            all_close = [qml.math.isclose(i, j) for i, j in zip(self_co, other_co)]
+            return all(all_close) and (other_op == next(iter(self_op)))
 
         raise ValueError("Can only compare a Hamiltonian, and a Hamiltonian/Observable/Tensor.")
 
