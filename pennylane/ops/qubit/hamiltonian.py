@@ -611,6 +611,8 @@ class Hamiltonian(Observable):
         >>> ob1.compare(ob2)
         False
         """
+        if len(other._obs_data()) == len(self._obs_data()) == 0:
+            return True
         self.simplify()
         self_co, self_op = zip(*self._obs_data())
         if isinstance(other, Hamiltonian):
