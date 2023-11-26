@@ -624,6 +624,8 @@ class Hamiltonian(Observable):
             all_close = [qml.math.isclose(i, j) for i, j in zip(self_co, other_co)]  # pylint: disable=protected-access
             return all(all_close) and other._obs_data() == next(iter(self_op))
 
+        raise ValueError("Can only compare a Hamiltonian, and a Hamiltonian/Observable/Tensor.")
+
     def __matmul__(self, H):
         r"""The tensor product operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
         coeffs1 = copy(self.coeffs)
