@@ -240,8 +240,8 @@ class TestExpval:
             qml.CNOT([0, 1])
             return qml.expval(H)
 
-        np.random.seed(42)
-        params = np.random.normal(0, np.pi, 4)
+        rng = np.random.default_rng(42)
+        params = rng.normal(0, np.pi, 4)
         energy = [cost_circuit(p) for p in params]
         energy_batched = cost_circuit(params)
 
