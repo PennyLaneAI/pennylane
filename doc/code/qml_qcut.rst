@@ -1,8 +1,6 @@
 qml.qcut
 ========
 
-Overview
---------
 
 .. currentmodule:: pennylane.qcut
 
