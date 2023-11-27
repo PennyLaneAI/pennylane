@@ -255,36 +255,66 @@ class PauliWord(dict):
     def _to_sparse_mat(self, wire_order, coeff):
         """Compute the sparse matrix of the Pauli word times a coefficient, given a wire order.
         See pauli_sparse_matrices.md for the technical details of the implementation."""
+        matrix_size = 2 ** len(wire_order)
+        matrix = sparse.csr_matrix((matrix_size, matrix_size), dtype="complex128")
+        # Avoid checks and copies in __init__ by directly setting the attributes of an empty matrix
+        matrix.data = self._get_csr_data(wire_order, coeff)
+        matrix.indices = self._get_csr_indices(wire_order)
+        matrix.indptr = _cached_arange(matrix_size + 1)  # Non-zero entries by row (starting from 0)
+        return matrix
+
+    def _get_csr_data(self, wire_order, coeff):
+        """Computes the sparse matrix data of the Pauli word times a coefficient, given a wire order."""
         full_word = [self[wire] for wire in wire_order]
+
         matrix_size = 2 ** len(wire_order)
         data = np.empty(matrix_size, dtype=np.complex128)  # Non-zero values
-        indices = np.empty(matrix_size, dtype=np.int64)  # Column index of non-zero values
-        indptr = _cached_arange(matrix_size + 1)  # Non-zero entries by row (starting from 0)
-
         current_size = 2
-        data[:current_size], indices[:current_size] = _cached_sparse_data(full_word[-1])
+        data[:current_size], _ = _cached_sparse_data(full_word[-1])
         data[:current_size] *= coeff  # Multiply initial term better than the full matrix
         for s in full_word[-2::-1]:
             if s == "I":
                 data[current_size : 2 * current_size] = data[:current_size]
-                indices[current_size : 2 * current_size] = indices[:current_size] + current_size
             elif s == "X":
                 data[current_size : 2 * current_size] = data[:current_size]
-                indices[current_size : 2 * current_size] = indices[:current_size]
-                indices[:current_size] += current_size
             elif s == "Y":
                 data[current_size : 2 * current_size] = 1j * data[:current_size]
                 data[:current_size] *= -1j
+            elif s == "Z":
+                data[current_size : 2 * current_size] = -data[:current_size]
+            current_size *= 2
+        return data
+
+    def _get_csr_data_2(self, wire_order, coeff):
+        """Computes the sparse matrix data of the Pauli word times a coefficient, given a wire order."""
+        full_word = [self[wire] for wire in wire_order]
+        nwords = len(full_word)
+        if nwords < 2:
+            return np.array([1.0]), self._get_csr_data(wire_order, coeff)
+        outer = self._get_csr_data(wire_order[: nwords // 2], 1.0)
+        inner = self._get_csr_data(wire_order[nwords // 2 :], coeff)
+        return outer, inner
+
+    def _get_csr_indices(self, wire_order):
+        """Computes the sparse matrix indices of the Pauli word times a coefficient, given a wire order."""
+        full_word = [self[wire] for wire in wire_order]
+        matrix_size = 2 ** len(wire_order)
+        indices = np.empty(matrix_size, dtype=np.int64)  # Column index of non-zero values
+        current_size = 2
+        _, indices[:current_size] = _cached_sparse_data(full_word[-1])
+        for s in full_word[-2::-1]:
+            if s == "I":
+                indices[current_size : 2 * current_size] = indices[:current_size] + current_size
+            elif s == "X":
+                indices[current_size : 2 * current_size] = indices[:current_size]
+                indices[:current_size] += current_size
+            elif s == "Y":
                 indices[current_size : 2 * current_size] = indices[:current_size]
                 indices[:current_size] += current_size
             elif s == "Z":
-                data[current_size : 2 * current_size] = -data[:current_size]
                 indices[current_size : 2 * current_size] = indices[:current_size] + current_size
             current_size *= 2
-        # Avoid checks and copies in __init__ by directly setting the attributes of an empty matrix
-        matrix = sparse.csr_matrix((matrix_size, matrix_size), dtype="complex128")
-        matrix.data, matrix.indices, matrix.indptr = data, indices, indptr
-        return matrix
+        return indices
 
     def operation(self, wire_order=None, get_as_tensor=False):
         """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliWord."""
@@ -410,7 +440,7 @@ class PauliSentence(dict):
         Returns:
             (Union[NumpyArray, ScipySparseArray]): Matrix representation of the Pauli sentence.
 
-        Rasies:
+        Raises:
             ValueError: Can't get the matrix of an empty PauliSentence.
         """
         wire_order = self.wires if wire_order is None else Wires(wire_order)
@@ -489,6 +519,49 @@ class PauliSentence(dict):
         )
         matrix.eliminate_zeros()
         return matrix
+
+    def dot(self, vector, wire_order=None):
+        """Computes the matrix-vector product of the Pauli sentence with a state vector.
+        See pauli_sparse_matrices.md for the technical details."""
+        wire_order = self.wires if wire_order is None else Wires(wire_order)
+        if not wire_order.contains_wires(self.wires):
+            raise ValueError(
+                "Can't get the matrix for the specified wire order because it "
+                f"does not contain all the Pauli sentence's wires {self.wires}"
+            )
+        pauli_words = list(self)  # Ensure consistent ordering
+        op_sparse_idx = _ps_to_sparse_index(pauli_words, wire_order)
+        _, unique_sparse_structures, unique_invs = np.unique(
+            op_sparse_idx, axis=0, return_index=True, return_inverse=True
+        )
+        pw_sparse_structures = unique_sparse_structures[unique_invs]
+
+        dtype = np.complex64 if vector.dtype in (np.float32, np.complex64) else np.complex128
+        if vector.ndim == 1:
+            vector = vector.reshape(1, -1)
+        mv = np.zeros_like(vector, dtype=dtype)
+        for sparse_structure in unique_sparse_structures:
+            indices, *_ = np.nonzero(pw_sparse_structures == sparse_structure)
+            entries, data = self._get_same_structure_csr(
+                [pauli_words[i] for i in indices], wire_order
+            )
+            mv += vector[:, entries] * data.reshape(1, -1)
+        return mv.reshape(vector.shape)
+
+    # pylint: disable=protected-access
+    def _get_same_structure_csr(self, pauli_words, wire_order):
+        """Returns the CSR indices and data for Pauli words with the same sparse structure."""
+        indices = pauli_words[0]._get_csr_indices(wire_order)
+        nwires = len(wire_order)
+        nwords = len(pauli_words)
+        inner = np.empty((nwords, 2 ** (nwires - nwires // 2)), dtype=np.complex128)
+        outer = np.empty((nwords, 2 ** (nwires // 2)), dtype=np.complex128)
+        for i, word in enumerate(pauli_words):
+            outer[i, :], inner[i, :] = word._get_csr_data_2(
+                wire_order, coeff=qml.math.to_numpy(self[word])
+            )
+        data = outer.T @ inner
+        return indices, data.ravel()
 
     def _sum_same_structure_pws(self, pauli_words, wire_order):
         """Sums Pauli words with the same sparse structure."""

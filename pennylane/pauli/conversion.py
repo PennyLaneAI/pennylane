@@ -346,6 +346,15 @@ def pauli_sentence(op):
     return _pauli_sentence(op)
 
 
+def is_pauli_sentence(op):
+    """Returns True of the operator is a PauliSentence and False otherwise."""
+    if op._pauli_rep is not None:  # pylint: disable=protected-access
+        return True
+    if isinstance(op, Hamiltonian):
+        return all(is_pauli_word(o) for o in op.ops)
+    return False
+
+
 @singledispatch
 def _pauli_sentence(op):
     """Private function to dispatch"""
@@ -400,17 +409,26 @@ def _(op: Hamiltonian):
     if not all(is_pauli_word(o) for o in op.ops):
         raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
 
-    summands = []
-    for coeff, term in zip(*op.terms()):
-        ps = _pauli_sentence(term)
-        for pw, sub_coeff in ps.items():
-            ps[pw] = coeff * sub_coeff
-        summands.append(ps)
+    def term_2_pauli_word(term):
+        if isinstance(term, Tensor):
+            pw = dict((obs.wires[0], obs.name[-1]) for obs in term.non_identity_obs)
+        elif isinstance(term, Identity):
+            pw = {}
+        else:
+            pw = dict([(term.wires[0], term.name[-1])])
+        return PauliWord(pw)
 
-    return reduce(lambda a, b: a + b, summands) if len(summands) > 0 else PauliSentence()
+    ps = PauliSentence()
+    for coeff, term in zip(*op.terms()):
+        sub_ps = PauliSentence({term_2_pauli_word(term): coeff})
+        ps += sub_ps
+
+    return ps
 
 
 @_pauli_sentence.register
 def _(op: Sum):
-    summands = (_pauli_sentence(summand) for summand in op)
-    return reduce(lambda a, b: a + b, summands)
+    ps = PauliSentence()
+    for term in op:
+        ps += _pauli_sentence(term)
+    return ps
