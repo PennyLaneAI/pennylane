@@ -173,6 +173,13 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
             With analytic execution, ``qml.mutual_info`` will raise errors when using any interfaces except
             ``jax``, and ``qml.vn_entropy`` will raise an error with the ``tensorflow`` interface when the
             postselection state has zero probability.
+
+        .. warning::
+
+            When using JIT, ``QNode``'s may have unexpected behaviour when postselection on a zero probability state
+            is performed. Due to floating point precision, the zero probability may not be detected, thus letting
+            execution continue as normal without ``NaN`` or ``Inf`` values or empty samples, leading to unexpected
+            or incorrect results.
     """
 
     wire = Wires(wires)
