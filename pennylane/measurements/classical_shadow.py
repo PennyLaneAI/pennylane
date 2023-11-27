@@ -72,7 +72,7 @@ def shadow_expval(H, k=1, seed=None):
     We can compute the expectation value of H as well as its gradient in the usual way.
 
     >>> circuit(x, H)
-    tensor(1.827, requires_grad=True)
+    array(1.8774)
     >>> qml.grad(circuit)(x, H)
     -0.44999999999999984
 
@@ -81,9 +81,9 @@ def shadow_expval(H, k=1, seed=None):
 
     >>> Hs = [H, qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
     >>> circuit(x, Hs)
-    [ 1.88586e+00,  4.50000e-03,  1.32000e-03, -1.92000e-03]
+    array([ 1.881 , -0.0312, -0.0027, -0.0087])
     >>> qml.jacobian(circuit)(x, Hs)
-    [-0.48312, -0.00198, -0.00375,  0.00168]
+    array([-0.4518,  0.0174, -0.0216, -0.0063])
     """
     seed = seed or np.random.randint(2**30)
     return ShadowExpvalMP(H=H, seed=seed, k=k)
@@ -178,7 +178,7 @@ def classical_shadow(wires, seed=None):
 
             ops = [qml.Hadamard(wires=0), qml.CNOT(wires=(0,1))]
             measurements = [qml.classical_shadow(wires=(0,1))]
-            tape = qml.tape.QuantumTape(ops, measurements)
+            tape = qml.tape.QuantumTape(ops, measurements, shots=5)
 
         >>> bits1, recipes1 = qml.execute([tape], device=dev, gradient_fn=None)[0]
         >>> bits2, recipes2 = qml.execute([tape], device=dev, gradient_fn=None)[0]
@@ -195,10 +195,10 @@ def classical_shadow(wires, seed=None):
             dev = qml.device("default.qubit", wires=2, shots=5)
 
             measurements1 = [qml.classical_shadow(wires=(0,1), seed=10)]
-            tape1 = qml.tape.QuantumTape(ops, measurements1)
+            tape1 = qml.tape.QuantumTape(ops, measurements1, shots=5)
 
             measurements2 = [qml.classical_shadow(wires=(0,1), seed=15)]
-            tape2 = qml.tape.QuantumTape(ops, measurements2)
+            tape2 = qml.tape.QuantumTape(ops, measurements2, shots=5)
 
         >>> bits1, recipes1 = qml.execute([tape1], device=dev, gradient_fn=None)[0]
         >>> bits2, recipes2 = qml.execute([tape2], device=dev, gradient_fn=None)[0]

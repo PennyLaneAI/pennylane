@@ -124,11 +124,6 @@ class PowOperation(Operation):
     def name(self):
         return self._name
 
-    # pylint: disable=missing-function-docstring
-    @property
-    def basis(self):
-        return self.base.basis
-
     @property
     def control_wires(self):
         return self.base.control_wires
@@ -264,7 +259,7 @@ class Pow(ScalarSymbolicOp):
 
     @staticmethod
     def _matrix(scalar, mat):
-        if isinstance(scalar, int):
+        if isinstance(scalar, int) and qml.math.get_deep_interface(mat) != "tensorflow":
             return qmlmath.linalg.matrix_power(mat, scalar)
         return fractional_matrix_power(mat, scalar)
 
