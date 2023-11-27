@@ -146,9 +146,10 @@ class TestJaxExecuteUnitTests:
 
         # adjoint method only performs a single device execution per tape, but gets both result and gradient
         assert dev.num_executions == 3
-        spy.assert_called()
+        spy.assert_not_called()
 
         g = jax.jacobian(cost)(a)
+        spy.assert_called()
         expected_g = (-np.sin(x) * np.cos(y), -np.cos(x) * np.sin(y))
         assert qml.math.allclose(g[0][0], expected_g)
         assert qml.math.allclose(g[0][1], np.zeros(2))
@@ -156,10 +157,10 @@ class TestJaxExecuteUnitTests:
         assert qml.math.allclose(g[2], expected_g)
 
     def test_no_grad_on_execution(self, mocker):
-        """Test that no grad on execution uses the `device.batch_execute` and `device.gradients` pathway"""
+        """Test that no grad on execution uses the `device.execute_and_gradients`."""
         dev = qml.device("default.qubit.legacy", wires=1)
         spy_execute = mocker.spy(qml.devices.DefaultQubitLegacy, "batch_execute")
-        spy_gradients = mocker.spy(qml.devices.DefaultQubitLegacy, "gradients")
+        spy_gradients = mocker.spy(qml.devices.DefaultQubitLegacy, "execute_and_gradients")
 
         def cost(a):
             with qml.queuing.AnnotatedQueue() as q:

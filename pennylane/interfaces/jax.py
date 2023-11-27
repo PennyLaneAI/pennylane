@@ -12,8 +12,114 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains functions for adding the JAX interface
-to a PennyLane Device class.
+This module contains functions for binding JVP's or VJP's to the JAX interface.
+
+See JAX documentation on this process `here <https://jax.readthedocs.io/en/latest/notebooks/Custom_derivative_rules_for_Python_code.html>`_ .
+
+**Basic examples:**
+
+.. code-block:: python
+
+    def f(x):
+        return x**2
+
+    def f_and_jvp(primals, tangents):
+        x = primals[0]
+        dx = tangents[0]
+        print("in custom jvp function: ", x, dx)
+        return x**2, 2*x*dx
+
+    registered_f_jvp = jax.custom_jvp(f)
+
+    registered_f_jvp.defjvp(f_and_jvp)
+
+>>> jax.grad(registered_f)(jax.numpy.array(2.0))
+in custom jvp function:  2.0 Traced<ShapedArray(float64[], weak_type=True):JaxprTrace(level=1/0)>
+Array(4., dtype=float64, weak_type=True)
+
+
+We can do something similar for the VJP as well:
+
+.. code-block:: python
+
+    def f_fwd(x):
+        print("in forward pass: ", x)
+        return f(x), x
+
+    def f_bwd(residual, dy):
+        print("in backward pass: ", residual, dy)
+        return (dy*2*residual,)
+
+    registered_f_vjp = jax.custom_vjp(f)
+    registered_f_vjp.defvjp(f_fwd, f_bwd)
+    
+>>> jax.grad(registered_f_vjp)(jax.numpy.array(2.0))
+in forward pass:  2.0
+in backward pass:  2.0 1.0
+Array(4., dtype=float64, weak_type=True)
+
+**JVP versus VJP:**
+
+When JAX can trace the product between the jacobian and the cotangents, it can turn the JVP calculation into a VJP calculation. Through this
+process, JAX can support both JVP and VJP calculations by registering only the JVP.
+
+Unfortunately, :meth:`~pennylane.devices.Device.compute_jvp` uses pure numpy to perform the jacobian product and cannot
+be traced by JAX.
+
+For example, we we replace the definition of ``f_and_jvp`` from above:
+
+.. code-block:: python
+
+    def f_and_jvp(primals, tangents):
+        x = primals[0]
+        dx = qml.math.unwrap(tangents[0])
+        return x**2, 2*x*dx
+
+>>> jax.grad(registered_f_jvp)(jax.numpy.array(2.0))
+ValueError: Converting a JAX array to a NumPy array not supported when using the JAX JIT.
+
+But if we used the VJP instead:
+
+.. code-block:: python
+
+    def f_bwd(residual, dy):
+        dy = qml.math.unwrap(dy)
+        return (dy*2*residual,)
+
+We would be able to calculate the gradient without error.
+
+Since the VJP calculation offers access to ``jax.grad`` and ``jax.jacobian``, we register the VJP when we have to choose
+between either the VJP or the JVP.
+
+**Pytrees and Non-diff argnums:**
+
+The trainable arguments for the registered functions can be any valid pytree.
+
+.. code-block:: python
+
+    def f(x):
+        return x['a']**2
+
+    def f_and_jvp(primals, tangents):
+        x = primals[0]
+        dx = tangents[0]
+        print("in custom jvp function: ", x, dx)
+        return x['a']**2, 2*x['a']*dx['a']
+
+    registered_f_jvp = jax.custom_jvp(f)
+
+    registered_f_jvp.defjvp(f_and_jvp)
+
+>>> jax.grad(registered_f_jvp)({'a': jax.numpy.array(2.0)})
+in custom jvp function:  {'a': Array(2., dtype=float64, weak_type=True)} {'a': Traced<ShapedArray(float64[], weak_type=True):JaxprTrace(level=1/0)>}
+{'a': Array(4., dtype=float64, weak_type=True)}
+
+As we can see here, the tangents are packed into the same pytree structure as the trainable arguments.
+
+Currently, :class:`~.QuantumScript` is a valid pytree *most* of the time. Once it is a valid pytree *all* of
+time and can store tangents in place of the variables, we can use a batch of tapes as our trainable argument. Until then, the tapes
+must be non-pytree non-differenatible argument that accompanies the tree leaves.
+
 """
 # pylint: disable=unused-argument
 import logging
@@ -39,7 +145,7 @@ ExecuteFn = Callable[[Batch], qml.typing.ResultBatch]
 
 
 @dataclasses.dataclass
-class NonPytreeWrapper:
+class _NonPytreeWrapper:
     """We aren't quite ready to switch to having tapes as pytrees as our
     differentiable argument due to:
 
@@ -115,13 +221,13 @@ def _to_jax(result: qml.typing.ResultBatch) -> qml.typing.ResultBatch:
     return jnp.array(result)
 
 
-def execute_wrapper(params, tapes, execute_fn, jpc) -> ResultBatch:
+def _execute_wrapper(params, tapes, execute_fn, jpc) -> ResultBatch:
     """Executes ``tapes`` with ``params`` via ``execute_fn``"""
     new_tapes = set_parameters_on_copy_and_unwrap(tapes.vals, params, unwrap=False)
     return _to_jax(execute_fn(new_tapes))
 
 
-def jax_execute_and_compute_jvp(tapes, execute_fn, jpc, primals, tangents):
+def _execute_and_compute_jvp(tapes, execute_fn, jpc, primals, tangents):
     """Compute the results and jvps for ``tapes`` with ``primals[0]`` parameters via
     ``jpc``.
     """
@@ -130,23 +236,23 @@ def jax_execute_and_compute_jvp(tapes, execute_fn, jpc, primals, tangents):
     return _to_jax(res), _to_jax(jvps)
 
 
-def vjp_fwd(params, tapes, execute_fn, jpc):
+def _vjp_fwd(params, tapes, execute_fn, jpc):
     """Perform the forward pass execution, return results and empty residuals."""
     new_tapes = set_parameters_on_copy_and_unwrap(tapes.vals, params, unwrap=False)
     return _to_jax(execute_fn(new_tapes)), None
 
 
-def vjp_bwd(tapes, execute_fn, jpc, _, dy):
+def _vjp_bwd(tapes, execute_fn, jpc, _, dy):
     """Perform the backward pass of a vjp calculation, returning the vjp."""
     vjp = jpc.compute_vjp(tapes.vals, dy)
     return (_to_jax(vjp),)
 
 
-_execute_jvp = jax.custom_jvp(execute_wrapper, nondiff_argnums=[1, 2, 3])
-_execute_jvp.defjvp(jax_execute_and_compute_jvp)
+_execute_jvp = jax.custom_jvp(_execute_wrapper, nondiff_argnums=[1, 2, 3])
+_execute_jvp.defjvp(_execute_and_compute_jvp)
 
-_execute_vjp = jax.custom_vjp(execute_wrapper, nondiff_argnums=[1, 2, 3])
-_execute_vjp.defvjp(vjp_fwd, vjp_bwd)
+_execute_vjp = jax.custom_vjp(_execute_wrapper, nondiff_argnums=[1, 2, 3])
+_execute_vjp.defvjp(_vjp_fwd, _vjp_bwd)
 
 
 def jax_jvp_execute(tapes: Batch, execute_fn: ExecuteFn, jpc):
@@ -164,15 +270,11 @@ def jax_jvp_execute(tapes: Batch, execute_fn: ExecuteFn, jpc):
 
     """
     if logger.isEnabledFor(logging.DEBUG):
-        logger.debug("dsfjlfs")
-
-    for tape in tapes:
-        params = tape.get_parameters(trainable_only=False)
-        tape.trainable_params = qml.math.get_trainable_indices(params)
+        logger.debug("Entry with (tapes=%s, execute_fn=%s, jpc=%s)", tapes, execute_fn, jpc)
 
     parameters = tuple(tuple(t.get_parameters()) for t in tapes)
 
-    return _execute_jvp(parameters, NonPytreeWrapper(tuple(tapes)), execute_fn, jpc)
+    return _execute_jvp(parameters, _NonPytreeWrapper(tuple(tapes)), execute_fn, jpc)
 
 
 def jax_vjp_execute(tapes: Batch, execute_fn: ExecuteFn, jpc):
@@ -190,12 +292,8 @@ def jax_vjp_execute(tapes: Batch, execute_fn: ExecuteFn, jpc):
 
     """
     if logger.isEnabledFor(logging.DEBUG):
-        logger.debug("dsfjlfs")
-
-    for tape in tapes:
-        params = tape.get_parameters(trainable_only=False)
-        tape.trainable_params = qml.math.get_trainable_indices(params)
+        logger.debug("Entry with (tapes=%s, execute_fn=%s, jpc=%s)", tapes, execute_fn, jpc)
 
     parameters = tuple(tuple(t.get_parameters()) for t in tapes)
 
-    return _execute_vjp(parameters, NonPytreeWrapper(tuple(tapes)), execute_fn, jpc)
+    return _execute_vjp(parameters, _NonPytreeWrapper(tuple(tapes)), execute_fn, jpc)

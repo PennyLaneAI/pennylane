@@ -566,7 +566,8 @@ def execute(
 
         interface = get_jax_interface_name(tapes)
         # Only need to calculate derivatives with jax when we know it will be executed later.
-        grad_on_execution = grad_on_execution if isinstance(gradient_fn, Callable) else False
+        if interface == "jax":
+            grad_on_execution = grad_on_execution if isinstance(gradient_fn, Callable) else False
 
     if device_vjp and isinstance(device, qml.Device):
         raise qml.QuantumFunctionError(
@@ -784,6 +785,10 @@ def execute(
             ml_boundary_execute = _get_ml_boundary_execute(interface, _grad_on_execution)
             execute_fn = partial(ml_boundary_execute, execute_fn=execute_fn, jpc=jpc)
             jpc = TransformJacobianProducts(execute_fn, gradient_fn, gradient_kwargs)
+
+    for tape in tapes:
+        params = tape.get_parameters(trainable_only=False)
+        tape.trainable_params = qml.math.get_trainable_indices(params)
 
     ml_boundary_execute = _get_ml_boundary_execute(
         interface, _grad_on_execution, config.use_device_jacobian_product
