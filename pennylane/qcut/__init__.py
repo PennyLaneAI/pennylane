@@ -78,7 +78,7 @@ executed on parallel devices if available. Please see the
     Simulated quantum circuits that produce samples can be cut using
     the :func:`~.pennylane.cut_circuit_mc`
     transform, which is based on the Monte Carlo method.
-    
+
 Automatic cutting
 -----------------
 
