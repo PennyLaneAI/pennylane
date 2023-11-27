@@ -369,11 +369,8 @@ class PauliSentence(dict):
         the Pauli words pair-wise"""
         final_ps = PauliSentence()
 
-        if len(self) == 0:
-            return copy(other)
-
-        if len(other) == 0:
-            return copy(self)
+        if len(self) == 0 or len(other) == 0:
+            return final_ps
 
         for pw1 in self:
             for pw2 in other:

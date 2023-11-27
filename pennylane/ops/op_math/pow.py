@@ -1,4 +1,3 @@
-# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -216,8 +215,8 @@ class Pow(ScalarSymbolicOp):
             if (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) and (
                 self.batch_size is None
             ):
-                pr = qml.pauli.PauliSentence({})
-                for _ in range(self.z):
+                pr = base_pauli_rep
+                for _ in range(self.z - 1):
                     pr = pr * base_pauli_rep
                 self._pauli_rep = pr
             else:
