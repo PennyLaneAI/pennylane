@@ -39,6 +39,10 @@ expectation value.
 
     ~cut_circuit_mc
 
+
+Utility functions
+~~~~~~~~~~~~~~~~~
+
 There are also low-level functions that can be used to build up the circuit cutting functionalities:
 
 .. autosummary::
