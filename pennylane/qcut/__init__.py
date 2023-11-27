@@ -58,9 +58,9 @@ There are also low-level functions that can be used to build up the circuit cutt
 Cutting Circuits
 ----------------
 
-Circuit cutting allows you to replace a circuit with ``N`` wires by a set
+Circuit cutting can allow you to replace a circuit with ``N`` wires by a set
 of circuits with less than ``N`` wires (see also
-`Peng et. al <https://arxiv.org/abs/1904.00102>`_). Of course this comes
+`Peng et. al <https://arxiv.org/abs/1904.00102>`_). This comes
 with a cost: the smaller circuits require a greater number of device
 executions to be evaluated.
 
