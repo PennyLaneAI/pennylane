@@ -614,7 +614,7 @@ class Hamiltonian(Observable):
         self.simplify()
         if isinstance(other, (Hamiltonian, Tensor, Observable)):
             other.simplify()
-            if len(other._obs_data()) == len(self._obs_data()) == 0:  # edge case of empty _obs_data
+            if len(other._obs_data()) == len(self._obs_data()) == 0:  # pylint: disable=protected-access
                 return True
 
         self_co, self_op = zip(*self._obs_data())
