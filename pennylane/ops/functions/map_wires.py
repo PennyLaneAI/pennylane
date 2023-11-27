@@ -112,8 +112,9 @@ def _map_wires_transform(
     ops = [map_wires(op, wire_map, queue=queue) for op in tape.operations]
     measurements = [map_wires(m, wire_map, queue=queue) for m in tape.measurements]
 
-    out = tape.__class__(ops=ops, measurements=measurements, shots=tape.shots)
-    out.trainable_params = tape.trainable_params
+    out = tape.__class__(
+        ops=ops, measurements=measurements, shots=tape.shots, trainable_params=tape.trainable_params
+    )
 
     def processing_fn(res):
         """Defines how matrix works if applied to a tape containing multiple operations."""
