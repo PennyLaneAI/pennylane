@@ -30,7 +30,15 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
     Args:
         op (Operator or QNode or QuantumTape or Callable): A quantum operator or quantum circuit.
         wire_order (Sequence[Any], optional): Order of the wires in the quantum circuit.
-            Defaults to the order in which the wires appear in the quantum function.
+            The default wire order depends on the type of ``op``:
+
+            - If ``op`` is a :class:`~.QNode`, then the wire order is determined by the
+              associated device's wires, if provided.
+
+            - Otherwise, the wire order is determined by the order in which wires
+              appear in the circuit.
+
+            - See the usage details for more information.
 
     Returns:
         TensorLike or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
@@ -123,6 +131,41 @@ def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
         1.9775421558720845
         >>> qml.grad(cost)(theta)
         -0.14943813247359922
+
+        .. note::
+
+            When using ``qml.matrix`` with a ``QNode``, unless specified, the device wire order will
+            be used. If the device wires are not set, the wire order will be inferred
+            from the quantum function used to create the ``QNode``. Consider the following example:
+
+            .. code-block:: python
+
+                def circuit():
+                    qml.Hadamard(wires=1)
+                    qml.CZ(wires=[0, 1])
+                    qml.Hadamard(wires=1)
+                    return qml.state()
+
+                dev_with_wires = qml.device("default.qubit", wires=[0, 1])
+                dev_without_wires = qml.device("default.qubit")
+
+                qnode_with_wires = qml.QNode(circuit, dev_with_wires)
+                qnode_without_wires = qml.QNode(circuit, dev_without_wires)
+
+            >>> qml.matrix(qnode_with_wires)().round(2)
+            array([[ 1.+0.j, -0.+0.j,  0.+0.j,  0.+0.j],
+                   [-0.+0.j,  1.+0.j,  0.+0.j,  0.+0.j],
+                   [ 0.+0.j,  0.+0.j, -0.+0.j,  1.+0.j],
+                   [ 0.+0.j,  0.+0.j,  1.+0.j, -0.+0.j]])
+            >>> qml.matrix(qnode_without_wires)().round(2)
+            array([[ 1.+0.j,  0.+0.j, -0.+0.j,  0.+0.j],
+                   [ 0.+0.j, -0.+0.j,  0.+0.j,  1.+0.j],
+                   [-0.+0.j,  0.+0.j,  1.+0.j,  0.+0.j],
+                   [ 0.+0.j,  1.+0.j,  0.+0.j, -0.+0.j]])
+
+            The second matrix above uses wire order ``[1, 0]`` because the device does not have
+            wires specified, and this is the order in which wires appear in ``circuit()``.
+
     """
     if not isinstance(op, qml.operation.Operator):
         if not isinstance(op, (qml.tape.QuantumScript, qml.QNode)) and not callable(op):
