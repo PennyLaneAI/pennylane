@@ -706,9 +706,9 @@ class TestMatrix:
         base = qml.IsingZZ(param, wires=(0, 1))
         op = Pow(base, z)
 
-        mat = qml.matrix(op)
-        shortcut = base.pow(z)[0]
-        shortcut_mat = qml.matrix(shortcut)
+        mat = op.matrix()
+        [shortcut] = base.pow(z)
+        shortcut_mat = shortcut.matrix()
 
         return qml.math.allclose(mat, shortcut_mat)
 
@@ -750,6 +750,15 @@ class TestMatrix:
 
         param = tf.Variable(2.34)
         assert self.check_matrix(param, z)
+
+    @pytest.mark.tf
+    def test_matrix_tf_int_z(self):
+        """Test that matrix works with integer power."""
+        import tensorflow as tf
+
+        theta = tf.Variable(1.0)
+        mat = qml.pow(qml.RX(theta, wires=0), z=3).matrix()
+        assert qml.math.allclose(mat, qml.RX.compute_matrix(3))
 
     def test_matrix_wire_order(self):
         """Test that the wire_order keyword rearranges ording."""
@@ -796,7 +805,7 @@ class TestSparseMatrix:
         sparse_mat_array = sparse_mat.toarray()
 
         assert qml.math.allclose(sparse_mat_array, H_cubed.toarray())
-        assert qml.math.allclose(sparse_mat_array, qml.matrix(op))
+        assert qml.math.allclose(sparse_mat_array, op.matrix())
 
     def test_sparse_matrix_float_exponent(self):
         """Test that even a sparse-matrix defining op raised to a float power
