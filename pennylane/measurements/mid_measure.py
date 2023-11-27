@@ -15,7 +15,7 @@
 This module contains the qml.measure measurement.
 """
 import uuid
-from typing import Generic, TypeVar, Optional
+from typing import Generic, TypeVar, Optional, Sequence
 
 import pennylane as qml
 import pennylane.numpy as np
@@ -311,18 +311,12 @@ class MeasurementValue(Generic[T]):
             ret_dict[branch] = self.processing_fn(*branch)
         return ret_dict
 
-    def map_wires(self, wire_map):
-        """Returns a copy of the current ``MeasurementValue`` with the wires of each measurement changed
-        according to the given wire map.
-
-        Args:
-            wire_map (dict): dictionary containing the old wires as keys and the new wires as values
-
-        Returns:
-            MeasurementValue: new ``MeasurementValue`` instance with measurement wires mapped
-        """
-        mapped_measurements = [m.map_wires(wire_map) for m in self.measurements]
-        return MeasurementValue(mapped_measurements, self.processing_fn)
+    @staticmethod
+    def _combine_values(mvs: Sequence["MeasurementValue"]):
+        """Helper function for merging multiple measurement values for measurement
+        statistics."""
+        mid_measures = [m for mv in mvs for m in mv.measurements]
+        return MeasurementValue(mid_measures, lambda v: v)
 
     def _transform_bin_op(self, base_bin, other):
         """Helper function for defining dunder binary operations."""
