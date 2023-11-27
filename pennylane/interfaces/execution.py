@@ -787,7 +787,7 @@ def execute(
             execute_fn = partial(ml_boundary_execute, execute_fn=execute_fn, jpc=jpc)
             jpc = TransformJacobianProducts(execute_fn, gradient_fn, gradient_kwargs)
 
-    if interface == "jax":
+    if interface in {"jax", "jax-python"}:
         for tape in tapes:
             params = tape.get_parameters(trainable_only=False)
             tape.trainable_params = qml.math.get_trainable_indices(params)
