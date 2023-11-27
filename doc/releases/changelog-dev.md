@@ -145,6 +145,10 @@
 * The `rot` decomposition now has support for returning a global phase.
   [(#4869)](https://github.com/PennyLaneAI/pennylane/pull/4869)
 
+* `Condition` and `MeasurementValue` objects now implement `map_wires`. This is needed for
+  the newly-added drawing of mid-circuit measurements.
+  [(#4884)](https://github.com/PennyLaneAI/pennylane/pull/4884)
+
 <h3>Breaking changes 💔</h3>
 
 * The decomposition of `GroverOperator` now has an additional global phase operation.
