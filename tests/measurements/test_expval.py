@@ -227,3 +227,22 @@ class TestExpval:
 
         state = tf.Variable(state, dtype=tf.float64)
         assert qml.math.allequal(compute_expval(state), expected)
+
+    def test_batched_hamiltonian(self):
+        """Test that the expval interface works"""
+        dev = qml.device("default.qubit")
+        ops = (qml.Hadamard(0), qml.PauliZ(0) @ qml.PauliY(1) @ qml.PauliY(2) @ qml.PauliX(3))
+        H = qml.Hamiltonian([0.5, 1.0], ops)
+
+        @qml.qnode(dev, interface="autograd", diff_method="parameter-shift")
+        def cost_circuit(params):
+            qml.RX(params, 0)
+            qml.CNOT([0, 1])
+            return qml.expval(H)
+
+        rng = np.random.default_rng(42)
+        params = rng.normal(0, np.pi, 4)
+        energy = [cost_circuit(p) for p in params]
+        energy_batched = cost_circuit(params)
+
+        assert qml.math.allequal(energy_batched, energy)

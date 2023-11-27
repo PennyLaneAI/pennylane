@@ -17,7 +17,6 @@ Contains the condition transform.
 from functools import wraps
 from typing import Type
 
-from pennylane.measurements import MeasurementValue
 from pennylane.operation import AnyWires, Operation
 from pennylane.tape import make_qscript
 
@@ -48,15 +47,13 @@ class Conditional(Operation):
 
     num_wires = AnyWires
 
-    def __init__(
-        self,
-        expr: MeasurementValue[bool],
-        then_op: Type[Operation],
-        id=None,
-    ):
+    def __init__(self, expr, then_op: Type[Operation], id=None):
         self.meas_val = expr
         self.then_op = then_op
         super().__init__(wires=then_op.wires, id=id)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return self.then_op.label(decimals=decimals, base_label=base_label, cache=cache)
 
 
 def cond(condition, true_fn, false_fn=None):

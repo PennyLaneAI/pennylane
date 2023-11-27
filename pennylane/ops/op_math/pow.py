@@ -259,7 +259,7 @@ class Pow(ScalarSymbolicOp):
 
     @staticmethod
     def _matrix(scalar, mat):
-        if isinstance(scalar, int):
+        if isinstance(scalar, int) and qml.math.get_deep_interface(mat) != "tensorflow":
             return qmlmath.linalg.matrix_power(mat, scalar)
         return fractional_matrix_power(mat, scalar)
 
