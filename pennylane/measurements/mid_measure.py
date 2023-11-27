@@ -15,7 +15,7 @@
 This module contains the qml.measure measurement.
 """
 import uuid
-from typing import Generic, TypeVar, Optional
+from typing import Generic, TypeVar, Optional, Sequence
 
 import pennylane as qml
 import pennylane.numpy as np
@@ -304,6 +304,13 @@ class MeasurementValue(Generic[T]):
             branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurements)))
             ret_dict[branch] = self.processing_fn(*branch)
         return ret_dict
+
+    @staticmethod
+    def _combine_values(mvs: Sequence["MeasurementValue"]):
+        """Helper function for merging multiple measurement values for measurement
+        statistics."""
+        mid_measures = [m for mv in mvs for m in mv.measurements]
+        return MeasurementValue(mid_measures, lambda v: v)
 
     def _transform_bin_op(self, base_bin, other):
         """Helper function for defining dunder binary operations."""

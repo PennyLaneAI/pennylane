@@ -136,6 +136,15 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
     if isinstance(op, MeasurementValue):
         return CountsMP(obs=op, all_outcomes=all_outcomes)
 
+    if isinstance(op, Sequence):
+        if not all(isinstance(o, MeasurementValue) for o in op):
+            raise qml.QuantumFunctionError(
+                "Only sequences of MeasurementValues can be passed with the op argument."
+            )
+
+        mv = MeasurementValue._combine_values(op)  # pylint: disable=protected-access
+        return CountsMP(obs=mv, all_outcomes=all_outcomes)
+
     if op is not None and not op.is_hermitian:  # None type is also allowed for op
         warnings.warn(f"{op.name} might not be hermitian.")
 
@@ -320,6 +329,6 @@ class CountsMP(SampleMeasurement):
         for result, outcome_dict in zip(results, outcome_dicts):
             states, _counts = result
             for state, count in zip(qml.math.unwrap(states), _counts):
-                outcome_dict[state] = count
+                outcome_dict[state] = int(count)
 
         return outcome_dicts if batched else outcome_dicts[0]

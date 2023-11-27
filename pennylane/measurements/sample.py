@@ -106,6 +106,15 @@ def sample(op: Optional[Union[Operator, MeasurementValue]] = None, wires=None) -
     if isinstance(op, MeasurementValue):
         return SampleMP(obs=op)
 
+    if isinstance(op, Sequence):
+        if not all(isinstance(o, MeasurementValue) for o in op):
+            raise qml.QuantumFunctionError(
+                "Only sequences of MeasurementValues can be passed with the op argument."
+            )
+
+        mv = MeasurementValue._combine_values(op)  # pylint: disable=protected-access
+        return SampleMP(wires=mv.wires)
+
     if op is not None and not op.is_hermitian:  # None type is also allowed for op
         warnings.warn(f"{op.name} might not be hermitian.")
 

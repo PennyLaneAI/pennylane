@@ -25,6 +25,7 @@ from pennylane.wires import Wires
 
 from .measurements import SampleMeasurement, StateMeasurement, Variance
 from .mid_measure import MeasurementValue
+from .sample import SampleMP
 
 
 def var(op: Union[Operator, MeasurementValue]) -> "VarianceMP":
@@ -58,6 +59,15 @@ def var(op: Union[Operator, MeasurementValue]) -> "VarianceMP":
     """
     if isinstance(op, MeasurementValue):
         return VarianceMP(obs=op)
+
+    if isinstance(op, Sequence):
+        if not all(isinstance(o, MeasurementValue) for o in op):
+            raise qml.QuantumFunctionError(
+                "Only sequences of MeasurementValues can be passed with the op argument."
+            )
+
+        mv = MeasurementValue._combine_values(op)  # pylint: disable=protected-access
+        return VarianceMP(obs=mv)
 
     if not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
@@ -115,7 +125,7 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         # estimate the variance
         op = self.mv if self.mv is not None else self.obs
         with qml.queuing.QueuingManager.stop_recording():
-            samples = qml.sample(op=op).process_samples(
+            samples = SampleMP(obs=op).process_samples(
                 samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
             )
 
