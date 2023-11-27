@@ -611,12 +611,12 @@ class Hamiltonian(Observable):
         >>> ob1.compare(ob2)
         False
         """
-        if len(other._obs_data()) == len(self._obs_data()) == 0:
-            return True
         self.simplify()
         self_co, self_op = zip(*self._obs_data())
         if isinstance(other, Hamiltonian):
             other.simplify()
+            if len(other._obs_data()) == len(self._obs_data()) == 0:  # edge case of empty _obs_data
+                return True
             other_co, other_op = zip(*other._obs_data())  # pylint: disable=protected-access
             all_close = [qml.math.isclose(i, j) for i, j in zip(self_co, other_co)]
             return all(all_close) and (other_op == self_op)
