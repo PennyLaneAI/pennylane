@@ -143,7 +143,6 @@ class PauliWord(dict):
         for wire, op in mapping.copy().items():
             if op == I:
                 del mapping[wire]
-        mapping = dict(sorted(mapping.items(), key=lambda item: str(item[0])))
         super().__init__(mapping)
 
     def __reduce__(self):
