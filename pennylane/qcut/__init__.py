@@ -16,6 +16,12 @@ This module contains quantum function transforms for cutting quantum circuits.
 
 .. currentmodule:: pennylane
 
+Overview
+--------
+
+This subpackage defines transform functions for circuit cutting. This allows
+for 'cutting' (or splitting) of large circuits into smaller circuits, to allow
+them to be executed on devices that have a restricted number of qubits.
 Transforms for circuit cutting
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
