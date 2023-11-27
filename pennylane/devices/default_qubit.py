@@ -740,8 +740,14 @@ class DefaultQubit(Device):
 
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
+
+            def _state(circuit):
+                return (
+                    None if self._state_cache is None else self._state_cache.get(circuit.hash, None)
+                )
+
             res = tuple(
-                adjoint_vjp(circuit, cots, state=self._state_cache.get(circuit.hash, None))
+                adjoint_vjp(circuit, cots, state=_state(circuit))
                 for circuit, cots in zip(circuits, cotangents)
             )
         else:
