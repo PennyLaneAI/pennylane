@@ -16,8 +16,8 @@ This module contains quantum function transforms for cutting quantum circuits.
 
 .. currentmodule:: pennylane
 
-Transform for circuit cutting
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Transforms for circuit cutting
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The :func:`~.cut_circuit` transform accepts a QNode and returns a new function that cuts the original circuit,
 allowing larger circuits to be split into smaller circuits that are compatible with devices that
