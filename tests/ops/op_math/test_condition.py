@@ -203,6 +203,21 @@ class TestCond:
             qml.cond(m_0, inp)()
 
 
+@pytest.mark.parametrize("op_class", [qml.PauliY, qml.Toffoli, qml.Hadamard, qml.CZ])
+def test_conditional_label(op_class):
+    """Test that the label for conditional oeprators is correct."""
+    base_op = op_class(wires=range(op_class.num_wires))
+
+    # Need to use queue because `qml.cond` doesn't return `Conditional` operators
+    with qml.queuing.AnnotatedQueue() as q:
+        m0 = qml.measure(0)
+        qml.cond(m0, op_class)(wires=range(op_class.num_wires))
+
+    cond_op = q.queue[1]
+
+    assert base_op.label() == cond_op.label()
+
+
 @pytest.mark.parametrize("terminal_measurement", terminal_meas)
 class TestOtherTransforms:
     """Tests that qml.cond works correctly with other transforms."""
