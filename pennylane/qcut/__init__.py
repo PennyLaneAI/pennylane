@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This subpackage contains quantum function transforms for cutting quantum circuits.
+This module contains quantum function transforms for cutting quantum circuits.
 
 .. currentmodule:: pennylane
 
