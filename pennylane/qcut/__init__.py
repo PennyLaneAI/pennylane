@@ -22,6 +22,7 @@ Overview
 This subpackage defines transform functions for circuit cutting. This allows
 for 'cutting' (or splitting) of large circuits into smaller circuits, to allow
 them to be executed on devices that have a restricted number of qubits.
+
 Transforms for circuit cutting
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -53,6 +54,7 @@ There are also low-level functions that can be used to build up the circuit cutt
     ~qcut.kahypar_cut
     ~qcut.place_wire_cuts
     ~qcut.find_and_place_cuts
+
 Cutting Circuits
 ----------------
 
