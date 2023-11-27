@@ -226,7 +226,7 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
             new_observables.append(o)
     obs = qml.dot(new_cotangents, new_observables)
     if obs._pauli_rep is not None:
-        flat_bra = obs._pauli_rep.dot(ket.flatten())
+        flat_bra = obs._pauli_rep.dot(ket.flatten(), wire_order=list(range(tape.num_wires)))
         bra = flat_bra.reshape(ket.shape)
     else:
         bra = apply_operation(obs, ket)
