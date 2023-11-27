@@ -459,31 +459,6 @@ class TestSpecialGates:
         assert ax.texts[1].get_text() == "1"
         plt.close()
 
-    def test_Conditional(self, mocker):
-        """Tests Conditional has correct special handling."""
-        box_gate_spy = mocker.spy(qml.drawer.MPLDrawer, "box_gate")
-
-        with qml.queuing.AnnotatedQueue() as q:
-            m0 = qml.measure(0)
-            qml.cond(m0, qml.Hadamard)(1)
-
-        tape = QuantumScript.from_queue(q)
-        _, ax = tape_mpl(tape)
-        assert [l.get_data() for l in ax.lines] == [
-            ((-1, 2), (0, 0)),
-            ((-1, 2), (1, 1)),
-        ]
-
-        box_gate_spy.assert_called_with(
-            mocker.ANY,
-            1,
-            [1],
-            "H",
-            box_options={"zorder": 4},
-            text_options={"zorder": 5},
-        )
-        plt.close()
-
 
 controlled_data = [
     (qml.CY(wires=(0, 1)), "Y"),
@@ -834,3 +809,67 @@ class TestLayering:
         assert ax.texts[4].get_text() == "IsingXX"
         assert ax.texts[5].get_text() == "X"
         plt.close()
+
+
+class TestClassicalControl:
+    """Tests involving mid circuit measurements and classical control."""
+
+    def test_single_measure_multiple_conds(self):
+        """Test a single mid circuit measurement with two conditional operators."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            m0 = qml.measure(0)
+            qml.cond(m0, qml.PauliX)(0)
+            qml.cond(m0, qml.PauliY)(0)
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        _, ax = qml.drawer.tape_mpl(tape)
+
+        assert len(ax.patches) == 5  # three for measure, two for boxes
+
+        for layer, shift in enumerate((1, 5, 7)):
+            assert ax.lines[shift].get_xdata() == (layer - 0.03, layer - 0.03)
+            assert ax.lines[shift + 1].get_xdata() == (layer + 0.03, layer + 0.03)
+            assert ax.lines[shift].get_ydata() == (0, 0.63)
+            assert ax.lines[shift + 1].get_ydata() == (0, 0.63)
+
+        assert ax.lines[3].get_xdata() == (-0.03, 2.03)
+        assert ax.lines[3].get_ydata() == (0.57, 0.57)
+        assert ax.lines[4].get_xdata() == (-0.03, 2.03)
+        assert ax.lines[4].get_ydata() == (0.63, 0.63)
+
+    def test_combo_measurement(self):
+        """Test a control that depends on two mid circuit measurements."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            m0 = qml.measure(0)
+            m1 = qml.measure(1)
+            qml.cond(m0 & m1, qml.PauliY)(0)
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        _, ax = qml.drawer.tape_mpl(tape)
+
+        assert len(ax.patches) == 7  # three for 2 measurements, one for box
+
+        # all vertical lines
+
+        for layer, shift in enumerate((2, 6, 10)):
+            assert ax.lines[shift].get_xdata() == (layer - 0.03, layer - 0.03)
+            assert ax.lines[shift + 1].get_xdata() == (layer + 0.03, layer + 0.03)
+
+        assert ax.lines[2].get_ydata() == (0, 1.63)
+        assert ax.lines[3].get_ydata() == (0, 1.63)
+        assert ax.lines[6].get_ydata() == (1, 1.88)  # 2 + 1*.25 + 0.03 - 0.4
+        assert ax.lines[7].get_ydata() == (1, 1.88)
+        assert ax.lines[10].get_ydata() == (0, 1.88)
+        assert ax.lines[11].get_ydata() == (0, 1.88)
+
+        # all horizontal lines
+
+        assert ax.lines[4].get_xdata() == (-0.03, 2.03)
+        assert qml.math.allclose(ax.lines[4].get_ydata(), (1.57, 1.57))
+        assert ax.lines[5].get_xdata() == (-0.03, 2.03)
+        assert qml.math.allclose(ax.lines[5].get_ydata(), (1.63, 1.63))
+
+        assert ax.lines[8].get_xdata() == (0.97, 2.03)
+        # assert ax.lines[8].get_ydata() ==

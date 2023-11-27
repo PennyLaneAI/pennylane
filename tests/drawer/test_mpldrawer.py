@@ -799,13 +799,13 @@ class TestClassicalWires:
 
         assert len(drawer.ax.lines) == 3
 
-        base_y = 1 + 2 * 0.25  # number of wires + scaling * classical wire
+        base_y = 1 + 2 * 0.25 - 0.4  # number of wires + scaling * classical wire - 0.4
 
         assert drawer.ax.lines[1].get_xdata() == (1 - 0.03, 3 + 0.03)
-        assert drawer.ax.lines[1].get_ydata() == (base_y - 0.03, base_y - 0.03)
+        assert allclose(drawer.ax.lines[1].get_ydata(), (base_y - 0.03, base_y - 0.03))
 
         assert drawer.ax.lines[2].get_xdata() == (1 - 0.03, 3 + 0.03)
-        assert drawer.ax.lines[2].get_ydata() == (base_y + 0.03, base_y + 0.03)
+        assert allclose(drawer.ax.lines[2].get_ydata(), (base_y + 0.03, base_y + 0.03))
 
         plt.close()
 
@@ -819,8 +819,8 @@ class TestClassicalWires:
 
         assert drawer.ax.lines[2].get_xdata() == (1 - 0.03, 1 - 0.03)
         assert drawer.ax.lines[3].get_xdata() == (1 + 0.03, 1 + 0.03)
-        assert drawer.ax.lines[2].get_ydata() == (1, 2 + 2 * 0.25 + 0.03)
-        assert drawer.ax.lines[3].get_ydata() == (1, 2 + 2 * 0.25 + 0.03)
+        assert allclose(drawer.ax.lines[2].get_ydata(), (1, 2 + 2 * 0.25 + 0.03 - 0.4))
+        assert allclose(drawer.ax.lines[3].get_ydata(), (1, 2 + 2 * 0.25 + 0.03 - 0.4))
 
 
 class TestCond:

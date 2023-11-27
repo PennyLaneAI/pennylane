@@ -888,6 +888,9 @@ class MPLDrawer:
                 layer + 0.05 * self._box_length, wires + 0.225, text, fontsize=(self.fontsize - 2)
             )
 
+    def _cwire_y(self, c_wire):
+        return self.n_wires + self._cwire_scaling * c_wire - 0.4
+
     def classical_wire(self, c_wire, start_layer, end_layer) -> None:
         """Draw a horizontal classical control wire.
 
@@ -898,13 +901,17 @@ class MPLDrawer:
             end_layer (int): The last layer to include for the classical wire.
 
         """
-        x_locs = (start_layer - self._cond_shift, end_layer + self._cond_shift)
-        y_pos = self.n_wires + self._cwire_scaling * c_wire - self._cond_shift
-        self.ax.add_line(plt.Line2D(x_locs, (y_pos, y_pos), zorder=1))
-        y_pos = self.n_wires + self._cwire_scaling * c_wire + self._cond_shift
+        # [path_effects.Stroke(linewidth=5, foreground="black"), path_effects.Stroke(linewidth=2, foreground="white")]
+
+        x_locs = (start_layer + self._cond_shift, end_layer + self._cond_shift)
+        y_pos = self._cwire_y(c_wire) - self._cond_shift
         self.ax.add_line(plt.Line2D(x_locs, (y_pos, y_pos), zorder=1))
 
-    def classical_control(self, c_wire, layer, wire) -> None:
+        x_locs = (start_layer - self._cond_shift, end_layer + self._cond_shift)
+        y_pos = self._cwire_y(c_wire) + self._cond_shift
+        self.ax.add_line(plt.Line2D(x_locs, (y_pos, y_pos), zorder=1))
+
+    def classical_control(self, c_wire, layer, wire, joins=tuple(), opening=None) -> None:
         """Draw a vertical connection between a quantum operation and a classical wire.
 
         Args:
@@ -912,15 +919,32 @@ class MPLDrawer:
                 1 below the last quantum wire
             layer (int): The x position for the classical control lines.
             wire (int): The quantum wire to target.
+            opening=None (Optional[str]): If ``"right"``, the right side stops early to better
+               join with a classical wire.
 
         """
-        ys = (wire, self.n_wires + self._cwire_scaling * c_wire + self._cond_shift)
+        ys = (wire, self._cwire_y(c_wire) + self._cond_shift)
         self.ax.add_line(
             plt.Line2D((layer - self._cond_shift, layer - self._cond_shift), ys, zorder=1)
         )
+
+        if opening == "right":
+            ys = (wire, self._cwire_y(c_wire) - self._cond_shift)
+        else:
+            ys = (wire, self._cwire_y(c_wire) + self._cond_shift)
         self.ax.add_line(
             plt.Line2D((layer + self._cond_shift, layer + self._cond_shift), ys, zorder=1)
         )
+        for c_wire in joins:
+            r = patches.Rectangle(
+                (layer - self._cond_shift, self._cwire_y(c_wire) - self._cond_shift),
+                2 * self._cond_shift,
+                2 * self._cond_shift,
+                facecolor=plt.rcParams["lines.color"],
+                linewidth=0,
+                zorder=2,
+            )
+            self.ax.add_patch(r)
 
     def cond(self, layer, measured_layer, wires, wires_target, options=None):
         """Add classical communication double-lines for conditional operations
