@@ -122,7 +122,7 @@ class TestCatalyst:
         """Test variable capture using multiple backend devices."""
         dev = qml.device("lightning.qubit", wires=2)
 
-        @qml.qjit()
+        @qml.qjit
         def workflow(n: int):
             @qml.qnode(dev)
             def f(x: float):
