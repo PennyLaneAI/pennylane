@@ -6,6 +6,10 @@
 
 <h4>Decompose circuits into the Clifford+T gateset 🧩</h4>
 
+* `qml.transforms.decompositions.sk_decomposition` method implements the Solovay-Kitaev algorithm for
+  approximately decomposing any single-qubit operation to Clifford+T basis.
+  [(#4801)](https://github.com/PennyLaneAI/pennylane/pull/4801)
+
 <h4>Transforms (TODO: better title) 🤖</h4>
 
 <h4>Use an iterative approach for quantum phase estimation 🔄</h4>
@@ -42,12 +46,16 @@
 
 <h4>Drawing and statistics for mid-circuit measurements 🎨</h4>
 
-* `qml.draw` now supports drawing mid-circuit measurements.
+* `qml.draw` now supports drawing mid-circuit measurements and conditional operators.
   [(#4775)](https://github.com/PennyLaneAI/pennylane/pull/4775)
+  [(#4803)](https://github.com/PennyLaneAI/pennylane/pull/4803)
 
 <h4>Catalyst is seamlessly integrated with PennyLane ⚗️</h4>
 
 <h3>Improvements 🛠</h3>
+
+* `qml.expval` with large `Hamiltonian` objects is now faster and has a significantly lower memory footprint (and constant with respect to the number of `Hamiltonian` terms) when the `Hamiltonian` is a `PauliSentence`. That is due to the introduction of a specialized `dot` method in the `PauliSentence` class which performs `PauliSentence`-`state` products.
+  [(#4839)](https://github.com/PennyLaneAI/pennylane/pull/4839)
 
 <h4>Community contributions 🥳</h4>
 
@@ -74,6 +82,10 @@
 
 * `AmplitudeEmbedding` now also supports batching when used with Tensorflow.
   [(#4818)](https://github.com/PennyLaneAI/pennylane/pull/4818)
+
+* `qml.draw` and `qml.draw_mpl` now support drawing mid-circuit measurements.
+  [(#4775)](https://github.com/PennyLaneAI/pennylane/pull/4775)
+  [(#4832)](https://github.com/PennyLaneAI/pennylane/pull/4832)
 
 * `qml.ArbitraryUnitary` now supports batching.
   [(#4745)](https://github.com/PennyLaneAI/pennylane/pull/4745)
@@ -104,6 +116,9 @@
 * Added `ops.functions.assert_valid` for checking if an `Operator` class is defined correctly.
   [(#4764)](https://github.com/PennyLaneAI/pennylane/pull/4764)
 
+* Added `__eq__` method for TransformProgram and TransformContainers allowing the comparison of respective objects using `==` and `!=` operators.
+  [(#4858)](https://github.com/PennyLaneAI/pennylane/pull/4858)
+
 * `GlobalPhase` now decomposes to nothing, in case devices do not support global phases.
   [(#4855)](https://github.com/PennyLaneAI/pennylane/pull/4855)
 
@@ -120,7 +135,9 @@
   `SparseHamiltonian`.
   [(#4828)](https://github.com/PennyLaneAI/pennylane/pull/4828)
 
-<h3>Breaking changes 💔</h3>
+* `trainable_params` can now be set on initialization of `QuantumScript`, instead of having to set the
+  parameter after initialization.
+  [(#4877)](https://github.com/PennyLaneAI/pennylane/pull/4877)
 
 * `default.qubit` now calculates the expectation value of Hermitians in a differentiable manner.
   [(#4866)](https://github.com/PennyLaneAI/pennylane/pull/4866)
@@ -150,8 +167,6 @@
 * The `rot` decomposition will now normalize its rotation angles to the range `[0, 4pi]` for consistency
   [(#4869)](https://github.com/PennyLaneAI/pennylane/pull/4869)
 
-<h3>Deprecations 👋</h3>
-
 * `QuantumScript.graph` is now built using `tape.measurements` instead of `tape.observables`
   because it depended on the now-deprecated `Observable.return_type` property.
   [(#4762)](https://github.com/PennyLaneAI/pennylane/pull/4762)
@@ -179,6 +194,10 @@
 * Documentation page for `qml.measurements` now links top-level accessible functions (e.g. `qml.expval`) 
   to their top-level pages (rather than their module-level pages, eg. `qml.measurements.expval`).
   [(#4750)](https://github.com/PennyLaneAI/pennylane/pull/4750)
+
+* Added information to documentation of `qml.matrix` about wire ordering when using `qml.matrix` on a
+  `QNode` which uses a device with `device.wires=None`.
+  [(#4874)](https://github.com/PennyLaneAI/pennylane/pull/4874)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -239,6 +258,10 @@
   integer power.
   [(#4827)](https://github.com/PennyLaneAI/pennylane/pull/4827)
 
+* Fixed text drawer to correctly label qinfo measurements, as well as `qml.classical_shadow`
+  `qml.shadow_expval`.
+  [(#4803)](https://github.com/PennyLaneAI/pennylane/pull/4803)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -252,6 +275,7 @@ Lillian Frederiksen,
 Emiliano Godinez Ramirez,
 Ankit Khandelwal,
 Christina Lee,
+Vincent Michaud-Rioux,
 Anurav Modak,
 Mudit Pandey,
 Matthew Silverman,

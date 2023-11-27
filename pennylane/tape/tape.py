@@ -297,6 +297,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     Keyword Args:
         shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
             Note that this property is still experimental and under development.
+        trainable_params (None, Sequence[int]): the indices for which parameters are trainable
         _update=True (bool): Whether or not to set various properties on initialization. Setting
             ``_update=False`` reduces computations if the tape is only an intermediary step.
 
@@ -420,10 +421,13 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         ops=None,
         measurements=None,
         shots=None,
+        trainable_params=None,
         _update=True,
     ):  # pylint: disable=too-many-arguments
         AnnotatedQueue.__init__(self)
-        QuantumScript.__init__(self, ops, measurements, shots, _update=_update)
+        QuantumScript.__init__(
+            self, ops, measurements, shots, trainable_params=trainable_params, _update=_update
+        )
 
     def __enter__(self):
         QuantumTape._lock.acquire()
@@ -435,6 +439,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         QueuingManager.remove_active_queue()
         QuantumTape._lock.release()
         self._process_queue()
+        self._trainable_params = None
 
     def adjoint(self):
         adjoint_tape = super().adjoint()
