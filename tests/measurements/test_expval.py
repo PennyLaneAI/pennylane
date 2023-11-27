@@ -245,4 +245,4 @@ class TestExpval:
         energy = [cost_circuit(p) for p in params]
         energy_batched = cost_circuit(params)
 
-        qml.math.allequal(energy_batched, energy)
+        assert qml.math.allequal(energy_batched, energy)
