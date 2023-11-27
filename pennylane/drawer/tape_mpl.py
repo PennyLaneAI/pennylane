@@ -209,8 +209,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
     )
 
     config = _Config(
-        wire_map,
-        decimals,
+        decimals=decimals,
         active_wire_notches=active_wire_notches,
         bit_map=bit_map,
         terminal_layers=terminal_layers,
