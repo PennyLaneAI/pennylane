@@ -52,7 +52,7 @@ We can do something similar for the VJP as well:
 
     registered_f_vjp = jax.custom_vjp(f)
     registered_f_vjp.defvjp(f_fwd, f_bwd)
-    
+
 >>> jax.grad(registered_f_vjp)(jax.numpy.array(2.0))
 in forward pass:  2.0
 in backward pass:  2.0 1.0
