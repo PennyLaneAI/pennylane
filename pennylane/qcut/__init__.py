@@ -67,7 +67,38 @@ There are also low-level functions that can be used to build up the circuit cutt
     ~qcut.kahypar_cut
     ~qcut.place_wire_cuts
     ~qcut.find_and_place_cuts
+Cutting Circuits
+----------------
 
+Circuit cutting allows you to replace a circuit with ``N`` wires by a set
+of circuits with less than ``N`` wires (see also
+`Peng et. al <https://arxiv.org/abs/1904.00102>`_). Of course this comes
+with a cost: the smaller circuits require a greater number of device
+executions to be evaluated.
+
+In PennyLane, circuit cutting for circuits that terminate in expectation values
+can be activated by positioning :class:`~.pennylane.WireCut` operators at the
+desired cut locations, and by decorating the QNode with
+the :func:`~.pennylane.cut_circuit` transform.
+
+Cut circuits remain fully differentiable, and the resulting circuits can be
+executed on parallel devices if available. Please see the
+:func:`~.pennylane.cut_circuit` documentation for more details.
+
+.. note::
+
+    Simulated quantum circuits that produce samples can be cut using
+    the :func:`~.pennylane.cut_circuit_mc`
+    transform, which is based on the Monte Carlo method.
+    
+Automatic cutting
+-----------------
+
+PennyLane also has experimental support for automatic cutting of circuits ---
+that is, the ability to determine optimum cut location without explicitly
+placing :class:`~.pennylane.WireCut` operators. This can be enabled by using the
+``auto_cutter`` keyword argument of :func:`~.pennylane.cut_circuit`; refer to the
+function documentation for more details.
 """
 
 from .utils import (
