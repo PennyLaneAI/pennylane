@@ -14,12 +14,13 @@
 """
 Unit tests for the qml.map_wires function
 """
+# pylint: disable=too-few-public-methods
 from functools import partial
 
 import pytest
 
 import pennylane as qml
-from pennylane.ops import Prod, Sum
+from pennylane.ops import Prod
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
@@ -53,7 +54,7 @@ class TestMapWiresOperators:
         op = build_op()
 
         m_op = qml.map_wires(op, wire_map=wire_map)
-        assert isinstance(m_op, qml.ops.Prod)
+        assert isinstance(m_op, qml.ops.Prod)  # pylint:disable=no-member
         assert m_op.data == mapped_op.data
         assert m_op.wires == mapped_op.wires
         assert m_op.arithmetic_depth == mapped_op.arithmetic_depth
@@ -81,13 +82,12 @@ class TestMapWiresOperators:
 
     def test_map_wires_with_queuing_and_with_replacing(self):
         """Test the map_wires method while queuing with `queue = True` and `replace=True`."""
-        with qml.queuing.AnnotatedQueue() as q_tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op = build_op()
             m_op = qml.map_wires(op, wire_map=wire_map, queue=True, replace=True)
-        tape = QuantumScript.from_queue(q_tape)
-        assert len(tape.circuit) == 1
-        assert tape.circuit[0] is m_op
-        assert q_tape.get_info(op).get("owner", None) is m_op
+
+        assert len(q) == 1
+        assert q.queue[0] is m_op
 
     def test_map_wires_unsupported_object_raises_error(self):
         """Test that an error is raised when trying to map the wires of an unsupported object."""
@@ -98,41 +98,46 @@ class TestMapWiresOperators:
 class TestMapWiresTapes:
     """Tests for the qml.map_wires method used with tapes."""
 
-    def test_map_wires_tape(self):
+    @pytest.mark.parametrize("shots", [None, 100])
+    def test_map_wires_tape(self, shots):
         """Test the map_wires method with a tape."""
         with qml.queuing.AnnotatedQueue() as q_tape:
             build_op()
 
-        tape = QuantumScript.from_queue(q_tape)
+        tape = QuantumScript.from_queue(q_tape, shots=shots)
+        tape.trainable_params = [0, 2]
         # TODO: Use qml.equal when supported
 
-        s_tape = qml.map_wires(tape, wire_map=wire_map)
+        s_tapes, _ = qml.map_wires(tape, wire_map=wire_map)
+        s_tape = s_tapes[0]
         assert len(s_tape) == 1
+        assert s_tape.trainable_params == [0, 2]
         s_op = s_tape[0]
-        assert isinstance(s_op, qml.ops.Prod)
+        assert isinstance(s_op, qml.ops.Prod)  # pylint:disable=no-member
         assert s_op.data == mapped_op.data
         assert s_op.wires == mapped_op.wires
         assert s_op.arithmetic_depth == mapped_op.arithmetic_depth
+        assert tape.shots == s_tape.shots
 
-    def test_execute_mapped_tape(self):
+    @pytest.mark.parametrize("shots", [None, 5000])
+    def test_execute_mapped_tape(self, shots):
         """Test the execution of a mapped tape."""
         dev = qml.device("default.qubit", wires=5)
         with qml.queuing.AnnotatedQueue() as q_tape:
             build_op()
             qml.expval(op=qml.PauliZ(1))
 
-        tape = QuantumScript.from_queue(q_tape)
+        tape = QuantumScript.from_queue(q_tape, shots=shots)
         # TODO: Use qml.equal when supported
 
-        m_tape = qml.map_wires(tape, wire_map=wire_map)
+        m_tapes, _ = qml.map_wires(tape, wire_map=wire_map)
+        m_tape = m_tapes[0]
         m_op = m_tape.operations[0]
         m_obs = m_tape.observables[0]
-        assert isinstance(m_op, qml.ops.Prod)
-        assert m_op.data == mapped_op.data
-        assert m_op.wires == mapped_op.wires
-        assert m_op.arithmetic_depth == mapped_op.arithmetic_depth
+        assert qml.equal(m_op, mapped_op)
+        assert tape.shots == m_tape.shots
         assert m_obs.wires == Wires(wire_map[1])
-        assert qml.math.allclose(dev.execute(tape), dev.execute(m_tape))
+        assert qml.math.allclose(dev.execute(tape), dev.execute(m_tape), atol=0.05)
 
 
 class TestMapWiresQNodes:
@@ -145,23 +150,20 @@ class TestMapWiresQNodes:
         @qml.qnode(dev)
         def qnode():
             build_op()
-            return qml.expval(op=build_op())
+            return qml.expval(qml.prod(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)))
 
         # TODO: Use qml.equal when supported
+        mapped_obs = qml.prod(qml.PauliX(4), qml.PauliY(3), qml.PauliZ(2))
 
         m_qnode = qml.map_wires(qnode, wire_map=wire_map)
         assert m_qnode() == qnode()
         assert len(m_qnode.tape) == 2
-        m_op = m_qnode.tape.operations[0]
-        m_obs = m_qnode.tape.observables[0]
-        assert isinstance(m_op, qml.ops.Prod)
-        assert m_op.data == mapped_op.data
-        assert m_op.wires == mapped_op.wires
-        assert m_op.arithmetic_depth == mapped_op.arithmetic_depth
-        assert isinstance(m_obs, qml.ops.Prod)
-        assert m_obs.data == mapped_op.data
-        assert m_obs.wires == mapped_op.wires
-        assert m_obs.arithmetic_depth == mapped_op.arithmetic_depth
+        tapes, _ = m_qnode.transform_program((m_qnode.tape,))
+
+        m_op = tapes[0].operations
+        m_obs = tapes[0].observables
+        assert qml.equal(m_op[0], mapped_op)
+        assert qml.equal(m_obs[0], mapped_obs)
 
 
 class TestMapWiresCallables:
@@ -204,10 +206,10 @@ class TestMapWiresCallables:
 
         @jax.jit
         @partial(qml.map_wires, wire_map=wire_map)
-        @qml.qnode(qml.device("default.qubit.jax", wires=5), interface="jax")
+        @qml.qnode(qml.device("default.qubit", wires=5))
         def circuit(x):
             qml.adjoint(qml.RX(x, wires=0))
-            qml.PauliX(0) ** 2
+            _ = qml.PauliX(0) ** 2
             return qml.expval(qml.PauliY(0))
 
         x = jax.numpy.array(4 * jax.numpy.pi + 0.1)

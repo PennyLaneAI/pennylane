@@ -175,6 +175,7 @@ def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None, interface=Non
     b = anp.asarray(W[R + 1 :], like=interface)
 
     x0 = anp.asarray(np.float64(0.0), like=interface) if x0 is None else x0
+
     # Construct the Fourier series
     def _reconstruction(x):
         """Univariate reconstruction based on arbitrary shifts."""
@@ -298,7 +299,6 @@ def _prepare_jobs(ids, nums_frequency, spectra, shifts, atol):
             _jobs = {}
 
             for par_idx in inner_dict:
-
                 # Determine spectrum and number of frequencies, discounting for 0
                 _spectrum = spectra[arg_name][par_idx]
                 R = len(_spectrum) - 1
@@ -448,7 +448,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
     reconstructions:
 
     >>> tracker.totals
-    {'executions': 15}
+    {'batches': 15, 'simulations': 15, 'executions': 15}
 
     The example above used that we already knew the frequency spectra of the
     QNode of interest. However, this is in general not the case and we may need

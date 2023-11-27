@@ -16,14 +16,14 @@
 import functools
 from collections.abc import Sequence
 
-from autograd.numpy.numpy_boxes import ArrayBox
 import autoray as ar
-from autoray import numpy as np
 import numpy as onp
+from autograd.numpy.numpy_boxes import ArrayBox
+from autoray import numpy as np
 from numpy import ndarray
 
 from . import single_dispatch  # pylint:disable=unused-import
-from .utils import cast, get_interface, requires_grad
+from .utils import cast, cast_like, get_interface, requires_grad
 
 
 # pylint:disable=redefined-outer-name
@@ -71,7 +71,7 @@ def multi_dispatch(argnum=None, tensor_list=None):
 
 
     Args:
-        argnum (list[int]): A list of integers indicating indicating the indices
+        argnum (list[int]): A list of integers indicating the indices
             to dispatch (i.e., the arguments that are tensors handled by an interface).
             If ``None``, dispatch over all arguments.
         tensor_lists (list[int]): a list of integers indicating which indices
@@ -294,6 +294,18 @@ def diag(values, k=0, like=None):
 
 
 @multi_dispatch(argnum=[0, 1])
+def matmul(tensor1, tensor2, like=None):
+    """Returns the matrix product of two tensors."""
+    if like == "torch":
+        if get_interface(tensor1) != "torch":
+            tensor1 = ar.numpy.asarray(tensor1, like="torch")
+        if get_interface(tensor2) != "torch":
+            tensor2 = ar.numpy.asarray(tensor2, like="torch")
+        tensor2 = cast_like(tensor2, tensor1)  # pylint: disable=arguments-out-of-order
+    return ar.numpy.matmul(tensor1, tensor2, like=like)
+
+
+@multi_dispatch(argnum=[0, 1])
 def dot(tensor1, tensor2, like=None):
     """Returns the matrix or dot product of two tensors.
 
@@ -329,14 +341,16 @@ def dot(tensor1, tensor2, like=None):
 
         return np.tensordot(x, y, axes=[[-1], [-2]], like=like)
 
-    if like == "tensorflow":
-        if len(np.shape(x)) == 0 and len(np.shape(y)) == 0:
+    if like in {"tensorflow", "autograd"}:
+        shape_y = len(np.shape(y))
+        shape_x = len(np.shape(x))
+        if shape_x == 0 and shape_y == 0:
             return x * y
 
-        if len(np.shape(y)) == 1:
+        if shape_y == 1:
             return np.tensordot(x, y, axes=[[-1], [0]], like=like)
 
-        if len(np.shape(x)) == 2 and len(np.shape(y)) == 2:
+        if shape_x == 2 and shape_y == 2:
             return x @ y
 
         return np.tensordot(x, y, axes=[[-1], [-2]], like=like)
@@ -398,28 +412,10 @@ def get_trainable_indices(values, like=None):
     Trainable: {0}
     tensor(0.0899685, requires_grad=True)
     """
-    trainable = requires_grad
     trainable_params = set()
 
-    if like == "jax":
-        import jax
-
-        if not any(isinstance(v, jax.core.Tracer) for v in values):
-            # No JAX tracing is occuring; treat all `Array` objects as trainable.
-
-            # pylint: disable=function-redefined,unused-argument
-            def trainable(p, **kwargs):
-                return isinstance(p, jax.Array)
-
-        else:
-            # JAX tracing is occuring; use the default behaviour (only traced arrays
-            # are treated as trainable). This is required to ensure that `jax.grad(func, argnums=...)
-            # works correctly, as the argnums argnument determines which parameters are
-            # traced arrays.
-            trainable = requires_grad
-
     for idx, p in enumerate(values):
-        if trainable(p, interface=like):
+        if requires_grad(p, interface=like):
             trainable_params.add(idx)
 
     return trainable_params
@@ -492,7 +488,7 @@ def stack(values, axis=0, like=None):
     return np.stack(values, axis=axis, like=like)
 
 
-def einsum(indices, *operands, like=None):
+def einsum(indices, *operands, like=None, optimize=None):
     """Evaluates the Einstein summation convention on the operands.
 
     Args:
@@ -541,7 +537,17 @@ def einsum(indices, *operands, like=None):
     if like is None:
         like = get_interface(*operands)
     operands = np.coerce(operands, like=like)
-    return np.einsum(indices, *operands, like=like)
+    if optimize is None or like == "torch":
+        # torch einsum doesn't support the optimize keyword argument
+        return np.einsum(indices, *operands, like=like)
+    if like == "tensorflow":
+        # Unpacking and casting necessary for higher order derivatives,
+        # and avoiding implicit fp32 down-conversions.
+        op1, op2 = operands
+        op1 = array(op1, like=op1[0], dtype=op1[0].dtype)
+        op2 = array(op2, like=op2[0], dtype=op2[0].dtype)
+        return np.einsum(indices, op1, op2, like=like)
+    return np.einsum(indices, *operands, like=like, optimize=optimize)
 
 
 def where(condition, x=None, y=None):
@@ -755,27 +761,43 @@ def unwrap(values, max_depth=None):
     """
 
     def convert(val):
-        if isinstance(val, list):
+        if isinstance(val, (tuple, list)):
             return unwrap(val)
         new_val = (
             np.to_numpy(val, max_depth=max_depth) if isinstance(val, ArrayBox) else np.to_numpy(val)
         )
         return new_val.tolist() if isinstance(new_val, ndarray) and not new_val.shape else new_val
 
-    return [convert(val) for val in values]
+    if isinstance(values, (tuple, list)):
+        return type(values)(convert(val) for val in values)
+    return (
+        np.to_numpy(values, max_depth=max_depth)
+        if isinstance(values, ArrayBox)
+        else np.to_numpy(values)
+    )
 
 
-@multi_dispatch(argnum=[0])
+@multi_dispatch(argnum=[0, 1])
 def add(*args, like=None, **kwargs):
     """Add arguments element-wise."""
     if like == "scipy":
         return onp.add(*args, **kwargs)  # Dispatch scipy add to numpy backed specifically.
-    try:
-        return np.add(*args, **kwargs)
-    except TypeError:
-        # catch arg1 = torch, arg2=numpy error
-        # works fine with opposite order
-        return np.add(args[1], args[0], *args[2:], **kwargs)
+
+    arg_interfaces = {get_interface(args[0]), get_interface(args[1])}
+
+    # case of one torch tensor and one vanilla numpy array
+    if like == "torch" and len(arg_interfaces) == 2:
+        # In autoray 0.6.5, np.add dispatches to torch instead of
+        # numpy if one parameter is a torch tensor and the other is
+        # a numpy array. torch.add raises an Exception if one of the
+        # arguments is a numpy array, so here we cast both arguments
+        # to be tensors.
+        dev = getattr(args[0], "device", None) or getattr(args[1], "device")
+        arg0 = np.asarray(args[0], device=dev, like=like)
+        arg1 = np.asarray(args[1], device=dev, like=like)
+        return np.add(arg0, arg1, *args[2:], **kwargs)
+
+    return np.add(*args, **kwargs, like=like)
 
 
 @multi_dispatch()
@@ -821,6 +843,28 @@ def expm(tensor, like=None):
     return scipy_expm(tensor)
 
 
+@multi_dispatch()
+def norm(tensor, like=None, **kwargs):
+    """Compute the norm of a tensor in each interface."""
+    if like == "jax":
+        from jax.numpy.linalg import norm
+
+    elif like == "tensorflow":
+        from tensorflow import norm
+
+    elif like == "torch":
+        from torch.linalg import norm
+
+        if "axis" in kwargs:
+            axis_val = kwargs.pop("axis")
+            kwargs["dim"] = axis_val
+
+    else:
+        from scipy.linalg import norm
+
+    return norm(tensor, **kwargs)
+
+
 @multi_dispatch(argnum=[1])
 def gammainc(m, t, like=None):
     r"""Return the lower incomplete Gamma function.
@@ -853,3 +897,95 @@ def gammainc(m, t, like=None):
     import scipy
 
     return scipy.special.gammainc(m, t)
+
+
+@multi_dispatch()
+def detach(tensor, like=None):
+    """Detach a tensor from its trace and return just its numerical values.
+
+    Args:
+        tensor (tensor_like): Tensor to detach
+        like (str): Manually chosen interface to dispatch to.
+
+    Returns:
+        tensor_like: A tensor in the same interface as the input tensor but
+        with a stopped gradient.
+    """
+    if like == "jax":
+        import jax
+
+        return jax.lax.stop_gradient(tensor)
+
+    if like == "torch":
+        return tensor.detach()
+
+    if like == "tensorflow":
+        import tensorflow as tf
+
+        return tf.stop_gradient(tensor)
+
+    if like == "autograd":
+        return np.to_numpy(tensor)
+
+    return tensor
+
+
+def jax_argnums_to_tape_trainable(qnode, argnums, program, args, kwargs):
+    """This functions gets the tape parameters from the QNode construction given some argnums (only for Jax).
+    The tape parameters are transformed to JVPTracer if they are from argnums. This function imitates the behavior
+    of Jax in order to mark trainable parameters.
+
+    Args:
+        qnode(qml.QNode): the quantum node.
+        argnums(int, list[int]): the parameters that we want to set as trainable (on the QNode level).
+        program(qml.transforms.core.TransformProgram): the transform program to be applied on the tape.
+
+
+    Return:
+        list[float, jax.JVPTracer]: List of parameters where the trainable one are `JVPTracer`.
+    """
+    import jax
+
+    with jax.core.new_main(jax.interpreters.ad.JVPTrace) as main:
+        trace = jax.interpreters.ad.JVPTrace(main, 0)
+
+    args_jvp = [
+        jax.interpreters.ad.JVPTracer(trace, arg, jax.numpy.zeros(arg.shape))
+        if i in argnums
+        else arg
+        for i, arg in enumerate(args)
+    ]
+
+    qnode.construct(args_jvp, kwargs)
+    tape = qnode.qtape
+    tapes, _ = program((tape,))
+    del trace
+    return tuple(tape.get_parameters(trainable_only=False) for tape in tapes)
+
+
+@multi_dispatch(tensor_list=[1])
+def set_index(array, idx, val, like=None):
+    """Set the value at a specified index in an array.
+    Calls ``array[idx]=val`` and returns the updated array unless JAX.
+
+    Args:
+        array (tensor_like): array to be modified
+        idx (int, tuple): index to modify
+        val (int, float): value to set
+
+    Returns:
+        a new copy of the array with the specified index updated to ``val``.
+
+    Whether the original array is modified is interface-dependent.
+
+    .. note:: TensorFlow EagerTensor does not support item assignment
+    """
+    if like == "jax":
+        from jax import numpy as jnp
+
+        # ensure array is jax array (interface may be jax because of idx or val and not array)
+        jax_array = jnp.array(array)
+        return jax_array.at[idx].set(val)
+
+    array[idx] = val
+    return array

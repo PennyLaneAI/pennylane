@@ -72,15 +72,30 @@ class Tracker:
     You can then access the tabulated information through ``totals``, ``history``, and ``latest``:
 
     >>> tracker.totals
-    {'executions': 3, 'shots': 300, 'batches': 2, 'batch_len': 3}
-    >>> tracker.history
-    {'executions': [1, 1, 1],
-     'shots': [100, 100, 100],
-     'results': [array([1.]), array([-0.06]), array([0.18])],
-     'batches': [1, 1],
-     'batch_len': [1, 2]}
+    {'batches': 2, 'simulations': 3, 'executions': 3, 'shots': 300}
     >>> tracker.latest
-    {'batches': 1, 'batch_len': 2}
+    {'simulations': 1,
+     'executions': 1,
+     'results': array(-0.08),
+     'shots': 100,
+     'resources': Resources(num_wires=1, num_gates=1,
+                            gate_types=defaultdict(<class 'int'>, {'RX': 1}),
+                            gate_sizes=defaultdict(<class 'int'>, {1: 1}),
+                            depth=1,
+                            shots=Shots(total_shots=100, shot_vector=(ShotCopies(100 shots x 1),)))}
+    >>> tracker.history.keys()
+    dict_keys(['batches', 'simulations', 'executions', 'results', 'shots', 'resources'])
+    >>> tracker.history['results']
+    [array(1.), array(0.02), array(-0.08)]
+    >>> print(tracker.history['resources'][0])
+    wires: 1
+    gates: 1
+    depth: 1
+    shots: Shots(total=100)
+    gate_types:
+    {'RX': 1}
+    gate_sizes:
+    {1: 1}
 
     We can see that calculating the gradient of ``circuit`` takes three total evaluations: one
     forward pass and one batch of length two for the derivative of ``qml.RX``.
@@ -121,6 +136,28 @@ class Tracker:
         >>> tracker.totals['executions']
         2
 
+        When used with the null qubit device (eg. ``dev = qml.device("null.qubit")``), we can track the resources
+        used in the circuit without execution!
+
+        >>> dev = qml.device("null.qubit", wires=[0], shots=10)
+        >>> @qml.qnode(dev)
+        ... def circuit(x):
+        ...     qml.RX(x, wires=0)
+        ...     return qml.expval(qml.PauliZ(0))
+        ...
+        >>> with qml.Tracker(dev) as tracker:
+        ...     circuit(0.1)
+        ...
+        >>> resources_lst = tracker.history['resources']
+        >>> print(resources_lst[0])
+        wires: 1
+        gates: 1
+        depth: 1
+        shots: Shots(total=10)
+        gate_types:
+        {"RX": 1}
+        gate_sizes:
+        {1: 1}
     """
 
     def __init__(self, dev=None, callback=None, persistent=False):
@@ -134,7 +171,7 @@ class Tracker:
 
         if dev is not None:
             if not hasattr(dev, "tracker"):
-                raise Exception(f"Device '{dev.short_name}' does not support device tracking")
+                raise ValueError(f"Device '{dev.short_name}' does not support device tracking")
             dev.tracker = self
 
     def __enter__(self):

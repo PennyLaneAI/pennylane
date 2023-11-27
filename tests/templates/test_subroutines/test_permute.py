@@ -14,9 +14,16 @@
 """
 Tests for the Permute template.
 """
+# pylint: disable=too-many-arguments
 import pytest
 import numpy as np
 import pennylane as qml
+
+
+def test_standard_validity():
+    """Check the operation using the assert_valid function."""
+    op = qml.Permute([0, 1, 2, 3], wires=(3, 2, 1, 0))
+    qml.ops.functions.assert_valid(op)
 
 
 class TestDecomposition:
@@ -27,7 +34,7 @@ class TestDecomposition:
 
         dev = qml.device("default.qubit", wires=4)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="autograd")
         def identity_permutation():
             qml.Permute([0, 1, 2, 3], wires=dev.wires)
             return qml.expval(qml.PauliZ(0))
@@ -36,7 +43,7 @@ class TestDecomposition:
         identity_permutation()
 
         # expand the Permute operation
-        tape = spy.call_args[0][0]
+        tape = spy.call_args[0][0][0]
 
         assert len(tape.operations) == 0
 
@@ -67,7 +74,7 @@ class TestDecomposition:
 
         dev = qml.device("default.qubit", wires=len(permutation_order))
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="autograd")
         def two_cycle():
             qml.Permute(permutation_order, wires=dev.wires)
             return qml.expval(qml.PauliZ(0))
@@ -75,7 +82,7 @@ class TestDecomposition:
         spy = mocker.spy(two_cycle.device, "execute")
         two_cycle()
 
-        tape = spy.call_args[0][0]
+        tape = spy.call_args[0][0][0]
 
         # Check that the Permute operation was expanded to SWAPs when the QNode
         # is evaluated, and that the wires are the same
@@ -121,7 +128,7 @@ class TestDecomposition:
 
         dev = qml.device("default.qubit", wires=len(permutation_order))
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="autograd")
         def cycle():
             qml.Permute(permutation_order, wires=dev.wires)
             return qml.expval(qml.PauliZ(0))
@@ -129,7 +136,7 @@ class TestDecomposition:
         spy = mocker.spy(cycle.device, "execute")
         cycle()
 
-        tape = spy.call_args[0][0]
+        tape = spy.call_args[0][0][0]
 
         # Check that the Permute operation was expanded to SWAPs when the QNode
         # is evaluated, and that the wires are the same
@@ -171,7 +178,7 @@ class TestDecomposition:
 
         dev = qml.device("default.qubit", wires=len(permutation_order))
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="autograd")
         def arbitrary_perm():
             qml.Permute(permutation_order, wires=dev.wires)
             return qml.expval(qml.PauliZ(0))
@@ -179,7 +186,7 @@ class TestDecomposition:
         spy = mocker.spy(arbitrary_perm.device, "execute")
         arbitrary_perm()
 
-        tape = spy.call_args[0][0]
+        tape = spy.call_args[0][0][0]
 
         # Check that the Permute operation was expanded to SWAPs when the QNode
         # is evaluated, and that the wires are the same
@@ -231,7 +238,7 @@ class TestDecomposition:
 
         dev = qml.device("default.qubit", wires=num_wires)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="autograd")
         def subset_perm():
             qml.Permute(permutation_order, wires=wire_subset)
             return qml.expval(qml.PauliZ(0))
@@ -239,7 +246,7 @@ class TestDecomposition:
         spy = mocker.spy(subset_perm.device, "execute")
         subset_perm()
 
-        tape = spy.call_args[0][0]
+        tape = spy.call_args[0][0][0]
 
         # Check that the Permute operation was expanded to SWAPs when the QNode
         # is evaluated, and that the wires are the same
@@ -289,17 +296,18 @@ class TestDecomposition:
         @qml.qnode(dev)
         def circuit():
             qml.Permute(permutation, wires=range(4))
-            return qml.expval(qml.Identity(0))
+            return qml.expval(qml.Identity(0)), qml.state()
 
         @qml.qnode(dev2)
         def circuit2():
             qml.Permute(permutation2, wires=["z", "a", "k", "o"])
-            return qml.expval(qml.Identity("z"))
+            return qml.expval(qml.Identity("z")), qml.state()
 
-        circuit()
-        circuit2()
+        res1, state1 = circuit()
+        res2, state2 = circuit2()
 
-        assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
 
 class TestInputs:
@@ -345,7 +353,7 @@ class TestInputs:
             with pytest.raises(ValueError, match=expected_error_message):
                 qml.Permute(permutation_order, wires=wire_labels)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        qml.tape.QuantumScript.from_queue(q)
 
     def test_id(self):
         """Tests that the id attribute can be set."""

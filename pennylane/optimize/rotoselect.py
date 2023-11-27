@@ -133,6 +133,7 @@ class RotoselectOptimizer:
         """
         x_flat = np.fromiter(_flatten(x), dtype=float)
         # wrap the objective function so that it accepts the flattened parameter array
+        # pylint:disable=unnecessary-lambda-assignment
         objective_fn_flat = lambda x_flat, gen: objective_fn(
             unflatten(x_flat, x), generators=gen, **kwargs
         )
@@ -207,6 +208,7 @@ class RotoselectOptimizer:
         Returns:
             array: the input sequence ``x`` with the value at position ``d`` optimized
         """
+
         # helper function for x[d] = theta
         def insert(x, d, theta):
             x[d] = theta

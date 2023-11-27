@@ -262,7 +262,7 @@ Using a different interface that supports complex differentiation will fix this 
             return qml.state()
 
         x = torch.tensor([0.1], requires_grad=True, dtype=torch.complex64)
-        print(F.jacobian(circuit, (x,)))
+        print(torch.autograd.functional.jacobian(circuit, (x,)))
 
 >>> state_vector_grad_jax()
 [[-0.02498958+0.j        ]

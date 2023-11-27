@@ -15,23 +15,37 @@
 This module contains the qml.matrix function.
 """
 # pylint: disable=protected-access
+from typing import Sequence, Callable
+from functools import partial
+
 import pennylane as qml
+from pennylane.transforms.op_transforms import OperationTransformError
+from pennylane import transform
+from pennylane.typing import TensorLike
 
 
-@qml.op_transform
-def matrix(op, *, wire_order=None):
+def matrix(op: qml.operation.Operator, wire_order=None) -> TensorLike:
     r"""The matrix representation of an operation or quantum circuit.
 
     Args:
-        op (.Operator, pennylane.QNode, .QuantumTape, or Callable): An operator, quantum node, tape,
-            or function that applies quantum operations.
+        op (Operator or QNode or QuantumTape or Callable): A quantum operator or quantum circuit.
         wire_order (Sequence[Any], optional): Order of the wires in the quantum circuit.
-            Defaults to the order in which the wires appear in the quantum function.
+            The default wire order depends on the type of ``op``:
+
+            - If ``op`` is a :class:`~.QNode`, then the wire order is determined by the
+              associated device's wires, if provided.
+
+            - Otherwise, the wire order is determined by the order in which wires
+              appear in the circuit.
+
+            - See the usage details for more information.
 
     Returns:
-        tensor_like or function: Function which accepts the same arguments as the QNode or quantum
-        function. When called, this function will return the unitary matrix in the appropriate
-        autodiff framework (Autograd, TensorFlow, PyTorch, JAX) given its parameters.
+        TensorLike or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+
+        If an operator is provided as input, the matrix is returned directly in the form of a tensor.
+        Otherwise, the transformed circuit is returned as described in :func:`qml.transform <pennylane.transform>`.
+        Executing this circuit will provide its matrix representation.
 
     **Example**
 
@@ -86,8 +100,8 @@ def matrix(op, *, wire_order=None):
         [ 0.+0.j,  0.+0.38268343j,  0.+0.j,  -0.92387953+0.j]])
 
         Note that since ``wire_order`` was not specified, the default order ``[1, 0]`` for ``circuit``
-        was used, and the unitary matrix corresponds to the operation :math:`Z\otimes R_X(\theta)`. To
-        obtain the matrix for :math:`R_X(\theta)\otimes Z`, specify ``wire_order=[0, 1]`` in the
+        was used, and the unitary matrix corresponds to the operation :math:`R_X(\theta)\otimes Z`. To
+        obtain the matrix for :math:`Z\otimes R_X(\theta)`, specify ``wire_order=[0, 1]`` in the
         function call:
 
         >>> matrix = qml.matrix(circuit, wire_order=[0, 1])
@@ -117,36 +131,101 @@ def matrix(op, *, wire_order=None):
         1.9775421558720845
         >>> qml.grad(cost)(theta)
         -0.14943813247359922
+
+        .. note::
+
+            When using ``qml.matrix`` with a ``QNode``, unless specified, the device wire order will
+            be used. If the device wires are not set, the wire order will be inferred
+            from the quantum function used to create the ``QNode``. Consider the following example:
+
+            .. code-block:: python
+
+                def circuit():
+                    qml.Hadamard(wires=1)
+                    qml.CZ(wires=[0, 1])
+                    qml.Hadamard(wires=1)
+                    return qml.state()
+
+                dev_with_wires = qml.device("default.qubit", wires=[0, 1])
+                dev_without_wires = qml.device("default.qubit")
+
+                qnode_with_wires = qml.QNode(circuit, dev_with_wires)
+                qnode_without_wires = qml.QNode(circuit, dev_without_wires)
+
+            >>> qml.matrix(qnode_with_wires)().round(2)
+            array([[ 1.+0.j, -0.+0.j,  0.+0.j,  0.+0.j],
+                   [-0.+0.j,  1.+0.j,  0.+0.j,  0.+0.j],
+                   [ 0.+0.j,  0.+0.j, -0.+0.j,  1.+0.j],
+                   [ 0.+0.j,  0.+0.j,  1.+0.j, -0.+0.j]])
+            >>> qml.matrix(qnode_without_wires)().round(2)
+            array([[ 1.+0.j,  0.+0.j, -0.+0.j,  0.+0.j],
+                   [ 0.+0.j, -0.+0.j,  0.+0.j,  1.+0.j],
+                   [-0.+0.j,  0.+0.j,  1.+0.j,  0.+0.j],
+                   [ 0.+0.j,  1.+0.j,  0.+0.j, -0.+0.j]])
+
+            The second matrix above uses wire order ``[1, 0]`` because the device does not have
+            wires specified, and this is the order in which wires appear in ``circuit()``.
+
     """
+    if not isinstance(op, qml.operation.Operator):
+        if not isinstance(op, (qml.tape.QuantumScript, qml.QNode)) and not callable(op):
+            raise OperationTransformError(
+                "Input is not an Operator, tape, QNode, or quantum function"
+            )
+        return _matrix_transform(op, wire_order=wire_order)
+
     if isinstance(op, qml.operation.Tensor) and wire_order is not None:
         op = 1.0 * op  # convert to a Hamiltonian
 
     if isinstance(op, qml.Hamiltonian):
-        return qml.utils.sparse_hamiltonian(op, wires=wire_order).toarray()
+        return op.sparse_matrix(wire_order=wire_order).toarray()
 
-    return op.matrix(wire_order=wire_order)
+    try:
+        return op.matrix(wire_order=wire_order)
+    except:  # pylint: disable=bare-except
+        return matrix(op.expand(), wire_order=wire_order)
 
 
-@matrix.tape_transform
-def _matrix(tape, wire_order=None):
-    """Defines how matrix works if applied to a tape containing multiple operations."""
+@partial(transform, is_informative=True)
+def _matrix_transform(
+    tape: qml.tape.QuantumTape, wire_order=None, **kwargs
+) -> (Sequence[qml.tape.QuantumTape], Callable):
     if not tape.wires:
         raise qml.operation.MatrixUndefinedError
-    params = tape.get_parameters(trainable_only=False)
-    interface = qml.math.get_interface(*params)
 
-    wire_order = wire_order or tape.wires
+    if wire_order and not set(tape.wires).issubset(wire_order):
+        raise OperationTransformError(
+            f"Wires in circuit {list(tape.wires)} are inconsistent with "
+            f"those in wire_order {list(wire_order)}"
+        )
 
-    # initialize the unitary matrix
-    if len(tape.operations) == 0:
-        result = qml.math.eye(2 ** len(wire_order), like=interface)
-    else:
-        result = matrix(tape.operations[0], wire_order=wire_order)
+    wires = kwargs.get("device_wires", None) or tape.wires
+    wire_order = wire_order or wires
 
-    for op in tape.operations[1:]:
-        U = matrix(op, wire_order=wire_order)
-        # Coerce the matrices U and result and use matrix multiplication. Broadcasted axes
-        # are handled correctly automatically by ``matmul`` (See e.g. NumPy documentation)
-        result = qml.math.matmul(*qml.math.coerce([U, result], like=interface), like=interface)
+    def processing_fn(res):
+        """Defines how matrix works if applied to a tape containing multiple operations."""
 
-    return result
+        params = res[0].get_parameters(trainable_only=False)
+        interface = qml.math.get_interface(*params)
+
+        # initialize the unitary matrix
+        if len(res[0].operations) == 0:
+            result = qml.math.eye(2 ** len(wire_order), like=interface)
+        else:
+            result = matrix(res[0].operations[0], wire_order=wire_order)
+
+        for op in res[0].operations[1:]:
+            U = matrix(op, wire_order=wire_order)
+            # Coerce the matrices U and result and use matrix multiplication. Broadcasted axes
+            # are handled correctly automatically by ``matmul`` (See e.g. NumPy documentation)
+            result = qml.math.matmul(*qml.math.coerce([U, result], like=interface), like=interface)
+
+        return result
+
+    return [tape], processing_fn
+
+
+@_matrix_transform.custom_qnode_transform
+def _matrix_transform_qnode(self, qnode, targs, tkwargs):
+    tkwargs.setdefault("device_wires", qnode.device.wires)
+    return self.default_qnode_transform(qnode, targs, tkwargs)

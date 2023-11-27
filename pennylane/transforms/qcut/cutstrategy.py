@@ -23,7 +23,7 @@ from typing import Any, ClassVar, Dict, List, Sequence, Union
 from networkx import MultiDiGraph
 
 import pennylane as qml
-from pennylane.ops.qubit.non_parametric_ops import WireCut
+from pennylane.ops.meta import WireCut
 
 
 @dataclass()
@@ -125,16 +125,16 @@ class CutStrategy:
         if devices is None and self.max_free_wires is None:
             raise ValueError("One of arguments `devices` and max_free_wires` must be provided.")
 
-        if isinstance(devices, qml.Device):
+        if isinstance(devices, (qml.Device, qml.devices.Device)):
             devices = (devices,)
 
         if devices is not None:
             if not isinstance(devices, SequenceType) or any(
-                (not isinstance(d, qml.Device) for d in devices)
+                (not isinstance(d, (qml.Device, qml.devices.Device)) for d in devices)
             ):
                 raise ValueError(
                     "Argument `devices` must be a list or tuple containing elements of type "
-                    "`qml.Device`"
+                    "`qml.Device` or `qml.devices.Device`"
                 )
 
             device_wire_sizes = [len(d.wires) for d in devices]
@@ -195,9 +195,9 @@ class CutStrategy:
         """
         wire_depths = {}
         for g in tape_dag.nodes:
-            if not isinstance(g, WireCut):
-                for w in g.wires:
-                    wire_depths[w] = wire_depths.get(w, 0) + 1 / len(g.wires)
+            if not isinstance(g.obj, WireCut):
+                for w in g.obj.wires:
+                    wire_depths[w] = wire_depths.get(w, 0) + 1 / len(g.obj.wires)
         self._validate_input(max_wires_by_fragment, max_gates_by_fragment)
 
         probed_cuts = self._infer_probed_cuts(
@@ -343,7 +343,6 @@ class CutStrategy:
         probed_cuts = []
 
         if max_gates_by_fragment is None and max_wires_by_fragment is None:
-
             # k_lower, when supplied by a user, can be higher than k_lb if the the desired k is known:
             k_lower = self.k_lower if self.k_lower is not None else k_lb
             # k_upper, when supplied by a user, can be higher than k_ub to encourage exploration:

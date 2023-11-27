@@ -85,20 +85,18 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
         if QueuingManager.recording():
             with QueuingManager.stop_recording():
                 new_op = copy(input.simplify())
-            QueuingManager.update_info(input, owner=new_op)
+            QueuingManager.remove(input)
             return qml.apply(new_op)
         return input.simplify()
 
     if isinstance(input, QuantumScript):
-        # pylint: disable=protected-access
         return input.__class__(
-            [op.simplify() for op in input._ops],
+            [op.simplify() for op in input.operations],
             [m.simplify() for m in input.measurements],
-            [op.simplify() for op in input._prep],
+            shots=input.shots,
         )
 
     if callable(input):
-
         old_qfunc = input.func if isinstance(input, QNode) else input
 
         @wraps(old_qfunc)

@@ -101,8 +101,7 @@ class SimplifiedTwoDesign(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, initial_layer_weights, weights, wires, do_queue=True, id=None):
-
+    def __init__(self, initial_layer_weights, weights, wires, id=None):
         shape = qml.math.shape(weights)
 
         if len(shape) > 1:
@@ -124,7 +123,7 @@ class SimplifiedTwoDesign(Operation):
 
         self.n_layers = shape[0]
 
-        super().__init__(initial_layer_weights, weights, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(initial_layer_weights, weights, wires=wires, id=id)
 
     @property
     def num_params(self):
@@ -172,7 +171,6 @@ class SimplifiedTwoDesign(Operation):
             op_list.append(qml.RY(initial_layer_weights[i], wires=wires[i]))
 
         for layer in range(n_layers):
-
             # even layer of entanglers
             even_wires = [wires[i : i + 2] for i in range(0, len(wires) - 1, 2)]
             for i, wire_pair in enumerate(even_wires):

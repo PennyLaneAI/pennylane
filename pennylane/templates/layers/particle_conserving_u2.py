@@ -152,8 +152,7 @@ class ParticleConservingU2(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, weights, wires, init_state=None, do_queue=True, id=None):
-
+    def __init__(self, weights, wires, init_state=None, id=None):
         if len(wires) < 2:
             raise ValueError(
                 f"This template requires the number of qubits to be greater than one;"
@@ -170,9 +169,9 @@ class ParticleConservingU2(Operation):
                 f"Weights tensor must have a second dimension of length {2 * len(wires) - 1}; got {shape[1]}"
             )
 
-        self._hyperparameters = {"init_state": qml.math.toarray(init_state)}
+        self._hyperparameters = {"init_state": tuple(init_state)}
 
-        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(weights, wires=wires, id=id)
 
     @property
     def num_params(self):
@@ -216,9 +215,8 @@ class ParticleConservingU2(Operation):
         op_list = [qml.BasisEmbedding(init_state, wires=wires)]
 
         for l in range(n_layers):
-
-            for j, _ in enumerate(wires):
-                op_list.append(qml.RZ(weights[l, j], wires=wires[j]))
+            for j, wires_ in enumerate(wires):
+                op_list.append(qml.RZ(weights[l, j], wires=wires_))
 
             for i, wires_ in enumerate(nm_wires):
                 op_list.extend(u2_ex_gate(weights[l, len(wires) + i], wires=wires_))

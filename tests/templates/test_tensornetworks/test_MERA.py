@@ -14,10 +14,11 @@
 """
 Tests for the MERA template.
 """
+# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 import numpy as np
 import pennylane as qml
-from pennylane.templates.tensornetworks.mera import *
+from pennylane.templates.tensornetworks.mera import MERA, compute_indices
 
 
 def circuit0_block(wires):
@@ -104,6 +105,42 @@ def circuit3_MERA(weights, wires):
     qml.StronglyEntanglingLayers(SELWeights5, wires=[wires[0], wires[1]])
 
 
+# pylint: disable=protected-access
+def test_flatten_unflatten():
+    """Tests the flatten and unflatten methods."""
+
+    def block(weights, wires):
+        qml.CNOT(wires=[wires[0], wires[1]])
+        qml.RY(weights[0], wires=wires[0])
+        qml.RY(weights[1], wires=wires[1])
+
+    n_wires = 4
+    n_block_wires = 2
+    n_params_block = 2
+    n_blocks = qml.MERA.get_n_blocks(range(n_wires), n_block_wires)
+
+    template_weights = [[0.1, -0.3]] * n_blocks
+
+    wires = qml.wires.Wires((0, 1, 2, 3))
+
+    op = qml.MERA(wires, n_block_wires, block, n_params_block, template_weights)
+
+    data, metadata = op._flatten()
+    assert len(data) == 1
+    assert qml.math.allclose(data[0], template_weights)
+
+    assert metadata[0] == wires
+    assert dict(metadata[1]) == op.hyperparameters
+
+    # make sure metadata hashable
+    assert hash(metadata)
+
+    new_op = qml.MERA._unflatten(*op._flatten())
+    assert qml.equal(new_op, op)
+    assert new_op._name == "MERA"  # make sure acutally initialized
+    assert new_op is not op
+
+
 class TestIndicesMERA:
     """Test function that computes MERA indices"""
 
@@ -169,19 +206,19 @@ class TestIndicesMERA:
     @pytest.mark.parametrize(
         ("wires", "n_block_wires", "expected_indices"),
         [
-            ([1, 2, 3, 4], 2, [[2, 1], [3, 4], [4, 2], [1, 3], [1, 2]]),
+            ((1, 2, 3, 4), 2, ((2, 1), (3, 4), (4, 2), (1, 3), (1, 2))),
             (
                 range(12),
                 6,
-                [
-                    [3, 4, 5, 0, 1, 2],
-                    [6, 7, 8, 9, 10, 11],
-                    [9, 10, 11, 3, 4, 5],
-                    [0, 1, 2, 6, 7, 8],
-                    [0, 1, 2, 3, 4, 5],
-                ],
+                (
+                    (3, 4, 5, 0, 1, 2),
+                    (6, 7, 8, 9, 10, 11),
+                    (9, 10, 11, 3, 4, 5),
+                    (0, 1, 2, 6, 7, 8),
+                    (0, 1, 2, 3, 4, 5),
+                ),
             ),
-            (["a", "b", "c", "d"], 2, [["b", "a"], ["c", "d"], ["d", "b"], ["a", "c"], ["a", "b"]]),
+            (("a", "b", "c", "d"), 2, (("b", "a"), ("c", "d"), ("d", "b"), ("a", "c"), ("a", "b"))),
         ],
     )
     def test_indices_output(self, wires, n_block_wires, expected_indices):
@@ -432,16 +469,16 @@ class TestTemplateOutputs:
         dev = qml.device("default.qubit", wires=wires)
 
         @qml.qnode(dev)
-        def circuit():
+        def circuit_template():
             qml.MERA(wires, n_block_wires, block, n_params_block, template_weights)
             return qml.expval(qml.PauliZ(wires=wires[1]))
 
-        template_result = circuit()
+        template_result = circuit_template()
 
         @qml.qnode(dev)
-        def circuit():
+        def circuit_manual():
             expected_circuit(template_weights, wires)
             return qml.expval(qml.PauliZ(wires=wires[1]))
 
-        manual_result = circuit()
+        manual_result = circuit_manual()
         assert np.isclose(template_result, manual_result)

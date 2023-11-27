@@ -110,7 +110,7 @@ def scf(mol, n_steps=50, tol=1e-8):
         r"""Perform the self-consistent-field iterations.
 
         Args:
-            args (array[array[float]]): initial values of the differentiable parameters
+            *args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
             tuple(array[float]): eigenvalues of the Fock matrix, molecular orbital coefficients,
@@ -132,8 +132,8 @@ def scf(mol, n_steps=50, tol=1e-8):
             s = overlap_matrix(basis_functions)(*args)
             h_core = core_matrix(basis_functions, charges, r)(*args)
 
-        qml.math.random.seed(2030)
-        s = s + qml.math.diag(qml.math.random.rand(len(s)) * 1.0e-12)
+        rng = qml.math.random.default_rng(2030)
+        s = s + qml.math.diag(rng.random(len(s)) * 1.0e-12)
 
         w, v = qml.math.linalg.eigh(s)
         x = v @ qml.math.diag(1.0 / qml.math.sqrt(w)) @ v.T
@@ -146,7 +146,6 @@ def scf(mol, n_steps=50, tol=1e-8):
         p = mol_density_matrix(n_electron, coeffs)
 
         for _ in range(n_steps):
-
             j = qml.math.einsum("pqrs,rs->pq", rep_tensor, p)
             k = qml.math.einsum("psqr,rs->pq", rep_tensor, p)
 
@@ -204,7 +203,7 @@ def nuclear_energy(charges, r):
         r"""Compute the nuclear-repulsion energy.
 
         Args:
-            args (array[array[float]]): initial values of the differentiable parameters
+            *args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
             array[float]: nuclear-repulsion energy
@@ -247,7 +246,7 @@ def hf_energy(mol):
         r"""Compute the Hartree-Fock energy.
 
         Args:
-            args (array[array[float]]): initial values of the differentiable parameters
+            *args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
             float: the Hartree-Fock energy

@@ -4,3 +4,4 @@ include LICENSE
 include tests/*
 include example_config.toml
 include pennylane/transforms/qcut/_cut_kKaHyPar_sea20.ini
+include pennylane/logging/log_config.toml

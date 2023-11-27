@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""
+Unit tests for the optimization transform ``merge_amplitude_embedding``.
+"""
 import pytest
 from pennylane import numpy as np
 
@@ -31,7 +33,7 @@ class TestMergeAmplitudeEmbedding:
             qml.AmplitudeEmbedding([0.0, 1.0], wires=1)
             qml.Hadamard(wires=0)
             qml.Hadamard(wires=0)
-            qml.state()
+            return qml.state()
 
         transformed_qfunc = merge_amplitude_embedding(qfunc)
         ops = qml.tape.make_qscript(transformed_qfunc)().operations
@@ -41,6 +43,22 @@ class TestMergeAmplitudeEmbedding:
         # Check that the solution is as expected.
         dev = qml.device("default.qubit", wires=2)
         assert np.allclose(qml.QNode(transformed_qfunc, dev)()[-1], 1)
+
+    def test_multi_amplitude_embedding_qnode(self):
+        """Test that the transformation is working correctly by joining two AmplitudeEmbedding."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @merge_amplitude_embedding
+        @qml.qnode(device=dev)
+        def circuit():
+            qml.AmplitudeEmbedding([0.0, 1.0], wires=0)
+            qml.AmplitudeEmbedding([0.0, 1.0], wires=1)
+            qml.Hadamard(wires=0)
+            qml.Hadamard(wires=1)
+            return qml.state()
+
+        assert qml.math.allclose(circuit(), np.array([1, -1, -1, 1]) / 2)
 
     def test_repeated_qubit(self):
         """Check that AmplitudeEmbedding cannot be applied if the qubit has already been used."""
@@ -70,6 +88,25 @@ class TestMergeAmplitudeEmbedding:
         dev = qml.device("default.qubit", wires=3)
         qnode = qml.QNode(qfunc, dev)
         assert qnode()[3] == 1.0
+
+    def test_broadcasting(self):
+        """Test that merging preserves the batch dimension"""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.transforms.merge_amplitude_embedding
+        @qml.qnode(dev)
+        def qnode():
+            qml.AmplitudeEmbedding([[1, 0], [0, 1]], wires=0)
+            qml.AmplitudeEmbedding([1, 0], wires=1)
+            qml.AmplitudeEmbedding([[0, 1], [1, 0]], wires=2)
+            return qml.state()
+
+        res = qnode()
+        assert qnode.tape.batch_size == 2
+
+        # |001> and |100>
+        expected = np.array([[0, 1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0]])
+        assert np.allclose(res, expected)
 
 
 class TestMergeAmplitudeEmbeddingInterfaces:
@@ -104,7 +141,7 @@ class TestMergeAmplitudeEmbeddingInterfaces:
 
         dev = qml.device("default.qubit", wires=2)
         optimized_qfunc = qml.transforms.merge_amplitude_embedding(qfunc)
-        optimized_qnode = qml.QNode(optimized_qfunc, dev, interface="torch")
+        optimized_qnode = qml.QNode(optimized_qfunc, dev)
 
         amplitude = torch.tensor([0.0, 1.0], requires_grad=True)
         # Check the state |11> is being generated.
@@ -122,7 +159,7 @@ class TestMergeAmplitudeEmbeddingInterfaces:
 
         dev = qml.device("default.qubit", wires=2)
         optimized_qfunc = qml.transforms.merge_amplitude_embedding(qfunc)
-        optimized_qnode = qml.QNode(optimized_qfunc, dev, interface="tf")
+        optimized_qnode = qml.QNode(optimized_qfunc, dev)
 
         amplitude = tf.Variable([0.0, 1.0])
         # Check the state |11> is being generated.
@@ -134,7 +171,6 @@ class TestMergeAmplitudeEmbeddingInterfaces:
         from jax import numpy as jnp
         from jax.config import config
 
-        remember = config.read("jax_enable_x64")
         config.update("jax_enable_x64", True)
 
         def qfunc(amplitude):
@@ -144,7 +180,7 @@ class TestMergeAmplitudeEmbeddingInterfaces:
 
         dev = qml.device("default.qubit", wires=2)
         optimized_qfunc = qml.transforms.merge_amplitude_embedding(qfunc)
-        optimized_qnode = qml.QNode(optimized_qfunc, dev, interface="jax")
+        optimized_qnode = qml.QNode(optimized_qfunc, dev)
 
         amplitude = jnp.array([0.0, 1.0], dtype=jnp.float64)
         # Check the state |11> is being generated.

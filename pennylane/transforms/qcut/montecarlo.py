@@ -26,7 +26,7 @@ from pennylane import numpy as np
 from pennylane.measurements import SampleMP
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript, QuantumTape
-from pennylane.transforms.batch_transform import batch_transform
+from pennylane.transforms import transform
 from pennylane.wires import Wires
 
 from .cutstrategy import CutStrategy
@@ -46,7 +46,26 @@ from .tapes import _qcut_expand_fn, graph_to_tape, tape_to_graph
 from .utils import find_and_place_cuts, fragment_graph, replace_wire_cut_nodes
 
 
-@batch_transform
+def _cut_circuit_mc_expand(
+    tape: QuantumTape,
+    classical_processing_fn: Optional[callable] = None,
+    max_depth: int = 1,
+    shots: Optional[int] = None,
+    device_wires: Optional[Wires] = None,
+    auto_cutter: Union[bool, Callable] = False,
+    **kwargs,
+) -> (Sequence[QuantumTape], Callable):
+    """Main entry point for expanding operations in sample-based tapes until
+    reaching a depth that includes :class:`~.WireCut` operations."""
+    # pylint: disable=unused-argument, too-many-arguments
+
+    def processing_fn(res):
+        return res[0]
+
+    return [_qcut_expand_fn(tape, max_depth, auto_cutter)], processing_fn
+
+
+@partial(transform, expand_transform=_cut_circuit_mc_expand)
 def cut_circuit_mc(
     tape: QuantumTape,
     classical_processing_fn: Optional[callable] = None,
@@ -55,7 +74,7 @@ def cut_circuit_mc(
     shots: Optional[int] = None,
     device_wires: Optional[Wires] = None,
     **kwargs,
-) -> Tuple[Tuple[QuantumTape], Callable]:
+) -> (Sequence[QuantumTape], Callable):
     """
     Cut up a circuit containing sample measurements into smaller fragments using a
     Monte Carlo method.
@@ -68,7 +87,7 @@ def cut_circuit_mc(
     an expectation value will be evaluated.
 
     Args:
-        tape (QuantumTape): the tape of the full circuit to be cut
+        tape (QNode or QuantumTape): the quantum circuit to be cut.
         classical_processing_fn (callable): A classical postprocessing function to be applied to
             the reconstructed bitstrings. The expected input is a bitstring; a flat array of length ``wires``,
             and the output should be a single number within the interval :math:`[-1, 1]`.
@@ -92,9 +111,10 @@ def cut_circuit_mc(
             :func:`~.find_and_place_cuts` and :func:`~.kahypar_cut` for the available arguments.
 
     Returns:
-        Callable: Function which accepts the same arguments as the QNode.
-        When called, this function will sample from the partitioned circuit fragments
-        and combine the results using a Monte Carlo method.
+        qnode (QNode) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will sample from the partitioned circuit fragments and combine the results using a Monte Carlo method.
 
     **Example**
 
@@ -126,13 +146,13 @@ def cut_circuit_mc(
 
     >>> x = 0.3
     >>> circuit(x)
-    tensor([[1, 1],
-            [0, 1],
-            [0, 1],
-            ...,
-            [0, 1],
-            [0, 1],
-            [0, 1]], requires_grad=True)
+    array([[0., 0.],
+           [0., 1.],
+           [1., 0.],
+           ...,
+           [0., 0.],
+           [0., 0.],
+           [0., 1.]])
 
     Furthermore, the number of shots can be temporarily altered when calling
     the qnode:
@@ -148,7 +168,9 @@ def cut_circuit_mc(
 
     .. code-block:: python
 
-        @qml.cut_circuit_mc(auto_cutter=True)
+        from functools import partial
+
+        @partial(qml.cut_circuit_mc, auto_cutter=True)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(0.89, wires=0)
@@ -198,13 +220,15 @@ def cut_circuit_mc(
 
             np.random.seed(42)
 
-            with qml.tape.QuantumTape() as tape:
-                qml.Hadamard(wires=0)
-                qml.CNOT(wires=[0, 1])
-                qml.PauliX(wires=1)
-                qml.WireCut(wires=1)
-                qml.CNOT(wires=[1, 2])
-                qml.sample(wires=[0, 1, 2])
+            ops = [
+                qml.Hadamard(wires=0),
+                qml.CNOT(wires=[0, 1]),
+                qml.PauliX(wires=1),
+                qml.WireCut(wires=1),
+                qml.CNOT(wires=[1, 2]),
+            ]
+            measurements = [qml.sample(wires=[0, 1, 2])]
+            tape = qml.tape.QuantumTape(ops, measurements)
 
         >>> print(tape.draw())
         0: ──H─╭●───────────┤ ╭Sample
@@ -223,12 +247,14 @@ def cut_circuit_mc(
 
         .. code-block:: python
 
-            with qml.tape.QuantumTape() as uncut_tape:
-                qml.Hadamard(wires=0)
-                qml.CNOT(wires=[0, 1])
-                qml.PauliX(wires=1)
-                qml.CNOT(wires=[1, 2])
-                qml.sample(wires=[0, 1, 2])
+            ops = [
+                qml.Hadamard(wires=0),
+                qml.CNOT(wires=[0, 1]),
+                qml.PauliX(wires=1),
+                qml.CNOT(wires=[1, 2]),
+            ]
+            measurements = [qml.sample(wires=[0, 1, 2])]
+            uncut_tape = qml.tape.QuantumTape(ops, measurements)
 
         >>> cut_graph = qml.transforms.qcut.find_and_place_cuts(
         ...     graph=qml.transforms.qcut.tape_to_graph(uncut_tape),
@@ -270,7 +296,7 @@ def cut_circuit_mc(
         Additionally, we must remap the tape wires to match those available on our device.
 
         >>> dev = qml.device("default.qubit", wires=2, shots=1)
-        >>> fragment_tapes = [qml.map_wires(t, dict(zip(t.wires, dev.wires))) for t in fragment_tapes]
+        >>> fragment_tapes = [qml.map_wires(t, dict(zip(t.wires, dev.wires)))[0][0] for t in fragment_tapes]
 
         Note that the number of shots on the device is set to :math:`1` here since we
         will only require one execution per fragment configuration. In the
@@ -357,19 +383,20 @@ def cut_circuit_mc(
         ... )
         array(-4.)
 
-        Using the Monte Carlo approach of [Peng et. al](https://arxiv.org/abs/1904.00102), the
-        `cut_circuit_mc` transform also supports returning sample-based expectation values of
+        Using the Monte Carlo approach of `Peng et. al <https://arxiv.org/abs/1904.00102>`_, the
+        ``cut_circuit_mc`` transform also supports returning sample-based expectation values of
         observables that are diagonal in the computational basis, as shown below for a `ZZ` measurement
         on wires `0` and `2`:
 
         .. code-block::
 
+            from functools import partial
             dev = qml.device("default.qubit", wires=2, shots=10000)
 
             def observable(bitstring):
                 return (-1) ** np.sum(bitstring)
 
-            @qml.cut_circuit_mc(classical_processing_fn=observable)
+            @partial(qml.cut_circuit_mc, classical_processing_fn=observable)
             @qml.qnode(dev)
             def circuit(x):
                 qml.RX(0.89, wires=0)
@@ -415,7 +442,6 @@ def cut_circuit_mc(
     g = tape_to_graph(tape)
 
     if auto_cutter is True or callable(auto_cutter):
-
         cut_strategy = kwargs.pop("cut_strategy", None) or CutStrategy(
             max_free_wires=len(device_wires)
         )
@@ -430,7 +456,9 @@ def cut_circuit_mc(
     replace_wire_cut_nodes(g)
     fragments, communication_graph = fragment_graph(g)
     fragment_tapes = [graph_to_tape(f) for f in fragments]
-    fragment_tapes = [qml.map_wires(t, dict(zip(t.wires, device_wires))) for t in fragment_tapes]
+    fragment_tapes = [
+        qml.map_wires(t, dict(zip(t.wires, device_wires)))[0][0] for t in fragment_tapes
+    ]
 
     configurations, settings = expand_fragment_tapes_mc(
         fragment_tapes, communication_graph, shots=shots
@@ -439,44 +467,68 @@ def cut_circuit_mc(
     tapes = tuple(tape for c in configurations for tape in c)
 
     if classical_processing_fn:
-        return tapes, partial(
-            qcut_processing_fn_mc,
-            communication_graph=communication_graph,
-            settings=settings,
-            shots=shots,
-            classical_processing_fn=classical_processing_fn,
-        )
 
-    return tapes, partial(
-        qcut_processing_fn_sample, communication_graph=communication_graph, shots=shots
-    )
+        def processing_fn(results):
+            results = qcut_processing_fn_mc(
+                results,
+                communication_graph=communication_graph,
+                settings=settings,
+                shots=shots,
+                classical_processing_fn=classical_processing_fn,
+            )
 
+            return results
 
-def _cut_circuit_mc_expand(
-    tape: QuantumTape,
-    classical_processing_fn: Optional[callable] = None,
-    max_depth: int = 1,
-    shots: Optional[int] = None,
-    device_wires: Optional[Wires] = None,
-    auto_cutter: Union[bool, Callable] = False,
-    **kwargs,
-):
-    """Main entry point for expanding operations in sample-based tapes until
-    reaching a depth that includes :class:`~.WireCut` operations."""
-    # pylint: disable=unused-argument, too-many-arguments
-    return _qcut_expand_fn(tape, max_depth, auto_cutter)
+    else:
+
+        def processing_fn(results):
+            results = qcut_processing_fn_sample(
+                results, communication_graph=communication_graph, shots=shots
+            )
+
+            return results[0]
+
+    return tapes, processing_fn
 
 
-cut_circuit_mc.expand_fn = _cut_circuit_mc_expand
+class CustomQNode(qml.QNode):
+    """
+    A subclass with a custom __call__ method. The custom QNode transform returns an instance
+    of this class.
+    """
+
+    def __call__(self, *args, **kwargs):
+        shots = kwargs.pop("shots", False)
+        shots = shots or self.device.shots
+
+        if not shots:
+            raise ValueError(
+                "A shots value must be provided in the device "
+                "or when calling the QNode to be cut"
+            )
+        if isinstance(shots, qml.measurements.Shots):
+            shots = shots.total_shots
+
+        # find the qcut transform inside the transform program and set the shots argument
+        qcut_tc = [
+            tc for tc in self.transform_program if tc.transform.__name__ == "cut_circuit_mc"
+        ][-1]
+        qcut_tc._kwargs["shots"] = shots
+
+        kwargs["shots"] = 1
+        return super().__call__(*args, **kwargs)
 
 
-@cut_circuit_mc.custom_qnode_wrapper
-def qnode_execution_wrapper_mc(self, qnode, targs, tkwargs):
+@cut_circuit_mc.custom_qnode_transform
+def _qnode_transform_mc(self, qnode, targs, tkwargs):
     """Here, we overwrite the QNode execution wrapper in order
-    to replace execution variables"""
-
-    transform_max_diff = tkwargs.pop("max_diff", None)
-    tkwargs.setdefault("device_wires", qnode.device.wires)
+    to access the device wires."""
+    if tkwargs.get("shots", False):
+        raise ValueError(
+            "Cannot provide a 'shots' value directly to the cut_circuit_mc "
+            "decorator when transforming a QNode. Please provide the number of shots in "
+            "the device or when calling the QNode."
+        )
 
     if "shots" in inspect.signature(qnode.func).parameters:
         raise ValueError(
@@ -485,56 +537,16 @@ def qnode_execution_wrapper_mc(self, qnode, targs, tkwargs):
             "taken by the device."
         )
 
-    def _wrapper(*args, **kwargs):
-        if tkwargs.get("shots", False):
-            raise ValueError(
-                "Cannot provide a 'shots' value directly to the cut_circuit_mc "
-                "decorator when transforming a QNode. Please provide the number of shots in "
-                "the device or when calling the QNode."
-            )
+    tkwargs.setdefault("device_wires", qnode.device.wires)
 
-        shots = kwargs.pop("shots", False)
-        shots = shots or qnode.device.shots
+    execute_kwargs = getattr(qnode, "execute_kwargs", {}).copy()
+    execute_kwargs["cache"] = False
 
-        if shots is None:
-            raise ValueError(
-                "A shots value must be provided in the device "
-                "or when calling the QNode to be cut"
-            )
+    new_qnode = self.default_qnode_transform(qnode, targs, tkwargs)
+    new_qnode.__class__ = CustomQNode
+    new_qnode.execute_kwargs = execute_kwargs
 
-        qnode.construct(args, kwargs)
-        tapes, processing_fn = self.construct(qnode.qtape, *targs, **tkwargs, shots=shots)
-
-        interface = qnode.interface
-        execute_kwargs = getattr(qnode, "execute_kwargs", {}).copy()
-        max_diff = execute_kwargs.pop("max_diff", 2)
-        max_diff = transform_max_diff or max_diff
-
-        gradient_fn = getattr(qnode, "gradient_fn", qnode.diff_method)
-        gradient_kwargs = getattr(qnode, "gradient_kwargs", {})
-
-        if interface is None or not self.differentiable:
-            gradient_fn = None
-
-        execute_kwargs["cache"] = False
-
-        res = qml.execute(
-            tapes,
-            device=qnode.device,
-            gradient_fn=gradient_fn,
-            interface=interface,
-            max_diff=max_diff,
-            override_shots=1,
-            gradient_kwargs=gradient_kwargs,
-            **execute_kwargs,
-        )
-
-        out = processing_fn(res)
-        if isinstance(out, list) and len(out) == 1:
-            return out[0]
-        return out
-
-    return _wrapper
+    return new_qnode
 
 
 MC_STATES = [
@@ -613,12 +625,14 @@ def expand_fragment_tapes_mc(
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as tape:
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.WireCut(wires=1)
-            qml.CNOT(wires=[1, 2])
-            qml.sample(wires=[0, 1, 2])
+        ops = [
+            qml.Hadamard(wires=0),
+            qml.CNOT(wires=[0, 1]),
+            qml.WireCut(wires=1),
+            qml.CNOT(wires=[1, 2]),
+        ]
+        measurements = [qml.sample(wires=[0, 1, 2])]
+        tape = qml.tape.QuantumTape(ops, measurements)
 
     We can generate the fragment tapes using the following workflow:
 
@@ -668,8 +682,8 @@ def expand_fragment_tapes_mc(
     pairs = [e[-1] for e in communication_graph.edges.data("pair")]
     settings = np.random.choice(range(8), size=(len(pairs), shots), replace=True)
 
-    meas_settings = {pair[0].id: setting for pair, setting in zip(pairs, settings)}
-    prep_settings = {pair[1].id: setting for pair, setting in zip(pairs, settings)}
+    meas_settings = {pair[0].obj.id: setting for pair, setting in zip(pairs, settings)}
+    prep_settings = {pair[1].obj.id: setting for pair, setting in zip(pairs, settings)}
 
     all_configs = []
     for tape in tapes:
@@ -690,7 +704,7 @@ def expand_fragment_tapes_mc(
                         meas_w = op.wires[0]
                         MC_MEASUREMENTS[meas_settings[op.id][shot]](meas_w)
 
-            frag_config.append(QuantumScript.from_queue(q))
+            frag_config.append(QuantumScript.from_queue(q, shots=1))
 
         all_configs.append(frag_config)
 

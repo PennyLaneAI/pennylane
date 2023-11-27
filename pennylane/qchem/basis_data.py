@@ -774,7 +774,7 @@ def load_basisset(basis, element):
 
     >>> basis = '6-31g'
     >>> element = 'He'
-    >>> basis = load_basisset(basis, element)
+    >>> basis = qml.qchem.load_basisset(basis, element)
     >>> basis
     {'orbitals': ['S', 'S'],
      'exponents': [[38.421634, 5.77803, 1.241774], [0.297964]],

@@ -14,11 +14,14 @@
 """Transforms for interacting with PyZX, framework for ZX calculus."""
 # pylint: disable=too-many-statements, too-many-branches, too-many-return-statements, too-many-arguments
 
+from functools import partial
+from typing import Sequence, Callable
 from collections import OrderedDict
 import numpy as np
 import pennylane as qml
-from pennylane.transforms.op_transforms import op_transform
-from pennylane.tape import QuantumScript
+from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.transforms.op_transforms import OperationTransformError
+from pennylane.transforms import transform
 from pennylane.wires import Wires
 
 
@@ -46,15 +49,20 @@ class EdgeType:  # pylint: disable=too-few-public-methods
     HADAMARD = 2
 
 
-@op_transform
-def to_zx(tape, expand_measurement=False):  # pylint: disable=unused-argument
+def to_zx(tape, expand_measurements=False):  # pylint: disable=unused-argument
     """This transform converts a PennyLane quantum tape to a ZX-Graph in the `PyZX framework <https://pyzx.readthedocs.io/en/latest/>`_.
     The graph can be optimized and transformed by well-known ZX-calculus reductions.
 
     Args:
-        tape(QuantumTape, Operation): The PennyLane quantum circuit.
+        tape(QNode or QuantumTape or Callable or Operation): The PennyLane quantum circuit.
         expand_measurements(bool): The expansion will be applied on measurements that are not in the Z-basis and
             rotations will be added to the operations.
+
+    Returns:
+        graph (pyzx.Graph) or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the ZX graph in the form of a PyZX graph.
 
     **Example**
 
@@ -225,7 +233,8 @@ def to_zx(tape, expand_measurement=False):  # pylint: disable=unused-argument
 
             wires = qml.wires.Wires([4, 3, 0, 2, 1])
             wires_map = dict(zip(tape_opt.wires, wires))
-            tape_opt_reorder = qml.map_wires(input=tape_opt, wire_map=wires_map)
+            tapes_opt_reorder, fn = qml.map_wires(input=tape_opt, wire_map=wires_map)[0][0]
+            tape_opt_reorder = fn(tapes_opt_reorder)
 
             @qml.qnode(device=dev)
             def mod_5_4():
@@ -233,8 +242,8 @@ def to_zx(tape, expand_measurement=False):  # pylint: disable=unused-argument
                     qml.apply(g)
                 return qml.expval(qml.PauliZ(wires=0))
 
-        >>> mod_5_4_opt()
-        -0.9999999999999989
+        >>> mod_5_4()
+        tensor(1., requires_grad=True)
 
     .. note::
 
@@ -244,11 +253,20 @@ def to_zx(tape, expand_measurement=False):  # pylint: disable=unused-argument
         Copyright (C) 2018 - Aleks Kissinger and John van de Wetering
     """
     # If it is a simple operation just transform it to a tape
-    return _to_zx(QuantumScript([tape]))
+    if not isinstance(tape, qml.operation.Operator):
+        if not isinstance(tape, (qml.tape.QuantumScript, qml.QNode)) and not callable(tape):
+            raise OperationTransformError(
+                "Input is not an Operator, tape, QNode, or quantum function"
+            )
+        return _to_zx_transform(tape, expand_measurements=expand_measurements)
+
+    return to_zx(QuantumScript([tape]))
 
 
-@to_zx.tape_transform
-def _to_zx(tape, expand_measurements=False):
+@partial(transform, is_informative=True)
+def _to_zx_transform(
+    tape: QuantumTape, expand_measurements=False
+) -> (Sequence[QuantumTape], Callable):
     """Private function to convert a PennyLane tape to a `PyZX graph <https://pyzx.readthedocs.io/en/latest/>`_ ."""
     # Avoid to make PyZX a requirement for PennyLane.
     try:
@@ -280,75 +298,79 @@ def _to_zx(tape, expand_measurements=False):
         "CCZ": pyzx.circuit.gates.CCZ,
         "Toffoli": pyzx.circuit.gates.Tofolli,
     }
-    # Create the graph, a qubit mapper, the classical mapper stays empty as PennyLane does not support classical bits.
-    graph = Graph(None)
-    q_mapper = TargetMapper()
-    c_mapper = TargetMapper()
 
-    # Map the wires to consecutive wires
+    def processing_fn(res):
+        # Create the graph, a qubit mapper, the classical mapper stays empty as PennyLane does not support classical bits.
+        graph = Graph(None)
+        q_mapper = TargetMapper()
+        c_mapper = TargetMapper()
 
-    consecutive_wires = Wires(range(len(tape.wires)))
-    consecutive_wires_map = OrderedDict(zip(tape.wires, consecutive_wires))
-    tape = qml.map_wires(input=tape, wire_map=consecutive_wires_map)
+        # Map the wires to consecutive wires
 
-    inputs = []
+        consecutive_wires = Wires(range(len(res[0].wires)))
+        consecutive_wires_map = OrderedDict(zip(res[0].wires, consecutive_wires))
+        mapped_tapes, fn = qml.map_wires(input=res[0], wire_map=consecutive_wires_map)
+        mapped_tape = fn(mapped_tapes)
 
-    # Create the qubits in the graph and the qubit mapper
-    for i in range(len(tape.wires)):
-        vertex = graph.add_vertex(VertexType.BOUNDARY, i, 0)
-        inputs.append(vertex)
-        q_mapper.set_prev_vertex(i, vertex)
-        q_mapper.set_next_row(i, 1)
-        q_mapper.set_qubit(i, i)
+        inputs = []
 
-    # Expand the tape to be compatible with PyZX and add rotations first for measurements
-    stop_crit = qml.BooleanFn(lambda obj: obj.name in gate_types)
-    tape = qml.tape.tape.expand_tape(
-        tape, depth=10, stop_at=stop_crit, expand_measurements=expand_measurements
-    )
+        # Create the qubits in the graph and the qubit mapper
+        for i in range(len(mapped_tape.wires)):
+            vertex = graph.add_vertex(VertexType.BOUNDARY, i, 0)
+            inputs.append(vertex)
+            q_mapper.set_prev_vertex(i, vertex)
+            q_mapper.set_next_row(i, 1)
+            q_mapper.set_qubit(i, i)
 
-    expanded_operations = []
+        # Expand the tape to be compatible with PyZX and add rotations first for measurements
+        stop_crit = qml.BooleanFn(lambda obj: obj.name in gate_types)
+        mapped_tape = qml.tape.tape.expand_tape(
+            mapped_tape, depth=10, stop_at=stop_crit, expand_measurements=expand_measurements
+        )
 
-    # Define specific decompositions
-    for op in tape.operations:
-        if op.name == "RY":
-            theta = op.data[0]
-            decomp = [
-                qml.RX(np.pi / 2, wires=op.wires),
-                qml.RZ(theta + np.pi, wires=op.wires),
-                qml.RX(np.pi / 2, wires=op.wires),
-                qml.RZ(3 * np.pi, wires=op.wires),
-            ]
-            expanded_operations.extend(decomp)
-        else:
-            expanded_operations.append(op)
+        expanded_operations = []
 
-    expanded_tape = QuantumScript(expanded_operations, tape.measurements, [])
+        # Define specific decompositions
+        for op in mapped_tape.operations:
+            if op.name == "RY":
+                theta = op.data[0]
+                decomp = [
+                    qml.RX(np.pi / 2, wires=op.wires),
+                    qml.RZ(theta + np.pi, wires=op.wires),
+                    qml.RX(np.pi / 2, wires=op.wires),
+                    qml.RZ(3 * np.pi, wires=op.wires),
+                ]
+                expanded_operations.extend(decomp)
+            else:
+                expanded_operations.append(op)
 
-    _add_operations_to_graph(expanded_tape, graph, gate_types, q_mapper, c_mapper)
+        expanded_tape = QuantumScript(expanded_operations, mapped_tape.measurements)
 
-    row = max(q_mapper.max_row(), c_mapper.max_row())
+        _add_operations_to_graph(expanded_tape, graph, gate_types, q_mapper, c_mapper)
 
-    outputs = []
-    for mapper in (q_mapper, c_mapper):
-        for label in mapper.labels():
-            qubit = mapper.to_qubit(label)
-            vertex = graph.add_vertex(VertexType.BOUNDARY, qubit, row)
-            outputs.append(vertex)
-            pre_vertex = mapper.prev_vertex(label)
-            graph.add_edge(graph.edge(pre_vertex, vertex))
+        row = max(q_mapper.max_row(), c_mapper.max_row())
 
-    graph.set_inputs(tuple(inputs))
-    graph.set_outputs(tuple(outputs))
+        outputs = []
+        for mapper in (q_mapper, c_mapper):
+            for label in mapper.labels():
+                qubit = mapper.to_qubit(label)
+                vertex = graph.add_vertex(VertexType.BOUNDARY, qubit, row)
+                outputs.append(vertex)
+                pre_vertex = mapper.prev_vertex(label)
+                graph.add_edge(graph.edge(pre_vertex, vertex))
 
-    return graph
+        graph.set_inputs(tuple(inputs))
+        graph.set_outputs(tuple(outputs))
+
+        return graph
+
+    return [tape], processing_fn
 
 
 def _add_operations_to_graph(tape, graph, gate_types, q_mapper, c_mapper):
     """Add the tape operation to the PyZX graph."""
     # Create graph from circuit in the quantum tape (operations, measurements)
     for op in tape.operations:
-
         # Check that the gate is compatible with PyZX
         name = op.name
         if name not in gate_types:
@@ -459,7 +481,6 @@ def from_zx(graph, decompose_phases=True):
 
     for row_key in sorted(rows.keys()):
         for vertex in rows[row_key]:
-
             qubit_1 = qubits[vertex]
             param = params[vertex]
             type_1 = types[vertex]
@@ -549,7 +570,6 @@ def _add_one_qubit_gate(param, type_1, qubit_1, decompose_phases):
 def _add_two_qubit_gates(graph, vertex, neighbor, type_1, type_2, qubit_1, qubit_2):
     """Return the list of two qubit gates giveeen the vertex and its neighbor."""
     if type_1 == type_2:
-
         if graph.edge_type(graph.edge(vertex, neighbor)) != EdgeType.HADAMARD:
             raise qml.QuantumFunctionError(
                 "Two green or respectively two red nodes connected by a simple edge does not have a "

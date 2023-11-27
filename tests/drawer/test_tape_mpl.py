@@ -16,10 +16,9 @@
 See section on "Testing Matplotlib based code" in the "Software Tests"
 page in the developement guide.
 """
-
+# pylint: disable=protected-access, expression-not-assigned
 
 import pytest
-from pytest_mock import mocker
 import pennylane as qml
 
 from pennylane.drawer import tape_mpl
@@ -178,6 +177,8 @@ class TestWires:
 
 class TestSpecialGates:
     """Tests the gates with special drawing methods."""
+
+    width = 0.75 - 2 * 0.2
 
     def test_SWAP(self):
         """Test SWAP gate special call"""
@@ -341,6 +342,23 @@ class TestSpecialGates:
 
         plt.close()
 
+    def test_CCZ(self):
+        """Test that CCZ gets correct special call."""
+
+        tape = QuantumScript([qml.CCZ(wires=(0, 1, 2))])
+        _, ax = tape_mpl(tape)
+        layer = 0
+
+        # three wires and one control line
+        assert len(ax.lines) == 4
+
+        assert ax.lines[3].get_data() == ((layer, layer), (0, 2))
+
+        # three control circles
+        assert len(ax.patches) == 3
+        for i in range(3):
+            assert ax.patches[i].center == (layer, i)
+
     def test_Barrier(self):
         """Test Barrier gets correct special call."""
 
@@ -349,7 +367,6 @@ class TestSpecialGates:
 
         tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape)
-        layer = 0
 
         assert len(ax.lines) == 3
         assert len(ax.collections) == 2
@@ -364,7 +381,6 @@ class TestSpecialGates:
 
         tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape)
-        layer = 0
 
         assert len(ax.lines) == 2
         assert len(ax.texts) == 3
@@ -373,16 +389,99 @@ class TestSpecialGates:
         plt.close()
 
     def test_Prod(self):
+        """Test Prod gets correct special call."""
         with qml.queuing.AnnotatedQueue() as q_tape:
             qml.S(0) @ qml.T(0)
 
         tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape)
-        layer = 0
 
         assert len(ax.lines) == 1
         assert len(ax.collections) == 0
 
+        plt.close()
+
+    def test_MidMeasureMP(self):
+        """Tests MidMeasureMP has correct special handling."""
+        m = qml.measure(0)
+        tape = QuantumScript(m.measurements)
+        _, ax = tape_mpl(tape)
+        assert [l.get_data() for l in ax.lines] == [((-1, 1), (0, 0))]
+        assert len(ax.patches) == 3
+
+        assert ax.patches[0].get_x() == -0.175
+        assert ax.patches[0].get_y() == -0.175
+        plt.close()
+
+    def test_MidMeasure_reset(self):
+        """Test that a reset mid circuit measurement is correct."""
+        m = qml.measure(0, reset=True)
+        tape = QuantumScript(m.measurements)
+        fig, ax = tape_mpl(tape)
+
+        assert [l.get_data() for l in ax.lines] == [((-1, 2), (0, 0))]
+        assert len(ax.patches) == 5
+
+        # patches 0-2 are normal measure box
+        assert ax.patches[0].get_x() == -0.175
+        assert ax.patches[0].get_y() == -0.175
+        assert isinstance(ax.patches[1], mpl.patches.Arc)
+        assert isinstance(ax.patches[2], mpl.patches.FancyArrow)
+
+        # patch 3 is wire erasing rectnagle
+        assert ax.patches[3].get_xy() == (0, -0.1)
+        assert ax.patches[3].get_width() == 1
+        assert ax.patches[3].get_facecolor() == fig.get_facecolor()
+        assert ax.patches[3].get_edgecolor() == fig.get_facecolor()
+
+        # patch 4 is state prep box gate
+        assert isinstance(ax.patches[0], mpl.patches.FancyBboxPatch)
+        assert ax.patches[0].get_x() == -self.width / 2.0
+        assert ax.patches[0].get_y() == -self.width / 2.0
+        assert ax.patches[0].get_width() == self.width
+        assert ax.patches[0].get_height() == self.width
+
+        assert len(ax.texts) == 2
+        assert ax.texts[1].get_text() == "|0⟩"
+        plt.close()
+
+    def test_MidMeasure_postselect(self):
+        """Test that a mid circuit measurement with postselection gets a label."""
+        m = qml.measure(0, postselect=True)
+        tape = QuantumScript(m.measurements)
+        _, ax = tape_mpl(tape)
+
+        assert [l.get_data() for l in ax.lines] == [((-1, 1), (0, 0))]
+        assert len(ax.patches) == 3
+
+        assert len(ax.texts) == 2
+        assert ax.texts[0].get_text() == "0"
+        assert ax.texts[1].get_text() == "1"
+        plt.close()
+
+    def test_Conditional(self, mocker):
+        """Tests Conditional has correct special handling."""
+        box_gate_spy = mocker.spy(qml.drawer.MPLDrawer, "box_gate")
+
+        with qml.queuing.AnnotatedQueue() as q:
+            m0 = qml.measure(0)
+            qml.cond(m0, qml.Hadamard)(1)
+
+        tape = QuantumScript.from_queue(q)
+        _, ax = tape_mpl(tape)
+        assert [l.get_data() for l in ax.lines] == [
+            ((-1, 2), (0, 0)),
+            ((-1, 2), (1, 1)),
+        ]
+
+        box_gate_spy.assert_called_with(
+            mocker.ANY,
+            1,
+            [1],
+            "H",
+            box_options={"zorder": 4},
+            text_options={"zorder": 5},
+        )
         plt.close()
 
 
@@ -443,33 +542,34 @@ class TestControlledGates:
         assert ax.texts[2].get_text() == "RX\n(1.23)"
         plt.close()
 
-    def test_control_values_str(self):
-        """Test control values get displayed correctly when they are provided as a string."""
-
-        with qml.queuing.AnnotatedQueue() as q_tape:
-            qml.ControlledQubitUnitary(
-                qml.matrix(qml.RX)(0, 0),
-                control_wires=[0, 1, 2, 3],
-                wires=[4],
-                control_values="1010",
-            )
-
-        tape = QuantumScript.from_queue(q_tape)
-        self.check_tape_controlled_qubit_unitary(tape)
-
     def test_control_values_bool(self):
         """Test control_values get displayed correctly when they are provided as a list of bools."""
 
         with qml.queuing.AnnotatedQueue() as q_tape:
+            # pylint:disable=no-member
             qubit_unitary = qml.QubitUnitary(qml.matrix(qml.RX)(0, 0), wires=4)
             qml.ops.op_math.Controlled(qubit_unitary, (0, 1, 2, 3), [1, 0, 1, 0])
 
         tape = QuantumScript.from_queue(q_tape)
         self.check_tape_controlled_qubit_unitary(tape)
 
+    def test_nested_control_values_bool(self):
+        """Test control_values get displayed correctly for nested controlled operations
+        when they are provided as a list of bools."""
+
+        with qml.queuing.AnnotatedQueue() as q_tape:
+            qml.ctrl(
+                qml.ctrl(qml.PauliX(wires=4), control=[2, 3], control_values=[1, 0]),
+                control=[0, 1],
+                control_values=[1, 0],
+            )
+
+        tape = QuantumScript.from_queue(q_tape)
+        self.check_tape_controlled_qubit_unitary(tape)
+
     def check_tape_controlled_qubit_unitary(self, tape):
         """Checks the control symbols for a tape with some version of a controlled qubit unitary."""
-        _, ax = tape_mpl(tape, style=None)  # set style to None to use plt.rcParams values
+        _, ax = tape_mpl(tape, style="rcParams")  # use plt.rcParams values
         layer = 0
 
         # 5 wires -> 4 control, 1 target
@@ -538,6 +638,28 @@ class TestGeneralOperations:
         assert ax.patches[0].get_height() == num_wires - 1 + self.width
 
         plt.close()
+
+    def test_snapshot(self):
+        """Test that `qml.Snapshot` works properly with `tape_mpl`."""
+
+        # Test that empty figure is created when the only gate is `qml.Snapshot`
+        tape = QuantumScript([qml.Snapshot()])
+        fig, ax = tape_mpl(tape)
+
+        assert isinstance(fig, mpl.figure.Figure)
+        assert isinstance(ax, mpl.axes._axes.Axes)
+
+        assert fig.axes == [ax]
+
+        # Test that `qml.Snapshot` works properly when other gates are present
+        tape = QuantumScript([qml.Snapshot(), qml.Hadamard(0), qml.Hadamard(1), qml.Hadamard(2)])
+        _, ax = tape_mpl(tape)
+
+        assert isinstance(ax.patches[0], mpl.patches.FancyBboxPatch)
+        assert ax.patches[0].get_x() == -self.width / 2.0
+        assert ax.patches[0].get_y() == -self.width / 2.0
+        assert ax.patches[0].get_width() == self.width
+        assert ax.patches[0].get_height() == 2 + self.width
 
     @pytest.mark.parametrize("op", general_op_data)
     def test_general_operations_decimals(self, op):
@@ -610,7 +732,7 @@ class TestMeasurements:
         for ii, w in enumerate(wires):
             assert ax.patches[3 * ii].get_x() == 1 - self.width / 2.0
             assert ax.patches[3 * ii].get_y() == w - self.width / 2.0
-            assert ax.patches[3 * ii + 1].center == (1, w + 0.75 / 16)  # arc
+            assert ax.patches[3 * ii + 1].center == (1, w + 0.75 * 0.15)  # arc
             assert isinstance(ax.patches[3 * ii + 2], mpl.patches.FancyArrow)  # fancy arrow
 
         plt.close()

@@ -15,14 +15,13 @@
 Function cut_circuit for cutting a quantum circuit into smaller circuit fragments.
 """
 
-
 from functools import partial
-from typing import Callable, Optional, Tuple, Union
+from typing import Callable, Optional, Union, Sequence
 
 import pennylane as qml
 from pennylane.measurements import ExpectationMP
 from pennylane.tape import QuantumTape
-from pennylane.transforms.batch_transform import batch_transform
+from pennylane.transforms import transform
 from pennylane.wires import Wires
 
 from .cutstrategy import CutStrategy
@@ -32,7 +31,41 @@ from .tapes import _qcut_expand_fn, expand_fragment_tape, graph_to_tape, tape_to
 from .utils import find_and_place_cuts, fragment_graph, replace_wire_cut_nodes
 
 
-@batch_transform
+def _cut_circuit_expand(
+    tape: QuantumTape,
+    use_opt_einsum: bool = False,
+    device_wires: Optional[Wires] = None,
+    max_depth: int = 1,
+    auto_cutter: Union[bool, Callable] = False,
+    **kwargs,
+) -> (Sequence[QuantumTape], Callable):
+    """Main entry point for expanding operations until reaching a depth that
+    includes :class:`~.WireCut` operations."""
+    # pylint: disable=unused-argument
+
+    def processing_fn(res):
+        return res[0]
+
+    tapes, tapes_fn = [tape], processing_fn
+
+    # Expand the tapes for handling Hamiltonian with two or more terms
+    tape_meas_ops = tape.measurements
+    if tape_meas_ops and isinstance(tape_meas_ops[0].obs, qml.Hamiltonian):
+        if len(tape_meas_ops) > 1:
+            raise NotImplementedError(
+                "Hamiltonian expansion is supported only with a single Hamiltonian"
+            )
+
+        new_meas_op = type(tape_meas_ops[0])(obs=qml.Hamiltonian(*tape_meas_ops[0].obs.terms()))
+        new_tape = qml.tape.QuantumScript(tape.operations, [new_meas_op], shots=tape.shots)
+        new_tape.trainable_params = tape.trainable_params
+
+        tapes, tapes_fn = qml.transforms.hamiltonian_expand(new_tape, group=False)
+
+    return [_qcut_expand_fn(tape, max_depth, auto_cutter) for tape in tapes], tapes_fn
+
+
+@partial(transform, expand_transform=_cut_circuit_expand)
 def cut_circuit(
     tape: QuantumTape,
     auto_cutter: Union[bool, Callable] = False,
@@ -40,7 +73,7 @@ def cut_circuit(
     device_wires: Optional[Wires] = None,
     max_depth: int = 1,
     **kwargs,
-) -> Tuple[Tuple[QuantumTape], Callable]:
+) -> (Sequence[QuantumTape], Callable):
     """
     Cut up a quantum circuit into smaller circuit fragments.
 
@@ -57,7 +90,7 @@ def cut_circuit(
         Only circuits that return a single expectation value are supported.
 
     Args:
-        tape (QuantumTape): the tape of the full circuit to be cut
+        tape (QNode or QuantumTape): the quantum circuit to be cut
         auto_cutter (Union[bool, Callable]): Toggle for enabling automatic cutting with the default
             :func:`~.kahypar_cut` partition method. Can also pass a graph partitioning function that
             takes an input graph and returns a list of edges to be cut based on a given set of
@@ -79,10 +112,10 @@ def cut_circuit(
             :func:`~.find_and_place_cuts` and :func:`~.kahypar_cut` for the available arguments.
 
     Returns:
-        Callable: Function which accepts the same arguments as the QNode.
-        When called, this function will perform a process tomography of the
-        partitioned circuit fragments and combine the results via tensor
-        contractions.
+        qnode (QNode) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will perform a process tomography of the partitioned circuit fragments and combine the results via tensor contractions.
 
     **Example**
 
@@ -119,7 +152,7 @@ def cut_circuit(
     Futhermore, the output of the cut circuit is also differentiable:
 
     >>> qml.grad(circuit)(x)
-    -0.276982865449393
+    tensor(-0.27698287, requires_grad=True)
 
     Alternatively, if the optimal wire-cut placement is unknown for an arbitrary circuit, the
     ``auto_cutter`` option can be enabled to make attempts in finding such an optimal cut. The
@@ -128,7 +161,9 @@ def cut_circuit(
 
     .. code-block:: python
 
-        @qml.cut_circuit(auto_cutter=True)
+        from functools import partial
+
+        @partial(qml.cut_circuit, auto_cutter=True)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -146,7 +181,7 @@ def cut_circuit(
     >>> circuit(x)
     0.47165198882111165
     >>> qml.grad(circuit)(x)
-    -0.276982865449393
+    tensor(-0.27698287, requires_grad=True)
 
     .. details::
         :title: Usage Details
@@ -175,19 +210,20 @@ def cut_circuit(
 
         .. code-block:: python
 
-            with qml.tape.QuantumTape() as tape:
-                qml.RX(0.531, wires=0)
-                qml.RY(0.9, wires=1)
-                qml.RX(0.3, wires=2)
+            ops = [
+                qml.RX(0.531, wires=0),
+                qml.RY(0.9, wires=1),
+                qml.RX(0.3, wires=2),
 
-                qml.CZ(wires=[0, 1])
-                qml.RY(-0.4, wires=0)
+                qml.CZ(wires=(0,1)),
+                qml.RY(-0.4, wires=0),
 
-                qml.WireCut(wires=1)
+                qml.WireCut(wires=1),
 
-                qml.CZ(wires=[1, 2])
-
-                qml.expval(qml.pauli.string_to_pauli_word("ZZZ"))
+                qml.CZ(wires=[1, 2]),
+            ]
+            measurements = [qml.expval(qml.pauli.string_to_pauli_word("ZZZ"))]
+            tape = qml.tape.QuantumTape(ops, measurements)
 
         >>> print(qml.drawer.tape_text(tape))
         0: ──RX─╭●──RY────┤ ╭<Z@Z@Z>
@@ -211,22 +247,23 @@ def cut_circuit(
 
         .. code-block:: python
 
-            with qml.tape.QuantumTape() as uncut_tape:
-                qml.RX(0.531, wires=0)
-                qml.RY(0.9, wires=1)
-                qml.RX(0.3, wires=2)
+            ops = [
+                qml.RX(0.531, wires=0),
+                qml.RY(0.9, wires=1),
+                qml.RX(0.3, wires=2),
 
-                qml.CZ(wires=[0, 1])
-                qml.RY(-0.4, wires=0)
+                qml.CZ(wires=(0,1)),
+                qml.RY(-0.4, wires=0),
 
-                qml.CZ(wires=[1, 2])
-
-                qml.expval(qml.pauli.string_to_pauli_word("ZZZ"))
+                qml.CZ(wires=[1, 2]),
+            ]
+            measurements = [qml.expval(qml.pauli.string_to_pauli_word("ZZZ"))]
+            uncut_tape = qml.tape.QuantumTape(ops, measurements)
 
         >>> cut_graph = qml.transforms.qcut.find_and_place_cuts(
-                graph = qml.transforms.qcut.tape_to_graph(uncut_tape),
-                cut_strategy = qml.transforms.qcut.CutStrategy(max_free_wires=2),
-            )
+        ...     graph = qml.transforms.qcut.tape_to_graph(uncut_tape),
+        ...     cut_strategy = qml.transforms.qcut.CutStrategy(max_free_wires=2),
+        ... )
         >>> print(qml.transforms.qcut.graph_to_tape(cut_graph).draw())
         0: ──RX─╭●──RY────┤ ╭<Z@Z@Z>
         1: ──RY─╰Z──//─╭●─┤ ├<Z@Z@Z>
@@ -263,7 +300,7 @@ def cut_circuit(
         Additionally, we must remap the tape wires to match those available on our device.
 
         >>> dev = qml.device("default.qubit", wires=2)
-        >>> fragment_tapes = [qml.map_wires(t, dict(zip(t.wires, dev.wires))) for t in fragment_tapes]
+        >>> fragment_tapes = [qml.map_wires(t, dict(zip(t.wires, dev.wires)))[0][0] for t in fragment_tapes]
 
         Next, each circuit fragment is expanded over :class:`~.MeasureNode` and
         :class:`~.PrepareNode` configurations and a flat list of tapes is created:
@@ -346,10 +383,11 @@ def cut_circuit(
                 "installed using:\npip install opt_einsum"
             ) from e
 
+    # convert the quantum tape to a DAG structure
     g = tape_to_graph(tape)
 
+    # place WireCut(s) nodes in the DAG automatically if intended
     if auto_cutter is True or callable(auto_cutter):
-
         cut_strategy = kwargs.pop("cut_strategy", None) or CutStrategy(
             max_free_wires=len(device_wires)
         )
@@ -361,12 +399,21 @@ def cut_circuit(
             **kwargs,
         )
 
+    # replace the WireCut nodes in the DAG with Measure and Perpare nodes.
     replace_wire_cut_nodes(g)
+
+    # decompose the DAG into subgraphs based on the replaced WireCut(s)
+    # along with a quotient graph to store connections between them
     fragments, communication_graph = fragment_graph(g)
+
+    # convert decomposed DAGs into tapes, remap their wires for device and expand them
     fragment_tapes = [graph_to_tape(f) for f in fragments]
-    fragment_tapes = [qml.map_wires(t, dict(zip(t.wires, device_wires))) for t in fragment_tapes]
+    fragment_tapes = [
+        qml.map_wires(t, dict(zip(t.wires, device_wires)))[0][0] for t in fragment_tapes
+    ]
     expanded = [expand_fragment_tape(t) for t in fragment_tapes]
 
+    # store the data necessary for classical post processing of results
     configurations = []
     prepare_nodes = []
     measure_nodes = []
@@ -375,6 +422,7 @@ def cut_circuit(
         prepare_nodes.append(p)
         measure_nodes.append(m)
 
+    # flatten out the tapes to be returned
     tapes = tuple(tape for c in configurations for tape in c)
 
     return tapes, partial(
@@ -386,28 +434,9 @@ def cut_circuit(
     )
 
 
-def _cut_circuit_expand(
-    tape: QuantumTape,
-    use_opt_einsum: bool = False,
-    device_wires: Optional[Wires] = None,
-    max_depth: int = 1,
-    auto_cutter: Union[bool, Callable] = False,
-    **kwargs,
-):
-    """Main entry point for expanding operations until reaching a depth that
-    includes :class:`~.WireCut` operations."""
-    # pylint: disable=unused-argument
-    return _qcut_expand_fn(tape, max_depth, auto_cutter)
-
-
-cut_circuit.expand_fn = _cut_circuit_expand
-
-
-@cut_circuit.custom_qnode_wrapper
-def qnode_execution_wrapper(self, qnode, targs, tkwargs):
+@cut_circuit.custom_qnode_transform
+def _qnode_transform(self, qnode, targs, tkwargs):
     """Here, we overwrite the QNode execution wrapper in order
     to access the device wires."""
-    # pylint: disable=function-redefined
-
     tkwargs.setdefault("device_wires", qnode.device.wires)
-    return self.default_qnode_wrapper(qnode, targs, tkwargs)
+    return self.default_qnode_transform(qnode, targs, tkwargs)

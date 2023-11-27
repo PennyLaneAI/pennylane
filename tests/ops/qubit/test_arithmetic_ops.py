@@ -14,6 +14,7 @@
 """
 Unit tests for the the arithmetic qubit operations
 """
+# pylint: disable=too-many-arguments
 import copy
 import itertools
 
@@ -33,8 +34,6 @@ label_data = [
 def test_label(op, label):
     assert op.label() == label
     assert op.label(decimals=2) == label
-    op.inv()
-    assert op.label() == label + "⁻¹"
 
 
 class TestQubitCarry:
@@ -87,8 +86,8 @@ class TestQubitCarry:
         spy = mocker.spy(qml.QubitCarry, "decomposition")
 
         with qml.queuing.AnnotatedQueue() as q:
-            for i in range(len(input_string)):
-                if input_string[i] == "1":
+            for i, letter in enumerate(input_string):
+                if letter == "1":
                     qml.PauliX(i)
             qml.QubitCarry(wires=wires)
             qml.probs(wires=[0, 1, 2, 3])
@@ -192,17 +191,15 @@ class TestQubitSum:
         dev = qml.device("default.qubit", wires=3)
         spy = mocker.spy(qml.QubitSum, "decomposition")
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.QubitStateVector(input_state, wires=[0, 1, 2])
+        if expand:
+            ops = [
+                qml.StatePrep(input_state, wires=[0, 1, 2]),
+                *qml.QubitSum(wires=wires).expand(),
+            ]
+        else:
+            ops = [qml.StatePrep(input_state, wires=[0, 1, 2]), qml.QubitSum(wires=wires)]
 
-            if expand:
-                qml.QubitSum(wires=wires).expand()
-            else:
-                qml.QubitSum(wires=wires)
-
-            qml.state()
-
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript(ops, [qml.state()])
         result = dev.execute(tape)
         assert np.allclose(result, output_state)
 
@@ -211,12 +208,13 @@ class TestQubitSum:
 
     def test_adjoint(self):
         """Test the adjoint method of QubitSum by reconstructing the unitary matrix and checking
-        if it is equal to qml.QubitSum's matrix representation (recall that the operation is self-adjoint)"""
+        if it is equal to qml.QubitSum's matrix representation (recall that the operation is self-adjoint)
+        """
         dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
         def f(state):
-            qml.QubitStateVector(state, wires=range(3))
+            qml.StatePrep(state, wires=range(3))
             qml.adjoint(qml.QubitSum)(wires=range(3))
             return qml.probs(wires=range(3))
 
@@ -246,6 +244,33 @@ class TestQubitSum:
 
 class TestIntegerComparator:
     """Tests for the IntegerComparator"""
+
+    # pylint: disable=protected-access
+    def test_flatten_unflatten(self):
+        """Tests the flatten and unflatten methods"""
+        wires = qml.wires.Wires((0, 1, 2, 3))
+        work_wires = qml.wires.Wires(4)
+        op = qml.IntegerComparator(
+            2,
+            geq=False,
+            wires=(0, 1, 2, 3),
+            work_wires=(4),
+        )
+
+        data, metadata = op._flatten()
+        assert data == tuple()
+        assert len(metadata) == 2
+        assert metadata[0] == wires
+        assert metadata[1][0] == ("work_wires", work_wires)
+        assert metadata[1][1] == ("value", 2)
+        assert metadata[1][2] == ("geq", False)
+
+        # check hashable
+        assert hash(metadata)
+
+        new_op = type(op)._unflatten(*op._flatten())
+        assert qml.equal(new_op, op)
+        assert new_op is not op
 
     @pytest.mark.parametrize(
         "value,geq,wires,work_wires,expected_error_message",
@@ -361,13 +386,11 @@ class TestIntegerComparator:
     def test_label_method(self):
         """Test label method"""
 
-        op, label1, label2 = qml.IntegerComparator(2, wires=(0, 1, 2, 3)), ">=2", ">=2"
+        op = qml.IntegerComparator(2, wires=(0, 1, 2, 3))
+        label = ">=2"
 
-        assert op.label() == label1
-        assert op.label(decimals=2) == label1
-
-        op.inv()
-        assert op.label() == label2
+        assert op.label() == label
+        assert op.label(decimals=2) == label
 
     @pytest.mark.parametrize(
         "value,wires,geq,expected_error_message",
@@ -406,7 +429,7 @@ class TestIntegerComparator:
         @qml.qnode(dev)
         def f(bitstring, tape, geq):
             qml.BasisState(bitstring, wires=range(num_wires + num_workers))
-            qml.IntegerComparator(2, wires=(0, 1, 2), geq=geq).inv()
+            qml.adjoint(qml.IntegerComparator(2, wires=(0, 1, 2), geq=geq), lazy=False)
             for op in tape.operations:
                 op.queue()
             return qml.probs(wires=range(num_wires + num_workers))
@@ -434,6 +457,7 @@ class TestIntegerComparator:
         tape2 = qml.tape.QuantumScript.from_queue(q2)
         assert all(isinstance(op, qml.Identity) for op in tape2.operations)
 
+    # pylint: disable=use-implicit-booleaness-not-comparison
     def test_power(self):
         """Test ``pow`` method."""
         op = qml.IntegerComparator(3, wires=[0, 1, 2, 3])

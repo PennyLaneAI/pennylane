@@ -62,11 +62,7 @@ class TestRMSPropOptimizer:
         rms_opt = RMSPropOptimizer(stepsize, decay=gamma)
 
         univariate_funcs = [np.sin, lambda x: np.exp(x / 10.0), lambda x: x**2]
-        grad_uni_fns = [
-            lambda x: np.cos(x),
-            lambda x: np.exp(x / 10.0) / 10.0,
-            lambda x: 2 * x,
-        ]
+        grad_uni_fns = [np.cos, lambda x: np.exp(x / 10.0) / 10.0, lambda x: 2 * x]
 
         for gradf, f in zip(grad_uni_fns, univariate_funcs):
             rms_opt.reset()

@@ -89,6 +89,12 @@ class Wires(Sequence):
 
     Indexing an instance of this class will return a wire label.
 
+    .. warning::
+
+        In order to support wire labels of any hashable type, integers and 0-d arrays are considered different.
+        For example, running ``qml.RX(1.1, qml.numpy.array(0))`` on a device initialized with ``wires=[0]``
+        will fail because ``qml.numpy.array(0)`` does not exist in the device's wire map.
+
     Args:
          wires (Any): the wire label(s)
     """
@@ -348,10 +354,9 @@ class Wires(Sequence):
         if n_samples > len(self._labels):
             raise WireError(f"Cannot sample {n_samples} wires from {len(self._labels)} wires.")
 
-        if seed is not None:
-            np.random.seed(seed)
+        rng = np.random.default_rng(seed)
 
-        indices = np.random.choice(len(self._labels), size=n_samples, replace=False)
+        indices = rng.choice(len(self._labels), size=n_samples, replace=False)
         subset = tuple(self[i] for i in indices)
         return Wires(subset, _override=True)
 

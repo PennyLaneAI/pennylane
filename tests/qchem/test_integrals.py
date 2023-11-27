@@ -14,6 +14,7 @@
 """
 Unit tests for functions needed to computing integrals over basis functions.
 """
+# pylint: disable=too-many-arguments,too-few-public-methods,protected-access
 import pytest
 
 import pennylane as qml
@@ -151,6 +152,23 @@ class TestAuxiliary:
         h = qchem.integrals._hermite_coulomb(t, u, v, n, p, dr)
         assert np.allclose(h, h_ref)
 
+    @pytest.mark.parametrize(
+        ("n", "result"),
+        [
+            (0, 1),
+            (-1, 1),
+            (-2, 0),
+            (-3, 0),
+            (2, 2),
+            (5, 15),
+            (8, 384),
+        ],
+    )
+    def test_fac2(self, n, result):
+        r"""Test that the _fac2 function returns a correct value."""
+        value = qchem.integrals._fac2(n)
+        assert value == result
+
 
 class TestOverlap:
     """Tests for overlap integrals"""
@@ -284,7 +302,6 @@ class TestOverlap:
 
         for i in range(len(alpha)):
             for j in range(len(alpha[0])):
-
                 alpha_minus = alpha.copy()
                 alpha_plus = alpha.copy()
                 alpha_minus[i][j] = alpha_minus[i][j] - delta
@@ -442,7 +459,6 @@ class TestMoment:
 
         for i in range(len(alpha)):
             for j in range(len(alpha[0])):
-
                 alpha_minus = alpha.copy()
                 alpha_plus = alpha.copy()
                 alpha_minus[i][j] = alpha_minus[i][j] - delta
@@ -592,7 +608,6 @@ class TestKinetic:
 
         for i in range(len(alpha)):
             for j in range(len(alpha[0])):
-
                 alpha_minus = alpha.copy()
                 alpha_plus = alpha.copy()
                 alpha_minus[i][j] = alpha_minus[i][j] - delta
@@ -699,7 +714,6 @@ class TestAttraction:
 
         for i in range(len(alpha)):
             for j in range(len(alpha[0])):
-
                 alpha_minus = alpha.copy()
                 alpha_plus = alpha.copy()
                 alpha_minus[i][j] = alpha_minus[i][j] - delta
@@ -835,7 +849,6 @@ class TestRepulsion:
 
         for i in range(len(alpha)):
             for j in range(len(alpha[0])):
-
                 alpha_minus = alpha.copy()
                 alpha_plus = alpha.copy()
                 alpha_minus[i][j] = alpha_minus[i][j] - delta

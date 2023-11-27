@@ -30,6 +30,7 @@ dev = qml.device("default.qubit", wires=(0, "a", 1.23))
 
 @qml.qnode(dev)
 def circuit1(x, y):
+    """Circuit on three qubits."""
     qml.RX(x, wires=0)
     qml.CNOT(wires=(0, "a"))
     qml.RY(y, wires=1.23)
@@ -38,6 +39,7 @@ def circuit1(x, y):
 
 @qml.qnode(dev)
 def circuit2(x):
+    """Circuit on a single qubit."""
     qml.RX(x, wires=0)
     return qml.expval(qml.PauliZ(0))
 
@@ -49,7 +51,7 @@ def test_standard_use():
     fig, ax = qml.draw_mpl(circuit1)(1.23, 2.34)
 
     assert isinstance(fig, mpl.figure.Figure)
-    assert isinstance(ax, mpl.axes._axes.Axes)
+    assert isinstance(ax, mpl.axes._axes.Axes)  # pylint:disable=protected-access
 
     # proxy for whether correct things were drawn
     assert len(ax.patches) == 7  # two boxes, 2 circles for CNOT, 3 patches for measure
@@ -69,17 +71,21 @@ def test_standard_use():
 
 
 @pytest.mark.parametrize(
+    "device",
+    [qml.device("default.qubit.legacy", wires=3), qml.devices.DefaultQubit(wires=3)],
+)
+@pytest.mark.parametrize(
     "strategy, initial_strategy, n_lines", [("gradient", "device", 3), ("device", "gradient", 13)]
 )
-def test_expansion_strategy(strategy, initial_strategy, n_lines):
+def test_expansion_strategy(device, strategy, initial_strategy, n_lines):
     """Test that the expansion strategy keyword controls what operations are drawn."""
 
-    @qml.qnode(qml.device("default.qubit", wires=3), expansion_strategy=initial_strategy)
+    @qml.qnode(device, expansion_strategy=initial_strategy)
     def circuit():
         qml.Permute([2, 0, 1], wires=(0, 1, 2))
         return qml.expval(qml.PauliZ(0))
 
-    fig, ax = qml.draw_mpl(circuit, expansion_strategy=strategy)()
+    _, ax = qml.draw_mpl(circuit, expansion_strategy=strategy)()
 
     assert len(ax.lines) == n_lines
     assert circuit.expansion_strategy == initial_strategy
@@ -114,7 +120,7 @@ class TestKwargs:
             1.23, 2.34
         )
 
-        for l in ax.texts[0:3]:  # three labels
+        for l in ax.texts[:3]:  # three labels
             assert l.get_color() == "purple"
             assert l.get_fontsize() == 20
         plt.close()
@@ -230,7 +236,7 @@ class TestWireBehaviour:
 
         _, ax = qml.draw_mpl(circuit1, wire_options={"color": "black", "linewidth": 4})(1.23, 2.34)
 
-        for w in ax.lines[0:3]:  # three wires
+        for w in ax.lines[:3]:  # three wires
             assert w.get_color() == "black"
             assert w.get_linewidth() == 4
 
@@ -241,40 +247,40 @@ class TestMPLIntegration:
     """Test using matplotlib styling to modify look of graphic."""
 
     def test_rcparams(self):
-        """Test setting rcParams modifies style for draw_mpl(circuit, style=None)."""
+        """Test setting rcParams modifies style for draw_mpl(circuit, style="rcParams")."""
 
         rgba_red = (1, 0, 0, 1)
         rgba_green = (0, 1, 0, 1)
         plt.rcParams["patch.facecolor"] = rgba_red
         plt.rcParams["lines.color"] = rgba_green
 
-        _, ax = qml.draw_mpl(circuit1, style=None)(1.23, 2.34)
+        _, ax = qml.draw_mpl(circuit1, style="rcParams")(1.23, 2.34)
 
         assert ax.patches[0].get_facecolor() == rgba_red
         assert ax.patches[1].get_facecolor() == rgba_red
 
-        for l in ax.lines[0:-1]:  # final is fancy arrow, has different styling
+        for l in ax.lines[:-1]:  # final is fancy arrow, has different styling
             assert l.get_color() == rgba_green
 
-        plt.style.use("default")
+        qml.drawer.use_style("black_white")
         plt.close()
 
     def test_style_with_matplotlib(self):
-        """Test matplotlib styles impact figure styling for draw_mpl(circuit, style=None)."""
+        """Test matplotlib styles impact figure styling for draw_mpl(circuit, style="rcParams")."""
 
         plt.style.use("fivethirtyeight")
 
-        _, ax = qml.draw_mpl(circuit1, style=None)(1.23, 2.34)
+        _, ax = qml.draw_mpl(circuit1, style="rcParams")(1.23, 2.34)
 
         expected_facecolor = mpl.colors.to_rgba(plt.rcParams["patch.facecolor"])
         assert ax.patches[0].get_facecolor() == expected_facecolor
         assert ax.patches[1].get_facecolor() == expected_facecolor
 
         expected_linecolor = mpl.colors.to_rgba(plt.rcParams["lines.color"])
-        for l in ax.lines[0:-1]:  # final is fancy arrow, has different styling
+        for l in ax.lines[:-1]:  # final is fancy arrow, has different styling
             assert mpl.colors.to_rgba(l.get_color()) == expected_linecolor
 
-        plt.style.use("default")
+        qml.drawer.use_style("black_white")
         plt.close()
 
     def test_style_restores_settings(self):
@@ -305,3 +311,66 @@ class TestMPLIntegration:
         assert mpl.rcParams["axes.facecolor"] == initial_facecolor
         assert mpl.rcParams["patch.facecolor"] == initial_patch_facecolor
         assert mpl.rcParams["patch.edgecolor"] == initial_patch_edgecolor
+
+
+def test_draw_mpl_supports_qfuncs():
+    """Test that draw_mpl works with non-QNode quantum functions."""
+
+    def qfunc(x):
+        qml.RX(x, 0)
+
+    fig, ax = qml.draw_mpl(qfunc)(1.1)
+
+    assert isinstance(fig, mpl.figure.Figure)
+    assert isinstance(ax, mpl.axes._axes.Axes)  # pylint:disable=protected-access
+    assert len(ax.patches) == 1
+    assert len(ax.lines) == 1
+    assert len(ax.texts) == 2
+    assert ax.texts[0].get_text() == "0"
+    assert ax.texts[1].get_text() == "RX"
+    plt.close()
+
+
+def test_draw_mpl_with_qfunc_warns_with_expansion_strategy():
+    """Test that draw warns the user about expansion_strategy being ignored."""
+
+    def qfunc():
+        qml.PauliZ(0)
+
+    with pytest.warns(UserWarning, match="the expansion_strategy argument is ignored"):
+        _ = qml.draw_mpl(qfunc, expansion_strategy="gradient")
+
+
+def test_mid_circuit_measurement_device_api(mocker):
+    """Test that a circuit containing mid-circuit measurements is transformed by the drawer
+    to use deferred measurements if the device uses the new device API."""
+
+    @qml.qnode(qml.device("default.qubit"))
+    def circ():
+        qml.PauliX(0)
+        qml.measure(0)
+        return qml.probs(wires=0)
+
+    draw_qnode = qml.draw_mpl(circ)
+    spy = mocker.spy(qml.defer_measurements, "_transform")
+
+    _ = draw_qnode()
+    spy.assert_called_once()
+
+
+def test_qnode_transform_program(mocker):
+    """Test that qnode transforms are applied before drawing a circuit."""
+
+    @qml.compile
+    @qml.qnode(qml.device("default.qubit"))
+    def circuit():
+        qml.RX(1.1, 0)
+        qml.RX(2.2, 0)
+        return qml.state()
+
+    draw_qnode = qml.draw_mpl(circuit, decimals=2)
+    qnode_transform = circuit.transform_program[0]
+    spy = mocker.spy(qnode_transform, "_transform")
+
+    _ = draw_qnode()
+    spy.assert_called_once()

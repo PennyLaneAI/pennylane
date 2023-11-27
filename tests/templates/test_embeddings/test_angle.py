@@ -20,6 +20,36 @@ from pennylane import numpy as pnp
 import pennylane as qml
 
 
+def test_standard_validity():
+    """Check the operation using the assert_valid function."""
+    op = qml.AngleEmbedding(features=[1, 2, 3], wires=range(3), rotation="Z")
+    qml.ops.functions.assert_valid(op)
+
+
+def test_repr():
+    """Test the custom repr for angle embedding."""
+    op = qml.AngleEmbedding(features=[1, 2, 3], wires=range(3), rotation="Z")
+    expected = "AngleEmbedding([1 2 3], wires=[0, 1, 2], rotation=Z)"
+    assert repr(op) == expected
+
+
+# pylint: disable=protected-access
+def test_flatten_unflatten():
+    """Test the _flatten and _unflatten methods."""
+    wires = qml.wires.Wires((0, 1, 2))
+    op = qml.AngleEmbedding(features=[1, 2, 3], wires=wires, rotation="Z")
+
+    data, metadata = op._flatten()
+    assert data == op.data
+    assert len(metadata) == 2
+    assert metadata[0] == wires
+    assert metadata[1] == (("rotation", "Z"),)
+
+    new_op = type(op)._unflatten(*op._flatten())
+    assert qml.equal(op, new_op)
+    assert op is not new_op
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
@@ -106,17 +136,18 @@ class TestDecomposition:
         @qml.qnode(dev)
         def circuit():
             qml.AngleEmbedding(features, wires=range(3))
-            return qml.expval(qml.Identity(0))
+            return qml.expval(qml.Identity(0)), qml.state()
 
         @qml.qnode(dev2)
         def circuit2():
             qml.AngleEmbedding(features, wires=["z", "a", "k"])
-            return qml.expval(qml.Identity("z"))
+            return qml.expval(qml.Identity("z")), qml.state()
 
-        circuit()
-        circuit2()
+        res1, state1 = circuit()
+        res2, state2 = circuit2()
 
-        assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
 
 class TestInputs:
@@ -229,8 +260,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="jax")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
@@ -254,8 +285,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="tf")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="tf")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
@@ -281,8 +312,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="torch")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="torch")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)

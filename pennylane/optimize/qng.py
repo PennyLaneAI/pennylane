@@ -187,7 +187,6 @@ class QNGOptimizer(GradientDescentOptimizer):
 
         if recompute_tensor or self.metric_tensor is None:
             if metric_tensor_fn is None:
-
                 metric_tensor_fn = qml.metric_tensor(qnode, approx=self.approx)
 
             _metric_tensor = metric_tensor_fn(*args, **kwargs)

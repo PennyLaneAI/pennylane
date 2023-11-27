@@ -242,8 +242,7 @@ class ParticleConservingU1(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, weights, wires, init_state=None, do_queue=True, id=None):
-
+    def __init__(self, weights, wires, init_state=None, id=None):
         if len(wires) < 2:
             raise ValueError(
                 f"Expected the number of qubits to be greater than one; " f"got wires {wires}"
@@ -264,9 +263,9 @@ class ParticleConservingU1(Operation):
                 f"Weights tensor must have third dimension of length 2; got {shape[2]}"
             )
 
-        self._hyperparameters = {"init_state": qml.math.toarray(init_state)}
+        self._hyperparameters = {"init_state": tuple(init_state)}
 
-        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(weights, wires=wires, id=id)
 
     @property
     def num_params(self):

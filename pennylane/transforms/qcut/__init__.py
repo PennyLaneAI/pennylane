@@ -34,11 +34,10 @@ from .tapes import (
     _find_new_wire,
     _add_operator_node,
 )
-from .cutcircuit import cut_circuit, _cut_circuit_expand, qnode_execution_wrapper
+from .cutcircuit import cut_circuit, _cut_circuit_expand
 from .montecarlo import (
     cut_circuit_mc,
     _cut_circuit_mc_expand,
-    qnode_execution_wrapper_mc,
     expand_fragment_tapes_mc,
     MC_MEASUREMENTS,
     MC_STATES,

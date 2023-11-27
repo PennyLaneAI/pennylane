@@ -68,7 +68,6 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
     """
 
     def __init__(self, observables, grouping_type="qwc", graph_colourer="rlf"):
-
         if grouping_type.lower() not in GROUPING_TYPES:
             raise ValueError(
                 f"Grouping type must be one of: {GROUPING_TYPES}, instead got {grouping_type}."
@@ -147,11 +146,9 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
             )
 
             if self.grouping_type == "commuting":
-
                 adj = mat_prod % 2
 
             elif self.grouping_type == "anticommuting":
-
                 adj = (mat_prod + 1) % 2
                 np.fill_diagonal(adj, 0)
 
@@ -245,16 +242,19 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
     # we cannot delete elements from the coefficients tensor, so we
     # use a proxy list memorising the indices for this logic
     coeff_indices = list(range(qml.math.shape(coefficients)[0]))
-    for i, partition in enumerate(partitioned_paulis):
+    for i, partition in enumerate(partitioned_paulis):  # pylint:disable=too-many-nested-blocks
         indices = []
         for pauli_word in partition:
             # find index of this pauli word in remaining original observables,
             for observable in observables:
                 if are_identical_pauli_words(pauli_word, observable):
-                    ind = observables.index(observable)
-                    indices.append(coeff_indices[ind])
-                    observables.pop(ind)
-                    coeff_indices.pop(ind)
+                    for ind, obs in enumerate(observables):
+                        if obs is not observable:
+                            continue
+                        indices.append(coeff_indices[ind])
+                        observables.pop(ind)
+                        coeff_indices.pop(ind)
+                        break
                     break
 
         # add a tensor of coefficients to the grouped coefficients

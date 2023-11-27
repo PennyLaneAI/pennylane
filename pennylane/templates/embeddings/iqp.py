@@ -166,8 +166,7 @@ class IQPEmbedding(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, features, wires, n_repeats=1, pattern=None, do_queue=True, id=None):
-
+    def __init__(self, features, wires, n_repeats=1, pattern=None, id=None):
         shape = qml.math.shape(features)
 
         if len(shape) not in {1, 2}:
@@ -182,11 +181,10 @@ class IQPEmbedding(Operation):
 
         if pattern is None:
             # default is an all-to-all pattern
-            pattern = combinations(wires, 2)
-
+            pattern = tuple(combinations(wires, 2))
         self._hyperparameters = {"pattern": pattern, "n_repeats": n_repeats}
 
-        super().__init__(features, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(features, wires=wires, id=id)
 
     @property
     def num_params(self):
@@ -237,7 +235,6 @@ class IQPEmbedding(Operation):
             features = qml.math.T(features)
 
         for _ in range(n_repeats):
-
             for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
                 op_list.append(qml.Hadamard(wires=wires[i]))
                 op_list.append(qml.RZ(features[i], wires=wires[i]))
