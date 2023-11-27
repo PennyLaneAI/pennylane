@@ -786,9 +786,10 @@ def execute(
             execute_fn = partial(ml_boundary_execute, execute_fn=execute_fn, jpc=jpc)
             jpc = TransformJacobianProducts(execute_fn, gradient_fn, gradient_kwargs)
 
-    for tape in tapes:
-        params = tape.get_parameters(trainable_only=False)
-        tape.trainable_params = qml.math.get_trainable_indices(params)
+    if interface == "jax":
+        for tape in tapes:
+            params = tape.get_parameters(trainable_only=False)
+            tape.trainable_params = qml.math.get_trainable_indices(params)
 
     ml_boundary_execute = _get_ml_boundary_execute(
         interface, _grad_on_execution, config.use_device_jacobian_product
