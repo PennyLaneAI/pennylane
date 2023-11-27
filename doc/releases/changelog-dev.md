@@ -192,6 +192,10 @@
   to their top-level pages (rather than their module-level pages, eg. `qml.measurements.expval`).
   [(#4750)](https://github.com/PennyLaneAI/pennylane/pull/4750)
 
+* Added information to documentation of `qml.matrix` about wire ordering when using `qml.matrix` on a
+  `QNode` which uses a device with `device.wires=None`.
+  [(#4874)](https://github.com/PennyLaneAI/pennylane/pull/4874)
+
 <h3>Bug fixes 🐛</h3>
 
 * `qml.grad` and `qml.jacobian` now explicitly raise errors if trainable parameters are integers.
