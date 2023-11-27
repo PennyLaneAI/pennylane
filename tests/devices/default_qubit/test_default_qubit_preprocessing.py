@@ -678,6 +678,7 @@ class TestAdjointDiffTapeValidation:
 
     def test_trainable_params_decomposed(self):
         """Test that the trainable parameters of a tape are updated when it is expanded"""
+
         ops = [
             qml.QubitUnitary([[0, 1], [1, 0]], wires=0),
             qml.CNOT([0, 1]),
