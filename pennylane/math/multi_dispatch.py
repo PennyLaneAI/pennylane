@@ -859,11 +859,10 @@ def norm(tensor, like=None, **kwargs):
             axis_val = kwargs.pop("axis")
             kwargs["dim"] = axis_val
 
-    elif like == "autograd" and kwargs.get("ord", None) is None:
-        if kwargs.get("axis", None) is None:
-            norm = _flat_autograd_norm
-        else:
-            from autograd.numpy.linalg import norm
+    elif (
+        like == "autograd" and kwargs.get("ord", None) is None and kwargs.get("axis", None) is None
+    ):
+        norm = _flat_autograd_norm
 
     else:
         from scipy.linalg import norm
