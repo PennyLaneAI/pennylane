@@ -3,6 +3,7 @@ on:
   schedule:
     - cron: "0 0 * * 0-6"  # Run daily at 0am
   pull_request:
+  workflow_call:
 
 concurrency:
   group: benchmarks-${{ github.ref }}
@@ -16,7 +17,7 @@ jobs:
 
       uses: ./.github/workflows/interface-unit-tests.yml
       with:
-        # TODO: Update this in the future to a stable release or master branch
+        # This is to be updated to the most recent reference branch.
         branch: add-pytest-benchmarks
 
         pipeline_mode: 'reference-benchmarks'
