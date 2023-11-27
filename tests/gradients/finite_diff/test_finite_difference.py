@@ -1067,7 +1067,9 @@ class TestFiniteDiffGradients:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("dev_name", ["default.qubit"])
-    def test_jax_probs(self, dev_name, approx_order, strategy, tol):  # pylint: disable=unused-argument
+    def test_jax_probs(
+        self, dev_name, approx_order, strategy, tol
+    ):  # pylint: disable=unused-argument
         """Tests that the output of the finite-difference transform is similar using or not diff method on the QNode."""
         import jax
         from jax.config import config
