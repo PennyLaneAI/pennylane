@@ -267,9 +267,9 @@ class PauliWord(dict):
     def _get_csr_data(self, wire_order, coeff):
         """Computes the sparse matrix data of the Pauli word times a coefficient, given a wire order."""
         full_word = [self[wire] for wire in wire_order]
+
         matrix_size = 2 ** len(wire_order)
         data = np.empty(matrix_size, dtype=np.complex128)  # Non-zero values
-
         current_size = 2
         data[:current_size], _ = _cached_sparse_data(full_word[-1])
         data[:current_size] *= coeff  # Multiply initial term better than the full matrix
@@ -285,6 +285,16 @@ class PauliWord(dict):
                 data[current_size : 2 * current_size] = -data[:current_size]
             current_size *= 2
         return data
+
+    def _get_csr_data_2(self, wire_order, coeff):
+        """Computes the sparse matrix data of the Pauli word times a coefficient, given a wire order."""
+        full_word = [self[wire] for wire in wire_order]
+        nwords = len(full_word)
+        if nwords < 2:
+            return self._get_csr_data(wire_order, coeff), np.array([1.0])
+        outer = self._get_csr_data(wire_order[:nwords // 2], 1.0)
+        inner = self._get_csr_data(wire_order[nwords // 2:], coeff)
+        return outer, inner
 
     def _get_csr_indices(self, wire_order):
         """Computes the sparse matrix indices of the Pauli word times a coefficient, given a wire order."""
@@ -543,12 +553,14 @@ class PauliSentence(dict):
     def _get_same_structure_csr(self, pauli_words, wire_order):
         """Returns the CSR indices and data for Pauli words with the same sparse structure."""
         indices = pauli_words[0]._get_csr_indices(wire_order)
-        data = pauli_words[0]._get_csr_data(
-            wire_order, coeff=qml.math.to_numpy(self[pauli_words[0]])
-        )
-        for word in pauli_words[1:]:
-            data += word._get_csr_data(wire_order, coeff=qml.math.to_numpy(self[word]))
-        return indices, data
+        nwires = len(wire_order)
+        nwords = len(pauli_words)
+        inner = np.empty((nwords, 2 ** (nwires - nwires//2)), dtype=np.complex128)
+        outer = np.empty((nwords, 2 ** (nwires//2)), dtype=np.complex128)
+        for i, word in enumerate(pauli_words):
+            outer[i,:], inner[i,:] = word._get_csr_data_2(wire_order, coeff=qml.math.to_numpy(self[word]))
+        data = outer.T @ inner
+        return indices, data.ravel()
 
     def _sum_same_structure_pws(self, pauli_words, wire_order):
         """Sums Pauli words with the same sparse structure."""
