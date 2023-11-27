@@ -291,9 +291,9 @@ class PauliWord(dict):
         full_word = [self[wire] for wire in wire_order]
         nwords = len(full_word)
         if nwords < 2:
-            return self._get_csr_data(wire_order, coeff), np.array([1.0])
-        outer = self._get_csr_data(wire_order[:nwords // 2], 1.0)
-        inner = self._get_csr_data(wire_order[nwords // 2:], coeff)
+            return np.array([1.0]), self._get_csr_data(wire_order, coeff)
+        outer = self._get_csr_data(wire_order[: nwords // 2], 1.0)
+        inner = self._get_csr_data(wire_order[nwords // 2 :], coeff)
         return outer, inner
 
     def _get_csr_indices(self, wire_order):
@@ -555,10 +555,12 @@ class PauliSentence(dict):
         indices = pauli_words[0]._get_csr_indices(wire_order)
         nwires = len(wire_order)
         nwords = len(pauli_words)
-        inner = np.empty((nwords, 2 ** (nwires - nwires//2)), dtype=np.complex128)
-        outer = np.empty((nwords, 2 ** (nwires//2)), dtype=np.complex128)
+        inner = np.empty((nwords, 2 ** (nwires - nwires // 2)), dtype=np.complex128)
+        outer = np.empty((nwords, 2 ** (nwires // 2)), dtype=np.complex128)
         for i, word in enumerate(pauli_words):
-            outer[i,:], inner[i,:] = word._get_csr_data_2(wire_order, coeff=qml.math.to_numpy(self[word]))
+            outer[i, :], inner[i, :] = word._get_csr_data_2(
+                wire_order, coeff=qml.math.to_numpy(self[word])
+            )
         data = outer.T @ inner
         return indices, data.ravel()
 
