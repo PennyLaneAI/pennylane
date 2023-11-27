@@ -147,6 +147,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The transforms submodule `qml.transforms.qcut` becomes its own module `qml.qcut`.
+  [(#4819)](https://github.com/PennyLaneAI/pennylane/pull/4819)
+
 * The decomposition of `GroverOperator` now has an additional global phase operation.
   [(#4666)](https://github.com/PennyLaneAI/pennylane/pull/4666)
 
@@ -190,6 +193,9 @@
   [(#4773)](https://github.com/PennyLaneAI/pennylane/pull/4773)
 
 <h3>Documentation 📝</h3>
+
+* Documentation for QCut was move to its own API page `qml.qcut`.
+  [(#4819)](https://github.com/PennyLaneAI/pennylane/pull/4819)
 
 * Documentation page for `qml.measurements` now links top-level accessible functions (e.g. `qml.expval`) 
   to their top-level pages (rather than their module-level pages, eg. `qml.measurements.expval`).
@@ -275,6 +281,7 @@ Lillian Frederiksen,
 Emiliano Godinez Ramirez,
 Ankit Khandelwal,
 Christina Lee,
+Romain Moyard,
 Vincent Michaud-Rioux,
 Anurav Modak,
 Mudit Pandey,
