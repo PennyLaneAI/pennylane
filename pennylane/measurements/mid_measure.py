@@ -178,6 +178,7 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
             probability state is performed. Due to floating point precision, the zero probability may not be
             detected, thus letting execution continue as normal without ``NaN`` or ``Inf`` values or empty
             samples, leading to unexpected or incorrect results.
+
     """
 
     wire = Wires(wires)
