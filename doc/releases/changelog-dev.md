@@ -84,7 +84,7 @@
   Currently, PennyLane supports the `Catalyst hybrid compiler <https://github.com/pennylaneai/catalyst>`__
   hybrid compiler with the `qml.qjit` decorator. A significant benefit of Catalyst
   is the ability to preserve complex control flow around quantum operations — such as
-  `if` statements and `for` loops, and including measurement feedback — during compilation,
+  if statements and for loops, and including measurement feedback — during compilation,
   while continuing to support end-to-end autodifferentiation.
 
 * `qml.grad` and `qml.jacobian` can be used with the `qml.qjit` decorator.

@@ -95,7 +95,7 @@ class grad:
             ops_loader = available_eps[active_jit]["ops"].load()
             return ops_loader.grad(func, method=method, h=h, argnum=argnum)
 
-        if method or h:
+        if method or h:  # pragma: no cover
             raise ValueError(
                 f"Invalid values for 'method={method}' and 'h={h}' in interpreted mode"
             )
