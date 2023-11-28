@@ -199,6 +199,18 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
             # the adjoint operator of this gate simply negates the angle
             return FlipAndRotate(-self.parameters[0], self.wires[0], self.wires[1], do_flip=self.hyperparameters["do_flip"])
 
+        @classmethod
+        def _unflatten(cls, data, metadata):
+            # as the class differs from the standard `__init__` call signature of
+            # (*data, wires=wires, **hyperparameters), the _unflatten method that
+            # must be defined as well
+            # _unflatten recreates a opeartion from the serialized data and metadata of ``Operator._flatten``
+            # copied_op = type(op)._unflatten(*op._flatten())
+            wires = metadata[0]
+            hyperparams = dict(metadata[1])
+            return cls(data[0], wire_rot=wires[0], wire_flip=wires[1], do_flip=hyperparams['do_flip'])
+
+
 The new gate can now be created as follows:
 
 >>> op = FlipAndRotate(0.1, wire_rot="q3", wire_flip="q1", do_flip=True)
@@ -208,6 +220,27 @@ FlipAndRotate(0.1, wires=['q3', 'q1'])
 [PauliX(wires=['q1']), RX(0.1, wires=['q3'])]
 >>> op.adjoint()
 FlipAndRotate(-0.1, wires=['q3', 'q1'])
+
+Once the class has been created, you can run a suite of validation checks using :func:`.ops.functions.assert_valid`.
+This function will warn you of some common errors in custom operators.
+
+>>> qml.ops.functions.assert_valid(op)
+
+If the above operator omitted the ``_unflatten`` custom definition, it would raise:
+
+.. code-block::
+
+
+    TypeError: FlipAndRotate.__init__() got an unexpected keyword argument 'wires'
+
+
+    The above exception was the direct cause of the following exception:
+
+    AssertionError: FlipAndRotate._unflatten must be able to reproduce the original operation
+    from (0.1,) and (<Wires = ['q3', 'q1']>, (('do_flip', True),)). You may need to override
+    either the _unflatten or _flatten method. 
+    For local testing, try type(op)._unflatten(*op._flatten())
+
 
 The new gate can be used with PennyLane devices. Device support for an operation can be checked via
 ``dev.stopping_condition(op)``.  If ``True``, then the device supports the operation.

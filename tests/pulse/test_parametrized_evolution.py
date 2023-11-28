@@ -36,6 +36,21 @@ class MyOp(qml.RX):  # pylint: disable=too-few-public-methods
     has_diagonalizing_gates = False
 
 
+@pytest.mark.jax
+@pytest.mark.xfail  # TODO: fix by story 50356
+def test_standard_validity():
+    """Run standard validity checks on the parametrized evolution."""
+    from jax import numpy as jnp
+
+    def f1(p, t):
+        return jnp.sin(p * t)
+
+    H = f1 * qml.PauliY(0)
+
+    ev = qml.evolve(H)
+    qml.ops.functions.assert_valid(ev)
+
+
 def time_independent_hamiltonian():
     """Create a time-independent Hamiltonian on two qubits."""
     ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0), qml.PauliX(1)]
@@ -761,7 +776,7 @@ class TestIntegration:
 
 @pytest.mark.jax
 def test_map_wires():
-    """Test that map wires returns a new ParameterizedEvolution, with wires updated on
+    """Test that map wires returns a new ParametrizedEvolution, with wires updated on
     both the operator and the corresponding Hamiltonian"""
 
     def f1(p, t):
