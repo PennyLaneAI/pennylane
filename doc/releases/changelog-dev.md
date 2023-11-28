@@ -97,10 +97,23 @@
 
 * Autograd and torch can now use vjps provided by the device from the new device API. If a device provides
   a vector Jacobian product, this can be selected by providing `device_vjp=True` to
-  `qml.execute`.
+  `qml.QNode` or `qml.execute`.
   [(#4557)](https://github.com/PennyLaneAI/pennylane/pull/4557)
   [(#4654)](https://github.com/PennyLaneAI/pennylane/pull/4654)
 
+```pycon
+>>> dev = qml.device('default.qubit')
+>>> @qml.qnode(dev, diff_method="adjoint", device_vjp=True)
+>>> def circuit(x):
+...     qml.RX(x, wires=0)
+...     return qml.expval(qml.PauliZ(0))
+>>> with dev.tracker:
+...     g = qml.grad(circuit)(qml.numpy.array(0.1))
+>>> dev.tracker.totals
+{'batches': 1, 'simulations': 1, 'executions': 1, 'vjp_batches': 1, 'vjps': 1}
+>>> g
+-0.09983341664682815
+```
 * Updates to some relevant Pytests to enable its use as a suite of benchmarks.
   [(#4703)](https://github.com/PennyLaneAI/pennylane/pull/4703)
 
