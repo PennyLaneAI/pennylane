@@ -52,6 +52,71 @@
 
 <h4>Catalyst is seamlessly integrated with PennyLane ⚗️</h4>
 
+* The `qml.compiler` module provides support for hybrid quantum-classical compilation.
+  [(#4692)](https://github.com/PennyLaneAI/pennylane/pull/4692)
+
+  Through the use of the `qml.qjit` decorator, entire workflows can be just-in-time (JIT)
+  compiled --- including both quantum and classical processing --- down to a machine binary on
+  first function execution. Subsequent calls to the compiled function will execute
+  the previously-compiled binary, resulting in significant performance improvements.
+
+  ``` python
+  import pennylane as qml
+
+  dev = qml.device("lightning.qubit", wires=2)
+
+  @qml.qjit
+  @qml.qnode(dev)
+  def circuit(theta):
+      qml.Hadamard(wires=0)
+      qml.RX(theta, wires=1)
+      qml.CNOT(wires=[0,1])
+      return qml.expval(qml.PauliZ(wires=1))
+  ```
+
+  ``` pycon
+  >>> circuit(0.5)  # the first call, compilation occurs here
+  array(0.)
+  >>> circuit(0.5)  # the precompiled quantum function is called
+  array(0.)
+  ```
+
+  Currently, PennyLane supports the [Catalyst hybrid compiler](https://github.com/pennylaneai/catalyst)
+  hybrid compiler with the `qml.qjit` decorator. A significant benefit of Catalyst
+  is the ability to preserve complex control flow around quantum operations — such as
+  if statements and for loops, and including measurement feedback — during compilation,
+  while continuing to support end-to-end autodifferentiation.
+
+* `qml.grad` and `qml.jacobian` can be used with the `qml.qjit` decorator.
+  [(#4709)](https://github.com/PennyLaneAI/pennylane/pull/4709)
+
+  When these functions are used with `qml.qjit`, they are patched to
+  [catalyst.grad](https://docs.pennylane.ai/projects/catalyst/en/stable/code/api/catalyst.grad.html) and
+  [catalyst.jacobian](https://docs.pennylane.ai/projects/catalyst/en/stable/code/api/catalyst.jacobian.html).
+
+  ``` python
+  dev = qml.device("lightning.qubit", wires=1)
+
+  @qml.qjit
+  def workflow(x):
+
+      @qml.qnode(dev)
+      def circuit(x):
+          qml.RX(np.pi * x[0], wires=0)
+          qml.RY(x[1], wires=0)
+          return qml.probs()
+
+      g = qml.jacobian(circuit)
+
+      return g(x)
+  ```
+
+  ``` pycon
+    >>> workflow(np.array([2.0, 1.0]))
+    array([[-1.32116540e-07,  1.33781874e-07],
+           [-4.20735506e-01,  4.20735506e-01]])
+  ```
+
 <h3>Improvements 🛠</h3>
 
 * `qml.expval` with large `Hamiltonian` objects is now faster and has a significantly lower memory footprint (and constant with respect to the number of `Hamiltonian` terms) when the `Hamiltonian` is a `PauliSentence`. That is due to the introduction of a specialized `dot` method in the `PauliSentence` class which performs `PauliSentence`-`state` products.
@@ -274,11 +339,13 @@
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
+Ali Asadi,
 Thomas Bromley,
 Astral Cai,
 Isaac De Vlugt,
 Amintor Dusko,
 Lillian Frederiksen,
+Josh Izaac,
 Emiliano Godinez Ramirez,
 Ankit Khandelwal,
 Christina Lee,
