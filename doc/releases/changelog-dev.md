@@ -259,6 +259,10 @@
   `qml.shadow_expval`.
   [(#4803)](https://github.com/PennyLaneAI/pennylane/pull/4803)
 
+* Removed an implicit assumption that an empty `PauliSentence` gets treated as identity under 
+  multiplication.
+  [(#4887)](https://github.com/PennyLaneAI/pennylane/pull/4887)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -275,5 +279,6 @@ Christina Lee,
 Anurav Modak,
 Mudit Pandey,
 Matthew Silverman,
+Jay Soni,
 David Wierichs,
 Justin Woodring,
