@@ -172,7 +172,7 @@ class QNode:
             the maximum number of derivatives to support. Increasing this value allows
             for higher order derivatives to be extracted, at the cost of additional
             (classical) computational overhead during the backwards pass.
-        device_vjp=False (bool): Whether or not to use the device provided Vector Jacobian Product (VJP).
+        device_vjp (bool): Whether or not to use the device-provided Vector Jacobian Product (VJP).
             A value of ``None`` indicates to use it if the device provides it, but use the full jacobian otherwise.
 
     Keyword Args:
