@@ -17,7 +17,7 @@ from typing import Sequence, Callable
 
 from pennylane.tape import QuantumTape
 from pennylane.transforms import transform
-from pennylane.math import allclose, stack, cast_like, zeros, is_abstract, get_deep_interface
+from pennylane.math import allclose, stack, cast_like, zeros, is_abstract, get_interface
 from pennylane.queuing import QueuingManager
 
 from pennylane.ops.qubit.attributes import composable_rotations
@@ -149,7 +149,7 @@ def merge_rotations(
 
         # We need to use stack to get this to work and be differentiable in all interfaces
         cumulative_angles = stack(current_gate.parameters)
-        interface = get_deep_interface(cumulative_angles)
+        interface = get_interface(cumulative_angles)
         # As long as there is a valid next gate, check if we can merge the angles
         while next_gate_idx is not None:
             # Get the next gate
@@ -166,7 +166,9 @@ def merge_rotations(
                     else:
                         cumulative_angles = fuse_rot_angles(
                             cumulative_angles,
-                            cast_like(stack(next_gate.parameters), cumulative_angles),
+                            cast_like(
+                                stack(next_gate.parameters, like=interface), cumulative_angles
+                            ),
                         )
                 # Other, single-parameter rotation gates just have the angle summed
                 else:

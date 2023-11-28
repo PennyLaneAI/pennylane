@@ -305,10 +305,6 @@ class TestCliffordCompile:
         ):
             decomposed_qfunc()
 
-
-class TestCompileInterfaces:
-    """Test the interface support for the transfrom"""
-
     # pylint: disable= import-outside-toplevel
     @pytest.mark.all_interfaces
     def test_clifford_decompose_interfaces(self):
@@ -364,5 +360,5 @@ class TestCompileInterfaces:
             igrads.append([grad_numpy, grad_jax, grad_torch, grad_tflow])
 
         # Compare results
-        assert all([qml.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*funres)])
-        assert all([qml.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*igrads)])
+        assert all(qml.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*funres))
+        assert all(qml.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*igrads))
