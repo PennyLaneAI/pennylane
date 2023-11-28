@@ -64,7 +64,7 @@ def check_clifford_op(op):
 
     For a given unitary operator :math:`U` acting on :math:`N` qubits, this method checks that the
     transformation :math:`UPU^{\dagger}` maps the Pauli tensor products :math:`P = {I, X, Y, Z}^{\otimes N}`
-    to Pauli tensor products with :math:`O(N \times 8^N)` time complexity when using naive matrix multiplication.
+    to Pauli tensor products using the decomposition of the matrix for :math:`U` in the Pauli basis.
 
     Args:
         op: the operator that needs to be tested
@@ -97,8 +97,8 @@ def check_clifford_op(op):
         # hopefully op_math.prod scales better than matrix multiplication, i.e., O((2^N)^3)
         upu = qml.pauli.pauli_sentence(qml.prod(*pauli_prod))
         upu.simplify()
-
-        if len(upu) != 1:  # Pauli sum always lie outside set P
+        # Pauli sum always lie outside set P
+        if len(upu) != 1:
             return False
 
     return True
@@ -127,7 +127,7 @@ def check_clifford_t(op):
 
     # Save time and check from the parameter of rotation gates
     if isinstance(op, _PARAMETER_GATES) or isinstance(base, _PARAMETER_GATES):
-        return qml.math.isclose(op.data[0] % math.pi, 0.0)
+        return qml.math.isclose(qml.math.mod(op.data[0], math.pi), 0.0)
 
     return check_clifford_op(op)
 
@@ -142,10 +142,10 @@ def _simplify_param(theta, gate):
     if qml.math.isclose(theta, 0.0, atol=1e-6):
         return [qml.GlobalPhase(0.0)]
 
-    rem, mod = theta / math.pi, theta % math.pi
-    if qml.math.isclose(mod, 0.0, atol=1e-6):
+    rem_, mod_ = qml.math.divide(theta, math.pi), qml.math.mod(theta, math.pi)
+    if qml.math.isclose(mod_, 0.0, atol=1e-6):
         ops = [qml.GlobalPhase(theta / 2)]
-        if qml.math.isclose(rem % 2, 1.0, atol=1e-6):
+        if qml.math.isclose(qml.math.mod(rem_, 2), 1.0, atol=1e-6):
             ops.append(gate)
         return ops
 
@@ -253,7 +253,7 @@ def _merge_param_gates(operations, merge_ops=None):
             merged_ops.append(curr_gate)
             continue
 
-        # If gate is not to be merged, update counter
+        # If gate is in the merge_ops, update counter
         if curr_gate.name in merge_ops:
             number_ops += 1
 
@@ -290,7 +290,7 @@ def clifford_t_decomposition(
     method="sk",
     **method_kwargs,
 ) -> (Sequence[QuantumTape], Callable):
-    r"""Unrolls a circuit into the Clifford+T basis using the optimal ancilla-free approximation of :class:`~.RZ` operations.
+    r"""Decomposes a circuit into the Clifford+T basis.
 
     This method first decomposes the gate operations to a basis comprised of Clifford, :class:`~.T`, :class:`~.RZ` and
     :class:`~.GlobalPhase` operations (and their adjoints). The Clifford gates include the following PennyLane operations:
@@ -300,14 +300,14 @@ def clifford_t_decomposition(
     - Two qubit gates - :class:`~.CNOT`, :class:`~.CY`, :class:`~.CZ`, :class:`~.SWAP`, and :class:`~.ISWAP`.
 
     Then the leftover single qubit :class:`~.RZ` operations are approximated in the Clifford+T basis with
-    :math:`\epsilon > 0` error using the Solovay-Kitaev algorithm described in
-    `Dawson and Nielsen (2005) <https://arxiv.org/abs/quant-ph/0505030>`_.
+    :math:`\epsilon > 0` error. By default, the Solovay-Kitaev algorithm described in
+    `Dawson and Nielsen (2005) <https://arxiv.org/abs/quant-ph/0505030>`_ is used via the :func:`~.sk_decomposition` function.
 
     Args:
-        tape (QuantumTape): A quantum tape
+        tape (QNode or QuantumTape or Callable): The quantum circuit to be decomposed.
         epsilon (float): The maximum permissible error. Defaults to ``0.0001``.
         max_expansion (int): The depth to be used for tape expansion before manual decomposition to Clifford+T basis is applied.
-        method (str): Method to be used for Clifford+T decomposition. Default value is ``"sk"`` for Solovay-Kitaev
+        method (str): Method to be used for Clifford+T decomposition. Default value is ``"sk"`` for Solovay-Kitaev.
         **method_kwargs: Keyword argument to pass options for the ``method`` used for decompositions.
 
     Keyword Args:
@@ -317,14 +317,12 @@ def clifford_t_decomposition(
               arguments for the ``"sk"`` method, i.e., for performing Solovay-Kitaev decomposition using :func:`~.sk_decomposition`
 
     Returns:
-        pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
-        it returns a QNode with the transform added to its transform program. If a tape is passed,
-        returns a tuple containing a list of quantum tapes to be evaluated, and a function to be
-        applied to these tape executions.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described
+        in the :func:`qml.transform <pennylane.transform>`.
 
     Raises:
-        ValueError: If any gate operation does not have a rule for its decomposition
-        NotImplementedError: If chosen decomposition is not supported
+        ValueError: If a gate operation does not have a decomposition when required.
+        NotImplementedError: If chosen decomposition ``method`` is not supported.
 
     .. seealso:: :func:`~.sk_decomposition` for Solovay-Kitaev decomposition.
 
