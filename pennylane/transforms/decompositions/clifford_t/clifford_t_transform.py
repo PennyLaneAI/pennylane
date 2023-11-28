@@ -127,7 +127,12 @@ def check_clifford_t(op):
 
     # Save time and check from the parameter of rotation gates
     if isinstance(op, _PARAMETER_GATES) or isinstance(base, _PARAMETER_GATES):
-        return qml.math.allclose(qml.math.mod(op.data[0], math.pi), 0.0)
+        theta = op.data[0]
+        return (
+            False
+            if qml.math.is_abstract(theta)
+            else qml.math.allclose(qml.math.mod(theta, math.pi), 0.0)
+        )
 
     return check_clifford_op(op)
 
@@ -139,6 +144,9 @@ def _simplify_param(theta, gate):
     when even, and (b) returns combination of provided gate with global phase when odd.
     In rest of the other cases it would return None.
     """
+    if qml.math.is_abstract(theta):  # pragma: no cover
+        return None
+
     if qml.math.allclose(theta, 0.0, atol=1e-6):
         return [qml.GlobalPhase(0.0)]
 
