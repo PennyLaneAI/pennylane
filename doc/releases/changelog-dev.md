@@ -54,6 +54,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.expval` with large `Hamiltonian` objects is now faster and has a significantly lower memory footprint (and constant with respect to the number of `Hamiltonian` terms) when the `Hamiltonian` is a `PauliSentence`. That is due to the introduction of a specialized `dot` method in the `PauliSentence` class which performs `PauliSentence`-`state` products.
+  [(#4839)](https://github.com/PennyLaneAI/pennylane/pull/4839)
+
 <h4>Community contributions 🥳</h4>
 
 * Approximate Quantum Fourier Transform (AQFT) is now available from `qml.AQFT`.
@@ -148,6 +151,10 @@
 * The `rot` decomposition now has support for returning a global phase.
   [(#4869)](https://github.com/PennyLaneAI/pennylane/pull/4869)
 
+* The `"pennylane_sketch"` MPL-drawer style has been added. This is the same as the `"pennylane"`
+  style, but with sketch-style lines.
+  [(#4880)](https://github.com/PennyLaneAI/pennylane/pull/4880)
+
 <h3>Breaking changes 💔</h3>
 
 * The decomposition of `GroverOperator` now has an additional global phase operation.
@@ -173,6 +180,9 @@
 * `QuantumScript.graph` is now built using `tape.measurements` instead of `tape.observables`
   because it depended on the now-deprecated `Observable.return_type` property.
   [(#4762)](https://github.com/PennyLaneAI/pennylane/pull/4762)
+
+* The `"pennylane"` MPL-drawer style now draws straight lines instead of sketch-style lines.
+  [(#4880)](https://github.com/PennyLaneAI/pennylane/pull/4880)
 
 <h3>Deprecations 👋</h3>
 
@@ -278,6 +288,7 @@ Lillian Frederiksen,
 Emiliano Godinez Ramirez,
 Ankit Khandelwal,
 Christina Lee,
+Vincent Michaud-Rioux,
 Anurav Modak,
 Mudit Pandey,
 Matthew Silverman,
