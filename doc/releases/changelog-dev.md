@@ -210,6 +210,10 @@
 * The `rot` decomposition now has support for returning a global phase.
   [(#4869)](https://github.com/PennyLaneAI/pennylane/pull/4869)
 
+* The `"pennylane_sketch"` MPL-drawer style has been added. This is the same as the `"pennylane"`
+  style, but with sketch-style lines.
+  [(#4880)](https://github.com/PennyLaneAI/pennylane/pull/4880)
+
 <h3>Breaking changes 💔</h3>
 
 * The decomposition of `GroverOperator` now has an additional global phase operation.
@@ -235,6 +239,9 @@
 * `QuantumScript.graph` is now built using `tape.measurements` instead of `tape.observables`
   because it depended on the now-deprecated `Observable.return_type` property.
   [(#4762)](https://github.com/PennyLaneAI/pennylane/pull/4762)
+
+* The `"pennylane"` MPL-drawer style now draws straight lines instead of sketch-style lines.
+  [(#4880)](https://github.com/PennyLaneAI/pennylane/pull/4880)
 
 <h3>Deprecations 👋</h3>
 
