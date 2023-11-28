@@ -52,10 +52,10 @@
 
 <h4>Catalyst is seamlessly integrated with PennyLane ⚗️</h4>
 
-* The ``qml.compiler`` module provides support for hybrid quantum-classical compilation.
+* The `qml.compiler` module provides support for hybrid quantum-classical compilation.
   [(#4692)](https://github.com/PennyLaneAI/pennylane/pull/4692)
 
-  Through the use of the ``qml.qjit`` decorator, entire workflows can be just-in-time (JIT)
+  Through the use of the `qml.qjit` decorator, entire workflows can be just-in-time (JIT)
   compiled --- including both quantum and classical processing --- down to a machine binary on
   first function execution. Subsequent calls to the compiled function will execute
   the previously-compiled binary, resulting in significant performance improvements.
@@ -65,7 +65,7 @@
 
   dev = qml.device("lightning.qubit", wires=2)
 
-  @qjit
+  @qml.qjit
   @qml.qnode(dev)
   def circuit(theta):
       qml.Hadamard(wires=0)
@@ -81,18 +81,18 @@
   array(0.)
   ```
 
-  Currently, PennyLane supports the [Catalyst](https://github.com/pennylaneai/catalyst)
-  hybrid compiler with the ``qml.qjit`` decorator. A significant benefit of Catalyst
+  Currently, PennyLane supports the `Catalyst hybrid compiler <https://github.com/pennylaneai/catalyst>`__
+  hybrid compiler with the `qml.qjit` decorator. A significant benefit of Catalyst
   is the ability to preserve complex control flow around quantum operations — such as
-  if statements and for loops, and including measurement feedback — during compilation,
+  `if` statements and `for` loops, and including measurement feedback — during compilation,
   while continuing to support end-to-end autodifferentiation.
 
-* ``qml.grad`` and ``qml.jacobian`` can be used with the ``qml.qjit`` decorator.
+* `qml.grad` and `qml.jacobian` can be used with the `qml.qjit` decorator.
   [(#4709)](https://github.com/PennyLaneAI/pennylane/pull/4709)
 
-  When these functions are used with ``qml.qjit``, they are patched to
-  [catalyst.grad](https://docs.pennylane.ai/projects/catalyst/en/stable/code/api/catalyst.grad.html) and
-  [catalyst.jacobian](https://docs.pennylane.ai/projects/catalyst/en/stable/code/api/catalyst.jacobian.html).
+  When these functions are used with `qml.qjit`, they are patched to
+  `catalyst.grad <https://docs.pennylane.ai/projects/catalyst/en/stable/code/api/catalyst.grad.html>`__ and
+  `catalyst.jacobian <https://docs.pennylane.ai/projects/catalyst/en/stable/code/api/catalyst.jacobian.html>`__.
 
   ``` python
   dev = qml.device("lightning.qubit", wires=1)
