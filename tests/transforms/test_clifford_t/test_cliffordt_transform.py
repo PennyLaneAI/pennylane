@@ -304,3 +304,65 @@ class TestCliffordCompile:
             match=r"Currently we only support Solovay-Kitaev \('sk'\) decompostion",
         ):
             decomposed_qfunc()
+
+
+class TestCompileInterfaces:
+    """Test the interface support for the transfrom"""
+
+    # pylint: disable= import-outside-toplevel
+    @pytest.mark.all_interfaces
+    def test_clifford_decompose_interfaces(self):
+        """Test that unwrap converts lists to lists and interface variables to numpy."""
+
+        dev = qml.device("default.qubit", wires=3)
+
+        def circuit(x):
+            qml.RZ(x[0], wires=[0])
+            qml.PhaseShift(x[1], wires=[1])
+            qml.SingleExcitation(x[2], wires=[1, 2])
+            qml.PauliX(0)
+            return qml.expval(qml.PauliZ(1))
+
+        original_qnode = qml.QNode(circuit, dev)
+        transfmd_qnode = qml.QNode(
+            clifford_t_decomposition(circuit, max_depth=3, basis_length=10), dev
+        )
+
+        import jax
+        import torch
+        import tensorflow as tf
+
+        funres = []
+        igrads = []
+        coeffs = [1.0, 2.0, 3.0]
+        for qcirc in [original_qnode, transfmd_qnode]:
+            # Autograd Interface
+            A = qml.numpy.array(coeffs)
+            fres_numpy = qcirc(A)
+            grad_numpy = qml.grad(qcirc, argnum=0)(A)
+
+            # Jax Interface
+            A = jax.numpy.array(coeffs)
+            fres_jax = qcirc(A)
+            grad_jax = jax.grad(qcirc, argnums=0)(A)
+
+            # Tensorflow Interface
+            A = tf.Variable(qml.numpy.array(coeffs))
+            with tf.GradientTape() as tape:
+                loss = qcirc(A)
+            grad_tflow = tape.gradient(loss, A)
+            fres_tflow = loss
+
+            # PyTorch Interface
+            A = torch.tensor(coeffs, requires_grad=True)
+            result = qcirc(A)
+            result.backward()
+            grad_torch = A.grad
+            fres_torch = result
+
+            funres.append([fres_numpy, fres_jax, fres_torch, fres_tflow])
+            igrads.append([grad_numpy, grad_jax, grad_torch, grad_tflow])
+
+        # Compare results
+        assert all([qml.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*funres)])
+        assert all([qml.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*igrads)])

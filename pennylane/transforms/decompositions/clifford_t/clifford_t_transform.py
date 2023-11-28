@@ -127,7 +127,7 @@ def check_clifford_t(op):
 
     # Save time and check from the parameter of rotation gates
     if isinstance(op, _PARAMETER_GATES) or isinstance(base, _PARAMETER_GATES):
-        return qml.math.isclose(qml.math.mod(op.data[0], math.pi), 0.0)
+        return qml.math.allclose(qml.math.mod(op.data[0], math.pi), 0.0)
 
     return check_clifford_op(op)
 
@@ -139,13 +139,13 @@ def _simplify_param(theta, gate):
     when even, and (b) returns combination of provided gate with global phase when odd.
     In rest of the other cases it would return None.
     """
-    if qml.math.isclose(theta, 0.0, atol=1e-6):
+    if qml.math.allclose(theta, 0.0, atol=1e-6):
         return [qml.GlobalPhase(0.0)]
 
     rem_, mod_ = qml.math.divide(theta, math.pi), qml.math.mod(theta, math.pi)
-    if qml.math.isclose(mod_, 0.0, atol=1e-6):
+    if qml.math.allclose(mod_, 0.0, atol=1e-6):
         ops = [qml.GlobalPhase(theta / 2)]
-        if qml.math.isclose(qml.math.mod(rem_, 2), 1.0, atol=1e-6):
+        if qml.math.allclose(qml.math.mod(rem_, 2), 1.0, atol=1e-6):
             ops.append(gate)
         return ops
 
@@ -264,10 +264,12 @@ def _merge_param_gates(operations, merge_ops=None):
             continue
 
         # Initialize the current angle and iterate until end of merge
-        cumulative_angles = qml.math.array(curr_gate.parameters, dtype=float)
+        curr_params = curr_gate.parameters
+        curr_intrfc = qml.math.get_deep_interface(curr_gate.parameters)
+        cumulative_angles = qml.math.array(curr_params, dtype=float, like=curr_intrfc)
         next_gate = copied_ops[next_gate_idx]
         while curr_gate.name == next_gate.name and curr_gate.wires == next_gate.wires:
-            cumulative_angles = cumulative_angles + qml.math.array(next_gate.parameters)
+            cumulative_angles += qml.math.array(next_gate.parameters, like=curr_intrfc)
             # Check if the subsequent gate exists in the vicinity
             copied_ops.pop(next_gate_idx)
             next_gate_idx = find_next_gate(curr_gate.wires, copied_ops)
@@ -456,7 +458,7 @@ def clifford_t_decomposition(
         for op in new_operations:
             if isinstance(op, qml.RZ):
                 clifford_ops = decompose_fn(op, epsilon, **method_kwargs)
-                phase += clifford_ops.pop().data[0]
+                phase += qml.math.convert_like(clifford_ops.pop().data[0], phase)
                 decomp_ops.extend(clifford_ops)
             else:
                 decomp_ops.append(op)
