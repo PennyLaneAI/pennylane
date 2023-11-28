@@ -46,21 +46,18 @@ def create_initial_state(
         array: The initial state of a circuit
     """
     if isinstance(wires, Wires):
-        wire_array = wires.toarray()
-    else:
-        wire_array = np.array(wires)
-    num_wires = len(wire_array)
+        wires = wires.tolist()
+
+    num_wires = len(wires)
 
     if not prep_operation:
         rho = _create_basis_state(num_wires, 0)
 
     elif isinstance(prep_operation, QutritBasisState):
-        rho = _apply_basis_state(prep_operation.parameters[0], wire_array)
+        rho = _apply_basis_state(prep_operation.parameters[0], wires)
 
     elif isinstance(prep_operation, StatePrepBase):
-        rho = _apply_state_vector(
-            prep_operation.state_vector(wire_order=list(wire_array)), num_wires
-        )
+        rho = _apply_state_vector(prep_operation.state_vector(wire_order=list(wires)), num_wires)
 
     # TODO: add instance for prep_operations as added
 
@@ -73,7 +70,11 @@ def _apply_state_vector(state, num_wires):  # function is easy to abstract for q
     Args:
         state (array[complex]): normalized input state of length
             ``3**len(wires)``
-        num_wires (array[int]): wires that get initialized in the state
+        num_wires (int): number of wires that get initialized in the state
+
+    Returns:
+        array[complex]: complex array of shape ``[3] * (2 * num_wires)``
+        representing the density matrix of this state.
     """
 
     # Initialize the entire wires with the state
@@ -87,8 +88,11 @@ def _apply_basis_state(state, wires):  # function is easy to abstract for qudit
     Args:
         state (array[int]): computational basis state of shape ``(wires,)``
             consisting of 0s, 1s and 2s.
-        wires (array[int]): wires that the provided computational state should be initialized on
+        wires (Iterable[int]): wires that the provided computational state should be initialized on
 
+    Returns:
+        array[complex]: complex array of shape ``[3] * (2 * num_wires)``
+        representing the density matrix of this basis state.
     """
     num_wires = len(wires)
 
@@ -103,6 +107,7 @@ def _create_basis_state(num_wires, index):  # function is easy to abstract for q
     """Return the density matrix representing a computational basis state over all wires.
 
     Args:
+        num_wires (int): number of wires to initialize
         index (int): integer representing the computational basis state.
 
     Returns:
