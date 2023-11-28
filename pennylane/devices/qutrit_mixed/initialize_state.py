@@ -86,7 +86,7 @@ def _apply_basis_state(state, wires):  # function is easy to abstract for qudit
 
     Args:
         state (array[int]): computational basis state of shape ``(wires,)``
-            consisting of 0s and 1s.
+            consisting of 0s, 1s and 2s.
         wires (array[int]): wires that the provided computational state should be initialized on
 
     """
