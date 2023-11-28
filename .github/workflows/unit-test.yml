@@ -103,11 +103,6 @@ jobs:
           fetch-depth: ${{ inputs.checkout_fetch_depth }}
           repository: PennyLaneAI/pennylane
 
-      - run: |
-          ls -ltrh 
-          ls -R .github
-          
-
       - name: Determine benchmark name
         if: ${{ inputs.pipeline_mode != 'unit-tests' }}
         id: benchmark_name
