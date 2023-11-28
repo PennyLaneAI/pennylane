@@ -81,7 +81,7 @@
   array(0.)
   ```
 
-  Currently, PennyLane supports the `Catalyst hybrid compiler <https://github.com/pennylaneai/catalyst>`__
+  Currently, PennyLane supports the [Catalyst hybrid compiler](https://github.com/pennylaneai/catalyst)
   hybrid compiler with the `qml.qjit` decorator. A significant benefit of Catalyst
   is the ability to preserve complex control flow around quantum operations — such as
   if statements and for loops, and including measurement feedback — during compilation,
@@ -91,8 +91,8 @@
   [(#4709)](https://github.com/PennyLaneAI/pennylane/pull/4709)
 
   When these functions are used with `qml.qjit`, they are patched to
-  `catalyst.grad <https://docs.pennylane.ai/projects/catalyst/en/stable/code/api/catalyst.grad.html>`__ and
-  `catalyst.jacobian <https://docs.pennylane.ai/projects/catalyst/en/stable/code/api/catalyst.jacobian.html>`__.
+  [catalyst.grad](https://docs.pennylane.ai/projects/catalyst/en/stable/code/api/catalyst.grad.html) and
+  [catalyst.jacobian](https://docs.pennylane.ai/projects/catalyst/en/stable/code/api/catalyst.jacobian.html).
 
   ``` python
   dev = qml.device("lightning.qubit", wires=1)
