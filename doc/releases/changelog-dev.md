@@ -119,6 +119,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.expval` with large `Hamiltonian` objects is now faster and has a significantly lower memory footprint (and constant with respect to the number of `Hamiltonian` terms) when the `Hamiltonian` is a `PauliSentence`. That is due to the introduction of a specialized `dot` method in the `PauliSentence` class which performs `PauliSentence`-`state` products.
+  [(#4839)](https://github.com/PennyLaneAI/pennylane/pull/4839)
+
 <h4>Community contributions 🥳</h4>
 
 * Approximate Quantum Fourier Transform (AQFT) is now available from `qml.AQFT`.
@@ -196,6 +199,10 @@
 * When multiplying `SparseHamiltonian`s by a scalar value, the result stays as a 
   `SparseHamiltonian`.
   [(#4828)](https://github.com/PennyLaneAI/pennylane/pull/4828)
+
+* `trainable_params` can now be set on initialization of `QuantumScript`, instead of having to set the
+  parameter after initialization.
+  [(#4877)](https://github.com/PennyLaneAI/pennylane/pull/4877)
 
 * `default.qubit` now calculates the expectation value of Hermitians in a differentiable manner.
   [(#4866)](https://github.com/PennyLaneAI/pennylane/pull/4866)
@@ -335,6 +342,7 @@ Josh Izaac,
 Emiliano Godinez Ramirez,
 Ankit Khandelwal,
 Christina Lee,
+Vincent Michaud-Rioux,
 Anurav Modak,
 Mudit Pandey,
 Matthew Silverman,
