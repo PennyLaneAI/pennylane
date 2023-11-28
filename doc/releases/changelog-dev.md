@@ -262,6 +262,10 @@
   `qml.shadow_expval`.
   [(#4803)](https://github.com/PennyLaneAI/pennylane/pull/4803)
 
+* Using a `CNOT` with large, batched states and the tensorflow interface no longer raises
+  an unexpected error.
+  [(#)]()
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):

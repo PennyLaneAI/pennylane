@@ -1199,3 +1199,26 @@ def test_tf_large_state(op):
 
     # still all zeros.  Mostly just making sure error not raised
     assert qml.math.allclose(state, new_state)
+
+
+@pytest.mark.tf
+def test_cnot_large_batched_state_tf():
+    """Test that CNOT with large batched states works as expected."""
+    import tensorflow as tf
+
+    dev = qml.device("default.qubit", wires=8)
+
+    @qml.qnode(dev, interface="tf")
+    def ancillary_qcnn_circuit(inputs):
+        qml.AmplitudeEmbedding(features=inputs, wires=range(4), normalize=True)
+        qml.CNOT(wires=[0, 1])
+        qml.Toffoli(wires=[0, 2, 4])
+        qml.Toffoli(wires=[0, 2, 5])
+        qml.Toffoli(wires=[0, 2, 6])
+        qml.Toffoli(wires=[0, 2, 7])
+        return [qml.expval(qml.PauliZ(i)) for i in range(4, 8)]
+
+    batch_size = 3
+    params = np.random.rand(batch_size, 16)
+    result = ancillary_qcnn_circuit(tf.Variable(params))
+    assert qml.math.shape(result) == (4, batch_size)
