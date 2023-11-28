@@ -334,6 +334,10 @@
   `qml.shadow_expval`.
   [(#4803)](https://github.com/PennyLaneAI/pennylane/pull/4803)
 
+* Using a `CNOT` or `PauliZ` operation with large, batched states and the tensorflow
+  interface no longer raises an unexpected error.
+  [(#4889)](https://github.com/PennyLaneAI/pennylane/pull/4889)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
