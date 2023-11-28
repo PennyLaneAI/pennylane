@@ -69,7 +69,7 @@ from pennylane.measurements import (
     shadow_expval,
 )
 from pennylane.ops import *
-from pennylane.ops import adjoint, ctrl, exp, sum, pow, prod, s_prod
+from pennylane.ops import adjoint, ctrl, cond, exp, sum, pow, prod, s_prod
 from pennylane.templates import broadcast, layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
@@ -86,10 +86,7 @@ from pennylane.transforms import (
     batch_input,
     batch_transform,
     batch_partial,
-    cut_circuit,
-    cut_circuit_mc,
     compile,
-    cond,
     defer_measurements,
     metric_tensor,
     specs,
@@ -114,11 +111,13 @@ from pennylane.ops.functions import (
     map_wires,
     matrix,
     simplify,
+    iterative_qpe,
 )
 from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost
 from pennylane.debugging import snapshots
 from pennylane.shadows import ClassicalShadow
+from pennylane.qcut import cut_circuit, cut_circuit_mc
 import pennylane.pulse
 
 import pennylane.fourier
@@ -129,6 +128,9 @@ import pennylane.qinfo
 from pennylane.interfaces import execute  # pylint:disable=wrong-import-order
 import pennylane.logging  # pylint:disable=wrong-import-order
 
+from pennylane.compiler import qjit
+import pennylane.compiler
+
 import pennylane.data
 
 # Look for an existing configuration file
@@ -137,6 +139,10 @@ default_config = Configuration("config.toml")
 
 class QuantumFunctionError(Exception):
     """Exception raised when an illegal operation is defined in a quantum function."""
+
+
+class PennyLaneDeprecationWarning(UserWarning):
+    """Warning raised when a PennyLane feature is being deprecated."""
 
 
 def _get_device_entrypoints():

@@ -265,14 +265,6 @@ class Controlled(SymbolicOp):
         if control_values is None:
             control_values = [True] * len(control_wires)
         else:
-            if isinstance(control_values, str):
-                warnings.warn(
-                    "Specifying control values as a string is deprecated. Please use Sequence[Bool]",
-                    UserWarning,
-                )
-                # All values not 0 are cast as true. Assumes a string of 1s and 0s.
-                control_values = [(x != "0") for x in control_values]
-
             control_values = (
                 [bool(control_values)]
                 if isinstance(control_values, int)
@@ -602,6 +594,13 @@ def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Op
         return None
 
     base_decomp = op.base.decomposition()
+    if len(base_decomp) == 0 and isinstance(op.base, qml.GlobalPhase):
+        warnings.warn(
+            "Controlled-GlobalPhase currently decomposes to nothing, and this will likely "
+            "produce incorrect results. Consider implementing your circuit with a different set "
+            "of operations, or use a device that natively supports GlobalPhase.",
+            UserWarning,
+        )
 
     return [Controlled(newop, op.control_wires, work_wires=op.work_wires) for newop in base_decomp]
 

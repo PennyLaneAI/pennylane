@@ -134,7 +134,7 @@ class TransformDispatcher:
             "or call the transform directly using qnode = transform_fn(qnode, "
             "**transform_kwargs). Visit the deprecations page for more details: "
             "https://docs.pennylane.ai/en/stable/development/deprecations.html",
-            UserWarning,
+            qml.PennyLaneDeprecationWarning,
         )
 
         if obj is not None:
@@ -366,6 +366,18 @@ class TransformContainer:
                 self._is_informative,
                 self.final_transform,
             )
+        )
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, TransformContainer):
+            return False
+        return (
+            self.args == other.args
+            and self.transform == other.transform
+            and self.kwargs == other.kwargs
+            and self.classical_cotransform == other.classical_cotransform
+            and self.is_informative == other.is_informative
+            and self.final_transform == other.final_transform
         )
 
     @property

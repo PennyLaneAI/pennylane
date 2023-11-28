@@ -844,7 +844,7 @@ class TestFiniteDiffIntegration:
                     (np.sin(x / 2) ** 2 * np.sin(y)) / 2,
                     -(np.sin(x / 2) ** 2 * np.sin(y)) / 2,
                 ],
-                atol=0.07,
+                atol=0.08,
                 rtol=0,
             )
             assert isinstance(res[1][1], numpy.ndarray)

@@ -3,6 +3,9 @@
 Deprecations
 ============
 
+All PennyLane deprecations will raise a ``qml.PennyLaneDeprecationWarning``. Pending and completed
+deprecations are listed below.
+
 Pending deprecations
 --------------------
 
@@ -86,6 +89,11 @@ Pending deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+* Specifying ``control_values`` passed to ``qml.ctrl`` as a string is no longer supported.
+
+  - Deprecated in v0.25
+  - Removed in v0.34
 
 * ``qml.gradients.pulse_generator`` has become ``qml.gradients.pulse_odegen`` to adhere to paper naming conventions.
 
