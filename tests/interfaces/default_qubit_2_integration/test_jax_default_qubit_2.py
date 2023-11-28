@@ -400,7 +400,15 @@ class TestJaxExecuteIntegration:
             return jnp.hstack(execute([new_tape], device, **execute_kwargs)[0])
 
         jac_fn = jax.jacobian(cost, argnums=[0, 1])
-        jac = jac_fn(a, b)
+        if execute_kwargs.get("gradient_fn", "") == "adjoint" and execute_kwargs.get(
+            "device_vjp", False
+        ):
+            with pytest.raises(
+                NotImplementedError, match=r"adjoint_vjp does not yet support jax jacobians"
+            ):
+                jac = jac_fn(a, b)
+        else:
+            jac = jac_fn(a, b)
 
         a = jnp.array(0.54)
         b = jnp.array(0.8)

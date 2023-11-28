@@ -269,7 +269,7 @@ def jax_jvp_execute(tapes: Batch, execute_fn: ExecuteFn, jpc):
         the returned tuple corresponds in order to the provided tapes.
 
     """
-    if logger.isEnabledFor(logging.DEBUG):
+    if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
         logger.debug("Entry with (tapes=%s, execute_fn=%s, jpc=%s)", tapes, execute_fn, jpc)
 
     parameters = tuple(tuple(t.get_parameters()) for t in tapes)
@@ -291,7 +291,7 @@ def jax_vjp_execute(tapes: Batch, execute_fn: ExecuteFn, jpc):
         the returned tuple corresponds in order to the provided tapes.
 
     """
-    if logger.isEnabledFor(logging.DEBUG):
+    if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
         logger.debug("Entry with (tapes=%s, execute_fn=%s, jpc=%s)", tapes, execute_fn, jpc)
 
     parameters = tuple(tuple(t.get_parameters()) for t in tapes)
