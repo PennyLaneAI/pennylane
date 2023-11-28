@@ -4,6 +4,12 @@ on:
     - cron: "0 0 * * 0-6"  # Run daily at 0am
   pull_request:
   workflow_call:
+    inputs:
+      branch:
+        description: The PennyLane branch to run benchmarks with
+        required: false
+        type: string
+        default: 'master'
 
 concurrency:
   group: benchmarks-${{ github.ref }}
@@ -40,9 +46,9 @@ jobs:
       uses: ./.github/workflows/interface-unit-tests.yml
       needs: reference-benchmarks
       with:
-        # If runnning on schedule will compare master with the reference data.
+        # If running on schedule will compare master with the reference data.
         # If not, will compare the branch defined by github.ref (PRs, for example)
-        branch: ${{ github.ref }}
+        branch: ${{ inputs.branch == '' && github.ref ||  inputs.branch}}
 
         pipeline_mode: 'benchmarks'
 
