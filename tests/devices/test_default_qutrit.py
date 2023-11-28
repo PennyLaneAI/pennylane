@@ -1405,7 +1405,7 @@ class TestDensityMatrix:
 @pytest.mark.parametrize("use_jit", [True, False])
 class TestQNodeIntegrationJax:
     """Integration tests for default.qutrit with JAX. This test ensures it integrates
-        properly with the PennyLane UI, in particular the QNode."""
+    properly with the PennyLane UI, in particular the QNode."""
 
     def test_qutrit_circuit(self, tol, use_jit):
         """Test that the device provides the correct
@@ -1601,7 +1601,7 @@ class TestPassthruIntegrationJax:
 @pytest.mark.tf
 class TestQNodeIntegrationTF:
     """Integration tests for default.qutrit with TensorFlow. This test ensures it integrates
-            properly with the PennyLane UI, in particular the QNode."""
+    properly with the PennyLane UI, in particular the QNode."""
 
     def test_qutrit_circuit(self, tol):
         """Test that the device provides the correct
@@ -1783,7 +1783,7 @@ class TestPassthruIntegrationTF:
 @pytest.mark.torch
 class TestQNodeIntegrationTorch:
     """Integration tests for default.qutrit with Torch. This test ensures it integrates
-            properly with the PennyLane UI, in particular the QNode."""
+    properly with the PennyLane UI, in particular the QNode."""
 
     def test_qutrit_circuit(self, tol):
         """Test that the device provides the correct
