@@ -155,8 +155,9 @@ def _(op: MidMeasureMP, drawer, layer, config):
 
     if op in config.bit_map:
         c_wire = config.bit_map[op]
-        # drawer.classical_control(c_wire, layer, op.wires[0], opening="right")
-        # drawer.classical_wire(c_wire, layer, config.terminal_layers[c_wire])
+        layers = [layer, layer, config.terminal_layers[c_wire]]
+        wires = [op.wires[0], c_wire + drawer.n_wires, c_wire + drawer.n_wires]
+        drawer.classical_wire(layers, wires)
 
 
 @_add_operation_to_drawer.register
@@ -168,9 +169,9 @@ def _(op: qml.ops.op_math.Conditional, drawer, layer, config) -> None:
         box_options={"zorder": 4},
         text_options={"zorder": 5},
     )
-    joins = tuple(config.bit_map[m] for m in op.meas_val.measurements)
+    joins = tuple((config.bit_map[m] + drawer.n_wires) for m in op.meas_val.measurements)
     c_wire = max(joins)
-    drawer.classical_control(c_wire, layer, min(op.wires), joins=joins)
+    drawer.classical_wire([layer, layer], [min(op.wires), c_wire], joins=joins)
 
 
 def _get_measured_wires(measurements, wires) -> set:
