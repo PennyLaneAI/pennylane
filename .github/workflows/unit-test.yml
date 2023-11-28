@@ -101,6 +101,7 @@ jobs:
         with:
           ref: ${{ inputs.branch }}
           fetch-depth: ${{ inputs.checkout_fetch_depth }}
+          repository: PennyLaneAI/pennylane
 
       - name: Determine benchmark name
         if: ${{ inputs.pipeline_mode != 'unit-tests' }}
