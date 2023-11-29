@@ -486,7 +486,7 @@ def vjp(f, params, cotangents, method=None, h=None, argnum=None):
                              differentiable by listing their indices in the ``argnum`` parameter.
         cotangents(List[Array]): List (or a tuple) of tangent values to use in JVP. The list size
                                  and shapes must match the size and shape of ``f`` outputs.
-        method(str): Differentiation method to use, same as in :func:`~pennylane.grad`.
+        method(str): Differentiation method to use, same as in :func:`~.grad`.
         h (float): the step-size value for the finite-difference (``"fd"``) method
         argnum (Union[int, List[int]]): the params' indices to differentiate.
 
@@ -497,7 +497,7 @@ def vjp(f, params, cotangents, method=None, h=None, argnum=None):
         TypeError: invalid parameter types
         ValueError: invalid parameter values
 
-    .. seealso:: :func:`~pennylane.grad`, :func:`~.jvp`, :func:`~.jacobian`
+    .. seealso:: :func:`~.grad`, :func:`~.jvp`, :func:`~.jacobian`
 
     **Example**
 
@@ -540,6 +540,7 @@ def jvp(f, params, tangents, method=None, h=None, argnum=None):
 
         When used with :func:`~.qjit`, this function only supports the Catalyst compiler;
         see :func:`catalyst.jvp` for more details.
+
         Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
         page for an overview of the differences between Catalyst and PennyLane.
@@ -551,7 +552,7 @@ def jvp(f, params, tangents, method=None, h=None, argnum=None):
                               differentiable by listing their indices in the ``argnum`` parameter.
         tangents(List[Array]): List (or a tuple) of tangent values to use in JVP. The list size and
                                shapes must match the ones of differentiable params.
-        method(str): Differentiation method to use, same as in :func:`~pennylane.grad`.
+        method(str): Differentiation method to use, same as in :func:`~.grad`.
         h (float): the step-size value for the finite-difference (``"fd"``) method
         argnum (Union[int, List[int]]): the params' indices to differentiate.
 
@@ -562,7 +563,7 @@ def jvp(f, params, tangents, method=None, h=None, argnum=None):
         TypeError: invalid parameter types
         ValueError: invalid parameter values
 
-    .. seealso:: :func:`~pennylane.grad`, :func:`~.vjp`, :func:`~.jacobian`
+    .. seealso:: :func:`~.grad`, :func:`~.vjp`, :func:`~.jacobian`
 
     **Example 1 (basic usage)**
 
