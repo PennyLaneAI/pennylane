@@ -53,13 +53,15 @@ _CLIFFORD_T_TWO_GATES = [
 ]
 
 # Single-parameter gates in PL
+# note: _simplify_param makes use of their periodic nature,
+# any additions to this, should be reflected there as well.
 _PARAMETER_GATES = (qml.RX, qml.RY, qml.RZ, qml.Rot, qml.PhaseShift)
 
 # Clifford+T gate set
 _CLIFFORD_T_GATES = tuple(_CLIFFORD_T_ONE_GATES + _CLIFFORD_T_TWO_GATES) + (qml.GlobalPhase,)
 
 
-def check_clifford_op(op):
+def check_clifford_op(op, use_decomposition=False):
     r"""Checks if an operator is Clifford or not.
 
     For a given unitary operator :math:`U` acting on :math:`N` qubits, this method checks that the
@@ -68,13 +70,17 @@ def check_clifford_op(op):
 
     Args:
         op: the operator that needs to be tested
+        use_decomposition: if ``True``, use operator's decomposition to compute the matrix, in case
+            it doesn't define a ``compute_matrix`` method. Default is ``False``.
 
     Returns:
         Bool that represents whether the provided operator is Clifford or not.
     """
 
     # Check if matrix can be calculated for the operator
-    if not op.has_matrix:
+    if (not op.has_matrix and not use_decomposition) or (
+        use_decomposition and not op.expand().wires
+    ):
         return False
 
     # Compute the LCUs for the operator in Pauli basis
@@ -104,7 +110,7 @@ def check_clifford_op(op):
     return True
 
 
-def check_clifford_t(op):
+def check_clifford_t(op, use_decomposition=False):
     r"""Checks whether the gate is in the standard Clifford+T basis.
 
     For a given unitary operator :math:`U` acting on :math:`N` qubits, which is not a T-gate,
@@ -114,6 +120,8 @@ def check_clifford_t(op):
 
     Args:
         op: the operator that needs to be checked
+        use_decomposition: if ``True``, use operator's decomposition to compute the matrix, in case
+            it doesn't define a ``compute_matrix`` method. Default is ``False``.
 
     Returns:
         Bool that represents whether the provided operator is Clifford+T or not.
@@ -134,7 +142,7 @@ def check_clifford_t(op):
             else qml.math.allclose(qml.math.mod(theta, math.pi), 0.0)
         )
 
-    return check_clifford_op(op)
+    return check_clifford_op(op, use_decomposition=use_decomposition)
 
 
 def _simplify_param(theta, gate):
