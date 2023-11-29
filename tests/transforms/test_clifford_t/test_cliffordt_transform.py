@@ -20,7 +20,6 @@ import pytest
 import pennylane as qml
 
 from pennylane.transforms.decompositions.clifford_t.clifford_t_transform import (
-    check_clifford_op,
     check_clifford_t,
     clifford_t_decomposition,
     _rot_decompose,
