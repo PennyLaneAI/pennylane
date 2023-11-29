@@ -49,6 +49,7 @@
 * `qml.draw` now supports drawing mid-circuit measurements and conditional operators.
   [(#4775)](https://github.com/PennyLaneAI/pennylane/pull/4775)
   [(#4803)](https://github.com/PennyLaneAI/pennylane/pull/4803)
+  [(#4901)](https://github.com/PennyLaneAI/pennylane/pull/4901)
 
 <h4>Catalyst is seamlessly integrated with PennyLane ⚗️</h4>
 
@@ -370,6 +371,9 @@
 * Using a `CNOT` or `PauliZ` operation with large, batched states and the tensorflow
   interface no longer raises an unexpected error.
   [(#4889)](https://github.com/PennyLaneAI/pennylane/pull/4889)
+
+* `qml.map_wires` no longer fails when mapping nested quantum tapes.
+  [(#4901)](https://github.com/PennyLaneAI/pennylane/pull/4901)
 
 <h3>Contributors ✍️</h3>
 
