@@ -66,6 +66,7 @@ PennyLane primitives.
 .. autosummary::
     :toctree: api
 
+    ~cond
     ~grad
     ~jacobian
 

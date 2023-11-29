@@ -118,6 +118,7 @@
   ```
 
 * `qml.for_loop` and `qml.while_loop` compiler-specific decorators are added.
+  `qml.cond` can be used with the `qml.qjit` decorator.
   [(#4698)](https://github.com/PennyLaneAI/pennylane/pull/4698)
 
   ``` python
@@ -145,6 +146,9 @@
   >>> circuit(7, 1.6)
   (array(0.97926626), array(0.55395718))
   ```
+
+* `qml.ctrl` can be used with the `qml.qjit` decorator.
+  [(#4726)](https://github.com/PennyLaneAI/pennylane/pull/4726)
 
 <h3>Improvements 🛠</h3>
 
