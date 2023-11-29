@@ -214,6 +214,9 @@
   style, but with sketch-style lines.
   [(#4880)](https://github.com/PennyLaneAI/pennylane/pull/4880)
 
+* `Conditional` and `MeasurementValue` objects now implement `map_wires`.
+  [(#4884)](https://github.com/PennyLaneAI/pennylane/pull/4884)
+
 <h3>Breaking changes 💔</h3>
 
 * The transforms submodule `qml.transforms.qcut` becomes its own module `qml.qcut`.
