@@ -249,6 +249,26 @@ class TestCatalyst:
         with pytest.raises(CompileError, match="Setting lazy=False is not supported with qjit."):
             workflow(0.1, [1])
 
+    def test_control(self):
+        """Test that control works with qjit."""
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qjit
+        @qml.qnode(dev)
+        def workflow(theta, w, cw):
+            qml.Hadamard(wires=[0])
+            qml.Hadamard(wires=[1])
+
+            def func(arg):
+                qml.RX(theta, wires=arg)
+
+            qml.ctrl(func, control=[cw])(w)
+            qml.ctrl(qml.RZ, control=[cw])(theta, wires=w)
+            qml.ctrl(qml.RY(theta, wires=w), control=[cw])
+            return qml.probs()
+
+        assert jnp.allclose(workflow(jnp.pi / 4, 1, 0), jnp.array([0.25, 0.25, 0.125, 0.375]))
+
     def test_grad_classical_preprocessing(self):
         """Test the grad transformation with classical preprocessing."""
 
