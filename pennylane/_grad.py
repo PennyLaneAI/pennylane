@@ -16,7 +16,6 @@ This module contains the autograd wrappers :class:`grad` and :func:`jacobian`
 """
 import warnings
 
-
 from autograd import jacobian as _jacobian
 from autograd.core import make_vjp as _make_vjp
 from autograd.numpy.numpy_boxes import ArrayBox
@@ -31,6 +30,7 @@ make_vjp = unary_to_nary(_make_vjp)
 class grad:
     """Returns the gradient as a callable function of hybrid quantum-classical functions.
     :func:`~.qjit` and Autograd compatible.
+
     By default, gradients are computed for arguments which contain
     the property ``requires_grad=True``. Alternatively, the ``argnum`` keyword argument
     can be specified to compute gradients for function arguments without this property,
