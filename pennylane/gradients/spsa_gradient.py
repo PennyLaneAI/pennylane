@@ -22,7 +22,7 @@ from functools import partial
 import numpy as np
 
 import pennylane as qml
-from pennylane.transforms.core import transform
+from pennylane import transform
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 
@@ -103,13 +103,13 @@ def spsa_grad(
     sampler=_rademacher_sampler,
     sampler_rng=None,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
-    r"""Transform a QNode to compute the SPSA gradient of all gate
+    r"""Transform a circuit to compute the SPSA gradient of all gate
     parameters with respect to its inputs. This estimator shifts all parameters
     simultaneously and approximates the gradient based on these shifts and a
     finite-difference method.
 
     Args:
-        tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
+        tape (QNode or QuantumTape): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
@@ -166,17 +166,11 @@ def spsa_grad(
             ``spsa_grad`` in each call.
 
     Returns:
-        function or tuple[list[QuantumTape], function]:
+        qnode (QNode) or tuple[List[QuantumTape], function]:
 
-        - If the input is a QNode, an object representing the Jacobian (function) of the QNode
-          that can be executed to obtain the Jacobian.
-          The type of the Jacobian returned is either a tensor, a tuple or a
-          nested tuple depending on the nesting structure of the original QNode output.
-
-        - If the input is a tape, a tuple containing a
-          list of generated tapes, together with a post-processing
-          function to be applied to the results of the evaluated tapes
-          in order to obtain the Jacobian.
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple depending upon the nesting
+        structure of measurements in the original circuit.
 
     **Example**
 
@@ -241,7 +235,7 @@ def spsa_grad(
         device evaluation. Instead, the processed tapes, and post-processing
         function, which together define the gradient are directly returned:
 
-        >>> ops = [qml.RX(p, wires=0) for p in params]
+        >>> ops = [qml.RX(params[0], 0), qml.RY(params[1], 0), qml.RX(params[2], 0)]
         >>> measurements = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))]
         >>> tape = qml.tape.QuantumTape(ops, measurements)
         >>> gradient_tapes, fn = qml.gradients.spsa_grad(tape)
@@ -330,8 +324,10 @@ def spsa_grad(
     all_coeffs = []
     for idx_rep in range(num_directions):
         direction = sampler(indices, num_trainable_params, idx_rep, rng=sampler_rng)
+        # the `where` arg is being cast to list to avoid unexpected side effects from types that
+        # override __array_ufunc__. See https://github.com/numpy/numpy/pull/23240 for more details
         inv_direction = qml.math.divide(
-            1, direction, where=(direction != 0), out=qml.math.zeros_like(direction)
+            1, direction, where=list(direction != 0), out=qml.math.zeros_like(direction)
         )
         # Use only the non-zero part of `direction` for the shifts, to skip redundant zero shifts
         _shifts = qml.math.tensordot(h * shifts, direction[indices], axes=0)

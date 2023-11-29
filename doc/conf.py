@@ -45,8 +45,22 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx_automodapi.automodapi",
     "sphinx_copybutton",
+    "sphinxext.opengraph",
     "m2r2",
 ]
+
+# Open Graph metadata
+ogp_social_cards = {
+    "image": "_static/logo.png",
+    "enable": True,
+    "site_url": "https://docs.pennylane.ai/",
+    "line_color": "#03b2ff",
+}
+ogp_image = "_static/header-tall.png"
+
+
+# The base URL with a proper language and version.
+html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "/")
 
 os.environ["SPHINX_BUILD"] = "1"
 

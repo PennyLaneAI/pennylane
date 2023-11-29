@@ -1,4 +1,4 @@
-# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -124,11 +124,6 @@ class PowOperation(Operation):
     def name(self):
         return self._name
 
-    # pylint: disable=missing-function-docstring
-    @property
-    def basis(self):
-        return self.base.basis
-
     @property
     def control_wires(self):
         return self.base.control_wires
@@ -221,8 +216,8 @@ class Pow(ScalarSymbolicOp):
             if (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) and (
                 self.batch_size is None
             ):
-                pr = qml.pauli.PauliSentence({})
-                for _ in range(self.z):
+                pr = base_pauli_rep
+                for _ in range(self.z - 1):
                     pr = pr * base_pauli_rep
                 self._pauli_rep = pr
             else:
@@ -264,7 +259,7 @@ class Pow(ScalarSymbolicOp):
 
     @staticmethod
     def _matrix(scalar, mat):
-        if isinstance(scalar, int):
+        if isinstance(scalar, int) and qml.math.get_deep_interface(mat) != "tensorflow":
             return qmlmath.linalg.matrix_power(mat, scalar)
         return fractional_matrix_power(mat, scalar)
 

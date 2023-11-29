@@ -130,10 +130,12 @@ class ExpvalCost:
 
         Grouping these commuting observables leads to fewer device executions:
 
-        >>> cost_opt(params)
-        >>> ex_opt = dev.num_executions
-        >>> cost_no_opt(params)
-        >>> ex_no_opt = dev.num_executions - ex_opt
+        >>> with qml.Tracker(dev) as tracker:
+        ...     cost_opt(params)
+        >>> ex_opt = tracker.totals["executions"]
+        >>> with tracker:
+        ...     cost_no_opt(params)
+        >>> ex_no_opt = tracker.totals["executions"]
         >>> print("Number of executions:", ex_no_opt)
         Number of executions: 2
         >>> print("Number of executions (optimized):", ex_opt)
@@ -154,7 +156,7 @@ class ExpvalCost:
             "ExpvalCost is deprecated, use qml.expval() instead. "
             "For optimizing Hamiltonian measurements with measuring commuting "
             "terms in parallel, use the grouping_type keyword in qml.Hamiltonian.",
-            UserWarning,
+            qml.PennyLaneDeprecationWarning,
         )
 
         if kwargs.get("measure", "expval") != "expval":

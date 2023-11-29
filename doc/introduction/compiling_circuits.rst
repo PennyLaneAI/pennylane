@@ -135,9 +135,9 @@ For example, take the following decorated quantum function:
 
     dev = qml.device('default.qubit', wires=[0, 1, 2])
 
+    @qml.compile
     @qml.qnode(dev)
-    @qml.compile()
-    def qfunc(x, y, z):
+    def circuit(x, y, z):
         qml.Hadamard(wires=0)
         qml.Hadamard(wires=1)
         qml.Hadamard(wires=2)
@@ -157,7 +157,7 @@ The default behaviour of :func:`~.pennylane.compile` applies a sequence of three
 transforms: :func:`~.pennylane.transforms.commute_controlled`, :func:`~.pennylane.transforms.cancel_inverses`,
 and then :func:`~.pennylane.transforms.merge_rotations`.
 
->>> print(qml.draw(qfunc)(0.2, 0.3, 0.4))
+>>> print(qml.draw(circuit)(0.2, 0.3, 0.4))
 0: ──H──RX(0.60)─────────────────┤  <Z>
 1: ──H─╭X─────────────────────╭●─┤     
 2: ──H─╰●─────────RX(0.30)──Y─╰Z─┤     
@@ -173,8 +173,8 @@ controlled gates and cancel adjacent inverses, we could do:
     from pennylane.transforms import commute_controlled, cancel_inverses
     pipeline = [commute_controlled, cancel_inverses]
 
+    @partial(qml.compile, pipeline=pipeline)
     @qml.qnode(dev)
-    @qml.compile(pipeline=pipeline)
     def qfunc(x, y, z):
         qml.Hadamard(wires=0)
         qml.Hadamard(wires=1)

@@ -19,7 +19,7 @@ Through the use of the :func:`~.qjit` decorator, entire workflows
 can be just-in-time (JIT) compiled --- including both quantum and
 classical processing --- down to a machine binary on first
 function execution. Subsequent calls to the compiled function will execute
-the previously compiled binary, resulting in significant
+the previously-compiled binary, resulting in significant
 performance improvements.
 
 Currently, PennyLane supports the
@@ -32,13 +32,14 @@ autodifferentiation.
 
 .. note::
 
-    Catalyst currently only supports the JAX interface of PennyLane.
+    `Catalyst <https://github.com/pennylaneai/catalyst>`__ currently only
+    supports the JAX interface of PennyLane.
 
 Overview
 --------
 
 The main entry point to hybrid compilation in PennyLane
-is via the qjit decorator.
+is via the :func:`~.qjit` decorator.
 
 .. autosummary::
     :toctree: api
@@ -58,6 +59,15 @@ available hybrid compilers.
     ~compiler.active_compiler
     ~compiler.active
 
+Presented below is the list of :func:`~.qjit` compatible
+PennyLane primitives.
+
+.. autosummary::
+    :toctree: api
+
+    ~grad
+    ~jacobian
+
 Compiler
 --------
 
@@ -71,15 +81,14 @@ to incorporate additional compilers in the near future.
 
 .. note::
 
-    Catalyst is officially supported on Linux (x86_64) and macOS (aarch64) platforms.
-    To install it, simply run the following ``pip`` command:
+    To install Catalyst, simply run the following ``pip`` command:
 
     .. code-block:: console
 
       pip install pennylane-catalyst
 
-    Please see the :doc:`installation <catalyst:dev/installation>`
-    guide for more information.
+    See the :doc:`installation <catalyst:dev/installation>`
+    guide for more information and supported platforms.
 
 Basic usage
 -----------
@@ -90,18 +99,18 @@ Basic usage
     ``lightning.kokkos``, ``braket.local.qubit``, and ``braket.aws.qubit``
     devices. It does not support ``default.qubit``.
 
-    Please see the :doc:`Catalyst documentation <catalyst:index>` for more details on supported
+    See the :doc:`Catalyst documentation <catalyst:index>` for more details on supported
     devices, operations, and measurements.
 
 When using just-in-time (JIT) compilation, the compilation is triggered at the call site the
 first time the quantum function is executed. For example, ``circuit`` is
-compiled as early as the first call.
+compiled in the first call.
 
 .. code-block:: python
 
     dev = qml.device("lightning.qubit", wires=2)
 
-    @qjit
+    @qml.qjit
     @qml.qnode(dev)
     def circuit(theta):
         qml.Hadamard(wires=0)
@@ -172,9 +181,14 @@ using Catalyst.
 Adding a compiler
 -----------------
 
-For any compiler packages seeking to be registered, it is imperative that they
-expose the ``entry_points`` metadata under the designated group name
-``pennylane.compilers``, with the following entry points:
+.. warning::
+
+    The PennyLane compiler API is experimental and subject to change.
+
+To register any compiler packages, an experimental interface is available.
+This interface exposes the ``entry_points``
+metadata under the designated group name ``pennylane.compilers``, including the
+following entry points:
 
 - ``context``: Path to the compilation evaluation context manager.
   This context manager should have the method ``context.is_tracing()``,
@@ -202,7 +216,7 @@ In order to support applying the ``qjit`` decorator with and without arguments,
     def function(x, y):
         ...
 
-you should ensure that the ``qjit`` decorator itself returns a decorator
+You should ensure that the ``qjit`` decorator itself returns a decorator
 if no function is provided:
 
 .. code-block:: python

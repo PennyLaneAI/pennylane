@@ -28,7 +28,19 @@ class CompileError(Exception):
 class AvailableCompilers:
     """This contains data of installed PennyLane compiler packages."""
 
-    entrypoints_interface = ("qjit", "context", "ops")
+    # The collection of entry points that compiler packages must export.
+    # Note that this is still an experimental interface and is subject to change.
+    # This variable is used for validity checks of installed packages entry points.
+    # For any compiler packages seeking to be registered, it is imperative
+    # that they expose the ``entry_points`` metadata under the designated
+    # group name ``pennylane.compilers``, with the following entry points:
+    # - ``context``: Path to the compilation evaluation context manager.
+    # - ``ops``: Path to the compiler operations module.
+    # - ``qjit``: Path to the JIT decorator provided by the compiler.
+    entrypoints_interface = ("context", "qjit", "ops")
+
+    # The dictionary of installed compiler packages
+    # and their entry point loaders.
     names_entrypoints = {}
 
 
