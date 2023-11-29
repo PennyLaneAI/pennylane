@@ -19,7 +19,6 @@ import pytest
 import pennylane as qml
 from pennylane.compiler.compiler import CompileError
 
-
 from pennylane import numpy as np
 
 catalyst = pytest.importorskip("catalyst")
@@ -211,78 +210,68 @@ class TestCatalyst:
         result_header = "func.func private @circuit(%arg0: tensor<f64>) -> tensor<f64>"
         assert result_header in mlir_str
 
-    def test_jvp(self):
-        """Test that the correct JVP is returned with QJIT."""
+    def test_qjit_adjoint(self):
+        """Test JIT compilation with adjoint support"""
+        dev = qml.device("lightning.qubit", wires=2)
 
         @qml.qjit
-        def jvp(params, tangent):
-            def f(x):
-                y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
-                return jnp.stack(y)
+        @qml.qnode(device=dev)
+        def workflow_cl(theta, wires):
+            def func():
+                qml.RX(theta, wires=wires)
 
-            return qml.jvp(f, [params], [tangent])
+            qml.adjoint(func)()
+            return qml.probs()
 
-        x = jnp.array([0.1, 0.2])
-        tangent = jnp.array([0.3, 0.6])
-        res = jvp(x, tangent)
-        assert len(res) == 2
-        assert jnp.allclose(res[0], jnp.array([0.09983342, 0.04, 0.02]))
-        assert jnp.allclose(res[1], jnp.array([0.29850125, 0.24000006, 0.12]))
+        @qml.qnode(device=dev)
+        def workflow_pl(theta, wires):
+            def func():
+                qml.RX(theta, wires=wires)
 
-    def test_jvp_without_qjit(self):
-        """Test that an error is raised when using JVP without QJIT."""
+            qml.adjoint(func)()
+            return qml.probs()
 
-        def jvp(params, tangent):
-            def f(x):
-                y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
-                return jnp.stack(y)
+        assert jnp.allclose(workflow_cl(0.1, [1]), workflow_pl(0.1, [1]))
 
-            return qml.jvp(f, [params], [tangent])
-
-        x = jnp.array([0.1, 0.2])
-        tangent = jnp.array([0.3, 0.6])
-
-        with pytest.raises(
-            CompileError, match="Pennylane does not support the JVP function without QJIT."
-        ):
-            jvp(x, tangent)
-
-    def test_vjp(self):
-        """Test that the correct VJP is returned with QJIT."""
+    def test_qjit_adjoint_lazy(self):
+        """Test that Lazy kwarg is not supported."""
+        dev = qml.device("lightning.qubit", wires=2)
 
         @qml.qjit
-        def vjp(params, cotangent):
-            def f(x):
-                y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
-                return jnp.stack(y)
+        @qml.qnode(device=dev)
+        def workflow(theta, wires):
+            def func():
+                qml.RX(theta, wires=wires)
 
-            return qml.vjp(f, [params], [cotangent])
+            qml.adjoint(func, lazy=False)()
+            return qml.probs()
 
-        x = jnp.array([0.1, 0.2])
-        dy = jnp.array([-0.5, 0.1, 0.3])
+        with pytest.raises(CompileError, match="Setting lazy=False is not supported with qjit."):
+            workflow(0.1, [1])
 
-        res = vjp(x, dy)
-        assert len(res) == 2
-        assert jnp.allclose(res[0], jnp.array([0.09983342, 0.04, 0.02]))
-        assert jnp.allclose(res[1], jnp.array([-0.43750208, 0.07000001]))
+    def test_control(self):
+        """Test that control works with qjit."""
+        dev = qml.device("lightning.qubit", wires=2)
 
-    def test_vjp_without_qjit(self):
-        """Test that an error is raised when using VJP without QJIT."""
+        @qml.qjit
+        @qml.qnode(dev)
+        def workflow(theta, w, cw):
+            qml.Hadamard(wires=[0])
+            qml.Hadamard(wires=[1])
 
-        def vjp(params, cotangent):
-            def f(x):
-                y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
-                return jnp.stack(y)
+            def func(arg):
+                qml.RX(theta, wires=arg)
 
-            return qml.vjp(f, [params], [cotangent])
+            qml.ctrl(func, control=[cw])(w)
+            qml.ctrl(qml.RZ, control=[cw])(theta, wires=w)
+            qml.ctrl(qml.RY(theta, wires=w), control=[cw])
+            return qml.probs()
 
-        x = jnp.array([0.1, 0.2])
-        dy = jnp.array([-0.5, 0.1, 0.3])
+        assert jnp.allclose(workflow(jnp.pi / 4, 1, 0), jnp.array([0.25, 0.25, 0.125, 0.375]))
 
-        with pytest.raises(
-            CompileError, match="Pennylane does not support the VJP function without QJIT."
-        ):
-            vjp(x, dy)
+
+class TestCatalystGrad:
+    """Test ``qml.qjit`` with Catalyst's grad operations"""
 
     def test_grad_classical_preprocessing(self):
         """Test the grad transformation with classical preprocessing."""
@@ -417,3 +406,76 @@ class TestCatalyst:
             match="Invalid values for 'method=fd' and 'h=0.3' in interpreted mode",
         ):
             workflow(np.array([2.0, 1.0]))
+
+    def test_jvp(self):
+        """Test that the correct JVP is returned with QJIT."""
+
+        @qml.qjit
+        def jvp(params, tangent):
+            def f(x):
+                y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
+                return jnp.stack(y)
+
+            return qml.jvp(f, [params], [tangent])
+
+        x = jnp.array([0.1, 0.2])
+        tangent = jnp.array([0.3, 0.6])
+        res = jvp(x, tangent)
+        assert len(res) == 2
+        assert jnp.allclose(res[0], jnp.array([0.09983342, 0.04, 0.02]))
+        assert jnp.allclose(res[1], jnp.array([0.29850125, 0.24000006, 0.12]))
+
+    def test_jvp_without_qjit(self):
+        """Test that an error is raised when using JVP without QJIT."""
+
+        def jvp(params, tangent):
+            def f(x):
+                y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
+                return jnp.stack(y)
+
+            return qml.jvp(f, [params], [tangent])
+
+        x = jnp.array([0.1, 0.2])
+        tangent = jnp.array([0.3, 0.6])
+
+        with pytest.raises(
+            CompileError, match="Pennylane does not support the JVP function without QJIT."
+        ):
+            jvp(x, tangent)
+
+    def test_vjp(self):
+        """Test that the correct VJP is returned with QJIT."""
+
+        @qml.qjit
+        def vjp(params, cotangent):
+            def f(x):
+                y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
+                return jnp.stack(y)
+
+            return qml.vjp(f, [params], [cotangent])
+
+        x = jnp.array([0.1, 0.2])
+        dy = jnp.array([-0.5, 0.1, 0.3])
+
+        res = vjp(x, dy)
+        assert len(res) == 2
+        assert jnp.allclose(res[0], jnp.array([0.09983342, 0.04, 0.02]))
+        assert jnp.allclose(res[1], jnp.array([-0.43750208, 0.07000001]))
+
+    def test_vjp_without_qjit(self):
+        """Test that an error is raised when using VJP without QJIT."""
+
+        def vjp(params, cotangent):
+            def f(x):
+                y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
+                return jnp.stack(y)
+
+            return qml.vjp(f, [params], [cotangent])
+
+        x = jnp.array([0.1, 0.2])
+        dy = jnp.array([-0.5, 0.1, 0.3])
+
+        with pytest.raises(
+            CompileError, match="Pennylane does not support the VJP function without QJIT."
+        ):
+            vjp(x, dy)

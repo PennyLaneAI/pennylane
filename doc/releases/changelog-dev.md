@@ -120,6 +120,12 @@
 * `qml.vjp` and `qml.vjp` can be used with the `qml.qjit` decorator.
   [(#4724)](https://github.com/PennyLaneAI/pennylane/pull/4724)
 
+* `qml.adjoint` can be used with the `qml.qjit` decorator.
+  [(#4725)](https://github.com/PennyLaneAI/pennylane/pull/4725)
+
+* `qml.ctrl` can be used with the `qml.qjit` decorator.
+  [(#4726)](https://github.com/PennyLaneAI/pennylane/pull/4726)
+
 <h3>Improvements 🛠</h3>
 
 * `qml.expval` with large `Hamiltonian` objects is now faster and has a significantly lower memory footprint (and constant with respect to the number of `Hamiltonian` terms) when the `Hamiltonian` is a `PauliSentence`. That is due to the introduction of a specialized `dot` method in the `PauliSentence` class which performs `PauliSentence`-`state` products.
