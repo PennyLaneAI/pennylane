@@ -19,7 +19,7 @@ In the PennyLane framework, these requirements are translated as follows:
 
 To streamline the creation of transforms and ensure their versatility across various circuit abstractions in PennyLane
 (:class:`~.QuantumTape`, :class:`~.QNode` and quantum functions), we have created a simple
-decorator :func:`~.transform` that can be applied on your quantum transform respecting the above contract.
+decorator :func:`pennylane.transform` that can be applied on your quantum transform respecting the above contract.
 
 Creating your own transform
 ---------------------------
@@ -44,7 +44,7 @@ function in this scenario, we include a null function that simply returns the re
 
         return [new_tape], null_postprocessing
 
-To make your transform applicable to both :class:`~.QNode` and quantum functions, you can use the :func:`~.transform` decorator.
+To make your transform applicable to both :class:`~.QNode` and quantum functions, you can use the :func:`pennylane.transform` decorator.
 
 >>> dispatched_transform = qml.transform(remove_rx)
 
@@ -96,6 +96,6 @@ Relevant links
 --------------
 
 Explore practical examples of transforms focused on compiling circuits in the :doc:`inspecting circuits </introduction/compiling_circuits>`.
-For gradient transforms, refer to the examples in :doc:`gradients documentation <../code/api/pennylane.gradients>`.
-Discover quantum information transformations in the :doc:`qinfo documentation <../code/api/pennylane.qinfo>`. Finally,
-for a comprehensive overview of transforms and core functionalities, consult the :doc:`qinfo documentation <../code/api/pennylane.transforms>`.
+For gradient transforms, refer to the examples in :doc:`gradients documentation <../code/qml_gradients>`.
+Discover quantum information transformations in the :doc:`qinfo documentation <../code/qml_qinfo`. Finally,
+for a comprehensive overview of transforms and core functionalities, consult the :doc:`qinfo documentation <../code/qml_transforms`.

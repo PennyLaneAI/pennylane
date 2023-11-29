@@ -1,10 +1,10 @@
 .. role:: html(raw)
    :format: html
 
-.. _intro_ref_compile_worklfow:
+.. _intro_ref_compile_worklfows:
 
-Just-in-time compilation with Catalyst
-======================================
+Compiling workflows
+===================
 
 In addition to quantum circuit transformations, PennyLane also supports full
 hybrid just-in-time (JIT) compilation via the :func:`~.qjit` decorator and
