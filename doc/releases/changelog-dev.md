@@ -284,6 +284,7 @@
 
 * Fixed a bug where the parameter-shift rule of `qml.ctrl(op)` was wrong if `op` had a generator
   that has two or more eigenvalues and is stored as a `SparseHamiltonian`.
+  [(#4899)](https://github.com/PennyLaneAI/pennylane/pull/4899)
 
 * `qml.grad` and `qml.jacobian` now explicitly raise errors if trainable parameters are integers.
   [(#4836)](https://github.com/PennyLaneAI/pennylane/pull/4836)
