@@ -113,7 +113,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
     return qjit_loader(fn=fn, *args, **kwargs)
 
 
-def while_loop(*args, **kwargs):
+def while_loop(cond_fn):
     """A :func:`~.qjit` compatible while-loop for PennyLane programs.
 
     .. note::
@@ -181,18 +181,18 @@ def while_loop(*args, **kwargs):
             return qml.expval(qml.PauliZ(0)), final_x
 
     >>> circuit(1.6)
-    [array(-0.02919952), array(2.56)]
+    (array(-0.02919952), array(2.56))
     """
 
     if active_jit := active_compiler():
         compilers = AvailableCompilers.names_entrypoints
         ops_loader = compilers[active_jit]["ops"].load()
-        return ops_loader.while_loop(*args, **kwargs)
+        return ops_loader.while_loop(cond_fn)
 
     raise CompileError("There is no active compiler package.")
 
 
-def for_loop(*args, **kwargs):
+def for_loop(lower_bound, upper_bound, step):
     """A :func:`~.qjit` compatible for-loop for PennyLane programs.
 
     .. note::
@@ -272,12 +272,12 @@ def for_loop(*args, **kwargs):
             return qml.expval(qml.PauliZ(0)), final_x
 
     >>> circuit(7, 1.6)
-    [array(0.97926626), array(0.55395718)]
+    (array(0.97926626), array(0.55395718))
     """
 
     if active_jit := active_compiler():
         compilers = AvailableCompilers.names_entrypoints
         ops_loader = compilers[active_jit]["ops"].load()
-        return ops_loader.for_loop(*args, **kwargs)
+        return ops_loader.for_loop(lower_bound, upper_bound, step)
 
     raise CompileError("There is no active compiler package.")

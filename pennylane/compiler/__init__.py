@@ -39,7 +39,8 @@ Overview
 --------
 
 The main entry point to hybrid compilation in PennyLane
-is via the :func:`~.qjit` decorator.
+is via the :func:`~.qjit` decorator that can be mixed with
+other compiler-specific decorators and functions:
 
 .. autosummary::
     :toctree: api
