@@ -561,7 +561,7 @@ def jvp(f, params, tangents, method=None, h=None, argnum=None):
     Raises:
         TypeError: invalid parameter types
         ValueError: invalid parameter values
-        
+
     .. seealso:: :func:`~pennylane.grad`, :func:`~.vjp`, :func:`~.jacobian`
 
     **Example 1 (basic usage)**
