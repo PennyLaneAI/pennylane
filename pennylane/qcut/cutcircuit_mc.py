@@ -32,7 +32,12 @@ from pennylane.wires import Wires
 from .cutstrategy import CutStrategy
 from .kahypar import kahypar_cut
 from .processing import qcut_processing_fn_mc, qcut_processing_fn_sample
-from .qcut import (
+
+from .tapes import _qcut_expand_fn, graph_to_tape, tape_to_graph
+from .utils import (
+    find_and_place_cuts,
+    fragment_graph,
+    replace_wire_cut_nodes,
     MeasureNode,
     PrepareNode,
     _prep_iminus_state,
@@ -42,8 +47,6 @@ from .qcut import (
     _prep_plus_state,
     _prep_zero_state,
 )
-from .tapes import _qcut_expand_fn, graph_to_tape, tape_to_graph
-from .utils import find_and_place_cuts, fragment_graph, replace_wire_cut_nodes
 
 
 def _cut_circuit_mc_expand(
@@ -202,14 +205,14 @@ def cut_circuit_mc(
         .. autosummary::
             :toctree:
 
-            ~transforms.qcut.tape_to_graph
-            ~transforms.qcut.find_and_place_cuts
-            ~transforms.qcut.replace_wire_cut_nodes
-            ~transforms.qcut.fragment_graph
-            ~transforms.qcut.graph_to_tape
-            ~transforms.qcut.expand_fragment_tapes_mc
-            ~transforms.qcut.qcut_processing_fn_sample
-            ~transforms.qcut.qcut_processing_fn_mc
+            ~qcut.tape_to_graph
+            ~qcut.find_and_place_cuts
+            ~qcut.replace_wire_cut_nodes
+            ~qcut.fragment_graph
+            ~qcut.graph_to_tape
+            ~qcut.expand_fragment_tapes_mc
+            ~qcut.qcut_processing_fn_sample
+            ~qcut.qcut_processing_fn_mc
 
         The following shows how these elementary steps are combined as part of the
         ``cut_circuit_mc()`` transform.
@@ -237,7 +240,7 @@ def cut_circuit_mc(
 
         To cut the circuit, we first convert it to its graph representation:
 
-        >>> graph = qml.transforms.qcut.tape_to_graph(tape)
+        >>> graph = qml.qcut.tape_to_graph(tape)
 
         If, however, the optimal location of the :class:`~.WireCut` is unknown, we can use
         :func:`~.find_and_place_cuts` to make attempts in automatically finding such a cut
@@ -256,11 +259,11 @@ def cut_circuit_mc(
             measurements = [qml.sample(wires=[0, 1, 2])]
             uncut_tape = qml.tape.QuantumTape(ops, measurements)
 
-        >>> cut_graph = qml.transforms.qcut.find_and_place_cuts(
-        ...     graph=qml.transforms.qcut.tape_to_graph(uncut_tape),
-        ...     cut_strategy=qml.transforms.qcut.CutStrategy(max_free_wires=2),
+        >>> cut_graph = qml.qcut.find_and_place_cuts(
+        ...     graph=qml.qcut.tape_to_graph(uncut_tape),
+        ...     cut_strategy=qml.qcut.CutStrategy(max_free_wires=2),
         ... )
-        >>> print(qml.transforms.qcut.graph_to_tape(cut_graph).draw())
+        >>> print(qml.qcut.graph_to_tape(cut_graph).draw())
          0: ──H─╭●───────────┤  Sample[|1⟩⟨1|]
          1: ────╰X──//──X─╭●─┤  Sample[|1⟩⟨1|]
          2: ──────────────╰X─┤  Sample[|1⟩⟨1|]
@@ -268,7 +271,7 @@ def cut_circuit_mc(
         Our next step, using the original manual cut placement, is to remove the :class:`~.WireCut`
         nodes in the graph and replace with :class:`~.MeasureNode` and :class:`~.PrepareNode` pairs.
 
-        >>> qml.transforms.qcut.replace_wire_cut_nodes(graph)
+        >>> qml.qcut.replace_wire_cut_nodes(graph)
 
         The :class:`~.MeasureNode` and :class:`~.PrepareNode` pairs are placeholder operations that
         allow us to cut the circuit graph and then randomly select measurement and preparation
@@ -277,11 +280,11 @@ def cut_circuit_mc(
         `communication_graph <https://en.wikipedia.org/wiki/Quotient_graph>`__
         detailing the connectivity between the components.
 
-        >>> fragments, communication_graph = qml.transforms.qcut.fragment_graph(graph)
+        >>> fragments, communication_graph = qml.qcut.fragment_graph(graph)
 
         We now convert the ``fragments`` back to :class:`~.QuantumTape` objects
 
-        >>> fragment_tapes = [qml.transforms.qcut.graph_to_tape(f) for f in fragments]
+        >>> fragment_tapes = [qml.qcut.graph_to_tape(f) for f in fragments]
 
         The circuit fragments can now be visualized:
 
@@ -315,7 +318,7 @@ def cut_circuit_mc(
         is determined by the number of shots.
 
         >>> shots = 3
-        >>> configurations, settings = qml.transforms.qcut.expand_fragment_tapes_mc(
+        >>> configurations, settings = qml.qcut.expand_fragment_tapes_mc(
         ...     fragment_tapes, communication_graph, shots=shots
         ... )
         >>> tapes = tuple(tape for c in configurations for tape in c)
@@ -353,7 +356,7 @@ def cut_circuit_mc(
         output bitstrings.
 
         >>> results = qml.execute(tapes, dev, gradient_fn=None)
-        >>> qml.transforms.qcut.qcut_processing_fn_sample(
+        >>> qml.qcut.qcut_processing_fn_sample(
         ...     results,
         ...     communication_graph,
         ...     shots=shots,
@@ -374,7 +377,7 @@ def cut_circuit_mc(
                 if x[0] == 1:
                     return -1
 
-        >>> qml.transforms.qcut.qcut_processing_fn_mc(
+        >>> qml.qcut.qcut_processing_fn_mc(
         ...     results,
         ...     communication_graph,
         ...     settings,
@@ -636,17 +639,17 @@ def expand_fragment_tapes_mc(
 
     We can generate the fragment tapes using the following workflow:
 
-    >>> g = qml.transforms.qcut.tape_to_graph(tape)
-    >>> qml.transforms.qcut.replace_wire_cut_nodes(g)
-    >>> subgraphs, communication_graph = qml.transforms.qcut.fragment_graph(g)
-    >>> tapes = [qml.transforms.qcut.graph_to_tape(sg) for sg in subgraphs]
+    >>> g = qml.qcut.tape_to_graph(tape)
+    >>> qml.qcut.replace_wire_cut_nodes(g)
+    >>> subgraphs, communication_graph = qml.qcut.fragment_graph(g)
+    >>> tapes = [qml.qcut.graph_to_tape(sg) for sg in subgraphs]
 
     We can then expand over the measurement and preparation nodes to generate random
     configurations using:
 
     .. code-block:: python
 
-        >>> configs, settings = qml.transforms.qcut.expand_fragment_tapes_mc(tapes, communication_graph, 3)
+        >>> configs, settings = qml.qcut.expand_fragment_tapes_mc(tapes, communication_graph, 3)
         >>> print(settings)
         [[1 6 2]]
         >>> for i, (c1, c2) in enumerate(zip(configs[0], configs[1])):

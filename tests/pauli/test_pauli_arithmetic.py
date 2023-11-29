@@ -356,8 +356,8 @@ class TestPauliSentence:
         ),
         (ps3, ps4, ps3),
         (ps4, ps3, ps3),
-        (ps1, ps5, ps1),
-        (ps5, ps1, ps1),
+        (ps1, ps5, ps5),
+        (ps5, ps1, ps5),
         (
             PauliSentence(
                 {PauliWord({0: "Z"}): np.array(1.0), PauliWord({0: "Z", 1: "X"}): np.array(1.0)}
