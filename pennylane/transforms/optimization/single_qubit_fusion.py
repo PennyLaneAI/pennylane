@@ -16,7 +16,7 @@
 from typing import Sequence, Callable
 
 from pennylane.tape import QuantumTape
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 from pennylane.ops.qubit import Rot
 from pennylane.math import allclose, stack, is_abstract
 from pennylane.queuing import QueuingManager
@@ -36,7 +36,7 @@ def single_qubit_fusion(
     (on the same qubit) with that property defined will be fused into one ``Rot``.
 
     Args:
-        tape (QuantumTape): A quantum tape.
+        tape (QNode or QuantumTape or Callable): A quantum circuit.
         atol (float): An absolute tolerance for which to apply a rotation after
             fusion. After fusion of gates, if the fused angles :math:`\theta` are such that
             :math:`|\theta|\leq \text{atol}`, no rotation gate will be applied.
@@ -45,18 +45,18 @@ def single_qubit_fusion(
             be fused will be fused.
 
     Returns:
-        pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
-        it returns a QNode with the transform added to its transform program.
-        If a tape is passed, returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
 
-    Consider the following quantum function.
+    >>> dev = qml.device('default.qubit', wires=1)
+
+    You can apply the transform directly on :class:`QNode`:
 
     .. code-block:: python
 
+        @single_qubit_fusion
+        @qml.qnode(device=dev)
         def qfunc(r1, r2):
             qml.Hadamard(wires=0)
             qml.Rot(*r1, wires=0)
@@ -65,20 +65,36 @@ def single_qubit_fusion(
             qml.RZ(r2[0], wires=0)
             return qml.expval(qml.PauliX(0))
 
-    The circuit before optimization:
+    The single qubit gates are fused before execution.
 
-    >>> dev = qml.device('default.qubit', wires=1)
-    >>> qnode = qml.QNode(qfunc, dev)
-    >>> print(qml.draw(qnode)([0.1, 0.2, 0.3], [0.4, 0.5, 0.6]))
-    0: ──H──Rot(0.1, 0.2, 0.3)──Rot(0.4, 0.5, 0.6)──RZ(0.1)──RZ(0.4)──┤ ⟨X⟩
+    .. details::
+        :title: Usage Details
 
-    Full single-qubit gate fusion allows us to collapse this entire sequence into a
-    single ``qml.Rot`` rotation gate.
+        Consider the following quantum function.
 
-    >>> optimized_qfunc = single_qubit_fusion(qfunc)
-    >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-    >>> print(qml.draw(optimized_qnode)([0.1, 0.2, 0.3], [0.4, 0.5, 0.6]))
-    0: ──Rot(3.57, 2.09, 2.05)──┤ ⟨X⟩
+        .. code-block:: python
+
+            def qfunc(r1, r2):
+                qml.Hadamard(wires=0)
+                qml.Rot(*r1, wires=0)
+                qml.Rot(*r2, wires=0)
+                qml.RZ(r1[0], wires=0)
+                qml.RZ(r2[0], wires=0)
+                return qml.expval(qml.PauliX(0))
+
+        The circuit before optimization:
+
+        >>> qnode = qml.QNode(qfunc, dev)
+        >>> print(qml.draw(qnode)([0.1, 0.2, 0.3], [0.4, 0.5, 0.6]))
+        0: ──H──Rot(0.1, 0.2, 0.3)──Rot(0.4, 0.5, 0.6)──RZ(0.1)──RZ(0.4)──┤ ⟨X⟩
+
+        Full single-qubit gate fusion allows us to collapse this entire sequence into a
+        single ``qml.Rot`` rotation gate.
+
+        >>> optimized_qfunc = single_qubit_fusion(qfunc)
+        >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        >>> print(qml.draw(optimized_qnode)([0.1, 0.2, 0.3], [0.4, 0.5, 0.6]))
+        0: ──Rot(3.57, 2.09, 2.05)──┤ ⟨X⟩
 
     """
     # Make a working copy of the list to traverse

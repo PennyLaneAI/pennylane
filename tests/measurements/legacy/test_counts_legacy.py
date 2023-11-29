@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import AllCounts, Counts
+from pennylane.measurements import Counts
 from pennylane.operation import Operator
 
 
@@ -32,7 +32,7 @@ def custom_measurement_process(device, spy):
         meas = call_args.args[1]
         shot_range, bin_size = (call_args.kwargs["shot_range"], call_args.kwargs["bin_size"])
         if isinstance(meas, Operator):
-            all_outcomes = meas.return_type is AllCounts
+            all_outcomes = call_args.kwargs["all_outcomes"]
             meas = qml.counts(op=meas, all_outcomes=all_outcomes)
         old_res = device.sample(call_args.args[1], **call_args.kwargs)
         new_res = meas.process_samples(

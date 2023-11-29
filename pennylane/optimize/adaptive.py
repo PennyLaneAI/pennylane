@@ -19,7 +19,7 @@ from typing import Sequence, Callable
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.tape import QuantumTape
-from pennylane.transforms.core import transform
+from pennylane import transform
 
 
 @transform
@@ -27,16 +27,13 @@ def append_gate(tape: QuantumTape, params, gates) -> (Sequence[QuantumTape], Cal
     """Append parameterized gates to an existing tape.
 
     Args:
-        tape (QuantumTape): quantum tape to transform by adding gates
+        tape (QuantumTape or QNode or Callable): quantum circuit to transform by adding gates
         params (array[float]): parameters of the gates to be added
         gates (list[Operator]): list of the gates to be added
 
     Returns:
-        pennylane.QNode or qfunc or tuple[List[.QuantumTape], function]: If a QNode is passed,
-        it returns a QNode with the transform added to its transform program.
-        If a tape is passed, returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+
     """
     new_operations = []
 
@@ -125,32 +122,32 @@ class AdaptiveOptimizer:
 
     .. code-block :: pycon
 
-        Energy: -1.246549938420637
-        0: ─╭BasisState(M0)─╭G²(0.20)─┤ ╭<𝓗>
-        1: ─├BasisState(M0)─├G²(0.20)─┤ ├<𝓗>
-        2: ─├BasisState(M0)─│─────────┤ ├<𝓗>
-        3: ─├BasisState(M0)─│─────────┤ ├<𝓗>
-        4: ─├BasisState(M0)─├G²(0.20)─┤ ├<𝓗>
-        5: ─╰BasisState(M0)─╰G²(0.20)─┤ ╰<𝓗>
-        Largest Gradient: 0.14399872776755085
+        Energy: -1.2465499384199699
+        0: ─╭|Ψ⟩─╭G²(0.20)─┤ ╭<𝓗>
+        1: ─├|Ψ⟩─├G²(0.20)─┤ ├<𝓗>
+        2: ─├|Ψ⟩─│─────────┤ ├<𝓗>
+        3: ─├|Ψ⟩─│─────────┤ ├<𝓗>
+        4: ─├|Ψ⟩─├G²(0.20)─┤ ├<𝓗>
+        5: ─╰|Ψ⟩─╰G²(0.20)─┤ ╰<𝓗>
+        Largest Gradient: 0.1439987277673651
 
-        Energy: -1.2613740231529604
-        0: ─╭BasisState(M0)─╭G²(0.20)─╭G²(0.19)─┤ ╭<𝓗>
-        1: ─├BasisState(M0)─├G²(0.20)─├G²(0.19)─┤ ├<𝓗>
-        2: ─├BasisState(M0)─│─────────├G²(0.19)─┤ ├<𝓗>
-        3: ─├BasisState(M0)─│─────────╰G²(0.19)─┤ ├<𝓗>
-        4: ─├BasisState(M0)─├G²(0.20)───────────┤ ├<𝓗>
-        5: ─╰BasisState(M0)─╰G²(0.20)───────────┤ ╰<𝓗>
-        Largest Gradient: 0.1349349562423238
+        Energy: -1.2613740231522532
+        0: ─╭|Ψ⟩─╭G²(0.20)─╭G²(0.19)─┤ ╭<𝓗>
+        1: ─├|Ψ⟩─├G²(0.20)─├G²(0.19)─┤ ├<𝓗>
+        2: ─├|Ψ⟩─│─────────├G²(0.19)─┤ ├<𝓗>
+        3: ─├|Ψ⟩─│─────────╰G²(0.19)─┤ ├<𝓗>
+        4: ─├|Ψ⟩─├G²(0.20)───────────┤ ├<𝓗>
+        5: ─╰|Ψ⟩─╰G²(0.20)───────────┤ ╰<𝓗>
+        Largest Gradient: 0.13493495624211427
 
-        Energy: -1.2743971719780331
-        0: ─╭BasisState(M0)─╭G²(0.20)─╭G²(0.19)──────────┤ ╭<𝓗>
-        1: ─├BasisState(M0)─├G²(0.20)─├G²(0.19)─╭G(0.00)─┤ ├<𝓗>
-        2: ─├BasisState(M0)─│─────────├G²(0.19)─│────────┤ ├<𝓗>
-        3: ─├BasisState(M0)─│─────────╰G²(0.19)─╰G(0.00)─┤ ├<𝓗>
-        4: ─├BasisState(M0)─├G²(0.20)────────────────────┤ ├<𝓗>
-        5: ─╰BasisState(M0)─╰G²(0.20)────────────────────┤ ╰<𝓗>
-        Largest Gradient: 0.00040841755397108586
+        Energy: -1.2743971719772815
+        0: ─╭|Ψ⟩─╭G²(0.20)─╭G²(0.19)──────────┤ ╭<𝓗>
+        1: ─├|Ψ⟩─├G²(0.20)─├G²(0.19)─╭G(0.00)─┤ ├<𝓗>
+        2: ─├|Ψ⟩─│─────────├G²(0.19)─│────────┤ ├<𝓗>
+        3: ─├|Ψ⟩─│─────────╰G²(0.19)─╰G(0.00)─┤ ├<𝓗>
+        4: ─├|Ψ⟩─├G²(0.20)────────────────────┤ ├<𝓗>
+        5: ─╰|Ψ⟩─╰G²(0.20)────────────────────┤ ╰<𝓗>
+        Largest Gradient: 0.0004084175253678331
     """
 
     def __init__(self, param_steps=10, stepsize=0.5):

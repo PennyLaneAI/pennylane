@@ -28,6 +28,7 @@ from pennylane.measurements.counts import CountsMP
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.operation import Observable, Operator, Tensor
 from pennylane.ops import Hamiltonian, Controlled, Pow, Adjoint, Exp, SProd, CompositeOp
+from pennylane.templates.subroutines import ControlledSequence
 
 
 def equal(
@@ -244,6 +245,18 @@ def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
 
 
 @_equal.register
+def _equal_controlled_sequence(op1: ControlledSequence, op2: ControlledSequence, **kwargs):
+    """Determine whether two ControlledSequences are equal"""
+    if [op1.wires, op1.arithmetic_depth] != [
+        op2.wires,
+        op2.arithmetic_depth,
+    ]:
+        return False
+
+    return qml.equal(op1.base, op2.base, **kwargs)
+
+
+@_equal.register
 # pylint: disable=unused-argument
 def _equal_pow(op1: Pow, op2: Pow, **kwargs):
     """Determine whether two Pow objects are equal"""
@@ -371,7 +384,12 @@ def _equal_mid_measure(
     rtol=1e-5,
     atol=1e-9,
 ):
-    return op1.wires == op2.wires and op1.id == op2.id and op1.reset == op2.reset
+    return (
+        op1.wires == op2.wires
+        and op1.id == op2.id
+        and op1.reset == op2.reset
+        and op1.postselect == op2.postselect
+    )
 
 
 @_equal.register

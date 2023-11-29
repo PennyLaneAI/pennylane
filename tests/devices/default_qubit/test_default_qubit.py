@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for default qubit."""
-# pylint: disable=import-outside-toplevel, no-member
+# pylint: disable=import-outside-toplevel, no-member, too-many-arguments
 
+from unittest import mock
 import pytest
 
 import numpy as np
@@ -315,6 +316,17 @@ class TestBasicCircuit:
         res = circuit(param)
         assert qml.math.get_interface(res) == "tensorflow"
         assert qml.math.allclose(res, -1)
+
+    def test_basis_state_wire_order(self):
+        """Test that the wire order is correct with a basis state if the tape wires have a non standard order."""
+
+        dev = DefaultQubit()
+
+        tape = qml.tape.QuantumScript([qml.BasisState([1], wires=1), qml.PauliZ(0)], [qml.state()])
+
+        expected = np.array([0, 1, 0, 0], dtype=np.complex128)
+        res = dev.execute(tape)
+        assert qml.math.allclose(res, expected)
 
 
 class TestSampleMeasurements:
@@ -773,32 +785,38 @@ class TestExecutingBatches:
         assert qml.math.allclose(g1, g3)
 
 
+@pytest.mark.slow
 class TestSumOfTermsDifferentiability:
     """Basically a copy of the `qubit.simulate` test but using the device instead."""
 
     @staticmethod
-    def f(dev, scale, n_wires=10, offset=0.1, convert_to_hamiltonian=False):
+    def f(dev, scale, n_wires=10, offset=0.1, style="sum"):
         """Execute a quantum script with a large Hamiltonian."""
         ops = [qml.RX(offset + scale * i, wires=i) for i in range(n_wires)]
 
         t1 = 2.5 * qml.prod(*(qml.PauliZ(i) for i in range(n_wires)))
         t2 = 6.2 * qml.prod(*(qml.PauliY(i) for i in range(n_wires)))
         H = t1 + t2
-        if convert_to_hamiltonian:
+        if style == "hamiltonian":
             H = H._pauli_rep.hamiltonian()  # pylint: disable=protected-access
+        elif style == "hermitian":
+            H = qml.Hermitian(H.matrix(), wires=H.wires)
         qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
         return dev.execute(qs)
 
     @staticmethod
-    def f_hashable(scale, n_wires=10, offset=0.1, convert_to_hamiltonian=False):
+    def f_hashable(scale, n_wires=10, offset=0.1, style="sum"):
         """Execute a quantum script with a large Hamiltonian."""
         ops = [qml.RX(offset + scale * i, wires=i) for i in range(n_wires)]
 
         t1 = 2.5 * qml.prod(*(qml.PauliZ(i) for i in range(n_wires)))
         t2 = 6.2 * qml.prod(*(qml.PauliY(i) for i in range(n_wires)))
         H = t1 + t2
-        if convert_to_hamiltonian:
+        if style == "hamiltonian":
             H = H._pauli_rep.hamiltonian()  # pylint: disable=protected-access
+        elif style == "hermitian":
+            H = qml.Hermitian(H.matrix(), wires=H.wires)
+        qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
         qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
         return DefaultQubit().execute(qs)
 
@@ -811,23 +829,23 @@ class TestSumOfTermsDifferentiability:
         return 2.5 * qml.math.prod(cosines) + 6.2 * qml.math.prod(sines)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("convert_to_hamiltonian", (True, False))
-    def test_autograd_backprop(self, convert_to_hamiltonian):
+    @pytest.mark.parametrize("style", ("sum", "hamiltonian", "hermitian"))
+    def test_autograd_backprop(self, style):
         """Test that backpropagation derivatives work in autograd with hamiltonians and large sums."""
         dev = DefaultQubit()
         x = qml.numpy.array(0.52)
-        out = self.f(dev, x, convert_to_hamiltonian=convert_to_hamiltonian)
+        out = self.f(dev, x, style=style)
         expected_out = self.expected(x)
         assert qml.math.allclose(out, expected_out)
 
-        g = qml.grad(self.f)(dev, x, convert_to_hamiltonian=convert_to_hamiltonian)
+        g = qml.grad(self.f)(dev, x, style=style)
         expected_g = qml.grad(self.expected)(x)
         assert qml.math.allclose(g, expected_g)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
-    @pytest.mark.parametrize("convert_to_hamiltonian", (True, False))
-    def test_jax_backprop(self, convert_to_hamiltonian, use_jit):
+    @pytest.mark.parametrize("style", ("sum", "hamiltonian", "hermitian"))
+    def test_jax_backprop(self, style, use_jit):
         """Test that backpropagation derivatives work with jax with hamiltonians and large sums."""
         import jax
         from jax.config import config
@@ -836,17 +854,17 @@ class TestSumOfTermsDifferentiability:
         x = jax.numpy.array(0.52, dtype=jax.numpy.float64)
         f = jax.jit(self.f_hashable, static_argnums=(1, 2, 3)) if use_jit else self.f_hashable
 
-        out = f(x, convert_to_hamiltonian=convert_to_hamiltonian)
+        out = f(x, style=style)
         expected_out = self.expected(x)
         assert qml.math.allclose(out, expected_out, atol=1e-6)
 
-        g = jax.grad(f)(x, convert_to_hamiltonian=convert_to_hamiltonian)
+        g = jax.grad(f)(x, style=style)
         expected_g = jax.grad(self.expected)(x)
         assert qml.math.allclose(g, expected_g)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("convert_to_hamiltonian", (True, False))
-    def test_torch_backprop(self, convert_to_hamiltonian):
+    @pytest.mark.parametrize("style", ("sum", "hamiltonian", "hermitian"))
+    def test_torch_backprop(self, style):
         """Test that backpropagation derivatives work with torch with hamiltonians and large sums."""
         import torch
 
@@ -854,7 +872,7 @@ class TestSumOfTermsDifferentiability:
 
         x = torch.tensor(-0.289, requires_grad=True)
         x2 = torch.tensor(-0.289, requires_grad=True)
-        out = self.f(dev, x, convert_to_hamiltonian=convert_to_hamiltonian)
+        out = self.f(dev, x, style=style)
         expected_out = self.expected(x2, like="torch")
         assert qml.math.allclose(out, expected_out)
 
@@ -863,8 +881,8 @@ class TestSumOfTermsDifferentiability:
         assert qml.math.allclose(x.grad, x2.grad)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("convert_to_hamiltonian", (True, False))
-    def test_tf_backprop(self, convert_to_hamiltonian):
+    @pytest.mark.parametrize("style", ("sum", "hamiltonian", "hermitian"))
+    def test_tf_backprop(self, style):
         """Test that backpropagation derivatives work with tensorflow with hamiltonians and large sums."""
         import tensorflow as tf
 
@@ -873,7 +891,7 @@ class TestSumOfTermsDifferentiability:
         x = tf.Variable(0.5)
 
         with tf.GradientTape() as tape1:
-            out = self.f(dev, x, convert_to_hamiltonian=convert_to_hamiltonian)
+            out = self.f(dev, x, style=style)
 
         with tf.GradientTape() as tape2:
             expected_out = self.expected(x)
@@ -1077,8 +1095,6 @@ class TestAdjointDifferentiation:
 
         expected_grad = -qml.math.sin(x) * cotangent[0]
         actual_grad = dev.compute_vjp(qs, cotangent, self.ec)
-        assert isinstance(actual_grad, np.ndarray)
-        assert actual_grad.shape == ()  # pylint: disable=no-member
         assert np.isclose(actual_grad, expected_grad)
 
         expected_val = qml.math.cos(x)
@@ -1100,7 +1116,6 @@ class TestAdjointDifferentiation:
         expected_grad = -qml.math.sin(x) * cotangent[0]
         actual_grad = dev.compute_vjp([qs], [cotangent], self.ec)
         assert isinstance(actual_grad, tuple)
-        assert isinstance(actual_grad[0], np.ndarray)
         assert np.isclose(actual_grad[0], expected_grad)
 
         expected_val = qml.math.cos(x)
@@ -1635,6 +1650,266 @@ def test_projector_dynamic_type(max_workers, n_wires):
         qs = qml.tape.QuantumScript(ops, [qml.expval(qml.Projector(state, wires))])
         res = dev.execute(qs)
         assert np.isclose(res, 1 / 2**n_wires)
+
+
+@pytest.mark.all_interfaces
+@pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "jax", "tensorflow"])
+@pytest.mark.parametrize("use_jit", [True, False])
+class TestPostselection:
+    """Various integration tests for postselection of mid-circuit measurements."""
+
+    @pytest.mark.parametrize(
+        "mp",
+        [
+            qml.expval(qml.PauliZ(0)),
+            qml.var(qml.PauliZ(0)),
+            qml.probs(wires=[0, 1]),
+            qml.density_matrix(wires=0),
+            qml.purity(0),
+            qml.vn_entropy(0),
+            qml.mutual_info(0, 1),
+        ],
+    )
+    @pytest.mark.parametrize("param", np.linspace(np.pi / 4, 3 * np.pi / 4, 3))
+    def test_postselection_valid_analytic(self, param, mp, interface, use_jit):
+        """Test that the results of a circuit with postselection is expected
+        with analytic execution."""
+        if use_jit and interface != "jax":
+            pytest.skip("Cannot JIT in non-JAX interfaces.")
+
+        dev = qml.device("default.qubit")
+        param = qml.math.asarray(param, like=interface)
+
+        @qml.qnode(dev, interface=interface)
+        def circ_postselect(theta):
+            qml.RX(theta, 0)
+            qml.CNOT([0, 1])
+            qml.measure(0, postselect=1)
+            return qml.apply(mp)
+
+        @qml.qnode(dev, interface=interface)
+        def circ_expected():
+            qml.RX(np.pi, 0)
+            qml.CNOT([0, 1])
+            return qml.apply(mp)
+
+        if use_jit:
+            import jax
+
+            circ_postselect = jax.jit(circ_postselect)
+
+        res = circ_postselect(param)
+        expected = circ_expected()
+
+        assert qml.math.allclose(res, expected)
+        assert qml.math.get_interface(res) == qml.math.get_interface(expected)
+
+    @pytest.mark.parametrize(
+        "mp",
+        [
+            qml.expval(qml.PauliZ(0)),
+            qml.var(qml.PauliZ(0)),
+            qml.probs(wires=[0, 1]),
+            qml.shadow_expval(qml.Hamiltonian([1.0, -1.0], [qml.PauliZ(0), qml.PauliX(0)])),
+            # qml.sample, qml.classical_shadow, qml.counts are not included because their
+            # shape/values are dependent on the number of shots, which will be changed
+            # randomly per the binomial distribution and the probability of the postselected
+            # state
+        ],
+    )
+    @pytest.mark.parametrize("param", np.linspace(np.pi / 4, 3 * np.pi / 4, 3))
+    @pytest.mark.parametrize("shots", [50000, (50000, 50000)])
+    def test_postselection_valid_finite_shots(
+        self, param, mp, shots, interface, use_jit, tol_stochastic
+    ):
+        """Test that the results of a circuit with postselection is expected with
+        finite shots."""
+        if use_jit and (interface != "jax" or isinstance(shots, tuple)):
+            pytest.skip("Cannot JIT in non-JAX interfaces, or with shot vectors.")
+
+        dev = qml.device("default.qubit")
+        param = qml.math.asarray(param, like=interface)
+
+        @qml.qnode(dev, interface=interface)
+        def circ_postselect(theta):
+            qml.RX(theta, 0)
+            qml.CNOT([0, 1])
+            qml.measure(0, postselect=1)
+            return qml.apply(mp)
+
+        @qml.qnode(dev, interface=interface)
+        def circ_expected():
+            qml.RX(np.pi, 0)
+            qml.CNOT([0, 1])
+            return qml.apply(mp)
+
+        if use_jit:
+            import jax
+
+            circ_postselect = jax.jit(circ_postselect, static_argnames=["shots"])
+
+        res = circ_postselect(param, shots=shots)
+        expected = circ_expected(shots=shots)
+
+        if not isinstance(shots, tuple):
+            assert qml.math.allclose(res, expected, atol=tol_stochastic, rtol=0)
+            assert qml.math.get_interface(res) == qml.math.get_interface(expected)
+
+        else:
+            assert isinstance(res, tuple)
+            for r, e in zip(res, expected):
+                assert qml.math.allclose(r, e, atol=tol_stochastic, rtol=0)
+                assert qml.math.get_interface(r) == qml.math.get_interface(e)
+
+    @pytest.mark.parametrize(
+        "mp, expected_shape",
+        [(qml.sample(wires=[0]), (5,)), (qml.classical_shadow(wires=[0]), (2, 5, 1))],
+    )
+    @pytest.mark.parametrize("param", np.linspace(np.pi / 4, 3 * np.pi / 4, 3))
+    @pytest.mark.parametrize("shots", [10, (10, 10)])
+    def test_postselection_valid_finite_shots_varied_shape(
+        self, mp, param, expected_shape, shots, interface, use_jit
+    ):
+        """Test that qml.sample and qml.classical_shadow work correctly.
+        Separate test because their shape is non-deterministic."""
+
+        if use_jit:
+            pytest.skip("Cannot JIT while mocking function.")
+
+        dev = qml.device("default.qubit", seed=42)
+        param = qml.math.asarray(param, like=interface)
+
+        with mock.patch("numpy.random.binomial", lambda *args, **kwargs: 5):
+
+            @qml.qnode(dev, interface=interface)
+            def circ_postselect(theta):
+                qml.RX(theta, 0)
+                qml.CNOT([0, 1])
+                qml.measure(0, postselect=1)
+                return qml.apply(mp)
+
+            if use_jit:
+                import jax
+
+                circ_postselect = jax.jit(circ_postselect, static_argnames=["shots"])
+
+            res = circ_postselect(param, shots=shots)
+
+        if not isinstance(shots, tuple):
+            assert qml.math.get_interface(res) == interface if interface != "autograd" else "numpy"
+            assert qml.math.shape(res) == expected_shape
+
+        else:
+            assert isinstance(res, tuple)
+            for r in res:
+                assert (
+                    qml.math.get_interface(r) == interface if interface != "autograd" else "numpy"
+                )
+                assert qml.math.shape(r) == expected_shape
+
+    @pytest.mark.parametrize(
+        "mp, autograd_interface, is_nan",
+        [
+            (qml.expval(qml.PauliZ(0)), "autograd", True),
+            (qml.var(qml.PauliZ(0)), "autograd", True),
+            (qml.probs(wires=[0, 1]), "autograd", True),
+            (qml.density_matrix(wires=0), "autograd", True),
+            (qml.purity(0), "numpy", True),
+            (qml.vn_entropy(0), "numpy", False),
+            (qml.mutual_info(0, 1), "numpy", False),
+        ],
+    )
+    def test_postselection_invalid_analytic(
+        self, mp, autograd_interface, is_nan, interface, use_jit
+    ):
+        """Test that the results of a qnode are nan values of the correct shape if the state
+        that we are postselecting has a zero probability of occurring."""
+
+        if (isinstance(mp, qml.measurements.MutualInfoMP) and interface != "jax") or (
+            isinstance(mp, qml.measurements.VnEntropyMP) and interface == "tensorflow"
+        ):
+            pytest.skip("Unsupported measurements and interfaces.")
+
+        if use_jit and interface != "jax":
+            pytest.skip("Can't jit with non-jax interfaces.")
+
+        # Wires are specified so that the shape for measurements can be determined correctly
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface=interface)
+        def circ():
+            qml.RX(np.pi, 0)
+            qml.CNOT([0, 1])
+            qml.measure(0, postselect=0)
+            return qml.apply(mp)
+
+        if use_jit:
+            import jax
+
+            circ = jax.jit(circ)
+
+        res = circ()
+        if interface == "autograd":
+            assert qml.math.get_interface(res) == autograd_interface
+        else:
+            assert qml.math.get_interface(res) == interface
+        assert qml.math.shape(res) == mp.shape(dev, qml.measurements.Shots(None))
+        if is_nan:
+            assert qml.math.all(qml.math.isnan(res))
+        else:
+            assert qml.math.allclose(res, 0.0)
+
+    @pytest.mark.parametrize(
+        "mp, expected_shape",
+        [
+            (qml.expval(qml.PauliZ(0)), ()),
+            (qml.var(qml.PauliZ(0)), ()),
+            (qml.sample(qml.PauliZ(0)), (0,)),
+            (qml.classical_shadow(wires=0), (2, 0, 1)),
+            (qml.shadow_expval(qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliX(0)])), ()),
+            # qml.probs and qml.counts are not tested because they fail in this case
+        ],
+    )
+    @pytest.mark.parametrize("shots", [10, (10, 10)])
+    def test_postselection_invalid_finite_shots(
+        self, mp, expected_shape, shots, interface, use_jit
+    ):
+        """Test that the results of a qnode are nan values of the correct shape if the state
+        that we are postselecting has a zero probability of occurring with finite shots."""
+
+        if use_jit and interface != "jax":
+            pytest.skip("Can't jit with non-jax interfaces.")
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev, interface=interface)
+        def circ():
+            qml.RX(np.pi, 0)
+            qml.CNOT([0, 1])
+            qml.measure(0, postselect=0)
+            return qml.apply(mp)
+
+        if use_jit:
+            import jax
+
+            circ = jax.jit(circ, static_argnames=["shots"])
+
+        res = circ(shots=shots)
+
+        if not isinstance(shots, tuple):
+            assert qml.math.shape(res) == expected_shape
+            assert qml.math.get_interface(res) == interface if interface != "autograd" else "numpy"
+            if not 0 in expected_shape:  # No nan values if array is empty
+                assert qml.math.all(qml.math.isnan(res))
+        else:
+            assert isinstance(res, tuple)
+            for r in res:
+                assert qml.math.shape(r) == expected_shape
+                assert (
+                    qml.math.get_interface(r) == interface if interface != "autograd" else "numpy"
+                )
+                if not 0 in expected_shape:  # No nan values if array is empty
+                    assert qml.math.all(qml.math.isnan(r))
 
 
 class TestIntegration:

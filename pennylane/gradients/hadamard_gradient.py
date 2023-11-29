@@ -21,7 +21,7 @@ from functools import partial
 import pennylane as qml
 import pennylane.numpy as np
 from pennylane.transforms.metric_tensor import _get_aux_wire
-from pennylane.transforms.core import transform
+from pennylane import transform
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 from pennylane.transforms.tape_expand import expand_invalid_trainable_hadamard_gradient
 
@@ -66,10 +66,10 @@ def hadamard_grad(
     aux_wire=None,
     device_wires=None,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
-    r"""Transform a QNode to compute the Hadamard test gradient of all gates with respect to their inputs.
+    r"""Transform a circuit to compute the Hadamard test gradient of all gates with respect to their inputs.
 
     Args:
-        tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
+        tape (QNode or QuantumTape): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
@@ -80,17 +80,11 @@ def hadamard_grad(
             is ``None``.
 
     Returns:
-        function or tuple[list[QuantumTape], function]:
+        qnode (QNode) or tuple[List[QuantumTape], function]:
 
-        - If the input is a QNode, an object representing the Jacobian (function) of the QNode
-          that can be executed to obtain the Jacobian.
-          The type of the Jacobian returned is either a tensor, a tuple or a
-          nested tuple depending on the nesting structure of the original QNode output.
-
-        - If the input is a tape, a tuple containing a
-          list of generated tapes, together with a post-processing
-          function to be applied to the results of the evaluated tapes
-          in order to obtain the Jacobian.
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple depending upon the nesting
+        structure of measurements in the original circuit.
 
     For a variational evolution :math:`U(\mathbf{p}) \vert 0\rangle` with
     :math:`N` parameters :math:`\mathbf{p}`,
@@ -114,72 +108,93 @@ def hadamard_grad(
 
     **Example**
 
-    This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects:
-
-    >>> dev = qml.device("default.qubit", wires=2)
-    >>> @qml.qnode(dev)
-    ... def circuit(params):
-    ...     qml.RX(params[0], wires=0)
-    ...     qml.RY(params[1], wires=0)
-    ...     qml.RX(params[2], wires=0)
-    ...     return qml.expval(qml.PauliZ(0))
-    >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-    >>> qml.gradients.hadamard_grad(circuit)(params)
-    (tensor([-0.3875172], requires_grad=True),
-     tensor([-0.18884787], requires_grad=True),
-     tensor([-0.38355704], requires_grad=True))
-
-    This quantum gradient transform can also be applied to low-level
-    :class:`~.QuantumTape` objects. This will result in no implicit quantum
-    device evaluation. Instead, the processed tapes, and post-processing
-    function, which together define the gradient are directly returned:
-
-    >>> ops = [qml.RX(p, wires=0) for p in params]
-    >>> measurements = [qml.expval(qml.PauliZ(0))]
-    >>> tape = qml.tape.QuantumTape(ops, measurements)
-    >>> gradient_tapes, fn = qml.gradients.hadamard_grad(tape)
-    >>> gradient_tapes
-    [<QuantumTape: wires=[0, 1], params=3>,
-     <QuantumTape: wires=[0, 1], params=3>,
-     <QuantumTape: wires=[0, 1], params=3>]
-
-    This can be useful if the underlying circuits representing the gradient
-    computation need to be analyzed.
-
-    The output tapes can then be evaluated and post-processed to retrieve
-    the gradient:
-
-    >>> dev = qml.device("default.qubit", wires=2)
-    >>> fn(qml.execute(gradient_tapes, dev, None))
-    (array(-0.3875172), array(-0.18884787), array(-0.38355704))
-
     This transform can be registered directly as the quantum gradient transform
     to use during autodifferentiation:
 
-    >>> dev = qml.device("default.qubit", wires=3)
+    >>> import jax
+    >>> dev = qml.device("default.qubit", wires=2)
     >>> @qml.qnode(dev, interface="jax", diff_method="hadamard")
     ... def circuit(params):
     ...     qml.RX(params[0], wires=0)
     ...     qml.RY(params[1], wires=0)
     ...     qml.RX(params[2], wires=0)
-    ...     return qml.expval(qml.PauliZ(0))
+    ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
     >>> params = jax.numpy.array([0.1, 0.2, 0.3])
     >>> jax.jacobian(circuit)(params)
-    [-0.3875172  -0.18884787 -0.38355704]
+    (Array([-0.38751727, -0.18884793, -0.3835571 ], dtype=float32),
+    Array([0.6991687 , 0.34072432, 0.6920237 ], dtype=float32))
 
-    If you use custom wires on your device, you need to pass an auxiliary wire.
+    .. details::
+        :title: Usage Details
 
-    >>> dev_wires = ("a", "c")
-    >>> dev = qml.device("default.qubit", wires=dev_wires)
-    >>> @qml.qnode(dev, interface="jax", diff_method="hadamard", aux_wire="c", device_wires=dev_wires)
-    >>> def circuit(params):
-    ...    qml.RX(params[0], wires="a")
-    ...    qml.RY(params[1], wires="a")
-    ...    qml.RX(params[2], wires="a")
-    ...    return qml.expval(qml.PauliZ("a"))
-    >>> params = jax.numpy.array([0.1, 0.2, 0.3])
-    >>> jax.jacobian(circuit)(params)
-    [-0.3875172  -0.18884787 -0.38355704]
+        This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects.
+        However, for performance reasons, we recommend providing the gradient transform as the ``diff_method`` argument
+        of the QNode decorator, and differentiating with your preferred machine learning framework.
+
+        >>> dev = qml.device("default.qubit", wires=2)
+        >>> @qml.qnode(dev)
+        ... def circuit(params):
+        ...     qml.RX(params[0], wires=0)
+        ...     qml.RY(params[1], wires=0)
+        ...     qml.RX(params[2], wires=0)
+        ...     return qml.expval(qml.PauliZ(0))
+        >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
+        >>> qml.gradients.hadamard_grad(circuit)(params)
+        (tensor([-0.3875172], requires_grad=True),
+         tensor([-0.18884787], requires_grad=True),
+         tensor([-0.38355704], requires_grad=True))
+
+        This quantum gradient transform can also be applied to low-level
+        :class:`~.QuantumTape` objects. This will result in no implicit quantum
+        device evaluation. Instead, the processed tapes, and post-processing
+        function, which together define the gradient are directly returned:
+
+        >>> ops = [qml.RX(p, wires=0) for p in params]
+        >>> measurements = [qml.expval(qml.PauliZ(0))]
+        >>> tape = qml.tape.QuantumTape(ops, measurements)
+        >>> gradient_tapes, fn = qml.gradients.hadamard_grad(tape)
+        >>> gradient_tapes
+        [<QuantumTape: wires=[0, 1], params=3>,
+         <QuantumTape: wires=[0, 1], params=3>,
+         <QuantumTape: wires=[0, 1], params=3>]
+
+        This can be useful if the underlying circuits representing the gradient
+        computation need to be analyzed.
+
+        The output tapes can then be evaluated and post-processed to retrieve
+        the gradient:
+
+        >>> dev = qml.device("default.qubit", wires=2)
+        >>> fn(qml.execute(gradient_tapes, dev, None))
+        (array(-0.3875172), array(-0.18884787), array(-0.38355704))
+
+        This transform can be registered directly as the quantum gradient transform
+        to use during autodifferentiation:
+
+        >>> dev = qml.device("default.qubit", wires=3)
+        >>> @qml.qnode(dev, interface="jax", diff_method="hadamard")
+        ... def circuit(params):
+        ...     qml.RX(params[0], wires=0)
+        ...     qml.RY(params[1], wires=0)
+        ...     qml.RX(params[2], wires=0)
+        ...     return qml.expval(qml.PauliZ(0))
+        >>> params = jax.numpy.array([0.1, 0.2, 0.3])
+        >>> jax.jacobian(circuit)(params)
+        [-0.3875172  -0.18884787 -0.38355704]
+
+        If you use custom wires on your device, you need to pass an auxiliary wire.
+
+        >>> dev_wires = ("a", "c")
+        >>> dev = qml.device("default.qubit", wires=dev_wires)
+        >>> @qml.qnode(dev, interface="jax", diff_method="hadamard", aux_wire="c", device_wires=dev_wires)
+        >>> def circuit(params):
+        ...    qml.RX(params[0], wires="a")
+        ...    qml.RY(params[1], wires="a")
+        ...    qml.RX(params[2], wires="a")
+        ...    return qml.expval(qml.PauliZ("a"))
+        >>> params = jax.numpy.array([0.1, 0.2, 0.3])
+        >>> jax.jacobian(circuit)(params)
+        [-0.3875172  -0.18884787 -0.38355704]
 
     .. note::
 

@@ -127,6 +127,8 @@ class MeasurementProcess(ABC):
             where the instance has to be identified
     """
 
+    # pylint:disable=too-many-instance-attributes
+
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
 
@@ -291,10 +293,7 @@ class MeasurementProcess(ABC):
             return f"{self.return_type.value}(eigvals={self._eigvals}, wires={self.wires.tolist()})"
 
         # Todo: when tape is core the return type will always be taken from the MeasurementProcess
-        if getattr(self.obs, "return_type", None) is None:
-            return f"{self.return_type.value}({self.obs})"
-
-        return f"{self.obs}"
+        return f"{self.return_type.value}({self.obs})"
 
     def __copy__(self):
         cls = self.__class__
@@ -472,10 +471,8 @@ class MeasurementProcess(ABC):
         """
         new_measurement = copy.copy(self)
         if self.mv is not None:
-            mv = copy.copy(self.mv)
-            mv.measurements = [m.map_wires(wire_map=wire_map) for m in mv.measurements]
-            new_measurement.mv = mv
-        if self.obs is not None:
+            new_measurement.mv = self.mv.map_wires(wire_map=wire_map)
+        elif self.obs is not None:
             new_measurement.obs = self.obs.map_wires(wire_map=wire_map)
         elif self._wires is not None:
             new_measurement._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
@@ -512,7 +509,7 @@ class SampleMeasurement(MeasurementProcess):
     ...     qml.PauliX(0)
     ...     return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
     >>> circuit()
-    tensor([1000,    0], requires_grad=True)
+    (tensor(1000, requires_grad=True), tensor(0, requires_grad=True))
     """
 
     @abstractmethod

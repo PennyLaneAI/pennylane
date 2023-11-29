@@ -64,22 +64,17 @@ def specs(qnode, max_expansion=None, expansion_strategy=None):
 
     >>> qml.specs(circuit)(x, add_ry=False)
     {'resources': Resources(num_wires=2, num_gates=2, gate_types=defaultdict(<class 'int'>, {'RX': 1, 'CNOT': 1}),
-    gate_sizes=defaultdict(int, {1: 1, 2: 1}), depth=2, shots=Shots(total_shots=None, shot_vector=())),
-    'gate_sizes': defaultdict(int, {1: 1, 2: 1}),
-    'gate_types': defaultdict(int, {'RX': 1, 'CNOT': 1}),
-    'num_operations': 2,
+    gate_sizes=defaultdict(<class 'int'>, {1: 1, 2: 1}), depth=2, shots=Shots(total_shots=None, shot_vector=())),
     'num_observables': 1,
     'num_diagonalizing_gates': 0,
-    'num_used_wires': 2,
     'num_trainable_params': 1,
-    'depth': 2,
     'num_device_wires': 2,
     'device_name': 'default.qubit',
     'expansion_strategy': 'gradient',
     'gradient_options': {'shifts': 0.7853981633974483},
     'interface': 'auto',
     'diff_method': 'parameter-shift',
-    'gradient_fn': 'pennylane.gradients.parameter_shift.param_shift',
+    'gradient_fn': 'pennylane.transforms.core.transform_dispatcher.param_shift',
     'num_gradient_executions': 2}
 
     """
