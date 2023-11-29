@@ -126,9 +126,9 @@ def while_loop(cond_fn):
         page for an overview of the differences between Catalyst and PennyLane.
 
     This decorator provides a functional version of the traditional while
-    loop, similar to ``jax.lax.while_loop``. That is, any variables that are
-    modified across iterations need to be provided as inputs and outputs to
-    the loop body function:
+    loop, similar to `jax.lax.while_loop <https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.while_loop.html>`__.
+    That is, any variables that are modified across iterations need to be provided as
+    inputs and outputs to the loop body function:
 
     - Input arguments contain the value of a variable at the start of an
       iteration
@@ -205,9 +205,9 @@ def for_loop(lower_bound, upper_bound, step):
         page for an overview of the differences between Catalyst and PennyLane.
 
     This decorator provides a functional version of the traditional
-    for-loop, similar to ``jax.cond.fori_loop``. That is, any variables that
-    are modified across iterations need to be provided as inputs/outputs to
-    the loop body function:
+    for-loop, similar to `jax.cond.fori_loop <https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.fori_loop.html>`__.
+    That is, any variables that are modified across iterations need to be provided
+    as inputs/outputs to the loop body function:
 
     - Input arguments contain the value of a variable at the start of an
       iteration.
