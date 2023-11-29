@@ -606,7 +606,7 @@ class gradient_transform(qml.batch_transform):  # pragma: no cover
             # Special case where we apply a Jax transform (jacobian e.g.) on the gradient transform and argnums are
             # defined on the outer transform and therefore on the args.
             argnum_cjac = trainable_params or argnums if interface == "jax" else None
-            cjac = qml.classical_jacobian(
+            cjac = qml.gradients.classical_jacobian(
                 qnode, argnum=argnum_cjac, expand_fn=self.expand_fn
             )(*args, **kwargs)
 

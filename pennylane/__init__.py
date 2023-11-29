@@ -119,6 +119,7 @@ from pennylane.qcut import cut_circuit, cut_circuit_mc
 import pennylane.pulse
 
 import pennylane.fourier
+from pennylane.gradients import metric_tensor, adjoint_metric_tensor
 import pennylane.gradients  # pylint:disable=wrong-import-order
 import pennylane.qinfo
 
