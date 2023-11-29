@@ -220,7 +220,7 @@
 * `qml.ShotAdaptiveOptimizer` can now use a multinomial distribution for spreading shots across
   the terms of a Hamiltonian measured in a QNode. Note that this is equivalent to what can be
   done with `qml.ExpvalCost`, but this is the preferred method because `ExpvalCost` is deprecated.
-  [(#)]()
+  [(#4896)](https://github.com/PennyLaneAI/pennylane/pull/4896)
 
 <h3>Breaking changes 💔</h3>
 
