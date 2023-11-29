@@ -266,15 +266,7 @@ def _draw_qnode(
                 tapes = qnode.construct(args, kwargs)
                 if isinstance(qnode.device, qml.devices.Device):
                     program = qnode.transform_program
-                    if any(
-                        isinstance(op, qml.measurements.MidMeasureMP)
-                        for op in qnode.tape.operations
-                    ):
-                        tapes, _ = qml.defer_measurements(qnode.tape, device=qnode.device)
-                    else:
-                        tapes = [qnode.tape]
-
-                    tapes = program(tapes)
+                    tapes = program([qnode.tape])
 
             finally:
                 qnode.expansion_strategy = original_expansion_strategy

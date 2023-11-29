@@ -285,7 +285,7 @@ class TestMidCircuitMeasurements:
     """Tests for drawing mid-circuit measurements and classical conditions."""
 
     @pytest.mark.parametrize("device_name", ["default.qubit"])
-    def test_mid_circuit_measurement_device_api(self, device_name, mocker):
+    def test_qnode_mid_circuit_measurement_not_deferred(self, device_name, mocker):
         """Test that a circuit containing mid-circuit measurements is transformed by the drawer
         to use deferred measurements if the device uses the new device API."""
         dev = qml.device(device_name)
@@ -297,10 +297,14 @@ class TestMidCircuitMeasurements:
             return qml.probs(wires=0)
 
         draw_qnode = qml.draw(circ)
-        spy = mocker.spy(qml.defer_measurements, "_transform")
+        spy1 = mocker.spy(qml.defer_measurements, "_transform")
+        spy2 = mocker.spy(qml.transforms.defer_measurements, "_transform")
 
-        _ = draw_qnode()
-        spy.assert_called_once()
+        drawing = draw_qnode()
+        spy1.assert_not_called()
+        spy2.assert_not_called()
+
+        assert drawing == "0: ──X──┤↗├─┤  Probs"
 
     @pytest.mark.parametrize(
         "postselect, reset, mid_measure_label",
