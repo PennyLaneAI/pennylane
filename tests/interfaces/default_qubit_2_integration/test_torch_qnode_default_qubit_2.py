@@ -1141,14 +1141,20 @@ class TestQubitIntegration:
         )
         assert np.allclose(weights.grad.detach(), expected, atol=tol, rtol=0)
 
-    def test_postselection_differentiation(self, interface, dev, diff_method, grad_on_execution):
+    def test_postselection_differentiation(
+        self, interface, dev, diff_method, grad_on_execution, device_vjp
+    ):
         """Test that when postselecting with default.qubit, differentiation works correctly."""
 
         if diff_method in ["adjoint", "spsa", "hadamard"]:
             pytest.skip("Diff method does not support postselection.")
 
         @qml.qnode(
-            dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
+            dev,
+            diff_method=diff_method,
+            interface=interface,
+            grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
         )
         def circuit(phi, theta):
             qml.RX(phi, wires=0)
@@ -1158,7 +1164,11 @@ class TestQubitIntegration:
             return qml.expval(qml.PauliZ(1))
 
         @qml.qnode(
-            dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
+            dev,
+            diff_method=diff_method,
+            interface=interface,
+            grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
         )
         def expected_circuit(theta):
             qml.PauliX(1)
