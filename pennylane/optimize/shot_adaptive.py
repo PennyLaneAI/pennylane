@@ -314,7 +314,6 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
             qnode.func = func
 
-            _ = qnode(*args, **kwargs)
             if s > 1:
 
                 def cost(*args, **kwargs):
