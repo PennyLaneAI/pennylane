@@ -490,7 +490,7 @@ class TestWeightedRandomSampling:
         expval_cost = catch_warn_ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
         weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
 
-        opt = qml.ShotAdaptiveOptimizer(min_shots=10)
+        opt = qml.ShotAdaptiveOptimizer(min_shots=10, term_sampling="weighted_random_sampling")
         spy = mocker.spy(opt, "weighted_random_sampling")
 
         _ = opt.step(expval_cost, weights)
@@ -592,7 +592,7 @@ class TestQNodeWeightedRandomSampling:
 
         weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
 
-        opt = qml.ShotAdaptiveOptimizer(min_shots=10)
+        opt = qml.ShotAdaptiveOptimizer(min_shots=10, term_sampling="weighted_random_sampling")
         spy = mocker.spy(opt, "qnode_weighted_random_sampling")
 
         _ = opt.step(circuit, weights)

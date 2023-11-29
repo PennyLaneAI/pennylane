@@ -270,6 +270,10 @@
 * The `"pennylane"` MPL-drawer style now draws straight lines instead of sketch-style lines.
   [(#4880)](https://github.com/PennyLaneAI/pennylane/pull/4880)
 
+* The default value for the `term_sampling` argument of `ShotAdaptiveOptimizer` is now
+  `None` instead of `"weighted_random_sampling"`.
+  [(#4896)](https://github.com/PennyLaneAI/pennylane/pull/4896)
+
 <h3>Deprecations 👋</h3>
 
 * `single_tape_transform`, `batch_transform`, `qfunc_transform`, and `op_transform` are deprecated.

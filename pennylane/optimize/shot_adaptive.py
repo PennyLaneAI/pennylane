@@ -30,10 +30,22 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     of the parameter-shift gradient, this optimizer frugally distributes a shot
     budget across the partial derivatives of each parameter.
 
-    In addition, if computing the expectation value of a Hamiltonian using
-    :class:`~.ExpvalCost`, weighted random sampling can be used to further
-    distribute the shot budget across the local terms from which the Hamiltonian
-    is constructed.
+    In addition, weighted random sampling can be used to further distribute the
+    shot budget across the local terms from which the Hamiltonian is constructed.
+
+    .. warning::
+
+        ``ExpvalCost`` is deprecated. Instead, it is recommended to simply
+        pass Hamiltonians to the :func:`~pennylane.expval` function inside QNodes.
+
+        .. code-block:: python
+
+            @qml.qnode(dev)
+            def ansatz(params):
+                some_qfunc(params)
+                return qml.expval(Hamiltonian)
+
+        In order to optimize the Hamiltonian evaluation taking into account commuting terms, use the ``grouping_type`` keyword in :class:`~.Hamiltonian`.
 
     .. note::
 
@@ -48,11 +60,10 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         mu (float): The running average constant :math:`\mu \in [0, 1]`. Used to control how quickly the
             number of shots recommended for each gradient component changes.
         b (float): Regularization bias. The bias should be kept small, but non-zero.
-        term_sampling (str): The random sampling algorithm to multinomially distribute the shot budget
-            across terms in the Hamiltonian expectation value.
-            Currently, only ``"weighted_random_sampling"`` is supported.
-            Only takes effect if the objective function provided is an instance of :class:`~.ExpvalCost`.
-            Set this argument to ``None`` to turn off random sampling of Hamiltonian terms.
+        term_sampling (str): The random sampling algorithm to multinomially distribute the shot
+            budget across terms in the Hamiltonian expectation value. Currently, only
+            ``"weighted_random_sampling"`` is supported. The default value is ``None``, which
+            disables the random sampling behaviour.
         stepsize (float): The learning rate :math:`\eta`. The learning rate *must* be such
             that :math:`\eta < 2/L = 2/\sum_i|c_i|`, where:
 
@@ -64,8 +75,8 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
     **Example**
 
-    For VQE/VQE-like problems, the objective function for the optimizer can be
-    realized as an :class:`~.ExpvalCost` object, constructed using a :class:`~.Hamiltonian`.
+    For VQE/VQE-like problems, the objective function for the optimizer can be realized
+    as a :class:`~.QNode` object measuring the expecation of a :class:`~.Hamiltonian`.
 
     >>> coeffs = [2, 4, -1, 5, 2]
     >>> obs = [
@@ -77,7 +88,10 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     ... ]
     >>> H = qml.Hamiltonian(coeffs, obs)
     >>> dev = qml.device("default.qubit", wires=2, shots=100)
-    >>> cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
+    >>> @qml.qnode(dev)
+    >>> def cost(weights):
+    ...     qml.StronglyEntanglingLayers(weights, wires=range(2))
+    ...     return qml.expval(H)
 
     Once constructed, the cost function can be passed directly to the
     optimizer's ``step`` method. The attributes ``opt.shots_used`` and
@@ -173,9 +187,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
           <https://quantum-journal.org/papers/q-2020-05-11-263/>`__ (2020).
     """
 
-    def __init__(
-        self, min_shots, term_sampling="weighted_random_sampling", mu=0.99, b=1e-6, stepsize=0.07
-    ):
+    def __init__(self, min_shots, term_sampling=None, mu=0.99, b=1e-6, stepsize=0.07):
         self.term_sampling = term_sampling
         self.trainable_args = set()
 
@@ -413,14 +425,11 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         if self.lipschitz is None:
             self.check_learning_rate(1)
 
-        qnode.construct(args, kwargs)
-        [expval] = qnode.tape.measurements
         if self.term_sampling == "weighted_random_sampling":
-            if isinstance(expval.obs, qml.Hamiltonian):
-                return self.qnode_weighted_random_sampling(
-                    qnode, self.max_shots, self.trainable_args, *args, **kwargs
-                )
-        elif self.term_sampling is not None:
+            return self.qnode_weighted_random_sampling(
+                qnode, self.max_shots, self.trainable_args, *args, **kwargs
+            )
+        if self.term_sampling is not None:
             raise ValueError(
                 f"Unknown Hamiltonian term sampling method {self.term_sampling}. "
                 "Only term_sampling='weighted_random_sampling' and "
