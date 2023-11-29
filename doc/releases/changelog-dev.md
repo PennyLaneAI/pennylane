@@ -217,6 +217,11 @@
 * `Conditional` and `MeasurementValue` objects now implement `map_wires`.
   [(#4884)](https://github.com/PennyLaneAI/pennylane/pull/4884)
 
+* `qml.ShotAdaptiveOptimizer` can now use a multinomial distribution for spreading shots across
+  the terms of a Hamiltonian measured in a QNode. Note that this is equivalent to what can be
+  done with `qml.ExpvalCost`, but this is the preferred method because `ExpvalCost` is deprecated.
+  [(#)]()
+
 <h3>Breaking changes 💔</h3>
 
 * The transforms submodule `qml.transforms.qcut` becomes its own module `qml.qcut`.

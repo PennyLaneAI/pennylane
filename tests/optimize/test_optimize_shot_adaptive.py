@@ -574,6 +574,123 @@ class TestWeightedRandomSampling:
         assert grads[0].shape == (10, *weights.shape)
 
 
+class TestQNodeWeightedRandomSampling:
+    """Tests for weighted random Hamiltonian term sampling"""
+
+    def test_wrs_expval_cost(self, mocker):
+        """Checks that cost functions that are expval costs can
+        make use of weighted random sampling"""
+        coeffs = [0.2, 0.1]
+        dev = qml.device("default.qubit", wires=2, shots=100)
+        H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)])
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            qml.StronglyEntanglingLayers(weights, wires=range(2))
+            return qml.expval(H)
+
+        weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
+
+        opt = qml.ShotAdaptiveOptimizer(min_shots=10)
+        spy = mocker.spy(opt, "qnode_weighted_random_sampling")
+
+        _ = opt.step(circuit, weights)
+        spy.assert_called_once()
+
+        grads = opt.qnode_weighted_random_sampling(circuit, 10, [0], weights)
+        assert len(grads) == 1
+        assert grads[0].shape == (10, *weights.shape)
+
+    def test_wrs_disabled(self, mocker):
+        """Checks that cost functions that are expval costs can
+        disable use of weighted random sampling"""
+        coeffs = [0.2, 0.1]
+        dev = qml.device("default.qubit", wires=2, shots=100)
+        H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)])
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            qml.StronglyEntanglingLayers(weights, wires=range(2))
+            return qml.expval(H)
+
+        weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
+
+        opt = qml.ShotAdaptiveOptimizer(min_shots=10, term_sampling=None)
+        spy = mocker.spy(opt, "qnode_weighted_random_sampling")
+
+        opt.step(circuit, weights)
+        spy.assert_not_called()
+
+    def test_unknown_term_sampling_method(self):
+        """Checks that an exception is raised if the term sampling method is unknown"""
+        coeffs = [0.2, 0.1]
+        dev = qml.device("default.qubit", wires=2, shots=100)
+        H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)])
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            qml.StronglyEntanglingLayers(weights, wires=range(2))
+            return qml.expval(H)
+
+        weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
+
+        opt = qml.ShotAdaptiveOptimizer(min_shots=10, term_sampling="uniform_random_sampling")
+
+        with pytest.raises(ValueError, match="Unknown Hamiltonian term sampling method"):
+            opt.step(circuit, weights)
+
+    def test_zero_shots(self, mocker):
+        """Test that, if the shot budget for a single term is 0,
+        that the jacobian computation is skipped"""
+        coeffs = [0.2, 0.1, 0.1]
+        dev = qml.device("default.qubit", wires=2, shots=100)
+        H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)])
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            qml.StronglyEntanglingLayers(weights, wires=range(2))
+            return qml.expval(H)
+
+        weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
+
+        opt = qml.ShotAdaptiveOptimizer(min_shots=10)
+        spy = mocker.spy(qml, "jacobian")
+        mocker.patch(
+            "scipy.stats._multivariate.multinomial_gen.rvs", return_value=np.array([[4, 0, 6]])
+        )
+        grads = opt.qnode_weighted_random_sampling(circuit, 10, [0], weights)
+
+        assert len(spy.call_args_list) == 2
+        assert len(grads) == 1
+        assert grads[0].shape == (10, *weights.shape)
+
+    def test_single_shots(self, mocker):
+        """Test that, if the shot budget for a single term is 1,
+        that the number of dimensions for the returned Jacobian is expanded"""
+        coeffs = [0.2, 0.1, 0.1]
+        dev = qml.device("default.qubit", wires=2, shots=100)
+        H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)])
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            qml.StronglyEntanglingLayers(weights, wires=range(2))
+            return qml.expval(H)
+
+        weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
+
+        opt = qml.ShotAdaptiveOptimizer(min_shots=10)
+
+        spy = mocker.spy(qml, "jacobian")
+        mocker.patch(
+            "scipy.stats._multivariate.multinomial_gen.rvs", return_value=np.array([[4, 1, 5]])
+        )
+        grads = opt.qnode_weighted_random_sampling(circuit, 10, [0], weights)
+
+        assert len(spy.call_args_list) == 3
+        assert len(grads) == 1
+        assert grads[0].shape == (10, *weights.shape)
+
+
 class TestOptimization:
     """Integration test to ensure that the optimizer
     minimizes simple examples"""

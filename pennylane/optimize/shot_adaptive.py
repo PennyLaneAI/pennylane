@@ -268,6 +268,79 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         return [np.concatenate(i) for i in zip(*grads)]
 
     @staticmethod
+    def qnode_weighted_random_sampling(qnode, shots, argnums, *args, **kwargs):
+        """Returns an array of length ``shots`` containing single-shot estimates
+        of the Hamiltonian gradient. The shots are distributed randomly over
+        the terms in the Hamiltonian, as per a multinomial distribution.
+
+        Args:
+            qnode (.QNode): A QNode that returns the expectation value of a Hamiltonian.
+            shots (int): The number of shots used to estimate the Hamiltonian expectation
+                value. These shots are distributed over the terms in the Hamiltonian,
+                as per a Multinomial distribution.
+            argnums (Sequence[int]): the QNode argument indices which are trainable
+            *args: Arguments to the QNode
+            **kwargs: Keyword arguments to the QNode
+
+        Returns:
+            array[float]: the single-shot gradients of the Hamiltonian expectation value
+        """
+        qnode.construct(args, kwargs)
+        base_func = qnode.func
+        tape = qnode.tape
+        [expval] = tape.measurements
+        coeffs, observables = expval.obs.terms()
+
+        # determine the shot probability per term
+        prob_shots = np.abs(coeffs) / np.sum(np.abs(coeffs))
+
+        # construct the multinomial distribution, and sample
+        # from it to determine how many shots to apply per term
+        si = multinomial(n=shots, p=prob_shots)
+        shots_per_term = si.rvs()[0]
+
+        grads = []
+
+        for o, c, p, s in zip(observables, coeffs, prob_shots, shots_per_term):
+            # if the number of shots is 0, do nothing
+            if s == 0:
+                continue
+
+            def func(*qnode_args, **qnode_kwargs):
+                qs = qml.tape.make_qscript(base_func)(*qnode_args, **qnode_kwargs)
+                for op in qs.operations:
+                    qml.apply(op)
+                return qml.expval(o)  # pylint:disable=cell-var-from-loop
+
+            qnode.func = func
+
+            _ = qnode(*args, **kwargs)
+            if s > 1:
+
+                def cost(*args, **kwargs):
+                    # pylint: disable=cell-var-from-loop
+                    return qml.math.stack(qnode(*args, **kwargs))
+
+            else:
+                cost = qnode
+
+            new_shots = 1 if s == 1 else [(1, int(s))]
+            jacs = []
+            for i in argnums:
+                j = qml.jacobian(cost, argnum=i)(*args, **kwargs, shots=new_shots)
+
+                if s == 1:
+                    j = np.expand_dims(j, 0)
+                # Divide each term by the probability per shot. This is
+                # because we are sampling one at a time.
+                jacs.append(c * j / p)
+
+            grads.append(jacs)
+
+        qnode.func = base_func
+        return [np.concatenate(i) for i in zip(*grads)]
+
+    @staticmethod
     def check_device(dev):
         r"""Verifies that the device used by the objective function is non-analytic.
 
@@ -337,6 +410,20 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
         if self.lipschitz is None:
             self.check_learning_rate(1)
+
+        qnode.construct(args, kwargs)
+        [expval] = qnode.tape.measurements
+        if self.term_sampling == "weighted_random_sampling":
+            if isinstance(expval.obs, qml.Hamiltonian):
+                return self.qnode_weighted_random_sampling(
+                    qnode, self.max_shots, self.trainable_args, *args, **kwargs
+                )
+        elif self.term_sampling is not None:
+            raise ValueError(
+                f"Unknown Hamiltonian term sampling method {self.term_sampling}. "
+                "Only term_sampling='weighted_random_sampling' and "
+                "term_sampling=None currently supported."
+            )
 
         new_shots = [(1, int(self.max_shots))]
 
