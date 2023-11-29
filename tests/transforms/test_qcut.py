@@ -34,8 +34,8 @@ from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane import qcut
 from pennylane.queuing import WrappedObj
-from pennylane.transforms import qcut
 from pennylane.wires import Wires
 
 pytestmark = pytest.mark.qcut
@@ -3061,7 +3061,7 @@ class TestCutCircuitMCTransform:
             qml.CNOT(wires=[0, 1])
             return qml.sample(wires=[0, 1])
 
-        spy = mocker.spy(qcut.montecarlo, "qcut_processing_fn_mc")
+        spy = mocker.spy(qcut.cutcircuit_mc, "qcut_processing_fn_mc")
         x = np.array(0.531, requires_grad=True)
         res = circuit(x)
 
@@ -3104,7 +3104,7 @@ class TestCutCircuitMCTransform:
             qml.CNOT(wires=[0, 1])
             return qml.sample(wires=[0, 1])
 
-        spy = mocker.spy(qcut.montecarlo, "qcut_processing_fn_mc")
+        spy = mocker.spy(qcut.cutcircuit_mc, "qcut_processing_fn_mc")
 
         x = 0.4
         res = circuit(x)
@@ -3163,7 +3163,7 @@ class TestCutCircuitMCTransform:
 
             return qml.sample(wires=[1, 2, 3])
 
-        spy = mocker.spy(qcut.montecarlo, "qcut_processing_fn_mc")
+        spy = mocker.spy(qcut.cutcircuit_mc, "qcut_processing_fn_mc")
 
         params = np.array([0.4, 0.5, 0.6, 0.7, 0.8], requires_grad=True)
         res = circuit(params)
@@ -4245,12 +4245,8 @@ class TestCutCircuitTransform:
         dev_2 = qml.device("default.qubit", wires=["Alice", 3.14, "Bob"])
 
         uncut_circuit = qml.QNode(circuit, dev_uncut)
-        cut_circuit_1 = qml.transforms.cut_circuit(
-            qml.QNode(circuit, dev_1), use_opt_einsum=use_opt_einsum
-        )
-        cut_circuit_2 = qml.transforms.cut_circuit(
-            qml.QNode(circuit, dev_2), use_opt_einsum=use_opt_einsum
-        )
+        cut_circuit_1 = qml.cut_circuit(qml.QNode(circuit, dev_1), use_opt_einsum=use_opt_einsum)
+        cut_circuit_2 = qml.cut_circuit(qml.QNode(circuit, dev_2), use_opt_einsum=use_opt_einsum)
 
         res_expected = uncut_circuit()
         res_1 = cut_circuit_1()
@@ -4267,7 +4263,7 @@ class TestCutCircuitTransform:
 
         dev = qml.device("default.qubit", wires=3)
 
-        @partial(qml.transforms.cut_circuit, use_opt_einsum=use_opt_einsum)
+        @partial(qml.cut_circuit, use_opt_einsum=use_opt_einsum)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -4289,7 +4285,7 @@ class TestCutCircuitTransform:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(qml.transforms.cut_circuit, use_opt_einsum=use_opt_einsum)
+        @partial(qml.cut_circuit, use_opt_einsum=use_opt_einsum)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -4514,7 +4510,7 @@ class TestCutCircuitExpansion:
             return qml.apply(measurement)
 
         spy = mocker.spy(qcut.cutcircuit, "_qcut_expand_fn")
-        spy_mc = mocker.spy(qcut.montecarlo, "_qcut_expand_fn")
+        spy_mc = mocker.spy(qcut.cutcircuit_mc, "_qcut_expand_fn")
 
         kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
         cut_transform(circuit, device_wires=[0])(**kwargs)
@@ -4535,7 +4531,7 @@ class TestCutCircuitExpansion:
         tape = qml.tape.QuantumScript.from_queue(q)
         spy = mocker.spy(qcut.tapes, "_qcut_expand_fn")
         spy_cc = mocker.spy(qcut.cutcircuit, "_qcut_expand_fn")
-        spy_mc = mocker.spy(qcut.montecarlo, "_qcut_expand_fn")
+        spy_mc = mocker.spy(qcut.cutcircuit_mc, "_qcut_expand_fn")
 
         kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
         cut_transform(tape, device_wires=[0], **kwargs)
@@ -4617,7 +4613,7 @@ class TestCutCircuitExpansion:
         qnode_cut = qcut.cut_circuit_mc(qml.QNode(circuit, dev_cut))
 
         spy_tapes = mocker.spy(qcut.tapes, "_qcut_expand_fn")
-        spy_mc = mocker.spy(qcut.montecarlo, "_qcut_expand_fn")
+        spy_mc = mocker.spy(qcut.cutcircuit_mc, "_qcut_expand_fn")
 
         qnode_cut(template_weights)
 
@@ -4897,7 +4893,7 @@ class TestKaHyPar:
         ),
     ]
     config_path = str(
-        Path(__file__).parent.parent.parent / "pennylane/transforms/qcut/_cut_kKaHyPar_sea20.ini"
+        Path(__file__).parent.parent.parent / "pennylane/qcut/_cut_kKaHyPar_sea20.ini"
     )
 
     def test_seed_in_ci(self):
@@ -5282,7 +5278,7 @@ class TestAutoCutCircuit:
 
         dev = qml.device("default.qubit", wires=3)
 
-        @partial(qml.transforms.cut_circuit, auto_cutter=True)
+        @partial(qml.cut_circuit, auto_cutter=True)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -5302,7 +5298,7 @@ class TestAutoCutCircuit:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(qml.transforms.cut_circuit, auto_cutter=True)
+        @partial(qml.cut_circuit, auto_cutter=True)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -5385,7 +5381,7 @@ class TestAutoCutCircuit:
         template_weights = [[0.1, -0.3]] * n_blocks
 
         device_size = 2
-        cut_strategy = qml.transforms.qcut.CutStrategy(max_free_wires=device_size)
+        cut_strategy = qml.qcut.CutStrategy(max_free_wires=device_size)
 
         with qml.queuing.AnnotatedQueue() as q0:
             qml.MPS(range(n_wires), n_block_wires, block, n_params_block, template_weights)
@@ -5413,13 +5409,6 @@ class TestAutoCutCircuit:
 
         # each frag should have the device size constraint satisfied.
         assert all(len(set(e[2] for e in f.edges.data("wire"))) <= device_size for f in frags)
-
-
-class TestRedirect:
-    """Tests that redirect in qcut.__init__ works to maintain import pathways while reorganizing files"""
-
-    def test_qcut_redirects_to_qcut_qcut(self):
-        assert qml.transforms.qcut._prep_one_state == qml.transforms.qcut.qcut._prep_one_state
 
 
 class TestCutCircuitWithHamiltonians:
@@ -5562,7 +5551,7 @@ class TestCutCircuitWithHamiltonians:
         template_weights = [[0.1, -0.3]] * n_blocks
 
         device_size = 2
-        cut_strategy = qml.transforms.qcut.CutStrategy(max_free_wires=device_size)
+        cut_strategy = qml.qcut.CutStrategy(max_free_wires=device_size)
 
         hamiltonian = qml.Hamiltonian(
             [1.0, 1.0],
