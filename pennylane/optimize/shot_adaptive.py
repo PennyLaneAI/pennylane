@@ -13,6 +13,7 @@
 # limitations under the License.
 """Shot adaptive optimizer"""
 # pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-branches
+from copy import copy
 from scipy.stats import multinomial
 
 import pennylane as qml
@@ -285,6 +286,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         Returns:
             array[float]: the single-shot gradients of the Hamiltonian expectation value
         """
+        qnode = copy(qnode)
         qnode.construct(args, kwargs)
         base_func = qnode.func
         tape = qnode.tape
@@ -338,7 +340,6 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
             grads.append(jacs)
 
-        qnode.func = base_func
         return [np.concatenate(i) for i in zip(*grads)]
 
     @staticmethod
