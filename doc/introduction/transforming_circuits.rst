@@ -6,27 +6,28 @@
 Transforming circuits
 =====================
 
-A quantum transform is a function that takes a circuit as input and returns one or more transformed circuits with a
-post processing function. The post processing functions is applied on the results after execution of the resulting
-circuit. This function is mainly useful when the transform returns multiple circuits, as we need a recipe to gather
-the results of the executed circuits (e.g. parameter shift or hamiltonian expansion).
+A quantum transform is a crucial concept in PennyLane, representing a function that takes a circuit as input and
+yields one or more transformed circuits along with a post-processing function. The post-processing function is applied
+to the results obtained after executing the transformed circuit. This becomes particularly valuable when a transform
+generates multiple circuits, requiring a method to aggregate the results, such as through parameter shift or
+Hamiltonian expansion.
 
-This requirements translates in PennyLane as follows:
+In the PennyLane framework, these requirements are translated as follows:
 
-* A transform accepts a :class:`~.QuantumTape` as its first input and
-  returns a sequence of :class:`~.QuantumTape` and a processing function.
+* A transform accepts a :class:`~.QuantumTape` as its primary input and
+  returns a sequence of :class:`~.QuantumTape` and an associated processing function.
 
-In order to simplify the creation of transforms and to make them powerful tools that work on all different circuit
-abstraction in PennyLane (:class:`~.QuantumTape`, :class:`~.QNode` and quantum functions). We have created a simple
+To streamline the creation of transforms and ensure their versatility across various circuit abstractions in PennyLane
+(:class:`~.QuantumTape`, :class:`~.QNode` and quantum functions), we have created a simple
 decorator :func:`~.transform` that can be applied on your quantum transform respecting the above contract.
 
-How to create your own transform?
----------------------------------
+Creating your own transform
+---------------------------
 
-First let's create a quantum transform that respects the structure requirements from above. Let's say we want a very
-simple transform that removes the :class:`~.RX` operations from the circuit. We simply need to filter the original
-:class:`~.QuantumTape` and return a new one without the filter operations. In this case, we do not need any specific
-processing function, therefore we add a null function that just returns the result.
+To illustrate the process of creating a quantum transform, let's consider a straightforward example. Suppose we want
+a transform that removes all :class:`~.RX` operations from a given circuit. In this case, we merely need to filter the
+original :class:`~.QuantumTape` and return a new one without the filtered operations. As we don't require a specific processing
+function in this scenario, we include a null function that simply returns the result.
 
 .. code-block:: python
 
@@ -43,14 +44,12 @@ processing function, therefore we add a null function that just returns the resu
 
         return [new_tape], null_postprocessing
 
-Now if you want your transform to work on :class:`~.QNode` and quantum functions, you simply need to use
-:func:`~.transform` as a decorator.
+To make your transform applicable to both :class:`~.QNode` and quantum functions, you can use the :func:`~.transform` decorator.
 
 >>> dispatched_transform = qml.transform(remove_rx)
 
-Let's now consider an example where the post processing is not a dummy function. Let's we want to take a circuit and
-sum it to its adjoint. We simply define the adjoint of the tape operations, create a new tape and return both tapes.
-The processing function simply sums the results.
+For a more advanced example, let's consider a transform that sums a circuit with its adjoint. We define the adjoint
+of the tape operations, create a new tape, and return both tapes. The processing function then sums the results.
 
 .. code-block:: python
 
@@ -71,9 +70,9 @@ The processing function simply sums the results.
 Composability of transforms
 ---------------------------
 
-The transforms are by principle composable on :class:`~.QNode`, it means that transforms with compatible post processing
-function can be applied on QNodes successively. For example you want to apply multiple compilation passes on your QNode
-to increase the reduction of gates before execution then it is possible:
+Transforms are inherently composable on :class:`~.QNode`, meaning that transforms with compatible post-processing
+functions can be successively applied to QNodes. This allows for the application of multiple compilation passes on a
+QNode to optimize gate reduction before execution.
 
 .. code-block:: python
 
@@ -90,13 +89,13 @@ to increase the reduction of gates before execution then it is possible:
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(wires=0))
 
-First inverses are cancelled and therefore the two Hadamard gates are removed, then the rotation are merged as a single
-:class:`qml.Rot` gate. Therefore we successfully applied two transforms on this circuit very easily!
+In this example, inverses are canceled, leading to the removal of two Hadamard gates. Subsequently, rotations are
+merged into a single :class:`qml.Rot` gate. Consequently, two transforms are successfully applied to the circuit.
 
 Relevant links
 --------------
 
-Good examples of transforms with the purpose of compiling can be found in :doc:`inspecting circuits </introduction/compiling_circuits>`.
-For gradient transforms, you can find examples in :doc:`gradients documentation <../code/api/pennylane.gradients>`.
-Quantum information transformations can be found the :doc:`qinfo documentation <../code/api/pennylane.qinfo>`. Finally,
-the rest of the transforms and the core functionalities can be found in the:doc:`qinfo documentation <../code/api/pennylane.transforms>`.
+Explore practical examples of transforms focused on compiling circuits in the :doc:`inspecting circuits </introduction/compiling_circuits>`.
+For gradient transforms, refer to the examples in :doc:`gradients documentation <../code/api/pennylane.gradients>`.
+Discover quantum information transformations in the :doc:`qinfo documentation <../code/api/pennylane.qinfo>`. Finally,
+for a comprehensive overview of transforms and core functionalities, consult the :doc:`qinfo documentation <../code/api/pennylane.transforms>`.
