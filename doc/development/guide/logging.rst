@@ -15,7 +15,7 @@ To enable logging support in your PennyLane work-flow simply run the following l
 This will ensure all levels of the execution pipeline log function entries and
 outputs. These are logged to handlers pointing to the standard output. Note, since Python's logging framework configuration functions overwrite previous logger configurations, it is expected that :func:`~pennylane.logging.enable_logging()` is called only when not using external logging configurations.
 
-If you are defining custom logging configurations, you can extend the logging configuration options as defined in the section `Customizing the logging configuration <logging-config>`_, or avoid calling :func:`~pennylane.logging.enable_logging()` in favour of tour custom configuration options.
+If you are defining custom logging configurations, you can extend the logging configuration options as defined in the section :ref:`Customizing the logging configuration <logging-config>`, or avoid calling :func:`~pennylane.logging.enable_logging()` in favour of tour custom configuration options.
 
 Adding logging supports during development
 ------------------------------------------

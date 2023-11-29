@@ -98,7 +98,7 @@ def _(fermi_operator: FermiWord, ps=False, wire_map=None, tol=None):
 
     else:
         coeffs = {"+": -0.5j, "-": 0.5j}
-        qubit_operator = PauliSentence()
+        qubit_operator = PauliSentence({PauliWord({}): 1.0})  # Identity PS to multiply PSs with
 
         for item in fermi_operator.items():
             (_, wire), sign = item
@@ -130,7 +130,7 @@ def _(fermi_operator: FermiSentence, ps=False, wire_map=None, tol=None):
     wires = list(fermi_operator.wires) or [0]
     identity_wire = wires[0]
 
-    qubit_operator = PauliSentence()
+    qubit_operator = PauliSentence()  # Empty PS as 0 operator to add Pws to
 
     for fw, coeff in fermi_operator.items():
         fermi_word_as_ps = jordan_wigner(fw, ps=True)

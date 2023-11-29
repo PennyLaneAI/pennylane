@@ -34,15 +34,15 @@ class TestInitialization:
         assert len(qs._ops) == 0
         assert len(qs._measurements) == 0
         assert len(qs._par_info) == 0
-        assert len(qs._trainable_params) == 0
+        assert qs._trainable_params is None
+        assert qs.trainable_params == []
+        assert qs._trainable_params == []
         assert qs._graph is None
         assert qs._specs is None
         assert qs._shots.total_shots is None
         assert qs._batch_size is None
         assert qs.wires == qml.wires.Wires([])
         assert qs.num_wires == 0
-        assert qs.is_sampled is False
-        assert qs.all_sampled is False
         assert qs.samples_computational_basis is False
         assert len(qs._obs_sharing_wires) == 0
         assert len(qs._obs_sharing_wires_id) == 0
@@ -92,16 +92,6 @@ class TestInitialization:
         """Test the num_preps property."""
         assert QuantumScript(ops).num_preps == num_preps
 
-    def test_prep_deprecation(self):
-        """Test that the prep keyword ~is deprecated and~ behaves as expected."""
-        prep = [qml.BasisState([1, 1], wires=(0, 1))]
-        ops = [qml.PauliX(0)]
-        with pytest.warns(UserWarning, match="`prep` keyword argument is being removed"):
-            qs = QuantumScript(ops=ops, prep=prep)
-            assert len(qs.operations) == len(qs._ops) == 2
-            assert qml.equal(qs.operations[0], prep[0])
-            assert qml.equal(qs.operations[1], ops[0])
-
 
 sample_measurements = [
     qml.sample(),
@@ -132,15 +122,17 @@ class TestUpdate:
         ops = [qml.S(0), qml.T("a"), qml.S(0)]
         measurement = [qml.probs(wires=("a"))]
 
-        qs = QuantumScript(ops, measurement, prep)
+        qs = QuantumScript(prep + ops, measurement)
         assert qs.wires == qml.wires.Wires([-1, -2, 0, "a"])
         assert qs.num_wires == 4
 
     @pytest.mark.parametrize("sample_ms", sample_measurements)
     def test_update_circuit_info_sampling(self, sample_ms):
         qs = QuantumScript(measurements=[qml.expval(qml.PauliZ(0)), sample_ms])
-        assert qs.is_sampled is True
-        assert qs.all_sampled is False
+        with pytest.warns(UserWarning, match="QuantumScript.is_sampled is deprecated"):
+            assert qs.is_sampled is True
+        with pytest.warns(UserWarning, match="QuantumScript.all_sampled is deprecated"):
+            assert qs.all_sampled is False
 
         shadow_mp = sample_ms.return_type not in (
             qml.measurements.Shadow,
@@ -149,16 +141,20 @@ class TestUpdate:
         assert qs.samples_computational_basis is shadow_mp
 
         qs = QuantumScript(measurements=[sample_ms, sample_ms, qml.sample()])
-        assert qs.is_sampled is True
-        assert qs.all_sampled is True
+        with pytest.warns(UserWarning, match="QuantumScript.is_sampled is deprecated"):
+            assert qs.is_sampled is True
+        with pytest.warns(UserWarning, match="QuantumScript.all_sampled is deprecated"):
+            assert qs.all_sampled is True
         assert qs.samples_computational_basis is True
 
     def test_update_circuit_info_no_sampling(self):
         """Test that all_sampled, is_sampled and samples_computational_basis properties are set to False if no sampling
         measurement process exists."""
         qs = QuantumScript(measurements=[qml.expval(qml.PauliZ(0))])
-        assert qs.is_sampled is False
-        assert qs.all_sampled is False
+        with pytest.warns(UserWarning, match="QuantumScript.is_sampled is deprecated"):
+            assert qs.is_sampled is False
+        with pytest.warns(UserWarning, match="QuantumScript.all_sampled is deprecated"):
+            assert qs.all_sampled is False
         assert qs.samples_computational_basis is False
 
     def test_samples_computational_basis_correctly(self):
@@ -193,7 +189,7 @@ class TestUpdate:
         assert p_i[6] == {"op": ops[3], "op_idx": 3, "p_idx": 1}
         assert p_i[7] == {"op": m[0].obs, "op_idx": 4, "p_idx": 0}
 
-        assert qs._trainable_params == list(range(8))
+        assert qs.trainable_params == list(range(8))
 
     # pylint: disable=unbalanced-tuple-unpacking
     def test_get_operation(self):
@@ -416,7 +412,7 @@ class TestInfomationProperties:
         g = qs.graph
         assert isinstance(g, qml.CircuitGraph)
         assert g.operations == qs.operations
-        assert g.observables == qs.observables
+        assert g.observables == qs.measurements
 
         # test that if we request it again, we get the same object
         assert qs.graph is g
@@ -482,7 +478,7 @@ class TestScriptCopying:
         prep = [qml.BasisState(np.array([1, 0]), wires=(0, 1))]
         ops = [qml.RY(0.5, wires=1), qml.CNOT((0, 1))]
         m = [qml.expval(qml.PauliZ(0) @ qml.PauliY(1))]
-        qs = QuantumScript(ops, m, prep=prep)
+        qs = QuantumScript(prep + ops, m)
 
         copied_qs = qs.copy()
 
@@ -517,7 +513,7 @@ class TestScriptCopying:
         prep = [qml.BasisState(np.array([1, 0]), wires=(0, 1))]
         ops = [qml.RY(0.5, wires=1), qml.CNOT((0, 1))]
         m = [qml.expval(qml.PauliZ(0) @ qml.PauliY(1))]
-        qs = QuantumScript(ops, m, prep=prep)
+        qs = QuantumScript(prep + ops, m)
 
         copied_qs = copy_fn(qs)
 
@@ -546,7 +542,7 @@ class TestScriptCopying:
         prep = [qml.BasisState(np.array([1, 0]), wires=(0, 1))]
         ops = [qml.RY(0.5, wires=1), qml.CNOT((0, 1))]
         m = [qml.expval(qml.PauliZ(0) @ qml.PauliY(1))]
-        qs = QuantumScript(ops, m, prep=prep)
+        qs = QuantumScript(prep + ops, m)
 
         copied_qs = copy.deepcopy(qs)
 
@@ -1453,7 +1449,7 @@ def test_flatten_unflatten(qscript_type):
     assert all(o1 is o2 for o1, o2 in zip(new_tape.operations, tape.operations))
     assert all(o1 is o2 for o1, o2 in zip(new_tape.measurements, tape.measurements))
     assert new_tape.shots == qml.measurements.Shots(100)
-    assert new_tape.trainable_params == [0]
+    assert new_tape.trainable_params == (0,)
 
 
 @pytest.mark.jax

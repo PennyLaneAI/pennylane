@@ -12,51 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This subpackage contains QNode, quantum function, device, and tape transforms.
-
+This subpackage contains PennyLane transforms and their building blocks.
 
 .. currentmodule:: pennylane
 
-Transforms
-----------
+Custom transforms
+-----------------
 
-Transforms that act on QNodes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-These transforms accept QNodes, and return new transformed functions
-that compute the desired quantity.
+:func:`qml.transform <pennylane.transform>` can be used to define custom transformations
+that work with PennyLane QNodes; such transformations can map a circuit
+to one or many new circuits alongside associated classical post-processing.
 
 .. autosummary::
     :toctree: api
 
-    ~transforms.classical_jacobian
-    ~batch_params
-    ~batch_input
-    ~batch_partial
-    ~metric_tensor
-    ~adjoint_metric_tensor
-    ~specs
-    ~transforms.split_non_commuting
+    ~transforms.core.transform
 
-Transforms that act on quantum functions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-These transforms accept quantum functions (Python functions
-containing quantum operations) that are used to construct QNodes.
-
-.. autosummary::
-    :toctree: api
-
-    ~transforms.cond
-    ~defer_measurements
-    ~apply_controlled_Q
-    ~quantum_monte_carlo
-    ~transforms.insert
+Transforms library
+------------------
+A range of ready-to-use transforms are available in PennyLane.
 
 Transforms for circuit compilation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This set of transforms accept quantum functions, and perform basic circuit compilation tasks.
+A set of transforms to perform basic circuit compilation tasks.
 
 .. autosummary::
     :toctree: api
@@ -95,68 +74,66 @@ There are also utility functions that take a circuit and return a DAG.
     ~transforms.CommutationDAG
     ~transforms.CommutationDAGNode
 
-Transform for circuit cutting
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Transform for Clifford+T compilation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :func:`~.cut_circuit` transform accepts a QNode and returns a new function that cuts the original circuit,
-allowing larger circuits to be split into smaller circuits that are compatible with devices that
-have a restricted number of qubits.
+The following functions assist in decomposing operations to the Clifford+T basis.
 
 .. autosummary::
     :toctree: api
 
-    ~cut_circuit
+    ~transforms.sk_decomposition
 
-The :func:`~.cut_circuit_mc` transform is designed to be used for cutting circuits which contain :func:`~.sample`
-measurements and is implemented using a Monte Carlo method. Similarly to the :func:`~.cut_circuit`
-transform, this transform accepts a QNode and returns a new function that cuts the original circuit.
-This transform can also accept an optional classical processing function to calculate an
-expectation value.
+Transforms for error mitigation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: api
 
-    ~cut_circuit_mc
+    ~transforms.mitigate_with_zne
+    ~transforms.fold_global
+    ~transforms.poly_extrapolate
+    ~transforms.richardson_extrapolate
 
-There are also low-level functions that can be used to build up the circuit cutting functionalities:
+Other transforms
+~~~~~~~~~~~~~~~~
 
-.. autosummary::
-    :toctree: api
-
-    ~transforms.qcut.tape_to_graph
-    ~transforms.qcut.replace_wire_cut_nodes
-    ~transforms.qcut.fragment_graph
-    ~transforms.qcut.graph_to_tape
-    ~transforms.qcut.expand_fragment_tape
-    ~transforms.qcut.expand_fragment_tapes_mc
-    ~transforms.qcut.qcut_processing_fn
-    ~transforms.qcut.qcut_processing_fn_sample
-    ~transforms.qcut.qcut_processing_fn_mc
-    ~transforms.qcut.CutStrategy
-    ~transforms.qcut.kahypar_cut
-    ~transforms.qcut.place_wire_cuts
-    ~transforms.qcut.find_and_place_cuts
-
-Transforms that act on tapes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-These transforms accept quantum tapes, and return one or
-more tapes as well as a classical processing function.
+These transforms use the :func:`pennylane.transform` function / decorator and can be used on
+:class:`pennylane.tape.QuantumTape`, :class:`pennylane.QNode`. They fulfill multiple purposes like circuit
+preprocessing, get information from a circuit and more.
 
 .. autosummary::
     :toctree: api
 
+    ~metric_tensor
+    ~adjoint_metric_tensor
+    ~batch_params
+    ~batch_input
+    ~transforms.insert
+    ~defer_measurements
+    ~transforms.split_non_commuting
     ~transforms.broadcast_expand
     ~transforms.hamiltonian_expand
     ~transforms.sign_expand
     ~transforms.sum_expand
+    ~transforms.convert_to_numpy_parameters
+    ~apply_controlled_Q
+    ~quantum_monte_carlo
 
-This transform accepts a single tape and returns a single tape:
+Transforms that act only on QNodes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+These transforms only accept QNodes, and return new transformed functions
+that compute the desired quantity.
 
 .. autosummary::
     :toctree: api
 
-    ~transforms.convert_to_numpy_parameters
+    ~transforms.classical_jacobian
+    ~batch_partial
+    ~specs
+    ~draw
+    ~draw_mpl
 
 Decorators and utility functions
 --------------------------------
@@ -167,10 +144,6 @@ to help build custom QNode, quantum function, and tape transforms:
 .. autosummary::
     :toctree: api
 
-    ~single_tape_transform
-    ~batch_transform
-    ~qfunc_transform
-    ~op_transform
     ~transforms.make_tape
     ~transforms.map_batch_transform
     ~transforms.create_expand_fn
@@ -181,28 +154,38 @@ to help build custom QNode, quantum function, and tape transforms:
     ~transforms.expand_trainable_multipar
     ~transforms.expand_nonunitary_gen
 
-Transforms for error mitigation
--------------------------------
+Transforms developer functions
+------------------------------
+
+:class:`~.TransformContainer`, :class:`~.TransformDispatcher` and  :class:`~.TransformProgram` are
+developer-facing objects that allow the
+creation, dispatching and composability of transforms. If you would like to make a custom transform, refer
+instead to the documentation of :func:`qml.transform <pennylane.transform>`.
 
 .. autosummary::
     :toctree: api
 
-    ~transforms.mitigate_with_zne
-    ~transforms.fold_global
-    ~transforms.poly_extrapolate
-    ~transforms.richardson_extrapolate
-
-Transforms core
----------------
-
-.. autosummary::
-    :toctree: api
-
-    ~transforms.core.transform
     ~transforms.core.transform_dispatcher
+    ~transforms.core.transform_program
+
+Old transforms framework
+------------------------
+
+These utility functions were previously used to create transforms in PennyLane and are now
+deprecated. It is now recommended to use :class:`qml.transform <pennylane.transform>`
+for the creation of custom transforms.
+
+.. autosummary::
+    :toctree: api
+
+    ~single_tape_transform
+    ~batch_transform
+    ~qfunc_transform
+    ~op_transform
 
 """
 # Import the decorators first to prevent circular imports when used in other transforms
+from .core import transform, TransformError
 from .batch_transform import batch_transform, map_batch_transform
 from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
 from .op_transforms import op_transform
@@ -210,12 +193,12 @@ from .batch_params import batch_params
 from .batch_input import batch_input
 from .batch_partial import batch_partial
 from .classical_jacobian import classical_jacobian
-from .condition import cond, Conditional
 from .convert_to_numpy_parameters import convert_to_numpy_parameters
 from .compile import compile
 from .decompositions import (
     one_qubit_decomposition,
     two_qubit_decomposition,
+    sk_decomposition,
 )
 from .defer_measurements import defer_measurements
 from .sign_expand import sign_expand
@@ -256,8 +239,5 @@ from .tape_expand import (
     set_decomposition,
 )
 from .transpile import transpile
-from . import qcut
-from .qcut import cut_circuit, cut_circuit_mc
 from .zx import to_zx, from_zx
 from .broadcast_expand import broadcast_expand
-from .core import transform, TransformError

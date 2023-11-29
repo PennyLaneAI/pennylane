@@ -112,8 +112,9 @@ def rydberg_interaction(
                 2 * np.pi * interaction_coeff / (abs(atom_distance) ** 6)
             )  # van der Waals potential
             coeffs.append(Vij)
-            observables.append(qml.prod(qml.Projector([1], wire1), qml.Projector([1], wire2)))
-            # Rydberg projectors
+            with qml.QueuingManager.stop_recording():
+                observables.append(qml.prod(qml.Projector([1], wire1), qml.Projector([1], wire2)))
+                # Rydberg projectors
 
     settings = RydbergSettings(register, interaction_coeff)
 
