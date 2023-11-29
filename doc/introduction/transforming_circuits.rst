@@ -6,13 +6,12 @@
 Transforming circuits
 =====================
 
-A quantum transform is a crucial concept in PennyLane, representing a function that takes a circuit as input and
+A quantum transform is a crucial concept in PennyLane, it is represented by a function that takes a circuit as input and
 yields one or more transformed circuits along with a post-processing function. The post-processing function is applied
-to the results obtained after executing the transformed circuit. This becomes particularly valuable when a transform
-generates multiple circuits, requiring a method to aggregate the results, such as through parameter shift or
-Hamiltonian expansion.
+to the results obtained after executing the transformed circuit(s). This becomes particularly valuable when a transform
+generates multiple circuits, requiring a method to aggregate the results (e.g. parameter shift or Hamiltonian expansion).
 
-In the PennyLane framework, these requirements are translated as follows:
+In PennyLane, these requirements are translated as follows:
 
 * A transform accepts a :class:`~.QuantumTape` as its primary input and
   returns a sequence of :class:`~.QuantumTape` and an associated processing function.
@@ -71,8 +70,8 @@ Composability of transforms
 ---------------------------
 
 Transforms are inherently composable on :class:`~.QNode`, meaning that transforms with compatible post-processing
-functions can be successively applied to QNodes. This allows for the application of multiple compilation passes on a
-QNode to optimize gate reduction before execution.
+functions can be successively applied to QNodes. For example, this allows for the application of multiple compilation
+passes on a QNode to maximize gate reduction before execution.
 
 .. code-block:: python
 
@@ -95,7 +94,7 @@ merged into a single :class:`qml.Rot` gate. Consequently, two transforms are suc
 Relevant links
 --------------
 
-Explore practical examples of transforms focused on compiling circuits in the :doc:`inspecting circuits </introduction/compiling_circuits>`.
+Explore practical examples of transforms focused on compiling circuits in the :doc:`compiling circuits documentation </introduction/compiling_circuits>`.
 For gradient transforms, refer to the examples in :doc:`gradients documentation <../code/qml_gradients>`.
-Discover quantum information transformations in the :doc:`qinfo documentation <../code/qml_qinfo>`. Finally,
-for a comprehensive overview of transforms and core functionalities, consult the :doc:`qinfo documentation <../code/qml_transforms>`.
+Discover quantum information transformations in the :doc:`quantum information documentation <../code/qml_qinfo>`. Finally,
+for a comprehensive overview of transforms and core functionalities, consult the :doc:`transforms documentation <../code/qml_transforms>`.
