@@ -243,7 +243,7 @@ class TestCatalyst:
             def func():
                 qml.RX(theta, wires=wires)
 
-            qml.adjoint(func, lazy=True)()
+            qml.adjoint(func, lazy=False)()
             return qml.probs()
 
         with pytest.raises(CompileError, match="Setting lazy=False is not supported with qjit."):
