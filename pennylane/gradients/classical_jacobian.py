@@ -55,7 +55,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
     \mathbb{R}^m` between the input QNode arguments :math:`w` and the gate arguments :math:`g`, for
     a given value of the QNode arguments:
 
-    >>> cjac_fn = qml.transforms.classical_jacobian(circuit)
+    >>> cjac_fn = qml.classical_jacobian(circuit)
     >>> weights = np.array([1., 1., 0.6], requires_grad=True)
     >>> cjac = cjac_fn(weights)
     >>> print(cjac)
@@ -128,7 +128,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
     ...     qml.RY(y ** 2, wires=1)
     ...     qml.RZ(1 / z, wires=1)
     ...     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-    >>> jac_fn = qml.transforms.classical_jacobian(circuit, argnum=[1, 2])
+    >>> jac_fn = qml.classical_jacobian(circuit, argnum=[1, 2])
     >>> x, y, z = np.array([0.1, -2.5, 0.71])
     >>> jac_fn(x, y, z)
     (array([-0., -5., -0.]), array([-0.        , -0.        , -1.98373339]))

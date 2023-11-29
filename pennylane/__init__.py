@@ -81,14 +81,12 @@ from pennylane import qaoa
 from pennylane.qnode import QNode, qnode
 from pennylane.transforms import (
     transform,
-    adjoint_metric_tensor,
     batch_params,
     batch_input,
     batch_transform,
     batch_partial,
     compile,
     defer_measurements,
-    metric_tensor,
     specs,
     qfunc_transform,
     op_transform,

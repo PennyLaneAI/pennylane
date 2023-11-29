@@ -50,6 +50,16 @@ Gradient transforms
     hadamard_grad
     stoch_pulse_grad
     pulse_odegen
+    classical_jacobian
+
+Metric tensors
+^^^^^^^^^^^^^^
+
+.. autosummary::
+    :toctree: api
+
+    metric_tensor
+    adjoint_metric_tensor
 
 Utility functions
 ^^^^^^^^^^^^^^^^^
@@ -336,6 +346,9 @@ from .spsa_gradient import spsa_grad
 from .hadamard_gradient import hadamard_grad
 from .pulse_gradient import stoch_pulse_grad
 from .pulse_gradient_odegen import pulse_odegen
+from .adjoint_metric_tensor import adjoint_metric_tensor
+from .metric_tensor import metric_tensor
+from .classical_jacobian import classical_jacobian
 
 from .hamiltonian_grad import hamiltonian_grad
 from .general_shift_rules import (
