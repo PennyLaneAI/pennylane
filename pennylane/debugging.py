@@ -80,10 +80,10 @@ def snapshots(qnode):
             return qml.expval(qml.PauliX(0))
 
     >>> qml.snapshots(circuit)()
-    {0: array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j]),
-    'very_important_state': array([0.70710678+0.j, 0.+0.j, 0.70710678+0.j, 0.+0.j]),
-    2: array([0.70710678+0.j, 0.+0.j, 0.+0.j, 0.70710678+0.j]),
-    'execution_results': array(0.)}
+    {0: array([1., 0., 0., 0.]),
+    'very_important_state': array([0.70710678, 0.        , 0.70710678, 0.        ]),
+    2: array([0.70710678, 0.        , 0.        , 0.70710678]),
+    'execution_results': 0.0}
     """
 
     def get_snapshots(*args, **kwargs):

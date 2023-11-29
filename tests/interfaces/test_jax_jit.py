@@ -679,6 +679,7 @@ class TestVectorValuedJIT:
         [
             ([qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))], (), tuple),
             ([qml.probs(wires=[0, 1])], (4,), jax.numpy.ndarray),
+            ([qml.probs()], (4,), jax.numpy.ndarray),
         ],
     )
     def test_shapes(self, execute_kwargs, ret_type, shape, expected_type):

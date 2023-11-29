@@ -19,6 +19,90 @@ import numpy as np
 from scipy.sparse import coo_matrix, csr_matrix
 import pennylane as qml
 
+SPARSEHAMILTONIAN_TEST_MATRIX = np.array(
+    [
+        [
+            0 + 0j,
+            0 - 0j,
+            0 + 0j,
+            -0 + 0j,
+            0 + 0j,
+            -0 + 0j,
+            -0 + 0j,
+            0 + 1.0j,
+        ],
+        [
+            0 + 0j,
+            0 + 0j,
+            0 + 0j,
+            0 + 0j,
+            0 + 0j,
+            0 + 0j,
+            -0 - 1.0j,
+            -0 + 0j,
+        ],
+        [
+            0 + 0j,
+            0 - 0j,
+            0 + 0j,
+            0 - 0j,
+            0 + 0j,
+            -0 - 1.0j,
+            0 + 0j,
+            -0 + 0j,
+        ],
+        [
+            0 + 0j,
+            0 + 0j,
+            0 + 0j,
+            0 + 0j,
+            0 + 1.0j,
+            0 + 0j,
+            0 + 0j,
+            0 + 0j,
+        ],
+        [
+            0 + 0j,
+            0 - 0j,
+            0 + 0j,
+            -0 - 1.0j,
+            0 + 0j,
+            0 - 0j,
+            0 + 0j,
+            -0 + 0j,
+        ],
+        [
+            0 + 0j,
+            0 + 0j,
+            0 + 1.0j,
+            0 + 0j,
+            0 + 0j,
+            0 + 0j,
+            0 + 0j,
+            0 + 0j,
+        ],
+        [
+            -0 + 0j,
+            0 + 1.0j,
+            0 + 0j,
+            0 - 0j,
+            0 + 0j,
+            0 - 0j,
+            0 + 0j,
+            0 - 0j,
+        ],
+        [
+            -0 - 1.0j,
+            -0 + 0j,
+            0 + 0j,
+            0 + 0j,
+            0 + 0j,
+            0 + 0j,
+            0 + 0j,
+            0 + 0j,
+        ],
+    ]
+)
 
 SPARSE_HAMILTONIAN_TEST_DATA = [(np.array([[1, 0], [-1.5, 0]])), (np.eye(4))]
 
@@ -212,3 +296,32 @@ class TestSparse:
 
         with pytest.raises(qml.operation.DiagGatesUndefinedError):
             dev.execute(qs)
+
+    @pytest.mark.parametrize("sparse_hamiltonian", SPARSEHAMILTONIAN_TEST_MATRIX)
+    def test_scalar_multipication(self, sparse_hamiltonian):
+        """Tests if the __mul__ method of SparseHamiltonian gives the correct result."""
+
+        value = 0.1234
+        num_wires = int(np.log2(len(sparse_hamiltonian)))
+        H = csr_matrix(SPARSEHAMILTONIAN_TEST_MATRIX)
+        H_multiplied = csr_matrix(SPARSEHAMILTONIAN_TEST_MATRIX * value)
+
+        H_sparse_mul_method = qml.SparseHamiltonian(H, wires=range(num_wires)) * value
+        H_sparse_mul_method = H_sparse_mul_method.sparse_matrix()
+        H_sparse_multiplied_before = qml.SparseHamiltonian(
+            H_multiplied, wires=range(num_wires)
+        ).sparse_matrix()
+
+        assert np.allclose(H_sparse_mul_method.toarray(), H_sparse_multiplied_before.toarray())
+
+    @pytest.mark.parametrize("sparse_hamiltonian", SPARSEHAMILTONIAN_TEST_MATRIX)
+    def test_scalar_multipication_typeerror(self, sparse_hamiltonian):
+        """Tests if the __mul__ method of SparseHamiltonian throws the correct error."""
+        value = [0.1234]
+        num_wires = int(np.log2(len(sparse_hamiltonian)))
+        H = csr_matrix(SPARSEHAMILTONIAN_TEST_MATRIX)
+
+        with pytest.raises(
+            TypeError, match="Scalar value must be an int or float. Got <class 'list'>"
+        ):
+            _ = qml.SparseHamiltonian(H, wires=range(num_wires)) * value

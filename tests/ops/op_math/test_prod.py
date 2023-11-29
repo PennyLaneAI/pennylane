@@ -21,7 +21,7 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as qnp
-from pennylane import QuantumFunctionError, math
+from pennylane import math
 from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
 from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
 from pennylane.wires import Wires
@@ -85,6 +85,17 @@ ops_hermitian_status = (  # computed manually
     False,  # False
     False,  # False
 )
+
+
+# currently failing due to has_diagonalizing_gates logic
+@pytest.mark.xfail  # TODO: fix with story 49608
+def test_basic_validity():
+    """Run basic validity checks on a prod operator."""
+    op1 = qml.PauliZ(0)
+    op2 = qml.Rot(1.2, 2.3, 3.4, wires=0)
+    op3 = qml.IsingZZ(4.32, wires=("a", "b"))
+    op = qml.prod(op1, op2, op3)
+    qml.ops.functions.assert_valid(op)
 
 
 def compare_and_expand_mat(mat1, mat2):
@@ -854,6 +865,7 @@ class TestProperties:
         assert np.allclose(eig_vals, cached_vals)
         assert np.allclose(eig_vecs, cached_vecs)
 
+    # pylint: disable=use-implicit-booleaness-not-comparison
     def test_diagonalizing_gates(self):
         """Test that the diagonalizing gates are correct."""
         diag_prod_op = Prod(qml.PauliZ(wires=0), qml.PauliZ(wires=1))
@@ -1270,8 +1282,8 @@ class TestIntegration:
             return qml.probs(op=prod_op)
 
         with pytest.raises(
-            QuantumFunctionError,
-            match="Symbolic Operations are not supported for " "rotating probabilities yet.",
+            qml.QuantumFunctionError,
+            match="Symbolic Operations are not supported for rotating probabilities yet.",
         ):
             my_circ()
 

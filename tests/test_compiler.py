@@ -14,11 +14,11 @@
 """
 Unit tests for the compiler subpackage.
 """
-
 # pylint: disable=import-outside-toplevel
 import pytest
 import pennylane as qml
 from pennylane.compiler.compiler import CompileError
+
 
 from pennylane import numpy as np
 
@@ -124,7 +124,8 @@ class TestCatalyst:
         """Test variable capture using multiple backend devices."""
         dev = qml.device("lightning.qubit", wires=2)
 
-        @qml.qjit()
+
+        @qml.qjit
         def workflow(n: int):
             @qml.qnode(dev)
             def f(x: float):

@@ -17,7 +17,12 @@ Unit tests for the pennylane.drawer.utils` module.
 
 import pytest
 import pennylane as qml
-from pennylane.drawer.utils import default_wire_map, convert_wire_order, unwrap_controls
+from pennylane.drawer.utils import (
+    default_wire_map,
+    convert_wire_order,
+    unwrap_controls,
+    find_mid_measure_cond_connections,
+)
 from pennylane.wires import Wires
 
 
@@ -157,3 +162,49 @@ class TestUnwrapControls:
 
         assert control_wires == expected_control_wires
         assert control_values == expected_control_values
+
+
+class TestFindMidMeasureCondConnections:
+    """Tests for the find_mid_measure_cond_connections helper function"""
+
+    def test_no_conds(self):
+        """Test that the return values are empty if there are no conditional operations."""
+        operations = [
+            qml.RX(0.123, 0),
+            qml.measurements.MidMeasureMP(0),
+            qml.RX(0.456, 1),
+            qml.measurements.MidMeasureMP(1),
+        ]
+        layers = [
+            [qml.RX(0.123, 0), qml.RX(0.456, 1)],
+            [qml.measurements.MidMeasureMP(0), qml.measurements.MidMeasureMP(1)],
+        ]
+
+        bit_map, measurement_layers, final_cond_layers = find_mid_measure_cond_connections(
+            operations, layers
+        )
+
+        assert bit_map == {}
+        assert len(measurement_layers) == len(final_cond_layers) == 0
+
+    def test_multi_meas_multi_cond(self):
+        """Test that multiple measurements and multiple conditions return the correct
+        output."""
+        with qml.queuing.AnnotatedQueue() as q:
+            m0 = qml.measure(0)
+            m1 = qml.measure(1)
+            m2 = qml.measure(2)
+            qml.cond(m0 & m1, qml.PauliX)(wires=4)
+            qml.cond(m1 & m2, qml.PauliX)(wires=5)
+            qml.cond(m2 & m0, qml.PauliX)(wires=6)
+
+        operations = q.queue
+        layers = [[op] for op in operations]
+
+        bit_map, measurement_layers, final_cond_layers = find_mid_measure_cond_connections(
+            operations, layers
+        )
+
+        assert bit_map == {operations[0]: 0, operations[1]: 1, operations[2]: 2}
+        assert measurement_layers == [0, 1, 2]
+        assert final_cond_layers == [5, 4, 5]

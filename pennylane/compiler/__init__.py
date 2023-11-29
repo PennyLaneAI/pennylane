@@ -108,7 +108,7 @@ compiled in the first call.
 
     dev = qml.device("lightning.qubit", wires=2)
 
-    @qjit
+    @qml.qjit
     @qml.qnode(dev)
     def circuit(theta):
         qml.Hadamard(wires=0)

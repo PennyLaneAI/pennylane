@@ -79,10 +79,11 @@ def transmon_interaction(
         :func:`~.transmon_drive`
 
     Args:
-        qubit_freq (Union[float, list[float]]): List of dressed qubit frequencies. This should be in units
+        qubit_freq (Union[float, list[float], Callable]): List of dressed qubit frequencies. This should be in units
             of frequency (GHz), and will be converted to angular frequency :math:`\omega` internally where
             needed, i.e. multiplied by :math:`2 \pi`. When passing a single float all qubits are assumed to
-            have that same frequency.
+            have that same frequency. When passing a parametrized function, it must have two
+            arguments, the first one being the trainable parameters and the second one being time.
         connections (list[tuple(int)]): List of connections ``(i, j)`` between qubits i and j.
             When the wires in ``connections`` are not contained in ``wires``, a warning is raised.
         coupling (Union[float, list[float]]): List of coupling strengths. This should be in units
@@ -158,9 +159,9 @@ def transmon_interaction(
         anharmonicity = [0.0] * n_wires
 
     # TODO: make coefficients callable / trainable. Currently not supported
-    if qml.math.ndim(qubit_freq) == 0:
+    if callable(qubit_freq) or qml.math.ndim(qubit_freq) == 0:
         qubit_freq = [qubit_freq] * n_wires
-    if len(qubit_freq) != n_wires:
+    elif len(qubit_freq) != n_wires:
         raise ValueError(
             f"Number of qubit frequencies in {qubit_freq} does not match the provided wires = {wires}"
         )

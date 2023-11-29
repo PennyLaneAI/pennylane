@@ -26,13 +26,18 @@ from pennylane import numpy as np
 from pennylane.measurements import SampleMP
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript, QuantumTape
-from pennylane.transforms.core import transform
+from pennylane.transforms import transform
 from pennylane.wires import Wires
 
 from .cutstrategy import CutStrategy
 from .kahypar import kahypar_cut
 from .processing import qcut_processing_fn_mc, qcut_processing_fn_sample
-from .qcut import (
+
+from .tapes import _qcut_expand_fn, graph_to_tape, tape_to_graph
+from .utils import (
+    find_and_place_cuts,
+    fragment_graph,
+    replace_wire_cut_nodes,
     MeasureNode,
     PrepareNode,
     _prep_iminus_state,
@@ -42,8 +47,6 @@ from .qcut import (
     _prep_plus_state,
     _prep_zero_state,
 )
-from .tapes import _qcut_expand_fn, graph_to_tape, tape_to_graph
-from .utils import find_and_place_cuts, fragment_graph, replace_wire_cut_nodes
 
 
 def _cut_circuit_mc_expand(
@@ -87,7 +90,7 @@ def cut_circuit_mc(
     an expectation value will be evaluated.
 
     Args:
-        tape (QuantumTape): the tape of the full circuit to be cut
+        tape (QNode or QuantumTape): the quantum circuit to be cut.
         classical_processing_fn (callable): A classical postprocessing function to be applied to
             the reconstructed bitstrings. The expected input is a bitstring; a flat array of length ``wires``,
             and the output should be a single number within the interval :math:`[-1, 1]`.
@@ -111,9 +114,10 @@ def cut_circuit_mc(
             :func:`~.find_and_place_cuts` and :func:`~.kahypar_cut` for the available arguments.
 
     Returns:
-        Callable: Function which accepts the same arguments as the QNode.
-        When called, this function will sample from the partitioned circuit fragments
-        and combine the results using a Monte Carlo method.
+        qnode (QNode) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will sample from the partitioned circuit fragments and combine the results using a Monte Carlo method.
 
     **Example**
 
@@ -145,13 +149,13 @@ def cut_circuit_mc(
 
     >>> x = 0.3
     >>> circuit(x)
-    tensor([[1, 1],
-            [0, 1],
-            [0, 1],
-            ...,
-            [0, 1],
-            [0, 1],
-            [0, 1]], requires_grad=True)
+    array([[0., 0.],
+           [0., 1.],
+           [1., 0.],
+           ...,
+           [0., 0.],
+           [0., 0.],
+           [0., 1.]])
 
     Furthermore, the number of shots can be temporarily altered when calling
     the qnode:
@@ -167,7 +171,9 @@ def cut_circuit_mc(
 
     .. code-block:: python
 
-        @qml.cut_circuit_mc(auto_cutter=True)
+        from functools import partial
+
+        @partial(qml.cut_circuit_mc, auto_cutter=True)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(0.89, wires=0)
@@ -199,14 +205,14 @@ def cut_circuit_mc(
         .. autosummary::
             :toctree:
 
-            ~transforms.qcut.tape_to_graph
-            ~transforms.qcut.find_and_place_cuts
-            ~transforms.qcut.replace_wire_cut_nodes
-            ~transforms.qcut.fragment_graph
-            ~transforms.qcut.graph_to_tape
-            ~transforms.qcut.expand_fragment_tapes_mc
-            ~transforms.qcut.qcut_processing_fn_sample
-            ~transforms.qcut.qcut_processing_fn_mc
+            ~qcut.tape_to_graph
+            ~qcut.find_and_place_cuts
+            ~qcut.replace_wire_cut_nodes
+            ~qcut.fragment_graph
+            ~qcut.graph_to_tape
+            ~qcut.expand_fragment_tapes_mc
+            ~qcut.qcut_processing_fn_sample
+            ~qcut.qcut_processing_fn_mc
 
         The following shows how these elementary steps are combined as part of the
         ``cut_circuit_mc()`` transform.
@@ -234,7 +240,7 @@ def cut_circuit_mc(
 
         To cut the circuit, we first convert it to its graph representation:
 
-        >>> graph = qml.transforms.qcut.tape_to_graph(tape)
+        >>> graph = qml.qcut.tape_to_graph(tape)
 
         If, however, the optimal location of the :class:`~.WireCut` is unknown, we can use
         :func:`~.find_and_place_cuts` to make attempts in automatically finding such a cut
@@ -253,11 +259,11 @@ def cut_circuit_mc(
             measurements = [qml.sample(wires=[0, 1, 2])]
             uncut_tape = qml.tape.QuantumTape(ops, measurements)
 
-        >>> cut_graph = qml.transforms.qcut.find_and_place_cuts(
-        ...     graph=qml.transforms.qcut.tape_to_graph(uncut_tape),
-        ...     cut_strategy=qml.transforms.qcut.CutStrategy(max_free_wires=2),
+        >>> cut_graph = qml.qcut.find_and_place_cuts(
+        ...     graph=qml.qcut.tape_to_graph(uncut_tape),
+        ...     cut_strategy=qml.qcut.CutStrategy(max_free_wires=2),
         ... )
-        >>> print(qml.transforms.qcut.graph_to_tape(cut_graph).draw())
+        >>> print(qml.qcut.graph_to_tape(cut_graph).draw())
          0: ──H─╭●───────────┤  Sample[|1⟩⟨1|]
          1: ────╰X──//──X─╭●─┤  Sample[|1⟩⟨1|]
          2: ──────────────╰X─┤  Sample[|1⟩⟨1|]
@@ -265,7 +271,7 @@ def cut_circuit_mc(
         Our next step, using the original manual cut placement, is to remove the :class:`~.WireCut`
         nodes in the graph and replace with :class:`~.MeasureNode` and :class:`~.PrepareNode` pairs.
 
-        >>> qml.transforms.qcut.replace_wire_cut_nodes(graph)
+        >>> qml.qcut.replace_wire_cut_nodes(graph)
 
         The :class:`~.MeasureNode` and :class:`~.PrepareNode` pairs are placeholder operations that
         allow us to cut the circuit graph and then randomly select measurement and preparation
@@ -274,11 +280,11 @@ def cut_circuit_mc(
         `communication_graph <https://en.wikipedia.org/wiki/Quotient_graph>`__
         detailing the connectivity between the components.
 
-        >>> fragments, communication_graph = qml.transforms.qcut.fragment_graph(graph)
+        >>> fragments, communication_graph = qml.qcut.fragment_graph(graph)
 
         We now convert the ``fragments`` back to :class:`~.QuantumTape` objects
 
-        >>> fragment_tapes = [qml.transforms.qcut.graph_to_tape(f) for f in fragments]
+        >>> fragment_tapes = [qml.qcut.graph_to_tape(f) for f in fragments]
 
         The circuit fragments can now be visualized:
 
@@ -312,7 +318,7 @@ def cut_circuit_mc(
         is determined by the number of shots.
 
         >>> shots = 3
-        >>> configurations, settings = qml.transforms.qcut.expand_fragment_tapes_mc(
+        >>> configurations, settings = qml.qcut.expand_fragment_tapes_mc(
         ...     fragment_tapes, communication_graph, shots=shots
         ... )
         >>> tapes = tuple(tape for c in configurations for tape in c)
@@ -350,7 +356,7 @@ def cut_circuit_mc(
         output bitstrings.
 
         >>> results = qml.execute(tapes, dev, gradient_fn=None)
-        >>> qml.transforms.qcut.qcut_processing_fn_sample(
+        >>> qml.qcut.qcut_processing_fn_sample(
         ...     results,
         ...     communication_graph,
         ...     shots=shots,
@@ -371,7 +377,7 @@ def cut_circuit_mc(
                 if x[0] == 1:
                     return -1
 
-        >>> qml.transforms.qcut.qcut_processing_fn_mc(
+        >>> qml.qcut.qcut_processing_fn_mc(
         ...     results,
         ...     communication_graph,
         ...     settings,
@@ -387,12 +393,13 @@ def cut_circuit_mc(
 
         .. code-block::
 
+            from functools import partial
             dev = qml.device("default.qubit", wires=2, shots=10000)
 
             def observable(bitstring):
                 return (-1) ** np.sum(bitstring)
 
-            @qml.cut_circuit_mc(classical_processing_fn=observable)
+            @partial(qml.cut_circuit_mc, classical_processing_fn=observable)
             @qml.qnode(dev)
             def circuit(x):
                 qml.RX(0.89, wires=0)
@@ -632,17 +639,17 @@ def expand_fragment_tapes_mc(
 
     We can generate the fragment tapes using the following workflow:
 
-    >>> g = qml.transforms.qcut.tape_to_graph(tape)
-    >>> qml.transforms.qcut.replace_wire_cut_nodes(g)
-    >>> subgraphs, communication_graph = qml.transforms.qcut.fragment_graph(g)
-    >>> tapes = [qml.transforms.qcut.graph_to_tape(sg) for sg in subgraphs]
+    >>> g = qml.qcut.tape_to_graph(tape)
+    >>> qml.qcut.replace_wire_cut_nodes(g)
+    >>> subgraphs, communication_graph = qml.qcut.fragment_graph(g)
+    >>> tapes = [qml.qcut.graph_to_tape(sg) for sg in subgraphs]
 
     We can then expand over the measurement and preparation nodes to generate random
     configurations using:
 
     .. code-block:: python
 
-        >>> configs, settings = qml.transforms.qcut.expand_fragment_tapes_mc(tapes, communication_graph, 3)
+        >>> configs, settings = qml.qcut.expand_fragment_tapes_mc(tapes, communication_graph, 3)
         >>> print(settings)
         [[1 6 2]]
         >>> for i, (c1, c2) in enumerate(zip(configs[0], configs[1])):
