@@ -104,8 +104,6 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
 
     **Example**
 
-    In interpreted mode,
-
     .. code-block:: python3
 
         dev = qml.device("default.qubit", wires=3)
