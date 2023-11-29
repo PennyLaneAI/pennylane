@@ -130,7 +130,7 @@ def _(fermi_operator: FermiSentence, ps=False, wire_map=None, tol=None):
     wires = list(fermi_operator.wires) or [0]
     identity_wire = wires[0]
 
-    qubit_operator = PauliSentence()  # Empty PS as 0 operator to add Pws too
+    qubit_operator = PauliSentence()  # Empty PS as 0 operator to add Pws to
 
     for fw, coeff in fermi_operator.items():
         fermi_word_as_ps = jordan_wigner(fw, ps=True)
