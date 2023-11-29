@@ -97,9 +97,6 @@ Relevant links
 --------------
 
 Good examples of transforms with the purpose of compiling can be found in :doc:`inspecting circuits </introduction/compiling_circuits>`.
-
-gradient transforms
-qinfo
-qcut
-
-transforms module
+For gradient transforms, you can find examples in :doc:`gradients documentation <../code/api/pennylane.gradients>`.
+Quantum information transformations can be found the :doc:`qinfo documentation <../code/api/pennylane.qinfo>`. Finally,
+the rest of the transforms and the core functionalities can be found in the:doc:`qinfo documentation <../code/api/pennylane.transforms>`.
