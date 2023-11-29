@@ -117,6 +117,9 @@
            [-4.20735506e-01,  4.20735506e-01]])
   ```
 
+* `qml.ctrl` can be used with the `qml.qjit` decorator.
+  [(#4726)](https://github.com/PennyLaneAI/pennylane/pull/4726)
+
 <h3>Improvements 🛠</h3>
 
 * `qml.expval` with large `Hamiltonian` objects is now faster and has a significantly lower memory footprint (and constant with respect to the number of `Hamiltonian` terms) when the `Hamiltonian` is a `PauliSentence`. That is due to the introduction of a specialized `dot` method in the `PauliSentence` class which performs `PauliSentence`-`state` products.
@@ -300,6 +303,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fix a bug where trainable parameters in the post-processing of finite diff were incorrect for Jax when applying
+  the transform directly on a ``QNode``.
+  [(#4879)](https://github.com/PennyLaneAI/pennylane/pull/4879)
+
 * `qml.grad` and `qml.jacobian` now explicitly raise errors if trainable parameters are integers.
   [(#4836)](https://github.com/PennyLaneAI/pennylane/pull/4836)
 
@@ -386,6 +393,7 @@ Ankit Khandelwal,
 Christina Lee,
 Romain Moyard,
 Vincent Michaud-Rioux,
+Romain Moyard,
 Anurav Modak,
 Mudit Pandey,
 Matthew Silverman,
