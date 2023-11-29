@@ -490,8 +490,8 @@ def vjp(f, params, cotangents, method=None, h=None, argnum=None):
         h (float): the step-size value for the finite-difference (``"fd"``) method
         argnum (Union[int, List[int]]): the params' indices to differentiate.
 
-    Returns (Tuple[Array]):
-        Return values of ``f`` paired with the JVP values.
+    Returns:
+        Tuple[Array]: Return values of ``f`` paired with the JVP values.
 
     Raises:
         TypeError: invalid parameter types
@@ -555,8 +555,8 @@ def jvp(f, params, tangents, method=None, h=None, argnum=None):
         h (float): the step-size value for the finite-difference (``"fd"``) method
         argnum (Union[int, List[int]]): the params' indices to differentiate.
 
-    Returns (Tuple[Array]):
-        Return values of ``f`` paired with the JVP values.
+    Returns:
+        Tuple[Array]: Return values of ``f`` paired with the JVP values.
 
     Raises:
         TypeError: invalid parameter types
@@ -586,7 +586,7 @@ def jvp(f, params, tangents, method=None, h=None, argnum=None):
 
     Here we show how to use ``argnum`` to ignore the non-differentiable parameter ``n`` of the
     target function. Note that the length and shapes of tangents must match the length and shape of
-    primal parameters which we mark as differentiable by passing their indices to ``argnum``.
+    primal parameters, which we mark as differentiable by passing their indices to ``argnum``.
 
     .. code-block:: python
 
