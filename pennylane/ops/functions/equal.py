@@ -167,17 +167,43 @@ def _equal(
 ):  # pylint: disable=unused-argument
     raise NotImplementedError(f"Comparison of {type(op1)} and {type(op2)} not implemented")
 
+@_equal.register
+def _equal_circuit(
+    op1 : qml.tape.QuantumScript,
+    op2 : qml.tape.QuantumScript,
+    check_interface=True,
+    check_trainability=True,
+    rtol=1e-5,
+    atol=1e-9,
+):
+    # operations
+    import itertools
+    if len(op1.operations) != len(op2.operations):
+        return False
+    for comparands in itertools.zip_longest(op1.operations, op2.operations):
+        if not qml.equal(comparands[0], comparands[1], check_interface=check_interface, 
+                         check_trainability=check_trainability, rtol=rtol, atol=atol):
+            return False
+    # measurements
+    if op1.measurements != op2.measurements:
+        return False
+    if op1.shots != op2.shots:
+        return False
+    if op1.trainable_params != op2.trainable_params:
+        return False
+    return True
 
 @_equal.register
 def _equal_operators(
-    op1: Operator,
-    op2: Operator,
+    op1: Union[Operator, qml.ops.qubit.parametric_ops_single_qubit.RX],
+    op2: Union[Operator, qml.ops.qubit.parametric_ops_single_qubit.RX],
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,
     atol=1e-9,
 ):
     """Default function to determine whether two Operator objects are equal."""
+    print("should be here")
     if not isinstance(
         op2, type(op1)
     ):  # clarifies cases involving PauliX/Y/Z (Observable/Operation)
