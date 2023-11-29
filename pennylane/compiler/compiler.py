@@ -70,7 +70,7 @@ def _refresh_compilers():
     for _, eps_dict in AvailableCompilers.names_entrypoints.items():
         ep_interface = AvailableCompilers.entrypoints_interface
         if any(ep not in eps_dict.keys() for ep in ep_interface):
-            raise KeyError(f"expected {ep_interface}, but recieved {eps_dict}")
+            raise KeyError(f"expected {ep_interface}, but recieved {eps_dict}")  # pragma: no cover
 
 
 # Scan installed compiler packages
@@ -91,7 +91,7 @@ def _reload_compilers():
 
 
 def available_compilers() -> List[str]:
-    """Loads and returns a list of available compilers that are
+    """Load and return a list of available compilers that are
     installed and compatible with the :func:`~.qjit` decorator.
 
     **Example**
@@ -116,9 +116,9 @@ def available(compiler="catalyst") -> bool:
     """Check the availability of the given compiler package.
 
     Args:
-        compiler (str): name of the compiler package (default value is ``catalyst``)
+        compiler (str): Name of the compiler package (default value is ``catalyst``)
 
-    Return:
+    Returns:
         bool: ``True`` if the compiler package is installed on the system
 
     **Example**
@@ -152,10 +152,9 @@ def active_compiler() -> Optional[str]:
     to allow differing logic for transformations or operations that are
     just-in-time compiled, versus those that are not.
 
-    Return:
-        Optional[str]: Name of the active compiler inside a :func:`~.qjit`
-            evaluation context. If there is no active compiler, ``None``
-            will be returned.
+    Returns:
+        Optional[str]: Name of the active compiler inside a :func:`~.qjit` evaluation
+        context. If there is no active compiler, ``None`` will be returned.
 
     **Example**
 
@@ -197,13 +196,13 @@ def active() -> bool:
     to allow differing logic for circuits or operations that are
     just-in-time compiled versus those that are not.
 
-    Return:
-        bool: True if the caller is inside a QJIT evaluation context
+    Returns:
+        bool: ``True`` if the caller is inside a QJIT evaluation context
 
     **Example**
 
     For example, you can use this method in your hybrid program to execute it
-    conditionally whether is called inside :func:`~.qjit` or not.
+    conditionally whether called inside :func:`~.qjit` or not.
 
     .. code-block:: python
 

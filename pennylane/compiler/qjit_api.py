@@ -189,7 +189,7 @@ def while_loop(cond_fn):
         ops_loader = compilers[active_jit]["ops"].load()
         return ops_loader.while_loop(cond_fn)
 
-    raise CompileError("There is no active compiler package.")
+    raise CompileError("There is no active compiler package.")  # pragma: no cover
 
 
 def for_loop(lower_bound, upper_bound, step):
@@ -280,4 +280,4 @@ def for_loop(lower_bound, upper_bound, step):
         ops_loader = compilers[active_jit]["ops"].load()
         return ops_loader.for_loop(lower_bound, upper_bound, step)
 
-    raise CompileError("There is no active compiler package.")
+    raise CompileError("There is no active compiler package.")  # pragma: no cover
