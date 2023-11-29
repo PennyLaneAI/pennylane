@@ -23,7 +23,7 @@ from pennylane.operation import Operator
 from pennylane.qnode import QNode
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumTape
-from pennylane.transforms.core import transform
+from pennylane import transform
 
 
 def map_wires(
@@ -36,15 +36,16 @@ def map_wires(
     wire map.
 
     Args:
-        input (.Operator, pennylane.QNode, .QuantumTape, or Callable): an operator, quantum node,
-            quantum tape, or function that applies quantum operations
+        input (Operator or QNode or QuantumTape or Callable): an operator or a quantum circuit.
         wire_map (dict): dictionary containing the old wires as keys and the new wires as values
         queue (bool): Whether or not to queue the object when recording. Defaults to False.
         replace (bool): When ``queue=True``, if ``replace=True`` the input operators will be
             replaced by its mapped version. Defaults to False.
 
     Returns:
-        (.Operator, pennylane.QNode, .QuantumTape, or Callable): input with changed wires
+        operator (Operator) or qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]:
+
+        The transformed circuit or operator with updated wires in :func:`qml.transform <pennylane.transform>`.
 
     .. note::
 
@@ -99,20 +100,21 @@ def map_wires(
             return new_op
         return input.map_wires(wire_map=wire_map)
     if isinstance(input, (QuantumScript, QNode)) or callable(input):
-        return _map_wires_transform(input, wire_map=wire_map)
+        return _map_wires_transform(input, wire_map=wire_map, queue=queue)
 
     raise ValueError(f"Cannot map wires of object {input} of type {type(input)}.")
 
 
 @partial(transform)
 def _map_wires_transform(
-    tape: qml.tape.QuantumTape, wire_map=None
+    tape: qml.tape.QuantumTape, wire_map=None, queue=False
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
-    ops = [map_wires(op, wire_map) for op in tape.operations]
-    measurements = [map_wires(m, wire_map) for m in tape.measurements]
+    ops = [map_wires(op, wire_map, queue=queue) for op in tape.operations]
+    measurements = [map_wires(m, wire_map, queue=queue) for m in tape.measurements]
 
-    out = tape.__class__(ops=ops, measurements=measurements, shots=tape.shots)
-    out.trainable_params = tape.trainable_params
+    out = tape.__class__(
+        ops=ops, measurements=measurements, shots=tape.shots, trainable_params=tape.trainable_params
+    )
 
     def processing_fn(res):
         """Defines how matrix works if applied to a tape containing multiple operations."""

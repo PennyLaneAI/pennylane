@@ -17,7 +17,7 @@ from functools import partial
 
 import pytest
 import pennylane as qml
-from pennylane.transforms.core import transform, TransformError
+from pennylane.transforms.core import transform, TransformError, TransformContainer
 
 dev = qml.device("default.qubit", wires=2)
 
@@ -109,7 +109,7 @@ def second_valid_transform(
     """A valid trasnform."""
     tape1 = tape.copy()
     tape2 = tape.copy()
-    tape2 = tape._ops.pop(index)  # pylint:disable=protected-access
+    tape._ops.pop(index)  # pylint:disable=protected-access
 
     def fn(results):
         return qml.math.sum(results)
@@ -181,6 +181,12 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
 
         qnode_transformed = dispatched_transform(qnode_circuit, 0)
         assert not qnode_circuit.transform_program
+
+        assert qnode_transformed.device is qnode_circuit.device
+
+        with dev.tracker:
+            qnode_circuit(0.1)
+        assert dev.tracker.totals["executions"] == 1
 
         assert isinstance(qnode_transformed, qml.QNode)
         assert isinstance(qnode_transformed.transform_program, qml.transforms.core.TransformProgram)
@@ -275,6 +281,40 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert isinstance(
             qnode_circuit.transform_program.pop_front(), qml.transforms.core.TransformContainer
         )
+
+    def test_equality(self):
+        """Tests that we can compare TransformContainer objects with the '==' and '!=' operators."""
+
+        t1 = TransformContainer(
+            qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 1}
+        )
+        t2 = TransformContainer(
+            qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 1}
+        )
+        t3 = TransformContainer(
+            qml.transforms.transpile.transform, kwargs={"coupling_map": [(0, 1), (1, 2)]}
+        )
+        t4 = TransformContainer(
+            qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 2}
+        )
+
+        t5 = TransformContainer(qml.transforms.merge_rotations.transform, args=(1e-6,))
+        t6 = TransformContainer(qml.transforms.merge_rotations.transform, args=(1e-7,))
+
+        # test for equality of identical transformers
+        assert t1 == t2
+
+        # test for inequality of different transformers
+        assert t1 != t3
+        assert t2 != t3
+        assert t1 != 2
+        assert t1 != t4
+        assert t5 != t6
+        assert t5 != t1
+
+        # Test equality with the same args
+        t5_copy = TransformContainer(qml.transforms.merge_rotations.transform, args=(1e-6,))
+        assert t5 == t5_copy
 
     def test_queuing_qfunc_transform(self):
         """Test that queuing works with the transformed quantum function."""
@@ -551,6 +591,13 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
 
         assert new_program[-1].transform is valid_transform
 
+        @qml.qnode(new_dev)
+        def circuit():
+            qml.PauliX(0)
+            return qml.state()
+
+        circuit()
+
     @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_old_device_transform(self, valid_transform):
         """Test a device transform on old device."""
@@ -607,3 +654,18 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         ):
             dispatched_transform = transform(valid_transform, expand_transform=valid_transform)
             dispatched_transform(device, index=0)
+
+    def test_sphinx_build(self, monkeypatch):
+        """Test that transforms are not created during Sphinx builds"""
+        monkeypatch.setenv("SPHINX_BUILD", "1")
+
+        with pytest.warns(UserWarning, match="Transforms have been disabled, as a Sphinx"):
+
+            @qml.transforms.core.transform
+            def custom_transform(  # pylint:disable=unused-variable
+                tape: qml.tape.QuantumTape, index: int
+            ) -> (Sequence[qml.tape.QuantumTape], Callable):
+                """A valid transform."""
+                tape = tape.copy()
+                tape._ops.pop(index)  # pylint:disable=protected-access
+                return [tape], lambda x: x

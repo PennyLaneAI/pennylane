@@ -436,6 +436,8 @@ class TestSupportedConfs:
             with pytest.raises(qml.DeviceError, match="not accepted with finite shots"):
                 compute_gradient(x, interface, circuit, return_type, complex=complex)
         else:
+            if interface == "torch" and return_type == "StateVector":
+                pytest.xfail(reason="see pytorch/pytorch/issues/94397")
             with pytest.raises(ValueError, match=msg):
                 compute_gradient(x, interface, circuit, return_type, complex=complex)
 
@@ -526,6 +528,8 @@ class TestSupportedConfs:
         """Test gradient of state directly succeeds for non-autograd interfaces"""
         circuit = get_qnode(interface, "backprop", "StateVector", None, wire_specs)
         x = get_variable(interface, wire_specs, complex=True)
+        if interface == "torch":
+            pytest.xfail(reason="see pytorch/pytorch/issues/94397")
         compute_gradient(x, interface, circuit, "StateVector", complex=True)
 
     wire_specs_list = [

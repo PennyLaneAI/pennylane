@@ -14,10 +14,10 @@
 """Simulate a quantum script."""
 # pylint: disable=protected-access
 from numpy.random import default_rng
+import numpy as np
 
 import pennylane as qml
 from pennylane.typing import Result
-from pennylane.wires import Wires
 
 from .initialize_state import create_initial_state
 from .apply_operation import apply_operation
@@ -46,41 +46,51 @@ INTERFACE_TO_LIKE = {
 }
 
 
-def expand_state_over_wires(state, state_wires, all_wires, is_state_batched):
-    """
-    Expand and re-order a state given some initial and target wire orders, setting
-    all additional wires to the 0 state.
+class _FlexShots(qml.measurements.Shots):
+    """Shots class that allows zero shots."""
 
-    Args:
-        state (~pennylane.typing.TensorLike): The state to re-order and expand
-        state_wires (.Wires): The wire order of the inputted state
-        all_wires (.Wires): The desired wire order
-        is_state_batched (bool): Whether the state has a batch dimension or not
+    # pylint: disable=super-init-not-called
+    def __init__(self, shots=None):
+        if isinstance(shots, int):
+            self.total_shots = shots
+            self.shot_vector = (qml.measurements.ShotCopies(shots, 1),)
+        else:
+            self.__all_tuple_init__([s if isinstance(s, tuple) else (s, 1) for s in shots])
 
-    Returns:
-        TensorLike: The state in the new desired size and order
-    """
-    pad_width = 2 ** len(all_wires) - 2 ** len(state_wires)
-    pad = (pad_width, 0) if qml.math.get_interface(state) == "torch" else (0, pad_width)
-    shape = (2,) * len(all_wires)
+        self._frozen = True
+
+
+def _postselection_postprocess(state, is_state_batched, shots):
+    """Update state after projector is applied."""
     if is_state_batched:
-        pad = ((0, 0), pad)
-        batch_size = qml.math.shape(state)[0]
-        shape = (batch_size,) + shape
-        state = qml.math.reshape(state, (batch_size, -1))
-    else:
-        pad = (pad,)
-        state = qml.math.flatten(state)
+        raise ValueError(
+            "Cannot postselect on circuits with broadcasting. Use the "
+            "qml.transforms.broadcast_expand transform to split a broadcasted "
+            "tape into multiple non-broadcasted tapes before executing if "
+            "postselection is used."
+        )
 
-    state = qml.math.pad(state, pad, mode="constant")
-    state = qml.math.reshape(state, shape)
+    # The floor function is being used here so that a norm very close to zero becomes exactly
+    # equal to zero so that the state can become invalid. This way, execution can continue, and
+    # bad postselection gives results that are invalid rather than results that look valid but
+    # are incorrect.
+    norm = qml.math.floor(qml.math.real(qml.math.norm(state)) * 1e15) * 1e-15
 
-    # re-order
-    new_wire_order = Wires.unique_wires([all_wires, state_wires]) + state_wires
-    desired_axes = [new_wire_order.index(w) for w in all_wires]
-    if is_state_batched:
-        desired_axes = [0] + [i + 1 for i in desired_axes]
-    return qml.math.transpose(state, desired_axes)
+    if shots:
+        # Clip the number of shots using a binomial distribution using the probability of
+        # measuring the postselected state.
+        postselected_shots = (
+            [np.random.binomial(s, float(norm**2)) for s in shots]
+            if not qml.math.is_abstract(norm)
+            else shots
+        )
+
+        # _FlexShots is used here since the binomial distribution could result in zero
+        # valid samples
+        shots = _FlexShots(postselected_shots)
+
+    state = state / qml.math.cast_like(norm, state)
+    return state, shots
 
 
 def get_final_state(circuit, debugger=None, interface=None):
@@ -105,23 +115,26 @@ def get_final_state(circuit, debugger=None, interface=None):
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         prep = circuit[0]
 
-    state = create_initial_state(circuit.op_wires, prep, like=INTERFACE_TO_LIKE[interface])
+    state = create_initial_state(sorted(circuit.op_wires), prep, like=INTERFACE_TO_LIKE[interface])
 
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)
     for op in circuit.operations[bool(prep) :]:
         state = apply_operation(op, state, is_state_batched=is_state_batched, debugger=debugger)
 
+        # Handle postselection on mid-circuit measurements
+        if isinstance(op, qml.Projector):
+            state, circuit._shots = _postselection_postprocess(
+                state, is_state_batched, circuit.shots
+            )
+
         # new state is batched if i) the old state is batched, or ii) the new op adds a batch dim
         is_state_batched = is_state_batched or op.batch_size is not None
 
-    if set(circuit.op_wires) < set(circuit.wires):
-        state = expand_state_over_wires(
-            state,
-            Wires(range(len(circuit.op_wires))),
-            Wires(range(circuit.num_wires)),
-            is_state_batched,
-        )
+    for _ in range(len(circuit.wires) - len(circuit.op_wires)):
+        # if any measured wires are not operated on, we pad the state with zeros.
+        # We know they belong at the end because the circuit is in standard wire-order
+        state = qml.math.stack([state, qml.math.zeros_like(state)], axis=-1)
 
     return state, is_state_batched
 
@@ -147,6 +160,7 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
     Returns:
         Tuple[TensorLike]: The measurement results
     """
+
     circuit = circuit.map_to_standard_wires()
 
     if not circuit.shots:

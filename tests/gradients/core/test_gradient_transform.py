@@ -605,7 +605,7 @@ class TestGradientTransformIntegration:
         """Test that setting the number of shots works correctly for
         a gradient transform"""
 
-        dev = qml.device("default.qubit.legacy", wires=1, shots=1000)
+        dev = qml.device("default.qubit", wires=1, shots=1000)
 
         @qml.qnode(dev)
         def circuit(x):
@@ -617,7 +617,7 @@ class TestGradientTransformIntegration:
         # the gradient function can be called with different shot values
         grad_fn = qml.gradients.param_shift(circuit)
         assert grad_fn(x).shape == ()
-        assert grad_fn(x, shots=[(1, 1000)]).shape == (1000,)
+        assert len(grad_fn(x, shots=[(1, 1000)])) == 1000
 
         # the original QNode is unaffected
         assert circuit(x).shape == tuple()

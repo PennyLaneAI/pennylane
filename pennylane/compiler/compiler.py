@@ -14,10 +14,10 @@
 """Compiler developer functions"""
 
 from typing import List, Optional
-from importlib import reload
+from sys import version_info
+from importlib import reload, metadata
 from collections import defaultdict
 import dataclasses
-import pkg_resources
 
 
 class CompileError(Exception):
@@ -28,7 +28,19 @@ class CompileError(Exception):
 class AvailableCompilers:
     """This contains data of installed PennyLane compiler packages."""
 
-    entrypoints_interface = ("qjit", "context", "ops")
+    # The collection of entry points that compiler packages must export.
+    # Note that this is still an experimental interface and is subject to change.
+    # This variable is used for validity checks of installed packages entry points.
+    # For any compiler packages seeking to be registered, it is imperative
+    # that they expose the ``entry_points`` metadata under the designated
+    # group name ``pennylane.compilers``, with the following entry points:
+    # - ``context``: Path to the compilation evaluation context manager.
+    # - ``ops``: Path to the compiler operations module.
+    # - ``qjit``: Path to the JIT decorator provided by the compiler.
+    entrypoints_interface = ("context", "qjit", "ops")
+
+    # The dictionary of installed compiler packages
+    # and their entry point loaders.
     names_entrypoints = {}
 
 
@@ -41,9 +53,16 @@ def _refresh_compilers():
     AvailableCompilers.names_entrypoints = defaultdict(dict)
 
     # Iterator packages entry-points with the 'pennylane.compilers' group name
-    for entry in pkg_resources.iter_entry_points("pennylane.compilers"):
+    entries = (
+        defaultdict(dict, metadata.entry_points())["pennylane.compilers"]
+        if version_info[:2] == (3, 9)
+        # pylint:disable=unexpected-keyword-arg
+        else metadata.entry_points(group="pennylane.compilers")
+    )
+
+    for entry in entries:
         # Only need name of the parent module
-        module_name = entry.module_name.split(".")[0]
+        module_name = entry.module.split(".")[0]
         AvailableCompilers.names_entrypoints[module_name][entry.name] = entry
 
     # Check whether available compilers follow the entry_point interface
@@ -51,7 +70,7 @@ def _refresh_compilers():
     for _, eps_dict in AvailableCompilers.names_entrypoints.items():
         ep_interface = AvailableCompilers.entrypoints_interface
         if any(ep not in eps_dict.keys() for ep in ep_interface):
-            raise KeyError(f"expected {ep_interface}, but recieved {eps_dict}")
+            raise KeyError(f"expected {ep_interface}, but recieved {eps_dict}")  # pragma: no cover
 
 
 # Scan installed compiler packages
@@ -64,12 +83,15 @@ def _reload_compilers():
     compilers names and entry points.
     """
 
-    reload(pkg_resources)
+    # Note re-importing ``importlib.metadata`` can be a very slow operation
+    # on systems with a large number of installed packages.
+
+    reload(metadata)
     _refresh_compilers()
 
 
 def available_compilers() -> List[str]:
-    """Loads and returns a list of available compilers that are
+    """Load and return a list of available compilers that are
     installed and compatible with the :func:`~.qjit` decorator.
 
     **Example**
@@ -94,9 +116,9 @@ def available(compiler="catalyst") -> bool:
     """Check the availability of the given compiler package.
 
     Args:
-        compiler (str): name of the compiler package (default value is ``catalyst``)
+        compiler (str): Name of the compiler package (default value is ``catalyst``)
 
-    Return:
+    Returns:
         bool: ``True`` if the compiler package is installed on the system
 
     **Example**
@@ -112,10 +134,8 @@ def available(compiler="catalyst") -> bool:
     True
     """
 
-    # It only refreshes the compilers names and entry points if the name
-    # is not already stored. This reduces the number of re-importing
-    # ``pkg_resources`` as it can be a very slow operation on systems
-    # with a large number of installed packages.
+    # It only refreshes the compilers names and entry points if
+    # the name is not already stored.
 
     if compiler not in AvailableCompilers.names_entrypoints:
         # Reload installed packages and updates
@@ -132,10 +152,9 @@ def active_compiler() -> Optional[str]:
     to allow differing logic for transformations or operations that are
     just-in-time compiled, versus those that are not.
 
-    Return:
-        Optional[str]: Name of the active compiler inside a :func:`~.qjit`
-            evaluation context. If there is no active compiler, ``None``
-            will be returned.
+    Returns:
+        Optional[str]: Name of the active compiler inside a :func:`~.qjit` evaluation
+        context. If there is no active compiler, ``None`` will be returned.
 
     **Example**
 
@@ -177,13 +196,13 @@ def active() -> bool:
     to allow differing logic for circuits or operations that are
     just-in-time compiled versus those that are not.
 
-    Return:
-        bool: True if the caller is inside a QJIT evaluation context
+    Returns:
+        bool: ``True`` if the caller is inside a QJIT evaluation context
 
     **Example**
 
     For example, you can use this method in your hybrid program to execute it
-    conditionally whether is called inside :func:`~.qjit` or not.
+    conditionally whether called inside :func:`~.qjit` or not.
 
     .. code-block:: python
 

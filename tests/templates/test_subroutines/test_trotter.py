@@ -312,6 +312,30 @@ class TestInitialization:
         assert qml.equal(op, new_op)
         assert new_op is not op
 
+    # TODO: Remove test when we deprecate ApproxTimeEvolution
+    @pytest.mark.parametrize("n", (1, 2, 5, 10))
+    @pytest.mark.parametrize("time", (0.5, 1.2))
+    def test_convention_approx_time_evolv(self, time, n):
+        """Test that TrotterProduct matches ApproxTimeEvolution"""
+        hamiltonian = qml.Hamiltonian(
+            [1.23, -0.45, 6], [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
+        )
+        op1 = qml.TrotterProduct(hamiltonian, time, order=1, n=n)
+        op2 = qml.adjoint(qml.ApproxTimeEvolution(hamiltonian, time, n=n))
+
+        assert qnp.allclose(
+            qml.matrix(op1, wire_order=hamiltonian.wires),
+            qml.matrix(op2, wire_order=hamiltonian.wires),
+        )
+
+        op1 = qml.adjoint(qml.TrotterProduct(hamiltonian, time, order=1, n=n))
+        op2 = qml.ApproxTimeEvolution(hamiltonian, time, n=n)
+
+        assert qnp.allclose(
+            qml.matrix(op1, wire_order=hamiltonian.wires),
+            qml.matrix(op2, wire_order=hamiltonian.wires),
+        )
+
 
 class TestPrivateFunctions:
     """Test the private helper functions."""

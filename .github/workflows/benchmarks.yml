@@ -1,0 +1,59 @@
+name: Benchmarks
+on:
+  schedule:
+    - cron: "0 0 * * 0-6"  # Run daily at 0am
+  pull_request:
+
+concurrency:
+  group: benchmarks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+    # If needed, this workflow will create a cached benchmark reference.
+    # This reference will be used for comparative analyses with all PRs benchmarks.
+    reference-benchmarks:
+      if: github.event_name == 'schedule' || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:run-benchmarks'))
+
+      uses: ./.github/workflows/interface-unit-tests.yml
+      with:
+        # TODO: Update this in the future to a stable release or master branch
+        branch: add-pytest-benchmarks
+
+        pipeline_mode: 'reference-benchmarks'
+
+        # Run a 'lightened' version of the CI on Pull Requests by default
+        # Unless the label `ci:run-full-test-suite` is attached to the PR.
+        # Always runs the full suite for push events.
+        run_lightened_ci: >-
+          ${{
+            github.event_name == 'pull_request'
+            && !contains(github.event.pull_request.labels.*.name, 'ci:run-full-test-suite')
+            || false
+          }}
+
+        skip_ci_test_jobs: torch-tests, autograd-tests, tf-tests, core-tests, all-interfaces-tests, external-libraries-tests, qcut-tests, qchem-tests, gradients-tests, data-tests
+
+    benchmarks:
+      if: github.event_name == 'schedule' || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:run-benchmarks'))
+
+      uses: ./.github/workflows/interface-unit-tests.yml
+      needs: reference-benchmarks
+      with:
+        # If runnning on schedule will compare master with the reference data.
+        # If not, will compare the branch defined by github.ref (PRs, for example)
+        branch: ${{ github.ref }}
+
+        pipeline_mode: 'benchmarks'
+
+        # Run a 'lightened' version of the CI on Pull Requests by default
+        # Unless the label `ci:run-full-test-suite` is attached to the PR.
+        # Always runs the full suite for push events.
+        run_lightened_ci: >-
+          ${{
+            github.event_name == 'pull_request'
+            && !contains(github.event.pull_request.labels.*.name, 'ci:run-full-test-suite')
+            || false
+          }}
+
+        skip_ci_test_jobs: torch-tests, autograd-tests, tf-tests, core-tests, all-interfaces-tests, external-libraries-tests, qcut-tests, qchem-tests, gradients-tests, data-tests
+

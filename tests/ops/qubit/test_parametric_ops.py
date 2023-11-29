@@ -4522,6 +4522,13 @@ def test_global_phase_compute_sparse_matrix(phi, n_wires):
     assert np.allclose(sparse_matrix.todense(), expected.todense())
 
 
+def test_decomposition():
+    """Test the decomposition of the GlobalPhase operation."""
+
+    assert qml.GlobalPhase.compute_decomposition(1.23) == []
+    assert qml.GlobalPhase(1.23).decomposition() == []
+
+
 control_data = [
     (qml.Rot(1, 2, 3, wires=0), Wires([])),
     (qml.RX(1.23, wires=0), Wires([])),
