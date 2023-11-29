@@ -35,7 +35,8 @@ from .controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
 
 
 def ctrl(op, control, control_values=None, work_wires=None):
-    """A :func:`~.qjit` compatible transformation that creates the control of an Operator or a function
+    """Create a method that applies a controlled version of the provided op.
+    :func:`~.qjit` compatible.
 
     .. note::
 
