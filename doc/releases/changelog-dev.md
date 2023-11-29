@@ -117,6 +117,9 @@
            [-4.20735506e-01,  4.20735506e-01]])
   ```
 
+* `qml.adjoint` can be used with the `qml.qjit` decorator.
+  [(#4725)](https://github.com/PennyLaneAI/pennylane/pull/4725)
+
 * `qml.ctrl` can be used with the `qml.qjit` decorator.
   [(#4726)](https://github.com/PennyLaneAI/pennylane/pull/4726)
 
