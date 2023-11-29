@@ -117,7 +117,7 @@
            [-4.20735506e-01,  4.20735506e-01]])
   ```
 
-* `qml.ctr` can be used with the `qml.qjit` decorator.
+* `qml.ctrl` can be used with the `qml.qjit` decorator.
   [(#4726)](https://github.com/PennyLaneAI/pennylane/pull/4726)
 
 <h3>Improvements 🛠</h3>
