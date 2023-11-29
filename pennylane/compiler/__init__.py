@@ -67,6 +67,8 @@ PennyLane primitives.
     ~ctrl
     ~grad
     ~jacobian
+    ~jvp
+    ~vjp
 
 Compiler
 --------
