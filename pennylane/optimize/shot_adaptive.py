@@ -289,7 +289,10 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         base_func = qnode.func
         tape = qnode.tape
         [expval] = tape.measurements
-        coeffs, observables = expval.obs.terms()
+        coeffs, observables = (
+            expval.obs.terms() if isinstance(expval.obs, qml.Hamiltonian) else (1.0, expval.obs)
+        )
+
 
         # determine the shot probability per term
         prob_shots = np.abs(coeffs) / np.sum(np.abs(coeffs))
