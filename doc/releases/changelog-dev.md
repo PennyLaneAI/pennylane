@@ -160,12 +160,25 @@
 * `default.qubit` no longer uses a dense matrix for `MultiControlledX` for more than 8 operation wires.
   [(#4673)](https://github.com/PennyLaneAI/pennylane/pull/4673)
 
-* Autograd and torch can now use vjps provided by the device from the new device API. If a device provides
+* Autograd and torch can now use VJPs provided by the device from the new device API. If a device provides
   a vector Jacobian product, this can be selected by providing `device_vjp=True` to
-  `qml.execute`.
+  `qml.QNode` or `qml.execute`.
   [(#4557)](https://github.com/PennyLaneAI/pennylane/pull/4557)
   [(#4654)](https://github.com/PennyLaneAI/pennylane/pull/4654)
 
+```pycon
+>>> dev = qml.device('default.qubit')
+>>> @qml.qnode(dev, diff_method="adjoint", device_vjp=True)
+>>> def circuit(x):
+...     qml.RX(x, wires=0)
+...     return qml.expval(qml.PauliZ(0))
+>>> with dev.tracker:
+...     g = qml.grad(circuit)(qml.numpy.array(0.1))
+>>> dev.tracker.totals
+{'batches': 1, 'simulations': 1, 'executions': 1, 'vjp_batches': 1, 'vjps': 1}
+>>> g
+-0.09983341664682815
+```
 * Updates to some relevant Pytests to enable its use as a suite of benchmarks.
   [(#4703)](https://github.com/PennyLaneAI/pennylane/pull/4703)
 
@@ -343,6 +356,10 @@
   `qml.shadow_expval`.
   [(#4803)](https://github.com/PennyLaneAI/pennylane/pull/4803)
 
+* Removed an implicit assumption that an empty `PauliSentence` gets treated as identity under 
+  multiplication.
+  [(#4887)](https://github.com/PennyLaneAI/pennylane/pull/4887)
+
 * Using a `CNOT` or `PauliZ` operation with large, batched states and the tensorflow
   interface no longer raises an unexpected error.
   [(#4889)](https://github.com/PennyLaneAI/pennylane/pull/4889)
@@ -367,5 +384,6 @@ Vincent Michaud-Rioux,
 Anurav Modak,
 Mudit Pandey,
 Matthew Silverman,
+Jay Soni,
 David Wierichs,
 Justin Woodring,
