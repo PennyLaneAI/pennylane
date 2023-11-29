@@ -323,7 +323,7 @@ def clifford_t_decomposition(
 
     Args:
         tape (QNode or QuantumTape or Callable): The quantum circuit to be decomposed.
-        epsilon (float): The maximum permissible error. Defaults to ``0.0001``.
+        epsilon (float): The maximum permissible circuit decomposition error. Defaults to ``0.0001``.
         max_expansion (int): The depth to be used for tape expansion before manual decomposition to Clifford+T basis is applied.
         method (str): Method to be used for Clifford+T decomposition. Default value is ``"sk"`` for Solovay-Kitaev.
         **method_kwargs: Keyword argument to pass options for the ``method`` used for decompositions.
