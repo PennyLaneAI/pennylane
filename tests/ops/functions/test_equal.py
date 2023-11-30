@@ -1799,6 +1799,7 @@ class TestParametrizedEvolutionComparisons:
         assert qml.equal(ev1(params1, t), ev2(params2, t))
         assert not qml.equal(ev1(params1, t), ev3(params3, t))
 
+
 class TestQuantumScriptEqual:
     def test_equal_quscript(self):
         tape1 = qml.tape.QuantumScript([qml.PauliX(0), qml.RX(1.2, wires=0)], [qml.expval(qml.PauliZ(0))],
