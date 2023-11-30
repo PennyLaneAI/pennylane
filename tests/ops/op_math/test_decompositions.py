@@ -19,16 +19,16 @@ Tests for the QubitUnitary decomposition transforms.
 from functools import reduce
 import pytest
 
-from test_optimization.utils import check_matrix_equivalence
+from tests.transforms.test_optimization.utils import check_matrix_equivalence
 from gate_data import I, Z, S, T, H, X, Y, CNOT, SWAP
 import pennylane as qml
 from pennylane import numpy as np
 
 from pennylane.wires import Wires
 
-from pennylane.transforms.decompositions import one_qubit_decomposition
-from pennylane.transforms.decompositions import two_qubit_decomposition
-from pennylane.transforms.decompositions.two_qubit_unitary import (
+from pennylane.ops.op_math.decompositions import one_qubit_decomposition
+from pennylane.ops.op_math.decompositions import two_qubit_decomposition
+from pennylane.ops.op_math.decompositions.two_qubit_unitary import (
     _convert_to_su4,
     _su2su2_to_tensor_products,
     _compute_num_cnots,

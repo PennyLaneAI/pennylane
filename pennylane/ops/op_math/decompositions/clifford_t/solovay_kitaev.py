@@ -21,20 +21,7 @@ from scipy.spatial import KDTree
 import pennylane as qml
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript
-from pennylane.transforms.optimization import cancel_inverses
 
-# Defining Clifford+T basis
-_CLIFFORD_T_BASIS = {
-    "I": qml.Identity(0),
-    "X": qml.PauliX(0),
-    "Y": qml.PauliY(0),
-    "Z": qml.PauliZ(0),
-    "H": qml.Hadamard(0),
-    "T": qml.T(0),
-    "T*": qml.adjoint(qml.T(0)),
-    "S": qml.S(0),
-    "S*": qml.adjoint(qml.S(0)),
-}
 
 
 def _SU2_transform(matrix):
@@ -114,6 +101,18 @@ def _approximate_set(basis_gates, max_length=10):
         Clifford+T sequences that will be used for approximating a matrix in the base case of recursive implementation of
         Solovay-Kitaev algorithm, with their corresponding SU(2) representations, global phases, and quaternion representations.
     """
+    # Defining Clifford+T basis
+    _CLIFFORD_T_BASIS = {
+        "I": qml.Identity(0),
+        "X": qml.PauliX(0),
+        "Y": qml.PauliY(0),
+        "Z": qml.PauliZ(0),
+        "H": qml.Hadamard(0),
+        "T": qml.T(0),
+        "T*": qml.adjoint(qml.T(0)),
+        "S": qml.S(0),
+        "S*": qml.adjoint(qml.S(0)),
+    }
     # Maintains the basis gates
     basis = [_CLIFFORD_T_BASIS[gate.upper()] for gate in basis_gates]
 
@@ -333,7 +332,7 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
             decomposition, u_prime = _solovay_kitaev(gate_mat, depth + 1, decomposition, u_prime)
 
         # Remove inverses if any in the decomposition and handle trivial case
-        [new_tape], _ = cancel_inverses(QuantumScript(decomposition or [qml.Identity(0)]))
+        [new_tape], _ = qml.transforms.cancel_inverses(QuantumScript(decomposition or [qml.Identity(0)]))
 
     # Map the wires to that of the operation and queue
     [map_tape], _ = qml.map_wires(new_tape, wire_map={0: op.wires[0]}, queue=True)

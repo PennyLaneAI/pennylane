@@ -58,8 +58,6 @@ both transforms, and decompositions within the larger PennyLane codebase.
 .. autosummary::
     :toctree: api
 
-    ~transforms.one_qubit_decomposition
-    ~transforms.two_qubit_decomposition
     ~transforms.set_decomposition
     ~transforms.pattern_matching
     ~transforms.to_zx
@@ -195,11 +193,6 @@ from .batch_partial import batch_partial
 from .classical_jacobian import classical_jacobian
 from .convert_to_numpy_parameters import convert_to_numpy_parameters
 from .compile import compile
-from .decompositions import (
-    one_qubit_decomposition,
-    two_qubit_decomposition,
-    sk_decomposition,
-)
 from .defer_measurements import defer_measurements
 from .sign_expand import sign_expand
 from .hamiltonian_expand import hamiltonian_expand, sum_expand

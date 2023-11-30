@@ -587,7 +587,7 @@ def two_qubit_decomposition(U, wires):
 
     We can compute its decompositon like so:
 
-    >>> decomp = qml.transforms.two_qubit_decomposition(np.array(U), wires=[0, 1])
+    >>> decomp = qml.ops.two_qubit_decomposition(np.array(U), wires=[0, 1])
     >>> decomp
     [Rot(tensor(-1.69488788, requires_grad=True), tensor(1.06701916, requires_grad=True), tensor(0.41190893, requires_grad=True), wires=[0]),
      Rot(tensor(1.57705621, requires_grad=True), tensor(2.42621204, requires_grad=True), tensor(2.57842249, requires_grad=True), wires=[1]),

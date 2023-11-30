@@ -19,7 +19,7 @@ import pytest
 import scipy as sp
 import pennylane as qml
 
-from pennylane.transforms.decompositions.clifford_t.solovay_kitaev import (
+from pennylane.ops.op_math.decompositions.clifford_t.solovay_kitaev import (
     _SU2_transform,
     _quaternion_transform,
     _contains_SU2,
