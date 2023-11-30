@@ -105,6 +105,7 @@ class TestCatalyst:
         assert circuit.jaxpr
         assert circuit.mlir
         assert circuit.qir
+
         result = circuit(0.2j, jnp.array([0.3, 0.6, 0.9]))
         expected = jnp.array(
             [0.75634905 - 0.52801002j, 0.0 + 0.0j, 0.35962678 + 0.14074839j, 0.0 + 0.0j]
