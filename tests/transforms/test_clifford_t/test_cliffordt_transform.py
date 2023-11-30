@@ -89,8 +89,8 @@ class TestCliffordCompile:
         [
             (qml.DoubleExcitation(2.0, wires=[0, 1, 2, 3]), False),
             (qml.PauliX(wires=[1]), True),
-            (qml.RX(3 * math.pi, wires=[1]), True),
-            (qml.PhaseShift(2 * math.pi, wires=["a"]), True),
+            (qml.RX(3 * PI, wires=[1]), True),
+            (qml.PhaseShift(2 * PI, wires=["a"]), True),
             (qml.ECR(wires=["e", "f"]), True),
             (qml.CH(wires=["a", "b"]), False),
             (qml.WireCut(0), False),

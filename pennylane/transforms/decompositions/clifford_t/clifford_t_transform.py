@@ -60,8 +60,11 @@ _PARAMETER_GATES = (qml.RX, qml.RY, qml.RZ, qml.Rot, qml.PhaseShift)
 # Clifford+T gate set
 _CLIFFORD_T_GATES = tuple(_CLIFFORD_T_ONE_GATES + _CLIFFORD_T_TWO_GATES) + (qml.GlobalPhase,)
 
+# Gates to be skipped during decomposition
+_SKIP_OP_TYPES = (qml.Barrier, qml.Snapshot, qml.WireCut)
 
-def check_clifford_op(op, use_decomposition=False):
+
+def _check_clifford_op(op, use_decomposition=False):
     r"""Checks if an operator is Clifford or not.
 
     For a given unitary operator :math:`U` acting on :math:`N` qubits, this method checks that the
@@ -69,8 +72,8 @@ def check_clifford_op(op, use_decomposition=False):
     to Pauli tensor products using the decomposition of the matrix for :math:`U` in the Pauli basis.
 
     Args:
-        op: the operator that needs to be tested
-        use_decomposition: if ``True``, use operator's decomposition to compute the matrix, in case
+        op (~pennylane.operation.Operation): the operator that needs to be tested
+        use_decomposition (bool): if ``True``, use operator's decomposition to compute the matrix, in case
             it doesn't define a ``compute_matrix`` method. Default is ``False``.
 
     Returns:
@@ -87,7 +90,7 @@ def check_clifford_op(op, use_decomposition=False):
     pauli_terms = qml.pauli_decompose(qml.matrix(op), wire_order=op.wires, check_hermitian=False)
     pauli_terms_adj = qml.Hamiltonian(qml.math.conj(pauli_terms.coeffs), pauli_terms.ops)
 
-    # Build Pauli tensor products P in Hamiltonian form
+    # Build Pauli tensor products P in the Hamiltonian form
     def pauli_group(x):
         return [qml.Identity(x), qml.PauliX(x), qml.PauliY(x), qml.PauliZ(x)]
 
@@ -115,12 +118,12 @@ def check_clifford_t(op, use_decomposition=False):
 
     For a given unitary operator :math:`U` acting on :math:`N` qubits, which is not a T-gate,
     this method checks that the transformation :math:`UPU^{\dagger}` maps the Pauli tensor products
-    :math:`P = {I, X, Y, Z}^{\otimes N}` to Pauli tensor products with :math:`O(N \times 8^N)` time
-    complexity when using naive matrix multiplication.
+    :math:`P = {I, X, Y, Z}^{\otimes N}` to to Pauli tensor products using the decomposition of the
+    matrix for :math:`U` in the Pauli basis.
 
     Args:
-        op: the operator that needs to be checked
-        use_decomposition: if ``True``, use operator's decomposition to compute the matrix, in case
+        op (~pennylane.operation.Operation): the operator that needs to be checked
+        use_decomposition (bool): if ``True``, use operator's decomposition to compute the matrix, in case
             it doesn't define a ``compute_matrix`` method. Default is ``False``.
 
     Returns:
@@ -142,7 +145,7 @@ def check_clifford_t(op, use_decomposition=False):
             else qml.math.allclose(qml.math.mod(theta, math.pi), 0.0)
         )
 
-    return check_clifford_op(op, use_decomposition=use_decomposition)
+    return _check_clifford_op(op, use_decomposition=use_decomposition)
 
 
 def _simplify_param(theta, gate):
@@ -375,10 +378,9 @@ def clifford_t_decomposition(
 
         # Now iterate over the expanded tape operations
         decomp_ops, gphase_ops = [], []
-        SKIP_OP_TYPES = (qml.Barrier, qml.Snapshot, qml.WireCut)
         for op in compiled_tape.operations:
             # Check whether operation is to be skipped
-            if isinstance(op, SKIP_OP_TYPES):
+            if isinstance(op, _SKIP_OP_TYPES):
                 decomp_ops.append(op)
 
             # Check whether the operation is a global phase
