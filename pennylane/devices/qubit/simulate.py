@@ -74,7 +74,10 @@ def _postselection_postprocess(state, is_state_batched, shots):
     # equal to zero so that the state can become invalid. This way, execution can continue, and
     # bad postselection gives results that are invalid rather than results that look valid but
     # are incorrect.
-    norm = qml.math.floor(qml.math.real(qml.math.norm(state)) * 1e15) * 1e-15
+    norm = qml.math.norm(state)
+
+    if not qml.math.is_abstract(state) and qml.math.allclose(norm, 0.0):
+        norm = 0.0
 
     if shots:
         # Clip the number of shots using a binomial distribution using the probability of
@@ -89,7 +92,7 @@ def _postselection_postprocess(state, is_state_batched, shots):
         # valid samples
         shots = _FlexShots(postselected_shots)
 
-    state = state / qml.math.cast_like(norm, state)
+    state = state / norm
     return state, shots
 
 

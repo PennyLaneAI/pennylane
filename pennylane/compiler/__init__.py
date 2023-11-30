@@ -63,8 +63,12 @@ PennyLane primitives.
 .. autosummary::
     :toctree: api
 
+    ~adjoint
+    ~ctrl
     ~grad
     ~jacobian
+    ~jvp
+    ~vjp
 
 Compiler
 --------
