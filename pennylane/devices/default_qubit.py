@@ -299,7 +299,8 @@ class DefaultQubit(Device):
         return "default.qubit"
 
     _state_cache: Optional[dict] = None
-    """A cache to store the "pre-rotated state" for reuse between the forward pass call to ``execute`` and 
+    """
+    A cache to store the "pre-rotated state" for reuse between the forward pass call to ``execute`` and
     subsequent calls to ``compute_vjp``. ``None`` indicates that no caching is required.
     """
 
