@@ -57,8 +57,9 @@ def _cut_circuit_expand(
             )
 
         new_meas_op = type(tape_meas_ops[0])(obs=qml.Hamiltonian(*tape_meas_ops[0].obs.terms()))
-        new_tape = qml.tape.QuantumScript(tape.operations, [new_meas_op], shots=tape.shots)
-        new_tape.trainable_params = tape.trainable_params
+        new_tape = type(tape)(
+            tape.operations, [new_meas_op], shots=tape.shots, trainable_params=tape.trainable_params
+        )
 
         tapes, tapes_fn = qml.transforms.hamiltonian_expand(new_tape, group=False)
 
@@ -194,14 +195,14 @@ def cut_circuit(
         .. autosummary::
             :toctree:
 
-            ~transforms.qcut.tape_to_graph
-            ~transforms.qcut.find_and_place_cuts
-            ~transforms.qcut.replace_wire_cut_nodes
-            ~transforms.qcut.fragment_graph
-            ~transforms.qcut.graph_to_tape
-            ~transforms.qcut.expand_fragment_tape
-            ~transforms.qcut.qcut_processing_fn
-            ~transforms.qcut.CutStrategy
+            ~qcut.tape_to_graph
+            ~qcut.find_and_place_cuts
+            ~qcut.replace_wire_cut_nodes
+            ~qcut.fragment_graph
+            ~qcut.graph_to_tape
+            ~qcut.expand_fragment_tape
+            ~qcut.qcut_processing_fn
+            ~qcut.CutStrategy
 
         The following shows how these elementary steps are combined as part of the
         ``cut_circuit()`` transform.
@@ -232,7 +233,7 @@ def cut_circuit(
 
         To cut the circuit, we first convert it to its graph representation:
 
-        >>> graph = qml.transforms.qcut.tape_to_graph(tape)
+        >>> graph = qml.qcut.tape_to_graph(tape)
 
         .. figure:: ../../_static/qcut_graph.svg
             :align: center
@@ -260,11 +261,11 @@ def cut_circuit(
             measurements = [qml.expval(qml.pauli.string_to_pauli_word("ZZZ"))]
             uncut_tape = qml.tape.QuantumTape(ops, measurements)
 
-        >>> cut_graph = qml.transforms.qcut.find_and_place_cuts(
-        ...     graph = qml.transforms.qcut.tape_to_graph(uncut_tape),
-        ...     cut_strategy = qml.transforms.qcut.CutStrategy(max_free_wires=2),
+        >>> cut_graph = qml.qcut.find_and_place_cuts(
+        ...     graph = qml.qcut.tape_to_graph(uncut_tape),
+        ...     cut_strategy = qml.qcut.CutStrategy(max_free_wires=2),
         ... )
-        >>> print(qml.transforms.qcut.graph_to_tape(cut_graph).draw())
+        >>> print(qml.qcut.graph_to_tape(cut_graph).draw())
         0: ──RX─╭●──RY────┤ ╭<Z@Z@Z>
         1: ──RY─╰Z──//─╭●─┤ ├<Z@Z@Z>
         2: ──RX────────╰Z─┤ ╰<Z@Z@Z>
@@ -272,7 +273,7 @@ def cut_circuit(
         Our next step is to remove the :class:`~.WireCut` nodes in the graph and replace with
         :class:`~.MeasureNode` and :class:`~.PrepareNode` pairs.
 
-        >>> qml.transforms.qcut.replace_wire_cut_nodes(graph)
+        >>> qml.qcut.replace_wire_cut_nodes(graph)
 
         The :class:`~.MeasureNode` and :class:`~.PrepareNode` pairs are placeholder operations that
         allow us to cut the circuit graph and then iterate over measurement and preparation
@@ -281,11 +282,11 @@ def cut_circuit(
         `communication_graph <https://en.wikipedia.org/wiki/Quotient_graph>`__
         detailing the connectivity between the components.
 
-        >>> fragments, communication_graph = qml.transforms.qcut.fragment_graph(graph)
+        >>> fragments, communication_graph = qml.qcut.fragment_graph(graph)
 
         We now convert the ``fragments`` back to :class:`~.QuantumTape` objects
 
-        >>> fragment_tapes = [qml.transforms.qcut.graph_to_tape(f) for f in fragments]
+        >>> fragment_tapes = [qml.qcut.graph_to_tape(f) for f in fragments]
 
         The circuit fragments can now be visualized:
 
@@ -307,7 +308,7 @@ def cut_circuit(
 
         .. code-block::
 
-            expanded = [qml.transforms.qcut.expand_fragment_tape(t) for t in fragment_tapes]
+            expanded = [qml.qcut.expand_fragment_tape(t) for t in fragment_tapes]
 
             configurations = []
             prepare_nodes = []
@@ -352,7 +353,7 @@ def cut_circuit(
         output via a tensor network contraction
 
         >>> results = qml.execute(tapes, dev, gradient_fn=None)
-        >>> qml.transforms.qcut.qcut_processing_fn(
+        >>> qml.qcut.qcut_processing_fn(
         ...     results,
         ...     communication_graph,
         ...     prepare_nodes,

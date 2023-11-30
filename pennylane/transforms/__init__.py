@@ -74,47 +74,15 @@ There are also utility functions that take a circuit and return a DAG.
     ~transforms.CommutationDAG
     ~transforms.CommutationDAGNode
 
-Transform for circuit cutting
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Transform for Clifford+T compilation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :func:`~.cut_circuit` transform accepts a QNode and returns a new function that cuts the original circuit,
-allowing larger circuits to be split into smaller circuits that are compatible with devices that
-have a restricted number of qubits.
+The following functions assist in decomposing operations to the Clifford+T basis.
 
 .. autosummary::
     :toctree: api
 
-    ~cut_circuit
-
-The :func:`~.cut_circuit_mc` transform is designed to be used for cutting circuits which contain :func:`~.sample`
-measurements and is implemented using a Monte Carlo method. Similarly to the :func:`~.cut_circuit`
-transform, this transform accepts a QNode and returns a new function that cuts the original circuit.
-This transform can also accept an optional classical processing function to calculate an
-expectation value.
-
-.. autosummary::
-    :toctree: api
-
-    ~cut_circuit_mc
-
-There are also low-level functions that can be used to build up the circuit cutting functionalities:
-
-.. autosummary::
-    :toctree: api
-
-    ~transforms.qcut.tape_to_graph
-    ~transforms.qcut.replace_wire_cut_nodes
-    ~transforms.qcut.fragment_graph
-    ~transforms.qcut.graph_to_tape
-    ~transforms.qcut.expand_fragment_tape
-    ~transforms.qcut.expand_fragment_tapes_mc
-    ~transforms.qcut.qcut_processing_fn
-    ~transforms.qcut.qcut_processing_fn_sample
-    ~transforms.qcut.qcut_processing_fn_mc
-    ~transforms.qcut.CutStrategy
-    ~transforms.qcut.kahypar_cut
-    ~transforms.qcut.place_wire_cuts
-    ~transforms.qcut.find_and_place_cuts
+    ~transforms.sk_decomposition
 
 Transforms for error mitigation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -166,18 +134,6 @@ that compute the desired quantity.
     ~specs
     ~draw
     ~draw_mpl
-
-
-Transforms that act on quantum functions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-These transforms accept quantum functions (Python functions
-containing quantum operations) that are used to construct QNodes.
-
-.. autosummary::
-    :toctree: api
-
-    ~transforms.cond
 
 Decorators and utility functions
 --------------------------------
@@ -237,12 +193,12 @@ from .batch_params import batch_params
 from .batch_input import batch_input
 from .batch_partial import batch_partial
 from .classical_jacobian import classical_jacobian
-from .condition import cond, Conditional
 from .convert_to_numpy_parameters import convert_to_numpy_parameters
 from .compile import compile
 from .decompositions import (
     one_qubit_decomposition,
     two_qubit_decomposition,
+    sk_decomposition,
 )
 from .defer_measurements import defer_measurements
 from .sign_expand import sign_expand
@@ -283,7 +239,5 @@ from .tape_expand import (
     set_decomposition,
 )
 from .transpile import transpile
-from . import qcut
-from .qcut import cut_circuit, cut_circuit_mc
 from .zx import to_zx, from_zx
 from .broadcast_expand import broadcast_expand
