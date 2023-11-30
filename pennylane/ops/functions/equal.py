@@ -19,7 +19,6 @@ from collections.abc import Iterable
 from functools import singledispatch
 import itertools
 from typing import Union
-import numpy as np
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
