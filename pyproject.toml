@@ -111,8 +111,8 @@ optional = true
 
 [tool.poetry.group.torch.dependencies]
 torch = [
-    { version = "2.1.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'" },
-    { version = "2.1.0+cpu", source = "pytorch-cpu", markers = "platform_machine == 'x86_64'" }
+    { version = "2.1.0", markers = "sys_platform == 'darwin'" },
+    { version = "2.1.0+cpu", markers = "sys_platform != 'darwin'", source = "pytorch-cpu" }
 ]
 
 [tool.poetry.group.tf]
