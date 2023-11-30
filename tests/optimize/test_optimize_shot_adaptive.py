@@ -578,29 +578,56 @@ class TestQNodeWeightedRandomSampling:
     """Tests for weighted random Hamiltonian term sampling"""
 
     def test_wrs_expval_cost(self, mocker):
-        """Checks that cost functions that are qnodes can
-
-        make use of weighted random sampling"""
+        """Checks that cost functions that are qnodes can make use of weighted random sampling"""
         coeffs = [0.2, 0.1]
         dev = qml.device("default.qubit", wires=2, shots=100)
         H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)])
 
         @qml.qnode(dev)
-        def circuit(weights):
+        def circuit(weights, x):
             qml.StronglyEntanglingLayers(weights, wires=range(2))
+            qml.RX(x, 0)
+            qml.CNOT([0, 1])
             return qml.expval(H)
 
         weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
+        x = np.array(1.1)
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10, term_sampling="weighted_random_sampling")
         spy = mocker.spy(opt, "qnode_weighted_random_sampling")
 
-        _ = opt.step(circuit, weights)
+        _ = opt.step(circuit, weights, x)
         spy.assert_called_once()
 
-        grads = opt.qnode_weighted_random_sampling(circuit, 10, [0], weights)
+        grads = opt.qnode_weighted_random_sampling(circuit, 10, [0], weights, x)
         assert len(grads) == 1
         assert grads[0].shape == (10, *weights.shape)
+
+    def test_wrs_expval_cost_multiple_args(self, mocker):
+        """Checks that cost functions that are qnodes works with multiple args"""
+        coeffs = [0.2, 0.1]
+        dev = qml.device("default.qubit", wires=2, shots=100)
+        H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)])
+
+        @qml.qnode(dev)
+        def circuit(weights, x):
+            qml.StronglyEntanglingLayers(weights, wires=range(2))
+            qml.RX(x, 0)
+            qml.CNOT([0, 1])
+            return qml.expval(H)
+
+        weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
+        x = np.array(1.1)
+
+        opt = qml.ShotAdaptiveOptimizer(min_shots=10, term_sampling="weighted_random_sampling")
+        spy = mocker.spy(opt, "qnode_weighted_random_sampling")
+
+        _ = opt.step(circuit, weights, x)
+        spy.assert_called_once()
+
+        weight_grad, x_grad = opt.qnode_weighted_random_sampling(circuit, 10, [0, 1], weights, x)
+        assert weight_grad.shape == (10, *weights.shape)
+        assert x_grad.shape == (10,)
 
     def test_wrs_disabled(self, mocker):
         """Checks that cost functions that are qnodes can
