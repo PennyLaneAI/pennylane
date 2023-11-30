@@ -1,5 +1,5 @@
 """
-Submodule for performing mixed-qutrit-based simulations of quantum circuits.
+Submodule for performing mixed state simulations of qutrit-based quantum circuits.
 
 This submodule is internal and subject to change without a deprecation cycle. Use
 at your own discretion.
