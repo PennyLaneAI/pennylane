@@ -153,7 +153,7 @@ class TestMapWiresTapes:
 
         [m_tape], _ = qml.map_wires(tape, wire_map=wire_map)
 
-        m_ops = m_tape.ops
+        m_ops = m_tape.operations
         assert len(m_ops) == 4
         assert len(m_tape.measurements) == 0
         assert m_ops[:3] == [qml.PauliX(4), qml.PauliZ(3), qml.PauliX(1)]
