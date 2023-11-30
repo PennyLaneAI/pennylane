@@ -46,9 +46,10 @@
 
 <h4>Drawing and statistics for mid-circuit measurements 🎨</h4>
 
-* `qml.draw` now supports drawing mid-circuit measurements and conditional operators.
+* `qml.draw` and `qml.draw_mpl` now support drawing mid-circuit measurements and conditional operators.
   [(#4775)](https://github.com/PennyLaneAI/pennylane/pull/4775)
   [(#4803)](https://github.com/PennyLaneAI/pennylane/pull/4803)
+  [(#4832)](https://github.com/PennyLaneAI/pennylane/pull/4832)
   [(#4901)](https://github.com/PennyLaneAI/pennylane/pull/4901)
 
 <h4>Catalyst is seamlessly integrated with PennyLane ⚗️</h4>
@@ -151,10 +152,6 @@
 
 * `AmplitudeEmbedding` now also supports batching when used with Tensorflow.
   [(#4818)](https://github.com/PennyLaneAI/pennylane/pull/4818)
-
-* `qml.draw` and `qml.draw_mpl` now support drawing mid-circuit measurements.
-  [(#4775)](https://github.com/PennyLaneAI/pennylane/pull/4775)
-  [(#4832)](https://github.com/PennyLaneAI/pennylane/pull/4832)
 
 * `qml.ArbitraryUnitary` now supports batching.
   [(#4745)](https://github.com/PennyLaneAI/pennylane/pull/4745)
