@@ -103,15 +103,22 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
 
     .. code-block:: python
 
-        @qjit
-        def workflow(params1, params2):
-            res1 = params1["a"][0][0] + params2[1]
-            return {"y1": jnp.sin(res1), "y2": jnp.cos(res1)}
+    dev = qml.device("lightning.qubit", wires=2)
 
-    >>> params1 = {"a": [[0.1], 0.2]}
-    >>> params2 = (0.6, 0.8)
-    >>> workflow(params1, params2)
-    array(0.78332691)
+    @qml.qjit
+    @qml.qnode(dev)
+    def f(x):
+        qml.RX(x["rx_param"], wires=0)
+        qml.RY(x["ry_param"], wires=0)
+        qml.CNOT(wires=[0, 1])
+        return {
+            "XY": qml.expval(qml.PauliX(0) @ qml.PauliY(1)),
+            "X": qml.expval(qml.PauliX(0)),
+        }
+
+    >>> x = {"rx_param": 0.5, "ry_param": 0.54}
+    >>> f(x)
+    {'X': array(-0.75271018), 'XY': array(1.)}
 
     For more details on using the :func:`~.qjit` decorator and Catalyst
     with PennyLane, please refer to the Catalyst
