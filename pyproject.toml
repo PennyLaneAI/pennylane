@@ -46,6 +46,7 @@ pytest = ">=7.1.2"
 pytest-cov = ">=3.0.0"
 pytest-mock = ">=3.7.0"
 pytest-xdist = ">=2.5.0"
+pytest-split = "*"
 flaky = ">=3.7.0"
 pytest-forked = ">=1.4.0"
 pytest-benchmark = "*"
@@ -65,8 +66,6 @@ matplotlib = "*"
 optional = true
 
 [tool.poetry.group.doc.dependencies]
-jax = "0.4.16"
-jaxlib = "0.4.16"
 mistune = "0.8.4"
 m2r2 = "*"
 pygments-github-lexers = "*"
@@ -79,14 +78,7 @@ sphinx = [
 sphinx-automodapi = "0.13"
 sphinx-copybutton = "*"
 sphinxcontrib-bibtex = "2.4.2"
-tensorflow = "2.15.0"
-tensorflow-macos = { version = "2.15.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'" }
 tensornetwork = "0.3"
-# torch = [
-#     { version = "2.1.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'" },
-#     { version = "2.1.0+cpu", source = "pytorch-cpu", markers = "platform_machine == 'x86_64'" }
-# ]
-torch = { version = "2.1.0", source = "pytorch-cpu" }
 jinja2 = "3.0.3"
 rustworkx = "0.12.1"
 networkx = "~2.6.2"
@@ -94,3 +86,35 @@ networkx = "~2.6.2"
 # navbar and header data to be updated at the source
 pennylane-sphinx-theme = "*"
 matplotlib = "*"
+
+[tool.poetry.group.jax]
+optional = true
+
+[tool.poetry.group.jax.dependencies]
+jax = "0.4.14"
+jaxlib = "0.4.14"
+
+[tool.poetry.group.torch]
+optional = true
+
+[tool.poetry.group.torch.dependencies]
+torch = { version = "2.1.0", source = "pytorch-cpu" }
+# torch = [
+#     { version = "2.1.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'" },
+#     { version = "2.1.0+cpu", source = "pytorch-cpu", markers = "platform_machine == 'x86_64'" }
+# ]
+
+[tool.poetry.group.tf]
+optional = true
+
+[tool.poetry.group.tf.dependencies]
+tensorflow = "2.15.0"
+keras = "2.15.0"
+tensorflow-macos = { version = "2.15.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'" }
+
+[tool.poetry.group.external]
+optional = true
+
+[tool.poetry.group.external.dependencies]
+pyzx = {git = "https://github.com/Quantomatic/pyzx.git", rev = "master"}
+pennylane-catalyst = "*"

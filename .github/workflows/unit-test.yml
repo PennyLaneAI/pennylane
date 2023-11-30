@@ -103,34 +103,29 @@ jobs:
           python-version: '${{ inputs.python_version }}'
 
       - name: Upgrade PIP
-        run: pip install --upgrade pip && pip install wheel --upgrade
+        run: |
+          pip install --upgrade pip
+          pip install --upgrade poetry wheel
+          poetry config virtualenvs.create false
 
       - name: Install PennyLane dependencies
-        run: |
-          pip install -r requirements-ci.txt --upgrade
-          pip install -r requirements-dev.txt --upgrade
+        run: poetry install --only dev --only ci
 
       - name: Install PyTorch
         if: inputs.install_pytorch == true
-        env:
-          TORCH_VERSION: ${{ inputs.pytorch_version != '' && format('=={0}', inputs.pytorch_version) || '' }}
-        run: pip install "torch${{ env.TORCH_VERSION }}" -f https://download.pytorch.org/whl/torch_stable.html
+        run: poetry install --only torch
 
       - name: Install TensorFlow
         if: inputs.install_tensorflow == true
-        env:
-          TF_VERSION: ${{ inputs.tensorflow_version != '' && format('~={0}', inputs.tensorflow_version) || '' }}
-        run: pip install "tensorflow${{ env.TF_VERSION }}" "keras${{ env.TF_VERSION }}"
+        run: poetry install --only tf
 
       - name: Install JAX
         if: inputs.install_jax == true
-        env:
-          JAX_VERSION: ${{ inputs.jax_version != '' && format('=={0}', inputs.jax_version) || '' }}
-        run: pip install "jax${{ env.JAX_VERSION}}" "jaxlib${{ env.JAX_VERSION }}"
+        run: poetry install --only jax
 
       - name: Install additional PIP packages
         if: inputs.additional_pip_packages != ''
-        run: pip install ${{ inputs.additional_pip_packages }}
+        run: poetry install --only external
 
       - name: Install PennyLane
         run: |
