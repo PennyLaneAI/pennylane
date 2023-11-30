@@ -1141,6 +1141,49 @@ class TestQubitIntegration:
         )
         assert np.allclose(weights.grad.detach(), expected, atol=tol, rtol=0)
 
+    def test_postselection_differentiation(
+        self, interface, dev, diff_method, grad_on_execution, device_vjp
+    ):
+        """Test that when postselecting with default.qubit, differentiation works correctly."""
+
+        if diff_method in ["adjoint", "spsa", "hadamard"]:
+            pytest.skip("Diff method does not support postselection.")
+
+        @qml.qnode(
+            dev,
+            diff_method=diff_method,
+            interface=interface,
+            grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
+        )
+        def circuit(phi, theta):
+            qml.RX(phi, wires=0)
+            qml.CNOT([0, 1])
+            qml.measure(wires=0, postselect=1)
+            qml.RX(theta, wires=1)
+            return qml.expval(qml.PauliZ(1))
+
+        @qml.qnode(
+            dev,
+            diff_method=diff_method,
+            interface=interface,
+            grad_on_execution=grad_on_execution,
+            device_vjp=device_vjp,
+        )
+        def expected_circuit(theta):
+            qml.PauliX(1)
+            qml.RX(theta, wires=1)
+            return qml.expval(qml.PauliZ(1))
+
+        phi = torch.tensor(1.23, requires_grad=True)
+        theta = torch.tensor(4.56, requires_grad=True)
+
+        assert qml.math.allclose(circuit(phi, theta), expected_circuit(theta))
+
+        gradient = torch.autograd.grad(circuit(phi, theta), [phi, theta])
+        exp_theta_grad = torch.autograd.grad(expected_circuit(theta), theta)[0]
+        assert qml.math.allclose(gradient, [0.0, exp_theta_grad])
+
 
 @pytest.mark.parametrize(
     "dev,diff_method,grad_on_execution, device_vjp", qubit_device_and_diff_method

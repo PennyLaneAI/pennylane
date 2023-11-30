@@ -117,6 +117,15 @@
            [-4.20735506e-01,  4.20735506e-01]])
   ```
 
+* `qml.vjp` and `qml.vjp` can be used with the `qml.qjit` decorator.
+  [(#4724)](https://github.com/PennyLaneAI/pennylane/pull/4724)
+
+* `qml.adjoint` can be used with the `qml.qjit` decorator.
+  [(#4725)](https://github.com/PennyLaneAI/pennylane/pull/4725)
+
+* `qml.ctrl` can be used with the `qml.qjit` decorator.
+  [(#4726)](https://github.com/PennyLaneAI/pennylane/pull/4726)
+
 <h3>Improvements 🛠</h3>
 
 * `qml.expval` with large `Hamiltonian` objects is now faster and has a significantly lower memory footprint (and constant with respect to the number of `Hamiltonian` terms) when the `Hamiltonian` is a `PauliSentence`. That is due to the introduction of a specialized `dot` method in the `PauliSentence` class which performs `PauliSentence`-`state` products.
@@ -294,6 +303,10 @@
   [(#4874)](https://github.com/PennyLaneAI/pennylane/pull/4874)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug where the parameter-shift rule of `qml.ctrl(op)` was wrong if `op` had a generator
+  that has two or more eigenvalues and is stored as a `SparseHamiltonian`.
+  [(#4899)](https://github.com/PennyLaneAI/pennylane/pull/4899)
 
 * Fix a bug where trainable parameters in the post-processing of finite diff were incorrect for Jax when applying
   the transform directly on a ``QNode``.
