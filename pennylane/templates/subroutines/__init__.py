@@ -39,3 +39,4 @@ from .qdrift import QDrift
 from .controlled_sequence import ControlledSequence
 from .trotter import TrotterProduct
 from .aqft import AQFT
+from .fable import FABLE
