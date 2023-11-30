@@ -23,7 +23,6 @@ from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript
 
 
-
 def _SU2_transform(matrix):
     r"""Perform a U(2) to SU(2) transformation via a global phase addition.
 
@@ -248,7 +247,7 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
         op  = qml.RZ(np.pi/3, wires=0)
 
         # Get the gate decomposition in ['T', 'T*', 'H']
-        ops = qml.transforms.decompositions.sk_decomposition(op, epsilon=1e-3)
+        ops = qml.ops.decompositions.sk_decomposition(op, epsilon=1e-3)
 
         # Get the approximate matrix from the ops
         matrix_sk = qml.prod(*reversed(ops)).matrix()
@@ -332,7 +331,9 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
             decomposition, u_prime = _solovay_kitaev(gate_mat, depth + 1, decomposition, u_prime)
 
         # Remove inverses if any in the decomposition and handle trivial case
-        [new_tape], _ = qml.transforms.cancel_inverses(QuantumScript(decomposition or [qml.Identity(0)]))
+        [new_tape], _ = qml.transforms.cancel_inverses(
+            QuantumScript(decomposition or [qml.Identity(0)])
+        )
 
     # Map the wires to that of the operation and queue
     [map_tape], _ = qml.map_wires(new_tape, wire_map={0: op.wires[0]}, queue=True)
