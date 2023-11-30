@@ -132,8 +132,8 @@ test_matrix = [
     ({"gradient_fn": param_shift}, no_shots, dev_def),  # 1
     ({"gradient_fn": "backprop"}, no_shots, dev_def),  # 2
     ({"gradient_fn": "adjoint"}, no_shots, dev_def),  # 3
-    ({"gradient_fn": "adjoint", "device_vjp": True}, no_shots, dev_def), # 4
-    ({"gradient_fn": "device"}, shots_2_10k, dev_ps), # 5
+    ({"gradient_fn": "adjoint", "device_vjp": True}, no_shots, dev_def),  # 4
+    ({"gradient_fn": "device"}, shots_2_10k, dev_ps),  # 5
 ]
 
 
@@ -373,10 +373,6 @@ class TestJaxExecuteIntegration:
         """Test re-using a quantum tape by passing new parameters"""
         if execute_kwargs["gradient_fn"] == param_shift:
             pytest.skip("Basic QNode execution wipes out trainable params with param-shift")
-        if execute_kwargs.get("gradient_fn", "") == "adjoint" and execute_kwargs.get(
-            "device_vjp", False
-        ):
-            pytest.xfail("adjoint_vjp does not yet support jax jacobians.")
 
         a = jnp.array(0.1)
         b = jnp.array(0.2)
@@ -473,10 +469,7 @@ class TestJaxExecuteIntegration:
         res = cost(a, U)
         assert np.allclose(res, -jnp.cos(a), atol=atol_for_shots(shots), rtol=0)
 
-        if shots.has_partitioned_shots:
-            jac_fn = jax.jacobian(cost)
-        else:
-            jac_fn = jax.grad(cost)
+        jac_fn = jax.jacobian(cost)
         jac = jac_fn(a, U)
         if not shots.has_partitioned_shots:
             assert isinstance(jac, jnp.ndarray)

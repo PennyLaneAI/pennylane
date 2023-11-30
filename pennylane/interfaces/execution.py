@@ -787,8 +787,8 @@ def execute(
             execute_fn = partial(ml_boundary_execute, execute_fn=execute_fn, jpc=jpc)
             jpc = TransformJacobianProducts(execute_fn, gradient_fn, gradient_kwargs)
 
-    # trainable parameters can only be set on the first pass for jax, not higher order passes
-    # for higher order derivatives
+    # trainable parameters can only be set on the first pass for jax
+    # not higher order passes for higher order derivatives
     if interface in {"jax", "jax-python"}:
         for tape in tapes:
             params = tape.get_parameters(trainable_only=False)
