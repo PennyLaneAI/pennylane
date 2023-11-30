@@ -44,16 +44,19 @@ class TestCatalystDraw:
     def test_cond_circuit(self, c):
         """Test a circuit with a Catalyst conditional."""
 
+        import catalyst  # pylint: disable=redefined-outer-name
+
         @qml.qjit
         @qml.qnode(qml.device("lightning.qubit", wires=(0, "a", 1.234)))
         def circuit(x, y, z, c):
             """A quantum circuit on three wires."""
 
+            @catalyst.cond(c)
             def conditional_flip():
                 qml.PauliX(wires=0)
 
             qml.RX(x, wires=0)
-            qml.cond(c, conditional_flip)
+            conditional_flip()
             qml.RY(y, wires="a")
             qml.RZ(z, wires=1.234)
             return qml.expval(qml.PauliZ(0))
@@ -68,12 +71,14 @@ class TestCatalystDraw:
     def test_for_loop_circuit(self, c):
         """Test a circuit with a Catalyst for_loop"""
 
+        import catalyst  # pylint: disable=redefined-outer-name
+
         @qml.qjit
         @qml.qnode(qml.device("lightning.qubit", wires=3))
         def circuit(x, y, z, c):
             """A quantum circuit on three wires."""
 
-            @qml.for_loop(0, c, 1)
+            @catalyst.for_loop(0, c, 1)
             def loop(i):
                 qml.Hadamard(wires=i)
 
@@ -93,12 +98,14 @@ class TestCatalystDraw:
     def test_while_loop_circuit(self, c):
         """Test a circuit with a Catalyst while_loop"""
 
+        import catalyst  # pylint: disable=redefined-outer-name
+
         @qml.qjit
         @qml.qnode(qml.device("lightning.qubit", wires=3))
         def circuit(x, y, z, c):
             """A quantum circuit on three wires."""
 
-            @qml.while_loop(lambda x: x < 2.0)
+            @catalyst.while_loop(lambda x: x < 2.0)
             def loop_rx(x):
                 # perform some work and update (some of) the arguments
                 qml.RX(x, wires=0)
@@ -141,12 +148,14 @@ class TestCatalystDrawMpl:
     def test_cond_circuit(self, c):
         """Test a circuit with a Catalyst conditional."""
 
+        import catalyst  # pylint: disable=redefined-outer-name
+
         @qml.qjit
         @qml.qnode(qml.device("lightning.qubit", wires=(0, "a", 1.234)))
         def circuit(x, y, z, c):
             """A quantum circuit on three wires."""
 
-            @qml.cond(c)
+            @catalyst.cond(c)
             def conditional_flip():
                 qml.PauliX(wires=0)
 
@@ -164,12 +173,14 @@ class TestCatalystDrawMpl:
     def test_for_loop_circuit(self, c):
         """Test a circuit with a Catalyst for_loop"""
 
+        import catalyst  # pylint: disable=redefined-outer-name
+
         @qml.qjit
         @qml.qnode(qml.device("lightning.qubit", wires=3))
         def circuit(x, y, z, c):
             """A quantum circuit on three wires."""
 
-            @qml.for_loop(0, c, 1)
+            @catalyst.for_loop(0, c, 1)
             def loop(i):
                 qml.Hadamard(wires=i)
 
@@ -187,12 +198,14 @@ class TestCatalystDrawMpl:
     def test_while_loop_circuit(self, c):
         """Test a circuit with a Catalyst while_loop"""
 
+        import catalyst  # pylint: disable=redefined-outer-name
+
         @qml.qjit
         @qml.qnode(qml.device("lightning.qubit", wires=3))
         def circuit(x, y, z, c):
             """A quantum circuit on three wires."""
 
-            @qml.while_loop(lambda x: x < 2.0)
+            @catalyst.while_loop(lambda x: x < 2.0)
             def loop_rx(x):
                 # perform some work and update (some of) the arguments
                 qml.RX(x, wires=0)
