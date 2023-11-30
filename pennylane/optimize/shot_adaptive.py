@@ -257,26 +257,23 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             # set the QNode device shots
             new_shots = 1 if s == 1 else [(1, int(s))]
 
-            jacs = []
-            for i in argnums:
-                if s > 1:
+            if s > 1:
 
-                    def cost(*args, **kwargs):
-                        # pylint: disable=cell-var-from-loop
-                        return qml.math.stack(h(*args, **kwargs))
+                def cost(*args, **kwargs):
+                    # pylint: disable=cell-var-from-loop
+                    return qml.math.stack(h(*args, **kwargs))
 
-                else:
-                    cost = h
+            else:
+                cost = h
 
-                j = qml.jacobian(cost, argnum=i)(*args, **kwargs, shots=new_shots)
+            jacs = qml.jacobian(cost, argnum=argnums)(*args, **kwargs, shots=new_shots)
 
-                if s == 1:
-                    j = np.expand_dims(j, 0)
-                # Divide each term by the probability per shot. This is
-                # because we are sampling one at a time.
-                jacs.append(c * j / p)
+            if s == 1:
+                jacs = [np.expand_dims(j, 0) for j in jacs]
 
-            grads.append(jacs)
+            # Divide each term by the probability per shot. This is
+            # because we are sampling one at a time.
+            grads.append([(c * j / p) for j in jacs])
 
         return [np.concatenate(i) for i in zip(*grads)]
 
@@ -330,6 +327,8 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
             qnode.func = func
 
+            new_shots = 1 if s == 1 else [(1, int(s))]
+
             if s > 1:
 
                 def cost(*args, **kwargs):
@@ -339,18 +338,14 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             else:
                 cost = qnode
 
-            new_shots = 1 if s == 1 else [(1, int(s))]
-            jacs = []
-            for i in argnums:
-                j = qml.jacobian(cost, argnum=i)(*args, **kwargs, shots=new_shots)
+            jacs = qml.jacobian(cost, argnum=argnums)(*args, **kwargs, shots=new_shots)
 
-                if s == 1:
-                    j = np.expand_dims(j, 0)
-                # Divide each term by the probability per shot. This is
-                # because we are sampling one at a time.
-                jacs.append(c * j / p)
+            if s == 1:
+                jacs = [np.expand_dims(j, 0) for j in jacs]
 
-            grads.append(jacs)
+            # Divide each term by the probability per shot. This is
+            # because we are sampling one at a time.
+            grads.append([(c * j / p) for j in jacs])
 
         return [np.concatenate(i) for i in zip(*grads)]
 
