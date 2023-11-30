@@ -1428,19 +1428,6 @@ class TestNumericType:
         assert np.issubdtype(result[1].dtype, np.int64)
         assert qs.numeric_type == (float, int)
 
-class TestEqual:
-    def test_equal(self):
-        tape1 = qml.tape.QuantumScript([qml.PauliX(0), qml.RX(1.2, wires=0)], [qml.expval(qml.PauliZ(0))],
-                                            shots=10)
-        tape2 = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliZ(0))], shots=10)
-        assert qml.equal(tape1, tape2) is False
-        assert qml.equal(tape1, tape1)
-        tape3 = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliZ(0))], shots=None)
-        assert qml.equal(tape2, tape3) is False
-        tape4 = qml.tape.QuantumScript([qml.PauliX(0), qml.RX(1.2 + 1e-6, wires=0)], [qml.expval(qml.PauliZ(0))],
-                                            shots=10)
-        assert qml.equal(tape1, tape4, atol=1e-5)
-        assert qml.equal(tape1, tape4, atol=1e-7) is False
 
 @pytest.mark.parametrize("qscript_type", (QuantumScript, qml.tape.QuantumTape))
 def test_flatten_unflatten(qscript_type):

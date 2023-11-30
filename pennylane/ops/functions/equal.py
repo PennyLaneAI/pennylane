@@ -195,8 +195,8 @@ def _equal_circuit(
 
 @_equal.register
 def _equal_operators(
-    op1: Union[Operator, qml.ops.qubit.parametric_ops_single_qubit.RX],
-    op2: Union[Operator, qml.ops.qubit.parametric_ops_single_qubit.RX],
+    op1: Operator,
+    op2: Operator,
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,
