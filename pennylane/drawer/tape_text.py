@@ -17,36 +17,16 @@ This module contains logic for the text based circuit drawer through the ``tape_
 # TODO: Fix the latter two pylint warnings
 # pylint: disable=too-many-arguments, too-many-branches, too-many-statements
 
-from dataclasses import dataclass
-from typing import Optional
 import pennylane as qml
 from pennylane.measurements import Expectation, Probability, Sample, Variance, State, MidMeasureMP
 
 from .drawable_layers import drawable_layers
-from .utils import convert_wire_order, unwrap_controls, find_mid_measure_cond_connections
-
-
-@dataclass
-class _Config:
-    """Dataclass containing attributes needed for updating the strings to be drawn for each layer"""
-
-    wire_map: dict
-    """Map between wire labels and their place in order"""
-
-    bit_map: dict
-    """Map between mid-circuit measurements and their corresponding bit in order"""
-
-    cur_layer: Optional[int] = None
-    """Current layer index that is being updated"""
-
-    final_cond_layers: Optional[list] = None
-    """List mapping bits to the last layer where they are used"""
-
-    decimals: Optional[int] = None
-    """Specifies how to round the parameters of operators"""
-
-    cache: Optional[dict] = None
-    """dictionary that carries information between label calls in the same drawing"""
+from .utils import (
+    convert_wire_order,
+    unwrap_controls,
+    find_mid_measure_cond_connections,
+    DrawingConfig,
+)
 
 
 def _add_grouping_symbols(op, layer_str, config):  # pylint: disable=unused-argument
@@ -415,7 +395,7 @@ def tape_text(
         layers_list, add_list, wire_fillers, bit_fillers, enders, bit_maps
     ):
         # Collect information needed for drawing layers
-        config = _Config(
+        config = DrawingConfig(
             wire_map=wire_map,
             bit_map=bit_map,
             cur_layer=-1,
