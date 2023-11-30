@@ -60,19 +60,19 @@ Array(4., dtype=float64, weak_type=True)
 
 **JVP versus VJP:**
 
-When JAX can trace the product between the jacobian and the cotangents, it can turn the JVP calculation into a VJP calculation. Through this
+When JAX can trace the product between the Jacobian and the cotangents, it can turn the JVP calculation into a VJP calculation. Through this
 process, JAX can support both JVP and VJP calculations by registering only the JVP.
 
-Unfortunately, :meth:`~pennylane.devices.Device.compute_jvp` uses pure numpy to perform the jacobian product and cannot
+Unfortunately, :meth:`~pennylane.devices.Device.compute_jvp` uses pure numpy to perform the Jacobian product and cannot
 be traced by JAX.
 
-For example, we we replace the definition of ``f_and_jvp`` from above:
+For example, if we replace the definition of ``f_and_jvp`` from above:
 
 .. code-block:: python
 
     def f_and_jvp(primals, tangents):
         x = primals[0]
-        dx = qml.math.unwrap(tangents[0])
+        dx = qml.math.unwrap(tangents[0]) # This line breaks tracing
         return x**2, 2*x*dx
 
 >>> jax.grad(registered_f_jvp)(jax.numpy.array(2.0))
@@ -116,9 +116,9 @@ in custom jvp function:  {'a': Array(2., dtype=float64, weak_type=True)} {'a': T
 
 As we can see here, the tangents are packed into the same pytree structure as the trainable arguments.
 
-Currently, :class:`~.QuantumScript` is a valid pytree *most* of the time. Once it is a valid pytree *all* of
+Currently, :class:`~.QuantumScript` is a valid pytree *most* of the time. Once it is a valid pytree *all* of the
 time and can store tangents in place of the variables, we can use a batch of tapes as our trainable argument. Until then, the tapes
-must be non-pytree non-differenatible argument that accompanies the tree leaves.
+must be a non-pytree non-differenatible argument that accompanies the tree leaves.
 
 """
 # pylint: disable=unused-argument
@@ -256,12 +256,12 @@ _execute_vjp.defvjp(_vjp_fwd, _vjp_bwd)
 
 
 def jax_jvp_execute(tapes: Batch, execute_fn: ExecuteFn, jpc):
-    """Execute a batch of tapes with Jax parameters using JVP derivatives.
+    """Execute a batch of tapes with JAX parameters using JVP derivatives.
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
         execute_fn (Callable[[Sequence[.QuantumTape]], ResultBatch]): a function that turns a batch of circuits into results
-        jpc (JacobianProductCalculator): a class that can compute the vector Jacobian product (VJP)
+        jpc (JacobianProductCalculator): a class that can compute the Jacobian vector product (JVP)
             for the input tapes.
 
     Returns:
@@ -278,7 +278,7 @@ def jax_jvp_execute(tapes: Batch, execute_fn: ExecuteFn, jpc):
 
 
 def jax_vjp_execute(tapes: Batch, execute_fn: ExecuteFn, jpc):
-    """Execute a batch of tapes with Jax parameters using VJP derivatives.
+    """Execute a batch of tapes with JAX parameters using VJP derivatives.
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute

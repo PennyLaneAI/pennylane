@@ -157,7 +157,7 @@ class TestJaxExecuteUnitTests:
         assert qml.math.allclose(g[2], expected_g)
 
     def test_no_grad_on_execution(self, mocker):
-        """Test that no grad on execution uses the `device.execute_and_gradients`."""
+        """Test that `grad_on_execution=False` uses the `device.execute_and_gradients`."""
         dev = qml.device("default.qubit.legacy", wires=1)
         spy_execute = mocker.spy(qml.devices.DefaultQubitLegacy, "batch_execute")
         spy_gradients = mocker.spy(qml.devices.DefaultQubitLegacy, "execute_and_gradients")

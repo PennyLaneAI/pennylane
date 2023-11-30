@@ -404,7 +404,7 @@ class TestJaxExecuteIntegration:
             "device_vjp", False
         ):
             with pytest.raises(
-                NotImplementedError, match=r"adjoint_vjp does not yet support jax jacobians"
+                NotImplementedError, match=r"adjoint_vjp does not yet support JAX Jacobians"
             ):
                 jac = jac_fn(a, b)
         else:

@@ -223,7 +223,7 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
     for t in cotangents:
         if qml.math.size(t) > 1:
             raise NotImplementedError(
-                "adjoint_vjp does not yet support jax jacobians, as they use a broadcast dimension on dy."
+                "adjoint_vjp does not yet support JAX Jacobians, as they use a broadcast dimension on the cotangent dy."
             )
     obs = qml.dot(cotangents, tape.observables)
     bra = apply_operation(obs, ket)
