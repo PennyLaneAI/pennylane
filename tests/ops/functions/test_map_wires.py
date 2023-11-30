@@ -160,7 +160,7 @@ class TestMapWiresTapes:
 
         nested_m_tape = m_ops[3]
         assert isinstance(nested_m_tape, QuantumScript)
-        assert nested_m_tape.ops == [qml.PauliY(4), qml.Hadamard(3), qml.PauliY(1)]
+        assert nested_m_tape.operations == [qml.PauliY(4), qml.Hadamard(3), qml.PauliY(1)]
         assert len(nested_m_tape.measurements) == 0
 
 
