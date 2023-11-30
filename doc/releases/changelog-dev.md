@@ -204,6 +204,7 @@
   `qml.QNode` or `qml.execute`.
   [(#4557)](https://github.com/PennyLaneAI/pennylane/pull/4557)
   [(#4654)](https://github.com/PennyLaneAI/pennylane/pull/4654)
+  [(#4841)](https://github.com/PennyLaneAI/pennylane/pull/4841)
 
 ```pycon
 >>> dev = qml.device('default.qubit')
