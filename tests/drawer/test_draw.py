@@ -297,12 +297,10 @@ class TestMidCircuitMeasurements:
             return qml.probs(wires=0)
 
         draw_qnode = qml.draw(circ)
-        spy1 = mocker.spy(qml.defer_measurements, "_transform")
-        spy2 = mocker.spy(qml.transforms.defer_measurements, "_transform")
+        spy = mocker.spy(qml.defer_measurements, "_transform")
 
         drawing = draw_qnode()
-        spy1.assert_not_called()
-        spy2.assert_not_called()
+        spy.assert_not_called()
 
         assert drawing == "0: ──X──┤↗├─┤  Probs"
 
