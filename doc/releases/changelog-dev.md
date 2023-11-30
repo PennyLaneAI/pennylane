@@ -117,6 +117,15 @@
            [-4.20735506e-01,  4.20735506e-01]])
   ```
 
+* `qml.vjp` and `qml.vjp` can be used with the `qml.qjit` decorator.
+  [(#4724)](https://github.com/PennyLaneAI/pennylane/pull/4724)
+
+* `qml.adjoint` can be used with the `qml.qjit` decorator.
+  [(#4725)](https://github.com/PennyLaneAI/pennylane/pull/4725)
+
+* `qml.ctrl` can be used with the `qml.qjit` decorator.
+  [(#4726)](https://github.com/PennyLaneAI/pennylane/pull/4726)
+
 <h3>Improvements 🛠</h3>
 
 * `qml.expval` with large `Hamiltonian` objects is now faster and has a significantly lower memory footprint (and constant with respect to the number of `Hamiltonian` terms) when the `Hamiltonian` is a `PauliSentence`. That is due to the introduction of a specialized `dot` method in the `PauliSentence` class which performs `PauliSentence`-`state` products.
@@ -160,12 +169,25 @@
 * `default.qubit` no longer uses a dense matrix for `MultiControlledX` for more than 8 operation wires.
   [(#4673)](https://github.com/PennyLaneAI/pennylane/pull/4673)
 
-* Autograd and torch can now use vjps provided by the device from the new device API. If a device provides
+* Autograd and torch can now use VJPs provided by the device from the new device API. If a device provides
   a vector Jacobian product, this can be selected by providing `device_vjp=True` to
-  `qml.execute`.
+  `qml.QNode` or `qml.execute`.
   [(#4557)](https://github.com/PennyLaneAI/pennylane/pull/4557)
   [(#4654)](https://github.com/PennyLaneAI/pennylane/pull/4654)
 
+```pycon
+>>> dev = qml.device('default.qubit')
+>>> @qml.qnode(dev, diff_method="adjoint", device_vjp=True)
+>>> def circuit(x):
+...     qml.RX(x, wires=0)
+...     return qml.expval(qml.PauliZ(0))
+>>> with dev.tracker:
+...     g = qml.grad(circuit)(qml.numpy.array(0.1))
+>>> dev.tracker.totals
+{'batches': 1, 'simulations': 1, 'executions': 1, 'vjp_batches': 1, 'vjps': 1}
+>>> g
+-0.09983341664682815
+```
 * Updates to some relevant Pytests to enable its use as a suite of benchmarks.
   [(#4703)](https://github.com/PennyLaneAI/pennylane/pull/4703)
 
@@ -219,6 +241,9 @@
 * The `"pennylane_sketch"` MPL-drawer style has been added. This is the same as the `"pennylane"`
   style, but with sketch-style lines.
   [(#4880)](https://github.com/PennyLaneAI/pennylane/pull/4880)
+
+* `Conditional` and `MeasurementValue` objects now implement `map_wires`.
+  [(#4884)](https://github.com/PennyLaneAI/pennylane/pull/4884)
 
 <h3>Breaking changes 💔</h3>
 
@@ -285,6 +310,14 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where the parameter-shift rule of `qml.ctrl(op)` was wrong if `op` had a generator
+  that has two or more eigenvalues and is stored as a `SparseHamiltonian`.
+  [(#4899)](https://github.com/PennyLaneAI/pennylane/pull/4899)
+
+* Fix a bug where trainable parameters in the post-processing of finite diff were incorrect for Jax when applying
+  the transform directly on a ``QNode``.
+  [(#4879)](https://github.com/PennyLaneAI/pennylane/pull/4879)
+
 * `qml.grad` and `qml.jacobian` now explicitly raise errors if trainable parameters are integers.
   [(#4836)](https://github.com/PennyLaneAI/pennylane/pull/4836)
 
@@ -346,6 +379,10 @@
   `qml.shadow_expval`.
   [(#4803)](https://github.com/PennyLaneAI/pennylane/pull/4803)
 
+* Removed an implicit assumption that an empty `PauliSentence` gets treated as identity under 
+  multiplication.
+  [(#4887)](https://github.com/PennyLaneAI/pennylane/pull/4887)
+
 * Using a `CNOT` or `PauliZ` operation with large, batched states and the tensorflow
   interface no longer raises an unexpected error.
   [(#4889)](https://github.com/PennyLaneAI/pennylane/pull/4889)
@@ -367,8 +404,10 @@ Ankit Khandelwal,
 Christina Lee,
 Romain Moyard,
 Vincent Michaud-Rioux,
+Romain Moyard,
 Anurav Modak,
 Mudit Pandey,
 Matthew Silverman,
+Jay Soni,
 David Wierichs,
 Justin Woodring,
