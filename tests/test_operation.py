@@ -843,6 +843,7 @@ class TestOperationConstruction:
         DummyOp.parameter_frequencies = qml.operation.Operation.parameter_frequencies
 
         op = DummyOp(0.7, [0, 1, 2, 3])
+        assert isinstance(op.generator(), qml.SparseHamiltonian)
         assert op.parameter_frequencies == [(1.0,)]
 
     def test_no_wires_passed(self):
