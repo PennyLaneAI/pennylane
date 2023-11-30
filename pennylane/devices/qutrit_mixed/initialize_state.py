@@ -97,8 +97,7 @@ def _apply_basis_state(state, wires):  # function is easy to abstract for qudit
     num_wires = len(wires)
 
     # get computational basis state number
-    basis_states = qudit_dim ** (num_wires - 1 - np.array(wires))
-    num = int(qml.math.dot(state, basis_states))
+    num = int("".join([str(x) for x in state]), qudit_dim)
 
     return _create_basis_state(num_wires, num)
 
