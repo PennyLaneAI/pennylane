@@ -158,13 +158,11 @@ jobs:
 
       - name: Install additional PIP packages
         if: inputs.additional_pip_packages != '' && steps.continue.outputs.confirm == 'true'
-        run: poetry install --only external
+        run: poetry install --only ${{ inputs.additional_pip_packages }}
 
       - name: Install PennyLane
         if: steps.continue.outputs.confirm == 'true'
-        run: |
-          python setup.py bdist_wheel
-          pip install dist/PennyLane*.whl
+        run: poetry install
 
       - name: Install PennyLane-Lightning master
         if: inputs.install_pennylane_lightning_master == true && steps.continue.outputs.confirm == 'true'

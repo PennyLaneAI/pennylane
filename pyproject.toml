@@ -91,18 +91,17 @@ matplotlib = "*"
 optional = true
 
 [tool.poetry.group.jax.dependencies]
-jax = "0.4.14"
-jaxlib = "0.4.14"
+jax = ">=0.4.14"
+jaxlib = ">=0.4.14"
 
 [tool.poetry.group.torch]
 optional = true
 
 [tool.poetry.group.torch.dependencies]
-torch = { version = "2.1.0", source = "pytorch-cpu" }
-# torch = [
-#     { version = "2.1.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'" },
-#     { version = "2.1.0+cpu", source = "pytorch-cpu", markers = "platform_machine == 'x86_64'" }
-# ]
+torch = [
+    { version = "2.1.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'" },
+    { version = "2.1.0+cpu", source = "pytorch-cpu", markers = "platform_machine == 'x86_64'" }
+]
 
 [tool.poetry.group.tf]
 optional = true
@@ -118,3 +117,23 @@ optional = true
 [tool.poetry.group.external.dependencies]
 pyzx = {git = "https://github.com/Quantomatic/pyzx.git", rev = "master"}
 pennylane-catalyst = "*"
+
+[tool.poetry.group.qcut]
+optional = true
+
+[tool.poetry.group.qcut.dependencies]
+kahypar = "1.1.7"
+opt_einsum = "*"
+
+[tool.poetry.group.qchem]
+optional = true
+
+[tool.poetry.group.qchem.dependencies]
+openfermionpyscf = "*"
+basis-set-exchange = "*"
+
+[tool.poetry.group.data]
+optional = true
+
+[tool.poetry.group.data.dependencies]
+h5py = "*"
