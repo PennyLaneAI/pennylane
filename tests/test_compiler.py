@@ -17,6 +17,7 @@ Unit tests for the compiler subpackage.
 # pylint: disable=import-outside-toplevel
 import pytest
 import pennylane as qml
+from pennylane.compiler.compiler import CompileError
 
 from pennylane import numpy as np
 
@@ -209,6 +210,272 @@ class TestCatalyst:
         result_header = "func.func private @circuit(%arg0: tensor<f64>) -> tensor<f64>"
         assert result_header in mlir_str
 
+    def test_qjit_adjoint(self):
+        """Test JIT compilation with adjoint support"""
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qjit
+        @qml.qnode(device=dev)
+        def workflow_cl(theta, wires):
+            def func():
+                qml.RX(theta, wires=wires)
+
+            qml.adjoint(func)()
+            return qml.probs()
+
+        @qml.qnode(device=dev)
+        def workflow_pl(theta, wires):
+            def func():
+                qml.RX(theta, wires=wires)
+
+            qml.adjoint(func)()
+            return qml.probs()
+
+        assert jnp.allclose(workflow_cl(0.1, [1]), workflow_pl(0.1, [1]))
+
+    def test_qjit_adjoint_lazy(self):
+        """Test that Lazy kwarg is not supported."""
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qjit
+        @qml.qnode(device=dev)
+        def workflow(theta, wires):
+            def func():
+                qml.RX(theta, wires=wires)
+
+            qml.adjoint(func, lazy=False)()
+            return qml.probs()
+
+        with pytest.raises(CompileError, match="Setting lazy=False is not supported with qjit."):
+            workflow(0.1, [1])
+
+    def test_control(self):
+        """Test that control works with qjit."""
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qjit
+        @qml.qnode(dev)
+        def workflow(theta, w, cw):
+            qml.Hadamard(wires=[0])
+            qml.Hadamard(wires=[1])
+
+            def func(arg):
+                qml.RX(theta, wires=arg)
+
+            qml.ctrl(func, control=[cw])(w)
+            qml.ctrl(qml.RZ, control=[cw])(theta, wires=w)
+            qml.ctrl(qml.RY(theta, wires=w), control=[cw])
+            return qml.probs()
+
+        assert jnp.allclose(workflow(jnp.pi / 4, 1, 0), jnp.array([0.25, 0.25, 0.125, 0.375]))
+
+
+class TestCatalystControlFlow:
+    """Test ``qml.qjit`` with Catalyst's control-flow operations"""
+
+    def test_alternating_while_loop(self):
+        """Test simple while loop."""
+        dev = qml.device("lightning.qubit", wires=1)
+
+        @qml.qjit
+        @qml.qnode(dev)
+        def circuit(n):
+            @qml.while_loop(lambda v: v[0] < v[1])
+            def loop(v):
+                qml.PauliX(wires=0)
+                return v[0] + 1, v[1]
+
+            loop((0, n))
+            return qml.expval(qml.PauliZ(0))
+
+        assert jnp.allclose(circuit(1), -1.0)
+
+    def test_nested_while_loops(self):
+        """Test nested while loops."""
+        dev = qml.device("lightning.qubit", wires=1)
+
+        @qml.qjit
+        @qml.qnode(dev)
+        def circuit(n, m):
+            @qml.while_loop(lambda i, _: i < n)
+            def outer(i, sm):
+                @qml.while_loop(lambda j: j < m)
+                def inner(j):
+                    return j + 1
+
+                return i + 1, sm + inner(0)
+
+            return outer(0, 0)[1]
+
+        assert circuit(5, 6) == 30  # 5 * 6
+        assert circuit(4, 7) == 28  # 4 * 7
+
+    def test_dynamic_wires_for_loops(self):
+        """Test for loops with iteration index-dependant wires."""
+        dev = qml.device("lightning.qubit", wires=6)
+
+        @qml.qjit
+        @qml.qnode(dev)
+        def circuit(n: int):
+            qml.Hadamard(wires=0)
+
+            @qml.for_loop(0, n - 1, 1)
+            def loop_fn(i):
+                qml.CNOT(wires=[i, i + 1])
+
+            loop_fn()
+            return qml.state()
+
+        expected = np.zeros(2**6)
+        expected[[0, 2**6 - 1]] = 1 / np.sqrt(2)
+
+        assert jnp.allclose(circuit(6), expected)
+
+    def test_nested_for_loops(self):
+        """Test nested for loops."""
+        dev = qml.device("lightning.qubit", wires=4)
+
+        @qml.qjit
+        @qml.qnode(dev)
+        def circuit(n):
+            # Input state: equal superposition
+            @qml.for_loop(0, n, 1)
+            def init(i):
+                qml.Hadamard(wires=i)
+
+            # QFT
+            @qml.for_loop(0, n, 1)
+            def qft(i):
+                qml.Hadamard(wires=i)
+
+                @qml.for_loop(i + 1, n, 1)
+                def inner(j):
+                    qml.ControlledPhaseShift(np.pi / 2 ** (n - j + 1), [i, j])
+
+                inner()
+
+            init()
+            qft()
+
+            # Expected output: |100...>
+            return qml.state()
+
+        assert jnp.allclose(circuit(4), jnp.eye(2**4)[0])
+
+    def test_cond(self):
+        """Test condition with simple true_fn"""
+        dev = qml.device("lightning.qubit", wires=1)
+
+        @qml.qjit
+        @qml.qnode(dev)
+        def circuit(x: float):
+            def ansatz_true():
+                qml.RX(x, wires=0)
+                qml.Hadamard(wires=0)
+
+            qml.cond(x > 1.4, ansatz_true)
+
+            return qml.expval(qml.PauliZ(0))
+
+        assert jnp.allclose(circuit(1.4), 1.0)
+        assert jnp.allclose(circuit(1.6), 0.0)
+
+    def test_cond_with_else(self):
+        """Test condition with simple true_fn and false_fn"""
+        dev = qml.device("lightning.qubit", wires=1)
+
+        @qml.qjit
+        @qml.qnode(dev)
+        def circuit(x: float):
+            def ansatz_true():
+                qml.RX(x, wires=0)
+                qml.Hadamard(wires=0)
+
+            def ansatz_false():
+                qml.RY(x, wires=0)
+
+            qml.cond(x > 1.4, ansatz_true, ansatz_false)
+
+            return qml.expval(qml.PauliZ(0))
+
+        assert jnp.allclose(circuit(1.4), 0.16996714)
+        assert jnp.allclose(circuit(1.6), 0.0)
+
+    def test_cond_with_elif(self):
+        """Test condition with a simple elif branch"""
+        dev = qml.device("lightning.qubit", wires=1)
+
+        @qml.qjit
+        @qml.qnode(dev)
+        def circuit(x):
+            def true_fn():
+                qml.RX(x, wires=0)
+
+            def elif_fn():
+                qml.RY(x, wires=0)
+
+            def false_fn():
+                qml.RX(x**2, wires=0)
+
+            qml.cond(x > 2.7, true_fn, false_fn, ((x > 1.4, elif_fn),))
+
+            return qml.expval(qml.PauliZ(0))
+
+        assert jnp.allclose(circuit(1.2), 0.13042371)
+        assert jnp.allclose(circuit(jnp.pi), -1.0)
+
+    def test_cond_with_elifs(self):
+        """Test condition with multiple elif branches"""
+        dev = qml.device("lightning.qubit", wires=1)
+
+        @qml.qjit
+        @qml.qnode(dev)
+        def circuit(x):
+            def true_fn():
+                qml.RX(x, wires=0)
+
+            def elif1_fn():
+                qml.RY(x, wires=0)
+
+            def elif2_fn():
+                qml.RZ(x, wires=0)
+
+            def false_fn():
+                qml.RX(x**2, wires=0)
+
+            qml.cond(x > 2.7, true_fn, false_fn, ((x > 2.4, elif1_fn), (x > 1.4, elif2_fn)))
+
+            return qml.expval(qml.PauliZ(0))
+
+        assert jnp.allclose(circuit(1.5), 1.0)
+        assert jnp.allclose(circuit(jnp.pi), -1.0)
+
+    def test_cond_with_elif_interpreted(self):
+        """Test condition with an elif branch in interpreted mode"""
+        dev = qml.device("lightning.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            def true_fn():
+                qml.RX(x, wires=0)
+
+            def elif_fn():
+                qml.RX(x**2, wires=0)
+
+            qml.cond(x > 2.7, true_fn, None, ((x > 1.4, elif_fn),))
+
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(
+            ValueError,
+            match="'elif' branches are not supported in interpreted mode",
+        ):
+            circuit(1.5)
+
+
+class TestCatalystGrad:
+    """Test ``qml.qjit`` with Catalyst's grad operations"""
+
     def test_grad_classical_preprocessing(self):
         """Test the grad transformation with classical preprocessing."""
 
@@ -342,3 +609,76 @@ class TestCatalyst:
             match="Invalid values for 'method=fd' and 'h=0.3' in interpreted mode",
         ):
             workflow(np.array([2.0, 1.0]))
+
+    def test_jvp(self):
+        """Test that the correct JVP is returned with QJIT."""
+
+        @qml.qjit
+        def jvp(params, tangent):
+            def f(x):
+                y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
+                return jnp.stack(y)
+
+            return qml.jvp(f, [params], [tangent])
+
+        x = jnp.array([0.1, 0.2])
+        tangent = jnp.array([0.3, 0.6])
+        res = jvp(x, tangent)
+        assert len(res) == 2
+        assert jnp.allclose(res[0], jnp.array([0.09983342, 0.04, 0.02]))
+        assert jnp.allclose(res[1], jnp.array([0.29850125, 0.24000006, 0.12]))
+
+    def test_jvp_without_qjit(self):
+        """Test that an error is raised when using JVP without QJIT."""
+
+        def jvp(params, tangent):
+            def f(x):
+                y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
+                return jnp.stack(y)
+
+            return qml.jvp(f, [params], [tangent])
+
+        x = jnp.array([0.1, 0.2])
+        tangent = jnp.array([0.3, 0.6])
+
+        with pytest.raises(
+            CompileError, match="Pennylane does not support the JVP function without QJIT."
+        ):
+            jvp(x, tangent)
+
+    def test_vjp(self):
+        """Test that the correct VJP is returned with QJIT."""
+
+        @qml.qjit
+        def vjp(params, cotangent):
+            def f(x):
+                y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
+                return jnp.stack(y)
+
+            return qml.vjp(f, [params], [cotangent])
+
+        x = jnp.array([0.1, 0.2])
+        dy = jnp.array([-0.5, 0.1, 0.3])
+
+        res = vjp(x, dy)
+        assert len(res) == 2
+        assert jnp.allclose(res[0], jnp.array([0.09983342, 0.04, 0.02]))
+        assert jnp.allclose(res[1], jnp.array([-0.43750208, 0.07000001]))
+
+    def test_vjp_without_qjit(self):
+        """Test that an error is raised when using VJP without QJIT."""
+
+        def vjp(params, cotangent):
+            def f(x):
+                y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
+                return jnp.stack(y)
+
+            return qml.vjp(f, [params], [cotangent])
+
+        x = jnp.array([0.1, 0.2])
+        dy = jnp.array([-0.5, 0.1, 0.3])
+
+        with pytest.raises(
+            CompileError, match="Pennylane does not support the VJP function without QJIT."
+        ):
+            vjp(x, dy)

@@ -112,10 +112,49 @@
   ```
 
   ``` pycon
-    >>> workflow(np.array([2.0, 1.0]))
-    array([[-1.32116540e-07,  1.33781874e-07],
-           [-4.20735506e-01,  4.20735506e-01]])
+  >>> workflow(np.array([2.0, 1.0]))
+  array([[-1.32116540e-07,  1.33781874e-07],
+          [-4.20735506e-01,  4.20735506e-01]])
   ```
+
+* `qml.for_loop` and `qml.while_loop` compiler-specific decorators are added.
+  `qml.cond` can be used with the `qml.qjit` decorator.
+  [(#4698)](https://github.com/PennyLaneAI/pennylane/pull/4698)
+
+  ``` python
+  dev = qml.device("lightning.qubit", wires=1)
+
+  @qml.qjit
+  @qml.qnode(dev)
+  def circuit(n: int, x: float):
+
+      @qml.for_loop(0, n, 1)
+      def loop_rx(i, x):
+          # perform some work and update (some of) the arguments
+          qml.RX(x, wires=0)
+
+          # update the value of x for the next iteration
+          return jnp.sin(x)
+
+      # apply the for loop
+      final_x = loop_rx(x)
+
+      return qml.expval(qml.PauliZ(0)), final_x
+  ```
+
+  ``` pycon
+  >>> circuit(7, 1.6)
+  (array(0.97926626), array(0.55395718))
+  ```
+
+* `qml.vjp` and `qml.vjp` can be used with the `qml.qjit` decorator.
+  [(#4724)](https://github.com/PennyLaneAI/pennylane/pull/4724)
+
+* `qml.adjoint` can be used with the `qml.qjit` decorator.
+  [(#4725)](https://github.com/PennyLaneAI/pennylane/pull/4725)
+
+* `qml.ctrl` can be used with the `qml.qjit` decorator.
+  [(#4726)](https://github.com/PennyLaneAI/pennylane/pull/4726)
 
 <h3>Improvements 🛠</h3>
 
@@ -296,6 +335,14 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where the parameter-shift rule of `qml.ctrl(op)` was wrong if `op` had a generator
+  that has two or more eigenvalues and is stored as a `SparseHamiltonian`.
+  [(#4899)](https://github.com/PennyLaneAI/pennylane/pull/4899)
+
+* Fix a bug where trainable parameters in the post-processing of finite diff were incorrect for Jax when applying
+  the transform directly on a ``QNode``.
+  [(#4879)](https://github.com/PennyLaneAI/pennylane/pull/4879)
+
 * `qml.grad` and `qml.jacobian` now explicitly raise errors if trainable parameters are integers.
   [(#4836)](https://github.com/PennyLaneAI/pennylane/pull/4836)
 
@@ -382,6 +429,7 @@ Ankit Khandelwal,
 Christina Lee,
 Romain Moyard,
 Vincent Michaud-Rioux,
+Romain Moyard,
 Anurav Modak,
 Mudit Pandey,
 Matthew Silverman,
