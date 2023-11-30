@@ -304,6 +304,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where the parameter-shift rule of `qml.ctrl(op)` was wrong if `op` had a generator
+  that has two or more eigenvalues and is stored as a `SparseHamiltonian`.
+  [(#4899)](https://github.com/PennyLaneAI/pennylane/pull/4899)
+
 * Fix a bug where trainable parameters in the post-processing of finite diff were incorrect for Jax when applying
   the transform directly on a ``QNode``.
   [(#4879)](https://github.com/PennyLaneAI/pennylane/pull/4879)
