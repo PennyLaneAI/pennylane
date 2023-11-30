@@ -26,7 +26,8 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
     .. note::
 
         Currently, only the :doc:`Catalyst <catalyst:index>` hybrid quantum-classical
-        compiler is supported. The Catalyst compiler works with the JAX interface
+        compiler is supported. The Catalyst compiler works with the JAX interface.
+
 
         For more details, see the :doc:`Catalyst documentation <catalyst:index>` and
         :func:`catalyst.qjit`.
@@ -95,6 +96,22 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
     array(0.)
     >>> circuit(0.5)  # the precompiled quantum function is called
     array(0.)
+
+    :func:`~.qjit` compiled programs also support nested container types as inputs and outputs of
+    compiled functions. This includes lists and dictionaries, as well as any data structure implementing
+    the `JAX PyTree <https://jax.readthedocs.io/en/latest/pytrees.html>`__.
+
+    .. code-block:: python
+
+        @qjit
+        def workflow(params1, params2):
+            res1 = params1["a"][0][0] + params2[1]
+            return {"y1": jnp.sin(res1), "y2": jnp.cos(res1)}
+
+    >>> params1 = {"a": [[0.1], 0.2]}
+    >>> params2 = (0.6, 0.8)
+    >>> workflow(params1, params2)
+    array(0.78332691)
 
     For more details on using the :func:`~.qjit` decorator and Catalyst
     with PennyLane, please refer to the Catalyst
