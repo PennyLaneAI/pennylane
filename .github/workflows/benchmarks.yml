@@ -1,7 +1,5 @@
 name: Benchmarks
 on:
-  schedule:
-    - cron: "0 0 * * 0-6"  # Run daily at 0am
   pull_request:
   workflow_call:
     inputs:
