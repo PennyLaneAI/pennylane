@@ -131,7 +131,6 @@ that compute the desired quantity.
 
     ~transforms.classical_jacobian
     ~batch_partial
-    ~specs
     ~draw
     ~draw_mpl
 
@@ -220,7 +219,6 @@ from .optimization import (
     pattern_matching,
     pattern_matching_optimization,
 )
-from .specs import specs
 from .qmc import apply_controlled_Q, quantum_monte_carlo
 from .unitary_to_rot import unitary_to_rot
 from .commutation_dag import (

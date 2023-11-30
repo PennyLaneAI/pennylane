@@ -32,6 +32,7 @@ import pennylane.qnn
 import pennylane.templates
 import pennylane.pauli
 from pennylane.pauli import pauli_decompose
+from pennylane.resource import specs
 import pennylane.resource
 import pennylane.qchem
 from pennylane.fermi import FermiC, FermiA, jordan_wigner
@@ -89,7 +90,6 @@ from pennylane.transforms import (
     compile,
     defer_measurements,
     metric_tensor,
-    specs,
     qfunc_transform,
     op_transform,
     single_tape_transform,
