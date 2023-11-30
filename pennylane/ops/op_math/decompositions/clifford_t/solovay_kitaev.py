@@ -247,7 +247,7 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
         op  = qml.RZ(np.pi/3, wires=0)
 
         # Get the gate decomposition in ['T', 'T*', 'H']
-        ops = qml.ops.decompositions.sk_decomposition(op, epsilon=1e-3)
+        ops = qml.ops.sk_decomposition(op, epsilon=1e-3)
 
         # Get the approximate matrix from the ops
         matrix_sk = qml.prod(*reversed(ops)).matrix()
