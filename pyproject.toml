@@ -97,7 +97,8 @@ networkx = "~2.6.2"
 # we do not pin the sphinx theme, to allow the
 # navbar and header data to be updated at the source
 pennylane-sphinx-theme = "*"
-matplotlib = "*"
+sphinxext-opengraph = "0.6.3" # Note: latest version 0.9.0 requires Sphinx >=4.0
+matplotlib = "3.8.0"
 
 [tool.poetry.group.jax]
 optional = true
