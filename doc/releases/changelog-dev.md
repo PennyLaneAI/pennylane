@@ -149,6 +149,8 @@
   Additionally, the relevant tests have been organized and placed in a new file, `tests/ops/test_meta.py` .
   [(#4789)](https://github.com/PennyLaneAI/pennylane/pull/4789)
 
+* Implement comparison between `QuantumScript` classes with `qml.equal` [#4902](https://github.com/PennyLaneAI/pennylane/pull/4902)
+
 <h4>Better support for batching</h4>
 
 * `default.qubit` now can evolve already batched states with `ParametrizedEvolution`
@@ -400,4 +402,4 @@ Mudit Pandey,
 Matthew Silverman,
 Jay Soni,
 David Wierichs,
-Justin Woodring,
+Justin Woodring, Minh Chau
