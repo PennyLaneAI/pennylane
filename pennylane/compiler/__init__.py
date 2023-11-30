@@ -48,6 +48,8 @@ other compiler-specific decorators and functions:
     ~qjit
     ~for_loop
     ~while_loop
+    ~jvp
+    ~vjp
 
 In addition, several developer functions are available to probe
 available hybrid compilers.
@@ -66,7 +68,9 @@ PennyLane primitives.
 .. autosummary::
     :toctree: api
 
+    ~adjoint
     ~cond
+    ~ctrl
     ~grad
     ~jacobian
 
