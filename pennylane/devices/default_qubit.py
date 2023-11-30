@@ -298,6 +298,11 @@ class DefaultQubit(Device):
         """The name of the device."""
         return "default.qubit"
 
+    _state_cache: Optional[dict] = None
+    """A cache to store the "pre-rotated state" for reuse between the forward pass call to ``execute`` and 
+    subsequent calls to ``compute_vjp``. ``None`` indicates that no caching is required.
+    """
+
     # pylint:disable = too-many-arguments
     def __init__(
         self,
@@ -316,7 +321,6 @@ class DefaultQubit(Device):
             self._prng_key = None
             self._rng = np.random.default_rng(seed)
         self._debugger = None
-        self._state_cache = None
 
     def supports_derivatives(
         self,
@@ -470,8 +474,7 @@ class DefaultQubit(Device):
             circuits = [circuits]
 
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
-        if execution_config.use_device_jacobian_product:
-            self._state_cache = {}
+        self._state_cache = {} if execution_config.use_device_jacobian_product else None
         interface = (
             execution_config.interface
             if execution_config.gradient_method in {"backprop", None}
