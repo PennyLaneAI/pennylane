@@ -1815,3 +1815,11 @@ def test_equal_quscript():
     )
     assert qml.equal(tape1, tape4, atol=1e-5)
     assert qml.equal(tape1, tape4, rtol=0, atol=1e-7) is False
+    tape5 = qml.tape.QuantumScript(
+        [qml.PauliX(0), qml.RX(1.2 + 1e-6, wires=0)], [qml.expval(qml.PauliZ(0))], shots=4
+    )
+    tape6 = qml.tape.QuantumScript(
+        [qml.PauliX(0), qml.RX(1.2 + 1e-6, wires=0)], [qml.expval(qml.PauliZ(0))], shots=4, trainable_params=2
+    )
+    assert qml.equal(tape4, tape5) is False
+    assert qml.equal(tape5, tape6) is False

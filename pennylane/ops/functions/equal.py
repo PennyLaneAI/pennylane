@@ -211,7 +211,6 @@ def _equal_operators(
     atol=1e-9,
 ):
     """Default function to determine whether two Operator objects are equal."""
-    print("should be here")
     if not isinstance(
         op2, type(op1)
     ):  # clarifies cases involving PauliX/Y/Z (Observable/Operation)
