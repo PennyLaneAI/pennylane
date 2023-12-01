@@ -696,7 +696,7 @@ class ControlledOp(Controlled, operation.Operation):
                 warnings.filterwarnings(
                     action="ignore", message=r".+ eigenvalues will be computed numerically\."
                 )
-                base_gen_eigvals = qml.eigvals(base_gen)
+                base_gen_eigvals = qml.eigvals(base_gen, k=2**self.base.num_wires)
 
             # The projectors in the full generator add a eigenvalue of `0` to
             # the eigenvalues of the base generator.
