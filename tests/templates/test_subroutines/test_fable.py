@@ -18,11 +18,11 @@ from functools import reduce
 import random
 from copy import copy, deepcopy
 import pytest
-import numpy as np
+# import numpy as np
 from pennylane.pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
 from pennylane.templates.subroutines.fable import *
 from pennylane.templates.state_preparations.mottonen import gray_code, _get_alpha_y
-from pennylane import numpy as pnp
+from pennylane import numpy as np
 import pennylane as qml
 
 def generate_random_matrix(rows, cols):
@@ -131,6 +131,33 @@ def test_FABLE(matrix,tolerance):
     M = len(y) * qml.matrix(circuit, wire_order=None)(y, tolerance)[0:len(matrix), 0:len(matrix)]
 
     assert np.allclose(matrix,M,atol= len(matrix)**3 * tolerance), 'block encoded matrix and given matrix are not equal'
+
+params=[]
+dims = [2,4,8]
+for i,dim in enumerate(dims):
+    matrix = generate_random_matrix(dim,dim)
+    params.append(matrix)
+
+@pytest.mark.parametrize('matrix',params)
+def test_differentiability(matrix):
+    """Tests the auto differentiability of workflow by comparing results of gradient methods"""
+    tol = 0.1
+    y = deepcopy(matrix)
+    y = process_matrix(y)
+    wiress = range(0, len(y) + 1)
+    matrix = np.array(matrix, requires_grad=True)
+    dev = qml.device('default.qubit', wires=wiress)
+
+    @qml.qnode(dev, diff_method='backprop')
+    def circuit(q,tol):
+        qml.FABLE(q, tol)
+        return qml.expval(qml.PauliZ(0))
+
+    auto_diff= qml.jacobian(circuit)(matrix,tol)
+    grad_param_shift = qml.gradients.param_shift(circuit)(matrix,tol)
+
+    ###check elements are equal
+    assert np.allclose(auto_diff, grad_param_shift, atol=len(matrix)**3 * tol)
 
 class TestWalshHadamardTransform:
     """Test the helper function walsh_hadamard_transform."""
