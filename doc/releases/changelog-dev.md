@@ -270,6 +270,9 @@
 * `Conditional` and `MeasurementValue` objects now implement `map_wires`.
   [(#4884)](https://github.com/PennyLaneAI/pennylane/pull/4884)
 
+*   `TRX`, `TRY`, and `TRZ` are now differentiable via backprop on `default.qutrit`
+  [(#4790)](https://github.com/PennyLaneAI/pennylane/pull/4790)
+
 <h3>Breaking changes 💔</h3>
 
 * The transforms submodule `qml.transforms.qcut` becomes its own module `qml.qcut`.
@@ -418,6 +421,7 @@ This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
 Ali Asadi,
+Gabriel Bottrill,
 Thomas Bromley,
 Astral Cai,
 Isaac De Vlugt,
