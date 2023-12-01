@@ -82,7 +82,7 @@ def _add_cond_grouping_symbols(op, layer_str, config):
 
     for b in range(n_wires, max_b):
         if b - n_wires in mapped_bits:
-            intersection = "╣" if config.cur_layer == config.bit_end_layers[b - n_wires] else "╬"
+            intersection = "╣" if config.cur_layer == config.final_cond_layers[b - n_wires] else "╬"
             layer_str[b] = "═" + intersection
         else:
             filler = " " if layer_str[b][-1] == " " else "═"
@@ -448,10 +448,21 @@ def tape_text(
                 if isinstance(op, MidMeasureMP) and op in bit_map:
                     cur_layer_mid_measure = op
 
-        # Adjust width for wire filler on unused wires
-        max_label_len = max(len(s) for s in layer_str)
-        for w in range(n_wires):
-            layer_str[w] = layer_str[w].ljust(max_label_len, w_filler)
+            # Adjust width for bit filler on unused bits
+            for b in range(n_bits):
+                if cur_layer_mid_measure is not None:
+                    # This condition is needed to pad the filler on the bits under MidMeasureMPs
+                    # that are used for conditions correctly
+                    cur_b_filler = (
+                        b_filler
+                        if bit_map[cur_layer_mid_measure] >= b and i < final_cond_layers[b]
+                        else " "
+                    )
+                else:
+                    cur_b_filler = (
+                        b_filler if measurement_layers[b] < i < final_cond_layers[b] else " "
+                    )
+                layer_str[b + n_wires] = layer_str[b + n_wires].ljust(max_label_len, cur_b_filler)
 
         # Adjust width for bit filler on unused bits
         for b in range(n_bits):
