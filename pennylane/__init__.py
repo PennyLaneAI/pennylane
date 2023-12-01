@@ -43,7 +43,7 @@ from pennylane.qchem import (
     import_operator,
 )
 from pennylane._device import Device, DeviceError
-from pennylane._grad import grad, jacobian
+from pennylane._grad import grad, jacobian, vjp, jvp
 from pennylane._qubit_device import QubitDevice
 from pennylane._qutrit_device import QutritDevice
 from pennylane._version import __version__
@@ -86,8 +86,6 @@ from pennylane.transforms import (
     batch_input,
     batch_transform,
     batch_partial,
-    cut_circuit,
-    cut_circuit_mc,
     compile,
     defer_measurements,
     metric_tensor,
@@ -119,6 +117,7 @@ from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost
 from pennylane.debugging import snapshots
 from pennylane.shadows import ClassicalShadow
+from pennylane.qcut import cut_circuit, cut_circuit_mc
 import pennylane.pulse
 
 import pennylane.fourier
@@ -128,6 +127,9 @@ import pennylane.qinfo
 # pylint:disable=wrong-import-order
 from pennylane.interfaces import execute  # pylint:disable=wrong-import-order
 import pennylane.logging  # pylint:disable=wrong-import-order
+
+from pennylane.compiler import qjit, while_loop, for_loop
+import pennylane.compiler
 
 import pennylane.data
 
