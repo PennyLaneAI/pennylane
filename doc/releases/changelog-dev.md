@@ -114,9 +114,39 @@
   ```
 
   ``` pycon
-    >>> workflow(np.array([2.0, 1.0]))
-    array([[-1.32116540e-07,  1.33781874e-07],
-           [-4.20735506e-01,  4.20735506e-01]])
+  >>> workflow(np.array([2.0, 1.0]))
+  array([[-1.32116540e-07,  1.33781874e-07],
+          [-4.20735506e-01,  4.20735506e-01]])
+  ```
+
+* `qml.for_loop` and `qml.while_loop` compiler-specific decorators are added.
+  `qml.cond` can be used with the `qml.qjit` decorator.
+  [(#4698)](https://github.com/PennyLaneAI/pennylane/pull/4698)
+
+  ``` python
+  dev = qml.device("lightning.qubit", wires=1)
+
+  @qml.qjit
+  @qml.qnode(dev)
+  def circuit(n: int, x: float):
+
+      @qml.for_loop(0, n, 1)
+      def loop_rx(i, x):
+          # perform some work and update (some of) the arguments
+          qml.RX(x, wires=0)
+
+          # update the value of x for the next iteration
+          return jnp.sin(x)
+
+      # apply the for loop
+      final_x = loop_rx(x)
+
+      return qml.expval(qml.PauliZ(0)), final_x
+  ```
+
+  ``` pycon
+  >>> circuit(7, 1.6)
+  (array(0.97926626), array(0.55395718))
   ```
 
 * `qml.vjp` and `qml.vjp` can be used with the `qml.qjit` decorator.
@@ -172,6 +202,7 @@
   `qml.QNode` or `qml.execute`.
   [(#4557)](https://github.com/PennyLaneAI/pennylane/pull/4557)
   [(#4654)](https://github.com/PennyLaneAI/pennylane/pull/4654)
+  [(#4841)](https://github.com/PennyLaneAI/pennylane/pull/4841)
 
 ```pycon
 >>> dev = qml.device('default.qubit')
@@ -236,6 +267,9 @@
 
 * `Conditional` and `MeasurementValue` objects now implement `map_wires`.
   [(#4884)](https://github.com/PennyLaneAI/pennylane/pull/4884)
+
+*   `TRX`, `TRY`, and `TRZ` are now differentiable via backprop on `default.qutrit`
+  [(#4790)](https://github.com/PennyLaneAI/pennylane/pull/4790)
 
 <h3>Breaking changes 💔</h3>
 
@@ -388,6 +422,7 @@ This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
 Ali Asadi,
+Gabriel Bottrill,
 Thomas Bromley,
 Astral Cai,
 Isaac De Vlugt,
