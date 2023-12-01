@@ -27,7 +27,7 @@ jobs:
       uses: ./.github/workflows/interface-unit-tests.yml
       with:
         # If running by workflow call, will check by provided ref_branch, if not will default to 'add-pytest-benchmarks'.
-        branch: ${{ inputs.ref_branch == '' && 'add-pytest-benchmarks' ||  inputs.ref_branch}}
+        branch: ${{ inputs.ref_branch || 'add-pytest-benchmarks' }}
 
         pipeline_mode: 'reference-benchmarks'
 
