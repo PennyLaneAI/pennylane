@@ -185,6 +185,9 @@
 * `qml.equal` now supports comparison of `QuantumScript` objects
   [#4902](https://github.com/PennyLaneAI/pennylane/pull/4902)
 
+* The function ``qml.Snapshot`` now supports arbitrary measurements of type ``StateMeasurement``.
+  [(#4876)](https://github.com/PennyLaneAI/pennylane/pull/4908)
+
 <h4>Better support for batching</h4>
 
 * `default.qubit` now can evolve already batched states with `ParametrizedEvolution`
@@ -448,6 +451,7 @@ Isaac De Vlugt,
 Amintor Dusko,
 Lillian Frederiksen,
 Josh Izaac,
+Juan Giraldo,
 Emiliano Godinez Ramirez,
 Ankit Khandelwal,
 Christina Lee,

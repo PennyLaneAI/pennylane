@@ -156,7 +156,8 @@ class Snapshot(Operation):
     r"""
     The Snapshot operation saves the internal simulator state at specific
     execution steps of a quantum function. As such, it is a pseudo operation
-    with no effect on the quantum state.
+    with no effect on the quantum state. Arbitrary measurements are supported
+    in snapshots via the key word argument ``measurement``.
 
     **Details:**
 
@@ -167,6 +168,9 @@ class Snapshot(Operation):
         tag (str or None): An optional custom tag for the snapshot, used to index it
             in the snapshots dictionary.
 
+        measurement (StateMeasurement or None): An optional option to record arbitrary
+            measurements of a state.
+
     **Example**
 
     .. code-block:: python3
@@ -175,7 +179,7 @@ class Snapshot(Operation):
 
         @qml.qnode(dev, interface=None)
         def circuit():
-            qml.Snapshot()
+            qml.Snapshot(measurement=qml.expval(qml.PauliZ(0))
             qml.Hadamard(wires=0)
             qml.Snapshot("very_important_state")
             qml.CNOT(wires=[0, 1])
@@ -183,7 +187,7 @@ class Snapshot(Operation):
             return qml.expval(qml.PauliX(0))
 
     >>> qml.snapshots(circuit)()
-    {0: array([1., 0., 0., 0.]),
+    {0: 1.0,
      'very_important_state': array([0.70710678, 0.        , 0.70710678, 0.        ]),
      2: array([0.70710678, 0.        , 0.        , 0.70710678]),
      'execution_results': 0.0}
@@ -194,8 +198,17 @@ class Snapshot(Operation):
     num_params = 0
     grad_method = None
 
-    def __init__(self, tag=None):
+    def __init__(self, tag=None, measurement=None):
         self.tag = tag
+        if measurement:
+            if isinstance(measurement, qml.measurements.StateMeasurement):
+                qml.queuing.QueuingManager.remove(measurement)
+            else:
+                raise ValueError(
+                    f"The measurement {measurement.__class__.__name__} is not supported as it is not "
+                    f"an instance of {qml.measurements.StateMeasurement}"
+                )
+        self.hyperparameters["measurement"] = measurement
         super().__init__(wires=[])
 
     def label(self, decimals=None, base_label=None, cache=None):

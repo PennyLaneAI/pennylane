@@ -332,3 +332,48 @@ class TestSnapshot:
 
         assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys()))
         assert all(np.allclose(v1, v2) for v1, v2 in zip(result.values(), expected.values()))
+
+    def test_all_measurement_snapshot(self):
+        """Test that the correct measurement snapshots are returned for different measurement types."""
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.Snapshot(measurement=qml.expval(qml.PauliZ(0)))
+            qml.RX(x, wires=0)
+            qml.Snapshot(measurement=qml.var(qml.PauliZ(0)))
+            qml.RX(x, wires=0)
+            qml.Snapshot(measurement=qml.probs(0))
+            qml.RX(x, wires=0)
+            qml.Snapshot(measurement=qml.state())
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        result = qml.snapshots(circuit)(0.1)
+        expected = {
+            0: np.array(1),
+            1: np.array(0.00996671),
+            2: np.array([0.99003329, 0.00996671]),
+            3: np.array([0.98877108 + 0.0j, 0.0 - 0.14943813j]),
+            "execution_results": np.array(0.92106099),
+        }
+
+        assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys()))
+        assert all(np.allclose(v1, v2) for v1, v2 in zip(result.values(), expected.values()))
+
+    def test_unsupported_snapshot_measurement(self):
+        """Test that an exception is raised when an unsupported measurement is provided to the snapshot."""
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(0)
+            with pytest.raises(
+                ValueError,
+                match="The measurement PauliZ is not supported as it is not an instance "
+                "of <class 'pennylane.measurements.measurements.StateMeasurement'>",
+            ):
+                qml.Snapshot(measurement=qml.PauliZ(0))
+            return qml.expval(qml.PauliZ(0))
+
+        qml.snapshots(circuit)()
