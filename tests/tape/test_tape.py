@@ -91,7 +91,6 @@ class TestConstruction:
 
         assert tape.wires == qml.wires.Wires([0, "a", 4])
         assert tape._output_dim == len(obs[0].wires) + 2 ** len(obs[1].wires)
-        assert tape._batch_size is None
 
     def test_observable_processing(self, make_tape):
         """Test that observables are processed correctly"""

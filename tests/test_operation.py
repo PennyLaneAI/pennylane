@@ -25,7 +25,14 @@ from numpy.linalg import multi_dot
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.operation import Operation, Operator, StatePrepBase, Tensor, operation_derivative
+from pennylane.operation import (
+    Operation,
+    Operator,
+    StatePrepBase,
+    Tensor,
+    operation_derivative,
+    _UNSET_BATCH_SIZE,
+)
 from pennylane.ops import Prod, SProd, Sum, cv
 from pennylane.wires import Wires
 
@@ -147,8 +154,9 @@ class TestOperatorConstruction:
             grad_method = "A"
             ndim_params = (0,)
 
+        op = DummyOp([[[0.5], [0.1]]], wires=0)
         with pytest.raises(ValueError, match=r"wrong number\(s\) of dimensions in parameters"):
-            DummyOp([[[0.5], [0.1]]], wires=0)
+            _ = op.batch_size
 
         op = DummyOp(0.5, wires=0)
         assert op.ndim_params == (0,)
@@ -159,8 +167,9 @@ class TestOperatorConstruction:
             num_wires = 1
             grad_method = "A"
 
+        op = DummyOp2([0.5], 0.6, wires=0)
         with pytest.raises(ValueError, match=r"wrong number\(s\) of dimensions in parameters"):
-            DummyOp2([0.5], 0.6, wires=0)
+            _ = op.batch_size
 
         op2 = DummyOp2([0.1], [[0.4, 0.1], [0.2, 1.2]], wires=0)
         assert op2.ndim_params == (1, 2)
@@ -183,8 +192,9 @@ class TestOperatorConstruction:
             num_wires = 1
 
         # Test with mismatching batch dimensions
+        op = DummyOp4([0.3] * 4, [[[0.3, 1.2]]] * 3, wires=0)
         with pytest.raises(ValueError, match="Broadcasting was attempted but the broadcasted"):
-            DummyOp4([0.3] * 4, [[[0.3, 1.2]]] * 3, wires=0)
+            _ = op.batch_size
 
     def test_default_pauli_rep(self):
         """Test that the default _pauli_rep attribute is None"""
@@ -299,6 +309,21 @@ class TestOperatorConstruction:
         assert hash(op2) == op2.hash
         assert hash(op1) == hash(op2)
 
+    @pytest.mark.parametrize("data,batch_size,ndim_params", [(1.1, None, 0), ([1.1, 2.2], 2, 1)])
+    def test_lazy_ndim_params_and_batch_size(self, data, batch_size, ndim_params):
+        """Test that ndim_params and batch_size are lazy properties."""
+
+        class DummyOp(Operator):
+            num_wires = 1
+            num_params = 1
+            ndim_params = (0,)
+
+        op = DummyOp(data, wires=[0])
+        assert op._batch_size == _UNSET_BATCH_SIZE
+        assert op.batch_size == batch_size
+        assert op._ndim_params == (ndim_params,)
+        assert op.ndim_params == (0,)
+
 
 class TestPytreeMethods:
     def test_pytree_defaults(self):
@@ -357,7 +382,7 @@ class TestBroadcasting:
 
         op = DummyOp(*params, wires=0)
         assert op.ndim_params == (0, 2)
-        assert op._batch_size == exp_batch_size
+        assert op.batch_size == exp_batch_size
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("params, exp_batch_size", broadcasted_params_test_data)
@@ -373,7 +398,7 @@ class TestBroadcasting:
         params = tuple(pnp.array(p, requires_grad=True) for p in params)
         op = DummyOp(*params, wires=0)
         assert op.ndim_params == (0, 2)
-        assert op._batch_size == exp_batch_size
+        assert op.batch_size == exp_batch_size
 
     @pytest.mark.jax
     @pytest.mark.parametrize("params, exp_batch_size", broadcasted_params_test_data)
@@ -390,7 +415,7 @@ class TestBroadcasting:
         params = tuple(jax.numpy.array(p) for p in params)
         op = DummyOp(*params, wires=0)
         assert op.ndim_params == (0, 2)
-        assert op._batch_size == exp_batch_size
+        assert op.batch_size == exp_batch_size
 
     @pytest.mark.tf
     @pytest.mark.parametrize("params, exp_batch_size", broadcasted_params_test_data)
@@ -407,7 +432,7 @@ class TestBroadcasting:
         params = tuple(tf.Variable(p) for p in params)
         op = DummyOp(*params, wires=0)
         assert op.ndim_params == (0, 2)
-        assert op._batch_size == exp_batch_size
+        assert op.batch_size == exp_batch_size
 
     @pytest.mark.torch
     @pytest.mark.parametrize("params, exp_batch_size", broadcasted_params_test_data)
@@ -424,7 +449,7 @@ class TestBroadcasting:
         params = tuple(torch.tensor(p, requires_grad=True) for p in params)
         op = DummyOp(*params, wires=0)
         assert op.ndim_params == (0, 2)
-        assert op._batch_size == exp_batch_size
+        assert op.batch_size == exp_batch_size
 
     @pytest.mark.tf
     @pytest.mark.parametrize("jit_compile", [True, False])
@@ -436,6 +461,7 @@ class TestBroadcasting:
         class MyRX(qml.RX):
             @property
             def ndim_params(self):
+                self._check_batching(self.data)
                 return self._ndim_params
 
         def fun(x):

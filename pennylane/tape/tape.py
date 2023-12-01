@@ -227,7 +227,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     # Update circuit info
     new_tape.wires = copy.copy(tape.wires)
     new_tape.num_wires = tape.num_wires
-    new_tape._batch_size = tape.batch_size
+    new_tape._batch_size = tape._batch_size
     new_tape._output_dim = tape.output_dim
     return new_tape
 
@@ -278,7 +278,7 @@ def expand_tape_state_prep(tape, skip_first=True):
     # Update circuit info
     new_tape.wires = copy.copy(tape.wires)
     new_tape.num_wires = tape.num_wires
-    new_tape._batch_size = tape.batch_size
+    new_tape._batch_size = tape._batch_size
     new_tape._output_dim = tape.output_dim
     return new_tape
 

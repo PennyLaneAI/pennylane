@@ -40,7 +40,7 @@ class TestInitialization:
         assert qs._graph is None
         assert qs._specs is None
         assert qs._shots.total_shots is None
-        assert qs._batch_size is None
+        assert qs.batch_size is None
         assert qs.wires == qml.wires.Wires([])
         assert qs.num_wires == 0
         assert qs.samples_computational_basis is False

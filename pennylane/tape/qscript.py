@@ -35,7 +35,7 @@ from pennylane.measurements import (
     Shots,
 )
 from pennylane.typing import TensorLike
-from pennylane.operation import Observable, Operator, Operation
+from pennylane.operation import Observable, Operator, Operation, _UNSET_BATCH_SIZE
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue, process_queue
 from pennylane.wires import Wires
@@ -199,7 +199,7 @@ class QuantumScript:
         self._graph = None
         self._specs = None
         self._output_dim = 0
-        self._batch_size = None
+        self._batch_size = _UNSET_BATCH_SIZE
 
         self.wires = _empty_wires
         self.num_wires = 0
@@ -347,6 +347,8 @@ class QuantumScript:
         Returns:
             int or None: The batch size of the quantum script if present, else ``None``.
         """
+        if self._batch_size == _UNSET_BATCH_SIZE:
+            self._update_batch_size()
         return self._batch_size
 
     @property
@@ -434,7 +436,9 @@ class QuantumScript:
         self._update_par_info()  # Updates _par_info; O(ops+obs)
 
         self._update_observables()  # Updates _obs_sharing_wires and _obs_sharing_wires_id
-        self._update_batch_size()  # Updates _batch_size; O(ops)
+        if self._batch_size != _UNSET_BATCH_SIZE:
+            # this avoids computing it on init (before it has been requested, lazy)
+            self._update_batch_size()  # Updates _batch_size; O(ops)
 
         # The following line requires _batch_size to be up to date
         self._update_output_dim()  # Updates _output_dim; O(obs)
@@ -890,7 +894,7 @@ class QuantumScript:
         new_qscript._update_par_info()
         new_qscript._obs_sharing_wires = self._obs_sharing_wires
         new_qscript._obs_sharing_wires_id = self._obs_sharing_wires_id
-        new_qscript._batch_size = self.batch_size
+        new_qscript._batch_size = self._batch_size
         new_qscript._output_dim = self.output_dim
 
         return new_qscript

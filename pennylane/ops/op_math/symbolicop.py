@@ -20,7 +20,7 @@ from copy import copy
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Operator
+from pennylane.operation import Operator, _UNSET_BATCH_SIZE
 from pennylane.queuing import QueuingManager
 
 
@@ -70,6 +70,7 @@ class SymbolicOp(Operator):
         self.queue_idx = None
         self._pauli_rep = None
         self.queue()
+        self._batch_size = _UNSET_BATCH_SIZE
 
     @property
     def batch_size(self):
@@ -166,10 +167,22 @@ class ScalarSymbolicOp(SymbolicOp):
     def __init__(self, base, scalar: float, id=None):
         self.scalar = np.array(scalar) if isinstance(scalar, list) else scalar
         super().__init__(base, id=id)
-        self._batch_size = self._check_and_compute_batch_size(scalar)
 
     @property
     def batch_size(self):
+        if self._batch_size == _UNSET_BATCH_SIZE:
+            batched_scalar = qml.math.ndim(self.scalar) > 0
+            scalar_size = qml.math.size(self.scalar)
+            if not batched_scalar:
+                # coeff is not batched
+                return self.base.batch_size
+            # coeff is batched
+            if self.base.batch_size is not None and self.base.batch_size != scalar_size:
+                raise ValueError(
+                    "Broadcasting was attempted but the broadcasted dimensions "
+                    f"do not match: {scalar_size}, {self.base.batch_size}."
+                )
+            self._batch_size = scalar_size
         return self._batch_size
 
     @property
@@ -180,20 +193,6 @@ class ScalarSymbolicOp(SymbolicOp):
     def data(self, new_data):
         self.scalar = new_data[0]
         self.base.data = new_data[1:]
-
-    def _check_and_compute_batch_size(self, scalar):
-        batched_scalar = qml.math.ndim(scalar) > 0
-        scalar_size = qml.math.size(scalar)
-        if not batched_scalar:
-            # coeff is not batched
-            return self.base.batch_size
-        # coeff is batched
-        if self.base.batch_size is not None and self.base.batch_size != scalar_size:
-            raise ValueError(
-                "Broadcasting was attempted but the broadcasted dimensions "
-                f"do not match: {scalar_size}, {self.base.batch_size}."
-            )
-        return scalar_size
 
     @property
     def has_matrix(self):

@@ -267,6 +267,7 @@ from .pytrees import register_pytree
 
 SUPPORTED_INTERFACES = {"numpy", "scipy", "autograd", "torch", "tensorflow", "jax"}
 __use_new_opmath = False
+_UNSET_BATCH_SIZE = -1  # indicates that the (lazy) batch size has not yet been accessed/computed
 
 
 class OperatorPropertyUndefined(Exception):
@@ -1076,7 +1077,8 @@ class Operator(abc.ABC):
                 f"{len(self._wires)} wires given, {self.num_wires} expected."
             )
 
-        self._check_batching(params)
+        self._batch_size = _UNSET_BATCH_SIZE
+        self._ndim_params = _UNSET_BATCH_SIZE
 
         self.data = tuple(np.array(p) if isinstance(p, (list, tuple)) else p for p in params)
 
@@ -1192,6 +1194,8 @@ class Operator(abc.ABC):
         Returns:
             tuple: Number of dimensions for each trainable parameter.
         """
+        if self._batch_size == _UNSET_BATCH_SIZE:
+            self._check_batching(self.data)
         return self._ndim_params
 
     @property
@@ -1206,6 +1210,8 @@ class Operator(abc.ABC):
         Returns:
             int or None: Size of the parameter broadcasting dimension if present, else ``None``.
         """
+        if self._batch_size == _UNSET_BATCH_SIZE:
+            self._check_batching(self.data)
         return self._batch_size
 
     @property
