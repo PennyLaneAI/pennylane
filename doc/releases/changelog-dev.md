@@ -327,7 +327,7 @@
 
 <h3>Documentation 📝</h3>
 
-* Documentation for `qml.metric_tensor` and `qml.adjoint_metric_tensor` was move to the gradients API page `qml.gradients`.
+* Documentation for `qml.metric_tensor` and `qml.adjoint_metric_tensor` was moved to the gradients API page `qml.gradients`.
   [(#4900)](https://github.com/PennyLaneAI/pennylane/pull/4900)
 
 * Documentation for QCut was move to its own API page `qml.qcut`.

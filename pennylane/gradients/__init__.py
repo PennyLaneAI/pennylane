@@ -58,8 +58,8 @@ Metric tensors
 .. autosummary::
     :toctree: api
 
-    metric_tensor
-    adjoint_metric_tensor
+    ~pennylane.metric_tensor
+    ~pennylane.adjoint_metric_tensor
 
 Utility functions
 ^^^^^^^^^^^^^^^^^
