@@ -147,7 +147,7 @@ jobs:
       install_pennylane_lightning_master: true
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: torch and not qcut and not finite-diff and not param-shift
-      additional_pip_packages: torch
+      additional_poetry_groups: torch
 
 
   autograd-tests:
@@ -206,7 +206,7 @@ jobs:
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: tf and not qcut and not finite-diff and not param-shift
       pytest_additional_args: --splits 3 --group ${{ matrix.group }} --durations-path='.github/workflows/tf_tests_durations.json'
-      additional_pip_packages: tf
+      additional_poetry_groups: tf
 
 
   jax-tests:
@@ -237,7 +237,7 @@ jobs:
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: jax and not qcut and not finite-diff and not param-shift
       pytest_additional_args: --splits 5 --group ${{ matrix.group }} --durations-path='.github/workflows/jax_tests_durations.json'
-      additional_pip_packages: jax
+      additional_poetry_groups: jax
 
 
   core-tests:
@@ -298,7 +298,7 @@ jobs:
       install_pennylane_lightning_master: false
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: all_interfaces
-      additional_pip_packages: jax,tf,torch
+      additional_poetry_groups: jax,tf,torch
 
 
   external-libraries-tests:
@@ -327,7 +327,7 @@ jobs:
       install_pennylane_lightning_master: false
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: external
-      additional_pip_packages: external,jax,tf
+      additional_poetry_groups: external,jax,tf
 
 
   qcut-tests:
@@ -356,7 +356,7 @@ jobs:
       install_pennylane_lightning_master: false
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: qcut
-      additional_pip_packages: qcut,jax,tf,torch
+      additional_poetry_groups: qcut,jax,tf,torch
 
 
   qchem-tests:
@@ -385,7 +385,7 @@ jobs:
       install_pennylane_lightning_master: false
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: qchem
-      additional_pip_packages: qchem
+      additional_poetry_groups: qchem
 
   gradients-tests:
     needs:
@@ -416,7 +416,7 @@ jobs:
       install_pennylane_lightning_master: false
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: ${{ matrix.config.suite }}
-      additional_pip_packages: jax,tf,torch
+      additional_poetry_groups: jax,tf,torch
 
 
   data-tests:
@@ -445,7 +445,7 @@ jobs:
       install_pennylane_lightning_master: false
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: data
-      additional_pip_packages: data
+      additional_poetry_groups: data
 
 
   device-tests:
