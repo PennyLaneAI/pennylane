@@ -177,9 +177,9 @@ class Exp(ScalarSymbolicOp, Operation):
 
     # pylint: disable=too-many-arguments
     def __init__(self, base, coeff=1, num_steps=None, id=None):
-        if not isinstance(base, Operator):
+        if base is not None and not isinstance(base, Operator):
             raise TypeError(
-                f"base is expected to be of type Operator, but received {type(base)}"
+                f"base is expected to be of type None or Operator, but received {type(base)}"
             )
         super().__init__(base, scalar=coeff, id=id)
         self.grad_recipe = [None]
