@@ -14,7 +14,7 @@ replace a gate type with another, fuse gates, exploit mathematical relations tha
 or replace a large circuit by a number of smaller circuits.
 
 Compilation functionality is mostly designed as **transforms**, which you can read up on in the
-section on :doc:`inspecting circuits </introduction/transforming_circuits>`.
+section on the :doc:`transforms documentation <../code/qml_transforms>.
 
 In addition to quantum circuit transforms, PennyLane also
 supports experimental just-in-time compilation, via the :func:`~.qjit` decorator and
@@ -339,4 +339,4 @@ observables and coefficients:
 >>> coeffs_groupings
 [[0.97, 4.21], [1.43]]
 
-This and more logic to manipulate Pauli observables is found in the :mod:`~.pennylane.pauli` module.
+This and more logic to manipulate Pauli observables is found in the :mod:`~.pauli` module.
