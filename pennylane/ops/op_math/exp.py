@@ -30,7 +30,6 @@ from pennylane.operation import (
     Operator,
     OperatorPropertyUndefined,
     Tensor,
-    Operator,
     expand_matrix,
 )
 from pennylane.ops.qubit import Hamiltonian
