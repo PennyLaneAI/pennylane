@@ -234,8 +234,8 @@ def jacobian(func, argnum=None, method=None, h=None):
             functions.
 
     Returns:
-        function: the function that returns the Jacobian of the input
-        function with respect to the arguments in argnum
+        function: the function that returns the Jacobian of the input function with respect to the
+        arguments in argnum
 
     .. note::
 
