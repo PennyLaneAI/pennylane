@@ -1821,8 +1821,13 @@ class TestQuantumScriptComparisons:
     tape7 = qml.tape.QuantumScript(
         [qml.PauliX(0), qml.RX(1.2 + 1e-6, wires=0)], [qml.expval(qml.PauliX(0))], shots=4
     )
+    tape8 = qml.tape.QuantumScript(
+        [qml.PauliX(0), qml.RX(1.2 + 1e-6, wires=0)],
+        [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))],
+        shots=4,
+    )
 
-    @pytest.mark.parametrize("tape, other_tape", [(tape5, tape7)])
+    @pytest.mark.parametrize("tape, other_tape", [(tape5, tape8), (tape5, tape7)])
     def test_non_equal_measurement_comparison(self, tape, other_tape):
         assert qml.equal(tape, other_tape) is False
 
