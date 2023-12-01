@@ -587,7 +587,7 @@ class TestMidCircuitMeasurements:
         assert drawing == expected_drawing
 
     def test_multi_meas_single_cond_split_lines(self):
-        """Test that a circuit is drawn correctly when mudltiple lines are needed and the
+        """Test that a circuit is drawn correctly when multiple lines are needed and the
         measurements and condition are split between the lines."""
 
         def circ():
@@ -619,7 +619,7 @@ class TestMidCircuitMeasurements:
         assert drawing == expected_drawing
 
     def test_multi_meas_multi_cond_split_lines(self):
-        """Test that a circuit is drawn correctly when mudltiple lines are needed and the
+        """Test that a circuit is drawn correctly when multiple lines are needed and the
         measurements and conditions are split between the lines."""
 
         def circ():
