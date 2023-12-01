@@ -60,14 +60,8 @@ def var(op: Union[Operator, MeasurementValue]) -> "VarianceMP":
     if isinstance(op, MeasurementValue):
         return VarianceMP(obs=op)
 
-    if isinstance(op, Sequence):
-        if not all(isinstance(o, MeasurementValue) for o in op):
-            raise qml.QuantumFunctionError(
-                "Only sequences of MeasurementValues can be passed with the op argument."
-            )
-
-        mv = MeasurementValue._combine_values(op)  # pylint: disable=protected-access
-        return VarianceMP(obs=mv)
+    if isinstance(op, Sequence) and any(isinstance(o, MeasurementValue) for o in op):
+        raise ValueError("qml.var does not support measuring sequences of mid-circuit measurements")
 
     if not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
