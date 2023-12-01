@@ -289,8 +289,8 @@ class Adjoint(SymbolicOp):
         return f"Adjoint({self.base})"
 
     # pylint: disable=protected-access
-    def _check_batching(self, params):
-        self.base._check_batching(params)
+    def _check_batching(self):
+        self.base._check_batching()
 
     @property
     def ndim_params(self):

@@ -461,7 +461,7 @@ class TestBroadcasting:
         class MyRX(qml.RX):
             @property
             def ndim_params(self):
-                self._check_batching(self.data)
+                self._check_batching()
                 return self._ndim_params
 
         def fun(x):

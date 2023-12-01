@@ -1084,18 +1084,16 @@ class Operator(abc.ABC):
 
         self.queue()
 
-    def _check_batching(self, params):
+    def _check_batching(self):
         """Check if the expected numbers of dimensions of parameters coincides with the
         ones received and sets the ``_batch_size`` attribute.
-
-        Args:
-            params (tuple): Parameters with which the operator is instantiated
 
         The check always passes and sets the ``_batch_size`` to ``None`` for the default
         ``Operator.ndim_params`` property but subclasses may overwrite it to define fixed
         expected numbers of dimensions, allowing to infer a batch size.
         """
         self._batch_size = None
+        params = self.data
 
         ndims = tuple(qml.math.ndim(p) for p in params)
 
@@ -1182,7 +1180,7 @@ class Operator(abc.ABC):
             tuple: Number of dimensions for each trainable parameter.
         """
         if self._batch_size is _UNSET_BATCH_SIZE:
-            self._check_batching(self.data)
+            self._check_batching()
         return self._ndim_params
 
     @property
@@ -1198,7 +1196,7 @@ class Operator(abc.ABC):
             int or None: Size of the parameter broadcasting dimension if present, else ``None``.
         """
         if self._batch_size is _UNSET_BATCH_SIZE:
-            self._check_batching(self.data)
+            self._check_batching()
         return self._batch_size
 
     @property

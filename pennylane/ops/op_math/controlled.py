@@ -366,8 +366,8 @@ class Controlled(SymbolicOp):
         return self.base.has_matrix
 
     # pylint: disable=protected-access
-    def _check_batching(self, params):
-        self.base._check_batching(params)
+    def _check_batching(self):
+        self.base._check_batching()
 
     @property
     def batch_size(self):

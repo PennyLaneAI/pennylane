@@ -347,7 +347,7 @@ class QuantumScript:
         Returns:
             int or None: The batch size of the quantum script if present, else ``None``.
         """
-        if self._batch_size == _UNSET_BATCH_SIZE:
+        if self._batch_size is _UNSET_BATCH_SIZE:
             self._update_batch_size()
         return self._batch_size
 
@@ -436,7 +436,7 @@ class QuantumScript:
         self._update_par_info()  # Updates _par_info; O(ops+obs)
 
         self._update_observables()  # Updates _obs_sharing_wires and _obs_sharing_wires_id
-        if self._batch_size != _UNSET_BATCH_SIZE:
+        if self._batch_size is not _UNSET_BATCH_SIZE:
             # this avoids computing it on init (before it has been requested, lazy)
             self._update_batch_size()  # Updates _batch_size; O(ops)
 

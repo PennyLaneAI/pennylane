@@ -170,7 +170,7 @@ class ScalarSymbolicOp(SymbolicOp):
 
     @property
     def batch_size(self):
-        if self._batch_size == _UNSET_BATCH_SIZE:
+        if self._batch_size is _UNSET_BATCH_SIZE:
             batched_scalar = qml.math.ndim(self.scalar) > 0
             scalar_size = qml.math.size(self.scalar)
             if not batched_scalar:
