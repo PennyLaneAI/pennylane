@@ -387,6 +387,7 @@ Guillermo Alonso,
 Ali Asadi,
 Thomas Bromley,
 Astral Cai,
+Minh Chau,
 Isaac De Vlugt,
 Amintor Dusko,
 Lillian Frederiksen,
@@ -402,4 +403,4 @@ Mudit Pandey,
 Matthew Silverman,
 Jay Soni,
 David Wierichs,
-Justin Woodring, Minh Chau
+Justin Woodring
