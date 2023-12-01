@@ -3,6 +3,11 @@ on:
   pull_request:
   workflow_call:
     inputs:
+      ref_branch:
+        description: The PennyLane reference branch for benchmarks
+        required: false
+        type: string
+        default: 'add-pytest-benchmarks'
       branch:
         description: The PennyLane branch to run benchmarks with
         required: false
@@ -21,8 +26,8 @@ jobs:
 
       uses: ./.github/workflows/interface-unit-tests.yml
       with:
-        # This is to be updated to the most recent reference branch.
-        branch: add-pytest-benchmarks
+        # If running by workflow call, will check by provided ref_branch, if not will default to 'add-pytest-benchmarks'.
+        branch: ${{ inputs.ref_branch == '' && 'add-pytest-benchmarks' ||  inputs.ref_branch}}
 
         pipeline_mode: 'reference-benchmarks'
 
@@ -44,8 +49,7 @@ jobs:
       uses: ./.github/workflows/interface-unit-tests.yml
       needs: reference-benchmarks
       with:
-        # If running on schedule will compare master with the reference data.
-        # If not, will compare the branch defined by github.ref (PRs, for example)
+        # If running by workflow call, will check by provided branch, if not will default to github.ref.
         branch: ${{ inputs.branch == '' && github.ref ||  inputs.branch}}
 
         pipeline_mode: 'benchmarks'
