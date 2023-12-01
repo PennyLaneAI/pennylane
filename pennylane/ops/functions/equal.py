@@ -191,8 +191,19 @@ def _equal_circuit(
         ):
             return False
     # measurements
-    if op1.measurements != op2.measurements:
+    if len(op1.measurements) != len(op2.measurements):
         return False
+    for comparands in zip(op1.measurements, op2.measurements):
+        if not qml.equal(
+            comparands[0],
+            comparands[1],
+            check_interface=check_interface,
+            check_trainability=check_trainability,
+            rtol=rtol,
+            atol=atol,
+        ):
+            return False
+
     if op1.shots != op2.shots:
         return False
     if op1.trainable_params != op2.trainable_params:
