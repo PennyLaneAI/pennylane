@@ -136,7 +136,7 @@ class Exp(SymbolicOp):
     def __init__(self, base=None, coeff=1, do_queue=True, id=None):
         if base and not isinstance(base, Operator):
             raise TypeError(
-                f"base is expected to be type None or Operator, but recieved {type(base)}"
+                f"base is expected to be type None or Operator, but received {type(base)}"
             )
         self.coeff = coeff
         super().__init__(base, do_queue=do_queue, id=id)
