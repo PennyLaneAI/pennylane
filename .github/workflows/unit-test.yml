@@ -55,10 +55,10 @@ on:
         type: string
         default: ''
       additional_poetry_groups:
-        description: Additional packages to install. Values will be passed to pip install {value}
+        description: Additional packages to install. Values will be passed to poetry install --with {value}
         required: false
         type: string
-        default: 'main'
+        default: ''
 
 jobs:
   test:
@@ -110,13 +110,9 @@ jobs:
           pip install --upgrade poetry wheel
           poetry config virtualenvs.create false
 
-      - name: Install PennyLane dependencies
+      - name: Install PennyLane and dependencies
         if: steps.continue.outputs.confirm == 'true'
-        run: poetry install --only dev --only ci
-
-      - name: Install PennyLane and packages
-        if: steps.continue.outputs.confirm == 'true'
-        run: poetry install --with ${{ inputs.additional_poetry_groups }}
+        run: poetry install --with dev,ci,${{ inputs.additional_poetry_groups || 'main' }}
 
       - name: Install PennyLane-Lightning master
         if: inputs.install_pennylane_lightning_master == true && steps.continue.outputs.confirm == 'true'
