@@ -184,7 +184,7 @@ for the creation of custom transforms.
     ~op_transform
 
 Transforming circuits
-=====================
+---------------------
 
 A quantum transform is a crucial concept in PennyLane, and refers to mapping a quantum
 circuit to one or more circuits, alongside a classical post-processing function.
