@@ -29,36 +29,6 @@ on:
         required: false
         type: string
         default: 'unit-tests'
-      install_jax:
-        description: Indicate if JAX should be installed or not
-        required: false
-        type: boolean
-        default: true
-      jax_version:
-        description: The version of JAX to install. Leave empty to install latest version.
-        required: false
-        type: string
-        default: ''
-      install_tensorflow:
-        description: Indicate if TensorFlow should be installed or not
-        required: false
-        type: boolean
-        default: true
-      tensorflow_version:
-        description: The version of TensorFlow to install. Leave empty to install latest version.
-        required: false
-        type: string
-        default: ''
-      install_pytorch:
-        description: Indicate if PyTorch should be installed or not
-        required: false
-        type: boolean
-        default: true
-      pytorch_version:
-        description: The version of PyTorch to install. Leave empty to install latest version.
-        required: false
-        type: string
-        default: ''
       install_pennylane_lightning_master:
         description: Indicate if PennyLane-Lightning should be installed from the master branch
         required: false
@@ -143,18 +113,6 @@ jobs:
       - name: Install PennyLane dependencies
         if: steps.continue.outputs.confirm == 'true'
         run: poetry install --only dev --only ci
-
-      - name: Install PyTorch
-        if: inputs.install_pytorch == true && steps.continue.outputs.confirm == 'true'
-        run: poetry install --only torch
-
-      - name: Install TensorFlow
-        if: inputs.install_tensorflow == true && steps.continue.outputs.confirm == 'true'
-        run: poetry install --only tf
-
-      - name: Install JAX
-        if: inputs.install_jax == true && steps.continue.outputs.confirm == 'true'
-        run: poetry install --only jax
 
       - name: Install additional PIP packages
         if: inputs.additional_pip_packages != '' && steps.continue.outputs.confirm == 'true'
