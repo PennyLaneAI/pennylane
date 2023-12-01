@@ -50,7 +50,8 @@ jobs:
       needs: reference-benchmarks
       with:
         # If running by workflow call, will check by provided branch, if not will default to github.ref.
-        branch: ${{ inputs.branch == '' && github.ref ||  inputs.branch}}
+        branch: ${{ inputs.branch || github.ref }}
+
 
         pipeline_mode: 'benchmarks'
 
