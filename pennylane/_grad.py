@@ -22,6 +22,7 @@ from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.extend import vspace
 from autograd.wrap_util import unary_to_nary
 from pennylane.compiler import compiler
+from pennylane.compiler.compiler import CompileError
 
 make_vjp = unary_to_nary(_make_vjp)
 
@@ -29,7 +30,6 @@ make_vjp = unary_to_nary(_make_vjp)
 class grad:
     """Returns the gradient as a callable function of hybrid quantum-classical functions.
     :func:`~.qjit` and Autograd compatible.
-
 
     By default, gradients are computed for arguments which contain
     the property ``requires_grad=True``. Alternatively, the ``argnum`` keyword argument
@@ -180,7 +180,7 @@ class grad:
         """This function is a replica of ``autograd.grad``, with the only
         difference being that it returns both the gradient *and* the forward pass
         value."""
-        vjp, ans = _make_vjp(fun, x)
+        vjp, ans = _make_vjp(fun, x)  # pylint: disable=redefined-outer-name
 
         if vspace(ans).size != 1:
             raise TypeError(
@@ -234,8 +234,8 @@ def jacobian(func, argnum=None, method=None, h=None):
             functions.
 
     Returns:
-        function: the function that returns the Jacobian of the input
-        function with respect to the arguments in argnum
+        function: the function that returns the Jacobian of the input function with respect to the
+        arguments in argnum
 
     .. note::
 
@@ -457,3 +457,160 @@ def jacobian(func, argnum=None, method=None, h=None):
         return jac[0] if unpack else jac
 
     return _jacobian_function
+
+
+# pylint: disable=too-many-arguments
+def vjp(f, params, cotangents, method=None, h=None, argnum=None):
+    """A :func:`~.qjit` compatible Vector-Jacobian product of PennyLane programs.
+
+    This function allows the Vector-Jacobian Product of a hybrid quantum-classical function to be
+    computed within the compiled program.
+
+    .. warning::
+
+        ``vjp`` is intended to be used with :func:`~.qjit` only.
+
+    .. note::
+
+        When used with :func:`~.qjit`, this function only supports the Catalyst compiler.
+        See :func:`catalyst.vjp` for more details.
+
+        Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
+        as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
+        page for an overview of the differences between Catalyst and PennyLane.
+
+    Args:
+        f(Callable): Function-like object to calculate VJP for
+        params(List[Array]): List (or a tuple) of arguments for `f` specifying the point to calculate
+                             VJP at. A subset of these parameters are declared as
+                             differentiable by listing their indices in the ``argnum`` parameter.
+        cotangents(List[Array]): List (or a tuple) of tangent values to use in JVP. The list size
+                                 and shapes must match the size and shape of ``f`` outputs.
+        method(str): Differentiation method to use, same as in :func:`~.grad`.
+        h (float): the step-size value for the finite-difference (``"fd"``) method
+        argnum (Union[int, List[int]]): the params' indices to differentiate.
+
+    Returns:
+        Tuple[Array]: Return values of ``f`` paired with the JVP values.
+
+    Raises:
+        TypeError: invalid parameter types
+        ValueError: invalid parameter values
+
+    .. seealso:: :func:`~.grad`, :func:`~.jvp`, :func:`~.jacobian`
+
+    **Example**
+
+    .. code-block:: python
+
+        @qml.qjit
+        def vjp(params, cotangent):
+          def f(x):
+              y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
+              return jnp.stack(y)
+
+          return qml.vjp(f, [params], [cotangent])
+
+    >>> x = jnp.array([0.1, 0.2])
+    >>> dy = jnp.array([-0.5, 0.1, 0.3])
+    >>> vjp(x, dy)
+    [array([0.09983342, 0.04      , 0.02      ]),
+    array([-0.43750208,  0.07000001])]
+    """
+    if active_jit := compiler.active_compiler():
+        available_eps = compiler.AvailableCompilers.names_entrypoints
+        ops_loader = available_eps[active_jit]["ops"].load()
+        return ops_loader.vjp(f, params, cotangents, method=method, h=h, argnum=argnum)
+
+    raise CompileError("Pennylane does not support the VJP function without QJIT.")
+
+
+# pylint: disable=too-many-arguments
+def jvp(f, params, tangents, method=None, h=None, argnum=None):
+    """A :func:`~.qjit` compatible Jacobian-vector product of PennyLane programs.
+
+    This function allows the Jacobian-vector Product of a hybrid quantum-classical function to be
+    computed within the compiled program.
+
+    .. warning::
+
+        ``jvp`` is intended to be used with :func:`~.qjit` only.
+
+    .. note::
+
+        When used with :func:`~.qjit`, this function only supports the Catalyst compiler;
+        see :func:`catalyst.jvp` for more details.
+
+        Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
+        as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
+        page for an overview of the differences between Catalyst and PennyLane.
+
+    Args:
+        f (Callable): Function-like object to calculate JVP for
+        params (List[Array]): List (or a tuple) of the function arguments specifying the point
+                              to calculate JVP at. A subset of these parameters are declared as
+                              differentiable by listing their indices in the ``argnum`` parameter.
+        tangents(List[Array]): List (or a tuple) of tangent values to use in JVP. The list size and
+                               shapes must match the ones of differentiable params.
+        method(str): Differentiation method to use, same as in :func:`~.grad`.
+        h (float): the step-size value for the finite-difference (``"fd"``) method
+        argnum (Union[int, List[int]]): the params' indices to differentiate.
+
+    Returns:
+        Tuple[Array]: Return values of ``f`` paired with the JVP values.
+
+    Raises:
+        TypeError: invalid parameter types
+        ValueError: invalid parameter values
+
+    .. seealso:: :func:`~.grad`, :func:`~.vjp`, :func:`~.jacobian`
+
+    **Example 1 (basic usage)**
+
+    .. code-block:: python
+
+        @qml.qjit
+        def jvp(params, tangent):
+          def f(x):
+              y = [jnp.sin(x[0]), x[1] ** 2, x[0] * x[1]]
+              return jnp.stack(y)
+
+          return qml.jvp(f, [params], [tangent])
+
+    >>> x = jnp.array([0.1, 0.2])
+    >>> tangent = jnp.array([0.3, 0.6])
+    >>> jvp(x, tangent)
+    [array([0.09983342, 0.04      , 0.02      ]),
+    array([0.29850125, 0.24000006, 0.12      ])]
+
+    **Example 2 (argnum usage)**
+
+    Here we show how to use ``argnum`` to ignore the non-differentiable parameter ``n`` of the
+    target function. Note that the length and shapes of tangents must match the length and shape of
+    primal parameters, which we mark as differentiable by passing their indices to ``argnum``.
+
+    .. code-block:: python
+
+        @qml.qjit
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def circuit(n, params):
+            qml.RX(params[n, 0], wires=n)
+            qml.RY(params[n, 1], wires=n)
+            return qml.expval(qml.PauliZ(1))
+
+        @qml.qjit
+        def workflow(primals, tangents):
+            return qml.jvp(circuit, [1, primals], [tangents], argnum=[1])
+
+    >>> params = jnp.array([[0.54, 0.3154], [0.654, 0.123]])
+    >>> dy = jnp.array([[1.0, 1.0], [1.0, 1.0]])
+    >>> workflow(params, dy)
+    [array(0.78766064), array(-0.7011436)]
+    """
+
+    if active_jit := compiler.active_compiler():
+        available_eps = compiler.AvailableCompilers.names_entrypoints
+        ops_loader = available_eps[active_jit]["ops"].load()
+        return ops_loader.jvp(f, params, tangents, method=method, h=h, argnum=argnum)
+
+    raise CompileError("Pennylane does not support the JVP function without QJIT.")

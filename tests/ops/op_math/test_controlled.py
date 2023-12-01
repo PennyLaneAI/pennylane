@@ -544,12 +544,13 @@ class TestOperationProperties:
             (qml.RX(1.23, wires=0), [(0.5, 1.0)]),
             (qml.PhaseShift(-2.4, wires=0), [(1,)]),
             (qml.IsingZZ(-9.87, (0, 1)), [(0.5, 1.0)]),
+            (qml.DoubleExcitationMinus(0.7, [0, 1, 2, 3]), [(0.5, 1.0)]),
         ],
     )
     def test_parameter_frequencies(self, base, expected):
         """Test parameter-frequencies against expected values."""
 
-        op = Controlled(base, (3, 4))
+        op = Controlled(base, (4, 5))
         assert op.parameter_frequencies == expected
 
     def test_parameter_frequencies_no_generator_error(self):
