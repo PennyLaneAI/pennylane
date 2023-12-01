@@ -1800,21 +1800,16 @@ class TestParametrizedEvolutionComparisons:
         assert not qml.equal(ev1(params1, t), ev3(params3, t))
 
 
-def test_equal_quscript():
-    """Test that QuantumScript can be compared"""
+class TestQuantumScriptComparisons:
+
     tape1 = qml.tape.QuantumScript(
         [qml.PauliX(0), qml.RX(1.2, wires=0)], [qml.expval(qml.PauliZ(0))], shots=10
     )
     tape2 = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliZ(0))], shots=10)
-    assert qml.equal(tape1, tape2) is False
-    assert qml.equal(tape1, tape1)
     tape3 = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliZ(0))], shots=None)
-    assert qml.equal(tape2, tape3) is False
     tape4 = qml.tape.QuantumScript(
         [qml.PauliX(0), qml.RX(1.2 + 1e-6, wires=0)], [qml.expval(qml.PauliZ(0))], shots=10
     )
-    assert qml.equal(tape1, tape4, atol=1e-5)
-    assert qml.equal(tape1, tape4, rtol=0, atol=1e-7) is False
     tape5 = qml.tape.QuantumScript(
         [qml.PauliX(0), qml.RX(1.2 + 1e-6, wires=0)], [qml.expval(qml.PauliZ(0))], shots=4
     )
@@ -1824,5 +1819,30 @@ def test_equal_quscript():
         shots=4,
         trainable_params=2,
     )
-    assert qml.equal(tape4, tape5) is False
-    assert qml.equal(tape5, tape6) is False
+    tape7 = qml.tape.QuantumScript(
+        [qml.PauliX(0), qml.RX(1.2 + 1e-6, wires=0)], [qml.expval(qml.PauliZ(0))], shots=4, measurements=3
+    )
+    @pytest.mark.parametrize("tape, other_tape", [(tape5, tape7)])
+    def test_non_equal_measurement_comparison(self, tape, other_tape):
+        assert qml.equal(tape, other_tape) is False
+
+    @pytest.mark.parametrize("tape, other_tape", [(tape2, tape3)])
+    def test_non_equal_shot_comparison(self, tape, other_tape):
+        assert qml.equal(tape, other_tape) is False
+    @pytest.mark.parametrize("tape, other_tape", [(tape1, tape1)])
+    def test_equal_comparison(self, tape, other_tape):
+        assert qml.equal(tape, other_tape)
+
+    @pytest.mark.parametrize("tape, other_tape", [(tape1, tape2)])
+    def test_non_equal_operators_comparison(self, tape, other_tape):
+        assert qml.equal(tape, other_tape) is False
+
+    @pytest.mark.parametrize("tape, other_tape", [(tape1, tape4)])
+    def test_different_tolerances_comparison(self, tape, other_tape):
+        assert qml.equal(tape, other_tape, atol=1e-5)
+        assert qml.equal(tape, other_tape, rtol=0, atol=1e-7) is False
+
+    @pytest.mark.parametrize("tape, other_tape", [(tape5, tape6)])
+    def test_non_equal_training_params_comparison(self, tape, other_tape):
+        assert qml.equal(tape, other_tape) is False
+
