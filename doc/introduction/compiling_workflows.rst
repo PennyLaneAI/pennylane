@@ -6,13 +6,15 @@
 Compiling workflows
 ===================
 
-In addition to quantum circuit transformations, PennyLane also supports full
+In addition to :doc:`quantum circuit transformations </introduction/compiling_circuits>`, PennyLane also supports full
 hybrid just-in-time (JIT) compilation via the :func:`~.qjit` decorator and
 the `Catalyst hybrid compiler <https://github.com/pennylaneai/catalyst>`__.
 Catalyst allows you to compile the entire quantum-classical workflow,
 including any optimization loops, which allows for optimized performance, and
 the ability to run the entire workflow on accelerator devices as
 appropriate.
+Installing compilers
+--------------------
 
 Currently, Catalyst must be installed separately, and only supports the JAX
 interface and select devices such as ``lightning.qubit``,
@@ -27,6 +29,9 @@ On MacOS and Linux, Catalyst can be installed with ``pip``:
 
 Check out the Catalyst documentation for
 :doc:`installation instructions <catalyst:dev/installation>`.
+
+Just-in-time compilation
+------------------------
 
 Using Catalyst with PennyLane is a simple as using the :func:`@qjit <.qjit>` decorator to
 compile your hybrid workflows:
@@ -70,6 +75,9 @@ models:
 
         return params
 
+Control flow
+------------
+
 The Catalyst compiler also supports capturing imperative Python control flow
 in compiled programs, resulting in control flow being interpreted at runtime
 rather than in Python at compile time. You can enable this feature via the
@@ -97,6 +105,9 @@ Note that AutoGraph results in additional restrictions, in particular whenever
 global state is involved.
 Please refer to the :doc:`AutoGraph guide<catalyst:dev/autograph>` for a
 complete discussion of the supported and unsupported use-cases.
+
+Additional resources
+--------------------
 
 For more details on using the :func:`~.qjit` decorator and Catalyst
 with PennyLane, please refer to the Catalyst

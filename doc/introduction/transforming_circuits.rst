@@ -6,22 +6,30 @@
 Transforming circuits
 =====================
 
-A quantum transform is a crucial concept in PennyLane, it is represented by a function that takes a circuit as input and
-yields one or more transformed circuits along with a post-processing function. The post-processing function is applied
-to the results obtained after executing the transformed circuit(s). This becomes particularly valuable when a transform
-generates multiple circuits, requiring a method to aggregate the results (e.g. parameter shift or Hamiltonian expansion).
+A quantum transform is a crucial concept in PennyLane, and refers to mapping a quantum
+circuit to one or more circuits, alongside a classical post-processing function.
+Once a transform is registered with PennyLane, the transformed circuits will be executed,
+and the classical post-processing function automatically applied to the outputs.
+This becomes particularly valuable when a transform generates multiple circuits,
+requiring a method to aggregate or reduce the results (e.g.,
+applying the parameter-shift rule or computing the expectation value of a Hamiltonian 
+term-by-term).
 
-In PennyLane, these requirements are translated as follows:
+.. note::
 
-* A transform accepts a :class:`~.QuantumTape` as its primary input and
-  returns a sequence of :class:`~.QuantumTape` and an associated processing function.
-
-To streamline the creation of transforms and ensure their versatility across various circuit abstractions in PennyLane
-(:class:`~.QuantumTape`, :class:`~.QNode` and quantum functions), we have created a simple
-decorator :func:`pennylane.transform` that can be applied on your quantum transform respecting the above contract.
+    For examples of built-in transforms that come with PennyLane, see the
+    :doc:`/introduction/compiling_circuits` documentation.
 
 Creating your own transform
 ---------------------------
+
+To streamline the creation of transforms and ensure their versatility across
+various circuit abstractions in PennyLane, the
+:func:`pennylane.transform` is available.
+
+This decorator registers transforms that accept a :class:`~.QuantumTape`
+as its primary input, and returns a sequence of :class:`~.QuantumTape`
+and an associated processing function.
 
 To illustrate the process of creating a quantum transform, let's consider a straightforward example. Suppose we want
 a transform that removes all :class:`~.RX` operations from a given circuit. In this case, we merely need to filter the
@@ -69,7 +77,7 @@ of the tape operations, create a new tape, and return both tapes. The processing
 Composability of transforms
 ---------------------------
 
-Transforms are inherently composable on :class:`~.QNode`, meaning that transforms with compatible post-processing
+Transforms are inherently composable on a :class:`~.QNode`, meaning that transforms with compatible post-processing
 functions can be successively applied to QNodes. For example, this allows for the application of multiple compilation
 passes on a QNode to maximize gate reduction before execution.
 
@@ -91,8 +99,8 @@ passes on a QNode to maximize gate reduction before execution.
 In this example, inverses are canceled, leading to the removal of two Hadamard gates. Subsequently, rotations are
 merged into a single :class:`qml.Rot` gate. Consequently, two transforms are successfully applied to the circuit.
 
-Relevant links
---------------
+Additional information
+----------------------
 
 Explore practical examples of transforms focused on compiling circuits in the :doc:`compiling circuits documentation </introduction/compiling_circuits>`.
 For gradient transforms, refer to the examples in :doc:`gradients documentation <../code/qml_gradients>`.

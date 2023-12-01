@@ -21,7 +21,7 @@ supports experimental just-in-time compilation, via the :func:`~.qjit` decorator
 `Catalyst <https://github.com/pennylaneai/catalyst>`__. This is more general, and
 supports full hybrid compilation --- compiling both the classical and quantum components
 of your workflow into a binary that can be run close to the accelerators.
-that you are using. More details can be found on :doc:`compiling workflows </introduction/compiling_workflows>`.
+that you are using. More details can be found in :doc:`compiling workflows </introduction/compiling_workflows>`.
 
 Simplifying Operators
 ----------------------
