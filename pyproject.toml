@@ -130,6 +130,7 @@ optional = true
 [tool.poetry.group.external.dependencies]
 pyzx = {git = "https://github.com/Quantomatic/pyzx.git", rev = "master"}
 pennylane-catalyst = "*"
+matplotlib = "*"
 
 [tool.poetry.group.qcut]
 optional = true
