@@ -30,7 +30,7 @@ Expectation Value Functions
 Circuit specifications
 ----------------------
 
-.. currentmodule:: pennylane.resource
+.. currentmodule:: pennylane
 
 .. autosummary::
     :toctree: api
