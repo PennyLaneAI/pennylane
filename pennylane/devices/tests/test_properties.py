@@ -120,7 +120,7 @@ class TestCapabilities:
             @qml.qnode(dev)
             def circuit():
                 qml.Displacement(1.0, 1.2345, wires=0)
-                return qml.expval(qml.X(wires=0))
+                return qml.expval(qml.QuadX(wires=0))
 
         # assert that device can measure observable from its model
         circuit()
@@ -189,7 +189,7 @@ class TestCapabilities:
             if cap["model"] == "qubit":
                 qml.PauliX(wires=0)
             else:
-                qml.X(wires=0)
+                qml.QuadX(wires=0)
             return qml.expval(qml.Identity(wires=0) @ qml.Identity(wires=1))
 
         if cap["supports_tensor_observables"]:
@@ -210,7 +210,6 @@ class TestCapabilities:
             return qml.state()
 
         if not cap.get("returns_state"):
-
             # If the device is not defined to return state then the
             # access_state method should raise
             with pytest.raises(qml.QuantumFunctionError):
@@ -223,7 +222,6 @@ class TestCapabilities:
 
             assert state is None
         else:
-
             if dev.shots is not None:
                 with pytest.warns(
                     UserWarning,
@@ -249,7 +247,7 @@ class TestCapabilities:
             if cap["model"] == "qubit":
                 qml.PauliX(wires=0)
             else:
-                qml.X(wires=0)
+                qml.QuadX(wires=0)
             return qml.probs(wires=0)
 
         if cap["returns_probs"]:
@@ -295,4 +293,4 @@ class TestCapabilities:
                 assert pnp.array(dev.access_state()).shape == orig_shape
 
         assert pnp.ndim(res) == 2
-        assert res.shape[0] == 3
+        assert res.shape[0] == 3  # pylint:disable=unsubscriptable-object

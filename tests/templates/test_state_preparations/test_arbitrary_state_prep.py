@@ -14,6 +14,7 @@
 """
 Unit tests for the ArbitraryStatePreparation template.
 """
+# pylint: disable=too-few-public-methods
 import pytest
 import numpy as np
 import pennylane as qml
@@ -56,6 +57,16 @@ class TestHelpers:
         """Test that the correct Pauli words are returned."""
         for idx, pauli_word in enumerate(_state_preparation_pauli_words(num_wires)):
             assert expected_pauli_words[idx] == pauli_word
+
+
+def test_standard_validity():
+    """Check the operation using the assert_valid function."""
+
+    weights = np.array([0, 1], dtype=float)
+
+    op = qml.ArbitraryStatePreparation(weights, wires=[0])
+
+    qml.ops.functions.assert_valid(op)
 
 
 class TestDecomposition:
@@ -117,23 +128,23 @@ class TestDecomposition:
         assert queue[5].hyperparameters["pauli_word"] == "XY"
         assert queue[5].wires.labels == (0, 1)
 
-    def test_GHZ_generation(self, qubit_device_3_wires, tol):
+    def test_GHZ_generation(self, tol):
         """Test that the template prepares a GHZ state."""
         GHZ_state = np.array([1 / np.sqrt(2), 0, 0, 0, 0, 0, 0, 1 / np.sqrt(2)])
 
         weights = np.zeros(14)
         weights[13] = np.pi / 2
 
-        @qml.qnode(qubit_device_3_wires)
+        @qml.qnode(qml.device("default.qubit"))
         def circuit(weights):
             qml.ArbitraryStatePreparation(weights, [0, 1, 2])
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.PauliZ(0)), qml.state()
 
-        circuit(weights)
+        _, state = circuit(weights)
 
-        assert np.allclose(circuit.device.state, GHZ_state, atol=tol, rtol=0)
+        assert np.allclose(state, GHZ_state, atol=tol, rtol=0)
 
-    def test_even_superposition_generation(self, qubit_device_3_wires, tol):
+    def test_even_superposition_generation(self, tol):
         """Test that the template prepares an even superposition state."""
         even_superposition_state = np.ones(8) / np.sqrt(8)
 
@@ -142,19 +153,19 @@ class TestDecomposition:
         weights[3] = np.pi / 2
         weights[5] = np.pi / 2
 
-        @qml.qnode(qubit_device_3_wires)
+        @qml.qnode(qml.device("default.qubit"))
         def circuit(weights):
             qml.ArbitraryStatePreparation(weights, [0, 1, 2])
 
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.PauliZ(0)), qml.state()
 
-        circuit(weights)
+        _, state = circuit(weights)
 
-        assert np.allclose(circuit.device.state, even_superposition_state, atol=tol, rtol=0)
+        assert np.allclose(state, even_superposition_state, atol=tol, rtol=0)
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-        weights = np.random.random(size=(2**4 - 2))
+        weights = np.random.random(size=2**4 - 2)
 
         dev = qml.device("default.qubit", wires=3)
         dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
@@ -162,17 +173,18 @@ class TestDecomposition:
         @qml.qnode(dev)
         def circuit():
             qml.ArbitraryStatePreparation(weights, wires=range(3))
-            return qml.expval(qml.Identity(0))
+            return qml.expval(qml.Identity(0)), qml.state()
 
         @qml.qnode(dev2)
         def circuit2():
             qml.ArbitraryStatePreparation(weights, wires=["z", "a", "k"])
-            return qml.expval(qml.Identity("z"))
+            return qml.expval(qml.Identity("z")), qml.state()
 
-        circuit()
-        circuit2()
+        res1, state1 = circuit()
+        res2, state2 = circuit2()
 
-        assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
 
 class TestInputs:
@@ -195,7 +207,7 @@ class TestInputs:
     def test_id(self):
         """Tests that the id attribute can be set."""
         template = qml.ArbitraryStatePreparation(
-            np.random.random(size=(2**4 - 2)), wires=[0, 1, 2], id="a"
+            np.random.random(size=2**4 - 2), wires=[0, 1, 2], id="a"
         )
         assert template.id == "a"
 
@@ -292,8 +304,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=2)
 
-        circuit = qml.QNode(circuit_template, dev, interface="jax")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
@@ -317,8 +329,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=2)
 
-        circuit = qml.QNode(circuit_template, dev, interface="tf")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="tf")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
@@ -344,8 +356,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=2)
 
-        circuit = qml.QNode(circuit_template, dev, interface="torch")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="torch")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)

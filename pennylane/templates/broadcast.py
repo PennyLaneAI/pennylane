@@ -116,7 +116,6 @@ def _preprocess(parameters, pattern, wires):
 
     # check that there are enough parameters for pattern
     if parameters is not None:
-
         shape = qml.math.shape(parameters)
 
         # expand dimension so that parameter sets for each unitary can be unpacked

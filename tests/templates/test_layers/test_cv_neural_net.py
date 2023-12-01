@@ -14,6 +14,7 @@
 """
 Unit tests for the CVNeuralNetLayers template.
 """
+# pylint: disable=too-few-public-methods,protected-access
 import pytest
 import numpy as np
 import pennylane as qml
@@ -126,7 +127,7 @@ class TestInputs:
         @qml.qnode(dev)
         def circuit():
             qml.CVNeuralNetLayers(*weights, wires=range(2))
-            return qml.expval(qml.X(0))
+            return qml.expval(qml.QuadX(0))
 
         with pytest.raises(ValueError, match="The first dimension of all parameters"):
             circuit()
@@ -142,7 +143,7 @@ class TestInputs:
         @qml.qnode(dev)
         def circuit():
             qml.CVNeuralNetLayers(*weights, wires=range(2))
-            return qml.expval(qml.X(0))
+            return qml.expval(qml.QuadX(0))
 
         with pytest.raises(ValueError, match="Got unexpected shape for one or more parameters"):
             circuit()
@@ -179,7 +180,7 @@ class TestAttributes:
 
 def circuit_template(*weights):
     qml.CVNeuralNetLayers(*weights, range(2))
-    return qml.expval(qml.X(0))
+    return qml.expval(qml.QuadX(0))
 
 
 def circuit_decomposed(*weights):
@@ -200,7 +201,7 @@ def circuit_decomposed(*weights):
     qml.Displacement(weights[8][0, 1], weights[9][0, 1], wires=1)
     qml.Kerr(weights[10][0, 0], wires=0)
     qml.Kerr(weights[10][0, 1], wires=1)
-    return qml.expval(qml.X(0))
+    return qml.expval(qml.QuadX(0))
 
 
 def test_adjoint():
@@ -215,7 +216,7 @@ def test_adjoint():
     def circuit():
         qml.CVNeuralNetLayers(*weights, wires=[0, 1])
         qml.adjoint(qml.CVNeuralNetLayers)(*weights, wires=[0, 1])
-        return qml.expval(qml.X(0))
+        return qml.expval(qml.QuadX(0))
 
     assert qml.math.allclose(circuit(), 0)
 
@@ -282,8 +283,8 @@ class TestInterfaces:
 
         dev = DummyDevice(wires=2)
 
-        circuit = qml.QNode(circuit_template, dev, interface="jax")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(*weights)
         res2 = circuit2(*weights)
@@ -309,8 +310,8 @@ class TestInterfaces:
 
         dev = DummyDevice(wires=2)
 
-        circuit = qml.QNode(circuit_template, dev, interface="tf")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="tf")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(*weights)
         res2 = circuit2(*weights)
@@ -338,8 +339,8 @@ class TestInterfaces:
 
         dev = DummyDevice(wires=2)
 
-        circuit = qml.QNode(circuit_template, dev, interface="torch")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="torch")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(*weights)
         res2 = circuit2(*weights)

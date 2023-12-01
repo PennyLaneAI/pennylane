@@ -35,6 +35,8 @@ class QutritUnitary(Operation):
     Args:
         U (array[complex]): square unitary matrix
         wires(Sequence[int] or int): the wire(s) the operation acts on
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified.
 
     **Example**
 
@@ -60,7 +62,7 @@ class QutritUnitary(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, *params, wires, do_queue=True):
+    def __init__(self, *params, wires):
         wires = Wires(wires)
 
         # For pure QutritUnitary operations (not controlled), check that the number
@@ -88,12 +90,12 @@ class QutritUnitary(Operation):
                 )
             ):
                 warnings.warn(
-                    f"Operator {U}\n may not be unitary."
+                    f"Operator {U}\n may not be unitary. "
                     "Verify unitarity of operation, or use a datatype with increased precision.",
                     UserWarning,
                 )
 
-        super().__init__(*params, wires=wires, do_queue=do_queue)
+        super().__init__(*params, wires=wires)
 
     @staticmethod
     def compute_matrix(U):  # pylint: disable=arguments-differ
@@ -132,8 +134,7 @@ class QutritUnitary(Operation):
         return super().pow(z)
 
     def _controlled(self, wire):
-        new_op = ControlledQutritUnitary(*self.parameters, control_wires=wire, wires=self.wires)
-        return new_op.inv() if self.inverse else new_op
+        return ControlledQutritUnitary(*self.parameters, control_wires=wire, wires=self.wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
@@ -196,14 +197,7 @@ class ControlledQutritUnitary(QutritUnitary):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(
-        self,
-        *params,
-        control_wires=None,
-        wires=None,
-        control_values=None,
-        do_queue=True,
-    ):
+    def __init__(self, *params, control_wires=None, wires=None, control_values=None):
         if control_wires is None:
             raise ValueError("Must specify control wires")
 
@@ -222,7 +216,7 @@ class ControlledQutritUnitary(QutritUnitary):
         }
 
         total_wires = control_wires + wires
-        super().__init__(*params, wires=total_wires, do_queue=do_queue)
+        super().__init__(*params, wires=total_wires)
 
     @staticmethod
     def compute_matrix(
@@ -333,10 +327,9 @@ class ControlledQutritUnitary(QutritUnitary):
         ctrl_wires = self.control_wires + wire
         old_control_values = self.hyperparameters["control_values"]
         values = None if old_control_values is None else f"{old_control_values}2"
-        new_op = ControlledQutritUnitary(
+        return ControlledQutritUnitary(
             *self.parameters,
             control_wires=ctrl_wires,
             wires=self.hyperparameters["u_wires"],
             control_values=values,
         )
-        return new_op.inv() if self.inverse else new_op

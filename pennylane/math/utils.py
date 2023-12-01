@@ -108,7 +108,7 @@ def cast(tensor, dtype):
     >>> cast(x, "complex128")
     <tf.Tensor: shape=(2,), dtype=complex128, numpy=array([1.+0.j, 2.+0.j])>
     """
-    if isinstance(tensor, (list, tuple)):
+    if isinstance(tensor, (list, tuple, int, float, complex)):
         tensor = np.asarray(tensor)
 
     if not isinstance(dtype, str):
@@ -138,7 +138,11 @@ def cast_like(tensor1, tensor2):
     >>> cast_like(x, y)
     tensor([1., 2.])
     """
-    if not is_abstract(tensor2):
+    if isinstance(tensor2, tuple) and len(tensor2) > 0:
+        tensor2 = tensor2[0]
+    if isinstance(tensor2, ArrayBox):
+        dtype = ar.to_numpy(tensor2._value).dtype.type  # pylint: disable=protected-access
+    elif not is_abstract(tensor2):
         dtype = ar.to_numpy(tensor2).dtype.type
     else:
         dtype = tensor2.dtype
@@ -232,11 +236,11 @@ def get_interface(*values):
     if "torch" in interfaces:
         return "torch"
 
-    if "autograd" in interfaces:
-        return "autograd"
-
     if "jax" in interfaces:
         return "jax"
+
+    if "autograd" in interfaces:
+        return "autograd"
 
     return "numpy"
 
@@ -273,6 +277,39 @@ def _get_interface_of_single_tensor(tensor):
         return "numpy"
 
     return res
+
+
+def get_deep_interface(value):
+    """
+    Given a deep data structure with interface-specific scalars at the bottom, return their
+    interface name.
+
+    Args:
+        value (list, tuple): A deep list-of-lists, tuple-of-tuples, or combination with
+            interface-specific data hidden within it
+
+    Returns:
+        str: The name of the interface deep within the value
+
+    **Example**
+
+    >>> x = [[jax.numpy.array(1), jax.numpy.array(2)], [jax.numpy.array(3), jax.numpy.array(4)]]
+    >>> get_deep_interface(x)
+    'jax'
+
+    This can be especially useful when converting to the appropriate interface:
+
+    >>> qml.math.asarray(x, like=qml.math.get_deep_interface(x))
+    Array([[1, 2],
+       [3, 4]], dtype=int64)
+
+    """
+    itr = value
+    while isinstance(itr, (list, tuple)):
+        if len(itr) == 0:
+            return "builtins"
+        itr = itr[0]
+    return ar.infer_backend(itr)
 
 
 def is_abstract(tensor, like=None):
@@ -322,7 +359,7 @@ def is_abstract(tensor, like=None):
     >>> function(x)
     Value: [0.5, 0.1]
     Abstract: False
-    DeviceArray(0.26, dtype=float32)
+    Array(0.26, dtype=float32)
 
     However, if we use the ``@jax.jit`` decorator, the tensor will now be abstract:
 
@@ -330,7 +367,7 @@ def is_abstract(tensor, like=None):
     >>> jax.jit(function)(x)
     Value: Traced<ShapedArray(float32[2])>with<DynamicJaxprTrace(level=0/1)>
     Abstract: True
-    DeviceArray(0.26, dtype=float32)
+    Array(0.26, dtype=float32)
 
     Note that JAX uses an abstract *shaped* array, so although we won't be able to
     include conditionals within our function that depend on the value of the tensor,
@@ -366,7 +403,14 @@ def is_abstract(tensor, like=None):
         import jax
         from jax.interpreters.partial_eval import DynamicJaxprTracer
 
-        if isinstance(tensor, (jax.ad.JVPTracer, jax.interpreters.batching.BatchTracer)):
+        if isinstance(
+            tensor,
+            (
+                jax.interpreters.ad.JVPTracer,
+                jax.interpreters.batching.BatchTracer,
+                jax.interpreters.partial_eval.JaxprTracer,
+            ),
+        ):
             # Tracer objects will be used when computing gradients or applying transforms.
             # If the value of the tracer is known, it will contain a ConcreteArray.
             # Otherwise, it will be abstract.
@@ -386,6 +430,22 @@ def is_abstract(tensor, like=None):
     #   NotSupportedError: Compiled functions can't take variable number of arguments or
     #   use keyword-only arguments with defaults.
     return False
+
+
+def import_should_record_backprop():  # pragma: no cover
+    """Return should_record_backprop or an equivalent function from TensorFlow."""
+    import tensorflow.python as tfpy
+
+    if hasattr(tfpy.eager.tape, "should_record_backprop"):
+        from tensorflow.python.eager.tape import should_record_backprop
+    elif hasattr(tfpy.eager.tape, "should_record"):
+        from tensorflow.python.eager.tape import should_record as should_record_backprop
+    elif hasattr(tfpy.eager.record, "should_record_backprop"):
+        from tensorflow.python.eager.record import should_record_backprop
+    else:
+        raise ImportError("Cannot import should_record_backprop from TensorFlow.")
+
+    return should_record_backprop
 
 
 def requires_grad(tensor, interface=None):
@@ -445,11 +505,7 @@ def requires_grad(tensor, interface=None):
     if interface == "tensorflow":
         import tensorflow as tf
 
-        try:
-            from tensorflow.python.eager.tape import should_record_backprop
-        except ImportError:  # pragma: no cover
-            from tensorflow.python.eager.tape import should_record as should_record_backprop
-
+        should_record_backprop = import_should_record_backprop()
         return should_record_backprop([tf.convert_to_tensor(tensor)])
 
     if interface == "autograd":
@@ -498,11 +554,7 @@ def in_backprop(tensor, interface=None):
     if interface == "tensorflow":
         import tensorflow as tf
 
-        try:
-            from tensorflow.python.eager.tape import should_record_backprop
-        except ImportError:  # pragma: no cover
-            from tensorflow.python.eager.tape import should_record as should_record_backprop
-
+        should_record_backprop = import_should_record_backprop()
         return should_record_backprop([tf.convert_to_tensor(tensor)])
 
     if interface == "autograd":

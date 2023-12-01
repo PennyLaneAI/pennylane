@@ -23,6 +23,8 @@ The operations are in one file:
 from .matrix_ops import *
 from .observables import *
 from .non_parametric_ops import *
+from .parametric_ops import *
+from .state_preparation import *
 from ..identity import Identity
 
 # TODO: Change `qml.Identity` for qutrit support or add `qml.TIdentity` for qutrits
@@ -34,6 +36,11 @@ ops = {
     "TClock",
     "TAdd",
     "TSWAP",
+    "THadamard",
+    "TRX",
+    "TRY",
+    "TRZ",
+    "QutritBasisState",
 }
 
 obs = {

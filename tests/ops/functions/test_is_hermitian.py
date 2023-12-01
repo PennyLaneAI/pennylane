@@ -91,7 +91,7 @@ class TestIsHermitian:
     def test_arithmetic_ops(self, arithmetic_ops: List[Operator]):
         """Test that provided arithmetic op cases are non-hermitian."""
         assert not qml.is_hermitian(qml.prod(*arithmetic_ops))
-        assert not qml.is_hermitian(qml.op_sum(*arithmetic_ops))
+        assert not qml.is_hermitian(qml.sum(*arithmetic_ops))
 
     @pytest.mark.parametrize("op", hermitian_ops)
     def test_s_prod(self, op):

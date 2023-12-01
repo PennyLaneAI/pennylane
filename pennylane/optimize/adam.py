@@ -86,7 +86,6 @@ class AdamOptimizer(GradientDescentOptimizer):
         trained_index = 0
         for index, arg in enumerate(args):
             if getattr(arg, "requires_grad", False):
-
                 self._update_accumulation(index, grad[trained_index])
                 args_new[index] = arg - new_stepsize * self.accumulation["fm"][index] / (
                     sqrt(self.accumulation["sm"][index]) + self.eps

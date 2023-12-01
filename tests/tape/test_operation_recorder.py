@@ -11,11 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-import pytest
-
+"""
+Unit tests for the ``OperationRecorder`` in PennyLane.
+"""
 import pennylane as qml
-from pennylane.tape import OperationRecorder
 
 
 class TestOperationRecorder:
@@ -84,6 +83,7 @@ class TestOperationRecorder:
             template(3)
 
         assert str(recorder) == expected_output
+        assert qml.equal(recorder[0], qml.RZ(0, wires=0))
 
     def test_template_with_return_integration(self):
         """Tests that the OperationRecorder integrates well with the
@@ -99,8 +99,8 @@ class TestOperationRecorder:
             + "\n"
             + "Observables\n"
             + "===========\n"
-            + "var(PauliZ(wires=[0]))\n"
-            + "sample(PauliX(wires=[1]))\n"
+            + "PauliZ(wires=[0])\n"
+            + "PauliX(wires=[1])\n"
         )
 
         def template(x):

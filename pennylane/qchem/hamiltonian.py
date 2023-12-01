@@ -15,7 +15,7 @@
 This module contains the functions needed for computing the molecular Hamiltonian.
 """
 # pylint: disable= too-many-branches, too-many-arguments, too-many-locals, too-many-nested-blocks
-import autograd.numpy as anp
+import pennylane as qml
 
 from .hartree_fock import nuclear_energy, scf
 from .observable_hf import fermionic_observable, qubit_observable
@@ -102,15 +102,15 @@ def electron_integrals(mol, core=None, active=None):
         r"""Compute the one- and two-electron integrals in the molecular orbital basis.
 
         Args:
-            args (array[array[float]]): initial values of the differentiable parameters
+            *args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
             tuple[array[float]]: 1D tuple containing core constant, one- and two-electron integrals
         """
         _, coeffs, _, h_core, repulsion_tensor = scf(mol)(*args)
-        one = anp.einsum("qr,rs,st->qt", coeffs.T, h_core, coeffs)
-        two = anp.swapaxes(
-            anp.einsum(
+        one = qml.math.einsum("qr,rs,st->qt", coeffs.T, h_core, coeffs)
+        two = qml.math.swapaxes(
+            qml.math.einsum(
                 "ab,cd,bdeg,ef,gh->acfh", coeffs.T, coeffs.T, repulsion_tensor, coeffs, coeffs
             ),
             1,
@@ -129,12 +129,12 @@ def electron_integrals(mol, core=None, active=None):
         for p in active:
             for q in active:
                 for i in core:
-                    o = anp.zeros(one.shape)
+                    o = qml.math.zeros(one.shape)
                     o[p, q] = 1.0
                     one = one + (2 * two[i][p][q][i] - two[i][p][i][q]) * o
 
-        one = one[anp.ix_(active, active)]
-        two = two[anp.ix_(active, active, active, active)]
+        one = one[qml.math.ix_(active, active)]
+        two = two[qml.math.ix_(active, active, active, active)]
 
         return core_constant, one, two
 
@@ -147,6 +147,8 @@ def fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     Args:
         mol (~qchem.molecule.Molecule): the molecule object
         cutoff (float): cutoff value for discarding the negligible electronic integrals
+        core (list[int]): indices of the core orbitals
+        active (list[int]): indices of the active orbitals
 
     Returns:
         function: function that computes the fermionic hamiltonian
@@ -166,11 +168,12 @@ def fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
         r"""Compute the fermionic hamiltonian.
 
         Args:
-            args (array[array[float]]): initial values of the differentiable parameters
+            *args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
-            tuple(array[float], list[list[int]]): the Hamiltonian coefficients and operators
+            FermiSentence: fermionic Hamiltonian
         """
+
         core_constant, one, two = electron_integrals(mol, core, active)(*args)
 
         return fermionic_observable(core_constant, one, two, cutoff)
@@ -184,6 +187,8 @@ def diff_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     Args:
         mol (~qchem.molecule.Molecule): the molecule object
         cutoff (float): cutoff value for discarding the negligible electronic integrals
+        core (list[int]): indices of the core orbitals
+        active (list[int]): indices of the active orbitals
 
     Returns:
         function: function that computes the qubit hamiltonian
@@ -198,22 +203,23 @@ def diff_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     >>> args = [alpha]
     >>> h = diff_hamiltonian(mol)(*args)
     >>> h.coeffs
-    tensor([ 0.29817879+0.j,  0.20813365+0.j,  0.20813365+0.j,
+    array([ 0.29817879+0.j,  0.20813365+0.j,  0.20813365+0.j,
              0.17860977+0.j,  0.04256036+0.j, -0.04256036+0.j,
             -0.04256036+0.j,  0.04256036+0.j, -0.34724873+0.j,
              0.13290293+0.j, -0.34724873+0.j,  0.17546329+0.j,
-             0.17546329+0.j,  0.13290293+0.j,  0.18470917+0.j], requires_grad=True)
+             0.17546329+0.j,  0.13290293+0.j,  0.18470917+0.j])
     """
 
     def _molecular_hamiltonian(*args):
         r"""Compute the qubit hamiltonian.
 
         Args:
-            args (array[array[float]]): initial values of the differentiable parameters
+            *args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
             Hamiltonian: the qubit Hamiltonian
         """
+
         h_ferm = fermionic_hamiltonian(mol, cutoff, core, active)(*args)
 
         return qubit_observable(h_ferm)

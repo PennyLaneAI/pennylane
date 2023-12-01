@@ -20,6 +20,16 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 
+def test_standard_validity():
+    """Check the operation using the assert_valid function."""
+
+    weights = np.random.random(size=(1, 2, 2))
+    init_state = np.array([1, 1, 0])
+    op = qml.ParticleConservingU1(weights, wires=range(3), init_state=init_state)
+
+    qml.ops.functions.assert_valid(op)
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
@@ -106,7 +116,6 @@ class TestDecomposition:
 
                     # check that parametrized gates take the parameters \phi and \theta properly
                     if exp_gate is qml.CRot:
-
                         if j < idx_CRot:
                             exp_params = [-phi, np.pi, phi]
                         if j > idx_CRot:
@@ -117,15 +126,10 @@ class TestDecomposition:
                         assert queue[idx].parameters == exp_params
 
                     elif exp_gate is qml.PhaseShift:
-
                         if j < idx_CRot:
-                            exp_params = -phi
-                            if j == idx_CRot / 2:
-                                exp_params = phi
+                            exp_params = phi if j == idx_CRot / 2 else -phi
                         if j > idx_CRot:
-                            exp_params = phi
-                            if j == (3 * idx_CRot + 2) / 2:
-                                exp_params = -phi
+                            exp_params = -phi if j == (3 * idx_CRot + 2) / 2 else phi
 
                         assert queue[idx].parameters == exp_params
 
@@ -140,17 +144,18 @@ class TestDecomposition:
         @qml.qnode(dev)
         def circuit():
             qml.ParticleConservingU1(weights, wires=range(3), init_state=init_state)
-            return qml.expval(qml.Identity(0))
+            return qml.expval(qml.Identity(0)), qml.state()
 
         @qml.qnode(dev2)
         def circuit2():
             qml.ParticleConservingU1(weights, wires=["z", "a", "k"], init_state=init_state)
-            return qml.expval(qml.Identity("z"))
+            return qml.expval(qml.Identity("z")), qml.state()
 
-        circuit()
-        circuit2()
+        res1, state1 = circuit()
+        res2, state2 = circuit2()
 
-        assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
         ("init_state", "exp_state"),
@@ -204,11 +209,9 @@ class TestDecomposition:
         @qml.qnode(dev)
         def circuit(weights):
             qml.ParticleConservingU1(weights, wires, init_state=init_state)
-            return qml.expval(qml.PauliZ(0))
+            return qml.state()
 
-        circuit(weights)
-
-        assert np.allclose(circuit.device.state, exp_state, atol=tol)
+        assert np.allclose(circuit(weights), exp_state, atol=tol)
 
 
 class TestInputs:
@@ -340,8 +343,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=2)
 
-        circuit = qml.QNode(circuit_template, dev, interface="jax")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
@@ -365,8 +368,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=2)
 
-        circuit = qml.QNode(circuit_template, dev, interface="tf")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="tf")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
@@ -392,8 +395,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=2)
 
-        circuit = qml.QNode(circuit_template, dev, interface="torch")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="torch")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)

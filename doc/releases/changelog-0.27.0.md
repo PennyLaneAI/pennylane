@@ -1,6 +1,6 @@
 :orphan:
 
-# Release 0.27.0 (current release)
+# Release 0.27.0
 
 <h3>New features since last release</h3>
 
@@ -227,7 +227,7 @@
   Result value: 1.00; Result type: <class 'pennylane.numpy.tensor.tensor'>
   Result value: 1.00; Result type: <class 'torch.Tensor'>
   Result value: 1.00; Result type: <class 'tensorflow.python.framework.ops.EagerTensor'>
-  Result value: 1.00; Result type: <class 'jaxlib.xla_extension.DeviceArray'>
+  Result value: 1.00; Result type: <class 'jaxlib.xla_extension.Array'>
   ```
 
 <h4>Upgraded JAX-JIT gradient support 🏎</h4>
@@ -258,8 +258,8 @@
 
   ```pycon
   >>> jax.jacobian(circuit, argnums=[0, 1])(x, y)
-  (DeviceArray([-0.84147098,  0.35017549], dtype=float64, weak_type=True),
-   DeviceArray([ 4.47445479e-18, -4.91295496e-01], dtype=float64, weak_type=True))
+  (Array([-0.84147098,  0.35017549], dtype=float64, weak_type=True),
+   Array([ 4.47445479e-18, -4.91295496e-01], dtype=float64, weak_type=True))
   ```
 
   Note that this change depends on `jax.pure_callback`, which requires `jax>=0.3.17`.
@@ -364,15 +364,15 @@
 
   ```pycon
   >>> jax.hessian(circuit)(params)
-  ((DeviceArray([[ 0.,  0.],
+  ((Array([[ 0.,  0.],
                 [ 2., -3.]], dtype=float32),
-  DeviceArray([[[-0.5,  0. ],
+  Array([[[-0.5,  0. ],
                 [ 0. ,  0. ]],
               [[ 0.5,  0. ],
                 [ 0. ,  0. ]]], dtype=float32)),
-  (DeviceArray([[ 0.07677898,  0.0563341 ],
+  (Array([[ 0.07677898,  0.0563341 ],
                 [ 0.07238522, -1.830669  ]], dtype=float32),
-  DeviceArray([[[-4.9707499e-01,  2.9999996e-04],
+  Array([[[-4.9707499e-01,  2.9999996e-04],
                 [-6.2500127e-04,  1.2500001e-04]],
                 [[ 4.9707499e-01, -2.9999996e-04],
                 [ 6.2500127e-04, -1.2500001e-04]]], dtype=float32)))
@@ -668,7 +668,7 @@
 * `qml.math.unwrap` no longer creates ragged arrays. Lists remain lists.
   [(#3163)](https://github.com/PennyLaneAI/pennylane/pull/3163)
 
-* New `null.qubit` device. The `null.qubit`performs no operations or memory allocations.
+* New `null.qubit` device. The `null.qubit` performs no operations or memory allocations.
   [(#2589)](https://github.com/PennyLaneAI/pennylane/pull/2589)
 
 * `default.qubit` favours decomposition and avoids matrix construction for `QFT` and `GroverOperator` at larger qubit numbers.
@@ -739,8 +739,8 @@
 <h3>Deprecations</h3>
 
 * `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated. Instead, `update_info` no longer raises errors
-   if the object isn't in the queue.
-   [(#3085)](https://github.com/PennyLaneAI/pennylane/pull/3085)
+  if the object isn't in the queue.
+  [(#3085)](https://github.com/PennyLaneAI/pennylane/pull/3085)
 
 * `qml.tape.stop_recording` and `QuantumTape.stop_recording` have been moved to `qml.QueuingManager.stop_recording`. The old functions will still be available until v0.29.
   [(#3068)](https://github.com/PennyLaneAI/pennylane/pull/3068)
@@ -809,9 +809,6 @@
 
 * Fixed a bug where `qml.BasisStatePreparation` and `qml.BasisEmbedding` were not jit-compilable with JAX.
   [(#3239)](https://github.com/PennyLaneAI/pennylane/pull/3239)
-
-* Fixed a bug where `qml.MottonenStatePreparation` was not jit-compilable with JAX.
-  [(#3260)](https://github.com/PennyLaneAI/pennylane/pull/3260)
 
 * Fixed a bug where `qml.MottonenStatePreparation` was not jit-compilable with JAX.
   [(#3260)](https://github.com/PennyLaneAI/pennylane/pull/3260)

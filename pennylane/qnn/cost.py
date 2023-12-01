@@ -81,7 +81,7 @@ class SquaredErrorLoss:
     >>> loss = qml.qnn.cost.SquaredErrorLoss(ansatz, obs, dev, interface="torch")
     >>> phis = np.ones(num_qubits)
     >>> loss(phis, target=np.array([1.0, 0.5, 0.1]))
-    tensor([0.2113, 0.2500, 0.0368], dtype=torch.float64)
+    array([0.21132197, 0.25      , 0.03683581])
 
     The loss function can be minimized using any gradient descent-based
     :doc:`optimizer </introduction/interfaces>`.
@@ -97,15 +97,12 @@ class SquaredErrorLoss:
         diff_method="best",
         **kwargs,
     ):
-        self.qnodes = qml.map(
-            ansatz,
-            observables,
-            device,
-            measure=measure,
-            interface=interface,
-            diff_method=diff_method,
-            **kwargs,
-        )
+        @qml.qnode(device, diff_method=diff_method, interface=interface, *kwargs)
+        def qnode(params, **circuit_kwargs):
+            ansatz(params, wires=device.wires, **circuit_kwargs)
+            return [getattr(qml, measure)(o) for o in observables]
+
+        self.qnode = qnode
 
     def loss(self, *args, target=None, **kwargs):
         r"""Calculates the squared error loss between the observables'
@@ -121,7 +118,7 @@ class SquaredErrorLoss:
         if target is None:
             raise ValueError("The target cannot be None")
 
-        input_ = self.qnodes(*args, **kwargs)
+        input_ = self.qnode(*args, **kwargs)
 
         if len(target) != len(input_):
             raise ValueError(

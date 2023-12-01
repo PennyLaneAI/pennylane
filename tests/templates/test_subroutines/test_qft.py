@@ -22,15 +22,20 @@ from gate_data import QFT
 import pennylane as qml
 
 
+def test_standard_validity():
+    """Check the operation using the assert_valid function."""
+    op = qml.QFT(wires=(0, 1, 2))
+    qml.ops.functions.assert_valid(op)
+
+
 class TestQFT:
     """Tests for the qft operations"""
 
-    @pytest.mark.parametrize("inverse", [True, False])
-    def test_QFT(self, inverse):
+    def test_QFT(self):
         """Test if the QFT matrix is equal to a manually-calculated version for 3 qubits"""
-        op = qml.QFT(wires=range(3)).inv() if inverse else qml.QFT(wires=range(3))
+        op = qml.QFT(wires=range(3))
         res = op.matrix()
-        exp = QFT.conj().T if inverse else QFT
+        exp = QFT
         assert np.allclose(res, exp)
 
     @pytest.mark.parametrize("n_qubits", range(2, 6))
@@ -43,10 +48,9 @@ class TestQFT:
 
         out_states = []
         for state in np.eye(2**n_qubits):
-            dev.reset()
-            ops = [qml.QubitStateVector(state, wires=range(n_qubits))] + decomp
-            dev.apply(ops)
-            out_states.append(dev.state)
+            ops = [qml.StatePrep(state, wires=range(n_qubits))] + decomp
+            qs = qml.tape.QuantumScript(ops, [qml.state()])
+            out_states.append(dev.execute(qs))
 
         reconstructed_unitary = np.array(out_states).T
         expected_unitary = qml.QFT(wires=range(n_qubits)).matrix()

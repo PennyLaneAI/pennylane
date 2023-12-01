@@ -251,7 +251,6 @@ def beamsplitter(theta, phi):
 
 
 def two_mode_squeezing(r, phi):
-
     """Two-mode squeezing.
 
     Args:
@@ -676,8 +675,8 @@ class DefaultGaussian(Device):
 
     _observable_map = {
         "NumberOperator": photon_number,
-        "X": homodyne(0),
-        "P": homodyne(np.pi / 2),
+        "QuadX": homodyne(0),
+        "QuadP": homodyne(np.pi / 2),
         "QuadOperator": homodyne(None),
         "PolyXP": poly_quad_expectations,
         "FockStateProjector": fock_expectation,
@@ -710,7 +709,6 @@ class DefaultGaussian(Device):
         self.reset()
 
     def apply(self, operation, wires, par):
-
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
 
@@ -786,7 +784,6 @@ class DefaultGaussian(Device):
         return S2
 
     def expval(self, observable, wires, par):
-
         if observable == "PolyXP":
             cov, mu = self._state
             ev, var = self._observable_map[observable](
@@ -805,14 +802,13 @@ class DefaultGaussian(Device):
         return ev
 
     def var(self, observable, wires, par):
-
-        cov, mu = self.reduced_state(wires)
-
         if observable == "PolyXP":
+            cov, mu = self._state
             _, var = self._observable_map[observable](
                 cov, mu, wires, self.wires, par, hbar=self.hbar
             )
         else:
+            cov, mu = self.reduced_state(wires)
             _, var = self._observable_map[observable](cov, mu, par, hbar=self.hbar)
         return var
 
@@ -837,9 +833,9 @@ class DefaultGaussian(Device):
         if len(wires) != 1:
             raise ValueError("Only one mode can be measured in homodyne.")
 
-        if observable == "X":
+        if observable == "QuadX":
             phi = 0.0
-        elif observable == "P":
+        elif observable == "QuadP":
             phi = np.pi / 2
         elif observable == "QuadOperator":
             phi = par[0]
@@ -892,3 +888,14 @@ class DefaultGaussian(Device):
     @property
     def observables(self):
         return set(self._observable_map.keys())
+
+    # pylint: disable=arguments-differ
+    def execute(self, operations, observables):
+        if len(observables) > 1:
+            raise qml.QuantumFunctionError("Default gaussian only support single measurements.")
+        return super().execute(operations, observables)
+
+    def batch_execute(self, circuits):
+        results = super().batch_execute(circuits)
+        results = [qml.math.squeeze(res) for res in results]
+        return results

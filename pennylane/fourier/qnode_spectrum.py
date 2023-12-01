@@ -19,6 +19,7 @@ from inspect import signature
 from itertools import product
 
 import numpy as np
+
 import pennylane as qml
 
 from .utils import get_spectrum, join_spectra
@@ -380,12 +381,17 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
     atol = 10 ** (-decimals) if decimals is not None else 1e-10
     # A map between Jacobian indices (contiguous) and arg names (may be discontiguous)
     arg_name_map = dict(enumerate(encoding_args))
-    jac_fn = qml.transforms.classical_jacobian(
-        qnode, argnum=argnum, expand_fn=qml.transforms.expand_multipar
-    )
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
+        old_interface = qnode.interface
+
+        if old_interface == "auto":
+            qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
+
+        jac_fn = qml.transforms.classical_jacobian(
+            qnode, argnum=argnum, expand_fn=qml.transforms.expand_multipar
+        )
         # Compute classical Jacobian and assert preprocessing is linear
         if not qml.math.is_independent(jac_fn, qnode.interface, args, kwargs, **validation_kwargs):
             raise ValueError(
@@ -395,9 +401,9 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         # After construction, check whether invalid operations (for a spectrum)
         # are present in the QNode
         for m in qnode.qtape.measurements:
-            if m.return_type not in {qml.measurements.Expectation, qml.measurements.Probability}:
+            if not isinstance(m, (qml.measurements.ExpectationMP, qml.measurements.ProbabilityMP)):
                 raise ValueError(
-                    f"The return_type {m.return_type.value} is not supported as it likely does "
+                    f"The measurement {m.__class__.__name__} is not supported as it likely does "
                     "not admit a Fourier spectrum."
                 )
         cjacs = jac_fn(*args, **kwargs)
@@ -459,6 +465,8 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
                 _spectra[idx] = [-freq for freq in spec[:0:-1]] + spec
             spectra[arg_name] = _spectra
 
+            if old_interface == "auto":
+                qnode.interface = "auto"
         return spectra
 
     return wrapper

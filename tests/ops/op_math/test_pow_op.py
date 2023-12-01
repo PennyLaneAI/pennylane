@@ -21,20 +21,29 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import DecompositionUndefinedError
-from pennylane.ops.op_math.controlled_class import ControlledOp
+from pennylane.ops.op_math.controlled import ControlledOp
 from pennylane.ops.op_math.pow import Pow, PowOperation
 
 
+# pylint: disable=too-few-public-methods
 class TempOperator(qml.operation.Operator):
     """Dummy operator"""
 
     num_wires = 1
 
 
-def pow_using_dunder_method(base, z, do_queue=True, id=None):
+# pylint: disable=unused-argument
+def pow_using_dunder_method(base, z, id=None):
     """Helper function which computes the base raised to the power invoking the __pow__ dunder
     method."""
     return base**z
+
+
+@pytest.mark.xfail  # TODO: remove xfail as part of story 49618
+def test_basic_validity():
+    """Run basic operator validity checks."""
+    op = qml.pow(qml.RX(1.2, wires=0), 3)
+    qml.ops.functions.assert_valid(op)
 
 
 class TestConstructor:
@@ -59,21 +68,22 @@ class TestConstructor:
         """Test that nonlazy pow returns a single identity if the power decomposes
         to the identity."""
 
-        op = qml.pow(op, 2, lazy=False)
-        assert qml.equal(op, qml.Identity(0))
+        op_new = qml.pow(op, 2, lazy=False)
+        assert qml.equal(op_new, qml.Identity(op.wires))
 
     def test_simplification_multiple_ops(self):
         """Test that when the simplification method returns a list of multiple operators,
         pow returns a list of multiple operators."""
 
+        # pylint: disable=too-few-public-methods
         class Temp(qml.operation.Operator):
             num_wires = 1
 
-            def pow(self, z):
+            def pow(self, z):  # pylint: disable=unused-argument
                 return [qml.S(0), qml.T(0)]
 
         new_op = qml.pow(Temp(0), 2, lazy=False)
-        assert isinstance(new_op, qml.ops.Prod)
+        assert isinstance(new_op, qml.ops.Prod)  # pylint:disable=no-member
         assert qml.equal(new_op.operands[0], qml.S(0))
         assert qml.equal(new_op.operands[1], qml.T(0))
 
@@ -83,10 +93,9 @@ class TestConstructor:
 
         with qml.queuing.AnnotatedQueue() as q:
             original_op = qml.PauliX(0)
-            new_op = qml.pow(original_op, 0.5, lazy=False)
+            _ = qml.pow(original_op, 0.5, lazy=False)
 
-        assert q[original_op]["owner"] is new_op
-        assert q[new_op]["owns"] is original_op
+        assert original_op not in q.queue
 
 
 @pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qml.pow])
@@ -174,7 +183,7 @@ class TestInitialization:
 
         assert op.num_params == 0
         assert op.parameters == []
-        assert op.data == []
+        assert op.data == ()
 
         assert op.wires == qml.wires.Wires("a")
         assert op.num_wires == 1
@@ -205,7 +214,7 @@ class TestInitialization:
         """Test pow initialization for a template."""
         rng = np.random.default_rng(seed=42)
         shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
-        params = rng.random(shape)
+        params = rng.random(shape)  # pylint:disable=no-member
 
         base = qml.StronglyEntanglingLayers(params, wires=[0, 1])
         op: Pow = power_method(base=base, z=2.67)
@@ -254,18 +263,18 @@ class TestProperties:
         base = qml.RX(x, wires="a")
         op: Pow = power_method(base=base, z=3.21)
 
-        assert op.data == [x]
+        assert op.data == (x,)
 
         # update parameters through pow
         x_new = np.array(2.3456)
-        op.data = [x_new]
-        assert base.data == [x_new]
-        assert op.data == [x_new]
+        op.data = (x_new,)
+        assert base.data == (x_new,)
+        assert op.data == (x_new,)
 
         # update base data updates pow data
         x_new2 = np.array(3.456)
-        base.data = [x_new2]
-        assert op.data == [x_new2]
+        base.data = (x_new2,)
+        assert op.data == (x_new2,)
 
     def test_has_matrix_true(self, power_method):
         """Test `has_matrix` property carries over when base op defines matrix."""
@@ -334,28 +343,68 @@ class TestProperties:
     def test_queue_category(self, power_method):
         """Test that the queue category `"_ops"` carries over."""
         op: Pow = power_method(base=qml.PauliX(0), z=3.5)
-        assert op._queue_category == "_ops"
+        assert op._queue_category == "_ops"  # pylint: disable=protected-access
 
     def test_queue_category_None(self, power_method):
         """Test that the queue category `None` for some observables carries over."""
         op: Pow = power_method(base=qml.PauliX(0) @ qml.PauliY(1), z=-1.1)
-        assert op._queue_category is None
+        assert op._queue_category is None  # pylint: disable=protected-access
 
     def test_batching_properties(self, power_method):
-        """Test that Pow batching behavior mirrors that of the base."""
+        """Test the batching properties and methods."""
 
-        class DummyOp(qml.operation.Operator):
-            ndim_params = (0, 2)
-            num_wires = 1
-
-        param1 = [0.3] * 3
-        param2 = [[[0.3, 1.2]]] * 3
-
-        base = DummyOp(param1, param2, wires=0)
-        op: Pow = power_method(base=base, z=3)
-
-        assert op.ndim_params == (0, 2)
+        # base is batched
+        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = power_method(base, z=1)
+        assert op.ndim_params == base.ndim_params
         assert op.batch_size == 3
+
+        # coeff is batched
+        base = qml.RX(1, 0)
+        op = power_method(base, z=np.array([1.2, 2.3, 3.4]))
+        assert op.ndim_params == base.ndim_params
+        assert op.batch_size == 3
+
+        # both are batched
+        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = power_method(base, z=np.array([1.2, 2.3, 3.4]))
+        assert op.ndim_params == base.ndim_params
+        assert op.batch_size == 3
+
+    def test_different_batch_sizes_raises_error(self, power_method):
+        """Test that using different batch sizes for base and scalar raises an error."""
+        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        with pytest.raises(
+            ValueError, match="Broadcasting was attempted but the broadcasted dimensions"
+        ):
+            _ = power_method(base, np.array([0.1, 1.2, 2.3, 3.4]))
+
+    op_pauli_reps = (
+        (qml.PauliZ(wires=0), 1, qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "Z"}): 1})),
+        (qml.PauliX(wires=1), 2, qml.pauli.PauliSentence({qml.pauli.PauliWord({}): 1})),  # identity
+        (qml.PauliY(wires="a"), 5, qml.pauli.PauliSentence({qml.pauli.PauliWord({"a": "Y"}): 1})),
+    )
+
+    @pytest.mark.parametrize("base, exp, rep", op_pauli_reps)
+    def test_pauli_rep(self, base, exp, rep, power_method):
+        """Test the pauli rep is produced as expected."""
+        op = power_method(base, exp)
+        assert op._pauli_rep == rep  # pylint: disable=protected-access
+
+    def test_pauli_rep_is_none_for_bad_exponents(self, power_method):
+        """Test that the _pauli_rep is None if the exponent is not positive or non integer."""
+        base = qml.PauliX(wires=0)
+        exponents = [1.23, -2]
+
+        for exponent in exponents:
+            op = power_method(base, z=exponent)
+            assert op._pauli_rep is None  # pylint: disable=protected-access
+
+    def test_pauli_rep_none_if_base_pauli_rep_none(self, power_method):
+        """Test that None is produced if the base op does not have a pauli rep"""
+        base = qml.RX(1.23, wires=0)
+        op = power_method(base, z=2)
+        assert op._pauli_rep is None  # pylint: disable=protected-access
 
 
 class TestSimplify:
@@ -363,7 +412,7 @@ class TestSimplify:
 
     def test_depth_property(self):
         """Test depth property."""
-        pow_op = Pow(base=qml.ops.Adjoint(qml.PauliX(0)), z=2)
+        pow_op = Pow(base=qml.ops.Adjoint(qml.PauliX(0)), z=2)  # pylint:disable=no-member
         assert pow_op.arithmetic_depth == 2
 
     def test_simplify_nested_pow_ops(self):
@@ -397,21 +446,21 @@ class TestSimplify:
 
     def test_simplify_method(self):
         """Test that the simplify method reduces complexity to the minimum."""
-        pow_op = Pow(qml.op_sum(qml.PauliX(0), qml.PauliX(0)) + qml.PauliX(0), 2)
+        pow_op = Pow(qml.sum(qml.PauliX(0), qml.PauliX(0)) + qml.PauliX(0), 2)
         final_op = qml.s_prod(9, qml.PauliX(0))
         simplified_op = pow_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators
 
-        assert isinstance(simplified_op, qml.ops.SProd)
+        assert isinstance(simplified_op, qml.ops.SProd)  # pylint:disable=no-member
         assert final_op.data == simplified_op.data
         assert final_op.wires == simplified_op.wires
         assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
 
     def test_simplify_method_with_controlled_operation(self):
         """Test simplify method with controlled operation."""
-        pow_op = Pow(ControlledOp(base=qml.PauliX(0), control_wires=1, id=3), z=3)
-        final_op = ControlledOp(base=qml.PauliX(0), control_wires=1, id=3)
+        pow_op = Pow(ControlledOp(base=qml.Hadamard(0), control_wires=1, id=3), z=3)
+        final_op = ControlledOp(base=qml.Hadamard(0), control_wires=1, id=3)
         simplified_op = pow_op.simplify()
 
         assert isinstance(simplified_op, ControlledOp)
@@ -440,6 +489,25 @@ class TestMiscMethods:
         op = Pow(base, 2.5)
         assert repr(op) == "(RX(1, wires=[0]) + S(wires=[1]))**2.5"
 
+    # pylint: disable=protected-access
+    def test_flatten_unflatten(self):
+        """Test the _flatten and _unflatten methods."""
+
+        target = qml.S(0)
+        z = -0.5
+        op = Pow(target, z)
+        data, metadata = op._flatten()
+
+        assert len(data) == 2
+        assert data[0] is target
+        assert data[1] == z
+
+        assert metadata == tuple()
+
+        new_op = type(op)._unflatten(*op._flatten())
+        assert new_op is not op
+        assert qml.equal(new_op, op)
+
     def test_copy(self):
         """Test that a copy of a power operator can have its parameters updated
         independently of the original operator."""
@@ -451,10 +519,10 @@ class TestMiscMethods:
 
         assert copied_op.__class__ is op.__class__
         assert copied_op.z == op.z
-        assert copied_op.data == [param1]
+        assert copied_op.data == (param1,)
 
-        copied_op.data = [6.54]
-        assert op.data == [param1]
+        copied_op.data = (6.54,)
+        assert op.data == (param1,)
 
     def test_label(self):
         """Test that the label draws the exponent as superscript."""
@@ -481,6 +549,20 @@ class TestMiscMethods:
         mat_eigvals = qml.math.linalg.eigvals(op.matrix())
 
         assert qml.math.allclose(mat_eigvals, op.eigvals())
+
+    def test_has_generator_true(self):
+        """Test `has_generator` property carries over when base op defines generator."""
+        base = qml.RX(0.5, 0)
+        op = Pow(base, 0.3)
+
+        assert op.has_generator is True
+
+    def test_has_generator_false(self):
+        """Test `has_generator` property carries over when base op does not define a generator."""
+        base = qml.PauliX(0)
+        op = Pow(base, 0.3)
+
+        assert op.has_generator is False
 
     def test_generator(self):
         """Test that the generator is the base's generator multiplied by the power."""
@@ -530,36 +612,93 @@ class TestQueueing:
     def test_queueing(self):
         """Test queuing and metadata when both Pow and base defined inside a recording context."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
             op = Pow(base, 1.2)
 
-        assert tape.get_info(base)["owner"] is op
-        assert tape.get_info(op)["owns"] is base
-        assert tape.operations == [op]
+        assert q.queue[0] is op
+        assert len(q) == 1
 
     def test_queueing_base_defined_outside(self):
         """Test that base is added to queue even if it's defined outside the recording context."""
 
         base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op = Pow(base, 3.4)
 
-        assert len(tape.queue) == 1
-        assert tape.get_info(op)["owns"] is base
-        assert tape.operations == [op]
-
-    def test_do_queue_False(self):
-        """Test that when `do_queue` is specified, the operation is not queued."""
-        base = qml.PauliX(0)
-        with qml.tape.QuantumTape() as tape:
-            op = Pow(base, 4.5, do_queue=False)
-
-        assert len(tape) == 0
+        assert len(q) == 1
+        assert q.queue[0] is op
 
 
 class TestMatrix:
     """Test the matrix method for the power operator."""
+
+    def test_base_batching_support(self):
+        """Test that Pow matrix has base batching support."""
+        x = np.array([-1, -2, -3])
+        op = Pow(qml.RX(x, 0), z=3)
+        mat = op.matrix()
+        true_mat = qml.math.stack([Pow(qml.RX(i, 0), z=3).matrix() for i in x])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+
+    def test_coeff_batching_support(self):
+        """Test that Pow matrix has coeff batching support."""
+        x = np.array([-1, -2, -3])
+        op = Pow(qml.PauliX(0), z=x)
+        mat = op.matrix()
+        true_mat = qml.math.stack([Pow(qml.PauliX(0), i).matrix() for i in x])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+
+    def test_base_and_coeff_batching_support(self):
+        """Test that Pow matrix has base and coeff batching support."""
+        x = np.array([-1, -2, -3])
+        y = np.array([1, 2, 3])
+        op = Pow(qml.RX(x, 0), z=y)
+        mat = op.matrix()
+        true_mat = qml.math.stack([Pow(qml.RX(i, 0), j).matrix() for i, j in zip(x, y)])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+
+    @pytest.mark.jax
+    def test_batching_jax(self):
+        """Test that Pow matrix has batching support with the jax interface."""
+        import jax.numpy as jnp
+
+        x = jnp.array([-1, -2, -3])
+        y = jnp.array([1, 2, 3])
+        op = Pow(qml.RX(x, 0), y)
+        mat = op.matrix()
+        true_mat = qml.math.stack([Pow(qml.RX(i, 0), j).matrix() for i, j in zip(x, y)])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+
+    @pytest.mark.torch
+    def test_batching_torch(self):
+        """Test that Pow matrix has batching support with the torch interface."""
+        import torch
+
+        x = torch.tensor([-1, -2, -3])
+        y = torch.tensor([1, 2, 3])
+        op = Pow(qml.RX(x, 0), y)
+        mat = op.matrix()
+        true_mat = qml.math.stack([Pow(qml.RX(i, 0), j).matrix() for i, j in zip(x, y)])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+
+    @pytest.mark.tf
+    def test_batching_tf(self):
+        """Test that Pow matrix has batching support with the tensorflow interface."""
+        import tensorflow as tf
+
+        x = tf.constant([-1.0, -2.0, -3.0])
+        y = tf.constant([1.0, 2.0, 3.0])
+        op = Pow(qml.RX(x, 0), y)
+        mat = op.matrix()
+        true_mat = qml.math.stack([Pow(qml.RX(i, 0), j).matrix() for i, j in zip(x, y)])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
 
     def check_matrix(self, param, z):
         """Interface-independent helper function that checks that the matrix of a power op
@@ -567,9 +706,9 @@ class TestMatrix:
         base = qml.IsingZZ(param, wires=(0, 1))
         op = Pow(base, z)
 
-        mat = qml.matrix(op)
-        shortcut = base.pow(z)[0]
-        shortcut_mat = qml.matrix(shortcut)
+        mat = op.matrix()
+        [shortcut] = base.pow(z)
+        shortcut_mat = shortcut.matrix()
 
         return qml.math.allclose(mat, shortcut_mat)
 
@@ -611,6 +750,15 @@ class TestMatrix:
 
         param = tf.Variable(2.34)
         assert self.check_matrix(param, z)
+
+    @pytest.mark.tf
+    def test_matrix_tf_int_z(self):
+        """Test that matrix works with integer power."""
+        import tensorflow as tf
+
+        theta = tf.Variable(1.0)
+        mat = qml.pow(qml.RX(theta, wires=0), z=3).matrix()
+        assert qml.math.allclose(mat, qml.RX.compute_matrix(3))
 
     def test_matrix_wire_order(self):
         """Test that the wire_order keyword rearranges ording."""
@@ -657,7 +805,7 @@ class TestSparseMatrix:
         sparse_mat_array = sparse_mat.toarray()
 
         assert qml.math.allclose(sparse_mat_array, H_cubed.toarray())
-        assert qml.math.allclose(sparse_mat_array, qml.matrix(op))
+        assert qml.math.allclose(sparse_mat_array, op.matrix())
 
     def test_sparse_matrix_float_exponent(self):
         """Test that even a sparse-matrix defining op raised to a float power
@@ -738,49 +886,22 @@ class TestDecompositionExpand:
         with pytest.raises(DecompositionUndefinedError):
             op.decomposition()
 
+    def test_decomposition_in_recording_context_with_int_z(self):
+        """Tests that decomposition applies ops to a surrounding context."""
+        base_ops = [qml.PauliX(0), qml.PauliZ(1)]
+        base = qml.prod(*base_ops)
+        z = 2
+        op = Pow(base, z)
 
-class TestInverse:
-    """Test the interaction between in-place inversion and the power operator."""
+        # if this fails, someone must have implemented it! will need a new operator to use
+        with pytest.raises(qml.operation.PowUndefinedError):
+            base.pow(2)
 
-    def test_base_already_inverted(self):
-        """Test that if the base is already inverted, then initialization un-inverts
-        it and applies a negative sign to the exponent."""
-        with pytest.warns(UserWarning, match="In-place inversion with inverse is deprecated"):
-            base = qml.S(0).inv()
-        op = Pow(base, 2)
+        with qml.queuing.AnnotatedQueue() as q:
+            op.decomposition()
 
-        assert base.inverse is False
-
-        assert op.z == -2
-        assert op.name == "S**-2"
-        assert op.base_name == "S**-2"
-        assert op.inverse is False
-
-    def test_invert_pow_op(self):
-        """Test that in-place inversion of a power operator only changes the sign
-        of the power and does not change the `inverse` property."""
-        base = qml.S(0)
-        op = Pow(base, 2)
-
-        with pytest.warns(UserWarning, match="In-place inversion with inv is deprecated"):
-            op.inv()
-
-        assert base.inverse is False
-
-        assert op.z == -2
-        assert op.name == "S**-2"
-        assert op.base_name == "S**-2"
-        assert op.inverse is False
-
-    def test_inverse_setter(self):
-        """Assert that the inverse can be set to False, but trying to set it to True raises a
-        NotImplementedError."""
-        op = Pow(qml.S(0), 2.1)
-
-        op.inverse = False
-
-        with pytest.raises(NotImplementedError):
-            op.inverse = True
+        assert len(q.queue) == z
+        assert all(qml.equal(applied_op, base) for applied_op in q.queue)
 
 
 @pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qml.pow])

@@ -12,7 +12,9 @@
 #
 # All configuration values have a default; values that are commented out
 # serve to show the default.
-import sys, os, re
+import os
+import re
+import sys
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -43,14 +45,29 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx_automodapi.automodapi",
     "sphinx_copybutton",
+    "sphinxext.opengraph",
     "m2r2",
 ]
+
+# Open Graph metadata
+ogp_social_cards = {
+    "image": "_static/logo.png",
+    "enable": True,
+    "site_url": "https://docs.pennylane.ai/",
+    "line_color": "#03b2ff",
+}
+ogp_image = "_static/header-tall.png"
+
+
+# The base URL with a proper language and version.
+html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "/")
 
 os.environ["SPHINX_BUILD"] = "1"
 
 autosummary_generate = True
 autosummary_imported_members = False
 automodapi_toctreedirnm = "code/api"
+automodapi_inheritance_diagram = False
 automodsumm_inherited_members = True
 
 # Hot fix for the error: 'You must configure the bibtex_bibfiles setting'
@@ -59,7 +76,11 @@ bibtex_bibfiles = ["bibfile.bib"]
 copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "
 copybutton_prompt_is_regexp = True
 
-intersphinx_mapping = {"https://pennylane.ai/qml/": None}
+intersphinx_mapping = {
+    "demo": ("https://pennylane.ai/qml/", None),
+    "catalyst": ("https://docs.pennylane.ai/projects/catalyst/en/stable", None)
+}
+
 mathjax_path = (
     "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"
 )
@@ -77,7 +98,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "PennyLane"
-copyright = "2022, Xanadu Quantum Technologies"
+copyright = "2023, Xanadu Quantum Technologies"
 author = "Xanadu Inc."
 
 add_module_names = False
@@ -158,7 +179,7 @@ html_static_path = ["_static"]
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
 # directly to the root of the documentation.
-# html_extra_path = []
+html_extra_path = ["robots.txt"]
 
 # If not "", a "Last updated on:" timestamp is inserted at every page bottom,
 # using the given strftime format.
@@ -231,7 +252,7 @@ html_theme_options = {
     "extra_copyrights": [
         "TensorFlow, the TensorFlow logo, and any related marks are trademarks " "of Google Inc."
     ],
-    "google_analytics_tracking_id": "UA-130507810-1"
+    "google_analytics_tracking_id": "G-C480Z9JL0D",
 }
 
 edit_on_github_project = "PennyLaneAI/pennylane"
@@ -293,6 +314,9 @@ texinfo_documents = [
 
 # the order in which autodoc lists the documented members
 autodoc_member_order = "bysource"
+
+# remove types from function signatures
+autodoc_typehints = "none"
 
 # inheritance_diagram graphviz attributes
 inheritance_node_attrs = dict(color="lightskyblue1", style="filled")

@@ -14,8 +14,6 @@
 """Convenient utility functions for testing optimization transforms."""
 
 import pennylane as qml
-from pennylane import numpy as np
-from gate_data import I, SWAP
 
 
 def check_matrix_equivalence(matrix_expected, matrix_obtained, atol=1e-8):
@@ -31,5 +29,5 @@ def check_matrix_equivalence(matrix_expected, matrix_obtained, atol=1e-8):
 def compare_operation_lists(ops_obtained, names_expected, wires_expected):
     """Compare two lists of operations."""
     assert len(ops_obtained) == len(names_expected)
-    assert all([op.name == exp_name for (op, exp_name) in zip(ops_obtained, names_expected)])
-    assert all([op.wires == exp_wires for (op, exp_wires) in zip(ops_obtained, wires_expected)])
+    assert all(op.name == exp_name for (op, exp_name) in zip(ops_obtained, names_expected))
+    assert all(op.wires == exp_wires for (op, exp_wires) in zip(ops_obtained, wires_expected))

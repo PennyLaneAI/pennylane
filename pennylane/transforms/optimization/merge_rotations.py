@@ -13,25 +13,29 @@
 # limitations under the License.
 """Transform for merging adjacent rotations of the same type in a quantum circuit."""
 # pylint: disable=too-many-branches
-from pennylane import apply
-from pennylane.transforms import qfunc_transform
+from typing import Sequence, Callable
+
+from pennylane.tape import QuantumTape
+from pennylane.transforms import transform
 from pennylane.math import allclose, stack, cast_like, zeros, is_abstract
+from pennylane.queuing import QueuingManager
 
 from pennylane.ops.qubit.attributes import composable_rotations
 from pennylane.ops.op_math import Adjoint
 from .optimization_utils import find_next_gate, fuse_rot_angles
 
 
-@qfunc_transform
-def merge_rotations(tape, atol=1e-8, include_gates=None):
-    r"""Quantum function transform to combine rotation gates of the same type
-    that act sequentially.
+@transform
+def merge_rotations(
+    tape: QuantumTape, atol=1e-8, include_gates=None
+) -> (Sequence[QuantumTape], Callable):
+    r"""Quantum transform to combine rotation gates of the same type that act sequentially.
 
     If the combination of two rotation produces an angle that is close to 0,
     neither gate will be applied.
 
     Args:
-        qfunc (function): A quantum function.
+        tape (QNode or QuantumTape or Callable): A quantum circuit.
         atol (float): After fusion of gates, if the fused angle :math:`\theta` is such that
             :math:`|\theta|\leq \text{atol}`, no rotation gate will be applied.
         include_gates (None or list[str]): A list of specific operations to merge. If
@@ -40,15 +44,19 @@ def merge_rotations(tape, atol=1e-8, include_gates=None):
             only the operations whose names match those in the list will undergo merging.
 
     Returns:
-        function: the transformed quantum function
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
 
-    Consider the following quantum function.
+    >>> dev = qml.device('default.qubit', wires=3)
+
+    You can apply the transform directly on :class:`QNode`
 
     .. code-block:: python
 
-        def qfunc(x, y, z):
+        @merge_rotations
+        @qml.qnode(device=dev)
+        def circuit(x, y, z):
             qml.RX(x, wires=0)
             qml.RX(y, wires=0)
             qml.CNOT(wires=[1, 2])
@@ -58,41 +66,60 @@ def merge_rotations(tape, atol=1e-8, include_gates=None):
             qml.RY(-y, wires=1)
             return qml.expval(qml.PauliZ(0))
 
-    The circuit before optimization:
+    >>> circuit(0.1, 0.2, 0.3)
+    0.9553364891256055
 
-    >>> dev = qml.device('default.qubit', wires=3)
-    >>> qnode = qml.QNode(qfunc, dev)
-    >>> print(qml.draw(qnode)(1, 2, 3))
-    0: ──RX(1.00)──RX(2.00)─╭RZ(3.00)────────────┤  <Z>
-    1: ─╭●─────────RY(2.00)─│──────────RY(-2.00)─┤
-    2: ─╰X─────────H────────╰●───────────────────┤
+    .. details::
+        :title: Usage Details
 
-    By inspection, we can combine the two ``RX`` rotations on the first qubit.
-    On the second qubit, we have a cumulative angle of 0, and the gates will cancel.
+        You can also apply it on quantum function.
 
-    >>> optimized_qfunc = merge_rotations()(qfunc)
-    >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-    >>> print(qml.draw(optimized_qnode)(1, 2, 3))
-    0: ──RX(3.00)────╭RZ(3.00)─┤  <Z>
-    1: ─╭●───────────│─────────┤
-    2: ─╰X─────────H─╰●────────┤
+        .. code-block:: python
 
-    It is also possible to explicitly specify which rotations ``merge_rotations`` should
-    be merged using the ``include_gates`` argument. For example, if in the above
-    circuit we wanted only to merge the "RX" gates, we could do so as follows:
+            def qfunc(x, y, z):
+                qml.RX(x, wires=0)
+                qml.RX(y, wires=0)
+                qml.CNOT(wires=[1, 2])
+                qml.RY(y, wires=1)
+                qml.Hadamard(wires=2)
+                qml.CRZ(z, wires=[2, 0])
+                qml.RY(-y, wires=1)
+                return qml.expval(qml.PauliZ(0))
 
-    >>> optimized_qfunc = merge_rotations(include_gates=["RX"])(qfunc)
-    >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-    >>> print(qml.draw(optimized_qnode)(1, 2, 3))
-    0: ──RX(3.00)───────────╭RZ(3.00)────────────┤  <Z>
-    1: ─╭●─────────RY(2.00)─│──────────RY(-2.00)─┤
-    2: ─╰X─────────H────────╰●───────────────────┤
+        The circuit before optimization:
+
+        >>> qnode = qml.QNode(qfunc, dev)
+        >>> print(qml.draw(qnode)(1, 2, 3))
+        0: ──RX(1.00)──RX(2.00)─╭RZ(3.00)────────────┤  <Z>
+        1: ─╭●─────────RY(2.00)─│──────────RY(-2.00)─┤
+        2: ─╰X─────────H────────╰●───────────────────┤
+
+        By inspection, we can combine the two ``RX`` rotations on the first qubit.
+        On the second qubit, we have a cumulative angle of 0, and the gates will cancel.
+
+        >>> optimized_qfunc = merge_rotations()(qfunc)
+        >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        >>> print(qml.draw(optimized_qnode)(1, 2, 3))
+        0: ──RX(3.00)────╭RZ(3.00)─┤  <Z>
+        1: ─╭●───────────│─────────┤
+        2: ─╰X─────────H─╰●────────┤
+
+        It is also possible to explicitly specify which rotations ``merge_rotations`` should
+        be merged using the ``include_gates`` argument. For example, if in the above
+        circuit we wanted only to merge the "RX" gates, we could do so as follows:
+
+        >>> optimized_qfunc = merge_rotations(include_gates=["RX"])(qfunc)
+        >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        >>> print(qml.draw(optimized_qnode)(1, 2, 3))
+        0: ──RX(3.00)───────────╭RZ(3.00)────────────┤  <Z>
+        1: ─╭●─────────RY(2.00)─│──────────RY(-2.00)─┤
+        2: ─╰X─────────H────────╰●───────────────────┤
 
     """
     # Expand away adjoint ops
     expanded_tape = tape.expand(stop_at=lambda obj: not isinstance(obj, Adjoint))
     list_copy = expanded_tape.operations
-
+    new_operations = []
     while len(list_copy) > 0:
         current_gate = list_copy[0]
 
@@ -100,13 +127,13 @@ def merge_rotations(tape, atol=1e-8, include_gates=None):
         # op is in it, then try to merge. If not, queue and move on.
         if include_gates is not None:
             if current_gate.name not in include_gates:
-                apply(current_gate)
+                new_operations.append(current_gate)
                 list_copy.pop(0)
                 continue
 
         # Check if the rotation is composable; if it is not, move on.
         if not current_gate in composable_rotations:
-            apply(current_gate)
+            new_operations.append(current_gate)
             list_copy.pop(0)
             continue
 
@@ -116,7 +143,7 @@ def merge_rotations(tape, atol=1e-8, include_gates=None):
         # If no such gate is found (either there simply is none, or there are other gates
         # "in the way", queue the operation and move on
         if next_gate_idx is None:
-            apply(current_gate)
+            new_operations.append(current_gate)
             list_copy.pop(0)
             continue
 
@@ -160,14 +187,26 @@ def merge_rotations(tape, atol=1e-8, include_gates=None):
         # apply the operation regardless of the angles. Otherwise, only apply if
         # the rotation angle is non-trivial.
         if is_abstract(cumulative_angles):
-            current_gate.__class__(*cumulative_angles, wires=current_gate.wires)
+            with QueuingManager.stop_recording():
+                new_operations.append(
+                    current_gate.__class__(*cumulative_angles, wires=current_gate.wires)
+                )
         else:
             if not allclose(cumulative_angles, zeros(len(cumulative_angles)), atol=atol, rtol=0):
-                current_gate.__class__(*cumulative_angles, wires=current_gate.wires)
+                with QueuingManager.stop_recording():
+                    new_operations.append(
+                        current_gate.__class__(*cumulative_angles, wires=current_gate.wires)
+                    )
 
-        # Remove the first gate gate from the working list
+        # Remove the first gate from the working list
         list_copy.pop(0)
 
-    # Queue the measurements normally
-    for m in tape.measurements:
-        apply(m)
+    new_tape = type(tape)(new_operations, tape.measurements, shots=tape.shots)
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [new_tape], null_postprocessing

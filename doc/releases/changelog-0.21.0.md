@@ -218,10 +218,10 @@
   The QNode can be evaluated and its jacobian can be computed:
   ```pycon
   >>> circuit(x, y)
-  DeviceArray([0.8397495 , 0.16025047], dtype=float32)
+  Array([0.8397495 , 0.16025047], dtype=float32)
   >>> jax.jacobian(circuit, argnums=[0, 1])(x, y)
-  (DeviceArray([-0.2050439,  0.2050439], dtype=float32, weak_type=True),
-   DeviceArray([ 0.26043, -0.26043], dtype=float32, weak_type=True))
+  (Array([-0.2050439,  0.2050439], dtype=float32, weak_type=True),
+   Array([ 0.26043, -0.26043], dtype=float32, weak_type=True))
   ```
   Note that `jax.jit` is not yet supported for vector-valued QNodes.
 
