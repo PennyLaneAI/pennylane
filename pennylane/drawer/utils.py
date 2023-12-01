@@ -103,24 +103,26 @@ def unwrap_controls(op):
     return control_wires, control_values
 
 
-def find_mid_measure_cond_connections(operations, layers):
+def find_mid_measure_connections(tape, layers, measurment_layers_index):
     """Collect and return information about connections between mid-circuit measurements
-    and classical conditions.
+    and classical conditions and statistics that they connect to.
 
     This utility function returns three items needed for processing mid-circuit measurements
-    and classical conditions for drawing:
+    and classical conditions and statistics for drawing:
 
     * A dictionary mapping each mid-circuit measurement to a corresponding bit index.
-        This map only contains mid-circuit measurements that are used for classical conditioning.
+        This map only contains mid-circuit measurements that are used for classical conditioning
+        or collecting statistics.
     * A list where each index is a bit and the values are the indices  of the layers containing
         the mid-circuit measurement corresponding to the bits.
-    * A list where each index is a bit and the values are the indices of the last layers that
-        use those bits for classical conditions.
+    * A list where each index is a bit and the values are the indices of the last layers where the
+        bits should be drawn.
 
     Args:
-        operations (list[~.Operation]): List of operations on the tape
+        tape (~.QuantumScript): Tape to be drawn
         layers (list[list[~.Operation]]): List of drawable layers containing list of operations
             for each layer
+        measurement_layres_index (int): index for the first measurement layer
 
     Returns:
         tuple[dict, list, list]: Data structures needed for correctly drawing classical conditions
@@ -134,39 +136,48 @@ def find_mid_measure_cond_connections(operations, layers):
 
     # Map between classical bit positions and the layer of their corresponding mid-circuit
     # measurements.
-    measurement_layers = []
+    mid_measure_layers = []
 
-    # Map between classical bit positions and the final layer where the bit is used.
-    # This is needed to know when to stop drawing a bit line. The bit is the index,
-    # so each of the two lists must have the same length as the number of bits
-    final_cond_layers = []
+    # Map between classical bit positions and the final layer where the bit is to be drawn.
+    # The bit is the index, so each of the two lists must have the same length as the number
+    # of bits
+    bit_end_layers = []
 
-    measurements_for_conds = set()
+    used_mid_measures = set()
     conditional_ops = []
-    for op in operations:
+    for op in tape.operations:
         if isinstance(op, Conditional):
-            measurements_for_conds.update(op.meas_val.measurements)
+            used_mid_measures.update(op.meas_val.measurements)
             conditional_ops.append(op)
 
-    if len(measurements_for_conds) > 0:
-        cond_mid_measures = [op for op in operations if op in measurements_for_conds]
-        cond_mid_measures.sort(key=operations.index)
+    for mp in tape.measurements:
+        if mp.mv is not None:
+            used_mid_measures.update(mp.mv.measurements)
 
-        bit_map = dict(zip(cond_mid_measures, range(len(cond_mid_measures))))
+    if len(used_mid_measures) > 0:
+        used_mid_measures = list(used_mid_measures).sort(key=tape.operations.index)
+
+        bit_map = dict(zip(used_mid_measures, range(len(used_mid_measures))))
 
         n_bits = len(bit_map)
 
         # Set lists to correct size
-        measurement_layers = [None] * n_bits
-        final_cond_layers = [None] * n_bits
+        mid_measure_layers = [None] * n_bits
+        bit_end_layers = [None] * n_bits
 
-        for i, layer in enumerate(layers):
+        for i, layer in enumerate(layers[:measurment_layers_index]):
             for op in layer:
                 if isinstance(op, MidMeasureMP) and op in bit_map:
-                    measurement_layers[bit_map[op]] = i
+                    mid_measure_layers[bit_map[op]] = i
 
                 if isinstance(op, Conditional):
                     for mid_measure in op.meas_val.measurements:
-                        final_cond_layers[bit_map[mid_measure]] = i
+                        bit_end_layers[bit_map[mid_measure]] = i
 
-    return bit_map, measurement_layers, final_cond_layers
+        for i, layer in enumerate(layers[measurment_layers_index:]):
+            for mp in layer:
+                if mp.mv is not None:
+                    for mid_measure in mp.mv.measurements:
+                        bit_end_layers[bit_map[mid_measure]] = measurment_layers_index - 1
+
+    return bit_map, mid_measure_layers, bit_end_layers
