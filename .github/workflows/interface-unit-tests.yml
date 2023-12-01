@@ -325,6 +325,7 @@ jobs:
       python_version: ${{ matrix.python-version }}
       pipeline_mode: ${{ inputs.pipeline_mode }}
       install_pennylane_lightning_master: false
+      install_catalyst: true
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: external
       additional_poetry_groups: external,jax,tf

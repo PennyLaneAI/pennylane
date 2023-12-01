@@ -34,6 +34,11 @@ on:
         required: false
         type: boolean
         default: true
+      install_catalyst:
+        description: Indicate if PennyLane-Catalyst should be installed (with pip)
+        required: false
+        type: boolean
+        default: false
       pytest_test_directory:
         description: The directory where the PennyLane tests are that should be run by PyTest
         required: false
@@ -117,6 +122,10 @@ jobs:
       - name: Install PennyLane-Lightning master
         if: inputs.install_pennylane_lightning_master == true && steps.continue.outputs.confirm == 'true'
         run: pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
+
+      - name: Install PennyLane-Catalyst
+        if: inputs.install_catalyst == true && steps.continue.outputs.confirm == 'true'
+        run: pip install pennylane-catalyst --upgrade
 
       - name: Set PyTest Args
         if: steps.continue.outputs.confirm == 'true'
