@@ -39,12 +39,17 @@ Overview
 --------
 
 The main entry point to hybrid compilation in PennyLane
-is via the :func:`~.qjit` decorator.
+is via the :func:`~.qjit` decorator that can be mixed with
+other compiler-specific decorators and functions:
 
 .. autosummary::
     :toctree: api
 
     ~qjit
+    ~for_loop
+    ~while_loop
+    ~jvp
+    ~vjp
 
 In addition, several developer functions are available to probe
 available hybrid compilers.
@@ -63,6 +68,9 @@ PennyLane primitives.
 .. autosummary::
     :toctree: api
 
+    ~adjoint
+    ~cond
+    ~ctrl
     ~grad
     ~jacobian
 
@@ -232,4 +240,4 @@ if no function is provided:
 
 from .compiler import available_compilers, available, active_compiler, active
 
-from .qjit_api import qjit
+from .qjit_api import qjit, while_loop, for_loop
