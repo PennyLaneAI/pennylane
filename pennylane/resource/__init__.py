@@ -35,7 +35,8 @@ Circuit specifications
 .. autosummary::
     :toctree: api
 
-    ~pennylane.specs
+    ~specs
+
 
 Quantum Phase Estimation Resources
 ----------------------------------
