@@ -17,7 +17,6 @@ This module contains the qml.equal function.
 # pylint: disable=too-many-arguments,too-many-return-statements
 from collections.abc import Iterable
 from functools import singledispatch
-import itertools
 from typing import Union
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
@@ -181,7 +180,7 @@ def _equal_circuit(
     # operations
     if len(op1.operations) != len(op2.operations):
         return False
-    for comparands in itertools.zip_longest(op1.operations, op2.operations):
+    for comparands in zip(op1.operations, op2.operations):
         if not qml.equal(
             comparands[0],
             comparands[1],
