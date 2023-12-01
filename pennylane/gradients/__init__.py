@@ -54,12 +54,15 @@ Gradient transforms
 
 Metric tensors
 ^^^^^^^^^^^^^^
+.. currentmodule:: pennylane
 
 .. autosummary::
     :toctree: api
 
     metric_tensor
     adjoint_metric_tensor
+
+.. currentmodule:: pennylane.gradients
 
 
 Utility functions
