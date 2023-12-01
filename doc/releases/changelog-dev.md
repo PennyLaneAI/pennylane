@@ -272,6 +272,11 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The function `qml.transforms.one_qubit_decomposition`, `qml.transforms.two_qubit_decomposition`, 
+  `qml.transforms.sk_decomposition` were move to `qml.ops.one_qubit_decomposition`, `qml.ops.two_qubit_decomposition`, 
+  `qml.ops.sk_decomposition`.
+  [(#4906)](https://github.com/PennyLaneAI/pennylane/pull/4906)
+
 * The transforms submodule `qml.transforms.qcut` becomes its own module `qml.qcut`.
   [(#4819)](https://github.com/PennyLaneAI/pennylane/pull/4819)
 
@@ -321,6 +326,9 @@
   [(#4773)](https://github.com/PennyLaneAI/pennylane/pull/4773)
 
 <h3>Documentation 📝</h3>
+
+* Documentation for unitaries and operations decomposition was move `qml.ops.ops_math`.
+  [(#4906)](https://github.com/PennyLaneAI/pennylane/pull/4906)
 
 * Documentation for QCut was move to its own API page `qml.qcut`.
   [(#4819)](https://github.com/PennyLaneAI/pennylane/pull/4819)
