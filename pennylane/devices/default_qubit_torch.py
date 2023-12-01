@@ -11,29 +11,34 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains a PyTorch implementation of the :class:`~.DefaultQubit`
+"""This module contains a PyTorch implementation of the :class:`~.DefaultQubitLegacy`
 reference plugin.
 """
 import warnings
+import inspect
+import logging
 import semantic_version
 
 try:
     import torch
 
     VERSION_SUPPORT = semantic_version.match(">=1.8.1", torch.__version__)
-    if not VERSION_SUPPORT:
+    if not VERSION_SUPPORT:  # pragma: no cover
         raise ImportError("default.qubit.torch device requires Torch>=1.8.1")
 
-except ImportError as e:
+except ImportError as e:  # pragma: no cover
     raise ImportError("default.qubit.torch device requires Torch>=1.8.1") from e
 
 import numpy as np
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
-from . import DefaultQubit
+from . import DefaultQubitLegacy
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
-class DefaultQubitTorch(DefaultQubit):
-    """Simulator plugin based on ``"default.qubit"``, written using PyTorch.
+class DefaultQubitTorch(DefaultQubitLegacy):
+    """Simulator plugin based on ``"default.qubit.legacy"``, written using PyTorch.
 
     **Short name:** ``default.qubit.torch``
 
@@ -155,7 +160,6 @@ class DefaultQubitTorch(DefaultQubit):
     _ndim = staticmethod(lambda tensor: tensor.ndim)
 
     def __init__(self, wires, *, shots=None, analytic=None, torch_device=None):
-
         # Store if the user specified a Torch device. Otherwise the execute
         # method attempts to infer the Torch device from the gate parameters.
         self._torch_device_specified = torch_device is not None
@@ -194,7 +198,6 @@ class DefaultQubitTorch(DefaultQubit):
         par_torch_device = None
         for op in ops:
             for data in op.data:
-
                 # Using hasattr in case we don't have a Torch tensor as input
                 if hasattr(data, "is_cuda"):
                     if data.is_cuda:  # pragma: no cover
@@ -205,6 +208,16 @@ class DefaultQubitTorch(DefaultQubit):
         return par_torch_device
 
     def execute(self, circuit, **kwargs):
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                "Entry with args=(circuit=%s, kwargs=%s) called by=%s",
+                circuit,
+                kwargs,
+                "::L".join(
+                    str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
+                ),
+            )
+
         ops_and_obs = circuit.operations + circuit.observables
 
         par_torch_device = self._get_parameter_torch_device(ops_and_obs)
@@ -224,7 +237,6 @@ class DefaultQubitTorch(DefaultQubit):
                 # Raise a warning if there's a mismatch between the specified and
                 # used Torch devices
                 if params_cuda_device != specified_device_cuda:
-
                     warnings.warn(
                         f"Torch device {self._torch_device} specified "
                         "upon PennyLane device creation does not match the "
@@ -257,9 +269,10 @@ class DefaultQubitTorch(DefaultQubit):
     @staticmethod
     def _dot(x, y):
         if x.device != y.device:
-            if x.device != "cpu":
+            # GPU-specific cases
+            if x.device != "cpu":  # pragma: no cover
                 return torch.tensordot(x, y.to(x.device), dims=1)
-            if y.device != "cpu":
+            if y.device != "cpu":  # pragma: no cover
                 return torch.tensordot(x.to(y.device), y, dims=1)
 
         return torch.tensordot(x, y, dims=1)
@@ -278,7 +291,6 @@ class DefaultQubitTorch(DefaultQubit):
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):
-
         # `array` is now a torch tensor
         tensor = array
         new_tensor = torch.zeros(new_dimensions, dtype=tensor.dtype, device=tensor.device)

@@ -14,13 +14,15 @@
 """
 Unit tests for functions needed for computing the dipole.
 """
-import autograd
+# pylint: disable=too-many-arguments
 import pytest
 
 import pennylane as qml
 from pennylane import PauliX, PauliY, PauliZ
 from pennylane import numpy as np
 from pennylane import qchem
+from pennylane.fermi import from_string
+from pennylane.operation import disable_new_opmath, enable_new_opmath
 
 
 @pytest.mark.parametrize(
@@ -39,14 +41,14 @@ from pennylane import qchem
             np.array(
                 [
                     [
-                        [0.95622463, 0.7827277, -0.53222294],
-                        [0.7827277, 1.42895581, 0.23469918],
-                        [-0.53222294, 0.23469918, 0.48381955],
+                        [0.95622463, -0.7827277, -0.53222294],
+                        [-0.7827277, 1.42895581, -0.23469918],
+                        [-0.53222294, -0.23469918, 0.48381955],
                     ],
                     [
-                        [0.55538736, -0.53229398, -0.78262324],
-                        [-0.53229398, 0.3203965, 0.47233426],
-                        [-0.78262324, 0.47233426, 0.79021614],
+                        [0.55538736, 0.53229398, -0.78262324],
+                        [0.53229398, 0.3203965, -0.47233426],
+                        [-0.78262324, -0.47233426, 0.79021614],
                     ],
                     [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
                 ]
@@ -66,12 +68,12 @@ from pennylane import qchem
             np.array(
                 [
                     [
-                        [1.42895581, 0.23469918],
-                        [0.23469918, 0.48381955],
+                        [1.42895581, -0.23469918],
+                        [-0.23469918, 0.48381955],
                     ],
                     [
-                        [0.3203965, 0.47233426],
-                        [0.47233426, 0.79021614],
+                        [0.3203965, -0.47233426],
+                        [-0.47233426, 0.79021614],
                     ],
                     [[0.0, 0.0], [0.0, 0.0]],
                 ]
@@ -103,52 +105,25 @@ def test_dipole_integrals(symbols, geometry, charge, core, active, core_ref, int
             None,
             # x component of fermionic dipole computed with PL-QChem dipole (format is modified:
             # the signs of the coefficients, except that from the nuclear contribution, is flipped.
-            (
-                np.array(
-                    [
-                        2.869,
-                        -0.956224634652776,
-                        -0.782727697897828,
-                        0.532222940905614,
-                        -0.956224634652776,
-                        -0.782727697897828,
-                        0.532222940905614,
-                        -0.782727697897828,
-                        -1.42895581236226,
-                        -0.234699175620383,
-                        -0.782727697897828,
-                        -1.42895581236226,
-                        -0.234699175620383,
-                        0.532222940905614,
-                        -0.234699175620383,
-                        -0.483819552892797,
-                        0.532222940905614,
-                        -0.234699175620383,
-                        -0.483819552892797,
-                    ]
-                ),
-                [
-                    [],
-                    [0, 0],
-                    [0, 2],
-                    [0, 4],
-                    [1, 1],
-                    [1, 3],
-                    [1, 5],
-                    [2, 0],
-                    [2, 2],
-                    [2, 4],
-                    [3, 1],
-                    [3, 3],
-                    [3, 5],
-                    [4, 0],
-                    [4, 2],
-                    [4, 4],
-                    [5, 1],
-                    [5, 3],
-                    [5, 5],
-                ],
-            ),
+            2.869 * from_string("")
+            + -0.956224634652776 * from_string("0+ 0-")
+            + -0.782727697897828 * from_string("0+ 2-")
+            + 0.532222940905614 * from_string("0+ 4-")
+            + -0.956224634652776 * from_string("1+ 1-")
+            + -0.782727697897828 * from_string("1+ 3-")
+            + 0.532222940905614 * from_string("1+ 5-")
+            + -0.782727697897828 * from_string("2+ 0-")
+            + -1.42895581236226 * from_string("2+ 2-")
+            + -0.234699175620383 * from_string("2+ 4-")
+            + -0.782727697897828 * from_string("3+ 1-")
+            + -1.42895581236226 * from_string("3+ 3-")
+            + -0.234699175620383 * from_string("3+ 5-")
+            + 0.532222940905614 * from_string("4+ 0-")
+            + -0.234699175620383 * from_string("4+ 2-")
+            + -0.483819552892797 * from_string("4+ 4-")
+            + 0.532222940905614 * from_string("5+ 1-")
+            + -0.234699175620383 * from_string("5+ 3-")
+            + -0.483819552892797 * from_string("5+ 5-"),
         ),
         (
             ["H", "H", "H"],
@@ -160,34 +135,16 @@ def test_dipole_integrals(symbols, geometry, charge, core, active, core_ref, int
             [1, 2],
             # x component of fermionic dipole computed with PL-QChem dipole (format is modified:
             # the signs of the coefficients, except that from the nuclear contribution, is flipped.
-            (
-                np.array(
-                    [
-                        2.869,
-                        -1.912449269305551,
-                        -1.4289558123627388,
-                        -0.2346991756194219,
-                        -1.4289558123627388,
-                        -0.2346991756194219,
-                        -0.2346991756194219,
-                        -0.48381955289231976,
-                        -0.2346991756194219,
-                        -0.48381955289231976,
-                    ]
-                ),
-                [
-                    [],
-                    [],
-                    [0, 0],
-                    [0, 2],
-                    [1, 1],
-                    [1, 3],
-                    [2, 0],
-                    [2, 2],
-                    [3, 1],
-                    [3, 3],
-                ],
-            ),
+            2.869 * from_string("")
+            - 1.912449269305551 * from_string("")
+            + -1.4289558123627388 * from_string("0+ 0-")
+            + -0.2346991756194219 * from_string("0+ 2-")
+            + -1.4289558123627388 * from_string("1+ 1-")
+            + -0.2346991756194219 * from_string("1+ 3-")
+            + -0.2346991756194219 * from_string("2+ 0-")
+            + -0.48381955289231976 * from_string("2+ 2-")
+            + -0.2346991756194219 * from_string("3+ 1-")
+            + -0.48381955289231976 * from_string("3+ 3-"),
         ),
     ],
 )
@@ -238,20 +195,29 @@ def test_dipole_moment(symbols, geometry, core, charge, active, coeffs, ops):
         qml.Hamiltonian(np.ones(len(d_ref.coeffs)), d_ref.ops)
     )
 
+    enable_new_opmath()
+    d_op_math = qchem.dipole_moment(mol, core=core, active=active, cutoff=1.0e-8)(*args)[0]
+    disable_new_opmath()
+    d_ref_op_math = qml.dot(coeffs, ops)
+
+    assert np.allclose(
+        qml.matrix(d_op_math, wire_order=[0, 1, 2, 3]),
+        qml.matrix(d_ref_op_math, wire_order=[0, 1, 2, 3]),
+    )
+
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "charge", "core", "active"),
+    ("symbols", "geometry", "core", "active"),
     [
         (
             ["H", "H"],
             np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad=False),
-            0,
             None,
             None,
         ),
     ],
 )
-def test_dipole_moment_631g_basis(symbols, geometry, core, charge, active):
+def test_dipole_moment_631g_basis(symbols, geometry, core, active):
     r"""Test that the dipole moment is constructed properly with basis sets having different numbers
     of primitive Gaussian functions."""
     alpha = [
@@ -268,7 +234,7 @@ def test_dipole_moment_631g_basis(symbols, geometry, core, charge, active):
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "charge", "core", "active", "d_ref"),
+    ("symbols", "geometry", "charge", "d_ref"),
     [
         (
             ["H", "H", "H"],
@@ -276,13 +242,11 @@ def test_dipole_moment_631g_basis(symbols, geometry, core, charge, active):
                 [[0.028, 0.054, 0.0], [0.986, 1.610, 0.0], [1.855, 0.002, 0.0]], requires_grad=False
             ),
             1,
-            None,
-            None,
             [0.95655073, 0.55522528, 0.0],  # x, y, z components of the dipole moment from PL-QChem
         ),
     ],
 )
-def test_expvalD(symbols, geometry, charge, core, active, d_ref):
+def test_expvalD(symbols, geometry, charge, d_ref):
     r"""Test that expval(D) is correct."""
     mol = qchem.Molecule(symbols, geometry, charge=charge)
     args = []
@@ -306,7 +270,7 @@ def test_expvalD(symbols, geometry, charge, core, active, d_ref):
 
 
 def test_gradient_expvalD():
-    r"""Test that the gradient of expval(D) computed with ``autograd.grad`` is equal to the value
+    r"""Test that the gradient of expval(D) computed with ``qml.grad`` is equal to the value
     obtained with the finite difference method."""
     symbols = ["H", "H", "H"]
     geometry = np.array([[0.0, 0.0, 0.0], [1.0, 1.7, 0.0], [2.0, 0.0, 0.0]], requires_grad=False)
@@ -335,7 +299,7 @@ def test_gradient_expvalD():
 
         return circuit
 
-    grad_autograd = autograd.grad(dipole(mol))(*args)
+    grad_qml = qml.grad(dipole(mol))(*args)
 
     alpha_1 = np.array(
         [
@@ -360,4 +324,4 @@ def test_gradient_expvalD():
 
     grad_finitediff = (d_2 - d_1) / 0.0002
 
-    assert np.allclose(grad_autograd[0][0], grad_finitediff)
+    assert np.allclose(grad_qml[0][0], grad_finitediff)

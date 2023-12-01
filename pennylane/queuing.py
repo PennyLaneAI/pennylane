@@ -118,49 +118,41 @@ The function queues a copy of the original object if it already in the queue.
 >>> q.queue[0] is q.queue[1]
 False
 
-In the case of operators composed of other operators, each operator in the composite will be queued.
-For example, both ``PauliX`` and ``PauliX`` raised to a power.
+In the case of operators composed of other operators, like with :class:`~.SymbolicOp` and
+:class:`~.CompositeOp`, the new nested operation removes its constituents from the queue.
+Only the operators that will end up in the circuit will remain.
 
 >>> with qml.queuing.AnnotatedQueue() as q:
 ...     base = qml.PauliX(0)
+...     print(q.queue)
 ...     pow_op = base ** 1.5
->>> q.queue
-[PauliX(wires=[0]), PauliX(wires=[0])**1.5]
+...     print(q.queue)
+[PauliX(wires=[0])]
+[PauliX(wires=[0])**1.5]
 
-In this case, each object will have metadata associated with it. At later processing steps, the original
-``PauliX`` will be ignored in favor of the operator that *owns* it.
-
->>> q.get_info(base)
-{'owner': PauliX(wires=[0])**1.5}
->>> q.get_info(base)["owner"] is pow_op
-True
-
-Once the queue is constructed, the :func:`~.process_queue` function converts it into the operations,
-measurements, and state prep present in the final circuit. This step eliminates any object that has an owner.
+Once the queue is constructed, the :func:`~.process_queue` function converts it into the operations
+and measurements in the final circuit. This step eliminates any object that has an owner.
 
 >>> with qml.queuing.AnnotatedQueue() as q:
-...     qml.QubitStateVector(np.array([1.0, 0]), wires=0)
+...     qml.StatePrep(np.array([1.0, 0]), wires=0)
 ...     base = qml.PauliX(0)
 ...     pow_op = base ** 1.5
 ...     qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
->>> ops, measurements, prep = qml.queuing.process_queue(q)
+>>> ops, measurements = qml.queuing.process_queue(q)
 >>> ops
-[PauliX(wires=[0])**1.5]
+[StatePrep(tensor([1., 0.], requires_grad=True), wires=[0]), PauliX(wires=[0])**1.5]
 >>> measurements
 [expval(PauliZ(wires=[0]) @ PauliX(wires=[1]))]
->>> prep
-[QubitStateVector(tensor([1., 0.], requires_grad=True), wires=[0])]
 
-These three lists can be used to construct a :class:`~.QuantumScript`:
+These lists can be used to construct a :class:`~.QuantumScript`:
 
->>> qml.tape.QuantumScript(ops, measurements, prep)
+>>> qml.tape.QuantumScript(ops, measurements)
 <QuantumScript: wires=[0, 1], params=1>
 
-In order to construct new operators within a recording, but without queuing them, either
-use the :meth:`~.QueuingManager.stop_recording` context or specify `do_queue=False` upon construction:
+In order to construct new operators within a recording, but without queuing them
+use the :meth:`~.queuing.QueuingManager.stop_recording` context upon construction:
 
 >>> with qml.queuing.AnnotatedQueue() as q:
-...     qml.PauliX(0, do_queue=False)
 ...     with qml.QueuingManager.stop_recording():
 ...         qml.PauliY(1)
 >>> q.queue
@@ -171,10 +163,30 @@ use the :meth:`~.QueuingManager.stop_recording` context or specify `do_queue=Fal
 import copy
 from collections import OrderedDict
 from contextlib import contextmanager
+from threading import RLock
+from typing import Optional
 
 
 class QueuingError(Exception):
     """Exception that is raised when there is a queuing error"""
+
+
+class WrappedObj:
+    """Wraps an object to make its hash dependent on its identity"""
+
+    def __init__(self, obj):
+        self.obj = obj
+
+    def __hash__(self):
+        return id(self.obj)
+
+    def __eq__(self, other):
+        if not isinstance(other, WrappedObj):
+            return False
+        return id(self.obj) == id(other.obj)
+
+    def __repr__(self):
+        return f"Wrapped({self.obj.__repr__()})"
 
 
 class QueuingManager:
@@ -223,7 +235,7 @@ class QueuingManager:
         return bool(cls._active_contexts)
 
     @classmethod
-    def active_context(cls):
+    def active_context(cls) -> Optional["AnnotatedQueue"]:
         """Returns the currently active queuing context."""
         return cls._active_contexts[-1] if cls.recording() else None
 
@@ -340,12 +352,16 @@ class AnnotatedQueue(OrderedDict):
     """Lightweight class that maintains a basic queue of operations, in addition
     to metadata annotations."""
 
+    _lock = RLock()
+    """threading.RLock: Used to synchronize appending to/popping from global QueueingContext."""
+
     def __enter__(self):
         """Adds this instance to the global list of active contexts.
 
         Returns:
             AnnotatedQueue: this instance
         """
+        AnnotatedQueue._lock.acquire()
         QueuingManager.add_active_queue(self)
 
         return self
@@ -353,31 +369,52 @@ class AnnotatedQueue(OrderedDict):
     def __exit__(self, exception_type, exception_value, traceback):
         """Remove this instance from the global list of active contexts."""
         QueuingManager.remove_active_queue()
+        AnnotatedQueue._lock.release()
 
     def append(self, obj, **kwargs):
         """Append ``obj`` into the queue with ``kwargs`` metadata."""
+        obj = obj if isinstance(obj, WrappedObj) else WrappedObj(obj)
         self[obj] = kwargs
 
     def remove(self, obj):
-        """Remove ``obj`` from the queue.  Raises ``KeyError`` if ``obj`` is not already in the queue."""
-        del self[obj]
+        """Remove ``obj`` from the queue. Passes silently if the object is not in the queue."""
+        obj = obj if isinstance(obj, WrappedObj) else WrappedObj(obj)
+        if obj in self:
+            del self[obj]
 
     def update_info(self, obj, **kwargs):
         """Update ``obj``'s metadata with ``kwargs`` if it exists in the queue."""
+        obj = obj if isinstance(obj, WrappedObj) else WrappedObj(obj)
         if obj in self:
             self[obj].update(kwargs)
 
     def get_info(self, obj):
         """Retrieve the metadata for ``obj``.  Raises a ``QueuingError`` if obj is not in the queue."""
+        obj = obj if isinstance(obj, WrappedObj) else WrappedObj(obj)
         if obj not in self:
-            raise QueuingError(f"Object {obj} not in the queue.")
+            raise QueuingError(f"Object {obj.obj} not in the queue.")
 
         return self[obj]
+
+    def items(self):
+        return tuple((key.obj, value) for key, value in super().items())
 
     @property
     def queue(self):
         """Returns a list of objects in the annotated queue"""
-        return list(self.keys())
+        return list(key.obj for key in self.keys())
+
+    def __setitem__(self, key, value):
+        key = key if isinstance(key, WrappedObj) else WrappedObj(key)
+        return super().__setitem__(key, value)
+
+    def __getitem__(self, key):
+        key = key if isinstance(key, WrappedObj) else WrappedObj(key)
+        return super().__getitem__(key)
+
+    def __contains__(self, key):
+        key = key if isinstance(key, WrappedObj) else WrappedObj(key)
+        return super().__contains__(key)
 
 
 def apply(op, context=QueuingManager):
@@ -426,6 +463,22 @@ def apply(op, context=QueuingManager):
 
     >>> print(qml.draw(circuit)(0.6))
     0: ──RX(0.4)──RY(0.6)──RX(0.4)──┤ ⟨Z⟩
+
+    .. warning::
+
+        If you use ``apply`` on an operator that has already been queued, it will
+        be queued for a second time. For example:
+
+        .. code-block:: python
+
+            @qml.qnode(dev)
+            def circuit():
+                op = qml.Hadamard(0)
+                qml.apply(op)
+                return qml.expval(qml.PauliZ(0))
+
+        >>> print(qml.draw(circuit)())
+        0: ──H──H─┤  <Z>
 
     .. details::
         :title: Usage Details
@@ -484,7 +537,8 @@ def apply(op, context=QueuingManager):
     if not QueuingManager.recording():
         raise RuntimeError("No queuing context available to append operation to.")
 
-    if op in getattr(context, "queue", QueuingManager.active_context().queue):
+    # pylint: disable=unsupported-membership-test
+    if op in getattr(context, "queue", QueuingManager.active_context()):
         # Queuing contexts can only contain unique objects.
         # If the object to be queued already exists, copy it.
         op = copy.copy(op)
@@ -508,15 +562,14 @@ def process_queue(queue: AnnotatedQueue):
         queue (.AnnotatedQueue): The queue to be processed into individual lists
 
     Returns:
-        tuple[list(.Operation), list(.MeasurementProcess)], list(.Operation):
-        The list of main tape operations, the list of tape measurements, and the list of preparation operations
+        tuple[list(.Operation), list(.MeasurementProcess)]:
+        The list of tape operations, the list of tape measurements
     """
-    lists = {"_prep": [], "_ops": [], "_measurements": []}
-    list_order = {"_prep": 0, "_ops": 1, "_measurements": 2}
-    current_list = "_prep"
+    lists = {"_ops": [], "_measurements": []}
+    list_order = {"_ops": 1, "_measurements": 2}
+    current_list = "_ops"
 
     for obj, info in queue.items():
-
         if "owner" not in info and getattr(obj, "_queue_category", None) is not None:
             if list_order[obj._queue_category] > list_order[current_list]:
                 current_list = obj._queue_category
@@ -527,4 +580,4 @@ def process_queue(queue: AnnotatedQueue):
                 )
             lists[obj._queue_category].append(obj)
 
-    return lists["_ops"], lists["_measurements"], lists["_prep"]
+    return lists["_ops"], lists["_measurements"]

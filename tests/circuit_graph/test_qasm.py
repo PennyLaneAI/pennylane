@@ -21,7 +21,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane import CircuitGraph
 from pennylane.wires import Wires
 
 
@@ -31,7 +30,7 @@ class TestToQasmUnitTests:
     def test_empty_circuit(self):
         """Test that an empty circuit graph is properly
         serialized into an empty QASM program."""
-        circuit = qml.tape.QuantumTape()
+        circuit = qml.tape.QuantumScript()
         res = circuit.to_openqasm()
         expected = 'OPENQASM 2.0;\ninclude "qelib1.inc";\n'
         assert res == expected
@@ -39,7 +38,7 @@ class TestToQasmUnitTests:
     def test_native_qasm_gates(self):
         """Test that a circuit containing solely native QASM
         gates is properly serialized."""
-        with qml.tape.QuantumTape() as circuit:
+        with qml.queuing.AnnotatedQueue() as q_circuit:
             qml.RX(0.43, wires=0)
             qml.RY(0.35, wires=1)
             qml.RZ(0.35, wires=2)
@@ -48,6 +47,7 @@ class TestToQasmUnitTests:
             qml.CNOT(wires=[2, 0])
             qml.PauliX(wires=1)
 
+        circuit = qml.tape.QuantumScript.from_queue(q_circuit)
         res = circuit.to_openqasm()
 
         expected = dedent(
@@ -71,39 +71,13 @@ class TestToQasmUnitTests:
 
         assert res == expected
 
-    def test_native_inverse_gates(self):
-        """Test that a circuit containing inverse gates that are supported
-        natively by QASM, such as sdg, are correctly serialized."""
-        with qml.tape.QuantumTape() as circuit:
-            qml.S(wires=0)
-            qml.S(wires=0).inv()
-            qml.T(wires=0)
-            qml.T(wires=0).inv(),
-
-        res = circuit.to_openqasm()
-
-        expected = dedent(
-            """\
-            OPENQASM 2.0;
-            include "qelib1.inc";
-            qreg q[1];
-            creg c[1];
-            s q[0];
-            sdg q[0];
-            t q[0];
-            tdg q[0];
-            measure q[0] -> c[0];
-            """
-        )
-
-        assert res == expected
-
     def test_unused_wires(self):
         """Test that unused wires are correctly taken into account"""
-        with qml.tape.QuantumTape() as circuit:
+        with qml.queuing.AnnotatedQueue() as q_circuit:
             qml.Hadamard(wires=4)
             qml.CNOT(wires=[1, 0])
 
+        circuit = qml.tape.QuantumScript.from_queue(q_circuit)
         res = circuit.to_openqasm(wires=Wires([0, 1, 2, 3, 4]))
 
         expected = dedent(
@@ -127,14 +101,16 @@ class TestToQasmUnitTests:
     def test_rotation_gate_decomposition(self):
         """Test that gates not natively supported by QASM, such as the
         rotation gate, are correctly decomposed and serialized."""
-        with qml.tape.QuantumTape() as circuit1:
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.Rot(0.3, 0.1, 0.2, wires=1)
 
+        circuit1 = qml.tape.QuantumScript.from_queue(q1)
         qasm1 = circuit1.to_openqasm(wires=Wires([0, 1]))
 
-        with qml.tape.QuantumTape() as circuit2:
+        with qml.queuing.AnnotatedQueue() as q2:
             qml.Rot.compute_decomposition(0.3, 0.1, 0.2, wires=1)
 
+        circuit2 = qml.tape.QuantumScript.from_queue(q2)
         qasm2 = circuit2.to_openqasm(wires=Wires([0, 1]))
 
         expected = dedent(
@@ -159,14 +135,16 @@ class TestToQasmUnitTests:
         is correctly applied."""
         psi = np.array([1, -1, -1, 1]) / np.sqrt(4)
 
-        with qml.tape.QuantumTape() as circuit1:
-            qml.QubitStateVector(psi, wires=[0, 1])
+        with qml.queuing.AnnotatedQueue() as q1:
+            qml.StatePrep(psi, wires=[0, 1])
 
+        circuit1 = qml.tape.QuantumScript.from_queue(q1)
         qasm1 = circuit1.to_openqasm(precision=11)
 
-        with qml.tape.QuantumTape() as circuit2:
-            qml.QubitStateVector.compute_decomposition(psi, wires=[0, 1])
+        with qml.queuing.AnnotatedQueue() as q2:
+            qml.StatePrep.compute_decomposition(psi, wires=[0, 1])
 
+        circuit2 = qml.tape.QuantumScript.from_queue(q2)
         qasm2 = circuit2.to_openqasm(wires=Wires([0, 1]), precision=11)
 
         expected = dedent(
@@ -196,14 +174,16 @@ class TestToQasmUnitTests:
         is correctly applied."""
         basis_state = np.array([1, 0, 1, 1])
 
-        with qml.tape.QuantumTape() as circuit1:
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.BasisState(basis_state, wires=[0, 1, 2, 3])
 
+        circuit1 = qml.tape.QuantumScript.from_queue(q1)
         qasm1 = circuit1.to_openqasm()
 
-        with qml.tape.QuantumTape() as circuit2:
+        with qml.queuing.AnnotatedQueue() as q2:
             qml.BasisState.compute_decomposition(basis_state, wires=[0, 1, 2, 3])
 
+        circuit2 = qml.tape.QuantumScript.from_queue(q2)
         qasm2 = circuit2.to_openqasm(wires=[0, 1, 2, 3])
 
         expected = dedent(
@@ -228,24 +208,27 @@ class TestToQasmUnitTests:
     def test_unsupported_gate(self):
         """Test an exception is raised if an unsupported operation is
         applied."""
-        with qml.tape.QuantumTape() as circuit:
-            qml.S(wires=0), qml.DoubleExcitationPlus(0.5, wires=[0, 1, 2, 3])
+        with qml.queuing.AnnotatedQueue() as q_circuit:
+            qml.S(wires=0)
+            qml.DoubleExcitationPlus(0.5, wires=[0, 1, 2, 3])
 
+        circuit = qml.tape.QuantumScript.from_queue(q_circuit)
         with pytest.raises(
             ValueError, match="DoubleExcitationPlus not supported by the QASM serializer"
         ):
-            res = circuit.to_openqasm()
+            circuit.to_openqasm()
 
     def test_rotations(self):
         """Test that observable rotations are correctly applied."""
 
-        with qml.tape.QuantumTape() as circuit:
+        with qml.queuing.AnnotatedQueue() as q_circuit:
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliX(0))
             qml.expval(qml.PauliZ(1))
             qml.expval(qml.Hadamard(2))
 
+        circuit = qml.tape.QuantumScript.from_queue(q_circuit)
         res = circuit.to_openqasm()
 
         expected = dedent(
@@ -268,9 +251,10 @@ class TestToQasmUnitTests:
 
         ops2 = circuit.operations + circuit.diagonalizing_gates
 
-        with qml.tape.QuantumTape() as circuit2:
-            [o.queue() for o in ops2]
+        with qml.queuing.AnnotatedQueue() as q2:
+            _ = [o.queue() for o in ops2]
 
+        circuit2 = qml.tape.QuantumScript.from_queue(q2)
         qasm2 = circuit2.to_openqasm()
 
         assert res == qasm2
@@ -278,7 +262,7 @@ class TestToQasmUnitTests:
     def test_only_tape_measurements(self):
         """Test that no computational basis measurements are added other
         than those already in the tape when ``measure_all=False``."""
-        with qml.tape.QuantumTape() as circuit:
+        with qml.queuing.AnnotatedQueue() as q_circuit:
             qml.RX(0.43, wires="a")
             qml.RY(0.35, wires="b")
             qml.RZ(0.35, wires=2)
@@ -289,6 +273,7 @@ class TestToQasmUnitTests:
             qml.expval(qml.PauliZ("a"))
             qml.expval(qml.PauliZ(2))
 
+        circuit = qml.tape.QuantumScript.from_queue(q_circuit)
         res = circuit.to_openqasm(measure_all=False)
 
         expected = dedent(
@@ -453,39 +438,6 @@ class TestQNodeQasmIntegrationTests:
         res = qnode.qtape.to_openqasm()
         assert res == expected
 
-    def test_native_inverse_gates(self):
-        """Test that a QNode containing inverse gates that are supported
-        natively by QASM, such as sdg, are correctly serialized."""
-        dev = qml.device("default.qubit", wires=1)
-
-        @qml.qnode(dev)
-        def qnode():
-            qml.S(wires=0)
-            qml.S(wires=0).inv()
-            qml.T(wires=0)
-            qml.T(wires=0).inv()
-            return qml.expval(qml.PauliZ(0))
-
-        # construct the qnode circuit
-        qnode()
-        res = qnode.qtape.to_openqasm()
-
-        expected = dedent(
-            """\
-            OPENQASM 2.0;
-            include "qelib1.inc";
-            qreg q[1];
-            creg c[1];
-            s q[0];
-            sdg q[0];
-            t q[0];
-            tdg q[0];
-            measure q[0] -> c[0];
-            """
-        )
-
-        assert res == expected
-
     def test_unused_wires(self):
         """Test that unused wires are correctly taken into account"""
         dev = qml.device("default.qubit", wires=5)
@@ -555,7 +507,7 @@ class TestQNodeQasmIntegrationTests:
 
         @qml.qnode(dev)
         def qnode(state=None):
-            qml.QubitStateVector(state, wires=[0, 1])
+            qml.StatePrep(state, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
         # construct the qnode circuit
@@ -727,7 +679,37 @@ class TestQNodeQasmIntegrationTests:
 
         assert res == expected
 
+    @pytest.mark.tf
+    def test_tf_interface_information_removed(self):
+        """Test that interface information from tensorflow is not included in the
+        parameter string for parameterized operators"""
+        import tensorflow as tf
 
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def qnode(param):
+            qml.RX(param, wires="a")
+            return qml.expval(qml.PauliZ("a"))
+
+        qnode(tf.Variable(1.2))
+        res = qnode.qtape.to_openqasm()
+
+        expected = dedent(
+            """\
+            OPENQASM 2.0;
+            include "qelib1.inc";
+            qreg q[1];
+            creg c[1];
+            rx(1.2) q[0];
+            measure q[0] -> c[0];
+            """
+        )
+
+        assert res == expected
+
+
+# pylint: disable=unused-argument
 @pytest.mark.slow
 class TestQASMConformanceTests:
     """Conformance tests to ensure that the CircuitGraph
@@ -735,10 +717,11 @@ class TestQASMConformanceTests:
     by Qiskit. Note that this test class requires Qiskit and
     PennyLane-Qiskit as a dependency."""
 
-    @pytest.fixture
-    def check_dependencies(self):
+    # pylint: disable=attribute-defined-outside-init
+    @pytest.fixture(name="check_dependencies")
+    def check_dependencies_fixture(self):
         self.qiskit = pytest.importorskip("qiskit", minversion="0.14.1")
-        pl_qiskit = pytest.importorskip("pennylane_qiskit")
+        pytest.importorskip("pennylane_qiskit")
 
     def test_agrees_qiskit_plugin(self, check_dependencies):
         """Test that the QASM generated by the CircuitGraph agrees

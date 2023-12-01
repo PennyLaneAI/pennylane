@@ -20,7 +20,10 @@ import itertools
 import numbers
 from collections.abc import Iterable
 from copy import copy
+import functools
 from typing import List
+import scipy
+
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -31,7 +34,6 @@ OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identi
 
 
 def _compute_grouping_indices(observables, grouping_type="qwc", method="rlf"):
-
     # todo: directly compute the
     # indices, instead of extracting groups of observables first
     observable_groups = qml.pauli.group_observables(
@@ -42,21 +44,24 @@ def _compute_grouping_indices(observables, grouping_type="qwc", method="rlf"):
 
     indices = []
     available_indices = list(range(len(observables)))
-    for partition in observable_groups:
+    for partition in observable_groups:  # pylint:disable=too-many-nested-blocks
         indices_this_group = []
         for pauli_word in partition:
             # find index of this pauli word in remaining original observables,
             for observable in observables:
                 if qml.pauli.are_identical_pauli_words(pauli_word, observable):
-                    ind = observables.index(observable)
-                    indices_this_group.append(available_indices[ind])
-                    # delete this observable and its index, so it cannot be found again
-                    observables.pop(ind)
-                    available_indices.pop(ind)
+                    for ind, obs in enumerate(observables):
+                        if obs is not observable:
+                            continue
+                        indices_this_group.append(available_indices[ind])
+                        # delete this observable and its index, so it cannot be found again
+                        observables.pop(ind)
+                        available_indices.pop(ind)
+                        break
                     break
-        indices.append(indices_this_group)
+        indices.append(tuple(indices_this_group))
 
-    return indices
+    return tuple(indices)
 
 
 class Hamiltonian(Observable):
@@ -161,6 +166,18 @@ class Hamiltonian(Observable):
 
     num_wires = qml.operation.AnyWires
     grad_method = "A"  # supports analytic gradients
+    batch_size = None
+    ndim_params = None  # could be (0,) * len(coeffs), but it is not needed. Define at class-level
+
+    def _flatten(self):
+        # note that we are unable to restore grouping type or method without creating new properties
+        return (self.data, self._ops), (self.grouping_indices,)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        new_op = cls(data[0], data[1])
+        new_op._grouping_indices = metadata[0]  # pylint: disable=protected-access
+        return new_op
 
     def __init__(
         self,
@@ -170,9 +187,7 @@ class Hamiltonian(Observable):
         grouping_type=None,
         method="rlf",
         id=None,
-        do_queue=True,
     ):
-
         if qml.math.shape(coeffs)[0] != len(observables):
             raise ValueError(
                 "Could not create valid Hamiltonian; "
@@ -194,8 +209,6 @@ class Hamiltonian(Observable):
 
         self._wires = qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
 
-        self.return_type = None
-
         # attribute to store indices used to form groups of
         # commuting observables, since recomputation is costly
         self._grouping_indices = None
@@ -213,7 +226,10 @@ class Hamiltonian(Observable):
         # create the operator using each coefficient as a separate parameter;
         # this causes H.data to be a list of tensor scalars,
         # while H.coeffs is the original tensor
-        super().__init__(*coeffs_flat, wires=self._wires, id=id, do_queue=do_queue)
+        super().__init__(*coeffs_flat, wires=self._wires, id=id)
+
+    def _check_batching(self, params):
+        """Override for Hamiltonian, batching is not yet supported."""
 
     def label(self, decimals=None, base_label=None, cache=None):
         decimals = None if (len(self.parameters) > 3) else decimals
@@ -263,7 +279,7 @@ class Hamiltonian(Observable):
         >>> t[0]
         [<tf.Tensor: shape=(), dtype=float32, numpy=1.0>, <tf.Tensor: shape=(), dtype=float32, numpy=2.0>]
         """
-        return self.coeffs, self.ops
+        return self.parameters, self.ops
 
     @property
     def wires(self):
@@ -320,10 +336,11 @@ class Hamiltonian(Observable):
             or any(i not in range(len(self.ops)) for i in [i for sl in value for i in sl])
         ):
             raise ValueError(
-                f"The grouped index value needs to be a list of lists of integers between 0 and the "
+                f"The grouped index value needs to be a tuple of tuples of integers between 0 and the "
                 f"number of observables in the Hamiltonian; got {value}"
             )
-        self._grouping_indices = value
+        # make sure all tuples so can be hashable
+        self._grouping_indices = tuple(tuple(sublist) for sublist in value)
 
     def compute_grouping(self, grouping_type="qwc", method="rlf"):
         """
@@ -341,6 +358,92 @@ class Hamiltonian(Observable):
             self._grouping_indices = _compute_grouping_indices(
                 self.ops, grouping_type=grouping_type, method=method
             )
+
+    def sparse_matrix(self, wire_order=None):
+        r"""Computes the sparse matrix representation of a Hamiltonian in the computational basis.
+
+        Args:
+            wire_order (Iterable): global wire order, must contain all wire labels from the operator's wires.
+                If not provided, the default order of the wires (self.wires) of the Hamiltonian is used.
+
+        Returns:
+            csr_matrix: a sparse matrix in scipy Compressed Sparse Row (CSR) format with dimension
+            :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
+
+        **Example:**
+
+        >>> coeffs = [1, -0.45]
+        >>> obs = [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1)]
+        >>> H = qml.Hamiltonian(coeffs, obs)
+        >>> H_sparse = H.sparse_matrix()
+        >>> H_sparse
+        <4x4 sparse matrix of type '<class 'numpy.complex128'>'
+                with 8 stored elements in Compressed Sparse Row format>
+
+        The resulting sparse matrix can be either used directly or transformed into a numpy array:
+
+        >>> H_sparse.toarray()
+        array([[ 1.+0.j  ,  0.+0.j  ,  0.+0.45j,  0.+0.j  ],
+               [ 0.+0.j  , -1.+0.j  ,  0.+0.j  ,  0.-0.45j],
+               [ 0.-0.45j,  0.+0.j  , -1.+0.j  ,  0.+0.j  ],
+               [ 0.+0.j  ,  0.+0.45j,  0.+0.j  ,  1.+0.j  ]])
+        """
+        if wire_order is None:
+            wires = self.wires
+        else:
+            wires = wire_order
+        n = len(wires)
+        matrix = scipy.sparse.csr_matrix((2**n, 2**n), dtype="complex128")
+
+        coeffs = qml.math.toarray(self.data)
+
+        temp_mats = []
+        for coeff, op in zip(coeffs, self.ops):
+            obs = []
+            for o in qml.operation.Tensor(op).obs:
+                if len(o.wires) > 1:
+                    # todo: deal with operations created from multi-qubit operations such as Hermitian
+                    raise ValueError(
+                        f"Can only sparsify Hamiltonians whose constituent observables consist of "
+                        f"(tensor products of) single-qubit operators; got {op}."
+                    )
+                obs.append(o.matrix())
+
+            # Array to store the single-wire observables which will be Kronecker producted together
+            mat = []
+            # i_count tracks the number of consecutive single-wire identity matrices encountered
+            # in order to avoid unnecessary Kronecker products, since I_n x I_m = I_{n+m}
+            i_count = 0
+            for wire_lab in wires:
+                if wire_lab in op.wires:
+                    if i_count > 0:
+                        mat.append(scipy.sparse.eye(2**i_count, format="coo"))
+                    i_count = 0
+                    idx = op.wires.index(wire_lab)
+                    # obs is an array storing the single-wire observables which
+                    # make up the full Hamiltonian term
+                    sp_obs = scipy.sparse.coo_matrix(obs[idx])
+                    mat.append(sp_obs)
+                else:
+                    i_count += 1
+
+            if i_count > 0:
+                mat.append(scipy.sparse.eye(2**i_count, format="coo"))
+
+            red_mat = (
+                functools.reduce(lambda i, j: scipy.sparse.kron(i, j, format="coo"), mat) * coeff
+            )
+
+            temp_mats.append(red_mat.tocsr())
+            # Value of 100 arrived at empirically to balance time savings vs memory use. At this point
+            # the `temp_mats` are summed into the final result and the temporary storage array is
+            # cleared.
+            if (len(temp_mats) % 100) == 0:
+                matrix += sum(temp_mats)
+                temp_mats = []
+
+        matrix += sum(temp_mats)
+        return matrix
 
     def simplify(self):
         r"""Simplifies the Hamiltonian by combining like-terms.
@@ -383,7 +486,7 @@ class Hamiltonian(Observable):
 
         # hotfix: We `self.data`, since `self.parameters` returns a copy of the data and is now returned in
         # self.terms(). To be improved soon.
-        self.data = new_coeffs
+        self.data = tuple(new_coeffs)
         # hotfix: We overwrite the hyperparameter entry, which is now returned in self.terms().
         # To be improved soon.
         self.hyperparameters["ops"] = new_ops
@@ -393,6 +496,7 @@ class Hamiltonian(Observable):
         self._wires = qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
         # reset grouping, since the indices refer to the old observables and coefficients
         self._grouping_indices = None
+        return self
 
     def __str__(self):
         def wires_print(ob: Observable):
@@ -406,7 +510,6 @@ class Hamiltonian(Observable):
         terms_ls = []
 
         for coeff, obs in paired_coeff_obs:
-
             if isinstance(obs, Tensor):
                 obs_strs = [f"{OBS_MAP.get(ob.name, ob.name)}{wires_print(ob)}" for ob in obs.obs]
                 ob_str = " ".join(obs_strs)
@@ -462,6 +565,8 @@ class Hamiltonian(Observable):
                 parameters = tuple(
                     str(param) for param in ob.parameters
                 )  # Converts params into immutable type
+                if isinstance(ob, qml.GellMann):
+                    parameters += (ob.hyperparameters["index"],)
                 tensor.append((ob.name, ob.wires, parameters))
             data.add((co, frozenset(tensor)))
 
@@ -541,11 +646,11 @@ class Hamiltonian(Observable):
             return qml.Hamiltonian(coeffs, terms, simplify=True)
 
         if isinstance(H, (Tensor, Observable)):
-            terms = [op @ H for op in ops1]
+            terms = [op @ copy(H) for op in ops1]
 
             return qml.Hamiltonian(coeffs1, terms, simplify=True)
 
-        raise ValueError(f"Cannot tensor product Hamiltonian and {type(H)}")
+        return NotImplemented
 
     def __rmatmul__(self, H):
         r"""The tensor product operation (from the right) between a Hamiltonian and
@@ -558,11 +663,11 @@ class Hamiltonian(Observable):
         ops1 = self.ops.copy()
 
         if isinstance(H, (Tensor, Observable)):
-            terms = [H @ op for op in ops1]
+            terms = [copy(H) @ op for op in ops1]
 
             return qml.Hamiltonian(coeffs1, terms, simplify=True)
 
-        raise ValueError(f"Cannot tensor product Hamiltonian and {type(H)}")
+        return NotImplemented
 
     def __add__(self, H):
         r"""The addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
@@ -584,7 +689,7 @@ class Hamiltonian(Observable):
             ops.append(H)
             return qml.Hamiltonian(coeffs, ops, simplify=True)
 
-        raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
+        return NotImplemented
 
     __radd__ = __add__
 
@@ -595,15 +700,15 @@ class Hamiltonian(Observable):
             coeffs = qml.math.multiply(a, self_coeffs)
             return qml.Hamiltonian(coeffs, self.ops.copy())
 
-        raise ValueError(f"Cannot multiply Hamiltonian by {type(a)}")
+        return NotImplemented
 
     __rmul__ = __mul__
 
     def __sub__(self, H):
         r"""The subtraction operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
         if isinstance(H, (Hamiltonian, Tensor, Observable)):
-            return self.__add__(H.__mul__(-1))
-        raise ValueError(f"Cannot subtract {type(H)} from Hamiltonian")
+            return self + (-1 * H)
+        return NotImplemented
 
     def __iadd__(self, H):
         r"""The inplace addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
@@ -624,7 +729,7 @@ class Hamiltonian(Observable):
             self.simplify()
             return self
 
-        raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
+        return NotImplemented
 
     def __imul__(self, a):
         r"""The inplace scalar multiplication operation between a scalar and a Hamiltonian."""
@@ -632,20 +737,20 @@ class Hamiltonian(Observable):
             self._coeffs = qml.math.multiply(a, self._coeffs)
             return self
 
-        raise ValueError(f"Cannot multiply Hamiltonian by {type(a)}")
+        return NotImplemented
 
     def __isub__(self, H):
         r"""The inplace subtraction operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
         if isinstance(H, (Hamiltonian, Tensor, Observable)):
             self.__iadd__(H.__mul__(-1))
             return self
-        raise ValueError(f"Cannot subtract {type(H)} from Hamiltonian")
+        return NotImplemented
 
     def queue(self, context=qml.QueuingManager):
         """Queues a qml.Hamiltonian instance"""
         for o in self.ops:
-            context.update_info(o, owner=self)
-        context.append(self, owns=tuple(self.ops))
+            context.remove(o)
+        context.append(self)
         return self
 
     def map_wires(self, wire_map: dict):
@@ -660,7 +765,7 @@ class Hamiltonian(Observable):
         """
         cls = self.__class__
         new_op = cls.__new__(cls)
-        new_op.data = self.data.copy()
+        new_op.data = copy(self.data)
         new_op._wires = Wires(  # pylint: disable=protected-access
             [wire_map.get(wire, wire) for wire in self.wires]
         )

@@ -14,14 +14,16 @@
 """
 Unit tests for the :mod:`pennylane` :class:`QueuingManager` class.
 """
+from multiprocessing.dummy import Pool as ThreadPool
 import pytest
-import pennylane as qml
 import numpy as np
+import pennylane as qml
 
 from pennylane.queuing import (
     AnnotatedQueue,
     QueuingManager,
     QueuingError,
+    WrappedObj,
 )
 
 
@@ -158,18 +160,10 @@ class TestAnnotatedQueue:
     """Tests for the annotated queue class"""
 
     def test_remove_not_in_queue(self):
-        """Test that remove fails when the object to be removed is not in the queue."""
+        """Test that remove passes silently if the object is not in the queue"""
 
-        with AnnotatedQueue() as q1:
-            op1 = qml.PauliZ(0)
-            op2 = qml.PauliZ(1)
-            q1.append(op1)
-            q1.append(op2)
-
-        with AnnotatedQueue() as q2:
-            q2.append(op1)
-            with pytest.raises(KeyError):
-                q2.remove(op2)
+        q2 = AnnotatedQueue()
+        q2.remove(qml.PauliX(0))
 
     def test_append_qubit_gates(self):
         """Test that gates are successfully appended to the queue."""
@@ -205,7 +199,7 @@ class TestAnnotatedQueue:
             A = qml.PauliZ(0)
             B = qml.PauliY(1)
             tensor_op = qml.operation.Tensor(A, B)
-        assert q.queue == [A, B, tensor_op]
+        assert q.queue == [tensor_op]
         assert tensor_op.obs == [A, B]
 
     def test_append_tensor_ops_overloaded(self):
@@ -216,7 +210,7 @@ class TestAnnotatedQueue:
             A = qml.PauliZ(0)
             B = qml.PauliY(1)
             tensor_op = A @ B
-        assert q.queue == [A, B, tensor_op]
+        assert q.queue == [tensor_op]
         assert tensor_op.obs == [A, B]
 
     def test_get_info(self):
@@ -233,7 +227,7 @@ class TestAnnotatedQueue:
         for a non-existent object"""
 
         with AnnotatedQueue() as q:
-            A = qml.PauliZ(0)
+            qml.PauliZ(0)
 
         B = qml.PauliY(1)
 
@@ -272,7 +266,7 @@ class TestAnnotatedQueue:
         for a non-existent object."""
 
         with AnnotatedQueue() as q:
-            A = qml.PauliZ(0)
+            qml.PauliZ(0)
 
         B = qml.PauliY(1)
 
@@ -287,10 +281,26 @@ class TestAnnotatedQueue:
             B = qml.PauliY(1)
             tensor_op = qml.operation.Tensor(A, B)
 
-        assert q.queue == [A, B, tensor_op]
-        assert q.get_info(A) == {"owner": tensor_op}
-        assert q.get_info(B) == {"owner": tensor_op}
-        assert q.get_info(tensor_op) == {"owns": (A, B)}
+        assert q.queue == [tensor_op]
+
+    def test_parallel_queues_are_isolated(self):
+        """Tests that parallel queues do not queue each other's constituents."""
+        q1 = AnnotatedQueue()
+        q2 = AnnotatedQueue()
+        n = 10000
+
+        def queue_pauli(arg):
+            q, pauli = arg
+            with q:
+                for _ in range(n):
+                    pauli(0)
+
+        args = [(q1, qml.PauliX), (q2, qml.PauliY)]
+        ThreadPool(2).map(queue_pauli, args)
+        assert len(q1) == n
+        assert len(q2) == n
+        for queue, expected_op in args:
+            assert all(isinstance(op, expected_op) for op in queue.queue)
 
 
 test_observables = [
@@ -315,10 +325,11 @@ class TestApplyOp:
     def test_default_queue_operation_inside(self):
         """Test applying an operation instantiated within the queuing
         context to the existing active queue"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op1 = qml.PauliZ(0)
             op2 = qml.apply(op1)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert tape.operations == [op1, op2]
 
     def test_default_queue_operation_outside(self):
@@ -326,9 +337,10 @@ class TestApplyOp:
         to an existing active queue"""
         op = qml.PauliZ(0)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.apply(op)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert tape.operations == [op]
 
     @pytest.mark.parametrize("obs", test_observables)
@@ -337,31 +349,35 @@ class TestApplyOp:
         to an existing active queue"""
         op = qml.expval(obs)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.apply(op)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert tape.measurements == [op]
 
     @pytest.mark.parametrize("obs", test_observables)
-    def test_default_queue_measurements_outside(self, obs):
+    def test_default_queue_measurements_inside(self, obs):
         """Test applying a measurement instantiated inside a queuing context
         to an existing active queue"""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op1 = qml.expval(obs)
             op2 = qml.apply(op1)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert tape.measurements == [op1, op2]
 
     def test_different_queue_operation_inside(self):
         """Test applying an operation instantiated within the queuing
         context to a specfied queuing context"""
-        with qml.tape.QuantumTape() as tape1:
-            with qml.tape.QuantumTape() as tape2:
+        with qml.queuing.AnnotatedQueue() as q1:
+            with qml.queuing.AnnotatedQueue() as q2:
                 op1 = qml.PauliZ(0)
-                op2 = qml.apply(op1, tape1)
+                op2 = qml.apply(op1, q1)
 
-        assert tape1.operations == [tape2, op2]
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
+        assert tape1.operations == [op2]
         assert tape2.operations == [op1]
 
     def test_different_queue_operation_outside(self):
@@ -369,11 +385,13 @@ class TestApplyOp:
         to a specfied queuing context"""
         op = qml.PauliZ(0)
 
-        with qml.tape.QuantumTape() as tape1:
-            with qml.tape.QuantumTape() as tape2:
-                qml.apply(op, tape1)
+        with qml.queuing.AnnotatedQueue() as q1:
+            with qml.queuing.AnnotatedQueue() as q2:
+                qml.apply(op, q1)
 
-        assert tape1.operations == [tape2, op]
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
+        assert tape1.operations == [op]
         assert tape2.operations == []
 
     @pytest.mark.parametrize("obs", test_observables)
@@ -382,38 +400,100 @@ class TestApplyOp:
         to a specfied queuing context"""
         op = qml.expval(obs)
 
-        with qml.tape.QuantumTape() as tape1:
-            with qml.tape.QuantumTape() as tape2:
-                qml.apply(op, tape1)
+        with qml.queuing.AnnotatedQueue() as q1:
+            with qml.queuing.AnnotatedQueue() as q2:
+                qml.apply(op, q1)
 
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
         assert tape1.measurements == [op]
         assert tape2.measurements == []
 
     @pytest.mark.parametrize("obs", test_observables)
-    def test_different_queue_measurements_outside(self, obs):
+    def test_different_queue_measurements_inside(self, obs):
         """Test applying a measurement instantiated inside a queuing context
         to a specfied queuing context"""
 
-        with qml.tape.QuantumTape() as tape1:
-            with qml.tape.QuantumTape() as tape2:
+        with qml.queuing.AnnotatedQueue() as q1:
+            with qml.queuing.AnnotatedQueue() as q2:
                 op1 = qml.expval(obs)
-                op2 = qml.apply(op1, tape1)
+                op2 = qml.apply(op1, q1)
 
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
         assert tape1.measurements == [op2]
         assert tape2.measurements == [op1]
 
     def test_apply_no_queue_method(self):
         """Test that an object with no queue method is still
         added to the queuing context"""
-        with qml.tape.QuantumTape() as tape1:
-            with qml.tape.QuantumTape() as tape2:
+        with qml.queuing.AnnotatedQueue() as q1:
+            with qml.queuing.AnnotatedQueue() as q2:
                 op1 = qml.apply(5)
-                op2 = qml.apply(6, tape1)
+                op2 = qml.apply(6, q1)
 
-        assert tape1.queue == [tape2, op2]
-        assert tape2.queue == [op1]
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
+        assert q1.queue == [op2]
+        assert q2.queue == [op1]
 
         # note that tapes don't know how to process integers,
         # so they are not included after queue processing
-        assert tape1.operations == [tape2]
+        assert tape1.operations == []
         assert tape2.operations == []
+
+
+class TestWrappedObj:
+    """Tests for the ``WrappedObj`` class"""
+
+    @pytest.mark.parametrize(
+        "obj", [qml.PauliX(0), qml.expval(qml.PauliZ(0)), [0, 1, 2], ("a", "b")]
+    )
+    def test_wrapped_obj_init(self, obj):
+        """Test that ``WrappedObj`` is initialized correctly"""
+        wo = WrappedObj(obj)
+        assert wo.obj is obj
+
+    @pytest.mark.parametrize(
+        "obj1, obj2",
+        [(qml.PauliX(0), qml.PauliZ(0)), (qml.PauliX(0), qml.PauliX(0)), ((1,), (1, 2))],
+    )
+    def test_wrapped_obj_eq_false(self, obj1, obj2):
+        """Test that ``WrappedObj.__eq__`` returns False when expected."""
+        wo1 = WrappedObj(obj1)
+        wo2 = WrappedObj(obj2)
+        assert wo1 != wo2
+
+    def test_wrapped_obj_eq_false_other_obj(self):
+        """Test that WrappedObj.__eq__ returns False when the object being compared is not
+        a WrappedObj."""
+        op = qml.PauliX(0)
+        wo = WrappedObj(op)
+        assert wo != op
+
+    def test_wrapped_obj_eq_true(self):
+        """Test that ``WrappedObj.__eq__`` returns True when expected."""
+        op = qml.PauliX(0)
+        assert WrappedObj(op) == WrappedObj(op)
+
+    @pytest.mark.parametrize(
+        "obj", [qml.PauliX(0), qml.expval(qml.PauliZ(0)), [0, 1, 2], ("a", "b")]
+    )
+    def test_wrapped_obj_hash(self, obj):
+        """Test that ``WrappedObj.__hash__`` is the object id."""
+        wo = WrappedObj(obj)
+        assert wo.__hash__() == id(obj)
+
+    def test_wrapped_obj_repr(self):
+        """Test that the ``WrappedObj` representation is equivalent to the repr of the
+        object it wraps."""
+
+        class Dummy:  # pylint: disable=too-few-public-methods
+            """Dummy class with custom repr"""
+
+            def __repr__(self):
+                return "test_repr"
+
+        obj = Dummy()
+        wo = WrappedObj(obj)
+        assert wo.__repr__() == "Wrapped(test_repr)"

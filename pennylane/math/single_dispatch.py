@@ -12,13 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Autoray registrations"""
+
 # pylint:disable=protected-access,import-outside-toplevel,wrong-import-position, disable=unnecessary-lambda
 from importlib import import_module
-import numbers
 
 import autoray as ar
 import numpy as np
 import semantic_version
+from scipy.linalg import block_diag as _scipy_block_diag
+
+from .utils import get_deep_interface
 
 
 def _i(name):
@@ -33,6 +36,25 @@ def _i(name):
     return import_module(name)
 
 
+# ------------------------------- Builtins -------------------------------- #
+
+
+def _builtins_ndim(x):
+    interface = get_deep_interface(x)
+    x = ar.numpy.asarray(x, like=interface)
+    return ar.ndim(x)
+
+
+def _builtins_shape(x):
+    interface = get_deep_interface(x)
+    x = ar.numpy.asarray(x, like=interface)
+    return ar.shape(x)
+
+
+ar.register_function("builtins", "ndim", _builtins_ndim)
+ar.register_function("builtins", "shape", _builtins_shape)
+
+
 # -------------------------------- SciPy --------------------------------- #
 # the following is required to ensure that SciPy sparse Hamiltonians passed to
 # qml.SparseHamiltonian are not automatically 'unwrapped' to dense NumPy arrays.
@@ -45,7 +67,6 @@ ar.register_function("scipy", "ndim", np.ndim)
 
 
 # -------------------------------- NumPy --------------------------------- #
-from scipy.linalg import block_diag as _scipy_block_diag
 
 ar.register_function("numpy", "flatten", lambda x: x.flatten())
 ar.register_function("numpy", "coerce", lambda x: x)
@@ -74,7 +95,7 @@ def _scatter_element_add_numpy(tensor, index, value):
 ar.register_function("numpy", "scatter", _scatter_numpy)
 ar.register_function("numpy", "scatter_element_add", _scatter_element_add_numpy)
 ar.register_function("numpy", "eigvalsh", np.linalg.eigvalsh)
-ar.register_function("numpy", "entr", lambda x: -np.sum(x * np.log(x)))
+ar.register_function("numpy", "entr", lambda x: -np.sum(x * np.log(x), axis=-1))
 
 
 def _cond(pred, true_fn, false_fn, args):
@@ -86,6 +107,10 @@ def _cond(pred, true_fn, false_fn, args):
 
 ar.register_function("numpy", "cond", _cond)
 ar.register_function("builtins", "cond", _cond)
+
+ar.register_function("numpy", "gamma", lambda x: _i("scipy").special.gamma(x))
+
+ar.register_function("builtins", "gamma", lambda x: _i("scipy").special.gamma(x))
 
 # -------------------------------- Autograd --------------------------------- #
 
@@ -99,10 +124,21 @@ ar.autoray._BACKEND_ALIASES["pennylane"] = "autograd"
 # qml.numpy rather than autograd.numpy, to take into account our autograd modification.
 ar.autoray._MODULE_ALIASES["autograd"] = "pennylane.numpy"
 
+ar.register_function("autograd", "ndim", lambda x: _i("autograd").numpy.ndim(x))
+ar.register_function("autograd", "shape", lambda x: _i("autograd").numpy.shape(x))
 ar.register_function("autograd", "flatten", lambda x: x.flatten())
 ar.register_function("autograd", "coerce", lambda x: x)
 ar.register_function("autograd", "gather", lambda x, indices: x[np.array(indices)])
 ar.register_function("autograd", "unstack", list)
+
+
+def autograd_get_dtype_name(x):
+    """A autograd version of get_dtype_name that can handle array boxes."""
+    # this function seems to only get called with x is an arraybox.
+    return ar.get_dtype_name(x._value)
+
+
+ar.register_function("autograd", "get_dtype_name", autograd_get_dtype_name)
 
 
 def _block_diag_autograd(tensors):
@@ -180,11 +216,15 @@ def _take_autograd(tensor, indices, axis=None):
 ar.register_function("autograd", "take", _take_autograd)
 ar.register_function("autograd", "eigvalsh", lambda x: _i("autograd").numpy.linalg.eigh(x)[0])
 ar.register_function(
-    "autograd", "entr", lambda x: -_i("autograd").numpy.sum(x * _i("autograd").numpy.log(x))
+    "autograd",
+    "entr",
+    lambda x: -_i("autograd").numpy.sum(x * _i("autograd").numpy.log(x), axis=-1),
 )
 
 ar.register_function("autograd", "diagonal", lambda x, *args: _i("qml").numpy.diag(x))
 ar.register_function("autograd", "cond", _cond)
+
+ar.register_function("autograd", "gamma", lambda x: _i("autograd.scipy").special.gamma(x))
 
 
 # -------------------------------- TensorFlow --------------------------------- #
@@ -202,6 +242,20 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "sinc"] = "tensorflow.experimental.n
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "isclose"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "atleast_1d"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "all"] = "tensorflow.experimental.numpy"
+
+tf_fft_functions = [
+    "fft",
+    "ifft",
+    "fft2",
+    "ifft2",
+]
+
+
+for fn in tf_fft_functions:
+    ar.autoray._SUBMODULE_ALIASES["tensorflow", "fft." + fn] = "tensorflow.signal"
+
+ar.autoray._FUNC_ALIASES["tensorflow", "fft.fft2"] = "fft2d"
+ar.autoray._FUNC_ALIASES["tensorflow", "fft.ifft2"] = "ifft2d"
 
 ar.autoray._FUNC_ALIASES["tensorflow", "arcsin"] = "asin"
 ar.autoray._FUNC_ALIASES["tensorflow", "arccos"] = "acos"
@@ -222,11 +276,52 @@ ar.register_function("tensorflow", "flatten", lambda x: _i("tf").reshape(x, [-1]
 ar.register_function("tensorflow", "shape", lambda x: tuple(x.shape))
 ar.register_function(
     "tensorflow",
+    "full",
+    lambda shape, fill_value, **kwargs: _i("tf").fill(
+        shape if isinstance(shape, (tuple, list)) else (shape), fill_value, **kwargs
+    ),
+)
+ar.register_function(
+    "tensorflow",
+    "isnan",
+    lambda tensor, **kwargs: _i("tf").math.is_nan(_i("tf").math.real(tensor), **kwargs)
+    | _i("tf").math.is_nan(_i("tf").math.imag(tensor), **kwargs),
+)
+ar.register_function(
+    "tensorflow", "any", lambda tensor, **kwargs: _i("tf").reduce_any(tensor, **kwargs)
+)
+ar.register_function(
+    "tensorflow",
     "sqrt",
     lambda x: _i("tf").math.sqrt(
         _i("tf").cast(x, "float64") if x.dtype.name in ("int64", "int32") else x
     ),
 )
+
+
+def _ifft2_tf(a, s=None, axes=(-2, -1), norm=None):
+    if axes != (-2, -1):
+        raise ValueError(
+            "TensorFlow does not support passing axes; the ifft "
+            "will always be performed over the inner-most 2 dimensions."
+        )
+
+    if norm is not None:
+        raise ValueError("TensorFlow does not support the 'norm' keyword argument.")
+    if s is not None:
+        raise ValueError("TensorFlow does not support the 's' keyword argument.")
+
+    # TensorFlow only supports FFT of complex tensors
+    if a.dtype not in [_i("tf").complex64, _i("tf").complex128]:
+        if a.dtype is _i("tf").float64:
+            a = _i("tf").cast(a, dtype=_i("tf").complex128)
+        else:
+            a = _i("tf").cast(a, dtype=_i("tf").complex64)
+
+    return _i("tf").signal.ifft2d(input=a)
+
+
+ar.register_function("tensorflow", "fft.ifft2", _ifft2_tf)
 
 
 def _round_tf(tensor, decimals=0):
@@ -240,36 +335,15 @@ ar.register_function("tensorflow", "round", _round_tf)
 
 
 def _ndim_tf(tensor):
-    try:
-        return _i("tf").experimental.numpy.ndim(tensor)
-    except AttributeError:
-        return len(tensor.shape)
+    return len(tensor.shape)
 
 
 ar.register_function("tensorflow", "ndim", _ndim_tf)
 
 
-def _take_tf(tensor, indices, axis=None):
-    """Implement a TensorFlow version of np.take"""
+def _take_tf(tensor, indices, axis=None, **kwargs):
     tf = _i("tf")
-
-    if isinstance(indices, numbers.Number):
-        indices = [indices]
-
-    indices = tf.convert_to_tensor(indices)
-
-    if np.any(indices < 0):
-        # Unlike NumPy, TensorFlow doesn't support negative indices.
-        dim_length = tf.size(tensor).numpy() if axis is None else tf.shape(tensor)[axis]
-        indices = tf.where(indices >= 0, indices, indices + dim_length)
-
-    if axis is None:
-        # Unlike NumPy, if axis=None TensorFlow defaults to the first
-        # dimension rather than flattening the array.
-        data = tf.reshape(tensor, [-1])
-        return tf.gather(data, indices)
-
-    return tf.gather(tensor, indices, axis=axis)
+    return tf.experimental.numpy.take(tensor, indices, axis=axis, **kwargs)
 
 
 ar.register_function("tensorflow", "take", _take_tf)
@@ -369,7 +443,7 @@ def _eigvalsh_tf(density_matrix):
 
 ar.register_function("tensorflow", "eigvalsh", _eigvalsh_tf)
 ar.register_function(
-    "tensorflow", "entr", lambda x: -_i("tf").math.reduce_sum(x * _i("tf").math.log(x))
+    "tensorflow", "entr", lambda x: -_i("tf").math.reduce_sum(x * _i("tf").math.log(x), axis=-1)
 )
 
 
@@ -406,6 +480,7 @@ ar.register_function(
     "vander",
     lambda *args, **kwargs: _i("tf").experimental.numpy.vander(*args, **kwargs),
 )
+ar.register_function("tensorflow", "size", lambda x: _i("tf").size(x))
 
 
 # -------------------------------- Torch --------------------------------- #
@@ -414,7 +489,8 @@ ar.autoray._FUNC_ALIASES["torch", "unstack"] = "unbind"
 
 
 def _to_numpy_torch(x):
-    if getattr(x, "is_conj", False) and x.is_conj():
+    if getattr(x, "is_conj", False) and x.is_conj():  # pragma: no cover
+        # The following line is only covered if using Torch <v1.10.0
         x = x.resolve_conj()
 
     return x.detach().cpu().numpy()
@@ -436,6 +512,7 @@ def _asarray_torch(x, dtype=None, **kwargs):
         np.float64: torch.float64,
         np.complex64: torch.complex64,
         np.complex128: torch.complex128,
+        "float64": torch.float64,
     }
 
     if dtype in dtype_map:
@@ -450,6 +527,15 @@ ar.register_function("torch", "expand_dims", lambda x, axis: _i("torch").unsquee
 ar.register_function("torch", "shape", lambda x: tuple(x.shape))
 ar.register_function("torch", "gather", lambda x, indices: x[indices])
 ar.register_function("torch", "equal", lambda x, y: _i("torch").eq(x, y))
+
+ar.register_function(
+    "torch",
+    "fft.ifft2",
+    lambda a, s=None, axes=(-2, -1), norm=None: _i("torch").fft.ifft2(
+        input=a, s=s, dim=axes, norm=norm
+    ),
+)
+
 
 ar.register_function(
     "torch",
@@ -473,7 +559,7 @@ def _round_torch(tensor, decimals=0):
 ar.register_function("torch", "round", _round_torch)
 
 
-def _take_torch(tensor, indices, axis=None):
+def _take_torch(tensor, indices, axis=None, **_):
     """Torch implementation of np.take"""
     torch = _i("torch")
 
@@ -491,6 +577,8 @@ def _take_torch(tensor, indices, axis=None):
 
         return torch.index_select(tensor, dim=axis, index=indices)
 
+    if axis == -1:
+        return tensor[..., indices]
     fancy_indices = [slice(None)] * axis + [indices]
     return tensor[fancy_indices]
 
@@ -505,7 +593,8 @@ def _coerce_types_torch(tensors):
 
     # Extract existing set devices, if any
     device_set = set(t.device for t in tensors if isinstance(t, torch.Tensor))
-    if len(device_set) > 1:
+    if len(device_set) > 1:  # pragma: no cover
+        # GPU specific case
         device_names = ", ".join(str(d) for d in device_set)
         raise RuntimeError(
             f"Expected all tensors to be on the same device, but found at least two devices, {device_names}!"
@@ -541,7 +630,7 @@ def _block_diag_torch(tensors):
     torch = _i("torch")
     sizes = np.array([t.shape for t in tensors])
     shape = np.sum(sizes, axis=0).tolist()
-    res = torch.zeros(shape, dtype=tensors[0].dtype)
+    res = torch.zeros(shape, dtype=tensors[0].dtype, device=tensors[0].device)
 
     # get the diagonal indices at which new block
     # diagonals need to be inserted
@@ -606,10 +695,18 @@ def _ndim_torch(tensor):
     return tensor.dim()
 
 
+def _size_torch(tensor):
+    return tensor.numel()
+
+
 ar.register_function("torch", "ndim", _ndim_torch)
+ar.register_function("torch", "size", _size_torch)
+
 
 ar.register_function("torch", "eigvalsh", lambda x: _i("torch").linalg.eigvalsh(x))
-ar.register_function("torch", "entr", lambda x: _i("torch").sum(_i("torch").special.entr(x)))
+ar.register_function(
+    "torch", "entr", lambda x: _i("torch").sum(_i("torch").special.entr(x), dim=-1)
+)
 
 
 def _sum_torch(tensor, axis=None, keepdims=False, dtype=None):
@@ -646,14 +743,23 @@ ar.register_function("jax", "flatten", lambda x: x.flatten())
 ar.register_function(
     "jax",
     "take",
-    lambda x, indices, axis=None: _i("jax").numpy.take(
-        x, np.array(indices), axis=axis, mode="wrap"
+    lambda x, indices, axis=None, **kwargs: _i("jax").numpy.take(
+        x, np.array(indices), axis=axis, **kwargs
     ),
 )
 ar.register_function("jax", "coerce", lambda x: x)
 ar.register_function("jax", "to_numpy", _to_numpy_jax)
 ar.register_function("jax", "block_diag", lambda x: _i("jax").scipy.linalg.block_diag(*x))
 ar.register_function("jax", "gather", lambda x, indices: x[np.array(indices)])
+
+
+def _ndim_jax(x):
+    import jax.numpy as jnp
+
+    return jnp.ndim(x)
+
+
+ar.register_function("jax", "ndim", lambda x: _ndim_jax(x))
 
 
 def _scatter_jax(indices, array, new_dimensions):
@@ -673,10 +779,16 @@ ar.register_function(
 ar.register_function("jax", "unstack", list)
 # pylint: disable=unnecessary-lambda
 ar.register_function("jax", "eigvalsh", lambda x: _i("jax").numpy.linalg.eigvalsh(x))
-ar.register_function("jax", "entr", lambda x: _i("jax").numpy.sum(_i("jax").scipy.special.entr(x)))
+ar.register_function(
+    "jax", "entr", lambda x: _i("jax").numpy.sum(_i("jax").scipy.special.entr(x), axis=-1)
+)
 
 ar.register_function(
     "jax",
     "cond",
     lambda pred, true_fn, false_fn, args: _i("jax").lax.cond(pred, true_fn, false_fn, *args),
+)
+
+ar.register_function(
+    "jax", "gamma", lambda x: _i("jax").numpy.exp(_i("jax").scipy.special.gammaln(x))
 )

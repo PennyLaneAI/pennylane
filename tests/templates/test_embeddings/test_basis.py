@@ -20,6 +20,31 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 
+def test_standard_validity():
+    """Check the operation using the assert_valid function."""
+    wires = qml.wires.Wires((0, 1, 2))
+    op = qml.BasisEmbedding(features=np.array([1, 1, 1]), wires=wires)
+    qml.ops.functions.assert_valid(op)
+
+
+# pylint: disable=protected-access
+def test_flatten_unflatten():
+    """Test the _flatten and _unflatten methods."""
+    wires = qml.wires.Wires((0, 1, 2))
+    op = qml.BasisEmbedding(features=[1, 1, 1], wires=wires)
+    data, metadata = op._flatten()
+    assert data == tuple()
+    assert metadata[0] == wires
+    assert metadata[1] == (1, 1, 1)
+
+    # make sure metadata hashable
+    assert hash(metadata)
+
+    new_op = op._unflatten(*op._flatten())
+    assert qml.equal(op, new_op)
+    assert op is not new_op
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
@@ -60,17 +85,18 @@ class TestDecomposition:
         @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(features, wires=range(3))
-            return qml.expval(qml.Identity(0))
+            return qml.expval(qml.Identity(0)), qml.state()
 
         @qml.qnode(dev2)
         def circuit2():
             qml.BasisEmbedding(features, wires=["z", "a", "k"])
-            return qml.expval(qml.Identity("z"))
+            return qml.expval(qml.Identity("z")), qml.state()
 
-        circuit()
-        circuit2()
+        res1, state1 = circuit()
+        res2, state2 = circuit2()
 
-        assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
 
 class TestInputs:
@@ -143,9 +169,7 @@ def circuit_template(features):
 def circuit_decomposed(features):
     # convert tensor to list
     feats = list(qml.math.toarray(features))
-    for i in range(len(feats)):
-        if feats[i] == 1:
-            qml.PauliX(wires=i)
+    _ = [qml.PauliX(wires=i) for i, feat in enumerate(feats) if feat == 1]
 
     return qml.state()
 
@@ -195,15 +219,14 @@ class TestInterfaces:
     def test_jax(self, tol):
         """Tests the jax interface."""
 
-        import jax
         import jax.numpy as jnp
 
         features = jnp.array([0, 1, 0])
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="jax")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
@@ -223,8 +246,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="jax")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
@@ -245,8 +268,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="tf")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="tf")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
@@ -265,8 +288,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="tf-autograph")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="tf-autograph")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
@@ -285,8 +308,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="torch")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="torch")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)

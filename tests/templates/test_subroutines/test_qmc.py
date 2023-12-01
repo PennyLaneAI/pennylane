@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+Unit tests for the QuantumMonteCarlo subroutine template.
+"""
 import numpy as np
 import pytest
 from scipy.stats import norm
@@ -59,6 +62,20 @@ class TestProbsToUnitary:
         assert np.allclose(unitary @ unitary.T, np.eye(len(unitary)))
         assert np.allclose(unitary.T @ unitary, np.eye(len(unitary)))
 
+    @pytest.mark.jax
+    @pytest.mark.parametrize("p", ps)
+    def test_fixed_examples_jax_jit(self, p):
+        """Test if the correct unitary is returned for fixed input examples using JAX-JIT.
+        A correct unitary has its first column equal to the square root of the distribution
+        and satisfies U @ U.T = U.T @ U = I."""
+        import jax
+        from jax import numpy as jnp
+
+        unitary = jax.jit(probs_to_unitary)(jnp.array(p))
+        assert jnp.allclose(np.sqrt(p), unitary[:, 0])
+        assert jnp.allclose(unitary @ unitary.T, np.eye(len(unitary)), atol=1e-7)
+        assert jnp.allclose(unitary.T @ unitary, np.eye(len(unitary)), atol=1e-7)
+
 
 class TestFuncToUnitary:
     """Tests for the func_to_unitary function"""
@@ -66,10 +83,9 @@ class TestFuncToUnitary:
     def test_not_bounded_func(self):
         """Test if a ValueError is raised if a function that evaluates outside of the [0, 1]
         interval is provided"""
-        func = lambda i: np.sin(i)
 
         with pytest.raises(ValueError, match="func must be bounded within the interval"):
-            func_to_unitary(func, 8)
+            func_to_unitary(np.sin, 8)
 
     def test_example(self):
         """Test for a fixed example if the returned unitary maps input states to the
@@ -91,6 +107,30 @@ class TestFuncToUnitary:
         assert np.allclose(r @ r.T, np.eye(2 * M))
         assert np.allclose(r.T @ r, np.eye(2 * M))
 
+    @pytest.mark.jax
+    def test_example_jax_jit(self):
+        """Test for a fixed example using JAX-JIT if the returned unitary maps input states to the
+        expected output state as well as if the unitary satisfies U @ U.T = U.T @ U = I."""
+        import jax
+        from jax import numpy as jnp
+
+        M = 8
+        func = lambda i: jnp.sin(i) ** 2
+
+        r = func_to_unitary(jax.jit(func), M)
+
+        for i in range(M):
+            # The control qubit is the last qubit, so we have to look at every other term
+            # using [::2].
+            output_state = r[::2][i]
+            output_0 = output_state[::2]
+            output_1 = output_state[1::2]
+            assert np.allclose(output_0[i], np.sqrt(1 - func(i)))
+            assert np.allclose(output_1[i], np.sqrt(func(i)))
+
+        assert np.allclose(r @ r.T, np.eye(2 * M), atol=1e-7)
+        assert np.allclose(r.T @ r, np.eye(2 * M), atol=1e-7)
+
     def test_example_with_pl(self):
         """Test for a fixed example if the returned unitary behaves as expected
         when used within a PennyLane circuit, i.e., so that the probability of the final control
@@ -105,7 +145,7 @@ class TestFuncToUnitary:
 
         @qml.qnode(dev)
         def apply_r(input_state):
-            qml.QubitStateVector(input_state, wires=range(wires))
+            qml.StatePrep(input_state, wires=range(wires))
             qml.QubitUnitary(r, wires=range(wires + 1))
             return qml.probs(wires)
 
@@ -215,6 +255,23 @@ class TestQuantumMonteCarlo:
     def func(i):
         return np.sin(i) ** 2
 
+    # pylint: disable=protected-access
+    def test_flatten_unflatten(self):
+        """Test the flatten and unflatten methods."""
+        p = np.ones(4) / 4
+        target_wires, estimation_wires = Wires(range(3)), Wires(range(3, 5))
+
+        op = QuantumMonteCarlo(p, self.func, target_wires, estimation_wires)
+
+        data, metadata = op._flatten()
+        assert data is op.data
+        assert metadata[0] == op.wires
+        assert dict(metadata[1]) == op.hyperparameters
+
+        new_op = type(op)._unflatten(*op._flatten())
+        assert qml.equal(op, new_op)
+        assert op is not new_op
+
     def test_non_flat(self):
         """Test if a ValueError is raised when a non-flat array is input"""
         p = np.ones((4, 1)) / 4
@@ -251,8 +308,8 @@ class TestQuantumMonteCarlo:
         # Do expansion in two steps to avoid also decomposing the first QubitUnitary
         queue_before_qpe = tape.operations[:2]
 
-        # 2-qubit decomposition has 10 operations, and after is a 3-qubit gate so start at 11
-        queue_after_qpe = tape.expand().operations[11:]
+        # 2-qubit decomposition has 18 operations, and after is a 3-qubit gate so start at 19
+        queue_after_qpe = tape.expand().operations[19:]
 
         A = probs_to_unitary(p)
         R = func_to_unitary(self.func, 4)
@@ -267,9 +324,10 @@ class TestQuantumMonteCarlo:
 
         Q = make_Q(A, R)
 
-        with qml.tape.QuantumTape() as qpe_tape:
+        with qml.queuing.AnnotatedQueue() as q_qpe_tape:
             qml.QuantumPhaseEstimation(Q, target_wires, estimation_wires)
 
+        qpe_tape = qml.tape.QuantumScript.from_queue(q_qpe_tape)
         qpe_tape = qpe_tape.expand()
 
         assert len(queue_after_qpe) == len(qpe_tape.operations)
@@ -283,6 +341,7 @@ class TestQuantumMonteCarlo:
     def test_expected_value(self):
         """Test that the QuantumMonteCarlo template can correctly estimate the expectation value
         following the example in the usage details"""
+        # pylint: disable=cell-var-from-loop
         m = 5
         M = 2**m
 
@@ -324,6 +383,57 @@ class TestQuantumMonteCarlo:
             assert err1 >= err2
 
         assert np.allclose(estimates[-1], exact, rtol=1e-3)
+
+    @pytest.mark.jax
+    def test_expected_value_jax_jit(self):
+        """Test that the QuantumMonteCarlo template can correctly estimate the expectation value
+        following the example in the usage details using JAX-JIT"""
+        # pylint: disable=cell-var-from-loop
+        import jax
+        from jax import numpy as jnp
+
+        m = 5
+        M = 2**m
+
+        xmax = jnp.pi
+        xs = jnp.linspace(-xmax, xmax, M)
+
+        probs = jnp.array([norm().pdf(x) for x in xs])
+        probs /= jnp.sum(probs)
+
+        func = lambda i: jnp.cos(xs[i]) ** 2
+
+        estimates = []
+
+        for n in range(4, 11):
+            N = 2**n
+
+            target_wires = range(m + 1)
+            estimation_wires = range(m + 1, n + m + 1)
+
+            dev = qml.device("default.qubit", wires=(n + m + 1))
+
+            @jax.jit
+            @qml.qnode(dev, interface="jax")
+            def circuit():
+                qml.QuantumMonteCarlo(
+                    probs, func, target_wires=target_wires, estimation_wires=estimation_wires
+                )
+                return qml.probs(estimation_wires)
+
+            phase_estimated = jnp.argmax(circuit()[: int(N / 2)]) / N
+            mu_estimated = (1 - jnp.cos(np.pi * phase_estimated)) / 2
+            estimates.append(mu_estimated)
+
+        exact = 0.432332358381693654
+
+        # Check that the error is monotonically decreasing
+        for i in range(len(estimates) - 1):
+            err1 = jnp.abs(estimates[i] - exact)
+            err2 = jnp.abs(estimates[i + 1] - exact)
+            assert err1 >= err2
+
+        assert jnp.allclose(estimates[-1], exact, rtol=1e-3)
 
     def test_expected_value_custom_wires(self):
         """Test that the QuantumMonteCarlo template can correctly estimate the expectation value

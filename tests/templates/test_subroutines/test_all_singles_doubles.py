@@ -14,10 +14,23 @@
 """
 Tests for the AllSinglesDoubles template.
 """
+# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 import numpy as np
 from pennylane import numpy as pnp
 import pennylane as qml
+
+
+def test_standard_validity():
+    """Run standard tests of operation validity."""
+    op = qml.AllSinglesDoubles(
+        [1, 2],
+        wires=range(4),
+        hf_state=np.array([1, 1, 0, 0]),
+        singles=[[0, 1]],
+        doubles=[[0, 1, 2, 3]],
+    )
+    qml.ops.functions.assert_valid(op)
 
 
 class TestDecomposition:
@@ -119,7 +132,7 @@ class TestDecomposition:
                 singles=[[0, 1]],
                 doubles=[[0, 1, 2, 3]],
             )
-            return qml.expval(qml.Identity(0))
+            return qml.expval(qml.Identity(0)), qml.state()
 
         @qml.qnode(dev2)
         def circuit2():
@@ -130,12 +143,13 @@ class TestDecomposition:
                 singles=[["z", "a"]],
                 doubles=[["z", "a", "k", "e"]],
             )
-            return qml.expval(qml.Identity("z"))
+            return qml.expval(qml.Identity("z")), qml.state()
 
-        circuit()
-        circuit2()
+        res1, state1 = circuit()
+        res2, state2 = circuit2()
 
-        assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
 
 class TestInputs:
@@ -190,7 +204,7 @@ class TestInputs:
                 [[0, 2]],
                 [[0, 1, 2, 3]],
                 np.array([1, 1, 0, 0, 0]),
-                "BasisState parameter and wires",
+                "Basis states must be of length 4",
             ),
             (
                 np.array([-2.8, 1.6]),
@@ -375,8 +389,8 @@ class TestInterfaces:
         weights = jnp.array(np.random.random(size=(2,)))
         dev = qml.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev, interface="jax")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
@@ -399,8 +413,8 @@ class TestInterfaces:
         weights = tf.Variable(np.random.random(size=(2,)))
         dev = qml.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev, interface="tf")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="tf")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
@@ -426,8 +440,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev, interface="torch")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="torch")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)

@@ -15,6 +15,13 @@ or replace a large circuit by a number of smaller circuits.
 Compilation functionality is mostly designed as **transforms**, which you can read up on in the
 section on :doc:`inspecting circuits </introduction/inspecting_circuits>`.
 
+In addition to quantum circuit transforms, PennyLane also
+supports experimental just-in-time compilation, via the :func:`~.qjit` decorator and
+`Catalyst <https://github.com/pennylaneai/catalyst>`__. This is more general, and
+supports full hybrid compilation --- compiling both the classical and quantum components
+of your workflow into a binary that can be run close to the accelerators.
+that you are using.
+
 Simplifying Operators
 ----------------------
 
@@ -34,7 +41,7 @@ RX(0.09999999999999964, wires=[0])
 RX(11.336370614359172, wires=[0])
 >>> qml.simplify(qml.ops.Pow(qml.RX(1, 0), 3))
 RX(3.0, wires=[0])
->>> qml.simplify(qml.op_sum(qml.PauliY(3), qml.PauliY(3)))
+>>> qml.simplify(qml.sum(qml.PauliY(3), qml.PauliY(3)))
 2*(PauliY(wires=[3]))
 >>> qml.simplify(qml.RX(1, 0) @ qml.RX(1, 0))
 RX(2.0, wires=[0])
@@ -53,19 +60,19 @@ Several simplifications steps are happening here. First of all, the nested produ
 
 .. code-block:: python
 
-    qml.prod(qml.PauliX(0), qml.op_sum(qml.RX(1, 0), qml.PauliX(0)), qml.RX(1, 0))
+    qml.prod(qml.PauliX(0), qml.sum(qml.RX(1, 0), qml.PauliX(0)), qml.RX(1, 0))
 
 Then the product of sums is transformed into a sum of products:
 
 .. code-block:: python
 
-    qml.op_sum(qml.prod(qml.PauliX(0), qml.RX(1, 0), qml.RX(1, 0)), qml.prod(qml.PauliX(0), qml.PauliX(0), qml.RX(1, 0)))
+    qml.sum(qml.prod(qml.PauliX(0), qml.RX(1, 0), qml.RX(1, 0)), qml.prod(qml.PauliX(0), qml.PauliX(0), qml.RX(1, 0)))
 
 And finally like terms in the obtained products are grouped together, removing all identities: 
 
 .. code-block:: python
 
-    qml.op_sum(qml.prod(qml.PauliX(0), qml.RX(2, 0)), qml.RX(1, 0))
+    qml.sum(qml.prod(qml.PauliX(0), qml.RX(2, 0)), qml.RX(1, 0))
 
 As mentioned earlier we can also simplify QNode objects to, for example, group rotation gates:
 
@@ -128,9 +135,9 @@ For example, take the following decorated quantum function:
 
     dev = qml.device('default.qubit', wires=[0, 1, 2])
 
+    @qml.compile
     @qml.qnode(dev)
-    @qml.compile()
-    def qfunc(x, y, z):
+    def circuit(x, y, z):
         qml.Hadamard(wires=0)
         qml.Hadamard(wires=1)
         qml.Hadamard(wires=2)
@@ -150,7 +157,7 @@ The default behaviour of :func:`~.pennylane.compile` applies a sequence of three
 transforms: :func:`~.pennylane.transforms.commute_controlled`, :func:`~.pennylane.transforms.cancel_inverses`,
 and then :func:`~.pennylane.transforms.merge_rotations`.
 
->>> print(qml.draw(qfunc)(0.2, 0.3, 0.4))
+>>> print(qml.draw(circuit)(0.2, 0.3, 0.4))
 0: ──H──RX(0.60)─────────────────┤  <Z>
 1: ──H─╭X─────────────────────╭●─┤     
 2: ──H─╰●─────────RX(0.30)──Y─╰Z─┤     
@@ -166,8 +173,8 @@ controlled gates and cancel adjacent inverses, we could do:
     from pennylane.transforms import commute_controlled, cancel_inverses
     pipeline = [commute_controlled, cancel_inverses]
 
+    @partial(qml.compile, pipeline=pipeline)
     @qml.qnode(dev)
-    @qml.compile(pipeline=pipeline)
     def qfunc(x, y, z):
         qml.Hadamard(wires=0)
         qml.Hadamard(wires=1)
@@ -282,7 +289,7 @@ The example below shows how a three-wire circuit can be run on a two-wire device
 
         qml.CZ(wires=[1, 2])
 
-        return qml.expval(qml.grouping.string_to_pauli_word("ZZZ"))
+        return qml.expval(qml.pauli.string_to_pauli_word("ZZZ"))
 
 Instead of being executed directly, the circuit will be partitioned into
 smaller fragments according to the :class:`~.pennylane.WireCut` locations,
@@ -319,16 +326,121 @@ It turns a QNode that measures non-commuting observables into a QNode that inter
 uses *multiple* circuit executions with qubit-wise commuting groups. The transform is used
 by devices to make such measurements possible.
 
-On a lower level, the :func:`~.pennylane.grouping.group_observables` function can be used to split lists of
+On a lower level, the :func:`~.pennylane.pauli.group_observables` function can be used to split lists of
 observables and coefficients:
 
 >>> obs = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
 >>> coeffs = [1.43, 4.21, 0.97]
->>> obs_groupings, coeffs_groupings = qml.grouping.group_observables(obs, coeffs, 'anticommuting', 'lf')
+>>> obs_groupings, coeffs_groupings = qml.pauli.group_observables(obs, coeffs, 'anticommuting', 'lf')
 >>> obs_groupings
 [[PauliZ(wires=[1]), PauliX(wires=[0]) @ PauliX(wires=[1])],
  [PauliY(wires=[0])]]
 >>> coeffs_groupings
 [[0.97, 4.21], [1.43]]
 
-This and more logic to manipulate Pauli observables is found in the :mod:`~.pennylane.grouping` module.
+This and more logic to manipulate Pauli observables is found in the :mod:`~.pennylane.pauli` module.
+
+Just-in-time compilation with Catalyst
+--------------------------------------
+
+In addition to quantum circuit transformations, PennyLane also supports full
+hybrid just-in-time (JIT) compilation via the :func:`~.qjit` decorator and
+the `Catalyst hybrid compiler <https://github.com/pennylaneai/catalyst>`__.
+Catalyst allows you to compile the entire quantum-classical workflow,
+including any optimization loops, which allows for optimized performance, and
+the ability to run the entire workflow on accelerator devices as
+appropriate.
+
+Currently, Catalyst must be installed separately, and only supports the JAX
+interface and select devices such as ``lightning.qubit``,
+``lightning.kokkos``, ``braket.local.qubit`` and ``braket.aws.qubit``. It
+does **not** support ``default.qubit``.
+
+On MacOS and Linux, Catalyst can be installed with ``pip``:
+
+.. code-block:: console
+
+    pip install pennylane-catalyst
+
+Check out the Catalyst documentation for
+:doc:`installation instructions <catalyst:dev/installation>`.
+
+Using Catalyst with PennyLane is a simple as using the :func:`@qjit <.qjit>` decorator to
+compile your hybrid workflows:
+
+.. code-block:: python
+
+    from jax import numpy as jnp
+
+    dev = qml.device("lightning.qubit", wires=2, shots=1000)
+
+    @qml.qjit
+    @qml.qnode(dev)
+    def cost(params):
+        qml.Hadamard(0)
+        qml.RX(jnp.sin(params[0]) ** 2, wires=1)
+        qml.CRY(params[0], wires=[0, 1])
+        qml.RX(jnp.sqrt(params[1]), wires=1)
+        return qml.expval(qml.PauliZ(1))
+
+The :func:`~.qjit` decorator can also be used on hybrid cost functions --
+that is, cost functions that include both QNodes and classical processing. We
+can even JIT compile the full optimization loop, for example when training
+models:
+
+.. code-block:: python
+
+    import jaxopt
+
+    @jax.jit
+    def optimization():
+        # initial parameter
+        params = jnp.array([0.54, 0.3154])
+
+        # define the optimizer
+        opt = jaxopt.GradientDescent(cost, stepsize=0.4)
+        update = lambda i, args: tuple(opt.update(*args))
+
+        # perform optimization loop
+        state = opt.init_state(params)
+        (params, _) = jax.lax.fori_loop(0, 100, update, (params, state))
+
+        return params
+
+The Catalyst compiler also supports capturing imperative Python control flow
+in compiled programs, resulting in control flow being interpreted at runtime
+rather than in Python at compile time. You can enable this feature via the
+``autograph=True`` keyword argument.
+
+.. code-block:: python
+
+    @qml.qjit(autograph=True)
+    @qml.qnode(dev)
+    def circuit(x: int):
+
+        if x < 5:
+            qml.Hadamard(wires=0)
+        else:
+            qml.T(wires=0)
+
+        return qml.expval(qml.PauliZ(0))
+
+>>> circuit(3)
+array(0.)
+>>> circuit(5)
+array(1.)
+
+Note that AutoGraph results in additional restrictions, in particular whenever
+global state is involved.
+Please refer to the :doc:`AutoGraph guide<catalyst:dev/autograph>` for a
+complete discussion of the supported and unsupported use-cases.
+
+For more details on using the :func:`~.qjit` decorator and Catalyst
+with PennyLane, please refer to the Catalyst
+:doc:`quickstart guide <catalyst:dev/quick_start>`, as well as the :doc:`sharp
+bits and debugging tips <catalyst:dev/sharp_bits>` page for an overview of
+the differences between Catalyst and PennyLane, and how to best structure
+your workflows to improve performance when using Catalyst.
+
+To make your own compiler compatible with PennyLane, please see
+the :mod:`~.compiler` module documentation.

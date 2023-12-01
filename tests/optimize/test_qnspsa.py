@@ -14,17 +14,19 @@
 """
 Unit tests for the ``QNSPSAOptimizer``
 """
+# pylint: disable=protected-access
+from copy import deepcopy
 import pytest
 
+from scipy.linalg import sqrtm
 import pennylane as qml
 from pennylane import numpy as np
-from copy import deepcopy
-from scipy.linalg import sqrtm
 
 
 def get_single_input_qnode():
     """Prepare qnode with a single tensor as input."""
     dev = qml.device("default.qubit", wires=2)
+
     # the analytical expression of the qnode goes as:
     # np.cos(params[0][0] / 2) ** 2 - np.sin(params[0][0] / 2) ** 2 * np.cos(params[0][1])
     @qml.qnode(dev)
@@ -39,6 +41,7 @@ def get_single_input_qnode():
 def get_multi_input_qnode():
     """Prepare qnode with two separate tensors as input."""
     dev = qml.device("default.qubit", wires=2)
+
     # the analytical expression of the qnode goes as:
     # np.cos(x1 / 2) ** 2 - np.sin(x1 / 2) ** 2 * np.cos(x2)
     @qml.qnode(dev)
@@ -200,7 +203,7 @@ class TestQNSPSAOptimizer:
         grad_res = opt._post_process_grad(raw_results, grad_dirs)
 
         # gradient computed analytically
-        qnode_finite_diff = get_grad_finite_diff(params, finite_diff_step, grad_dirs).reshape(1, 1)
+        qnode_finite_diff = get_grad_finite_diff(params, finite_diff_step, grad_dirs)
         grad_expected = [
             qnode_finite_diff / (2 * finite_diff_step) * grad_dir for grad_dir in grad_dirs
         ]
@@ -314,7 +317,7 @@ class TestQNSPSAOptimizer:
         # test the next-step parameter
         _, grad_dirs = target_opt._get_spsa_grad_tapes(qnode, params, {})
         _, tensor_dirs = target_opt._get_tensor_tapes(qnode, params, {})
-        qnode_finite_diff = get_grad_finite_diff(params, finite_diff_step, grad_dirs).reshape(1, 1)
+        qnode_finite_diff = get_grad_finite_diff(params, finite_diff_step, grad_dirs)
         grad_expected = [
             qnode_finite_diff / (2 * finite_diff_step) * grad_dir for grad_dir in grad_dirs
         ]
@@ -415,3 +418,20 @@ class TestQNSPSAOptimizer:
         # blocking should stop params from updating from this minimum
         new_params, _ = opt.step_and_cost(qnode, params)
         assert np.allclose(new_params, params)
+
+
+def test_template_no_adjoint():
+    """Test that qnspsa iterates when the operations do not have a custom adjoint."""
+
+    num_qubits = 2
+    dev = qml.device("default.qubit", wires=num_qubits)
+
+    @qml.qnode(dev)
+    def cost(params):
+        qml.RandomLayers(weights=params, wires=range(num_qubits), seed=42)
+        return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+    params = np.random.normal(0, np.pi, (2, 4))
+    opt = qml.QNSPSAOptimizer(stepsize=5e-2)
+    assert opt.step_and_cost(cost, params)  # just checking it runs without error
+    assert not qml.RandomLayers.has_adjoint

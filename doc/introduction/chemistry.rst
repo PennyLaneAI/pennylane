@@ -38,12 +38,9 @@ where:
 The :func:`~.molecular_hamiltonian` function can also be used to construct the molecular Hamiltonian
 with an external backend that uses the
 `OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-PySCF>`_ plugin interfaced with the
-electronic structure package `PySCF <https://github.com/sunqm/pyscf>`_, which requires separate
+electronic structure package `PySCF <https://github.com/pyscf/pyscf>`_, which requires separate
 installation. This backend is non-differentiable and can be selected by setting
-``method='pyscf'`` in :func:`~.molecular_hamiltonian`. Additionally, if the electronic Hamiltonian
-is built independently using `OpenFermion <https://github.com/quantumlib/OpenFermion>`_ tools, it
-can be readily converted to a PennyLane observable using the
-:func:`~.pennylane.import_operator` function.
+``method='pyscf'`` in :func:`~.molecular_hamiltonian`. 
 
 Furthermore, the net charge,
 the `spin multiplicity <https://en.wikipedia.org/wiki/Multiplicity_(chemistry)>`_, the
@@ -62,6 +59,18 @@ specified for each backend.
         active_electrons=2,
         active_orbitals=2
     )
+
+Importing the Hamiltonian and ansatz state
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If the electronic Hamiltonian is built independently using 
+`OpenFermion <https://github.com/quantumlib/OpenFermion>`_ tools, it can be readily converted 
+to a PennyLane observable using the :func:`~.pennylane.import_operator` function. There is also 
+capability to import wavefunctions (states) that have been pre-computed by traditional quantum chemistry methods
+from `PySCF <https://github.com/pyscf/pyscf>`_, which could be used to for example to provide a better
+starting point to a quantum algorithm. State import can be accomplished using the :func:`~pennylane.qchem.import_state` 
+utility function.
+
 
 Importing molecular structure data
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -111,7 +120,7 @@ The circuit parameter can be optimized using the interface of choice.
 .. note::
 
     For more details on VQE and the quantum chemistry functionality available in
-    :mod:`~pennylane.qchem`, check out the PennyLane quantum chemistry tutorials.
+    :mod:`~pennylane.qchem`, check out the PennyLane `quantum chemistry tutorials <https://pennylane.ai/qml/demos_quantum-chemistry.html>`_.
 
 
 Quantum chemistry functions and classes
@@ -198,7 +207,7 @@ Differentiable observables
     ~pennylane.qchem.fermionic_dipole
     ~pennylane.qchem.fermionic_hamiltonian
     ~pennylane.qchem.fermionic_observable
-    ~pennylane.qchem.jordan_wigner
+    ~pennylane.jordan_wigner
     ~pennylane.qchem.molecular_hamiltonian
     ~pennylane.qchem.qubit_observable
 
@@ -252,8 +261,11 @@ Utility functions
     ~pennylane.qchem.excitations
     ~pennylane.qchem.excitations_to_wires
     ~pennylane.qchem.factorize
+    ~pennylane.qchem.givens_decomposition
     ~pennylane.qchem.hf_state
     ~pennylane.import_operator
+    ~pennylane.qchem.import_state
+    ~pennylane.qchem.mol_data
     ~pennylane.qchem.read_structure
 
 :html:`</div>`

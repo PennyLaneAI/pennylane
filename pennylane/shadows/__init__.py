@@ -44,7 +44,8 @@ Classical Shadows formalism
 ---------------------------
 
 .. note:: As per `arXiv:2103.07510 <https://arxiv.org/abs/2103.07510>`_, when computing multiple expectation values it is advisable to directly estimate the desired observables by simultaneously measuring
-    qubit-wise-commuting terms. One way of doing this in PennyLane is via :class:`~pennylane.Hamiltonian` and setting ``grouping_type="qwc"``.
+    qubit-wise-commuting terms. One way of doing this in PennyLane is via :class:`~pennylane.Hamiltonian` and setting ``grouping_type="qwc"``. For more details on this topic, see the PennyLane demo
+    on `estimating expectation values with classical shadows <https://pennylane.ai/qml/demos/tutorial_diffable_shadows.html>`_.
 
 A :class:`ClassicalShadow` is a classical description of a quantum state that is capable of reproducing expectation values of local Pauli observables, see `arXiv:2002.08953 <https://arxiv.org/abs/2002.08953>`_.
 
@@ -88,7 +89,7 @@ The easiest way of computing expectation values with classical shadows in PennyL
 The big advantage of this way of computing expectation values is that it is differentiable.
 
 >>> qnode(x)
-tensor(1.827, requires_grad=True)
+array(1.9242)
 >>> qml.grad(qnode)(x)
 -0.44999999999999984
 

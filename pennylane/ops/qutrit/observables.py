@@ -59,8 +59,6 @@ class THermitian(Hermitian):
     Args:
         A (array): square Hermitian matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
 
     .. note::
@@ -180,8 +178,6 @@ class GellMann(Observable):
         wires (Sequence[int] or int): the wire(s) the observable acts on
         index (int): The index of the Gell-Mann matrix to be used. Must be between 1
             and 8 inclusive
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
 
     **Example:**
@@ -205,7 +201,7 @@ class GellMann(Observable):
     num_params = 0
     """int: Number of trainable parameters the operator depends on"""
 
-    def __init__(self, wires, index=1, do_queue=True, id=None):
+    def __init__(self, wires, index=1, id=None):
         if not isinstance(index, int) or index < 1 or index > 8:
             raise ValueError(
                 "The index of a Gell-Mann observable must be an integer between 1 and 8 inclusive."
@@ -213,10 +209,13 @@ class GellMann(Observable):
 
         self.hyperparameters["index"] = index
 
-        super().__init__(wires=wires, do_queue=do_queue, id=id)
+        super().__init__(wires=wires, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
-        return base_label or "GellMann(" + str(self.hyperparameters["index"]) + ")"
+        return base_label or f"GellMann({self.hyperparameters['index']})"
+
+    def __repr__(self):
+        return f"GellMann{self.hyperparameters['index']}(wires=[{self.wires[0]}])"
 
     _eigvecs = {
         1: np.array(
@@ -286,7 +285,7 @@ class GellMann(Observable):
     def compute_eigvals(index):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{dagger}`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},

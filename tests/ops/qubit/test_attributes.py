@@ -20,7 +20,8 @@ import numpy as np
 from scipy.stats import unitary_group
 import pennylane as qml
 
-from pennylane.ops.qubit.attributes import Attribute
+from pennylane.ops.qubit.attributes import Attribute, has_unitary_generator
+from pennylane.operation import AnyWires
 
 # Dummy attribute
 new_attribute = Attribute(["PauliX", "PauliY", "PauliZ", "Hadamard", "RZ"])
@@ -108,6 +109,7 @@ single_scalar_multi_wire_ops = [
     "DoubleExcitationPlus",
     "DoubleExcitationMinus",
     "OrbitalRotation",
+    "FermionicSWAP",
 ]
 
 two_scalar_single_wire_ops = [
@@ -129,13 +131,16 @@ separately_tested_ops = [
     "QubitUnitary",
     "ControlledQubitUnitary",
     "DiagonalQubitUnitary",
+    "SpecialUnitary",
     "PauliRot",
     "MultiRZ",
     "QubitStateVector",
+    "StatePrep",
     "AmplitudeEmbedding",
     "AngleEmbedding",
     "IQPEmbedding",
     "QAOAEmbedding",
+    "PCPhase",
 ]
 
 
@@ -285,14 +290,12 @@ class TestSupportsBroadcasting:
         op = qml.ControlledQubitUnitary(U, wires=wires, control_wires=[1, "10"])
 
         mat1 = op.matrix()
-        mat2 = qml.ControlledQubitUnitary.compute_matrix(U, u_wires=wires, control_wires=[1, "10"])
         single_mats = [
             qml.ControlledQubitUnitary(_U, wires=wires, control_wires=[1, "10"]).matrix()
             for _U in U
         ]
 
         assert qml.math.allclose(mat1, single_mats)
-        assert qml.math.allclose(mat2, single_mats)
 
     def test_diagonal_qubit_unitary(self):
         """Test that DiagonalQubitUnitary, which is marked as supporting parameter broadcasting,
@@ -305,6 +308,21 @@ class TestSupportsBroadcasting:
         mat1 = op.matrix()
         mat2 = qml.DiagonalQubitUnitary.compute_matrix(diag)
         single_mats = [qml.DiagonalQubitUnitary(d, wires=wires).matrix() for d in diag]
+
+        assert qml.math.allclose(mat1, single_mats)
+        assert qml.math.allclose(mat2, single_mats)
+
+    def test_special_unitary(self):
+        """Test that SpecialUnitary, which is marked as supporting parameter broadcasting,
+        actually does support broadcasting."""
+        theta = np.array([[0.2, -0.1, 0.2], [0, 1, 0], [0.4, 0.2, 0.9], [0, 0, 0]])
+        wires = ["a"]
+
+        op = qml.SpecialUnitary(theta, wires=wires)
+
+        mat1 = op.matrix()
+        mat2 = qml.SpecialUnitary.compute_matrix(theta, 1)
+        single_mats = [qml.SpecialUnitary(t, wires=wires).matrix() for t in theta]
 
         assert qml.math.allclose(mat1, single_mats)
         assert qml.math.allclose(mat2, single_mats)
@@ -346,19 +364,19 @@ class TestSupportsBroadcasting:
         [([1.0, 0.0], 1), ([0.5, -0.5j, 0.5, -0.5], 2), (np.ones(8) / np.sqrt(8), 3)],
     )
     def test_qubit_state_vector(self, state_, num_wires):
-        """Test that QubitStateVector, which is marked as supporting parameter broadcasting,
+        """Test that StatePrep, which is marked as supporting parameter broadcasting,
         actually does support broadcasting."""
 
         state = np.array([state_])
-        op = qml.QubitStateVector(state, wires=list(range(num_wires)))
+        op = qml.StatePrep(state, wires=list(range(num_wires)))
         assert op.batch_size == 1
-        qml.QubitStateVector.compute_decomposition(state, list(range(num_wires)))
+        qml.StatePrep.compute_decomposition(state, list(range(num_wires)))
         op.decomposition()
 
         state = np.array([state_] * 3)
-        op = qml.QubitStateVector(state, wires=list(range(num_wires)))
+        op = qml.StatePrep(state, wires=list(range(num_wires)))
         assert op.batch_size == 3
-        qml.QubitStateVector.compute_decomposition(state, list(range(num_wires)))
+        qml.StatePrep.compute_decomposition(state, list(range(num_wires)))
         op.decomposition()
 
     @pytest.mark.parametrize(
@@ -435,3 +453,75 @@ class TestSupportsBroadcasting:
             features, weights, wires=list(range(num_wires)), local_field=qml.RY
         )
         op.decomposition()
+
+    def test_pcphase(self):
+        """Test that the PCPhase matrix works with broadcasted parameters"""
+        dim = 2
+        size = 4
+        broadcasted_phi = [1.23, 4.56, -0.7]
+
+        op = qml.PCPhase(broadcasted_phi, dim=dim, wires=[0, 1])
+
+        mat1 = qml.matrix(op)
+        mat2 = op.compute_matrix(*op.parameters, **op.hyperparameters)
+
+        mats = [
+            np.diag([np.exp(1j * phi) if i < dim else np.exp(-1j * phi) for i in range(size)])
+            for phi in broadcasted_phi
+        ]
+        expected_mat = np.array(mats)
+        assert np.allclose(mat1, expected_mat)
+        assert np.allclose(mat2, expected_mat)
+
+
+all_qubit_operators = sorted(qml.ops.qubit.__all__)  # pylint: disable=no-member
+unitarily_generated_ops = sorted(list(has_unitary_generator))
+
+
+class TestHasUnitaryGenerator:
+    """Test that all operations in the ``has_unitary_generator`` attribute
+    actually have unitary generators."""
+
+    @pytest.mark.parametrize("entry", unitarily_generated_ops)
+    def test_generator_unitarity(self, entry):
+        """Test directly that generators of the operators in the ``has_unitary_generator``
+        attribute are unitary up to a factor of 2."""
+        op_class = getattr(qml, entry)
+        phi = 1.23
+        wires = [0, 1, 2] if op_class.num_wires is AnyWires else list(range(op_class.num_wires))
+        if op_class is qml.PauliRot:
+            op = op_class(phi, pauli_word="XYZ", wires=wires)  # PauliRot has num_wires == AnyWires
+        elif op_class is qml.PCPhase:
+            op = op_class(phi, dim=(2 ** len(wires) - 1), wires=wires)
+        else:
+            op = op_class(phi, wires=wires)
+        gen = qml.generator(op, format="observable")
+        # Some generators are unitary up to a factor - in this case norm of first
+        # column will be scaled by this factor, so normalize generator first.
+        assert qml.is_unitary(qml.s_prod(1 / np.linalg.norm(qml.matrix(gen), axis=0)[0], gen))
+
+    @pytest.mark.parametrize("entry", all_qubit_operators)
+    def test_no_missing_entries(self, entry):
+        """Test directly that generators of the operators not in the ``has_unitary_generator``
+        attribute are not unitary (up to a factor of 2)."""
+        if entry in unitarily_generated_ops:
+            pytest.skip("Operator declared as having unitary generator")
+
+        op_class = getattr(qml, entry)
+
+        if not op_class.has_generator:
+            pytest.skip("Operator does not have a generator")
+        phi = 1.23
+        wires = [0, 1, 2] if op_class.num_wires is AnyWires else list(range(op_class.num_wires))
+        if op_class is qml.PauliRot:
+            op = op_class(phi, pauli_word="XYZ", wires=wires)  # PauliRot has num_wires == AnyWires
+        elif op_class is qml.PCPhase:
+            op = op_class(phi, dim=(2 ** len(wires) - 1), wires=wires)
+        else:
+            op = op_class(phi, wires=wires)
+        gen = qml.generator(op, format="observable")
+        # Some generators are unitary up to a factor - in this case norm of first
+        # column will be scaled by this factor, so normalize generator first.
+        # When `gen`` is not unitary, may give divide by zero warning, but non-unitarity
+        # can still be confirmed in this case.
+        assert not qml.is_unitary(qml.s_prod(1 / np.linalg.norm(qml.matrix(gen), axis=0)[0], gen))

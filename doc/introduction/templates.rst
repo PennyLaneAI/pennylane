@@ -103,12 +103,20 @@ state preparation is typically used as the first operation.
     :figure: _static/templates/state_preparations/basis.png
 
 .. gallery-item::
+    :description: :doc:`QutritBasisStatePreparation <../code/api/pennylane.QutritBasisStatePreparation>`
+    :figure: _static/templates/state_preparations/basis_qutrit.png
+
+.. gallery-item::
     :description: :doc:`MottonenStatePreparation <../code/api/pennylane.MottonenStatePreparation>`
     :figure: _static/templates/state_preparations/mottonen.png
 
 .. gallery-item::
     :description: :doc:`ArbitraryStatePreparation <../code/api/pennylane.ArbitraryStatePreparation>`
     :figure: _static/templates/subroutines/arbitrarystateprep.png
+
+.. gallery-item::
+    :description: :doc:`CosineWindow <../code/api/pennylane.CosineWindow>`
+    :figure: _static/templates/state_preparations/thumbnail_cosine_window.png
 
 .. raw:: html
 
@@ -125,6 +133,10 @@ like VQE to perform quantum chemistry simulations.
 .. gallery-item::
     :description: :doc:`AllSinglesDoubles <../code/api/pennylane.AllSinglesDoubles>`
     :figure: _static/templates/subroutines/all_singles_doubles.png
+
+.. gallery-item::
+    :description: :doc:`Basis Rotation <../code/api/pennylane.BasisRotation>`
+    :figure: _static/templates/subroutines/basis_rotation.jpeg
 
 .. gallery-item::
     :description: :doc:`GateFabric <../code/api/pennylane.GateFabric>`
@@ -174,6 +186,20 @@ can be broadcast with the shape and connectivity of tensor networks.
 
         <div style='clear:both'></div>
 
+Swap networks
+--------------
+
+Swap network templates perform qubit routing with linear cost, providing a quadratic advantage in
+circuit depth for carrying out all pair-wise interactions between qubits.
+
+.. gallery-item::
+    :description: :doc:`Canonical 2-Complete Linear Swap Network <../code/api/pennylane.TwoLocalSwapNetwork>`
+    :figure: _static/templates/swap_networks/ccl2.jpeg
+
+.. raw:: html
+
+        <div style='clear:both'></div>
+
 .. _intro_ref_temp_qchem:
 
 Other subroutines
@@ -206,6 +232,14 @@ Other useful templates which do not belong to the previous categories can be fou
   :figure: _static/templates/subroutines/approx_time_evolution.png
 
 .. gallery-item::
+  :description: :doc:`QDrift <../code/api/pennylane.QDrift>`
+  :figure: _static/templates/subroutines/qdrift.png
+
+.. gallery-item::
+  :description: :doc:`TrotterProduct <../code/api/pennylane.TrotterProduct>`
+  :figure: _static/templates/subroutines/trotter_product.png
+
+.. gallery-item::
   :description: :doc:`Permute <../code/api/pennylane.Permute>`
   :figure: _static/templates/subroutines/permute.png
 
@@ -222,6 +256,10 @@ Other useful templates which do not belong to the previous categories can be fou
     :figure: _static/templates/subroutines/qft.svg
 
 .. gallery-item::
+    :description: :doc:`Approximate QFT<../code/api/pennylane.AQFT>`
+    :figure: _static/templates/subroutines/aqft.png
+
+.. gallery-item::
     :description: :doc:`CommutingEvolution <../code/api/pennylane.CommutingEvolution>`
     :figure: _static/templates/subroutines/commuting_evolution.png
 
@@ -236,6 +274,18 @@ Other useful templates which do not belong to the previous categories can be fou
 .. gallery-item::
     :description: :doc:`FlipSign operator<../code/api/pennylane.FlipSign>`
     :figure: _static/templates/subroutines/flip_sign.png
+
+.. gallery-item::
+    :description: :doc:`QSVT<../code/api/pennylane.QSVT>`
+    :figure: _static/templates/subroutines/qsvt.png
+
+.. gallery-item::
+    :description: :doc:`Select<../code/api/pennylane.Select>`
+    :figure: _static/templates/subroutines/select.png
+
+.. gallery-item::
+    :description: :doc:`ControlledSequence<../code/api/pennylane.ControlledSequence>`
+    :figure: _static/templates/subroutines/small_ctrl.png
 
 .. raw:: html
 

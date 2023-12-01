@@ -1,7 +1,9 @@
 numpy
 scipy
+cvxpy
+cvxopt
 networkx
-retworkx
+rustworkx
 autograd
 toml
 appdirs
@@ -10,3 +12,4 @@ dask[delayed]
 autoray
 matplotlib
 requests
+tomli # Drop once minimum Python version is 3.11

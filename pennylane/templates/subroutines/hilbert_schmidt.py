@@ -71,8 +71,8 @@ class HilbertSchmidt(Operation):
 
         .. code-block:: python
 
-            with qml.tape.QuantumTape(do_queue=False) as u_tape:
-                qml.Hadamard(wires=0)
+            with qml.QueuingManager.stop_recording():
+                u_tape = qml.tape.QuantumTape([qml.Hadamard(0)])
 
             def v_function(params):
                 qml.RZ(params[0], wires=1)
@@ -96,11 +96,22 @@ class HilbertSchmidt(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, *params, v_function, v_wires, u_tape, do_queue=True, id=None):
+    def _flatten(self):
+        metadata = (
+            ("v_function", self.hyperparameters["v_function"]),
+            ("v_wires", self.hyperparameters["v_wires"]),
+            ("u_tape", self.hyperparameters["u_tape"]),
+        )
+        return self.data, metadata
 
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(*data, **dict(metadata))
+
+    def __init__(self, *params, v_function, v_wires, u_tape, id=None):
         self._num_params = len(params)
 
-        if not isinstance(u_tape, qml.tape.QuantumTape):
+        if not isinstance(u_tape, qml.tape.QuantumScript):
             raise qml.QuantumFunctionError("The argument u_tape must be a QuantumTape.")
 
         u_wires = u_tape.wires
@@ -113,9 +124,9 @@ class HilbertSchmidt(Operation):
 
         self.hyperparameters["v_function"] = v_function
 
-        v_tape = qml.transforms.make_tape(v_function)(*params)
+        v_tape = qml.tape.make_qscript(v_function)(*params)
         self.hyperparameters["v_tape"] = v_tape
-        self.hyperparameters["v_wires"] = v_tape.wires
+        self.hyperparameters["v_wires"] = qml.wires.Wires(v_wires)
 
         if len(u_wires) != len(v_wires):
             raise qml.QuantumFunctionError("U and V must have the same number of wires.")
@@ -129,7 +140,7 @@ class HilbertSchmidt(Operation):
 
         wires = qml.wires.Wires(u_wires + v_wires)
 
-        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(*params, wires=wires, id=id)
 
     @property
     def num_params(self):
@@ -141,36 +152,32 @@ class HilbertSchmidt(Operation):
     ):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a product of other operators."""
         n_wires = len(u_tape.wires + v_tape.wires)
-        decomp_ops = []
+        first_range = range(n_wires // 2)
+        second_range = range(n_wires // 2, n_wires)
 
-        first_range = range(0, int(n_wires / 2))
-        second_range = range(int(n_wires / 2), n_wires)
-
-        # Hadamard first layer
-        for i in first_range:
-            decomp_ops.append(qml.Hadamard(wires[i]))
-
+        decomp_ops = [qml.Hadamard(wires[i]) for i in first_range]
         # CNOT first layer
-        for i, j in zip(first_range, second_range):
-            decomp_ops.append(qml.CNOT(wires=[wires[i], wires[j]]))
+        decomp_ops.extend(
+            qml.CNOT(wires=[wires[i], wires[j]]) for i, j in zip(first_range, second_range)
+        )
 
         # Unitary U
         for op_u in u_tape.operations:
             # The operation has been defined outside of this function, to queue it we call qml.apply.
-            qml.apply(op_u)
+            if qml.QueuingManager.recording():
+                qml.apply(op_u)
             decomp_ops.append(op_u)
 
         # Unitary V conjugate
-        for op_v in v_tape.operations:
-            decomp_ops.append(qml.adjoint(op_v, lazy=False))
-
+        decomp_ops.extend(qml.adjoint(op_v, lazy=False) for op_v in v_tape.operations)
         # CNOT second layer
-        for i, j in zip(reversed(first_range), reversed(second_range)):
-            decomp_ops.append(qml.CNOT(wires=[wires[i], wires[j]]))
+        decomp_ops.extend(
+            qml.CNOT(wires=[wires[i], wires[j]])
+            for i, j in zip(reversed(first_range), reversed(second_range))
+        )
 
         # Hadamard second layer
-        for i in first_range:
-            decomp_ops.append(qml.Hadamard(wires[i]))
+        decomp_ops.extend(qml.Hadamard(wires[i]) for i in first_range)
         return decomp_ops
 
 
@@ -219,8 +226,8 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 
             import numpy as np
 
-            with qml.tape.QuantumTape(do_queue=False) as u_tape:
-                qml.CZ(wires=[0,1])
+            with qml.QueuingManager.stop_recording():
+                u_tape = qml.tape.QuantumTape([qml.CZ(wires=(0,1))])
 
             def v_function(params):
                 qml.RZ(params[0], wires=2)
@@ -241,7 +248,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 
         Now that the cost function has been defined it can be called for specific parameters:
 
-        >>> cost_lhst([3*np.pi/2, 3*np.pi/2, np.pi/2], v_function = v_function, v_wires = [1], u_tape = u_tape)
+        >>> cost_lhst([3*np.pi/2, 3*np.pi/2, np.pi/2], v_function = v_function, v_wires = [2,3], u_tape = u_tape)
         0.5
     """
 
@@ -250,32 +257,25 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         params, wires, u_tape, v_tape, v_function=None, v_wires=None
     ):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a product of other operators (static method)."""
-        decomp_ops = []
         n_wires = len(u_tape.wires + v_tape.wires)
-        first_range = range(0, int(n_wires / 2))
-        second_range = range(int(n_wires / 2), n_wires)
+        first_range = range(n_wires // 2)
+        second_range = range(n_wires // 2, n_wires)
 
-        # Hadamard first layer
-        for i in first_range:
-            decomp_ops.append(qml.Hadamard(wires[i]))
-
+        decomp_ops = [qml.Hadamard(wires[i]) for i in first_range]
         # CNOT first layer
-        for i, j in zip(first_range, second_range):
-            decomp_ops.append(qml.CNOT(wires=[wires[i], wires[j]]))
+        decomp_ops.extend(
+            qml.CNOT(wires=[wires[i], wires[j]]) for i, j in zip(first_range, second_range)
+        )
 
         # Unitary U
-        for op_u in u_tape.operations:
-            qml.apply(op_u)
-            decomp_ops.append(op_u)
+        if qml.QueuingManager.recording():
+            decomp_ops.extend(qml.apply(op_u) for op_u in u_tape.operations)
+        else:
+            decomp_ops.extend(u_tape.operations)
 
         # Unitary V conjugate
-        for op_v in v_tape.operations:
-            decomp_ops.append(qml.adjoint(qml.apply, lazy=False)(op_v))
+        decomp_ops.extend(qml.adjoint(qml.apply, lazy=False)(op_v) for op_v in v_tape.operations)
 
-        # Only one CNOT
-        decomp_ops.append(qml.CNOT(wires=[wires[0], wires[int(n_wires / 2)]]))
-
-        # Only one Hadamard
-        decomp_ops.append(qml.Hadamard(wires[0]))
+        decomp_ops.extend((qml.CNOT(wires=[wires[0], wires[n_wires // 2]]), qml.Hadamard(wires[0])))
 
         return decomp_ops

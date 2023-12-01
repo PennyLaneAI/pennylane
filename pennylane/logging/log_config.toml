@@ -1,0 +1,96 @@
+###############################################################################
+# Avoid interfering with existing loggers in dependent libraries
+###############################################################################
+
+disable_existing_loggers = false
+version = 1
+
+###############################################################################
+# Bind formatters defined locally and those defined in pennylane.logging
+###############################################################################
+
+[formatters]
+[formatters.qml_default_formatter]
+"()" = "pennylane.logging.formatters.formatter.DefaultFormatter"
+
+[formatters.qml_alt_formatter]
+"()" = "pennylane.logging.formatters.formatter.SimpleFormatter"
+
+[formatters.local_detailed]
+format = "\u001B[38;2;45;145;210m[%(asctime)s][%(levelname)s][<PID %(process)d:%(processName)s>] - %(name)s.%(funcName)s()::\"%(message)s\"\u001B[0m"
+
+[formatters.local_standard]
+format = "[%(asctime)s] - %(name)s - %(levelname)s - %(message)s"
+
+###############################################################################
+# Bind LogRecord filters defined in pennylane.logging module
+###############################################################################
+
+[filters]
+# Filter to show messages from the same local process as the Python script
+[filters.qml_LocalProcessFilter]
+"()" = "pennylane.logging.filter.LocalProcessFilter"
+
+# Filter to show debug level messages only
+[filters.qml_DebugOnlyFilter]
+"()" = "pennylane.logging.filter.DebugOnlyFilter"
+
+###############################################################################
+# Bind handlers defined in the logging and in pennylane.logging modules
+###############################################################################
+
+[handlers]
+[handlers.qml_debug_stream]
+class = "logging.StreamHandler"
+formatter = "qml_default_formatter"
+level = "DEBUG"
+stream = "ext://sys.stdout"
+
+[handlers.qml_debug_stream_alt]
+class = "logging.StreamHandler"
+formatter = "qml_alt_formatter"
+level = "DEBUG"
+stream = "ext://sys.stdout"
+
+[handlers.qml_debug_file]
+class = "logging.handlers.RotatingFileHandler"
+formatter = "local_standard"
+level = "DEBUG"
+filename = "qml_debug.log" # use `/tmp/filename.log` on Linux machines to avoid long-term persistence
+maxBytes = 16777216 # 16MB per file before splitting
+backupCount = 10 # Create 'qml_debug.log.1', ... 'qml_debug.log.backupCount' files and rollover when maxBytes is reached
+delay = true # Avoid file-creation unless used
+
+[handlers.local_filtered_detailed_stdout]
+class = "logging.StreamHandler"
+formatter = "local_standard"
+level = "DEBUG"
+stream = "ext://sys.stdout"
+filters = ["qml_LocalProcessFilter", "qml_DebugOnlyFilter"]
+
+###############################################################################
+# Define logger controls for internal and external packages
+###############################################################################
+
+[loggers]
+
+# Control JAX logging
+[loggers.jax]
+handlers = ["qml_debug_stream",]
+level = "WARN"
+propagate = false
+
+# Control logging across pennylane
+[loggers.pennylane]
+handlers = ["qml_debug_stream",]
+level = "DEBUG" # Set to TRACE for highest verbosity
+propagate = false
+
+# Control logging specifically in the pennylane.qnode module
+# Note the required quotes to overcome TOML nesting issues
+[loggers."pennylane.qnode"]
+handlers = ["qml_debug_stream",]
+level = "DEBUG" # Set to TRACE for highest verbosity
+propagate = false
+
+###############################################################################

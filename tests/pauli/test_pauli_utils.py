@@ -14,44 +14,46 @@
 """
 Unit tests for the :mod:`pauli` utility functions in ``pauli/utils.py``.
 """
-import pytest
+# pylint: disable=too-few-public-methods,too-many-public-methods
 import numpy as np
+import pytest
+
 import pennylane as qml
 from pennylane import (
+    RX,
+    RY,
+    U3,
+    Hadamard,
+    Hamiltonian,
+    Hermitian,
     Identity,
     PauliX,
     PauliY,
     PauliZ,
-    Hadamard,
-    Hermitian,
-    U3,
     is_commuting,
-    RX,
-    RY,
 )
 from pennylane.operation import Tensor
 from pennylane.pauli import (
-    is_pauli_word,
     are_identical_pauli_words,
-    pauli_to_binary,
-    binary_to_pauli,
-    pauli_word_to_string,
-    string_to_pauli_word,
-    pauli_word_to_matrix,
-    is_qwc,
     are_pauli_words_qwc,
+    binary_to_pauli,
+    diagonalize_pauli_word,
+    diagonalize_qwc_pauli_words,
+    is_pauli_word,
+    is_qwc,
     observables_to_binary_matrix,
-    qwc_complement_adj_matrix,
     partition_pauli_group,
     pauli_group,
     pauli_mult,
     pauli_mult_with_phase,
+    pauli_to_binary,
+    pauli_word_to_matrix,
+    pauli_word_to_string,
+    qwc_complement_adj_matrix,
     qwc_rotation,
-    diagonalize_pauli_word,
-    diagonalize_qwc_pauli_words,
     simplify,
+    string_to_pauli_word,
 )
-
 
 non_pauli_words = [
     PauliX(0) @ Hadamard(1) @ Identity(2),
@@ -195,7 +197,6 @@ class TestGroupingUtils:
     def test_is_qwc(self):
         """Determining if two Pauli words are qubit-wise commuting."""
 
-        n_qubits = 3
         wire_map = {0: 0, "a": 1, "b": 2}
         p1_vec = pauli_to_binary(PauliX(0) @ PauliY("a"), wire_map=wire_map)
         p2_vec = pauli_to_binary(PauliX(0) @ Identity("a") @ PauliX("b"), wire_map=wire_map)
@@ -260,18 +261,27 @@ class TestGroupingUtils:
 
         assert pytest.raises(ValueError, is_qwc, pauli_vec_1, pauli_vec_2)
 
-    def test_is_pauli_word(self):
+    obs_pw_status = (
+        (PauliX(0), True),
+        (PauliZ(1) @ PauliX(2) @ PauliZ(4), True),
+        (PauliX(1) @ Hadamard(4), False),
+        (Hadamard(0), False),
+        (Hamiltonian([], []), False),
+        (Hamiltonian([0.5], [PauliZ(1) @ PauliX(2)]), True),
+        (Hamiltonian([0.5], [PauliZ(1) @ PauliX(1)]), True),
+        (Hamiltonian([1.0], [Hadamard(0)]), False),
+        (Hamiltonian([1.0, 0.5], [PauliX(0), PauliZ(1) @ PauliX(2)]), False),
+        (qml.prod(qml.PauliX(0), qml.PauliY(0)), True),
+        (qml.prod(qml.PauliX(0), qml.PauliY(1)), True),
+        (qml.prod(qml.PauliX(0), qml.Hadamard(1)), False),
+        (qml.s_prod(5, qml.PauliX(0) @ qml.PauliZ(1)), True),
+        (qml.s_prod(5, qml.Hadamard(0)), False),
+    )
+
+    @pytest.mark.parametrize("ob, is_pw", obs_pw_status)
+    def test_is_pauli_word(self, ob, is_pw):
         """Test for determining whether input ``Observable`` instance is a Pauli word."""
-
-        observable_1 = PauliX(0)
-        observable_2 = PauliZ(1) @ PauliX(2) @ PauliZ(4)
-        observable_3 = PauliX(1) @ Hadamard(4)
-        observable_4 = Hadamard(0)
-
-        assert is_pauli_word(observable_1)
-        assert is_pauli_word(observable_2)
-        assert not is_pauli_word(observable_3)
-        assert not is_pauli_word(observable_4)
+        assert is_pauli_word(ob) == is_pw
 
     def test_is_pauli_word_non_observable(self):
         """Test that non-observables are not Pauli Words."""
@@ -299,6 +309,11 @@ class TestGroupingUtils:
         assert are_identical_pauli_words(pauli_word_1, pauli_word_3)
         assert not are_identical_pauli_words(pauli_word_1, pauli_word_4)
         assert not are_identical_pauli_words(pauli_word_3, pauli_word_4)
+
+    def test_identities_always_pauli_words(self):
+        """Tests that identity terms are always identical."""
+        assert are_identical_pauli_words(qml.Identity(0), qml.Identity("a"))
+        assert are_identical_pauli_words(qml.Identity((-2, -3)), qml.Identity("wire"))
 
     @pytest.mark.parametrize("non_pauli_word", non_pauli_words)
     def test_are_identical_pauli_words_non_pauli_word_catch(self, non_pauli_word):
@@ -367,6 +382,12 @@ class TestGroupingUtils:
             (PauliZ("a") @ PauliY("b") @ PauliZ("d"), {"a": 0, "b": 1, "c": 2, "d": 3}, "ZYIZ"),
             (PauliZ("a") @ PauliY("b") @ PauliZ("d"), None, "ZYZ"),
             (PauliX("a") @ PauliY("b") @ PauliZ("d"), {"d": 0, "c": 1, "b": 2, "a": 3}, "ZIYX"),
+            (4.5 * PauliX(0), {0: 0}, "X"),
+            (qml.prod(PauliX(0), PauliY(1)), {0: 0, 1: 1}, "XY"),
+            (PauliX(0) @ PauliZ(0), {0: 0}, "X"),  # second operator is ignored!!
+            (3 * PauliZ(0) @ PauliY(3), {0: 0, 3: 1}, "ZY"),
+            (qml.s_prod(8, qml.PauliX(0) @ qml.PauliZ(1)), {0: 0, 1: 1}, "XZ"),
+            (qml.Hamiltonian([4], [qml.PauliX(0) @ qml.PauliZ(1)]), {0: 0, 1: 1}, "XZ"),
         ],
     )
     def test_pauli_word_to_string(self, pauli_word, wire_map, expected_string):
@@ -519,7 +540,7 @@ class TestPauliGroup:
 
         expected_pg_1 = [Identity(0), PauliZ(0), PauliX(0), PauliY(0)]
         pg_1 = list(pauli_group(1))
-        assert all([expected.compare(obtained) for expected, obtained in zip(expected_pg_1, pg_1)])
+        assert all(expected.compare(obtained) for expected, obtained in zip(expected_pg_1, pg_1))
 
     def test_one_qubit_pauli_group_valid_float_input(self):
         """Test that the single-qubit Pauli group is constructed correctly when a float
@@ -527,7 +548,7 @@ class TestPauliGroup:
 
         expected_pg_1 = [Identity(0), PauliZ(0), PauliX(0), PauliY(0)]
         pg_1 = list(pauli_group(1.0))
-        assert all([expected.compare(obtained) for expected, obtained in zip(expected_pg_1, pg_1)])
+        assert all(expected.compare(obtained) for expected, obtained in zip(expected_pg_1, pg_1))
 
     def test_one_qubit_pauli_group_string_wire_map(self):
         """Test that the single-qubit Pauli group is constructed correctly with a wire
@@ -541,12 +562,7 @@ class TestPauliGroup:
             PauliY("qubit"),
         ]
         pg_1_wires = list(pauli_group(1, wire_map=wire_map))
-        assert all(
-            [
-                expected.compare(obtained)
-                for expected, obtained in zip(expected_pg_1_wires, pg_1_wires)
-            ]
-        )
+        assert all(exp.compare(ob) for exp, ob in zip(expected_pg_1_wires, pg_1_wires))
 
     def test_two_qubit_pauli_group(self):
         """Test that the two-qubit Pauli group is constructed correctly."""
@@ -573,7 +589,7 @@ class TestPauliGroup:
         ]
 
         pg_2 = list(pauli_group(2, wire_map=wire_map))
-        assert all([expected.compare(obtained) for expected, obtained in zip(expected_pg_2, pg_2)])
+        assert all(expected.compare(obtained) for expected, obtained in zip(expected_pg_2, pg_2))
 
     @pytest.mark.parametrize(
         "pauli_word_1,pauli_word_2,wire_map,expected_product",
@@ -789,10 +805,8 @@ class TestMeasurementTransformations:
         qwc_rot = qwc_rotation(pauli_ops)
 
         assert all(
-            [
-                self.are_identical_rotation_gates(qwc_rot[i], qwc_rot_sol[i])
-                for i in range(len(qwc_rot))
-            ]
+            self.are_identical_rotation_gates(qwc_rot[i], qwc_rot_sol[i])
+            for i in range(len(qwc_rot))
         )
 
     invalid_qwc_rotation_inputs = [
@@ -881,16 +895,12 @@ class TestMeasurementTransformations:
         qwc_rot_sol, diag_qwc_grouping_sol = qwc_sol_tuple
 
         assert all(
-            [
-                self.are_identical_rotation_gates(qwc_rot[i], qwc_rot_sol[i])
-                for i in range(len(qwc_rot))
-            ]
+            self.are_identical_rotation_gates(qwc_rot[i], qwc_rot_sol[i])
+            for i in range(len(qwc_rot))
         )
         assert all(
-            [
-                are_identical_pauli_words(diag_qwc_grouping[i], diag_qwc_grouping_sol[i])
-                for i in range(len(diag_qwc_grouping))
-            ]
+            are_identical_pauli_words(diag_qwc_grouping[i], diag_qwc_grouping_sol[i])
+            for i in range(len(diag_qwc_grouping))
         )
 
     not_qwc_groupings = [
@@ -898,6 +908,7 @@ class TestMeasurementTransformations:
         [PauliZ(0) @ Identity(1), PauliZ(0) @ PauliZ(1), PauliX(0) @ Identity(1)],
         [PauliX("a") @ PauliX(0), PauliZ(0) @ PauliZ("a")],
         [PauliZ("a") @ PauliY(1), PauliZ(1) @ PauliY("a")],
+        [Hamiltonian([1.0, 2.0], [PauliX("a"), PauliY("a")])],
     ]
 
     @pytest.mark.parametrize("not_qwc_grouping", not_qwc_groupings)
@@ -915,12 +926,13 @@ class TestObservableHF:
             (
                 [(0, "X"), (1, "Y")],  # X_0 @ Y_1
                 [(0, "X"), (2, "Y")],  # X_0 @ Y_2
-                ([(2, "Y"), (1, "Y")], 1.0),  # X_0 @ Y_1 @ X_0 @ Y_2
+                ([(0, "I"), (2, "Y"), (1, "Y")], 1.0),  # X_0 @ Y_1 @ X_0 @ Y_2
             ),
         ],
     )
     def test_pauli_mult(self, p1, p2, p_ref):
         r"""Test that _pauli_mult returns the correct operator."""
+        # pylint: disable=protected-access
         result = qml.pauli.utils._pauli_mult(p1, p2)
 
         assert result == p_ref
@@ -973,74 +985,82 @@ class TestObservableHF:
 
 
 class TestTapering:
-    @pytest.mark.parametrize(
-        ("terms", "num_qubits", "result"),
-        [
-            (
+    terms_bin_mat_data = [
+        (
+            [
+                qml.Identity(wires=[0]),
+                qml.PauliZ(wires=[0]),
+                qml.PauliZ(wires=[1]),
+                qml.PauliZ(wires=[2]),
+                qml.PauliZ(wires=[3]),
+                qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
+                qml.PauliY(wires=[0])
+                @ qml.PauliX(wires=[1])
+                @ qml.PauliX(wires=[2])
+                @ qml.PauliY(wires=[3]),
+                qml.PauliY(wires=[0])
+                @ qml.PauliY(wires=[1])
+                @ qml.PauliX(wires=[2])
+                @ qml.PauliX(wires=[3]),
+                qml.PauliX(wires=[0])
+                @ qml.PauliX(wires=[1])
+                @ qml.PauliY(wires=[2])
+                @ qml.PauliY(wires=[3]),
+                qml.PauliX(wires=[0])
+                @ qml.PauliY(wires=[1])
+                @ qml.PauliY(wires=[2])
+                @ qml.PauliX(wires=[3]),
+                qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2]),
+                qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]),
+                qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
+                qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[3]),
+                qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
+            ],
+            4,
+            np.array(
                 [
-                    qml.Identity(wires=[0]),
-                    qml.PauliZ(wires=[0]),
-                    qml.PauliZ(wires=[1]),
-                    qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[3]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
-                    qml.PauliY(wires=[0])
-                    @ qml.PauliX(wires=[1])
-                    @ qml.PauliX(wires=[2])
-                    @ qml.PauliY(wires=[3]),
-                    qml.PauliY(wires=[0])
-                    @ qml.PauliY(wires=[1])
-                    @ qml.PauliX(wires=[2])
-                    @ qml.PauliX(wires=[3]),
-                    qml.PauliX(wires=[0])
-                    @ qml.PauliX(wires=[1])
-                    @ qml.PauliY(wires=[2])
-                    @ qml.PauliY(wires=[3]),
-                    qml.PauliX(wires=[0])
-                    @ qml.PauliY(wires=[1])
-                    @ qml.PauliY(wires=[2])
-                    @ qml.PauliX(wires=[3]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]),
-                    qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[3]),
-                    qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
-                ],
-                4,
-                np.array(
-                    [
-                        [0, 0, 0, 0, 0, 0, 0, 0],
-                        [1, 0, 0, 0, 0, 0, 0, 0],
-                        [0, 1, 0, 0, 0, 0, 0, 0],
-                        [0, 0, 1, 0, 0, 0, 0, 0],
-                        [0, 0, 0, 1, 0, 0, 0, 0],
-                        [1, 1, 0, 0, 0, 0, 0, 0],
-                        [1, 0, 0, 1, 1, 1, 1, 1],
-                        [1, 1, 0, 0, 1, 1, 1, 1],
-                        [0, 0, 1, 1, 1, 1, 1, 1],
-                        [0, 1, 1, 0, 1, 1, 1, 1],
-                        [1, 0, 1, 0, 0, 0, 0, 0],
-                        [1, 0, 0, 1, 0, 0, 0, 0],
-                        [0, 1, 1, 0, 0, 0, 0, 0],
-                        [0, 1, 0, 1, 0, 0, 0, 0],
-                        [0, 0, 1, 1, 0, 0, 0, 0],
-                    ]
-                ),
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [1, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 1, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 1, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 1, 0, 0, 0, 0],
+                    [1, 1, 0, 0, 0, 0, 0, 0],
+                    [1, 0, 0, 1, 1, 1, 1, 1],
+                    [1, 1, 0, 0, 1, 1, 1, 1],
+                    [0, 0, 1, 1, 1, 1, 1, 1],
+                    [0, 1, 1, 0, 1, 1, 1, 1],
+                    [1, 0, 1, 0, 0, 0, 0, 0],
+                    [1, 0, 0, 1, 0, 0, 0, 0],
+                    [0, 1, 1, 0, 0, 0, 0, 0],
+                    [0, 1, 0, 1, 0, 0, 0, 0],
+                    [0, 0, 1, 1, 0, 0, 0, 0],
+                ]
             ),
-            (
-                [
-                    qml.PauliZ(wires=["a"]) @ qml.PauliX(wires=["b"]),
-                    qml.PauliZ(wires=["a"]) @ qml.PauliY(wires=["c"]),
-                    qml.PauliX(wires=["a"]) @ qml.PauliY(wires=["d"]),
-                ],
-                4,
-                np.array(
-                    [[1, 0, 0, 0, 0, 1, 0, 0], [1, 0, 1, 0, 0, 0, 1, 0], [0, 0, 0, 1, 1, 0, 0, 1]]
-                ),
+        ),
+        (
+            [
+                qml.PauliZ(wires=["a"]) @ qml.PauliX(wires=["b"]),
+                qml.PauliZ(wires=["a"]) @ qml.PauliY(wires=["c"]),
+                qml.PauliX(wires=["a"]) @ qml.PauliY(wires=["d"]),
+            ],
+            4,
+            np.array(
+                [[1, 0, 0, 0, 0, 1, 0, 0], [1, 0, 1, 0, 0, 0, 1, 0], [0, 0, 0, 1, 1, 0, 0, 1]]
             ),
-        ],
-    )
+        ),
+    ]
+
+    @pytest.mark.parametrize(("terms", "num_qubits", "result"), terms_bin_mat_data)
     def test_binary_matrix(self, terms, num_qubits, result):
         r"""Test that _binary_matrix returns the correct result."""
+        # pylint: disable=protected-access
         binary_matrix = qml.pauli.utils._binary_matrix(terms, num_qubits)
+        assert (binary_matrix == result).all()
+
+    @pytest.mark.parametrize(("terms", "num_qubits", "result"), terms_bin_mat_data)
+    def test_binary_matrix_from_pws(self, terms, num_qubits, result):
+        r"""Test that _binary_matrix_from_pws returns the correct result."""
+        # pylint: disable=protected-access
+        pws_lst = [list(qml.pauli.pauli_sentence(t))[0] for t in terms]
+        binary_matrix = qml.pauli.utils._binary_matrix_from_pws(pws_lst, num_qubits)
         assert (binary_matrix == result).all()

@@ -171,12 +171,11 @@ class QubitCarry(Operation):
         [Toffoli(wires=[1, 2, 4]), CNOT(wires=[1, 2]), Toffoli(wires=[0, 2, 4])]
 
         """
-        decomp_ops = [
+        return [
             qml.Toffoli(wires=wires[1:]),
             qml.CNOT(wires=[wires[1], wires[2]]),
             qml.Toffoli(wires=[wires[0], wires[2], wires[3]]),
         ]
-        return decomp_ops
 
 
 class QubitSum(Operation):
@@ -348,9 +347,9 @@ class IntegerComparator(Operation):
     ...     qml.IntegerComparator(value, geq=geq, wires=range(3))
     ...     return qml.state()
     >>> circuit([1, 0, 1], 1, True).reshape(2, 2, 2)[1, 0, 0]
-    (1+0j)
+    tensor(1.+0.j, requires_grad=True)
     >>> circuit([0, 1, 0], 3, False).reshape(2, 2, 2)[0, 1, 1]
-    (1+0j)
+    tensor(1.+0.j, requires_grad=True)
     """
     is_self_inverse = True
     num_wires = AnyWires
@@ -358,16 +357,18 @@ class IntegerComparator(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = None
-    # pylint: disable=too-many-arguments
-    def __init__(
-        self,
-        value,
-        geq=True,
-        wires=None,
-        work_wires=None,
-        do_queue=True,
-    ):
 
+    def _flatten(self):
+        hp = self.hyperparameters
+        metadata = (
+            ("work_wires", hp["work_wires"]),
+            ("value", hp["value"]),
+            ("geq", hp["geq"]),
+        )
+        return tuple(), (hp["control_wires"] + hp["target_wires"], metadata)
+
+    # pylint: disable=too-many-arguments
+    def __init__(self, value, geq=True, wires=None, work_wires=None):
         if not isinstance(value, int):
             raise ValueError(f"The compared value must be an int. Got {type(value)}.")
         if wires is None:
@@ -395,7 +396,7 @@ class IntegerComparator(Operation):
         self.geq = geq
         self.value = value
 
-        super().__init__(wires=total_wires, do_queue=do_queue)
+        super().__init__(wires=total_wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or f">={self.value}" if self.geq else f"<{self.value}"

@@ -77,9 +77,10 @@ class TestShadowEntropies:
         """Test entropies match roughly with exact solution for a non-constant distribution using other PennyLane functionalities"""
         n_wires = 4
         # exact solution
+        dev_exact = qml.device("default.qubit", wires=range(n_wires), shots=None)
         dev = qml.device("default.qubit", wires=range(n_wires), shots=100000)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev_exact)
         def qnode_exact(x):
             for i in range(n_wires):
                 qml.RY(x[i], wires=i)
@@ -149,7 +150,6 @@ class TestShadowEntropies:
         for alpha in [1, 2, 3]:
             for base in [2, np.exp(1)]:
                 for reduced_wires in [[0], [1]]:
-
                     entropy = shadow.entropy(wires=reduced_wires, base=base, alpha=alpha)
 
                     expected_entropy = expected_entropy_ising_xx(param, alpha) / np.log(base)

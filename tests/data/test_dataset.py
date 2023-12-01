@@ -1,4 +1,4 @@
-# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,230 +12,419 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :class:`pennylane.data.Dataset` class and its functions.
+Tests for :mod:`pennylane.data.base.dataset`.
 """
-# pylint:disable=protected-access
-from copy import copy
-import os
-import sys
+
+# pylint: disable=too-few-public-methods, too-many-public-methods
+
+from numbers import Number
+from pathlib import Path
+from typing import ClassVar, Dict
+
+import numpy as np
 import pytest
-import pennylane as qml
 
-pytestmark = pytest.mark.data
-
-# TODO: Bring pytest skip to relevant tests.
-zstd = pytest.importorskip("zstd")
-dill = pytest.importorskip("dill")
-
-
-def test_build_dataset():
-    """Test that a dataset builds correctly and returns the correct values."""
-    hamiltonian = qml.Hamiltonian(coeffs=[1], observables=[qml.PauliZ(wires=0)])
-    test_dataset = qml.data.Dataset(kw1=1, kw2="2", kw3=[3], hamiltonian=hamiltonian)
-
-    assert test_dataset.kw1 == 1
-    assert test_dataset.kw2 == "2"
-    assert test_dataset.kw3 == [3]
-    assert test_dataset.hamiltonian == hamiltonian
+from pennylane.data import (
+    AttributeInfo,
+    Dataset,
+    DatasetJSON,
+    DatasetNotWriteableError,
+    DatasetScalar,
+    attribute,
+    field,
+)
+from pennylane.data.base.dataset import UNSET, _init_arg
+from pennylane.data.base.hdf5 import open_group
 
 
-def test_write_dataset(tmp_path):
-    """Test that datasets are saved correctly."""
-    test_dataset = qml.data.Dataset(kw1=1, kw2="2", kw3=[3])
-    d = tmp_path / "sub"
-    p = d / "test_dataset"
-    test_dataset.write(p)
+class MyDataset(
+    Dataset, data_name="my_dataset", identifiers=("x", "y")
+):  # pylint: disable=too-many-public-methods
+    """A dataset subclass for testing."""
+
+    x: str = field()
+    y: str = field()
+    description: str = field(doc="description")
 
 
-def test_read_dataset(tmp_path):
-    """Test that datasets are loaded correctly."""
-    test_dataset = qml.data.Dataset(kw1=1, kw2="2", kw3=[3])
-    d = tmp_path / "sub"
-    p = d / "test_dataset"
-    test_dataset.write(p)
+class TestDataset:
+    """Tests initialization and instance methods of the ``Dataset`` class."""
 
-    test_dataset = qml.data.Dataset()
-    test_dataset.read(p)
+    def test_init(self):
+        """Test that initializing a Dataset with keyword arguments
+        creates the expected attributes.
+        """
+        ds = Dataset(
+            description="test",
+            x=DatasetScalar(1, AttributeInfo(doc="A variable")),
+            y=np.array([1, 2, 3]),
+            z="abc",
+        )
 
-    assert test_dataset.kw1 == 1
-    assert test_dataset.kw2 == "2"
-    assert test_dataset.kw3 == [3]
+        assert ds.description == "test"
+        assert ds.x == 1
+        assert (ds.y == np.array([1, 2, 3])).all()
+        assert ds.z == "abc"
+        assert ds.list_attributes() == ["description", "x", "y", "z"]
 
+    @pytest.mark.parametrize("data_name, expect", [(None, "generic"), ("other_name", "other_name")])
+    def test_init_dataname(self, data_name, expect):
+        """Test that a base dataset's data_name can be set on init, and that
+        it defaults to the class data name if none is provided."""
+        ds = Dataset(data_name=data_name)
 
-def test_list_attributes():
-    """Test the list_attributes method."""
-    test_dataset = qml.data.Dataset(kw1=1)
-    assert test_dataset.list_attributes() == ["kw1"]
+        assert ds.data_name == expect
 
-
-def test_copy_non_standard():
-    """Test that datasets can be built from other datasets."""
-    test_dataset = qml.data.Dataset(dtype="test_data", kw1=1, kw2="2", kw3=[3])
-    new_dataset = copy(test_dataset)
-    assert new_dataset.attrs == test_dataset.attrs
-    assert new_dataset._is_standard is False
-
-
-def test_copy_standard(tmp_path):
-    """Test that standard datasets can be built from other standard datasets."""
-    filepath = tmp_path / "myset_full.dat"
-    qml.data.Dataset._write_file({"molecule": 1, "hf_state": 2}, str(filepath))
-    test_dataset = qml.data.Dataset("qchem", str(tmp_path), "myset", "", standard=True)
-    new_dataset = copy(test_dataset)
-
-    assert new_dataset._is_standard == test_dataset._is_standard
-    assert new_dataset._dtype == test_dataset._dtype
-    assert new_dataset._folder == test_dataset._folder
-    assert new_dataset._prefix == test_dataset._prefix
-    assert new_dataset._prefix_len == test_dataset._prefix_len
-    assert new_dataset._fullfile == test_dataset._fullfile
-    assert new_dataset.__doc__ == test_dataset.__doc__
-    assert new_dataset.attrs == test_dataset.attrs
-    assert new_dataset.attrs == {"molecule": None, "hf_state": None}
-    assert new_dataset.molecule == 1
-    assert new_dataset.hf_state == 2
-    assert new_dataset.attrs == {"molecule": 1, "hf_state": 2}
-
-
-def test_invalid_init():
-    """Test that __init__ fails with invalid arguments."""
-    with pytest.raises(
-        TypeError,
-        match=r"Standard datasets expect 4 arguments: \['data_name', 'data_folder', 'attr_prefix', 'docstring'\]",
-    ):
-        qml.data.Dataset("first", "second", standard=True)
-
-    with pytest.raises(ValueError, match="Expected data_name to be a str, got int"):
-        qml.data.Dataset(1, "some_folder", "some_prefix", "some_docstr", standard=True)
-
-
-def test_getattribute_dunder_non_full(tmp_path):
-    """Test the getattribute override."""
-    non_standard_dataset = qml.data.Dataset(foo="bar")
-    with pytest.raises(AttributeError):
-        _ = non_standard_dataset.baz
-
-    folder = tmp_path / "datasets" / "myset"
-
-    # would not usually be done by users, bypassing qml.data.load
-    standard_dataset = qml.data.Dataset("qchem", str(folder), "myset", "", standard=True)
-
-    # no hf_state file exists (yet!)
-    with pytest.raises(AttributeError):
-        _ = standard_dataset.hf_state
-    # create an hf_state file
-    os.makedirs(folder)
-    qml.data.Dataset._write_file(2, str(folder / "myset_hf_state.dat"))
-    # this getattribute will read from the above created file
-    assert standard_dataset.hf_state == 2
-    assert standard_dataset._fullfile is None
-
-
-def test_getattribute_dunder_full(tmp_path):
-    """Test the getattribute behaviour when a fullfile is set."""
-    folder = tmp_path / "datasets" / "myset"
-    os.makedirs(folder)
-    qml.data.Dataset._write_file({"hf_state": 2}, str(folder / "myset_full.dat"))
-
-    # this getattribute will read from the above created file
-    dataset = qml.data.Dataset("qchem", str(folder), "myset", "", standard=True)
-    assert dataset.hf_state == 2
-    with pytest.raises(AttributeError):
-        _ = dataset.molecule
-
-
-def test_none_attribute_value(tmp_path):
-    """Test that non-standard datasets return None while standard datasets raise an error."""
-    non_standard_dataset = qml.data.Dataset(molecule=None)
-    assert non_standard_dataset.molecule is None
-
-    standard_dataset = qml.data.Dataset("qchem", str(tmp_path), "myset", "", standard=True)
-    standard_dataset.molecule = None  # wouldn't usually happen
-    with pytest.raises(
-        AttributeError,
-        match="Dataset has a 'molecule' attribute, but it is None and no data file was found",
-    ):
-        _ = standard_dataset.molecule
-
-
-def test_lazy_load_until_access_non_full(tmp_path):
-    """Test that Datasets do not load values until accessed with non-full files."""
-    filename = str(tmp_path / "myset_hf_state.dat")
-    qml.data.Dataset._write_file(2, filename)
-    dataset = qml.data.Dataset("qchem", str(tmp_path), "myset", "", standard=True)
-    assert dataset.attrs == {"hf_state": None}
-    assert dataset.hf_state == 2
-    assert dataset.attrs == {"hf_state": 2}
-
-
-def test_lazy_load_until_access_full(tmp_path):
-    """Test that Datasets do not load values until accessed with full files."""
-    filename = str(tmp_path / "myset_full.dat")
-    qml.data.Dataset._write_file({"molecule": 1, "hf_state": 2}, filename)
-    dataset = qml.data.Dataset("qchem", str(tmp_path), "myset", "", standard=True)
-    assert dataset.attrs == {"molecule": None, "hf_state": None}
-    assert dataset.molecule == 1
-    assert dataset.attrs == {"molecule": 1, "hf_state": None}
-    assert dataset.hf_state == 2
-    assert dataset.attrs == {"molecule": 1, "hf_state": 2}
-
-
-def test_hamiltonian_is_loaded_properly(tmp_path):
-    """Test that __getattribute__ correctly loads hamiltonians from dicts."""
-    filename = str(tmp_path / "myset_hamiltonian.dat")
-    qml.data.Dataset._write_file(
-        {"terms": {"IIII": 0.1, "ZIII": 0.2}, "wire_map": {0: 0, 1: 1, 2: 2, 3: 3}}, filename
+    @pytest.mark.parametrize(
+        "data_name, expect", [(None, "my_dataset"), ("other_name", "other_name")]
     )
-    dataset = qml.data.Dataset("qchem", str(tmp_path), "myset", "", standard=True)
-    ham = dataset.hamiltonian
-    assert isinstance(ham, qml.Hamiltonian)
-    coeffs, ops = ham.terms()
-    assert coeffs == [0.1, 0.2]
-    assert qml.equal(qml.Identity(0), ops[0])
-    assert qml.equal(qml.PauliZ(0), ops[1])
+    def test_subclass_init_dataname(self, data_name, expect):
+        """Test that a subclassed datasets' data_name can be set on init, and that
+        it defaults to the class data name if none is provided."""
+        ds = MyDataset(x="1", y="2", description="abc", data_name=data_name)
 
+        assert ds.data_name == expect
 
-def test_import_zstd_dill(monkeypatch):
-    """Test if an ImportError is raised by _import_zstd_dill function."""
+    def test_subclass_bind_init(self):
+        """Test that Dataset can be bind-initialized from a HDF5 group that
+        was initialized by a subclass of Dataset."""
 
-    with monkeypatch.context() as m:
-        m.setitem(sys.modules, "zstd", None)
+        bind = MyDataset(x="1", y="2", description="test").bind
 
-        with pytest.raises(ImportError, match="This feature requires zstd and dill"):
-            qml.data.dataset._import_zstd_dill()
+        ds = Dataset(bind)
 
-    with monkeypatch.context() as m:
-        m.setitem(sys.modules, "dill", None)
+        assert ds.data_name == "my_dataset"
+        assert ds.identifiers == {"x": "1", "y": "2"}
 
-        with pytest.raises(ImportError, match="This feature requires zstd and dill"):
-            qml.data.dataset._import_zstd_dill()
+    def test_subclass_category_id(self):
+        """Test that a subclass of Dataset preserves the defined
+        category_id."""
 
+        ds = MyDataset(x="1", y="2", description="test")
+        assert ds.data_name == "my_dataset"
 
-def test_repr_standard(tmp_path):
-    """Test that __repr__ for standard Datasets look as expected."""
-    folder = tmp_path / "qchem" / "H2" / "STO-3G" / "1.02"
-    os.makedirs(folder)
-    qml.data.Dataset._write_file(
-        {"molecule": 1, "hf_state": 2}, str(folder / "H2_STO-3G_1.02_full.dat")
+    def test_getattr_unset_fields(self):
+        """Test that __getattr__ returns UNSET if a dataset field
+        is not set."""
+
+        my_dataset = MyDataset(x="a", y="b")
+        assert my_dataset.description is UNSET
+
+    def test_setattr(self):
+        """Test that __setattrr__ successfully sets new attributes."""
+        ds = Dataset()
+
+        ds.x = 2.0
+        ds.q = "attribute"
+
+        assert ds.q == "attribute"
+        assert ds.x == 2.0
+
+    def test_setattr_with_attribute_type(self):
+        """Test that __setattr__ with a DatasetType passes through the AttributeInfo."""
+        ds = Dataset()
+        ds.x = DatasetScalar(2, info=AttributeInfo(doc="docstring", py_type=Number))
+
+        assert ds.attrs["x"].info.py_type == "numbers.Number"
+        assert ds.attrs["x"].info.doc == "docstring"
+
+    def test_setattr_preserves_field_info(self):
+        """Test that __setattr__ preserves AttributeInfo for fields."""
+
+        ds = MyDataset(description="test")
+
+        assert ds.attrs["description"].info.doc == MyDataset.fields["description"].info.doc
+        assert ds.attrs["description"].info["type_id"] == "string"
+
+    def test_setattr_field_conflicting_type(self):
+        """Test that __setattr__ raises a TypeError when setting an attribute
+        with a `DatasetAttribute` different from the field type."""
+
+        dset = MyDataset(x="1", y="2", description="test")
+
+        with pytest.raises(
+            TypeError, match="Expected 'x' to be of type 'DatasetString', but got 'DatasetScalar'."
+        ):
+            dset.x = DatasetScalar(1)
+
+    def test_delattr(self):
+        """Test that __delattr__ removes the attribute from the dataset
+        and the underlying file."""
+
+        ds = Dataset(x=1)
+
+        del ds.x
+
+        with pytest.raises(AttributeError, match="'Dataset' object has no attribute 'x'"):
+            _ = ds.x
+
+        assert "x" not in ds.bind
+
+    def test_delattr_no_such_attribute(self):
+        """Test the __delattr__ raises an AttributeError if the attribute
+        does not exist."""
+
+        ds = Dataset(y=1)
+
+        with pytest.raises(AttributeError, match="'Dataset' object has no attribute 'x'"):
+            del ds.x
+
+    def test_repr_shortened(self):
+        """Test the __repr__ has the expected format when there is more than 2 attributes."""
+
+        ds = Dataset(x=1, y="A string", width=3, z=None, length=4, identifiers=("length", "width"))
+
+        assert repr(ds) == "<Dataset = length: 4, width: 3, attributes: ['x', 'y', ...]>"
+
+    def test_repr(self):
+        """Test the __repr__ has the expected format when there is less than 2 attributes."""
+
+        ds = Dataset(x=1, y="A string")
+
+        assert repr(ds) == "<Dataset = attributes: ['x', 'y']>"
+
+    def test__dir__(self):
+        """Test that __dir__ returns all attributes."""
+
+        ds = Dataset(x=1, y="2")
+        assert dir(ds) == ["x", "y"]
+
+    @pytest.mark.parametrize(
+        "identifiers, expect", [(None, {}), (tuple(), {}), (("x", "y"), {"x": "1", "y": "2"})]
     )
+    def test_identifiers_base(self, identifiers, expect):
+        """Test that dataset identifiers can be set."""
+        ds = Dataset(x="1", y="2", identifiers=identifiers)
 
-    dataset = qml.data.Dataset("qchem", str(folder), "H2_STO-3G_1.02", "", standard=True)
-    assert (
-        repr(dataset)
-        == "<Dataset = description: qchem/H2/STO-3G/1.02, attributes: ['molecule', 'hf_state']>"
+        assert ds.identifiers == expect
+
+    def test_identifiers_base_missing(self):
+        """Test that identifiers whose attribute is missing on the
+        dataset will not be in the returned dict."""
+        ds = Dataset(x="1", identifiers=("x", "y"))
+
+        assert ds.identifiers == {"x": "1"}
+
+    def test_subclass_identifiers(self):
+        """Test that dataset subclasses' identifiers can be set."""
+        ds = MyDataset(x="1", y="2", description="abc")
+
+        assert ds.identifiers == {"x": "1", "y": "2"}
+
+    def test_subclass_identifiers_missing(self):
+        """Test that dataset subclasses' identifiers can be set."""
+        ds = MyDataset(x="1", description="abc")
+
+        assert ds.identifiers == {"x": "1"}
+
+    def test_attribute_info(self):
+        """Test that attribute info can be set and accessed
+        on a dataset attribute."""
+
+        dset = Dataset(x=1, y=attribute(3, doc="y Documentation"))
+
+        dset.attr_info["x"].doc = "x Documentation"
+
+        assert dset.attr_info["x"].doc == "x Documentation"
+        assert dset.attr_info["y"].doc == "y Documentation"
+
+    @pytest.mark.parametrize("mode", ["w-", "w", "a"])
+    def test_open_create(self, tmp_path, mode):
+        """Test that open() can create a new dataset on disk."""
+
+        path = Path(tmp_path, "dset.h5")
+        dset = Dataset.open(Path(tmp_path, "dset.h5"), mode=mode)
+
+        assert isinstance(dset, Dataset)
+        assert Path(tmp_path, "dset.h5").exists()
+        assert Path(dset.bind.filename) == path.absolute()
+
+    def test_open_existing_read_only(self, tmp_path):
+        """Test that open() can load an existing dataset
+        on disk in read-only mode."""
+
+        path = Path(tmp_path, "dset.h5")
+        existing = Dataset.open(path, mode="w")
+        existing.data = "some data"
+
+        existing.close()
+
+        dset = Dataset.open(path, mode="r")
+
+        assert isinstance(dset, Dataset)
+        assert Path(dset.bind.filename) == path.absolute()
+        assert dset.data == "some data"
+
+        with pytest.raises(DatasetNotWriteableError):
+            dset.other_data = "some other data"
+
+        dset.close()
+
+    def test_open_existing_read_write(self, tmp_path):
+        """Test that open() can load an existing dataset
+        on disk for modification."""
+
+        path = Path(tmp_path, "dset.h5")
+        existing = Dataset.open(path, mode="w")
+        existing.data = "some data"
+
+        existing.close()
+
+        dset = Dataset.open(path, mode="a")
+
+        assert isinstance(dset, Dataset)
+        assert Path(dset.bind.filename) == path.absolute()
+        assert dset.data == "some data"
+
+        dset.other_data = "some other data"
+
+        dset.close()
+
+        assert Dataset.open(path, "r").other_data == "some other data"
+
+    def test_open_existing_copy(self, tmp_path):
+        """Test that open() can load an existing dataset
+        on disk and copy it into memory."""
+
+        path = Path(tmp_path, "dset.h5")
+        existing = Dataset.open(path, "w")
+
+        existing.data = "some data"
+        existing.close()
+
+        dset = Dataset.open(path, "copy")
+
+        assert dset.bind.filename != str(path)
+        assert dset.data == "some data"
+
+        dset.other_data = "other data"
+        dset.close()
+
+        with pytest.raises(AttributeError):
+            _ = Dataset.open(path).other_data
+
+    @pytest.mark.parametrize(
+        "attributes_arg, attributes_expect", [(None, ["x", "y", "z"]), (["x", "y"], ["x", "y"])]
     )
+    def test_read_from_path(self, tmp_path, attributes_arg, attributes_expect):
+        """Test that read() can load attributes from a Dataset file."""
+        path = Path(tmp_path, "dset.h5")
+        existing = Dataset.open(path, "w")
 
-    dataset.vqe_energy = 1.1
-    assert (
-        repr(dataset)
-        == "<Dataset = description: qchem/H2/STO-3G/1.02, attributes: ['molecule', 'hf_state', ...]>"
+        existing.x = 1
+        existing.y = attribute("abc", doc="abc")
+        existing.z = [1, 2, 3]
+
+        existing.close()
+
+        dset = Dataset()
+        dset.read(path, attributes=attributes_arg)
+
+        assert dset.list_attributes() == attributes_expect
+        assert dset.y == "abc"
+        assert dset.attr_info["y"].doc == "abc"
+
+    @pytest.mark.parametrize(
+        "attributes_arg, attributes_expect", [(None, ["x", "y", "z"]), (["x", "y"], ["x", "y"])]
     )
+    def test_read_from_dataset(self, attributes_arg, attributes_expect):
+        """Test that read() can load attributes from a Dataset file."""
 
+        existing = Dataset()
 
-def test_repr_non_standard():
-    """Test that __repr__ for non-standard Datasets look as expected."""
-    dataset = qml.data.Dataset(foo=1, bar=2)
-    assert repr(dataset) == "<Dataset = attributes: ['foo', 'bar']>"
+        existing.x = 1
+        existing.y = attribute("abc", doc="abc")
+        existing.z = [1, 2, 3]
 
-    dataset.baz = 3
-    assert repr(dataset) == "<Dataset = attributes: ['foo', 'bar', ...]>"
+        dset = Dataset(x=2)
+        dset.read(existing, attributes=attributes_arg)
+
+        assert dset.list_attributes() == attributes_expect
+        assert dset.y == "abc"
+        assert dset.attr_info["y"].doc == "abc"
+
+    @pytest.mark.parametrize("overwrite, expect_x", [(False, 2), (True, 1)])
+    def test_read_overwrite(self, overwrite, expect_x):
+        """Test that overwrite determnines whether an existing attribute
+        is overwritten by read()."""
+
+        existing = Dataset(x=1)
+        new = Dataset(x=2)
+
+        new.read(existing, overwrite=overwrite)
+        assert new.x == expect_x
+
+    @pytest.mark.parametrize("mode", ["w-", "w", "a"])
+    def test_write(self, tmp_path, mode):
+        """Test that the ``write`` method creates a `hdf5` file that contains
+        the all the data in the dataset."""
+        ds = Dataset(x=DatasetScalar(1.0, AttributeInfo(py_type=int, doc="an int")))
+
+        path: Path = tmp_path / "test"
+        ds.write(path, mode=mode)
+
+        zgrp = open_group(path, mode="r")
+
+        ds_2 = Dataset(zgrp)
+
+        assert ds_2.bind is not ds.bind
+        assert ds.attrs == ds_2.attrs
+
+    @pytest.mark.parametrize(
+        "attributes_arg,attributes_expect",
+        [
+            (["x"], ["x", "y"]),
+            (["x", "y", "data"], ["x", "y", "data"]),
+            (["data"], ["x", "y", "data"]),
+        ],
+    )
+    def test_write_partial_always_copies_identifiers(self, attributes_arg, attributes_expect):
+        """Test that ``write`` will always copy attributes that are identifiers."""
+        ds = Dataset(x="a", y="b", data="Some data", identifiers=("x", "y"))
+        ds_2 = Dataset()
+
+        ds.write(ds_2, attributes=attributes_arg)
+        assert set(ds_2.list_attributes()) == set(attributes_expect)
+        assert ds_2.identifiers == ds.identifiers
+
+    def test_init_subclass(self):
+        """Test that __init_subclass__() does the following:
+
+        - Does not create fields for _InitArg and ClassVar
+        - collects fields from type annotations, including py_type
+        - gets data name and identifiers from class arguments
+        """
+
+        class NewDataset(
+            Dataset, data_name="new_dataset", identifiers=("x", "y")
+        ):  # pylint: disable= too-few-public-methods
+            """Dataset"""
+
+            class_info: ClassVar[str] = "Class variable"
+
+            init_arg: int = _init_arg(1)
+
+            x: int
+            y: str = field(doc="y documentation")
+            jsonable: Dict[str, str] = field(DatasetJSON, doc="json data")
+
+        ds = NewDataset(init_arg=3, x=1, y="abc", jsonable={"a": "b"})
+
+        assert ds.data_name == "new_dataset"
+        assert ds.identifiers == {"x": 1, "y": "abc"}
+
+        assert ds.attr_info["x"].py_type == "int"
+        assert ds.attr_info["y"].py_type == "str"
+        assert ds.attr_info["y"].doc == "y documentation"
+        assert ds.attr_info["jsonable"].py_type == "dict[str, str]"
+        assert ds.attr_info["jsonable"].doc == "json data"
+
+    def test_dataset_as_attribute(self):
+        """Test that a Dataset can be an attribute of
+        another dataset."""
+
+        child = Dataset(x=1, y=2)
+        parent = Dataset(child=child)
+
+        assert isinstance(parent.child, Dataset)
+        assert parent.child.list_attributes() == child.list_attributes()

@@ -85,7 +85,7 @@ def get_unitary(circ, n_wires):
         return qml.state()
 
     bitstrings = list(itertools.product([0, 1], repeat=n_wires))
-    u = [unitary_z(np.array(bitstring)).numpy() for bitstring in bitstrings]
+    u = [unitary_z(np.array(bitstring)) for bitstring in bitstrings]
     u = np.array(u).T
     return u
 
@@ -258,19 +258,17 @@ class TestQuantumMonteCarlo:
             fn, wires=wires, target_wire=target_wire, estimation_wires=estimation_wires
         )
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qmc_circuit()
             qml.probs(estimation_wires)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape = tape.expand(depth=2)
 
-        for op in tape.operations:
-            unexpanded = (
-                isinstance(op, qml.MultiControlledX)
-                or isinstance(op, qml.templates.QFT)
-                or isinstance(op, qml.tape.QuantumTape)
-            )
-            assert not unexpanded
+        assert all(
+            not isinstance(op, (qml.MultiControlledX, qml.templates.QFT, qml.tape.QuantumScript))
+            for op in tape.operations
+        )
 
         dev = qml.device("default.qubit", wires=wires + estimation_wires)
         res = dev.execute(tape)

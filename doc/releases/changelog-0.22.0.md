@@ -607,7 +607,7 @@
 * The `qml.QubitUnitary` operation now supports just-in-time compilation using JAX.
   [(#2249)](https://github.com/PennyLaneAI/pennylane/pull/2249)
 
-* Fixes a bug in the JAX interface where `DeviceArray` objects
+* Fixes a bug in the JAX interface where `Array` objects
   were not being converted to NumPy arrays before executing an
   external device.
   [(#2255)](https://github.com/PennyLaneAI/pennylane/pull/2255)

@@ -1,14 +1,26 @@
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Unit tests for the ``one_particle`` function of FermionOperator
+in openfermion.
+"""
 import os
-import sys
 
 import numpy as np
 import pytest
 
 from pennylane import qchem
-
-# TODO: Bring pytest skip to relevant tests.
-openfermion = pytest.importorskip("openfermion")
-openfermionpyscf = pytest.importorskip("openfermionpyscf")
 
 ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
 
@@ -126,9 +138,11 @@ t_op_4 = {
         (None, [0, 1, 2, 3, 4, 5], t_op_4),
     ],
 )
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_table_one_particle(core, active, t_op_exp):
     r"""Test the correctness of the FermionOperator built by the `'one_particle'` function
     of the `obs` module"""
+    import openfermion
 
     hf = openfermion.MolecularData(filename=os.path.join(ref_dir, "h2o_psi4"))
 
@@ -151,6 +165,7 @@ table_2D = np.array([[1, 2, 3], [4, 5, 6]])
         (table_2D, None, [2, 6], "Indices of active orbitals must be between 0 and"),
     ],
 )
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_exceptions_one_particle(t_me, core, active, msg_match):
     """Test that the function `'one_particle'` throws an exception
     if the matrix elements array is not a 2D array or if the indices

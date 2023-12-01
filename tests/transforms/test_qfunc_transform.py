@@ -14,6 +14,7 @@
 """
 Unit tests for the qfunc transform decorators.
 """
+# pylint:disable=no-value-for-parameter
 import pytest
 
 import pennylane as qml
@@ -23,6 +24,18 @@ from pennylane import numpy as np
 class TestSingleTapeTransform:
     """Tests for the single_tape_transform decorator"""
 
+    def test_single_tape_transform_is_deprecated(self):
+        """Test that the single_tape_transform class is deprecated."""
+
+        def func(op):
+            return op
+
+        with pytest.warns(
+            UserWarning,
+            match="Use of `single_tape_transform` to create a custom transform is deprecated",
+        ):
+            _ = qml.single_tape_transform(func)
+
     def test_error_invalid_callable(self):
         """Test that an error is raised if the transform
         is applied to an invalid function"""
@@ -30,7 +43,8 @@ class TestSingleTapeTransform:
         with pytest.raises(ValueError, match="does not appear to be a valid Python function"):
             qml.single_tape_transform(5)
 
-    def test_parametrized_transform(self):
+    @pytest.mark.parametrize("shots", [None, 100])
+    def test_parametrized_transform(self, shots):
         """Test that a parametrized transform can be applied
         to a tape"""
 
@@ -50,11 +64,14 @@ class TestSingleTapeTransform:
         b = np.array([0.2, 0.3])
         x = 0.543
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
             qml.CRX(x, wires=[0, 1])
 
-        ops = my_transform(tape, a, b).operations
+        tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
+        new_tape = my_transform(tape, a, b)
+        ops = new_tape.operations
+
         assert len(ops) == 4
         assert ops[0].name == "Hadamard"
 
@@ -66,9 +83,22 @@ class TestSingleTapeTransform:
 
         assert ops[3].name == "CZ"
 
+        assert new_tape.shots == tape.shots
+
 
 class TestQFuncTransforms:
     """Tests for the qfunc_transform decorator"""
+
+    def test_qfunc_transform_is_deprecated(self):
+        """Test that the qfunc_transform class is deprecated."""
+
+        def func(op):
+            return op
+
+        with pytest.warns(
+            UserWarning, match="Use of `qfunc_transform` to create a custom transform is deprecated"
+        ):
+            _ = qml.qfunc_transform(func)
 
     def test_error_invalid_transform_callable(self):
         """Test that an error is raised if the transform
@@ -113,10 +143,10 @@ class TestQFuncTransforms:
             qml.Hadamard(wires=0)
             qml.CRX(x, wires=[0, 1])
 
-        new_qfunc = my_transform(qfunc)
+        new_qfunc = my_transform(qfunc)  # pylint:disable=assignment-from-no-return
         x = 0.543
 
-        ops = qml.transforms.make_tape(new_qfunc)(x).operations
+        ops = qml.tape.make_qscript(new_qfunc)(x).operations
         assert len(ops) == 4
         assert ops[0].name == "Hadamard"
 
@@ -150,7 +180,7 @@ class TestQFuncTransforms:
             qml.CRX(x, wires=[0, 1])
 
         x = 0.543
-        ops = qml.transforms.make_tape(qfunc)(x).operations
+        ops = qml.tape.make_qscript(qfunc)(x).operations
         assert len(ops) == 4
         assert ops[0].name == "Hadamard"
 
@@ -188,7 +218,7 @@ class TestQFuncTransforms:
         x = 0.543
         new_qfunc = my_transform(a, b)(qfunc)
 
-        ops = qml.transforms.make_tape(new_qfunc)(x).operations
+        ops = qml.tape.make_qscript(new_qfunc)(x).operations
         assert len(ops) == 4
         assert ops[0].name == "Hadamard"
 
@@ -225,7 +255,7 @@ class TestQFuncTransforms:
             qml.Hadamard(wires=0)
             qml.CRX(x, wires=[0, 1])
 
-        ops = qml.transforms.make_tape(qfunc)(x).operations
+        ops = qml.tape.make_qscript(qfunc)(x).operations
         assert len(ops) == 4
         assert ops[0].name == "Hadamard"
 
@@ -265,7 +295,7 @@ class TestQFuncTransforms:
         def ansatz():
             qml.CNOT(wires=[0, 1])
 
-        ops = qml.transforms.make_tape(ansatz)().operations
+        ops = qml.tape.make_qscript(ansatz)().operations
         assert len(ops) == 2
         assert ops[0].name == "RZ"
         assert ops[0].parameters == [x]
@@ -301,6 +331,29 @@ class TestQFuncTransforms:
 
         assert np.allclose(normal_result, transformed_result)
         assert normal_result.shape == transformed_result.shape
+
+    def test_transform_does_not_add_return_value_to_qnode(self):
+        """Tests that qfunc_transform doesn't add an empty list of measurements to a QNode."""
+
+        @qml.qfunc_transform
+        def expand_hadamards(tape):
+            for op in tape:
+                if op.name == "Hadamard":
+                    qml.RZ(np.pi, wires=op.wires)
+                    qml.RY(np.pi / 2, wires=op.wires)
+                else:
+                    op.queue()
+
+        @expand_hadamards
+        def ansatz():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+
+        assert ansatz() is None
+
+        qnode = qml.QNode(ansatz, qml.device("default.qubit", wires=2))
+        with pytest.raises(qml.QuantumFunctionError, match="return either a single measurement"):
+            qnode()
 
     def test_sphinx_build(self, monkeypatch):
         """Test that qfunc transforms are not created during Sphinx builds"""
@@ -356,7 +409,7 @@ class TestQFuncTransformGradients:
     def circuit(param, *transform_weights):
         """Test QFunc"""
         qml.RX(0.1, wires=0)
-        TestQFuncTransformGradients.my_transform(*transform_weights)(
+        TestQFuncTransformGradients.my_transform(*transform_weights)(  # pylint:disable=not-callable
             TestQFuncTransformGradients.ansatz
         )(param)
         return qml.expval(qml.PauliZ(1))
@@ -371,7 +424,7 @@ class TestQFuncTransformGradients:
         """Test that a qfunc transform is differentiable when using
         autograd"""
         dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(self.circuit, dev, interface="autograd", diff_method=diff_method)
+        qnode = qml.QNode(self.circuit, dev, diff_method=diff_method)
 
         a = np.array(0.5, requires_grad=True)
         b = np.array([0.1, 0.2], requires_grad=True)
@@ -391,7 +444,7 @@ class TestQFuncTransformGradients:
         import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
+        qnode = qml.QNode(self.circuit, dev, diff_method=diff_method)
 
         a_np = np.array(0.5, requires_grad=True)
         b_np = np.array([0.1, 0.2], requires_grad=True)
@@ -416,7 +469,7 @@ class TestQFuncTransformGradients:
         import torch
 
         dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
+        qnode = qml.QNode(self.circuit, dev, diff_method=diff_method)
 
         a_np = np.array(0.5, requires_grad=True)
         b_np = np.array([0.1, 0.2], requires_grad=True)
@@ -442,7 +495,7 @@ class TestQFuncTransformGradients:
         import jax
 
         dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
+        qnode = qml.QNode(self.circuit, dev, diff_method=diff_method)
 
         a = jax.numpy.array(0.5)
         b = jax.numpy.array([0.1, 0.2])

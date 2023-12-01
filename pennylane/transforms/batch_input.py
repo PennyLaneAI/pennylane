@@ -13,21 +13,22 @@
 """
 Batch transformation for multiple (non-trainable) input examples following issue #2037
 """
-from typing import Callable, Sequence, Tuple, Union
+from typing import Callable, Sequence, Union
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.tape import QuantumTape
-from pennylane.transforms.batch_transform import batch_transform
+from pennylane.transforms.core import transform
+from pennylane.transforms.batch_params import _nested_stack, _split_operations
 
 
-@batch_transform
+@transform
 def batch_input(
-    tape: Union[QuantumTape, qml.QNode],
+    tape: QuantumTape,
     argnum: Union[Sequence[int], int],
-) -> Tuple[Sequence[QuantumTape], Callable]:
+) -> (Sequence[QuantumTape], Callable):
     """
-    Transform a QNode to support an initial batch dimension for gate inputs.
+    Transform a circuit to support an initial batch dimension for gate inputs.
 
     In a classical ML application one needs to batch the non-trainable inputs of the network.
     This function executes the same analogue for a quantum circuit:
@@ -41,13 +42,15 @@ def batch_input(
     Based on `arXiv:2202.10471 <https://arxiv.org/abs/2202.10471>`__.
 
     Args:
-        tape (.tape.QuantumTape or .QNode): Input quantum circuit to batch
+        tape (QNode or QuantumTape or Callable): Input quantum circuit to batch
         argnum (Sequence[int] or int): One or several index values indicating the position of the
-        non-trainable batched parameters in the quantum tape.
+            non-trainable batched parameters in the quantum tape.
 
     Returns:
-        Sequence[Sequence[.tape.QuantumTape], Callable]: list of tapes arranged
-        according to unbatched inputs and a callable function to batch the results.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the batched results.
 
     .. seealso:: :func:`~.batch_params`
 
@@ -55,9 +58,10 @@ def batch_input(
 
     .. code-block:: python
 
+        from functools import partial
         dev = qml.device("default.qubit", wires=2, shots=None)
 
-        @qml.batch_input(argnum=1)
+        @partial(qml.batch_input, argnum=1)
         @qml.qnode(dev, diff_method="parameter-shift", interface="tf")
         def circuit(inputs, weights):
             qml.RY(weights[0], wires=0)
@@ -72,16 +76,20 @@ def batch_input(
     array([0.46230079, 0.73971315, 0.95666004, 0.5355225 , 0.66180948,
             0.44519553, 0.93874261, 0.9483197 , 0.78737918, 0.90866411])>
     """
+    # pylint: disable=protected-access
     argnum = tuple(argnum) if isinstance(argnum, (list, tuple)) else (int(argnum),)
 
     all_parameters = tape.get_parameters(trainable_only=False)
     argnum_params = [all_parameters[i] for i in argnum]
 
     if any(num in tape.trainable_params for num in argnum):
-        raise ValueError(
-            "Batched inputs must be non-trainable. Please make sure that the parameters indexed by "
-            + "'argnum' are not marked as trainable."
-        )
+        # JAX arrays can't be marked as non-trainable, so don't raise this error
+        # if the interface is JAX
+        if qml.math.get_interface(*argnum_params) != "jax":
+            raise ValueError(
+                "Batched inputs must be non-trainable. Please make sure that the parameters indexed by "
+                + "'argnum' are not marked as trainable."
+            )
 
     batch_dims = np.unique([qml.math.shape(x)[0] for x in argnum_params])
     if len(batch_dims) != 1:
@@ -91,20 +99,14 @@ def batch_input(
 
     batch_size = batch_dims[0]
 
-    outputs = []
-    for i in range(batch_size):
-        batch = []
-        for idx, param in enumerate(all_parameters):
-            if idx in argnum:
-                param = param[i]
-            batch.append(param)
-        outputs.append(batch)
-
-    # Construct new output tape with unstacked inputs
     output_tapes = []
-    for params in outputs:
-        new_tape = tape.copy(copy_operations=True)
-        new_tape.set_parameters(params, trainable_only=False)
+    for ops in _split_operations(tape.operations, all_parameters, argnum, batch_size):
+        new_tape = qml.tape.QuantumScript(
+            ops, tape.measurements, shots=tape.shots, trainable_params=tape.trainable_params
+        )
         output_tapes.append(new_tape)
 
-    return output_tapes, lambda x: qml.math.squeeze(qml.math.stack(x))
+    def processing_fn(res):
+        return _nested_stack(res)
+
+    return output_tapes, processing_fn

@@ -228,6 +228,7 @@ class TestSPSAOptimizer:
         k = 1
         ck = c / k**gamma
         ak = a / (A + k) ** alpha
+        # pylint:disable=too-many-function-args
         deltas = np.array(np.meshgrid([1, -1], [1, -1], [1, -1], [1, -1])).T.reshape(-1, 2, 2)
 
         args = (multid_array,)
@@ -239,8 +240,8 @@ class TestSPSAOptimizer:
                 multiplier = ck * delta
                 thetaplus[index] = arg + multiplier
                 thetaminus[index] = arg - multiplier
-            yplus = quant_fun_mdarr(*thetaplus)
-            yminus = quant_fun_mdarr(*thetaminus)
+            yplus = np.array([quant_fun_mdarr(p) for p in thetaplus])
+            yminus = np.array([quant_fun_mdarr(p) for p in thetaminus])
             y_pm.append(yplus - yminus)
         # choose one delta
         d = 0
@@ -427,7 +428,7 @@ class TestSPSAOptimizer:
         def circuit(params):
             qml.StronglyEntanglingLayers(params, wires=list(range(n_wires)))
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev)
         def cost(params):
             circuit(params)
             return qml.probs(wires=[0, 1, 2, 3])

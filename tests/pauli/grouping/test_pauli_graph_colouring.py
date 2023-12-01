@@ -26,7 +26,6 @@ class TestGraphcolouringFunctions:
         """Verifies if all vertices of the same colour are not connected."""
 
         for colour in colouring.keys():
-
             grouping = colouring[colour]
             size_grouping = len(grouping)
 

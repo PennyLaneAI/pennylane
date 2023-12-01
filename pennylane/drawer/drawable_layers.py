@@ -15,6 +15,8 @@
 This module contains a helper function to sort operations into layers.
 """
 
+from pennylane.ops import Conditional
+from pennylane.measurements import MidMeasureMP
 from .utils import default_wire_map
 
 
@@ -46,6 +48,38 @@ def _recursive_find_layer(layer_to_check, op_occupied_wires, occupied_wires_per_
         return 0
     # keep pushing the operation to lower layers
     return _recursive_find_layer(layer_to_check - 1, op_occupied_wires, occupied_wires_per_layer)
+
+
+def _get_op_occupied_wires(op, wire_map, cond_measurements):
+    """Helper function to find wires that would be used by an operator in a drawable layer."""
+    if isinstance(op, MidMeasureMP):
+        mapped_wire = wire_map[op.wires[0]]
+
+        if op in cond_measurements:
+            min_wire = mapped_wire
+            max_wire = max(wire_map.values())
+            return set(range(min_wire, max_wire + 1))
+
+        return {mapped_wire}
+
+    if isinstance(op, Conditional):
+        mapped_wires = [wire_map[wire] for wire in op.then_op.wires]
+        min_wire = min(mapped_wires)
+        max_wire = max(wire_map.values())
+        return set(range(min_wire, max_wire + 1))
+
+    if len(op.wires) == 0:
+        # if no wires, then it acts on all wires
+        # for example, qml.state and qml.sample
+        mapped_wires = set(wire_map.values())
+        return mapped_wires
+
+    mapped_wires = {wire_map[wire] for wire in op.wires}
+    # get all integers from the minimum to the maximum
+    min_wire = min(mapped_wires)
+    max_wire = max(mapped_wires)
+
+    return set(range(min_wire, max_wire + 1))
 
 
 def drawable_layers(ops, wire_map=None):
@@ -81,39 +115,41 @@ def drawable_layers(ops, wire_map=None):
     transformation.
 
     """
+    # pylint:disable=too-many-nested-blocks,too-many-branches,too-many-statements
 
-    if wire_map is None:
+    if not wire_map:
         wire_map = default_wire_map(ops)
-
     # initialize
     max_layer = 0
     occupied_wires_per_layer = [set()]
-    ops_in_layer = [set()]
+    ops_in_layer = [[]]
+    measured_wires = {}
+
+    # Collect all mid-circuit measurements used for classical conditioning
+    cond_measurements = set()
+    for op in ops:
+        if isinstance(op, Conditional):
+            cond_measurements.update(op.meas_val.measurements)
 
     # loop over operations
     for op in ops:
-        if len(op.wires) == 0:
-            # if no wires, then it acts on all wires
-            # for example, qml.state and qml.sample
-            mapped_wires = set(wire_map.values())
-            op_occupied_wires = mapped_wires
-        else:
-            mapped_wires = {wire_map[wire] for wire in op.wires}
-            # get all integers from the minimum to the maximum
-            min_wire = min(mapped_wires)
-            max_wire = max(mapped_wires)
-            op_occupied_wires = set(range(min_wire, max_wire + 1))
+        if isinstance(op, MidMeasureMP):
+            if len(op.wires) > 1:
+                raise ValueError("Cannot draw mid-circuit measurements with more than one wire.")
 
+            measured_wires[op.id] = wire_map[op.wires[0]]
+
+        op_occupied_wires = _get_op_occupied_wires(op, wire_map, cond_measurements)
         op_layer = _recursive_find_layer(max_layer, op_occupied_wires, occupied_wires_per_layer)
 
         # see if need to add new layer
         if op_layer > max_layer:
             max_layer += 1
-            occupied_wires_per_layer.append(set())
-            ops_in_layer.append(set())
+            occupied_wires_per_layer.append(set(measured_wires.values()))
+            ops_in_layer.append([])
 
         # add to op_layer
-        ops_in_layer[op_layer].add(op)
+        ops_in_layer[op_layer].append(op)
         occupied_wires_per_layer[op_layer].update(op_occupied_wires)
 
-    return ops_in_layer
+    return list(filter(None, ops_in_layer[:-1])) + ops_in_layer[-1:]

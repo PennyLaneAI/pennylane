@@ -287,7 +287,6 @@ def mitigate_depolarizing_noise(K, num_wires, method, use_entries=None):
         mitigated_matrix = (K - noise_rate / dim) / (1 - noise_rate)
 
     elif method == "average":
-
         if use_entries is None:
             diagonal_elements = np.diag(K)
         else:

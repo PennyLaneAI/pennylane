@@ -14,20 +14,33 @@
 """
 Unit tests for the :mod:`pennylane` :class:`QutritDevice` class.
 """
-import pytest
-import numpy as np
+# pylint: disable=protected-access, redefined-outer-name, too-many-arguments, too-few-public-methods, unused-variable, unused-argument
 from random import random
+
+import numpy as np
+import pytest
 from scipy.stats import unitary_group
 
 import pennylane as qml
+from pennylane import DeviceError, QubitDevice, QutritDevice
 from pennylane import numpy as pnp
-from pennylane import QutritDevice, DeviceError, QuantumFunctionError, QubitDevice
-from pennylane.devices import DefaultQubit
-from pennylane.measurements import Sample, Variance, Expectation, Probability, State, Counts
-from pennylane.circuit_graph import CircuitGraph
+from pennylane.measurements import (
+    Counts,
+    CountsMP,
+    Expectation,
+    ExpectationMP,
+    MeasurementProcess,
+    Probability,
+    ProbabilityMP,
+    Sample,
+    SampleMP,
+    State,
+    StateMP,
+    Variance,
+    VarianceMP,
+)
+from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
-from pennylane.tape import QuantumTape
-from pennylane.measurements import state
 
 
 @pytest.fixture(scope="function")
@@ -45,7 +58,7 @@ def mock_qutrit_device(monkeypatch):
         m.setattr(QutritDevice, "apply", lambda self, *args, **kwargs: None)
 
         def get_qutrit_device(wires=1):
-            return QutritDevice(wires=wires)
+            return QutritDevice(wires=wires)  # pylint:disable=abstract-class-instantiated
 
         yield get_qutrit_device
 
@@ -75,7 +88,7 @@ def mock_qutrit_device_extract_stats(monkeypatch):
         m.setattr(QutritDevice, "apply", lambda self, x, **kwargs: x)
 
         def get_qutrit_device(wires=1):
-            return QutritDevice(wires=wires)
+            return QutritDevice(wires=wires)  # pylint:disable=abstract-class-instantiated
 
         yield get_qutrit_device
 
@@ -103,6 +116,7 @@ def mock_qutrit_device_shots(monkeypatch):
         )
 
         def get_qutrit_device(wires=1, shots=None):
+            # pylint:disable=abstract-class-instantiated
             return QutritDevice(wires=wires, shots=shots)
 
         yield get_qutrit_device
@@ -120,7 +134,7 @@ def mock_qutrit_device_with_original_statistics(monkeypatch):
         m.setattr(QutritDevice, "observables", ["Identity"])
 
         def get_qutrit_device(wires=1):
-            return QutritDevice(wires=wires)
+            return QutritDevice(wires=wires)  # pylint:disable=abstract-class-instantiated
 
         yield get_qutrit_device
 
@@ -138,17 +152,17 @@ class TestOperations:
         with pytest.raises(
             ValueError, match="Cannot access the operation queue outside of the execution context!"
         ):
-            dev.op_queue
+            _ = dev.op_queue
 
     def test_op_queue_is_filled_during_execution(self, mock_qutrit_device, monkeypatch):
         """Tests that the op_queue is correctly filled when apply is called and that accessing
         op_queue raises no error"""
         U = unitary_group.rvs(3, random_state=10)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             queue = [qml.QutritUnitary(U, wires=0), qml.QutritUnitary(U, wires=0)]
-            observables = [qml.expval(qml.Identity(0))]
 
+        tape = QuantumScript.from_queue(q)
         call_history = []
 
         with monkeypatch.context() as m:
@@ -158,7 +172,7 @@ class TestOperations:
                 lambda self, x, **kwargs: call_history.extend(x + kwargs.get("rotations", [])),
             )
             m.setattr(QutritDevice, "analytic_probability", lambda *args: None)
-            m.setattr(QutritDevice, "statistics", lambda self, *args, **kwargs: 0)
+            m.setattr(QutritDevice, "statistics", lambda self, *args, **kwargs: [0])
             dev = mock_qutrit_device()
             dev.execute(tape)
 
@@ -175,14 +189,14 @@ class TestOperations:
         """Tests that the operations are properly applied and queued"""
         U = unitary_group.rvs(3, random_state=10)
 
-        with qml.tape.QuantumTape() as tape:
-            queue = [
-                qml.QutritUnitary(U, wires=0),
-                qml.Hadamard(wires=1),
-                qml.QutritUnitary(U, wires=2),
-            ]
-            observables = [qml.expval(qml.Identity(0)), qml.var(qml.Identity(1))]
+        queue = [
+            qml.QutritUnitary(U, wires=0),
+            qml.Hadamard(wires=1),
+            qml.QutritUnitary(U, wires=2),
+        ]
+        observables = [qml.expval(qml.Identity(0)), qml.var(qml.Identity(1))]
 
+        tape = QuantumScript(queue, observables)
         dev = mock_qutrit_device()
         with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
             dev.execute(tape)
@@ -206,20 +220,20 @@ class TestOperations:
     ):
         """Tests that passing keyword arguments to execute propagates those kwargs to the apply()
         method"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             for op in queue + observables:
                 op.queue()
 
+        tape = QuantumScript.from_queue(q)
         call_history = {}
 
         with monkeypatch.context() as m:
             m.setattr(QutritDevice, "apply", lambda self, x, **kwargs: call_history.update(kwargs))
-            m.setattr(QutritDevice, "statistics", lambda self, *args, **kwargs: 0)
+            m.setattr(QutritDevice, "statistics", lambda self, *args, **kwargs: [0])
             dev = mock_qutrit_device()
             dev.execute(tape, hash=tape.graph.hash)
 
-        len(call_history.items()) == 1
-        call_history["hash"] = tape.graph.hash
+        assert call_history["hash"] == tape.graph.hash
 
 
 class TestObservables:
@@ -235,30 +249,35 @@ class TestObservables:
             ValueError,
             match="Cannot access the observable value queue outside of the execution context!",
         ):
-            dev.obs_queue
+            _ = dev.obs_queue
 
     def test_unsupported_observables_raise_error(self, mock_qutrit_device):
         """Tests that the operations are properly applied and queued"""
         U = unitary_group.rvs(3, random_state=10)
 
-        with qml.tape.QuantumTape() as tape:
-            queue = [qml.QutritUnitary(U, wires=0)]
-            observables = [qml.expval(qml.Hadamard(0))]
+        queue = [qml.QutritUnitary(U, wires=0)]
+        observables = [qml.expval(qml.Hadamard(0))]
 
+        tape = QuantumScript(queue, observables)
         dev = mock_qutrit_device()
         with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
             dev.execute(tape)
 
     def test_unsupported_observable_return_type_raise_error(self, mock_qutrit_device, monkeypatch):
         """Check that an error is raised if the return type of an observable is unsupported"""
+
+        class UnsupportedMeasurement(MeasurementProcess):
+            @property
+            def return_type(self):
+                return "SomeUnsupportedReturnType"
+
         U = unitary_group.rvs(3, random_state=10)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.QutritUnitary(U, wires=0)
-            qml.measurements.MeasurementProcess(
-                return_type="SomeUnsupportedReturnType", obs=qml.Identity(0)
-            )
+            UnsupportedMeasurement(obs=qml.Identity(0))
 
+        tape = QuantumScript.from_queue(q)
         with monkeypatch.context() as m:
             m.setattr(QutritDevice, "apply", lambda self, x, **kwargs: None)
             dev = mock_qutrit_device()
@@ -279,54 +298,61 @@ class TestParameters:
             ValueError,
             match="Cannot access the free parameter mapping outside of the execution context!",
         ):
-            dev.parameters
+            _ = dev.parameters
 
 
 class TestExtractStatistics:
     """Test the statistics method"""
 
     @pytest.mark.parametrize(
-        "returntype", [Expectation, Variance, Sample, Probability, State, Counts]
+        "measurement",
+        [
+            ExpectationMP(obs=qml.PauliX(0)),
+            VarianceMP(obs=qml.PauliX(0)),
+            SampleMP(obs=qml.PauliX(0)),
+            ProbabilityMP(obs=qml.PauliX(0)),
+            StateMP(),
+            CountsMP(),
+        ],
     )
-    def test_results_created(self, mock_qutrit_device_extract_stats, monkeypatch, returntype):
+    def test_results_created(self, mock_qutrit_device_extract_stats, monkeypatch, measurement):
         """Tests that the statistics method simply builds a results list without any side-effects"""
 
-        class SomeObservable(qml.operation.Observable):
-            num_wires = 1
-            return_type = returntype
-
-        obs = SomeObservable(wires=0)
+        qscript = QuantumScript(measurements=[measurement])
 
         with monkeypatch.context() as m:
             dev = mock_qutrit_device_extract_stats()
-            results = dev.statistics([obs])
+            results = dev.statistics(qscript)
 
         assert results == [0]
 
     def test_results_no_state(self, mock_qutrit_device, monkeypatch):
         """Tests that the statistics method raises an AttributeError when a State return type is
         requested when QutritDevice does not have a state attribute"""
+        qscript = QuantumScript(measurements=[qml.state()])
+
         with monkeypatch.context() as m:
             dev = mock_qutrit_device()
             m.delattr(QubitDevice, "state")
             with pytest.raises(
                 qml.QuantumFunctionError, match="The state is not available in the current"
             ):
-                dev.statistics([qml.state()])
+                dev.statistics(qscript)
 
     @pytest.mark.parametrize("returntype", [None])
     def test_results_created_empty(self, mock_qutrit_device_extract_stats, monkeypatch, returntype):
         """Tests that the statistics method returns an empty list if the return type is None"""
 
-        class SomeObservable(qml.operation.Observable):
-            num_wires = 1
-            return_type = returntype
+        class UnsupportedMeasurement(MeasurementProcess):
+            @property
+            def return_type(self):
+                return returntype
 
-        obs = SomeObservable(wires=0)
+        qscript = QuantumScript(measurements=[UnsupportedMeasurement()])
 
         with monkeypatch.context() as m:
             dev = mock_qutrit_device_extract_stats()
-            results = dev.statistics([obs])
+            results = dev.statistics(qscript)
 
         assert results == []
 
@@ -338,15 +364,16 @@ class TestExtractStatistics:
 
         assert returntype not in [Expectation, Variance, Sample, Probability, State, Counts, None]
 
-        class SomeObservable(qml.operation.Observable):
-            num_wires = 1
-            return_type = returntype
+        class UnsupportedMeasurement(MeasurementProcess):
+            @property
+            def return_type(self):
+                return returntype
 
-        obs = SomeObservable(wires=0)
+        qscript = QuantumScript(measurements=[UnsupportedMeasurement()])
 
         dev = mock_qutrit_device_extract_stats()
         with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
-            dev.statistics([obs])
+            dev.statistics(qscript)
 
     def test_return_state_with_multiple_observables(self, mock_qutrit_device_extract_stats):
         """Checks that an error is raised if multiple observables are being returned
@@ -354,11 +381,12 @@ class TestExtractStatistics:
         """
         U = unitary_group.rvs(3, random_state=10)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.QutritUnitary(U, wires=0)
             qml.state()
             qml.probs(wires=0)
 
+        tape = QuantumScript.from_queue(q)
         dev = mock_qutrit_device_extract_stats()
 
         with pytest.raises(
@@ -415,7 +443,7 @@ class TestSample:
 
         obs = SomeObservable(wires=0)
         with pytest.raises(qml.operation.EigvalsUndefinedError, match="Cannot compute samples"):
-            dev.sample(SomeObservable(wires=0))
+            dev.sample(obs)
 
     def test_samples_with_bins(self, mock_qutrit_device_with_original_statistics, monkeypatch):
         """Tests that sample works correctly when instantiating device with shot list"""
@@ -429,7 +457,7 @@ class TestSample:
         bin_size = 3
 
         out = dev.sample(obs, shot_range=shot_range, bin_size=bin_size)
-        expected_samples = samples.reshape(-1, 3, 2)
+        expected_samples = samples.reshape((-1, 3, 2))
 
         assert np.array_equal(out, expected_samples)
 
@@ -940,13 +968,19 @@ class TestExecution:
 class TestBatchExecution:
     """Tests for the batch_execute method."""
 
-    with qml.tape.QuantumTape() as tape1:
+    with qml.queuing.AnnotatedQueue() as q1:
         qml.QutritUnitary(np.eye(3), wires=0)
-        qml.expval(qml.Identity(0)), qml.expval(qml.Identity(1))
+        _ = (
+            qml.expval(qml.Identity(0)),
+            qml.expval(qml.Identity(1)),
+        )
 
-    with qml.tape.QuantumTape() as tape2:
+    tape1 = QuantumScript.from_queue(q1)
+    with qml.queuing.AnnotatedQueue() as q2:
         qml.QutritUnitary(np.eye(3), wires=0)
         qml.expval(qml.Identity(0))
+
+    tape2 = QuantumScript.from_queue(q2)
 
     @pytest.mark.parametrize("n_tapes", [1, 2, 3])
     def test_calls_to_execute(self, n_tapes, mocker, mock_qutrit_device):
@@ -986,7 +1020,7 @@ class TestBatchExecution:
         assert len(res) == 2
         assert np.allclose(res[0], dev.execute(self.tape1), rtol=tol, atol=0)
         assert np.allclose(res[1], dev.execute(self.tape2), rtol=tol, atol=0)
-        assert res[0].dtype == r_dtype
+        assert res[0][0].dtype == r_dtype
         assert res[1].dtype == r_dtype
 
     def test_result_empty_tape(self, mock_qutrit_device, tol):
@@ -994,7 +1028,7 @@ class TestBatchExecution:
 
         dev = mock_qutrit_device(wires=2)
 
-        empty_tape = qml.tape.QuantumTape()
+        empty_tape = QuantumScript()
         tapes = [empty_tape] * 3
         res = dev.batch_execute(tapes)
 
@@ -1012,7 +1046,7 @@ class TestShotList:
         with pytest.raises(qml.DeviceError, match="Shots must be"):
             mock_qutrit_device_shots(wires=2, shots=0.5)
 
-        with pytest.raises(ValueError, match="Unknown shot sequence"):
+        with pytest.raises(ValueError, match="Shots must be"):
             mock_qutrit_device_shots(wires=2, shots=["a", "b", "c"])
 
     shot_data = [
@@ -1054,10 +1088,18 @@ class TestShotList:
             return qml.probs(wires=[0, 1])
 
         res = circuit(0.1, 0.6)
-
-        assert res.shape == expected_shape
-        assert circuit.device._shot_vector == shot_vector
-        assert circuit.device.shots == total_shots
+        print(res)
+        if isinstance(shot_list[0], tuple):
+            shots = shot_list[0][1]
+            assert isinstance(res, tuple)
+            assert len(res) == shots
+            assert circuit.device._shot_vector == shot_vector
+            assert circuit.device.shots == total_shots
+        else:
+            assert isinstance(res, tuple)
+            assert len(res) == len(shot_list)
+            assert circuit.device._shot_vector == shot_vector
+            assert circuit.device.shots == total_shots
 
         # test gradient works
         # TODO: Add after differentiability of qutrit circuits is implemented
@@ -1102,9 +1144,17 @@ class TestShotList:
 
         res = circuit(0.1, 0.6)
 
-        assert res.shape == expected_shape
-        assert circuit.device._shot_vector == shot_vector
-        assert circuit.device.shots == total_shots
+        if isinstance(shot_list[0], tuple):
+            shots = shot_list[0][1]
+            assert isinstance(res, tuple)
+            assert len(res) == shots
+            assert circuit.device._shot_vector == shot_vector
+            assert circuit.device.shots == total_shots
+        else:
+            assert isinstance(res, tuple)
+            assert len(res) == len(shot_list)
+            assert circuit.device._shot_vector == shot_vector
+            assert circuit.device.shots == total_shots
 
         # test gradient works
         # TODO: Uncomment after parametric operations are added for qutrits and decomposition
@@ -1140,9 +1190,17 @@ class TestShotList:
 
         res = circuit(pnp.eye(9))
 
-        assert res.shape == expected_shape
-        assert circuit.device._shot_vector == shot_vector
-        assert circuit.device.shots == total_shots
+        if isinstance(shot_list[0], tuple):
+            shots = shot_list[0][1]
+            assert isinstance(res, tuple)
+            assert len(res) == shots
+            assert circuit.device._shot_vector == shot_vector
+            assert circuit.device.shots == total_shots
+        else:
+            assert isinstance(res, tuple)
+            assert len(res) == len(shot_list)
+            assert circuit.device._shot_vector == shot_vector
+            assert circuit.device.shots == total_shots
 
         # test gradient works
         # TODO: Uncomment after parametric operations are added for qutrits and decomposition
@@ -1161,7 +1219,7 @@ class TestUnimplemented:
     def test_adjoint_jacobian(self, mock_qutrit_device):
         """Test that adjoint_jacobian is unimplemented"""
         dev = mock_qutrit_device()
-        tape = qml.tape.QuantumTape()
+        tape = QuantumScript()
 
         with pytest.raises(NotImplementedError):
             dev.adjoint_jacobian(tape)
@@ -1193,3 +1251,21 @@ class TestUnimplemented:
 
         with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
             dev.mutual_info(0, 1, log_base=3)
+
+    def test_classical_shadow(self, mock_qutrit_device):
+        """Test that classical_shadow is unimplemented"""
+        dev = mock_qutrit_device()
+        qs = qml.tape.QuantumScript()
+        obs = qml.GellMann(1, 1)
+
+        with pytest.raises(qml.QuantumFunctionError, match="Qutrit devices don't support"):
+            dev.classical_shadow(obs, qs)
+
+    def test_shadow_expval(self, mock_qutrit_device):
+        """Test that shadow_expval is unimplemented"""
+        dev = mock_qutrit_device()
+        qs = qml.tape.QuantumScript()
+        obs = qml.GellMann(1, 1)
+
+        with pytest.raises(qml.QuantumFunctionError, match="Qutrit devices don't support"):
+            dev.shadow_expval(obs, qs)
