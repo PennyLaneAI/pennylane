@@ -1194,7 +1194,7 @@ class Operator(abc.ABC):
         Returns:
             tuple: Number of dimensions for each trainable parameter.
         """
-        if self._batch_size == _UNSET_BATCH_SIZE:
+        if self._batch_size is _UNSET_BATCH_SIZE:
             self._check_batching(self.data)
         return self._ndim_params
 
@@ -1210,7 +1210,7 @@ class Operator(abc.ABC):
         Returns:
             int or None: Size of the parameter broadcasting dimension if present, else ``None``.
         """
-        if self._batch_size == _UNSET_BATCH_SIZE:
+        if self._batch_size is _UNSET_BATCH_SIZE:
             self._check_batching(self.data)
         return self._batch_size
 

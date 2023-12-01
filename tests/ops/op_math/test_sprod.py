@@ -771,10 +771,11 @@ class TestProperties:
     def test_different_batch_sizes_raises_error(self):
         """Test that using different batch sizes for base and scalar raises an error."""
         base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = qml.s_prod(np.array([0.1, 1.2, 2.3, 3.4]), base)
         with pytest.raises(
             ValueError, match="Broadcasting was attempted but the broadcasted dimensions"
         ):
-            _ = qml.s_prod(np.array([0.1, 1.2, 2.3, 3.4]), base)
+            _ = op.batch_size
 
 
 class TestSimplify:
