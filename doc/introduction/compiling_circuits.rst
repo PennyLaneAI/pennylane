@@ -13,8 +13,9 @@ example, such a transformation could
 replace a gate type with another, fuse gates, exploit mathematical relations that simplify an observable,
 or replace a large circuit by a number of smaller circuits.
 
-Compilation functionality is mostly designed as **transforms**, which you can read up on in the
-section on the :doc:`transforms documentation <../code/qml_transforms>`.
+Compilation functionality is mostly designed as **transforms**; see the
+the :doc:`transforms documentation <../code/qml_transforms>` for more details,
+as well as information on how to write your own custom transforms.
 
 In addition to quantum circuit transforms, PennyLane also
 supports experimental just-in-time compilation, via the :func:`~.qjit` decorator and

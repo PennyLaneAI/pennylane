@@ -13,6 +13,7 @@ Catalyst allows you to compile the entire quantum-classical workflow,
 including any optimization loops, which allows for optimized performance, and
 the ability to run the entire workflow on accelerator devices as
 appropriate.
+
 Installing compilers
 --------------------
 
