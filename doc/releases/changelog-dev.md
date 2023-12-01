@@ -272,8 +272,8 @@
 
 <h3>Breaking changes 💔</h3>
 
-* The function `qml.transforms.one_qubit_decomposition`, `qml.transforms.two_qubit_decomposition`, 
-  `qml.transforms.sk_decomposition` were move to `qml.ops.one_qubit_decomposition`, `qml.ops.two_qubit_decomposition`, 
+* The functions `qml.transforms.one_qubit_decomposition`, `qml.transforms.two_qubit_decomposition`, 
+  `qml.transforms.sk_decomposition` were moved to respectively, `qml.ops.one_qubit_decomposition`, `qml.ops.two_qubit_decomposition`, 
   `qml.ops.sk_decomposition`.
   [(#4906)](https://github.com/PennyLaneAI/pennylane/pull/4906)
 
