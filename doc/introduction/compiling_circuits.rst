@@ -339,4 +339,4 @@ observables and coefficients:
 >>> coeffs_groupings
 [[0.97, 4.21], [1.43]]
 
-This and more logic to manipulate Pauli observables is found in the :mod:`~.pauli` module.
+This and more logic to manipulate Pauli observables is found in the :doc:`pauli module <../code/qml_pauli>`.
