@@ -1801,7 +1801,6 @@ class TestParametrizedEvolutionComparisons:
 
 
 class TestQuantumScriptComparisons:
-
     tape1 = qml.tape.QuantumScript(
         [qml.PauliX(0), qml.RX(1.2, wires=0)], [qml.expval(qml.PauliZ(0))], shots=10
     )
@@ -1820,8 +1819,9 @@ class TestQuantumScriptComparisons:
         trainable_params=2,
     )
     tape7 = qml.tape.QuantumScript(
-        [qml.PauliX(0), qml.RX(1.2 + 1e-6, wires=0)], [qml.expval(qml.PauliZ(0))], shots=4, measurements=3
+        [qml.PauliX(0), qml.RX(1.2 + 1e-6, wires=0)], [qml.expval(qml.PauliX(0))], shots=4
     )
+
     @pytest.mark.parametrize("tape, other_tape", [(tape5, tape7)])
     def test_non_equal_measurement_comparison(self, tape, other_tape):
         assert qml.equal(tape, other_tape) is False
@@ -1829,6 +1829,7 @@ class TestQuantumScriptComparisons:
     @pytest.mark.parametrize("tape, other_tape", [(tape2, tape3)])
     def test_non_equal_shot_comparison(self, tape, other_tape):
         assert qml.equal(tape, other_tape) is False
+
     @pytest.mark.parametrize("tape, other_tape", [(tape1, tape1)])
     def test_equal_comparison(self, tape, other_tape):
         assert qml.equal(tape, other_tape)
@@ -1845,4 +1846,3 @@ class TestQuantumScriptComparisons:
     @pytest.mark.parametrize("tape, other_tape", [(tape5, tape6)])
     def test_non_equal_training_params_comparison(self, tape, other_tape):
         assert qml.equal(tape, other_tape) is False
-
