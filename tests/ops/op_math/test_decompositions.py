@@ -18,9 +18,8 @@ Tests for the QubitUnitary decomposition transforms.
 
 from functools import reduce
 import pytest
-
-from tests.transforms.test_optimization.utils import check_matrix_equivalence
 from gate_data import I, Z, S, T, H, X, Y, CNOT, SWAP
+from tests.transforms.test_optimization.utils import check_matrix_equivalence
 import pennylane as qml
 from pennylane import numpy as np
 
