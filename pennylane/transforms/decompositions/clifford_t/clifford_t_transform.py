@@ -321,8 +321,8 @@ def clifford_t_decomposition(
     - Two qubit gates - :class:`~.CNOT`, :class:`~.CY`, :class:`~.CZ`, :class:`~.SWAP`, and :class:`~.ISWAP`.
 
     Then the leftover single qubit :class:`~.RZ` operations are approximated in the Clifford+T basis with
-    :math:`\epsilon > 0` error. By default, the Solovay-Kitaev algorithm described in
-    `Dawson and Nielsen (2005) <https://arxiv.org/abs/quant-ph/0505030>`_ is used via the :func:`~.sk_decomposition` function.
+    :math:`\epsilon > 0` error. By default, we use the Solovay-Kitaev algorithm described in
+    `Dawson and Nielsen (2005) <https://arxiv.org/abs/quant-ph/0505030>`_ for this.
 
     Args:
         tape (QNode or QuantumTape or Callable): The quantum circuit to be decomposed.
@@ -331,15 +331,15 @@ def clifford_t_decomposition(
         method (str): Method to be used for Clifford+T decomposition. Default value is ``"sk"`` for Solovay-Kitaev.
         **method_kwargs: Keyword argument to pass options for the ``method`` used for decompositions.
 
-    Keyword Args:
-        Options (*):
-
-            * **max_depth** (int), **basis_set** (list[str]), **basis_length** (int):
-              arguments for the ``"sk"`` method, i.e., for performing Solovay-Kitaev decomposition using :func:`~.sk_decomposition`
-
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described
         in the :func:`qml.transform <pennylane.transform>`.
+
+    **Keyword Arguments**
+
+    - Solovay-Kitaev decomposition --
+        **max_depth** (int), **basis_set** (list[str]), **basis_length** (int) -- arguments for the ``"sk"`` method,
+        where the decomposition is performed using the :func:`~.sk_decomposition` method.
 
     Raises:
         ValueError: If a gate operation does not have a decomposition when required.
