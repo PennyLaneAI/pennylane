@@ -73,8 +73,9 @@ Decompositions
 .. autosummary::
     :toctree: api
 
-    ~one_qubit_decomposition
-    ~two_qubit_decomposition
+    ~decompositions.one_qubit_decomposition
+    ~decompositions.two_qubit_decomposition
+    ~decompositions.sk_decomposition
     ~ctrl_decomp_zyz
     ~ctrl_decomp_bisect
 
