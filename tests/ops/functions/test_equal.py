@@ -1805,9 +1805,7 @@ class TestQuantumScriptComparisons:
         [qml.PauliX(0), qml.RX(1.2, wires=0)], [qml.expval(qml.PauliZ(0))], shots=10
     )
     tape2 = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliZ(0))], shots=10)
-    tape3 = qml.tape.QuantumScript(
-        [qml.PauliX(0)], [qml.expval(qml.PauliZ(0))], shots=None
-    )
+    tape3 = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliZ(0))], shots=None)
     tape4 = qml.tape.QuantumScript(
         [qml.PauliX(0), qml.RX(1.2 + 1e-6, wires=0)], [qml.expval(qml.PauliZ(0))], shots=10
     )
