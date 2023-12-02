@@ -105,8 +105,10 @@ def equal(
     False
     >>> qml.equal(qml.classical_shadow(wires=[0,1]), qml.classical_shadow(wires=[0,1]))
     True
-    >>> qml.equal(qml.tape.QuantumTape(wires=[0,1]), qml.tape.QuantumTape(wires=[0,1]))
-    True
+    >>> qml.equal(qml.tape.QuantumScript([qml.RX(1.2, wires=0)], [qml.expval(qml.PauliZ(0))]),
+    ...           qml.tape.QuantumScript([qml.RX(1.2 + 1e-6, wires=0)], [qml.expval(qml.PauliZ(0))]),
+    ...           rtol=0, atol=1e-7)
+    False
 
     .. details::
         :title: Usage Details
