@@ -30,11 +30,12 @@ from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.operation import Observable, Operator, Tensor
 from pennylane.ops import Hamiltonian, Controlled, Pow, Adjoint, Exp, SProd, CompositeOp
 from pennylane.templates.subroutines import ControlledSequence
+from pennylane.tape import QuantumTape
 
 
 def equal(
-    op1: Union[Operator, MeasurementProcess],
-    op2: Union[Operator, MeasurementProcess],
+    op1: Union[Operator, MeasurementProcess, QuantumTape],
+    op2: Union[Operator, MeasurementProcess, QuantumTape],
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,
@@ -63,8 +64,8 @@ def equal(
         comparison.
 
     Args:
-        op1 (.Operator or .MeasurementProcess): First object to compare
-        op2 (.Operator or .MeasurementProcess): Second object to compare
+        op1 (.Operator or .MeasurementProcess or .QuantumTape): First object to compare
+        op2 (.Operator or .MeasurementProcess or .QuantumTape): Second object to compare
         check_interface (bool, optional): Whether to compare interfaces. Default: ``True``. Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
         check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``. Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
         rtol (float, optional): Relative tolerance for parameters. Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
@@ -104,6 +105,8 @@ def equal(
     >>> qml.equal(qml.probs(wires=(0,1)), qml.probs(wires=(1,2)))
     False
     >>> qml.equal(qml.classical_shadow(wires=[0,1]), qml.classical_shadow(wires=[0,1]))
+    True
+    >>> qml.equal(qml.tape.QuantumTape(wires=[0,1]), qml.tape.QuantumTape(wires=[0,1]))
     True
 
     .. details::
