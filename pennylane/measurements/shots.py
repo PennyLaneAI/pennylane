@@ -228,7 +228,7 @@ class Shots:
 
         scaled_shots = int(self.total_shots * scalar)
 
-        if hasattr(self, "shot-vector"):
+        if hasattr(self, "shot_vector"):
             # If the shot vector is present, scale each component
             scaled_shot_vector = tuple(
                 ShotCopies(int(i.shots * scalar), i.copies) for i in self.shot_vector
@@ -256,3 +256,15 @@ class Shots:
     def num_copies(self):
         """The total number of copies of any shot quantity."""
         return sum(s.copies for s in self.shot_vector)
+
+
+sh1, sh2, sh3 = Shots(100), Shots((100, 100)), Shots(5)
+scaled_sh1 = sh1 * 2
+scaled_sh2 = sh2 * 2
+scaled_sh3 = sh3 * 0.5
+
+print(scaled_sh1.total_shots == 200)
+print(scaled_sh2.total_shots == 400)
+print(scaled_sh2.shot_vector[0].shots == 200)
+print(scaled_sh2.shot_vector[0].copies == 2)
+print(scaled_sh3.total_shots == 2)
