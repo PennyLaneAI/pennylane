@@ -250,3 +250,16 @@ class TestProperties:
     def test_num_copies(self, shots, expected):
         """Tests the num_copies property."""
         assert Shots(shots).num_copies == expected
+
+    def test_shot_mul(self):
+        """Test the __mul__ method for multiplying a number by a shot object."""
+        sh1, sh2, sh3 = Shots(100), Shots((100, 100)), Shots(5)
+        scaled_sh1 = sh1 * 2
+        scaled_sh2 = sh2 * 2
+        scaled_sh3 = sh3 * 0.5
+
+        assert scaled_sh1.total_shots == 200
+        assert scaled_sh2.total_shots == 400
+        assert scaled_sh2.shot_vector[0].shots == 200
+        assert scaled_sh2.shot_vector[0].copies == 2
+        assert scaled_sh3.total_shots == 2

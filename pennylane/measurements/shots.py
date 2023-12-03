@@ -222,6 +222,24 @@ class Shots:
     def __bool__(self):
         return self.total_shots is not None
 
+    def __mul__(self, scalar):
+        if not isinstance(scalar, (int, float)):
+            raise ValueError("Scalar must be a number")
+
+        scaled_shots = int(self.total_shots * scalar)
+
+        if hasattr(self, "shot_vector"):
+            # If the shot vector is present, scale each component
+            scaled_shot_vector = tuple(
+                ShotCopies(int(i.shots * scalar), i.copies) for i in self.shot_vector
+            )
+            return self.__class__(scaled_shot_vector)
+        else:
+            return self.__class__(scaled_shots)
+
+    def __rmul__(self, scalar):
+        return self.__mul__(scalar)
+
     @property
     def has_partitioned_shots(self):
         """
@@ -239,3 +257,11 @@ class Shots:
     def num_copies(self):
         """The total number of copies of any shot quantity."""
         return sum(s.copies for s in self.shot_vector)
+
+
+sh1, sh2, sh3 = Shots(100), Shots((100, 100)), Shots(5)
+scaled_sh1 = sh1 * 2
+scaled_sh2 = sh2 * 2
+scaled_sh3 = sh3 * 0.5
+
+print(scaled_sh2.shot_vector[0].shots)
