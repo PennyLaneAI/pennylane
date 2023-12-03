@@ -257,7 +257,7 @@ class TestProperties:
         scaled_sh1 = sh1 * 2
         scaled_sh2 = sh2 * 2
         scaled_sh3 = sh3 * 0.5
-        scaled_sh4= 2* sh2
+        scaled_sh4 = 2 * sh2
 
         assert scaled_sh1.total_shots == 200
         assert scaled_sh2.total_shots == 400
@@ -265,5 +265,5 @@ class TestProperties:
         assert scaled_sh2.shot_vector[0].copies == 2
         assert scaled_sh3.total_shots == 2
         assert scaled_sh4.total_shots == 400
-        assert scaled_sh4.shot_vector[0].shots== 200
+        assert scaled_sh4.shot_vector[0].shots == 200
         assert scaled_sh4.shot_vector[0].copies == 2
