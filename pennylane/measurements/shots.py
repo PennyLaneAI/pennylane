@@ -228,7 +228,10 @@ class Shots:
 
         scaled_shots = int(self.total_shots * scalar)
 
-        if hasattr(self, "shot_vector"):
+        if self.total_shots is None:
+            return self
+
+        if len(self.shot_vector)>=1:
             # If the shot vector is present, scale each component
             scaled_shot_vector = tuple(
                 ShotCopies(int(i.shots * scalar), i.copies) for i in self.shot_vector

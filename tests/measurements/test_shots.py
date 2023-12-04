@@ -267,3 +267,7 @@ class TestProperties:
         assert scaled_sh4.total_shots == 400
         assert scaled_sh4.shot_vector[0].shots == 200
         assert scaled_sh4.shot_vector[0].copies == 2
+
+    def test_shots_rmul(self):
+        """Test the __rmul__ method for multiplying a number by a shot object."""
+        return self.test_shot_mul
