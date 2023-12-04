@@ -663,8 +663,8 @@ class Operator(abc.ABC):
         the ``_check_batching`` method, by comparing the shape of the input data to
         the expected shape. Therefore, it is necessary to call ``_check_batching`` on
         any new input parameters passed to the operator. By default, any class inheriting
-        from :class:`~.operation.Operator` will do so within its ``__init__`` method, and
-        other objects may do so when updating the data of the ``Operator``.
+        from :class:`~.operation.Operator` will do so the first time an Operator's
+        ``batch_size`` property is accessed.
 
         ``_check_batching`` modifies the following class attributes:
 
@@ -679,9 +679,9 @@ class Operator(abc.ABC):
           not support broadcasting will report to not be broadcasted independently of the
           input.
 
-        Both attributes are not defined if ``_check_batching`` is not called. Therefore it
-        *needs to be called* within custom ``__init__`` implementations, either directly
-        or by calling ``Operator.__init__``.
+        These two properties are defined lazily, and accessing the public version of either
+        one of them (in other words, without the leading underscore) for the first time will
+        trigger a call to ``_check_batching``, which validates and sets these properties.
     """
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
 
