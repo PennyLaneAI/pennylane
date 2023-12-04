@@ -368,6 +368,18 @@ class TransformContainer:
             )
         )
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, TransformContainer):
+            return False
+        return (
+            self.args == other.args
+            and self.transform == other.transform
+            and self.kwargs == other.kwargs
+            and self.classical_cotransform == other.classical_cotransform
+            and self.is_informative == other.is_informative
+            and self.final_transform == other.final_transform
+        )
+
     @property
     def transform(self):
         """The stored quantum transform."""

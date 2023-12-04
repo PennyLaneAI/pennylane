@@ -266,15 +266,7 @@ def _draw_qnode(
                 tapes = qnode.construct(args, kwargs)
                 if isinstance(qnode.device, qml.devices.Device):
                     program = qnode.transform_program
-                    if any(
-                        isinstance(op, qml.measurements.MidMeasureMP)
-                        for op in qnode.tape.operations
-                    ):
-                        tapes, _ = qml.defer_measurements(qnode.tape, device=qnode.device)
-                    else:
-                        tapes = [qnode.tape]
-
-                    tapes = program(tapes)
+                    tapes = program([qnode.tape])
 
             finally:
                 qnode.expansion_strategy = original_expansion_strategy
@@ -335,11 +327,11 @@ def draw_mpl(
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
         decimals (int): How many decimal points to include when formatting operation parameters.
             Default ``None`` will omit parameters from operation labels.
-        style (str): visual style of plot. Valid strings are ``{'black_white', 'black_white_dark', 'sketch', 'pennylane',
-            'sketch_dark', 'solarized_light', 'solarized_dark', 'default'}``. If no style is specified, the
-            global style set with :func:`~.use_style` will be used, and the initial default is 'black_white'.
-            If you would like to use your environment's current rcParams, set `style` to "rcParams".
-            Setting style does not modify matplotlib global plotting settings.
+        style (str): visual style of plot. Valid strings are ``{'black_white', 'black_white_dark', 'sketch',
+            'pennylane', 'pennylane_sketch', 'sketch_dark', 'solarized_light', 'solarized_dark', 'default'}``.
+            If no style is specified, the global style set with :func:`~.use_style` will be used, and the
+            initial default is 'black_white'. If you would like to use your environment's current rcParams,
+            set ``style`` to "rcParams". Setting style does not modify matplotlib global plotting settings.
         fontsize (float or str): fontsize for text. Valid strings are
             ``{'xx-small', 'x-small', 'small', 'medium', large', 'x-large', 'xx-large'}``.
             Default is ``14``.
@@ -521,6 +513,8 @@ def draw_mpl(
                 :target: javascript:void(0);
 
     """
+    if catalyst_qjit(qnode):
+        qnode = qnode.user_function
     if hasattr(qnode, "construct"):
         return _draw_mpl_qnode(
             qnode,

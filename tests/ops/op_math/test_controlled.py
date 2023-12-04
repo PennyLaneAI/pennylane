@@ -544,12 +544,13 @@ class TestOperationProperties:
             (qml.RX(1.23, wires=0), [(0.5, 1.0)]),
             (qml.PhaseShift(-2.4, wires=0), [(1,)]),
             (qml.IsingZZ(-9.87, (0, 1)), [(0.5, 1.0)]),
+            (qml.DoubleExcitationMinus(0.7, [0, 1, 2, 3]), [(0.5, 1.0)]),
         ],
     )
     def test_parameter_frequencies(self, base, expected):
         """Test parameter-frequencies against expected values."""
 
-        op = Controlled(base, (3, 4))
+        op = Controlled(base, (4, 5))
         assert op.parameter_frequencies == expected
 
     def test_parameter_frequencies_no_generator_error(self):
@@ -842,6 +843,14 @@ class TestHelperMethod:
 
         decomp_mat = qml.matrix(op.decomposition, wire_order=op.wires)()
         assert qml.math.allclose(op.matrix(), decomp_mat)
+
+    def test_global_phase_decomp_raises_warning(self):
+        """Test that ctrl(GlobalPhase).decomposition() raises a warning."""
+        op = qml.ctrl(qml.GlobalPhase(1.23), control=[0])
+        with pytest.warns(
+            UserWarning, match="Controlled-GlobalPhase currently decomposes to nothing"
+        ):
+            assert op.decomposition() == []
 
 
 @pytest.mark.parametrize("test_expand", (False, True))
