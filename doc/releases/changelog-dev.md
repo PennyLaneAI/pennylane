@@ -197,11 +197,12 @@
 * `default.qubit` no longer uses a dense matrix for `MultiControlledX` for more than 8 operation wires.
   [(#4673)](https://github.com/PennyLaneAI/pennylane/pull/4673)
 
-* Autograd and torch can now use VJPs provided by the device from the new device API. If a device provides
+* Autograd, torch, and JAX (non-jit) can now use VJPs provided by the device from the new device API. If a device provides
   a vector Jacobian product, this can be selected by providing `device_vjp=True` to
   `qml.QNode` or `qml.execute`.
   [(#4557)](https://github.com/PennyLaneAI/pennylane/pull/4557)
   [(#4654)](https://github.com/PennyLaneAI/pennylane/pull/4654)
+  [(#4878)](https://github.com/PennyLaneAI/pennylane/pull/4878)
   [(#4841)](https://github.com/PennyLaneAI/pennylane/pull/4841)
 
 ```pycon
