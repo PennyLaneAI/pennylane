@@ -66,7 +66,7 @@ process, JAX can support both JVP and VJP calculations by registering only the J
 Unfortunately, :meth:`~pennylane.devices.Device.compute_jvp` uses pure numpy to perform the Jacobian product and cannot
 be traced by JAX.
 
-For example, if we replace the definition of ``f_and_jvp`` from above:
+For example, if we replace the definition of ``f_and_jvp`` from above with one that breaks tracing,
 
 .. code-block:: python
 
@@ -77,6 +77,8 @@ For example, if we replace the definition of ``f_and_jvp`` from above:
 
 >>> jax.grad(registered_f_jvp)(jax.numpy.array(2.0))
 ValueError: Converting a JAX array to a NumPy array not supported when using the JAX JIT.
+
+Note that the comment about ``JIT`` is generally a comment about not being able to trace code.
 
 But if we used the VJP instead:
 
