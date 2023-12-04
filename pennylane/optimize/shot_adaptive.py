@@ -45,8 +45,6 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
                 some_qfunc(params)
                 return qml.expval(Hamiltonian)
 
-        In order to optimize the Hamiltonian evaluation taking into account commuting terms, use the ``grouping_type`` keyword in :class:`~.Hamiltonian`.
-
         You should also set ``term_sampling='weighted_random_sampling'`` to continue using weighted
         random sampling in ``ShotAdaptiveOptimizer``.
 
