@@ -224,7 +224,7 @@ class Shots:
 
     def __mul__(self, scalar):
         if not isinstance(scalar, (int, float)):
-            raise ValueError("Scalar must be a number")
+            raise TypeError("Scalar must be a number")
 
         if self.total_shots is None:
             return self

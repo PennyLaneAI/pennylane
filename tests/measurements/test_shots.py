@@ -272,9 +272,9 @@ class TestProperties:
         assert scaled_sh5 == sh5
 
     def test_invalid_scalar_type(self):
-        """Test that __mul__ raises a ValueError for an invalid scalar type."""
+        """Test that __mul__ raises a TypeError for an invalid scalar type."""
         shots = Shots(100)
-        with pytest.raises(ValueError, "Scalar must be a number"):
+        with pytest.raises(TypeError, "Scalar must be a number"):
             shots_invalid = shots * "invalid scalar type"  # pylint: disable=unused-variable
 
     def test_shots_rmul(self):
