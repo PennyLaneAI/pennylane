@@ -229,15 +229,11 @@ class Shots:
         if self.total_shots is None:
             return self
 
-        scaled_shots = int(self.total_shots * scalar)
+        scaled_shot_vector = tuple(
+            ShotCopies(int(i.shots * scalar), i.copies) for i in self.shot_vector
+        )
 
-        if len(self.shot_vector) >= 1:
-            # If the shot vector is present, scale each component
-            scaled_shot_vector = tuple(
-                ShotCopies(int(i.shots * scalar), i.copies) for i in self.shot_vector
-            )
-            return self.__class__(scaled_shot_vector)
-        return self.__class__(scaled_shots)
+        return self.__class__(scaled_shot_vector)
 
     def __rmul__(self, scalar):
         return self.__mul__(scalar)
