@@ -198,7 +198,7 @@ class QuantumScript:
         self._trainable_params = trainable_params
         self._graph = None
         self._specs = None
-        self._output_dim = 0
+        self._output_dim = None
         self._batch_size = _UNSET_BATCH_SIZE
 
         self.wires = _empty_wires
@@ -354,6 +354,8 @@ class QuantumScript:
     @property
     def output_dim(self):
         """The (inferred) output dimension of the quantum script."""
+        if self._output_dim is None:
+            self._update_output_dim()  # this will set _batch_size if it isn't already
         return self._output_dim
 
     @property
@@ -439,9 +441,8 @@ class QuantumScript:
         if self._batch_size is not _UNSET_BATCH_SIZE:
             # this avoids computing it on init (before it has been requested, lazy)
             self._update_batch_size()  # Updates _batch_size; O(ops)
-
-        # The following line requires _batch_size to be up to date
-        self._update_output_dim()  # Updates _output_dim; O(obs)
+            # The following line requires _batch_size to be up to date
+            self._update_output_dim()  # Updates _output_dim; O(obs)
 
     def _update_circuit_info(self):
         """Update circuit metadata
@@ -895,7 +896,7 @@ class QuantumScript:
         new_qscript._obs_sharing_wires = self._obs_sharing_wires
         new_qscript._obs_sharing_wires_id = self._obs_sharing_wires_id
         new_qscript._batch_size = self._batch_size
-        new_qscript._output_dim = self.output_dim
+        new_qscript._output_dim = self._output_dim
 
         return new_qscript
 
