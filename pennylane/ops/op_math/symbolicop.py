@@ -70,7 +70,6 @@ class SymbolicOp(Operator):
         self.queue_idx = None
         self._pauli_rep = None
         self.queue()
-        self._batch_size = _UNSET_BATCH_SIZE
 
     @property
     def batch_size(self):
@@ -167,20 +166,22 @@ class ScalarSymbolicOp(SymbolicOp):
     def __init__(self, base, scalar: float, id=None):
         self.scalar = np.array(scalar) if isinstance(scalar, list) else scalar
         super().__init__(base, id=id)
+        self._batch_size = _UNSET_BATCH_SIZE
 
     @property
     def batch_size(self):
         if self._batch_size is _UNSET_BATCH_SIZE:
-            batched_scalar = qml.math.ndim(self.scalar) > 0
-            scalar_size = qml.math.size(self.scalar)
-            if not batched_scalar:
+            base_batch_size = self.base.batch_size
+            if qml.math.ndim(self.scalar) == 0:
                 # coeff is not batched
-                return self.base.batch_size
+                self._batch_size = base_batch_size
+                return base_batch_size
             # coeff is batched
-            if self.base.batch_size is not None and self.base.batch_size != scalar_size:
+            scalar_size = qml.math.size(self.scalar)
+            if base_batch_size is not None and base_batch_size != scalar_size:
                 raise ValueError(
                     "Broadcasting was attempted but the broadcasted dimensions "
-                    f"do not match: {scalar_size}, {self.base.batch_size}."
+                    f"do not match: {scalar_size}, {base_batch_size}."
                 )
             self._batch_size = scalar_size
         return self._batch_size
