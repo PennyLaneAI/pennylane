@@ -46,9 +46,11 @@
 
 <h4>Drawing and statistics for mid-circuit measurements 🎨</h4>
 
-* `qml.draw` now supports drawing mid-circuit measurements and conditional operators.
+* `qml.draw` and `qml.draw_mpl` now support drawing mid-circuit measurements and conditional operators.
   [(#4775)](https://github.com/PennyLaneAI/pennylane/pull/4775)
   [(#4803)](https://github.com/PennyLaneAI/pennylane/pull/4803)
+  [(#4832)](https://github.com/PennyLaneAI/pennylane/pull/4832)
+  [(#4901)](https://github.com/PennyLaneAI/pennylane/pull/4901)
 
 <h4>Catalyst is seamlessly integrated with PennyLane ⚗️</h4>
 
@@ -190,10 +192,6 @@
 * `AmplitudeEmbedding` now also supports batching when used with Tensorflow.
   [(#4818)](https://github.com/PennyLaneAI/pennylane/pull/4818)
 
-* `qml.draw` and `qml.draw_mpl` now support drawing mid-circuit measurements.
-  [(#4775)](https://github.com/PennyLaneAI/pennylane/pull/4775)
-  [(#4832)](https://github.com/PennyLaneAI/pennylane/pull/4832)
-
 * `qml.ArbitraryUnitary` now supports batching.
   [(#4745)](https://github.com/PennyLaneAI/pennylane/pull/4745)
 
@@ -272,6 +270,9 @@
 
 * `Conditional` and `MeasurementValue` objects now implement `map_wires`.
   [(#4884)](https://github.com/PennyLaneAI/pennylane/pull/4884)
+
+*   `TRX`, `TRY`, and `TRZ` are now differentiable via backprop on `default.qutrit`
+  [(#4790)](https://github.com/PennyLaneAI/pennylane/pull/4790)
 
 <h3>Breaking changes 💔</h3>
 
@@ -415,12 +416,16 @@
   interface no longer raises an unexpected error.
   [(#4889)](https://github.com/PennyLaneAI/pennylane/pull/4889)
 
+* `qml.map_wires` no longer fails when mapping nested quantum tapes.
+  [(#4901)](https://github.com/PennyLaneAI/pennylane/pull/4901)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
 Ali Asadi,
+Gabriel Bottrill,
 Thomas Bromley,
 Astral Cai,
 Minh Chau,
