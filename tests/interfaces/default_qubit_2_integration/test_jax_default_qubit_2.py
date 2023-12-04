@@ -396,8 +396,8 @@ class TestJaxExecuteIntegration:
                 NotImplementedError, match=r"adjoint_vjp does not yet support JAX Jacobians"
             ):
                 jac = jac_fn(a, b)
-        else:
-            jac = jac_fn(a, b)
+            return
+        jac = jac_fn(a, b)
 
         a = jnp.array(0.54)
         b = jnp.array(0.8)
