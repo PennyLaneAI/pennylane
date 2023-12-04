@@ -113,6 +113,6 @@ def _create_basis_state(num_wires, index):  # function is easy to abstract for q
         array[complex]: complex array of shape ``[3] * (2 * num_wires)``
         representing the density matrix of the basis state.
     """
-    rho = np.zeros((3**num_wires, 3**num_wires))
+    rho = qml.math.zeros((3**num_wires, 3**num_wires))
     rho[index, index] = 1
     return qml.math.reshape(rho, [qudit_dim] * (2 * num_wires))
