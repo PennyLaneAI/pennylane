@@ -82,7 +82,8 @@ def _add_cond_grouping_symbols(op, layer_str, config):
 
     for b in range(n_wires, max_b):
         if b - n_wires in mapped_bits:
-            layer_str[b] = "═╣"
+            intersection = "╣" if config.cur_layer == config.final_cond_layers[b - n_wires] else "╬"
+            layer_str[b] = "═" + intersection
         else:
             filler = " " if layer_str[b][-1] == " " else "═"
             layer_str[b] = filler + "║"
@@ -459,7 +460,11 @@ def tape_text(
                 if cur_layer_mid_measure is not None:
                     # This condition is needed to pad the filler on the bits under MidMeasureMPs
                     # that are used for conditions correctly
-                    cur_b_filler = b_filler if bit_map[cur_layer_mid_measure] >= b else " "
+                    cur_b_filler = (
+                        b_filler
+                        if bit_map[cur_layer_mid_measure] >= b and i < final_cond_layers[b]
+                        else " "
+                    )
                 else:
                     cur_b_filler = (
                         b_filler if measurement_layers[b] < i < final_cond_layers[b] else " "

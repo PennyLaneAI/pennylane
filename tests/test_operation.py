@@ -836,6 +836,16 @@ class TestOperationConstruction:
         for i in range(num_param):
             assert f[i] == (0.2, x[i])
 
+    def test_frequencies_sparse_generator(self):
+        """Test that the parameter frequencies are correctly deduced from a generator
+        that is a ``SparseHamiltonian``."""
+        DummyOp = copy.copy(qml.DoubleExcitationPlus)
+        DummyOp.parameter_frequencies = qml.operation.Operation.parameter_frequencies
+
+        op = DummyOp(0.7, [0, 1, 2, 3])
+        assert isinstance(op.generator(), qml.SparseHamiltonian)
+        assert op.parameter_frequencies == [(1.0,)]
+
     def test_no_wires_passed(self):
         """Test exception raised if no wires are passed"""
 

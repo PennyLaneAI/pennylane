@@ -46,9 +46,11 @@
 
 <h4>Drawing and statistics for mid-circuit measurements 🎨</h4>
 
-* `qml.draw` now supports drawing mid-circuit measurements and conditional operators.
+* `qml.draw` and `qml.draw_mpl` now support drawing mid-circuit measurements and conditional operators.
   [(#4775)](https://github.com/PennyLaneAI/pennylane/pull/4775)
   [(#4803)](https://github.com/PennyLaneAI/pennylane/pull/4803)
+  [(#4832)](https://github.com/PennyLaneAI/pennylane/pull/4832)
+  [(#4901)](https://github.com/PennyLaneAI/pennylane/pull/4901)
 
 <h4>Catalyst is seamlessly integrated with PennyLane ⚗️</h4>
 
@@ -112,10 +114,46 @@
   ```
 
   ``` pycon
-    >>> workflow(np.array([2.0, 1.0]))
-    array([[-1.32116540e-07,  1.33781874e-07],
-           [-4.20735506e-01,  4.20735506e-01]])
+  >>> workflow(np.array([2.0, 1.0]))
+  array([[-1.32116540e-07,  1.33781874e-07],
+          [-4.20735506e-01,  4.20735506e-01]])
   ```
+
+* `qml.for_loop` and `qml.while_loop` compiler-specific decorators are added.
+  `qml.cond` can be used with the `qml.qjit` decorator.
+  [(#4698)](https://github.com/PennyLaneAI/pennylane/pull/4698)
+
+  ``` python
+  dev = qml.device("lightning.qubit", wires=1)
+
+  @qml.qjit
+  @qml.qnode(dev)
+  def circuit(n: int, x: float):
+
+      @qml.for_loop(0, n, 1)
+      def loop_rx(i, x):
+          # perform some work and update (some of) the arguments
+          qml.RX(x, wires=0)
+
+          # update the value of x for the next iteration
+          return jnp.sin(x)
+
+      # apply the for loop
+      final_x = loop_rx(x)
+
+      return qml.expval(qml.PauliZ(0)), final_x
+  ```
+
+  ``` pycon
+  >>> circuit(7, 1.6)
+  (array(0.97926626), array(0.55395718))
+  ```
+
+* `qml.vjp` and `qml.vjp` can be used with the `qml.qjit` decorator.
+  [(#4724)](https://github.com/PennyLaneAI/pennylane/pull/4724)
+
+* `qml.adjoint` can be used with the `qml.qjit` decorator.
+  [(#4725)](https://github.com/PennyLaneAI/pennylane/pull/4725)
 
 * `qml.ctrl` can be used with the `qml.qjit` decorator.
   [(#4726)](https://github.com/PennyLaneAI/pennylane/pull/4726)
@@ -151,10 +189,6 @@
 * `AmplitudeEmbedding` now also supports batching when used with Tensorflow.
   [(#4818)](https://github.com/PennyLaneAI/pennylane/pull/4818)
 
-* `qml.draw` and `qml.draw_mpl` now support drawing mid-circuit measurements.
-  [(#4775)](https://github.com/PennyLaneAI/pennylane/pull/4775)
-  [(#4832)](https://github.com/PennyLaneAI/pennylane/pull/4832)
-
 * `qml.ArbitraryUnitary` now supports batching.
   [(#4745)](https://github.com/PennyLaneAI/pennylane/pull/4745)
 
@@ -169,6 +203,7 @@
   [(#4557)](https://github.com/PennyLaneAI/pennylane/pull/4557)
   [(#4654)](https://github.com/PennyLaneAI/pennylane/pull/4654)
   [(#4878)](https://github.com/PennyLaneAI/pennylane/pull/4878)
+  [(#4841)](https://github.com/PennyLaneAI/pennylane/pull/4841)
 
 ```pycon
 >>> dev = qml.device('default.qubit')
@@ -234,6 +269,9 @@
 * `Conditional` and `MeasurementValue` objects now implement `map_wires`.
   [(#4884)](https://github.com/PennyLaneAI/pennylane/pull/4884)
 
+*   `TRX`, `TRY`, and `TRZ` are now differentiable via backprop on `default.qutrit`
+  [(#4790)](https://github.com/PennyLaneAI/pennylane/pull/4790)
+
 <h3>Breaking changes 💔</h3>
 
 * The transforms submodule `qml.transforms.qcut` becomes its own module `qml.qcut`.
@@ -298,6 +336,10 @@
   [(#4874)](https://github.com/PennyLaneAI/pennylane/pull/4874)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug where the parameter-shift rule of `qml.ctrl(op)` was wrong if `op` had a generator
+  that has two or more eigenvalues and is stored as a `SparseHamiltonian`.
+  [(#4899)](https://github.com/PennyLaneAI/pennylane/pull/4899)
 
 * Fix a bug where trainable parameters in the post-processing of finite diff were incorrect for Jax when applying
   the transform directly on a ``QNode``.
@@ -372,12 +414,16 @@
   interface no longer raises an unexpected error.
   [(#4889)](https://github.com/PennyLaneAI/pennylane/pull/4889)
 
+* `qml.map_wires` no longer fails when mapping nested quantum tapes.
+  [(#4901)](https://github.com/PennyLaneAI/pennylane/pull/4901)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
 Ali Asadi,
+Gabriel Bottrill,
 Thomas Bromley,
 Astral Cai,
 Isaac De Vlugt,
