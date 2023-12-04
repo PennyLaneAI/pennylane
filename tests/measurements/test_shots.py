@@ -275,7 +275,7 @@ class TestProperties:
         """Test that __mul__ raises a ValueError for an invalid scalar type."""
         shots = Shots(100)
         with pytest.raises(ValueError, "Scalar must be a number"):
-            shots_invalid = shots * "invalid scalar type"
+            shots_invalid = shots * "invalid scalar type" # pylint: disable=unused-variabl
 
     def test_shots_rmul(self):
         """Test the __rmul__ method for multiplying a number by a shot object."""
