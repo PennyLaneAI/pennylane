@@ -226,10 +226,10 @@ class Shots:
         if not isinstance(scalar, (int, float)):
             raise ValueError("Scalar must be a number")
 
-        scaled_shots = int(self.total_shots * scalar)
-
         if self.total_shots is None:
             return self
+
+        scaled_shots = int(self.total_shots * scalar)
 
         if len(self.shot_vector) >= 1:
             # If the shot vector is present, scale each component
