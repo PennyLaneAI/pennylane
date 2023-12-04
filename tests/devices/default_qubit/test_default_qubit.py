@@ -798,7 +798,7 @@ class TestSumOfTermsDifferentiability:
         t2 = 6.2 * qml.prod(*(qml.PauliY(i) for i in range(n_wires)))
         H = t1 + t2
         if style == "hamiltonian":
-            H = H._pauli_rep.hamiltonian()  # pylint: disable=protected-access
+            H = H.pauli_rep.hamiltonian()
         elif style == "hermitian":
             H = qml.Hermitian(H.matrix(), wires=H.wires)
         qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
@@ -813,7 +813,7 @@ class TestSumOfTermsDifferentiability:
         t2 = 6.2 * qml.prod(*(qml.PauliY(i) for i in range(n_wires)))
         H = t1 + t2
         if style == "hamiltonian":
-            H = H._pauli_rep.hamiltonian()  # pylint: disable=protected-access
+            H = H.pauli_rep.hamiltonian()
         elif style == "hermitian":
             H = qml.Hermitian(H.matrix(), wires=H.wires)
         qs = qml.tape.QuantumScript(ops, [qml.expval(H)])

@@ -139,11 +139,10 @@ class SymbolicOp(Operator):
         )
 
     def map_wires(self, wire_map: dict):
-        # pylint:disable=protected-access
         new_op = copy(self)
         new_op.hyperparameters["base"] = self.base.map_wires(wire_map=wire_map)
-        if (p_rep := new_op._pauli_rep) is not None:
-            new_op._pauli_rep = p_rep.map_wires(wire_map)
+        if (p_rep := new_op.pauli_rep) is not None:
+            new_op._pauli_rep = p_rep.map_wires(wire_map)  # pylint:disable=protected-access
         return new_op
 
 
