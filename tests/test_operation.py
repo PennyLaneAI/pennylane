@@ -319,7 +319,7 @@ class TestOperatorConstruction:
             ndim_params = (0,)
 
         op = DummyOp(data, wires=[0])
-        assert op._batch_size == _UNSET_BATCH_SIZE
+        assert op._batch_size is _UNSET_BATCH_SIZE
         assert op._ndim_params is _UNSET_BATCH_SIZE
         assert op.batch_size == batch_size
         assert op._ndim_params == (ndim_params,)
