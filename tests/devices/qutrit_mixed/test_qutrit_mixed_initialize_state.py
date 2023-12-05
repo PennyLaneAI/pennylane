@@ -59,7 +59,8 @@ class TestInitializeState:
         assert qml.math.allequal(state, expected)
         if interface == "autograd":
             assert qml.math.get_interface(state) == "numpy"
-        assert qml.math.get_interface(state) == interface
+        else:
+            assert qml.math.get_interface(state) == interface
 
     def test_create_initial_state_with_BasisState(self):
         """Tests that create_initial_state works with a real state-prep operator."""
