@@ -74,8 +74,8 @@ There are also utility functions that take a circuit and return a DAG.
     ~transforms.CommutationDAG
     ~transforms.CommutationDAGNode
 
-Transform for Clifford+T compilation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Transform for Clifford+T decomposition
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This transform accepts quantum circuits and decomposes them to the Clifford+T basis.
 
