@@ -577,7 +577,7 @@ class TestWeightedRandomSampling:
 class TestQNodeWeightedRandomSampling:
     """Tests for weighted random Hamiltonian term sampling"""
 
-    def test_wrs_expval_cost(self, mocker):
+    def test_wrs_qnode(self, mocker):
         """Checks that cost functions that are qnodes can make use of weighted random sampling"""
         coeffs = [0.2, 0.1]
         dev = qml.device("default.qubit", wires=2, shots=100)
@@ -603,7 +603,7 @@ class TestQNodeWeightedRandomSampling:
         assert len(grads) == 1
         assert grads[0].shape == (10, *weights.shape)
 
-    def test_wrs_expval_cost_multiple_args(self, mocker):
+    def test_wrs_qnode_multiple_args(self, mocker):
         """Checks that cost functions that are qnodes works with multiple args"""
         coeffs = [0.2, 0.1]
         dev = qml.device("default.qubit", wires=2, shots=100)
