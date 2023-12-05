@@ -256,6 +256,12 @@ def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debu
     return state
 
 
+@apply_operation.register
+def apply_(op: qml.TAdd, state, is_state_batched: bool = False, debugger=None):
+    """Apply TAdd gate to state."""
+    pass
+
+
 def _get_kraus(operation):  # pylint: disable=no-self-use
     """Return the Kraus operators representing the operation.
 
@@ -273,3 +279,5 @@ def _get_kraus(operation):  # pylint: disable=no-self-use
     if isinstance(operation, Channel):
         return operation.kraus_matrices()
     return [operation.matrix()]
+
+
