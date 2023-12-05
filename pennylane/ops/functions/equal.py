@@ -18,6 +18,9 @@ This module contains the qml.equal function.
 from collections.abc import Iterable
 from functools import singledispatch
 from typing import Union
+
+import numpy as np
+
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
@@ -482,3 +485,24 @@ def _equal_shadow_measurements(op1: ShadowExpvalMP, op2: ShadowExpvalMP, **_):
 @_equal.register
 def _equal_counts(op1: CountsMP, op2: CountsMP, **kwargs):
     return _equal_measurements(op1, op2, **kwargs) and op1.all_outcomes == op2.all_outcomes
+
+
+@_equal.register
+def _equal_basis_rotation(
+    op1: qml.BasisRotation,
+    op2: qml.BasisRotation,
+    check_interface=True,
+    check_trainability=True,
+    rtol=1e-5,
+    atol=1e-9,
+):
+    if not np.allclose(
+        op1._hyperparameters["unitary_matrix"],  # pylint: disable=protected-access
+        op2._hyperparameters["unitary_matrix"],  # pylint: disable=protected-access
+        atol=atol,
+        rtol=rtol,
+    ):
+        return False
+    if op1.wires != op2.wires:
+        return False
+    return True

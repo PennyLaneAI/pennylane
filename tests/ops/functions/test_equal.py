@@ -1846,3 +1846,24 @@ class TestQuantumScriptComparisons:
     @pytest.mark.parametrize("tape, other_tape", [(tape2, tape5)])
     def test_non_equal_training_params_comparison(self, tape, other_tape):
         assert qml.equal(tape, other_tape) is False
+
+
+class TestBasisRotation:
+    rotation_mat = np.array(
+        [
+            [-0.618452, -0.68369054 - 0.38740723j],
+            [-0.78582258, 0.53807284 + 0.30489424j],
+        ]
+    )
+    op1 = qml.BasisRotation(wires=range(2), unitary_matrix=rotation_mat)
+    op2 = qml.BasisRotation(wires=range(2), unitary_matrix=np.array(rotation_mat))
+    op3 = qml.BasisRotation(wires=range(2), unitary_matrix=rotation_mat + 1e-7)
+
+    @pytest.mark.parametrize("op, other_op", [(op1, op3)])
+    def test_different_tolerances_comparison(self, op, other_op):
+        assert qml.equal(op, other_op, atol=1e-5)
+        assert qml.equal(op, other_op, rtol=0, atol=1e-9) is False
+
+    @pytest.mark.parametrize("op, other_op", [(op1, op2)])
+    def test_non_equal_training_params_comparison(self, op, other_op):
+        assert qml.equal(op, other_op)
