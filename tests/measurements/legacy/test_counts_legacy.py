@@ -634,7 +634,8 @@ def test_batched_counts_no_op_finite_shots(interface, wires, basis_states, mocke
         qml.pow(qml.PauliX(1), z=[1, 2])
         return qml.counts(wires=wires)
 
-    assert circuit() == [{basis_state: n_shots} for basis_state in basis_states]
+    res = circuit()
+    assert res == type(res)([{basis_state: n_shots} for basis_state in basis_states])
 
     custom_measurement_process(dev, spy)
 
@@ -656,7 +657,7 @@ def test_batched_counts_and_expval_no_op_finite_shots(interface, wires, basis_st
 
     res = circuit()
     assert isinstance(res, tuple) and len(res) == 2
-    assert res[0] == [{basis_state: n_shots} for basis_state in basis_states]
+    assert res[0] == type(res[0])([{basis_state: n_shots} for basis_state in basis_states])
     assert len(res[1]) == 2 and qml.math.allequal(res[1], 1)
 
     custom_measurement_process(dev, spy)
@@ -675,7 +676,8 @@ def test_batched_counts_operator_finite_shots(interface, mocker):
         qml.pow(qml.PauliX(0), z=[1, 2])
         return qml.counts(qml.PauliZ(0))
 
-    assert circuit() == [{-1: n_shots}, {1: n_shots}]
+    res = circuit()
+    assert res == type(res)([{-1: n_shots}, {1: n_shots}])
 
     custom_measurement_process(dev, spy)
 
@@ -695,7 +697,7 @@ def test_batched_counts_and_expval_operator_finite_shots(interface, mocker):
 
     res = circuit()
     assert isinstance(res, tuple) and len(res) == 2
-    assert res[0] == [{-1: n_shots}, {1: n_shots}]
+    assert res[0] == type(res[0])([{-1: n_shots}, {1: n_shots}])
     assert len(res[1]) == 2 and qml.math.allequal(res[1], [-1, 1])
 
     custom_measurement_process(dev, spy)
