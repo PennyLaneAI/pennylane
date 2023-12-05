@@ -175,15 +175,15 @@ class ScalarSymbolicOp(SymbolicOp):
             if qml.math.ndim(self.scalar) == 0:
                 # coeff is not batched
                 self._batch_size = base_batch_size
-                return base_batch_size
-            # coeff is batched
-            scalar_size = qml.math.size(self.scalar)
-            if base_batch_size is not None and base_batch_size != scalar_size:
-                raise ValueError(
-                    "Broadcasting was attempted but the broadcasted dimensions "
-                    f"do not match: {scalar_size}, {base_batch_size}."
-                )
-            self._batch_size = scalar_size
+            else:
+                # coeff is batched
+                scalar_size = qml.math.size(self.scalar)
+                if base_batch_size is not None and base_batch_size != scalar_size:
+                    raise ValueError(
+                        "Broadcasting was attempted but the broadcasted dimensions "
+                        f"do not match: {scalar_size}, {base_batch_size}."
+                    )
+                self._batch_size = scalar_size
         return self._batch_size
 
     @property

@@ -267,7 +267,7 @@ from .pytrees import register_pytree
 
 SUPPORTED_INTERFACES = {"numpy", "scipy", "autograd", "torch", "tensorflow", "jax"}
 __use_new_opmath = False
-_UNSET_BATCH_SIZE = object()  # indicates that the (lazy) batch size has not yet been accessed/computed
+_UNSET_BATCH_SIZE = -1  # indicates that the (lazy) batch size has not yet been accessed/computed
 
 
 class OperatorPropertyUndefined(Exception):
@@ -666,7 +666,7 @@ class Operator(abc.ABC):
         from :class:`~.operation.Operator` will do so the first time its
         ``batch_size`` property is accessed.
 
-        ``_check_batching`` modifies the following class attributes:
+        ``_check_batching`` modifies the following instance attributes:
 
         - ``_ndim_params``: The number of dimensions of the parameters passed to
           ``_check_batching``. For an ``Operator`` that does _not_ set the ``ndim_params``

@@ -315,6 +315,16 @@ class TestUpdate:
         assert copied._batch_size == 2
         assert copied._output_dim == 2
 
+    def test_lazy_setting_output_dim_sets_batch_size(self):
+        """Test that setting the output_dim also sets the batch_size."""
+        qs = QuantumScript([qml.RX([1.1, 2.2], 0)], [qml.expval(qml.PauliZ(0))])
+        assert qs._batch_size is _UNSET_BATCH_SIZE
+        assert qs._output_dim is None
+
+        assert qs.output_dim == 2  # getting this sets both _output_dim and _batch_size
+        assert qs._output_dim == 2
+        assert qs._batch_size == 2
+
 
 class TestIteration:
     """Test the capabilities related to iterating over quantum script."""

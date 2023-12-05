@@ -438,11 +438,6 @@ class QuantumScript:
         self._update_par_info()  # Updates _par_info; O(ops+obs)
 
         self._update_observables()  # Updates _obs_sharing_wires and _obs_sharing_wires_id
-        if self._batch_size is not _UNSET_BATCH_SIZE:
-            # this avoids computing it on init (before it has been requested, lazy)
-            self._update_batch_size()  # Updates _batch_size; O(ops)
-            # The following line requires _batch_size to be up to date
-            self._update_output_dim()  # Updates _output_dim; O(obs)
 
     def _update_circuit_info(self):
         """Update circuit metadata
