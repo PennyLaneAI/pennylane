@@ -388,6 +388,14 @@ if m0=1,m1=0 => 1
 if m0=1,m1=1 => 2"""
         )
 
+    def test_map_wires(self):
+        """Test that map_wires works as expected."""
+        a = MeasurementValue([mp1], lambda v: v)
+        b = a.map_wires({0: "b"})
+        [new_meas] = b.measurements
+        assert new_meas.wires == Wires(["b"])
+        assert new_meas.id == mp1.id
+
 
 unary_dunders = ["__invert__"]
 

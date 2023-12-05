@@ -13,6 +13,8 @@
 # limitations under the License.
 """Simulate a quantum script."""
 # pylint: disable=protected-access
+from typing import Optional
+
 from numpy.random import default_rng
 import numpy as np
 
@@ -74,7 +76,10 @@ def _postselection_postprocess(state, is_state_batched, shots):
     # equal to zero so that the state can become invalid. This way, execution can continue, and
     # bad postselection gives results that are invalid rather than results that look valid but
     # are incorrect.
-    norm = qml.math.floor(qml.math.real(qml.math.norm(state)) * 1e15) * 1e-15
+    norm = qml.math.norm(state)
+
+    if not qml.math.is_abstract(state) and qml.math.allclose(norm, 0.0):
+        norm = 0.0
 
     if shots:
         # Clip the number of shots using a binomial distribution using the probability of
@@ -89,7 +94,7 @@ def _postselection_postprocess(state, is_state_batched, shots):
         # valid samples
         shots = _FlexShots(postselected_shots)
 
-    state = state / qml.math.cast_like(norm, state)
+    state = state / norm
     return state, shots
 
 
@@ -194,8 +199,14 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
     return results
 
 
+# pylint: disable=too-many-arguments
 def simulate(
-    circuit: qml.tape.QuantumScript, rng=None, prng_key=None, debugger=None, interface=None
+    circuit: qml.tape.QuantumScript,
+    rng=None,
+    prng_key=None,
+    debugger=None,
+    interface=None,
+    state_cache: Optional[dict] = None,
 ) -> Result:
     """Simulate a single quantum script.
 
@@ -211,6 +222,7 @@ def simulate(
             generated. Only for simulation using JAX.
         debugger (_Debugger): The debugger to use
         interface (str): The machine learning interface to create the initial state with
+        state_cache=None (Optional[dict]): A dictionary mapping the hash of a circuit to the pre-rotated state. Used to pass the state between forward passes and vjp calculations.
 
     Returns:
         tuple(TensorLike): The results of the simulation
@@ -226,4 +238,6 @@ def simulate(
 
     """
     state, is_state_batched = get_final_state(circuit, debugger=debugger, interface=interface)
+    if state_cache is not None:
+        state_cache[circuit.hash] = state
     return measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key)

@@ -48,6 +48,10 @@ class AdamOptimizer(GradientDescentOptimizer):
         beta2 (float): hyperparameter governing the update of the first and second moment
         eps (float): offset :math:`\epsilon` added for numerical stability
 
+    .. note::
+
+        When using ``torch``, ``tensorflow`` or ``jax`` interfaces, refer to :doc:`Gradients and training </introduction/interfaces>` for suitable optimizers.
+
     """
 
     def __init__(self, stepsize=0.01, beta1=0.9, beta2=0.99, eps=1e-8):
