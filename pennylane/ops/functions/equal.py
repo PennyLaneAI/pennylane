@@ -110,7 +110,7 @@ def equal(
     >>> qml.equal(tape1, tape2, tol=0, atol=1e-7)
     False
     >>> qml.equal(tape1, tape2, tol=0, atol=1e-5)
-    False
+    True
 
     .. details::
         :title: Usage Details
