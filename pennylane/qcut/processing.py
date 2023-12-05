@@ -22,7 +22,7 @@ from networkx import MultiDiGraph
 import pennylane as qml
 from pennylane import numpy as np
 
-from .qcut import MeasureNode, PrepareNode
+from .utils import MeasureNode, PrepareNode
 
 
 def qcut_processing_fn(
@@ -298,7 +298,7 @@ def contract_tensors(
 
     The network can then be contracted using:
 
-    >>> qml.transforms.qcut.contract_tensors(tensors, graph, prep, meas)
+    >>> qml.qcut.contract_tensors(tensors, graph, prep, meas)
     38
     """
     # pylint: disable=import-outside-toplevel

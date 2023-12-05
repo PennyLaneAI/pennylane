@@ -236,7 +236,7 @@ def apply_pauliz(op: qml.PauliZ, state, is_state_batched: bool = False, debugger
     n_dim = math.ndim(state)
 
     if n_dim >= 9 and math.get_interface(state) == "tensorflow":
-        return apply_operation_tensordot(op, state)
+        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     sl_0 = _get_slice(0, axis, n_dim)
     sl_1 = _get_slice(1, axis, n_dim)
@@ -254,7 +254,7 @@ def apply_cnot(op: qml.CNOT, state, is_state_batched: bool = False, debugger=Non
     n_dim = math.ndim(state)
 
     if n_dim >= 9 and math.get_interface(state) == "tensorflow":
-        return apply_operation_tensordot(op, state)
+        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     sl_0 = _get_slice(0, control_axes, n_dim)
     sl_1 = _get_slice(1, control_axes, n_dim)

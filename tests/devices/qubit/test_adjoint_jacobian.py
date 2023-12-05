@@ -30,9 +30,10 @@ class TestAdjointJacobian:
     def test_custom_wire_labels(self, tol):
         """Test that adjoint_jacbonian works as expected when custom wire labels are used."""
         qs = QuantumScript(
-            [qml.RX(0.123, wires="a"), qml.RY(0.456, wires="b")], [qml.expval(qml.PauliX("a"))]
+            [qml.RX(0.123, wires="a"), qml.RY(0.456, wires="b")],
+            [qml.expval(qml.PauliX("a"))],
+            trainable_params=[0, 1],
         )
-        qs.trainable_params = {0, 1}
 
         calculated_val = adjoint_jacobian(qs)
 
@@ -49,10 +50,10 @@ class TestAdjointJacobian:
 
         prep_op = qml.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
         qs = QuantumScript(
-            ops=[prep_op, G(theta, wires=[0])], measurements=[qml.expval(qml.PauliZ(0))]
+            ops=[prep_op, G(theta, wires=[0])],
+            measurements=[qml.expval(qml.PauliZ(0))],
+            trainable_params=[1],
         )
-
-        qs.trainable_params = {1}
 
         calculated_val = adjoint_jacobian(qs)
         # compare to finite differences
@@ -72,9 +73,9 @@ class TestAdjointJacobian:
         qs = QuantumScript(
             ops=[prep_op, qml.Rot(*params, wires=[0])],
             measurements=[qml.expval(qml.PauliZ(0))],
+            trainable_params=[1, 2, 3],
         )
 
-        qs.trainable_params = {1, 2, 3}
         qs_valid, _ = qml.devices.preprocess.decompose(qs, adjoint_ops)
         qs = qs_valid[0]
 
@@ -110,8 +111,7 @@ class TestAdjointJacobian:
         ]
         measurements = [qml.expval(obs(wires=0)), qml.expval(qml.PauliZ(wires=1))]
 
-        qs = QuantumScript(ops, measurements)
-        qs.trainable_params = set(range(1, 1 + op.num_params))
+        qs = QuantumScript(ops, measurements, trainable_params=list(range(1, 1 + op.num_params)))
 
         qs_valid, _ = qml.devices.preprocess.decompose(qs, adjoint_ops)
         qs_valid = qs_valid[0]
@@ -188,9 +188,9 @@ class TestAdjointJacobian:
         qs = QuantumScript(
             [qml.RX(0.4, wires=[0]), qml.Rot(x, y, z, wires=[0]), qml.RY(-0.2, wires=[0])],
             [qml.expval(qml.PauliZ(0))],
+            trainable_params=[1, 2, 3],
         )
 
-        qs.trainable_params = {1, 2, 3}
         qs_valid, _ = qml.devices.preprocess.decompose(qs, adjoint_ops)
         qs_valid = qs_valid[0]
 
@@ -218,9 +218,9 @@ class TestAdjointJacobian:
         qs = QuantumScript(
             [prep_op, qml.RX(0.4, wires=[0]), qml.Rot(x, y, z, wires=[0]), qml.RY(-0.2, wires=[0])],
             [qml.expval(qml.PauliZ(0))],
+            trainable_params=[2, 3, 4],
         )
 
-        qs.trainable_params = {2, 3, 4}
         qs_valid, _ = qml.devices.preprocess.decompose(qs, adjoint_ops)
         qs_valid = qs_valid[0]
 
@@ -248,9 +248,9 @@ class TestAdjointJacobian:
                 qml.CNOT(wires=[1, 2]),
             ],
             [qml.expval(qml.Hermitian(mx, wires=[0, 2]))],
+            trainable_params=[0, 1, 2],
         )
 
-        qs.trainable_params = {0, 1, 2}
         qs_valid, _ = qml.devices.preprocess.decompose(qs, adjoint_ops)
         qs_valid = qs_valid[0]
 
@@ -279,9 +279,9 @@ class TestAdjointJacobian:
                 qml.CNOT(wires=[1, 2]),
             ],
             [qml.expval(qml.PauliX(0) @ qml.PauliY(2))],
+            trainable_params=[0, 1, 2],
         )
 
-        qs.trainable_params = {0, 1, 2}
         qs_valid, _ = qml.devices.preprocess.decompose(qs, adjoint_ops)
         qs_valid = qs_valid[0]
 
@@ -304,8 +304,7 @@ class TestAdjointJacobian:
             qml.RY(par, wires=0),
             qml.QubitUnitary(np.eye(2), wires=0),
         ]
-        qs = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
-        qs.trainable_params = [0]
+        qs = QuantumScript(ops, [qml.expval(qml.PauliZ(0))], trainable_params=[0])
 
         grad_adjoint = adjoint_jacobian(qs)
         expected = [-np.sin(par)]
@@ -319,8 +318,7 @@ class TestAdjointJVP:
     def test_single_param_single_obs(self, tangents, tol):
         """Test JVP is correct for a single parameter and observable"""
         x = np.array(0.654)
-        qs = QuantumScript([qml.RY(x, 0)], [qml.expval(qml.PauliZ(0))])
-        qs.trainable_params = {0}
+        qs = QuantumScript([qml.RY(x, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0])
 
         actual = adjoint_jvp(qs, tangents)
 
@@ -331,8 +329,11 @@ class TestAdjointJVP:
     def test_single_param_multi_obs(self, tangents, tol):
         """Test JVP is correct for a single parameter and multiple observables"""
         x = np.array(0.654)
-        qs = QuantumScript([qml.RY(x, 0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))])
-        qs.trainable_params = {0}
+        qs = QuantumScript(
+            [qml.RY(x, 0)],
+            [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))],
+            trainable_params=[0],
+        )
 
         actual = adjoint_jvp(qs, tangents)
         assert isinstance(actual, tuple)
@@ -347,8 +348,9 @@ class TestAdjointJVP:
         x = np.array(0.654)
         y = np.array(1.221)
 
-        qs = QuantumScript([qml.RY(x, 0), qml.RZ(y, 0)], [qml.expval(qml.PauliY(0))])
-        qs.trainable_params = {0, 1}
+        qs = QuantumScript(
+            [qml.RY(x, 0), qml.RZ(y, 0)], [qml.expval(qml.PauliY(0))], trainable_params=[0, 1]
+        )
 
         actual = adjoint_jvp(qs, tangents)
 
@@ -364,8 +366,7 @@ class TestAdjointJVP:
         y = np.array(1.221)
 
         obs = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0))]
-        qs = QuantumScript([qml.RY(x, 0), qml.RZ(y, 0)], obs)
-        qs.trainable_params = {0, 1}
+        qs = QuantumScript([qml.RY(x, 0), qml.RZ(y, 0)], obs, trainable_params=[0, 1])
 
         actual = adjoint_jvp(qs, tangents)
         assert isinstance(actual, tuple)
@@ -393,8 +394,7 @@ class TestAdjointJVP:
             qml.expval(qml.PauliY(wires[1])),
             qml.expval(qml.PauliX(wires[0])),
         ]
-        qs = QuantumScript([qml.RY(x, wires[0]), qml.RX(y, wires[1])], obs)
-        qs.trainable_params = {0, 1}
+        qs = QuantumScript([qml.RY(x, wires[0]), qml.RX(y, wires[1])], obs, trainable_params=[0, 1])
         assert qs.wires.tolist() == wires
 
         actual = adjoint_jvp(qs, tangents)
@@ -416,8 +416,7 @@ class TestAdjointJVP:
             qml.RY(par, wires=0),
             qml.QubitUnitary(np.eye(2), wires=0),
         ]
-        qs = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
-        qs.trainable_params = [0]
+        qs = QuantumScript(ops, [qml.expval(qml.PauliZ(0))], trainable_params=[0])
 
         jvp_adjoint = adjoint_jvp(qs, tangents)
         expected = [-np.sin(par) * tangents[0]]
@@ -431,8 +430,7 @@ class TestAdjointVJP:
     def test_single_param_single_obs(self, cotangents, tol):
         """Test VJP is correct for a single parameter and observable"""
         x = np.array(0.654)
-        qs = QuantumScript([qml.RY(x, 0)], [qml.expval(qml.PauliZ(0))])
-        qs.trainable_params = {0}
+        qs = QuantumScript([qml.RY(x, 0)], [qml.expval(qml.PauliZ(0))], trainable_params=[0])
 
         actual = adjoint_vjp(qs, cotangents)
 
@@ -444,8 +442,11 @@ class TestAdjointVJP:
     def test_single_param_multi_obs(self, cotangents, tol):
         """Test VJP is correct for a single parameter and multiple observables"""
         x = np.array(0.654)
-        qs = QuantumScript([qml.RY(x, 0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))])
-        qs.trainable_params = {0}
+        qs = QuantumScript(
+            [qml.RY(x, 0)],
+            [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))],
+            trainable_params=[0],
+        )
 
         actual = adjoint_vjp(qs, cotangents)
 
@@ -458,8 +459,9 @@ class TestAdjointVJP:
         x = np.array(0.654)
         y = np.array(1.221)
 
-        qs = QuantumScript([qml.RY(x, 0), qml.RZ(y, 0)], [qml.expval(qml.PauliY(0))])
-        qs.trainable_params = {0, 1}
+        qs = QuantumScript(
+            [qml.RY(x, 0), qml.RZ(y, 0)], [qml.expval(qml.PauliY(0))], trainable_params=[0, 1]
+        )
 
         actual = adjoint_vjp(qs, cotangents)
         assert isinstance(actual, tuple)
@@ -477,8 +479,7 @@ class TestAdjointVJP:
         y = np.array(1.221)
 
         obs = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0))]
-        qs = QuantumScript([qml.RY(x, 0), qml.RZ(y, 0)], obs)
-        qs.trainable_params = {0, 1}
+        qs = QuantumScript([qml.RY(x, 0), qml.RZ(y, 0)], obs, trainable_params=[0, 1])
 
         actual = adjoint_vjp(qs, cotangents)
         assert isinstance(actual, tuple)
@@ -508,8 +509,7 @@ class TestAdjointVJP:
             qml.expval(qml.PauliY(wires[1])),
             qml.expval(qml.PauliX(wires[0])),
         ]
-        qs = QuantumScript([qml.RY(x, wires[0]), qml.RX(y, wires[1])], obs)
-        qs.trainable_params = {0, 1}
+        qs = QuantumScript([qml.RY(x, wires[0]), qml.RX(y, wires[1])], obs, trainable_params=[0, 1])
         assert qs.wires.tolist() == wires
 
         actual = adjoint_vjp(qs, cotangents)
@@ -531,9 +531,20 @@ class TestAdjointVJP:
             qml.RY(par, wires=0),
             qml.QubitUnitary(np.eye(2), wires=0),
         ]
-        qs = QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
-        qs.trainable_params = [0]
+        qs = QuantumScript(ops, [qml.expval(qml.PauliZ(0))], trainable_params=[0])
 
         vjp_adjoint = adjoint_vjp(qs, cotangents)
         expected = [-np.sin(par) * cotangents[0]]
         assert np.allclose(vjp_adjoint, expected)
+
+    def test_hermitian_expval(self):
+        """Test adjoint_vjp works with a hermitian expectation value."""
+
+        x = 1.2
+        H = qml.Hermitian(np.array([[1, 0], [0, -1]]), wires=0)
+        cotangent = (0.5,)
+
+        qs = QuantumScript([qml.RX(x, wires=0)], [qml.expval(H)], trainable_params=[0])
+
+        [vjp_adjoint] = adjoint_vjp(qs, cotangent)
+        assert qml.math.allclose(vjp_adjoint, -0.5 * np.sin(x))

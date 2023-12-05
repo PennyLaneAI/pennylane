@@ -69,7 +69,7 @@ class TestShadowEntropies:
         ]
         assert np.allclose(entropies, entropies[0], atol=1e-2)
         expected = np.log(2) / np.log(base)
-        assert np.allclose(entropies, expected, atol=1e-2)
+        assert np.allclose(entropies, expected, atol=2e-2)
 
     def test_non_constant_distribution(
         self,

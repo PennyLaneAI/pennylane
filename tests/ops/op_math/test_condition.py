@@ -190,10 +190,13 @@ class TestCond:
             m_0 = qml.measure(1)
             qml.cond(m_0, g, f)()  # Check that the same error is raised when f and g are swapped
 
+
+class TestAdditionalCond:
+    """Test additional/misc functionality relating to qml.cond"""
+
     @pytest.mark.parametrize("inp", [1, "string", qml.PauliZ(0)])
-    def test_cond_error_unrecognized_input(self, inp, terminal_measurement):
+    def test_cond_error_unrecognized_input(self, inp):
         """Test that an error is raised when the input is not recognized."""
-        # pylint: disable=unused-argument
 
         with pytest.raises(
             ConditionalTransformError,
@@ -201,6 +204,17 @@ class TestCond:
         ):
             m_0 = qml.measure(1)
             qml.cond(m_0, inp)()
+
+    def test_map_wires(self):
+        """Tests the cond.map_wires function."""
+        with qml.queuing.AnnotatedQueue() as q:
+            m_0 = qml.measure(0)
+            qml.cond(m_0, qml.PauliX)(1)
+
+        meas, cond_op = q.queue
+        mapped_cond = cond_op.map_wires({0: "a", 1: "b"})
+        assert mapped_cond.meas_val.measurements == [meas.map_wires({0: "a"})]
+        assert mapped_cond.then_op == qml.PauliX("b")
 
 
 @pytest.mark.parametrize("op_class", [qml.PauliY, qml.Toffoli, qml.Hadamard, qml.CZ])
