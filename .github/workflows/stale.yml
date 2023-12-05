@@ -18,3 +18,4 @@ jobs:
           days-before-stale: 60
           days-before-issue-stale: -1
           exempt-pr-labels: keep-open
+          start-date: '2023-12-05T00:00:00Z'
