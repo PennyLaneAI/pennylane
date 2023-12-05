@@ -14,7 +14,6 @@
 """Functions to prepare a qutrit mixed state."""
 
 from typing import Iterable, Union
-import numpy as np
 import pennylane as qml
 from pennylane import (
     QutritBasisState,
