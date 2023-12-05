@@ -139,6 +139,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
                 )
             return probs[idx]
         eigvals = qml.math.asarray(self.eigvals(), dtype="float64")
+
         # we use ``self.wires`` instead of ``self.obs`` because the observable was
         # already applied to the state
         with qml.queuing.QueuingManager.stop_recording():

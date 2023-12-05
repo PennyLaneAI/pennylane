@@ -300,7 +300,7 @@ class MeasurementValue(Generic[T]):
     @property
     def wires(self):
         """Returns a list of wires corresponding to the mid-circuit measurements."""
-        return Wires([m.wires[0] for m in self.measurements])
+        return Wires.all_wires([m.wires for m in self.measurements])
 
     @property
     def branches(self):

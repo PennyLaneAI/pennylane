@@ -223,7 +223,7 @@ class SampleMP(SampleMeasurement):
             # While a measurement value may have more than one wire, we want
             # the returned samples to have a single value per shot rather than
             # a list equating to a binary number with length num_wires, so we
-            # override num_wires here
+            # override num_wires here.
             num_wires = 1
 
             # Measurement values should be processed to compute the outcome of the

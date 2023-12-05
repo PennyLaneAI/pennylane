@@ -23,7 +23,7 @@ from enum import Enum
 from typing import Sequence, Tuple, Optional
 
 import pennylane as qml
-from pennylane.operation import Operator
+from pennylane.operation import Operator, DecompositionUndefinedError, EigvalsUndefinedError
 from pennylane.pytrees import register_pytree
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
@@ -363,7 +363,10 @@ class MeasurementProcess(ABC):
             return qml.math.arange(0, 2 ** len(self.wires), 1)
 
         if self.obs is not None:
-            return qml.eigvals(self.obs)
+            try:
+                return qml.eigvals(self.obs)
+            except DecompositionUndefinedError as e:
+                raise EigvalsUndefinedError from e
         return self._eigvals
 
     @property
