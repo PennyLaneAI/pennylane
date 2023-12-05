@@ -168,18 +168,24 @@
 * `qml.draw` and `qml.draw_mpl` now render operator ids.
   [(#4749)](https://github.com/PennyLaneAI/pennylane/pull/4749)
 
+* Non-parametric-ops such as `Barrier`, `Snapshot` and `Wirecut` have been grouped together and moved to `pennylane/ops/meta.py`.
+  Additionally, the relevant tests have been organized and placed in a new file, `tests/ops/test_meta.py` .
+  [(#4789)](https://github.com/PennyLaneAI/pennylane/pull/4789)
+
+* `TRX`, `TRY`, and `TRZ` are now differentiable via backprop on `default.qutrit`
+  [(#4790)](https://github.com/PennyLaneAI/pennylane/pull/4790)
+
 * The function ``qml.equal`` now supports ``ControlledSequence`` operators.
   [(#4829)](https://github.com/PennyLaneAI/pennylane/pull/4829)
 
 * XZX decomposition is added to the list of supported single-qubit unitary decompositions.
   [(#4862)](https://github.com/PennyLaneAI/pennylane/pull/4862)
 
-* Non-parametric-ops such as `Barrier`, `Snapshot` and `Wirecut` have been grouped together and moved to `pennylane/ops/meta.py`.
-  Additionally, the relevant tests have been organized and placed in a new file, `tests/ops/test_meta.py` .
-  [(#4789)](https://github.com/PennyLaneAI/pennylane/pull/4789)
+* Added `__eq__` method for TransformProgram and TransformContainers allowing the comparison of respective objects using `==` and `!=` operators.
+  [(#4858)](https://github.com/PennyLaneAI/pennylane/pull/4858)
 
 * `qml.equal` now supports comparison of `QuantumScript` objects
-  [#4902](https://github.com/PennyLaneAI/pennylane/pull/4902)
+  [(#4902)](https://github.com/PennyLaneAI/pennylane/pull/4902)
 
 <h4>Better support for batching</h4>
 
@@ -243,9 +249,6 @@
 * Added `ops.functions.assert_valid` for checking if an `Operator` class is defined correctly.
   [(#4764)](https://github.com/PennyLaneAI/pennylane/pull/4764)
 
-* Added `__eq__` method for TransformProgram and TransformContainers allowing the comparison of respective objects using `==` and `!=` operators.
-  [(#4858)](https://github.com/PennyLaneAI/pennylane/pull/4858)
-
 * `GlobalPhase` now decomposes to nothing, in case devices do not support global phases.
   [(#4855)](https://github.com/PennyLaneAI/pennylane/pull/4855)
 
@@ -278,9 +281,6 @@
 
 * `Conditional` and `MeasurementValue` objects now implement `map_wires`.
   [(#4884)](https://github.com/PennyLaneAI/pennylane/pull/4884)
-
-*   `TRX`, `TRY`, and `TRZ` are now differentiable via backprop on `default.qutrit`
-  [(#4790)](https://github.com/PennyLaneAI/pennylane/pull/4790)
 
 <h3>Breaking changes 💔</h3>
 
