@@ -68,17 +68,17 @@ def _apply_state_vector(state, num_wires):  # function is easy to abstract for q
 
     Args:
         state (array[complex]): normalized input state of length
-            ``3**len(wires)``
+            ``qudit_dim**len(wires)``
         num_wires (int): number of wires that get initialized in the state
 
     Returns:
-        array[complex]: complex array of shape ``[3] * (2 * num_wires)``
+        array[complex]: complex array of shape ``[qudit_dim] * (2 * num_wires)``
         representing the density matrix of this state.
     """
 
     # Initialize the entire wires with the state
     rho = qml.math.outer(state, qml.math.conj(state))
-    return qml.math.reshape(rho, [3] * 2 * num_wires)
+    return qml.math.reshape(rho, [qudit_dim] * 2 * num_wires)
 
 
 def _apply_basis_state(state, wires):  # function is easy to abstract for qudit
@@ -90,7 +90,7 @@ def _apply_basis_state(state, wires):  # function is easy to abstract for qudit
         wires (Iterable[int]): wires that the provided computational state should be initialized on
 
     Returns:
-        array[complex]: complex array of shape ``[3] * (2 * num_wires)``
+        array[complex]: complex array of shape ``[qudit_dim] * (2 * num_wires)``
         representing the density matrix of this basis state.
     """
     num_wires = len(wires)
@@ -109,9 +109,9 @@ def _create_basis_state(num_wires, index):  # function is easy to abstract for q
         index (int): integer representing the computational basis state.
 
     Returns:
-        array[complex]: complex array of shape ``[3] * (2 * num_wires)``
+        array[complex]: complex array of shape ``[qudit_dim] * (2 * num_wires)``
         representing the density matrix of the basis state.
     """
-    rho = qml.math.zeros((3**num_wires, 3**num_wires))
+    rho = qml.math.zeros((qudit_dim**num_wires, qudit_dim**num_wires))
     rho[index, index] = 1
     return qml.math.reshape(rho, [qudit_dim] * (2 * num_wires))
