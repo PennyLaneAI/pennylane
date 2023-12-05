@@ -112,8 +112,7 @@ def sample(op: Optional[Union[Operator, MeasurementValue]] = None, wires=None) -
                 "Only sequences of MeasurementValues can be passed with the op argument."
             )
 
-        mv = MeasurementValue._combine_values(op)  # pylint: disable=protected-access
-        return SampleMP(wires=mv.wires)
+        return SampleMP(obs=op)
 
     if op is not None and not op.is_hermitian:  # None type is also allowed for op
         warnings.warn(f"{op.name} might not be hermitian.")
@@ -214,11 +213,32 @@ class SampleMP(SampleMeasurement):
 
         num_wires = samples.shape[-1]  # wires is the last dimension
 
-        if self.obs is None:
+        # If we're sampling wires or a list of mid-circuit measurements
+        if self.obs is None and not isinstance(self.mv, MeasurementValue):
             # if no observable was provided then return the raw samples
             return samples if bin_size is None else samples.T.reshape(num_wires, bin_size, -1)
 
-        if str(name) in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
+        # If we're sampling a mid-circuit measurement
+        if isinstance(self.mv, MeasurementValue):
+            # While a measurement value may have more than one wire, we want
+            # the returned samples to have a single value per shot rather than
+            # a list equating to a binary number with length num_wires, so we
+            # override num_wires here
+            num_wires = 1
+
+            # Measurement values should be processed to compute the outcome of the
+            # arithmetic expression used to process them. The processed result of
+            # a single value with no arithmetic operations applied to it will be
+            # the same as expected.
+            def processing_fn(a):
+                index = int("".join([str(int(x)) for x in a]), 2)
+                return self.mv[index]
+
+            # The last axis is reduced using the measurement value processing function
+            samples = qml.math.apply_along_axis(processing_fn, axis=-1, arr=samples)
+
+        # If we're sampling observables
+        elif str(name) in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}
             samples = 1 - 2 * qml.math.squeeze(samples, axis=-1)
         else:

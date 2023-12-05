@@ -24,7 +24,6 @@ from pennylane.wires import Wires
 
 from .measurements import Expectation, SampleMeasurement, StateMeasurement
 from .mid_measure import MeasurementValue
-from .sample import SampleMP
 
 
 def expval(op: Union[Operator, MeasurementValue]):
@@ -59,9 +58,9 @@ def expval(op: Union[Operator, MeasurementValue]):
     if isinstance(op, MeasurementValue):
         return ExpectationMP(obs=op)
 
-    if isinstance(op, Sequence) and any(isinstance(o, MeasurementValue) for o in op):
+    if isinstance(op, Sequence):
         raise ValueError(
-            "qml.expval does not support measuring sequences of mid-circuit measurements"
+            "qml.expval does not support measuring sequences of measurements or observables"
         )
 
     if not op.is_hermitian:
@@ -120,7 +119,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         # estimate the ev
         op = self.mv if self.mv is not None else self.obs
         with qml.queuing.QueuingManager.stop_recording():
-            samples = SampleMP(obs=op).process_samples(
+            samples = qml.sample(op=op).process_samples(
                 samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
             )
 

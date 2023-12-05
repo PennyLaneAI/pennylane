@@ -142,8 +142,7 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
                 "Only sequences of MeasurementValues can be passed with the op argument."
             )
 
-        mv = MeasurementValue._combine_values(op)  # pylint: disable=protected-access
-        return CountsMP(obs=mv, all_outcomes=all_outcomes)
+        return CountsMP(obs=op, all_outcomes=all_outcomes)
 
     if op is not None and not op.is_hermitian:  # None type is also allowed for op
         warnings.warn(f"{op.name} might not be hermitian.")
@@ -228,22 +227,21 @@ class CountsMP(SampleMeasurement):
         bin_size: int = None,
     ):
         with qml.queuing.QueuingManager.stop_recording():
-            if self.mv is not None:
-                samples = qml.sample(wires=self.mv.wires).process_samples(
-                    samples, wire_order, shot_range, bin_size
-                )
-            else:
-                samples = qml.sample(op=self.obs, wires=self._wires).process_samples(
-                    samples, wire_order, shot_range, bin_size
-                )
+            samples = qml.sample(op=self.obs or self.mv, wires=self._wires).process_samples(
+                samples, wire_order, shot_range, bin_size
+            )
 
         if bin_size is None:
             return self._samples_to_counts(samples)
 
-        num_wires = len(self.wires) if self.wires else len(wire_order)
+        num_wires = (
+            (len(self.wires) if self.wires else len(wire_order))
+            if not isinstance(self.mv, MeasurementValue)
+            else 1
+        )
         samples = (
             samples.reshape((num_wires, -1)).T.reshape(-1, bin_size, num_wires)
-            if self.obs is None
+            if self.obs is None and not isinstance(self.mv, MeasurementValue)
             else samples.reshape((-1, bin_size))
         )
 
@@ -301,7 +299,7 @@ class CountsMP(SampleMeasurement):
         batched_ndims = 2
         shape = qml.math.shape(samples)
 
-        if self.obs is None:
+        if self.obs is None and not isinstance(self.mv, MeasurementValue):
             # convert samples and outcomes (if using) from arrays to str for dict keys
             samples = qml.math.array(
                 [sample for sample in samples if not qml.math.any(qml.math.isnan(sample))]
@@ -315,7 +313,7 @@ class CountsMP(SampleMeasurement):
                     map(_sample_to_str, qml.QubitDevice.generate_basis_states(num_wires))
                 )
         elif self.all_outcomes:
-            outcomes = qml.eigvals(self.obs)
+            outcomes = self.eigvals()
 
         batched = len(shape) == batched_ndims
         if not batched:

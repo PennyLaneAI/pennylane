@@ -150,7 +150,7 @@ class MeasurementProcess(ABC):
         eigvals: Optional[TensorLike] = None,
         id: Optional[str] = None,
     ):
-        if obs is not None and obs.name == "MeasurementValue":
+        if getattr(obs, "name", None) == "MeasurementValue" or isinstance(obs, Sequence):
             self.mv = obs
             self.obs = None
         else:
@@ -312,6 +312,8 @@ class MeasurementProcess(ABC):
         This is the union of all the Wires objects of the measurement.
         """
         if self.mv is not None:
+            if isinstance(self.mv, Sequence):
+                return qml.wires.Wires.all_wires([m.wires for m in self.mv])
             return self.mv.wires
 
         if self.obs is not None:
@@ -354,10 +356,12 @@ class MeasurementProcess(ABC):
             array: eigvals representation
         """
         if self.mv is not None:
+            if getattr(self.mv, "name", None) == "MeasurementValue":
+                return qml.math.asarray([self.mv[i] for i in range(2 ** len(self.wires))])
             return qml.math.arange(0, 2 ** len(self.wires), 1)
 
         if self.obs is not None:
-            return self.obs.eigvals()
+            return qml.eigvals(self.obs)
         return self._eigvals
 
     @property
@@ -470,7 +474,11 @@ class MeasurementProcess(ABC):
         new_measurement = copy.copy(self)
         if self.mv is not None:
             mv = copy.copy(self.mv)
-            mv.measurements = [m.map_wires(wire_map=wire_map) for m in mv.measurements]
+            if getattr(mv, "name", None) == "MeasurementValue":
+                mv.measurements = [m.map_wires(wire_map=wire_map) for m in mv.measurements]
+            else:
+                for val in mv:
+                    val.measurements = [m.map_wires(wire_map=wire_map) for m in val.measurements]
             new_measurement.mv = mv
         if self.obs is not None:
             new_measurement.obs = self.obs.map_wires(wire_map=wire_map)

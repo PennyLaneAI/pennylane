@@ -101,8 +101,7 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
                 "Only sequences of MeasurementValues can be passed with the op argument."
             )
 
-        mv = MeasurementValue._combine_values(op)  # pylint: disable=protected-access
-        return ProbabilityMP(obs=mv)
+        return ProbabilityMP(obs=op)
 
     if isinstance(op, qml.Hamiltonian):
         raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
