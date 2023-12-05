@@ -139,7 +139,7 @@ def cwire_connections(layers):
         for op in layer:
             if isinstance(op, Conditional):
                 for m in op.meas_val.measurements:
-                    bit_map[m] = None
+                    bit_map[m] = None  # place holder till next pass
 
     connected_layers = [[] for _ in bit_map]
     connected_wires = [[] for _ in bit_map]
