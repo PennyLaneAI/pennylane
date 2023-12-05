@@ -22,7 +22,6 @@ from pennylane.operation import (
     StatePrepBase,
     Operation,
 )
-from pennylane.wires import Wires
 
 qudit_dim = 3  # specifies qudit dimension
 
