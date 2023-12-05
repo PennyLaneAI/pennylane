@@ -890,14 +890,19 @@ class MPLDrawer:
             )
 
     def _y(self, wire):
+        """Convert a wire number to a y coordinate. Wire numbers greater than the number of
+        quantum wires are treated as classical wires."""
         if wire < self.n_wires:
             return wire
         return self.n_wires + self._cwire_scaling * (wire - self.n_wires) - 0.4
 
-    def classical_wire(self, layers, wires, joins=tuple()) -> None:
+    def classical_wire(self, layers, wires) -> None:
         """Draw a horizontal classical control wire.
 
         Args:
+            layers: a list of x coordinates for the classical wire
+            wires: a list of y coordinates for the classical wire. Wire numbers
+                greater than the number of quantum wires will be scaled as classical wires.
 
         """
         s0 = path_effects.Stroke(
@@ -912,15 +917,20 @@ class MPLDrawer:
         line = plt.Line2D(layers, [self._y(w) for w in wires], path_effects=[s0, s1], zorder=1)
         self.ax.add_line(line)
 
-        joins_layer = max(layers)
-        self.ax.scatter(
-            [joins_layer] * len(joins),
-            [self._y(j) for j in joins],
-            color=plt.rcParams["lines.color"],
-            s=(5 * plt.rcParams["lines.linewidth"]) ** 2,
-            linewidth=0,
-            marker="s",
+    def join(self, layer, wire, erase_right=False):
+        """Erase the horizontal edges of an intersection between classical wires. By default, erases
+        only the left edge.
+
+        """
+        xs = (layer - 0.2, layer + 0.2) if erase_right else (layer - 0.2, layer)
+        line = plt.Line2D(
+            xs,
+            (self._y(wire), self._y(wire)),
+            zorder=2,
+            color=plt.rcParams["figure.facecolor"],
+            linewidth=3 * plt.rcParams["lines.linewidth"],
         )
+        self.ax.add_line(line)
 
     def cond(self, layer, measured_layer, wires, wires_target, options=None):
         """Add classical communication double-lines for conditional operations

@@ -27,7 +27,7 @@ from pennylane import ops
 from pennylane.measurements import MidMeasureMP
 from .mpldrawer import MPLDrawer
 from .drawable_layers import drawable_layers
-from .utils import convert_wire_order, unwrap_controls, find_mid_measure_cond_connections
+from .utils import convert_wire_order, unwrap_controls, cwire_connections
 from .style import _set_style
 
 has_mpl = True
@@ -153,12 +153,6 @@ def _(op: MidMeasureMP, drawer, layer, config):
             text_options={"zorder": 5},
         )
 
-    if op in config.bit_map:
-        c_wire = config.bit_map[op]
-        layers = [layer, layer, config.terminal_layers[c_wire]]
-        wires = [op.wires[0], c_wire + drawer.n_wires, c_wire + drawer.n_wires]
-        drawer.classical_wire(layers, wires)
-
 
 @_add_operation_to_drawer.register
 def _(op: qml.ops.op_math.Conditional, drawer, layer, config) -> None:
@@ -169,9 +163,10 @@ def _(op: qml.ops.op_math.Conditional, drawer, layer, config) -> None:
         box_options={"zorder": 4},
         text_options={"zorder": 5},
     )
-    joins = tuple((config.bit_map[m] + drawer.n_wires) for m in op.meas_val.measurements)
-    c_wire = max(joins)
-    drawer.classical_wire([layer, layer], [min(op.wires), c_wire], joins=joins)
+    sorted_bits = sorted([config.bit_map[m] for m in op.meas_val.measurements])
+    for b in sorted_bits[:-1]:
+        erase_right = layer < config.terminal_layers[b]
+        drawer.join(layer, b + drawer.n_wires, erase_right=erase_right)
 
 
 def _get_measured_wires(measurements, wires) -> set:
@@ -184,6 +179,16 @@ def _get_measured_wires(measurements, wires) -> set:
         for wire in m.wires:
             measured_wires.add(wire)
     return measured_wires
+
+
+def _add_classical_wires(drawer, layers, wires):
+    for cwire, (cwire_layers, layer_wires) in enumerate(zip(layers, wires), start=drawer.n_wires):
+        xs, ys = [], []
+        for l, w in zip(cwire_layers, layer_wires):
+            xs.extend([l, l, l])
+            ys.extend([cwire, w, cwire])
+
+        drawer.classical_wire(xs, ys)
 
 
 def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwargs):
@@ -205,7 +210,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
     n_layers = len(layers)
     n_wires = len(wire_map)
 
-    bit_map, _, terminal_layers = find_mid_measure_cond_connections(tape.operations, layers)
+    bit_map, cwire_layers, cwire_wires = cwire_connections(layers)
 
     drawer = MPLDrawer(
         n_layers=n_layers, n_wires=n_wires, c_wires=len(bit_map), wire_options=wire_options
@@ -215,7 +220,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
         decimals=decimals,
         active_wire_notches=active_wire_notches,
         bit_map=bit_map,
-        terminal_layers=terminal_layers,
+        terminal_layers=[cl[-1] for cl in cwire_layers],
     )
 
     if n_wires == 0:
@@ -225,6 +230,8 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
         drawer.fontsize = fontsize
 
     drawer.label(list(wire_map), text_options=label_options)
+
+    _add_classical_wires(drawer, cwire_layers, cwire_wires)
 
     for layer, layer_ops in enumerate(layers):
         for op in layer_ops:
