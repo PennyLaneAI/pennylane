@@ -13,10 +13,10 @@
 # limitations under the License.
 """Shot adaptive optimizer"""
 # pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-branches
+import numpy as np
 from scipy.stats import multinomial
 
 import pennylane as qml
-from pennylane import numpy as np
 
 from .gradient_descent import GradientDescentOptimizer
 

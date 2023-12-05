@@ -386,7 +386,7 @@ def mitigate_with_zne(
     .. code-block:: python3
 
         from functools import partial
-        from pennylane import numpy as np
+        import numpy as np
         from pennylane import qnode
 
         from pennylane.transforms import fold_global, poly_extrapolate

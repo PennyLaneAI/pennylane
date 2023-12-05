@@ -104,7 +104,7 @@ class UCCSD(Operation):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane import numpy as np
+            import numpy as np
 
             # Define the molecule
             symbols  = ['H', 'H', 'H']

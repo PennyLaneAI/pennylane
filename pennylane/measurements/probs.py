@@ -16,8 +16,8 @@ This module contains the qml.probs measurement.
 """
 from typing import Sequence, Tuple
 
+import numpy as np
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.wires import Wires
 
 from .measurements import Probability, SampleMeasurement, StateMeasurement

@@ -18,8 +18,8 @@ from typing import Sequence, Callable
 from itertools import chain
 from functools import partial
 
+import numpy as np
 import pennylane as qml
-from pennylane import numpy as np
 
 # pylint: disable=too-many-statements,unused-argument
 from pennylane.transforms.metric_tensor import _contract_metric_tensor_with_cjac
