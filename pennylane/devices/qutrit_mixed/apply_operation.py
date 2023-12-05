@@ -6,12 +6,15 @@ from string import ascii_letters as alphabet
 from pennylane import numpy as np
 from pennylane.operation import Channel
 
-qutrit_diagonal_in_z_basis = qml.Attribute(["TClock", "TRZ"])
 alphabet_array = np.array(list(alphabet))
+qutrit_diagonal_in_z_basis = qml.Attribute(["TClock", "TRZ"])
+
+EINSUM_OP_WIRECOUNT_PERF_THRESHOLD = 3
+EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD = 13
 
 qudit_dim = 3  # specifies qudit dimension
 
-def apply_channel_einsum(op: qml.operation.Operator, state, is_state_batched: bool = False):
+def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: bool = False):
     r"""Apply a quantum channel specified by a list of Kraus operators to subsystems of the
     quantum state. For a unitary gate, there is a single Kraus operator.
 
@@ -42,7 +45,7 @@ def apply_channel_einsum(op: qml.operation.Operator, state, is_state_batched: bo
     state_indices = alphabet[:rho_dim]
 
     # row indices of the quantum state affected by this operation
-    row_wires_list = wires.tolist()
+    row_wires_list = op.wires.tolist()
     row_indices = "".join(alphabet_array[row_wires_list].tolist())
 
     # column indices are shifted by the number of wires
@@ -72,7 +75,7 @@ def apply_channel_einsum(op: qml.operation.Operator, state, is_state_batched: bo
     return math.einsum(einsum_indices, kraus, state, kraus_dagger)
 
 
-def apply_channel_tensordot(op: qml.operation.Operator, state, is_state_batched: bool = False):
+def apply_operation_tensordot(op: qml.operation.Operator, state, is_state_batched: bool = False):
     r"""Apply a quantum channel specified by a list of Kraus operators to subsystems of the
     quantum state. For a unitary gate, there is a single Kraus operator.
 
@@ -186,46 +189,33 @@ def apply_operation(
     return _apply_operation_default(op, state, is_state_batched, debugger)
 
 
-def _apply_operation_default(operation, state, is_state_batched, debugger):
-    """Applies operations to the internal device state.
-
-    Args:
-        operation (.Operation): operation to apply on the device
-
-    Returns:
-        ndarray: output state
+def _apply_operation_default(op, state, is_state_batched, debugger):
+    """The default behaviour of apply_operation, accessed through the standard dispatch
+    of apply_operation, as well as conditionally in other dispatches.
     """
-    wires = operation.wires
-    matrices = _get_kraus(operation)
-
-    if operation in qutrit_diagonal_in_z_basis:
-        return _apply_diagonal_unitary(matrices, wires, state, is_state_batched)
-    else:
-        num_op_wires = len(wires)
-        interface = math.get_interface(state, *matrices)
-        # Use tensordot for Autograd and Numpy if there are more than 2 wires
-        # Use tensordot in any case for more than 7 wires, as einsum does not support this case
-
-        if (num_op_wires > 2 and interface in {"autograd", "numpy"}) or num_op_wires > 7:
-            return apply_channel_tensordot(matrices, wires, state, is_state_batched)
-        else:
-            return apply_channel_einsum(matrices, wires, state, is_state_batched)
+    if op in qutrit_diagonal_in_z_basis:
+        return _apply_diagonal_unitary(op, state, is_state_batched)
+    if (
+        len(op.wires) < EINSUM_OP_WIRECOUNT_PERF_THRESHOLD
+        and math.ndim(state) < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD
+    ) or (op.batch_size and is_state_batched):
+        return apply_operation_einsum(op, state, is_state_batched=is_state_batched)
+    return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
 
-# pylint: disable=arguments-differ
-
-
-def _apply_diagonal_unitary(eigvals, wires, state, is_state_batched):
+def _apply_diagonal_unitary(op: qml.operation.Operator, state, is_state_batched):
     r"""Apply a diagonal unitary gate specified by a list of eigenvalues. This method uses
     the fact that the unitary is diagonal for a more efficient implementation.
 
     Args:
-        eigvals (array): eigenvalues (phases) of the diagonal unitary
-        wires (Wires): target wires
+        op (Operator): The operation to apply to ``state``
+        state (TensorLike): The starting state.
+        is_state_batched (bool): Boolean representing whether the state is batched or not
 
     Returns:
         ndarray: output state
     """
+
     num_wires = (qml.math.shape(state) - is_state_batched)/2
 
     eigvals = math.stack(eigvals)
@@ -237,10 +227,10 @@ def _apply_diagonal_unitary(eigvals, wires, state, is_state_batched):
     state_indices = alphabet[: 2 * num_wires]
 
     # row indices of the quantum state affected by this operation
-    row_indices = "".join(alphabet_array[wires].tolist())
+    row_indices = "".join(alphabet_array[op.wires].tolist())
 
     # column indices are shifted by the number of wires
-    col_wires_list = [w + num_wires for w in wires]
+    col_wires_list = [w + num_wires for w in op.wires]
     col_indices = "".join(alphabet_array[col_wires_list].tolist())
 
     einsum_indices = f"{row_indices},{state_indices},{col_indices}->{state_indices}"
