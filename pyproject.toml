@@ -150,3 +150,5 @@ optional = true
 
 [tool.poetry.group.data.dependencies]
 h5py = "*"
+aiohttp = "*"
+fsspec = "*"
