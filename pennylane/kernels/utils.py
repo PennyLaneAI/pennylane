@@ -14,7 +14,8 @@
 """
 This file contains functionalities that simplify working with kernels.
 """
-from pennylane import numpy as np
+from itertools import product
+import pennylane as qml
 
 
 def square_kernel_matrix(X, kernel, assume_normalized_kernel=False):
@@ -56,18 +57,32 @@ def square_kernel_matrix(X, kernel, assume_normalized_kernel=False):
             [0.96864001, 0.99727485, 1.        , 0.96605621],
             [0.90932897, 0.95685561, 0.96605621, 1.        ]], requires_grad=True)
     """
-    N = len(X)
-    matrix = [0] * N**2
+    N = qml.math.shape(X)[0]
+    if assume_normalized_kernel and N == 1:
+        return qml.math.eye(1, like=qml.math.get_interface(X))
 
+    matrix = [None] * N**2
+
+    # Compute all off-diagonal kernel values, using symmetry of the kernel matrix
     for i in range(N):
-        for j in range(i, N):
-            if assume_normalized_kernel and i == j:
-                matrix[N * i + j] = 1.0
-            else:
-                matrix[N * i + j] = kernel(X[i], X[j])
-                matrix[N * j + i] = matrix[N * i + j]
+        for j in range(i + 1, N):
+            matrix[N * i + j] = (kernel_value := kernel(X[i], X[j]))
+            matrix[N * j + i] = kernel_value
 
-    return np.array(matrix).reshape((N, N))
+    if assume_normalized_kernel:
+        # Create a one-like entry that has the same interface and batching as the kernel output
+        # As we excluded the case N=1 together with assume_normalized_kernel above, matrix[1] exists
+        one = qml.math.ones_like(matrix[1])
+        for i in range(N):
+            matrix[N * i + i] = one
+    else:
+        # Fill the diagonal by computing the corresponding kernel values
+        for i in range(N):
+            matrix[N * i + i] = kernel(X[i], X[i])
+
+    shape = (N, N) if qml.math.ndim(matrix[0]) == 0 else (N, N, qml.math.size(matrix[0]))
+
+    return qml.math.moveaxis(qml.math.reshape(qml.math.stack(matrix), shape), -1, 0)
 
 
 def kernel_matrix(X1, X2, kernel):
@@ -79,7 +94,7 @@ def kernel_matrix(X1, X2, kernel):
         kernel ((datapoint, datapoint) -> float): Kernel function that maps datapoints to kernel value.
 
     Returns:
-        array[float]: The square matrix of kernel values.
+        array[float]: The matrix of kernel values.
 
     **Example:**
 
@@ -111,12 +126,12 @@ def kernel_matrix(X1, X2, kernel):
     As we can see, for :math:`n` and :math:`m` datapoints in the first and second
     dataset respectively, the output matrix has the shape :math:`n\times m`.
     """
-    N = len(X1)
-    M = len(X2)
+    N = qml.math.shape(X1)[0]
+    M = qml.math.shape(X2)[0]
 
-    matrix = [0] * N * M
-    for i in range(N):
-        for j in range(M):
-            matrix[M * i + j] = kernel(X1[i], X2[j])
+    matrix = qml.math.stack([kernel(x, y) for x, y in product(X1, X2)])
 
-    return np.array(matrix).reshape((N, M))
+    if qml.math.ndim(matrix[0]) == 0:
+        return qml.math.reshape(matrix, (N, M))
+
+    return qml.math.moveaxis(qml.math.reshape(matrix, (N, M, qml.math.size(matrix[0]))), -1, 0)

@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as qnp
-from pennylane import QuantumFunctionError, math
+from pennylane import math
 from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
 from pennylane.ops.op_math import Prod, Sum
 from pennylane.wires import Wires
@@ -85,7 +85,7 @@ def _get_pw(w, pauli_op):
 
 
 # pylint: disable=unused-argument
-def sum_using_dunder_method(*summands, do_queue=False, id=None):
+def sum_using_dunder_method(*summands, id=None):
     """Helper function which computes the sum of all the summands to invoke the
     __add__ dunder method."""
     return sum(summands)
@@ -118,7 +118,7 @@ class TestInitialization:
     @pytest.mark.parametrize("id", ("foo", "bar"))
     def test_init_sum_op(self, id, sum_method):
         """Test the initialization of a Sum operator."""
-        sum_op = sum_method(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"), do_queue=True, id=id)
+        sum_op = sum_method(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"), id=id)
 
         assert sum_op.wires == Wires((0, "a"))
         assert sum_op.num_wires == 2
@@ -126,8 +126,8 @@ class TestInitialization:
         if sum_method.__name__ == sum.__name__:
             assert sum_op.id == id
 
-        assert sum_op.data == [[], [0.23]]
-        assert sum_op.parameters == [[], [0.23]]
+        assert sum_op.data == (0.23,)
+        assert sum_op.parameters == [0.23]
         assert sum_op.num_params == 1
 
     @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, qml.sum])
@@ -142,8 +142,8 @@ class TestInitialization:
         assert sum_op.name == "Sum"
         assert sum_op.id is None
 
-        assert sum_op.data == [[[], [0.23]], [9.87]]
-        assert sum_op.parameters == [[[], [0.23]], [9.87]]
+        assert sum_op.data == (0.23, 9.87)
+        assert sum_op.parameters == [0.23, 9.87]
         assert sum_op.num_params == 2
 
     @pytest.mark.parametrize("ops_lst", ops)
@@ -321,7 +321,7 @@ class TestMatrix:
         wires = [0, 1]
         sum_op = Sum(
             qml.Hermitian(qnp.array([[0.0, 1.0], [1.0, 0.0]]), wires=0),
-            qml.Projector(basis_state=qnp.array([0, 1]), wires=wires),
+            qml.Projector(state=qnp.array([0, 1]), wires=wires),
         )
         mat = sum_op.matrix()
 
@@ -473,6 +473,15 @@ class TestMatrix:
 
 class TestProperties:
     """Test class properties."""
+
+    def test_hash(self):
+        """Test the hash property is independent of order."""
+        op1 = Sum(qml.PauliX("a"), qml.PauliY("b"))
+        op2 = Sum(qml.PauliY("b"), qml.PauliX("a"))
+        assert op1.hash == op2.hash
+
+        op3 = Sum(qml.PauliX("a"), qml.PauliY("b"), qml.PauliZ(-1))
+        assert op3.hash != op1.hash
 
     @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, qml.sum])
     @pytest.mark.parametrize("ops_lst", ops)
@@ -727,12 +736,67 @@ class TestSimplify:
         assert simplified_op.data == final_op.data
         assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
 
+    @pytest.mark.jax
+    def test_simplify_pauli_rep_jax(self):
+        """Test that simplifying operators with a valid pauli representation works with jax interface."""
+        import jax.numpy as jnp
+
+        c1, c2, c3 = jnp.array(1.23), jnp.array(-1.23), jnp.array(0.5)
+
+        op = qml.sum(
+            qml.s_prod(c1, qml.PauliX(0)),
+            qml.s_prod(c2, qml.PauliX(0)),
+            qml.s_prod(c3, qml.PauliZ(1)),
+        )
+        result = qml.s_prod(c3, qml.PauliZ(1))
+        simplified_op = op.simplify()
+
+        assert qml.equal(simplified_op, result)
+
+    @pytest.mark.tf
+    def test_simplify_pauli_rep_tf(self):
+        """Test that simplifying operators with a valid pauli representation works with tf interface."""
+        import tensorflow as tf
+
+        c1, c2, c3 = tf.Variable(1.23), tf.Variable(-1.23), tf.Variable(0.5)
+
+        op = qml.sum(
+            qml.s_prod(c1, qml.PauliX(0)),
+            qml.s_prod(c2, qml.PauliX(0)),
+            qml.s_prod(c3, qml.PauliZ(1)),
+        )
+        result = qml.s_prod(c3, qml.PauliZ(1))
+        simplified_op = op.simplify()
+
+        assert isinstance(simplified_op, type(result))
+        assert result.wires.toset() == simplified_op.wires.toset()
+        assert result.arithmetic_depth == simplified_op.arithmetic_depth
+        assert qnp.isclose(result.data[0], simplified_op.data[0])
+        assert result.data[1:] == simplified_op.data[1:]
+
+    @pytest.mark.torch
+    def test_simplify_pauli_rep_torch(self):
+        """Test that simplifying operators with a valid pauli representation works with torch interface."""
+        import torch
+
+        c1, c2, c3 = torch.tensor(1.23), torch.tensor(-1.23), torch.tensor(0.5)
+
+        op = qml.sum(
+            qml.s_prod(c1, qml.PauliX(0)),
+            qml.s_prod(c2, qml.PauliX(0)),
+            qml.s_prod(c3, qml.PauliZ(1)),
+        )
+        result = qml.s_prod(c3, qml.PauliZ(1))
+        simplified_op = op.simplify()
+
+        assert qml.equal(simplified_op, result)
+
 
 class TestSortWires:
     """Tests for the wire sorting algorithm."""
 
     def test_sorting_operators_with_one_wire(self):
-        """Test that the sorting alforithm works for operators that act on one wire."""
+        """Test that the sorting algorithm works for operators that act on one wire."""
         op_list = [
             qml.PauliX(3),
             qml.PauliZ(2),
@@ -749,15 +813,15 @@ class TestSortWires:
             qml.PauliZ(2),
             qml.PauliX(3),
             qml.PauliZ(3),
-            qml.RX(1, 5),
             qml.PauliX(5),
+            qml.RX(1, 5),
         ]
 
         for op1, op2 in zip(final_list, sorted_list):
             assert qml.equal(op1, op2)
 
     def test_sorting_operators_with_multiple_wires(self):
-        """Test that the sorting alforithm works for operators that act on multiple wires."""
+        """Test that the sorting algorithm works for operators that act on multiple wires."""
         op_tuple = (
             qml.PauliX(3),
             qml.PauliX(5),
@@ -786,7 +850,7 @@ class TestSortWires:
             assert qml.equal(op1, op2)
 
     def test_sorting_operators_with_wire_map(self):
-        """Test that the sorting alforithm works using a wire map."""
+        """Test that the sorting algorithm works using a wire map."""
         op_list = [
             qml.PauliX("three"),
             qml.PauliX(5),
@@ -818,6 +882,28 @@ class TestSortWires:
             assert op1.wires == op2.wires
             assert op1.data == op2.data
 
+    def test_sort_wires_alphabetically(self):
+        """Test that the summands are sorted alphabetically."""
+        mixed_list = [
+            qml.PauliY(1),
+            qml.PauliZ(0),
+            qml.PauliX(1),
+            qml.PauliY(0),
+            qml.PauliX(0),
+            qml.PauliZ(1),
+        ]
+        final_list = [
+            qml.PauliX(0),
+            qml.PauliY(0),
+            qml.PauliZ(0),
+            qml.PauliX(1),
+            qml.PauliY(1),
+            qml.PauliZ(1),
+        ]
+        sorted_list = Sum._sort(mixed_list)  # pylint: disable=protected-access
+        for op1, op2 in zip(final_list, sorted_list):
+            assert qml.equal(op1, op2)
+
 
 class TestWrapperFunc:
     """Test wrapper function."""
@@ -828,10 +914,9 @@ class TestWrapperFunc:
 
         summands = (qml.PauliX(wires=1), qml.RX(1.23, wires=0), qml.CNOT(wires=[0, 1]))
         op_id = "sum_op"
-        do_queue = False
 
-        sum_func_op = qml.sum(*summands, id=op_id, do_queue=do_queue)
-        sum_class_op = Sum(*summands, id=op_id, do_queue=do_queue)
+        sum_func_op = qml.sum(*summands, id=op_id)
+        sum_class_op = Sum(*summands, id=op_id)
 
         assert sum_class_op.operands == sum_func_op.operands
         assert np.allclose(sum_class_op.matrix(), sum_func_op.matrix())
@@ -920,8 +1005,8 @@ class TestIntegration:
             return qml.probs(op=sum_op)
 
         with pytest.raises(
-            QuantumFunctionError,
-            match="Symbolic Operations are not supported for " "rotating probabilities yet.",
+            qml.QuantumFunctionError,
+            match="Symbolic Operations are not supported for rotating probabilities yet.",
         ):
             my_circ()
 
@@ -982,13 +1067,26 @@ class TestIntegration:
         dev = qml.device("default.qubit", wires=wires)
         sum_op = Sum(Prod(qml.RX(1.23, wires=0), qml.Identity(wires=1)), qml.Identity(wires=1))
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface=None)
         def my_circ():
             qml.PauliX(0)
             return qml.expval(sum_op)
 
         with pytest.warns(UserWarning, match="Sum might not be hermitian."):
             my_circ()
+
+    def test_params_can_be_considered_trainable(self):
+        """Tests that the parameters of a Sum are considered trainable."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface=None)
+        def circuit():
+            return qml.expval(
+                Sum(qml.s_prod(1.1, qml.PauliX(0)), qml.s_prod(qnp.array(2.2), qml.PauliY(1)))
+            )
+
+        circuit()
+        assert circuit.tape.trainable_params == [1]
 
 
 # pylint: disable=too-few-public-methods

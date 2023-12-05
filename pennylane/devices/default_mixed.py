@@ -21,6 +21,7 @@ qubit-based quantum circuits.
 
 import functools
 import itertools
+from collections import defaultdict
 from string import ascii_letters as ABC
 
 import pennylane as qml
@@ -30,11 +31,11 @@ from pennylane import (
     DeviceError,
     QubitDensityMatrix,
     QubitDevice,
-    QubitStateVector,
+    StatePrep,
     Snapshot,
 )
 from pennylane import numpy as np
-from pennylane.measurements import CountsMP, MutualInfoMP, SampleMP, StateMP, VnEntropyMP
+from pennylane.measurements import CountsMP, MutualInfoMP, SampleMP, StateMP, VnEntropyMP, PurityMP
 from pennylane.operation import Channel
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import Wires
@@ -47,6 +48,20 @@ tolerance = 1e-10
 
 class DefaultMixed(QubitDevice):
     """Default qubit device for performing mixed-state computations in PennyLane.
+
+    .. warning::
+
+        The API of ``DefaultMixed`` will be updated soon to follow a new device interface described
+        in :class:`pennylane.devices.Device`.
+
+        This change will not alter device behaviour for most workflows, but may have implications for
+        plugin developers and users who directly interact with device methods. Please consult
+        :class:`pennylane.devices.Device` and the implementation in
+        :class:`pennylane.devices.DefaultQubit` for more information on what the new
+        interface will look like and be prepared to make updates in a coming release. If you have any
+        feedback on these changes, please create an
+        `issue <https://github.com/PennyLaneAI/pennylane/issues>`_ or post in our
+        `discussion forum <https://discuss.pennylane.ai/>`_.
 
     Args:
         wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
@@ -71,11 +86,14 @@ class DefaultMixed(QubitDevice):
         "Snapshot",
         "BasisState",
         "QubitStateVector",
+        "StatePrep",
         "QubitDensityMatrix",
         "QubitUnitary",
         "ControlledQubitUnitary",
+        "BlockEncode",
         "MultiControlledX",
         "DiagonalQubitUnitary",
+        "SpecialUnitary",
         "PauliX",
         "PauliY",
         "PauliZ",
@@ -94,6 +112,7 @@ class DefaultMixed(QubitDevice):
         "CZ",
         "CH",
         "PhaseShift",
+        "PCPhase",
         "ControlledPhaseShift",
         "CPhaseShift00",
         "CPhaseShift01",
@@ -128,15 +147,21 @@ class DefaultMixed(QubitDevice):
         "QFT",
         "ThermalRelaxationError",
         "ECR",
+        "ParametrizedEvolution",
+        "GlobalPhase",
     }
 
     _reshape = staticmethod(qnp.reshape)
     _flatten = staticmethod(qnp.flatten)
+    _transpose = staticmethod(qnp.transpose)
     # Allow for the `axis` keyword argument for integration with broadcasting-enabling
     # code in QubitDevice. However, it is not used as DefaultMixed does not support broadcasting
     # pylint: disable=unnecessary-lambda
     _gather = staticmethod(lambda *args, axis=0, **kwargs: qnp.gather(*args, **kwargs))
     _dot = staticmethod(qnp.dot)
+
+    measurement_map = defaultdict(lambda: "")
+    measurement_map[PurityMP] = "purity"
 
     @staticmethod
     def _reduce_sum(array, axes):
@@ -148,22 +173,7 @@ class DefaultMixed(QubitDevice):
         if not hasattr(array, "__len__"):
             return np.asarray(array, dtype=dtype)
 
-        if not isinstance(array, (list, tuple)):
-            if qnp.shape(array) == ():
-                return array
-
-        # check if the array is ragged
-        first_shape = qnp.shape(array[0])
-        is_ragged = any(qnp.shape(array[i]) != first_shape for i in range(len(array)))
-
-        if not is_ragged:
-            res = qnp.stack(array)
-            if dtype is not None:
-                res = qnp.cast(res, dtype=dtype)
-
-        if is_ragged or res.dtype is np.dtype("O"):
-            return qnp.cast(qnp.flatten(qnp.hstack(array)), dtype=dtype)
-
+        res = qnp.cast(array, dtype=dtype)
         return res
 
     def __init__(
@@ -236,6 +246,26 @@ class DefaultMixed(QubitDevice):
         dim = 2**self.num_wires
         # User obtains state as a matrix
         return qnp.reshape(self._pre_rotated_state, (dim, dim))
+
+    def density_matrix(self, wires):
+        """Returns the reduced density matrix over the given wires.
+
+        Args:
+            wires (Wires): wires of the reduced system
+
+        Returns:
+            array[complex]: complex array of shape ``(2 ** len(wires), 2 ** len(wires))``
+            representing the reduced density matrix of the state prior to measurement.
+        """
+        state = getattr(self, "state", None)
+        wires = self.map_wires(wires)
+        return qml.math.reduce_dm(state, indices=wires, c_dtype=self.C_DTYPE)
+
+    def purity(self, mp, **kwargs):  # pylint: disable=unused-argument
+        """Returns the purity of the final state"""
+        state = getattr(self, "state", None)
+        wires = self.map_wires(mp.wires)
+        return qml.math.purity(state, indices=wires, c_dtype=self.C_DTYPE)
 
     def reset(self):
         """Resets the device"""
@@ -333,6 +363,53 @@ class DefaultMixed(QubitDevice):
 
         self._state = qnp.einsum(einsum_indices, kraus, self._state, kraus_dagger)
 
+    def _apply_channel_tensordot(self, kraus, wires):
+        r"""Apply a quantum channel specified by a list of Kraus operators to subsystems of the
+        quantum state. For a unitary gate, there is a single Kraus operator.
+
+        Args:
+            kraus (list[array]): Kraus operators
+            wires (Wires): target wires
+        """
+        channel_wires = self.map_wires(wires)
+        num_ch_wires = len(channel_wires)
+
+        # Shape kraus operators and cast them to complex data type
+        kraus_shape = [2] * (num_ch_wires * 2)
+        kraus = [qnp.cast(qnp.reshape(k, kraus_shape), dtype=self.C_DTYPE) for k in kraus]
+
+        # row indices of the quantum state affected by this operation
+        row_wires_list = channel_wires.tolist()
+        # column indices are shifted by the number of wires
+        col_wires_list = [w + self.num_wires for w in row_wires_list]
+
+        channel_col_ids = list(range(num_ch_wires, 2 * num_ch_wires))
+        axes_left = [channel_col_ids, row_wires_list]
+        # Use column indices instead or rows to incorporate transposition of K^\dagger
+        axes_right = [col_wires_list, channel_col_ids]
+
+        # Apply the Kraus operators, and sum over all Kraus operators afterwards
+        def _conjugate_state_with(k):
+            """Perform the double tensor product k @ self._state @ k.conj().
+            The `axes_left` and `axes_right` arguments are taken from the ambient variable space
+            and `axes_right` is assumed to incorporate the tensor product and the transposition
+            of k.conj() simultaneously."""
+            return qnp.tensordot(qnp.tensordot(k, self._state, axes_left), qnp.conj(k), axes_right)
+
+        if len(kraus) == 1:
+            _state = _conjugate_state_with(kraus[0])
+        else:
+            _state = qnp.sum(qnp.stack([_conjugate_state_with(k) for k in kraus]), axis=0)
+
+        # Permute the affected axes to their destination places.
+        # The row indices of the kraus operators are moved from the beginning to the original
+        # target row locations, the column indices from the end to the target column locations
+        source_left = list(range(num_ch_wires))
+        dest_left = row_wires_list
+        source_right = list(range(-num_ch_wires, 0))
+        dest_right = col_wires_list
+        self._state = qnp.moveaxis(_state, source_left + source_right, dest_left + dest_right)
+
     def _apply_diagonal_unitary(self, eigvals, wires):
         r"""Apply a diagonal unitary gate specified by a list of eigenvalues. This method uses
         the fact that the unitary is diagonal for a more efficient implementation.
@@ -421,7 +498,7 @@ class DefaultMixed(QubitDevice):
         else:
             # generate basis states on subset of qubits via the cartesian product
             basis_states = qnp.asarray(
-                list(itertools.product([0, 1], repeat=len(device_wires))), dtype=self.C_DTYPE
+                list(itertools.product([0, 1], repeat=len(device_wires))), dtype=int
             )
 
             # get basis states to alter on full set of qubits
@@ -512,10 +589,10 @@ class DefaultMixed(QubitDevice):
             operation (.Operation): operation to apply on the device
         """
         wires = operation.wires
-        if operation.base_name == "Identity":
+        if operation.name == "Identity":
             return
 
-        if isinstance(operation, QubitStateVector):
+        if isinstance(operation, StatePrep):
             self._apply_state_vector(operation.parameters[0], wires)
             return
 
@@ -542,7 +619,14 @@ class DefaultMixed(QubitDevice):
         if operation in diagonal_in_z_basis:
             self._apply_diagonal_unitary(matrices, wires)
         else:
-            self._apply_channel(matrices, wires)
+            num_op_wires = len(wires)
+            interface = qml.math.get_interface(self._state, *matrices)
+            # Use tensordot for Autograd and Numpy if there are more than 2 wires
+            # Use tensordot in any case for more than 7 wires, as einsum does not support this case
+            if (num_op_wires > 2 and interface in {"autograd", "numpy"}) or num_op_wires > 7:
+                self._apply_channel_tensordot(matrices, wires)
+            else:
+                self._apply_channel(matrices, wires)
 
     # pylint: disable=arguments-differ
 
@@ -568,7 +652,7 @@ class DefaultMixed(QubitDevice):
         the ``QNode`` hash that can be used later for parametric compilation.
 
         Args:
-            circuit (~.CircuitGraph): circuit to execute on the device
+            circuit (QuantumTape): circuit to execute on the device
 
         Raises:
             QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
@@ -576,7 +660,6 @@ class DefaultMixed(QubitDevice):
         Returns:
             array[float]: measured value(s)
         """
-
         if self.readout_err:
             wires_list = []
             for m in circuit.measurements:
@@ -606,7 +689,7 @@ class DefaultMixed(QubitDevice):
 
         # apply the circuit operations
         for i, operation in enumerate(operations):
-            if i > 0 and isinstance(operation, (QubitStateVector, BasisState)):
+            if i > 0 and isinstance(operation, (StatePrep, BasisState)):
                 raise DeviceError(
                     f"Operation {operation.name} cannot be used after other Operations have already been applied "
                     f"on a {self.short_name} device."

@@ -14,18 +14,20 @@
 """
 Tests for the pennylane.qnn.cost module.
 """
+import pytest
 import numpy as np
 import pennylane as qml
-import pytest
 
 from pennylane.qnn.cost import SquaredErrorLoss
 
 
+# pylint: disable=unused-argument
 def rx_ansatz(phis, **kwargs):
     for w, phi in enumerate(phis):
         qml.RX(phi, wires=w)
 
 
+# pylint: disable=unused-argument
 def layer_ansatz(weights, x=None, **kwargs):
     qml.templates.AngleEmbedding(x, wires=[0, 1, 2])
     qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
@@ -39,7 +41,7 @@ class TestSquaredErrorLossAutograd:
 
             dev = qml.device("default.qubit", wires=num_qubits)
             observables = [qml.PauliZ(0)]
-            loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface="autograd")
+            loss = SquaredErrorLoss(rx_ansatz, observables, dev)
 
             phis = np.ones(num_qubits)
             loss(phis)
@@ -50,7 +52,7 @@ class TestSquaredErrorLossAutograd:
 
             dev = qml.device("default.qubit", wires=num_qubits)
             observables = [qml.PauliZ(0)]
-            loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface="autograd")
+            loss = SquaredErrorLoss(rx_ansatz, observables, dev)
 
             phis = np.ones(num_qubits)
             loss(phis, target=np.array([1.0, 2.0]))
@@ -60,7 +62,7 @@ class TestSquaredErrorLossAutograd:
 
         dev = qml.device("default.qubit", wires=num_qubits)
         observables = [qml.PauliZ(0), qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]
-        loss = SquaredErrorLoss(layer_ansatz, observables, dev, interface="autograd")
+        loss = SquaredErrorLoss(layer_ansatz, observables, dev)
 
         weights = np.ones((num_qubits, 3, 3))
         res = loss(weights, x=np.array([1.0, 2.0, 1.0]), target=np.array([1.0, 0.5, 0.1]))
@@ -72,7 +74,7 @@ class TestSquaredErrorLossAutograd:
 
         dev = qml.device("default.qubit", wires=num_qubits)
         observables = [qml.PauliZ(0), qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]
-        loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface="autograd")
+        loss = SquaredErrorLoss(rx_ansatz, observables, dev)
 
         phis = np.ones(num_qubits)
         res = loss(phis, target=np.array([1.0, 0.5, 0.1]))
@@ -88,7 +90,7 @@ class TestSquaredErrorLossTorch:
 
             dev = qml.device("default.qubit", wires=num_qubits)
             observables = [qml.PauliZ(0)]
-            loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface="torch")
+            loss = SquaredErrorLoss(rx_ansatz, observables, dev)
 
             phis = np.ones(num_qubits)
             loss(phis)
@@ -99,7 +101,7 @@ class TestSquaredErrorLossTorch:
 
             dev = qml.device("default.qubit", wires=num_qubits)
             observables = [qml.PauliZ(0)]
-            loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface="torch")
+            loss = SquaredErrorLoss(rx_ansatz, observables, dev)
 
             phis = np.ones(num_qubits)
             loss(phis, target=np.array([1.0, 2.0]))
@@ -109,7 +111,7 @@ class TestSquaredErrorLossTorch:
 
         dev = qml.device("default.qubit", wires=num_qubits)
         observables = [qml.PauliZ(0), qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]
-        loss = SquaredErrorLoss(layer_ansatz, observables, dev, interface="torch")
+        loss = SquaredErrorLoss(layer_ansatz, observables, dev)
 
         weights = np.ones((num_qubits, 3, 3))
         res = loss(weights, x=np.array([1.0, 2.0, 1.0]), target=np.array([1.0, 0.5, 0.1]))
@@ -121,7 +123,7 @@ class TestSquaredErrorLossTorch:
 
         dev = qml.device("default.qubit", wires=num_qubits)
         observables = [qml.PauliZ(0), qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]
-        loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface="torch")
+        loss = SquaredErrorLoss(rx_ansatz, observables, dev)
 
         phis = np.ones(num_qubits)
         res = loss(phis, target=np.array([1.0, 0.5, 0.1]))
@@ -137,7 +139,7 @@ class TestSquaredErrorLossTf:
 
             dev = qml.device("default.qubit", wires=num_qubits)
             observables = [qml.PauliZ(0)]
-            loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface="tf")
+            loss = SquaredErrorLoss(rx_ansatz, observables, dev)
 
             phis = np.ones(num_qubits)
             loss(phis)
@@ -148,7 +150,7 @@ class TestSquaredErrorLossTf:
 
             dev = qml.device("default.qubit", wires=num_qubits)
             observables = [qml.PauliZ(0)]
-            loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface="tf")
+            loss = SquaredErrorLoss(rx_ansatz, observables, dev)
 
             phis = np.ones(num_qubits)
             loss(phis, target=np.array([1.0, 2.0]))
@@ -158,7 +160,7 @@ class TestSquaredErrorLossTf:
 
         dev = qml.device("default.qubit", wires=num_qubits)
         observables = [qml.PauliZ(0), qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]
-        loss = SquaredErrorLoss(layer_ansatz, observables, dev, interface="tf")
+        loss = SquaredErrorLoss(layer_ansatz, observables, dev)
 
         weights = np.ones((num_qubits, 3, 3))
         res = loss(weights, x=np.array([1.0, 2.0, 1.0]), target=np.array([1.0, 0.5, 0.1]))
@@ -170,7 +172,7 @@ class TestSquaredErrorLossTf:
 
         dev = qml.device("default.qubit", wires=num_qubits)
         observables = [qml.PauliZ(0), qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]
-        loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface="tf")
+        loss = SquaredErrorLoss(rx_ansatz, observables, dev)
 
         phis = np.ones(num_qubits)
         res = loss(phis, target=np.array([1.0, 0.5, 0.1]))
@@ -186,7 +188,7 @@ class TestSquaredErrorLossJax:
 
             dev = qml.device("default.qubit", wires=num_qubits)
             observables = [qml.PauliZ(0)]
-            loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface="jax")
+            loss = SquaredErrorLoss(rx_ansatz, observables, dev)
 
             phis = np.ones(num_qubits)
             loss(phis)
@@ -197,7 +199,7 @@ class TestSquaredErrorLossJax:
 
             dev = qml.device("default.qubit", wires=num_qubits)
             observables = [qml.PauliZ(0)]
-            loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface="jax")
+            loss = SquaredErrorLoss(rx_ansatz, observables, dev)
 
             phis = np.ones(num_qubits)
             loss(phis, target=np.array([1.0, 2.0]))
@@ -207,7 +209,7 @@ class TestSquaredErrorLossJax:
 
         dev = qml.device("default.qubit", wires=num_qubits)
         observables = [qml.PauliZ(0), qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]
-        loss = SquaredErrorLoss(layer_ansatz, observables, dev, interface="jax")
+        loss = SquaredErrorLoss(layer_ansatz, observables, dev)
 
         weights = np.ones((num_qubits, 3, 3))
         res = loss(weights, x=np.array([1.0, 2.0, 1.0]), target=np.array([1.0, 0.5, 0.1]))
@@ -219,7 +221,7 @@ class TestSquaredErrorLossJax:
 
         dev = qml.device("default.qubit", wires=num_qubits)
         observables = [qml.PauliZ(0), qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]
-        loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface="jax")
+        loss = SquaredErrorLoss(rx_ansatz, observables, dev)
 
         phis = np.ones(num_qubits)
         res = loss(phis, target=np.array([1.0, 0.5, 0.1]))

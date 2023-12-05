@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for ``pennylane.numpy.random`` wrapping.  Arrays generated should have an 
+Tests for ``pennylane.numpy.random`` wrapping.  Arrays generated should have an
 additional property, ``requires_grad``, that marks them as trainable/ non-trainable.
 """
+# pylint: disable=too-few-public-methods
 
 import pytest
 
@@ -54,10 +55,10 @@ class TestGeneratorDistributions:
         assert isinstance(output, np.tensor)
 
         assert output.shape == size
-        assert output.requires_grad == True
+        assert output.requires_grad is True
 
         output.requires_grad = False
-        assert output.requires_grad == False
+        assert output.requires_grad is False
 
 
 class Test_default_rng:

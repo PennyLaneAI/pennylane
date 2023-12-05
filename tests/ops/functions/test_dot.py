@@ -17,15 +17,8 @@ Unit tests for the dot function
 import pytest
 
 import pennylane as qml
-from pennylane.collections import QNodeCollection
-from pennylane.ops import Hamiltonian, SProd, Sum
+from pennylane.ops import Hamiltonian, Prod, SProd, Sum
 from pennylane.pauli.pauli_arithmetic import PauliSentence
-
-
-def test_dot_qnode_collection_raises_warning():
-    """Test that a deprecation warning is raised when using qml.dot for a QNodeCollection."""
-    with pytest.warns(UserWarning, match="is deprecated"):
-        qml.dot([], QNodeCollection())
 
 
 class TestDotSum:
@@ -49,6 +42,43 @@ class TestDotSum:
         O = qml.dot(coeffs=[2.0], ops=[qml.PauliX(0)])
         assert isinstance(O, SProd)
         assert O.scalar == 2
+
+    def test_cast_tensor_to_prod(self):
+        """Test that `dot` casts all `Tensor` objects to `Prod`."""
+        result = qml.dot(
+            coeffs=[1, 1, 1],
+            ops=[
+                qml.PauliX(0) @ qml.PauliY(0),
+                qml.PauliX(0) @ qml.PauliY(0),
+                qml.PauliX(0) @ qml.PauliY(0),
+            ],
+        )
+        assert isinstance(result, Sum)
+        for op in result:
+            assert isinstance(op, Prod)
+
+    def test_dot_groups_coeffs(self):
+        """Test that the `dot` function groups the coefficients."""
+        result = qml.dot(coeffs=[4, 4, 4], ops=[qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)])
+        assert isinstance(result, SProd)
+        assert result.scalar == 4
+        assert isinstance(result.base, Sum)
+        assert len(result.base) == 3
+        for op in result.base:
+            assert isinstance(op, qml.PauliX)
+
+    def test_dot_groups_coeffs_with_different_sign(self):
+        """test that the `dot` function groups coefficients with different signs."""
+        cs = [4, -4, 4]
+        result = qml.dot(coeffs=cs, ops=[qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)])
+        assert isinstance(result, SProd)
+        assert result.scalar == 4
+        for op, c in zip(result.base, cs):
+            if c == -4:
+                assert isinstance(op, SProd)
+                assert op.scalar == -1
+            else:
+                assert isinstance(op, qml.PauliX)
 
     def test_dot_different_number_of_coeffs_and_ops(self):
         """Test that a ValueError is raised when the number of coefficients and operators does
@@ -182,12 +212,14 @@ class TestDotPauliSentence:
         c = qml.numpy.array([1.0, 2.0, 3.0])
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         ps = qml.dot(c, o, pauli=True)
-        op_sum = Sum(
-            qml.PauliX(0),
-            SProd(qml.numpy.array(2.0), qml.PauliY(1)),
-            SProd(qml.numpy.array(3.0), qml.PauliZ(2)),
+
+        ps_2 = qml.pauli.PauliSentence(
+            {
+                qml.pauli.PauliWord({0: "X"}): 1.0,
+                qml.pauli.PauliWord({1: "Y"}): 2.0,
+                qml.pauli.PauliWord({2: "Z"}): 3.0,
+            }
         )
-        ps_2 = qml.pauli.pauli_sentence(op_sum)
         assert ps == ps_2
 
     @pytest.mark.tf
@@ -198,12 +230,14 @@ class TestDotPauliSentence:
         c = tf.constant([1.0, 2.0, 3.0])
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         ps = qml.dot(c, o, pauli=True)
-        op_sum = Sum(
-            qml.PauliX(0),
-            SProd(tf.constant(2.0), qml.PauliY(1)),
-            SProd(tf.constant(3.0), qml.PauliZ(2)),
+
+        ps_2 = qml.pauli.PauliSentence(
+            {
+                qml.pauli.PauliWord({0: "X"}): tf.constant(1.0),
+                qml.pauli.PauliWord({1: "Y"}): tf.constant(2.0),
+                qml.pauli.PauliWord({2: "Z"}): tf.constant(3.0),
+            }
         )
-        ps_2 = qml.pauli.pauli_sentence(op_sum)
         assert ps == ps_2
 
     @pytest.mark.torch
@@ -214,12 +248,14 @@ class TestDotPauliSentence:
         c = torch.tensor([1.0, 2.0, 3.0])
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         ps = qml.dot(c, o, pauli=True)
-        op_sum = Sum(
-            qml.PauliX(0),
-            SProd(torch.tensor(2.0), qml.PauliY(1)),
-            SProd(torch.tensor(3.0), qml.PauliZ(2)),
+
+        ps_2 = qml.pauli.PauliSentence(
+            {
+                qml.pauli.PauliWord({0: "X"}): torch.tensor(1.0),
+                qml.pauli.PauliWord({1: "Y"}): torch.tensor(2.0),
+                qml.pauli.PauliWord({2: "Z"}): torch.tensor(3.0),
+            }
         )
-        ps_2 = qml.pauli.pauli_sentence(op_sum)
         assert ps == ps_2
 
     @pytest.mark.jax
@@ -230,10 +266,12 @@ class TestDotPauliSentence:
         c = jax.numpy.array([1.0, 2.0, 3.0])
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         ps = qml.dot(c, o, pauli=True)
-        op_sum = Sum(
-            qml.PauliX(0),
-            SProd(jax.numpy.array(2.0), qml.PauliY(1)),
-            SProd(jax.numpy.array(3.0), qml.PauliZ(2)),
+
+        ps_2 = qml.pauli.PauliSentence(
+            {
+                qml.pauli.PauliWord({0: "X"}): jax.numpy.array(1.0),
+                qml.pauli.PauliWord({1: "Y"}): jax.numpy.array(2.0),
+                qml.pauli.PauliWord({2: "Z"}): jax.numpy.array(3.0),
+            }
         )
-        ps_2 = qml.pauli.pauli_sentence(op_sum)
         assert ps == ps_2

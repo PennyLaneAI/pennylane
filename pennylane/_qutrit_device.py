@@ -206,6 +206,46 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
             "Unsupported return type specified for observable mutual information"
         )
 
+    def classical_shadow(self, obs, circuit):
+        """
+        Returns the measured trits and recipes in the classical shadow protocol.
+
+        Please refer to :func:`~.pennylane.classical_shadow` for detailed documentation.
+
+        .. seealso:: :func:`~pennylane.classical_shadow`
+
+        Args:
+            obs (~.pennylane.measurements.ClassicalShadowMP): The classical shadow measurement process
+            circuit (~.tapes.QuantumTape): The quantum tape that is being executed
+
+        Raises:
+            QuantumFunctionError: Classical shadow is currently unsupported on :class:`~.QutritDevice`
+        """
+        # TODO: Add support for ClassicalShadowMP
+        raise qml.QuantumFunctionError(
+            "Qutrit devices don't support classical shadow measurements."
+        )
+
+    def shadow_expval(self, obs, circuit):
+        r"""Compute expectation values using classical shadows in a differentiable manner.
+
+        Please refer to :func:`~.pennylane.shadow_expval` for detailed documentation.
+
+        .. seealso:: :func:`~pennylane.shadow_expval`
+
+        Args:
+            obs (~.pennylane.measurements.ShadowExpvalMP): The classical shadow expectation
+                value measurement process
+            circuit (~.tapes.QuantumTape): The quantum tape that is being executed
+
+        Raises:
+            QuantumFunctionError: Shadow Expectation values are currently unsupported on :class:`~.QutritDevice`
+        """
+        # TODO: Add support for ShadowExpvalMP
+        raise qml.QuantumFunctionError(
+            "Qutrit devices don't support shadow expectation value measurements."
+        )
+
     def estimate_probability(self, wires=None, shot_range=None, bin_size=None):
         """Return the estimated probability of each computational basis state
         using the generated samples.
@@ -313,18 +353,9 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         else:
             wires = inactive_device_wires
 
-        prob = self._flatten(self._reduce_sum(prob, wires))
-
-        # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
-        # If this is the case, we must permute the marginalized probability so that
-        # it corresponds to the orders of the wires passed.
-        num_wires = len(device_wires)
-        basis_states = self.generate_basis_states(num_wires)
-        basis_states = basis_states[:, np.argsort(np.argsort(device_wires))]
-
-        powers_of_three = 3 ** np.arange(len(device_wires))[::-1]
-        perm = basis_states @ powers_of_three
-        return self._gather(prob, perm)
+        prob = self._reduce_sum(prob, wires)
+        prob = self._transpose(prob, np.argsort(np.argsort(device_wires)))
+        return self._flatten(prob)
 
     def sample(self, observable, shot_range=None, bin_size=None, counts=False):
         def _samples_to_counts(samples, no_observable_provided):

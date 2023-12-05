@@ -22,7 +22,7 @@ from itertools import product
 import numpy as np
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
-from pennylane.ops.qubit.parametric_ops import PauliRot
+from pennylane.ops.qubit.parametric_ops_multi_qubit import PauliRot
 
 _pauli_matrices = np.array(
     [[[1, 0], [0, 1]], [[0, 1], [1, 0]], [[0, -1j], [1j, 0]], [[1, 0], [0, -1]]]
@@ -159,44 +159,39 @@ def _params_to_pauli_basis(params, words):
     return qml.math.T(qml.math.scatter_element_add(zeros, [ids], qml.math.T(params)))
 
 
-def special_unitary_matrix(theta, num_wires):
-    r"""Compute the matrix of an element in SU(N), given by the Pauli basis coordinates
-    of the associated Lie algebra element.
+def _pauli_decompose(matrix, num_wires):
+    r"""Compute the coefficients of a matrix or a batch of matrices (batch dimension(s) in the
+    leading axes) in the Pauli basis.
 
     Args:
-        theta (tensor_like): Pauli coordinates of the exponent :math:`A(\theta)`.
-        num_wires (int): The number of wires the matrix acts on.
+        matrix (tensor_like): Matrix or batch of matrices to decompose into the Pauli basis.
+        num_wires (int): Number of wires the matrices act on.
 
     Returns:
-        tensor_like: matrix of the special unitary corresponding to ``theta``. It
-            has the shape ``(2**num_wires, 2**num_wires)``.
+        tensor_like: Coefficients of the input ``matrix`` in the Pauli basis.
 
-    The :math:`4^n-1` Pauli basis elements of the Lie algebra :math:`\mathfrak{su}(N)`
-    for :math:`n` qubits are
-    :math:`P_m\in\{I, X, Y, Z\}^{\otimes n}\setminus\{I^{\otimes n}\}`, and the special
-    unitary matrix is computed as
+    For a matrix :math:`M`, these coefficients are defined via
+    :math:`M = \sum_\ell c_\ell P_\ell` and they can be computed using the (Frobenius) inner
+    product of :math:`M` with the corresponding Pauli word :math:`P_\ell`:
+    :math:`c_\ell = \frac{1}{2^N}\operatorname{Tr}\left\{P_\ell M\right\}` where the prefactor
+    is the normalization that makes the standard Pauli basis orthonormal, and :math:`N`
+    is the number of qubits.
+    That is, the normalization is such that a single Pauli word :math:`P_k` has
+    coefficients ``c_\ell = \delta_{k\ell}``.
 
-    .. math::
-
-        U(\theta) = \exp(i\sum_{m=1}^d \theta_m P_m)
-
-    See :func:`~.ops.qubit.matrix_ops.pauli_words` for the ordering of Pauli words.
-
-    .. note::
-
-        Note that this method internally handles a complex-valued tensor of size
-        ``(4**num_wires, 2**num_wires, 2**num_wires)``, which requires at least
-        ``4 ** (2 * num_wires - 13)`` GB of memory (at default precision).
+    Note that this implementation takes :math:`\mathcal{O}(16^N)` operations per input
+    matrix but there is a more efficient method taking only :math:`\mathcal{O}(N4^N)`
+    operations per matrix.
     """
-    if num_wires > 5:
-        theta = qml.math.hstack([[0], theta])
-        A = sum(
-            t * reduce(np.kron, letters)
-            for t, letters in zip(theta, product(_pauli_matrices, repeat=num_wires))
-        )
-    else:
-        A = qml.math.tensordot(theta, pauli_basis(num_wires), axes=[[-1], [0]])
-    return qml.math.expm(1j * A)
+    # Create the dense Pauli basis tensor (shape (d^2-1, d, d)) with d = 2**num_wires
+    basis = pauli_basis_matrices(num_wires)
+    # Contract the Pauli basis tensor with the input, which has shape (*batch_dims, d, d)
+    # We are interested in the traces of the matrix products, for each Pauli basis. Both
+    # contractions (mult and trace) can be executed by providing all axes of size d to
+    # ``tensordot``, which gives us a vectorized way to compute the coefficients.
+    coefficients = qml.math.tensordot(basis, matrix, axes=[[1, 2], [-1, -2]])
+    # Finally, cast to the original data type and renormalize
+    return qml.math.cast(coefficients, matrix.dtype) / 2**num_wires
 
 
 class SpecialUnitary(Operation):
@@ -243,8 +238,6 @@ class SpecialUnitary(Operation):
         theta (tensor_like): Pauli coordinates of the exponent :math:`A(\bm{\theta})`.
             See details below for the order of the Pauli words.
         wires (Sequence[int] or int): The wire(s) the operation acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
 
     Raises:
@@ -296,7 +289,7 @@ class SpecialUnitary(Operation):
     Note that for specific operations like the ``RX`` rotation gate above, it is
     strongly recommended to use the specialized implementation ``qml.RX`` rather
     than ``PauliRot`` or ``SpecialUnitary``.
-    However, ``SpecialUnitary`` gates go beyong such rotations: Multiple Pauli words
+    However, ``SpecialUnitary`` gates go beyond such rotations: Multiple Pauli words
     can be activated simultaneously, giving access to more complex operations.
     For two qubits, this could look like this:
 
@@ -454,7 +447,8 @@ class SpecialUnitary(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, theta, wires, words=None, do_queue=True, id=None):
+    def __init__(self, theta, wires, words=None, id=None):
+    def __init__(self, theta, wires, id=None):
         num_wires = 1 if isinstance(wires, int) else len(wires)
         self.hyperparameters["num_wires"] = num_wires
         if words is not None:
@@ -474,7 +468,7 @@ class SpecialUnitary(Operation):
                 f"{expected_dim}). The parameters have shape {theta_shape}"
             )
 
-        super().__init__(theta, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(theta, wires=wires, id=id)
 
     @staticmethod
     def compute_matrix(theta, num_wires):
@@ -505,7 +499,7 @@ class SpecialUnitary(Operation):
 
             U(\theta) = \exp(i\sum_{m=1}^d \theta_m P_m)
 
-        See :func:`~.ops.qubit.matrix_ops.pauli_basis_strings` for the ordering of Pauli words.
+        See the main class documentation above for the ordering of Pauli words.
 
         .. note::
 
@@ -677,13 +671,12 @@ class SpecialUnitary(Operation):
             The matrix exponential is not differentiable in Autograd. Therefore this function
             only supports JAX, Torch and Tensorflow.
 
-        .. seealso:: `~.SpecialUnitary.get_one_parameter_generators`
+        .. seealso:: :meth:`~.SpecialUnitary.get_one_parameter_generators`
 
         """
         num_wires = self.hyperparameters["num_wires"]
-        basis = pauli_basis_matrices(num_wires)
         generators = self.get_one_parameter_generators(interface)
-        return qml.math.tensordot(basis, generators, axes=[[1, 2], [2, 1]]) / 2**num_wires
+        return _pauli_decompose(generators, num_wires)
 
     def decomposition(self):
         r"""Representation of the operator as a product of other operators.
@@ -773,7 +766,7 @@ class TmpPauliRot(PauliRot):
             This operation is used in a differentiation pipeline of :class:`~.SpecialUnitary`
             and most likely should not be created manually by users.
         """
-        if qml.math.isclose(theta, theta * 0):
+        if qml.math.isclose(theta, theta * 0) and not qml.math.requires_grad(theta):
             return []
         return [PauliRot(theta, pauli_word, wires)]
 

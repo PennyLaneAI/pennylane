@@ -381,12 +381,17 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
     atol = 10 ** (-decimals) if decimals is not None else 1e-10
     # A map between Jacobian indices (contiguous) and arg names (may be discontiguous)
     arg_name_map = dict(enumerate(encoding_args))
-    jac_fn = qml.transforms.classical_jacobian(
-        qnode, argnum=argnum, expand_fn=qml.transforms.expand_multipar
-    )
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
+        old_interface = qnode.interface
+
+        if old_interface == "auto":
+            qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
+
+        jac_fn = qml.transforms.classical_jacobian(
+            qnode, argnum=argnum, expand_fn=qml.transforms.expand_multipar
+        )
         # Compute classical Jacobian and assert preprocessing is linear
         if not qml.math.is_independent(jac_fn, qnode.interface, args, kwargs, **validation_kwargs):
             raise ValueError(
@@ -460,6 +465,8 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
                 _spectra[idx] = [-freq for freq in spec[:0:-1]] + spec
             spectra[arg_name] = _spectra
 
+            if old_interface == "auto":
+                qnode.interface = "auto"
         return spectra
 
     return wrapper

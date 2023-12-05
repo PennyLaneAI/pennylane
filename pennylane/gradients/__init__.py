@@ -48,15 +48,8 @@ Gradient transforms
     param_shift_hessian
     spsa_grad
     hadamard_grad
-
-Custom gradients
-^^^^^^^^^^^^^^^^
-
-.. autosummary::
-    :toctree: api
-
-    gradient_transform
-    hessian_transform
+    stoch_pulse_grad
+    pulse_odegen
 
 Utility functions
 ^^^^^^^^^^^^^^^^^
@@ -70,9 +63,8 @@ Utility functions
     generate_shift_rule
     generate_multi_shift_rule
     eigvals_to_frequencies
-    compute_vjp
-    compute_vjp_single_new
-    compute_vjp_multi_new
+    compute_vjp_single
+    compute_vjp_multi
     batch_vjp
     vjp
     compute_jvp_single
@@ -130,7 +122,10 @@ for each QNode will be used.
 Transforming QNodes
 -------------------
 
-Alternatively, quantum gradient transforms can be applied manually to QNodes.
+Alternatively, quantum gradient transforms can be applied manually to QNodes. This is not
+recommended because PennyLane must compute the classical Jacobian of the parameters and multiply it with
+the quantum Jacobian, we recommend using the ``diff_method`` kwargs with your favorite machine learning
+framework.
 
 .. code-block:: python
 
@@ -148,12 +143,13 @@ Alternatively, quantum gradient transforms can be applied manually to QNodes.
 >>> circuit(weights)
 tensor([0.9658079, 0.0341921], requires_grad=True)
 >>> qml.gradients.param_shift(circuit)(weights)
-tensor([[-0.04673668, -0.09442394, -0.14409127],
-        [ 0.04673668,  0.09442394,  0.14409127]], requires_grad=True)
+(tensor([-0.04673668,  0.04673668], requires_grad=True),
+ tensor([-0.09442394,  0.09442394], requires_grad=True),
+ tensor([-0.14409127,  0.14409127], requires_grad=True))
 
 Comparing this to autodifferentiation:
 
->>> qml.grad(circuit)(weights)
+>>> qml.jacobian(circuit)(weights)
 array([[-0.04673668, -0.09442394, -0.14409127],
        [ 0.04673668,  0.09442394,  0.14409127]])
 
@@ -175,8 +171,9 @@ automatically return the gradient:
         return qml.probs(wires=1)
 
 >>> decorated_circuit(weights)
-tensor([[-0.04673668, -0.09442394, -0.14409127],
-        [ 0.04673668,  0.09442394,  0.14409127]], requires_grad=True)
+(tensor([-0.04673668,  0.04673668], requires_grad=True),
+ tensor([-0.09442394,  0.09442394], requires_grad=True),
+ tensor([-0.14409127,  0.14409127], requires_grad=True))
 
 .. note::
 
@@ -216,11 +213,15 @@ gradients to be computed:
 >>> circuit(weights)
 tensor(0.9316158, requires_grad=True)
 >>> qml.gradients.param_shift(circuit)(weights)  # gradient
-array([[-0.09347337, -0.18884787, -0.28818254]])
->>> qml.jacobian(qml.gradients.param_shift(circuit))(weights)  # hessian
-array([[[-0.9316158 ,  0.01894799,  0.0289147 ],
-        [ 0.01894799, -0.9316158 ,  0.05841749],
-        [ 0.0289147 ,  0.05841749, -0.9316158 ]]])
+(tensor(-0.09347337, requires_grad=True),
+ tensor(-0.18884787, requires_grad=True),
+ tensor(-0.28818254, requires_grad=True))
+>>> def stacked_output(weights):
+...     return qml.numpy.stack(qml.gradients.param_shift(circuit)(weights))
+>>> qml.jacobian(stacked_output)(weights)  # hessian
+array([[-0.9316158 ,  0.01894799,  0.0289147 ],
+       [ 0.01894799, -0.9316158 ,  0.05841749],
+       [ 0.0289147 ,  0.05841749, -0.9316158 ]])
 
 Another way to compute higher-order derivatives is by passing the ``max_diff`` and
 ``diff_method`` arguments to the QNode and by successive differentiation:
@@ -255,12 +256,13 @@ a datastructure representing variational quantum algorithms:
 
     weights = np.array([0.1, 0.2, 0.3], requires_grad=True)
 
-    with qml.tape.JacobianTape() as tape:
-        qml.RX(weights[0], wires=0)
-        qml.RY(weights[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        qml.RX(weights[2], wires=1)
-        qml.expval(qml.PauliZ(1))
+    ops = [
+        qml.RX(weights[0], wires=0),
+        qml.RY(weights[1], wires=1),
+        qml.CNOT(wires=[0, 1]),
+        qml.RX(weights[2], wires=1)]
+    measurements = [qml.expval(qml.PauliZ(1))]
+    tape = qml.tape.QuantumTape(ops, measurements)
 
 Unlike when transforming a QNode, transforming a tape directly
 will perform no implicit quantum device evaluation. Instead, it returns
@@ -284,7 +286,9 @@ the gradient:
 
 >>> dev = qml.device("default.qubit", wires=2)
 >>> fn(qml.execute(gradient_tapes, dev, None))
-[[-0.09347337 -0.18884787 -0.28818254]]
+(tensor(-0.09347337, requires_grad=True),
+ tensor(-0.18884787, requires_grad=True),
+ tensor(-0.28818254, requires_grad=True))
 
 Note that the post-processing function ``fn`` returned by the
 gradient transform is applied to the flat list of results returned
@@ -294,13 +298,13 @@ from executing the gradient tapes.
 Custom gradient transforms
 --------------------------
 
-Using the :class:`~.gradient_transform` decorator, custom gradient transforms
+Using the :func:`qml.transform <pennylane.transform>` decorator, custom gradient transforms
 can be created:
 
 .. code-block:: python
 
-    @gradient_transform
-    def my_custom_gradient(tape, **kwargs):
+    @transform
+    def my_custom_gradient(tape: qml.tape.QuantumTape, **kwargs) -> (Sequence[qml.tape.QuantumTape], Callable):
         ...
         return gradient_tapes, processing_fn
 
@@ -308,17 +312,17 @@ Once created, a custom gradient transform can be applied directly
 to QNodes, or registered as the quantum gradient transform to use
 during autodifferentiation.
 
-For more details, please see the :class:`~.gradient_transform`
+For more details, please see the :func:`qml.transform <pennylane.transform>`
 documentation.
 """
-import pennylane as qml
-
 from . import parameter_shift
 from . import parameter_shift_cv
 from . import parameter_shift_hessian
 from . import finite_difference
 from . import spsa_gradient
 from . import hadamard_gradient
+from . import pulse_gradient
+from . import pulse_gradient_odegen
 
 from .gradient_transform import gradient_transform, SUPPORTED_GRADIENT_KWARGS
 from .hessian_transform import hessian_transform
@@ -326,10 +330,12 @@ from .finite_difference import finite_diff, finite_diff_coeffs
 from .parameter_shift import param_shift
 from .parameter_shift_cv import param_shift_cv
 from .parameter_shift_hessian import param_shift_hessian
-from .vjp import compute_vjp, batch_vjp, vjp, compute_vjp_multi_new, compute_vjp_single_new
+from .vjp import batch_vjp, vjp, compute_vjp_multi, compute_vjp_single
 from .jvp import batch_jvp, jvp, compute_jvp_multi, compute_jvp_single
 from .spsa_gradient import spsa_grad
 from .hadamard_gradient import hadamard_grad
+from .pulse_gradient import stoch_pulse_grad
+from .pulse_gradient_odegen import pulse_odegen
 
 from .hamiltonian_grad import hamiltonian_grad
 from .general_shift_rules import (

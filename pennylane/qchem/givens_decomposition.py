@@ -85,21 +85,25 @@ def givens_decomposition(unitary):
 
     .. code-block:: python
 
-        unitary = np.array([[ 0.73678+0.27511j, -0.5095 +0.10704j, -0.06847+0.32515j]
-                            [-0.21271+0.34938j, -0.38853+0.36497j,  0.61467-0.41317j]
+        unitary = np.array([[ 0.73678+0.27511j, -0.5095 +0.10704j, -0.06847+0.32515j],
+                            [-0.21271+0.34938j, -0.38853+0.36497j,  0.61467-0.41317j],
                             [ 0.41356-0.20765j, -0.00651-0.66689j,  0.32839-0.48293j]])
 
-        phase_mat, ordered_rotations = givens_decomposition(matrix)
+        phase_mat, ordered_rotations = givens_decomposition(unitary)
 
     >>> phase_mat
-    [-0.20606284+0.97853876j -0.82993403+0.55786154j  0.56230707-0.82692851j]
+    tensor([-0.20604358+0.9785369j , -0.82993272+0.55786114j,
+            0.56230612-0.82692833j], requires_grad=True)
     >>> ordered_rotations
-    [(tensor([[-0.65088844-0.63936314j, -0.40933972-0.j],
-              [-0.29202076-0.28684994j,  0.91238204-0.j]], requires_grad=True), (0, 1)),
-     (tensor([[ 0.47970417-0.33309047j, -0.8117479 -0.j],
-              [ 0.66676972-0.46298251j,  0.584008  -0.j]], requires_grad=True), (1, 2)),
-     (tensor([[ 0.36147511+0.73779414j, -0.57008381-0.j],
-              [ 0.25082094+0.5119418j ,  0.82158655-0.j]], requires_grad=True), (0, 1))]
+    [(tensor([[-0.65087861-0.63937521j, -0.40933651-0.j        ],
+            [-0.29201359-0.28685265j,  0.91238348-0.j        ]], requires_grad=True),
+    (0, 1)),
+    (tensor([[ 0.47970366-0.33308926j, -0.8117487 -0.j        ],
+            [ 0.66677093-0.46298215j,  0.5840069 -0.j        ]], requires_grad=True),
+    (1, 2)),
+    (tensor([[ 0.36147547+0.73779454j, -0.57008306-0.j        ],
+            [ 0.2508207 +0.51194108j,  0.82158706-0.j        ]], requires_grad=True),
+    (0, 1))]
 
     Args:
         unitary (tensor): unitary matrix on which decomposition will be performed
@@ -115,7 +119,7 @@ def givens_decomposition(unitary):
 
         **Givens Rotation**
 
-        Applying the Givens roation :math:`T(\theta, \phi)` performs the following tranformation of the basis states:
+        Applying the Givens rotation :math:`T(\theta, \phi)` performs the following transformation of the basis states:
 
         .. math::
 

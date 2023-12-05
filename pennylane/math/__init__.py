@@ -34,7 +34,7 @@ The following frameworks are currently supported:
 import autoray as ar
 
 from .is_independent import is_independent
-from .matrix_manipulation import expand_matrix, reduce_matrices
+from .matrix_manipulation import expand_matrix, reduce_matrices, get_batch_size
 from .multi_dispatch import (
     add,
     array,
@@ -50,12 +50,15 @@ from .multi_dispatch import (
     gammainc,
     get_trainable_indices,
     iscomplex,
+    jax_argnums_to_tape_trainable,
     kron,
     matmul,
     multi_dispatch,
+    norm,
     ones_like,
     scatter,
     scatter_element_add,
+    set_index,
     stack,
     tensordot,
     unwrap,
@@ -63,22 +66,26 @@ from .multi_dispatch import (
 )
 from .quantum import (
     cov_matrix,
-    fidelity,
+    dm_from_state_vector,
     marginal_prob,
     mutual_info,
     purity,
-    reduced_dm,
+    reduce_dm,
+    reduce_statevector,
     relative_entropy,
     sqrt_matrix,
     vn_entropy,
     max_entropy,
+    trace_distance,
 )
+from .fidelity import fidelity, fidelity_statevector
 from .utils import (
     allclose,
     allequal,
     cast,
     cast_like,
     convert_like,
+    get_deep_interface,
     get_interface,
     in_backprop,
     is_abstract,
@@ -90,16 +97,41 @@ toarray = ar.numpy.to_numpy
 T = ar.numpy.transpose
 
 
+def get_dtype_name(x) -> str:
+    """An interface independent way of getting the name of the datatype.
+
+    >>> x = tf.Variable(0.1)
+    >>> qml.math.get_dtype_name(tf.Variable(0.1))
+    'float32'
+    """
+    return ar.get_dtype_name(x)
+
+
+class NumpyMimic(ar.autoray.NumpyMimic):
+    """Subclass of the Autoray NumpyMimic class in order to support
+    the NumPy fft submodule"""
+
+    # pylint: disable=too-few-public-methods
+
+    def __getattribute__(self, fn):
+        if fn == "fft":
+            return numpy_fft
+        return super().__getattribute__(fn)
+
+
+numpy_mimic = NumpyMimic()
+numpy_fft = ar.autoray.NumpyMimic("fft")
+
 # small constant for numerical stability that the user can modify
 eps = 1e-14
 
 
 def __getattr__(name):
-    return getattr(ar.numpy, name)
+    return getattr(numpy_mimic, name)
 
 
 __all__ = [
-    "multi_dispatch",
+    "add",
     "allclose",
     "allequal",
     "array",
@@ -111,32 +143,38 @@ __all__ = [
     "cov_matrix",
     "detach",
     "diag",
+    "dm_from_state_vector",
     "dot",
     "einsum",
+    "expand_matrix",
     "eye",
     "fidelity",
+    "fidelity_statevector",
     "frobenius_inner_product",
+    "get_dtype_name",
     "get_interface",
+    "get_deep_interface",
     "get_trainable_indices",
     "in_backprop",
     "is_abstract",
     "is_independent",
+    "iscomplex",
     "marginal_prob",
     "max_entropy",
+    "multi_dispatch",
     "mutual_info",
     "ones_like",
     "purity",
-    "reduced_dm",
+    "reduce_dm",
+    "reduce_statevector",
     "relative_entropy",
     "requires_grad",
     "sqrt_matrix",
     "scatter_element_add",
     "stack",
     "tensordot",
+    "trace_distance",
     "unwrap",
     "vn_entropy",
     "where",
-    "add",
-    "iscomplex",
-    "expand_matrix",
 ]

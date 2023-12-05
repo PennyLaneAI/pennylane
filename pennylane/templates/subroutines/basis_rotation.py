@@ -17,7 +17,7 @@ This module contains the template for performing basis transformation defined by
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 from pennylane.qchem.givens_decomposition import givens_decomposition
 
 
@@ -71,10 +71,10 @@ class BasisRotation(Operation):
         ...    qml.BasisRotation(wires=wires, unitary_matrix=umat)
         >>> circ_unitary = qml.matrix(circuit)()
         >>> np.round(circ_unitary/circ_unitary[0][0], 3)
-        tensor([[ 1.   +0.j   ,  0.   +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-                [ 0.   +0.j   , -0.516-0.596j, -0.302-0.536j,  0.   +0.j   ],
-                [ 0.   +0.j   ,  0.35 +0.506j, -0.311-0.724j,  0.   +0.j   ],
-                [ 0.   +0.j   ,  0.   +0.j   ,  0.   +0.j   , -0.438+0.899j]])
+        tensor([[ 1.   -0.j   , -0.   +0.j   , -0.   +0.j   , -0.   +0.j   ],
+                [-0.   +0.j   , -0.516-0.596j, -0.302-0.536j, -0.   +0.j   ],
+                [-0.   +0.j   ,  0.35 +0.506j, -0.311-0.724j, -0.   +0.j   ],
+                [-0.   +0.j   , -0.   +0.j   , -0.   +0.j   , -0.438+0.899j]], requires_grad=True)
 
     .. details::
         :title: Theory
@@ -99,7 +99,7 @@ class BasisRotation(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, wires, unitary_matrix, check=False, do_queue=True, id=None):
+    def __init__(self, wires, unitary_matrix, check=False, id=None):
         M, N = unitary_matrix.shape
         if M != N:
             raise ValueError(
@@ -118,7 +118,7 @@ class BasisRotation(Operation):
             "unitary_matrix": unitary_matrix,
         }
 
-        super().__init__(wires=wires, do_queue=do_queue, id=id)
+        super().__init__(wires=wires, id=id)
 
     @property
     def num_params(self):

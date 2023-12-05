@@ -14,18 +14,13 @@
 """
 Unit tests for the :mod:`pennylane` configuration classe :class:`Configuration`.
 """
-import pytest
 import os
-import logging as log
-import sys
 
+import pytest
 import toml
 
 import pennylane as qml
 from pennylane import Configuration
-
-
-log.getLogger("defaults")
 
 
 config_filename = "default_config.toml"
@@ -64,8 +59,8 @@ backend = "qasm_simulator"
 """
 
 
-@pytest.fixture(scope="function")
-def default_config(tmpdir):
+@pytest.fixture(scope="function", name="default_config")
+def default_config_fixture(tmpdir):
     config_path = os.path.join(tmpdir, config_filename)
 
     with open(config_path, "w") as f:
@@ -74,8 +69,8 @@ def default_config(tmpdir):
     return Configuration(name=config_path)
 
 
-@pytest.fixture(scope="function")
-def default_config_toml(tmpdir):
+@pytest.fixture(scope="function", name="default_config_toml")
+def default_config_toml_fixture(tmpdir):
     config_path = os.path.join(tmpdir, config_filename)
 
     with open(config_path, "w") as f:
@@ -87,6 +82,7 @@ def default_config_toml(tmpdir):
 class TestConfigurationFileInteraction:
     """Test the interaction with the configuration file."""
 
+    # pylint: disable=protected-access
     def test_loading_current_directory(self, monkeypatch, default_config_toml):
         """Test that the default configuration file can be loaded
         from the current directory."""
@@ -99,6 +95,7 @@ class TestConfigurationFileInteraction:
         assert config.path == os.path.join(os.curdir, config_path)
         assert config._config == config_toml
 
+    # pylint: disable=protected-access
     def test_loading_environment_variable(self, monkeypatch, default_config_toml):
         """Test that the default configuration file can be loaded
         from an environment variable."""
@@ -113,6 +110,7 @@ class TestConfigurationFileInteraction:
         assert config._env_config_dir == os.environ["PENNYLANE_CONF"]
         assert config.path == os.path.join(os.environ["PENNYLANE_CONF"], config_path)
 
+    # pylint: disable=protected-access
     def test_loading_absolute_path(self, monkeypatch, default_config_toml):
         """Test that the default configuration file can be loaded
         from an absolute path."""
@@ -126,17 +124,7 @@ class TestConfigurationFileInteraction:
         assert config._config == config_toml
         assert config.path == os.path.join(os.getcwd(), config_path)
 
-    def test_not_found_warning(self, caplog):
-        """Test that a warning is raised if no configuration file found."""
-
-        caplog.clear()
-        caplog.set_level(log.INFO)
-
-        Configuration("noconfig")
-
-        assert len(caplog.records) == 1
-        assert caplog.records[0].message == "No PennyLane configuration file found."
-
+    # pylint: disable=protected-access
     def test_save(self, tmp_path):
         """Test saving a configuration file."""
         config = Configuration(name=config_filename)
@@ -148,7 +136,7 @@ class TestConfigurationFileInteraction:
         config.save(temp_config_path)
 
         result = toml.load(temp_config_path)
-        config._config == result
+        assert config._config == result
 
 
 class TestProperties:
@@ -201,13 +189,13 @@ class TestProperties:
         assert not config
         assert default_config
 
-    def test_str(self, default_config):
+    def test_str(self):
         """Test string value of the Configuration object."""
         config = Configuration("noconfig")
 
         assert config.__str__() == ""
 
-    def test_str_loaded_config(self, default_config, monkeypatch, default_config_toml):
+    def test_str_loaded_config(self, monkeypatch, default_config_toml):
         """Test string value of the Configuration object that has been
         loaded."""
         config_toml, config_path = default_config_toml
@@ -218,7 +206,7 @@ class TestProperties:
 
         assert config.__str__() == f"{config_toml}"
 
-    def test_repr(self, default_config):
+    def test_repr(self):
         """Test repr value of the Configuration object."""
         path = "noconfig"
         config = Configuration(path)
@@ -226,6 +214,7 @@ class TestProperties:
         assert config.__repr__() == "PennyLane Configuration <noconfig>"
 
 
+# pylint: disable=too-few-public-methods
 class TestPennyLaneInit:
     """Tests to ensure that the code in PennyLane/__init__.py
     correctly knows how to load and use configuration data"""

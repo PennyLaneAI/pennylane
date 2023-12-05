@@ -1,6 +1,6 @@
 :orphan:
 
-# Release 0.28.0 (current release)
+# Release 0.28.0
 
 <h3>New features since last release</h3>
 
@@ -459,7 +459,7 @@
   [(#3276)](https://github.com/PennyLaneAI/pennylane/pull/3276)
 
 * `qml.Tracker` now also logs results in `tracker.history` when tracking the execution of a circuit.
-   [(#3306)](https://github.com/PennyLaneAI/pennylane/pull/3306)
+  [(#3306)](https://github.com/PennyLaneAI/pennylane/pull/3306)
 
 * The execution time of `Wires.all_wires` has been improved by avoiding data type changes and making use of `itertools.chain`.
   [(#3302)](https://github.com/PennyLaneAI/pennylane/pull/3302)

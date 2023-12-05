@@ -22,10 +22,11 @@ import pennylane as qml
 class TestSnapshot:
     """Test the Snapshot instruction for simulators."""
 
+    # pylint: disable=protected-access
     @pytest.mark.parametrize("method", [None, "backprop", "parameter-shift", "adjoint"])
-    def test_default_qubit(self, method):
+    def test_default_qubit_legacy(self, method):
         """Test that multiple snapshots are returned correctly on the state-vector simulator."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
 
         @qml.qnode(dev, diff_method=method)
         def circuit():
@@ -38,6 +39,8 @@ class TestSnapshot:
 
         circuit()
         assert dev._debugger is None
+        if method is not None:
+            assert circuit.interface == "auto"
 
         result = qml.snapshots(circuit)()
         expected = {
@@ -50,6 +53,41 @@ class TestSnapshot:
         assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys()))
         assert all(np.allclose(v1, v2) for v1, v2 in zip(result.values(), expected.values()))
 
+    # pylint: disable=protected-access
+    @pytest.mark.parametrize("method", [None, "backprop", "parameter-shift", "adjoint"])
+    def test_default_qubit2(self, method):
+        """Test that multiple snapshots are returned correctly on the new
+        state-vector simulator."""
+        dev = qml.device("default.qubit")
+
+        # TODO: add additional QNode test once the new device supports it
+
+        @qml.qnode(dev, diff_method=method)
+        def circuit():
+            qml.Snapshot()
+            qml.Hadamard(wires=0)
+            qml.Snapshot("very_important_state")
+            qml.CNOT(wires=[0, 1])
+            qml.Snapshot()
+            return qml.expval(qml.PauliX(0))
+
+        circuit()
+        assert dev._debugger is None
+        if method is not None:
+            assert circuit.interface == "auto"
+
+        result = qml.snapshots(circuit)()
+        expected = {
+            0: np.array([1, 0, 0, 0]),
+            "very_important_state": np.array([1 / np.sqrt(2), 0, 1 / np.sqrt(2), 0]),
+            2: np.array([1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)]),
+            "execution_results": np.array(0),
+        }
+
+        assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys()))
+        assert all(np.allclose(v1, v2) for v1, v2 in zip(result.values(), expected.values()))
+
+    # pylint: disable=protected-access
     @pytest.mark.parametrize("method", [None, "parameter-shift"])
     def test_default_mixed(self, method):
         """Test that multiple snapshots are returned correctly on the density-matrix simulator."""
@@ -80,6 +118,7 @@ class TestSnapshot:
         assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys()))
         assert all(np.allclose(v1, v2) for v1, v2 in zip(result.values(), expected.values()))
 
+    # pylint: disable=protected-access
     @pytest.mark.parametrize("method", [None, "parameter-shift"])
     def test_default_gaussian(self, method):
         """Test that multiple snapshots are returned correctly on the CV simulator."""
@@ -92,7 +131,7 @@ class TestSnapshot:
             qml.Snapshot("very_important_state")
             qml.Beamsplitter(0.5, 0.7, wires=[0, 1])
             qml.Snapshot()
-            return qml.expval(qml.X(0))
+            return qml.expval(qml.QuadX(0))
 
         circuit()
         assert dev._debugger is None
@@ -150,7 +189,7 @@ class TestSnapshot:
 
     def test_unsupported_device(self):
         """Test that an error is raised on unsupported devices."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
         # remove attributes to simulate unsupported device
         delattr(dev, "_debugger")
         dev.operations.remove("Snapshot")
@@ -173,6 +212,19 @@ class TestSnapshot:
 
         # need to revert change to not affect other tests (since operations a static attribute)
         dev.operations.add("Snapshot")
+
+    def test_unsupported_device_new(self):
+        """Test that an error is raised on unsupported devices."""
+
+        class DummyDevice(qml.devices.Device):  # pylint: disable=too-few-public-methods
+            def execute(self, *args, **kwargs):
+                return args, kwargs
+
+        dev = DummyDevice()
+
+        with pytest.raises(qml.DeviceError, match="Device does not support snapshots."):
+            with qml.debugging._Debugger(dev):
+                dev.execute([])
 
     def test_empty_snapshots(self):
         """Test that snapshots function in the absence of any Snapshot operations."""
@@ -236,12 +288,11 @@ class TestSnapshot:
             qml.Snapshot()
             if m == "expval":
                 return qml.expval(qml.PauliZ(0))
-            elif m == "var":
+            if m == "var":
                 return qml.var(qml.PauliY(1))
-            elif m == "probs":
+            if m == "probs":
                 return qml.probs([0, 1])
-            else:
-                return qml.state()
+            return qml.state()
 
         result = qml.snapshots(circuit)()
         expected = {

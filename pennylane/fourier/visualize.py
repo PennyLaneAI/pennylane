@@ -27,7 +27,7 @@ except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
         "You can install matplolib via \n\n   pip install matplotlib"
     ) from e
 
-from .utils import to_dict, format_nvec
+from .utils import format_nvec
 
 
 def _validate_coefficients(coeffs, n_inputs, can_be_list=True):
@@ -68,20 +68,12 @@ def _validate_coefficients(coeffs, n_inputs, can_be_list=True):
             f"Received coefficients of {len(coeffs.shape)}-dimensional function."
         )
 
-    # Shape in all dimensions of a single set of coefficients must be the same
-    shape_set = set(coeffs.shape[1:]) if can_be_list else set(coeffs.shape)
-    if len(shape_set) != 1:
+    # Size of each sample dimension must be 2d_i + 1 where d_i is the i-th degree
+    dims = coeffs.shape[1:] if can_be_list else coeffs.shape
+    if any((dim - 1) % 2 for dim in dims):
         raise ValueError(
-            "All dimensions of coefficient array must be the same. "
-            f"Received array with dimensions {coeffs.shape}"
-        )
-
-    # Size of each sample dimension must be 2d + 1 where d is the degree
-    shape_dim = coeffs.shape[1] if can_be_list else coeffs.shape[0]
-    if (shape_dim - 1) % 2 != 0:
-        raise ValueError(
-            "Shape of input coefficients must be 2d + 1, where d is the largest frequency. "
-            f"Coefficient array with shape {coeffs.shape} is invalid."
+            "Shape of input coefficients must be 2d_i + 1, where d_i is the largest frequency "
+            f"in the i-th input. Coefficient array with shape {coeffs.shape} is invalid."
         )
 
     # Return the coefficients; we may have switched to a numpy array or added a needed extra dimension
@@ -98,14 +90,15 @@ def _extract_data_and_labels(coeffs):
         (list(str), dict[str, array[complex]): The set of frequency labels, and a data
             dictionary split into real and imaginary parts.
     """
-    # extract the x ticks
-    nvecs = list(to_dict(coeffs[0]).keys())
+    # extract the x ticks: create generator for indices nvec = (n1, ..., nN),
+    # ranging from (-d1,...,-dN) to (d1,...,dN).
+    nvecs = list(product(*(np.array(range(-(d // 2), d // 2 + 1)) for d in coeffs[0].shape)))
     nvecs_formatted = [format_nvec(nvec) for nvec in nvecs]
 
-    # make data
+    # extract flattened data by real part and imaginary part, and respecting negative indices
     data = {}
-    data["real"] = np.array([[c[nvec].real for nvec in nvecs] for c in coeffs])
-    data["imag"] = np.array([[c[nvec].imag for nvec in nvecs] for c in coeffs])
+    data["real"] = np.array([[c[nvec] for nvec in nvecs] for c in coeffs.real])
+    data["imag"] = np.array([[c[nvec] for nvec in nvecs] for c in coeffs.imag])
 
     return nvecs_formatted, data
 
@@ -181,8 +174,9 @@ def violin(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
     to the plotting function:
 
     >>> import matplotlib.pyplot as plt
+    >>> from pennylane.fourier.visualize import violin
     >>> fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
-    >>> violinplt(coeffs, n_inputs, ax, show_freqs=True)
+    >>> violin(coeffs, n_inputs, ax, show_freqs=True)
 
     .. image:: ../../_static/fourier_vis_violin.png
         :align: center
@@ -286,6 +280,7 @@ def box(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True, show_fliers=Tru
     to the plotting function:
 
     >>> import matplotlib.pyplot as plt
+    >>> from pennylane.fourier.visualize import box
     >>> fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
     >>> box(coeffs, n_inputs, ax, show_freqs=True)
 
@@ -311,13 +306,15 @@ def box(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True, show_fliers=Tru
         data_colour = colour_dict[data_type]
         axis.boxplot(
             data[data_type],
-            boxprops=dict(
-                facecolor=to_rgb(data_colour) + (0.4,), color=data_colour, edgecolor=data_colour
-            ),
-            medianprops=dict(color=data_colour, linewidth=1.5),
-            flierprops=dict(markeredgecolor=data_colour),
-            whiskerprops=dict(color=data_colour),
-            capprops=dict(color=data_colour),
+            boxprops={
+                "facecolor": to_rgb(data_colour) + (0.4,),
+                "color": data_colour,
+                "edgecolor": data_colour,
+            },
+            medianprops={"color": data_colour, "linewidth": 1.5},
+            flierprops={"markeredgecolor": data_colour},
+            whiskerprops={"color": data_colour},
+            capprops={"color": data_colour},
             patch_artist=True,
             showfliers=show_fliers,
         )
@@ -396,6 +393,7 @@ def bar(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
     to the plotting function:
 
     >>> import matplotlib.pyplot as plt
+    >>> from pennylane.fourier.visualize import bar
     >>> fig, ax = plt.subplots(2, 1, sharey=True, figsize=(15, 4))
     >>> bar(coeffs, n_inputs, ax, colour_dict={"real" : "red", "imag" : "blue"})
 
@@ -503,6 +501,7 @@ def panel(coeffs, n_inputs, ax, colour=None):
     degree 2, we need a 5x5 grid.
 
     >>> import matplotlib.pyplot as plt
+    >>> from pennylane.fourier.visualize import panel
     >>> fig, ax = plt.subplots(5, 5, figsize=(12, 10), sharex=True, sharey=True)
     >>> panel(coeffs, n_inputs, ax)
 
@@ -575,7 +574,7 @@ def radial_box(coeffs, n_inputs, ax, show_freqs=True, colour_dict=None, show_fli
             :func:`~.pennylane.fourier.coefficients`.
         n_inputs (int): Dimension of the transformed function.
         ax (array[matplotlib.axes.Axes]): Axes to plot on. For this function, subplots
-            must specify ``subplot_kw=dict(polar=True)`` upon construction.
+            must specify ``subplot_kw={"polar":True}`` upon construction.
         show_freqs (bool): Whether or not to label the frequencies on
             the radial axis. Turn off for large plots.
         colour_dict (dict[str, str]): Specify a colour mapping for positive and negative
@@ -635,10 +634,11 @@ def radial_box(coeffs, n_inputs, ax, show_freqs=True, colour_dict=None, show_fli
     .. code-block:: python
 
         import matplotlib.pyplot as plt
+        from pennylane.fourier.visualize import radial_box
 
         fig, ax = plt.subplots(
             1, 2, sharex=True, sharey=True,
-            subplot_kw=dict(polar=True),
+            subplot_kw={"polar": True},
             figsize=(15, 8)
         )
 
@@ -679,13 +679,15 @@ def radial_box(coeffs, n_inputs, ax, show_freqs=True, colour_dict=None, show_fli
             data[data_type],
             positions=angles,
             widths=width,
-            boxprops=dict(
-                facecolor=to_rgb(data_colour) + (0.4,), color=data_colour, edgecolor=data_colour
-            ),
-            medianprops=dict(color=data_colour, linewidth=1.5),
-            flierprops=dict(markeredgecolor=data_colour),
-            whiskerprops=dict(color=data_colour),
-            capprops=dict(color=data_colour),
+            boxprops={
+                "facecolor": to_rgb(data_colour) + (0.4,),
+                "color": data_colour,
+                "edgecolor": data_colour,
+            },
+            medianprops={"color": data_colour, "linewidth": 1.5},
+            flierprops={"markeredgecolor": data_colour},
+            whiskerprops={"color": data_colour},
+            capprops={"color": data_colour},
             patch_artist=True,
             showfliers=show_fliers,
         )

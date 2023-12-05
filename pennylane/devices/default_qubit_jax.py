@@ -11,25 +11,31 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains an jax implementation of the :class:`~.DefaultQubit`
+"""This module contains a jax implementation of the :class:`~.DefaultQubitLegacy`
 reference plugin.
 """
+# pylint: disable=ungrouped-imports
 import numpy as np
 
 import pennylane as qml
-from pennylane.devices import DefaultQubit
+from pennylane.devices import DefaultQubitLegacy
+from pennylane.pulse import ParametrizedEvolution
+from pennylane.typing import TensorLike
 
 try:
-    import jax.numpy as jnp
     import jax
+    import jax.numpy as jnp
     from jax.config import config as jax_config
+    from jax.experimental.ode import odeint
+
+    from pennylane.pulse.parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
 
 except ImportError as e:  # pragma: no cover
-    raise ImportError("default.qubit.jax device requires installing jax>0.2.0") from e
+    raise ImportError("default.qubit.jax device requires installing jax>0.3.20") from e
 
 
-class DefaultQubitJax(DefaultQubit):
-    """Simulator plugin based on ``"default.qubit"``, written using jax.
+class DefaultQubitJax(DefaultQubitLegacy):
+    """Simulator plugin based on ``"default.qubit.legacy"``, written using jax.
 
     **Short name:** ``default.qubit.jax``
 
@@ -112,7 +118,7 @@ class DefaultQubitJax(DefaultQubit):
             a = keyed_circuit(key1)
             b = keyed_circuit(key2) # b will be different samples now.
 
-        Check out out the `JAX random documentation <https://jax.readthedocs.io/en/latest/jax.random.html>`__
+        Check out the `JAX random documentation <https://jax.readthedocs.io/en/latest/jax.random.html>`__
         for more information.
 
     Args:
@@ -124,6 +130,8 @@ class DefaultQubitJax(DefaultQubit):
             and variances analytically. In non-analytic mode, the ``diff_method="backprop"``
             QNode differentiation method is not supported and it is recommended to consider
             switching device to ``default.qubit`` and using ``diff_method="parameter-shift"``.
+            Or keeping ``default.qubit.jax`` but switching to
+            ``diff_method=qml.gradients.stoch_pulse_grad`` for pulse programming.
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is the key to the
             pseudo random number generator. If None, a random key will be generated.
 
@@ -155,6 +163,8 @@ class DefaultQubitJax(DefaultQubit):
     _size = staticmethod(jnp.size)
     _ndim = staticmethod(jnp.ndim)
 
+    operations = DefaultQubitLegacy.operations.union({"ParametrizedEvolution"})
+
     def __init__(self, wires, *, shots=None, prng_key=None, analytic=None):
         if jax_config.read("jax_enable_x64"):
             c_dtype = jnp.complex128
@@ -176,6 +186,57 @@ class DefaultQubitJax(DefaultQubit):
         capabilities = super().capabilities().copy()
         capabilities.update(passthru_interface="jax")
         return capabilities
+
+    def _apply_parametrized_evolution(self, state: TensorLike, operation: ParametrizedEvolution):
+        # given that wires is a static value (it is not a tracer), we can use an if statement
+        if (
+            2 * len(operation.wires) > self.num_wires
+            and not operation.hyperparameters["complementary"]
+        ):
+            # the device state vector contains less values than the operation matrix --> evolve state
+            return self._evolve_state_vector_under_parametrized_evolution(state, operation)
+        # the device state vector contains more/equal values than the operation matrix --> evolve matrix
+        return self._apply_operation(state, operation)
+
+    def _evolve_state_vector_under_parametrized_evolution(
+        self, state: TensorLike, operation: ParametrizedEvolution
+    ):
+        """Uses an odeint solver to compute the evolution of the input ``state`` under the given
+        ``ParametrizedEvolution`` operation.
+
+        Args:
+            state (array[complex]): input state
+            operation (ParametrizedEvolution): operation to apply on the state
+
+        Raises:
+            ValueError: If the parameters and time windows of the ``ParametrizedEvolution`` are
+                not defined.
+
+        Returns:
+            _type_: _description_
+        """
+        if operation.data is None or operation.t is None:
+            raise ValueError(
+                "The parameters and the time window are required to execute a ParametrizedEvolution "
+                "You can update these values by calling the ParametrizedEvolution class: EV(params, t)."
+            )
+
+        state = self._flatten(state)
+
+        with jax.ensure_compile_time_eval():
+            H_jax = ParametrizedHamiltonianPytree.from_hamiltonian(
+                operation.H, dense=operation.dense, wire_order=self.wires
+            )
+
+        def fun(y, t):
+            """dy/dt = -i H(t) y"""
+            return (-1j * H_jax(operation.data, t=t)) @ y
+
+        result = odeint(fun, state, operation.t, **operation.odeint_kwargs)
+        out_shape = [2] * self.num_wires
+        if operation.hyperparameters["return_intermediate"]:
+            return self._reshape(result, [-1] + out_shape)
+        return self._reshape(result[-1], out_shape)
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):

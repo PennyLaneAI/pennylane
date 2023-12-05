@@ -21,7 +21,6 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.devices import DefaultMixed, DefaultQubit
 
 
 @pytest.fixture(scope="function")
@@ -141,6 +140,7 @@ big_hamiltonian_grad = (
 # Ansatz
 
 
+# pylint: disable=unused-argument
 def custom_fixed_ansatz(params, wires=None):
     """Custom fixed ansatz"""
     qml.RX(0.5, wires=0)
@@ -201,16 +201,14 @@ CIRCUITS = [
 # Device
 
 
-@pytest.fixture(scope="function")
-def mock_device(monkeypatch):
+@pytest.fixture(scope="function", name="mock_device")
+def mock_device_fixture(monkeypatch):
     with monkeypatch.context() as m:
         m.setattr(qml.Device, "__abstractmethods__", frozenset())
         m.setattr(
             qml.Device, "_capabilities", {"supports_tensor_observables": True, "model": "qubit"}
         )
-        m.setattr(
-            qml.Device, "operations", ["RX", "RY", "Rot", "CNOT", "Hadamard", "QubitStateVector"]
-        )
+        m.setattr(qml.Device, "operations", ["RX", "RY", "Rot", "CNOT", "Hadamard", "StatePrep"])
         m.setattr(
             qml.Device, "observables", ["PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian"]
         )
@@ -221,7 +219,7 @@ def mock_device(monkeypatch):
         m.setattr(qml.Device, "apply", lambda self, x, y, z: None)
 
         def get_device(wires=1):
-            return qml.Device(wires=wires)
+            return qml.Device(wires=wires)  # pylint:disable=abstract-class-instantiated
 
         yield get_device
 
@@ -269,59 +267,8 @@ add_queue = zip(QUEUE_HAMILTONIANS_1, QUEUE_HAMILTONIANS_2, QUEUES)
 class TestVQE:
     """Test the core functionality of the VQE module"""
 
-    @pytest.mark.parametrize("ansatz", ANSAETZE)
-    @pytest.mark.parametrize("observables", OBSERVABLES)
-    def test_circuits_valid_init(self, ansatz, observables, mock_device):
-        """Tests that a collection of circuits is properly created by vqe.circuits"""
-        dev = mock_device()
-        circuits = qml.map(ansatz, observables, device=dev)
-
-        assert len(circuits) == len(observables)
-        assert all(callable(c) for c in circuits)
-        assert all(c.device == dev for c in circuits)
-
     @pytest.mark.parametrize("ansatz, params", CIRCUITS)
-    @pytest.mark.parametrize("observables", OBSERVABLES)
-    def test_circuits_evaluate(self, ansatz, observables, params, mock_device, seed):
-        """Tests that the circuits returned by ``vqe.circuits`` evaluate properly"""
-        dev = mock_device(wires=3)
-        circuits = qml.map(ansatz, observables, device=dev)
-        res = circuits(params)
-        assert all(val == 1.0 for val in res)
-
-    @pytest.mark.parametrize("coeffs, observables, expected", hamiltonians_with_expvals)
-    def test_circuits_expvals(self, coeffs, observables, expected):
-        """Tests that the vqe.circuits function returns correct expectation values"""
-        dev = qml.device("default.qubit", wires=2)
-        circuits = qml.map(lambda params, **kwargs: None, observables, dev)
-        res = [a * c([]) for a, c in zip(coeffs, circuits)]
-        assert np.all(res == expected)
-
-    @pytest.mark.parametrize("ansatz", ANSAETZE)
-    @pytest.mark.parametrize("observables", JUNK_INPUTS)
-    def test_circuits_no_observables(self, ansatz, observables, mock_device):
-        """Tests that an exception is raised when no observables are supplied to vqe.circuits"""
-        with pytest.raises(ValueError, match="observables are not valid"):
-            obs = (observables,)
-            qml.map(ansatz, obs, device=mock_device())
-
-    @pytest.mark.parametrize("ansatz", JUNK_INPUTS)
-    @pytest.mark.parametrize("observables", OBSERVABLES)
-    def test_circuits_no_ansatz(self, ansatz, observables, mock_device):
-        """Tests that an exception is raised when no valid ansatz is supplied to vqe.circuits"""
-        with pytest.raises(ValueError, match="not a callable function"):
-            qml.map(ansatz, observables, device=mock_device())
-
-    @pytest.mark.parametrize("coeffs, observables, expected", hamiltonians_with_expvals)
-    def test_aggregate_expval(self, coeffs, observables, expected):
-        """Tests that the aggregate function returns correct expectation values"""
-        dev = qml.device("default.qubit", wires=2)
-        qnodes = qml.map(lambda params, **kwargs: None, observables, dev)
-        expval = qml.dot(coeffs, qnodes)
-        assert expval([]) == sum(expected)
-
-    @pytest.mark.parametrize("ansatz, params", CIRCUITS)
-    @pytest.mark.parametrize("coeffs, observables", [z for z in zip(COEFFS, OBSERVABLES)])
+    @pytest.mark.parametrize("coeffs, observables", list(zip(COEFFS, OBSERVABLES)))
     def test_cost_evaluate(self, params, ansatz, coeffs, observables):
         """Tests that the cost function evaluates properly"""
         hamiltonian = qml.Hamiltonian(coeffs, observables)
@@ -345,7 +292,7 @@ class TestVQE:
         """Tests that the cost function raises an exception if the ansatz is not valid"""
         hamiltonian = qml.Hamiltonian((1.0,), [qml.PauliZ(0)])
         with pytest.raises(ValueError, match="not a callable function."):
-            cost = catch_warn_ExpvalCost(4, hamiltonian, mock_device())
+            catch_warn_ExpvalCost(4, hamiltonian, mock_device())
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("coeffs, observables, expected", hamiltonians_with_expvals)
@@ -364,14 +311,16 @@ class TestVQE:
             assert qnode.gradient_kwargs["h"] == 123
             assert qnode.gradient_kwargs["order"] == 2
 
+    # pylint: disable=protected-access
     @pytest.mark.torch
     @pytest.mark.slow
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
-    def test_optimize_torch(self, shots):
+    def test_optimize_torch(self, dev_name, shots):
         """Test that an ExpvalCost with observable optimization gives the same result as another
         ExpvalCost without observable optimization."""
 
-        dev = qml.device("default.qubit", wires=4, shots=shots)
+        dev = qml.device(dev_name, wires=4, shots=shots)
 
         hamiltonian1 = copy.copy(big_hamiltonian)
         hamiltonian2 = copy.copy(big_hamiltonian)
@@ -397,18 +346,22 @@ class TestVQE:
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
         w = np.random.random(shape)
 
-        c1 = cost(w)
-        exec_opt = dev.num_executions
-        dev._num_executions = 0
+        with qml.Tracker(dev) as tracker:
+            c1 = cost(w)
 
-        c2 = cost2(w)
-        exec_no_opt = dev.num_executions
+        exec_opt = tracker.totals["executions"]
+
+        with tracker:
+            c2 = cost2(w)
+
+        exec_no_opt = tracker.totals["executions"]
 
         assert exec_opt == 5  # Number of groups in the Hamiltonian
         assert exec_no_opt == 15
 
         assert np.allclose(c1, c2, atol=1e-1)
 
+    # pylint: disable=protected-access
     @pytest.mark.tf
     @pytest.mark.slow
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
@@ -442,18 +395,20 @@ class TestVQE:
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
         w = np.random.random(shape)
 
-        c1 = cost(w)
-        exec_opt = dev.num_executions
-        dev._num_executions = 0
+        with qml.Tracker(dev) as tracker:
+            c1 = cost(w)
+        exec_opt = tracker.totals["executions"]
 
-        c2 = cost2(w)
-        exec_no_opt = dev.num_executions
+        with tracker:
+            c2 = cost2(w)
+        exec_no_opt = tracker.totals["executions"]
 
         assert exec_opt == 5  # Number of groups in the Hamiltonian
         assert exec_no_opt == 15
 
         assert np.allclose(c1, c2, atol=1e-1)
 
+    # pylint: disable=protected-access
     @pytest.mark.autograd
     @pytest.mark.slow
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
@@ -487,18 +442,20 @@ class TestVQE:
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
         w = np.random.random(shape)
 
-        c1 = cost(w)
-        exec_opt = dev.num_executions
-        dev._num_executions = 0
+        with qml.Tracker(dev) as tracker:
+            c1 = cost(w)
+        exec_opt = tracker.totals["executions"]
 
-        c2 = cost2(w)
-        exec_no_opt = dev.num_executions
+        with tracker:
+            c2 = cost2(w)
+        exec_no_opt = tracker.totals["executions"]
 
         assert exec_opt == 5  # Number of groups in the Hamiltonian
         assert exec_no_opt == 15
 
         assert np.allclose(c1, c2, atol=1e-1)
 
+    # pylint: disable=protected-access
     @pytest.mark.autograd
     def test_optimize_multiple_terms_autograd(self):
         """Test that an ExpvalCost with observable optimization gives the same
@@ -542,18 +499,20 @@ class TestVQE:
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=5)
         w = np.random.random(shape)
 
-        c1 = cost(w)
-        exec_opt = dev.num_executions
-        dev._num_executions = 0
+        with qml.Tracker(dev) as tracker:
+            c1 = cost(w)
+        exec_opt = tracker.totals["executions"]
 
-        c2 = cost2(w)
-        exec_no_opt = dev.num_executions
+        with tracker:
+            c2 = cost2(w)
+        exec_no_opt = tracker.totals["executions"]
 
         assert exec_opt == 1  # Number of groups in the Hamiltonian
         assert exec_no_opt == 8
 
         assert np.allclose(c1, c2)
 
+    # pylint: disable=protected-access
     @pytest.mark.torch
     def test_optimize_multiple_terms_torch(self):
         """Test that an ExpvalCost with observable optimization gives the same
@@ -597,18 +556,21 @@ class TestVQE:
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=5)
         w = np.random.random(shape)
 
-        c1 = cost(w)
-        exec_opt = dev.num_executions
-        dev._num_executions = 0
+        with qml.Tracker(dev) as tracker:
+            c1 = cost(w)
+        exec_opt = tracker.totals["executions"]
 
-        c2 = cost2(w)
-        exec_no_opt = dev.num_executions
+        with tracker:
+            c2 = cost2(w)
+        exec_no_opt = tracker.totals["executions"]
 
+        # was 1, 8 on old device
         assert exec_opt == 1  # Number of groups in the Hamiltonian
         assert exec_no_opt == 8
 
         assert np.allclose(c1, c2)
 
+    # pylint: disable=protected-access
     @pytest.mark.tf
     def test_optimize_multiple_terms_tf(self):
         """Test that an ExpvalCost with observable optimization gives the same
@@ -652,18 +614,21 @@ class TestVQE:
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=5)
         w = np.random.random(shape)
 
-        c1 = cost(w)
-        exec_opt = dev.num_executions
-        dev._num_executions = 0
+        with qml.Tracker(dev) as tracker:
+            c1 = cost(w)
+        exec_opt = tracker.totals["executions"]
 
-        c2 = cost2(w)
-        exec_no_opt = dev.num_executions
+        with tracker:
+            c2 = cost2(w)
+        exec_no_opt = tracker.totals["executions"]
 
+        # was 1, 8 on old device
         assert exec_opt == 1  # Number of groups in the Hamiltonian
         assert exec_no_opt == 8
 
         assert np.allclose(c1, c2)
 
+    # pylint: disable=protected-access
     @pytest.mark.autograd
     def test_optimize_grad(self):
         """Test that the gradient of ExpvalCost is accessible and correct when using observable
@@ -692,12 +657,13 @@ class TestVQE:
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
         w = pnp.random.uniform(low=0, high=2 * np.pi, size=shape, requires_grad=True)
 
-        dc = qml.grad(cost)(w)
-        exec_opt = dev.num_executions
-        dev._num_executions = 0
+        with qml.Tracker(dev) as tracker:
+            dc = qml.grad(cost)(w)
+        exec_opt = tracker.totals["executions"]
 
-        dc2 = qml.grad(cost2)(w)
-        exec_no_opt = dev.num_executions
+        with tracker:
+            dc2 = qml.grad(cost2)(w)
+        exec_no_opt = tracker.totals["executions"]
 
         assert exec_no_opt > exec_opt
         assert np.allclose(dc, big_hamiltonian_grad)
@@ -781,53 +747,6 @@ class TestVQE:
 
         assert np.allclose(dc, big_hamiltonian_grad)
 
-    @pytest.mark.parametrize("approx", [None, "block-diag", "diag"])
-    def test_metric_tensor(self, approx):
-        """Test that the metric tensor can be calculated."""
-
-        dev = qml.device("default.qubit", wires=3)
-        p = pnp.array([1.0, 1.0, 1.0], requires_grad=True)
-
-        def ansatz(params, **kwargs):
-            qml.RX(params[0], wires=0)
-            qml.RY(params[1], wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.PhaseShift(params[2], wires=1)
-
-        h = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
-        qnodes = catch_warn_ExpvalCost(ansatz, h, dev)
-        mt = qml.metric_tensor(qnodes, approx=approx)(p)
-        assert mt.shape == (3, 3)
-        assert isinstance(mt, pnp.ndarray)
-
-    def test_multiple_devices(self, mocker):
-        """Test that passing multiple devices to ExpvalCost works correctly"""
-
-        dev = [qml.device("default.qubit", wires=2), qml.device("default.mixed", wires=2)]
-        spy = mocker.spy(DefaultQubit, "apply")
-        spy2 = mocker.spy(DefaultMixed, "apply")
-
-        obs = [qml.PauliZ(0), qml.PauliZ(1)]
-        h = qml.Hamiltonian([1, 1], obs)
-
-        qnodes = catch_warn_ExpvalCost(qml.templates.BasicEntanglerLayers, h, dev)
-        np.random.seed(1967)
-        w = np.random.random(qml.templates.BasicEntanglerLayers.shape(n_layers=3, n_wires=2))
-        w = pnp.array(w, requires_grad=True)
-
-        res = qnodes(w)
-
-        spy.assert_called_once()
-        spy2.assert_called_once()
-
-        mapped = qml.map(qml.templates.BasicEntanglerLayers, obs, dev)
-        exp = sum(mapped(w))
-
-        assert np.allclose(res, exp)
-
-        with pytest.warns(UserWarning, match="ExpvalCost was instantiated with multiple devices."):
-            qml.metric_tensor(qnodes, approx="block-diag")(w)
-
     def test_multiple_devices_opt_true(self):
         """Test if a ValueError is raised when multiple devices are passed when optimize=True."""
         dev = [qml.device("default.qubit", wires=2), qml.device("default.qubit", wires=2)]
@@ -851,13 +770,14 @@ class TestVQE:
 
 # Test data
 np.random.seed(1967)
-shape = qml.templates.StronglyEntanglingLayers.shape(2, 4)
-PARAMS = np.random.uniform(low=0, high=2 * np.pi, size=shape)
+_shape = qml.templates.StronglyEntanglingLayers.shape(2, 4)
+PARAMS = np.random.uniform(low=0, high=2 * np.pi, size=_shape)
 
 
 class TestNewVQE:
     """Test the new VQE syntax of passing the Hamiltonian as an observable."""
 
+    # pylint: disable=cell-var-from-loop
     @pytest.mark.parametrize("ansatz, params", CIRCUITS)
     @pytest.mark.parametrize("observables", OBSERVABLES_NO_HERMITIAN)
     def test_circuits_evaluate(self, ansatz, observables, params, tol):
@@ -878,11 +798,11 @@ class TestNewVQE:
         for obs in observables:
 
             @qml.qnode(dev)
-            def circuit():
+            def separate_circuit():
                 ansatz(params, wires=range(3))
                 return qml.expval(obs)
 
-            res_expected.append(circuit())
+            res_expected.append(separate_circuit())
 
         res_expected = np.sum([c * r for c, r in zip(coeffs, res_expected)])
 
@@ -916,10 +836,14 @@ class TestNewVQE:
 
         assert np.allclose(res1, res2, atol=tol)
 
-    @pytest.mark.autograd
+    @pytest.mark.jax
     @pytest.mark.parametrize("shots, dim", [([(1000, 2)], 2), ([30, 30], 2), ([2, 3, 4], 3)])
     def test_shot_distribution(self, shots, dim):
         """Tests that distributed shots work with the new VQE design."""
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.qnode(dev)
@@ -930,12 +854,13 @@ class TestNewVQE:
 
         obs = [qml.PauliZ(0), qml.PauliX(0) @ qml.PauliZ(1)]
         coeffs = np.array([0.1, 0.2])
-        weights = pnp.random.random([2, 2, 3], requires_grad=True)
+        key = jax.random.PRNGKey(42)
+        weights = jax.random.uniform(key, [2, 2, 3])
 
         res = circuit(weights, coeffs)
-        grad = qml.jacobian(circuit, argnum=1)(weights, coeffs)
+        grad = jax.jacobian(circuit, argnums=[1])(weights, coeffs)
         assert len(res) == dim
-        assert grad.shape == (dim, 2)
+        assert qml.math.shape(grad) == (dim, 1, 2)
 
     def test_circuit_drawer(self):
         """Test that the circuit drawer displays Hamiltonians well."""
@@ -982,7 +907,7 @@ class TestNewVQE:
         assert res[0] == circuit1()
         assert res[1] == circuit2()
 
-    def test_error_multiple_expvals_same_wire(self):
+    def test_multiple_expvals_same_wires(self):
         """Tests that more than one Hamiltonian expval can be evaluated."""
 
         coeffs = [1.0, 1.0, 1.0]
@@ -995,8 +920,15 @@ class TestNewVQE:
             qml.templates.StronglyEntanglingLayers(w, wires=range(4))
             return qml.expval(H1), qml.expval(H1)
 
-        with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
-            circuit()
+        res = circuit()
+
+        @qml.qnode(dev)
+        def circuit1():
+            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
+            return qml.expval(H1)
+
+        assert res[0] == circuit1()
+        assert res[1] == circuit1()
 
     def test_error_var_measurement(self):
         """Tests that error is thrown if var(H) is measured."""
@@ -1009,9 +941,7 @@ class TestNewVQE:
         def circuit():
             return qml.var(H)
 
-        with pytest.raises(
-            qml.operation.EigvalsUndefinedError, match="Cannot compute analytic variance"
-        ):
+        with pytest.raises(NotImplementedError):
             circuit()
 
     def test_error_sample_measurement(self):
@@ -1025,7 +955,7 @@ class TestNewVQE:
         def circuit():
             return qml.sample(H)
 
-        with pytest.raises(ValueError, match="Can only return the expectation of a single"):
+        with pytest.raises(qml.operation.DiagGatesUndefinedError):
             circuit()
 
     @pytest.mark.autograd
@@ -1068,7 +998,7 @@ class TestNewVQE:
         dev = qml.device("default.qubit", wires=4)
         H = big_hamiltonian
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev)
         def circuit(w):
             qml.templates.StronglyEntanglingLayers(w, wires=range(4))
             return qml.expval(H)
@@ -1076,7 +1006,7 @@ class TestNewVQE:
         w = torch.tensor(PARAMS, requires_grad=True)
 
         res = circuit(w)
-        res.backward()
+        res.backward()  # pylint:disable=no-member
         dc = w.grad.detach().numpy()
 
         assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
@@ -1089,7 +1019,7 @@ class TestNewVQE:
         dev = qml.device("default.qubit", wires=4)
         H = big_hamiltonian
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev)
         def circuit(w):
             qml.templates.StronglyEntanglingLayers(w, wires=range(4))
             return qml.expval(H)
@@ -1115,7 +1045,7 @@ class TestNewVQE:
         np.random.seed(1967)
         w = jnp.array(PARAMS)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circuit(w):
             qml.templates.StronglyEntanglingLayers(w, wires=range(4))
             return qml.expval(H)
@@ -1138,30 +1068,16 @@ class TestNewVQE:
 
         assert res["num_observables"] == 1
         assert res["num_diagonalizing_gates"] == 0
-        assert res["num_used_wires"] == 2
 
 
-@pytest.mark.autograd
-class TestAutogradInterface:
-    """Tests for the Autograd interface (and the NumPy interface for backward compatibility)"""
-
-    @pytest.mark.parametrize("ansatz, params", CIRCUITS)
-    @pytest.mark.parametrize("observables", OBSERVABLES)
-    @pytest.mark.parametrize("interface", ["autograd"])
-    def test_QNodes_have_right_interface(self, ansatz, observables, params, mock_device, interface):
-        """Test that QNodes have the Autograd interface"""
-        dev = mock_device(wires=3)
-        circuits = qml.map(ansatz, observables, device=dev, interface=interface)
-
-        assert all(c.interface == "autograd" for c in circuits)
-
-        res = [c(params) for c in circuits]
-        assert all(isinstance(val, (np.ndarray, float)) for val in res)
+class TestInterfaces:
+    """Tests for VQE with interfaces."""
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("interface", ["autograd"])
-    def test_gradient(self, tol, interface):
-        """Test differentiation works"""
+    def test_gradient_autograd(self, tol, interface):
+        """Tests for the Autograd interface (and the NumPy interface for
+        backward compatibility)"""
         dev = qml.device("default.qubit", wires=1)
 
         def ansatz(params, **kwargs):
@@ -1186,26 +1102,9 @@ class TestAutogradInterface:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-
-@pytest.mark.torch
-class TestTorchInterface:
-    """Tests for the PyTorch interface"""
-
-    @pytest.mark.parametrize("ansatz, params", CIRCUITS)
-    @pytest.mark.parametrize("observables", OBSERVABLES)
-    def test_QNodes_have_right_interface(self, ansatz, observables, params, mock_device):
-        """Test that QNodes have the torch interface"""
-        import torch
-
-        dev = mock_device(wires=3)
-        circuits = qml.map(ansatz, observables, device=dev, interface="torch")
-        assert all(c.interface == "torch" for c in circuits)
-
-        res = [c(params) for c in circuits]
-        assert all(isinstance(val, torch.Tensor) for val in res)
-
-    def test_gradient(self, tol):
-        """Test differentiation works"""
+    @pytest.mark.torch
+    def test_gradient_torch(self, tol):
+        """Tests for the PyTorch interface"""
         import torch
 
         dev = qml.device("default.qubit", wires=1)
@@ -1234,29 +1133,9 @@ class TestTorchInterface:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-
-@pytest.mark.tf
-class TestTFInterface:
-    """Tests for the TF interface"""
-
-    @pytest.mark.parametrize("ansatz, params", CIRCUITS)
-    @pytest.mark.parametrize("observables", OBSERVABLES)
-    def test_QNodes_have_right_interface(self, ansatz, observables, params, mock_device):
-        """Test that QNodes have the tf interface"""
-        import tensorflow as tf
-
-        if ansatz == amp_embed_and_strong_ent_layer:
-            pytest.skip("TF doesn't work with ragged arrays")
-
-        dev = mock_device(wires=3)
-        circuits = qml.map(ansatz, observables, device=dev, interface="tf")
-        assert all(c.interface == "tf" for c in circuits)
-
-        res = [c(params) for c in circuits]
-        assert all(isinstance(val, (tf.Variable, tf.Tensor)) for val in res)
-
-    def test_gradient(self, tol):
-        """Test differentiation works"""
+    @pytest.mark.tf
+    def test_gradient_tf(self, tol):
+        """Tests for the TF interface"""
         import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=1)
@@ -1284,12 +1163,8 @@ class TestTFInterface:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-
-# Multiple interfaces it will bee tested with math module
-@pytest.mark.all_interfaces
-class TestMultipleInterfaceIntegration:
-    """Tests to ensure that interfaces agree and integrate correctly"""
-
+    # Multiple interfaces will be tested with math module
+    @pytest.mark.all_interfaces
     def test_all_interfaces_gradient_agree(self, tol):
         """Test the gradient agrees across all interfaces"""
         import tensorflow as tf
@@ -1335,16 +1210,3 @@ class TestMultipleInterfaceIntegration:
 
         assert np.allclose(res, res_tf, atol=tol, rtol=0)
         assert np.allclose(res, res_torch, atol=tol, rtol=0)
-
-
-def test_vqe_cost():
-    """Tests that VQECost raises a UserWarning but otherwise behaves as ExpvalCost"""
-
-    h = qml.Hamiltonian([1], [qml.PauliZ(0)])
-    dev = qml.device("default.qubit", wires=1)
-    ansatz = qml.templates.StronglyEntanglingLayers
-
-    with pytest.warns(UserWarning, match="Use of VQECost is deprecated"):
-        cost = qml.VQECost(ansatz, h, dev)
-
-    assert isinstance(cost, qml.ExpvalCost)

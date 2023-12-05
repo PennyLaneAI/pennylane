@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,11 +18,15 @@ and CV circuit simulators that can be used with PennyLane without the need for a
 dependencies. They may also be used in the PennyLane test suite in order
 to verify and test quantum gradient computations.
 
+
+
 .. currentmodule:: pennylane.devices
 .. autosummary::
     :toctree: api
 
+
     default_qubit
+    default_qubit_legacy
     default_qubit_jax
     default_qubit_torch
     default_qubit_tf
@@ -31,12 +35,70 @@ to verify and test quantum gradient computations.
     default_mixed
     default_qutrit
     tests
+
+Next generation devices
+-----------------------
+
+:class:`pennylane.devices.Device` is the latest interface for the next generation of devices that
+replaces :class:`pennylane.Device` and :class:`pennylane.QubitDevice`.
+
+While the previous interface :class:`pennylane.Device` is imported top level, the new :class:`pennylane.devices.Device` is
+accessible from the ``pennylane.devices`` submodule.
+
+.. currentmodule:: pennylane.devices
+.. autosummary::
+    :toctree: api
+
+    ExecutionConfig
+    Device
+    DefaultQubit
+
+Preprocessing Transforms
+------------------------
+
+The ``preprocess`` module offers several transforms that can be used in constructing the :meth:`~.devices.Device.preprocess`
+method for devices.
+
+.. currentmodule:: pennylane.devices.preprocess
+.. autosummary::
+    :toctree: api
+
+    decompose
+    validate_observables
+    validate_measurements
+    validate_device_wires
+    validate_multiprocessing_workers
+    warn_about_trainable_observables
+    no_sampling
+
+Other transforms that may be relevant to device preprocessing include:
+
+.. currentmodule:: pennylane
+.. autosummary::
+    :toctree: api
+
+    defer_measurements
+    transforms.broadcast_expand
+    transforms.sum_expand
+    transforms.split_non_commuting
+    transforms.hamiltonian_expand
+
+Qubit Simulation Tools
+----------------------
+
+.. currentmodule:: pennylane.devices.qubit
+.. automodule:: pennylane.devices.qubit
+
 """
+
+from .execution_config import ExecutionConfig, DefaultExecutionConfig
+from .device_api import Device
+from .default_qubit import DefaultQubit
+
 # DefaultQubitTF and DefaultQubitAutograd not imported here since this
 # would lead to an automatic import of tensorflow and autograd, which are
 # not PennyLane core dependencies
-from .default_qubit import DefaultQubit
+from .default_qubit_legacy import DefaultQubitLegacy
 from .default_gaussian import DefaultGaussian
 from .default_mixed import DefaultMixed
 from .null_qubit import NullQubit
-from .execution_config import ExecutionConfig

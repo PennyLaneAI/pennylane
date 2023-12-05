@@ -14,7 +14,7 @@
 """
 Unit tests for the batch transform.
 """
-
+# pylint: disable=too-few-public-methods,not-callable
 import functools
 import pytest
 
@@ -24,6 +24,17 @@ from pennylane import numpy as np
 
 class TestBatchTransform:
     """Unit tests for the batch_transform class"""
+
+    def test_batch_transform_is_deprecated(self):
+        """Test that the batch_transform class is deprecated."""
+
+        def func(op):
+            return op
+
+        with pytest.warns(
+            UserWarning, match="Use of `batch_transform` to create a custom transform is deprecated"
+        ):
+            _ = qml.batch_transform(func)
 
     @staticmethod
     @qml.batch_transform
@@ -64,6 +75,7 @@ class TestBatchTransform:
 
     @staticmethod
     def expand_logic_with_kwarg(tape, perform_expansion=None, **kwargs):
+        # pylint: disable=unused-argument
         if perform_expansion:
             return TestBatchTransform.phaseshift_expand(tape)
         return tape
@@ -79,24 +91,24 @@ class TestBatchTransform:
         """Test that batch transforms are not created during Sphinx builds"""
 
         @qml.batch_transform
-        def my_transform(tape):
+        def my_transform0(tape):
             tape1 = tape.copy()
             tape2 = tape.copy()
             return [tape1, tape2], None
 
-        assert isinstance(my_transform, qml.batch_transform)
+        assert isinstance(my_transform0, qml.batch_transform)
 
         monkeypatch.setenv("SPHINX_BUILD", "1")
 
         with pytest.warns(UserWarning, match="Batch transformations have been disabled"):
 
             @qml.batch_transform
-            def my_transform(tape):
+            def my_transform1(tape):
                 tape1 = tape.copy()
                 tape2 = tape.copy()
                 return [tape1, tape2], None
 
-        assert not isinstance(my_transform, qml.batch_transform)
+        assert not isinstance(my_transform1, qml.batch_transform)
 
     def test_none_processing(self):
         """Test that a transform that returns None for a processing function applies
@@ -113,11 +125,11 @@ class TestBatchTransform:
             qml.expval(qml.PauliX(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        tapes, fn = my_transform(tape)
+        _, fn = my_transform(tape)
         assert fn(5) == 5
 
         qs = qml.tape.QuantumScript(tape.operations, tape.measurements)
-        tapes, fn = my_transform(qs)
+        _, fn = my_transform(qs)
         assert fn(5) == 5
 
     def test_not_differentiable(self):
@@ -213,6 +225,8 @@ class TestBatchTransform:
         class MyTransform:
             """Dummy class to allow spying to work"""
 
+            # pylint: disable=unused-argument
+
             def my_transform(self, tape, **kwargs):
                 tape1 = tape.copy()
                 tape2 = tape.copy()
@@ -246,6 +260,8 @@ class TestBatchTransform:
         class MyTransform:
             """Dummy class to allow spying to work"""
 
+            # pylint: disable=unused-argument
+
             def my_transform(self, tape, **kwargs):
                 tape1 = tape.copy()
                 tape2 = tape.copy()
@@ -262,6 +278,7 @@ class TestBatchTransform:
         @functools.partial(transform_fn, perform_expansion=perform_expansion)
         @qml.qnode(dev)
         def qnode(x):
+            # pylint: disable=unused-argument
             qml.PhaseShift(0.5, wires=0)
             return qml.expval(qml.PauliX(0))
 
@@ -288,7 +305,7 @@ class TestBatchTransform:
             qml.expval(qml.PauliX(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        tapes, fn = self.my_transform(tape, a, b)
+        tapes, _ = self.my_transform(tape, a, b)
 
         assert len(tapes[0].operations) == 2
         assert tapes[0].operations[0].name == "Hadamard"
@@ -314,7 +331,7 @@ class TestBatchTransform:
             qml.expval(qml.PauliX(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        tapes, fn = self.my_transform(a, b)(tape)
+        tapes, _ = self.my_transform(a, b)(tape)  # pylint: disable=no-value-for-parameter
 
         assert len(tapes[0].operations) == 2
         assert tapes[0].operations[0].name == "Hadamard"
@@ -334,10 +351,10 @@ class TestBatchTransform:
         b = 0.4
         x = 0.543
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit.legacy", wires=1)
         dev = self.my_transform(dev, a, b)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="autograd")
         def circuit(x):
             qml.Hadamard(wires=0)
             qml.RX(x, wires=0)
@@ -365,10 +382,10 @@ class TestBatchTransform:
         b = 0.4
         x = 0.543
 
-        dev = qml.device("default.qubit", wires=1)
-        dev = self.my_transform(a, b)(dev)
+        dev = qml.device("default.qubit.legacy", wires=1)
+        dev = self.my_transform(a, b)(dev)  # pylint: disable=no-value-for-parameter
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="autograd")
         def circuit(x):
             qml.Hadamard(wires=0)
             qml.RX(x, wires=0)
@@ -422,8 +439,9 @@ class TestBatchTransform:
         assert tapes[1].operations[1].name == "RZ"
         assert tapes[1].operations[1].parameters == [b * np.sin(x)]
 
-        expected = fn(dev.batch_execute(tapes))
+        expected = fn(dev.execute(tapes))
         assert res == expected
+        assert circuit.interface == "auto"
 
     def test_parametrized_transform_qnode_decorator(self, mocker):
         """Test that a parametrized transform can be applied
@@ -434,7 +452,7 @@ class TestBatchTransform:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @self.my_transform(a, b)
+        @self.my_transform(a, b)  # pylint: disable=no-value-for-parameter
         @qml.qnode(dev)
         def circuit(x):
             qml.Hadamard(wires=0)
@@ -457,10 +475,10 @@ class TestBatchTransform:
         assert tapes[1].operations[1].name == "RZ"
         assert tapes[1].operations[1].parameters == [b * np.sin(x)]
 
-        expected = fn(dev.batch_execute(tapes))
+        expected = fn(dev.execute(tapes))
         assert res == expected
 
-    def test_custom_qnode_wrapper(self, capsys):
+    def test_custom_qnode_wrapper(self):
         """Test that the QNode execution wrapper can be overridden
         if required."""
         a = 0.654
@@ -477,14 +495,14 @@ class TestBatchTransform:
         custom_wrapper_called = [False]  # use list so can edit by reference
 
         @my_transform.custom_qnode_wrapper
-        def qnode_wrapper(self, qnode, targs, tkwargs):
+        def qnode_wrapper(self, qnode, targs, tkwargs):  # pylint: disable=unused-variable
             wrapper = self.default_qnode_wrapper(qnode, targs, tkwargs)
             assert targs == (a,)
             assert tkwargs == {}
             custom_wrapper_called[0] = True
             return wrapper
 
-        @my_transform(a)
+        @my_transform(a)  # pylint: disable=no-value-for-parameter
         @qml.qnode(dev)
         def circuit(x):
             qml.Hadamard(wires=0)
@@ -550,7 +568,7 @@ class TestBatchTransformGradients:
         """Test that a batch transform is differentiable when using
         autograd"""
         dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(self.circuit, dev, interface="autograd", diff_method=diff_method)
+        qnode = qml.QNode(self.circuit, dev, diff_method=diff_method)
 
         def cost(x, weights):
             return self.my_transform(qnode, weights)(x)
@@ -572,7 +590,7 @@ class TestBatchTransformGradients:
         import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
+        qnode = qml.QNode(self.circuit, dev, diff_method=diff_method)
 
         weights_np = np.array([0.1, 0.2], requires_grad=True)
         x_np = np.array(0.543, requires_grad=True)
@@ -596,7 +614,7 @@ class TestBatchTransformGradients:
         import torch
 
         dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
+        qnode = qml.QNode(self.circuit, dev, diff_method=diff_method)
 
         weights_np = np.array([0.1, 0.2], requires_grad=True)
         weights = torch.tensor(weights_np, requires_grad=True, dtype=torch.float64)
@@ -618,10 +636,13 @@ class TestBatchTransformGradients:
         jax"""
         import jax
 
+        jax.config.update("jax_enable_x64", True)
+
         dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
+        qnode = qml.QNode(self.circuit, dev, diff_method=diff_method)
 
         def cost(x, weights):
+            # pylint: disable=unexpected-keyword-arg
             return self.my_transform(qnode, weights, max_diff=1)(x)
 
         weights_np = np.array([0.1, 0.2], requires_grad=True)
@@ -635,9 +656,10 @@ class TestBatchTransformGradients:
         grad = jax.grad(cost, argnums=[0, 1])(x, weights)
         expected = qml.grad(self.expval)(x_np, weights_np)
         assert len(grad) == len(expected)
-        assert all(np.allclose(g, e) for g, e in zip(grad, expected))
+        for g, e in zip(grad, expected):
+            assert qml.math.allclose(g, e)
 
-    def test_batch_transforms_qnode(self, diff_method, mocker):
+    def test_batch_transforms_qnode(self, diff_method):
         """Test that batch transforms can be applied to a QNode
         without affecting device batch transforms"""
         if diff_method == "backprop":
@@ -656,10 +678,8 @@ class TestBatchTransformGradients:
             qml.CNOT(wires=[0, 1])
             return qml.expval(H)
 
-        spy = mocker.spy(dev, "batch_transform")
-
         res = circuit(weights)
-        spy.assert_called()
+
         assert np.allclose(res, [0, -np.sin(weights[1])], atol=0.1)
 
 
@@ -668,7 +688,7 @@ class TestMapBatchTransform:
 
     def test_result(self, mocker):
         """Test that it correctly applies the transform to be mapped"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
         H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
         x = 0.6
         y = 0.7
@@ -702,7 +722,7 @@ class TestMapBatchTransform:
 
     def test_differentiation(self):
         """Test that an execution using map_batch_transform can be differentiated"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2)
         H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
 
         weights = np.array([0.6, 0.8], requires_grad=True)

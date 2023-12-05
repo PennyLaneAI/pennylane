@@ -15,7 +15,7 @@
 Contains the :class:`ExecutionConfig` data class.
 """
 from dataclasses import dataclass
-from typing import Optional, Tuple, Union
+from typing import Optional
 
 from pennylane.interfaces import SUPPORTED_INTERFACES
 from pennylane.gradients import SUPPORTED_GRADIENT_KWARGS
@@ -27,9 +27,11 @@ SUPPORTED_GRADIENT_METHODS = [
     "finite-diff",
     "device",
     "adjoint",
+    "gradient-transform",
 ]
 
 
+# pylint: disable=too-many-instance-attributes
 @dataclass
 class ExecutionConfig:
     """
@@ -38,19 +40,39 @@ class ExecutionConfig:
     See the Attributes section to learn more about the various configurable options.
     """
 
-    shots: Optional[Union[int, Tuple[int]]] = None
-    """The number of shots for an execution"""
+    grad_on_execution: Optional[bool] = None
+    """Whether or not to compute the gradient at the same time as the execution.
+
+    If ``None``, then the device or execution pipeline can decide which one is most efficient for the situation.
+    """
+
+    use_device_gradient: Optional[bool] = None
+    """Whether or not to compute the gradient on the device.
+
+    ``None`` indicates to use the device if possible, but to fall back to pennylane behavior if it isn't.
+
+    True indicates a request to either use the device gradient or fail.
+    """
+
+    use_device_jacobian_product: Optional[bool] = None
+    """Whether or not to use the device provided vjp or jvp to compute gradients.
+
+    ``None`` indicates to use the device if possible, but to fall back to the device Jacobian
+    or PennyLane behaviour if it isn't.
+
+    ``True`` indicates to either use the device Jacobian products or fail.
+    """
 
     gradient_method: Optional[str] = None
     """The method used to compute the gradient of the quantum circuit being executed"""
 
-    gradient_keyword_arguments: dict = None
+    gradient_keyword_arguments: Optional[dict] = None
     """Arguments used to control a gradient transform"""
 
-    device_options: dict = None
+    device_options: Optional[dict] = None
     """Various options for the device executing a quantum circuit"""
 
-    interface: str = "autograd"
+    interface: Optional[str] = None
     """The machine learning framework to use"""
 
     derivative_order: int = 1
@@ -64,7 +86,12 @@ class ExecutionConfig:
         """
         if self.interface not in SUPPORTED_INTERFACES:
             raise ValueError(
-                f"interface must be in {SUPPORTED_INTERFACES}, got {self.interface} instead."
+                f"Unknown interface. interface must be in {SUPPORTED_INTERFACES}, got {self.interface} instead."
+            )
+
+        if self.grad_on_execution not in {True, False, None}:
+            raise ValueError(
+                f"grad_on_execution must be True, False, or None. Got {self.grad_on_execution} instead."
             )
 
         if (
@@ -85,3 +112,6 @@ class ExecutionConfig:
             raise ValueError(
                 f"All gradient_keyword_arguments keys must be in {SUPPORTED_GRADIENT_KWARGS}, got unexpected values: {set(self.gradient_keyword_arguments) - set(SUPPORTED_GRADIENT_KWARGS)}"
             )
+
+
+DefaultExecutionConfig = ExecutionConfig()
