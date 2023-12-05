@@ -347,7 +347,7 @@ class QuantumScript:
         Returns:
             int or None: The batch size of the quantum script if present, else ``None``.
         """
-        if self._batch_size is _UNSET_BATCH_SIZE:
+        if self._batch_size == _UNSET_BATCH_SIZE:
             self._update_batch_size()
         return self._batch_size
 

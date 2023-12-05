@@ -41,7 +41,7 @@ class TestInitialization:
         assert qs._graph is None
         assert qs._specs is None
         assert qs._shots.total_shots is None
-        assert qs._batch_size is _UNSET_BATCH_SIZE
+        assert qs._batch_size == _UNSET_BATCH_SIZE
         assert qs.batch_size is None
         assert qs.wires == qml.wires.Wires([])
         assert qs.num_wires == 0
@@ -298,10 +298,10 @@ class TestUpdate:
         """Test that batch_size and output_dim are computed lazily."""
         qs = QuantumScript([qml.RX([1.1, 2.2], 0)], [qml.expval(qml.PauliZ(0))])
         copied = qs.copy()
-        assert qs._batch_size is _UNSET_BATCH_SIZE
+        assert qs._batch_size == _UNSET_BATCH_SIZE
         assert qs._output_dim is None
         # copying did not evaluate them either
-        assert copied._batch_size is _UNSET_BATCH_SIZE
+        assert copied._batch_size == _UNSET_BATCH_SIZE
         assert copied._output_dim is None
 
         # now evaluate it
@@ -318,7 +318,7 @@ class TestUpdate:
     def test_lazy_setting_output_dim_sets_batch_size(self):
         """Test that setting the output_dim also sets the batch_size."""
         qs = QuantumScript([qml.RX([1.1, 2.2], 0)], [qml.expval(qml.PauliZ(0))])
-        assert qs._batch_size is _UNSET_BATCH_SIZE
+        assert qs._batch_size == _UNSET_BATCH_SIZE
         assert qs._output_dim is None
 
         assert qs.output_dim == 2  # getting this sets both _output_dim and _batch_size

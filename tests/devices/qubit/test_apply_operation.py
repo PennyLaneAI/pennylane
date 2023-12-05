@@ -801,7 +801,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         param = qml.math.asarray([0.1, 0.2, 0.3], like=ml_framework)
         state = np.ones((2, 2)) / 2
         op = qml.RX(param, 0)
-        assert op._batch_size is _UNSET_BATCH_SIZE  # pylint:disable=protected-access
+        assert op._batch_size == _UNSET_BATCH_SIZE  # pylint:disable=protected-access
         state = method(op, state)
         assert state.shape == (3, 2, 2)
         assert op.batch_size == 3
