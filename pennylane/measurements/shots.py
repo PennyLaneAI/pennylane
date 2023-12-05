@@ -224,7 +224,7 @@ class Shots:
 
     def __mul__(self, scalar):
         if not isinstance(scalar, (int, float)):
-            raise TypeError("Scalar must be a number")
+            raise TypeError("can't multiply sequence by non-int of type 'Shots'")
 
         if self.total_shots is None:
             return self
