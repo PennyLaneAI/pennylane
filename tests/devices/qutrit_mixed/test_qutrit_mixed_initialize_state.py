@@ -57,6 +57,8 @@ class TestInitializeState:
         expected = np.reshape([1 / 9] * 81, [3, 3, 3, 3])
 
         assert qml.math.allequal(state, expected)
+        if interface == "autograd":
+            assert qml.math.get_interface(state) == "numpy"
         assert qml.math.get_interface(state) == interface
 
     def test_create_initial_state_with_BasisState(self):
