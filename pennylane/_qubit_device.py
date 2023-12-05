@@ -1314,9 +1314,10 @@ class QubitDevice(Device):
         if self.shots is None:
             try:
                 eigvals = self._asarray(
-                    observable.eigvals()
-                    if not isinstance(observable, MeasurementValue)
-                    else np.arange(2 ** len(observable.wires)),
+                    observable.eigvals() if not isinstance(observable, MeasurementValue)
+                    # Indexing a MeasurementValue gives the output of the processing function
+                    # for that index as a binary number.
+                    else [observable[i] for i in range(2 ** len(observable.wires))],
                     dtype=self.R_DTYPE,
                 )
             except qml.operation.EigvalsUndefinedError as e:
@@ -1349,9 +1350,10 @@ class QubitDevice(Device):
         if self.shots is None:
             try:
                 eigvals = self._asarray(
-                    observable.eigvals()
-                    if not isinstance(observable, MeasurementValue)
-                    else np.arange(2 ** len(observable.wires)),
+                    observable.eigvals() if not isinstance(observable, MeasurementValue)
+                    # Indexing a MeasurementValue gives the output of the processing function
+                    # for that index as a binary number.
+                    else [observable[i] for i in range(2 ** len(observable.wires))],
                     dtype=self.R_DTYPE,
                 )
             except qml.operation.EigvalsUndefinedError as e:
@@ -1425,7 +1427,7 @@ class QubitDevice(Device):
         batched_ndims = 2
         shape = samples.shape
 
-        if mp.obs is None and mp.mv is None:
+        if mp.obs is None and not isinstance(mp.mv, MeasurementValue):
             # convert samples and outcomes (if using) from arrays to str for dict keys
             samples = np.array([sample for sample in samples if not np.any(np.isnan(sample))])
             samples = qml.math.cast_like(samples, qml.math.int8(0))
@@ -1434,11 +1436,7 @@ class QubitDevice(Device):
             if mp.all_outcomes:
                 outcomes = list(map(_sample_to_str, self.generate_basis_states(num_wires)))
         elif mp.all_outcomes:
-            outcomes = (
-                qml.eigvals(mp.obs)
-                if mp.obs is not None
-                else np.arange(0, 2 ** len(mp.mv.wires), 1)
-            )
+            outcomes = mp.eigvals()
 
         batched = len(shape) == batched_ndims
         if not batched:
@@ -1481,7 +1479,7 @@ class QubitDevice(Device):
         if isinstance(mp, MeasurementProcess):
             if mp.obs is not None:
                 observable = mp.obs
-            elif mp.mv is not None:
+            elif mp.mv is not None and isinstance(mp.mv, MeasurementValue):
                 observable = mp.mv
             else:
                 no_observable_provided = True
@@ -1518,7 +1516,7 @@ class QubitDevice(Device):
             indices = samples @ powers_of_two
             indices = np.array(indices)  # Add np.array here for Jax support.
             if isinstance(observable, MeasurementValue):
-                samples = np.arange(0, 2 ** len(observable.wires), 1)[indices]
+                samples = mp.eigvals()[indices]
             else:
                 try:
                     samples = observable.eigvals()[indices]

@@ -359,6 +359,8 @@ class MeasurementProcess(ABC):
         """
         if self.mv is not None:
             if getattr(self.mv, "name", None) == "MeasurementValue":
+                # Indexing a MeasurementValue gives the output of the processing function
+                # for that index as a binary number.
                 return qml.math.asarray([self.mv[i] for i in range(2 ** len(self.wires))])
             return qml.math.arange(0, 2 ** len(self.wires), 1)
 

@@ -138,6 +138,9 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
                     state=state, wire_order=wire_order
                 )
             return probs[idx]
+
+        # This also covers statistics for mid-circuit measurements manipulated using
+        # arithmetic operators
         eigvals = qml.math.asarray(self.eigvals(), dtype="float64")
 
         # we use ``self.wires`` instead of ``self.obs`` because the observable was

@@ -142,6 +142,8 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
                 )
             return probs[idx] - probs[idx] ** 2
 
+        # This also covers statistics for mid-circuit measurements manipulated using
+        # arithmetic operators
         eigvals = qml.math.asarray(self.eigvals(), dtype="float64")
 
         # we use ``wires`` instead of ``op`` because the observable was

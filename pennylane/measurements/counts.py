@@ -234,11 +234,7 @@ class CountsMP(SampleMeasurement):
         if bin_size is None:
             return self._samples_to_counts(samples)
 
-        num_wires = (
-            (len(self.wires) if self.wires else len(wire_order))
-            if not isinstance(self.mv, MeasurementValue)
-            else 1
-        )
+        num_wires = len(self.wires) if self.wires else len(wire_order)
         samples = (
             samples.reshape((num_wires, -1)).T.reshape(-1, bin_size, num_wires)
             if self.obs is None and not isinstance(self.mv, MeasurementValue)
@@ -313,6 +309,8 @@ class CountsMP(SampleMeasurement):
                     map(_sample_to_str, qml.QubitDevice.generate_basis_states(num_wires))
                 )
         elif self.all_outcomes:
+            # This also covers statistics for mid-circuit measurements manipulated using
+            # arithmetic operators
             outcomes = self.eigvals()
 
         batched = len(shape) == batched_ndims

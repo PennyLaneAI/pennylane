@@ -209,6 +209,8 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         # translate to wire labels used by device
         wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]
+        if isinstance(self.mv, MeasurementValue):
+            mapped_wires.sort()
         inactive_wires = [wire_map[w] for w in inactive_wires]
 
         # reshape the probability so that each axis corresponds to a wire
