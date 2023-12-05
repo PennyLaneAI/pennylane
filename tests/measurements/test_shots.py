@@ -274,10 +274,10 @@ class TestProperties:
     def test_invalid_scalar_type(self):
         """Test that __mul__ raises a TypeError for an invalid scalar type."""
         shots = Shots(100)
-        with pytest.raises(
-            TypeError, match="can't multiply sequence by non-int of type 'Shots'"
-        ) as e:
+        # pylint: disable=pointless-statement
+        with pytest.raises(TypeError, match="can't multiply sequence by non-int of type 'Shots'"):
             shots * "invalid scalar type"  # pylint: disable=unused-variable
+        # pylint: enable=pointless-statement
 
     def test_shots_rmul(self):
         """Test the __rmul__ method for multiplying a number by a shot object."""
