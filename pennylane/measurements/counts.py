@@ -238,7 +238,11 @@ class CountsMP(SampleMeasurement):
         if bin_size is None:
             return self._samples_to_counts(samples)
 
-        num_wires = len(self.wires) if self.wires else len(wire_order)
+        num_wires = (
+            (len(self.wires) if self.wires else len(wire_order))
+            if not isinstance(self.mv, MeasurementValue)
+            else 1
+        )
         samples = (
             samples.reshape((num_wires, -1)).T.reshape(-1, bin_size, num_wires)
             if self.obs is None and not isinstance(self.mv, MeasurementValue)
