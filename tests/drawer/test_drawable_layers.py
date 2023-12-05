@@ -138,6 +138,26 @@ class TestDrawableLayers:
 
         assert layers == [[ops[0]], [ops[1]], [ops[2]]]
 
+    def test_mid_measure_custom_wires(self):
+        """Test that custom wires do not break the drawing of mid-circuit measurements."""
+
+        def teleport(state):
+            qml.QubitStateVector(state, wires=["A"])
+            qml.Hadamard(wires="a")
+            qml.CNOT(wires=["a", "B"])
+            qml.CNOT(wires=["A", "a"])
+            qml.Hadamard(wires="A")
+            m0 = qml.measure("A")
+            m1 = qml.measure("a")
+            qml.cond(m1, qml.PauliX)("B")
+            qml.cond(m0, qml.PauliZ)("B")
+
+        tape_custom = qml.tape.make_qscript(teleport)([0, 1])
+        [tape_standard], _ = qml.map_wires(tape_custom, {"A": 0, "a": 1, "B": 2})
+        ops = tape_standard.operations
+        layers = drawable_layers(ops)
+        assert layers == [ops[:2]] + [[op] for op in ops[2:]]
+
 
 class TestMidMeasure:
     """Tests the various changes from mid-circuit measurements."""

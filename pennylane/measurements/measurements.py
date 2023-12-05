@@ -127,6 +127,8 @@ class MeasurementProcess(ABC):
             where the instance has to be identified
     """
 
+    # pylint:disable=too-many-instance-attributes
+
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
 
@@ -473,14 +475,8 @@ class MeasurementProcess(ABC):
         """
         new_measurement = copy.copy(self)
         if self.mv is not None:
-            mv = copy.copy(self.mv)
-            if getattr(mv, "name", None) == "MeasurementValue":
-                mv.measurements = [m.map_wires(wire_map=wire_map) for m in mv.measurements]
-            else:
-                for val in mv:
-                    val.measurements = [m.map_wires(wire_map=wire_map) for m in val.measurements]
-            new_measurement.mv = mv
-        if self.obs is not None:
+            new_measurement.mv = self.mv.map_wires(wire_map=wire_map) if getattr(self.mv, "name", None) == "MeasurementValue" else [m.map_wires(wire_map=wire_map) for m in self.mv]
+        elif self.obs is not None:
             new_measurement.obs = self.obs.map_wires(wire_map=wire_map)
         elif self._wires is not None:
             new_measurement._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
