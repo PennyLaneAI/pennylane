@@ -15,6 +15,7 @@
 This module contains unit tests for ``qml.ops.functions.assert_valid``.
 """
 # pylint: disable=too-few-public-methods, unused-argument
+from inspect import getmembers, isclass
 import pytest
 
 import numpy as np
@@ -315,3 +316,80 @@ def test_data_is_tuple():
 
     with pytest.raises(AssertionError, match=r"op.data must be a tuple"):
         assert_valid(BadData(2.0, wires=0))
+
+
+def get_all_classes(c):
+    subs = c.__subclasses__()
+    classes = [c]
+    for sub in subs:
+        classes.extend(get_all_classes(sub))
+    return classes
+
+
+def generate_op_instances():
+    classes = get_all_classes(Operator)
+
+    template_types = {
+        i[1] for i in getmembers(qml.templates) if isclass(i[1]) and issubclass(i[1], Operator)
+    }
+
+    ops = []
+
+    for c in classes:
+        if c in template_types:
+            continue
+
+        if issubclass(c, (qml.ops.SymbolicOp, qml.ops.CompositeOp)) and c.num_params != 0:
+            continue
+
+        if c is qml.BlockEncode:
+            op = c(np.random.rand(2, 2), wires=[0, 1])
+            ops.append(op)
+            continue
+
+        if c is qml.QutritUnitary:
+            op = c(np.diag([1, 1, 1]), wires=[0])
+            ops.append(op)
+            continue
+
+        if c is qml.ControlledQutritUnitary:
+            op = c(np.random.rand(3, 3), wires=[0], control_wires=[1])
+            ops.append(op)
+            continue
+
+        n_wires = c.num_wires
+        if n_wires == qml.operation.AnyWires:
+            n_wires = 1
+        if n_wires == qml.operation.AllWires:
+            continue
+
+        try:
+            wires = qml.wires.Wires(range(n_wires))
+            if c.num_params == 0:
+                ops.append(c(wires))
+                continue
+
+            # get ndim_params
+            ndim_params = c.ndim_params
+            if isinstance(ndim_params, property):
+                num_params = c.num_params
+                if isinstance(num_params, property):
+                    num_params = 1
+                ndim_params = (0,) * num_params
+
+            # turn ndim_params into valid params
+            [dim] = set(ndim_params)
+            params = [1] * len(ndim_params) if dim == 0 else [np.diag([1] * dim)]
+
+            ops.append(c(*params, wires=wires))
+
+        except:  # pylint:disable=bare-except
+            pass
+
+    return ops
+
+
+@pytest.mark.parametrize("op", generate_op_instances())
+def test_generated_list_of_ops(op):
+    """Test every auto-generated operator instance."""
+    assert_valid(op)

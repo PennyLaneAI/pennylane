@@ -58,6 +58,9 @@ class Hermitian(Observable):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
+    ndim_params = (2,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
     grad_method = "F"
 
     # Qubit case
