@@ -160,9 +160,6 @@
 
 <h3>Improvements 🛠</h3>
 
-* `qml.expval` with large `Hamiltonian` objects is now faster and has a significantly lower memory footprint (and constant with respect to the number of `Hamiltonian` terms) when the `Hamiltonian` is a `PauliSentence`. That is due to the introduction of a specialized `dot` method in the `PauliSentence` class which performs `PauliSentence`-`state` products.
-  [(#4839)](https://github.com/PennyLaneAI/pennylane/pull/4839)
-
 <h4>Community contributions 🥳</h4>
 
 * Approximate Quantum Fourier Transform (AQFT) is now available from `qml.AQFT`.
@@ -208,19 +205,20 @@
   [(#4878)](https://github.com/PennyLaneAI/pennylane/pull/4878)
   [(#4841)](https://github.com/PennyLaneAI/pennylane/pull/4841)
 
-```pycon
->>> dev = qml.device('default.qubit')
->>> @qml.qnode(dev, diff_method="adjoint", device_vjp=True)
->>> def circuit(x):
-...     qml.RX(x, wires=0)
-...     return qml.expval(qml.PauliZ(0))
->>> with dev.tracker:
-...     g = qml.grad(circuit)(qml.numpy.array(0.1))
->>> dev.tracker.totals
-{'batches': 1, 'simulations': 1, 'executions': 1, 'vjp_batches': 1, 'vjps': 1}
->>> g
--0.09983341664682815
-```
+  ```pycon
+  >>> dev = qml.device('default.qubit')
+  >>> @qml.qnode(dev, diff_method="adjoint", device_vjp=True)
+  >>> def circuit(x):
+  ...     qml.RX(x, wires=0)
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> with dev.tracker:
+  ...     g = qml.grad(circuit)(qml.numpy.array(0.1))
+  >>> dev.tracker.totals
+  {'batches': 1, 'simulations': 1, 'executions': 1, 'vjp_batches': 1, 'vjps': 1}
+  >>> g
+  -0.09983341664682815
+  ```
+
 * Updates to some relevant Pytests to enable its use as a suite of benchmarks.
   [(#4703)](https://github.com/PennyLaneAI/pennylane/pull/4703)
 
@@ -236,6 +234,9 @@
 
 * Expand the benchmarks CI/CD pipeline to export all benchmark data in a single JSON file and a CSV file with runtimes. This includes all references and local benchmarks.
   [(#4873)](https://github.com/PennyLaneAI/pennylane/pull/4873)
+
+* `qml.expval` with large `Hamiltonian` objects is now faster and has a significantly lower memory footprint (and constant with respect to the number of `Hamiltonian` terms) when the `Hamiltonian` is a `PauliSentence`. That is due to the introduction of a specialized `dot` method in the `PauliSentence` class which performs `PauliSentence`-`state` products.
+  [(#4839)](https://github.com/PennyLaneAI/pennylane/pull/4839)
 
 <h4>Other improvements</h4>
 
