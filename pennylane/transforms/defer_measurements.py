@@ -56,6 +56,19 @@ def _check_tape_validity(tape: QuantumTape):
                 "measurements on a device that does not support them."
             )
 
+        if (
+            isinstance(mp, ProbabilityMP)
+            and isinstance(mp.mv, MeasurementValue)
+            and len(mp.mv.measurements) > 1
+            and not tape.shots
+        ):
+            raise ValueError(
+                "Cannot use ProbabilityMP as a measurement when measuring multiple mid-circuit "
+                "measurements collected using arithmetic operators. To collect probabilities for "
+                "multiple mid-circuit measurements, use a list of mid-circuit measurements with "
+                "qml.probs()."
+            )
+
 
 def _collect_mid_measure_info(tape: QuantumTape):
     """Helper function to collect information related to mid-circuit measurements in the tape."""
@@ -143,7 +156,8 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
         tape (QNode or QuantumTape or Callable): a quantum circuit.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The
+        transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
 
@@ -248,8 +262,9 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
                         if op.postselect is None:
                             new_operations.append(qml.CNOT([cur_wire, op.wires[0]]))
                         elif op.postselect == 1:
-                            # We know that the measured wire will be in the |1> state if postselected
-                            # |1>. So we can just apply a PauliX instead of a CNOT to reset
+                            # We know that the measured wire will be in the |1> state if
+                            # postselected |1>. So we can just apply a PauliX instead of
+                            # a CNOT to reset
                             new_operations.append(qml.PauliX(op.wires[0]))
 
                 cur_wire += 1
@@ -267,8 +282,9 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
     for mp in tape.measurements:
         if mp.mv is not None:
             # Update measurement value wires. We can't use `qml.map_wires` because the same
-            # wire can map to different control wires. This mapping is determined by the id
-            # of the MidMeasureMPs. Thus, we need to manually map wires for each MidMeasureMP.
+            # wire can map to different control wires when multiple mid-circuit measurements
+            # are made on the same wire. This mapping is determined by the id of the
+            # MidMeasureMPs. Thus, we need to manually map wires for each MidMeasureMP.
             if isinstance(mp.mv, MeasurementValue):
                 mp.mv.measurements = [
                     qml.map_wires(m, {m.wires[0]: control_wires[m.id]}) for m in mp.mv.measurements

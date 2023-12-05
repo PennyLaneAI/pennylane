@@ -219,7 +219,7 @@ class SampleMP(SampleMeasurement):
             return samples if bin_size is None else samples.T.reshape(num_wires, bin_size, -1)
 
         # If we're sampling observables
-        elif str(name) in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
+        if str(name) in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}
             samples = 1 - 2 * qml.math.squeeze(samples, axis=-1)
         else:

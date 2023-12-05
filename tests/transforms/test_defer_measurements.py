@@ -87,6 +87,10 @@ def test_postselection_error_with_wrong_device():
         (qml.probs(), "Cannot use ProbabilityMP as a measurement without"),
         (qml.sample(), "Cannot use SampleMP as a measurement without"),
         (qml.counts(), "Cannot use CountsMP as a measurement without"),
+        (
+            qml.probs(op=qml.measure(0) + qml.measure(1)),
+            "Cannot use ProbabilityMP as a measurement when",
+        ),
     ],
 )
 def test_unsupported_measurements(mp, err_msg):
@@ -95,6 +99,41 @@ def test_unsupported_measurements(mp, err_msg):
 
     with pytest.raises(ValueError, match=err_msg):
         _, _ = qml.defer_measurements(tape)
+
+
+@pytest.mark.parametrize(
+    "mp, compose_mv",
+    [
+        (qml.expval, True),
+        (qml.var, True),
+        (qml.probs, True),
+        (qml.probs, False),
+        (qml.sample, True),
+        (qml.sample, False),
+        (qml.counts, True),
+        (qml.counts, False),
+    ],
+)
+def test_multi_mcm_stats_same_wire(mp, compose_mv):
+    """Test that a tape collecting statistics on multiple mid-circuit measurements when
+    they measure the same wire is transformed correctly."""
+    mp1 = MidMeasureMP(0, id="foo")
+    mp2 = MidMeasureMP(0, id="bar")
+    mv1 = MeasurementValue([mp1], None)
+    mv2 = MeasurementValue([mp2], None)
+
+    mv = mv1 * mv2 if compose_mv else [mv1, mv2]
+    tape = qml.tape.QuantumScript([qml.PauliX(0), mp1, mp2], [mp(op=mv)], shots=10)
+    [deferred_tape], _ = qml.defer_measurements(tape)
+
+    emp1 = MidMeasureMP(1, id="foo")
+    emp2 = MidMeasureMP(2, id="bar")
+    emv1 = MeasurementValue([emp1], None)
+    emv2 = MeasurementValue([emp2], None)
+    emv = emv1 * emv2 if compose_mv else [emv1, emv2]
+
+    assert deferred_tape.operations == [qml.PauliX(0), qml.CNOT([0, 1]), qml.CNOT([0, 2])]
+    assert deferred_tape.measurements == [mp(op=emv)]
 
 
 class TestQNode:

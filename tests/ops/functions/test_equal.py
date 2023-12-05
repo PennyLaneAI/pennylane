@@ -1259,6 +1259,46 @@ class TestMeasurementsEqual:
             qml.measurements.MidMeasureMP(wires=qml.wires.Wires([0, 1]), reset=True, id="test_id"),
         )
 
+    @pytest.mark.parametrize("mp_fn", [qml.probs, qml.sample, qml.counts])
+    def test_mv_list_as_op(self, mp_fn):
+        """Test that MeasurementProcesses that measure a list of MeasurementValues check for equality
+        correctly."""
+        mv1 = qml.measure(0)
+        mv2 = qml.measure(1)
+        mv3 = qml.measure(1)
+        mv4 = qml.measure(0)
+        mv4.measurements[0].id = mv1.measurements[0].id
+
+        mp1 = mp_fn(op=[mv1, mv2])
+        mp2 = mp_fn(op=[mv4, mv2])
+        mp3 = mp_fn(op=[mv1, mv3])
+        mp4 = mp_fn(op=[mv2, mv1])
+
+        assert qml.equal(mp1, mp1)
+        assert qml.equal(mp1, mp2)
+        assert not qml.equal(mp1, mp3)
+        assert not qml.equal(mp1, mp4)
+
+    @pytest.mark.parametrize("mp_fn", [qml.expval, qml.var, qml.probs, qml.sample, qml.counts])
+    def test_mv_arithmetic_as_op(self, mp_fn):
+        """Test that MeasurementProcesses that measure a list of MeasurementValues check for equality
+        correctly."""
+        mv1 = qml.measure(0)
+        mv2 = qml.measure(1)
+        mv3 = qml.measure(1)
+        mv4 = qml.measure(0)
+        mv4.measurements[0].id = mv1.measurements[0].id
+
+        mp1 = mp_fn(op=mv1 * mv2)
+        mp2 = mp_fn(op=mv4 * mv2)
+        mp3 = mp_fn(op=mv2 * mv1)
+        mp4 = mp_fn(op=mv1 * mv3)
+
+        assert qml.equal(mp1, mp1)
+        assert qml.equal(mp1, mp2)
+        assert qml.equal(mp1, mp3)
+        assert not qml.equal(mp1, mp4)
+
 
 class TestObservablesComparisons:
     """Tests comparisons between Hamiltonians, Tensors and PauliX/Y/Z operators"""
