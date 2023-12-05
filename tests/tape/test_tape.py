@@ -31,7 +31,7 @@ from pennylane.measurements import (
     sample,
     var,
 )
-from pennylane.tape import QuantumTape, expand_tape_state_prep
+from pennylane.tape import QuantumTape, QuantumScript, expand_tape_state_prep
 
 
 def TestOperationMonkeypatching():
@@ -91,7 +91,6 @@ class TestConstruction:
 
         assert tape.wires == qml.wires.Wires([0, "a", 4])
         assert tape._output_dim == len(obs[0].wires) + 2 ** len(obs[1].wires)
-        assert tape._batch_size is None
 
     def test_observable_processing(self, make_tape):
         """Test that observables are processed correctly"""
@@ -358,26 +357,24 @@ class TestConstruction:
         """Test that the batch size is correctly inferred from all operation's
         batch_size, when creating and when using `bind_new_parameters`."""
 
+        tape = QuantumScript(
+            [qml.RX(x, wires=0), qml.Rot(*rot, wires=1), qml.RX(y, wires=1)],
+            [qml.expval(qml.PauliZ(0))],
+        )
         with pytest.raises(
             ValueError, match="batch sizes of the quantum script operations do not match."
         ):
-            with qml.queuing.AnnotatedQueue() as q:
-                qml.RX(x, wires=0)
-                qml.Rot(*rot, wires=1)
-                qml.RX(y, wires=1)
-                qml.apply(qml.expval(qml.PauliZ(0)))
+            _ = tape.batch_size
 
-            tape = qml.tape.QuantumScript.from_queue(q)
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(0.2, wires=0)
-            qml.Rot(1.0, 0.2, -0.3, wires=1)
-            qml.RX(0.2, wires=1)
-            qml.apply(qml.expval(qml.PauliZ(0)))
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = QuantumScript(
+            [qml.RX(0.2, wires=0), qml.Rot(1.0, 0.2, -0.3, wires=1), qml.RX(0.2, wires=1)],
+            [qml.expval(qml.PauliZ(0))],
+        )
+        tape = tape.bind_new_parameters([x] + rot + [y], [0, 1, 2, 3, 4])
         with pytest.raises(
             ValueError, match="batch sizes of the quantum script operations do not match."
         ):
-            tape.bind_new_parameters([x] + rot + [y], [0, 1, 2, 3, 4])
+            _ = tape.batch_size
 
 
 class TestIteration:
