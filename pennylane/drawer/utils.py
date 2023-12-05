@@ -135,15 +135,21 @@ def cwire_connections(layers):
 
     """
     bit_map = {}
+    for layer in layers:
+        for op in layer:
+            if isinstance(op, Conditional):
+                for m in op.meas_val.measurements:
+                    bit_map[m] = None
+
+    connected_layers = [[] for _ in bit_map]
+    connected_wires = [[] for _ in bit_map]
     num_cwires = 0
-    connected_layers = []
-    connected_wires = []
     for layer_idx, layer in enumerate(layers):
         for op in layer:
-            if isinstance(op, MidMeasureMP):
+            if isinstance(op, MidMeasureMP) and op in bit_map:
                 bit_map[op] = num_cwires
-                connected_layers.append([layer_idx])
-                connected_wires.append([op.wires[0]])
+                connected_layers[num_cwires].append(layer_idx)
+                connected_wires[num_cwires].append(op.wires[0])
                 num_cwires += 1
             elif isinstance(op, Conditional):
                 for m in op.meas_val.measurements:

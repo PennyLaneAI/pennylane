@@ -70,6 +70,8 @@ def _add_cond_grouping_symbols(op, layer_str, config):
     n_wires = len(config.wire_map)
 
     mapped_wires = [config.wire_map[w] for w in op.wires]
+    print(config.bit_map)
+    print(op.meas_val.measurements)
     mapped_bits = [config.bit_map[m] for m in op.meas_val.measurements]
     max_w = max(mapped_wires)
     max_b = max(mapped_bits) + n_wires
@@ -398,10 +400,9 @@ def tape_text(
     wire_fillers = ["─", " "]
     bit_fillers = ["═", " "]
     enders = [True, False]  # add "─┤" after all operations
-    bit_maps = [{}, {}]
 
     bit_map, cwire_layers, _ = cwire_connections(layers_list[0] + layers_list[1])
-    n_bits = len(bit_maps[0])
+    n_bits = len(bit_map)
 
     wire_totals = [f"{wire}: " for wire in wire_map]
     bit_totals = ["" for _ in range(n_bits)]
@@ -410,8 +411,8 @@ def tape_text(
     wire_totals = [s.rjust(line_length, " ") for s in wire_totals]
     bit_totals = [s.rjust(line_length, " ") for s in bit_totals]
 
-    for layers, add, w_filler, b_filler, ender, bit_map in zip(
-        layers_list, add_list, wire_fillers, bit_fillers, enders, bit_maps
+    for layers, add, w_filler, b_filler, ender in zip(
+        layers_list, add_list, wire_fillers, bit_fillers, enders
     ):
         # Collect information needed for drawing layers
         config = _Config(
