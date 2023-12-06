@@ -70,8 +70,6 @@ def _add_cond_grouping_symbols(op, layer_str, config):
     n_wires = len(config.wire_map)
 
     mapped_wires = [config.wire_map[w] for w in op.wires]
-    print(config.bit_map)
-    print(op.meas_val.measurements)
     mapped_bits = [config.bit_map[m] for m in op.meas_val.measurements]
     max_w = max(mapped_wires)
     max_b = max(mapped_bits) + n_wires
