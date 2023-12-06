@@ -897,7 +897,7 @@ class MPLDrawer:
         return self.n_wires + self._cwire_scaling * (wire - self.n_wires) - 0.4
 
     def classical_wire(self, layers, wires) -> None:
-        """Draw a horizontal classical control wire.
+        """Draw a classical control line.
 
         Args:
             layers: a list of x coordinates for the classical wire
