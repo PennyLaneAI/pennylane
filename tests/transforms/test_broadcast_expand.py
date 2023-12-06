@@ -49,6 +49,8 @@ sizes = [3, 1, 2]
 coeffs0 = [0.3, -5.1]
 H0 = qml.Hamiltonian(qml.math.array(coeffs0), [qml.PauliZ(0), qml.PauliY(1)])
 
+dev = qml.device("default.qubit", wires=2)
+"""Defines the device used for all tests"""
 
 # Here we exploit the product structure of our circuit
 def exp_fn_Z0(x, y, z):
@@ -85,8 +87,6 @@ observables_and_exp_fns = [
     ([qml.PauliZ(0), qml.PauliY(1)], exp_fn_Z0_and_Y1),
     ([H0], exp_fn_H0),
 ]
-
-dev = qml.device("default.qubit", wires=2)
 
 
 class TestBroadcastExpand:
