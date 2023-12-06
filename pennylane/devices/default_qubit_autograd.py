@@ -98,12 +98,7 @@ class DefaultQubitAutograd(DefaultQubitLegacy):
 
     @staticmethod
     def _asarray(array, dtype=None):
-        res = pnp.asarray(array, dtype=dtype)
-
-        if res.dtype is pnp.dtype("O"):
-            return pnp.hstack(array).flatten().astype(dtype)
-
-        return res
+        return pnp.asarray(array, dtype=dtype)
 
     @staticmethod
     def _const_mul(constant, array):
