@@ -51,6 +51,7 @@
   [(#4803)](https://github.com/PennyLaneAI/pennylane/pull/4803)
   [(#4832)](https://github.com/PennyLaneAI/pennylane/pull/4832)
   [(#4901)](https://github.com/PennyLaneAI/pennylane/pull/4901)
+  [(#4917)](https://github.com/PennyLaneAI/pennylane/pull/4917)
 
 <h4>Catalyst is seamlessly integrated with PennyLane ⚗️</h4>
 
@@ -181,6 +182,9 @@
   Additionally, the relevant tests have been organized and placed in a new file, `tests/ops/test_meta.py` .
   [(#4789)](https://github.com/PennyLaneAI/pennylane/pull/4789)
 
+* `qml.equal` now supports comparison of `QuantumScript` objects
+  [#4902](https://github.com/PennyLaneAI/pennylane/pull/4902)
+
 <h4>Better support for batching</h4>
 
 * `default.qubit` now can evolve already batched states with `ParametrizedEvolution`
@@ -191,6 +195,9 @@
 
 * `qml.ArbitraryUnitary` now supports batching.
   [(#4745)](https://github.com/PennyLaneAI/pennylane/pull/4745)
+
+* Operator and tape batch sizes are evaluated lazily.
+  [(#4911)](https://github.com/PennyLaneAI/pennylane/pull/4911)
 
 <h4>Performance improvements and benchmarking</h4>
 
@@ -277,6 +284,10 @@
 
 * `TRX`, `TRY`, and `TRZ` are now differentiable via backprop on `default.qutrit`
   [(#4790)](https://github.com/PennyLaneAI/pennylane/pull/4790)
+
+* Operators now define a `pauli_rep` property, an instance of `PauliSentence`, defaulting
+  to `None` if the operator has not defined it (or has no definition in the pauli basis).
+  [(#4915)](https://github.com/PennyLaneAI/pennylane/pull/4915)
 
 * `qml.ShotAdaptiveOptimizer` can now use a multinomial distribution for spreading shots across
   the terms of a Hamiltonian measured in a QNode. Note that this is equivalent to what can be
@@ -441,6 +452,7 @@ Ali Asadi,
 Gabriel Bottrill,
 Thomas Bromley,
 Astral Cai,
+Minh Chau,
 Isaac De Vlugt,
 Amintor Dusko,
 Lillian Frederiksen,
@@ -456,4 +468,4 @@ Mudit Pandey,
 Matthew Silverman,
 Jay Soni,
 David Wierichs,
-Justin Woodring,
+Justin Woodring
