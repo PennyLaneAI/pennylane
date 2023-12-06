@@ -273,6 +273,44 @@ class TestProbs:
             for r in res:  # pylint: disable=not-an-iterable
                 assert np.allclose(r, expected, atol=atol, rtol=0)
 
+    @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
+    @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
+    def test_observable_is_measurement_value_list(
+        self, shots, phi, tol, tol_stochastic
+    ):  # pylint: disable=too-many-arguments
+        """Test that probs for mid-circuit measurement values
+        are correct for a single measurement value."""
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            qml.RX(0.5 * phi, 1)
+            m1 = qml.measure(1)
+            qml.RX(2.0 * phi, 2)
+            m2 = qml.measure(2)
+            return qml.probs(op=[m0, m1, m2])
+
+        res = circuit(phi, shots=shots)
+
+        @qml.qnode(dev)
+        def expected_circuit(phi):
+            qml.RX(phi, 0)
+            qml.RX(0.5 * phi, 1)
+            qml.RX(2.0 * phi, 2)
+            return qml.probs(wires=[0, 1, 2])
+
+        expected = expected_circuit(phi, shots=None)
+
+        atol = tol if shots is None else tol_stochastic
+
+        if not isinstance(shots, list):
+            assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
+        else:
+            for r in res:  # pylint: disable=not-an-iterable
+                assert np.allclose(r, expected, atol=atol, rtol=0)
+
     @pytest.mark.parametrize("shots", [None, 100])
     def test_batch_size(self, shots):
         """Test the probability is correct for a batched input."""
