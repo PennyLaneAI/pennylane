@@ -15,15 +15,13 @@
 This module contains unit tests for ``qml.ops.functions.assert_valid``.
 """
 # pylint: disable=too-few-public-methods, unused-argument
-from inspect import getmembers, isclass
 import pytest
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Operator, Operation, Tensor, Observable, Channel
+from pennylane.operation import Operator
 from pennylane.ops.functions import assert_valid
-from pennylane.ops.op_math.adjoint import AdjointOpObs, Adjoint, AdjointOperation, AdjointObs
 
 
 class TestDecompositionErrors:
@@ -319,123 +317,10 @@ def test_data_is_tuple():
         assert_valid(BadData(2.0, wires=0))
 
 
-# these types need manual registration below
-_SKIP_OP_TYPES = {
-    # ops composed of more than one thing
-    Adjoint,
-    Tensor,
-    qml.Hamiltonian,
-    qml.ops.Pow,
-    qml.ops.SProd,
-    qml.ops.Prod,
-    qml.ops.Sum,
-    qml.ops.Controlled,
-    qml.ops.Exp,
-    qml.ops.Evolution,
-    qml.ops.Conditional,
-    # fails for unknown reason - should be registered in the test parametrization below
-    qml.ops.ControlledQubitUnitary,
-    qml.QubitStateVector,
-    qml.GlobalPhase,
-    qml.QubitChannel,
-    qml.SparseHamiltonian,
-    qml.MultiControlledX,
-    qml.ops.qubit.Projector,  # both basis-state and state-vector needed
-    qml.pulse.ParametrizedEvolution,
-    qml.THermitian,
-    qml.resource.FirstQuantization,
-    qml.SpecialUnitary,
-    qml.IntegerComparator,
-    qml.PauliRot,
-    qml.PauliError,
-    qml.ops.qubit.special_unitary.TmpPauliRot,  # private object
-    qml.StatePrep,
-    qml.PCPhase,
-    qml.resource.DoubleFactorization,
-    qml.resource.ResourcesOperation,
-    # templates
-    *[i[1] for i in getmembers(qml.templates) if isclass(i[1]) and issubclass(i[1], Operator)],
-}
-
-# valid instances of types that don't get auto-generated properly
-_REGISTERED_INSTANCES = [
-    qml.BlockEncode(np.random.rand(2, 2), wires=[0, 1]),
-    qml.QutritUnitary(np.eye(3), wires=[0]),
-    qml.ControlledQutritUnitary(np.random.rand(3, 3), wires=[0], control_wires=[1]),
-]
-
-# types that should not have actual instances created
-_ABSTRACT_OR_META_TYPES = {
-    Operator,
-    Operation,
-    Observable,
-    Channel,
-    qml.ops.SymbolicOp,
-    qml.ops.ScalarSymbolicOp,
-    qml.ops.CompositeOp,
-    qml.ops.ControlledOp,
-    qml.ops.qubit.BasisStateProjector,
-    qml.ops.qubit.StateVectorProjector,
-    qml.ops.qubit.StatePrepBase,
-    AdjointOpObs,
-    AdjointOperation,
-    AdjointObs,
-}
-
-
-def get_all_classes(c):
-    """Recursive function to generate a flat list of all child classes of ``c``.
-    (first called with ``Operator``)."""
-    subs = c.__subclasses__()
-    classes = [] if c in _ABSTRACT_OR_META_TYPES else [c]
-    for sub in subs:
-        classes.extend(get_all_classes(sub))
-    return classes
-
-
-def create_op_instance(c):
-    """Given an Operator class, create an instance of it."""
-    n_wires = c.num_wires
-    if n_wires == qml.operation.AllWires:
-        raise ValueError("AllWires unsupported. Op needing whitelisting:", c)
-    if n_wires == qml.operation.AnyWires:
-        n_wires = 1
-
-    wires = qml.wires.Wires(range(n_wires))
-    if (num_params := c.num_params) == 0:
-        return c(wires)
-
-    # get ndim_params
-    ndim_params = c.ndim_params
-    if isinstance(ndim_params, property):
-        if isinstance(num_params, property):
-            num_params = 1
-        ndim_params = (0,) * num_params
-
-    # turn ndim_params into valid params
-    [dim] = set(ndim_params)
-    params = [1] * len(ndim_params) if dim == 0 else [np.eye(dim)]
-
-    return c(*params, wires=wires)
-
-
-_AUTO_TYPES = (
-    set(get_all_classes(Operator)) - _SKIP_OP_TYPES - {type(o) for o in _REGISTERED_INSTANCES}
-)
-
-
-def create_and_catch(c):
-    try:
-        create_op_instance(c)
-    except Exception as e:
-        raise Exception(f"failed to generate instance for {c.__name__}: {e}") from e
-
-
-@pytest.mark.parametrize("op", list(map(create_and_catch, _AUTO_TYPES)) + _REGISTERED_INSTANCES)
-def test_generated_list_of_ops(op):
+def test_generated_list_of_ops(op_to_validate):
     """Test every auto-generated operator instance."""
     if isinstance(
-        op,
+        op_to_validate,
         (
             qml.CY,
             qml.CZ,
@@ -448,7 +333,7 @@ def test_generated_list_of_ops(op):
         ),
     ):
         pytest.xfail(reason="failing for not yet declared reasons")
-    if op.__module__[14:20] == "qutrit":
+    if op_to_validate.__module__[14:20] == "qutrit":
         # QutritBasisState actually passes validation... but it shouldn't
         pytest.xfail(reason="qutrit ops fail matrix validation")
-    assert_valid(op)
+    assert_valid(op_to_validate)
