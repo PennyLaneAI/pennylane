@@ -33,8 +33,6 @@ def make_ops(x, y, z):
         qml.Hadamard(1),
     ]
     return ops
-    # expvals = [qml.expval(ob) for ob in obs]
-    # return qml.tape.QuantumScript(ops, expvals)
 
 
 parameters = [
@@ -98,7 +96,6 @@ class TestBroadcastExpand:
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
     def test_expansion(self, params, size, obs, exp_fn):
         """Test that the expansion works as expected."""
-        # tape = make_tape(*params, obs)
         ops = make_ops(*params)
         expvals = [qml.expval(ob) for ob in obs]
         tape = qml.tape.QuantumScript(ops, expvals)
@@ -122,11 +119,7 @@ class TestBroadcastExpand:
         @qml.qnode(dev)
         def circuit(x, y, z, obs):
             qml.StatePrep(np.array([1, 0, 0, 0]), wires=[0, 1])
-            qml.RX(x, wires=0)
-            qml.PauliY(0)
-            qml.RX(y, wires=1)
-            qml.RZ(z, wires=1)
-            qml.Hadamard(1)
+            _ = make_ops(x, y, z)
             return [qml.expval(ob) for ob in obs]
 
         result = circuit(*params, obs)
