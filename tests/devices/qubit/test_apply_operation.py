@@ -20,6 +20,7 @@ import pytest
 import numpy as np
 from scipy.stats import unitary_group
 import pennylane as qml
+from pennylane.operation import _UNSET_BATCH_SIZE, Operation
 
 
 from pennylane.devices.qubit.apply_operation import (
@@ -51,7 +52,7 @@ def test_custom_operator_with_matrix():
     )
 
     # pylint: disable=too-few-public-methods
-    class CustomOp(qml.operation.Operation):
+    class CustomOp(Operation):
         num_wires = 1
 
         def matrix(self):
@@ -800,7 +801,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         param = qml.math.asarray([0.1, 0.2, 0.3], like=ml_framework)
         state = np.ones((2, 2)) / 2
         op = qml.RX(param, 0)
-        op._batch_size = None  # pylint:disable=protected-access
+        assert op._batch_size is _UNSET_BATCH_SIZE  # pylint:disable=protected-access
         state = method(op, state)
         assert state.shape == (3, 2, 2)
         assert op.batch_size == 3
