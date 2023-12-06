@@ -38,7 +38,6 @@ from pennylane.wires import Wires
 
 # pylint: disable=no-self-use, no-member, protected-access, redefined-outer-name, too-few-public-methods
 # pylint: disable=too-many-public-methods, unused-argument, unnecessary-lambda-assignment, unnecessary-dunder-call
-# pylint: disable=import-outside-toplevel
 
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
@@ -116,7 +115,6 @@ class TestOperatorConstruction:
 
             @property
             def num_params(self):
-                """Return the number of parameters of DummyOp."""
                 return 1
 
         with pytest.raises(ValueError, match="wrong number of parameters"):
@@ -226,8 +224,6 @@ class TestOperatorConstruction:
         """Test that wires can be passed as the final positional argument."""
 
         class DummyOp(qml.operation.Operator):
-            """A dummy operator with one wire and one parameter."""
-
             num_wires = 1
             num_params = 1
 
@@ -239,8 +235,6 @@ class TestOperatorConstruction:
         """Test an error is raised if no wires are passed."""
 
         class DummyOp(qml.operation.Operator):
-            """A dummy operator with one wire and one parameter."""
-
             num_wires = 1
             num_params = 1
 
@@ -251,8 +245,7 @@ class TestOperatorConstruction:
         """Tests that we can set the name of an operator"""
 
         class DummyOp(qml.operation.Operator):
-            """A dummy operator with one wire."""
-
+            r"""Dummy custom operator"""
             num_wires = 1
 
         op = DummyOp(wires=0)
@@ -263,13 +256,9 @@ class TestOperatorConstruction:
         """Tests that the hyperparams attribute is defined for all operations."""
 
         class MyOp(qml.operation.Operation):
-            """A dummy operator with one wire."""
-
             num_wires = 1
 
         class MyOpOverwriteInit(qml.operation.Operation):
-            """A dummy operator with one wire and a custom __init__ method."""
-
             num_wires = 1
 
             def __init__(self, wires):  # pylint:disable=super-init-not-called
@@ -285,9 +274,6 @@ class TestOperatorConstruction:
         """Tests that an operation can add custom hyperparams."""
 
         class MyOp(qml.operation.Operation):
-            """A dummy operator with one wire and a custom __init__ method that sets
-            a hyperparameter."""
-
             num_wires = 1
 
             def __init__(self, wires, basis_state=None):  # pylint:disable=super-init-not-called
@@ -502,13 +488,10 @@ class TestHasReprProperties:
         """Test has_matrix property detects overriding of `compute_matrix` method."""
 
         class MyOp(qml.operation.Operator):
-            """A dummy operator with one wire and a custom compute_matrix method."""
-
             num_wires = 1
 
             @staticmethod
             def compute_matrix(*params, **hyperparams):
-                """Compute a custom matrix for the dummy op."""
                 return np.eye(2)
 
         assert MyOp.has_matrix is True
@@ -519,7 +502,6 @@ class TestHasReprProperties:
 
         class MyOp(qml.operation.Operator):
             def matrix(self, _=None):
-                """Compute a custom matrix for the dummy op."""
                 return np.eye(2)
 
         assert MyOp.has_matrix is True
@@ -529,8 +511,6 @@ class TestHasReprProperties:
         """Test has_matrix property defaults to false if `compute_matrix` not overwritten."""
 
         class MyOp(qml.operation.Operator):
-            """A dummy operator with one wire."""
-
             num_wires = 1
 
         assert MyOp.has_matrix is False
@@ -550,8 +530,6 @@ class TestHasReprProperties:
         """Test has_adjoint property detects overriding of `adjoint` method."""
 
         class MyOp(qml.operation.Operator):
-            """A self-adjoint dummy operator with one wire."""
-
             num_wires = 1
             adjoint = lambda self: self
 
@@ -562,8 +540,6 @@ class TestHasReprProperties:
         """Test has_adjoint property defaults to false if `adjoint` not overwritten."""
 
         class MyOp(qml.operation.Operator):
-            """A dummy operator with one wire."""
-
             num_wires = 1
 
         assert MyOp.has_adjoint is False
@@ -573,9 +549,6 @@ class TestHasReprProperties:
         """Test has_decomposition property detects overriding of `compute_decomposition` method."""
 
         class MyOp(qml.operation.Operator):
-            """A dummy operator with one wire and one parameter as well as a
-            custom compute_decomposition method."""
-
             num_wires = 1
             num_params = 1
 
@@ -590,14 +563,10 @@ class TestHasReprProperties:
         """Test has_decomposition property detects overriding of `decomposition` method."""
 
         class MyOp(qml.operation.Operator):
-            """A dummy operator with one wire and one parameter as well as a
-            custom decomposition method."""
-
             num_wires = 1
             num_params = 1
 
             def decomposition(self):
-                """Return the decomposition of the dummy operator."""
                 return [qml.RX(self.parameters[0], wires=self.wires)]
 
         assert MyOp.has_decomposition is True
@@ -608,8 +577,6 @@ class TestHasReprProperties:
         `decomposition` nor `compute_decomposition` are overwritten."""
 
         class MyOp(qml.operation.Operator):
-            """A dummy operator with one wire."""
-
             num_wires = 1
 
         assert MyOp.has_decomposition is False
@@ -620,9 +587,6 @@ class TestHasReprProperties:
         overriding of `compute_diagonalizing_gates` method."""
 
         class MyOp(qml.operation.Operator):
-            """A dummy operator with one wire and one parameter as well as
-            a custom compute_diagonalizing_gates method."""
-
             num_wires = 1
             num_params = 1
 
@@ -638,14 +602,10 @@ class TestHasReprProperties:
         overriding of `diagonalizing_gates` method."""
 
         class MyOp(qml.operation.Operator):
-            """A dummy operator with one wire and one parameter as well as
-            a custom diagonalizing_gates method."""
-
             num_wires = 1
             num_params = 1
 
             def diagonalizing_gates(self):
-                """Return diagonalizing gates of the dummy op."""
                 return [qml.RX(self.parameters[0], wires=self.wires)]
 
         assert MyOp.has_diagonalizing_gates is True
@@ -656,8 +616,6 @@ class TestHasReprProperties:
         `diagonalizing_gates` nor `compute_diagonalizing_gates` are overwritten."""
 
         class MyOp(qml.operation.Operator):
-            """A dummy operator with one wire."""
-
             num_wires = 1
 
         assert MyOp.has_diagonalizing_gates is False
@@ -667,13 +625,10 @@ class TestHasReprProperties:
         """Test `has_generator` property detects overriding of `generator` method."""
 
         class MyOp(qml.operation.Operator):
-            """A dummy operator with one wire and a generator."""
-
             num_wires = 1
 
             @staticmethod
             def generator():
-                """Return the (identity) generator of the custom operator."""
                 return np.eye(2)
 
         assert MyOp.has_generator is True
@@ -690,8 +645,6 @@ class TestHasReprProperties:
         """Test `has_generator` property defaults to false if `generator` not overwritten."""
 
         class MyOp(qml.operation.Operator):
-            """A dummy operator with one wire."""
-
             num_wires = 1
 
         assert MyOp.has_generator is False
@@ -776,7 +729,6 @@ class TestOperationConstruction:
 
             @property
             def grad_recipe(self):
-                """Return the gradient recipe of the custom operation."""
                 x = self.data[0]
                 return ([[1.0, 1.0, x], [1.0, 0.0, -x]],)
 
@@ -795,7 +747,6 @@ class TestOperationConstruction:
 
             @property
             def parameter_frequencies(self):
-                """Return the parameter frequencies of the custom operation."""
                 return [(0.4, 1.2)]
 
         x = 0.654
@@ -812,7 +763,6 @@ class TestOperationConstruction:
             num_wires = 1
 
             def generator(self):
-                """Return the generator of the custom operation."""
                 return -0.2 * qml.PauliX(wires=self.wires)
 
         x = 0.654
@@ -868,7 +818,6 @@ class TestOperationConstruction:
             grad_method = "A"
 
             def generator(self):
-                """Return the generator of the custom operation."""
                 return -0.2 * qml.PauliX(wires=self.wires)
 
         x = 0.654
@@ -905,7 +854,6 @@ class TestOperationConstruction:
 
             @property
             def parameter_frequencies(self):
-                """Return the parameter frequencies of the custom operation."""
                 x = self.data
                 return [(0.2, _x) for _x in x]
 
@@ -1080,12 +1028,10 @@ class TestObservableConstruction:
         op = DummyObserv(1.0, wires=0, id="test")
         assert op.id == "test"
 
-    def test_raises_if_wire_is_not_given_in_argument(self):
-        """Test that an error is raised if no wires are provided."""
+    def test_raises_if_no_wire_is_given(self):
+        """Test that an error is raised if no wire is passed at initialization."""
 
         class DummyObservable(qml.operation.Observable):
-            """Custom operator with one wire."""
-
             num_wires = 1
 
         with pytest.raises(Exception, match="Must specify the wires *"):
@@ -1118,7 +1064,6 @@ class TestOperatorIntegration:
 
         @qml.qnode(dev1)
         def circuit():
-            """A simple circuit using a dummy operation."""
             DummyOp(wires=[0])
             return qml.expval(qml.PauliZ(0))
 
@@ -1282,8 +1227,6 @@ class TestOperatorIntegration:
         has its right dunder method defined, the class' right dunder method is called."""
 
         class Dummy:
-            """Dummy object providing right dunder methods."""
-
             def __radd__(self, other):
                 return True
 
@@ -2212,15 +2155,11 @@ class TestTensorObservableOperations:
 
 # Dummy class inheriting from Operator
 class MyOp(Operator):
-    """Dummy operator with one wire."""
-
     num_wires = 1
 
 
 # Dummy class inheriting from Operation
 class MyGate(Operation):
-    """Dummy operation with one wire."""
-
     num_wires = 1
 
 
@@ -2298,13 +2237,10 @@ class TestDefaultRepresentations:
 
 
 class MyOpWithMat(Operator):
-    """Custom operator with one wire and compute_matrix method."""
-
     num_wires = 1
 
     @staticmethod
     def compute_matrix(theta):  # pylint:disable=arguments-differ
-        """Compute the matrix of the custom operator."""
         return np.tensordot(theta, np.array([[0.4, 1.2], [1.2, 0.4]]), axes=0)
 
 
@@ -2340,7 +2276,6 @@ class TestChannel:
 
             @staticmethod
             def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
-                """Compute the Kraus matrices of the custom channel."""
                 K1 = np.sqrt(p) * X
                 K2 = np.sqrt(1 - p) * I
                 return [K1, K2]
@@ -2357,8 +2292,6 @@ class TestOperationDerivative:
         """Tests if the function raises an exception if the input operation has no generator"""
 
         class CustomOp(qml.operation.Operation):
-            """Custom operation with one wire and one parameter."""
-
             num_wires = 1
             num_params = 1
 
@@ -2375,10 +2308,7 @@ class TestOperationDerivative:
         parameters"""
 
         class RotWithGen(qml.Rot):
-            """Variant of qml.Rot with a generator defined."""
-
             def generator(self):
-                """Generator of qml.Rot variant."""
                 return qml.Hermitian(np.zeros((2, 2)), wires=self.wires)
 
         op = RotWithGen(0.1, 0.2, 0.3, wires=0)
@@ -2451,8 +2381,6 @@ class TestCVOperation:
         """Make sure that `heisenberg_expand` method receives enough wires to actually expand"""
 
         class DummyOp(qml.operation.CVOperation):
-            """Dummy CV operation on one wire."""
-
             num_wires = 1
 
         op = DummyOp(wires=1)
@@ -2464,8 +2392,6 @@ class TestCVOperation:
         """Make sure that size of input for `heisenberg_expand` method is validated"""
 
         class DummyOp(qml.operation.CVOperation):
-            """Dummy CV operation on one wire."""
-
             num_wires = 1
 
         op = DummyOp(wires=1)
@@ -2478,8 +2404,6 @@ class TestCVOperation:
         """Ensure that `heisenberg_expand` raises exception if it receives an array with order > 2"""
 
         class DummyOp(qml.operation.CVOperation):
-            """Dummy CV operation on one wire."""
-
             num_wires = 1
 
         op = DummyOp(wires=1)
@@ -2522,9 +2446,6 @@ class TestStatePrepBase:
 
 
 class TestCriteria:
-    """Test the Boolean functions that determine criteria or properties
-    of an operation."""
-
     doubleExcitation = qml.DoubleExcitation(0.1, wires=[0, 1, 2, 3])
     rx = qml.RX(qml.numpy.array(0.3, requires_grad=True), wires=1)
     stiff_rx = qml.RX(0.3, wires=1)
@@ -2534,7 +2455,6 @@ class TestCriteria:
     exp = qml.expval(qml.PauliZ(0))
 
     def test_docstring(self):
-        r"""Tests that the docstring of `has_gen` is set correctly."""
         expected = "Returns ``True`` if an operator has a generator defined."
         assert qml.operation.has_gen.__doc__ == expected
 
@@ -2752,8 +2672,6 @@ def test_docstring_example_of_operator_class(tol):
     page in the developer guide."""
 
     class FlipAndRotate(qml.operation.Operation):
-        """A custom operation that performs a rotation and a flip."""
-
         num_wires = qml.operation.AnyWires
         grad_method = "A"
 
@@ -2769,17 +2687,14 @@ def test_docstring_example_of_operator_class(tol):
 
         @property
         def num_params(self):
-            """Return the (fixed) number of parameters of FlipAndRotate."""
             return 1
 
         @property
         def ndim_params(self):
-            """Return the (fixed) number of dimensions per parameter of FlipAndRotate."""
             return (0,)
 
         @staticmethod
         def compute_decomposition(angle, wires, do_flip):  # pylint: disable=arguments-differ
-            """Compute the decomposition of FlipAndRotate."""
             op_list = []
             if do_flip:
                 op_list.append(qml.PauliX(wires=wires[1]))
@@ -2787,7 +2702,6 @@ def test_docstring_example_of_operator_class(tol):
             return op_list
 
         def adjoint(self):
-            """Return the adjoint of FlipAndRotate."""
             return FlipAndRotate(
                 -self.parameters[0],
                 self.wires[0],
@@ -2799,7 +2713,6 @@ def test_docstring_example_of_operator_class(tol):
 
     @qml.qnode(dev)
     def circuit(angle):
-        """A circuit using FlipAndRotate."""
         FlipAndRotate(angle, wire_rot="q1", wire_flip="q1")
         return qml.expval(qml.PauliZ("q1"))
 
