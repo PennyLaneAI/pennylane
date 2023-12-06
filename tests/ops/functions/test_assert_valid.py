@@ -317,23 +317,57 @@ def test_data_is_tuple():
         assert_valid(BadData(2.0, wires=0))
 
 
-def test_generated_list_of_ops(op_to_validate):
+def create_op_instance(c):
+    """Given an Operator class, create an instance of it."""
+    n_wires = c.num_wires
+    if n_wires == qml.operation.AllWires:
+        raise ValueError("AllWires unsupported. Op needing whitelisting:", c)
+    if n_wires == qml.operation.AnyWires:
+        n_wires = 1
+
+    wires = qml.wires.Wires(range(n_wires))
+    if (num_params := c.num_params) == 0:
+        return c(wires)
+
+    # get ndim_params
+    ndim_params = c.ndim_params
+    if isinstance(ndim_params, property):
+        if isinstance(num_params, property):
+            num_params = 1
+        ndim_params = (0,) * num_params
+
+    # turn ndim_params into valid params
+    [dim] = set(ndim_params)
+    params = [1] * len(ndim_params) if dim == 0 else [np.eye(dim)]
+
+    return c(*params, wires=wires)
+
+
+def test_generated_list_of_ops(class_to_validate):
     """Test every auto-generated operator instance."""
-    if isinstance(
-        op_to_validate,
-        (
-            qml.CY,
-            qml.CZ,
-            qml.Identity,
-            qml.Snapshot,
-            qml.PauliY,
-            qml.DiagonalQubitUnitary,
-            qml.PhaseShift,
-            qml.BlockEncode,
-        ),
-    ):
+    if class_to_validate in {
+        qml.CY,
+        qml.CZ,
+        qml.Identity,
+        qml.Snapshot,
+        qml.PauliY,
+        qml.DiagonalQubitUnitary,
+        qml.PhaseShift,
+    }:
         pytest.xfail(reason="failing for not yet declared reasons")
-    if op_to_validate.__module__[14:20] == "qutrit":
+    if class_to_validate.__module__[14:20] == "qutrit":
         # QutritBasisState actually passes validation... but it shouldn't
         pytest.xfail(reason="qutrit ops fail matrix validation")
-    assert_valid(op_to_validate)
+
+    try:
+        op = create_op_instance(class_to_validate)
+    except Exception as e:  # pylint:disable=broad-exception-raised
+        raise Exception(f"failed to create {class_to_validate} instance: {e}") from e
+
+    assert_valid(op)
+
+
+@pytest.mark.parametrize("op", [qml.sum(qml.PauliX(0), qml.PauliZ(0))])
+def test_explicit_list_of_ops(op):
+    """Test the validity of operators that could not be auto-generated."""
+    assert_valid(op)
