@@ -170,9 +170,9 @@ class TestProcessSamples:
         result = qml.counts(mv).process_samples(samples, wire_order=[0])
 
         assert len(result) == 2
-        assert set(result.keys()) == {"0", "1"}
-        assert result["0"] == np.count_nonzero(samples[:, 0] == 0)
-        assert result["1"] == np.count_nonzero(samples[:, 0] == 1)
+        assert set(result.keys()) == {0, 1}
+        assert result[0] == np.count_nonzero(samples[:, 0] == 0)
+        assert result[1] == np.count_nonzero(samples[:, 0] == 1)
 
     def test_counts_all_outcomes_wires(self):
         """Test that the counts output is correct when all_outcomes is passed"""
@@ -224,15 +224,15 @@ class TestProcessSamples:
         result1 = qml.counts(mv, all_outcomes=False).process_samples(samples, wire_order=[0])
 
         assert len(result1) == 1
-        assert set(result1.keys()) == {"0"}
-        assert result1["0"] == shots
+        assert set(result1.keys()) == {0}
+        assert result1[0] == shots
 
         result2 = qml.counts(mv, all_outcomes=True).process_samples(samples, wire_order=[0])
 
         assert len(result2) == 2
-        assert set(result2.keys()) == {"0", "1"}
-        assert result2["0"] == shots
-        assert result2["1"] == 0
+        assert set(result2.keys()) == {0, 1}
+        assert result2[0] == shots
+        assert result2[1] == 0
 
 
 class TestCountsIntegration:

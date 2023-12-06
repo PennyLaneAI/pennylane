@@ -1516,7 +1516,10 @@ class QubitDevice(Device):
             indices = samples @ powers_of_two
             indices = np.array(indices)  # Add np.array here for Jax support.
             if isinstance(observable, MeasurementValue):
-                samples = mp.eigvals()[indices]
+                eigvals = self._asarray(
+                    [observable[i] for i in range(2 ** len(observable.wires))], dtype=self.R_DTYPE
+                )
+                samples = eigvals[indices]
             else:
                 try:
                     samples = observable.eigvals()[indices]
