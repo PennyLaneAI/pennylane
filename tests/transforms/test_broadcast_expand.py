@@ -21,7 +21,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 
-def make_tape(x, y, z, obs):
+def make_ops(x, y, z):
     """Construct a tape with three parametrized, two unparametrized
     operations and expvals of provided observables."""
 
@@ -32,9 +32,9 @@ def make_tape(x, y, z, obs):
         qml.RZ(z, wires=1),
         qml.Hadamard(1),
     ]
-    expvals = [qml.expval(ob) for ob in obs]
-    tape = qml.tape.QuantumScript(ops, expvals)
-    return tape
+    return ops
+    # expvals = [qml.expval(ob) for ob in obs]
+    # return qml.tape.QuantumScript(ops, expvals)
 
 
 parameters = [
@@ -56,13 +56,13 @@ H0 = qml.Hamiltonian(qml.math.array(coeffs0), [qml.PauliZ(0), qml.PauliY(1)])
 def exp_fn_Z0(x, y, z):
     """Compute the expected value for qml.PauliZ(0)."""
     out = -qml.math.cos(x) * qml.math.ones_like(y) * qml.math.ones_like(z)
-    return out[0] if len(out)==1 else out
+    return out[0] if len(out) == 1 else out
 
 
 def exp_fn_Y1(x, y, z):
     """Compute the expected value for qml.PauliY(1)."""
     out = qml.math.sin(y) * qml.math.cos(z) * qml.math.ones_like(x)
-    return out[0] if len(out)==1 else out
+    return out[0] if len(out) == 1 else out
 
 
 def exp_fn_Z0Y1(x, y, z):
@@ -90,6 +90,7 @@ observables_and_exp_fns = [
 
 dev = qml.device("default.qubit", wires=2)
 
+
 class TestBroadcastExpand:
     """Tests for the broadcast_expand transform"""
 
@@ -97,7 +98,10 @@ class TestBroadcastExpand:
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
     def test_expansion(self, params, size, obs, exp_fn):
         """Test that the expansion works as expected."""
-        tape = make_tape(*params, obs)
+        # tape = make_tape(*params, obs)
+        ops = make_ops(*params)
+        expvals = [qml.expval(ob) for ob in obs]
+        tape = qml.tape.QuantumScript(ops, expvals)
         assert tape.batch_size == size
 
         tapes, fn = qml.transforms.broadcast_expand(tape)
@@ -109,9 +113,9 @@ class TestBroadcastExpand:
 
         assert qml.math.allclose(result, expected)
 
-    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes)))
+    @pytest.mark.parametrize("params", parameters)
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
-    def test_expansion_qnode(self, params, size, obs, exp_fn):
+    def test_expansion_qnode(self, params, obs, exp_fn):
         """Test that the transform integrates correctly with the transform program"""
 
         @qml.transforms.broadcast_expand
@@ -170,16 +174,16 @@ class TestBroadcastExpand:
     @pytest.mark.filterwarnings("ignore:Output seems independent of input")
     @pytest.mark.parametrize("params", parameters)
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
-    @pytest.mark.parametrize("gradient_fn", [qml.gradients.param_shift, "backprop"])
-    def test_autograd(self, params, obs, exp_fn, gradient_fn):
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
+    def test_autograd(self, params, obs, exp_fn, diff_method):
         """Test that the expansion works with autograd and is differentiable."""
         params = tuple(pnp.array(p, requires_grad=True) for p in params)
+
+        @qml.transforms.broadcast_expand
+        @qml.qnode(dev, interface="autograd", diff_method=diff_method)
         def cost(*params):
-            tape = make_tape(*params, obs)
-            tapes, fn = qml.transforms.broadcast_expand(tape)
-            if len(tape.measurements) > 1:
-                return qml.math.stack(fn(qml.execute(tapes, dev, qml.gradients.param_shift)))
-            return fn(qml.execute(tapes, dev, qml.gradients.param_shift))
+            make_ops(*params)
+            return qml.math.stack([qml.expval(ob) for ob in obs])
 
         expected = exp_fn(*params)
 
@@ -194,8 +198,8 @@ class TestBroadcastExpand:
     @pytest.mark.parametrize("params", parameters)
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
     @pytest.mark.parametrize("use_jit", [True, False])
-    @pytest.mark.parametrize("gradient_fn", [qml.gradients.param_shift, "backprop"])
-    def test_jax(self, params, obs, exp_fn, use_jit, gradient_fn):
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
+    def test_jax(self, params, obs, exp_fn, use_jit, diff_method):
         """Test that the expansion works with jax and is differentiable."""
         # pylint: disable=too-many-arguments
         import jax
@@ -203,10 +207,12 @@ class TestBroadcastExpand:
         jax.config.update("jax_enable_x64", True)
 
         params = tuple(jax.numpy.array(p) for p in params)
+
+        @qml.transforms.broadcast_expand
+        @qml.qnode(dev, interface="jax", diff_method=diff_method)
         def cost(*params):
-            tape = make_tape(*params, obs)
-            tapes, fn = qml.transforms.broadcast_expand(tape)
-            return fn(qml.execute(tapes, dev, gradient_fn))
+            make_ops(*params)
+            return tuple(qml.expval(ob) for ob in obs)
 
         if use_jit:
             cost = jax.jit(cost)
@@ -220,12 +226,8 @@ class TestBroadcastExpand:
         exp_jac = jax.jacobian(exp_fn, argnums=[0, 1, 2])(*params)
 
         if len(obs) > 1:
-            exp_jac_0 = jax.jacobian(exp_fn_Z0, argnums=[0, 1, 2])(*params)
-            exp_jac_1 = jax.jacobian(exp_fn_Y1, argnums=[0, 1, 2])(*params)
-
-            assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac[0], exp_jac_0))
-            assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac[1], exp_jac_1))
-
+            assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac[0], exp_jac[0]))
+            assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac[1], exp_jac[1]))
         else:
             assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac, exp_jac))
 
@@ -239,10 +241,11 @@ class TestBroadcastExpand:
 
         params = tuple(tf.Variable(p, dtype=tf.float64) for p in params)
 
+        @qml.transforms.broadcast_expand
+        @qml.qnode(dev, interface="tensorflow")
         def cost(*params):
-            tape = make_tape(*params, obs)
-            tapes, fn = qml.transforms.broadcast_expand(tape)
-            return fn(qml.execute(tapes, dev, qml.gradients.param_shift))
+            make_ops(*params)
+            return tuple(qml.expval(ob) for ob in obs)
 
         with tf.GradientTape(persistent=True) as t:
             out = tf.stack(cost(*params))
@@ -261,8 +264,8 @@ class TestBroadcastExpand:
     @pytest.mark.filterwarnings("ignore:Output seems independent of input")
     @pytest.mark.parametrize("params", parameters)
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
-    @pytest.mark.parametrize("gradient_fn", [qml.gradients.param_shift, "backprop"])
-    def test_torch(self, params, obs, exp_fn, gradient_fn):
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
+    def test_torch(self, params, obs, exp_fn, diff_method):
         """Test that the expansion works with torch and is differentiable."""
         import torch
 
@@ -271,15 +274,24 @@ class TestBroadcastExpand:
         )
         params = tuple(pnp.array(p, requires_grad=True) for p in params)
 
+        @qml.transforms.broadcast_expand
+        @qml.qnode(dev, interface="torch", diff_method=diff_method)
         def cost(*params):
-            tape = make_tape(*params, obs)
-            tapes, fn = qml.transforms.broadcast_expand(tape)
-            if len(tape.measurements) > 1:
-                return qml.math.stack(fn(qml.execute(tapes, dev, qml.gradients.param_shift)))
-            return fn(qml.execute(tapes, dev, qml.gradients.param_shift))
+            make_ops(*params)
+            return tuple(qml.expval(ob) for ob in obs)
 
+        res = cost(*torch_params)
         jac = torch.autograd.functional.jacobian(cost, torch_params)
-        exp_jac = qml.jacobian(exp_fn)(*params)
+        exp_jac = torch.autograd.functional.jacobian(exp_fn, torch_params)
 
-        assert qml.math.allclose(cost(*torch_params), exp_fn(*params))
+        if len(obs) > 1:
+            assert all(qml.math.allclose(r, e) for r, e in zip(res, exp_fn(*params)))
+            # Need to perform a transpose because the broadcast_expand transform pulls out the
+            # broadcasting axis, which the `exp_fn` does not do.
+            jac = tuple(
+                qml.math.stack([jac[i][j] for i in range(len(obs))]) for j in range(len(params))
+            )
+        else:
+            assert qml.math.allclose(res, exp_fn(*params))
+
         assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac, exp_jac))
