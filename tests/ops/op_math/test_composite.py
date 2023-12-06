@@ -143,10 +143,11 @@ class TestConstruction:
     def test_different_batch_sizes_raises_error(self):
         """Test that an error is raised if the operands have different batch sizes."""
         base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = ValidOp(base, qml.RY(1, 0), qml.RZ(np.array([1, 2, 3, 4]), wires=2))
         with pytest.raises(
             ValueError, match="Broadcasting was attempted but the broadcasted dimensions"
         ):
-            _ = ValidOp(base, qml.RY(1, 0), qml.RZ(np.array([1, 2, 3, 4]), wires=2))
+            _ = op.batch_size
 
     def test_decomposition_raises_error(self):
         """Test that calling decomposition() raises a ValueError."""
