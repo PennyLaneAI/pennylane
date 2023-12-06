@@ -166,7 +166,7 @@ def _(op: qml.ops.op_math.Conditional, drawer, layer, config) -> None:
     sorted_bits = sorted([config.bit_map[m] for m in op.meas_val.measurements])
     for b in sorted_bits[:-1]:
         erase_right = layer < config.terminal_layers[b]
-        drawer.join(layer, b + drawer.n_wires, erase_right=erase_right)
+        drawer.cwire_join(layer, b + drawer.n_wires, erase_right=erase_right)
 
 
 def _get_measured_wires(measurements, wires) -> set:

@@ -917,9 +917,15 @@ class MPLDrawer:
         line = plt.Line2D(layers, [self._y(w) for w in wires], path_effects=[s0, s1], zorder=1)
         self.ax.add_line(line)
 
-    def join(self, layer, wire, erase_right=False):
+    def cwire_join(self, layer, wire, erase_right=False):
         """Erase the horizontal edges of an intersection between classical wires. By default, erases
         only the left edge.
+
+        Args:
+            layer: the x corrdinate for the classical wire intersection
+            wire: the classical wire coordinate for the intersection
+            erase_right=False(bool):  whether or not to erase the right side of the intersection
+                in addition to the left.
 
         """
         xs = (layer - 0.2, layer + 0.2) if erase_right else (layer - 0.2, layer)

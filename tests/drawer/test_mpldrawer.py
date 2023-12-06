@@ -792,35 +792,36 @@ class TestClassicalWires:
     def test_classical_wire(self):
         """Test the addition of horiziontal classical wires."""
         drawer = MPLDrawer(n_wires=1, n_layers=4, c_wires=3)
-        drawer.classical_wire(c_wire=2, start_layer=1, end_layer=3)
 
-        assert drawer._cond_shift == 0.03
-        assert drawer._cwire_scaling == 0.25
+        layers = [0, 0, 1, 1]
+        wires = [0, 1, 1, 0]
+        drawer.classical_wire(layers, wires)
 
-        assert len(drawer.ax.lines) == 3
+        [_, cwire] = drawer.ax.lines
+        assert cwire.get_xdata() == layers
+        assert cwire.get_ydata() == [0, 0.6, 0.6, 0]  # cwires are scaledc
 
-        base_y = 1 + 2 * 0.25 - 0.4  # number of wires + scaling * classical wire - 0.4
+        [pe1, pe2] = cwire.get_path_effects()
 
-        assert drawer.ax.lines[1].get_xdata() == (1 - 0.03, 3 + 0.03)
-        assert allclose(drawer.ax.lines[1].get_ydata(), (base_y - 0.03, base_y - 0.03))
-
-        assert drawer.ax.lines[2].get_xdata() == (1 - 0.03, 3 + 0.03)
-        assert allclose(drawer.ax.lines[2].get_ydata(), (base_y + 0.03, base_y + 0.03))
+        # probably not a good way to test this, but the best I can figure out
+        assert pe1._gc == {
+            "linewidth": 5 * plt.rcParams["lines.linewidth"],
+            "foreground": plt.rcParams["lines.color"],
+        }
+        assert pe2._gc == {
+            "linewidth": 3 * plt.rcParams["lines.linewidth"],
+            "foreground": plt.rcParams["figure.facecolor"],
+        }
 
         plt.close()
 
-    def test_classical_control(self):
-        """Test the addition of classical control wires."""
+    def test_cwire_join(self):
+        """Test the cwire join method."""
+        drawer = MPLDrawer(n_wires=1, n_layers=4, c_wires=3)
 
-        drawer = MPLDrawer(n_wires=2, n_layers=4, c_wires=3)
-        drawer.classical_control(c_wire=2, layer=1, wire=1)
+        drawer.cwire_join(1, 2)
 
-        assert len(drawer.ax.lines) == 4
-
-        assert drawer.ax.lines[2].get_xdata() == (1 - 0.03, 1 - 0.03)
-        assert drawer.ax.lines[3].get_xdata() == (1 + 0.03, 1 + 0.03)
-        assert allclose(drawer.ax.lines[2].get_ydata(), (1, 2 + 2 * 0.25 + 0.03 - 0.4))
-        assert allclose(drawer.ax.lines[3].get_ydata(), (1, 2 + 2 * 0.25 + 0.03 - 0.4))
+        plt.close()
 
 
 class TestCond:
