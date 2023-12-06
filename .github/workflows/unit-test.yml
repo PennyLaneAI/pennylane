@@ -101,6 +101,7 @@ jobs:
         with:
           ref: ${{ inputs.branch }}
           fetch-depth: ${{ inputs.checkout_fetch_depth }}
+          repository: PennyLaneAI/pennylane
 
       - name: Determine benchmark name
         if: ${{ inputs.pipeline_mode != 'unit-tests' }}
@@ -209,7 +210,7 @@ jobs:
           name: ${{ inputs.coverage_artifact_name }}
           path: coverage.xml
 
-        # If this is a reference benchmark move file to the cached directory, and we have a non-empty reference benchmark file.
+      # If this is a reference benchmark move file to the cached directory, and we have a non-empty reference benchmark file.
       - name: Move reference pytest benchmark file to cache
         if: inputs.pipeline_mode == 'reference-benchmarks' && hashFiles('benchmarks.json') != ''
         run: mkdir -p ${{ github.workspace }}/benchmark_reference && cp benchmarks.json "$_"
@@ -225,6 +226,12 @@ jobs:
         if: inputs.pipeline_mode == 'benchmarks' && hashFiles('benchmark_results/benchmarks_xubm.json') != '' && hashFiles('benchmark_reference/benchmarks_xubm.json') != ''
         run: |
           python .github/workflows/scripts/benchmarks/plot_benchmarks.py --graph_name ${{ steps.benchmark_name.outputs.benchmark_name }}
+
+      # Merge benchmarks data in a single JSON. Create a CSV file with runtimes. Move data to the artifact directory.
+      - name: Post-process benchmark data
+        if: inputs.pipeline_mode == 'benchmarks' && hashFiles('benchmark_results/benchmarks_xubm.json') != '' && hashFiles('benchmark_reference/benchmarks_xubm.json') != ''
+        run: |
+          python .github/workflows/scripts/benchmarks/export_benchmarks_data.py
 
       # If this is an assessment benchmark, upload the data as an artifact.
       - name: Upload pytest benchmark results
