@@ -23,6 +23,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.operation import Operator, Operation, Tensor, Observable, Channel
 from pennylane.ops.functions import assert_valid
+from pennylane.ops.op_math.adjoint import AdjointOpObs, Adjoint, AdjointOperation, AdjointObs
 
 
 class TestDecompositionErrors:
@@ -318,29 +319,10 @@ def test_data_is_tuple():
         assert_valid(BadData(2.0, wires=0))
 
 
-def get_all_classes(c):
-    subs = c.__subclasses__()
-    classes = [c]
-    for sub in subs:
-        classes.extend(get_all_classes(sub))
-    return classes
-
-
-SKIP_OP_TYPES = {
-    # abstract/meta types - do not test
-    Operator,
-    Operation,
-    Observable,
-    Channel,
-    qml.ops.SymbolicOp,
-    qml.ops.ScalarSymbolicOp,
-    qml.ops.CompositeOp,
-    qml.ops.ControlledOp,
-    qml.ops.qubit.BasisStateProjector,
-    qml.ops.qubit.StateVectorProjector,
-    qml.ops.qubit.StatePrepBase,
+# these types need manual registration below
+_SKIP_OP_TYPES = {
     # ops composed of more than one thing
-    # once an example is registered, move to the "registered" section below as well
+    Adjoint,
     Tensor,
     qml.Hamiltonian,
     qml.ops.Pow,
@@ -352,7 +334,6 @@ SKIP_OP_TYPES = {
     qml.ops.Evolution,
     qml.ops.Conditional,
     # fails for unknown reason - should be registered in the test parametrization below
-    # once an example is registered, move to the "registered" section below as well
     qml.ops.ControlledQubitUnitary,
     qml.QubitStateVector,
     qml.GlobalPhase,
@@ -373,60 +354,77 @@ SKIP_OP_TYPES = {
     qml.resource.DoubleFactorization,
     qml.resource.ResourcesOperation,
     # templates
-    # once an example is registered, move to the "registered" section below as well
     *[i[1] for i in getmembers(qml.templates) if isclass(i[1]) and issubclass(i[1], Operator)],
-    # ops manually registered below
-    qml.BlockEncode,
-    qml.QutritUnitary,
-    qml.ControlledQutritUnitary,
 }
 
-
-def generate_op_instances():
-    classes = set(get_all_classes(Operator))
-
-    ops = []
-
-    for c in classes:
-        if c in SKIP_OP_TYPES or "Adjoint" in c.__name__:
-            continue
-
-        n_wires = c.num_wires
-        if n_wires == qml.operation.AnyWires:
-            n_wires = 1
-        if n_wires == qml.operation.AllWires:
-            continue
-
-        wires = qml.wires.Wires(range(n_wires))
-        if c.num_params == 0:
-            ops.append(c(wires))
-            continue
-
-        # get ndim_params
-        ndim_params = c.ndim_params
-        if isinstance(ndim_params, property):
-            num_params = c.num_params
-            if isinstance(num_params, property):
-                num_params = 1
-            ndim_params = (0,) * num_params
-
-        # turn ndim_params into valid params
-        [dim] = set(ndim_params)
-        params = [1] * len(ndim_params) if dim == 0 else [np.eye(dim)]
-
-        ops.append(c(*params, wires=wires))
-
-    return ops
-
-
-all_ops = generate_op_instances() + [
+# valid instances of types that don't get auto-generated properly
+_REGISTERED_INSTANCES = [
     qml.BlockEncode(np.random.rand(2, 2), wires=[0, 1]),
-    qml.QutritUnitary(np.diag([1, 1, 1]), wires=[0]),
+    qml.QutritUnitary(np.eye(3), wires=[0]),
     qml.ControlledQutritUnitary(np.random.rand(3, 3), wires=[0], control_wires=[1]),
 ]
 
+# types that should not have actual instances created
+_ABSTRACT_OR_META_TYPES = {
+    Operator,
+    Operation,
+    Observable,
+    Channel,
+    qml.ops.SymbolicOp,
+    qml.ops.ScalarSymbolicOp,
+    qml.ops.CompositeOp,
+    qml.ops.ControlledOp,
+    qml.ops.qubit.BasisStateProjector,
+    qml.ops.qubit.StateVectorProjector,
+    qml.ops.qubit.StatePrepBase,
+    AdjointOpObs,
+    AdjointOperation,
+    AdjointObs,
+}
 
-@pytest.mark.parametrize("op", generate_op_instances())
+
+def get_all_classes(c):
+    """Recursive function to generate a flat list of all child classes of ``c``.
+    (first called with ``Operator``)."""
+    subs = c.__subclasses__()
+    classes = [] if c in _ABSTRACT_OR_META_TYPES else [c]
+    for sub in subs:
+        classes.extend(get_all_classes(sub))
+    return classes
+
+
+def create_op_instance(c):
+    """Given an Operator class, create an instance of it."""
+    n_wires = c.num_wires
+    if n_wires == qml.operation.AllWires:
+        raise ValueError("AllWires unsupported. Op needing whitelisting:", c)
+    if n_wires == qml.operation.AnyWires:
+        n_wires = 1
+
+    wires = qml.wires.Wires(range(n_wires))
+    if (num_params := c.num_params) == 0:
+        return c(wires)
+
+    # get ndim_params
+    ndim_params = c.ndim_params
+    if isinstance(ndim_params, property):
+        if isinstance(num_params, property):
+            num_params = 1
+        ndim_params = (0,) * num_params
+
+    # turn ndim_params into valid params
+    [dim] = set(ndim_params)
+    params = [1] * len(ndim_params) if dim == 0 else [np.eye(dim)]
+
+    return c(*params, wires=wires)
+
+
+_AUTO_TYPES = (
+    set(get_all_classes(Operator)) - _SKIP_OP_TYPES - {type(o) for o in _REGISTERED_INSTANCES}
+)
+
+
+@pytest.mark.parametrize("op", list(map(create_op_instance, _AUTO_TYPES)) + _REGISTERED_INSTANCES)
 def test_generated_list_of_ops(op):
     """Test every auto-generated operator instance."""
     if isinstance(
@@ -439,6 +437,7 @@ def test_generated_list_of_ops(op):
             qml.PauliY,
             qml.DiagonalQubitUnitary,
             qml.PhaseShift,
+            qml.BlockEncode,
         ),
     ):
         pytest.xfail(reason="failing for not yet declared reasons")
