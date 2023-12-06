@@ -308,8 +308,8 @@ class Prod(CompositeOp):
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
 
     def sparse_matrix(self, wire_order=None):
-        if self._pauli_rep:  # Get the sparse matrix from the PauliSentence representation
-            return self._pauli_rep.to_mat(wire_order=wire_order or self.wires, format="csr")
+        if self.pauli_rep:  # Get the sparse matrix from the PauliSentence representation
+            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format="csr")
 
         if self.has_overlapping_wires or self.num_wires > MAX_NUM_WIRES_KRON_PRODUCT:
             gen = ((op.sparse_matrix(), op.wires) for op in self)
@@ -353,11 +353,7 @@ class Prod(CompositeOp):
 
     def _build_pauli_rep(self):
         """PauliSentence representation of the Product of operations."""
-        if all(
-            operand_pauli_reps := [
-                op._pauli_rep for op in self.operands  # pylint: disable=protected-access
-            ]
-        ):
+        if all(operand_pauli_reps := [op.pauli_rep for op in self.operands]):
             return reduce(lambda a, b: a * b, operand_pauli_reps)
         return None
 
@@ -378,7 +374,7 @@ class Prod(CompositeOp):
 
     def simplify(self) -> Union["Prod", Sum]:
         # try using pauli_rep:
-        if pr := self._pauli_rep:
+        if pr := self.pauli_rep:
             pr.simplify()
             return pr.operation(wire_order=self.wires)
 
