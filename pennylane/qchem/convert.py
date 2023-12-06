@@ -17,7 +17,7 @@ This module contains the functions for converting an external operator to a Penn
 import warnings
 from itertools import product
 
-# pylint: disable= import-outside-toplevel
+# pylint: disable= import-outside-toplevel,no-member
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import Tensor, active_new_opmath
@@ -259,7 +259,7 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None):
                     f"but got {op}."
                 ) from e
 
-        elif (ps := op._pauli_rep) is None:  # pylint: disable=protected-access
+        elif (ps := op.pauli_rep) is None:
             raise ValueError(
                 f"Expected a Pennylane operator with a valid Pauli word representation, but got {op}."
             )
