@@ -103,81 +103,57 @@ def unwrap_controls(op):
     return control_wires, control_values
 
 
-def find_mid_measure_connections(tape, layers, measurment_layers_index):
-    """Collect and return information about connections between mid-circuit measurements
-    and classical conditions and statistics that they connect to.
-
-    This utility function returns three items needed for processing mid-circuit measurements
-    and classical conditions and statistics for drawing:
-
-    * A dictionary mapping each mid-circuit measurement to a corresponding bit index.
-        This map only contains mid-circuit measurements that are used for classical conditioning
-        or collecting statistics.
-    * A list where each index is a bit and the values are the indices  of the layers containing
-        the mid-circuit measurement corresponding to the bits.
-    * A list where each index is a bit and the values are the indices of the last layers where the
-        bits should be drawn.
+def cwire_connections(layers):
+    """Extract the information required for classical control wires.
 
     Args:
-        tape (~.QuantumScript): Tape to be drawn
-        layers (list[list[~.Operation]]): List of drawable layers containing list of operations
-            for each layer
-        measurement_layres_index (int): index for the first measurement layer
+        layers (List[List[.Operator, .MeasurementProcess]]): the operations and measurements sorted
+            into layers via ``drawable_layers``. Measurement layers may be appended to operation layers.
 
     Returns:
-        tuple[dict, list, list]: Data structures needed for correctly drawing classical conditions
-        as described above.
+        dict, list, list: map from mid circuit measurement to classical wire, list of list of accessed layers
+            for each classical wire, and largest wire corresponding to the accessed layers in the list above.
+
+    >>> with qml.queuing.AnnotatedQueue() as q:
+    ...     m0 = qml.measure(0)
+    ...     m1 = qml.measure(1)
+    ...     qml.cond(m0 & m1, qml.PauliY)(0)
+    ...     qml.cond(m0, qml.S)(3)
+    >>> tape = qml.tape.QuantumScript.from_queue(q)
+    >>> layers = drawable_layers(tape)
+    >>> bit_map, cwire_layers, cwire_wires = cwire_connections(layers)
+    >>> bit_map
+    {measure(wires=[0]): 0, measure(wires=[1]): 1}
+    >>> cwire_layers
+    [[0, 2, 3], [1, 2]]
+    >>> cwire_wires
+    [[0, 0, 3], [1, 0]]
+
+    From this information, we can see that the first classical wire is active in layers
+    0, 2, and 3 while the second classical wire is active in layers 1 and 2.  The first "active"
+    layer will always be the one with the mid circuit measurement.
+
     """
-
-    # Map between mid-circuit measurements and their position on the drawing
-    # The bit map only contains mid-circuit measurements that are used in
-    # classical conditions.
     bit_map = {}
+    for layer in layers:
+        for op in layer:
+            if isinstance(op, Conditional):
+                for m in op.meas_val.measurements:
+                    bit_map[m] = None  # place holder till next pass
 
-    # Map between classical bit positions and the layer of their corresponding mid-circuit
-    # measurements.
-    mid_measure_layers = []
-
-    # Map between classical bit positions and the final layer where the bit is to be drawn.
-    # The bit is the index, so each of the two lists must have the same length as the number
-    # of bits
-    bit_end_layers = []
-
-    used_mid_measures = set()
-    conditional_ops = []
-    for op in tape.operations:
-        if isinstance(op, Conditional):
-            used_mid_measures.update(op.meas_val.measurements)
-            conditional_ops.append(op)
-
-    for mp in tape.measurements:
-        if mp.mv is not None:
-            used_mid_measures.update(mp.mv.measurements)
-
-    if len(used_mid_measures) > 0:
-        used_mid_measures = list(used_mid_measures).sort(key=tape.operations.index)
-
-        bit_map = dict(zip(used_mid_measures, range(len(used_mid_measures))))
-
-        n_bits = len(bit_map)
-
-        # Set lists to correct size
-        mid_measure_layers = [None] * n_bits
-        bit_end_layers = [None] * n_bits
-
-        for i, layer in enumerate(layers[:measurment_layers_index]):
-            for op in layer:
-                if isinstance(op, MidMeasureMP) and op in bit_map:
-                    mid_measure_layers[bit_map[op]] = i
-
-                if isinstance(op, Conditional):
-                    for mid_measure in op.meas_val.measurements:
-                        bit_end_layers[bit_map[mid_measure]] = i
-
-        for i, layer in enumerate(layers[measurment_layers_index:]):
-            for mp in layer:
-                if mp.mv is not None:
-                    for mid_measure in mp.mv.measurements:
-                        bit_end_layers[bit_map[mid_measure]] = measurment_layers_index - 1
-
-    return bit_map, mid_measure_layers, bit_end_layers
+    connected_layers = [[] for _ in bit_map]
+    connected_wires = [[] for _ in bit_map]
+    num_cwires = 0
+    for layer_idx, layer in enumerate(layers):
+        for op in layer:
+            if isinstance(op, MidMeasureMP) and op in bit_map:
+                bit_map[op] = num_cwires
+                connected_layers[num_cwires].append(layer_idx)
+                connected_wires[num_cwires].append(op.wires[0])
+                num_cwires += 1
+            elif isinstance(op, Conditional):
+                for m in op.meas_val.measurements:
+                    cwire = bit_map[m]
+                    connected_layers[cwire].append(layer_idx)
+                    connected_wires[cwire].append(max(op.wires))
+    return bit_map, connected_layers, connected_wires
