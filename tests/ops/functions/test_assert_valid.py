@@ -327,51 +327,58 @@ def get_all_classes(c):
 
 
 SKIP_OP_TYPES = {
+    # abstract/meta types - do not test
     Operator,
     Operation,
-    Tensor,
     Observable,
     Channel,
-    qml.Hamiltonian,
-    qml.BlockEncode,
-    qml.QutritUnitary,
-    qml.ControlledQutritUnitary,
     qml.ops.SymbolicOp,
     qml.ops.ScalarSymbolicOp,
+    qml.ops.CompositeOp,
+    qml.ops.ControlledOp,
+    qml.ops.qubit.BasisStateProjector,
+    qml.ops.qubit.StateVectorProjector,
+    qml.ops.qubit.StatePrepBase,
+    # ops composed of more than one thing
+    # once an example is registered, move to the "registered" section below as well
+    Tensor,
+    qml.Hamiltonian,
     qml.ops.Pow,
     qml.ops.SProd,
-    qml.ops.CompositeOp,
     qml.ops.Prod,
     qml.ops.Sum,
     qml.ops.Controlled,
-    qml.ops.ControlledOp,
-    qml.ops.ControlledQubitUnitary,
     qml.ops.Exp,
     qml.ops.Evolution,
+    qml.ops.Conditional,
+    # fails for unknown reason - should be registered in the test parametrization below
+    # once an example is registered, move to the "registered" section below as well
+    qml.ops.ControlledQubitUnitary,
     qml.QubitStateVector,
     qml.GlobalPhase,
     qml.QubitChannel,
     qml.SparseHamiltonian,
     qml.MultiControlledX,
-    qml.ops.qubit.Projector,
-    qml.ops.qubit.BasisStateProjector,
-    qml.ops.qubit.StateVectorProjector,
-    qml.ops.qubit.StatePrepBase,
+    qml.ops.qubit.Projector,  # both basis-state and state-vector needed
     qml.pulse.ParametrizedEvolution,
-    qml.ops.Conditional,
-    qml.Hamiltonian,
     qml.THermitian,
     qml.resource.FirstQuantization,
     qml.SpecialUnitary,
     qml.IntegerComparator,
     qml.PauliRot,
     qml.PauliError,
-    qml.ops.qubit.special_unitary.TmpPauliRot,
+    qml.ops.qubit.special_unitary.TmpPauliRot,  # private object
     qml.StatePrep,
     qml.PCPhase,
     qml.resource.DoubleFactorization,
     qml.resource.ResourcesOperation,
+    # templates
+    # once an example is registered, move to the "registered" section below as well
     *[i[1] for i in getmembers(qml.templates) if isclass(i[1]) and issubclass(i[1], Operator)],
+    # ops manually registered below
+    qml.BlockEncode,
+    qml.QutritUnitary,
+    qml.ControlledQutritUnitary,
 }
 
 
