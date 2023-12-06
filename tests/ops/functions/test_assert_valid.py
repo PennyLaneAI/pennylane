@@ -405,7 +405,7 @@ def generate_op_instances():
 
         # turn ndim_params into valid params
         [dim] = set(ndim_params)
-        params = [1] * len(ndim_params) if dim == 0 else [np.diag([1] * dim)]
+        params = [1] * len(ndim_params) if dim == 0 else [np.eye(dim)]
 
         ops.append(c(*params, wires=wires))
 
