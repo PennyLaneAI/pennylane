@@ -51,6 +51,7 @@
   [(#4803)](https://github.com/PennyLaneAI/pennylane/pull/4803)
   [(#4832)](https://github.com/PennyLaneAI/pennylane/pull/4832)
   [(#4901)](https://github.com/PennyLaneAI/pennylane/pull/4901)
+  [(#4850)](https://github.com/PennyLaneAI/pennylane/pull/4850)
 
 <h4>Catalyst is seamlessly integrated with PennyLane ⚗️</h4>
 
