@@ -195,6 +195,9 @@
 * `qml.ArbitraryUnitary` now supports batching.
   [(#4745)](https://github.com/PennyLaneAI/pennylane/pull/4745)
 
+* Operator and tape batch sizes are evaluated lazily.
+  [(#4911)](https://github.com/PennyLaneAI/pennylane/pull/4911)
+
 <h4>Performance improvements and benchmarking</h4>
 
 * `default.qubit` no longer uses a dense matrix for `MultiControlledX` for more than 8 operation wires.
@@ -280,6 +283,10 @@
 
 *   `TRX`, `TRY`, and `TRZ` are now differentiable via backprop on `default.qutrit`
   [(#4790)](https://github.com/PennyLaneAI/pennylane/pull/4790)
+
+* Operators now define a `pauli_rep` property, an instance of `PauliSentence`, defaulting
+  to `None` if the operator has not defined it (or has no definition in the pauli basis).
+  [(#4915)](https://github.com/PennyLaneAI/pennylane/pull/4915)
 
 <h3>Breaking changes 💔</h3>
 
