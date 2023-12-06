@@ -1233,7 +1233,7 @@ class Operator(abc.ABC):
 
     @property
     def pauli_rep(self):
-        """A PauliSentence representation of the Operator, or None if it doesn't have one."""
+        """A :class:`~.PauliSentence` representation of the Operator, or ``None`` if it doesn't have one."""
         return self._pauli_rep
 
     @property
