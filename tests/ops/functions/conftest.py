@@ -91,6 +91,8 @@ _ABSTRACT_OR_META_TYPES = {
 def get_all_classes(c):
     """Recursive function to generate a flat list of all child classes of ``c``.
     (first called with ``Operator``)."""
+    if c.__module__[:10] != "pennylane.":
+        return []
     subs = c.__subclasses__()
     classes = [] if c in _ABSTRACT_OR_META_TYPES else [c]
     for sub in subs:
@@ -132,7 +134,7 @@ _AUTO_TYPES = (
 def create_and_catch(c):
     try:
         return create_op_instance(c)
-    except Exception as e:
+    except Exception as e:  # pylint:disable=broad-exception-raised
         raise Exception(f"failed to generate instance for {c.__name__}: {e}") from e
 
 
