@@ -1001,7 +1001,7 @@ class QNode:
             config = qml.devices.ExecutionConfig(
                 interface=self.interface,
                 gradient_method=_gradient_method,
-                grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
+                grad_on_execution=grad_on_execution,
                 use_device_jacobian_product=self.execute_kwargs["device_vjp"],
             )
             device_transform_program, config = self.device.preprocess(execution_config=config)

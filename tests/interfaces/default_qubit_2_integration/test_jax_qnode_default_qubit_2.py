@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the JAX-Python interface with a QNode"""
-# pylint: disable=no-member, too-many-arguments, unexpected-keyword-arg
+# pylint: disable=no-member, too-many-arguments, unexpected-keyword-arg, use-implicit-booleaness-not-comparison
 
 from itertools import product
 import numpy as np
@@ -187,12 +187,12 @@ class TestQNode:
     ):
         """Test that operation and nested tape expansion
         is differentiable"""
-        kwargs = dict(
-            diff_method=diff_method,
-            interface=interface,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
-        )
+        kwargs = {
+            "diff_method": diff_method,
+            "interface": interface,
+            "grad_on_execution": grad_on_execution,
+            "device_vjp": device_vjp,
+        }
 
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
@@ -265,12 +265,12 @@ class TestVectorValuedQNode:
         self, dev, diff_method, grad_on_execution, device_vjp, interface, tol
     ):
         """Test jacobian calculation"""
-        kwargs = dict(
-            diff_method=diff_method,
-            interface=interface,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
-        )
+        kwargs = {
+            "diff_method": diff_method,
+            "interface": interface,
+            "grad_on_execution": grad_on_execution,
+            "device_vjp": device_vjp,
+        }
 
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
@@ -326,12 +326,12 @@ class TestVectorValuedQNode:
         self, dev, diff_method, grad_on_execution, device_vjp, interface, tol
     ):
         """Test jacobian calculation when no prior circuit evaluation has been performed"""
-        kwargs = dict(
-            diff_method=diff_method,
-            interface=interface,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
-        )
+        kwargs = {
+            "diff_method": diff_method,
+            "interface": interface,
+            "grad_on_execution": grad_on_execution,
+            "device_vjp": device_vjp,
+        }
 
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
@@ -384,12 +384,12 @@ class TestVectorValuedQNode:
     ):
         """Tests correct output shape and evaluation for a tape
         with a single prob output"""
-        kwargs = dict(
-            diff_method=diff_method,
-            interface=interface,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
-        )
+        kwargs = {
+            "diff_method": diff_method,
+            "interface": interface,
+            "grad_on_execution": grad_on_execution,
+            "device_vjp": device_vjp,
+        }
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
@@ -409,6 +409,10 @@ class TestVectorValuedQNode:
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[1])
 
+        if device_vjp:
+            with pytest.raises(NotImplementedError):
+                jax.jacobian(circuit, argnums=[0, 1])(x, y)
+            return
         res = jax.jacobian(circuit, argnums=[0, 1])(x, y)
 
         expected = np.array(
@@ -435,12 +439,12 @@ class TestVectorValuedQNode:
     ):
         """Tests correct output shape and evaluation for a tape
         with multiple prob outputs"""
-        kwargs = dict(
-            diff_method=diff_method,
-            interface=interface,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
-        )
+        kwargs = {
+            "diff_method": diff_method,
+            "interface": interface,
+            "grad_on_execution": grad_on_execution,
+            "device_vjp": device_vjp,
+        }
 
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
@@ -479,6 +483,10 @@ class TestVectorValuedQNode:
         assert res[1].shape == (4,)  # pylint:disable=comparison-with-callable
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
+        if device_vjp:
+            with pytest.raises(NotImplementedError):
+                jax.jacobian(circuit, argnums=[0, 1])(x, y)
+            return
         jac = jax.jacobian(circuit, argnums=[0, 1])(x, y)
         expected_0 = np.array(
             [
@@ -520,12 +528,12 @@ class TestVectorValuedQNode:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        kwargs = dict(
-            diff_method=diff_method,
-            interface=interface,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
-        )
+        kwargs = {
+            "diff_method": diff_method,
+            "interface": interface,
+            "grad_on_execution": grad_on_execution,
+            "device_vjp": device_vjp,
+        }
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
@@ -557,6 +565,10 @@ class TestVectorValuedQNode:
         assert res[1].shape == (2,)  # pylint:disable=comparison-with-callable
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
+        if device_vjp:
+            with pytest.raises(NotImplementedError):
+                jax.jacobian(circuit, argnums=[0, 1])(x, y)
+            return
         jac = jax.jacobian(circuit, argnums=[0, 1])(x, y)
         expected = [
             [-np.sin(x), 0],
@@ -618,6 +630,10 @@ class TestVectorValuedQNode:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])
 
+        if device_vjp:
+            with pytest.raises(NotImplementedError):
+                jax.jacobian(circuit, argnums=[0])(x, y)
+            return
         jac = jax.jacobian(circuit, argnums=[0])(x, y)
 
         expected = [
@@ -645,12 +661,12 @@ class TestVectorValuedQNode:
     def test_diff_var_probs(self, dev, diff_method, grad_on_execution, device_vjp, interface, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and variance outputs"""
-        kwargs = dict(
-            diff_method=diff_method,
-            interface=interface,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
-        )
+        kwargs = {
+            "diff_method": diff_method,
+            "interface": interface,
+            "grad_on_execution": grad_on_execution,
+            "device_vjp": device_vjp,
+        }
 
         if diff_method == "hadamard":
             pytest.skip("Hadamard does not support var")
@@ -687,6 +703,10 @@ class TestVectorValuedQNode:
         assert res[1].shape == (2,)  # pylint:disable=comparison-with-callable
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
+        if device_vjp:
+            with pytest.raises(NotImplementedError):
+                jax.jacobian(circuit, argnums=[0, 1])(x, y)
+            return
         jac = jax.jacobian(circuit, argnums=[0, 1])(x, y)
         expected = [
             [2 * np.cos(x) * np.sin(x), 0],
@@ -957,13 +977,13 @@ class TestQubitIntegrationHigherOrder:
         self, dev, diff_method, grad_on_execution, device_vjp, interface, tol
     ):
         """Test second derivative calculation of a scalar-valued QNode"""
-        kwargs = dict(
-            diff_method=diff_method,
-            interface=interface,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
-            max_diff=2,
-        )
+        kwargs = {
+            "diff_method": diff_method,
+            "interface": interface,
+            "grad_on_execution": grad_on_execution,
+            "device_vjp": device_vjp,
+            "max_diff": 2,
+        }
 
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not second derivative.")
@@ -1911,6 +1931,10 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         if diff_method == "adjoint":
             a = a + 0j
 
+        if device_vjp:
+            with pytest.raises(NotImplementedError):
+                jacobian(circuit)(a, shots=shots)
+            return
         jac = jacobian(circuit)(a, shots=shots)
 
         assert isinstance(jac, tuple)
@@ -1952,6 +1976,10 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             a = a + 0j
             b = b + 0j
 
+        if device_vjp:
+            with pytest.raises(NotImplementedError):
+                jacobian(circuit, argnums=[0, 1])(a, b, shots=shots)
+            return
         jac = jacobian(circuit, argnums=[0, 1])(a, b, shots=shots)
 
         assert isinstance(jac, tuple)
@@ -1998,6 +2026,10 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         if diff_method == "adjoint":
             a = a + 0j
 
+        if device_vjp:
+            with pytest.raises(NotImplementedError):
+                jacobian(circuit)(a, shots=shots)
+            return
         jac = jacobian(circuit)(a, shots=shots)
 
         assert isinstance(jac, tuple)

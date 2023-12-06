@@ -109,6 +109,12 @@ def pytreeify(cls):
     return cls
 
 
+def _recursive_conj(dy):
+    if isinstance(dy, torch.Tensor):
+        return torch.conj(dy)
+    return tuple(_recursive_conj(d) for d in dy)
+
+
 @pytreeify
 class ExecuteTapes(torch.autograd.Function):
     """The signature of this ``torch.autograd.Function`` is designed to
@@ -175,9 +181,10 @@ class ExecuteTapes(torch.autograd.Function):
                     str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
                 ),
             )
-
+        # Torch obeys the dL/dz_conj convention instead of the
+        # dL/dz convention of PennyLane, autograd and jax. This converts between the formats
+        dy = _recursive_conj(dy)
         vjps = ctx.jpc.compute_vjp(ctx.tapes, dy)
-
         # split tensor into separate entries
         unpacked_vjps = []
         for vjp_slice in vjps:

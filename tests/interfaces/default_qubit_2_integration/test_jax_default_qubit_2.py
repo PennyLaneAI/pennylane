@@ -273,6 +273,9 @@ class TestJaxExecuteIntegration:
             return out
 
         params = jnp.array([0.1, 0.2])
+        if execute_kwargs.get("gradient_fn", "") == "adjoint":
+            params = params + 0j
+
         x, y = params
 
         res = cost(params)
@@ -566,6 +569,10 @@ class TestJaxExecuteIntegration:
             assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
         jac_fn = jax.jacobian(cost, argnums=[0, 1])
+        if execute_kwargs.get("device_vjp", False):
+            with pytest.raises(NotImplementedError):
+                jac_fn(x, y)
+            return
         res = jac_fn(x, y)
         assert isinstance(res, tuple) and len(res) == 2
         assert res[0].shape == (2, 4) if shots.has_partitioned_shots else (4,)
@@ -627,6 +634,10 @@ class TestJaxExecuteIntegration:
             assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
         jac_fn = jax.jacobian(cost, argnums=[0, 1])
+        if execute_kwargs.get("device_vjp", False):
+            with pytest.raises(NotImplementedError):
+                jac_fn(x, y)
+            return
         res = jac_fn(x, y)
         assert isinstance(res, tuple) and len(res) == 2
         assert res[0].shape == (3 * shots.num_copies,) if shots.has_partitioned_shots else (3,)

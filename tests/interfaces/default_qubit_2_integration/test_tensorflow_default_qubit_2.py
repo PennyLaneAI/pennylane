@@ -109,14 +109,14 @@ class TestCaching:
 # add tests for lightning 2 when possible
 # set rng for device when possible
 test_matrix = [
-    ({"gradient_fn": param_shift, "interface": "tensorflow"}, 100000, DefaultQubit(seed=42)),
-    ({"gradient_fn": param_shift, "interface": "tensorflow"}, None, DefaultQubit()),
-    ({"gradient_fn": "backprop", "interface": "tensorflow"}, None, DefaultQubit()),
-    ({"gradient_fn": "adjoint", "interface": "tensorflow"}, None, DefaultQubit()),
-    ({"gradient_fn": param_shift, "interface": "tf-autograph"}, 100000, DefaultQubit(seed=42)),
-    ({"gradient_fn": param_shift, "interface": "tf-autograph"}, None, DefaultQubit()),
-    ({"gradient_fn": "backprop", "interface": "tf-autograph"}, None, DefaultQubit()),
-    ({"gradient_fn": "adjoint", "interface": "tf-autograph"}, None, DefaultQubit()),
+    ({"gradient_fn": param_shift, "interface": "tensorflow"}, 100000, DefaultQubit(seed=42)),  # 0
+    ({"gradient_fn": param_shift, "interface": "tensorflow"}, None, DefaultQubit()),  # 1
+    ({"gradient_fn": "backprop", "interface": "tensorflow"}, None, DefaultQubit()),  # 2
+    ({"gradient_fn": "adjoint", "interface": "tensorflow"}, None, DefaultQubit()),  # 3
+    ({"gradient_fn": param_shift, "interface": "tf-autograph"}, 100000, DefaultQubit(seed=42)),  # 4
+    ({"gradient_fn": param_shift, "interface": "tf-autograph"}, None, DefaultQubit()),  # 5
+    ({"gradient_fn": "backprop", "interface": "tf-autograph"}, None, DefaultQubit()),  # 6
+    ({"gradient_fn": "adjoint", "interface": "tf-autograph"}, None, DefaultQubit()),  # 7
 ]
 
 
