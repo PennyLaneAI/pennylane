@@ -23,7 +23,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator
+from pennylane.operation import Operator, _UNSET_BATCH_SIZE
 from pennylane.wires import Wires
 
 # pylint: disable=too-many-instance-attributes
@@ -67,9 +67,9 @@ class CompositeOp(Operator):
         self._overlapping_ops = None
         self._pauli_rep = self._build_pauli_rep()
         self.queue()
-        self._check_batching(None)  # unused param
+        self._batch_size = _UNSET_BATCH_SIZE
 
-    def _check_batching(self, _):
+    def _check_batching(self):
         batch_sizes = {op.batch_size for op in self if op.batch_size is not None}
         if len(batch_sizes) > 1:
             raise ValueError(
