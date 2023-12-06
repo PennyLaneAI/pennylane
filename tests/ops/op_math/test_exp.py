@@ -102,7 +102,7 @@ class TestInitialization:
     def test_base_is_not_operator_error(self, constructor):
         """Test that Exp raises an error if a base is provided that is not an Operator"""
 
-        with pytest.raises(TypeError, match="base is expected to be of type None or Operator"):
+        with pytest.raises(TypeError, match="base is expected to be of type Operator"):
             constructor(2, qml.PauliX(0))
 
 
