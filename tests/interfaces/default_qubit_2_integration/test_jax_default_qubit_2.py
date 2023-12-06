@@ -123,12 +123,17 @@ class TestCaching:
 
 # add tests for lightning 2 when possible
 # set rng for device when possible
+no_shots = Shots(None)
+shots_2_10k = Shots((10000, 10000))
+dev_def = DefaultQubit()
+dev_ps = ParamShiftDerivativesDevice(seed=54353453)
 test_matrix = [
-    ({"gradient_fn": param_shift}, Shots(100000), DefaultQubit(seed=42)),
-    ({"gradient_fn": param_shift}, Shots(None), DefaultQubit()),
-    ({"gradient_fn": "backprop"}, Shots(None), DefaultQubit()),
-    ({"gradient_fn": "adjoint"}, Shots(None), DefaultQubit()),
-    ({"gradient_fn": "device"}, Shots((10000, 10000)), ParamShiftDerivativesDevice(seed=54353453)),
+    ({"gradient_fn": param_shift}, Shots(100000), DefaultQubit(seed=42)),  # 0
+    ({"gradient_fn": param_shift}, no_shots, dev_def),  # 1
+    ({"gradient_fn": "backprop"}, no_shots, dev_def),  # 2
+    ({"gradient_fn": "adjoint"}, no_shots, dev_def),  # 3
+    ({"gradient_fn": "adjoint", "device_vjp": True}, no_shots, dev_def),  # 4
+    ({"gradient_fn": "device"}, shots_2_10k, dev_ps),  # 5
 ]
 
 
@@ -160,7 +165,7 @@ class TestJaxExecuteIntegration:
             res = cost(a, b)
 
         if execute_kwargs.get("gradient_fn", None) == "adjoint":
-            assert device.tracker.totals["execute_and_derivative_batches"] == 1
+            assert device.tracker.totals.get("execute_and_derivative_batches", 0) == 0
         else:
             assert device.tracker.totals["batches"] == 1
         assert device.tracker.totals["executions"] == 2  # different wires so different hashes
@@ -197,6 +202,11 @@ class TestJaxExecuteIntegration:
 
     def test_jacobian(self, execute_kwargs, shots, device):
         """Test jacobian calculation"""
+        if execute_kwargs.get("gradient_fn", "") == "adjoint" and execute_kwargs.get(
+            "device_vjp", False
+        ):
+            pytest.xfail("adjoint_vjp does not yet support jax jacobians.")
+
         a = jnp.array(0.1)
         b = jnp.array(0.2)
 
@@ -276,6 +286,11 @@ class TestJaxExecuteIntegration:
     # pylint: disable=too-many-statements
     def test_tapes_with_different_return_size(self, execute_kwargs, shots, device):
         """Test that tapes wit different can be executed and differentiated."""
+
+        if execute_kwargs.get("gradient_fn", "") == "adjoint" and execute_kwargs.get(
+            "device_vjp", False
+        ):
+            pytest.xfail("adjoint_vjp does not yet support jax jacobians.")
 
         def cost(params):
             tape1 = qml.tape.QuantumScript(
@@ -371,6 +386,14 @@ class TestJaxExecuteIntegration:
             return jnp.hstack(execute([new_tape], device, **execute_kwargs)[0])
 
         jac_fn = jax.jacobian(cost, argnums=[0, 1])
+        if execute_kwargs.get("gradient_fn", "") == "adjoint" and execute_kwargs.get(
+            "device_vjp", False
+        ):
+            with pytest.raises(
+                NotImplementedError, match=r"adjoint_vjp does not yet support JAX Jacobians"
+            ):
+                jac = jac_fn(a, b)
+            return
         jac = jac_fn(a, b)
 
         a = jnp.array(0.54)
@@ -771,6 +794,8 @@ class TestHamiltonianWorkflows:
 
         if execute_kwargs["gradient_fn"] == "adjoint" and not use_new_op_math:
             pytest.skip("adjoint differentiation does not suppport hamiltonians.")
+        if execute_kwargs["gradient_fn"] == "adjoint" and execute_kwargs.get("device_vjp", False):
+            pytest.xfail("adjoint vjp does not yet support jax jacobians.")
 
         coeffs1 = jnp.array([0.1, 0.2, 0.3])
         coeffs2 = jnp.array([0.7])

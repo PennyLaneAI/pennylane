@@ -20,6 +20,7 @@ import pytest
 import numpy as np
 from scipy.stats import unitary_group
 import pennylane as qml
+from pennylane.operation import _UNSET_BATCH_SIZE, Operation
 
 
 from pennylane.devices.qubit.apply_operation import (
@@ -51,7 +52,7 @@ def test_custom_operator_with_matrix():
     )
 
     # pylint: disable=too-few-public-methods
-    class CustomOp(qml.operation.Operation):
+    class CustomOp(Operation):
         num_wires = 1
 
         def matrix(self):
@@ -800,7 +801,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         param = qml.math.asarray([0.1, 0.2, 0.3], like=ml_framework)
         state = np.ones((2, 2)) / 2
         op = qml.RX(param, 0)
-        op._batch_size = None  # pylint:disable=protected-access
+        assert op._batch_size is _UNSET_BATCH_SIZE  # pylint:disable=protected-access
         state = method(op, state)
         assert state.shape == (3, 2, 2)
         assert op.batch_size == 3
@@ -1187,15 +1188,57 @@ class TestMultiControlledXKernel:
 
 
 @pytest.mark.tf
-@pytest.mark.parametrize("op", (qml.PauliZ(8), qml.CNOT((5, 6))))
-def test_tf_large_state(op):
-    """Tests that custom kernels that use slicing fall back to a different method when
-    the state has a large number of wires."""
-    import tensorflow as tf
+class TestLargeTFCornerCases:
+    """Test large corner cases for tensorflow."""
 
-    state = np.zeros([2] * 10)
-    state = tf.Variable(state)
-    new_state = apply_operation(op, state)
+    @pytest.mark.parametrize("op", (qml.PauliZ(8), qml.CNOT((5, 6))))
+    def test_tf_large_state(self, op):
+        """Tests that custom kernels that use slicing fall back to a different method when
+        the state has a large number of wires."""
+        import tensorflow as tf
 
-    # still all zeros.  Mostly just making sure error not raised
-    assert qml.math.allclose(state, new_state)
+        state = np.zeros([2] * 10)
+        state = tf.Variable(state)
+        new_state = apply_operation(op, state)
+
+        # still all zeros.  Mostly just making sure error not raised
+        assert qml.math.allclose(state, new_state)
+
+    def test_cnot_large_batched_state_tf(self):
+        """Test that CNOT with large batched states works as expected."""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=8)
+
+        @qml.qnode(dev, interface="tf")
+        def ancillary_qcnn_circuit(inputs):
+            qml.AmplitudeEmbedding(features=inputs, wires=range(4), normalize=True)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliZ(1)
+            qml.Toffoli(wires=[0, 2, 4])
+            qml.Toffoli(wires=[0, 2, 5])
+            qml.Toffoli(wires=[0, 2, 6])
+            qml.Toffoli(wires=[0, 2, 7])
+            return [qml.expval(qml.PauliZ(i)) for i in range(4, 8)]
+
+        batch_size = 3
+        params = np.random.rand(batch_size, 16)
+        result = ancillary_qcnn_circuit(tf.Variable(params))
+        assert qml.math.shape(result) == (4, batch_size)
+
+    def test_pauliz_large_batched_state_tf(self):
+        """Test that PauliZ with large batched states works as expected."""
+        import tensorflow as tf
+
+        @qml.qnode(qml.device("default.qubit"), interface="tf")
+        def circuit(init_state):
+            qml.StatePrep(init_state, wires=range(8))
+            qml.PauliX(0)
+            qml.PauliZ(0)
+            return qml.state()
+
+        states = np.zeros((3, 256))
+        states[:, 0] = 1.0
+        results = circuit(tf.Variable(states))
+        assert qml.math.shape(results) == (3, 256)
+        assert np.array_equal(results[:, 128], [-1.0 + 0.0j] * 3)
