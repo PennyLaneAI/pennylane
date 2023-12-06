@@ -177,7 +177,7 @@ class TestSample:
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 2))
     def test_observable_is_composed_measurement_value(self, shots, phi):
         """Test that samples for mid-circuit measurement values
-        are correct for a single measurement value."""
+        are correct for a composed measurement value."""
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.qnode(dev)
@@ -200,7 +200,7 @@ class TestSample:
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 2))
     def test_observable_is_measurement_value_list(self, shots, phi):
         """Test that samples for mid-circuit measurement values
-        are correct for a single measurement value."""
+        are correct for a measurement value list."""
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.qnode(dev)

@@ -279,7 +279,7 @@ class TestProbs:
         self, shots, phi, tol, tol_stochastic
     ):  # pylint: disable=too-many-arguments
         """Test that probs for mid-circuit measurement values
-        are correct for a single measurement value."""
+        are correct for a measurement value list."""
         dev = qml.device("default.qubit")
 
         @qml.qnode(dev)
@@ -301,7 +301,7 @@ class TestProbs:
             qml.RX(2.0 * phi, 2)
             return qml.probs(wires=[0, 1, 2])
 
-        expected = expected_circuit(phi, shots=None)
+        expected = expected_circuit(phi)
 
         atol = tol if shots is None else tol_stochastic
 

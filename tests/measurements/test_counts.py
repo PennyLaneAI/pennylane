@@ -174,6 +174,39 @@ class TestProcessSamples:
         assert result[0] == np.count_nonzero(samples[:, 0] == 0)
         assert result[1] == np.count_nonzero(samples[:, 0] == 1)
 
+    def test_counts_shape_composed_measurement_value(self):
+        """Test that the counts output is correct for composed mid-circuit measurement
+        values."""
+        shots = 1000
+        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int64)
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+
+        result = qml.counts(op=m0 | m1).process_samples(samples, wire_order=[0, 1])
+
+        assert len(result) == 2
+        assert set(result.keys()) == {0, 1}
+        samples = np.apply_along_axis((lambda x: x[0] | x[1]), axis=1, arr=samples)
+        assert result[0] == np.count_nonzero(samples == 0)
+        assert result[1] == np.count_nonzero(samples == 1)
+
+    def test_counts_shape_measurement_value_list(self):
+        """Test that the counts output is correct for list mid-circuit measurement
+        values."""
+        shots = 1000
+        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int64)
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+
+        result = qml.counts(op=[m0, m1]).process_samples(samples, wire_order=[0, 1])
+
+        assert len(result) == 4
+        assert set(result.keys()) == {"00", "01", "10", "11"}
+        assert result["00"] == np.count_nonzero([np.allclose(s, [0, 0]) for s in samples])
+        assert result["01"] == np.count_nonzero([np.allclose(s, [0, 1]) for s in samples])
+        assert result["10"] == np.count_nonzero([np.allclose(s, [1, 0]) for s in samples])
+        assert result["11"] == np.count_nonzero([np.allclose(s, [1, 1]) for s in samples])
+
     def test_counts_all_outcomes_wires(self):
         """Test that the counts output is correct when all_outcomes is passed"""
         shots = 1000
