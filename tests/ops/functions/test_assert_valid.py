@@ -424,7 +424,14 @@ _AUTO_TYPES = (
 )
 
 
-@pytest.mark.parametrize("op", list(map(create_op_instance, _AUTO_TYPES)) + _REGISTERED_INSTANCES)
+def create_and_catch(c):
+    try:
+        create_op_instance(c)
+    except Exception as e:
+        raise Exception(f"failed to generate instance for {c.__name__}: {e}") from e
+
+
+@pytest.mark.parametrize("op", list(map(create_and_catch, _AUTO_TYPES)) + _REGISTERED_INSTANCES)
 def test_generated_list_of_ops(op):
     """Test every auto-generated operator instance."""
     if isinstance(
