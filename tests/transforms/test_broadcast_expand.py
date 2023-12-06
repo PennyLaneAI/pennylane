@@ -24,18 +24,16 @@ from pennylane import numpy as pnp
 def make_tape(x, y, z, obs):
     """Construct a tape with three parametrized, two unparametrized
     operations and expvals of provided observables."""
-    with qml.queuing.AnnotatedQueue() as q:
-        #qml.RX(x, wires=0)
-        qml.StatePrep(np.array([1, 0, 0, 0]), wires=[0, 1])
-        RX_broadcasted(x, wires=0)
-        qml.PauliY(0)
-        qml.RX(y, wires=1)
-        qml.RZ(z, wires=1)
-        qml.Hadamard(1)
-        for ob in obs:
-            qml.expval(ob)
 
-    tape = qml.tape.QuantumScript.from_queue(q)
+    ops = [
+        qml.RX(x, wires=0),
+        qml.PauliY(0),
+        qml.RX(y, wires=1),
+        qml.RZ(z, wires=1),
+        qml.Hadamard(1),
+    ]
+    expvals = [qml.expval(ob) for ob in obs]
+    tape = qml.tape.QuantumScript(ops, expvals)
     return tape
 
 
@@ -57,12 +55,14 @@ H0 = qml.Hamiltonian(qml.math.array(coeffs0), [qml.PauliZ(0), qml.PauliY(1)])
 # Here we exploit the product structure of our circuit
 def exp_fn_Z0(x, y, z):
     """Compute the expected value for qml.PauliZ(0)."""
-    return -qml.math.cos(x) * qml.math.ones_like(y) * qml.math.ones_like(z)
+    out = -qml.math.cos(x) * qml.math.ones_like(y) * qml.math.ones_like(z)
+    return out[0] if len(out)==1 else out
 
 
 def exp_fn_Y1(x, y, z):
     """Compute the expected value for qml.PauliY(1)."""
-    return qml.math.sin(y) * qml.math.cos(z) * qml.math.ones_like(x)
+    out = qml.math.sin(y) * qml.math.cos(z) * qml.math.ones_like(x)
+    return out[0] if len(out)==1 else out
 
 
 def exp_fn_Z0Y1(x, y, z):
@@ -72,10 +72,8 @@ def exp_fn_Z0Y1(x, y, z):
 
 def exp_fn_Z0_and_Y1(x, y, z):
     """Compute the expected value for qml.PauliZ(0) and qml.PauliY(1)."""
-    return qml.math.array(
-        [exp_fn_Z0(x, y, z), exp_fn_Y1(x, y, z)],
-        like=exp_fn_Z0(x, y, z) + exp_fn_Y1(x, y, z),
-    )
+    # The stacking is required to enable `qml.jacobian` called on this function
+    return qml.math.stack([exp_fn_Z0(x, y, z), exp_fn_Y1(x, y, z)])
 
 
 def exp_fn_H0(x, y, z):
@@ -90,6 +88,7 @@ observables_and_exp_fns = [
     ([H0], exp_fn_H0),
 ]
 
+dev = qml.device("default.qubit", wires=2)
 
 class TestBroadcastExpand:
     """Tests for the broadcast_expand transform"""
@@ -98,7 +97,6 @@ class TestBroadcastExpand:
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
     def test_expansion(self, params, size, obs, exp_fn):
         """Test that the expansion works as expected."""
-        dev = qml.device("default.qubit", wires=2)
         tape = make_tape(*params, obs)
         assert tape.batch_size == size
 
@@ -111,7 +109,7 @@ class TestBroadcastExpand:
 
         assert qml.math.allclose(result, expected)
 
-    @pytest.mark.parametrize("params, size", parameters_and_size)
+    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes)))
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
     def test_expansion_qnode(self, params, size, obs, exp_fn):
         """Test that the transform integrates correctly with the transform program"""
@@ -120,18 +118,15 @@ class TestBroadcastExpand:
         @qml.qnode(dev)
         def circuit(x, y, z, obs):
             qml.StatePrep(np.array([1, 0, 0, 0]), wires=[0, 1])
-            RX_broadcasted(x, wires=0)
+            qml.RX(x, wires=0)
             qml.PauliY(0)
-            RX_broadcasted(y, wires=1)
-            RZ_broadcasted(z, wires=1)
+            qml.RX(y, wires=1)
+            qml.RZ(z, wires=1)
             qml.Hadamard(1)
             return [qml.expval(ob) for ob in obs]
 
         result = circuit(*params, obs)
         expected = exp_fn(*params)
-
-        if len(obs) > 1 and size == 1:
-            expected = expected.T
 
         assert qml.math.allclose(result, expected)
 
@@ -179,10 +174,6 @@ class TestBroadcastExpand:
     def test_autograd(self, params, obs, exp_fn, gradient_fn):
         """Test that the expansion works with autograd and is differentiable."""
         params = tuple(pnp.array(p, requires_grad=True) for p in params)
-        # Need a special Autograd device for gradient method "backprop"
-        dev_type = ".autograd" if gradient_fn == "backprop" else ""
-        dev = qml.device(f"default.qubit{dev_type}", wires=2)
-
         def cost(*params):
             tape = make_tape(*params, obs)
             tapes, fn = qml.transforms.broadcast_expand(tape)
@@ -212,10 +203,6 @@ class TestBroadcastExpand:
         jax.config.update("jax_enable_x64", True)
 
         params = tuple(jax.numpy.array(p) for p in params)
-        # Need a special JAX device for gradient method "backprop"
-        dev_type = ".jax" if gradient_fn == "backprop" else ""
-        dev = qml.device(f"default.qubit{dev_type}", wires=2)
-
         def cost(*params):
             tape = make_tape(*params, obs)
             tapes, fn = qml.transforms.broadcast_expand(tape)
@@ -251,7 +238,6 @@ class TestBroadcastExpand:
         import tensorflow as tf
 
         params = tuple(tf.Variable(p, dtype=tf.float64) for p in params)
-        dev = qml.device("default.qubit", wires=2)
 
         def cost(*params):
             tape = make_tape(*params, obs)
@@ -284,9 +270,6 @@ class TestBroadcastExpand:
             torch.tensor(p, requires_grad=True, dtype=torch.float64) for p in params
         )
         params = tuple(pnp.array(p, requires_grad=True) for p in params)
-        # Need a special Torch device for gradient method "backprop"
-        dev_type = ".torch" if gradient_fn == "backprop" else ""
-        dev = qml.device(f"default.qubit{dev_type}", wires=2)
 
         def cost(*params):
             tape = make_tape(*params, obs)
