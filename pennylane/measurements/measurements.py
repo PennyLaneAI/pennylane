@@ -287,13 +287,13 @@ class MeasurementProcess(ABC):
 
     def __repr__(self):
         """Representation of this class."""
-        if self.obs is None:
+        if not self.obs and not self.mv:
             if self._eigvals is None:
                 return f"{self.return_type.value}(wires={self.wires.tolist()})"
             return f"{self.return_type.value}(eigvals={self._eigvals}, wires={self.wires.tolist()})"
 
         # Todo: when tape is core the return type will always be taken from the MeasurementProcess
-        return f"{self.return_type.value}({self.obs})"
+        return f"{self.return_type.value}({self.obs or repr(self.mv)})"
 
     def __copy__(self):
         cls = self.__class__

@@ -423,3 +423,6 @@ class MeasurementValue(Generic[T]):
                 "if " + ",".join(id_branch_mapping) + " => " + str(self.processing_fn(*branch))
             )
         return "\n".join(lines)
+
+    def __repr__(self):
+        return f"MeasurementValue(wires={self.wires.tolist()})"

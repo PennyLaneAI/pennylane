@@ -24,6 +24,7 @@ from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
     MeasurementTransform,
+    MeasurementValue,
     MidMeasure,
     MidMeasureMP,
     MutualInfoMP,
@@ -383,6 +384,15 @@ class TestProperties:
 
         m = ProbabilityMP(eigvals=(1, 0), wires=qml.wires.Wires(0))
         assert repr(m) == "probs(eigvals=[1 0], wires=[0])"
+
+        m0 = MeasurementValue([MidMeasureMP(Wires(0), id="0")], lambda v: v)
+        m1 = MeasurementValue([MidMeasureMP(Wires(1), id="1")], lambda v: v)
+        m = ProbabilityMP(obs=[m0, m1])
+        expected = "probs([MeasurementValue(wires=[0]), MeasurementValue(wires=[1])])"
+        assert repr(m) == expected
+
+        m = ProbabilityMP(obs=m0 * m1)
+        expected = "probs(MeasurementValue(wires=[0, 1]))"
 
     def test_measurement_value_map_wires(self):
         """Test that MeasurementProcess.map_wires works correctly when mp.mv
