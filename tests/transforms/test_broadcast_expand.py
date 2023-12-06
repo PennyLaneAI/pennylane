@@ -52,6 +52,7 @@ H0 = qml.Hamiltonian(qml.math.array(coeffs0), [qml.PauliZ(0), qml.PauliY(1)])
 dev = qml.device("default.qubit", wires=2)
 """Defines the device used for all tests"""
 
+
 # Here we exploit the product structure of our circuit
 def exp_fn_Z0(x, y, z):
     """Compute the expected value for qml.PauliZ(0)."""
