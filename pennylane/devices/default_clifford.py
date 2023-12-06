@@ -27,20 +27,14 @@ from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.typing import Result, ResultBatch
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
+from pennylane.measurements.expval import ExpectationMP
 from pennylane.devices.qubit.sampling import get_num_shots_and_executions
+from pennylane.devices.qubit.simulate import INTERFACE_TO_LIKE
 
 from . import Device
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
-from .clifford.simulate import simulate  # get_final_state, measure_final_state
 
 from .default_qubit import accepted_sample_measurement
-# from .clifford.sampling import get_num_shots_and_executions
-
-# from .clifford.preprocess import (
-#     preprocess,
-#     validate_multiprocessing_workers,
-#     validate_device_wires,
-# )
 
 from .preprocess import (
     decompose,
@@ -49,7 +43,6 @@ from .preprocess import (
     validate_multiprocessing_workers,
     validate_device_wires,
     warn_about_trainable_observables,
-    no_sampling,
 )
 
 Result_or_ResultBatch = Union[Result, ResultBatch]
@@ -59,7 +52,7 @@ QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
 
 # Updated observable list
-_observables = {
+_MEAS_OBSERVABLES = {
     "PauliX",
     "PauliY",
     "PauliZ",
@@ -75,36 +68,50 @@ _observables = {
 }
 
 # Clifford gates
-_operations = {
-    "Identity",
-    "Snapshot",
-    "BasisState",
-    "StatePrep",
-    "PauliX",
-    "PauliY",
-    "PauliZ",
-    "MultiRZ",
-    "Hadamard",
-    "S",
-    "Adjoint(S)",
-    "SX",
-    "Adjoint(SX)",
-    "CNOT",
-    "SWAP",
-    "ISWAP",
-    "Adjoint(ISWAP)",
-    "CY",
-    "CZ",
-    "GlobalPhase",
+_GATE_OPERATIONS = {
+    "Identity": "I",
+    "Snapshot": None,
+    "BasisState": None,
+    "StatePrep": None,
+    "PauliX": "X",
+    "PauliY": "Y",
+    "PauliZ": "Z",
+    "Hadamard": "H",
+    "S": "S",
+    "Adjoint(S)": "S_DAG",
+    "SX": "SX",
+    "Adjoint(SX)": "SX_DAG",
+    "CNOT": "CNOT",
+    "SWAP": "SWAP",
+    "ISWAP": "ISWAP",
+    "Adjoint(ISWAP)": "ISWAP_DAG",
+    "CY": "CY",
+    "CZ": "CZ",
+    "GlobalPhase": None,
 }
+
 
 def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
     """Specifies whether or not an observable is accepted by DefaultClifford."""
-    return obs.name in _observables
+    return obs.name in _MEAS_OBSERVABLES
+
 
 def operations_stopping_condition(obs: qml.operation.Operator) -> bool:
     """Specifies whether or not an observable is accepted by DefaultClifford."""
-    return obs.name in _operations
+    return obs.name in _GATE_OPERATIONS
+
+
+def _import_stim():
+    """Import stim."""
+    try:
+        # pylint: disable=import-outside-toplevel, unused-import, multiple-imports
+        import stim
+    except ImportError as Error:
+        raise ImportError(
+            "This feature requires stim, a fast stabilizer circuit simulator."
+            "It can be installed with: pip install stim."
+        ) from Error
+    return stim
 
 
 class DefaultClifford(Device):
@@ -116,6 +123,9 @@ class DefaultClifford(Device):
         check_clifford (bool): Check if all the gate operations in the circuits to be executed are Clifford. Default is ``True``.
         max_error (float): The maximum permissible decomposition error for the circuits with non-Clifford gate operaitons.
             Default is ``0.0``.
+        state (str): Describes what should be returned when the device's state is computed with ``qml.state``. Default is
+            "tableau", which makes it return the final evolved Tableau. Alternatively, one may use "state_vector" to obtain
+            the evolved state vector. Note that the latter might not be computationally feasible for larger qubit numbers.
         seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator, jax.random.PRNGKey]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``, or
             a request to seed from numpy's global random number generator.
@@ -186,7 +196,7 @@ class DefaultClifford(Device):
         Suppose one has a processor with 5 cores or more, these scripts can be executed in
         parallel as follows
 
-        >>> dev = DefaultQubit(max_workers=5)
+        >>> dev = DefaultClifford(max_workers=5)
         >>> program, execution_config = dev.preprocess()
         >>> new_batch, post_processing_fn = program(qscripts)
         >>> results = dev.execute(new_batch, execution_config=execution_config)
@@ -243,13 +253,24 @@ class DefaultClifford(Device):
         shots=None,
         check_clifford=True,
         max_error=0.0,
+        state="tableau",
         seed="global",
         max_workers=None,
     ) -> None:
         super().__init__(wires=wires, shots=shots)
+
+        self._stim = _import_stim()
         self._max_workers = max_workers
         self._check_clifford = check_clifford
         self._max_error = max(max_error, 0.0)
+
+        if state in ["tableau", "state_vector"]:
+            self._state = state
+        else:
+            raise ValueError(
+                f"Keyword state only accepts two options: 'tableau' and 'state_vector', got {state}."
+            )
+
         seed = np.random.randint(0, high=10000000) if seed == "global" else seed
         if qml.math.get_interface(seed) == "jax":
             self._prng_key = seed
@@ -315,7 +336,7 @@ class DefaultClifford(Device):
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(qml.defer_measurements, device=self)
 
-        # TODO: Add the Clifford+T decomposition transform here
+        # TODO: Add the Clifford+T decomposition transform here instead.
         if self._check_clifford:
             transform_program.add_transform(
                 decompose, stopping_condition=operations_stopping_condition, name=self.name
@@ -331,7 +352,7 @@ class DefaultClifford(Device):
         max_workers = config.device_options.get("max_workers", self._max_workers)
         if max_workers:
             transform_program.add_transform(validate_multiprocessing_workers, max_workers, self)
-        
+
         # Validate derivatives
         transform_program.add_transform(warn_about_trainable_observables)
         if config.gradient_method is not None:
@@ -357,7 +378,7 @@ class DefaultClifford(Device):
         )
         if max_workers is None:
             results = tuple(
-                simulate(
+                self.simulate(
                     c,
                     rng=self._rng,
                     prng_key=self._prng_key,
@@ -369,7 +390,7 @@ class DefaultClifford(Device):
         else:
             vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
             seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
-            _wrap_simulate = partial(simulate, debugger=None, interface=interface)
+            _wrap_simulate = partial(self.simulate, debugger=None, interface=interface)
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
                 exec_map = executor.map(
                     _wrap_simulate,
@@ -512,3 +533,154 @@ class DefaultClifford(Device):
             bool: Whether or not a derivative can be calculated provided the given information
         """
         return False
+
+    # pylint: disable=unidiomatic-typecheck, unused-argument
+    def simulate(
+        self,
+        circuit: qml.tape.QuantumScript,
+        rng=None,
+        prng_key=None,
+        debugger=None,
+        interface=None,
+    ) -> Result:
+        """Simulate a single quantum script.
+
+        Args:
+            circuit (QuantumTape): The single circuit to simulate
+            rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
+                seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
+                If no value is provided, a default RNG will be used.
+            prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+                the key to the JAX pseudo random number generator. If None, a random key will be
+                generated. Only for simulation using JAX.
+            debugger (_Debugger): The debugger to use
+            interface (str): The machine learning interface to create the initial state with
+
+        Returns:
+            tuple(TensorLike): The results of the simulation
+
+        Note that this function can return measurements for non-commuting observables simultaneously.
+
+        This function assumes that all operations provide matrices.
+
+        >>> qs = qml.tape.QuantumScript([qml.RX(1.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.probs(wires=(0,1))])
+        >>> simulate(qs)
+        (0.36235775447667357,
+        tensor([0.68117888, 0.        , 0.31882112, 0.        ], requires_grad=True))
+
+        """
+
+        stim = self._stim
+
+        circuit = circuit.map_to_standard_wires()
+
+        if circuit.shots:
+            raise NotImplementedError(
+                "default.clifford currently doesn't support computation with shots."
+            )
+
+        prep = None
+        if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
+            prep = circuit[0]
+
+        # initial state is batched only if the state preparation (if it exists) is batched
+        is_state_batched = bool(prep and prep.batch_size is not None)
+        if is_state_batched:
+            raise NotImplementedError("Clifford simulator doesn't support batching.")
+
+        stim_ct = stim.Circuit()
+        initial_tableau = stim.Tableau.from_circuit(stim_ct)
+
+        tableau_simulator = stim.TableauSimulator()
+
+        use_prep_ops = bool(prep)
+        if use_prep_ops:
+            initial_tableau = stim.Tableau.from_state_vector(
+                qml.math.reshape(prep.state_vector(wire_order=list(circuit.op_wires)), (1, -1))[0],
+                endian="big",
+            )
+            tableau_simulator.do_tableau(initial_tableau, circuit.wires)
+
+        global_phase_ops = []
+        for op in circuit.operations[use_prep_ops:]:
+            gate, wires = _GATE_OPERATIONS[op.name], op.wires
+            if gate is not None:
+                stim_ct.append(gate, wires)
+            else:
+                if op.name == "GlobalPhase":
+                    global_phase_ops.append(op)
+                elif op.name == "Snapshot":
+                    state = stim.Tableau.from_circuit(stim_ct).to_state_vector()
+                    if debugger is not None and debugger.active:
+                        flat_state = qml.math.flatten(state)
+                    if op.tag:
+                        debugger.snapshots[op.tag] = flat_state
+                    else:
+                        debugger.snapshots[len(debugger.snapshots)] = flat_state
+                else:
+                    pass
+        tableau_simulator.do_circuit(stim_ct)
+
+        res = []
+        for meas in circuit.measurements:
+            # Analytic case
+            if not circuit.shots:
+                # Computing statevector via tableaus
+                if type(meas) is qml.measurements.StateMP:
+                    if self._state == "tableau":
+                        inverse_tableau = tableau_simulator.current_inverse_tableau()
+                        res.append(qml.math.array(inverse_tableau.inverse().to_numpy()))
+                    else:
+                        state_vector = qml.math.array(
+                            tableau_simulator.state_vector(endian="big"),
+                            like=INTERFACE_TO_LIKE[interface],
+                        )
+                        res.append(state_vector)
+
+                # Computing density matrix via tableaus
+                elif type(meas) is qml.measurements.DensityMatrixMP:
+                    state_vector = qml.math.array(
+                        tableau_simulator.state_vector(endian="big"),
+                        like=INTERFACE_TO_LIKE[interface],
+                    )
+                    density_matrix = qml.math.einsum("i, j->ij", state_vector, state_vector)
+                    res.append(density_matrix)
+
+                # Computing purity via tableaus // Trivial
+                elif type(meas) is qml.measurements.PurityMP:
+                    res.append(qml.math.array(1.0, like=INTERFACE_TO_LIKE[interface]))
+
+                # Computing expectation values via measurement
+                elif isinstance(meas, ExpectationMP):
+                    # Case for simple Pauli terms
+                    if (
+                        isinstance(meas.obs, qml.PauliZ)
+                        or isinstance(meas.obs, qml.PauliX)
+                        or isinstance(meas.obs, qml.PauliY)
+                    ):
+                        pauli = stim.PauliString(_GATE_OPERATIONS[meas.obs.name])
+                        res.append(tableau_simulator.peek_observable_expectation(pauli))
+
+                    # Case for simple Pauli tensor
+                    elif isinstance(meas.obs, qml.operation.Tensor):
+                        expec = "".join([_GATE_OPERATIONS[name] for name in meas.obs.name])
+                        pauli = stim.PauliString(expec)
+                        res.append(tableau_simulator.peek_observable_expectation(pauli))
+
+                    # Case for a Hamiltonian
+                    elif isinstance(meas.obs, qml.Hamiltonian):
+                        coeffs, obs = meas.obs.terms()
+                        expecs = qml.math.zeros_like(coeffs)
+                        for idx, ob in enumerate(obs):
+                            expec = "".join([_GATE_OPERATIONS[name] for name in ob.name])
+                            pauli = stim.PauliString(expec)
+                            expecs[idx] = tableau_simulator.peek_observable_expectation(pauli)
+                        res.append(qml.math.sum(coeffs * expecs))
+
+                    # Add support for more case when the time is right
+                    else:
+                        raise NotImplementedError(
+                            f"default.clifford doesn't support {meas} at the moment."
+                        )
+
+        return tuple(res)
