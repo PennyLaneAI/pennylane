@@ -821,6 +821,26 @@ class TestClassicalWires:
 
         drawer.cwire_join(1, 2)
 
+        [_, eraser] = drawer.ax.lines
+
+        assert eraser.get_xdata() == (0.8, 1)
+        assert eraser.get_ydata() == (0.85, 0.85)
+        assert eraser.get_color() == plt.rcParams["figure.facecolor"]
+        assert eraser.get_linewidth() == 3 * plt.rcParams["lines.linewidth"]
+        plt.close()
+
+    def test_cwire_join_erase_right(self):
+        """Test the cwire join method."""
+        drawer = MPLDrawer(n_wires=1, n_layers=4, c_wires=3)
+
+        drawer.cwire_join(1, 1, erase_right=True)
+
+        [_, eraser] = drawer.ax.lines
+
+        assert eraser.get_xdata() == (0.8, 1.2)
+        assert eraser.get_ydata() == (0.6, 0.6)
+        assert eraser.get_color() == plt.rcParams["figure.facecolor"]
+        assert eraser.get_linewidth() == 3 * plt.rcParams["lines.linewidth"]
         plt.close()
 
 

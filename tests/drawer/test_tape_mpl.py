@@ -827,16 +827,22 @@ class TestClassicalControl:
 
         assert len(ax.patches) == 5  # three for measure, two for boxes
 
-        for layer, shift in enumerate((1, 5, 7)):
-            assert ax.lines[shift].get_xdata() == (layer - 0.03, layer - 0.03)
-            assert ax.lines[shift + 1].get_xdata() == (layer + 0.03, layer + 0.03)
-            assert ax.lines[shift].get_ydata() == (0, 0.63)
-            assert ax.lines[shift + 1].get_ydata() == (0, 0.63)
+        [_, cwire] = ax.lines
 
-        assert ax.lines[3].get_xdata() == (-0.03, 2.03)
-        assert ax.lines[3].get_ydata() == (0.57, 0.57)
-        assert ax.lines[4].get_xdata() == (-0.03, 2.03)
-        assert ax.lines[4].get_ydata() == (0.63, 0.63)
+        assert cwire.get_xdata() == [0, 0, 0, 1, 1, 1, 2, 2, 2]
+        assert cwire.get_ydata() == [0.6, 0, 0.6, 0.6, 0, 0.6, 0.6, 0, 0.6]
+
+        [pe1, pe2] = cwire.get_path_effects()
+
+        # probably not a good way to test this, but the best I can figure out
+        assert pe1._gc == {
+            "linewidth": 5 * plt.rcParams["lines.linewidth"],
+            "foreground": "black",  # lines.color for black white style
+        }
+        assert pe2._gc == {
+            "linewidth": 3 * plt.rcParams["lines.linewidth"],
+            "foreground": "white",  # figure.facecolor for black white sytle
+        }
 
     def test_combo_measurement(self):
         """Test a control that depends on two mid circuit measurements."""
@@ -850,26 +856,68 @@ class TestClassicalControl:
         _, ax = qml.drawer.tape_mpl(tape)
 
         assert len(ax.patches) == 7  # three for 2 measurements, one for box
+        [_, _, cwire1, cwire2, eraser] = ax.lines
 
-        # all vertical lines
+        assert cwire1.get_xdata() == [0, 0, 0, 2, 2, 2]
+        assert cwire1.get_ydata() == [1.6, 0, 1.6, 1.6, 0, 1.6]
 
-        for layer, shift in enumerate((2, 6, 10)):
-            assert ax.lines[shift].get_xdata() == (layer - 0.03, layer - 0.03)
-            assert ax.lines[shift + 1].get_xdata() == (layer + 0.03, layer + 0.03)
+        assert cwire2.get_xdata() == [1, 1, 1, 2, 2, 2]
+        assert cwire2.get_ydata() == [1.85, 1, 1.85, 1.85, 0, 1.85]
 
-        assert ax.lines[2].get_ydata() == (0, 1.63)
-        assert ax.lines[3].get_ydata() == (0, 1.63)
-        assert ax.lines[6].get_ydata() == (1, 1.88)  # 2 + 1*.25 + 0.03 - 0.4
-        assert ax.lines[7].get_ydata() == (1, 1.88)
-        assert ax.lines[10].get_ydata() == (0, 1.88)
-        assert ax.lines[11].get_ydata() == (0, 1.88)
+        for cwire in [cwire1, cwire2]:
+            [pe1, pe2] = cwire.get_path_effects()
 
-        # all horizontal lines
+            # probably not a good way to test this, but the best I can figure out
+            assert pe1._gc == {
+                "linewidth": 5 * plt.rcParams["lines.linewidth"],
+                "foreground": "black",  # lines.color for black white style
+            }
+            assert pe2._gc == {
+                "linewidth": 3 * plt.rcParams["lines.linewidth"],
+                "foreground": "white",  # figure.facecolor for black white sytle
+            }
 
-        assert ax.lines[4].get_xdata() == (-0.03, 2.03)
-        assert qml.math.allclose(ax.lines[4].get_ydata(), (1.57, 1.57))
-        assert ax.lines[5].get_xdata() == (-0.03, 2.03)
-        assert qml.math.allclose(ax.lines[5].get_ydata(), (1.63, 1.63))
+        assert eraser.get_xdata() == (1.8, 2)
+        assert eraser.get_ydata() == (1.6, 1.6)
+        assert eraser.get_color() == plt.rcParams["figure.facecolor"]
+        assert eraser.get_linewidth() == 3 * plt.rcParams["lines.linewidth"]
 
-        assert ax.lines[8].get_xdata() == (0.97, 2.03)
-        # assert ax.lines[8].get_ydata() ==
+    def test_combo_measurement_non_terminal(self):
+        """Test a combination measurement where the classical wires continue on.
+        This covers the "erase_right=True" case.
+        """
+        with qml.queuing.AnnotatedQueue() as q:
+            m0 = qml.measure(0)
+            m1 = qml.measure(1)
+            qml.cond(m0 & m1, qml.PauliY)(0)
+            qml.cond(m0, qml.S)(0)
+            qml.cond(m1, qml.T)(1)
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        _, ax = qml.drawer.tape_mpl(tape)
+
+        [_, _, cwire1, cwire2, eraser] = ax.lines
+
+        assert cwire1.get_xdata() == [0, 0, 0, 2, 2, 2, 3, 3, 3]
+        assert cwire1.get_ydata() == [1.6, 0, 1.6, 1.6, 0, 1.6, 1.6, 0, 1.6]
+
+        assert cwire2.get_xdata() == [1, 1, 1, 2, 2, 2, 4, 4, 4]
+        assert cwire2.get_ydata() == [1.85, 1, 1.85, 1.85, 0, 1.85, 1.85, 1, 1.85]
+
+        for cwire in [cwire1, cwire2]:
+            [pe1, pe2] = cwire.get_path_effects()
+
+            # probably not a good way to test this, but the best I can figure out
+            assert pe1._gc == {
+                "linewidth": 5 * plt.rcParams["lines.linewidth"],
+                "foreground": "black",  # lines.color for black white style
+            }
+            assert pe2._gc == {
+                "linewidth": 3 * plt.rcParams["lines.linewidth"],
+                "foreground": "white",  # figure.facecolor for black white sytle
+            }
+
+        assert eraser.get_xdata() == (1.8, 2.2)
+        assert eraser.get_ydata() == (1.6, 1.6)
+        assert eraser.get_color() == plt.rcParams["figure.facecolor"]
+        assert eraser.get_linewidth() == 3 * plt.rcParams["lines.linewidth"]
