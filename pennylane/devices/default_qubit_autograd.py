@@ -11,16 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains an autograd implementation of the :class:`~.DefaultQubit`
+"""This module contains an autograd implementation of the :class:`~.DefaultQubitLegacy`
 reference plugin.
 """
 from pennylane import numpy as np
 
-from pennylane.devices import DefaultQubit
+from pennylane.devices import DefaultQubitLegacy
 
 
-class DefaultQubitAutograd(DefaultQubit):
-    """Simulator plugin based on ``"default.qubit"``, written using Autograd.
+class DefaultQubitAutograd(DefaultQubitLegacy):
+    """Simulator plugin based on ``"default.qubit.legacy"``, written using Autograd.
 
     **Short name:** ``default.qubit.autograd``
 

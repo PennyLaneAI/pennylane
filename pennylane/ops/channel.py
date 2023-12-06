@@ -51,16 +51,14 @@ class AmplitudeDamping(Channel):
     Args:
         gamma (float): amplitude damping probability
         wires (Sequence[int] or int): the wire the channel acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, gamma, wires, do_queue=True, id=None):
-        super().__init__(gamma, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, gamma, wires, id=None):
+        super().__init__(gamma, wires=wires, id=id)
 
     @staticmethod
     def compute_kraus_matrices(gamma):  # pylint:disable=arguments-differ
@@ -131,16 +129,14 @@ class GeneralizedAmplitudeDamping(Channel):
         gamma (float): amplitude damping probability
         p (float): excitation probability
         wires (Sequence[int] or int): the wire the channel acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
     num_params = 2
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, gamma, p, wires, do_queue=True, id=None):
-        super().__init__(gamma, p, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, gamma, p, wires, id=None):
+        super().__init__(gamma, p, wires=wires, id=id)
 
     @staticmethod
     def compute_kraus_matrices(gamma, p):  # pylint:disable=arguments-differ
@@ -217,8 +213,8 @@ class PhaseDamping(Channel):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, gamma, wires, do_queue=True, id=None):
-        super().__init__(gamma, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, gamma, wires, id=None):
+        super().__init__(gamma, wires=wires, id=id)
 
     @staticmethod
     def compute_kraus_matrices(gamma):  # pylint:disable=arguments-differ
@@ -296,8 +292,6 @@ class DepolarizingChannel(Channel):
     Args:
         p (float): Each Pauli gate is applied with probability :math:`\frac{p}{3}`
         wires (Sequence[int] or int): the wire the channel acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -305,8 +299,8 @@ class DepolarizingChannel(Channel):
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
-    def __init__(self, p, wires, do_queue=True, id=None):
-        super().__init__(p, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, p, wires, id=None):
+        super().__init__(p, wires=wires, id=id)
 
     @staticmethod
     def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
@@ -371,8 +365,6 @@ class BitFlip(Channel):
     Args:
         p (float): The probability that a bit flip error occurs.
         wires (Sequence[int] or int): the wire the channel acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -380,8 +372,8 @@ class BitFlip(Channel):
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
-    def __init__(self, p, wires, do_queue=True, id=None):
-        super().__init__(p, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, p, wires, id=None):
+        super().__init__(p, wires=wires, id=id)
 
     @staticmethod
     def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
@@ -455,16 +447,14 @@ class ResetError(Channel):
         p_0 (float): The probability that a reset to 0 error occurs.
         p_1 (float): The probability that a reset to 1 error occurs.
         wires (Sequence[int] or int): the wire the channel acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
     num_params = 2
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, p0, p1, wires, do_queue=True, id=None):
-        super().__init__(p0, p1, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, p0, p1, wires, id=None):
+        super().__init__(p0, p1, wires=wires, id=id)
 
     @staticmethod
     def compute_kraus_matrices(p_0, p_1):  # pylint:disable=arguments-differ
@@ -547,8 +537,6 @@ class PauliError(Channel):
         operators (str): The Pauli operators acting on the specified (groups of) wires
         p (float): The probability of the operator being applied
         wires (Sequence[int] or int): The wires the channel acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
 
     **Example:**
@@ -568,8 +556,8 @@ class PauliError(Channel):
     num_params = 2
     """int: Number of trainable parameters that the operator depends on."""
 
-    def __init__(self, operators, p, wires=None, do_queue=True, id=None):
-        super().__init__(operators, p, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, operators, p, wires=None, id=None):
+        super().__init__(operators, p, wires=wires, id=id)
 
         # check if the specified operators are legal
         if not set(operators).issubset({"X", "Y", "Z"}):
@@ -661,8 +649,6 @@ class PhaseFlip(Channel):
     Args:
         p (float): The probability that a phase flip error occurs.
         wires (Sequence[int] or int): the wire the channel acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
     num_params = 1
@@ -670,8 +656,8 @@ class PhaseFlip(Channel):
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
-    def __init__(self, p, wires, do_queue=True, id=None):
-        super().__init__(p, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, p, wires, id=None):
+        super().__init__(p, wires=wires, id=id)
 
     @staticmethod
     def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
@@ -713,15 +699,13 @@ class QubitChannel(Channel):
     Args:
         K_list (list[array[complex]]): list of Kraus matrices
         wires (Union[Wires, Sequence[int], or int]): the wire(s) the operation acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, K_list, wires=None, do_queue=True, id=None):
-        super().__init__(*K_list, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, K_list, wires=None, id=None):
+        super().__init__(*K_list, wires=wires, id=id)
 
         # check all Kraus matrices are square matrices
         if not all(K.shape[0] == K.shape[1] for K in K_list):
@@ -750,7 +734,7 @@ class QubitChannel(Channel):
         """Kraus matrices representing the QubitChannel channel.
 
         Args:
-            K_list (list[array[complex]]): list of Kraus matrices
+            *K_list (list[array[complex]]): list of Kraus matrices
 
         Returns:
             list (array): list of Kraus matrices
@@ -841,16 +825,14 @@ class ThermalRelaxationError(Channel):
         t2 (float): the :math:`T_2` dephasing constant. Must be less than :math:`2 T_1`
         tg (float): the gate time for relaxation error
         wires (Sequence[int] or int): the wire the channel acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
     num_params = 4
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, pe, t1, t2, tq, wires, do_queue=True, id=None):
-        super().__init__(pe, t1, t2, tq, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, pe, t1, t2, tq, wires, id=None):
+        super().__init__(pe, t1, t2, tq, wires=wires, id=id)
 
     @staticmethod
     def compute_kraus_matrices(pe, t1, t2, tg):  # pylint:disable=arguments-differ

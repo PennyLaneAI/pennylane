@@ -14,11 +14,9 @@
 """
 Unit tests for :mod:`fourier` visualization functions.
 """
+# pylint: disable=too-few-public-methods,too-many-arguments
 
 import pytest
-
-matplotlib = pytest.importorskip("matplotlib")
-import matplotlib.pyplot as plt
 
 from pennylane import numpy as np
 
@@ -31,6 +29,10 @@ from pennylane.fourier.visualize import (
     panel,
     radial_box,
 )
+
+matplotlib = pytest.importorskip("matplotlib")
+
+plt = matplotlib.pyplot
 
 
 coeffs_1D_valid_1 = np.array([0.5, 0, 0.25j, 0.25j, 0])

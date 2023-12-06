@@ -22,6 +22,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np, DeviceError
 from pennylane.devices.null_qubit import NullQubit
+from pennylane.measurements import Shots
 from pennylane import Tracker
 
 
@@ -98,7 +99,7 @@ class TestApply:
                 [1 / math.sqrt(30), 2 / math.sqrt(30), 3 / math.sqrt(30), 4 / math.sqrt(30)],
             ),
             (
-                qml.QubitStateVector,
+                qml.StatePrep,
                 [1 / math.sqrt(30), 2 / math.sqrt(30), 3 / math.sqrt(30), 4 / math.sqrt(30)],
             ),
         ],
@@ -167,7 +168,7 @@ class TestExpval:
 
         dev = nullqubit_device(wires=1)
         dev.reset()
-        dev.apply([qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates())
+        dev.apply([qml.StatePrep(np.array(input), wires=[0])], obs.diagonalizing_gates())
         res = dev.expval(obs)
         assert res == [0.0]
 
@@ -186,7 +187,7 @@ class TestExpval:
 
         dev = nullqubit_device(wires=1)
         dev.reset()
-        dev.apply([qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates())
+        dev.apply([qml.StatePrep(np.array(input), wires=[0])], obs.diagonalizing_gates())
         res = dev.expval(obs)
 
         assert res == [0.0]
@@ -218,7 +219,7 @@ class TestExpval:
 
         dev = nullqubit_device(wires=2)
         dev.reset()
-        dev.apply([qml.QubitStateVector(np.array(input), wires=[0, 1])], obs.diagonalizing_gates())
+        dev.apply([qml.StatePrep(np.array(input), wires=[0, 1])], obs.diagonalizing_gates())
         res = dev.expval(obs)
 
         assert res == [0.0]
@@ -244,7 +245,7 @@ class TestVar:
 
         dev = nullqubit_device(wires=1)
         dev.reset()
-        dev.apply([qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates())
+        dev.apply([qml.StatePrep(np.array(input), wires=[0])], obs.diagonalizing_gates())
         res = dev.var(obs)
         assert res == [0.0]
 
@@ -263,7 +264,7 @@ class TestVar:
 
         dev = nullqubit_device(wires=1)
         dev.reset()
-        dev.apply([qml.QubitStateVector(np.array(input), wires=[0])], obs.diagonalizing_gates())
+        dev.apply([qml.StatePrep(np.array(input), wires=[0])], obs.diagonalizing_gates())
         res = dev.var(obs)
 
         assert res == [0.0]
@@ -295,7 +296,7 @@ class TestVar:
 
         dev = nullqubit_device(wires=2)
         dev.reset()
-        dev.apply([qml.QubitStateVector(np.array(input), wires=[0, 1])], obs.diagonalizing_gates())
+        dev.apply([qml.StatePrep(np.array(input), wires=[0, 1])], obs.diagonalizing_gates())
         res = dev.var(obs)
 
         assert res == [0.0]
@@ -446,7 +447,7 @@ class TestNullQubitIntegration:
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
-            qml.QubitStateVector(np.array(state), wires=[0])
+            qml.StatePrep(np.array(state), wires=[0])
             return qml.expval(obs(wires=[0]))
 
         assert circuit() == np.array([0.0], dtype=object)
@@ -470,7 +471,7 @@ class TestNullQubitIntegration:
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
-            qml.QubitStateVector(np.array(state), wires=[0])
+            qml.StatePrep(np.array(state), wires=[0])
             return qml.expval(obs(*par, wires=[0]))
 
         assert circuit() == np.array([0.0], dtype=object)
@@ -507,7 +508,7 @@ class TestNullQubitIntegration:
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
-            qml.QubitStateVector(np.array(state), wires=[0, 1])
+            qml.StatePrep(np.array(state), wires=[0, 1])
             return qml.expval(obs(*par, wires=[0, 1]))
 
         assert circuit() == np.array([0.0], dtype=object)
@@ -1064,9 +1065,9 @@ class TestOpCallIntegration:
         (qml.IsingYY, [math.pi / 2], {"IsingYY": 1}),
         (qml.IsingZZ, [math.pi / 2], {"IsingZZ": 1}),
         (
-            qml.QubitStateVector,
+            qml.StatePrep,
             [1 / math.sqrt(30), 2 / math.sqrt(30), 3 / math.sqrt(30), 4 / math.sqrt(30)],
-            {"QubitStateVector": 1},
+            {"StatePrep": 1},
         ),
         (
             qml.BasisState,
@@ -1174,7 +1175,17 @@ class TestTrackerIntegration:
 
         @qml.qnode(dev)
         def circuit():
+            qml.RX(1.23, wires=0)
+            qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
+
+        circuit_resources = qml.resource.Resources(
+            num_wires=2,
+            num_gates=2,
+            gate_types={"RX": 1, "CNOT": 1},
+            gate_sizes={1: 1, 2: 1},
+            depth=2,
+        )
 
         class callback_wrapper:
             """Callback wrapping class"""
@@ -1198,6 +1209,7 @@ class TestTrackerIntegration:
             "shots": [None, None],
             "batches": [1, 1],
             "batch_len": [1, 1],
+            "resources": [circuit_resources, circuit_resources],
         }
         assert tracker.latest == {"batches": 1, "batch_len": 1}
 
@@ -1209,6 +1221,7 @@ class TestTrackerIntegration:
             "shots": [None, None],
             "batches": [1, 1],
             "batch_len": [1, 1],
+            "resources": [circuit_resources, circuit_resources],
         }
         assert kwargs_called["latest"] == {"batches": 1, "batch_len": 1}
 
@@ -1219,7 +1232,27 @@ class TestTrackerIntegration:
 
         @qml.qnode(dev)
         def circuit():
+            qml.RX(1.23, wires=0)
+            qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
+
+        circuit_resources_10 = qml.resource.Resources(
+            num_wires=2,
+            num_gates=2,
+            gate_types={"RX": 1, "CNOT": 1},
+            gate_sizes={1: 1, 2: 1},
+            depth=2,
+            shots=Shots(10),
+        )
+
+        circuit_resources_20 = qml.resource.Resources(
+            num_wires=2,
+            num_gates=2,
+            gate_types={"RX": 1, "CNOT": 1},
+            gate_sizes={1: 1, 2: 1},
+            depth=2,
+            shots=Shots(20),
+        )
 
         class callback_wrapper:
             """Callback wrapping class"""
@@ -1243,6 +1276,7 @@ class TestTrackerIntegration:
             "shots": [10, 20],
             "batches": [1, 1],
             "batch_len": [1, 1],
+            "resources": [circuit_resources_10, circuit_resources_20],
         }
         assert tracker.latest == {"batches": 1, "batch_len": 1}
 
@@ -1261,5 +1295,93 @@ class TestTrackerIntegration:
             "shots": [10, 20],
             "batches": [1, 1],
             "batch_len": [1, 1],
+            "resources": [circuit_resources_10, circuit_resources_20],
+        }
+        assert kwargs_called["latest"] == {"batches": 1, "batch_len": 1}
+
+    def test_custom_resource_operations(self, nullqubit_device, mocker):
+        """Test that custom operation resources are tracked correctly."""
+        # pylint: disable=unexpected-keyword-arg
+        dev = nullqubit_device(wires=2)
+
+        class CustomResourceOperation(
+            qml.resource.ResourcesOperation
+        ):  # pylint: disable=too-few-public-methods
+            def resources(self):
+                return qml.resource.Resources(
+                    num_wires=2,
+                    num_gates=3,
+                    gate_types={"Hadamard": 2, "CNOT": 1},
+                    gate_sizes={1: 2, 2: 1},
+                    depth=2,
+                )
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(1.23, wires=0)
+            qml.CNOT(wires=[0, 1])
+            CustomResourceOperation(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        circuit_resources_10 = qml.resource.Resources(
+            num_wires=2,
+            num_gates=5,
+            gate_types={"RX": 1, "Hadamard": 2, "CNOT": 2},
+            gate_sizes={1: 3, 2: 2},
+            depth=4,
+            shots=Shots(10),
+        )
+
+        circuit_resources_20 = qml.resource.Resources(
+            num_wires=2,
+            num_gates=5,
+            gate_types={"RX": 1, "Hadamard": 2, "CNOT": 2},
+            gate_sizes={1: 3, 2: 2},
+            depth=4,
+            shots=Shots(20),
+        )
+
+        class callback_wrapper:
+            """Callback wrapping class"""
+
+            # pylint: disable=too-few-public-methods
+
+            @staticmethod
+            def callback(totals=None, history=None, latest=None):
+                """Wrapped callback function."""
+
+        wrapper = callback_wrapper()
+        spy = mocker.spy(wrapper, "callback")
+
+        with Tracker(circuit.device, callback=wrapper.callback) as tracker:
+            circuit(shots=10)
+            circuit(shots=20)
+
+        assert tracker.totals == {"executions": 2, "batches": 2, "batch_len": 2, "shots": 30}
+        assert tracker.history == {
+            "executions": [1, 1],
+            "shots": [10, 20],
+            "batches": [1, 1],
+            "batch_len": [1, 1],
+            "resources": [circuit_resources_10, circuit_resources_20],
+        }
+        assert tracker.latest == {"batches": 1, "batch_len": 1}
+
+        assert spy.call_count == 4
+
+        _, kwargs_called = spy.call_args_list[-1]
+
+        assert kwargs_called["totals"] == {
+            "executions": 2,
+            "batches": 2,
+            "batch_len": 2,
+            "shots": 30,
+        }
+        assert kwargs_called["history"] == {
+            "executions": [1, 1],
+            "shots": [10, 20],
+            "batches": [1, 1],
+            "batch_len": [1, 1],
+            "resources": [circuit_resources_10, circuit_resources_20],
         }
         assert kwargs_called["latest"] == {"batches": 1, "batch_len": 1}

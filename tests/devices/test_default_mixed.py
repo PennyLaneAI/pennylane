@@ -21,7 +21,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane import QubitStateVector, BasisState, DeviceError
+from pennylane import StatePrep, BasisState, DeviceError
 from pennylane.devices import DefaultMixed
 from pennylane.ops import (
     Identity,
@@ -976,33 +976,33 @@ class TestApply:
 
     @pytest.mark.parametrize("nr_wires", [1, 2, 3])
     def test_apply_state_vector(self, nr_wires, tol):
-        """Tests that we correctly apply a `QubitStateVector` operation for the root state"""
+        """Tests that we correctly apply a `StatePrep` operation for the root state"""
         dev = qml.device("default.mixed", wires=nr_wires)
         dim = 2**nr_wires
         state = np.array([np.exp(1j * 2 * np.pi * n / dim) / np.sqrt(dim) for n in range(dim)])
-        dev.apply([QubitStateVector(state, wires=range(nr_wires))])
+        dev.apply([StatePrep(state, wires=range(nr_wires))])
 
         assert np.allclose(dev.state, root_state(nr_wires), atol=tol, rtol=0)
 
     def test_apply_state_vector_wires(self, tol):
-        """Tests that we correctly apply a `QubitStateVector` operation for the root state when
+        """Tests that we correctly apply a `StatePrep` operation for the root state when
         wires are passed as an ordered list"""
         nr_wires = 3
         dev = qml.device("default.mixed", wires=[0, 1, 2])
         dim = 2**nr_wires
         state = np.array([np.exp(1j * 2 * np.pi * n / dim) / np.sqrt(dim) for n in range(dim)])
-        dev.apply([QubitStateVector(state, wires=[0, 1, 2])])
+        dev.apply([StatePrep(state, wires=[0, 1, 2])])
 
         assert np.allclose(dev.state, root_state(nr_wires), atol=tol, rtol=0)
 
     def test_apply_state_vector_subsystem(self, tol):
-        """Tests that we correctly apply a `QubitStateVector` operation when the
+        """Tests that we correctly apply a `StatePrep` operation when the
         wires passed are a strict subset of the device wires"""
         nr_wires = 2
         dev = qml.device("default.mixed", wires=[0, 1, 2])
         dim = 2**nr_wires
         state = np.array([np.exp(1j * 2 * np.pi * n / dim) / np.sqrt(dim) for n in range(dim)])
-        dev.apply([QubitStateVector(state, wires=[0, 1])])
+        dev.apply([StatePrep(state, wires=[0, 1])])
 
         expected = np.array([1, 0, 1j, 0, -1, 0, -1j, 0]) / 2
         expected = np.outer(expected, np.conj(expected))
@@ -1020,11 +1020,11 @@ class TestApply:
             dev.apply(ops)
 
     def test_raise_order_error_qubit_state(self):
-        """Tests that an error is raised if a state is prepared after QubitStateVector has been
+        """Tests that an error is raised if a state is prepared after StatePrep has been
         applied"""
         dev = qml.device("default.mixed", wires=1)
         state = np.array([1, 0])
-        ops = [PauliX(0), QubitStateVector(state, wires=0)]
+        ops = [PauliX(0), StatePrep(state, wires=0)]
 
         with pytest.raises(DeviceError, match="Operation"):
             dev.apply(ops)

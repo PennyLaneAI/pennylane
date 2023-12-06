@@ -54,7 +54,7 @@ PennyLane Documentation
 Features
 --------
 
-.. image:: _static/header.png
+.. image:: _static/header-tall.png
     :align: left
     :width: 450px
     :target: javascript:void(0);
@@ -68,6 +68,12 @@ Features
 - *Best of both worlds*.
   Support for **hybrid quantum and classical** models; connect quantum
   hardware with PyTorch, TensorFlow, and NumPy.
+
+..
+
+- *Just in time compilation*. Compile your **entire hybrid workflow**, with support for
+  adaptive circuits, real-time measurement feedback, unbounded loops, and more. See
+  `Catalyst <https://github.com/pennylaneai/catalyst>`__ for more details.
 
 ..
 
@@ -157,6 +163,8 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    introduction/compiling_circuits
    introduction/chemistry
    introduction/data
+   introduction/returns
+   introduction/logging
 
 .. toctree::
    :maxdepth: 1
@@ -175,16 +183,20 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :hidden:
 
    code/qml
+   code/qml_compiler
    code/qml_data
    code/qml_drawer
+   code/qml_fermi
    code/qml_fourier
    code/qml_gradients
    code/qml_kernels
+   code/qml_logging
    code/qml_math
    code/qml_numpy
    code/qml_ops_op_math
    code/qml_pauli
    code/qml_pulse
+   code/qml_qcut
    code/qml_qinfo
    code/qml_resource
    code/qml_shadows

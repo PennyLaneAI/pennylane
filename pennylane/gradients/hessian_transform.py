@@ -20,7 +20,7 @@ import pennylane as qml
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 
 
-def _process_jacs_new(jac, qhess):
+def _process_jacs(jac, qhess):
     """
     Combine the classical and quantum jacobians
     """
@@ -49,7 +49,7 @@ def _process_jacs_new(jac, qhess):
 
         qh_indices = "ab..."
 
-        # contract the first axis of the jacobian with the first and second axes of the hessian
+        # contract the first axis of the jacobian with the first and second axes of the Hessian
         first_jac_indices = f"a{ABC[2:2 + jac_ndim - 1]}"
         second_jac_indices = f"b{ABC[2 + jac_ndim - 1:2 + 2 * jac_ndim - 2]}"
 
@@ -66,7 +66,7 @@ def _process_jacs_new(jac, qhess):
     return tuple(hess) if len(hess) > 1 else hess[0]
 
 
-class hessian_transform(qml.batch_transform):
+class hessian_transform(qml.batch_transform):  # pragma: no cover
     """Decorator for defining quantum Hessian transforms.
 
     Quantum Hessian transforms are a specific case of :class:`~.batch_transform`s,
@@ -176,7 +176,7 @@ class hessian_transform(qml.batch_transform):
 
             if not qml.math.get_trainable_indices(args) and not argnums:
                 warnings.warn(
-                    "Attempted to compute the hessian of a QNode with no trainable parameters. "
+                    "Attempted to compute the Hessian of a QNode with no trainable parameters. "
                     "If this is unintended, please add trainable parameters in accordance with "
                     "the chosen auto differentiation framework."
                 )
@@ -190,7 +190,7 @@ class hessian_transform(qml.batch_transform):
             if not hybrid:
                 return qhess
 
-            if qml.active_return() and len(qnode.tape.measurements) == 1:
+            if len(qnode.tape.measurements) == 1:
                 qhess = (qhess,)
 
             kwargs.pop("shots", False)
@@ -216,22 +216,7 @@ class hessian_transform(qml.batch_transform):
             hessians = []
             for jac in cjac:
                 if jac is not None:
-                    if qml.active_return():
-                        hess = _process_jacs_new(jac, qhess)
-                    else:
-                        # Check for a Jacobian equal to the identity matrix.
-                        shape = qml.math.shape(jac)
-                        is_square = len(shape) == 2 and shape[0] == shape[1]
-                        if is_square and qml.math.allclose(jac, qml.numpy.eye(shape[0])):
-                            hessians.append(qhess)
-                            continue
-
-                        num_arg_dims = (
-                            len(qml.math.shape(jac)) - 1
-                        )  # number of axes in qnode_arg_shape
-                        hess = qml.math.tensordot(qhess, jac, [[-1], [0]])
-                        hess = qml.math.tensordot(hess, jac, [[-1 - num_arg_dims], [0]])
-
+                    hess = _process_jacs(jac, qhess)
                     hessians.append(hess)
 
             return hessians[0] if has_single_arg else tuple(hessians)

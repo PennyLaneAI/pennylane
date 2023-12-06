@@ -32,14 +32,14 @@ class TestCircuits:
         dev = qml.device("default.qubit", wires=n_qubits)
 
         @qml.qnode(dev)
-        def circuit(x):
-            for l in range(n_layers):
+        def _circuit(x):
+            for _ in range(n_layers):
                 for i in range(n_qubits):
                     qml.RX(x, wires=i, id="x")
                     qml.RY(0.4, wires=i)
             return qml.expval(qml.PauliZ(wires=0))
 
-        res = circuit_spectrum(circuit)(0.1)
+        res = circuit_spectrum(_circuit)(0.1)
         expected_degree = n_qubits * n_layers
         assert np.allclose(res["x"], range(-expected_degree, expected_degree + 1))
 
@@ -50,21 +50,21 @@ class TestCircuits:
         dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)
-        def circuit(x):
+        def _circuit(x):
             qml.RX(x, wires=0, id="x")
             qml.RY(0.4, wires=0, id="other")
             return qml.expval(qml.PauliZ(wires=0))
 
-        res = circuit_spectrum(circuit, encoding_gates=["x"])(0.1)
+        res = circuit_spectrum(_circuit, encoding_gates=["x"])(0.1)
         assert res == {"x": [-1.0, 0.0, 1.0]}
 
-        res = circuit_spectrum(circuit, encoding_gates=["x", "other"])(0.1)
+        res = circuit_spectrum(_circuit, encoding_gates=["x", "other"])(0.1)
         assert res == {"x": [-1.0, 0.0, 1.0], "other": [-1.0, 0.0, 1.0]}
 
-        res = circuit_spectrum(circuit)(0.1)
+        res = circuit_spectrum(_circuit)(0.1)
         assert res == {"x": [-1.0, 0.0, 1.0], "other": [-1.0, 0.0, 1.0]}
 
-        res = circuit_spectrum(circuit, encoding_gates=["a"])(0.1)
+        res = circuit_spectrum(_circuit, encoding_gates=["a"])(0.1)
         assert res == {"a": []}
 
     def test_spectrum_changes_with_qnode_args(self):
@@ -74,17 +74,17 @@ class TestCircuits:
         dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
-        def circuit(last_gate):
+        def _circuit(last_gate):
             qml.RX(0.1, wires=0, id="x")
             qml.RX(0.2, wires=1, id="x")
             if last_gate:
                 qml.RX(0.3, wires=2, id="x")
             return qml.expval(qml.PauliZ(wires=0))
 
-        res_true = circuit_spectrum(circuit)(True)
+        res_true = circuit_spectrum(_circuit)(True)
         assert np.allclose(res_true["x"], range(-3, 4))
 
-        res_false = circuit_spectrum(circuit)(False)
+        res_false = circuit_spectrum(_circuit)(False)
         assert np.allclose(res_false["x"], range(-2, 3))
 
     def test_input_gates_not_of_correct_form(self):
@@ -94,13 +94,13 @@ class TestCircuits:
         dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
-        def circuit():
+        def _circuit():
             qml.RX(0.1, wires=0, id="x")
             qml.Rot(0.2, 0.3, 0.4, wires=1, id="x")
             return qml.expval(qml.PauliZ(wires=0))
 
         with pytest.raises(ValueError, match="Can only consider one-parameter gates"):
-            circuit_spectrum(circuit)()
+            circuit_spectrum(_circuit)()
 
 
 def circuit(x, w):

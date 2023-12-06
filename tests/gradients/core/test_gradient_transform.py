@@ -17,29 +17,37 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.gradients.gradient_transform import (
-    gradient_transform,
-    gradient_analysis,
+    _gradient_analysis,
     choose_grad_methods,
-    grad_method_validation,
+    _grad_method_validation,
 )
+
+
+def test_repr():
+    """Test the repr method of gradient transforms."""
+    assert repr(qml.gradients.param_shift) == "<transform: param_shift>"
+    assert repr(qml.gradients.spsa_grad) == "<transform: spsa_grad>"
+    assert repr(qml.gradients.finite_diff) == "<transform: finite_diff>"
 
 
 class TestGradAnalysis:
     """Tests for parameter gradient methods"""
+
+    # pylint: disable=protected-access
 
     def test_non_differentiable(self):
         """Test that a non-differentiable parameter is correctly marked"""
         psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.QubitStateVector(psi, wires=[0, 1])
+            qml.StatePrep(psi, wires=[0, 1])
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])
             qml.CNOT(wires=[0, 1])
             qml.probs(wires=[0, 1])
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        gradient_analysis(tape)
+        _gradient_analysis(tape)
 
         assert tape._par_info[0]["grad_method"] is None
         assert tape._par_info[1]["grad_method"] == "A"
@@ -47,11 +55,11 @@ class TestGradAnalysis:
 
     def test_analysis_caching(self, mocker):
         """Test that the gradient analysis is only executed once per tape
-        if grad_fn is set an unchanged."""
+        if grad_fn is set and unchanged."""
         psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.QubitStateVector(psi, wires=[0, 1])
+            qml.StatePrep(psi, wires=[0, 1])
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])
             qml.CNOT(wires=[0, 1])
@@ -59,7 +67,7 @@ class TestGradAnalysis:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         spy = mocker.spy(qml.operation, "has_grad_method")
-        gradient_analysis(tape, grad_fn=5)
+        _gradient_analysis(tape, grad_fn=5)
         spy.assert_called()
 
         assert tape._par_info[0]["grad_method"] is None
@@ -67,7 +75,7 @@ class TestGradAnalysis:
         assert tape._par_info[2]["grad_method"] == "A"
 
         spy = mocker.spy(qml.operation, "has_grad_method")
-        gradient_analysis(tape, grad_fn=5)
+        _gradient_analysis(tape, grad_fn=5)
         spy.assert_not_called()
 
     def test_independent(self):
@@ -80,7 +88,7 @@ class TestGradAnalysis:
             qml.expval(qml.PauliY(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        gradient_analysis(tape)
+        _gradient_analysis(tape)
 
         assert tape._par_info[0]["grad_method"] == "A"
         assert tape._par_info[1]["grad_method"] == "0"
@@ -95,7 +103,7 @@ class TestGradAnalysis:
             qml.expval(qml.PauliY(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        gradient_analysis(tape, use_graph=False)
+        _gradient_analysis(tape, use_graph=False)
 
         assert tape._par_info[0]["grad_method"] == "A"
         assert tape._par_info[1]["grad_method"] == "A"
@@ -107,14 +115,14 @@ class TestGradAnalysis:
         psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
 
         with qml.queuing.AnnotatedQueue() as q:
-            qml.QubitStateVector(psi, wires=[0, 1])
+            qml.StatePrep(psi, wires=[0, 1])
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])
             qml.CNOT(wires=[0, 1])
             qml.probs(wires=[0, 1])
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        gradient_analysis(tape)
+        _gradient_analysis(tape)
 
         assert tape._par_info[0]["grad_method"] is None
         assert tape._par_info[1]["grad_method"] == "F"
@@ -122,7 +130,9 @@ class TestGradAnalysis:
 
 
 class TestGradMethodValidation:
-    """Test the helper function grad_method_validation."""
+    """Test the helper function _grad_method_validation."""
+
+    # pylint: disable=protected-access
 
     @pytest.mark.parametrize("method", ["analytic", "best"])
     def test_with_nondiff_parameters(self, method):
@@ -136,7 +146,7 @@ class TestGradMethodValidation:
         tape._par_info[0]["grad_method"] = "A"
         tape._par_info[1]["grad_method"] = None
         with pytest.raises(ValueError, match="Cannot differentiate with respect"):
-            grad_method_validation(method, tape)
+            _grad_method_validation(method, tape)
 
     def test_with_numdiff_parameters_and_analytic(self):
         """Test that trainable parameters with numerical grad_method ``"F"``
@@ -149,7 +159,7 @@ class TestGradMethodValidation:
         tape._par_info[0]["grad_method"] = "A"
         tape._par_info[1]["grad_method"] = "F"
         with pytest.raises(ValueError, match="The analytic gradient method cannot be used"):
-            grad_method_validation("analytic", tape)
+            _grad_method_validation("analytic", tape)
 
 
 class TestChooseGradMethods:
@@ -191,10 +201,37 @@ class TestChooseGradMethods:
 class TestGradientTransformIntegration:
     """Test integration of the gradient transform decorator"""
 
-    def test_acting_on_qnodes(self, tol):
-        """Test that a gradient transform acts on QNodes
-        correctly"""
-        dev = qml.device("default.qubit", wires=2)
+    @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 1e-1), ([1000, 500], 3e-1)])
+    @pytest.mark.parametrize("slicing", [False, True])
+    def test_acting_on_qnodes_single_param(self, shots, slicing, atol):
+        """Test that a gradient transform acts on QNodes with a single parameter correctly"""
+        np.random.seed(412)
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            if slicing:
+                qml.RX(weights[0], wires=[0])
+            else:
+                qml.RX(weights, wires=[0])
+            return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
+
+        grad_fn = qml.gradients.param_shift(circuit)
+
+        w = np.array([0.543] if slicing else 0.543, requires_grad=True)
+        res = grad_fn(w)
+        assert circuit.interface == "auto"
+        expected = np.array([-np.sin(w[0] if slicing else w), 0])
+        if isinstance(shots, list):
+            assert all(np.allclose(r, expected, atol=atol, rtol=0) for r in res)
+        else:
+            assert np.allclose(res, expected, atol=atol, rtol=0)
+
+    @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 1e-1), ([1000, 100], 2e-1)])
+    def test_acting_on_qnodes_multi_param(self, shots, atol):
+        """Test that a gradient transform acts on QNodes with multiple parameters correctly"""
+        np.random.seed(412)
+        dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.qnode(dev)
         def circuit(weights):
@@ -210,7 +247,41 @@ class TestGradientTransformIntegration:
         assert circuit.interface == "auto"
         x, y = w
         expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        if isinstance(shots, list):
+            assert all(np.allclose(r, expected, atol=atol, rtol=0) for r in res)
+        else:
+            assert np.allclose(res, expected, atol=atol, rtol=0)
+
+    @pytest.mark.xfail(reason="Gradient transforms are not compatible with shots and mixed shapes")
+    @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 1e-1), ([1000, 100], 2e-1)])
+    def test_acting_on_qnodes_multi_param_multi_arg(self, shots, atol):
+        """Test that a gradient transform acts on QNodes with multiple parameters
+        in both the tape and the QNode correctly"""
+        np.random.seed(234)
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(weight0, weight1):
+            qml.RX(weight0, wires=[0])
+            qml.RY(weight1[0], wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
+
+        grad_fn = qml.gradients.param_shift(circuit)
+
+        w = [np.array(0.543, requires_grad=True), np.array([-0.654], requires_grad=True)]
+        res = grad_fn(*w)
+        assert circuit.interface == "auto"
+        x, (y,) = w
+        expected = (np.array([-np.sin(x), 0]), np.array([[0], [-2 * np.cos(y) * np.sin(y)]]))
+        if isinstance(shots, list):
+            assert isinstance(res, tuple) and len(res) == len(shots)
+            for _res in res:
+                assert isinstance(_res, tuple) and len(_res) == 2
+                assert all(np.allclose(r, e, atol=atol, rtol=0) for r, e in zip(_res, expected))
+        else:
+            assert isinstance(res, tuple) and len(res) == 2
+            assert all(np.allclose(r, e, atol=atol, rtol=0) for r, e in zip(res, expected))
 
     def test_decorator(self, tol):
         """Test that a gradient transform decorating a QNode
@@ -263,15 +334,20 @@ class TestGradientTransformIntegration:
         dev = qml.device("default.qubit", wires=2)
         spy = mocker.spy(qml.gradients.parameter_shift, "expval_param_shift")
 
-        class NonDiffRXGate(qml.PhaseShift):
+        # pylint: disable=too-few-public-methods
+        class NonDiffRXGate(qml.RX):
+            """A non-differentiable gate that decomposes into RX."""
+
             grad_method = None
 
             @staticmethod
             def compute_decomposition(x, wires):
+                """Decompose into a qml.RX gate."""
                 return [qml.RX(x, wires=wires)]
 
         @qml.qnode(dev)
         def circuit(weights):
+            """A quantum circuit using the above non-differentiable RX gate."""
             NonDiffRXGate(weights[0], wires=[0])
             qml.RY(weights[1], wires=[1])
             qml.CNOT(wires=[0, 1])
@@ -324,7 +400,8 @@ class TestGradientTransformIntegration:
         y = np.array([[0.2, 0.2], [0.3, 0.5]], requires_grad=True)
 
         expected = qml.jacobian(circuit)(x, y)
-        res = qml.gradients.param_shift(circuit, hybrid=True)(x, y)
+        # pylint:disable=unexpected-keyword-arg
+        res = qml.gradients.param_shift(circuit)(x, y)
         assert isinstance(res, tuple) and len(res) == 2
         assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
 
@@ -394,7 +471,6 @@ class TestGradientTransformIntegration:
         x = np.array([0.1, 0.2], requires_grad=True)
 
         expected = qml.jacobian(circuit)(x)
-        cjac = qml.transforms.classical_jacobian(circuit)(x)
         res = qml.gradients.param_shift(circuit)(x)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -405,6 +481,8 @@ class TestGradientTransformIntegration:
 
         @qml.qnode(dev)
         def circuit(x, y):
+            """A quantum circuit that does not use its first parameter."""
+            # pylint: disable=unused-argument
             qml.RX(y[0], wires=0)
             qml.RY(y[0], wires=0)
             qml.RZ(y[1], wires=0)
@@ -418,11 +496,10 @@ class TestGradientTransformIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_classical_processing_arguments(self, mocker, tol):
+    def test_classical_processing_arguments(self, tol):
         """Test that a gradient transform acts on QNodes
         correctly when the QNode arguments are classically processed"""
         dev = qml.device("default.qubit", wires=2)
-        spy = mocker.spy(qml.transforms, "classical_jacobian")
 
         @qml.qnode(dev)
         def circuit(weights):
@@ -434,19 +511,14 @@ class TestGradientTransformIntegration:
         w = np.array([0.543, -0.654], requires_grad=True)
         res = qml.gradients.param_shift(circuit)(w)
 
-        classical_jac = spy.spy_return(w)
-        assert isinstance(classical_jac, np.ndarray)
-        assert np.allclose(classical_jac, np.array([[2 * w[0], 0], [0, 1]]))
-
-        x, y = w
+        x, _ = w
         expected = [-2 * x * np.sin(x**2), 0]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_classical_processing_multiple_arguments(self, mocker, tol):
+    def test_classical_processing_multiple_arguments(self, tol):
         """Test that a gradient transform acts on QNodes
         correctly when multiple QNode arguments are classically processed"""
         dev = qml.device("default.qubit", wires=2)
-        spy = mocker.spy(qml.transforms, "classical_jacobian")
 
         @qml.qnode(dev)
         def circuit(data, weights):
@@ -459,11 +531,9 @@ class TestGradientTransformIntegration:
         # set d as non-differentiable
         d = np.array(0.56, requires_grad=False)
         w = np.array([0.543, -0.654], requires_grad=True)
-        x, y = w
+        x, _ = w
 
         res = qml.gradients.param_shift(circuit)(d, w)
-        classical_jac = spy.spy_return(d, w)
-        assert np.allclose(classical_jac, np.array([[2 * w[0], 0], [0, 1]]).T)
 
         expected = np.array([-2 * x * np.cos(np.cos(d)) * np.sin(x**2), 0])
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -473,10 +543,6 @@ class TestGradientTransformIntegration:
         w = np.array([0.543, -0.654], requires_grad=True)
 
         res = qml.gradients.param_shift(circuit)(d, w)
-        classical_jac = spy.spy_return(d, w)
-        assert isinstance(classical_jac, tuple)
-        assert np.allclose(classical_jac[0], [-np.sin(d), 0, 0])
-        assert np.allclose(classical_jac[1], np.array([[0, 2 * w[0], 0], [0, 0, 1]]).T)
 
         expected_dd = np.cos(x**2) * np.sin(d) * np.sin(np.cos(d))
         expected_dw = np.array([-2 * x * np.cos(np.cos(d)) * np.sin(x**2), 0])
@@ -503,23 +569,18 @@ class TestGradientTransformIntegration:
         expected = qml.jacobian(circuit)(w)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        # when executed with hybrid=False, only the quantum jacobian is returned
-        res = qml.gradients.param_shift(circuit, hybrid=False)(w)
-        assert res[0].shape == (4,)
-        assert res[1].shape == (4,)
-
         @qml.qnode(dev)
-        def circuit(weights):
+        def circuit1(weights):
             qml.RX(weights[0], wires=[0])
             qml.RY(weights[1], wires=[1])
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[0, 1])
 
         w = np.array([0.543**2, -0.654], requires_grad=True)
-        expected = qml.jacobian(circuit)(w)
+        expected = qml.jacobian(circuit1)(w)
 
-        assert np.allclose(res[0], expected.T[0], atol=tol, rtol=0)
-        assert np.allclose(res[1], expected.T[1], atol=tol, rtol=0)
+        assert np.allclose(res[0][0], expected[0], atol=10e-2, rtol=0)
+        assert np.allclose(res[1][0], expected[1], atol=10e-2, rtol=0)
 
     @pytest.mark.parametrize("strategy", ["gradient", "device"])
     def test_template_integration(self, strategy, tol):
@@ -539,6 +600,7 @@ class TestGradientTransformIntegration:
         expected = qml.jacobian(circuit)(weights)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    # pylint: disable=unexpected-keyword-arg
     def test_setting_shots(self):
         """Test that setting the number of shots works correctly for
         a gradient transform"""
@@ -555,25 +617,11 @@ class TestGradientTransformIntegration:
         # the gradient function can be called with different shot values
         grad_fn = qml.gradients.param_shift(circuit)
         assert grad_fn(x).shape == ()
-        assert grad_fn(x, shots=[(1, 1000)]).shape == (1000,)
+        assert len(grad_fn(x, shots=[(1, 1000)])) == 1000
 
         # the original QNode is unaffected
         assert circuit(x).shape == tuple()
         assert circuit(x, shots=1000).shape == tuple()
-
-    def test_shots_error(self):
-        """Raise an exception if shots is used within the QNode"""
-        dev = qml.device("default.qubit", wires=1, shots=1000)
-
-        def circuit(x, shots):
-            qml.RX(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.warns(UserWarning, match="Detected 'shots' as an argument to the given"):
-            qnode = qml.QNode(circuit, dev)
-
-        with pytest.raises(ValueError, match="Detected 'shots' as an argument of the quantum"):
-            qml.gradients.param_shift(qnode)(0.2, shots=100)
 
 
 class TestInterfaceIntegration:

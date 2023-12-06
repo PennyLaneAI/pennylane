@@ -530,7 +530,7 @@ class TestPassthruIntegration:
         def circuit(x, weights, w):
             """In this example, a mixture of scalar
             arguments, array arguments, and keyword arguments are used."""
-            qml.QubitStateVector(state, wires=w)
+            qml.StatePrep(state, wires=w)
             operation(x, weights[0], weights[1], wires=w)
             return qml.expval(qml.PauliX(w))
 
@@ -573,9 +573,9 @@ class TestPassthruIntegration:
     @pytest.mark.parametrize(
         "dev_name,diff_method,mode",
         [
-            ["default.mixed", "finite-diff", "backward"],
-            ["default.mixed", "parameter-shift", "backward"],
-            ["default.mixed", "backprop", "forward"],
+            ["default.mixed", "finite-diff", False],
+            ["default.mixed", "parameter-shift", False],
+            ["default.mixed", "backprop", True],
         ],
     )
     def test_multiple_measurements_differentiation(self, dev_name, diff_method, mode, tol):
@@ -585,7 +585,7 @@ class TestPassthruIntegration:
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)
 
-        @qml.qnode(dev, diff_method=diff_method, interface="autograd", mode=mode)
+        @qml.qnode(dev, diff_method=diff_method, interface="autograd", grad_on_execution=mode)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -642,6 +642,7 @@ class TestPassthruIntegration:
         assert np.allclose(np.diag(res_b), expected_b, atol=tol, rtol=0)
 
 
+# pylint: disable=too-few-public-methods
 class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
 
@@ -659,20 +660,3 @@ class TestHighLevelIntegration:
 
         grad = qml.grad(circuit)(weights)
         assert grad.shape == weights.shape
-
-    def test_qnode_collection_integration(self):
-        """Test that QNodeCollections does not work with the new return system."""
-        dev = qml.device("default.mixed", wires=2)
-
-        def ansatz(weights, **kwargs):
-            # pylint: disable=unused-argument
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-
-        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="QNodeCollections does not support the new return system.",
-        ):
-            qml.map(ansatz, obs_list, dev, interface="autograd")

@@ -13,31 +13,45 @@
 # limitations under the License.
 """Adaptive optimizer"""
 import copy
+from typing import Sequence, Callable
 
 # pylint: disable= no-value-for-parameter, protected-access, not-callable
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.tape import QuantumTape
+from pennylane import transform
 
 
-@qml.qfunc_transform
-def append_gate(tape, params, gates):
+@transform
+def append_gate(tape: QuantumTape, params, gates) -> (Sequence[QuantumTape], Callable):
     """Append parameterized gates to an existing tape.
 
     Args:
-        tape (QuantumTape): quantum tape to transform by adding gates
+        tape (QuantumTape or QNode or Callable): quantum circuit to transform by adding gates
         params (array[float]): parameters of the gates to be added
         gates (list[Operator]): list of the gates to be added
+
+    Returns:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+
     """
-    for o in tape.operations:
-        qml.apply(o)
+    new_operations = []
 
     for i, g in enumerate(gates):
         g = copy.copy(g)
-        g.data[0] = params[i]
-        qml.apply(g)
+        new_params = (params[i], *g.data[1:])
+        g.data = new_params
+        new_operations.append(g)
 
-    for m in tape.measurements:
-        qml.apply(m)
+    new_tape = type(tape)(tape.operations + new_operations, tape.measurements, shots=tape.shots)
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]  # pragma: no cover
+
+    return [new_tape], null_postprocessing
 
 
 class AdaptiveOptimizer:
@@ -100,7 +114,7 @@ class AdaptiveOptimizer:
     >>> for i in range(len(operator_pool)):
     ...     circuit, energy, gradient = opt.step_and_cost(circuit, operator_pool, drain_pool=True)
     ...     print('Energy:', energy)
-    ...     print(qml.draw(circuit)())
+    ...     print(qml.draw(circuit, show_matrices=False)())
     ...     print('Largest Gradient:', gradient)
     ...     print()
     ...     if gradient < 1e-3:
@@ -108,32 +122,32 @@ class AdaptiveOptimizer:
 
     .. code-block :: pycon
 
-        Energy: -1.246549938420637
-        0: ─╭BasisState(M0)─╭G²(0.20)─┤ ╭<𝓗>
-        1: ─├BasisState(M0)─├G²(0.20)─┤ ├<𝓗>
-        2: ─├BasisState(M0)─│─────────┤ ├<𝓗>
-        3: ─├BasisState(M0)─│─────────┤ ├<𝓗>
-        4: ─├BasisState(M0)─├G²(0.20)─┤ ├<𝓗>
-        5: ─╰BasisState(M0)─╰G²(0.20)─┤ ╰<𝓗>
-        Largest Gradient: 0.14399872776755085
+        Energy: -1.2465499384199699
+        0: ─╭|Ψ⟩─╭G²(0.20)─┤ ╭<𝓗>
+        1: ─├|Ψ⟩─├G²(0.20)─┤ ├<𝓗>
+        2: ─├|Ψ⟩─│─────────┤ ├<𝓗>
+        3: ─├|Ψ⟩─│─────────┤ ├<𝓗>
+        4: ─├|Ψ⟩─├G²(0.20)─┤ ├<𝓗>
+        5: ─╰|Ψ⟩─╰G²(0.20)─┤ ╰<𝓗>
+        Largest Gradient: 0.1439987277673651
 
-        Energy: -1.2613740231529604
-        0: ─╭BasisState(M0)─╭G²(0.20)─╭G²(0.19)─┤ ╭<𝓗>
-        1: ─├BasisState(M0)─├G²(0.20)─├G²(0.19)─┤ ├<𝓗>
-        2: ─├BasisState(M0)─│─────────├G²(0.19)─┤ ├<𝓗>
-        3: ─├BasisState(M0)─│─────────╰G²(0.19)─┤ ├<𝓗>
-        4: ─├BasisState(M0)─├G²(0.20)───────────┤ ├<𝓗>
-        5: ─╰BasisState(M0)─╰G²(0.20)───────────┤ ╰<𝓗>
-        Largest Gradient: 0.1349349562423238
+        Energy: -1.2613740231522532
+        0: ─╭|Ψ⟩─╭G²(0.20)─╭G²(0.19)─┤ ╭<𝓗>
+        1: ─├|Ψ⟩─├G²(0.20)─├G²(0.19)─┤ ├<𝓗>
+        2: ─├|Ψ⟩─│─────────├G²(0.19)─┤ ├<𝓗>
+        3: ─├|Ψ⟩─│─────────╰G²(0.19)─┤ ├<𝓗>
+        4: ─├|Ψ⟩─├G²(0.20)───────────┤ ├<𝓗>
+        5: ─╰|Ψ⟩─╰G²(0.20)───────────┤ ╰<𝓗>
+        Largest Gradient: 0.13493495624211427
 
-        Energy: -1.2743971719780331
-        0: ─╭BasisState(M0)─╭G²(0.20)─╭G²(0.19)──────────┤ ╭<𝓗>
-        1: ─├BasisState(M0)─├G²(0.20)─├G²(0.19)─╭G(0.00)─┤ ├<𝓗>
-        2: ─├BasisState(M0)─│─────────├G²(0.19)─│────────┤ ├<𝓗>
-        3: ─├BasisState(M0)─│─────────╰G²(0.19)─╰G(0.00)─┤ ├<𝓗>
-        4: ─├BasisState(M0)─├G²(0.20)────────────────────┤ ├<𝓗>
-        5: ─╰BasisState(M0)─╰G²(0.20)────────────────────┤ ╰<𝓗>
-        Largest Gradient: 0.00040841755397108586
+        Energy: -1.2743971719772815
+        0: ─╭|Ψ⟩─╭G²(0.20)─╭G²(0.19)──────────┤ ╭<𝓗>
+        1: ─├|Ψ⟩─├G²(0.20)─├G²(0.19)─╭G(0.00)─┤ ├<𝓗>
+        2: ─├|Ψ⟩─│─────────├G²(0.19)─│────────┤ ├<𝓗>
+        3: ─├|Ψ⟩─│─────────╰G²(0.19)─╰G(0.00)─┤ ├<𝓗>
+        4: ─├|Ψ⟩─├G²(0.20)────────────────────┤ ├<𝓗>
+        5: ─╰|Ψ⟩─╰G²(0.20)────────────────────┤ ╰<𝓗>
+        Largest Gradient: 0.0004084175253678331
     """
 
     def __init__(self, param_steps=10, stepsize=0.5):
@@ -152,7 +166,7 @@ class AdaptiveOptimizer:
         Returns:
             function: user-defined circuit with appended gates
         """
-        final_circuit = append_gate(params, gates)(initial_circuit)
+        final_circuit = append_gate(initial_circuit, params, gates)
 
         return final_circuit()
 
@@ -187,14 +201,14 @@ class AdaptiveOptimizer:
         qnode = copy.copy(circuit)
 
         if drain_pool:
-            repeated_gates = [
+            operator_pool = [
                 gate
                 for gate in operator_pool
-                for operation in circuit.tape.operations
-                if (gate.name == operation.name and gate.wires == operation.wires)
+                if all(
+                    gate.name != operation.name or gate.wires != operation.wires
+                    for operation in circuit.tape.operations
+                )
             ]
-            for gate in repeated_gates:
-                operator_pool.remove(gate)
 
         params = np.array([gate.parameters[0] for gate in operator_pool], requires_grad=True)
         qnode.func = self._circuit
@@ -213,6 +227,6 @@ class AdaptiveOptimizer:
                 qnode, params, gates=selected_gates, initial_circuit=circuit.func
             )
 
-        qnode.func = append_gate(params, selected_gates)(circuit.func)
+        qnode.func = append_gate(circuit.func, params, selected_gates)
 
         return qnode, cost, max(abs(qml.math.toarray(grads)))

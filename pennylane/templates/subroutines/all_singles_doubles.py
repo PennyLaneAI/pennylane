@@ -115,9 +115,7 @@ class AllSinglesDoubles(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(
-        self, weights, wires, hf_state, singles=None, doubles=None, do_queue=True, id=None
-    ):
+    def __init__(self, weights, wires, hf_state, singles=None, doubles=None, id=None):
         if len(wires) < 2:
             raise ValueError(
                 f"The number of qubits (wires) can not be less than 2; got len(wires) = {len(wires)}"
@@ -142,16 +140,19 @@ class AllSinglesDoubles(Operation):
         if weights_shape != exp_shape:
             raise ValueError(f"'weights' tensor must be of shape {exp_shape}; got {weights_shape}.")
 
+        if hf_state[0].dtype != np.dtype("int"):
+            raise ValueError(f"Elements of 'hf_state' must be integers; got {hf_state.dtype}")
+
+        singles = tuple(tuple(s) for s in singles)
+        doubles = tuple(tuple(d) for d in doubles)
+
         self._hyperparameters = {
-            "hf_state": qml.math.toarray(hf_state),
+            "hf_state": tuple(hf_state),
             "singles": singles,
             "doubles": doubles,
         }
 
-        if hf_state.dtype != np.dtype("int"):
-            raise ValueError(f"Elements of 'hf_state' must be integers; got {hf_state.dtype}")
-
-        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(weights, wires=wires, id=id)
 
     @property
     def num_params(self):

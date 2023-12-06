@@ -14,13 +14,16 @@
 """
 Unit tests for the :mod:`pennylane.qaoa` submodule.
 """
-import pytest
 import itertools
+import pytest
 import numpy as np
 
 import networkx as nx
 from networkx import Graph
 import rustworkx as rx
+
+from scipy.linalg import expm
+from scipy.sparse import csc_matrix, kron
 
 import pennylane as qml
 from pennylane import qaoa
@@ -37,15 +40,13 @@ from pennylane.qaoa.cycle import (
     out_flow_constraint,
     _inner_out_flow_constraint_hamiltonian,
 )
-from scipy.linalg import expm
-from scipy.sparse import csc_matrix, kron
 
 
 #####################################################
 
-graph = Graph()
-graph.add_nodes_from([0, 1, 2])
-graph.add_edges_from([(0, 1), (1, 2)])
+line_graph = Graph()
+line_graph.add_nodes_from([0, 1, 2])
+line_graph.add_edges_from([(0, 1), (1, 2)])
 
 graph_rx = rx.PyGraph()
 graph_rx.add_nodes_from([0, 1, 2])
@@ -155,8 +156,7 @@ class TestMixerHamiltonians:
         assert mixer_ops == ["PauliX", "PauliX", "PauliX", "PauliX"]
         assert mixer_wires == [0, 1, 2, 3]
 
-    @pytest.mark.parametrize("constrained", [True, False])
-    def test_x_mixer_grouping(self, constrained):
+    def test_x_mixer_grouping(self):
         """Tests that the grouping information is set and correct"""
 
         wires = range(4)
@@ -166,7 +166,7 @@ class TestMixerHamiltonians:
         assert all(qml.is_commuting(o, mixer_hamiltonian.ops[0]) for o in mixer_hamiltonian.ops[1:])
         # check that the 1-group grouping information was set
         assert mixer_hamiltonian.grouping_indices is not None
-        assert mixer_hamiltonian.grouping_indices == [[0, 1, 2, 3]]
+        assert mixer_hamiltonian.grouping_indices == ((0, 1, 2, 3),)
 
     def test_xy_mixer_type_error(self):
         """Tests that the XY mixer throws the correct error"""
@@ -196,7 +196,7 @@ class TestMixerHamiltonians:
                 ),
             ),
             (
-                graph,
+                line_graph,
                 qml.Hamiltonian(
                     [0.5, 0.5, 0.5, 0.5],
                     [
@@ -412,13 +412,13 @@ class TestMixerHamiltonians:
         assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(target_hamiltonian)
 
 
-"""GENERATES CASES TO TEST THE MAXCUT PROBLEM"""
+# GENERATES CASES TO TEST THE MAXCUT PROBLEM
 
 GRAPHS = [
     g1,
     g1_rx,
     Graph((np.array([0, 1]), np.array([1, 2]), np.array([0, 2]))),
-    graph,
+    line_graph,
     graph_rx,
 ]
 
@@ -655,7 +655,7 @@ MAXCLIQUE = list(zip(GRAPHS, CONSTRAINED, COST_HAMILTONIANS, MIXER_HAMILTONIANS)
 
 """GENERATES CASES TO TEST EDGE DRIVER COST HAMILTONIAN"""
 GRAPHS = GRAPHS[1:-2]
-GRAPHS.append(graph)
+GRAPHS.append(line_graph)
 GRAPHS.append(Graph([("b", 1), (1, 2.3)]))
 GRAPHS.append(graph_rx)
 
@@ -725,15 +725,15 @@ EDGE_DRIVER = zip(GRAPHS, REWARDS, HAMILTONIANS)
 """GENERATES THE CASES TO TEST THE MAXIMUM WEIGHTED CYCLE PROBLEM"""
 digraph_complete = nx.complete_graph(3).to_directed()
 complete_edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(digraph_complete.edges)}
-for k, v in complete_edge_weight_data.items():
-    digraph_complete[k[0]][k[1]]["weight"] = v
+for _k, _v in complete_edge_weight_data.items():
+    digraph_complete[_k[0]][_k[1]]["weight"] = _v
 
 digraph_complete_rx = rx.generators.directed_mesh_graph(3, [0, 1, 2])
 complete_edge_weight_data = {
     edge: (i + 1) * 0.5 for i, edge in enumerate(sorted(digraph_complete_rx.edge_list()))
 }
-for k, v in complete_edge_weight_data.items():
-    digraph_complete_rx.update_edge(k[0], k[1], {"weight": v})
+for _k, _v in complete_edge_weight_data.items():
+    digraph_complete_rx.update_edge(_k[0], _k[1], {"weight": _v})
 
 DIGRAPHS = [digraph_complete] * 2
 
@@ -878,18 +878,8 @@ MAPPINGS = [qaoa.cycle.wires_to_edges(digraph_complete)] * 2
 MWC = list(zip(DIGRAPHS, MWC_CONSTRAINED, COST_HAMILTONIANS, MIXER_HAMILTONIANS, MAPPINGS))
 
 
-def decompose_hamiltonian(hamiltonian):
-    coeffs = list(qml.math.toarray(hamiltonian.coeffs))
-    ops = [i.name for i in hamiltonian.ops]
-    wires = [i.wires for i in hamiltonian.ops]
-
-    return [coeffs, ops, wires]
-
-
 class TestCostHamiltonians:
     """Tests that the cost Hamiltonians are being generated correctly"""
-
-    """Tests the cost Hamiltonian components"""
 
     def test_bit_driver_error(self):
         """Tests that the bit driver Hamiltonian throws the correct error"""
@@ -929,8 +919,6 @@ class TestCostHamiltonians:
         H = qaoa.edge_driver(graph, reward)
         assert decompose_hamiltonian(H) == decompose_hamiltonian(hamiltonian)
 
-    """Tests the cost Hamiltonians"""
-
     def test_max_weight_cycle_errors(self):
         """Tests that the max weight cycle Hamiltonian throws the correct errors"""
 
@@ -962,8 +950,7 @@ class TestCostHamiltonians:
         assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
         assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
 
-    @pytest.mark.parametrize("constrained", [True, False])
-    def test_maxcut_grouping(self, constrained):
+    def test_maxcut_grouping(self):
         """Tests that the grouping information is set and correct"""
 
         graph = MAXCUT[0][0]
@@ -973,7 +960,7 @@ class TestCostHamiltonians:
         assert all(qml.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
         # check that the 1-group grouping information was set
         assert cost_h.grouping_indices is not None
-        assert cost_h.grouping_indices == [list(range(len(cost_h.ops)))]
+        assert cost_h.grouping_indices == (tuple(range(len(cost_h.ops))),)
 
     @pytest.mark.parametrize(("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian"), MIS)
     def test_mis_output(self, graph, constrained, cost_hamiltonian, mixer_hamiltonian):
@@ -984,8 +971,7 @@ class TestCostHamiltonians:
         assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
         assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
 
-    @pytest.mark.parametrize("constrained", [True, False])
-    def test_mis_grouping(self, constrained):
+    def test_mis_grouping(self):
         """Tests that the grouping information is set and correct"""
 
         graph = MIS[0][0]
@@ -995,7 +981,7 @@ class TestCostHamiltonians:
         assert all(qml.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
         # check that the 1-group grouping information was set
         assert cost_h.grouping_indices is not None
-        assert cost_h.grouping_indices == [list(range(len(cost_h.ops)))]
+        assert cost_h.grouping_indices == (tuple(range(len(cost_h.ops))),)
 
     @pytest.mark.parametrize(("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian"), MVC)
     def test_mvc_output(self, graph, constrained, cost_hamiltonian, mixer_hamiltonian):
@@ -1006,8 +992,7 @@ class TestCostHamiltonians:
         assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
         assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
 
-    @pytest.mark.parametrize("constrained", [True, False])
-    def test_mvc_grouping(self, constrained):
+    def test_mvc_grouping(self):
         """Tests that the grouping information is set and correct"""
 
         graph = MVC[0][0]
@@ -1017,7 +1002,7 @@ class TestCostHamiltonians:
         assert all(qml.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
         # check that the 1-group grouping information was set
         assert cost_h.grouping_indices is not None
-        assert cost_h.grouping_indices == [list(range(len(cost_h.ops)))]
+        assert cost_h.grouping_indices == (tuple(range(len(cost_h.ops))),)
 
     @pytest.mark.parametrize(
         ("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian"), MAXCLIQUE
@@ -1030,8 +1015,7 @@ class TestCostHamiltonians:
         assert decompose_hamiltonian(cost_hamiltonian) == decompose_hamiltonian(cost_h)
         assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
 
-    @pytest.mark.parametrize("constrained", [True, False])
-    def test_max_clique_grouping(self, constrained):
+    def test_max_clique_grouping(self):
         """Tests that the grouping information is set and correct"""
 
         graph = MAXCLIQUE[0][0]
@@ -1041,8 +1025,9 @@ class TestCostHamiltonians:
         assert all(qml.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
         # check that the 1-group grouping information was set
         assert cost_h.grouping_indices is not None
-        assert cost_h.grouping_indices == [list(range(len(cost_h.ops)))]
+        assert cost_h.grouping_indices == (tuple(range(len(cost_h.ops))),)
 
+    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
         ("graph", "constrained", "cost_hamiltonian", "mixer_hamiltonian", "mapping"), MWC
     )
@@ -1065,8 +1050,7 @@ class TestCostHamiltonians:
 
         assert decompose_hamiltonian(mixer_hamiltonian) == decompose_hamiltonian(mixer_h)
 
-    @pytest.mark.parametrize("constrained", [True, False])
-    def test_max_weight_cycle_grouping(self, constrained):
+    def test_max_weight_cycle_grouping(self):
         """Tests that the grouping information is set and correct"""
 
         graph = MWC[0][0]
@@ -1076,12 +1060,14 @@ class TestCostHamiltonians:
         assert all(qml.is_commuting(o, cost_h.ops[0]) for o in cost_h.ops[1:])
         # check that the 1-group grouping information was set
         assert cost_h.grouping_indices is not None
-        assert cost_h.grouping_indices == [list(range(len(cost_h.ops)))]
+        assert cost_h.grouping_indices == (tuple(range(len(cost_h.ops))),)
 
 
+# pylint: disable=too-few-public-methods
 class TestUtils:
     """Tests that the utility functions are working properly"""
 
+    # pylint: disable=protected-access
     @pytest.mark.parametrize(
         ("hamiltonian", "value"),
         (
@@ -1211,6 +1197,7 @@ class TestIntegration:
             qaoa.mixer_layer(alpha, mixer_h)
 
         # Repeatedly applies layers of the QAOA ansatz
+        # pylint: disable=unused-argument
         def circuit(params, **kwargs):
             for w in wires:
                 qml.Hadamard(wires=w)
@@ -1245,6 +1232,7 @@ class TestIntegration:
             qaoa.mixer_layer(alpha, mixer_h)
 
         # Repeatedly applies layers of the QAOA ansatz
+        # pylint: disable=unused-argument
         def circuit(params, **kwargs):
             for w in wires:
                 qml.Hadamard(wires=w)
@@ -1261,6 +1249,7 @@ class TestIntegration:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
+# pylint: disable=too-many-public-methods
 class TestCycles:
     """Tests that ``cycle`` module functions are behaving correctly"""
 
@@ -1404,7 +1393,7 @@ class TestCycles:
 
         n_nodes = 3
         m = wires_to_edges(g)
-        n_wires = len(graph.edge_list() if isinstance(graph, rx.PyDiGraph) else graph.edges)
+        n_wires = len(g.edge_list() if isinstance(g, rx.PyDiGraph) else g.edges)
 
         # Find Hamiltonian and its matrix representation
         h = cycle_mixer(g)
@@ -1606,8 +1595,8 @@ class TestCycles:
         expected_coeffs = [np.log(0.5), np.log(1), np.log(1.5), np.log(2), np.log(2.5), np.log(3)]
 
         assert np.allclose(expected_coeffs, h.coeffs)
-        assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
-        assert all([type(op) is type(exp) for op, exp in zip(h.ops, expected_ops)])
+        assert all(op.wires == exp.wires for op, exp in zip(h.ops, expected_ops))
+        assert all(type(op) is type(exp) for op, exp in zip(h.ops, expected_ops))
 
     def test_loss_hamiltonian_error(self):
         """Test if the loss_hamiltonian function raises ValueError"""
@@ -1666,8 +1655,8 @@ class TestCycles:
         ]
 
         assert np.allclose(expected_coeffs, h.coeffs)
-        assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
-        assert all([type(op) is type(exp) for op, exp in zip(h.ops, expected_ops)])
+        assert all(op.wires == exp.wires for op, exp in zip(h.ops, expected_ops))
+        assert all(type(op) is type(exp) for op, exp in zip(h.ops, expected_ops))
 
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
@@ -1749,10 +1738,8 @@ class TestCycles:
 
         assert squared_coeffs == expected_coeffs
         assert all(
-            [
-                op1.name == op2.name and op1.wires == op2.wires
-                for op1, op2 in zip(expected_ops, squared_ops)
-            ]
+            op1.name == op2.name and op1.wires == op2.wires
+            for op1, op2 in zip(expected_ops, squared_ops)
         )
 
     @pytest.mark.parametrize(
@@ -1775,7 +1762,7 @@ class TestCycles:
         assert np.allclose(expected_coeffs, h.coeffs)
         for i, expected_op in enumerate(expected_ops):
             assert str(h.ops[i]) == str(expected_op)
-        assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
+        assert all(op.wires == exp.wires for op, exp in zip(h.ops, expected_ops))
 
     @pytest.mark.parametrize("g", [nx.complete_graph(3), rx.generators.mesh_graph(3, [0, 1, 2])])
     def test_inner_out_flow_constraint_hamiltonian_error(self, g):
@@ -1805,7 +1792,7 @@ class TestCycles:
         assert np.allclose(expected_coeffs, h.coeffs)
         for i, expected_op in enumerate(expected_ops):
             assert str(h.ops[i]) == str(expected_op)
-        assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
+        assert all(op.wires == exp.wires for op, exp in zip(h.ops, expected_ops))
 
     @pytest.mark.parametrize("g", [nx.complete_graph(3), rx.generators.mesh_graph(3, [0, 1, 2])])
     def test_inner_net_flow_constraint_hamiltonian_error(self, g):
@@ -1829,7 +1816,7 @@ class TestCycles:
         assert np.allclose(expected_coeffs, h.coeffs)
         for i, expected_op in enumerate(expected_ops):
             assert str(h.ops[i]) == str(expected_op)
-        assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
+        assert all(op.wires == exp.wires for op, exp in zip(h.ops, expected_ops))
 
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
@@ -1854,11 +1841,12 @@ class TestCycles:
         assert np.allclose(expected_coeffs, h.coeffs)
         for i, expected_op in enumerate(expected_ops):
             assert str(h.ops[i]) == str(expected_op)
-        assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
+        assert all(op.wires == exp.wires for op, exp in zip(h.ops, expected_ops))
 
-    def test_out_flow_constraint_raises(self, monkeypatch):
+    def test_out_flow_constraint_raises(self):
         """Test the out-flow constraint function may raise an error."""
 
+        # pylint: disable=super-init-not-called
         class OtherDirectedGraph(nx.DiGraph):
             def __init__(self, *args, **kwargs):
                 pass
@@ -1881,6 +1869,7 @@ class TestCycles:
         # We use PL to find the energies corresponding to each possible bitstring
         dev = qml.device("default.qubit", wires=wires)
 
+        # pylint: disable=unused-argument
         def states(basis_state, **kwargs):
             qml.BasisState(basis_state, wires=range(wires))
 
@@ -1931,6 +1920,7 @@ class TestCycles:
         # We use PL to find the energies corresponding to each possible bitstring
         dev = qml.device("default.qubit", wires=wires)
 
+        # pylint: disable=unused-argument
         def energy(basis_state, **kwargs):
             qml.BasisState(basis_state, wires=range(wires))
 
@@ -1976,11 +1966,12 @@ class TestCycles:
         the correct graph type"""
 
         with pytest.raises(ValueError, match="Input graph must be"):
-            h = net_flow_constraint(g)
+            net_flow_constraint(g)
 
-    def test_net_flow_constraint_undirected_raises_error(self, monkeypatch):
+    def test_net_flow_constraint_undirected_raises_error(self):
         """Test the net-flow constraint function may raise an error."""
 
+        # pylint: disable=super-init-not-called
         class OtherDirectedGraph(nx.DiGraph):
             def __init__(self, *args, **kwargs):
                 pass
@@ -2004,6 +1995,7 @@ class TestCycles:
         # Find the energies corresponding to each possible bitstring
         dev = qml.device("default.qubit", wires=wires)
 
+        # pylint: disable=unused-argument
         def states(basis_state, **kwargs):
             qml.BasisState(basis_state, wires=range(wires))
 
@@ -2039,13 +2031,14 @@ class TestCycles:
                     len([all_nodes[0]] + nodes_out) == len(set([all_nodes[0]] + nodes_out))
                 ):  # check that each edge connect to the next via a common node and that no node is crossed more than once
                     return True
+            return False
 
         for energy, bs in energies_bitstrings:
             # convert binary string to wires then wires to edges
             wires_ = tuple(i for i, s in enumerate(bs) if s != 0)
             edges = tuple(m[w] for w in wires_)
 
-            if len(edges) and find_simple_cycle(edges):
+            if len(edges) > 0 and find_simple_cycle(edges):
                 assert energy == min(energies_bitstrings)[0]
-            elif len(edges) and not find_simple_cycle(edges):
+            elif len(edges) > 0 and not find_simple_cycle(edges):
                 assert energy > min(energies_bitstrings)[0]

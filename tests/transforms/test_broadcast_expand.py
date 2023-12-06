@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the broadcast_expand transform.
+Unit tests for the ``broadcast_expand`` transform.
 """
-# pylint: disable=import-outside-toplevel
-
+# pylint: disable=too-few-public-methods
 import pytest
 import numpy as np
 import pennylane as qml
@@ -26,7 +25,9 @@ def make_tape(x, y, z, obs):
     """Construct a tape with three parametrized, two unparametrized
     operations and expvals of provided observables."""
     with qml.queuing.AnnotatedQueue() as q:
-        qml.RX(x, wires=0)
+        #qml.RX(x, wires=0)
+        qml.StatePrep(np.array([1, 0, 0, 0]), wires=[0, 1])
+        RX_broadcasted(x, wires=0)
         qml.PauliY(0)
         qml.RX(y, wires=1)
         qml.RZ(z, wires=1)
@@ -110,11 +111,65 @@ class TestBroadcastExpand:
 
         assert qml.math.allclose(result, expected)
 
-    def test_without_broadcasting(self):
-        """Test that an error is raised when applying the transform to a non-broadcasted tape."""
-        tape = make_tape(0.2, 0.1, 0.5, [qml.PauliZ(0)])
-        with pytest.raises(ValueError, match="The provided tape is not broadcasted."):
-            qml.transforms.broadcast_expand(tape)
+    @pytest.mark.parametrize("params, size", parameters_and_size)
+    @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
+    def test_expansion_qnode(self, params, size, obs, exp_fn):
+        """Test that the transform integrates correctly with the transform program"""
+
+        @qml.transforms.broadcast_expand
+        @qml.qnode(dev)
+        def circuit(x, y, z, obs):
+            qml.StatePrep(np.array([1, 0, 0, 0]), wires=[0, 1])
+            RX_broadcasted(x, wires=0)
+            qml.PauliY(0)
+            RX_broadcasted(y, wires=1)
+            RZ_broadcasted(z, wires=1)
+            qml.Hadamard(1)
+            return [qml.expval(ob) for ob in obs]
+
+        result = circuit(*params, obs)
+        expected = exp_fn(*params)
+
+        if len(obs) > 1 and size == 1:
+            expected = expected.T
+
+        assert qml.math.allclose(result, expected)
+
+    def test_state_prep(self):
+        """Test that expansion works for state preparations"""
+        ops = [qml.CNOT([0, 1])]
+        meas = [qml.expval(qml.PauliZ(1))]
+        prep = [qml.StatePrep(np.eye(4), wires=[0, 1])]
+        tape = qml.tape.QuantumScript(prep + ops, meas)
+
+        tapes, fn = qml.transforms.broadcast_expand(tape)
+        assert len(tapes) == 4
+        assert all(t.batch_size is None for t in tapes)
+
+        result = fn(qml.execute(tapes, dev, None))
+        expected = np.array([1, -1, -1, 1])
+
+        assert qml.math.allclose(result, expected)
+
+    def test_not_copied(self):
+        """Test that unbroadcasted operators are not copied"""
+        x = np.array([0.5, 0.7, 0.9])
+        y = np.array(1.5)
+
+        ops = [qml.RX(x, wires=0), qml.RY(y, wires=0)]
+        meas = [qml.expval(qml.PauliZ(0))]
+        tape = qml.tape.QuantumScript(ops, meas)
+
+        tapes = qml.transforms.broadcast_expand(tape)[0]
+        assert len(tapes) == 3
+        assert all(t.batch_size is None for t in tapes)
+
+        for t in tapes:
+            # different instance of RX
+            assert t.operations[0] is not tape.operations[0]
+
+            # same instance of RY
+            assert t.operations[1] is tape.operations[1]
 
     @pytest.mark.autograd
     @pytest.mark.filterwarnings("ignore:Output seems independent of input")

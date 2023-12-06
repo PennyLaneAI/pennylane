@@ -22,6 +22,7 @@ from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 from .measurements import AllCounts, Counts, SampleMeasurement
+from .mid_measure import MeasurementValue
 
 
 def _sample_to_str(sample):
@@ -39,7 +40,8 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
     specified on the device.
 
     Args:
-        op (Observable or None): a quantum observable object
+        op (Observable or MeasurementValue or None): a quantum observable object. To get counts
+            for mid-circuit measurements, ``op`` should be a ``MeasurementValue``.
         wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if
             op is None
         all_outcomes(bool): determines whether the returned dict will contain only the observed
@@ -55,6 +57,11 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
     The probability of drawing eigenvalue :math:`\lambda_i` is given by
     :math:`p(\lambda_i) = |\langle \xi_i | \psi \rangle|^2`, where :math:`| \xi_i \rangle`
     is the corresponding basis state from the observable's eigenbasis.
+
+    .. note::
+
+        Differentiation of QNodes that return ``counts`` is currently not supported. Please refer to
+        :func:`~.pennylane.sample` if differentiability is required.
 
     **Example**
 
@@ -116,7 +123,7 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
     .. code-block:: python3
 
         @qml.qnode(dev)
-        def circuit(x):
+        def circuit():
             qml.PauliX(wires=0)
             return qml.counts(all_outcomes=True)
 
@@ -125,14 +132,10 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
     >>> circuit()
     {'00': 0, '01': 0, '10': 4, '11': 0}
 
-    .. note::
-
-        QNodes that return samples cannot, in general, be differentiated, since the derivative
-        with respect to a sample --- a stochastic process --- is ill-defined. The one exception
-        is if the QNode uses the parameter-shift method (``diff_method="parameter-shift"``), in
-        which case ``qml.sample(obs)`` is interpreted as a single-shot expectation value of the
-        observable ``obs``.
     """
+    if isinstance(op, MeasurementValue):
+        return CountsMP(obs=op, all_outcomes=all_outcomes)
+
     if op is not None and not op.is_hermitian:  # None type is also allowed for op
         warnings.warn(f"{op.name} might not be hermitian.")
 
@@ -154,9 +157,9 @@ class CountsMP(SampleMeasurement):
     Please refer to :func:`counts` for detailed documentation.
 
     Args:
-        obs (.Operator): The observable that is to be measured as part of the
-            measurement process. Not all measurement processes require observables (for
-            example ``Probability``); this argument is optional.
+        obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
+            as part of the measurement process. Not all measurement processes require observables
+            (for example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
@@ -178,6 +181,10 @@ class CountsMP(SampleMeasurement):
     ):
         self.all_outcomes = all_outcomes
         super().__init__(obs, wires, eigvals, id)
+
+    def _flatten(self):
+        metadata = (("wires", self.raw_wires), ("all_outcomes", self.all_outcomes))
+        return (self.obs or self.mv, self._eigvals), metadata
 
     def __repr__(self):
         if self.obs is None:
@@ -211,9 +218,15 @@ class CountsMP(SampleMeasurement):
         shot_range: Tuple[int] = None,
         bin_size: int = None,
     ):
-        samples = qml.sample(op=self.obs, wires=self._wires).process_samples(
-            samples, wire_order, shot_range, bin_size
-        )
+        with qml.queuing.QueuingManager.stop_recording():
+            if self.mv is not None:
+                samples = qml.sample(wires=self.mv.wires).process_samples(
+                    samples, wire_order, shot_range, bin_size
+                )
+            else:
+                samples = qml.sample(op=self.obs, wires=self._wires).process_samples(
+                    samples, wire_order, shot_range, bin_size
+                )
 
         if bin_size is None:
             return self._samples_to_counts(samples)
@@ -281,6 +294,10 @@ class CountsMP(SampleMeasurement):
 
         if self.obs is None:
             # convert samples and outcomes (if using) from arrays to str for dict keys
+            samples = qml.math.array(
+                [sample for sample in samples if not qml.math.any(qml.math.isnan(sample))]
+            )
+            samples = qml.math.cast_like(samples, qml.math.int8(0))
             samples = qml.math.apply_along_axis(_sample_to_str, -1, samples)
             batched_ndims = 3  # no observable was provided, batched samples will have shape (batch_size, shots, len(wires))
             if self.all_outcomes:
@@ -299,9 +316,10 @@ class CountsMP(SampleMeasurement):
         base_dict = {k: qml.math.int64(0) for k in outcomes}
         outcome_dicts = [base_dict.copy() for _ in range(shape[0])]
         results = [qml.math.unique(batch, return_counts=True) for batch in samples]
+
         for result, outcome_dict in zip(results, outcome_dicts):
             states, _counts = result
-            for state, count in zip(states, _counts):
+            for state, count in zip(qml.math.unwrap(states), _counts):
                 outcome_dict[state] = count
 
         return outcome_dicts if batched else outcome_dicts[0]

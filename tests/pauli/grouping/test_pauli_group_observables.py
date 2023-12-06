@@ -227,7 +227,7 @@ class TestGroupObservables:
     Tests for ``group_observables`` function using QWC, commuting, and anticommuting partitioning.
     """
 
-    qwc_tuples = [(obs, sol) for obs, sol in zip(observables_list, qwc_sols)]
+    qwc_tuples = list(zip(observables_list, qwc_sols))
 
     @pytest.mark.parametrize("observables,qwc_partitions_sol", qwc_tuples)
     def test_qwc_partitioning(self, observables, qwc_partitions_sol):
@@ -238,14 +238,14 @@ class TestGroupObservables:
         assert len(qwc_partitions) == n_partitions
         # assert each partition is of the correct length:
         assert all(
-            [len(qwc_partitions[i]) == len(qwc_partitions_sol[i]) for i in range(n_partitions)]
+            len(part) == len(part_sol) for part, part_sol in zip(qwc_partitions, qwc_partitions_sol)
         )
         # assert each partition contains the same Pauli terms as the solution partition:
         for i, partition in enumerate(qwc_partitions):
             for j, pauli in enumerate(partition):
                 assert are_identical_pauli_words(pauli, qwc_partitions_sol[i][j])
 
-    com_tuples = [(obs, sol) for obs, sol in zip(observables_list, commuting_sols)]
+    com_tuples = list(zip(observables_list, commuting_sols))
 
     @pytest.mark.parametrize("observables,com_partitions_sol", com_tuples)
     def test_commuting_partitioning(self, observables, com_partitions_sol):
@@ -255,15 +255,13 @@ class TestGroupObservables:
         n_partitions = len(com_partitions_sol)
         assert len(com_partitions) == n_partitions
         # assert each partition is of the correct length:
-        assert all(
-            [len(com_partitions[i]) == len(com_partitions_sol[i]) for i in range(n_partitions)]
-        )
+        assert all(len(p) == len(p_sol) for p, p_sol in zip(com_partitions, com_partitions_sol))
         # assert each partition contains the same Pauli terms as the solution partition:
         for i, partition in enumerate(com_partitions):
             for j, pauli in enumerate(partition):
                 assert are_identical_pauli_words(pauli, com_partitions_sol[i][j])
 
-    anticom_tuples = [(obs, sols) for obs, sols in zip(observables_list, anticommuting_sols)]
+    anticom_tuples = list(zip(observables_list, anticommuting_sols))
 
     @pytest.mark.parametrize("observables,anticom_partitions_sol", anticom_tuples)
     def test_anticommuting_partitioning(self, observables, anticom_partitions_sol):
@@ -274,10 +272,7 @@ class TestGroupObservables:
         assert len(anticom_partitions) == n_partitions
         # assert each partition is of the correct length:
         assert all(
-            [
-                len(anticom_partitions[i]) == len(anticom_partitions_sol[i])
-                for i in range(n_partitions)
-            ]
+            len(p) == len(p_sol) for p, p_sol in zip(anticom_partitions, anticom_partitions_sol)
         )
         # assert each partition contains the same Pauli terms as the solution partition:
         for i, partition in enumerate(anticom_partitions):
@@ -295,6 +290,7 @@ class TestGroupObservables:
     def test_binary_repr_custom_wire_map(self):
         """Tests that the ``binary_repr`` method sets a custom
         wire map correctly."""
+        # pylint: disable=protected-access
 
         observables = [Identity("alice"), Identity("bob"), Identity("charlie")]
         grouping_instance = PauliGroupingStrategy(observables, "anticommuting")

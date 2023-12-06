@@ -24,6 +24,18 @@ from pennylane import numpy as np
 class TestSingleTapeTransform:
     """Tests for the single_tape_transform decorator"""
 
+    def test_single_tape_transform_is_deprecated(self):
+        """Test that the single_tape_transform class is deprecated."""
+
+        def func(op):
+            return op
+
+        with pytest.warns(
+            UserWarning,
+            match="Use of `single_tape_transform` to create a custom transform is deprecated",
+        ):
+            _ = qml.single_tape_transform(func)
+
     def test_error_invalid_callable(self):
         """Test that an error is raised if the transform
         is applied to an invalid function"""
@@ -31,7 +43,8 @@ class TestSingleTapeTransform:
         with pytest.raises(ValueError, match="does not appear to be a valid Python function"):
             qml.single_tape_transform(5)
 
-    def test_parametrized_transform(self):
+    @pytest.mark.parametrize("shots", [None, 100])
+    def test_parametrized_transform(self, shots):
         """Test that a parametrized transform can be applied
         to a tape"""
 
@@ -55,8 +68,10 @@ class TestSingleTapeTransform:
             qml.Hadamard(wires=0)
             qml.CRX(x, wires=[0, 1])
 
-        tape = qml.tape.QuantumScript.from_queue(q)
-        ops = my_transform(tape, a, b).operations
+        tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
+        new_tape = my_transform(tape, a, b)
+        ops = new_tape.operations
+
         assert len(ops) == 4
         assert ops[0].name == "Hadamard"
 
@@ -68,9 +83,22 @@ class TestSingleTapeTransform:
 
         assert ops[3].name == "CZ"
 
+        assert new_tape.shots == tape.shots
+
 
 class TestQFuncTransforms:
     """Tests for the qfunc_transform decorator"""
+
+    def test_qfunc_transform_is_deprecated(self):
+        """Test that the qfunc_transform class is deprecated."""
+
+        def func(op):
+            return op
+
+        with pytest.warns(
+            UserWarning, match="Use of `qfunc_transform` to create a custom transform is deprecated"
+        ):
+            _ = qml.qfunc_transform(func)
 
     def test_error_invalid_transform_callable(self):
         """Test that an error is raised if the transform
@@ -115,7 +143,7 @@ class TestQFuncTransforms:
             qml.Hadamard(wires=0)
             qml.CRX(x, wires=[0, 1])
 
-        new_qfunc = my_transform(qfunc)
+        new_qfunc = my_transform(qfunc)  # pylint:disable=assignment-from-no-return
         x = 0.543
 
         ops = qml.tape.make_qscript(new_qfunc)(x).operations

@@ -28,7 +28,7 @@ from pennylane.queuing import QueuingManager
 from .symbolicop import ScalarSymbolicOp
 
 
-def s_prod(scalar, operator, lazy=True, do_queue=True, id=None):
+def s_prod(scalar, operator, lazy=True, id=None):
     r"""Construct an operator which is the scalar product of the
     given scalar and operator provided.
 
@@ -38,7 +38,6 @@ def s_prod(scalar, operator, lazy=True, do_queue=True, id=None):
 
     Keyword Args:
         lazy=True (bool): If ``lazy=False`` and the operator is already a scalar product operator, the scalar provided will simply be combined with the existing scaling factor.
-        do_queue (bool): determines if the scalar product operator will be queued. Default is True.
         id (str or None): id for the scalar product operator. Default is None.
     Returns:
         ~ops.op_math.SProd: The operator representing the scalar product.
@@ -74,13 +73,10 @@ def s_prod(scalar, operator, lazy=True, do_queue=True, id=None):
            [ 2., 0.]])
     """
     if lazy or not isinstance(operator, SProd):
-        return SProd(scalar, operator, do_queue=do_queue, id=id)
+        return SProd(scalar, operator, id=id)
 
-    sprod_op = SProd(scalar=scalar * operator.scalar, base=operator.base, do_queue=do_queue, id=id)
-
-    if do_queue:
-        QueuingManager.remove(operator)
-
+    sprod_op = SProd(scalar=scalar * operator.scalar, base=operator.base, id=id)
+    QueuingManager.remove(operator)
     return sprod_op
 
 
@@ -93,8 +89,6 @@ class SProd(ScalarSymbolicOp):
         base (~.operation.Operator): the operator which will get scaled.
 
     Keyword Args:
-        do_queue (bool): determines if the scalar product operator will be queued
-            (currently not supported). Default is True.
         id (str or None): id for the scalar product operator. Default is None.
 
     .. note::
@@ -135,14 +129,20 @@ class SProd(ScalarSymbolicOp):
     """
     _name = "SProd"
 
-    def __init__(self, scalar: Union[int, float, complex], base: Operator, do_queue=True, id=None):
-        super().__init__(base=base, scalar=scalar, do_queue=do_queue, id=id)
+    def _flatten(self):
+        return (self.scalar, self.base), tuple()
+
+    @classmethod
+    def _unflatten(cls, data, _):
+        return cls(data[0], data[1])
+
+    def __init__(self, scalar: Union[int, float, complex], base: Operator, id=None):
+        super().__init__(base=base, scalar=scalar, id=id)
 
         if (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) and (self.batch_size is None):
             scalar = copy(self.scalar)
             if qnp.get_interface(scalar) == "tensorflow" and not scalar.dtype.is_complex:
-                c = qnp.convert_like(1 + 0j, scalar)  # get a complex dtype in the same interface
-                scalar = qnp.cast_like(scalar, c)  # cast scalar to complex dtype
+                scalar = qnp.cast(scalar, "complex128")
 
             pr = {pw: qnp.dot(coeff, scalar) for pw, coeff in base_pauli_rep.items()}
             self._pauli_rep = qml.pauli.PauliSentence(pr)
@@ -226,7 +226,10 @@ class SProd(ScalarSymbolicOp):
         Returns:
             array: array containing the eigenvalues of the operator.
         """
-        return self.scalar * self.base.eigvals()
+        base_eigs = self.base.eigvals()
+        if qml.math.get_interface(self.scalar) == "torch" and self.scalar.requires_grad:
+            base_eigs = qml.math.convert_like(base_eigs, self.scalar)
+        return self.scalar * base_eigs
 
     def sparse_matrix(self, wire_order=None):
         """Computes, by default, a `scipy.sparse.csr_matrix` representation of this Tensor.
@@ -241,7 +244,11 @@ class SProd(ScalarSymbolicOp):
         Returns:
             :class:`scipy.sparse._csr.csr_matrix`: sparse matrix representation
         """
-        return self.base.sparse_matrix(wire_order=wire_order).multiply(self.scalar)
+        if self._pauli_rep:  # Get the sparse matrix from the PauliSentence representation
+            return self._pauli_rep.to_mat(wire_order=wire_order or self.wires, format="csr")
+        mat = self.base.sparse_matrix(wire_order=wire_order).multiply(self.scalar)
+        mat.eliminate_zeros()
+        return mat
 
     @property
     def has_matrix(self):
@@ -250,9 +257,6 @@ class SProd(ScalarSymbolicOp):
 
     @staticmethod
     def _matrix(scalar, mat):
-        if qml.math.get_interface(scalar) == "tensorflow":
-            # we must cast ``scalar`` to complex to avoid an error
-            scalar = qml.math.cast_like(scalar, mat)
         return scalar * mat
 
     @property

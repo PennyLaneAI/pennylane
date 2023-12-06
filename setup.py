@@ -12,13 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Setup file for package installation."""
+
 from setuptools import setup, find_packages
 
 with open("pennylane/_version.py") as f:
     version = f.readlines()[-1].split()[-1].strip("\"'")
 
 requirements = [
-    "numpy<1.24",
+    "numpy",
     "scipy",
     "networkx",
     "rustworkx",
@@ -26,10 +28,11 @@ requirements = [
     "toml",
     "appdirs",
     "semantic-version>=2.7",
-    "autoray>=0.3.1",
+    "autoray>=0.6.1",
     "cachetools",
-    "pennylane-lightning>=0.28",
+    "pennylane-lightning>=0.33",
     "requests",
+    "typing_extensions",
 ]
 
 info = {
@@ -37,7 +40,7 @@ info = {
     "version": version,
     "maintainer": "Xanadu Inc.",
     "maintainer_email": "software@xanadu.ai",
-    "url": "https://github.com/XanaduAI/pennylane",
+    "url": "https://github.com/PennyLaneAI/pennylane",
     "license": "Apache License 2.0",
     "packages": find_packages(where="."),
     "entry_points": {
@@ -45,6 +48,7 @@ info = {
         # This requires a rename in the setup file of all devices, and is best done during another refactor
         "pennylane.plugins": [
             "default.qubit = pennylane.devices:DefaultQubit",
+            "default.qubit.legacy = pennylane.devices:DefaultQubitLegacy",
             "default.gaussian = pennylane.devices:DefaultGaussian",
             "default.qubit.tf = pennylane.devices.default_qubit_tf:DefaultQubitTF",
             "default.qubit.torch = pennylane.devices.default_qubit_torch:DefaultQubitTorch",
@@ -62,7 +66,7 @@ info = {
     "provides": ["pennylane"],
     "install_requires": requirements,
     "extras_require": {"kernels": ["cvxpy", "cvxopt"]},
-    "package_data": {"pennylane": ["devices/tests/pytest.ini"]},
+    "package_data": {"pennylane": ["devices/tests/pytest.ini", "drawer/plot.mplstyle"]},
     "include_package_data": True,
 }
 
@@ -78,7 +82,6 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",

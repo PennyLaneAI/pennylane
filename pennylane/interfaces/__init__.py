@@ -40,6 +40,17 @@ Supported interfaces
     ~interfaces.tensorflow_autograph
     ~interfaces.torch
 
+Jacobian Product Calculation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~interfaces.jacobian_products.JacobianProductCalculator
+    ~interfaces.jacobian_products.TransformJacobianProducts
+    ~interfaces.jacobian_products.DeviceDerivatives
+    ~interfaces.jacobian_products.DeviceJacobianProducts
+
 """
 from .execution import cache_execute, execute, INTERFACE_MAP, SUPPORTED_INTERFACES
 from .set_shots import set_shots
