@@ -448,11 +448,6 @@ class TestVectorValuedQNode:
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
 
-        if diff_method == "adjoint":
-            # TODO: figure out how to fix this internally
-            x = x + 0j
-            y = y + 0j
-
         @qnode(dev, **kwargs)
         def circuit(x, y):
             qml.RX(x, wires=[0])
