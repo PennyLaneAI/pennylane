@@ -261,7 +261,7 @@ FERMI_OPS_COMPLEX = [
                 qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliZ(3) @ qml.PauliY(4),
                 qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliX(4),
                 qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliY(4) @ qml.PauliZ(5),
-                qml.PauliY(0) @ qml.PauliZ(3) @ qml.PauliX(4) @ qml.PauliZ(5),    
+                qml.PauliY(0) @ qml.PauliZ(3) @ qml.PauliX(4) @ qml.PauliZ(5),
                 qml.PauliY(0) @ qml.PauliZ(3) @ qml.PauliY(4),
                 qml.PauliY(0) @ qml.PauliX(4),
                 qml.PauliY(0) @ qml.PauliY(4) @ qml.PauliZ(5),
