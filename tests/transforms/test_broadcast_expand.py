@@ -21,10 +21,12 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 
-def make_ops(x, y, z):
-    """Construct a tape with three parametrized, two unparametrized
-    operations and expvals of provided observables."""
+dev = qml.device("default.qubit", wires=2)
+"""Defines the device used for all tests"""
 
+
+def make_ops(x, y, z):
+    """Queue three parametrized and two unparametrized operations and return them."""
     ops = [
         qml.RX(x, wires=0),
         qml.PauliY(0),
@@ -49,38 +51,21 @@ sizes = [3, 1, 2]
 coeffs0 = [0.3, -5.1]
 H0 = qml.Hamiltonian(qml.math.array(coeffs0), [qml.PauliZ(0), qml.PauliY(1)])
 
-dev = qml.device("default.qubit", wires=2)
-"""Defines the device used for all tests"""
-
 
 # Here we exploit the product structure of our circuit
 def exp_fn_Z0(x, y, z):
-    """Compute the expected value for qml.PauliZ(0)."""
     out = -qml.math.cos(x) * qml.math.ones_like(y) * qml.math.ones_like(z)
     return out[0] if len(out) == 1 else out
 
 
 def exp_fn_Y1(x, y, z):
-    """Compute the expected value for qml.PauliY(1)."""
     out = qml.math.sin(y) * qml.math.cos(z) * qml.math.ones_like(x)
     return out[0] if len(out) == 1 else out
 
 
-def exp_fn_Z0Y1(x, y, z):
-    """Compute the expected value for qml.PauliZ(0)@qml.PauliY(1)."""
-    return exp_fn_Z0(x, y, z) * exp_fn_Y1(x, y, z)
-
-
-def exp_fn_Z0_and_Y1(x, y, z):
-    """Compute the expected value for qml.PauliZ(0) and qml.PauliY(1)."""
-    # The stacking is required to enable `qml.jacobian` called on this function
-    return qml.math.stack([exp_fn_Z0(x, y, z), exp_fn_Y1(x, y, z)])
-
-
-def exp_fn_H0(x, y, z):
-    """Compute the expected value for the Hamiltonian H0 defined above."""
-    return exp_fn_Z0(x, y, z) * coeffs0[0] + exp_fn_Y1(x, y, z) * coeffs0[1]
-
+exp_fn_Z0Y1 = lambda x, y, z: exp_fn_Z0(x, y, z) * exp_fn_Y1(x, y, z)
+exp_fn_Z0_and_Y1 = lambda x, y, z: qml.math.stack([exp_fn_Z0(x, y, z), exp_fn_Y1(x, y, z)])
+exp_fn_H0 = lambda x, y, z: exp_fn_Z0(x, y, z) * coeffs0[0] + exp_fn_Y1(x, y, z) * coeffs0[1]
 
 observables_and_exp_fns = [
     ([qml.PauliZ(0)], exp_fn_Z0),
