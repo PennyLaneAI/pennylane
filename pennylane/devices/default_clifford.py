@@ -644,6 +644,8 @@ class DefaultClifford(Device):
                     global_phase_ops.append(op)
                 elif op.name == "Snapshot":
                     state = stim.Tableau.from_circuit(stim_ct).to_state_vector()
+                    if state.shape == (1,):
+                        state = qml.math.array([1.0, 0.0], dtype=complex)
                     if debugger is not None and debugger.active:
                         flat_state = qml.math.flatten(state)
                         if op.tag:

@@ -163,6 +163,37 @@ def test_max_worker_clifford():
     (res_q, grad_q) = dev_c.execute_and_compute_derivatives(qscript, config)
     assert qml.math.allclose(res_q, res_t[0]) and qml.math.allclose(grad_q, grad_t[0])
 
+def test_debugger():
+    """Tests that the debugger works for a simple circuit"""
+
+    class Debugger:
+        """A dummy debugger class"""
+
+        def __init__(self):
+            self.active = True
+            self.snapshots = {}
+
+    dev = qml.device("default.clifford")
+    ops = [qml.Snapshot(), qml.Hadamard(wires=0), qml.Snapshot("final_state")]
+    qs = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))])
+
+    debugger = Debugger()
+    result = dev.simulate(qs, debugger=debugger)
+
+    assert isinstance(result, tuple)
+    assert len(result) == 2
+
+    assert list(debugger.snapshots.keys()) == [0, "final_state"]
+    assert qml.math.allclose(debugger.snapshots[0], qml.math.array([1, 0]))
+    assert qml.math.allclose(
+        debugger.snapshots["final_state"], qml.math.array([1, 1]) / qml.math.sqrt(2)
+    )
+
+    assert qml.math.allclose(result[0], 1.0)
+    assert qml.math.allclose(result[1], 0.0)
+
+
+
 
 def test_fail_import_stim(monkeypatch):
     """Test if an ImportError is raised when stim is requested but not installed"""
