@@ -279,13 +279,15 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         return [np.concatenate(i) for i in zip(*grads)]
 
     @staticmethod
-    def qnode_weighted_random_sampling(qnode, shots, argnums, *args, **kwargs):
+    def qnode_weighted_random_sampling(qnode, coeffs, observables, shots, argnums, *args, **kwargs):
         """Returns an array of length ``shots`` containing single-shot estimates
         of the Hamiltonian gradient. The shots are distributed randomly over
         the terms in the Hamiltonian, as per a multinomial distribution.
 
         Args:
             qnode (.QNode): A QNode that returns the expectation value of a Hamiltonian.
+            coeffs (List[float]): The coefficients of the Hamiltonian being measured
+            observables (List[Observable]): The terms of the Hamiltonian being measured
             shots (int): The number of shots used to estimate the Hamiltonian expectation
                 value. These shots are distributed over the terms in the Hamiltonian,
                 as per a Multinomial distribution.
@@ -297,13 +299,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             array[float]: the single-shot gradients of the Hamiltonian expectation value
         """
         qnode = copy(qnode)
-        qnode.construct(args, kwargs)
         base_func = qnode.func
-        tape = qnode.tape
-        [expval] = tape.measurements
-        coeffs, observables = (
-            expval.obs.terms() if isinstance(expval.obs, qml.Hamiltonian) else (1.0, expval.obs)
-        )
 
         # determine the shot probability per term
         prob_shots = np.abs(coeffs) / np.sum(np.abs(coeffs))
@@ -418,12 +414,19 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         """Compute the single shot gradients of a QNode."""
         self.check_device(qnode.device)
 
+        qnode.construct(args, kwargs)
+        tape = qnode.tape
+        [expval] = tape.measurements
+        coeffs, observables = (
+            expval.obs.terms() if isinstance(expval.obs, qml.Hamiltonian) else ([1.0], [expval.obs])
+        )
+
         if self.lipschitz is None:
-            self.check_learning_rate(1)
+            self.check_learning_rate(coeffs)
 
         if self.term_sampling == "weighted_random_sampling":
             return self.qnode_weighted_random_sampling(
-                qnode, self.max_shots, self.trainable_args, *args, **kwargs
+                qnode, coeffs, observables, self.max_shots, self.trainable_args, *args, **kwargs
             )
         if self.term_sampling is not None:
             raise ValueError(
