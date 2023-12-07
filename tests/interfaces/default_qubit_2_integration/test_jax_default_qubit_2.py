@@ -546,9 +546,6 @@ class TestJaxExecuteIntegration:
         x = jnp.array(0.543)
         y = jnp.array(-0.654)
 
-        if execute_kwargs.get("gradient_fn", "") == "adjoint":
-            x = x + 0j
-            y = y + 0j
         res = cost(x, y)
         expected = jnp.array(
             [
@@ -616,10 +613,6 @@ class TestJaxExecuteIntegration:
 
         x = jnp.array(0.543)
         y = jnp.array(-0.654)
-
-        if execute_kwargs.get("gradient_fn", "") == "adjoint":
-            x = x + 0j
-            y = y + 0j
 
         res = cost(x, y)
         expected = jnp.array(
