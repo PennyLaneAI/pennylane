@@ -1858,7 +1858,7 @@ class TestBasisRotation:
     op1 = qml.BasisRotation(wires=range(2), unitary_matrix=rotation_mat)
     op2 = qml.BasisRotation(wires=range(2), unitary_matrix=np.array(rotation_mat))
     op3 = qml.BasisRotation(wires=range(2), unitary_matrix=rotation_mat + 1e-7)
-    op4 = qml.BasisRotation(wires=range(2,4), unitary_matrix=rotation_mat)
+    op4 = qml.BasisRotation(wires=range(2, 4), unitary_matrix=rotation_mat)
 
     @pytest.mark.parametrize("op, other_op", [(op1, op3)])
     def test_different_tolerances_comparison(self, op, other_op):
@@ -1868,6 +1868,7 @@ class TestBasisRotation:
     @pytest.mark.parametrize("op, other_op", [(op1, op2)])
     def test_non_equal_training_params_comparison(self, op, other_op):
         assert qml.equal(op, other_op)
+
     @pytest.mark.parametrize("op, other_op", [(op1, op4)])
     def test_non_equal_training_wires(self, op, other_op):
         assert qml.equal(op, other_op) is False
