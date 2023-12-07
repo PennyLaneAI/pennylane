@@ -474,7 +474,6 @@ class ParametrizedEvolution(Operation):
         )
 
     def _flatten(self):
-
         data = self.data
         metadata = (tuple(self.t), self.H, self.hyperparameters, self.odeint_kwargs)
 
@@ -484,6 +483,7 @@ class ParametrizedEvolution(Operation):
     def _unflatten(cls, data, metadata):
         params = data
         t, H, hyperparamameters, odeint_kwargs = metadata
+
         return cls(
             H,
             params,
