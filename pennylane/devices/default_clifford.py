@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the next generation successor to default qubit
+This module contains the clifford simulator based on stim
 """
 
 from dataclasses import replace
@@ -30,6 +30,8 @@ from pennylane.transforms.core import TransformProgram
 from pennylane.measurements.expval import ExpectationMP
 from pennylane.devices.qubit.sampling import get_num_shots_and_executions
 from pennylane.devices.qubit.simulate import INTERFACE_TO_LIKE
+
+# from pennylane.transforms.optimization.optimization_utils import _fuse_global_phases
 
 from . import Device
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
@@ -115,7 +117,7 @@ def _import_stim():
 
 
 class DefaultClifford(Device):
-    """A PennyLane device written in Python and capable of executing Clifford circuit using `Stim (2021) <https://github.com/quantumlib/Stim/tree/main>`_  .
+    r"""A PennyLane device written in Python and capable of executing Clifford circuit using `Stim (2021) <https://github.com/quantumlib/Stim/tree/main>`_  .
 
     Args:
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots to use in executions involving
@@ -167,6 +169,39 @@ class DefaultClifford(Device):
     -0.0038567269892757494,
     0.1339705146860149,
     -0.03780669772690448]
+
+    .. details::
+        :title: Clifford Tableau
+
+        The device represents a state by the inverse of a Tableau consisiting of binary
+        variable :math:`x_{ij},z_{ij}` for all :math:`i\in\left\{1,\ldots,2n\right\}`,
+        :math:`j\in\left\{1,\ldots,n\right\}`, and :math:`r_{i}` for all
+        :math:`i\in\left\{1,\ldots,2n\right\}`.
+
+        .. math::
+
+            \begin{tabular}
+                [c]{ccc|ccc|c}%
+                $x_{11}$ & $\cdots$ & $x_{1n}$ & $z_{11}$ & $\cdots$ & $z_{1n}$ & $r_{1}$\\
+                $\vdots$ & $\ddots$ & $\vdots$ & $\vdots$ & $\ddots$ & $\vdots$ & $\vdots$\\
+                $x_{n1}$ & $\cdots$ & $x_{nn}$ & $z_{n1}$ & $\cdots$ & $z_{nn}$ & $r_{n}%
+                $\\\hline
+                $x_{\left(  n+1\right)  1}$ & $\cdots$ & $x_{\left(  n+1\right)  n}$ &
+                $z_{\left(  n+1\right)  1}$ & $\cdots$ & $z_{\left(  n+1\right)  n}$ &
+                $r_{n+1}$\\
+                $\vdots$ & $\ddots$ & $\vdots$ & $\vdots$ & $\ddots$ & $\vdots$ & $\vdots$\\
+                $x_{\left(  2n\right)  1}$ & $\cdots$ & $x_{\left(  2n\right)  n}$ &
+                $z_{\left(  2n\right)  1}$ & $\cdots$ & $z_{\left(  2n\right)  n}$ & $r_{2n}$%
+            \end{tabular}
+
+        Rows :math:`1` to :math:`n` of the tableau represent the destabilizer generators 
+        :math:`R_{1},\ldots,R_{n}`, and rows :math:`n+1` to :math:`2n` represent the stabilizer
+        generators :math:`R_{n+1},\ldots,R_{2n}`. If :math:`R_{i}=\pm P_{1}\cdots P_{n}`,
+        then bits :math:`x_{ij},z_{ij}` determine the j:math:`^{th}` Pauli matrix
+        :math:`P_{j}:\ 00` means `I`, :math:`01` means `X`, :math:`11` means `Y`,
+        and :math:`10` means `Z`. Finally, :math:`r_{i}` is :math`1` if :math:`R_{i}`
+        has negative phase and :math:`0` if :math:`r_{i}` has positive phase.
+
 
     .. details::
         :title: Tracking
@@ -613,13 +648,15 @@ class DefaultClifford(Device):
                     state = stim.Tableau.from_circuit(stim_ct).to_state_vector()
                     if debugger is not None and debugger.active:
                         flat_state = qml.math.flatten(state)
-                    if op.tag:
-                        debugger.snapshots[op.tag] = flat_state
-                    else:
-                        debugger.snapshots[len(debugger.snapshots)] = flat_state
+                        if op.tag:
+                            debugger.snapshots[op.tag] = flat_state
+                        else:
+                            debugger.snapshots[len(debugger.snapshots)] = flat_state
                 else:
                     pass
         tableau_simulator.do_circuit(stim_ct)
+
+        gphase_op = qml.GlobalPhase(qml.math.sum(op.data[0] for op in global_phase_ops))
 
         res = []
         for meas in circuit.measurements:
@@ -628,13 +665,21 @@ class DefaultClifford(Device):
                 # Computing statevector via tableaus
                 if type(meas) is qml.measurements.StateMP:
                     if self._state == "tableau":
-                        inverse_tableau = tableau_simulator.current_inverse_tableau()
-                        res.append(qml.math.array(inverse_tableau.inverse().to_numpy()))
+                        tableau = tableau_simulator.current_inverse_tableau().inverse()
+                        x2x, x2z, z2x, z2z, x_signs, z_signs = tableau.to_numpy()
+                        res.append(
+                            np.vstack(
+                                (
+                                    np.hstack((x2x, x2z, x_signs.reshape(-1, 1))),
+                                    np.hstack((z2x, z2z, z_signs.reshape(-1, 1))),
+                                )
+                            ).astype(int)
+                        )
                     else:
                         state_vector = qml.math.array(
                             tableau_simulator.state_vector(endian="big"),
                             like=INTERFACE_TO_LIKE[interface],
-                        )
+                        ) * qml.matrix(gphase_op)
                         res.append(state_vector)
 
                 # Computing density matrix via tableaus
@@ -646,9 +691,10 @@ class DefaultClifford(Device):
                     density_matrix = qml.math.einsum("i, j->ij", state_vector, state_vector)
                     res.append(density_matrix)
 
-                # Computing purity via tableaus // Trivial
+                # Computing purity via tableaus 
                 elif type(meas) is qml.measurements.PurityMP:
-                    res.append(qml.math.array(1.0, like=INTERFACE_TO_LIKE[interface]))
+                    if circuit.op_wires == meas.wires: # // Trivial
+                        res.append(qml.math.array(1.0, like=INTERFACE_TO_LIKE[interface]))
 
                 # Computing expectation values via measurement
                 elif isinstance(meas, ExpectationMP):
