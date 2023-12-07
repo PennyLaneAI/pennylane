@@ -118,7 +118,7 @@ def check_clifford_t(op, use_decomposition=False):
 
     For a given unitary operator :math:`U` acting on :math:`N` qubits, which is not a T-gate,
     this method checks that the transformation :math:`UPU^{\dagger}` maps the Pauli tensor products
-    :math:`P = {I, X, Y, Z}^{\otimes N}` to to Pauli tensor products using the decomposition of the
+    :math:`P = {I, X, Y, Z}^{\otimes N}` to Pauli tensor products using the decomposition of the
     matrix for :math:`U` in the Pauli basis.
 
     Args:
@@ -320,13 +320,13 @@ def clifford_t_decomposition(
       :class:`~.SX`, :class:`~.S`, and :class:`~.Hadamard`.
     - Two qubit gates - :class:`~.CNOT`, :class:`~.CY`, :class:`~.CZ`, :class:`~.SWAP`, and :class:`~.ISWAP`.
 
-    Then the leftover single qubit :class:`~.RZ` operations are approximated in the Clifford+T basis with
+    Then, the leftover single qubit :class:`~.RZ` operations are approximated in the Clifford+T basis with
     :math:`\epsilon > 0` error. By default, we use the Solovay-Kitaev algorithm described in
     `Dawson and Nielsen (2005) <https://arxiv.org/abs/quant-ph/0505030>`_ for this.
 
     Args:
         tape (QNode or QuantumTape or Callable): The quantum circuit to be decomposed.
-        epsilon (float): The maximum permissible circuit decomposition error. Defaults to ``0.0001``.
+        epsilon (float): The maximum permissible operator norm error of the complete circuit decomposition. Defaults to ``0.0001``.
         max_expansion (int): The depth to be used for tape expansion before manual decomposition to Clifford+T basis is applied.
         method (str): Method to be used for Clifford+T decomposition. Default value is ``"sk"`` for Solovay-Kitaev.
         **method_kwargs: Keyword argument to pass options for the ``method`` used for decompositions.
