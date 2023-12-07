@@ -44,6 +44,7 @@ H = qml.PauliX(1) + amp * qml.PauliZ(0) + amp * qml.PauliY(1)
 params = [0.5, 0.5]
 
 example_pytree_evolutions = [
+    qml.pulse.ParametrizedEvolution(H),
     qml.pulse.ParametrizedEvolution(H, params, t=0.5),
     qml.pulse.ParametrizedEvolution(H, params, t=[0.5, 1.0]),
     qml.pulse.ParametrizedEvolution(H, params, t=0.5, return_intermediate=True),

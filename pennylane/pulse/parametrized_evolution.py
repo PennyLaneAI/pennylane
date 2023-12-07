@@ -475,7 +475,11 @@ class ParametrizedEvolution(Operation):
 
     def _flatten(self):
         data = self.data
-        metadata = (tuple(self.t), self.H, self.hyperparameters, self.odeint_kwargs)
+        if self.t is None:
+            t = None
+        else:
+            t = tuple(self.t)
+        metadata = (t, self.H, self.hyperparameters, self.odeint_kwargs)
 
         return data, metadata
 
@@ -499,9 +503,8 @@ class ParametrizedEvolution(Operation):
             same_times = other.t is None
         else:
             same_times = all(self.t == other.t)
-        if self.data is None:
-            same_data = other.data is None
-        elif isinstance(self.data, tuple) and isinstance(other.data, tuple):
+
+        if isinstance(self.data, tuple) and isinstance(other.data, tuple):
             same_data = self.data == other.data
         elif isinstance(self.data, Iterable) and isinstance(other.data, Iterable):
             same_data = all(self.data == other.data)
