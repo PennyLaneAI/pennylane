@@ -293,6 +293,16 @@ class TestCliffordCompile:
         ):
             _rot_decompose(op)
 
+    def test_zero_global_phase(self):
+        """Test that global phase operation is added only when it is non-zero"""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.CNOT([0, 1])
+
+        [tape], _ = qml.clifford_t_decomposition(tape)
+
+        assert not sum([isinstance(op, qml.GlobalPhase) for op in tape.operations])
+
     def test_raise_with_decomposition_method(self):
         """Test that exception is correctly raise when using incorrect decomposing method"""
 

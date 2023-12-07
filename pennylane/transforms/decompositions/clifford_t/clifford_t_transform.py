@@ -480,7 +480,10 @@ def clifford_t_decomposition(
                 decomp_ops.extend(clifford_ops)
             else:
                 decomp_ops.append(op)
-        decomp_ops.append(qml.GlobalPhase(phase))
+
+        # check if phase is non-zero for non jax-jit cases
+        if not qml.math.is_abstract(phase) and not qml.math.allclose(phase, 0.0):
+            decomp_ops.append(qml.GlobalPhase(phase))
 
     # Construct a new tape with the expanded set of operations
     new_tape = type(tape)(decomp_ops, compiled_tape.measurements, shots=tape.shots)
