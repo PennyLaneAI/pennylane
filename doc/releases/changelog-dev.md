@@ -170,17 +170,18 @@
   ```python
   import pennylane as qml
 
-  with qml.tape.QuantumTape() as tape:
+  with qml.tape.QuantumTape() as circuit:
       qml.RX(1.1, 0)
       qml.CNOT([0, 1])
       qml.RY(2.2, 0)
 
-  (tape,), postproc = qml.clifford_t_decomposition(tape, 0.001)
+  (circuit,), _ = qml.clifford_t_decomposition(circuit, 0.001)
   ```
 
   The resource requirements of this circuit can also be evaluated.
 
   ```pycon
+  >>> circuit.specs["resources"]
   wires: 2
   gates: 49770
   depth: 49770
