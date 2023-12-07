@@ -497,8 +497,8 @@ def _equal_basis_rotation(
     atol=1e-9,
 ):
     if not np.allclose(
-        op1._hyperparameters["unitary_matrix"],  # pylint: disable=protected-access
-        op2._hyperparameters["unitary_matrix"],  # pylint: disable=protected-access
+        op1.hyperparameters["unitary_matrix"],
+        op2.hyperparameters["unitary_matrix"], 
         atol=atol,
         rtol=rtol,
     ):
