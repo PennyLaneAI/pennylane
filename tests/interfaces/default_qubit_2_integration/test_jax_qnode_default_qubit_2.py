@@ -397,11 +397,6 @@ class TestVectorValuedQNode:
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
 
-        if diff_method == "adjoint":
-            # TODO: figure out how to perform this casting internally
-            x = x + 0j
-            y = y + 0j
-
         @qnode(dev, **kwargs)
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -541,10 +536,6 @@ class TestVectorValuedQNode:
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
 
-        if diff_method == "adjoint":
-            x = x + 0j
-            y = y + 0j
-
         @qnode(dev, **kwargs)
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -676,10 +667,6 @@ class TestVectorValuedQNode:
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
-
-        if diff_method == "adjoint":
-            x = x + 0j
-            y = y + 0j
 
         @qnode(dev, **kwargs)
         def circuit(x, y):
@@ -1928,9 +1915,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
 
         a = jax.numpy.array(0.1)
 
-        if diff_method == "adjoint":
-            a = a + 0j
-
         if device_vjp:
             with pytest.raises(NotImplementedError):
                 jacobian(circuit)(a, shots=shots)
@@ -1971,10 +1955,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
 
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
-
-        if diff_method == "adjoint":
-            a = a + 0j
-            b = b + 0j
 
         if device_vjp:
             with pytest.raises(NotImplementedError):
@@ -2023,8 +2003,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
         a = jax.numpy.array([0.1, 0.2])
-        if diff_method == "adjoint":
-            a = a + 0j
 
         if device_vjp:
             with pytest.raises(NotImplementedError):
