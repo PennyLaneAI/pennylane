@@ -342,10 +342,10 @@ class TestProperties:
         m1 = qml.measure(1)
         m1.measurements[0].id = "def"
 
-        mp1 = qml.probs(op=[m0, m1])
+        mp1 = qml.sample(op=[m0, m1])
         assert np.all(mp1.eigvals() == [0, 1, 2, 3])
 
-        mp2 = qml.probs(op=3 * m0 - m1 / 2)
+        mp2 = qml.sample(op=3 * m0 - m1 / 2)
         assert np.all(mp2.eigvals() == [0, -0.5, 3, 2.5])
 
     def test_error_obs_and_eigvals(self):
@@ -406,13 +406,13 @@ class TestProperties:
 
         wire_map = {"a": 0, "b": 1}
 
-        mp1 = qml.probs(op=[m0, m1])
+        mp1 = qml.sample(op=[m0, m1])
         mapped_mp1 = mp1.map_wires(wire_map)
-        assert qml.equal(mapped_mp1, qml.probs(op=[m2, m3]))
+        assert qml.equal(mapped_mp1, qml.sample(op=[m2, m3]))
 
-        mp2 = qml.probs(op=m0 * m1)
+        mp2 = qml.sample(op=m0 * m1)
         mapped_mp2 = mp2.map_wires(wire_map)
-        assert qml.equal(mapped_mp2, qml.probs(op=m2 * m3))
+        assert qml.equal(mapped_mp2, qml.sample(op=m2 * m3))
 
 
 class TestExpansion:

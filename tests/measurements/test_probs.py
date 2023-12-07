@@ -317,7 +317,7 @@ class TestProbs:
         m0 = qml.measure(0)
         m1 = qml.measure(1)
 
-        with pytest.raises(ValueError, match="Cannot use qml.probs() when measuring multiple"):
+        with pytest.raises(ValueError, match=r"Cannot use qml.probs\(\) when measuring multiple"):
             _ = qml.probs(op=m0 + m1)
 
     def test_mixed_lists_as_op_not_allowed(self):
@@ -326,7 +326,7 @@ class TestProbs:
 
         with pytest.raises(
             qml.QuantumFunctionError,
-            "Only sequences of MeasurementValues can be passed with the op argument",
+            match="Only sequences of MeasurementValues can be passed with the op argument",
         ):
             _ = qml.sample(op=[m0, qml.PauliZ(0)])
 

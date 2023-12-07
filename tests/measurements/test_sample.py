@@ -224,7 +224,7 @@ class TestSample:
 
         with pytest.raises(
             qml.QuantumFunctionError,
-            "Only sequences of MeasurementValues can be passed with the op argument",
+            match="Only sequences of MeasurementValues can be passed with the op argument",
         ):
             _ = qml.sample(op=[m0, qml.PauliZ(0)])
 

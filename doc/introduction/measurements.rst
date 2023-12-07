@@ -402,17 +402,71 @@ statistics are :class:`~.pennylane.devices.DefaultQubit`, :class:`~.pennylane.de
         qml.cond(m0, qml.RY)(y, wires=1)
         return qml.probs(wires=1), qml.probs(op=m0)
 
-Executing this QNode:
+Executing this ``QNode``:
 
 >>> func(np.pi / 2, np.pi / 4)
 (tensor([0.9267767, 0.0732233], requires_grad=True),
  tensor([0.5, 0.5], requires_grad=True))
 
+Users can also collect statistics on mid-circuit measurements manipulated using arithmetic/boolean operators.
+This works for both unary and binary operators. To see a full list of supported operators, refer to the
+:func:`~.pennylane.measure` documentation. An example for collecting such statistics is shown below:
+
+.. code-block:: python3
+
+    import pennylane as qml
+
+    dev = qml.device("default.qubit")
+
+    @qml.qnode(dev)
+    def circuit(phi, theta):
+        qml.RX(phi, wires=0)
+        m0 = qml.measure(wires=0)
+        qml.RY(theta, wires=1)
+        m1 = qml.measure(wires=1)
+        return qml.sample(~m0 - 2 * m1)
+
+Executing this ``QNode``:
+
+>>> circuit(1.23, 4.56, shots=5)
+array([-1, -2,  1, -1,  1])
+
+Collecting statistics for mid-circuit measurements manipulated using arithmetic/boolean operators is supported
+with ``qml.expval``, ``qml.var``, ``qml.sample``, and ``qml.counts``.
+
+Moreover, statistics for multiple mid-circuit measurements can be collected by passing lists of mid-circuit
+measurement values as the ``op`` argument of the measurement process:
+
+.. code-block:: python3
+
+    import pennylane as qml
+
+    dev = qml.device("default.qubit")
+
+    @qml.qnode(dev)
+    def circuit(phi, theta):
+        qml.RX(phi, wires=0)
+        m0 = qml.measure(wires=0)
+        qml.RY(theta, wires=1)
+        m1 = qml.measure(wires=1)
+        return qml.sample(op=[m0, m1])
+
+Executing this ``QNode``:
+
+>>> circuit(1.23, 4.56, shots=5)
+array([[0, 1],
+       [1, 1],
+       [0, 1],
+       [0, 0],
+       [1, 1]])
+
+Collecting statistics for sequences of mid-circuit measurements is supported with ``qml.sample``,
+``qml.probs``, and ``qml.counts``.
+
 .. warning::
 
-    Currently, statistics can only be collected for single mid-circuit measurement values. Moreover, any
-    measurement values manipulated using boolean or arithmetic operators cannot be used. These can lead to
-    unexpected/incorrect behaviour.
+    When collecting statistics for a list of mid-circuit measurements, values manipulated using
+    arithmetic operators should not be used. If done, correct behaviour is not guaranteed.
 
 Changing the number of shots
 ----------------------------
