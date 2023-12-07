@@ -482,7 +482,7 @@ def clifford_t_decomposition(
                 decomp_ops.append(op)
 
         # check if phase is non-zero for non jax-jit cases
-        if not qml.math.is_abstract(phase) and not qml.math.allclose(phase, 0.0):
+        if qml.math.is_abstract(phase) or not qml.math.allclose(phase, 0.0):
             decomp_ops.append(qml.GlobalPhase(phase))
 
     # Construct a new tape with the expanded set of operations
