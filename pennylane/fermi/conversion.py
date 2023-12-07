@@ -200,7 +200,7 @@ def parity_transform(
     + (-0.25+0j) * X(0) @ Z(1)
     + (0.25+0j) * X(0)
     + 0.25j * Y(0) @ Z(1)
-    
+
     >>> parity_transform(w, n_qubits=6, ps=True, wire_map={0: 2, 1: 3})
     -0.25j * Y(2)
     + (-0.25+0j) * X(2) @ Z(3)
@@ -231,7 +231,8 @@ def _(fermi_operator: FermiWord, n_qubits, ps=False, wire_map=None, tol=None):
         for item in fermi_operator.items():
             (_, wire), sign = item
             if wire >= n_qubits:
-                raise ValueError(f"Creating/annihilating a particle  on qubit number {wire} for a {n_qubits} qubit system")                
+                raise ValueError(f"Creating/annihilating a particle  on qubit number {wire} for a {n_qubits} qubit system")
+
             if wire==0:
                 x_string = dict(zip(range(wire+1, n_qubits), ["X"] * (n_qubits-wire)))
                 qubit_operator *= PauliSentence(
