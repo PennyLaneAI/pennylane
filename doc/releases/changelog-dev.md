@@ -179,11 +179,11 @@
   [(#4862)](https://github.com/PennyLaneAI/pennylane/pull/4862)
 
 * Non-parametric-ops such as `Barrier`, `Snapshot` and `Wirecut` have been grouped together and moved to `pennylane/ops/meta.py`.
-  Additionally, the relevant tests have been organized and placed in a new file, `tests/ops/test_meta.py` .
+  Additionally, the relevant tests have been organized and placed in a new file, `tests/ops/test_meta.py`.
   [(#4789)](https://github.com/PennyLaneAI/pennylane/pull/4789)
 
 * `qml.equal` now supports comparison of `QuantumScript` objects
-  [#4902](https://github.com/PennyLaneAI/pennylane/pull/4902)
+  ([#4902](https://github.com/PennyLaneAI/pennylane/pull/4902)) and `BasisRotation` objects ([#4919]((https://github.com/PennyLaneAI/pennylane/pull/4902)))
 
 <h4>Better support for batching</h4>
 
