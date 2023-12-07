@@ -53,7 +53,7 @@
   [(#4901)](https://github.com/PennyLaneAI/pennylane/pull/4901)
   [(#4917)](https://github.com/PennyLaneAI/pennylane/pull/4917)
 
-* Users can now statistics for multiple mid-circuit measurements.
+* Users can now return statistics for multiple mid-circuit measurements.
   [(#4888)](https://github.com/PennyLaneAI/pennylane/pull/4888)
 
   There are two ways in which mid-circuit measurement statistics can be collected:
