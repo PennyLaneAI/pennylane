@@ -328,7 +328,7 @@ class TestProbs:
             qml.QuantumFunctionError,
             match="Only sequences of MeasurementValues can be passed with the op argument",
         ):
-            _ = qml.sample(op=[m0, qml.PauliZ(0)])
+            _ = qml.probs(op=[m0, qml.PauliZ(0)])
 
     @pytest.mark.parametrize("shots", [None, 100])
     def test_batch_size(self, shots):
