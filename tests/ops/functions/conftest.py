@@ -97,6 +97,9 @@ def get_all_classes(c):
     return classes
 
 
-@pytest.fixture(params=set(get_all_classes(Operator)) - _SKIP_OP_TYPES)
+_CLASSES_TO_TEST = set(get_all_classes(Operator)) - _SKIP_OP_TYPES
+
+
+@pytest.fixture(params=sorted(_CLASSES_TO_TEST, key=lambda op: op.__name__))
 def class_to_validate(request):
     yield request.param
