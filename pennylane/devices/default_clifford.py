@@ -117,7 +117,7 @@ def _import_stim():
 
 
 class DefaultClifford(Device):
-    r"""A PennyLane device written in Python and capable of executing Clifford circuit using `Stim (2021) <https://github.com/quantumlib/Stim/tree/main>`_  .
+    r"""A PennyLane device written in Python and capable of executing Clifford circuit using `stim (2021) <https://github.com/quantumlib/stim/tree/main>`_  .
 
     Args:
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots to use in executions involving
@@ -294,7 +294,6 @@ class DefaultClifford(Device):
     ) -> None:
         super().__init__(wires=wires, shots=shots)
 
-        self._stim = _import_stim()
         self._max_workers = max_workers
         self._check_clifford = check_clifford
         self._max_error = max(max_error, 0.0)
@@ -497,7 +496,7 @@ class DefaultClifford(Device):
             self.tracker.update(derivative_batches=1, derivatives=len(circuits))
             self.tracker.record()
 
-        res = tuple(0.0 for circuit in circuits)
+        res = tuple((0.0,) for circuit in circuits)
 
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is not None:
@@ -528,8 +527,7 @@ class DefaultClifford(Device):
 
         meas = self.execute(circuits, execution_config=execution_config)
         grad = self.compute_derivatives(circuits, execution_config=execution_config)
-
-        results, jacs = tuple(zip(meas, grad))
+        (results, jacs) = tuple(zip(meas, grad))[0]
 
         return (results[0], jacs[0]) if is_single_circuit else (results, jacs)
 
@@ -605,7 +603,7 @@ class DefaultClifford(Device):
 
         """
 
-        stim = self._stim
+        stim = _import_stim()
 
         circuit = circuit.map_to_standard_wires()
 
@@ -691,9 +689,9 @@ class DefaultClifford(Device):
                     density_matrix = qml.math.einsum("i, j->ij", state_vector, state_vector)
                     res.append(density_matrix)
 
-                # Computing purity via tableaus 
+                # Computing purity via tableaus
                 elif type(meas) is qml.measurements.PurityMP:
-                    if circuit.op_wires == meas.wires: # // Trivial
+                    if circuit.op_wires == meas.wires:  # // Trivial
                         res.append(qml.math.array(1.0, like=INTERFACE_TO_LIKE[interface]))
 
                 # Computing expectation values via measurement
