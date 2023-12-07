@@ -497,7 +497,7 @@ def _equal_basis_rotation(
     rtol=1e-5,
     atol=1e-9,
 ):
-    if not np.allclose(
+    if not qml.math.allclose(
         op1.hyperparameters["unitary_matrix"],
         op2.hyperparameters["unitary_matrix"],
         atol=atol,
