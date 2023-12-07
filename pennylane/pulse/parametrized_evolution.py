@@ -571,21 +571,26 @@ class ParametrizedEvolution(Operation):
 
         p = ",".join(s for s in param_strings)
         return f"{op_label}\n(p=[{p}], t={self.t})"
-    
+
     def _flatten(self):
         hamiltonian = self.H
         params = self.data
         t = self.t
         hyper_params = self.hyper_parameters
         odeint_kwargs = self.odeint_kwargs
-        
+
         return (hamiltonian, params, t, hyper_params, odeint_kwargs)
-    
+
     @classmethod
     def _unflatten(cls, hamiltonian, params, t, hyper_params, odeint_kwargs):
-        return cls(hamiltonian, params, t, complementary=hyper_params["complementary"], return_intermediate=hyper_params["return_intermediate"], **odeint_kwargs)
-    
-register_pytree(ParametrizedEvolution, ParametrizedEvolution._flatten, ParametrizedEvolution._unflatten)
+        return cls(
+            hamiltonian,
+            params,
+            t,
+            complementary=hyper_params["complementary"],
+            return_intermediate=hyper_params["return_intermediate"],
+            **odeint_kwargs,
+        )
 
 
 @functions.bind_new_parameters.register
