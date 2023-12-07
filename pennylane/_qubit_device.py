@@ -639,8 +639,7 @@ class QubitDevice(Device):
                 result = self.sample(m, shot_range=shot_range, bin_size=bin_size, counts=True)
 
             elif isinstance(m, ProbabilityMP):
-                wires = obs.wires if not isinstance(obs, list) else m.wires
-                result = self.probability(wires=wires, shot_range=shot_range, bin_size=bin_size)
+                result = self.probability(wires=m.wires, shot_range=shot_range, bin_size=bin_size)
 
             elif isinstance(m, StateMP):
                 if len(measurements) > 1:
