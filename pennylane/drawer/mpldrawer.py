@@ -922,8 +922,8 @@ class MPLDrawer:
         only the left edge.
 
         Args:
-            layer: the x corrdinate for the classical wire intersection
-            wire: the classical wire coordinate for the intersection
+            layer: the x-coordinate for the classical wire intersection
+            wire: the classical wire y-coordinate for the intersection
             erase_right=False(bool):  whether or not to erase the right side of the intersection
                 in addition to the left.
 
