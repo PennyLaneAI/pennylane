@@ -92,12 +92,14 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
     Note that the output shape of this measurement process depends on whether
     the device simulates qubit or continuous variable quantum systems.
     """
-    if isinstance(op, MeasurementValue) and len(op.measurements) > 1:
-        raise ValueError(
-            "Cannot use qml.probs() when measuring multiple mid-circuit measurements collected "
-            "using arithmetic operators. To collect probabilities for multiple mid-circuit "
-            "measurements, use a list of mid-circuit measurements with qml.probs()."
-        )
+    if isinstance(op, MeasurementValue):
+        if len(op.measurements) > 1:
+            raise ValueError(
+                "Cannot use qml.probs() when measuring multiple mid-circuit measurements collected "
+                "using arithmetic operators. To collect probabilities for multiple mid-circuit "
+                "measurements, use a list of mid-circuit measurements with qml.probs()."
+            )
+        return ProbabilityMP(obs=op)
 
     if isinstance(op, Sequence):
         if not all(isinstance(o, MeasurementValue) for o in op):

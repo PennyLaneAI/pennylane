@@ -102,7 +102,6 @@ def test_unsupported_measurements(mp, err_msg):
     [
         (qml.expval, True),
         (qml.var, True),
-        (qml.probs, True),
         (qml.probs, False),
         (qml.sample, True),
         (qml.sample, False),

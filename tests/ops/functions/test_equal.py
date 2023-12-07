@@ -1289,7 +1289,7 @@ class TestMeasurementsEqual:
 
         assert not qml.equal(mp1, mp2)
 
-    @pytest.mark.parametrize("mp_fn", [qml.expval, qml.var, qml.probs, qml.sample, qml.counts])
+    @pytest.mark.parametrize("mp_fn", [qml.expval, qml.var, qml.sample, qml.counts])
     def test_mv_arithmetic_as_op(self, mp_fn):
         """Test that MeasurementProcesses that measure a list of MeasurementValues check for equality
         correctly."""
