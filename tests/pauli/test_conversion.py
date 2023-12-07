@@ -510,7 +510,7 @@ class TestPauliSentence:
     @pytest.mark.parametrize("op, ps", operator_ps)
     def test_operator_private_ps(self, op, ps):
         """Test that a correct pauli sentence is computed when passing an arithmetic operator and not
-        relying on the saved op._pauli_rep attribute."""
+        relying on the saved op.pauli_rep attribute."""
         assert qml.pauli.conversion._pauli_sentence(op) == ps  # pylint: disable=protected-access
 
     error_ps = (
