@@ -218,6 +218,16 @@ class TestSample:
         else:
             assert res.shape == (shots, 2)
 
+    def test_mixed_lists_as_op_not_allowed(self):
+        """Test that passing a list not containing only measurement values raises an error."""
+        m0 = qml.measure(0)
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            "Only sequences of MeasurementValues can be passed with the op argument",
+        ):
+            _ = qml.sample(op=[m0, qml.PauliZ(0)])
+
     def test_providing_observable_and_wires(self):
         """Test that a ValueError is raised if both an observable is provided and wires are specified"""
         dev = qml.device("default.qubit", wires=2)

@@ -56,19 +56,6 @@ def _check_tape_validity(tape: QuantumTape):
                 "measurements on a device that does not support them."
             )
 
-        if (
-            isinstance(mp, ProbabilityMP)
-            and isinstance(mp.mv, MeasurementValue)
-            and len(mp.mv.measurements) > 1
-            and not tape.shots
-        ):
-            raise ValueError(
-                "Cannot use ProbabilityMP as a measurement when measuring multiple mid-circuit "
-                "measurements collected using arithmetic operators. To collect probabilities for "
-                "multiple mid-circuit measurements, use a list of mid-circuit measurements with "
-                "qml.probs()."
-            )
-
 
 def _collect_mid_measure_info(tape: QuantumTape):
     """Helper function to collect information related to mid-circuit measurements in the tape."""

@@ -87,10 +87,6 @@ def test_postselection_error_with_wrong_device():
         (qml.probs(), "Cannot use ProbabilityMP as a measurement without"),
         (qml.sample(), "Cannot use SampleMP as a measurement without"),
         (qml.counts(), "Cannot use CountsMP as a measurement without"),
-        (
-            qml.probs(op=qml.measure(0) + qml.measure(1)),
-            "Cannot use ProbabilityMP as a measurement when",
-        ),
     ],
 )
 def test_unsupported_measurements(mp, err_msg):

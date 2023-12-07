@@ -1279,6 +1279,16 @@ class TestMeasurementsEqual:
         assert not qml.equal(mp1, mp3)
         assert not qml.equal(mp1, mp4)
 
+    def test_mv_list_and_arithmetic_as_op(self):
+        """Test that comparing measurements using composite measurement values and
+        a list of measurement values fails."""
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+        mp1 = qml.sample(op=m0 * m1)
+        mp2 = qml.sample(op=[m0, m1])
+
+        assert not qml.equal(mp1, mp2)
+
     @pytest.mark.parametrize("mp_fn", [qml.expval, qml.var, qml.probs, qml.sample, qml.counts])
     def test_mv_arithmetic_as_op(self, mp_fn):
         """Test that MeasurementProcesses that measure a list of MeasurementValues check for equality

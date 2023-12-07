@@ -311,6 +311,25 @@ class TestProbs:
             for r in res:  # pylint: disable=not-an-iterable
                 assert np.allclose(r, expected, atol=atol, rtol=0)
 
+    def test_composite_measurement_value_not_allowed(self):
+        """Test that measuring composite mid-circuit measurement values raises
+        an error."""
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+
+        with pytest.raises(ValueError, match="Cannot use qml.probs() when measuring multiple"):
+            _ = qml.probs(op=m0 + m1)
+
+    def test_mixed_lists_as_op_not_allowed(self):
+        """Test that passing a list not containing only measurement values raises an error."""
+        m0 = qml.measure(0)
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            "Only sequences of MeasurementValues can be passed with the op argument",
+        ):
+            _ = qml.sample(op=[m0, qml.PauliZ(0)])
+
     @pytest.mark.parametrize("shots", [None, 100])
     def test_batch_size(self, shots):
         """Test the probability is correct for a batched input."""

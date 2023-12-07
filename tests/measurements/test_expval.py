@@ -132,6 +132,16 @@ class TestExpval:
         atol = tol if shots is None else tol_stochastic
         assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
 
+    def test_measurement_value_list_not_allowed(self):
+        """Test that measuring a list of measurement values raises an error."""
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+
+        with pytest.raises(
+            ValueError, match="qml.expval does not support measuring sequences of measurements"
+        ):
+            _ = qml.expval([m0, m1])
+
     @pytest.mark.parametrize(
         "obs",
         [qml.PauliZ(0), qml.Hermitian(np.diag([1, 2]), 0), qml.Hermitian(np.diag([1.0, 2.0]), 0)],

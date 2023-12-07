@@ -207,6 +207,16 @@ class TestProcessSamples:
         assert result["10"] == np.count_nonzero([np.allclose(s, [1, 0]) for s in samples])
         assert result["11"] == np.count_nonzero([np.allclose(s, [1, 1]) for s in samples])
 
+    def test_mixed_lists_as_op_not_allowed(self):
+        """Test that passing a list not containing only measurement values raises an error."""
+        m0 = qml.measure(0)
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            "Only sequences of MeasurementValues can be passed with the op argument",
+        ):
+            _ = qml.sample(op=[m0, qml.PauliZ(0)])
+
     def test_counts_all_outcomes_wires(self):
         """Test that the counts output is correct when all_outcomes is passed"""
         shots = 1000
