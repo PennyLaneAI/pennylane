@@ -139,7 +139,7 @@ def _(op: ops.WireCut, drawer, layer, _):
 
 
 @_add_operation_to_drawer.register
-def _(op: MidMeasureMP, drawer, layer, config):
+def _(op: MidMeasureMP, drawer, layer, _):
     text = None if op.postselect is None else str(int(op.postselect))
     drawer.measure(layer, op.wires[0], text=text)  # assume one wire
 
