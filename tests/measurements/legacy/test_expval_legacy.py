@@ -123,6 +123,7 @@ class TestExpval:
     ):  # pylint: disable=too-many-arguments
         """Test that expectation values for mid-circuit measurement values
         are correct for a single measurement value."""
+        np.random.seed(42)
         dev = qml.device(device_name, wires=2, shots=shots)
 
         @qml.qnode(dev)
@@ -150,6 +151,7 @@ class TestExpval:
     ):  # pylint: disable=too-many-arguments
         """Test that expectation values for mid-circuit measurement values
         are correct for a composite measurement value."""
+        np.random.seed(42)
         dev = qml.device(device_name, wires=6, shots=shots)
 
         @qml.qnode(dev)
