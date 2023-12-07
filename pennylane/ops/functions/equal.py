@@ -488,6 +488,7 @@ def _equal_counts(op1: CountsMP, op2: CountsMP, **kwargs):
 
 
 @_equal.register
+# pylint: disable=unused-argument
 def _equal_basis_rotation(
     op1: qml.BasisRotation,
     op2: qml.BasisRotation,
@@ -498,7 +499,7 @@ def _equal_basis_rotation(
 ):
     if not np.allclose(
         op1.hyperparameters["unitary_matrix"],
-        op2.hyperparameters["unitary_matrix"], 
+        op2.hyperparameters["unitary_matrix"],
         atol=atol,
         rtol=rtol,
     ):
