@@ -890,8 +890,11 @@ class MPLDrawer:
             )
 
     def _y(self, wire):
-        """Convert a wire number to a y coordinate. Wire numbers greater than the number of
-        quantum wires are treated as classical wires."""
+        """Used for determining the correct y coordinate for classical wires.
+        Classical wires should be enumerated starting at the number of quantum wires the drawer has.
+        For example, if the drawer has ``3`` quantum wires, the first classical wire should be located at ``3``
+        which corresponds to a ``y`` coordinate of ``2.6``.
+        """
         if wire < self.n_wires:
             return wire
         return self.n_wires + self._cwire_scaling * (wire - self.n_wires) - 0.4
@@ -905,16 +908,18 @@ class MPLDrawer:
                 greater than the number of quantum wires will be scaled as classical wires.
 
         """
-        s0 = path_effects.Stroke(
+        outer_stroke = path_effects.Stroke(
             linewidth=5 * plt.rcParams["lines.linewidth"], foreground=plt.rcParams["lines.color"]
         )
 
-        s1 = path_effects.Stroke(
+        inner_stroke = path_effects.Stroke(
             linewidth=3 * plt.rcParams["lines.linewidth"],
             foreground=plt.rcParams["figure.facecolor"],
         )
 
-        line = plt.Line2D(layers, [self._y(w) for w in wires], path_effects=[s0, s1], zorder=1)
+        line = plt.Line2D(
+            layers, [self._y(w) for w in wires], path_effects=[outer_stroke, inner_stroke], zorder=1
+        )
         self.ax.add_line(line)
 
     def cwire_join(self, layer, wire, erase_right=False):
@@ -934,7 +939,7 @@ class MPLDrawer:
             (self._y(wire), self._y(wire)),
             zorder=2,
             color=plt.rcParams["figure.facecolor"],
-            linewidth=3 * plt.rcParams["lines.linewidth"],
+            linewidth=3 * plt.rcParams["lines.linewidth"],  # match inner_stroke from classical_wire
         )
         self.ax.add_line(line)
 
