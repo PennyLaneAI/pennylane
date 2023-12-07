@@ -429,29 +429,28 @@ def tape_text(
                 cur_b_filler = b_filler if min(cwire_layers[b]) < i < max(cwire_layers[b]) else " "
                 layer_str[b + n_wires] = cur_b_filler
 
-        # Add filler before current layer
-        layer_str = [w_filler] * n_wires + [" "] * n_bits
-        for b in bit_map.values():
-            cur_b_filler = b_filler if mid_measure_layers[b] < i < bit_end_layers[b] else " "
-            layer_str[b + n_wires] = cur_b_filler
+            config.cur_layer = i
+            # Keep track of mid-circuit measurements in each layer that are used
+            # for conditions, if any
+            cur_layer_mid_measure = None
 
-        config.cur_layer = i
-        # Keep track of mid-circuit measurements in each layer that are used
-        # for conditions, if any
-        cur_layer_mid_measure = None
+            for op in layer:
+                if isinstance(op, qml.tape.QuantumScript):
+                    layer_str = _add_grouping_symbols(op, layer_str, config)
+                    label = f"Tape:{cache['tape_offset']+len(tape_cache)}"
+                    for w in op.wires:
+                        layer_str[wire_map[w]] += label
+                    tape_cache.append(op)
+                else:
+                    layer_str = add(op, layer_str, config)
 
-        for op in layer:
-            if isinstance(op, qml.tape.QuantumScript):
-                layer_str = _add_grouping_symbols(op, layer_str, config)
-                label = f"Tape:{cache['tape_offset']+len(tape_cache)}"
-                for w in op.wires:
-                    layer_str[wire_map[w]] += label
-                tape_cache.append(op)
-            else:
-                layer_str = add(op, layer_str, config)
+                    if isinstance(op, MidMeasureMP) and op in bit_map:
+                        cur_layer_mid_measure = op
 
-                if isinstance(op, MidMeasureMP) and op in bit_map:
-                    cur_layer_mid_measure = op
+            # Adjust width for wire filler on unused wires
+            max_label_len = max(len(s) for s in layer_str)
+            for w in range(n_wires):
+                layer_str[w] = layer_str[w].ljust(max_label_len, w_filler)
 
             # Adjust width for bit filler on unused bits
             for b in range(n_bits):
