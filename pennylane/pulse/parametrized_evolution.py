@@ -474,7 +474,6 @@ class ParametrizedEvolution(Operation):
         )
 
     def _flatten(self):
-        """Unpacking the ParametrizedEvolution pytree into a flat tuple"""
 
         data = self.data
         metadata = (tuple(self.t), self.H, self.hyperparameters, self.odeint_kwargs)
