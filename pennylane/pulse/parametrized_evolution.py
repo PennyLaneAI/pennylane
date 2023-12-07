@@ -26,7 +26,6 @@ import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.typing import TensorLike
 from pennylane.ops import functions
-from pennylane.pytrees import register_pytree
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 from .hardware_hamiltonian import HardwareHamiltonian
