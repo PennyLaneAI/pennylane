@@ -20,6 +20,7 @@ This file contains the ``ParametrizedEvolution`` operator.
 
 from typing import List, Union, Sequence
 import warnings
+from collections.abc import Iterable
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
@@ -472,6 +473,53 @@ class ParametrizedEvolution(Operation):
                 str(self.odeint_kwargs.values()),
             )
         )
+    
+    def _flatten(self):
+        """Unpacking the ParametrizedEvolution pytree into a flat tuple"""
+
+        data = self.data
+        metadata = (tuple(self.t), self.H, self.hyperparameters, self.odeint_kwargs)
+
+        return data, metadata
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        params = data
+        t, H, hyperparamameters, odeint_kwargs = metadata
+        return cls(
+            H,
+            params,
+            t,
+            complementary=hyperparamameters["complementary"],
+            return_intermediate=hyperparamameters["return_intermediate"],
+            **odeint_kwargs,
+        )
+    
+    def __eq__(self, other):
+        """Check equality between two ParametrizedEvolution operators"""
+        if self.t is None:
+            same_times = other.t is None
+        else:
+            same_times = all(self.t == other.t)
+        if self.data is None:
+            same_data = other.data is None
+        elif isinstance(self.data, tuple) and isinstance(other.data, tuple):
+            same_data = self.data == other.data
+        elif isinstance(self.data, Iterable) and isinstance(other.data, Iterable):
+            same_data = all(self.data == other.data)
+        else:
+            same_data = False
+        return all(
+            [
+                str(self.name) == str(other.name),
+                self.wires == other.wires,
+                self.hyperparameters == other.hyperparameters,
+                self.H == other.H,
+                self.odeint_kwargs == other.odeint_kwargs,
+                same_times,
+                same_data
+            ]
+            )
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
@@ -571,26 +619,6 @@ class ParametrizedEvolution(Operation):
 
         p = ",".join(s for s in param_strings)
         return f"{op_label}\n(p=[{p}], t={self.t})"
-
-    def _flatten(self):
-        hamiltonian = self.H
-        params = self.data
-        t = self.t
-        hyper_params = self.hyperparameters
-        odeint_kwargs = self.odeint_kwargs
-
-        return (hamiltonian, params, t, hyper_params, odeint_kwargs)
-
-    @classmethod
-    def _unflatten(cls, hamiltonian, params, t, hyper_params, odeint_kwargs):
-        return cls(
-            hamiltonian,
-            params,
-            t,
-            complementary=hyper_params["complementary"],
-            return_intermediate=hyper_params["return_intermediate"],
-            **odeint_kwargs,
-        )
 
 
 @functions.bind_new_parameters.register

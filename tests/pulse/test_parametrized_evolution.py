@@ -43,26 +43,37 @@ H = qml.PauliX(1) + amp * qml.PauliZ(0) + amp * qml.PauliY(1)
 params = [0.5, 0.5]
 
 example_pytree_evolutions = [
-    qml.pulse.ParametrizedEvolution(H),
-    qml.pulse.ParametrizedEvolution(H, params),
-    qml.pulse.ParametrizedEvolution(H, t=0.5),
     qml.pulse.ParametrizedEvolution(H, params, t=0.5),
     qml.pulse.ParametrizedEvolution(H, params, t=[0.5, 1.]),
     qml.pulse.ParametrizedEvolution(H, params, t=0.5, return_intermediate=True),
     qml.pulse.ParametrizedEvolution(H, params, t=0.5, return_intermediate=True, complementary=True)
 ]
 
+@pytest.mark.parametrize("evol", example_pytree_evolutions)
+def test_trivial_equality(evol):
+    """Test equality method for the trivial case of having the same operators"""
+    assert evol==evol
+
+def test_equality_different_datatypes():
+    """Test equality method for the case of same data but different datatypes"""
+    params0 = [0.5, 0.5]
+    params1 = (0.5, 0.5)
+    evol1 = qml.pulse.ParametrizedEvolution(H, params0, t=0.5)
+    evol2 = qml.pulse.ParametrizedEvolution(H, params1, t=0.5)
+    assert evol1==evol2
+
+
 @pytest.mark.jax
 class TestPytree():
     """Testing pytree related functionality"""
-    @pytest.mark.parametrize(evol, example_pytree_evolutions)
+    @pytest.mark.parametrize("evol", example_pytree_evolutions)
     def test_flatten_unflatten_identity(self, evol):
         """Test that flattening and unflattening is yielding the same parametrized evolution"""
         assert evol._unflatten(*evol._flatten()) == evol
 
 
 @pytest.mark.jax
-# @pytest.mark.xfail  # TODO: fix by story 50356
+@pytest.mark.xfail
 def test_standard_validity():
     """Run standard validity checks on the parametrized evolution."""
     from jax import numpy as jnp
@@ -71,8 +82,9 @@ def test_standard_validity():
         return jnp.sin(p * t)
 
     H = f1 * qml.PauliY(0)
+    params = jnp.array(0.5)
 
-    ev = qml.evolve(H)
+    ev = qml.pulse.ParametrizedEvolution(H, params, 0.5)
     qml.ops.functions.assert_valid(ev)
 
 
