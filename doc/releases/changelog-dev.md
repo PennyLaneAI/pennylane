@@ -4,16 +4,10 @@
 
 <h3>New features since last release</h3>
 
-<h4>Decompose circuits into the Clifford+T gateset 🧩</h4>
-
-* `qml.transforms.decompositions.sk_decomposition` method implements the Solovay-Kitaev algorithm for
-  approximately decomposing any single-qubit operation to Clifford+T basis.
-  [(#4801)](https://github.com/PennyLaneAI/pennylane/pull/4801)
-
 <h4>Drawing and statistics for mid-circuit measurements 🎨</h4>
 
-* Mid-circuit measurements can now be visualized with the text-based ``qml.draw()`` and the 
-  graphical ``qml.draw_mpl()``.
+* Mid-circuit measurements can now be visualized with the text-based `qml.draw()` and the 
+  graphical `qml.draw_mpl()`.
   [(#4775)](https://github.com/PennyLaneAI/pennylane/pull/4775)
   [(#4803)](https://github.com/PennyLaneAI/pennylane/pull/4803)
   [(#4832)](https://github.com/PennyLaneAI/pennylane/pull/4832)
@@ -160,6 +154,43 @@
 * `qml.ctrl` can be used with the `qml.qjit` decorator.
   [(#4726)](https://github.com/PennyLaneAI/pennylane/pull/4726)
 
+<h4>Decompose circuits into the Clifford+T gateset 🧩</h4>
+
+* `qml.transforms.decompositions.sk_decomposition` method implements the Solovay-Kitaev algorithm for
+  approximately decomposing any single-qubit operation to Clifford+T basis.
+  [(#4801)](https://github.com/PennyLaneAI/pennylane/pull/4801)
+
+* The `qml.clifford_t_decomposition()` transform provides an approximate breakdown of an input
+  circuit into the [Clifford+T](https://en.wikipedia.org/wiki/Clifford_gates) gateset. Behind the
+  scenes, this decomposition is enacted via the `sk_decomposition()` function using the
+  Solovay-Kitaev algorithm.
+
+  Given a total circuit error `epsilon=0.001`, the following circuit can be decomposed:
+
+  ```python
+  import pennylane as qml
+
+  with qml.tape.QuantumTape() as tape:
+      qml.RX(1.1, 0)
+      qml.CNOT([0, 1])
+      qml.RY(2.2, 0)
+
+  (tape,), postproc = qml.clifford_t_decomposition(tape, 0.001)
+  ```
+
+  The resource requirements of this circuit can also be evaluated.
+
+  ```pycon
+  wires: 2
+  gates: 49770
+  depth: 49770
+  shots: Shots(total=None)
+  gate_types:
+  {'Adjoint(T)': 13647, 'Hadamard': 22468, 'T': 13651, 'CNOT': 1, 'Adjoint(S)': 1, 'S': 1, 'GlobalPhase': 1}
+  gate_sizes:
+  {1: 49768, 2: 1, 0: 1}
+  ```
+
 <h4>Use an iterative approach for quantum phase estimation 🔄</h4>
 
 * Iterative Quantum Phase Estimation is now available from `qml.iterative_qpe`.
@@ -212,7 +243,7 @@
 * `TRX`, `TRY`, and `TRZ` are now differentiable via backprop on `default.qutrit`
   [(#4790)](https://github.com/PennyLaneAI/pennylane/pull/4790)
 
-* The function ``qml.equal`` now supports ``ControlledSequence`` operators.
+* The function `qml.equal` now supports `ControlledSequence` operators.
   [(#4829)](https://github.com/PennyLaneAI/pennylane/pull/4829)
 
 * XZX decomposition is added to the list of supported single-qubit unitary decompositions.
@@ -275,7 +306,7 @@
   custom rule for `apply_operation`. Also, the matrix representation of `GroverOperator` runs faster now.
   [(#4666)](https://github.com/PennyLaneAI/pennylane/pull/4666)
 
-* Add a new repository CI/CD pipeline to run benchmarks and plot graphs comparing with a fixed reference. This pipeline will run on a schedule and can be activated on a PR with the label ``ci:run_benchmarks``.
+* Add a new repository CI/CD pipeline to run benchmarks and plot graphs comparing with a fixed reference. This pipeline will run on a schedule and can be activated on a PR with the label `ci:run_benchmarks`.
   [(#4741)](https://github.com/PennyLaneAI/pennylane/pull/4741)
 
 * Expand the benchmarks CI/CD pipeline to export all benchmark data in a single JSON file and a CSV file with runtimes. This includes all references and local benchmarks.
@@ -393,7 +424,7 @@
   [(#4899)](https://github.com/PennyLaneAI/pennylane/pull/4899)
 
 * Fix a bug where trainable parameters in the post-processing of finite diff were incorrect for Jax when applying
-  the transform directly on a ``QNode``.
+  the transform directly on a `QNode`.
   [(#4879)](https://github.com/PennyLaneAI/pennylane/pull/4879)
 
 * `qml.grad` and `qml.jacobian` now explicitly raise errors if trainable parameters are integers.
