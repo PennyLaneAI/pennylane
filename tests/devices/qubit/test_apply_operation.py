@@ -602,8 +602,7 @@ class TestSnapshot:
         assert qml.math.allclose(debugger.snapshots[tag], qml.math.flatten(initial_state))
 
     def test_measurement(self, ml_framework):
-        """Test an arbitrary measurement is recorded properly when
-        a snapshot is created"""
+        """Test that an arbitrary measurement is recorded properly when a snapshot is created"""
         initial_state = np.array(
             [
                 [0.04624539 + 0.3895457j, 0.22399401 + 0.53870339j],
@@ -611,24 +610,19 @@ class TestSnapshot:
             ]
         )
         initial_state = qml.math.asarray(initial_state, like=ml_framework)
+        measurement = qml.expval(qml.PauliZ(0))
 
         debugger = self.Debugger()
-        tag = "abcd"
         new_state = apply_operation(
-            qml.Snapshot(tag, measurement=qml.expval(qml.PauliZ(0))),
-            initial_state,
-            debugger=debugger,
+            qml.Snapshot(measurement=measurement), initial_state, debugger=debugger
         )
 
         assert new_state.shape == initial_state.shape
         assert qml.math.allclose(new_state, initial_state)
 
-        assert list(debugger.snapshots.keys()) == [tag]
-        assert debugger.snapshots[tag].shape == ()
-        assert qml.math.allclose(
-            debugger.snapshots[tag],
-            qml.devices.qubit.measure(qml.expval(qml.PauliZ(0)), initial_state),
-        )
+        assert list(debugger.snapshots.keys()) == [0]
+        assert debugger.snapshots[0].shape == ()
+        assert debugger.snapshots[0] == qml.devices.qubit.measure(measurement, initial_state)
 
 
 @pytest.mark.parametrize("method", methods)
