@@ -174,8 +174,8 @@ class TestProcessSamples:
         assert result[0] == np.count_nonzero(samples[:, 0] == 0)
         assert result[1] == np.count_nonzero(samples[:, 0] == 1)
 
-    def test_counts_shape_composed_measurement_value(self):
-        """Test that the counts output is correct for composed mid-circuit measurement
+    def test_counts_shape_composite_measurement_value(self):
+        """Test that the counts output is correct for composite mid-circuit measurement
         values."""
         shots = 1000
         samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int64)
@@ -266,6 +266,56 @@ class TestProcessSamples:
         assert set(result2.keys()) == {0, 1}
         assert result2[0] == shots
         assert result2[1] == 0
+
+    def test_counts_all_outcomes_composite_measurement_value(self):
+        """Test that the counts output is correct when all_outcomes is passed
+        for composite mid-circuit measurement values."""
+        shots = 1000
+        samples = np.zeros((shots, 2)).astype(np.int64)
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+        mv = (m0 - 1) * 2 * (m1 + 1) - 2  # 00 equates to -4
+
+        result1 = qml.counts(mv, all_outcomes=False).process_samples(samples, wire_order=[0, 1])
+
+        assert len(result1) == 1
+        assert set(result1.keys()) == {-4}
+        assert result1[-4] == shots
+
+        result2 = qml.counts(mv, all_outcomes=True).process_samples(samples, wire_order=[0, 1])
+
+        # Possible outcomes are -4, -6, -2
+        assert len(result2) == 3
+        assert set(result2.keys()) == {-6, -4, -2}
+        assert result2[-4] == shots
+        assert result2[-6] == result2[-2] == 0
+
+    def test_counts_all_outcomes_measurement_value_list(self):
+        """Test that the counts output is correct when all_outcomes is passed
+        for a list of mid-circuit measurement values."""
+        shots = 1000
+        samples = np.zeros((shots, 2)).astype(np.int64)
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+
+        result1 = qml.counts([m0, m1], all_outcomes=False).process_samples(
+            samples, wire_order=[0, 1]
+        )
+
+        assert len(result1) == 1
+        assert set(result1.keys()) == {"00"}
+        assert result1["00"] == shots
+
+        result2 = qml.counts([m0, m1], all_outcomes=True).process_samples(
+            samples, wire_order=[0, 1]
+        )
+
+        assert len(result2) == 4
+        assert set(result2.keys()) == {"00", "01", "10", "11"}
+        assert result2["00"] == shots
+        assert result2["01"] == 0
+        assert result2["10"] == 0
+        assert result2["11"] == 0
 
 
 class TestCountsIntegration:

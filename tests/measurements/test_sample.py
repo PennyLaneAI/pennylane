@@ -175,9 +175,9 @@ class TestSample:
 
     @pytest.mark.parametrize("shots", [5, [5, 5]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 2))
-    def test_observable_is_composed_measurement_value(self, shots, phi):
+    def test_observable_is_composite_measurement_value(self, shots, phi):
         """Test that samples for mid-circuit measurement values
-        are correct for a composed measurement value."""
+        are correct for a composite measurement value."""
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.qnode(dev)

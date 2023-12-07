@@ -94,11 +94,11 @@ class TestVar:
 
     @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
-    def test_observable_is_composed_measurement_value(
+    def test_observable_is_composite_measurement_value(
         self, shots, phi, tol, tol_stochastic
     ):  # pylint: disable=too-many-arguments
         """Test that expectation values for mid-circuit measurement values
-        are correct for a composed measurement value."""
+        are correct for a composite measurement value."""
         dev = qml.device("default.qubit")
 
         @qml.qnode(dev)

@@ -629,14 +629,18 @@ class QubitDevice(Device):
                 result = self.var(obs, shot_range=shot_range, bin_size=bin_size)
 
             elif isinstance(m, SampleMP):
-                samples = self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=False)
+                sample_input = m if m.mv is not None else obs
+                samples = self.sample(
+                    sample_input, shot_range=shot_range, bin_size=bin_size, counts=False
+                )
                 result = self._asarray(qml.math.squeeze(samples))
 
             elif isinstance(m, CountsMP):
                 result = self.sample(m, shot_range=shot_range, bin_size=bin_size, counts=True)
 
             elif isinstance(m, ProbabilityMP):
-                result = self.probability(wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
+                wires = obs.wires if not isinstance(obs, list) else m.wires
+                result = self.probability(wires=wires, shot_range=shot_range, bin_size=bin_size)
 
             elif isinstance(m, StateMP):
                 if len(measurements) > 1:
@@ -1484,7 +1488,8 @@ class QubitDevice(Device):
             else:
                 no_observable_provided = True
 
-        # translate to wire labels used by device
+        # translate to wire labels used by device. observable is list when measuring sequence
+        # of multiple MeasurementValues
         device_wires = self.map_wires(observable.wires)
         name = observable.name
         # Select the samples from self._samples that correspond to ``shot_range`` if provided

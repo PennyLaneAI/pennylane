@@ -153,7 +153,8 @@ class MeasurementProcess(ABC):
         id: Optional[str] = None,
     ):
         if getattr(obs, "name", None) == "MeasurementValue" or isinstance(obs, Sequence):
-            self.mv = obs
+            # Cast sequence of measurement values to list
+            self.mv = obs if getattr(obs, "name", None) == "MeasurementValue" else list(obs)
             self.obs = None
         else:
             self.obs = obs
