@@ -221,7 +221,6 @@ def _(fermi_operator: FermiWord, n_qubits, ps=False, wire_map=None, tol=None):
     wires = list(fermi_operator.wires) or [0]
     identity_wire = wires[0]
 
-        
     if len(fermi_operator) == 0:
         qubit_operator = PauliSentence({PauliWord({}): 1.0})
 
@@ -232,8 +231,7 @@ def _(fermi_operator: FermiWord, n_qubits, ps=False, wire_map=None, tol=None):
         for item in fermi_operator.items():
             (_, wire), sign = item
             if wire >= n_qubits:
-                raise ValueError(f"Creating/annihilating a particle  on qubit number {wire} for a {n_qubits} qubit system")
-                
+                raise ValueError(f"Creating/annihilating a particle  on qubit number {wire} for a {n_qubits} qubit system")                
             if wire==0:
                 x_string = dict(zip(range(wire+1, n_qubits), ["X"] * (n_qubits-wire)))
                 qubit_operator *= PauliSentence(
