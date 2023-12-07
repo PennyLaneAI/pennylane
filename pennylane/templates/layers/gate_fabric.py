@@ -134,22 +134,22 @@ class GateFabric(Operation):
                 conv = np.abs(energy[-1] - prev_energy)
 
                 if n % 2 == 0:
-                    print(f"Step = {n},  Energy = {energy[-1]:.8f} Ha")
+                    print(f"Step = {n},  Energy = {energy[-1]:.8f} Eh")
 
                 if conv <= conv_tol:
                     break
 
-            print("\n" f"Final value of the ground-state energy = {energy[-1]:.8f} Ha")
+            print("\n" f"Final value of the ground-state energy = {energy[-1]:.8f} Eh")
             print("\n" f"Optimal value of the circuit parameters = {angle[-1]}")
 
         .. code-block:: none
 
-            Step = 0,  Energy = -0.87007254 Ha
-            Step = 2,  Energy = -1.13107530 Ha
-            Step = 4,  Energy = -1.13611971 Ha
-            Step = 6,  Energy = -1.13618810 Ha
+            Step = 0,  Energy = -0.87007254 Eh
+            Step = 2,  Energy = -1.13107530 Eh
+            Step = 4,  Energy = -1.13611971 Eh
+            Step = 6,  Energy = -1.13618810 Eh
 
-            Final value of the ground-state energy = -1.13618903 Ha
+            Final value of the ground-state energy = -1.13618903 Eh
 
             Optimal value of the circuit parameters = [[[ 0.60328427  0.41850407]]
             [[ 0.85581129 -0.24522642]]]

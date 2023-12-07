@@ -185,6 +185,9 @@
 * `qml.equal` now supports comparison of `QuantumScript` objects
   [#4902](https://github.com/PennyLaneAI/pennylane/pull/4902)
 
+* Changed notation of Hartree energy from Ha to the IUPAC standard Eh
+  [#4925](https://github.com/PennyLaneAI/pennylane/pull/4925)
+
 <h4>Better support for batching</h4>
 
 * `default.qubit` now can evolve already batched states with `ParametrizedEvolution`

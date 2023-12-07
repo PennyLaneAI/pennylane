@@ -138,7 +138,7 @@ Running this optimization, we get the following output in atomic units:
     Step: 15, Energy: -1.140321384816611, Maximum Absolute Force: 0.0004138319900744425
     Step: 20, Energy: -1.1403680839339787, Maximum Absolute Force: 8.223248376348913e-06
 
-Note that the computed energy is lower than the Full-CI energy, -1.1373060483 Ha, obtained without
+Note that the computed energy is lower than the Full-CI energy, -1.1373060483 Eh, obtained without
 optimizing the basis set parameters.
 
 The components of the HF solver can also be differentiated individually. For instance, the overlap

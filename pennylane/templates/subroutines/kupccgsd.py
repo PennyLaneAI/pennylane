@@ -162,23 +162,23 @@ class kUpCCGSD(Operation):
                 angle.append(weights)
                 conv = np.abs(energy[-1] - prev_energy)
                 if n % 4 == 0:
-                    print(f"Step = {n},  Energy = {energy[-1]:.8f} Ha")
+                    print(f"Step = {n},  Energy = {energy[-1]:.8f} Eh")
                 if conv <= conv_tol:
                     break
 
-            print("\n" f"Final value of the ground-state energy = {energy[-1]:.8f} Ha")
+            print("\n" f"Final value of the ground-state energy = {energy[-1]:.8f} Eh")
             print("\n" f"Optimal value of the circuit parameters = {angle[-1]}")
 
         .. code-block:: none
 
-            Step = 0,  Energy = -1.08949110 Ha
-            Step = 4,  Energy = -1.13370605 Ha
-            Step = 8,  Energy = -1.13581648 Ha
-            Step = 12,  Energy = -1.13613171 Ha
-            Step = 16,  Energy = -1.13618030 Ha
-            Step = 20,  Energy = -1.13618779 Ha
+            Step = 0,  Energy = -1.08949110 Eh
+            Step = 4,  Energy = -1.13370605 Eh
+            Step = 8,  Energy = -1.13581648 Eh
+            Step = 12,  Energy = -1.13613171 Eh
+            Step = 16,  Energy = -1.13618030 Eh
+            Step = 20,  Energy = -1.13618779 Eh
 
-            Final value of the ground-state energy = -1.13618779 Ha
+            Final value of the ground-state energy = -1.13618779 Eh
 
             Optimal value of the circuit parameters = [[0.97879636 0.46093583 0.98108824
             0.45864352 0.65531446 0.44558289]]
