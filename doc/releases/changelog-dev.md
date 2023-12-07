@@ -52,7 +52,7 @@
   >>> print(qml.draw_mpl(circuit)())
   ```
   
-  <img src="https://docs.pennylane.ai/en/stable/_images/cosine_window.png" width=50%/>
+  <img src="https://github.com/PennyLaneAI/pennylane/blob/v0.34_release_notes_2/doc/_static/mid-circuit-measurement.png?raw=true" width=70%/>
 
 <h4>Catalyst is seamlessly integrated with PennyLane ⚗️</h4>
 
