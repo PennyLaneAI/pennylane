@@ -516,7 +516,7 @@ class Operator(abc.ABC):
 
     .. code-block:: python
 
-        import numpy as np
+        from pennylane import numpy as np
 
         dev = qml.device("default.qubit", wires=["q1", "q2", "q3"])
 
