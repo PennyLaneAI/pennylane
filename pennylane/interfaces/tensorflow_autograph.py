@@ -139,6 +139,13 @@ def execute(
         # flatten the results
         res = _flatten_nested_list(res)
 
+        for tape in tapes:
+            for m in tape.measurements:
+                if m.numeric_type == complex:
+                    raise NotImplementedError(
+                        f"Tensorflow autograph only supports real valued measurements. Got {m}"
+                    )
+
         for i, r in enumerate(res):
             # convert output to TensorFlow tensors
             res[i] = _to_tensors(r)

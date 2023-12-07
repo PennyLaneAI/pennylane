@@ -244,6 +244,14 @@ class TestTensorflowExecuteIntegration:
         params = tf.Variable([0.1, 0.2])
         x, y = params
 
+        if (
+            execute_kwargs.get("interface", "") == "tf-autograph"
+            and execute_kwargs.get("gradient_fn", "") == "adjoint"
+        ):
+            with pytest.raises(NotImplementedError):
+                with tf.GradientTape() as tape:
+                    res = cost(params)
+            return
         with tf.GradientTape() as tape:
             res = cost(params)
         expected = 2 + tf.cos(0.5) + tf.cos(x) * tf.cos(y)
@@ -505,6 +513,15 @@ class TestTensorflowExecuteIntegration:
         x = tf.Variable(0.543)
         y = tf.Variable(-0.654)
 
+        if (
+            execute_kwargs.get("interface", "") == "tf-autograph"
+            and execute_kwargs.get("gradient_fn", "") == "adjoint"
+        ):
+            with pytest.raises(NotImplementedError):
+                with tf.GradientTape() as tape:
+                    cost_res = cost(x, y)
+            return
+
         with tf.GradientTape() as tape:
             cost_res = cost(x, y)
 
@@ -558,6 +575,15 @@ class TestTensorflowExecuteIntegration:
 
         x = tf.Variable(0.543)
         y = tf.Variable(-0.654)
+
+        if (
+            execute_kwargs.get("interface", "") == "tf-autograph"
+            and execute_kwargs.get("gradient_fn", "") == "adjoint"
+        ):
+            with pytest.raises(NotImplementedError):
+                with tf.GradientTape() as tape:
+                    cost_res = cost(x, y)
+            return
 
         with tf.GradientTape() as tape:
             cost_res = cost(x, y)

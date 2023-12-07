@@ -43,7 +43,6 @@ def _adjoint_jacobian_state(tape: QuantumTape):
 
     param_idx = has_state_prep
     for op in tape.operations[has_state_prep:]:
-
         jacobian = [apply_operation(op, jac) for jac in jacobian]
 
         if op.num_params == 1:

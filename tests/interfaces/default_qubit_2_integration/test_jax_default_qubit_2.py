@@ -273,8 +273,6 @@ class TestJaxExecuteIntegration:
             return out
 
         params = jnp.array([0.1, 0.2])
-        if execute_kwargs.get("gradient_fn", "") == "adjoint":
-            params = params + 0j
 
         x, y = params
 
