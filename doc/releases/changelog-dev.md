@@ -24,6 +24,8 @@
   conditioning are supported.
 
   ```python
+  import pennylane as qml
+
   def circuit():
       m0 = qml.measure(0, reset=True)
       m1 = qml.measure(1, postselect=1)
@@ -36,13 +38,21 @@
   The text-based drawer outputs:
 
   ```pycon
-  >>> print(qml.draw(f)())
+  >>> print(qml.draw(circuit)())
   0: ──┤↗│  │0⟩────────S───────T────┤  
   1: ───║────────┤↗₁├──║──┤↗├──║──X─┤  
         ╚═════════║════╬═══║═══╣  ║    
                   ╚════╩═══║═══╝  ║    
                            ╚══════╝    
   ```
+  
+  The graphical drawer outputs:
+
+  ```pycon
+  >>> print(qml.draw_mpl(circuit)())
+  ```
+  
+  <img src="https://docs.pennylane.ai/en/stable/_images/cosine_window.png" width=50%/>
 
 <h4>Catalyst is seamlessly integrated with PennyLane ⚗️</h4>
 
