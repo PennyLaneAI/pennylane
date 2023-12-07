@@ -37,22 +37,25 @@ class MyOp(qml.RX):  # pylint: disable=too-few-public-methods
 
 
 def amp(p, t):
-    return p*t
+    return p * t
+
 
 H = qml.PauliX(1) + amp * qml.PauliZ(0) + amp * qml.PauliY(1)
 params = [0.5, 0.5]
 
 example_pytree_evolutions = [
     qml.pulse.ParametrizedEvolution(H, params, t=0.5),
-    qml.pulse.ParametrizedEvolution(H, params, t=[0.5, 1.]),
+    qml.pulse.ParametrizedEvolution(H, params, t=[0.5, 1.0]),
     qml.pulse.ParametrizedEvolution(H, params, t=0.5, return_intermediate=True),
-    qml.pulse.ParametrizedEvolution(H, params, t=0.5, return_intermediate=True, complementary=True)
+    qml.pulse.ParametrizedEvolution(H, params, t=0.5, return_intermediate=True, complementary=True),
 ]
+
 
 @pytest.mark.parametrize("evol", example_pytree_evolutions)
 def test_trivial_equality(evol):
     """Test equality method for the trivial case of having the same operators"""
-    assert evol==evol
+    assert evol == evol
+
 
 def test_equality_different_datatypes():
     """Test equality method for the case of same data but different datatypes"""
@@ -60,12 +63,13 @@ def test_equality_different_datatypes():
     params1 = (0.5, 0.5)
     evol1 = qml.pulse.ParametrizedEvolution(H, params0, t=0.5)
     evol2 = qml.pulse.ParametrizedEvolution(H, params1, t=0.5)
-    assert evol1==evol2
+    assert evol1 == evol2
 
 
 @pytest.mark.jax
-class TestPytree():
+class TestPytree:
     """Testing pytree related functionality"""
+
     @pytest.mark.parametrize("evol", example_pytree_evolutions)
     def test_flatten_unflatten_identity(self, evol):
         """Test that flattening and unflattening is yielding the same parametrized evolution"""

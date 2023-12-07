@@ -473,7 +473,7 @@ class ParametrizedEvolution(Operation):
                 str(self.odeint_kwargs.values()),
             )
         )
-    
+
     def _flatten(self):
         """Unpacking the ParametrizedEvolution pytree into a flat tuple"""
 
@@ -494,7 +494,7 @@ class ParametrizedEvolution(Operation):
             return_intermediate=hyperparamameters["return_intermediate"],
             **odeint_kwargs,
         )
-    
+
     def __eq__(self, other):
         """Check equality between two ParametrizedEvolution operators"""
         if self.t is None:
@@ -517,9 +517,9 @@ class ParametrizedEvolution(Operation):
                 self.H == other.H,
                 self.odeint_kwargs == other.odeint_kwargs,
                 same_times,
-                same_data
+                same_data,
             ]
-            )
+        )
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
