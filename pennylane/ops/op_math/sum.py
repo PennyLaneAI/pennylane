@@ -168,8 +168,8 @@ class Sum(CompositeOp):
     @property
     def is_hermitian(self):
         """If all of the terms in the sum are hermitian, then the Sum is hermitian."""
-        if self._pauli_rep is not None:
-            coeffs_list = list(self._pauli_rep.values())
+        if self.pauli_rep is not None:
+            coeffs_list = list(self.pauli_rep.values())
             if not math.is_abstract(coeffs_list[0]):
                 return not any(math.iscomplex(c) for c in coeffs_list)
 
@@ -221,8 +221,8 @@ class Sum(CompositeOp):
         return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
 
     def sparse_matrix(self, wire_order=None):
-        if self._pauli_rep:  # Get the sparse matrix from the PauliSentence representation
-            return self._pauli_rep.to_mat(wire_order=wire_order or self.wires, format="csr")
+        if self.pauli_rep:  # Get the sparse matrix from the PauliSentence representation
+            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format="csr")
 
         gen = ((op.sparse_matrix(), op.wires) for op in self)
 
@@ -252,11 +252,7 @@ class Sum(CompositeOp):
 
     def _build_pauli_rep(self):
         """PauliSentence representation of the Sum of operations."""
-        if all(
-            operand_pauli_reps := [
-                op._pauli_rep for op in self.operands  # pylint: disable=protected-access
-            ]
-        ):
+        if all(operand_pauli_reps := [op.pauli_rep for op in self.operands]):
             new_rep = qml.pauli.PauliSentence()
             for operand_rep in operand_pauli_reps:
                 for pw, coeff in operand_rep.items():
@@ -295,7 +291,7 @@ class Sum(CompositeOp):
 
     def simplify(self, cutoff=1.0e-12) -> "Sum":  # pylint: disable=arguments-differ
         # try using pauli_rep:
-        if pr := self._pauli_rep:
+        if pr := self.pauli_rep:
             pr.simplify()
             return pr.operation(wire_order=self.wires)
 

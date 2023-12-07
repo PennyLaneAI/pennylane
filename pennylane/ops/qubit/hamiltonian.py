@@ -228,7 +228,7 @@ class Hamiltonian(Observable):
         # while H.coeffs is the original tensor
         super().__init__(*coeffs_flat, wires=self._wires, id=id)
 
-    def _check_batching(self, params):
+    def _check_batching(self):
         """Override for Hamiltonian, batching is not yet supported."""
 
     def label(self, decimals=None, base_label=None, cache=None):
