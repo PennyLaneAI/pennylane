@@ -36,8 +36,33 @@ class MyOp(qml.RX):  # pylint: disable=too-few-public-methods
     has_diagonalizing_gates = False
 
 
+def amp(p, t):
+    return p*t
+
+H = qml.PauliX(1) + amp * qml.PauliZ(0) + amp * qml.PauliY(1)
+params = [0.5, 0.5]
+
+example_pytree_evolutions = [
+    qml.pulse.ParametrizedEvolution(H),
+    qml.pulse.ParametrizedEvolution(H, params),
+    qml.pulse.ParametrizedEvolution(H, t=0.5),
+    qml.pulse.ParametrizedEvolution(H, params, t=0.5),
+    qml.pulse.ParametrizedEvolution(H, params, t=[0.5, 1.]),
+    qml.pulse.ParametrizedEvolution(H, params, t=0.5, return_intermediate=True),
+    qml.pulse.ParametrizedEvolution(H, params, t=0.5, return_intermediate=True, complementary=True)
+]
+
 @pytest.mark.jax
-@pytest.mark.xfail  # TODO: fix by story 50356
+class TestPytree():
+    """Testing pytree related functionality"""
+    @pytest.mark.parametrize(evol, example_pytree_evolutions)
+    def test_flatten_unflatten_identity(self, evol):
+        """Test that flattening and unflattening is yielding the same parametrized evolution"""
+        assert evol._unflatten(*evol._flatten()) == evol
+
+
+@pytest.mark.jax
+# @pytest.mark.xfail  # TODO: fix by story 50356
 def test_standard_validity():
     """Run standard validity checks on the parametrized evolution."""
     from jax import numpy as jnp

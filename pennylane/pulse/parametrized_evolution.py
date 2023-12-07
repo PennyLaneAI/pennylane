@@ -576,7 +576,7 @@ class ParametrizedEvolution(Operation):
         hamiltonian = self.H
         params = self.data
         t = self.t
-        hyper_params = self.hyper_parameters
+        hyper_params = self.hyperparameters
         odeint_kwargs = self.odeint_kwargs
 
         return (hamiltonian, params, t, hyper_params, odeint_kwargs)
