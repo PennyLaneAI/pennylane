@@ -466,7 +466,7 @@ Collecting statistics for sequences of mid-circuit measurements is supported wit
 .. warning::
 
     When collecting statistics for a list of mid-circuit measurements, values manipulated using
-    arithmetic operators should not be used. If done, correct behaviour is not guaranteed.
+    arithmetic operators should not be used as this behaviour is not supported.
 
 Changing the number of shots
 ----------------------------
