@@ -149,9 +149,10 @@ def _(fermi_operator: FermiSentence, ps=False, wire_map=None, tol=None):
 
     return qubit_operator
 
+
 def parity_transform(
     fermi_operator: (Union[FermiWord, FermiSentence]),
-        n_qubits: int,
+    n_qubits: int,
     ps: bool = False,
     wire_map: dict = None,
     tol: float = None,
@@ -231,10 +232,12 @@ def _(fermi_operator: FermiWord, n_qubits, ps=False, wire_map=None, tol=None):
         for item in fermi_operator.items():
             (_, wire), sign = item
             if wire >= n_qubits:
-                raise ValueError(f"Creating/annihilating a particle  on qubit number {wire} for a {n_qubits} qubit system")
+                raise ValueError(
+                    f"Creating/annihilating a particle  on qubit number {wire} for a {n_qubits} qubit system"
+                )
 
-            if wire==0:
-                x_string = dict(zip(range(wire+1, n_qubits), ["X"] * (n_qubits-wire)))
+            if wire == 0:
+                x_string = dict(zip(range(wire + 1, n_qubits), ["X"] * (n_qubits - wire)))
                 qubit_operator *= PauliSentence(
                     {
                         PauliWord({**{wire: "X"}, **x_string}): 0.5,
@@ -242,10 +245,10 @@ def _(fermi_operator: FermiWord, n_qubits, ps=False, wire_map=None, tol=None):
                     }
                 )
             else:
-                x_string = dict(zip(range(wire+1, n_qubits), ["X"] * (n_qubits-wire)))
+                x_string = dict(zip(range(wire + 1, n_qubits), ["X"] * (n_qubits - wire)))
                 qubit_operator *= PauliSentence(
                     {
-                        PauliWord({**{wire-1:"Z"}, **{wire: "X"}, **x_string}): 0.5,
+                        PauliWord({**{wire - 1: "Z"}, **{wire: "X"}, **x_string}): 0.5,
                         PauliWord({**{wire: "Y"}, **x_string}): coeffs[sign],
                     }
                 )
