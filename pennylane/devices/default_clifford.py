@@ -37,7 +37,6 @@ from .execution_config import ExecutionConfig, DefaultExecutionConfig
 from .default_qubit import accepted_sample_measurement
 
 from .preprocess import (
-    decompose,
     validate_observables,
     validate_measurements,
     validate_multiprocessing_workers,
@@ -355,11 +354,12 @@ class DefaultClifford(Device):
 
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(qml.defer_measurements, device=self)
+        transform_program.add_transform(qml.transforms.broadcast_expand)
 
         # TODO: Add the Clifford+T decomposition transform here instead.
         if self._check_clifford:
             transform_program.add_transform(
-                decompose, stopping_condition=operations_stopping_condition, name=self.name
+                qml.transforms.clifford_t_decomposition, epsilon=self._max_error
             )
         transform_program.add_transform(
             validate_measurements, sample_measurements=accepted_sample_measurement, name=self.name
@@ -522,17 +522,7 @@ class DefaultClifford(Device):
         execution_config: Optional[ExecutionConfig] = None,
         circuit: Optional[QuantumTape] = None,
     ) -> bool:
-        """Whether or not this device defines a custom jacobian vector product.
-
-        ``DefaultClifford`` returns trivial derivates everytime.
-
-        Args:
-            execution_config (ExecutionConfig): The configuration of the desired derivative calculation
-            circuit (QuantumTape): An optional circuit to check derivatives support for.
-
-        Returns:
-            bool: Whether or not a derivative can be calculated provided the given information
-        """
+        """Whether or not this device defines a custom jacobian vector product."""
         return False
 
     def supports_vjp(
@@ -540,17 +530,7 @@ class DefaultClifford(Device):
         execution_config: Optional[ExecutionConfig] = None,
         circuit: Optional[QuantumTape] = None,
     ) -> bool:
-        """Whether or not this device defines a custom vector jacobian product.
-
-        ``DefaultClifford`` returns trivial derivates everytime.
-
-        Args:
-            execution_config (ExecutionConfig): A description of the hyperparameters for the desired computation.
-            circuit (None, QuantumTape): A specific circuit to check differentation for.
-
-        Returns:
-            bool: Whether or not a derivative can be calculated provided the given information
-        """
+        """Whether or not this device defines a custom vector jacobian product."""
         return False
 
     # pylint: disable=unidiomatic-typecheck, unused-argument
@@ -601,11 +581,6 @@ class DefaultClifford(Device):
         prep = None
         if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
             prep = circuit[0]
-
-        # initial state is batched only if the state preparation (if it exists) is batched
-        is_state_batched = bool(prep and prep.batch_size is not None)
-        if is_state_batched:
-            raise NotImplementedError("default.clifford doesn't support batching.")
 
         stim_ct = stim.Circuit()
         initial_tableau = stim.Tableau.from_circuit(stim_ct)
