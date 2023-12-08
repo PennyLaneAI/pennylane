@@ -475,13 +475,14 @@ class ParametrizedEvolution(Operation):
 
     def _flatten(self):
         data = self.data
-        keys_and_values = tuple((key, value) for key, value in self.odeint_kwargs.items())
+        odeint_kwargs_tuples = tuple((key, value) for key, value in self.odeint_kwargs.items())
         metadata = (
             tuple(self.t),
             self.H,
             self.hyperparameters["return_intermediate"],
             self.hyperparameters["complementary"],
-            keys_and_values,
+            self.dense,
+            odeint_kwargs_tuples,
         )
 
         return data, metadata
@@ -492,7 +493,7 @@ class ParametrizedEvolution(Operation):
             params = None
         else:
             params = data
-        t, H, return_intermediate, complementary, odeint_kwargs = metadata
+        t, H, return_intermediate, complementary, dense, odeint_kwargs = metadata
 
         return cls(
             H,
@@ -500,6 +501,7 @@ class ParametrizedEvolution(Operation):
             t,
             return_intermediate=return_intermediate,
             complementary=complementary,
+            dense=dense,
             **dict(odeint_kwargs),
         )
 
