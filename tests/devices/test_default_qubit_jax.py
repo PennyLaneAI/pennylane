@@ -585,7 +585,7 @@ class TestQNodeIntegration:
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def circuit():
-            qml.evolve(H, return_intermediate=True)(params=[], t=phi / 2)
+            qml.evolve(H)(params=[], t=phi / 2, return_intermediate=True)
             return qml.expval(qml.PauliZ(0))
 
         @qml.qnode(dev)
@@ -612,7 +612,7 @@ class TestQNodeIntegration:
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def circuit():
-            qml.evolve(H, return_intermediate=True, complementary=True)(params=[], t=phi / 2)
+            qml.evolve(H)(params=[], t=phi / 2, return_intermediate=True, complementary=True)
             return qml.expval(qml.PauliZ(0))
 
         @qml.qnode(dev)
@@ -1154,7 +1154,7 @@ class TestOps:
         """Test applying a ParametrizedEvolution without params or t specified raises an error."""
         dev = DefaultQubitJax(wires=["a"])
         state = jnp.array([[[1.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]], dtype=complex)
-        ev = qml.evolve(ParametrizedHamiltonian([1], [qml.PauliX("a")]))
+        ev = qml.evolve(ParametrizedHamiltonian([1], [qml.PauliX("a")]), t=0.5)
         with pytest.raises(
             ValueError,
             match="The parameters and the time window are required to execute a ParametrizedEvolution",
