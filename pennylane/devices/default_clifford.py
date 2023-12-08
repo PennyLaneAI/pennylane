@@ -292,7 +292,7 @@ class DefaultClifford(Device):
             )
 
         seed = np.random.randint(0, high=10000000) if seed == "global" else seed
-        if qml.math.get_interface(seed) == "jax": # pragma: no cover
+        if qml.math.get_interface(seed) == "jax":  # pragma: no cover
             self._prng_key = seed
             self._rng = np.random.default_rng(None)
         else:
@@ -311,7 +311,7 @@ class DefaultClifford(Device):
 
         """
         updated_values = {}
-        if execution_config.gradient_method == "best": # pragma: no cover
+        if execution_config.gradient_method == "best":  # pragma: no cover
             updated_values["gradient_method"] = None
         if execution_config.use_device_gradient is None:
             updated_values["use_device_gradient"] = True
@@ -429,7 +429,7 @@ class DefaultClifford(Device):
             for i, c in enumerate(circuits):
                 qpu_executions, shots = get_num_shots_and_executions(c)
                 res = np.array(results[i]) if isinstance(results[i], Number) else results[i]
-                if c.shots: # pragma: no cover
+                if c.shots:  # pragma: no cover
                     self.tracker.update(
                         simulations=1,
                         executions=qpu_executions,
