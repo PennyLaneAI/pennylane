@@ -322,7 +322,7 @@
 
 <h4>Other improvements</h4>
 
-* A new attribute called `ops.functions.assert_valid` has been added for checking if an `Operator` class is defined correctly.
+* A new function called `ops.functions.assert_valid` has been added for checking if an `Operator` class is defined correctly.
   [(#4764)](https://github.com/PennyLaneAI/pennylane/pull/4764)
 
 * `GlobalPhase` now decomposes to nothing in case devices do not support global phases.
