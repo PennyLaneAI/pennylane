@@ -78,7 +78,7 @@ def test_state_clifford(circuit, state):
     qn_d = qml.QNode(circuit_fn, dev_d)
 
     if state == "state_vector":
-        st1, st2 = qn_c(), qn_c()
+        st1, st2 = qn_c(), qn_d()
         phase = qml.math.divide(
             st1, st2, out=qml.math.zeros_like(st1, dtype=complex), where=st1 != 0
         )[qml.math.nonzero(np.round(st1, 10))]
@@ -163,8 +163,48 @@ def test_max_worker_clifford():
     (res_q, grad_q) = dev_c.execute_and_compute_derivatives(qscript, config)
     assert qml.math.allclose(res_q, res_t[0]) and qml.math.allclose(grad_q, grad_t[0])
 
+
+def test_tracker():
+    """Test that the tracker works for this device"""
+
+    dev_c = qml.device("default.clifford")
+    dev_d = qml.device("default.qubit")
+
+    assert dev_c.supports_derivatives()
+    assert not dev_c.supports_jvp()
+    assert not dev_c.supports_vjp()
+
+    qscript = qml.tape.QuantumScript(
+        [qml.Hadamard(wires=[0]), qml.CNOT([0, 1])],
+        [qml.expval(qml.PauliZ(0))],
+    )
+    tapes = tuple([qscript])
+
+    with qml.Tracker(dev_c) as tracker:
+        program, config = dev_d.preprocess()
+        tapes, _ = program(tapes)
+        res_d = dev_d.execute(tapes, config)
+        program, config = dev_c.preprocess()
+        tapes, _ = program(tapes)
+        res_c = dev_c.execute(tapes, config)
+        assert np.allclose(res_d, res_c)
+
+        res_q = dev_c.execute(qscript, config)
+        assert np.allclose(res_q, res_c[0])
+
+        grad_t = dev_c.compute_derivatives(tapes, config)
+        grad_q = dev_c.compute_derivatives(qscript, config)
+        assert qml.math.allclose(grad_q, grad_t[0])
+
+        (res_t, grad_t) = dev_c.execute_and_compute_derivatives(tapes, config)
+        (res_q, grad_q) = dev_c.execute_and_compute_derivatives(qscript, config)
+        assert qml.math.allclose(res_q, res_t[0]) and qml.math.allclose(grad_q, grad_t[0])
+
+    assert tracker.totals
+
+
 def test_debugger():
-    """Tests that the debugger works for a simple circuit"""
+    """Test that the debugger works for a simple circuit"""
 
     class Debugger:
         """A dummy debugger class"""
@@ -174,7 +214,7 @@ def test_debugger():
             self.snapshots = {}
 
     dev = qml.device("default.clifford")
-    ops = [qml.Snapshot(), qml.Hadamard(wires=0), qml.Snapshot("final_state")]
+    ops = [qml.Snapshot(), qml.Hadamard(wires=0), qml.Snapshot("final_state"), qml.WireCut(0)]
     qs = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))])
 
     debugger = Debugger()
@@ -193,15 +233,55 @@ def test_debugger():
     assert qml.math.allclose(result[1], 0.0)
 
 
+def test_shot_error():
+    """Test if an NotImplementedError is raised when shots are requested"""
+
+    @qml.qnode(qml.device("default.clifford", shots=1024))
+    def circuit_fn():
+        qml.BasisState(np.array([1, 1]), wires=range(2))
+        return qml.expval(qml.PauliZ(0))
+
+    with pytest.raises(
+        NotImplementedError,
+        match="default.clifford currently doesn't support computation with shots.",
+    ):
+        circuit_fn()
 
 
-def test_fail_import_stim(monkeypatch):
-    """Test if an ImportError is raised when stim is requested but not installed"""
+def test_batch_prep_error():
+    """Test if an NotImplementedError is raised when batching the initial state"""
 
-    with monkeypatch.context() as m:
-        m.setitem(sys.modules, "stim", None)
-        with pytest.raises(ImportError, match="This feature requires stim"):
-            _import_stim()
+    @qml.qnode(qml.device("default.clifford"))
+    def circuit_fn():
+        qml.BasisState(np.array([[1, 1]]), wires=range(2))
+        return qml.expval(qml.PauliZ(0))
+
+    with pytest.raises(NotImplementedError, match="default.clifford doesn't support batching."):
+        circuit_fn()
+
+
+def test_pauli_sentence_error():
+    """Test if an NotImplementedError is raised when taking expectation value of op_math objects"""
+
+    @qml.qnode(qml.device("default.clifford"))
+    def circuit_fn():
+        qml.BasisState(np.array([1, 1]), wires=range(2))
+        return qml.expval(qml.sum(qml.PauliZ(0), qml.PauliX(1)))
+
+    with pytest.raises(
+        NotImplementedError,
+        match="default.clifford doesn't support expectation value calculation with",
+    ):
+        circuit_fn()
+
+
+def test_state_error():
+    """Test if an ValueError is raised when state is invalid"""
+
+    with pytest.raises(
+        ValueError, match="Keyword state only accepts two options: 'tableau' and 'state_vector'"
+    ):
+        qml.device("default.clifford", state="dm")
 
 
 def test_fail_import_stim(monkeypatch):

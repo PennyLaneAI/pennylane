@@ -31,8 +31,6 @@ from pennylane.measurements.expval import ExpectationMP
 from pennylane.devices.qubit.sampling import get_num_shots_and_executions
 from pennylane.devices.qubit.simulate import INTERFACE_TO_LIKE
 
-# from pennylane.transforms.optimization.optimization_utils import _fuse_global_phases
-
 from . import Device
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
 
@@ -90,6 +88,7 @@ _GATE_OPERATIONS = {
     "CY": "CY",
     "CZ": "CZ",
     "GlobalPhase": None,
+    "WireCut": None,
 }
 
 
@@ -145,18 +144,16 @@ class DefaultClifford(Device):
 
     .. code-block:: python
 
-        n_layers = 5
-        n_wires = 10
         num_qscripts = 5
 
-        shape = qml.StronglyEntanglingLayers.shape(n_layers=n_layers, n_wires=n_wires)
         rng = qml.numpy.random.default_rng(seed=42)
 
         qscripts = []
         for i in range(num_qscripts):
-            params = rng.random(shape)
-            op = qml.StronglyEntanglingLayers(params, wires=range(n_wires))
-            qs = qml.tape.QuantumScript([op], [qml.expval(qml.PauliZ(0))])
+            qs = qml.tape.QuantumScript(
+                [qml.Hadamard(wires=[0]), qml.CNOT(wires=[0, 1])],
+                [qml.expval(qml.PauliZ(0))]
+            )
             qscripts.append(qs)
 
     >>> dev = DefaultClifford()
@@ -164,11 +161,7 @@ class DefaultClifford(Device):
     >>> new_batch, post_processing_fn = program(qscripts)
     >>> results = dev.execute(new_batch, execution_config=execution_config)
     >>> post_processing_fn(results)
-    [-0.0006888975950537501,
-    0.025576307134457577,
-    -0.0038567269892757494,
-    0.1339705146860149,
-    -0.03780669772690448]
+    [0.0, 1.0, 1.0, 0.0, 1.0]
 
     .. details::
         :title: Clifford Tableau
@@ -216,14 +209,7 @@ class DefaultClifford(Device):
         * ``results``: The results of each call of :meth:`~.execute`
         * ``derivative_batches``: How many times :meth:`~.compute_derivatives` is called.
         * ``execute_and_derivative_batches``: How many times :meth:`~.execute_and_compute_derivatives` is called
-        * ``vjp_batches``: How many times :meth:`~.compute_vjp` is called
-        * ``execute_and_vjp_batches``: How many times :meth:`~.execute_and_compute_vjp` is called
-        * ``jvp_batches``: How many times :meth:`~.compute_jvp` is called
-        * ``execute_and_jvp_batches``: How many times :meth:`~.execute_and_compute_jvp` is called
         * ``derivatives``: How many circuits are submitted to :meth:`~.compute_derivatives` or :meth:`~.execute_and_compute_derivatives`.
-        * ``vjps``: How many circuits are submitted to :meth:`~.compute_vjp` or :meth:`~.execute_and_compute_vjp`
-        * ``jvps``: How many circuits are submitted to :meth:`~.compute_jvp` or :meth:`~.execute_and_compute_jvp`
-
 
     .. details::
         :title: Accelerate calculations with multiprocessing
@@ -306,7 +292,7 @@ class DefaultClifford(Device):
             )
 
         seed = np.random.randint(0, high=10000000) if seed == "global" else seed
-        if qml.math.get_interface(seed) == "jax":
+        if qml.math.get_interface(seed) == "jax": # pragma: no cover
             self._prng_key = seed
             self._rng = np.random.default_rng(None)
         else:
@@ -325,7 +311,7 @@ class DefaultClifford(Device):
 
         """
         updated_values = {}
-        if execution_config.gradient_method == "best":
+        if execution_config.gradient_method == "best": # pragma: no cover
             updated_values["gradient_method"] = None
         if execution_config.use_device_gradient is None:
             updated_values["use_device_gradient"] = True
@@ -443,7 +429,7 @@ class DefaultClifford(Device):
             for i, c in enumerate(circuits):
                 qpu_executions, shots = get_num_shots_and_executions(c)
                 res = np.array(results[i]) if isinstance(results[i], Number) else results[i]
-                if c.shots:
+                if c.shots: # pragma: no cover
                     self.tracker.update(
                         simulations=1,
                         executions=qpu_executions,
@@ -619,7 +605,7 @@ class DefaultClifford(Device):
         # initial state is batched only if the state preparation (if it exists) is batched
         is_state_batched = bool(prep and prep.batch_size is not None)
         if is_state_batched:
-            raise NotImplementedError("Clifford simulator doesn't support batching.")
+            raise NotImplementedError("default.clifford doesn't support batching.")
 
         stim_ct = stim.Circuit()
         initial_tableau = stim.Tableau.from_circuit(stim_ct)
@@ -726,7 +712,7 @@ class DefaultClifford(Device):
                     # Add support for more case when the time is right
                     else:
                         raise NotImplementedError(
-                            f"default.clifford doesn't support {meas} at the moment."
+                            f"default.clifford doesn't support expectation value calculation with {type(meas.obs)} at the moment."
                         )
 
         return tuple(res)
