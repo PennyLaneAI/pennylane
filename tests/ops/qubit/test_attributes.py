@@ -40,6 +40,11 @@ class TestAttribute:
         with pytest.raises(TypeError, match="can be checked for attribute inclusion"):
             assert object() not in new_attribute
 
+    def test_measurement_process_input(self):
+        """Test that MeasurementProcesses are valid objects to check inside Attributes"""
+        assert qml.measurements.MidMeasureMP(0) not in new_attribute
+        assert qml.expval(qml.PauliX(0)) not in new_attribute
+
     def test_string_inclusion(self):
         """Test that we can check inclusion using strings."""
         assert "PauliX" in new_attribute
