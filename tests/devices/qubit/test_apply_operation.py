@@ -491,7 +491,7 @@ class TestApplyParametrizedEvolution:
         phi = jnp.linspace(0.3, 0.7, 7)
         phi_for_RX = phi - phi[0]
         state = jnp.array([[[1.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]], dtype=complex)
-        ev = qml.evolve(H, return_intermediate=True)(params=[], t=phi / 2)
+        ev = qml.evolve(H)(params=[], t=phi / 2, return_intermediate=True)
         state_ev = apply_operation(ev, state)
         state_rx = apply_operation(qml.RX(phi_for_RX, 0), state)
 
