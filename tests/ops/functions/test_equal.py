@@ -1848,7 +1848,6 @@ class TestQuantumScriptComparisons:
         assert qml.equal(tape, other_tape) is False
 
 
-@pytest.mark.jax
 class TestBasisRotation:
     import jax
 
@@ -1858,17 +1857,10 @@ class TestBasisRotation:
             [-0.78582258, 0.53807284 + 0.30489424j],
         ]
     )
-    rotation_mat_jax = jax.numpy.array(
-        [
-            [-0.618452, -0.68369054 - 0.38740723j],
-            [-0.78582258, 0.53807284 + 0.30489424j],
-        ]
-    )
     op1 = qml.BasisRotation(wires=range(2), unitary_matrix=rotation_mat)
     op2 = qml.BasisRotation(wires=range(2), unitary_matrix=np.array(rotation_mat))
     op3 = qml.BasisRotation(wires=range(2), unitary_matrix=rotation_mat + 1e-7)
     op4 = qml.BasisRotation(wires=range(2, 4), unitary_matrix=rotation_mat)
-    op5 = qml.BasisRotation(wires=range(2), unitary_matrix=rotation_mat_jax)
 
     @pytest.mark.parametrize("op, other_op", [(op1, op3)])
     def test_different_tolerances_comparison(self, op, other_op):
@@ -1883,7 +1875,17 @@ class TestBasisRotation:
     def test_non_equal_training_wires(self, op, other_op):
         assert qml.equal(op, other_op) is False
 
-    @pytest.mark.parametrize("op, other_op", [(op1, op5)])
-    def test_non_equal_interfaces(self, op, other_op):
+    @pytest.mark.jax
+    @pytest.mark.parametrize("op", [op1])
+    def test_non_equal_interfaces(self, op):
+        import jax
+
+        rotation_mat_jax = jax.numpy.array(
+            [
+                [-0.618452, -0.68369054 - 0.38740723j],
+                [-0.78582258, 0.53807284 + 0.30489424j],
+            ]
+        )
+        other_op = qml.BasisRotation(wires=range(2), unitary_matrix=rotation_mat_jax)
         assert qml.equal(op, other_op, check_interface=False)
         assert qml.equal(op, other_op) is False
