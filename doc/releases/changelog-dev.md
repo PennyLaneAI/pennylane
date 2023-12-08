@@ -6,6 +6,10 @@
 
 <h4>Decompose circuits into the Clifford+T gateset 🧩</h4>
 
+* `qml.transforms.clifford_t_decomposition` method implements a transform for
+  approximately decomposing any circuit to the Clifford+T basis.
+  [(#4802)](https://github.com/PennyLaneAI/pennylane/pull/4802)
+
 * `qml.transforms.decompositions.sk_decomposition` method implements the Solovay-Kitaev algorithm for
   approximately decomposing any single-qubit operation to Clifford+T basis.
   [(#4801)](https://github.com/PennyLaneAI/pennylane/pull/4801)
@@ -51,6 +55,7 @@
   [(#4803)](https://github.com/PennyLaneAI/pennylane/pull/4803)
   [(#4832)](https://github.com/PennyLaneAI/pennylane/pull/4832)
   [(#4901)](https://github.com/PennyLaneAI/pennylane/pull/4901)
+  [(#4850)](https://github.com/PennyLaneAI/pennylane/pull/4850)
   [(#4917)](https://github.com/PennyLaneAI/pennylane/pull/4917)
 
 <h4>Catalyst is seamlessly integrated with PennyLane ⚗️</h4>
