@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-<h4>Drawing and statistics for mid-circuit measurements 🎨</h4>
+<h4>Statistics and drawings for mid-circuit measurements 🎨</h4>
 
 * Mid-circuit measurements can now be visualized with the text-based `qml.draw()` and the 
   graphical `qml.draw_mpl()`.
@@ -50,15 +50,26 @@
 
 <h4>Catalyst is seamlessly integrated with PennyLane ⚗️</h4>
 
-* The `qml.compiler` module provides support for hybrid quantum-classical compilation.
+Catalyst, our next-generation compilation framework, is now available within PennyLane
+rather than a standalone package, allowing you to access the benefits of just-in-time (JIT)
+compilation in PennyLane proper.  
+
+To access these features, simply install `pennylane-catalyst`:
+
+```
+pip install pennylane-catalyst
+```
+
+* The [`qml.compiler`](https://docs.pennylane.ai/en/latest/code/qml_compiler.html) 
+  module provides support for hybrid quantum-classical compilation.
   [(#4692)](https://github.com/PennyLaneAI/pennylane/pull/4692)
 
-  Through the use of the `qml.qjit` decorator, entire workflows can be just-in-time (JIT)
-  compiled --- including both quantum and classical processing --- down to a machine binary on
-  first function execution. Subsequent calls to the compiled function will execute
+  Through the use of the `qml.qjit` decorator, entire workflows can be JIT
+  compiled — including both quantum and classical processing — down to a machine binary on
+  first-function execution. Subsequent calls to the compiled function will execute
   the previously-compiled binary, resulting in significant performance improvements.
 
-  ``` python
+  ```python
   import pennylane as qml
 
   dev = qml.device("lightning.qubit", wires=2)
@@ -72,7 +83,7 @@
       return qml.expval(qml.PauliZ(wires=1))
   ```
 
-  ``` pycon
+  ```pycon
   >>> circuit(0.5)  # the first call, compilation occurs here
   array(0.)
   >>> circuit(0.5)  # the precompiled quantum function is called
@@ -83,14 +94,25 @@
   hybrid compiler with the `qml.qjit` decorator. A significant benefit of Catalyst
   is the ability to preserve complex control flow around quantum operations — such as
   if statements and for loops, and including measurement feedback — during compilation,
-  while continuing to support end-to-end autodifferentiation.
+  while continuing to support end-to-end autodifferentiation. 
 
-* `qml.grad` and `qml.jacobian` can be used with the `qml.qjit` decorator.
+  To access these features, simply install `pennylane-catalyst`:
+
+  ```
+  pip install pennylane-catalyst
+  ```
+
+* The following functions can now be used with the `qml.qjit` decorator: `qml.grad`, 
+  `qml.jacobian`, `qml.vjp`, `qml.jvp`, `qml.adjoint`, and `qml.ctrl`.
   [(#4709)](https://github.com/PennyLaneAI/pennylane/pull/4709)
+  [(#4724)](https://github.com/PennyLaneAI/pennylane/pull/4724)
+  [(#4725)](https://github.com/PennyLaneAI/pennylane/pull/4725)
+  [(#4726)](https://github.com/PennyLaneAI/pennylane/pull/4726)
 
-  When these functions are used with `qml.qjit`, they are patched to
+  When `qml.grad` or `qml.jacobian` are used with `@qml.qjit`, they are patched to
   [catalyst.grad](https://docs.pennylane.ai/projects/catalyst/en/stable/code/api/catalyst.grad.html) and
-  [catalyst.jacobian](https://docs.pennylane.ai/projects/catalyst/en/stable/code/api/catalyst.jacobian.html).
+  [catalyst.jacobian](https://docs.pennylane.ai/projects/catalyst/en/stable/code/api/catalyst.jacobian.html), 
+  respectively.
 
   ``` python
   dev = qml.device("lightning.qubit", wires=1)
@@ -115,8 +137,8 @@
           [-4.20735506e-01,  4.20735506e-01]])
   ```
 
-* `qml.for_loop` and `qml.while_loop` compiler-specific decorators are added.
-  `qml.cond` can be used with the `qml.qjit` decorator.
+* JIT-compatible functionality for control flow, `qml.for_loop`, `qml.while_loop`, and `qml.cond`, 
+  and have been added.
   [(#4698)](https://github.com/PennyLaneAI/pennylane/pull/4698)
 
   ``` python
@@ -145,25 +167,17 @@
   (array(0.97926626), array(0.55395718))
   ```
 
-* `qml.vjp` and `qml.vjp` can be used with the `qml.qjit` decorator.
-  [(#4724)](https://github.com/PennyLaneAI/pennylane/pull/4724)
-
-* `qml.adjoint` can be used with the `qml.qjit` decorator.
-  [(#4725)](https://github.com/PennyLaneAI/pennylane/pull/4725)
-
-* `qml.ctrl` can be used with the `qml.qjit` decorator.
-  [(#4726)](https://github.com/PennyLaneAI/pennylane/pull/4726)
-
 <h4>Decompose circuits into the Clifford+T gateset 🧩</h4>
 
-* `qml.transforms.decompositions.sk_decomposition` method implements the Solovay-Kitaev algorithm for
-  approximately decomposing any single-qubit operation to Clifford+T basis.
+* The new `qml.transforms.decompositions.sk_decomposition` method implements the 
+  Solovay-Kitaev algorithm for approximately decomposing any single-qubit operation 
+  to the Clifford+T basis.
   [(#4801)](https://github.com/PennyLaneAI/pennylane/pull/4801)
 
-* The `qml.clifford_t_decomposition()` transform provides an approximate breakdown of an input
-  circuit into the [Clifford+T](https://en.wikipedia.org/wiki/Clifford_gates) gateset. Behind the
-  scenes, this decomposition is enacted via the `sk_decomposition()` function using the
-  Solovay-Kitaev algorithm.
+* The new `qml.clifford_t_decomposition()` transform provides an approximate breakdown 
+  of an input circuit into the [Clifford+T](https://en.wikipedia.org/wiki/Clifford_gates) 
+  gateset. Behind the scenes, this decomposition is enacted via the `sk_decomposition()` 
+  function using the Solovay-Kitaev algorithm.
 
   Given a total circuit error `epsilon=0.001`, the following circuit can be decomposed:
 
@@ -228,32 +242,33 @@
 
 <h4>Community contributions 🥳</h4>
 
-* Added `__iadd__` method to PauliSentence, which enables inplace-addition using `+=`, we no longer need to perform a copy, leading to performance improvements.
+* The `+=` operand can now be used with a `PauliSentence`, which has also provided
+  a performance boost.
   [(#4662)](https://github.com/PennyLaneAI/pennylane/pull/4662)
 
-* Approximate Quantum Fourier Transform (AQFT) is now available from `qml.AQFT`.
+* The Approximate Quantum Fourier Transform (AQFT) is now available with `qml.AQFT`.
   [(#4715)](https://github.com/PennyLaneAI/pennylane/pull/4715)
 
-* `qml.draw` and `qml.draw_mpl` now render operator ids.
+* `qml.draw` and `qml.draw_mpl` now render operator IDs.
   [(#4749)](https://github.com/PennyLaneAI/pennylane/pull/4749)
 
-* Non-parametric-ops such as `Barrier`, `Snapshot` and `Wirecut` have been grouped together and moved to `pennylane/ops/meta.py`.
-  Additionally, the relevant tests have been organized and placed in a new file, `tests/ops/test_meta.py` .
+* Non-parametric operators such as `Barrier`, `Snapshot` and `Wirecut` have been grouped together and moved to `pennylane/ops/meta.py`.
+  Additionally, the relevant tests have been organized and placed in a new file, `tests/ops/test_meta.py`.
   [(#4789)](https://github.com/PennyLaneAI/pennylane/pull/4789)
 
-* `TRX`, `TRY`, and `TRZ` are now differentiable via backprop on `default.qutrit`
+* `TRX`, `TRY`, and `TRZ` operators are now differentiable via backpropagation on `default.qutrit`.
   [(#4790)](https://github.com/PennyLaneAI/pennylane/pull/4790)
 
 * The function `qml.equal` now supports `ControlledSequence` operators.
   [(#4829)](https://github.com/PennyLaneAI/pennylane/pull/4829)
 
-* XZX decomposition is added to the list of supported single-qubit unitary decompositions.
+* XZX decomposition has been added to the list of supported single-qubit unitary decompositions.
   [(#4862)](https://github.com/PennyLaneAI/pennylane/pull/4862)
 
-* Added `__eq__` method for TransformProgram and TransformContainers allowing the comparison of respective objects using `==` and `!=` operators.
+* `==` and `!=` operands can now be used with `TransformProgram` and `TransformContainers` instances.
   [(#4858)](https://github.com/PennyLaneAI/pennylane/pull/4858)
 
-* `qml.equal` now supports comparison of `QuantumScript` objects
+* `qml.equal` now supports comparison of `QuantumScript` objects.
   [(#4902)](https://github.com/PennyLaneAI/pennylane/pull/4902)
 
 <h4>Better support for batching</h4>
@@ -261,7 +276,7 @@
 * `default.qubit` now can evolve already batched states with `ParametrizedEvolution`
   [(#4863)](https://github.com/PennyLaneAI/pennylane/pull/4863)
 
-* `AmplitudeEmbedding` now also supports batching when used with Tensorflow.
+* `AmplitudeEmbedding` now supports batching when used with Tensorflow.
   [(#4818)](https://github.com/PennyLaneAI/pennylane/pull/4818)
 
 * `qml.ArbitraryUnitary` now supports batching.
@@ -272,7 +287,7 @@
 
 <h4>Performance improvements and benchmarking</h4>
 
-* Autograd, torch, and JAX (non-jit) can now use VJPs provided by the device from the new device API. If a device provides
+* Autograd, PyTorch, and JAX (non-jit) can now use VJPs provided by the device from the new device API. If a device provides
   a vector-Jacobian product, this can be selected by providing `device_vjp=True` to
   `qml.QNode` or `qml.execute`.
   [(#4557)](https://github.com/PennyLaneAI/pennylane/pull/4557)
@@ -294,31 +309,31 @@
   -0.09983341664682815
   ```
 
-* `qml.expval` with large `Hamiltonian` objects is now faster and has a significantly lower memory footprint (and constant with respect to the number of `Hamiltonian` terms) when the `Hamiltonian` is a `PauliSentence`. That is due to the introduction of a specialized `dot` method in the `PauliSentence` class which performs `PauliSentence`-`state` products.
+* `qml.expval` with large `Hamiltonian` objects is now faster and has a significantly lower memory footprint (and constant with respect to the number of `Hamiltonian` terms) when the `Hamiltonian` is a `PauliSentence`. This is due to the introduction of a specialized `dot` method in the `PauliSentence` class which performs `PauliSentence`-`state` products.
   [(#4839)](https://github.com/PennyLaneAI/pennylane/pull/4839)
 
 * `default.qubit` no longer uses a dense matrix for `MultiControlledX` for more than 8 operation wires.
   [(#4673)](https://github.com/PennyLaneAI/pennylane/pull/4673)
 
-* Updates to some relevant Pytests to enable its use as a suite of benchmarks.
+* Some relevant Pytests have been updated to enable its use as a suite of benchmarks.
   [(#4703)](https://github.com/PennyLaneAI/pennylane/pull/4703)
 
 * `default.qubit` now applies `GroverOperator` faster by not using its matrix representation but a
-  custom rule for `apply_operation`. Also, the matrix representation of `GroverOperator` runs faster now.
+  custom rule for `apply_operation`. Also, the matrix representation of `GroverOperator` now runs faster.
   [(#4666)](https://github.com/PennyLaneAI/pennylane/pull/4666)
 
-* Add a new repository CI/CD pipeline to run benchmarks and plot graphs comparing with a fixed reference. This pipeline will run on a schedule and can be activated on a PR with the label `ci:run_benchmarks`.
+* A new pipeline to run benchmarks and plot graphs comparing with a fixed reference has been added. This pipeline will run on a schedule and can be activated on a PR with the label `ci:run_benchmarks`.
   [(#4741)](https://github.com/PennyLaneAI/pennylane/pull/4741)
 
-* Expand the benchmarks CI/CD pipeline to export all benchmark data in a single JSON file and a CSV file with runtimes. This includes all references and local benchmarks.
+* The benchmarks pipeline has been expanded to export all benchmark data to a single JSON file and a CSV file with runtimes. This includes all references and local benchmarks.
   [(#4873)](https://github.com/PennyLaneAI/pennylane/pull/4873)
 
 <h4>Other improvements</h4>
 
-* Added `ops.functions.assert_valid` for checking if an `Operator` class is defined correctly.
+* A new attribute called `ops.functions.assert_valid` has been added for checking if an `Operator` class is defined correctly.
   [(#4764)](https://github.com/PennyLaneAI/pennylane/pull/4764)
 
-* `GlobalPhase` now decomposes to nothing, in case devices do not support global phases.
+* `GlobalPhase` now decomposes to nothing in case devices do not support global phases.
   [(#4855)](https://github.com/PennyLaneAI/pennylane/pull/4855)
 
 * Custom operations can now provide their matrix directly through the `Operator.matrix()` method
@@ -327,18 +342,18 @@
   `Operator.compute_matrix` is not.
   [(#4844)](https://github.com/PennyLaneAI/pennylane/pull/4844)
 
-* Simplified the logic for re-arranging states before returning.
+* The logic for re-arranging states before returning them has been improved.
   [(#4817)](https://github.com/PennyLaneAI/pennylane/pull/4817)
 
-* When multiplying `SparseHamiltonian`s by a scalar value, the result stays as a
+* When multiplying `SparseHamiltonian`s by a scalar value, the result now stays as a
   `SparseHamiltonian`.
   [(#4828)](https://github.com/PennyLaneAI/pennylane/pull/4828)
 
-* `trainable_params` can now be set on initialization of `QuantumScript`, instead of having to set the
+* `trainable_params` can now be set on initialization of `QuantumScript` instead of having to set the
   parameter after initialization.
   [(#4877)](https://github.com/PennyLaneAI/pennylane/pull/4877)
 
-* `default.qubit` now calculates the expectation value of Hermitians in a differentiable manner.
+* `default.qubit` now calculates the expectation value of `Hermitian` operators in a differentiable manner.
   [(#4866)](https://github.com/PennyLaneAI/pennylane/pull/4866)
 
 * The `rot` decomposition now has support for returning a global phase.
@@ -357,13 +372,13 @@
 
 <h3>Breaking changes 💔</h3>
 
-* The transforms submodule `qml.transforms.qcut` becomes its own module `qml.qcut`.
+* The transforms submodule `qml.transforms.qcut` is now its own module: `qml.qcut`.
   [(#4819)](https://github.com/PennyLaneAI/pennylane/pull/4819)
 
 * The decomposition of `GroverOperator` now has an additional global phase operation.
   [(#4666)](https://github.com/PennyLaneAI/pennylane/pull/4666)
 
-* Moved `qml.cond` and the `Conditional` operation from the `transforms` folder to the `ops/op_math` folder.
+* `qml.cond` and the `Conditional` operation have been moved from the `transforms` folder to the `ops/op_math` folder.
   `qml.transforms.Conditional` will now be available as `qml.ops.Conditional`.
   [(#4860)](https://github.com/PennyLaneAI/pennylane/pull/4860)
 
@@ -371,7 +386,7 @@
   `StatePrepBase` operations should be placed at the beginning of the `ops` list instead.
   [(#4756)](https://github.com/PennyLaneAI/pennylane/pull/4756)
 
-* `qml.gradients.pulse_generator` has become `qml.gradients.pulse_odegen` to adhere to paper naming conventions.
+* `qml.gradients.pulse_generator` is now named `qml.gradients.pulse_odegen` to adhere to paper naming conventions.
   [(#4769)](https://github.com/PennyLaneAI/pennylane/pull/4769)
 
 * Specifying `control_values` passed to `qml.ctrl` as a string is no longer supported.
@@ -390,7 +405,7 @@
 <h3>Deprecations 👋</h3>
 
 * `single_tape_transform`, `batch_transform`, `qfunc_transform`, and `op_transform` are deprecated.
-  Instead switch to using the new `qml.transform` function.
+  Use the new `qml.transform` function instead.
   [(#4774)](https://github.com/PennyLaneAI/pennylane/pull/4774)
 
 * `Observable.return_type` is deprecated. Instead, you should inspect the type
@@ -407,14 +422,14 @@
 
 <h3>Documentation 📝</h3>
 
-* Documentation for QCut was move to its own API page `qml.qcut`.
+* Documentation for QCut has moved to its own API page `qml.qcut`.
   [(#4819)](https://github.com/PennyLaneAI/pennylane/pull/4819)
 
-* Documentation page for `qml.measurements` now links top-level accessible functions (e.g. `qml.expval`) 
-  to their top-level pages (rather than their module-level pages, eg. `qml.measurements.expval`).
+* The documentation page for `qml.measurements` now links top-level accessible functions (e.g., `qml.expval`) 
+  to their top-level pages rather than their module-level pages (e.g., `qml.measurements.expval`).
   [(#4750)](https://github.com/PennyLaneAI/pennylane/pull/4750)
 
-* Added information to documentation of `qml.matrix` about wire ordering when using `qml.matrix` on a
+* Information to the documentation for `qml.matrix` about wire ordering has been added for using `qml.matrix` on a
   `QNode` which uses a device with `device.wires=None`.
   [(#4874)](https://github.com/PennyLaneAI/pennylane/pull/4874)
 
@@ -424,14 +439,14 @@
   that has two or more eigenvalues and is stored as a `SparseHamiltonian`.
   [(#4899)](https://github.com/PennyLaneAI/pennylane/pull/4899)
 
-* Fix a bug where trainable parameters in the post-processing of finite diff were incorrect for Jax when applying
-  the transform directly on a `QNode`.
+* Fixed a bug where trainable parameters in the post-processing of finite-differences were incorrect for JAX when applying
+  the transform directly on a QNode.
   [(#4879)](https://github.com/PennyLaneAI/pennylane/pull/4879)
 
 * `qml.grad` and `qml.jacobian` now explicitly raise errors if trainable parameters are integers.
   [(#4836)](https://github.com/PennyLaneAI/pennylane/pull/4836)
 
-* JAX JIT now works with shot vectors.
+* JAX-JIT now works with shot vectors.
   [(#4772)](https://github.com/PennyLaneAI/pennylane/pull/4772/)
 
 * JAX can now differentiate a batch of circuits where one tape does not have trainable parameters.
@@ -441,15 +456,15 @@
   [(#4666)](https://github.com/PennyLaneAI/pennylane/pull/4666)
 
 * The `tape.to_openqasm` method no longer mistakenly includes interface information in the parameter
-  string when converting tapes using non-numpy interfaces.
+  string when converting tapes using non-NumPy interfaces.
   [(#4849)](https://github.com/PennyLaneAI/pennylane/pull/4849)
 
 * `qml.defer_measurements` now correctly transforms circuits when terminal measurements include wires
   used in mid-circuit measurements.
   [(#4787)](https://github.com/PennyLaneAI/pennylane/pull/4787)
 
-* Fixes a bug where the adjoint method differentiation would fail if
-  an operation with `grad_method=None` that has a parameter is present.
+* Fixed a bug where the adjoint differentiation method would fail if
+  an operation that has a parameter with `grad_method=None` is present.
   [(#4820)](https://github.com/PennyLaneAI/pennylane/pull/4820)
 
 * `MottonenStatePreparation` now raises an error if decomposing a broadcasted state vector.
@@ -472,8 +487,8 @@
 * `transpile` can now handle measurements that are broadcasted onto all wires.
   [(#4793)](https://github.com/PennyLaneAI/pennylane/pull/4793)
 
-* Parametrized circuits whose operators do not act on all wires return pennylane tensors as
-  expected, instead of numpy arrays.
+* Parametrized circuits whose operators do not act on all wires return PennyLane tensors instead of NumPy arrays, as
+  expected.
   [(#4811)](https://github.com/PennyLaneAI/pennylane/pull/4811)
   [(#4817)](https://github.com/PennyLaneAI/pennylane/pull/4817)
 
@@ -485,7 +500,7 @@
   integer power.
   [(#4827)](https://github.com/PennyLaneAI/pennylane/pull/4827)
 
-* Fixed text drawer to correctly label qinfo measurements, as well as `qml.classical_shadow`
+* The text drawer has been fixed to correctly label `qinfo` measurements, as well as `qml.classical_shadow`
   `qml.shadow_expval`.
   [(#4803)](https://github.com/PennyLaneAI/pennylane/pull/4803)
 
@@ -493,7 +508,7 @@
   multiplication.
   [(#4887)](https://github.com/PennyLaneAI/pennylane/pull/4887)
 
-* Using a `CNOT` or `PauliZ` operation with large, batched states and the tensorflow
+* Using a `CNOT` or `PauliZ` operation with large batched states and the Tensorflow
   interface no longer raises an unexpected error.
   [(#4889)](https://github.com/PennyLaneAI/pennylane/pull/4889)
 
