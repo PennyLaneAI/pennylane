@@ -246,11 +246,11 @@ def test_shot_error():
         circuit_fn()
 
 
-def test_pauli_sentence_error():
+def test_meas_error():
     """Test if an NotImplementedError is raised when taking expectation value of op_math objects"""
 
     @qml.qnode(qml.device("default.clifford"))
-    def circuit_fn():
+    def circuit_exp():
         qml.BasisState(np.array([1, 1]), wires=range(2))
         return qml.expval(qml.sum(qml.PauliZ(0), qml.PauliX(1)))
 
@@ -258,7 +258,15 @@ def test_pauli_sentence_error():
         NotImplementedError,
         match="default.clifford doesn't support expectation value calculation with",
     ):
-        circuit_fn()
+        circuit_exp()
+
+    @qml.qnode(qml.device("default.clifford"))
+    def circuit_ent():
+        qml.BasisState(np.array([1, 1]), wires=range(2))
+        return qml.vn_entropy(wires=[0, 1])
+
+    with pytest.raises(NotImplementedError, match="default.clifford doesn't support the"):
+        circuit_ent()
 
 
 def test_state_error():
