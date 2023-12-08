@@ -96,11 +96,6 @@ def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
     return obs.name in _MEAS_OBSERVABLES
 
 
-def operations_stopping_condition(obs: qml.operation.Operator) -> bool:
-    """Specifies whether or not an observable is accepted by DefaultClifford."""
-    return obs.name in _GATE_OPERATIONS
-
-
 def _import_stim():
     """Import stim."""
     try:
@@ -354,7 +349,6 @@ class DefaultClifford(Device):
 
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(qml.defer_measurements, device=self)
-        transform_program.add_transform(qml.transforms.broadcast_expand)
 
         # TODO: Add the Clifford+T decomposition transform here instead.
         if self._check_clifford:

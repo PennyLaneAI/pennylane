@@ -60,7 +60,7 @@ def test_expectation_clifford(circuit, expec_op):
     qn_c = qml.QNode(circuit_fn, dev_c)
     qn_d = qml.QNode(circuit_fn, dev_d)
 
-    assert np.allclose(qn_c(), qn_d(), atol=1e-2)
+    assert np.allclose(qn_c(), qn_d())
 
 
 @pytest.mark.parametrize("circuit", [circuit_1])
@@ -112,9 +112,7 @@ def test_meas_clifford(circuit, meas_type):
 @pytest.mark.parametrize("circuit", [circuit_1])
 def test_prep_snap_clifford(circuit):
     """Test that the execution of default.clifford is possible and agrees with default.qubit"""
-    dev_c = qml.device(
-        "default.clifford",
-    )
+    dev_c = qml.device("default.clifford", check_clifford=False)
     dev_d = qml.device("default.qubit")
 
     def circuit_fn():
