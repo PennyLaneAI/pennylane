@@ -609,79 +609,107 @@ class DefaultClifford(Device):
                             debugger.snapshots[len(debugger.snapshots)] = flat_state
                 else:
                     pass
+
         tableau_simulator.do_circuit(stim_ct)
 
-        gphase_op = qml.GlobalPhase(qml.math.sum(op.data[0] for op in global_phase_ops))
+        global_phase = qml.GlobalPhase(qml.math.sum(op.data[0] for op in global_phase_ops))
 
-        res = []
+        results = []
         for meas in circuit.measurements:
             # Analytic case
             if not circuit.shots:
                 # Computing statevector via tableaus
                 if type(meas) is qml.measurements.StateMP:
-                    if self._state == "tableau":
-                        tableau = tableau_simulator.current_inverse_tableau().inverse()
-                        x2x, x2z, z2x, z2z, x_signs, z_signs = tableau.to_numpy()
-                        res.append(
-                            np.vstack(
-                                (
-                                    np.hstack((x2x, x2z, x_signs.reshape(-1, 1))),
-                                    np.hstack((z2x, z2z, z_signs.reshape(-1, 1))),
-                                )
-                            ).astype(int)
-                        )
-                    else:
-                        state_vector = qml.math.array(
-                            tableau_simulator.state_vector(endian="big"),
-                            like=INTERFACE_TO_LIKE[interface],
-                        ) * qml.matrix(gphase_op)
-                        res.append(state_vector)
+                    res = self._measure_state(circuit, tableau_simulator, interface, global_phase)
 
                 # Computing density matrix via tableaus
                 elif type(meas) is qml.measurements.DensityMatrixMP:
-                    state_vector = qml.math.array(
-                        tableau_simulator.state_vector(endian="big"),
-                        like=INTERFACE_TO_LIKE[interface],
-                    )
-                    density_matrix = qml.math.einsum("i, j->ij", state_vector, state_vector)
-                    res.append(density_matrix)
+                    res = self._measure_density_matrix(circuit, tableau_simulator, interface)
 
                 # Computing purity via tableaus
                 elif type(meas) is qml.measurements.PurityMP:
-                    if circuit.op_wires == meas.wires:  # // Trivial
-                        res.append(qml.math.array(1.0, like=INTERFACE_TO_LIKE[interface]))
+                    res = self._measure_purity(circuit, tableau_simulator, interface, meas)
 
                 # Computing expectation values via measurement
                 elif isinstance(meas, ExpectationMP):
-                    # Case for simple Pauli terms
-                    if (
-                        isinstance(meas.obs, qml.PauliZ)
-                        or isinstance(meas.obs, qml.PauliX)
-                        or isinstance(meas.obs, qml.PauliY)
-                    ):
-                        pauli = stim.PauliString(_GATE_OPERATIONS[meas.obs.name])
-                        res.append(tableau_simulator.peek_observable_expectation(pauli))
+                    res = self._measure_expectation(
+                        circuit, tableau_simulator, interface, meas, stim
+                    )
 
-                    # Case for simple Pauli tensor
-                    elif isinstance(meas.obs, qml.operation.Tensor):
-                        expec = "".join([_GATE_OPERATIONS[name] for name in meas.obs.name])
-                        pauli = stim.PauliString(expec)
-                        res.append(tableau_simulator.peek_observable_expectation(pauli))
+                # Computing more measurements
+                else:
+                    raise NotImplementedError(
+                        f"default.clifford doesn't support the {type(meas)} measurement at the moment."
+                    )
 
-                    # Case for a Hamiltonian
-                    elif isinstance(meas.obs, qml.Hamiltonian):
-                        coeffs, obs = meas.obs.terms()
-                        expecs = qml.math.zeros_like(coeffs)
-                        for idx, ob in enumerate(obs):
-                            expec = "".join([_GATE_OPERATIONS[name] for name in ob.name])
-                            pauli = stim.PauliString(expec)
-                            expecs[idx] = tableau_simulator.peek_observable_expectation(pauli)
-                        res.append(qml.math.sum(coeffs * expecs))
+                results.append(res)
 
-                    # Add support for more case when the time is right
-                    else:
-                        raise NotImplementedError(
-                            f"default.clifford doesn't support expectation value calculation with {type(meas.obs)} at the moment."
-                        )
+        return tuple(results)
 
-        return tuple(res)
+    def _measure_state(self, circuit, tableau_sim, interface, global_phase):
+        """Measure the state of the simualtor device"""
+        if self._state == "tableau":
+            tableau = tableau_sim.current_inverse_tableau().inverse()
+            x2x, x2z, z2x, z2z, x_signs, z_signs = tableau.to_numpy()
+            return np.vstack(
+                (
+                    np.hstack((x2x, x2z, x_signs.reshape(-1, 1))),
+                    np.hstack((z2x, z2z, z_signs.reshape(-1, 1))),
+                )
+            ).astype(int)
+
+        return qml.math.array(
+            tableau_sim.state_vector(endian="big"),
+            like=INTERFACE_TO_LIKE[interface],
+        ) * qml.matrix(global_phase)
+
+    def _measure_density_matrix(self, circuit, tableau_sim, interface):
+        """Measure the density matrix from the state of simulator device"""
+        state_vector = qml.math.array(
+            tableau_sim.state_vector(endian="big"),
+            like=INTERFACE_TO_LIKE[interface],
+        )
+        return qml.math.einsum("i, j->ij", state_vector, state_vector)
+
+    def _measure_purity(self, circuit, tableau_sim, interface, meas_op):
+        """Measure the purity of the state of simulator device"""
+        if circuit.op_wires == meas_op.wires:  # // Trivial
+            return qml.math.array(1.0, like=INTERFACE_TO_LIKE[interface])
+
+    def _measure_expectation(self, circuit, tableau_sim, interface, meas_op, stim):
+        """Measure the expectation value with respect to the state of simulator device"""
+
+        # Case for simple Pauli terms
+        if (
+            isinstance(meas_op.obs, qml.PauliZ)
+            or isinstance(meas_op.obs, qml.PauliX)
+            or isinstance(meas_op.obs, qml.PauliY)
+        ):
+            pauli = stim.PauliString(_GATE_OPERATIONS[meas_op.obs.name])
+            return qml.math.array(
+                tableau_sim.peek_observable_expectation(pauli), like=INTERFACE_TO_LIKE[interface]
+            )
+
+        # Case for simple Pauli tensor
+        elif isinstance(meas_op.obs, qml.operation.Tensor):
+            expec = "".join([_GATE_OPERATIONS[name] for name in meas_op.obs.name])
+            pauli = stim.PauliString(expec)
+            return qml.math.array(
+                tableau_sim.peek_observable_expectation(pauli), like=INTERFACE_TO_LIKE[interface]
+            )
+
+        # Case for a Hamiltonian
+        elif isinstance(meas_op.obs, qml.Hamiltonian):
+            coeffs, obs = meas_op.obs.terms()
+            expecs = qml.math.zeros_like(coeffs)
+            for idx, ob in enumerate(obs):
+                expec = "".join([_GATE_OPERATIONS[name] for name in ob.name])
+                pauli = stim.PauliString(expec)
+                expecs[idx] = tableau_sim.peek_observable_expectation(pauli)
+            return qml.math.array(qml.math.sum(coeffs * expecs), like=INTERFACE_TO_LIKE[interface])
+
+        # Add support for more case when the time is right
+        else:
+            raise NotImplementedError(
+                f"default.clifford doesn't support expectation value calculation with {type(meas_op.obs)} at the moment."
+            )
