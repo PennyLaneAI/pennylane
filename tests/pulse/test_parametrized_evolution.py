@@ -14,7 +14,7 @@
 """
 Unit tests for the ParametrizedEvolution class
 """
-# pylint: disable=unused-argument,too-few-public-methods,import-outside-toplevel
+# pylint: disable=unused-argument,too-few-public-methods,import-outside-toplevel,comparison-with-itself,protected-access
 from functools import reduce
 import numpy as np
 
@@ -27,7 +27,7 @@ from pennylane.tape import QuantumTape
 from pennylane.devices import DefaultQubit, DefaultQubitLegacy
 
 
-class MyOp(qml.RX):  # pylint: disable=too-few-public-methods
+class MyOp(qml.RX):
     """Variant of qml.RX that claims to not have `adjoint` or a matrix defined."""
 
     has_matrix = False
@@ -77,8 +77,6 @@ example_pytree_evolutions = [
     qml.pulse.ParametrizedEvolution(H1, params1_, t=0.5, return_intermediate=True),
 ]
 
-
-# pylint: disable=comparison-with-itself
 @pytest.mark.parametrize("evol", example_pytree_evolutions)
 def test_trivial_equality(evol):
     """Test equality method for the trivial case of having the same operators"""
@@ -93,8 +91,6 @@ def test_equality_different_datatypes():
     evol2 = qml.pulse.ParametrizedEvolution(H0, p1, t=0.5)
     assert evol1 == evol2
 
-
-# pylint: disable=protected-access
 @pytest.mark.jax
 class TestPytree:
     """Testing pytree related functionality"""
