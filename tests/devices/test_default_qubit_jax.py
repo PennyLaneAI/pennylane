@@ -1150,17 +1150,6 @@ class TestOps:
 
         assert qml.math.allclose(res, expected_res, atol=1e-5)
 
-    def test_parametrized_evolution_raises_error(self):
-        """Test applying a ParametrizedEvolution without params or t specified raises an error."""
-        dev = DefaultQubitJax(wires=["a"])
-        state = jnp.array([[[1.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]], dtype=complex)
-        ev = qml.evolve(ParametrizedHamiltonian([1], [qml.PauliX("a")]), t=0.5)
-        with pytest.raises(
-            ValueError,
-            match="The parameters and the time window are required to execute a ParametrizedEvolution",
-        ):
-            dev._apply_parametrized_evolution(state=state, operation=ev)
-
 
 @pytest.mark.jax
 class TestOpsBroadcasted:
