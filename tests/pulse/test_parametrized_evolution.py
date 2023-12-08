@@ -78,7 +78,7 @@ example_pytree_evolutions = [
 ]
 
 
-# pylint: disable=omparison-with-itself
+# pylint: disable=comparison-with-itself
 @pytest.mark.parametrize("evol", example_pytree_evolutions)
 def test_trivial_equality(evol):
     """Test equality method for the trivial case of having the same operators"""
