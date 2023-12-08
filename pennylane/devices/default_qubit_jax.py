@@ -215,7 +215,7 @@ class DefaultQubitJax(DefaultQubitLegacy):
         Returns:
             _type_: _description_
         """
-        if operation.data is None or qml.math.allclose(operation.t,[0., 0.]):
+        if operation.data is None or qml.math.allclose(operation.t, [0.0, 0.0]):
             raise ValueError(
                 "The parameters and the time window are required to execute a ParametrizedEvolution "
                 "You can update these values by calling the ParametrizedEvolution class: EV(params, t)."

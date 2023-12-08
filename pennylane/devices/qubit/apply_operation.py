@@ -424,7 +424,7 @@ def _evolve_state_vector_under_parametrized_evolution(
             "You can install jax via: pip install jax"
         ) from e
 
-    if operation.data is None or qml.math.allclose(operation.t, [0., 0.]):
+    if operation.data is None or qml.math.allclose(operation.t, [0.0, 0.0]):
         raise ValueError(
             "The parameters and the time window are required to execute a ParametrizedEvolution "
             "You can update these values by calling the ParametrizedEvolution class: EV(params, t)."
