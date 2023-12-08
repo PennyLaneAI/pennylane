@@ -165,8 +165,45 @@ measurement_label_map = {
 }
 
 
+def _add_cwire_measurement_grouping_symbols(mcms, layer_str, config):
+    """Adds symbols indicating the extent of a given object for mid-circuit measurement
+    statistics."""
+    if len(mcms) > 1:
+        n_wires = len(config.wire_map)
+        mapped_bits = [config.bit_map[m] for m in mcms]
+        min_b, max_b = min(mapped_bits) + n_wires, max(mapped_bits) + n_wires
+
+        layer_str[min_b] = "╭"
+        layer_str[max_b] = "╰"
+
+        for b in range(min_b + 1, max_b):
+            layer_str[b] = "├" if b in mapped_bits else "│"
+
+    return layer_str
+
+
+def _add_cwire_measurement(m, layer_str, config):
+    """Updates ``layer_str`` with the ``m`` measurement when it it used
+    for collecting mid-circuit measurement statistics."""
+    mcms = [v.measurements[0] for v in m.mv] if isinstance(m.mv, list) else m.mv.measurements
+    layer_str = _add_cwire_measurement_grouping_symbols(mcms, layer_str, config)
+
+    mv_label = f"MCM({m.wires.tolist()})"
+    meas_label = measurement_label_map[m.return_type](mv_label)
+
+    n_wires = len(config.wire_map)
+    for mcm in mcms:
+        ind = config.bit_map[mcm] + n_wires
+        layer_str[ind] += meas_label
+
+    return layer_str
+
+
 def _add_measurement(m, layer_str, config):
     """Updates ``layer_str`` with the ``m`` measurement."""
+    if m.mv is not None:
+        return _add_cwire_measurement(m, layer_str, config)
+
     layer_str = _add_grouping_symbols(m, layer_str, config)
 
     if m.obs is None:
@@ -420,7 +457,7 @@ def tape_text(
         b_filler = "═" if i <= final_operations_layer else " "
         add_fn = _add_op if i <= final_operations_layer else _add_measurement
 
-        # Create layer strings using wire and cwire fillers
+        # Create initial strings for the current layer using wire and cwire fillers
         layer_str = [w_filler] * n_wires + [" "] * n_bits
         for b in bit_map.values():
             cur_b_filler = b_filler if min(cwire_layers[b]) < i < max(cwire_layers[b]) else " "
@@ -431,6 +468,9 @@ def tape_text(
         # for conditions, if any
         cur_layer_mid_measure = None
 
+        ##########################################
+        # Update current layer strings with labels
+        ##########################################
         for op in layer:
             if isinstance(op, qml.tape.QuantumScript):
                 layer_str = _add_grouping_symbols(op, layer_str, config)
@@ -444,10 +484,9 @@ def tape_text(
                 if isinstance(op, MidMeasureMP) and op in bit_map:
                     cur_layer_mid_measure = op
 
-        #######################################
-        # Add filler to the right of the labels
-        #######################################
-
+        #################################################
+        # Left justify layer strings and pad on the right
+        #################################################
         # Adjust width for wire filler on unused wires
         max_label_len = max(len(s) for s in layer_str)
         for w in range(n_wires):
@@ -469,6 +508,9 @@ def tape_text(
 
         line_length += max_label_len + 1  # one for the filler character
 
+        ##################
+        # Create new lines
+        ##################
         if line_length > max_length:
             # move totals into finished_lines and reset totals
             finished_lines += wire_totals + bit_totals
@@ -484,18 +526,26 @@ def tape_text(
 
             line_length = 2 + max_label_len
 
-        # Join current layer with lines for previous layers. Joining is done by adding a filler at
-        # the end of the previous layer
+        ###################################################
+        # Join current layer with lines for previous layers
+        ###################################################
+        # Joining is done by adding a filler at the end of the previous layer
         wire_totals = [w_filler.join([t, s]) for t, s in zip(wire_totals, layer_str[:n_wires])]
 
         for j, (bt, s) in enumerate(zip(bit_totals, layer_str[n_wires : n_wires + n_bits])):
             cur_b_filler = b_filler if cwire_layers[j][0] < i <= cwire_layers[j][-1] else " "
             bit_totals[j] = cur_b_filler.join([bt, s])
 
+        ################################################
         # Add ender characters to final operations layer
+        ################################################
         if i == final_operations_layer:
             wire_totals = [f"{s}─┤" for s in wire_totals]
-            bit_totals = [f"{s}  " for s in bit_totals]
+            for b in range(n_bits):
+                if cwire_layers[b][-1] > final_operations_layer:
+                    bit_totals[b] += "═╡"
+                else:
+                    bit_totals[b] += "  "
 
             line_length += 2
 

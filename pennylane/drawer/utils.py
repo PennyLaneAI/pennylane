@@ -15,7 +15,7 @@
 This module contains some useful utility functions for circuit drawing.
 """
 from pennylane.ops import Controlled, Conditional
-from pennylane.measurements import MidMeasureMP
+from pennylane.measurements import MeasurementProcess, MidMeasureMP, MeasurementValue
 
 
 def default_wire_map(tape):
@@ -103,7 +103,7 @@ def unwrap_controls(op):
     return control_wires, control_values
 
 
-def cwire_connections(layers):
+def cwire_connections(layers):  # pylint: disable=too-many-branches
     """Extract the information required for classical control wires.
 
     Args:
@@ -137,9 +137,17 @@ def cwire_connections(layers):
     bit_map = {}
     for layer in layers:
         for op in layer:
+            # Add placeholders to bit_map until next pass
             if isinstance(op, Conditional):
                 for m in op.meas_val.measurements:
-                    bit_map[m] = None  # place holder till next pass
+                    bit_map[m] = None
+            elif isinstance(op, MeasurementProcess) and op.mv is not None:
+                if isinstance(op.mv, MeasurementValue):
+                    for m in op.mv.measurements:
+                        bit_map[m] = None
+                else:
+                    for m in op.mv:
+                        bit_map[m.measurements[0]] = None
 
     connected_layers = [[] for _ in bit_map]
     connected_wires = [[] for _ in bit_map]
@@ -151,9 +159,21 @@ def cwire_connections(layers):
                 connected_layers[num_cwires].append(layer_idx)
                 connected_wires[num_cwires].append(op.wires[0])
                 num_cwires += 1
+
             elif isinstance(op, Conditional):
                 for m in op.meas_val.measurements:
                     cwire = bit_map[m]
                     connected_layers[cwire].append(layer_idx)
                     connected_wires[cwire].append(max(op.wires))
+
+            elif isinstance(op, MeasurementProcess) and op.mv is not None:
+                if isinstance(op.mv, MeasurementValue):
+                    for m in op.mv.measurements:
+                        cwire = bit_map[m]
+                        connected_layers[cwire].append(layer_idx)
+                else:
+                    for m in op.mv:
+                        cwire = bit_map[m.measurements[0]]
+                        connected_layers[cwire].append(layer_idx)
+
     return bit_map, connected_layers, connected_wires
