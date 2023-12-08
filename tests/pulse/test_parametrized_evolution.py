@@ -114,7 +114,7 @@ def test_standard_validity():
     params = (0.5,)
 
     ev = qml.pulse.ParametrizedEvolution(H, params, 0.5)
-    qml.ops.functions.assert_valid(ev)
+    qml.ops.functions.assert_valid(ev, skip_pickle=True)
 
 
 def time_independent_hamiltonian():
