@@ -389,67 +389,6 @@ class ParametrizedEvolution(Operation):
         if t is None:
             self.t = [0.0, 0.0]
         else:
-<<<<<<< HEAD
-            self.t = jnp.array([0, t] if qml.math.ndim(t) == 0 else t, dtype=float)
-        params = [] if params is None else params
-
-        wires = H.wires
-        # from here on down same as super().__init__ method but without the batching check
-        # super().__init__(*params, wires=H.wires, do_queue=do_queue, id=id)
-        self._name = self.__class__.__name__  #: str: name of the operator
-        self._id = id
-        self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
-        self._pauli_rep = None  # Union[PauliSentence, None]: Representation of the operator as a pauli sentence, if applicable
-
-        wires_from_args = False
-        if wires is None:
-            try:
-                wires = params[-1]
-                params = params[:-1]
-                wires_from_args = True
-            except IndexError as err:
-                raise ValueError(
-                    f"Must specify the wires that {type(self).__name__} acts on"
-                ) from err
-
-        self._num_params = len(params)
-
-        # Check if the expected number of parameters coincides with the one received.
-        # This is always true for the default `Operator.num_params` property, but
-        # subclasses may overwrite it to define a fixed expected value.
-        if len(params) != self.num_params:
-            if wires_from_args and len(params) == (self.num_params - 1):
-                raise ValueError(f"Must specify the wires that {type(self).__name__} acts on")
-            raise ValueError(
-                f"{self.name}: wrong number of parameters. "
-                f"{len(params)} parameters passed, {self.num_params} expected."
-            )
-
-        self._wires = wires if isinstance(wires, Wires) else Wires(wires)
-
-        # check that the number of wires given corresponds to required number
-        if self.num_wires in {AllWires, AnyWires}:
-            if (
-                not isinstance(self, (qml.Barrier, qml.Snapshot, qml.Hamiltonian))
-                and len(qml.wires.Wires(wires)) == 0
-            ):
-                raise ValueError(
-                    f"{self.name}: wrong number of wires. " f"At least one wire has to be given."
-                )
-
-        elif len(self._wires) != self.num_wires:
-            raise ValueError(
-                f"{self.name}: wrong number of wires. "
-                f"{len(self._wires)} wires given, {self.num_wires} expected."
-            )
-
-        # self._check_batching(params)
-
-        self.data = [p for p in params]
-
-        if do_queue:
-            self.queue()
-=======
             if isinstance(t, (list, tuple)):
                 t = qml.math.stack(t)
             self.t = qml.math.cast(qml.math.stack([0.0, t]) if qml.math.ndim(t) == 0 else t, float)
@@ -467,13 +406,20 @@ class ParametrizedEvolution(Operation):
                     f"in the Hamiltonian must be the same. Received {len(params)=} parameters but "
                     f"expected {len(H.coeffs_parametrized)} parameters."
                 )
-        super().__init__(*params, wires=H.wires, id=id)
+
+        try:
+            super().__init__(*params, wires=H.wires, id=id)
+        except ValueError as e:
+            self.data = tuple(p for p in params)
+            self.queue()
+
+
         self.hyperparameters["return_intermediate"] = return_intermediate
         self.hyperparameters["complementary"] = complementary
         self._check_time_batching()
         self.dense = len(self.wires) < 3 if dense is None else dense
->>>>>>> 77bced0643eb6a75b08ecad61f4a12752ca9b99b
 
+        
     def __call__(
         self, params, t, return_intermediate=None, complementary=None, dense=None, **odeint_kwargs
     ):
@@ -484,10 +430,7 @@ class ParametrizedEvolution(Operation):
             )
         # Need to cast all elements inside params to `jnp.arrays` to make sure they are not cast
         # to `np.arrays` inside `Operator.__init__`
-<<<<<<< HEAD
         # params = [jnp.array(p) for p in params]
-=======
-        params = [jnp.array(p) for p in params]
         # Inherit return_intermediate and complementary from self if not provided.
         if return_intermediate is None:
             return_intermediate = self.hyperparameters["return_intermediate"]
@@ -495,7 +438,6 @@ class ParametrizedEvolution(Operation):
             complementary = self.hyperparameters["complementary"]
         if dense is None:
             dense = self.dense
->>>>>>> 77bced0643eb6a75b08ecad61f4a12752ca9b99b
         odeint_kwargs = {**self.odeint_kwargs, **odeint_kwargs}
         if qml.QueuingManager.recording():
             qml.QueuingManager.remove(self)
