@@ -170,16 +170,12 @@ pip install pennylane-catalyst
 
 <h4>Decompose circuits into the Clifford+T gateset 🧩</h4>
 
-* The new `qml.transforms.decompositions.sk_decomposition` method implements the 
-  Solovay-Kitaev algorithm for approximately decomposing any single-qubit operation 
-  to the Clifford+T basis.
-  [(#4801)](https://github.com/PennyLaneAI/pennylane/pull/4801)
-  [(#4802)](https://github.com/PennyLaneAI/pennylane/pull/4802)
-
 * The new `qml.clifford_t_decomposition()` transform provides an approximate breakdown 
   of an input circuit into the [Clifford+T](https://en.wikipedia.org/wiki/Clifford_gates) 
   gateset. Behind the scenes, this decomposition is enacted via the `sk_decomposition()` 
   function using the Solovay-Kitaev algorithm.
+  [(#4801)](https://github.com/PennyLaneAI/pennylane/pull/4801)
+  [(#4802)](https://github.com/PennyLaneAI/pennylane/pull/4802)
 
   Given a total circuit error `epsilon=0.001`, the following circuit can be decomposed:
 
