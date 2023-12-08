@@ -1849,7 +1849,6 @@ class TestQuantumScriptComparisons:
 
 
 class TestBasisRotation:
-    import jax
 
     rotation_mat = np.array(
         [
