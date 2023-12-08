@@ -387,7 +387,7 @@ class ParametrizedEvolution(Operation):
         self.H = H
         self.odeint_kwargs = odeint_kwargs
         if t is None:
-            self.t = [0., 0.]
+            self.t = [0.0, 0.0]
         else:
             if isinstance(t, (list, tuple)):
                 t = qml.math.stack(t)
@@ -475,51 +475,33 @@ class ParametrizedEvolution(Operation):
 
     def _flatten(self):
         data = self.data
-        metadata = (tuple(self.t), self.H, self.hyperparameters, self.odeint_kwargs)
+        keys_and_values = tuple((key, value) for key, value in self.odeint_kwargs.items())
+        metadata = (
+            tuple(self.t),
+            self.H,
+            self.hyperparameters["return_intermediate"],
+            self.hyperparameters["complementary"],
+            keys_and_values,
+        )
 
         return data, metadata
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        if len(data)==0:
+        if len(data) == 0:
             params = None
         else:
             params = data
-        t, H, hyperparamameters, odeint_kwargs = metadata
+        t, H, return_intermediate, complementary, odeint_kwargs = metadata
 
         return cls(
             H,
             params,
             t,
-            complementary=hyperparamameters["complementary"],
-            return_intermediate=hyperparamameters["return_intermediate"],
-            **odeint_kwargs,
+            return_intermediate=return_intermediate,
+            complementary=complementary,
+            **dict(odeint_kwargs),
         )
-
-    # def __eq__(self, other):
-    #     """Check equality between two ParametrizedEvolution operators"""
-    #     if self.t is None:
-    #         same_times = other.t is None
-    #     else:
-    #         same_times = all(self.t == other.t)
-
-    #     if isinstance(self.data, tuple) and isinstance(other.data, tuple):
-    #         same_data = self.data == other.data
-    #     elif isinstance(self.data, Iterable) and isinstance(other.data, Iterable):
-    #         same_data = all(self.data == other.data)
-    #     else:
-    #         same_data = False
-    #     return all(
-    #         [
-    #             str(self.name) == str(other.name),
-    #             self.wires == other.wires,
-    #             self.hyperparameters == other.hyperparameters,
-    #             self.H == other.H,
-    #             self.odeint_kwargs == other.odeint_kwargs,
-    #             same_times,
-    #             same_data,
-    #         ]
-    #     )
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
