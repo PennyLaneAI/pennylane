@@ -504,4 +504,9 @@ def _equal_basis_rotation(
         return False
     if op1.wires != op2.wires:
         return False
+    if check_interface:
+        if qml.math.get_interface(op1.hyperparameters["unitary_matrix"]) != qml.math.get_interface(
+            op2.hyperparameters["unitary_matrix"]
+        ):
+            return False
     return True
