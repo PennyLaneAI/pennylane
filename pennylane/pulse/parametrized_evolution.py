@@ -23,7 +23,6 @@ import warnings
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
-from pennylane.wires import Wires
 from pennylane.typing import TensorLike
 from pennylane.ops import functions
 
@@ -409,7 +408,7 @@ class ParametrizedEvolution(Operation):
 
         try:
             super().__init__(*params, wires=H.wires, id=id)
-        except ValueError as e:
+        except ValueError:
             self.data = tuple(p for p in params)
             self.queue()
 
