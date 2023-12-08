@@ -287,7 +287,7 @@ class TestInitialization:
         # pylint:disable = use-implicit-booleaness-not-comparison
         assert ev.parameters == []
         assert ev.num_params == 0
-        assert ev.t is None
+        assert ev.t == [0.0, 0.0]
         assert ev.odeint_kwargs == {"mxstep": 10}
         params = []
         t = 6
