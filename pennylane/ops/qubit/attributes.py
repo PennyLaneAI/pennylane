@@ -18,6 +18,7 @@ and lists all operators satisfying those criteria.
 from inspect import isclass
 
 from pennylane.operation import Operator, Tensor
+from pennylane.measurements import MeasurementProcess
 
 
 class Attribute(set):
@@ -81,7 +82,7 @@ class Attribute(set):
             if isinstance(obj, Tensor):
                 return False
 
-            if isinstance(obj, Operator):
+            if isinstance(obj, (Operator, MeasurementProcess)):
                 return super().__contains__(obj.name)
 
             if isclass(obj):
