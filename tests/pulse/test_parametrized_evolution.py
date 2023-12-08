@@ -36,19 +36,45 @@ class MyOp(qml.RX):  # pylint: disable=too-few-public-methods
     has_diagonalizing_gates = False
 
 
-def amp(p, t):
+def amp0(p, t):
     return p * t
 
 
-H = qml.PauliX(1) + amp * qml.PauliZ(0) + amp * qml.PauliY(1)
-params = [0.5, 0.5]
+def amp1(p, t):
+    return p[0] * t + p[1]
+
+
+H0 = qml.PauliX(1) + amp0 * qml.PauliZ(0) + amp0 * qml.PauliY(1)
+params0 = [0.5, 0.5]
+
+H1 = qml.PauliX(1) + amp0 * qml.PauliZ(0) + amp1 * qml.PauliY(1)
+params1 = (0.5, [0.5, 0.5])
 
 example_pytree_evolutions = [
-    qml.pulse.ParametrizedEvolution(H),
-    qml.pulse.ParametrizedEvolution(H, params, t=0.5),
-    qml.pulse.ParametrizedEvolution(H, params, t=[0.5, 1.0]),
-    qml.pulse.ParametrizedEvolution(H, params, t=0.5, return_intermediate=True),
-    qml.pulse.ParametrizedEvolution(H, params, t=0.5, return_intermediate=True, complementary=True),
+    qml.pulse.ParametrizedEvolution(H0),
+    qml.pulse.ParametrizedEvolution(H0, params0),
+    qml.pulse.ParametrizedEvolution(H0, t=0.3),
+    qml.pulse.ParametrizedEvolution(H0, params0, t=0.5),
+    qml.pulse.ParametrizedEvolution(H0, params0, t=[0.5, 1.0]),
+    qml.pulse.ParametrizedEvolution(H0, params0, t=0.5, return_intermediate=True),
+    qml.pulse.ParametrizedEvolution(
+        H0, params0, t=0.5, return_intermediate=True, complementary=True
+    ),
+    qml.pulse.ParametrizedEvolution(
+        H0, params0, t=0.5, return_intermediate=True, complementary=True, atol=1e-4, rtol=1e-4
+    ),
+    qml.pulse.ParametrizedEvolution(
+        H0,
+        params0,
+        t=0.5,
+        return_intermediate=True,
+        complementary=True,
+        atol=1e-4,
+        rtol=1e-4,
+        dense=True,
+    ),
+    qml.pulse.ParametrizedEvolution(H1, params1, t=0.5),
+    qml.pulse.ParametrizedEvolution(H1, params1, t=0.5, return_intermediate=True),
 ]
 
 
@@ -62,8 +88,8 @@ def test_equality_different_datatypes():
     """Test equality method for the case of same data but different datatypes"""
     params0 = [0.5, 0.5]
     params1 = (0.5, 0.5)
-    evol1 = qml.pulse.ParametrizedEvolution(H, params0, t=0.5)
-    evol2 = qml.pulse.ParametrizedEvolution(H, params1, t=0.5)
+    evol1 = qml.pulse.ParametrizedEvolution(H0, params0, t=0.5)
+    evol2 = qml.pulse.ParametrizedEvolution(H0, params1, t=0.5)
     assert evol1 == evol2
 
 
@@ -78,16 +104,14 @@ class TestPytree:
 
 
 @pytest.mark.jax
-@pytest.mark.xfail
 def test_standard_validity():
     """Run standard validity checks on the parametrized evolution."""
-    from jax import numpy as jnp
 
     def f1(p, t):
-        return jnp.sin(p * t)
+        return p * t
 
     H = f1 * qml.PauliY(0)
-    params = jnp.array(0.5)
+    params = (0.5,)
 
     ev = qml.pulse.ParametrizedEvolution(H, params, 0.5)
     qml.ops.functions.assert_valid(ev)
