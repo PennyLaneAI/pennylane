@@ -149,14 +149,13 @@ def drawable_layers(ops, wire_map=None):
     occupied_wires_per_layer = [set()]
     ops_in_layer = [[]]
     used_mcms_per_layer = [set()]
-    measured_wires = {}
 
     # Collect all mid-circuit measurements used for classical conditioning
     used_mid_measures = set()
     for op in ops:
         if isinstance(op, Conditional):
             used_mid_measures.update(op.meas_val.measurements)
-        if isinstance(op, MeasurementProcess) and op.mv is not None:
+        elif isinstance(op, MeasurementProcess) and op.mv is not None:
             if isinstance(op, list):
                 used_mid_measures.union(set(m.measurements[0] for m in op.mv))
             else:
@@ -168,9 +167,14 @@ def drawable_layers(ops, wire_map=None):
             if len(op.wires) > 1:
                 raise ValueError("Cannot draw mid-circuit measurements with more than one wire.")
 
-            measured_wires[op.id] = wire_map[op.wires[0]]
+        if not getattr(op, "mv", None):
+            # Only terminal measurements that collect mid-circuit measurement statistics have
+            # op.mv != None
+            op_occupied_wires = _get_op_occupied_wires(op, wire_map, used_mid_measures)
+            op_layer = _recursive_find_layer(max_layer, op_occupied_wires, occupied_wires_per_layer)
+            stat_mcms = set()
 
-        if isinstance(op, MeasurementProcess) and op.mv is not None:
+        else:
             op_occupied_wires = set()
             stat_mcms = (
                 set(m.measurements[0] for m in op.mv)
@@ -179,15 +183,10 @@ def drawable_layers(ops, wire_map=None):
             )
             op_layer = _recursive_find_mcm_stats_layer(max_layer, stat_mcms, used_mcms_per_layer)
 
-        else:
-            op_occupied_wires = _get_op_occupied_wires(op, wire_map, used_mid_measures)
-            op_layer = _recursive_find_layer(max_layer, op_occupied_wires, occupied_wires_per_layer)
-            stat_mcms = set()
-
         # see if need to add new layer
         if op_layer > max_layer:
             max_layer += 1
-            occupied_wires_per_layer.append(set(measured_wires.values()))
+            occupied_wires_per_layer.append(set())
             ops_in_layer.append([])
             used_mcms_per_layer.append(set())
 

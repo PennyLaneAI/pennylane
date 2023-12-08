@@ -576,10 +576,10 @@ class TestMidCircuitMeasurements:
 
         drawing = qml.draw(circ, max_length=25)()
         expected_drawing = (
-            "0: ──┤↗├─────────────\n"
+            "0: ──┤↗├──RX(0.00)───\n"
             "1: ───║───RX(0.12)──X\n"
             "      ╚═══╩═════════╝\n\n"
-            "───RX(0.00)─┤  <Z>\n"
+            "────────────┤  <Z>\n"
             "───RX(0.00)─┤     \n"
             "                  "
         )
