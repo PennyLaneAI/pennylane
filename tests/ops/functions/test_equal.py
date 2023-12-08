@@ -1848,6 +1848,7 @@ class TestQuantumScriptComparisons:
         assert qml.equal(tape, other_tape) is False
 
 
+@pytest.mark.jax
 class TestBasisRotation:
     import jax
 
