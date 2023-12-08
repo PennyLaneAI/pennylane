@@ -38,6 +38,7 @@ def circuit_1():
     qml.Hadamard(wires=[0])
     qml.WireCut(wires=[1])
 
+
 @pytest.mark.parametrize("circuit", [circuit_1])
 @pytest.mark.parametrize(
     "expec_op",
