@@ -101,6 +101,7 @@ def autograd_execute(
     tapes: Batch,
     execute_fn: ExecuteFn,
     jpc: qml.interfaces.jacobian_products.JacobianProductCalculator,
+    device=None,
 ):
     """Execute a batch of tapes with Autograd parameters on a device.
 
