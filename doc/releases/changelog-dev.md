@@ -15,8 +15,8 @@
   [(#4850)](https://github.com/PennyLaneAI/pennylane/pull/4850)
   [(#4917)](https://github.com/PennyLaneAI/pennylane/pull/4917)
 
-  Mid-circuit measurement capabilities including qubit reuse and reset, postselection, and
-  conditioning are supported.
+  Drawing of mid-circuit measurement capabilities including qubit reuse and reset,
+  postselection, and conditioning are supported.
 
   ```python
   import pennylane as qml
@@ -51,17 +51,16 @@
 
 <h4>Catalyst is seamlessly integrated with PennyLane ⚗️</h4>
 
-Catalyst, our next-generation compilation framework, is now available within PennyLane
-rather than a standalone package, allowing you to access the benefits of just-in-time (JIT)
-compilation in PennyLane proper.  
+* Catalyst, our next-generation compilation framework, is now accessible within PennyLane,
+  allowing you to more easily benefit from hybrid just-in-time (JIT) compilation.
 
-To access these features, simply install `pennylane-catalyst`:
+  To access these features, simply install `pennylane-catalyst`:
 
-```
-pip install pennylane-catalyst
-```
+  ```
+  pip install pennylane-catalyst
+  ```
 
-* The [`qml.compiler`](https://docs.pennylane.ai/en/latest/code/qml_compiler.html) 
+  The [`qml.compiler`](https://docs.pennylane.ai/en/latest/code/qml_compiler.html) 
   module provides support for hybrid quantum-classical compilation.
   [(#4692)](https://github.com/PennyLaneAI/pennylane/pull/4692)
 
@@ -99,7 +98,7 @@ pip install pennylane-catalyst
 
 
 * The following functions can now be used with the `qml.qjit` decorator: `qml.grad`, 
-  `qml.jacobian`, `qml.vjp`, `qml.jvp`, `qml.adjoint`, and `qml.ctrl`.
+  `qml.jacobian`, `qml.vjp`, `qml.jvp`, and `qml.adjoint`.
   [(#4709)](https://github.com/PennyLaneAI/pennylane/pull/4709)
   [(#4724)](https://github.com/PennyLaneAI/pennylane/pull/4724)
   [(#4725)](https://github.com/PennyLaneAI/pennylane/pull/4725)
@@ -133,8 +132,8 @@ pip install pennylane-catalyst
           [-4.20735506e-01,  4.20735506e-01]])
   ```
 
-* JIT-compatible functionality for control flow, `qml.for_loop`, `qml.while_loop`, and `qml.cond`, 
-  and have been added.
+* JIT-compatible functionality for control flow has been added via `qml.for_loop`,
+  `qml.while_loop`, and `qml.cond`.
   [(#4698)](https://github.com/PennyLaneAI/pennylane/pull/4698)
 
   ``` python
