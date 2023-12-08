@@ -97,11 +97,6 @@ pip install pennylane-catalyst
   if statements and for loops, and including measurement feedback — during compilation,
   while continuing to support end-to-end autodifferentiation. 
 
-  To access these features, simply install `pennylane-catalyst`:
-
-  ```
-  pip install pennylane-catalyst
-  ```
 
 * The following functions can now be used with the `qml.qjit` decorator: `qml.grad`, 
   `qml.jacobian`, `qml.vjp`, `qml.jvp`, `qml.adjoint`, and `qml.ctrl`.
