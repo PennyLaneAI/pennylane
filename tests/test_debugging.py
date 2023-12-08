@@ -351,8 +351,8 @@ class TestSnapshot:
         expected = {
             0: np.array(1),
             1: np.array(1 - np.cos(x) ** 2),
-            2: np.array([np.cos(x/2)**2, np.sin(x/2)**2]),
-            3: np.array([np.cos(x/2), -1j * np.sin(x/2)]),
+            2: np.array([np.cos(x / 2) ** 2, np.sin(x / 2) ** 2]),
+            3: np.array([np.cos(x / 2), -1j * np.sin(x / 2)]),
             "execution_results": np.array(np.cos(x)),
         }
 
