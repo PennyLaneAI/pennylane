@@ -342,20 +342,18 @@ class TestSnapshot:
             qml.Snapshot(measurement=qml.expval(qml.PauliZ(0)))
             qml.RX(x, wires=0)
             qml.Snapshot(measurement=qml.var(qml.PauliZ(0)))
-            qml.RX(x, wires=0)
             qml.Snapshot(measurement=qml.probs(0))
-            qml.RX(x, wires=0)
             qml.Snapshot(measurement=qml.state())
-            qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        result = qml.snapshots(circuit)(0.1)
+        x = 0.1
+        result = qml.snapshots(circuit)(x)
         expected = {
             0: np.array(1),
-            1: np.array(0.00996671),
-            2: np.array([0.99003329, 0.00996671]),
-            3: np.array([0.98877108 + 0.0j, 0.0 - 0.14943813j]),
-            "execution_results": np.array(0.92106099),
+            1: np.array(1 - np.cos(x) ** 2),
+            2: np.array([np.cos(x/2)**2, np.sin(x/2)**2]),
+            3: np.array([np.cos(x/2), -1j * np.sin(x/2)]),
+            "execution_results": np.array(np.cos(x)),
         }
 
         assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys()))

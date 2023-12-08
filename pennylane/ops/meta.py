@@ -157,7 +157,7 @@ class Snapshot(Operation):
     The Snapshot operation saves the internal simulator state at specific
     execution steps of a quantum function. As such, it is a pseudo operation
     with no effect on the quantum state. Arbitrary measurements are supported
-    in snapshots via the key word argument ``measurement``.
+    in snapshots via the keyword argument ``measurement``.
 
     **Details:**
 
@@ -168,7 +168,7 @@ class Snapshot(Operation):
         tag (str or None): An optional custom tag for the snapshot, used to index it
             in the snapshots dictionary.
 
-        measurement (StateMeasurement or None): An optional option to record arbitrary
+        measurement (StateMeasurement or None): An optional argument to record arbitrary
             measurements of a state.
 
     **Example**
