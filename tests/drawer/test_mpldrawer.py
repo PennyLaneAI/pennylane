@@ -788,6 +788,62 @@ class TestAutosize:
         plt.close()
 
 
+class TestClassicalWires:
+    def test_classical_wire(self):
+        """Test the addition of horiziontal classical wires."""
+        drawer = MPLDrawer(n_wires=1, n_layers=4, c_wires=3)
+
+        layers = [0, 0, 1, 1]
+        wires = [0, 1, 1, 0]
+        drawer.classical_wire(layers, wires)
+
+        [_, cwire] = drawer.ax.lines
+        assert cwire.get_xdata() == layers
+        assert cwire.get_ydata() == [0, 0.6, 0.6, 0]  # cwires are scaledc
+
+        [pe1, pe2] = cwire.get_path_effects()
+
+        # probably not a good way to test this, but the best I can figure out
+        assert pe1._gc == {
+            "linewidth": 5 * plt.rcParams["lines.linewidth"],
+            "foreground": plt.rcParams["lines.color"],
+        }
+        assert pe2._gc == {
+            "linewidth": 3 * plt.rcParams["lines.linewidth"],
+            "foreground": plt.rcParams["figure.facecolor"],
+        }
+
+        plt.close()
+
+    def test_cwire_join(self):
+        """Test the cwire join method."""
+        drawer = MPLDrawer(n_wires=1, n_layers=4, c_wires=3)
+
+        drawer.cwire_join(1, 2)
+
+        [_, eraser] = drawer.ax.lines
+
+        assert eraser.get_xdata() == (0.8, 1)
+        assert eraser.get_ydata() == (0.85, 0.85)
+        assert eraser.get_color() == plt.rcParams["figure.facecolor"]
+        assert eraser.get_linewidth() == 3 * plt.rcParams["lines.linewidth"]
+        plt.close()
+
+    def test_cwire_join_erase_right(self):
+        """Test the cwire join method."""
+        drawer = MPLDrawer(n_wires=1, n_layers=4, c_wires=3)
+
+        drawer.cwire_join(1, 1, erase_right=True)
+
+        [_, eraser] = drawer.ax.lines
+
+        assert eraser.get_xdata() == (0.8, 1.2)
+        assert eraser.get_ydata() == (0.6, 0.6)
+        assert eraser.get_color() == plt.rcParams["figure.facecolor"]
+        assert eraser.get_linewidth() == 3 * plt.rcParams["lines.linewidth"]
+        plt.close()
+
+
 class TestCond:
     """Test the cond double-wire drawing function."""
 
