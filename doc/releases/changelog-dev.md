@@ -166,6 +166,32 @@
 
 <h3>Improvements 🛠</h3>
 
+* `SpecialUnitary` can now be initialized with only a subset of all parameters.
+
+  A single non-zero entry in the parameters will create a Pauli rotation:
+
+  ```pycon
+  >>> qml.ops.qubit.special_unitary.pauli_basis_strings(1) # 4**1-1 = 3 Pauli words
+  ['X', 'Y', 'Z']
+  >>> x = 0.412
+  >>> theta = x * np.array([1, 0, 0]) # The first entry belongs to the Pauli word "X"
+  >>> su = qml.SpecialUnitary(theta, wires=0)
+  >>> rx = qml.RX(-2 * x, 0) # RX introduces a prefactor -0.5 that has to be compensated
+  >>> qml.math.allclose(su.matrix(), rx.matrix())
+  True
+  ```
+
+  Alternatively, it is possible to pass the parameters for specific Pauli words and
+  indicate the selection and order of words with the optional argument `words`:
+
+  ```pycon
+  >>> x = [0.2, 0.4]
+  >>> words = ["IX", "YY"] # The first parameter will be used for IX, the second for YY
+  >>> qml.SpecialUnitary(x, wires=[0, 1], words=words)
+  SpecialUnitary(array([0.2, 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0.4, 0. , 0. , 0. ,
+          0. , 0. ]), wires=[0, 1])
+  ```
+  
 * `qml.expval` with large `Hamiltonian` objects is now faster and has a significantly lower memory footprint (and constant with respect to the number of `Hamiltonian` terms) when the `Hamiltonian` is a `PauliSentence`. That is due to the introduction of a specialized `dot` method in the `PauliSentence` class which performs `PauliSentence`-`state` products.
   [(#4839)](https://github.com/PennyLaneAI/pennylane/pull/4839)
 
