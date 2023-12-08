@@ -12,6 +12,7 @@
   [(#4803)](https://github.com/PennyLaneAI/pennylane/pull/4803)
   [(#4832)](https://github.com/PennyLaneAI/pennylane/pull/4832)
   [(#4901)](https://github.com/PennyLaneAI/pennylane/pull/4901)
+  [(#4850)](https://github.com/PennyLaneAI/pennylane/pull/4850)
   [(#4917)](https://github.com/PennyLaneAI/pennylane/pull/4917)
 
   Mid-circuit measurement capabilities including qubit reuse and reset, postselection, and
@@ -173,6 +174,7 @@ pip install pennylane-catalyst
   Solovay-Kitaev algorithm for approximately decomposing any single-qubit operation 
   to the Clifford+T basis.
   [(#4801)](https://github.com/PennyLaneAI/pennylane/pull/4801)
+  [(#4802)](https://github.com/PennyLaneAI/pennylane/pull/4802)
 
 * The new `qml.clifford_t_decomposition()` transform provides an approximate breakdown 
   of an input circuit into the [Clifford+T](https://en.wikipedia.org/wiki/Clifford_gates) 
