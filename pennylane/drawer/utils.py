@@ -14,7 +14,8 @@
 """
 This module contains some useful utility functions for circuit drawing.
 """
-from pennylane.ops import Controlled
+from pennylane.ops import Controlled, Conditional
+from pennylane.measurements import MidMeasureMP
 
 
 def default_wire_map(tape):
@@ -77,7 +78,7 @@ def unwrap_controls(op):
     # Get wires and control values of base operation; need to make a copy of
     # control values, otherwise it will modify the list in the operation itself.
     control_wires = getattr(op, "control_wires", [])
-    control_values = op.hyperparameters.get("control_values", None)
+    control_values = getattr(op, "hyperparameters", {}).get("control_values", None)
 
     if isinstance(control_values, list):
         control_values = control_values.copy()
@@ -98,4 +99,61 @@ def unwrap_controls(op):
 
             next_ctrl = next_ctrl.base
 
+    control_values = [bool(int(i)) for i in control_values] if control_values else control_values
     return control_wires, control_values
+
+
+def cwire_connections(layers):
+    """Extract the information required for classical control wires.
+
+    Args:
+        layers (List[List[.Operator, .MeasurementProcess]]): the operations and measurements sorted
+            into layers via ``drawable_layers``. Measurement layers may be appended to operation layers.
+
+    Returns:
+        dict, list, list: map from mid circuit measurement to classical wire, list of list of accessed layers
+            for each classical wire, and largest wire corresponding to the accessed layers in the list above.
+
+    >>> with qml.queuing.AnnotatedQueue() as q:
+    ...     m0 = qml.measure(0)
+    ...     m1 = qml.measure(1)
+    ...     qml.cond(m0 & m1, qml.PauliY)(0)
+    ...     qml.cond(m0, qml.S)(3)
+    >>> tape = qml.tape.QuantumScript.from_queue(q)
+    >>> layers = drawable_layers(tape)
+    >>> bit_map, cwire_layers, cwire_wires = cwire_connections(layers)
+    >>> bit_map
+    {measure(wires=[0]): 0, measure(wires=[1]): 1}
+    >>> cwire_layers
+    [[0, 2, 3], [1, 2]]
+    >>> cwire_wires
+    [[0, 0, 3], [1, 0]]
+
+    From this information, we can see that the first classical wire is active in layers
+    0, 2, and 3 while the second classical wire is active in layers 1 and 2.  The first "active"
+    layer will always be the one with the mid circuit measurement.
+
+    """
+    bit_map = {}
+    for layer in layers:
+        for op in layer:
+            if isinstance(op, Conditional):
+                for m in op.meas_val.measurements:
+                    bit_map[m] = None  # place holder till next pass
+
+    connected_layers = [[] for _ in bit_map]
+    connected_wires = [[] for _ in bit_map]
+    num_cwires = 0
+    for layer_idx, layer in enumerate(layers):
+        for op in layer:
+            if isinstance(op, MidMeasureMP) and op in bit_map:
+                bit_map[op] = num_cwires
+                connected_layers[num_cwires].append(layer_idx)
+                connected_wires[num_cwires].append(op.wires[0])
+                num_cwires += 1
+            elif isinstance(op, Conditional):
+                for m in op.meas_val.measurements:
+                    cwire = bit_map[m]
+                    connected_layers[cwire].append(layer_idx)
+                    connected_wires[cwire].append(max(op.wires))
+    return bit_map, connected_layers, connected_wires

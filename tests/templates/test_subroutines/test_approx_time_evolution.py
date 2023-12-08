@@ -20,6 +20,33 @@ from pennylane import numpy as pnp
 import pennylane as qml
 
 
+def test_standard_validity():
+    """Run standard tests of operation validity."""
+    H = 2.0 * qml.PauliX(0) + 3.0 * qml.PauliY(0)
+    t = 0.1
+    op = qml.ApproxTimeEvolution(H, t, n=20)
+    qml.ops.functions.assert_valid(op)
+
+
+# pylint: disable=protected-access
+def test_flatten_unflatten():
+    """Tests the _flatten and _unflatten methods."""
+    H = 2.0 * qml.PauliX(0) + 3.0 * qml.PauliY(0)
+    t = 0.1
+    op = qml.ApproxTimeEvolution(H, t, n=20)
+    data, metadata = op._flatten()
+    assert data[0] is H
+    assert data[1] == t
+    assert metadata == (20,)
+
+    # check metadata hashable
+    assert hash(metadata)
+
+    new_op = type(op)._unflatten(*op._flatten())
+    assert qml.equal(op, new_op)
+    assert new_op is not op
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
@@ -146,17 +173,18 @@ class TestDecomposition:
         @qml.qnode(dev)
         def circuit():
             qml.ApproxTimeEvolution(hamiltonian, 0.5, 2)
-            return qml.expval(qml.Identity(0))
+            return qml.expval(qml.Identity(0)), qml.state()
 
         @qml.qnode(dev2)
         def circuit2():
             qml.ApproxTimeEvolution(hamiltonian2, 0.5, 2)
-            return qml.expval(qml.Identity("z"))
+            return qml.expval(qml.Identity("z")), qml.state()
 
-        circuit()
-        circuit2()
+        res1, state1 = circuit()
+        res2, state2 = circuit2()
 
-        assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
+        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
 
 class TestInputs:
@@ -225,12 +253,12 @@ class TestInputs:
 
 # test data for gradient tests
 
-hamiltonian = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)])
+ham = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)])
 n = 2
 
 
 def circuit_template(time):
-    qml.ApproxTimeEvolution(hamiltonian, time, n)
+    qml.ApproxTimeEvolution(ham, time, n)
     return qml.expval(qml.PauliZ(0))
 
 
@@ -364,10 +392,11 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
 
+# pylint: disable=protected-access, unexpected-keyword-arg
 @pytest.mark.autograd
 @pytest.mark.parametrize(
     "dev_name,diff_method",
-    [["default.qubit.autograd", "backprop"], ["default.qubit", qml.gradients.param_shift]],
+    [["default.qubit", "backprop"], ["default.qubit", qml.gradients.param_shift]],
 )
 def test_trainable_hamiltonian(dev_name, diff_method):
     """Test that the ApproxTimeEvolution template
@@ -389,15 +418,16 @@ def test_trainable_hamiltonian(dev_name, diff_method):
     def cost(coeffs, t):
         tape = create_tape(coeffs, t)
 
-        if diff_method is qml.gradients.param_shift:
+        if diff_method is qml.gradients.param_shift and dev_name != "default.qubit":
             tape = dev.expand_fn(tape)
-
-        return qml.execute([tape], dev, diff_method)[0]
+            return qml.execute([tape], dev, diff_method)[0]
+        program, _ = dev.preprocess()
+        return qml.execute([tape], dev, gradient_fn=diff_method, transform_program=program)[0]
 
     t = pnp.array(0.54, requires_grad=True)
     coeffs = pnp.array([-0.6, 2.0], requires_grad=True)
 
-    res = cost(coeffs, t)
+    cost(coeffs, t)
     grad = qml.grad(cost)(coeffs, t)
 
     assert len(grad) == 2
@@ -409,9 +439,12 @@ def test_trainable_hamiltonian(dev_name, diff_method):
     assert grad[1].shape == tuple()
 
     # compare to finite-differences
-    tape = create_tape(coeffs, t)
-    g_tapes, fn = qml.gradients.finite_diff(tape, _expand=False, validate_params=False)
-    expected = fn(qml.execute(g_tapes, dev, None))[0]
 
-    assert np.allclose(grad[0], expected[0:1])
-    assert np.allclose(grad[1], expected[2])
+    @qml.qnode(dev, diff_method="finite-diff")
+    def circuit(coeffs, t):
+        H = qml.Hamiltonian(coeffs, obs)
+        qml.ApproxTimeEvolution(H, t, 2)
+        return qml.expval(qml.PauliZ(0))
+
+    expected = qml.grad(circuit)(coeffs, t)
+    assert np.allclose(qml.math.hstack(grad), qml.math.hstack(expected))

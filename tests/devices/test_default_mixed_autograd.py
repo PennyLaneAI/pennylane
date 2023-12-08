@@ -329,8 +329,11 @@ class TestPassthruIntegration:
         dev1 = qml.device("default.mixed", wires=3)
         dev2 = qml.device("default.mixed", wires=3)
 
-        circuit1 = qml.QNode(circuit, dev1, diff_method="backprop", interface="autograd")
-        circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift")
+        def cost(x):
+            return qml.math.stack(circuit(x))
+
+        circuit1 = qml.QNode(cost, dev1, diff_method="backprop", interface="autograd")
+        circuit2 = qml.QNode(cost, dev2, diff_method="parameter-shift")
 
         res = circuit1(p)
 
@@ -527,7 +530,7 @@ class TestPassthruIntegration:
         def circuit(x, weights, w):
             """In this example, a mixture of scalar
             arguments, array arguments, and keyword arguments are used."""
-            qml.QubitStateVector(state, wires=w)
+            qml.StatePrep(state, wires=w)
             operation(x, weights[0], weights[1], wires=w)
             return qml.expval(qml.PauliX(w))
 
@@ -570,33 +573,36 @@ class TestPassthruIntegration:
     @pytest.mark.parametrize(
         "dev_name,diff_method,mode",
         [
-            ["default.mixed", "finite-diff", "backward"],
-            ["default.mixed", "parameter-shift", "backward"],
-            ["default.mixed", "backprop", "forward"],
+            ["default.mixed", "finite-diff", False],
+            ["default.mixed", "parameter-shift", False],
+            ["default.mixed", "backprop", True],
         ],
     )
-    def test_ragged_differentiation(self, dev_name, diff_method, mode, tol):
+    def test_multiple_measurements_differentiation(self, dev_name, diff_method, mode, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
         dev = qml.device(dev_name, wires=2)
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)
 
-        @qml.qnode(dev, diff_method=diff_method, interface="autograd", mode=mode)
+        @qml.qnode(dev, diff_method=diff_method, interface="autograd", grad_on_execution=mode)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return [qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])]
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])
 
         res = circuit(x, y)
 
         expected = np.array(
             [np.cos(x), (1 + np.cos(x) * np.cos(y)) / 2, (1 - np.cos(x) * np.cos(y)) / 2]
         )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(qml.math.hstack(res), expected, atol=tol, rtol=0)
 
-        res = qml.jacobian(circuit)(x, y)
+        def cost(x, y):
+            return qml.math.hstack(circuit(x, y))
+
+        res = qml.jacobian(cost)(x, y)
         assert isinstance(res, tuple) and len(res) == 2
         assert res[0].shape == (3,)
         assert res[1].shape == (3,)
@@ -636,6 +642,7 @@ class TestPassthruIntegration:
         assert np.allclose(np.diag(res_b), expected_b, atol=tol, rtol=0)
 
 
+# pylint: disable=too-few-public-methods
 class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
 
@@ -652,28 +659,4 @@ class TestHighLevelIntegration:
         weights = np.random.random(shape, requires_grad=True)
 
         grad = qml.grad(circuit)(weights)
-        assert grad.shape == weights.shape
-
-    def test_qnode_collection_integration(self):
-        """Test that a PassthruQNode default.mixed.autograd works with QNodeCollections."""
-        dev = qml.device("default.mixed", wires=2)
-
-        def ansatz(weights, **kwargs):
-            # pylint: disable=unused-argument
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-
-        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        with pytest.warns(UserWarning, match="The map function is deprecated"):
-            qnodes = qml.map(ansatz, obs_list, dev, interface="autograd")
-
-        assert qnodes.interface == "autograd"
-
-        weights = np.array([0.1, 0.2], requires_grad=True)
-
-        def cost(weights):
-            return np.sum(qnodes(weights))
-
-        grad = qml.grad(cost)(weights)
         assert grad.shape == weights.shape

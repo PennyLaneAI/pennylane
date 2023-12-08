@@ -20,7 +20,8 @@ undergoing cosmetic changes.
 import pathlib
 import matplotlib.pyplot as plt
 
-from pennylane.drawer import MPLDrawer, use_style
+from pennylane.drawer import MPLDrawer
+from pennylane.drawer.style import _set_style
 
 folder = pathlib.Path(__file__).parent
 
@@ -88,6 +89,18 @@ def ctrl(savefile="ctrl.png"):
     plt.close()
 
 
+def cond(savefile="cond.png"):
+    drawer = MPLDrawer(n_wires=3, n_layers=4)
+
+    drawer.cond(layer=1, measured_layer=0, wires=[0], wires_target=[1])
+
+    options = {'color': "indigo", 'linewidth': 1.5}
+    drawer.cond(layer=3, measured_layer=2, wires=(1,), wires_target=(2,), options=options)
+
+    plt.savefig(folder / savefile)
+    plt.close()
+
+
 def CNOT(savefile="cnot.png"):
     drawer = MPLDrawer(n_wires=2, n_layers=2)
 
@@ -124,7 +137,7 @@ def measure(savefile="measure.png"):
 
 
 def integration(style="default", savefile="example_basic.png"):
-    use_style(style)
+    _set_style(style)
     drawer = MPLDrawer(n_wires=5, n_layers=6)
 
     drawer.label(["0", "a", r"$|\Psi\rangle$", r"$|\theta\rangle$", "aux"])
@@ -148,7 +161,7 @@ def integration(style="default", savefile="example_basic.png"):
 
     drawer.fig.suptitle("My Circuit", fontsize="xx-large")
     plt.savefig(folder / savefile)
-    plt.style.use("default")
+    _set_style("default")
     plt.close()
 
 
@@ -189,7 +202,7 @@ def integration_rcParams(savefile="example_rcParams.png"):
     drawer.fig.suptitle("My Circuit", fontsize="xx-large")
 
     plt.savefig(folder / savefile)
-    plt.style.use("default")
+    _set_style("default")
     plt.close()
 
 
@@ -250,3 +263,4 @@ if __name__ == "__main__":
     integration(style="black_white", savefile="black_white_style.png")
     integration_rcParams()
     integration_formatted()
+    cond()

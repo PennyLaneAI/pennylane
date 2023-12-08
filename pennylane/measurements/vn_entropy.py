@@ -15,17 +15,15 @@
 """
 This module contains the qml.vn_entropy measurement.
 """
-import copy
-from typing import Sequence
+from typing import Sequence, Optional
 
 import pennylane as qml
-from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 from .measurements import StateMeasurement, VnEntropy
 
 
-def vn_entropy(wires, log_base=None):
+def vn_entropy(wires, log_base=None) -> "VnEntropyMP":
     r"""Von Neumann entropy of the system prior to measurement.
 
     .. math::
@@ -58,7 +56,7 @@ def vn_entropy(wires, log_base=None):
 
     >>> param = np.array(np.pi/4, requires_grad=True)
     >>> qml.grad(circuit_entropy)(param)
-    0.6232252401402305
+    tensor(0.62322524, requires_grad=True)
 
     .. note::
 
@@ -78,28 +76,33 @@ class VnEntropyMP(StateMeasurement):
     Please refer to :func:`vn_entropy` for detailed documentation.
 
     Args:
-        obs (.Observable): The observable that is to be measured as part of the
-            measurement process. Not all measurement processes require observables (for
-            example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
-            This can only be specified if an observable was not provided.
-        eigvals (array): A flat array representing the eigenvalues of the measurement.
             This can only be specified if an observable was not provided.
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
+        log_base (float): Base for the logarithm.
     """
+
+    def _flatten(self):
+        metadata = (("wires", self.raw_wires), ("log_base", self.log_base))
+        return (None, None), metadata
 
     # pylint: disable=too-many-arguments, unused-argument
     def __init__(
         self,
-        obs: Operator = None,
-        wires=None,
-        eigvals=None,
-        id=None,
-        log_base=None,
+        wires: Optional[Wires] = None,
+        id: Optional[str] = None,
+        log_base: Optional[float] = None,
     ):
         self.log_base = log_base
-        super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
+        super().__init__(wires=wires, id=id)
+
+    @property
+    def hash(self):
+        """int: returns an integer hash uniquely representing the measurement process"""
+        fingerprint = (self.__class__.__name__, tuple(self.wires.tolist()), self.log_base)
+
+        return hash(fingerprint)
 
     @property
     def return_type(self):
@@ -109,29 +112,14 @@ class VnEntropyMP(StateMeasurement):
     def numeric_type(self):
         return float
 
-    def shape(self, device=None):
-        if qml.active_return():
-            return self._shape_new(device)
-        if device is None or device.shot_vector is None:
-            return (1,)
-        num_shot_elements = sum(s.copies for s in device.shot_vector)
-        return (num_shot_elements,)
-
-    def _shape_new(self, device=None):
-        if device is None or device.shot_vector is None:
+    def shape(self, device, shots):
+        if not shots.has_partitioned_shots:
             return ()
-        num_shot_elements = sum(s.copies for s in device.shot_vector)
+        num_shot_elements = sum(s.copies for s in shots.shot_vector)
         return tuple(() for _ in range(num_shot_elements))
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
+        state = qml.math.dm_from_state_vector(state)
         return qml.math.vn_entropy(
             state, indices=self.wires, c_dtype=state.dtype, base=self.log_base
-        )
-
-    def __copy__(self):
-        return self.__class__(
-            obs=copy.copy(self.obs),
-            wires=self._wires,
-            eigvals=self._eigvals,
-            log_base=self.log_base,
         )

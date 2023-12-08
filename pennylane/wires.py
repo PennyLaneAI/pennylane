@@ -89,6 +89,12 @@ class Wires(Sequence):
 
     Indexing an instance of this class will return a wire label.
 
+    .. warning::
+
+        In order to support wire labels of any hashable type, integers and 0-d arrays are considered different.
+        For example, running ``qml.RX(1.1, qml.numpy.array(0))`` on a device initialized with ``wires=[0]``
+        will fail because ``qml.numpy.array(0)`` does not exist in the device's wire map.
+
     Args:
          wires (Any): the wire label(s)
     """

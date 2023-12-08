@@ -44,21 +44,24 @@ def _compute_grouping_indices(observables, grouping_type="qwc", method="rlf"):
 
     indices = []
     available_indices = list(range(len(observables)))
-    for partition in observable_groups:
+    for partition in observable_groups:  # pylint:disable=too-many-nested-blocks
         indices_this_group = []
         for pauli_word in partition:
             # find index of this pauli word in remaining original observables,
             for observable in observables:
                 if qml.pauli.are_identical_pauli_words(pauli_word, observable):
-                    ind = observables.index(observable)
-                    indices_this_group.append(available_indices[ind])
-                    # delete this observable and its index, so it cannot be found again
-                    observables.pop(ind)
-                    available_indices.pop(ind)
+                    for ind, obs in enumerate(observables):
+                        if obs is not observable:
+                            continue
+                        indices_this_group.append(available_indices[ind])
+                        # delete this observable and its index, so it cannot be found again
+                        observables.pop(ind)
+                        available_indices.pop(ind)
+                        break
                     break
-        indices.append(indices_this_group)
+        indices.append(tuple(indices_this_group))
 
-    return indices
+    return tuple(indices)
 
 
 class Hamiltonian(Observable):
@@ -163,6 +166,18 @@ class Hamiltonian(Observable):
 
     num_wires = qml.operation.AnyWires
     grad_method = "A"  # supports analytic gradients
+    batch_size = None
+    ndim_params = None  # could be (0,) * len(coeffs), but it is not needed. Define at class-level
+
+    def _flatten(self):
+        # note that we are unable to restore grouping type or method without creating new properties
+        return (self.data, self._ops), (self.grouping_indices,)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        new_op = cls(data[0], data[1])
+        new_op._grouping_indices = metadata[0]  # pylint: disable=protected-access
+        return new_op
 
     def __init__(
         self,
@@ -172,7 +187,6 @@ class Hamiltonian(Observable):
         grouping_type=None,
         method="rlf",
         id=None,
-        do_queue=True,
     ):
         if qml.math.shape(coeffs)[0] != len(observables):
             raise ValueError(
@@ -195,8 +209,6 @@ class Hamiltonian(Observable):
 
         self._wires = qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
 
-        self.return_type = None
-
         # attribute to store indices used to form groups of
         # commuting observables, since recomputation is costly
         self._grouping_indices = None
@@ -214,7 +226,10 @@ class Hamiltonian(Observable):
         # create the operator using each coefficient as a separate parameter;
         # this causes H.data to be a list of tensor scalars,
         # while H.coeffs is the original tensor
-        super().__init__(*coeffs_flat, wires=self._wires, id=id, do_queue=do_queue)
+        super().__init__(*coeffs_flat, wires=self._wires, id=id)
+
+    def _check_batching(self):
+        """Override for Hamiltonian, batching is not yet supported."""
 
     def label(self, decimals=None, base_label=None, cache=None):
         decimals = None if (len(self.parameters) > 3) else decimals
@@ -264,7 +279,7 @@ class Hamiltonian(Observable):
         >>> t[0]
         [<tf.Tensor: shape=(), dtype=float32, numpy=1.0>, <tf.Tensor: shape=(), dtype=float32, numpy=2.0>]
         """
-        return self.coeffs, self.ops
+        return self.parameters, self.ops
 
     @property
     def wires(self):
@@ -321,10 +336,11 @@ class Hamiltonian(Observable):
             or any(i not in range(len(self.ops)) for i in [i for sl in value for i in sl])
         ):
             raise ValueError(
-                f"The grouped index value needs to be a list of lists of integers between 0 and the "
+                f"The grouped index value needs to be a tuple of tuples of integers between 0 and the "
                 f"number of observables in the Hamiltonian; got {value}"
             )
-        self._grouping_indices = value
+        # make sure all tuples so can be hashable
+        self._grouping_indices = tuple(tuple(sublist) for sublist in value)
 
     def compute_grouping(self, grouping_type="qwc", method="rlf"):
         """
@@ -470,7 +486,7 @@ class Hamiltonian(Observable):
 
         # hotfix: We `self.data`, since `self.parameters` returns a copy of the data and is now returned in
         # self.terms(). To be improved soon.
-        self.data = new_coeffs
+        self.data = tuple(new_coeffs)
         # hotfix: We overwrite the hyperparameter entry, which is now returned in self.terms().
         # To be improved soon.
         self.hyperparameters["ops"] = new_ops
@@ -549,6 +565,8 @@ class Hamiltonian(Observable):
                 parameters = tuple(
                     str(param) for param in ob.parameters
                 )  # Converts params into immutable type
+                if isinstance(ob, qml.GellMann):
+                    parameters += (ob.hyperparameters["index"],)
                 tensor.append((ob.name, ob.wires, parameters))
             data.add((co, frozenset(tensor)))
 
@@ -628,7 +646,7 @@ class Hamiltonian(Observable):
             return qml.Hamiltonian(coeffs, terms, simplify=True)
 
         if isinstance(H, (Tensor, Observable)):
-            terms = [op @ H for op in ops1]
+            terms = [op @ copy(H) for op in ops1]
 
             return qml.Hamiltonian(coeffs1, terms, simplify=True)
 
@@ -645,7 +663,7 @@ class Hamiltonian(Observable):
         ops1 = self.ops.copy()
 
         if isinstance(H, (Tensor, Observable)):
-            terms = [H @ op for op in ops1]
+            terms = [copy(H) @ op for op in ops1]
 
             return qml.Hamiltonian(coeffs1, terms, simplify=True)
 
@@ -747,7 +765,7 @@ class Hamiltonian(Observable):
         """
         cls = self.__class__
         new_op = cls.__new__(cls)
-        new_op.data = self.data.copy()
+        new_op.data = copy(self.data)
         new_op._wires = Wires(  # pylint: disable=protected-access
             [wire_map.get(wire, wire) for wire in self.wires]
         )

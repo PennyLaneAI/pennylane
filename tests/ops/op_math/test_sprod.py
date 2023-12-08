@@ -22,7 +22,7 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 import pennylane.numpy as qnp
-from pennylane import QuantumFunctionError, math
+from pennylane import math
 from pennylane.operation import AnyWires, DecompositionUndefinedError, MatrixUndefinedError
 from pennylane.ops.op_math.sprod import SProd, s_prod
 from pennylane.wires import Wires
@@ -102,7 +102,7 @@ class TestInitialization:
 
     @pytest.mark.parametrize("test_id", ("foo", "bar"))
     def test_init_sprod_op(self, test_id):
-        sprod_op = s_prod(3.14, qml.RX(0.23, wires="a"), do_queue=True, id=test_id)
+        sprod_op = s_prod(3.14, qml.RX(0.23, wires="a"), id=test_id)
 
         # no need to test if op.base == RX since this is covered in SymbolicOp tests
         assert sprod_op.scalar == 3.14
@@ -112,31 +112,49 @@ class TestInitialization:
         assert sprod_op.id == test_id
         assert sprod_op.queue_idx is None
 
-        assert sprod_op.data == [[3.14], [0.23]]
-        assert sprod_op.parameters == [[3.14], [0.23]]
+        assert sprod_op.data == (3.14, 0.23)
+        assert sprod_op.parameters == [3.14, 0.23]
         assert sprod_op.num_params == 2
 
     def test_parameters(self):
         sprod_op = s_prod(9.87, qml.Rot(1.23, 4.0, 5.67, wires=1))
-        assert sprod_op.parameters == [[9.87], [1.23, 4.0, 5.67]]
+        assert sprod_op.parameters == [9.87, 1.23, 4.0, 5.67]
 
     def test_data(self):
         sprod_op = s_prod(9.87, qml.Rot(1.23, 4.0, 5.67, wires=1))
-        assert sprod_op.data == [[9.87], [1.23, 4.0, 5.67]]
+        assert sprod_op.data == (9.87, 1.23, 4.0, 5.67)
 
     def test_data_setter(self):
         """Test the setter method for data"""
         scalar, angles = (9.87, (1.23, 4.0, 5.67))
-        old_data = [[9.87], [1.23, 4.0, 5.67]]
+        old_data = (9.87, 1.23, 4.0, 5.67)
 
         sprod_op = s_prod(scalar, qml.Rot(*angles, wires=1))
         assert sprod_op.data == old_data
 
-        new_data = [[1.23], [0.0, -1.0, -2.0]]
+        new_data = (1.23, 0.0, -1.0, -2.0)
         sprod_op.data = new_data
         assert sprod_op.data == new_data
-        assert sprod_op.scalar == new_data[0][0]
-        assert sprod_op.base.data == new_data[1]
+        assert sprod_op.scalar == new_data[0]
+        assert sprod_op.base.data == new_data[1:]
+
+    def test_data_setter_shallow(self):
+        """Test the setter method for data with a non-parametric base op."""
+        op = s_prod(0.1, qml.PauliX(0))
+        op.data = (0.2,)
+        assert op.data == (0.2,) == (op.scalar,)
+
+    def test_data_setter_deep(self):
+        """Test the setter method for data with a deep base operator."""
+        op = s_prod(0.1, qml.sum(qml.PauliX(0), qml.prod(qml.PauliY(0), qml.RX(0.2, 1))))
+        assert op.data == (0.1, 0.2)
+
+        new_data = (0.3, 0.4)
+        op.data = new_data
+        assert op.data == new_data
+        assert op.scalar == 0.3
+        assert op.base[1].data == (0.4,)
+        assert op.base[1][1].data == (0.4,)
 
     @pytest.mark.parametrize("scalar, op", ops)
     def test_terms(self, op, scalar):
@@ -174,6 +192,24 @@ class TestMscMethods:
         sprod_op = SProd(scalar, op)
         assert op_rep == repr(sprod_op)
 
+    # pylint: disable=protected-access
+    @pytest.mark.parametrize("op_scalar_tup", ops)
+    def test_flatten_unflatten(self, op_scalar_tup):
+        scalar, op = op_scalar_tup
+        sprod_op = SProd(scalar, op)
+
+        data, metadata = sprod_op._flatten()
+
+        assert len(data) == 2
+        assert data[0] == scalar
+        assert data[1] is op
+
+        assert metadata == tuple()
+
+        new_op = type(sprod_op)._unflatten(*sprod_op._flatten())
+        assert qml.equal(new_op, sprod_op)
+        assert new_op is not sprod_op
+
     @pytest.mark.parametrize("op_scalar_tup", ops)
     def test_copy(self, op_scalar_tup):
         """Test the copy dunder method properly copies the operator."""
@@ -190,9 +226,6 @@ class TestMscMethods:
         assert sprod_op.base.name == copied_op.base.name
         assert sprod_op.base.wires == copied_op.base.wires
         assert sprod_op.base.data == copied_op.base.data
-        assert (
-            sprod_op.base.data is not copied_op.base.data
-        )  # we want different object with same content
 
     def test_has_matrix_true_via_factor_has_matrix(self):
         """Test that a scalar product with an operator that has `has_matrix=True`
@@ -388,7 +421,7 @@ class TestMatrix:
     def test_sprod_observables(self):
         """Test that observable objects can also be scaled with correct matrix representation."""
         wires = [0, 1]
-        sprod_op1 = SProd(1.23, qml.Projector(basis_state=qnp.array([0, 1]), wires=wires))
+        sprod_op1 = SProd(1.23, qml.Projector(state=qnp.array([0, 1]), wires=wires))
         sprod_op2 = SProd(3.45, qml.Hermitian(qnp.array([[0.0, 1.0], [1.0, 0.0]]), wires=0))
         mat1 = sprod_op1.matrix()
         mat2 = sprod_op2.matrix()
@@ -474,6 +507,32 @@ class TestMatrix:
         assert mat.dtype == true_mat.dtype
         assert np.allclose(mat, true_mat)
 
+    @pytest.mark.tf
+    def test_tf_matrix_type_casting(self):
+        """Test that types for the matrix are always converted to complex128 and parameters aren't truncated."""
+        import tensorflow as tf
+
+        coeff = tf.Variable(0.1)
+        op = qml.PauliX(0)
+
+        sprod_op = SProd(coeff, op)
+        mat = sprod_op.matrix()
+
+        assert mat.dtype == tf.complex128
+        expected = np.array([[0, 0.1], [0.1, 0.0]], dtype="complex128")
+        assert qml.math.allclose(mat, expected)
+        assert sprod_op.data[0].dtype == coeff.dtype  # coeff not modified by calling the matrix
+
+        op = qml.PauliY(0)
+
+        sprod_op = SProd(coeff, op)
+        mat = sprod_op.matrix()
+
+        assert mat.dtype == tf.complex128
+        expected = np.array([[0, -0.1j], [0.1j, 0.0]], dtype="complex128")
+        assert qml.math.allclose(mat, expected)
+        assert sprod_op.data[0].dtype == coeff.dtype  # coeff not modified by calling the matrix
+
 
 class TestSparseMatrix:
     sparse_ops = (
@@ -494,6 +553,7 @@ class TestSparseMatrix:
 
         expected_sparse_matrix = csr_matrix(op.matrix()).multiply(scalar)
         expected_sparse_matrix.sort_indices()
+        expected_sparse_matrix.eliminate_zeros()
 
         assert isinstance(sparse_matrix, type(expected_sparse_matrix))
         assert all(sparse_matrix.data == expected_sparse_matrix.data)
@@ -513,6 +573,7 @@ class TestSparseMatrix:
 
         expected_sparse_matrix = csr_matrix(op.matrix()).multiply(scalar)
         expected_sparse_matrix.sort_indices()
+        expected_sparse_matrix.eliminate_zeros()
 
         assert isinstance(sparse_matrix, type(expected_sparse_matrix))
         assert all(sparse_matrix.data == expected_sparse_matrix.data)
@@ -532,6 +593,7 @@ class TestSparseMatrix:
 
         expected_sparse_matrix = csr_matrix(op.matrix()).multiply(scalar)
         expected_sparse_matrix.sort_indices()
+        expected_sparse_matrix.eliminate_zeros()
 
         assert isinstance(sparse_matrix, type(expected_sparse_matrix))
         assert all(sparse_matrix.data == expected_sparse_matrix.data)
@@ -551,6 +613,7 @@ class TestSparseMatrix:
 
         expected_sparse_matrix = csr_matrix(op.matrix()).multiply(scalar)
         expected_sparse_matrix.sort_indices()
+        expected_sparse_matrix.eliminate_zeros()
 
         assert isinstance(sparse_matrix, type(expected_sparse_matrix))
         assert all(sparse_matrix.data == expected_sparse_matrix.data)
@@ -567,6 +630,7 @@ class TestSparseMatrix:
 
         expected_sparse_matrix = scalar * op.matrix()
         expected_sparse_matrix = csr_matrix(expected_sparse_matrix)
+        expected_sparse_matrix.eliminate_zeros()
 
         assert np.allclose(sparse_matrix.todense(), expected_sparse_matrix.todense())
 
@@ -678,13 +742,13 @@ class TestProperties:
     @pytest.mark.parametrize("op, rep", op_pauli_reps)
     def test_pauli_rep(self, op, rep):
         """Test the pauli rep is produced as expected."""
-        assert op._pauli_rep == rep  # pylint: disable=protected-access
+        assert op.pauli_rep == rep
 
     def test_pauli_rep_none_if_base_pauli_rep_none(self):
         """Test that None is produced if the base op does not have a pauli rep"""
         base = qml.RX(1.23, wires=0)
         op = qml.s_prod(2, base)
-        assert op._pauli_rep is None  # pylint: disable=protected-access
+        assert op.pauli_rep is None
 
     def test_batching_properties(self):
         """Test the batching properties and methods."""
@@ -707,10 +771,11 @@ class TestProperties:
     def test_different_batch_sizes_raises_error(self):
         """Test that using different batch sizes for base and scalar raises an error."""
         base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = qml.s_prod(np.array([0.1, 1.2, 2.3, 3.4]), base)
         with pytest.raises(
             ValueError, match="Broadcasting was attempted but the broadcasted dimensions"
         ):
-            _ = qml.s_prod(np.array([0.1, 1.2, 2.3, 3.4]), base)
+            _ = op.batch_size
 
 
 class TestSimplify:
@@ -726,7 +791,7 @@ class TestSimplify:
         sprod_op = SProd(
             2, SProd(2, qml.RZ(1.32, wires=0)) + qml.Identity(wires=0) + qml.RX(1.9, wires=1)
         )
-        final_op = qml.ops.Sum(
+        final_op = qml.ops.Sum(  # pylint:disable=no-member
             SProd(4, qml.RZ(1.32, wires=0)),
             SProd(2, qml.Identity(wires=0)),
             SProd(2, qml.RX(1.9, wires=1)),
@@ -735,7 +800,7 @@ class TestSimplify:
 
         # TODO: Use qml.equal when supported for nested operators
 
-        assert isinstance(simplified_op, qml.ops.Sum)
+        assert isinstance(simplified_op, qml.ops.Sum)  # pylint:disable=no-member
         for s1, s2 in zip(final_op.operands, simplified_op.operands):
             assert isinstance(s2, SProd)
             assert s1.name == s2.name
@@ -773,7 +838,7 @@ class TestSimplify:
         final_op = s_prod(0 - 6j, qml.PauliX(0))
         simplified_op = sprod_op.simplify()
 
-        assert isinstance(simplified_op, qml.ops.SProd)
+        assert isinstance(simplified_op, qml.ops.SProd)  # pylint:disable=no-member
         assert simplified_op.name == final_op.name
         assert repr(simplified_op) == repr(final_op)
         assert simplified_op.wires == final_op.wires
@@ -833,10 +898,9 @@ class TestWrapperFunc:
         coeff, op = op_scalar_tup
 
         op_id = "sprod_op"
-        do_queue = False
 
-        sprod_func_op = s_prod(coeff, op, id=op_id, do_queue=do_queue)
-        sprod_class_op = SProd(coeff, op, id=op_id, do_queue=do_queue)
+        sprod_func_op = s_prod(coeff, op, id=op_id)
+        sprod_class_op = SProd(coeff, op, id=op_id)
 
         assert sprod_class_op.scalar == sprod_func_op.scalar
         assert sprod_class_op.base == sprod_func_op.base
@@ -914,8 +978,8 @@ class TestIntegration:
             return qml.probs(op=sprod_op)
 
         with pytest.raises(
-            QuantumFunctionError,
-            match="Symbolic Operations are not supported for " "rotating probabilities yet.",
+            qml.QuantumFunctionError,
+            match="Symbolic Operations are not supported for rotating probabilities yet.",
         ):
             my_circ()
 
@@ -947,8 +1011,8 @@ class TestIntegration:
         results = my_circ()
 
         assert sum(results.values()) == 20
-        assert 1.23 in results
-        assert -1.23 not in results
+        assert 1.23 in results  # pylint:disable=unsupported-membership-test
+        assert -1.23 not in results  # pylint:disable=unsupported-membership-test
 
     def test_differentiable_scalar(self):
         """Test that the gradient can be computed of the scalar when a SProd op
@@ -982,7 +1046,7 @@ class TestIntegration:
         true_grad = 100 * -qnp.sqrt(2) * qnp.cos(weights[0] / 2) * qnp.sin(weights[0] / 2)
         assert qnp.allclose(grad, true_grad)
 
-    def test_non_hermitian_op_in_measurement_process(self):
+    def test_non_hermitian_obs_not_supported(self):
         """Test that non-hermitian ops in a measurement process will raise a warning."""
         wires = [0, 1]
         dev = qml.device("default.qubit", wires=wires)
@@ -993,7 +1057,7 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.expval(sprod_op)
 
-        with pytest.warns(UserWarning, match="SProd might not be hermitian."):
+        with pytest.raises(NotImplementedError):
             my_circ()
 
     @pytest.mark.torch
@@ -1043,7 +1107,7 @@ class TestIntegration:
         def circuit(s):
             return qml.expval(qml.s_prod(s, qml.PauliZ(0)))
 
-        res = circuit(tf.Variable(2))
+        res = circuit(tf.Variable(2, dtype=tf.float64))
 
         assert qml.math.allclose(res, 2)
 

@@ -15,9 +15,12 @@
 """
 This submodule contains the ParametrizedHamiltonian class
 """
+from copy import copy
+
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 
@@ -233,13 +236,45 @@ class ParametrizedHamiltonian:
     def __call__(self, params, t):
         if len(params) != len(self.coeffs_parametrized):
             raise ValueError(
-                "The length of the params argument and the number of scalar-valued functions must be the same."
-                f"Received len(params) = {len(params)} but expected {len(self.coeffs_parametrized)}"
+                "The length of the params argument and the number of scalar-valued functions "
+                f"must be the same. Received len(params) = {len(params)} parameters but "
+                f"expected {len(self.coeffs_parametrized)} parameters."
             )
         return self.H_fixed() + self.H_parametrized(params, t)
 
     def __repr__(self):
-        return f"ParametrizedHamiltonian: terms={qml.math.shape(self.coeffs)[0]}"
+        terms = []
+
+        for coeff, op in zip(self.coeffs_fixed, self.ops_fixed):
+            term = f"({coeff}*({op}))"
+            terms.append(term)
+
+        for i, (coeff, op) in enumerate(zip(self.coeffs_parametrized, self.ops_parametrized)):
+            if callable(coeff) and hasattr(coeff, "__name__"):
+                term = f"({coeff.__name__}(params_{i}, t)*({op}))"
+            elif hasattr(coeff, "__class__") and hasattr(coeff.__class__, "__name__"):
+                term = f"({coeff.__class__.__name__}(params_{i}, t)*({op}))"
+            terms.append(term)
+
+        return "  " + "\n+ ".join(terms)
+
+    def map_wires(self, wire_map):
+        """Returns a copy of the current ParametrizedHamiltonian with its wires changed according
+        to the given wire map.
+
+        Args:
+            wire_map (dict): dictionary containing the old wires as keys and the new wires as values
+
+        Returns:
+            .ParametrizedHamiltonian: A new instance with mapped wires
+        """
+        new_ph = copy(self)
+        new_ph.ops_parametrized = [op.map_wires(wire_map) for op in self.ops_parametrized]
+        new_ph.ops_fixed = [op.map_wires(wire_map) for op in self.ops_fixed]
+        new_ph.wires = Wires.all_wires(
+            [op.wires for op in new_ph.ops_fixed] + [op.wires for op in new_ph.ops_parametrized]
+        )
+        return new_ph
 
     def H_fixed(self):
         """The fixed term(s) of the ``ParametrizedHamiltonian``. Returns a ``Sum`` operator of ``SProd``
@@ -289,20 +324,59 @@ class ParametrizedHamiltonian:
         coeffs = self.coeffs.copy()
 
         if isinstance(H, (Hamiltonian, ParametrizedHamiltonian)):
-            coeffs.extend(H.coeffs.copy())
-            ops.extend(H.ops.copy())
-            return ParametrizedHamiltonian(coeffs, ops)
+            # if Hamiltonian, coeffs array must be converted to list
+            new_coeffs = coeffs + list(H.coeffs.copy())
+            new_ops = ops + H.ops.copy()
+            return ParametrizedHamiltonian(new_coeffs, new_ops)
 
         if isinstance(H, qml.ops.SProd):  # pylint: disable=no-member
-            coeffs.append(H.scalar)
-            ops.append(H.base)
-            return ParametrizedHamiltonian(coeffs, ops)
+            new_coeffs = coeffs + [H.scalar]
+            new_ops = ops + [H.base]
+            return ParametrizedHamiltonian(new_coeffs, new_ops)
 
         if isinstance(H, Operator):
-            coeffs.append(1)
-            ops.append(H)
-            return ParametrizedHamiltonian(coeffs, ops)
+            new_coeffs = coeffs + [1]
+            new_ops = ops + [H]
+
+            return ParametrizedHamiltonian(new_coeffs, new_ops)
 
         return NotImplemented
 
-    __radd__ = __add__
+    def __radd__(self, H):
+        r"""The addition operation between a ``ParametrizedHamiltonian`` and an ``Operator``
+        or ``ParametrizedHamiltonian``."""
+        ops = self.ops.copy()
+        coeffs = self.coeffs.copy()
+
+        if isinstance(H, (Hamiltonian, ParametrizedHamiltonian)):
+            # if Hamiltonian, coeffs array must be converted to list
+            new_coeffs = list(H.coeffs.copy()) + coeffs
+            new_ops = H.ops.copy() + ops
+            return ParametrizedHamiltonian(new_coeffs, new_ops)
+
+        if isinstance(H, qml.ops.SProd):  # pylint: disable=no-member
+            new_coeffs = [H.scalar] + coeffs
+            new_ops = [H.base] + ops
+            return ParametrizedHamiltonian(new_coeffs, new_ops)
+
+        if isinstance(H, Operator):
+            new_coeffs = [1] + coeffs
+            new_ops = [H] + ops
+
+            return ParametrizedHamiltonian(new_coeffs, new_ops)
+
+        return NotImplemented
+
+    def __mul__(self, other):
+        ops = self.ops.copy()
+        coeffs_fixed = self.coeffs_fixed.copy()
+        coeffs_parametrized = self.coeffs_parametrized.copy()
+        if isinstance(other, TensorLike) and qml.math.ndim(other) == 0:
+            coeffs_fixed = [other * c for c in coeffs_fixed]
+            coeffs_parametrized = [
+                lambda p, t, new_c=c: other * new_c(p, t) for c in coeffs_parametrized
+            ]
+            return ParametrizedHamiltonian(coeffs_fixed + coeffs_parametrized, ops)
+        return NotImplemented
+
+    __rmul__ = __mul__

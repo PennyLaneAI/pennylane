@@ -361,11 +361,14 @@ class TestPassthruIntegration:
         dev1 = qml.device("default.mixed", wires=3)
         dev2 = qml.device("default.mixed", wires=3)
 
+        def cost(x):
+            return qml.math.stack(circuit(x))
+
         circuit1 = decorator(qml.QNode(circuit, dev1, diff_method="backprop", interface=interface))
-        circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift")
+        circuit2 = qml.QNode(cost, dev2, diff_method="parameter-shift")
 
         with tf.GradientTape() as tape:
-            res = circuit1(p_tf)
+            res = tf.experimental.numpy.hstack(circuit1(p_tf))
 
         assert np.allclose(res, circuit2(p), atol=tol, rtol=0)
 
@@ -602,7 +605,7 @@ class TestPassthruIntegration:
         def circuit(x, weights, w):
             """In this example, a mixture of scalar
             arguments, array arguments, and keyword arguments are used."""
-            qml.QubitStateVector(state, wires=w)
+            qml.StatePrep(state, wires=w)
             operation(x, weights[0], weights[1], wires=w)
             return qml.expval(qml.PauliX(w))
 
@@ -614,7 +617,7 @@ class TestPassthruIntegration:
         phi = -0.234
         lam = 0.654
 
-        params = tf.Variable([theta, phi, lam], trainable=True)
+        params = tf.Variable([theta, phi, lam], trainable=True, dtype=tf.float64)
 
         res = cost(params)
         expected_cost = (np.sin(lam) * np.sin(phi) - np.cos(theta) * np.cos(lam) * np.cos(phi)) ** 2
@@ -648,14 +651,16 @@ class TestPassthruIntegration:
 
     @pytest.mark.parametrize("decorator, interface", decorators_interfaces)
     @pytest.mark.parametrize(
-        "dev_name,diff_method,mode",
+        "dev_name,diff_method,grad_on_execution",
         [
-            ["default.mixed", "finite-diff", "backward"],
-            ["default.mixed", "parameter-shift", "backward"],
-            ["default.mixed", "backprop", "forward"],
+            ["default.mixed", "finite-diff", False],
+            ["default.mixed", "parameter-shift", False],
+            ["default.mixed", "backprop", True],
         ],
     )
-    def test_ragged_differentiation(self, decorator, interface, dev_name, diff_method, mode, tol):
+    def test_ragged_differentiation(
+        self, decorator, interface, dev_name, diff_method, grad_on_execution, tol
+    ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
         # pylint: disable=too-many-arguments
@@ -665,7 +670,9 @@ class TestPassthruIntegration:
         y = tf.Variable(-0.654, dtype=tf.float64)
 
         @decorator
-        @qml.qnode(dev, diff_method=diff_method, mode=mode, interface=interface)
+        @qml.qnode(
+            dev, diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
+        )
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -673,7 +680,7 @@ class TestPassthruIntegration:
             return [qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])]
 
         with tf.GradientTape() as tape:
-            res = circuit(x, y)
+            res = tf.experimental.numpy.hstack(circuit(x, y))
 
         expected = np.array(
             [
@@ -744,32 +751,6 @@ class TestHighLevelIntegration:
             res = circuit(weights)
 
         grad = tape.gradient(res, weights)
-        assert isinstance(grad, tf.Tensor)
-        assert grad.shape == weights.shape
-
-    def test_qnode_collection_integration(self):
-        """Test that a PassthruQNode default.mixed.tf works with QNodeCollections."""
-        dev = qml.device("default.mixed", wires=2)
-
-        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        with pytest.warns(UserWarning, match="The map function is deprecated"):
-            qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="tf")
-
-        assert qnodes.interface == "tf"
-
-        weights = tf.Variable(
-            np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2))
-        )
-
-        @tf.function
-        def cost(weights):
-            return tf.reduce_sum(qnodes(weights))
-
-        with tf.GradientTape() as tape:
-            res = cost(weights)
-
-        grad = tape.gradient(res, weights)
-
         assert isinstance(grad, tf.Tensor)
         assert grad.shape == weights.shape
 

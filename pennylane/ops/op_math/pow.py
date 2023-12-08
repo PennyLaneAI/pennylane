@@ -1,4 +1,4 @@
-# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ from .symbolicop import ScalarSymbolicOp, SymbolicOp
 _superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
 
 
-def pow(base, z=1, lazy=True, do_queue=True, id=None):
+def pow(base, z=1, lazy=True, id=None):
     """Raise an Operator to a power.
 
     Args:
@@ -46,8 +46,6 @@ def pow(base, z=1, lazy=True, do_queue=True, id=None):
     Keyword Args:
         lazy=True (bool): In lazy mode, all operations are wrapped in a ``Pow`` class
             and handled later. If ``lazy=False``, operation-specific simplifications are first attempted.
-        do_queue (bool): indicates whether the operator should be
-            recorded when created in a tape context
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
 
@@ -90,11 +88,11 @@ def pow(base, z=1, lazy=True, do_queue=True, id=None):
 
     """
     if lazy:
-        return Pow(base, z, do_queue=do_queue, id=id)
+        return Pow(base, z, id=id)
     try:
         pow_ops = base.pow(z)
     except PowUndefinedError:
-        return Pow(base, z, do_queue=do_queue, id=id)
+        return Pow(base, z, id=id)
 
     num_ops = len(pow_ops)
     if num_ops == 0:
@@ -103,9 +101,7 @@ def pow(base, z=1, lazy=True, do_queue=True, id=None):
         pow_op = pow_ops[0]
     else:
         pow_op = qml.prod(*pow_ops)
-
-    if do_queue:
-        QueuingManager.remove(base)
+    QueuingManager.remove(base)
 
     return pow_op
 
@@ -125,17 +121,8 @@ class PowOperation(Operation):
     grad_method = None
 
     @property
-    def base_name(self):
-        return self._name
-
-    @property
     def name(self):
         return self._name
-
-    # pylint: disable=missing-function-docstring
-    @property
-    def basis(self):
-        return self.base.basis
 
     @property
     def control_wires(self):
@@ -166,17 +153,35 @@ class Pow(ScalarSymbolicOp):
 
     """
 
+    def _flatten(self):
+        return (self.base, self.z), tuple()
+
+    @classmethod
+    def _unflatten(cls, data, _):
+        return pow(data[0], z=data[1])
+
     _operation_type = None  # type if base inherits from operation and not observable
     _operation_observable_type = None  # type if base inherits from both operation and observable
     _observable_type = None  # type if base inherits from observable and not oepration
 
     # pylint: disable=unused-argument
-    def __new__(cls, base=None, z=1, do_queue=True, id=None):
+    def __new__(cls, base=None, z=1, id=None):
         """Mixes in parents based on inheritance structure of base.
 
         Though all the types will be named "Pow", their *identity* and location in memory will be
         different based on ``base``'s inheritance.  We cache the different types in private class
         variables so that:
+
+        >>> Pow(op, z).__class__ is Pow(op, z).__class__
+        True
+        >>> type(Pow(op, z)) == type(Pow(op, z))
+        True
+        >>> isinstance(Pow(op, z), type(Pow(op, z)))
+        True
+        >>> Pow(qml.RX(1.2, wires=0), 0.5).__class__ is Pow._operation_type
+        True
+        >>> Pow(qml.PauliX(0), 1.2).__class__ is Pow._operation_observable_type
+        True
 
         """
 
@@ -201,18 +206,18 @@ class Pow(ScalarSymbolicOp):
 
         return object.__new__(Pow)
 
-    def __init__(self, base=None, z=1, do_queue=True, id=None):
+    def __init__(self, base=None, z=1, id=None):
         self.hyperparameters["z"] = z
         self._name = f"{base.name}**{z}"
 
-        super().__init__(base, scalar=z, do_queue=do_queue, id=id)
+        super().__init__(base, scalar=z, id=id)
 
         if isinstance(self.z, int) and self.z > 0:
             if (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) and (
                 self.batch_size is None
             ):
-                pr = qml.pauli.PauliSentence({})
-                for _ in range(self.z):
+                pr = base_pauli_rep
+                for _ in range(self.z - 1):
                     pr = pr * base_pauli_rep
                 self._pauli_rep = pr
             else:
@@ -236,6 +241,15 @@ class Pow(ScalarSymbolicOp):
     def ndim_params(self):
         return self.base.ndim_params
 
+    @property
+    def data(self):
+        """The trainable parameters"""
+        return self.base.data
+
+    @data.setter
+    def data(self, new_data):
+        self.base.data = new_data
+
     def label(self, decimals=None, base_label=None, cache=None):
         z_string = format(self.z).translate(_superscript)
         base_label = self.base.label(decimals, base_label, cache=cache)
@@ -245,7 +259,7 @@ class Pow(ScalarSymbolicOp):
 
     @staticmethod
     def _matrix(scalar, mat):
-        if isinstance(scalar, int):
+        if isinstance(scalar, int) and qml.math.get_deep_interface(mat) != "tensorflow":
             return qmlmath.linalg.matrix_power(mat, scalar)
         return fractional_matrix_power(mat, scalar)
 
@@ -316,6 +330,11 @@ class Pow(ScalarSymbolicOp):
         base_eigvals = self.base.eigvals()
         return [value**self.z for value in base_eigvals]
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_generator(self):
+        return self.base.has_generator
+
     def generator(self):
         r"""Generator of an operator that is in single-parameter-form.
 
@@ -338,7 +357,7 @@ class Pow(ScalarSymbolicOp):
 
     def simplify(self) -> Union["Pow", Identity]:
         # try using pauli_rep:
-        if pr := self._pauli_rep:
+        if pr := self.pauli_rep:
             pr.simplify()
             return pr.operation(wire_order=self.wires)
 

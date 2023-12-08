@@ -14,7 +14,6 @@
 """
 This submodule defines the symbolic operation that stands for an exponential of an operator.
 """
-from copy import copy
 from typing import List
 from warnings import warn
 
@@ -34,7 +33,6 @@ from pennylane.operation import (
     expand_matrix,
 )
 from pennylane.ops.qubit import Hamiltonian
-from pennylane.ops.qubit.attributes import has_unitary_generator_types
 from pennylane.wires import Wires
 
 from .sprod import SProd
@@ -54,7 +52,7 @@ def exp(op, coeff=1, num_steps=None, id=None):
         id (str): id for the Exp operator. Default is None.
 
     Returns:
-       :class:`Exp`: A :class:`~.operation.Operator` representing an operator exponential.
+       :class:`Exp`: An :class:`~.operation.Operator` representing an operator exponential.
 
     .. note::
 
@@ -125,7 +123,6 @@ class Exp(ScalarSymbolicOp, Operation):
         num_steps (int): The number of steps used in the decomposition of the exponential operator,
             also known as the Trotter number. If this value is `None` and the Suzuki-Trotter
             decomposition is needed, an error will be raised.
-        do_queue (bool): determines if the sum operator will be queued. Default is True.
         id (str): id for the Exp operator. Default is None.
 
     **Example**
@@ -170,12 +167,22 @@ class Exp(ScalarSymbolicOp, Operation):
     control_wires = Wires([])
     _name = "Exp"
 
+    def _flatten(self):
+        return (self.base, self.data[0]), (self.num_steps,)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(data[0], data[1], num_steps=metadata[0])
+
     # pylint: disable=too-many-arguments
-    def __init__(self, base, coeff=1, num_steps=None, do_queue=True, id=None):
-        super().__init__(base, scalar=coeff, do_queue=do_queue, id=id)
-        self._data = [[coeff], self.base.data]
+    def __init__(self, base, coeff=1, num_steps=None, id=None):
+        if not isinstance(base, Operator):
+            raise TypeError(f"base is expected to be of type Operator, but received {type(base)}")
+        super().__init__(base, scalar=coeff, id=id)
         self.grad_recipe = [None]
         self.num_steps = num_steps
+
+        self.hyperparameters["num_steps"] = num_steps
 
     def __repr__(self):
         return (
@@ -184,30 +191,9 @@ class Exp(ScalarSymbolicOp, Operation):
             else f"Exp({self.coeff} {self.base.name})"
         )
 
-    # pylint: disable=attribute-defined-outside-init
-    def __copy__(self):
-        # this method needs to be overwritten because the base must be copied too.
-        copied_op = object.__new__(type(self))
-        # copied_op must maintain inheritance structure of self
-        # Relevant for symbolic ops that mix in operation-specific components.
-
-        for attr, value in vars(self).items():
-            if attr not in {"_hyperparameters"}:
-                setattr(copied_op, attr, value)
-
-        copied_op._hyperparameters = copy(self.hyperparameters)
-        copied_op.hyperparameters["base"] = copy(self.base)
-        copied_op._data = copy(self._data)
-
-        return copied_op
-
     @property
     def hash(self):
         return hash((str(self.name), self.base.hash, str(self.coeff)))
-
-    @property
-    def data(self):
-        return self._data
 
     @property
     def coeff(self):
@@ -265,6 +251,7 @@ class Exp(ScalarSymbolicOp, Operation):
 
         return d
 
+    # pylint:disable=too-many-branches
     def _recursive_decomposition(self, base: Operator, coeff: complex):
         """Decompose the exponential of ``base`` multiplied by ``coeff``.
 
@@ -298,26 +285,50 @@ class Exp(ScalarSymbolicOp, Operation):
             ops = base.ops if isinstance(base, Hamiltonian) else base.operands
             return self._trotter_decomposition(ops, coeffs)
 
-        for op_class in has_unitary_generator_types:
-            # Check if the exponentiated operator is a generator of another operator
-            if op_class.num_wires in {base.num_wires, AnyWires} and op_class is not qml.PauliRot:
+        # Store operator classes with generators
+        has_generator_types = []
+        has_generator_types_anywires = []
+        for op_name in qml.ops.qubit.__all__:  # pylint:disable=no-member
+            op_class = getattr(qml.ops.qubit, op_name)  # pylint:disable=no-member
+            if op_class.has_generator:
+                if op_class.num_wires == AnyWires:
+                    has_generator_types_anywires.append(op_class)
+                elif op_class.num_wires == len(base.wires):
+                    has_generator_types.append(op_class)
+        # Ensure op_class.num_wires == base.num_wires before op_class.num_wires == AnyWires
+        has_generator_types.extend(has_generator_types_anywires)
+
+        for op_class in has_generator_types:
+            # PauliRot and PCPhase have different positional args
+            if op_class not in {qml.PauliRot, qml.PCPhase}:
                 g, c = qml.generator(op_class)(coeff, base.wires)
                 # Some generators are not wire-ordered (e.g. OrbitalRotation)
                 new_g = qml.map_wires(g, dict(zip(g.wires, base.wires)))
 
                 if qml.equal(base, new_g) and math.real(coeff) == 0:
-                    coeff *= -1j / c  # cancel the coefficients added by the generator
+                    coeff = math.real(
+                        -1j / c * coeff
+                    )  # cancel the coefficients added by the generator
                     return [op_class(coeff, g.wires)]
 
         if qml.pauli.is_pauli_word(base) and math.real(coeff) == 0:
             # Check if the exponential can be decomposed into a PauliRot gate
             return self._pauli_rot_decomposition(base, coeff)
 
-        raise DecompositionUndefinedError(
-            f"The decomposition of the {self} operator is not defined. "
-            "Please set a value to ``num_steps`` when instantiating the ``Exp`` operator "
-            "if a Suzuki-Trotter decomposition is required."
-        )
+        error_msg = f"The decomposition of the {self} operator is not defined. "
+
+        if not self.num_steps:  # if num_steps was not set
+            error_msg += (
+                "Please set a value to ``num_steps`` when instantiating the ``Exp`` operator "
+                "if a Suzuki-Trotter decomposition is required. "
+            )
+
+        if math.real(self.coeff) != 0 and self.base.is_hermitian:
+            error_msg += (
+                "Decomposition is not defined for real coefficients of hermitian operators."
+            )
+
+        raise DecompositionUndefinedError(error_msg)
 
     @staticmethod
     def _pauli_rot_decomposition(base: Operator, coeff: complex):
@@ -330,7 +341,9 @@ class Exp(ScalarSymbolicOp, Operation):
         Returns:
             List[Operator]: list containing the PauliRot operator
         """
-        coeff = 2j * coeff  # need to cancel the coefficients added by PauliRot and Ising gates
+        coeff = math.real(
+            2j * coeff
+        )  # need to cancel the coefficients added by PauliRot and Ising gates
         pauli_word = qml.pauli.pauli_word_to_string(base)
         if pauli_word == "I" * base.num_wires:
             return []
@@ -373,7 +386,7 @@ class Exp(ScalarSymbolicOp, Operation):
             try:
                 eigvals = self.eigvals()
                 eigvals_mat = (
-                    math.stack(math.diag(e) for e in eigvals)
+                    math.stack([math.diag(e) for e in eigvals])
                     if qml.math.ndim(self.scalar) > 0
                     else math.diag(eigvals)
                 )
@@ -447,6 +460,11 @@ class Exp(ScalarSymbolicOp, Operation):
             return Exp(new_base.base, self.coeff * new_base.scalar)
         return Exp(new_base, self.coeff)
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_generator(self):
+        return self.base.is_hermitian and not np.real(self.coeff)
+
     def generator(self):
         r"""Generator of an operator that is in single-parameter-form.
 
@@ -469,5 +487,5 @@ class Exp(ScalarSymbolicOp, Operation):
         raise GeneratorUndefinedError(
             f"Exponential with coefficient {self.coeff} and base operator {self.base} does not appear to have a "
             f"generator. Consider using op.simplify() to simplify before finding the generator, or define the operator "
-            f"in the form exp(ixG) through the Evolution class."
+            f"in the form exp(-ixG) through the Evolution class."
         )

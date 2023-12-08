@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as qnp
-from pennylane import QuantumFunctionError, math
+from pennylane import math
 from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
 from pennylane.ops.op_math import Prod, Sum
 from pennylane.wires import Wires
@@ -85,7 +85,7 @@ def _get_pw(w, pauli_op):
 
 
 # pylint: disable=unused-argument
-def sum_using_dunder_method(*summands, do_queue=False, id=None):
+def sum_using_dunder_method(*summands, id=None):
     """Helper function which computes the sum of all the summands to invoke the
     __add__ dunder method."""
     return sum(summands)
@@ -118,7 +118,7 @@ class TestInitialization:
     @pytest.mark.parametrize("id", ("foo", "bar"))
     def test_init_sum_op(self, id, sum_method):
         """Test the initialization of a Sum operator."""
-        sum_op = sum_method(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"), do_queue=True, id=id)
+        sum_op = sum_method(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"), id=id)
 
         assert sum_op.wires == Wires((0, "a"))
         assert sum_op.num_wires == 2
@@ -126,8 +126,8 @@ class TestInitialization:
         if sum_method.__name__ == sum.__name__:
             assert sum_op.id == id
 
-        assert sum_op.data == [[], [0.23]]
-        assert sum_op.parameters == [[], [0.23]]
+        assert sum_op.data == (0.23,)
+        assert sum_op.parameters == [0.23]
         assert sum_op.num_params == 1
 
     @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, qml.sum])
@@ -142,8 +142,8 @@ class TestInitialization:
         assert sum_op.name == "Sum"
         assert sum_op.id is None
 
-        assert sum_op.data == [[[], [0.23]], [9.87]]
-        assert sum_op.parameters == [[[], [0.23]], [9.87]]
+        assert sum_op.data == (0.23, 9.87)
+        assert sum_op.parameters == [0.23, 9.87]
         assert sum_op.num_params == 2
 
     @pytest.mark.parametrize("ops_lst", ops)
@@ -321,7 +321,7 @@ class TestMatrix:
         wires = [0, 1]
         sum_op = Sum(
             qml.Hermitian(qnp.array([[0.0, 1.0], [1.0, 0.0]]), wires=0),
-            qml.Projector(basis_state=qnp.array([0, 1]), wires=wires),
+            qml.Projector(state=qnp.array([0, 1]), wires=wires),
         )
         mat = sum_op.matrix()
 
@@ -474,6 +474,15 @@ class TestMatrix:
 class TestProperties:
     """Test class properties."""
 
+    def test_hash(self):
+        """Test the hash property is independent of order."""
+        op1 = Sum(qml.PauliX("a"), qml.PauliY("b"))
+        op2 = Sum(qml.PauliY("b"), qml.PauliX("a"))
+        assert op1.hash == op2.hash
+
+        op3 = Sum(qml.PauliX("a"), qml.PauliY("b"), qml.PauliZ(-1))
+        assert op3.hash != op1.hash
+
     @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, qml.sum])
     @pytest.mark.parametrize("ops_lst", ops)
     def test_is_hermitian(self, ops_lst, sum_method):
@@ -537,12 +546,12 @@ class TestProperties:
     @pytest.mark.parametrize("op, rep", op_pauli_reps)
     def test_pauli_rep(self, op, rep):
         """Test that the pauli rep gives the expected result."""
-        assert op._pauli_rep == rep  # pylint: disable=protected-access
+        assert op.pauli_rep == rep
 
     def test_pauli_rep_none(self):
         """Test that None is produced if any of the summands don't have a _pauli_rep."""
         op = qml.sum(qml.PauliX(wires=0), qml.RX(1.23, wires=1))
-        assert op._pauli_rep is None  # pylint: disable=protected-access
+        assert op.pauli_rep is None
 
     op_pauli_reps_nested = (
         (
@@ -637,7 +646,7 @@ class TestProperties:
     @pytest.mark.parametrize("op, rep", op_pauli_reps_nested)
     def test_pauli_rep_nested(self, op, rep):
         """Test that the pauli rep gives the expected result."""
-        assert op._pauli_rep == rep  # pylint: disable=protected-access
+        assert op.pauli_rep == rep
 
 
 class TestSimplify:
@@ -905,10 +914,9 @@ class TestWrapperFunc:
 
         summands = (qml.PauliX(wires=1), qml.RX(1.23, wires=0), qml.CNOT(wires=[0, 1]))
         op_id = "sum_op"
-        do_queue = False
 
-        sum_func_op = qml.sum(*summands, id=op_id, do_queue=do_queue)
-        sum_class_op = Sum(*summands, id=op_id, do_queue=do_queue)
+        sum_func_op = qml.sum(*summands, id=op_id)
+        sum_class_op = Sum(*summands, id=op_id)
 
         assert sum_class_op.operands == sum_func_op.operands
         assert np.allclose(sum_class_op.matrix(), sum_func_op.matrix())
@@ -997,8 +1005,8 @@ class TestIntegration:
             return qml.probs(op=sum_op)
 
         with pytest.raises(
-            QuantumFunctionError,
-            match="Symbolic Operations are not supported for " "rotating probabilities yet.",
+            qml.QuantumFunctionError,
+            match="Symbolic Operations are not supported for rotating probabilities yet.",
         ):
             my_circ()
 
@@ -1059,13 +1067,26 @@ class TestIntegration:
         dev = qml.device("default.qubit", wires=wires)
         sum_op = Sum(Prod(qml.RX(1.23, wires=0), qml.Identity(wires=1)), qml.Identity(wires=1))
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface=None)
         def my_circ():
             qml.PauliX(0)
             return qml.expval(sum_op)
 
         with pytest.warns(UserWarning, match="Sum might not be hermitian."):
             my_circ()
+
+    def test_params_can_be_considered_trainable(self):
+        """Tests that the parameters of a Sum are considered trainable."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface=None)
+        def circuit():
+            return qml.expval(
+                Sum(qml.s_prod(1.1, qml.PauliX(0)), qml.s_prod(qnp.array(2.2), qml.PauliY(1)))
+            )
+
+        circuit()
+        assert circuit.tape.trainable_params == [1]
 
 
 # pylint: disable=too-few-public-methods

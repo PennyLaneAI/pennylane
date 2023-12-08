@@ -14,12 +14,13 @@
 """
 Unit tests for the ``QNSPSAOptimizer``
 """
+# pylint: disable=protected-access
+from copy import deepcopy
 import pytest
 
+from scipy.linalg import sqrtm
 import pennylane as qml
 from pennylane import numpy as np
-from copy import deepcopy
-from scipy.linalg import sqrtm
 
 
 def get_single_input_qnode():
@@ -202,7 +203,7 @@ class TestQNSPSAOptimizer:
         grad_res = opt._post_process_grad(raw_results, grad_dirs)
 
         # gradient computed analytically
-        qnode_finite_diff = get_grad_finite_diff(params, finite_diff_step, grad_dirs).reshape(1, 1)
+        qnode_finite_diff = get_grad_finite_diff(params, finite_diff_step, grad_dirs)
         grad_expected = [
             qnode_finite_diff / (2 * finite_diff_step) * grad_dir for grad_dir in grad_dirs
         ]
@@ -316,7 +317,7 @@ class TestQNSPSAOptimizer:
         # test the next-step parameter
         _, grad_dirs = target_opt._get_spsa_grad_tapes(qnode, params, {})
         _, tensor_dirs = target_opt._get_tensor_tapes(qnode, params, {})
-        qnode_finite_diff = get_grad_finite_diff(params, finite_diff_step, grad_dirs).reshape(1, 1)
+        qnode_finite_diff = get_grad_finite_diff(params, finite_diff_step, grad_dirs)
         grad_expected = [
             qnode_finite_diff / (2 * finite_diff_step) * grad_dir for grad_dir in grad_dirs
         ]
@@ -417,3 +418,20 @@ class TestQNSPSAOptimizer:
         # blocking should stop params from updating from this minimum
         new_params, _ = opt.step_and_cost(qnode, params)
         assert np.allclose(new_params, params)
+
+
+def test_template_no_adjoint():
+    """Test that qnspsa iterates when the operations do not have a custom adjoint."""
+
+    num_qubits = 2
+    dev = qml.device("default.qubit", wires=num_qubits)
+
+    @qml.qnode(dev)
+    def cost(params):
+        qml.RandomLayers(weights=params, wires=range(num_qubits), seed=42)
+        return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+    params = np.random.normal(0, np.pi, (2, 4))
+    opt = qml.QNSPSAOptimizer(stepsize=5e-2)
+    assert opt.step_and_cost(cost, params)  # just checking it runs without error
+    assert not qml.RandomLayers.has_adjoint

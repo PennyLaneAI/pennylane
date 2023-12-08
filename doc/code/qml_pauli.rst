@@ -98,7 +98,7 @@ groupings according to a binary relation (e.g., qubit-wise commuting):
 >>> observables = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
 >>> obs_groupings = group_observables(observables)
 >>> obs_groupings
-[[Tensor(PauliX(wires=[0]), PauliX(wires=[1]))],
+[[PauliX(wires=[0]) @ PauliX(wires=[1])],
  [PauliY(wires=[0]), PauliZ(wires=[1])]]
 
 The :math:`C_{J}` coefficients for each :math:`P_J` Pauli word making up a
@@ -111,7 +111,7 @@ the groups of observables:
 >>> coeffs = [1.43, 4.21, 0.97]
 >>> obs_groupings, coeffs_groupings = group_observables(obs, coeffs, 'qwc', 'rlf')
 >>> obs_groupings
-[[Tensor(PauliX(wires=[0]), PauliX(wires=[1]))],
+[[PauliX(wires=[0]) @ PauliX(wires=[1])],
  [PauliY(wires=[0]), PauliZ(wires=[1])]]
 >>> coeffs_groupings
 [[4.21], [1.43, 0.97]]

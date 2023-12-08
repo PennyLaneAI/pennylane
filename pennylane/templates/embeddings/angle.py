@@ -43,6 +43,8 @@ class AngleEmbedding(Operation):
             with :math:`N\leq n`
         wires (Any or Iterable[Any]): wires that the template acts on
         rotation (str): type of rotations used
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified.
 
     Example:
 
@@ -73,7 +75,14 @@ class AngleEmbedding(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, features, wires, rotation="X", do_queue=True, id=None):
+    def _flatten(self):
+        hyperparameters = (("rotation", self._rotation),)
+        return self.data, (self.wires, hyperparameters)
+
+    def __repr__(self):
+        return f"AngleEmbedding({self.data[0]}, wires={self.wires.tolist()}, rotation={self._rotation})"
+
+    def __init__(self, features, wires, rotation="X", id=None):
         if rotation not in ROT:
             raise ValueError(f"Rotation option {rotation} not recognized.")
 
@@ -84,10 +93,11 @@ class AngleEmbedding(Operation):
                 f"Features must be of length {len(wires)} or less; got length {n_features}."
             )
 
+        self._rotation = rotation
         self._hyperparameters = {"rotation": ROT[rotation]}
 
         wires = wires[:n_features]
-        super().__init__(features, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(features, wires=wires, id=id)
 
     @property
     def num_params(self):

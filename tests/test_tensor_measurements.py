@@ -14,14 +14,12 @@
 """
 Integration tests to ensure that tensor observables return the correct result.
 """
+import functools
 import pytest
 
 import numpy as np
-import itertools
-import functools
 import pennylane as qml
 from pennylane import expval, var, sample
-from gate_data import I, X, Y, Z, S, Rotx, Roty, H, CNOT
 
 
 Z = np.array([[1, 0], [0, -1]])
@@ -38,6 +36,7 @@ def ansatz(a, b, c):
     qml.CNOT(wires=[1, 2])
 
 
+# pylint: disable=too-many-arguments
 @pytest.mark.parametrize("shots", [None, int(1e6)])
 @pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
 class TestTensorExpval:
@@ -229,6 +228,7 @@ class TestTensorExpval:
             [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
         )
 
+        # pylint: disable=unused-argument
         @qml.qnode(dev)
         def circuit(a, b, c):
             qml.RY(a, wires=0)
@@ -359,6 +359,7 @@ def tensor_product(observables):
 class TestTensorSample:
     """Tests for samples of tensor observables"""
 
+    # pylint: disable=unused-argument
     def test_paulix_tensor_pauliz(self, theta, phi, varphi, tol_stochastic):
         """Test that a tensor product involving PauliX and PauliZ works correctly"""
         dev = qml.device("default.qubit", wires=2, shots=int(1e6))
@@ -387,25 +388,6 @@ class TestTensorSample:
         # s1 should only contain 1 and -1
         assert np.allclose(s1**2, 1, atol=tol_stochastic, rtol=0)
 
-        zero_state = np.zeros(2**3)
-        zero_state[0] = 1
-        psi = zero_state
-        psi = tensor_product([Rotx(theta), I, I]) @ zero_state
-        psi = tensor_product([I, Rotx(phi), I]) @ psi
-        psi = tensor_product([I, I, Rotx(varphi)]) @ psi
-        psi = tensor_product([CNOT, I]) @ psi
-        psi = tensor_product([I, CNOT]) @ psi
-
-        # Diagonalize according to the observable
-        psi = tensor_product([H, I, I]) @ psi
-        psi = tensor_product([I, I, Z]) @ psi
-        psi = tensor_product([I, I, S]) @ psi
-        psi = tensor_product([I, I, H]) @ psi
-
-        expected_probabilities = np.abs(psi) ** 2
-
-        assert np.allclose(dev.probability(), expected_probabilities, atol=tol_stochastic, rtol=0)
-
     def test_pauliz_tensor_hadamard(self, theta, phi, varphi, tol_stochastic):
         """Test that a tensor product involving PauliZ and hadamard works correctly"""
         dev = qml.device("default.qubit", wires=3, shots=int(1e6))
@@ -416,25 +398,6 @@ class TestTensorSample:
             return sample(qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2))
 
         s1 = circuit(theta, phi, varphi)
-
-        zero_state = np.zeros(2**3)
-        zero_state[0] = 1
-        psi = zero_state
-        psi = tensor_product([Rotx(theta), I, I]) @ zero_state
-        psi = tensor_product([I, Rotx(phi), I]) @ psi
-        psi = tensor_product([I, I, Rotx(varphi)]) @ psi
-        psi = tensor_product([CNOT, I]) @ psi
-        psi = tensor_product([I, CNOT]) @ psi
-
-        # Diagonalize according to the observable
-        psi = tensor_product([I, Roty(-np.pi / 4), I]) @ psi
-        psi = tensor_product([I, I, Z]) @ psi
-        psi = tensor_product([I, I, S]) @ psi
-        psi = tensor_product([I, I, H]) @ psi
-
-        expected_probabilities = np.abs(psi) ** 2
-
-        assert np.allclose(dev.probability(), expected_probabilities, atol=tol_stochastic, rtol=0)
 
         # s1 should only contain 1 and -1
         assert np.allclose(s1**2, 1, atol=tol_stochastic, rtol=0)
@@ -461,22 +424,5 @@ class TestTensorSample:
 
         # s1 should only contain the eigenvalues of
         # the hermitian matrix tensor product Z
-        Z = np.diag([1, -1])
         eigvals = np.linalg.eigvalsh(np.kron(Z, A))
         assert set(np.round(s1, 8)).issubset(set(np.round(eigvals, 8)))
-
-        zero_state = np.zeros(2**3)
-        zero_state[0] = 1
-        psi = tensor_product([Rotx(theta), I, I]) @ zero_state
-        psi = tensor_product([I, Rotx(phi), I]) @ psi
-        psi = tensor_product([I, I, Rotx(varphi)]) @ psi
-        psi = tensor_product([CNOT, I]) @ psi
-        psi = tensor_product([I, CNOT]) @ psi
-
-        # Diagonalize according to the observable
-        eigvals, eigvecs = np.linalg.eigh(A)
-        psi = tensor_product([I, eigvecs.conj().T]) @ psi
-
-        expected_probabilities = np.abs(psi) ** 2
-
-        assert np.allclose(dev.probability(), expected_probabilities, atol=tol_stochastic, rtol=0)

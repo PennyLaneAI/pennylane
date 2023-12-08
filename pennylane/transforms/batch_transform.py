@@ -20,12 +20,25 @@ import os
 import types
 import warnings
 
+from typing import Callable, Tuple
+
 import pennylane as qml
+from pennylane.typing import ResultBatch
+
+PostprocessingFn = Callable[[ResultBatch], ResultBatch]
+QuantumTapeBatch = Tuple[qml.tape.QuantumScript]
 
 
 class batch_transform:
     r"""Class for registering a tape transform that takes a tape, and outputs
     a batch of tapes to be independently executed on a quantum device.
+
+    .. warning::
+
+        Use of ``batch_transform`` to create a custom transform is deprecated. Instead
+        switch to using the new :func:`transform` function. Follow the instructions
+        `here <https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms>`_
+        for further details
 
     Examples of such transforms include quantum gradient shift rules (such
     as finite-differences and the parameter-shift rule) and metrics such as
@@ -76,24 +89,23 @@ class batch_transform:
             '''Generates two tapes, one with all RX replaced with RY,
             and the other with all RX replaced with RZ.'''
 
-            tape1 = qml.tape.QuantumTape()
-            tape2 = qml.tape.QuantumTape()
+            ops1 = []
+            ops2 = []
 
             # loop through all operations on the input tape
-            for op in tape:
+            for op in tape.operations:
                 if op.name == "RX":
                     wires = op.wires
                     param = op.parameters[0]
 
-                    with tape1:
-                        qml.RY(a * qml.math.abs(param), wires=wires)
-
-                    with tape2:
-                        qml.RZ(b * qml.math.abs(param), wires=wires)
+                    ops1.append(qml.RY(a * qml.math.abs(param), wires=wires))
+                    ops2.append(qml.RZ(b * qml.math.abs(param), wires=wires))
                 else:
-                    for t in [tape1, tape2]:
-                        with t:
-                            qml.apply(op)
+                    ops1.append(op)
+                    ops2.append(op)
+
+            tape1 = qml.tape.QuantumTape(ops1, tape.measurements)
+            tape2 = qml.tape.QuantumTape(ops2, tape.measurements)
 
             def processing_fn(results):
                 return qml.math.sum(qml.math.stack(results))
@@ -102,10 +114,8 @@ class batch_transform:
 
     We can apply this transform to a quantum tape:
 
-    >>> with qml.tape.QuantumTape() as tape:
-    ...     qml.Hadamard(wires=0)
-    ...     qml.RX(-0.5, wires=0)
-    ...     qml.expval(qml.PauliX(0))
+    >>> ops = [qml.Hadamard(wires=0), qml.RX(-0.5, wires=0)]
+    >>> tape = qml.tape.QuantumTape(ops, [qml.expval(qml.PauliX(0))])
     >>> tapes, fn = my_transform(tape, 0.65, 2.5)
     >>> print(qml.drawer.tape_text(tapes[0], decimals=2))
     0: ──H──RY(0.33)─┤  <X>
@@ -117,7 +127,7 @@ class batch_transform:
     >>> dev = qml.device("default.qubit", wires=1)
     >>> res = qml.execute(tapes, dev, interface="autograd", gradient_fn=qml.gradients.param_shift)
     >>> print(res)
-    [tensor([0.94765073], requires_grad=True), tensor([0.31532236], requires_grad=True)]
+    [0.9476507264148154, 0.31532236239526856]
 
     Applying the processing function, we retrieve the end result of the transform:
 
@@ -210,6 +220,12 @@ class batch_transform:
                 "does not appear to be a valid Python function or callable."
             )
 
+        warnings.warn(
+            "Use of `batch_transform` to create a custom transform is deprecated. Instead "
+            "switch to using the new qml.transform function. Follow the instructions here for "
+            "further details: https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms.",
+            qml.PennyLaneDeprecationWarning,
+        )
         self.transform_fn = transform_fn
         self.expand_fn = expand_fn
         self.differentiable = differentiable
@@ -285,6 +301,11 @@ class batch_transform:
 
         def _wrapper(*args, **kwargs):
             shots = kwargs.pop("shots", False)
+
+            argnums = kwargs.pop("argnums", None)
+
+            if argnums:
+                tkwargs["argnums"] = argnums  # pragma: no cover
 
             old_interface = qnode.interface
 
@@ -392,7 +413,7 @@ class batch_transform:
         wrapper.differentiable = self.differentiable
         return wrapper
 
-    def construct(self, tape, *args, **kwargs):
+    def construct(self, tape, *targs, **tkwargs):
         """Applies the batch tape transform to an input tape.
 
         Args:
@@ -404,12 +425,15 @@ class batch_transform:
             tuple[list[tapes], callable]: list of transformed tapes
             to execute and a post-processing function.
         """
-        expand = kwargs.pop("_expand", True)
+        expand = tkwargs.pop("_expand", True)
+        argnums = tkwargs.pop("argnums", None)
 
         if expand and self.expand_fn is not None:
-            tape = self.expand_fn(tape, *args, **kwargs)
+            tape = self.expand_fn(tape, *targs, **tkwargs)
 
-        tapes, processing_fn = self.transform_fn(tape, *args, **kwargs)
+        if argnums is not None:
+            tape.trainable_params = argnums  # pragma: no cover
+        tapes, processing_fn = self.transform_fn(tape, *targs, **tkwargs)
 
         if processing_fn is None:
 
@@ -430,15 +454,16 @@ class batch_transform:
         return lambda tape: self.construct(tape, *targs, **tkwargs)
 
 
-def map_batch_transform(transform, tapes):
-    """Map a batch transform over multiple tapes.
+def map_batch_transform(
+    transform: Callable, tapes: QuantumTapeBatch
+) -> Tuple[QuantumTapeBatch, PostprocessingFn]:
+    """Map a transform over multiple tapes.
 
     Args:
-        transform (.batch_transform): the batch transform
-            to be mapped
-        tapes (Sequence[QuantumTape]): The sequence of tapes the batch
+        transform (Callable): the transform to be mapped
+        tapes (Sequence[QuantumTape]): The sequence of tapes the
             transform should be applied to. Each tape in the sequence
-            is transformed by the batch transform.
+            is transformed by the transform.
 
     **Example**
 
@@ -448,33 +473,35 @@ def map_batch_transform(transform, tapes):
 
         H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
 
-        with qml.tape.QuantumTape() as tape1:
-            qml.RX(0.5, wires=0)
-            qml.RY(0.1, wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(H)
 
-        with qml.tape.QuantumTape() as tape2:
-            qml.Hadamard(wires=0)
-            qml.CRX(0.5, wires=[0, 1])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(H + 0.5 * qml.PauliY(0))
+        ops1 = [
+            qml.RX(0.5, wires=0),
+            qml.RY(0.1, wires=1),
+            qml.CNOT(wires=(0,1))
+        ]
+        measurements1 = [qml.expval(H)]
+        tape1 = qml.tape.QuantumTape(ops1, measurements1)
+
+        ops2 = [qml.Hadamard(0), qml.CRX(0.5, wires=(0,1)), qml.CNOT((0,1))]
+        measurements2 = [qml.expval(H + 0.5 * qml.PauliY(0))]
+        tape2 = qml.tape.QuantumTape(ops2, measurements2)
+
 
     We can use ``map_batch_transform`` to map a single
-    batch transform across both of the these tapes in such a way
+    transform across both of the these tapes in such a way
     that allows us to submit a single job for execution:
 
     >>> tapes, fn = map_batch_transform(qml.transforms.hamiltonian_expand, [tape1, tape2])
     >>> dev = qml.device("default.qubit", wires=2)
     >>> fn(qml.execute(tapes, dev, qml.gradients.param_shift))
-    [0.9950041652780257, 0.8150893013179248]
+    [array(0.99500417), array(0.8150893)]
     """
     execution_tapes = []
     batch_fns = []
     tape_counts = []
 
     for t in tapes:
-        # Preprocess the tapes by applying batch transforms
+        # Preprocess the tapes by applying transforms
         # to each tape, and storing corresponding tapes
         # for execution, processing functions, and list of tape lengths.
         new_tapes, fn = transform(t)
@@ -482,12 +509,25 @@ def map_batch_transform(transform, tapes):
         batch_fns.append(fn)
         tape_counts.append(len(new_tapes))
 
-    def processing_fn(res):
+    def processing_fn(res: ResultBatch) -> ResultBatch:
+        """Applies a batch of post-procesing functions to results.
+
+        Args:
+            res (ResultBatch): the results of executing a batch of circuits
+
+        Returns:
+            ResultBatch : results that have undergone classical post processing
+
+        Closure variables:
+            tape_counts: the number of tapes outputted from each application of the transform
+            batch_fns: the post processing functions to apply to each sub-batch
+
+        """
         count = 0
         final_results = []
 
         for idx, s in enumerate(tape_counts):
-            # apply any batch transform post-processing
+            # apply any transform post-processing
             new_res = batch_fns[idx](res[count : count + s])
             final_results.append(new_res)
             count += s

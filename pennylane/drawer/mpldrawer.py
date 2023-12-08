@@ -15,11 +15,13 @@
 This module contains the MPLDrawer class for creating circuit diagrams with matplotlib
 """
 from collections.abc import Iterable
+import warnings
 
 has_mpl = True
 try:
     import matplotlib.pyplot as plt
     from matplotlib import patches
+    import matplotlib.patheffects as path_effects
 except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
     has_mpl = False
 
@@ -64,6 +66,7 @@ class MPLDrawer:
         n_wires (int): the number of wires
 
     Keyword Args:
+        c_wires=0 (int): the number of classical wires to leave space for.
         wire_options=None (dict): matplotlib configuration options for drawing the wire lines
         figsize=None (Iterable): Allows users to specify the size of the figure manually. Defaults
             to scale with the size of the circuit via ``n_layers`` and ``n_wires``.
@@ -245,7 +248,13 @@ class MPLDrawer:
     _notch_style = "round, pad=0.05"
     """Box style for active wire notches."""
 
-    def __init__(self, n_layers, n_wires, wire_options=None, figsize=None):
+    _cond_shift = 0.03
+    """The shift value from the centre axis for classical double-lines."""
+
+    _cwire_scaling = 0.25
+    """The distance between successive control wires."""
+
+    def __init__(self, n_layers, n_wires, c_wires=0, wire_options=None, figsize=None):
         if not has_mpl:  # pragma: no cover
             raise ImportError(
                 "Module matplotlib is required for ``MPLDrawer`` class. "
@@ -258,13 +267,13 @@ class MPLDrawer:
         ## Creating figure and ax
 
         if figsize is None:
-            figsize = (self.n_layers + 3, self.n_wires + 1)
+            figsize = (self.n_layers + 3, self.n_wires + self._cwire_scaling * c_wires + 1)
 
         self._fig = plt.figure(figsize=figsize)
         self._ax = self._fig.add_axes(
             [0, 0, 1, 1],
             xlim=(-2, self.n_layers + 1),
-            ylim=(-1, self.n_wires),
+            ylim=(-1, self.n_wires + self._cwire_scaling * c_wires),
             xticks=[],
             yticks=[],
         )
@@ -276,8 +285,11 @@ class MPLDrawer:
             wire_options = {}
 
         # adding wire lines
-        for wire in range(self.n_wires):
-            line = plt.Line2D((-1, self.n_layers), (wire, wire), zorder=1, **wire_options)
+        self._wire_lines = [
+            plt.Line2D((-1, self.n_layers), (wire, wire), zorder=1, **wire_options)
+            for wire in range(self.n_wires)
+        ]
+        for line in self._wire_lines:
             self._ax.add_line(line)
 
     @property
@@ -341,6 +353,26 @@ class MPLDrawer:
 
         for wire, ii_label in enumerate(labels):
             self._ax.text(-1.5, wire, ii_label, **text_options)
+
+    def erase_wire(self, layer: int, wire: int, length: int) -> None:
+        """Erases a portion of a wire by adding a rectangle that matches the background.
+
+        Args:
+            layer (int): starting x coordinate for erasing the wire
+            wire (int): y location to erase the wire from
+            length (float, int): horizontal distance from ``layer`` to erase the background.
+
+        """
+
+        rect = patches.Rectangle(
+            (layer, wire - 0.1),
+            length,
+            0.2,
+            facecolor=plt.rcParams["figure.facecolor"],
+            edgecolor=plt.rcParams["figure.facecolor"],
+            zorder=1.1,
+        )
+        self.ax.add_patch(rect)
 
     def box_gate(self, layer, wires, text="", box_options=None, text_options=None, **kwargs):
         """Draws a box and adds label text to its center.
@@ -585,6 +617,15 @@ class MPLDrawer:
         min_wire = min(wires_all)
         max_wire = max(wires_all)
 
+        if len(wires_target) > 1:
+            min_target, max_target = min(wires_target), max(wires_target)
+            if any(min_target < w < max_target for w in wires_ctrl):
+                warnings.warn(
+                    "Some control indicators are hidden behind an operator. Consider re-ordering "
+                    "your circuit wires to ensure all control indicators are visible.",
+                    UserWarning,
+                )
+
         line = plt.Line2D((layer, layer), (min_wire, max_wire), **options)
         self._ax.add_line(line)
 
@@ -764,7 +805,7 @@ class MPLDrawer:
         self._ax.add_line(l1)
         self._ax.add_line(l2)
 
-    def measure(self, layer, wires, box_options=None, lines_options=None):
+    def measure(self, layer, wires, text=None, box_options=None, lines_options=None):
         """Draw a Measurement graphic at designated layer, wire combination.
 
         Args:
@@ -772,6 +813,7 @@ class MPLDrawer:
             wires (int): wire to draw on
 
         Keyword Args:
+            text=None (str): an annotation for the lower right corner.
             box_options=None (dict): dictionary to format a matplotlib rectangle
             lines_options=None (dict): dictionary to format matplotlib arc and arrow
 
@@ -818,7 +860,7 @@ class MPLDrawer:
         self._ax.add_patch(box)
 
         arc = patches.Arc(
-            (layer, wires + self._box_length / 16),
+            (layer, wires + 0.15 * self._box_length),
             0.6 * self._box_length,
             0.55 * self._box_length,
             theta1=180,
@@ -828,8 +870,8 @@ class MPLDrawer:
         self._ax.add_patch(arc)
 
         # can experiment with the specific numbers to make it look decent
-        arrow_start_x = layer - 0.165 * self._box_length
-        arrow_start_y = wires + 0.25 * self._box_length
+        arrow_start_x = layer - 0.15 * self._box_length
+        arrow_start_y = wires + 0.3 * self._box_length
         arrow_width = 0.3 * self._box_length
         arrow_height = -0.5 * self._box_length
 
@@ -842,3 +884,209 @@ class MPLDrawer:
             head_width=self._box_length / 8.0,
             **lines_options,
         )
+        if text:
+            self._ax.text(
+                layer + 0.05 * self._box_length, wires + 0.225, text, fontsize=(self.fontsize - 2)
+            )
+
+    def _y(self, wire):
+        """Used for determining the correct y coordinate for classical wires.
+        Classical wires should be enumerated starting at the number of quantum wires the drawer has.
+        For example, if the drawer has ``3`` quantum wires, the first classical wire should be located at ``3``
+        which corresponds to a ``y`` coordinate of ``2.6``.
+        """
+        if wire < self.n_wires:
+            return wire
+        return self.n_wires + self._cwire_scaling * (wire - self.n_wires) - 0.4
+
+    def classical_wire(self, layers, wires) -> None:
+        """Draw a classical control line.
+
+        Args:
+            layers: a list of x coordinates for the classical wire
+            wires: a list of y coordinates for the classical wire. Wire numbers
+                greater than the number of quantum wires will be scaled as classical wires.
+
+        """
+        outer_stroke = path_effects.Stroke(
+            linewidth=5 * plt.rcParams["lines.linewidth"], foreground=plt.rcParams["lines.color"]
+        )
+
+        inner_stroke = path_effects.Stroke(
+            linewidth=3 * plt.rcParams["lines.linewidth"],
+            foreground=plt.rcParams["figure.facecolor"],
+        )
+
+        line = plt.Line2D(
+            layers, [self._y(w) for w in wires], path_effects=[outer_stroke, inner_stroke], zorder=1
+        )
+        self.ax.add_line(line)
+
+    def cwire_join(self, layer, wire, erase_right=False):
+        """Erase the horizontal edges of an intersection between classical wires. By default, erases
+        only the left edge.
+
+        Args:
+            layer: the x-coordinate for the classical wire intersection
+            wire: the classical wire y-coordinate for the intersection
+            erase_right=False(bool):  whether or not to erase the right side of the intersection
+                in addition to the left.
+
+        """
+        xs = (layer - 0.2, layer + 0.2) if erase_right else (layer - 0.2, layer)
+        line = plt.Line2D(
+            xs,
+            (self._y(wire), self._y(wire)),
+            zorder=2,
+            color=plt.rcParams["figure.facecolor"],
+            linewidth=3 * plt.rcParams["lines.linewidth"],  # match inner_stroke from classical_wire
+        )
+        self.ax.add_line(line)
+
+    def cond(self, layer, measured_layer, wires, wires_target, options=None):
+        """Add classical communication double-lines for conditional operations
+
+        Args:
+            layer (int): the layer to draw vertical lines in, containing the target operation
+            measured_layer (int): the layer where the mid-circuit measurements are
+            wires (Union[int, Iterable[int]]): set of wires to control on
+            wires_target (Union[int, Iterable[int]]): target wires. Used to determine where to
+                terminate the vertical double-line
+
+        Keyword Args:
+            options=None (dict): Matplotlib keywords passed to ``plt.Line2D``
+
+        **Example**
+
+        .. code-block:: python
+
+            drawer = MPLDrawer(n_wires=3, n_layers=4)
+
+            drawer.cond(layer=1, measured_layer=0, wires=[0], wires_target=[1])
+
+            options = {'color': "indigo", 'linewidth': 1.5}
+            drawer.cond(layer=3, measured_layer=2, wires=(1,), wires_target=(2,), options=options)
+
+        .. figure:: ../../_static/drawer/cond.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+        """
+        if options is None:
+            options = {}
+
+        wires_ctrl = _to_tuple(sorted(wires))
+        wires_target = _to_tuple(sorted(wires_target))
+        start_x = measured_layer + self._box_length / 2.0
+        lines = []
+
+        if wires_ctrl[-1] < wires_target[0]:
+            lines.extend(
+                (
+                    # draw from top-most measurement to double-elbow
+                    plt.Line2D(
+                        (start_x, layer + self._cond_shift),
+                        (wires_ctrl[0] - self._cond_shift,) * 2,
+                        **options,
+                    ),
+                    plt.Line2D(
+                        (start_x, layer - self._cond_shift),
+                        (wires_ctrl[0] + self._cond_shift,) * 2,
+                        **options,
+                    ),
+                    # draw vertical lines that reach the target operation
+                    plt.Line2D(
+                        (layer + self._cond_shift,) * 2,
+                        (wires_ctrl[0] - self._cond_shift, wires_target[0]),
+                        **options,
+                    ),
+                    plt.Line2D(
+                        (layer - self._cond_shift,) * 2,
+                        (wires_ctrl[-1] + self._cond_shift, wires_target[0]),
+                        **options,
+                    ),
+                )
+            )
+            for prev_idx, next_wire in enumerate(wires_ctrl[1:]):
+                # draw ⅃ for every wire but the first one
+                #      ‾
+                lines.extend(
+                    (
+                        plt.Line2D(
+                            (layer - self._cond_shift,) * 2,
+                            (wires_ctrl[prev_idx] + self._cond_shift, next_wire - self._cond_shift),
+                            **options,
+                        ),
+                        plt.Line2D(
+                            (start_x, layer - self._cond_shift),
+                            (next_wire - self._cond_shift,) * 2,
+                            **options,
+                        ),
+                        plt.Line2D(
+                            (start_x, layer - self._cond_shift),
+                            (next_wire + self._cond_shift,) * 2,
+                            **options,
+                        ),
+                    )
+                )
+        elif wires_target[-1] < wires_ctrl[0]:
+            lines.extend(
+                (
+                    # draw from bottom-most measurement to double-elbow
+                    plt.Line2D(
+                        (start_x, layer + self._cond_shift),
+                        (wires_ctrl[-1] + self._cond_shift,) * 2,
+                        **options,
+                    ),
+                    plt.Line2D(
+                        (start_x, layer - self._cond_shift),
+                        (wires_ctrl[-1] - self._cond_shift,) * 2,
+                        **options,
+                    ),
+                    # draw vertical lines that reach the target operation
+                    plt.Line2D(
+                        (layer + self._cond_shift,) * 2,
+                        (wires_ctrl[-1] + self._cond_shift, wires_target[-1]),
+                        **options,
+                    ),
+                    plt.Line2D(
+                        (layer - self._cond_shift,) * 2,
+                        (wires_ctrl[0] - self._cond_shift, wires_target[-1]),
+                        **options,
+                    ),
+                )
+            )
+            for wire_idx, ctrl_wire in enumerate(wires_ctrl[:-1]):
+                # draw _  for every wire but the first one
+                #      ‾|
+                lines.extend(
+                    (
+                        plt.Line2D(
+                            (layer - self._cond_shift,) * 2,
+                            (
+                                ctrl_wire + self._cond_shift,
+                                wires_ctrl[wire_idx + 1] - self._cond_shift,
+                            ),
+                            **options,
+                        ),
+                        plt.Line2D(
+                            (start_x, layer - self._cond_shift),
+                            (ctrl_wire - self._cond_shift,) * 2,
+                            **options,
+                        ),
+                        plt.Line2D(
+                            (start_x, layer - self._cond_shift),
+                            (ctrl_wire + self._cond_shift,) * 2,
+                            **options,
+                        ),
+                    )
+                )
+        else:
+            raise ValueError(
+                "Cannot draw interspersed mid-circuit measurements and conditional operations. "
+                "Consider providing a wire order such that all measurement wires precede all "
+                "wires for the operator being controlled, or vice versa."
+            )
+
+        for line in lines:
+            self._ax.add_line(line)

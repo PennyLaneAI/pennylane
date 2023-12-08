@@ -120,7 +120,7 @@ class TestCapabilities:
             @qml.qnode(dev)
             def circuit():
                 qml.Displacement(1.0, 1.2345, wires=0)
-                return qml.expval(qml.X(wires=0))
+                return qml.expval(qml.QuadX(wires=0))
 
         # assert that device can measure observable from its model
         circuit()
@@ -189,7 +189,7 @@ class TestCapabilities:
             if cap["model"] == "qubit":
                 qml.PauliX(wires=0)
             else:
-                qml.X(wires=0)
+                qml.QuadX(wires=0)
             return qml.expval(qml.Identity(wires=0) @ qml.Identity(wires=1))
 
         if cap["supports_tensor_observables"]:
@@ -247,7 +247,7 @@ class TestCapabilities:
             if cap["model"] == "qubit":
                 qml.PauliX(wires=0)
             else:
-                qml.X(wires=0)
+                qml.QuadX(wires=0)
             return qml.probs(wires=0)
 
         if cap["returns_probs"]:

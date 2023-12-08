@@ -11,10 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 Unit tests for the convenience functions used in pulsed programming.
 """
+# pylint: disable=import-outside-toplevel
 import inspect
 from functools import partial
 
@@ -218,9 +218,12 @@ class TestPWC_from_function:
 
 @pytest.mark.jax
 class TestIntegration:
+    """Test integration of pwc functions with the pulse module."""
+
     def integral_pwc(  # pylint:disable = too-many-arguments
         self, t1, t2, num_bins, integration_bounds, fn, params, pwc_from_function=False
     ):
+        """Helper function that integrates a pwc function."""
         from jax import numpy as jnp
 
         # constants set by array if pwc, constants must be found if pwc_from_function

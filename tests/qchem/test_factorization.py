@@ -14,7 +14,7 @@
 """
 Unit tests for functions needed for two-electron integral tensor factorization.
 """
-
+# pylint: disable=too-many-arguments
 import pytest
 
 import pennylane as qml
@@ -326,7 +326,7 @@ def test_basis_rotation_output(
         assert np.allclose(np.sort(coeff), np.sort(coeffs_ref[i]))
 
     for j, op in enumerate(ops):
-        ops_ref_str = [qml.pauli.pauli_word_to_string(t) for t in ops_ref[i]]
+        ops_ref_str = [qml.pauli.pauli_word_to_string(t) for t in ops_ref[j]]
         for o in op:
             assert qml.pauli.pauli_word_to_string(o) in ops_ref_str
 
@@ -370,7 +370,7 @@ def test_basis_rotation_utransform(core, one_electron, two_electron):
     A new Hamiltonian is generated from these operators and is compared with the original
     Hamiltonian.
     """
-    c_group, o_group, u_transform = qml.qchem.basis_rotation(one_electron, two_electron)
+    *_, u_transform = qml.qchem.basis_rotation(one_electron, two_electron)
 
     a_cr = [  # fermionic creation operators
         np.array(
@@ -699,7 +699,9 @@ def test_basis_rotation_utransform(core, one_electron, two_electron):
 def test_chemist_transform(
     two_body_tensor, spatial_basis, one_body_correction, chemist_two_body_coeffs
 ):
-    r"""Test that `_chemist_transform` builds correct two-body tensors in chemist notation with correct one-body corrections"""
+    r"""Test that `_chemist_transform` builds correct two-body tensors in
+    chemist notation with correct one-body corrections"""
+    # pylint: disable=protected-access
     one_body_corr, chemist_two_body = qml.qchem.factorization._chemist_transform(
         two_body_tensor=two_body_tensor, spatial_basis=spatial_basis
     )

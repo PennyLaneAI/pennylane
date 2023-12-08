@@ -18,14 +18,14 @@ with preparing a certain state on the device.
 # pylint:disable=abstract-method,arguments-differ,protected-access,no-member
 from pennylane import numpy as np
 from pennylane import math
-from pennylane.operation import AnyWires, Operation, StatePrep
+from pennylane.operation import AnyWires, Operation, StatePrepBase
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.wires import Wires, WireError
 
-state_prep_ops = {"BasisState", "QubitStateVector", "QubitDensityMatrix"}
+state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
 
 
-class BasisState(StatePrep):
+class BasisState(StatePrepBase):
     r"""BasisState(n, wires)
     Prepares a single computational basis state.
 
@@ -41,11 +41,18 @@ class BasisState(StatePrep):
         target device, PennyLane will attempt to decompose the operation
         into :class:`~.PauliX` operations.
 
+    .. note::
+
+        When called in the middle of a circuit, the action of the operation is defined
+        as :math:`U|0\rangle = |\psi\rangle`
+
     Args:
         n (array): prepares the basis state :math:`\ket{n}`, where ``n`` is an
             array of integers from the set :math:`\{0, 1\}`, i.e.,
             if ``n = np.array([0, 1, 0])``, prepares the state :math:`|010\rangle`.
         wires (Sequence[int] or int): the wire(s) the operation acts on
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified.
 
     **Example**
 
@@ -60,6 +67,9 @@ class BasisState(StatePrep):
     num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (1,)
+    """int: Number of dimensions per trainable parameter of the operator."""
 
     @staticmethod
     def compute_decomposition(n, wires):
@@ -95,6 +105,7 @@ class BasisState(StatePrep):
         if (num_wires := len(self.wires)) != len(prep_vals):
             raise ValueError("BasisState parameter and wires must be of equal length.")
 
+        prep_vals = math.cast(prep_vals, int)
         if wire_order is None:
             indices = prep_vals
         else:
@@ -110,8 +121,8 @@ class BasisState(StatePrep):
         return math.convert_like(ket, prep_vals)
 
 
-class QubitStateVector(StatePrep):
-    r"""QubitStateVector(state, wires)
+class StatePrep(StatePrepBase):
+    r"""StatePrep(state, wires)
     Prepare subsystems using the given ket vector in the computational basis.
 
     **Details:**
@@ -122,21 +133,28 @@ class QubitStateVector(StatePrep):
 
     .. note::
 
-        If the ``QubitStateVector`` operation is not supported natively on the
+        If the ``StatePrep`` operation is not supported natively on the
         target device, PennyLane will attempt to decompose the operation
         using the method developed by Möttönen et al. (Quantum Info. Comput.,
         2005).
 
+    .. note::
+
+        When called in the middle of a circuit, the action of the operation is defined
+        as :math:`U|0\rangle = |\psi\rangle`
+
     Args:
         state (array[complex]): a state vector of size 2**len(wires)
         wires (Sequence[int] or int): the wire(s) the operation acts on
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified.
 
     **Example**
 
     >>> dev = qml.device('default.qubit', wires=2)
     >>> @qml.qnode(dev)
     ... def example_circuit():
-    ...     qml.QubitStateVector(np.array([1, 0, 0, 0]), wires=range(2))
+    ...     qml.StatePrep(np.array([1, 0, 0, 0]), wires=range(2))
     ...     return qml.state()
     >>> print(example_circuit())
     [1.+0.j 0.+0.j 0.+0.j 0.+0.j]
@@ -148,8 +166,8 @@ class QubitStateVector(StatePrep):
     ndim_params = (1,)
     """int: Number of dimensions per trainable parameter of the operator."""
 
-    def __init__(self, state, wires, do_queue=True, id=None):
-        super().__init__(state, wires=wires, do_queue=do_queue, id=id)
+    def __init__(self, state, wires, id=None):
+        super().__init__(state, wires=wires, id=id)
         state = self.parameters[0]
 
         if len(state.shape) == 1:
@@ -170,7 +188,7 @@ class QubitStateVector(StatePrep):
         .. math:: O = O_1 O_2 \dots O_n.
 
 
-        .. seealso:: :meth:`~.QubitStateVector.decomposition`.
+        .. seealso:: :meth:`~.StatePrep.decomposition`.
 
         Args:
             state (array[complex]): a state vector of size 2**len(wires)
@@ -181,7 +199,7 @@ class QubitStateVector(StatePrep):
 
         **Example:**
 
-        >>> qml.QubitStateVector.compute_decomposition(np.array([1, 0, 0, 0]), wires=range(2))
+        >>> qml.StatePrep.compute_decomposition(np.array([1, 0, 0, 0]), wires=range(2))
         [MottonenStatePreparation(tensor([1, 0, 0, 0], requires_grad=True), wires=[0, 1])]
 
         """
@@ -189,27 +207,45 @@ class QubitStateVector(StatePrep):
 
     def state_vector(self, wire_order=None):
         num_op_wires = len(self.wires)
-        op_vector = math.reshape(self.parameters[0], (2,) * num_op_wires)
+        op_vector_shape = (-1,) + (2,) * num_op_wires if self.batch_size else (2,) * num_op_wires
+        op_vector = math.reshape(self.parameters[0], op_vector_shape)
 
         if wire_order is None or Wires(wire_order) == self.wires:
             return op_vector
 
         wire_order = Wires(wire_order)
         if not wire_order.contains_wires(self.wires):
-            raise WireError("Custom wire_order must contain all QubitStateVector wires")
+            raise WireError(f"Custom wire_order must contain all {self.name} wires")
 
         num_total_wires = len(wire_order)
-        indices = tuple([slice(None)] * num_op_wires + [0] * (num_total_wires - num_op_wires))
-        ket = np.zeros((2,) * num_total_wires, dtype=np.complex128)
+        indices = tuple(
+            [Ellipsis] + [slice(None)] * num_op_wires + [0] * (num_total_wires - num_op_wires)
+        )
+        ket_shape = [2] * num_total_wires
+        if self.batch_size:
+            # Add broadcasted dimension to the shape of the state vector
+            ket_shape = [self.batch_size] + ket_shape
+
+        ket = np.zeros(ket_shape, dtype=np.complex128)
         ket[indices] = op_vector
 
         # unless wire_order is [*self.wires, *rest_of_wire_order], need to rearrange
         if self.wires != wire_order[:num_op_wires]:
             current_order = self.wires + list(Wires.unique_wires([wire_order, self.wires]))
             desired_order = [current_order.index(w) for w in wire_order]
+            if self.batch_size:
+                # If the operation is broadcasted, the desired order must include the batch dimension
+                # as the first dimension.
+                desired_order = [0] + [d + 1 for d in desired_order]
+
             ket = ket.transpose(desired_order)
 
         return math.convert_like(ket, op_vector)
+
+
+# pylint: disable=missing-class-docstring
+class QubitStateVector(StatePrep):
+    pass  # QSV is still available
 
 
 class QubitDensityMatrix(Operation):
@@ -233,6 +269,8 @@ class QubitDensityMatrix(Operation):
     Args:
         state (array[complex]): a density matrix of size ``(2**len(wires), 2**len(wires))``
         wires (Sequence[int] or int): the wire(s) the operation acts on
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified.
 
     .. details::
         :title: Usage Details
@@ -265,6 +303,3 @@ class QubitDensityMatrix(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = None
-
-    # This is a temporary attribute to fix the operator queuing behaviour
-    _queue_category = "_prep"

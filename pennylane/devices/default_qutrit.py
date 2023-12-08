@@ -22,19 +22,33 @@ import functools
 import numpy as np
 
 import pennylane as qml  # pylint: disable=unused-import
-from pennylane import QutritDevice
+from pennylane import QutritDevice, QutritBasisState, DeviceError
 from pennylane.wires import WireError
-from pennylane.devices.default_qubit import _get_slice
+from pennylane.devices.default_qubit_legacy import _get_slice
 from .._version import __version__
 
 # tolerance for numerical errors
 tolerance = 1e-10
 
-OMEGA = np.exp(2 * np.pi * 1j / 3)
+OMEGA = qml.math.exp(2 * np.pi * 1j / 3)
 
 
 class DefaultQutrit(QutritDevice):
     """Default qutrit device for PennyLane.
+
+    .. warning::
+
+        The API of ``DefaultQutrit`` will be updated soon to follow a new device interface described
+        in :class:`pennylane.devices.Device`.
+
+        This change will not alter device behaviour for most workflows, but may have implications for
+        plugin developers and users who directly interact with device methods. Please consult
+        :class:`pennylane.devices.Device` and the implementation in
+        :class:`pennylane.devices.DefaultQubit` for more information on what the new
+        interface will look like and be prepared to make updates in a coming release. If you have any
+        feedback on these changes, please create an
+        `issue <https://github.com/PennyLaneAI/pennylane/issues>`_ or post in our
+        `discussion forum <https://discuss.pennylane.ai/>`_.
 
     Args:
         wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
@@ -57,10 +71,18 @@ class DefaultQutrit(QutritDevice):
         "QutritUnitary",
         "ControlledQutritUnitary",
         "TShift",
+        "Adjoint(TShift)",
         "TClock",
+        "Adjoint(TClock)",
         "TAdd",
+        "Adjoint(TAdd)",
         "TSWAP",
         "THadamard",
+        "Adjoint(THadamard)",
+        "TRX",
+        "TRY",
+        "TRZ",
+        "QutritBasisState",
     }
 
     # Identity is supported as an observable for qml.state() to work correctly. However, any
@@ -70,6 +92,32 @@ class DefaultQutrit(QutritDevice):
         "GellMann",
         "Identity",
     }
+
+    # Static methods to use qml.math to allow for backprop differentiation
+    _reshape = staticmethod(qml.math.reshape)
+    _flatten = staticmethod(qml.math.flatten)
+    _transpose = staticmethod(qml.math.transpose)
+    _dot = staticmethod(qml.math.dot)
+    _stack = staticmethod(qml.math.stack)
+    _conj = staticmethod(qml.math.conj)
+    _roll = staticmethod(qml.math.roll)
+    _cast = staticmethod(qml.math.cast)
+    _tensordot = staticmethod(qml.math.tensordot)
+    _real = staticmethod(qml.math.real)
+    _imag = staticmethod(qml.math.imag)
+
+    @staticmethod
+    def _reduce_sum(array, axes):
+        return qml.math.sum(array, tuple(axes))
+
+    @staticmethod
+    def _asarray(array, dtype=None):
+        # Support float
+        if not hasattr(array, "__len__"):
+            return np.asarray(array, dtype=dtype)
+
+        res = qml.math.cast(array, dtype=dtype)
+        return res
 
     def __init__(
         self,
@@ -127,7 +175,15 @@ class DefaultQutrit(QutritDevice):
         # for correctly applying basis state / state vector / snapshot operations which will
         # be added later.
         for i, operation in enumerate(operations):  # pylint: disable=unused-variable
-            self._state = self._apply_operation(self._state, operation)
+            if i > 0 and isinstance(operation, (QutritBasisState)):
+                raise DeviceError(
+                    f"Operation {operation.name} cannot be used after other operations have already been applied "
+                    f"on a {self.short_name} device."
+                )
+            if isinstance(operation, QutritBasisState):
+                self._apply_basis_state(operation.parameters[0], operation.wires)
+            else:
+                self._state = self._apply_operation(self._state, operation)
 
         # store the pre-rotated state
         self._pre_rotated_state = self._state
@@ -135,6 +191,35 @@ class DefaultQutrit(QutritDevice):
         # apply the circuit rotations
         for operation in rotations:
             self._state = self._apply_operation(self._state, operation)
+
+    def _apply_basis_state(self, state, wires):
+        """Initialize the state vector in a specified computational basis state.
+
+        Args:
+            state (array[int]): computational basis state of shape ``(wires,)``
+                consisting of 0s, 1s and 2s.
+            wires (Wires): wires that the provided computational state should be initialized on
+
+        Note: This function does not support broadcasted inputs yet.
+        """
+        # translate to wire labels used by device
+        device_wires = self.map_wires(wires)
+
+        # length of basis state parameter
+        n_basis_state = len(state)
+
+        if not set(state.tolist()).issubset({0, 1, 2}):
+            raise ValueError("QutritBasisState parameter must consist of 0, 1 or 2 integers.")
+
+        if n_basis_state != len(device_wires):
+            raise ValueError("QutritBasisState parameter and wires must be of equal length.")
+
+        # get computational basis state number
+        basis_states = 3 ** (self.num_wires - 1 - np.array(device_wires))
+        basis_states = qml.math.convert_like(basis_states, state)
+        num = int(qml.math.dot(state, basis_states))
+
+        self._state = self._create_basis_state(num)
 
     def _apply_operation(self, state, operation):
         """Applies operations to the input state.
@@ -146,13 +231,19 @@ class DefaultQutrit(QutritDevice):
         Returns:
             array[complex]: output state
         """
-        if operation.base_name == "Identity":
+        if operation.name == "Identity":
             return state
         wires = operation.wires
 
-        if operation.base_name in self._apply_ops:
+        if operation.name in self._apply_ops:  # pylint: disable=no-else-return
             axes = self.wires.indices(wires)
-            return self._apply_ops[operation.base_name](state, axes)
+            return self._apply_ops[operation.name](state, axes)
+        elif (
+            isinstance(operation, qml.ops.Adjoint)  # pylint: disable=no-member
+            and operation.base.name in self._apply_ops
+        ):
+            axes = self.wires.indices(wires)
+            return self._apply_ops[operation.base.name](state, axes, inverse=True)
 
         matrix = self._asarray(self._get_unitary_matrix(operation), dtype=self.C_DTYPE)
 
@@ -285,6 +376,12 @@ class DefaultQutrit(QutritDevice):
             supports_inverse_operations=True,
             supports_analytic_computation=True,
             returns_state=True,
+            passthru_devices={
+                "autograd": "default.qutrit",
+                "tf": "default.qutrit",
+                "torch": "default.qutrit",
+                "jax": "default.qutrit",
+            },
         )
         return capabilities
 
@@ -352,7 +449,7 @@ class DefaultQutrit(QutritDevice):
         device_wires = self.map_wires(wires)
 
         mat = self._cast(self._reshape(mat, [3] * len(device_wires) * 2), dtype=self.C_DTYPE)
-        axes = (np.arange(len(device_wires), 2 * len(device_wires)), device_wires)
+        axes = (list(range(len(device_wires), 2 * len(device_wires))), device_wires)
         tdot = self._tensordot(mat, state, axes=axes)
 
         # tensordot causes the axes given in `wires` to end up in the first positions
