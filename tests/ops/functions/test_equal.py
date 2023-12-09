@@ -1875,7 +1875,7 @@ class TestBasisRotation:
     def test_non_equal_training_wires(self, op, other_op):
         assert qml.equal(op, other_op) is False
 
-    @pytest.mark.jax
+    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("op", [op1])
     def test_non_equal_interfaces(self, op):
         import jax
