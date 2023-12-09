@@ -262,8 +262,8 @@
   [(#4789)](https://github.com/PennyLaneAI/pennylane/pull/4789)
 
 * `qml.equal` now supports comparison of `QuantumScript` and `BasisRotation` objects
-  ([#4902](https://github.com/PennyLaneAI/pennylane/pull/4902),
-  [#4919](https://github.com/PennyLaneAI/pennylane/pull/4919))
+  [(#4902)](https://github.com/PennyLaneAI/pennylane/pull/4902)
+  [(#4919)](https://github.com/PennyLaneAI/pennylane/pull/4919)
 
 * `==` and `!=` operands can now be used with `TransformProgram` and `TransformContainers` instances.
   [(#4858)](https://github.com/PennyLaneAI/pennylane/pull/4858)
