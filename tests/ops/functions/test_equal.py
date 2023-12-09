@@ -1849,7 +1849,6 @@ class TestQuantumScriptComparisons:
 
 
 class TestBasisRotation:
-
     rotation_mat = np.array(
         [
             [-0.618452, -0.68369054 - 0.38740723j],
@@ -1874,10 +1873,9 @@ class TestBasisRotation:
     def test_non_equal_training_wires(self, op, other_op):
         assert qml.equal(op, other_op) is False
 
-    @pytest.mark.all_interfaces
+    @pytest.mark.jax
     @pytest.mark.parametrize("op", [op1])
     def test_non_equal_interfaces(self, op):
-        import jax
 
         rotation_mat_jax = jax.numpy.array(
             [
