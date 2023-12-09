@@ -1876,7 +1876,6 @@ class TestBasisRotation:
     @pytest.mark.jax
     @pytest.mark.parametrize("op", [op1])
     def test_non_equal_interfaces(self, op):
-
         rotation_mat_jax = jax.numpy.array(
             [
                 [-0.618452, -0.68369054 - 0.38740723j],
