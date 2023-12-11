@@ -386,7 +386,7 @@ class ParametrizedEvolution(Operation):
         self.H = H
         self.odeint_kwargs = odeint_kwargs
         if t is None:
-            self.t = [0.0, 0.0]
+            self.t = None
         else:
             if isinstance(t, (list, tuple)):
                 t = qml.math.stack(t)
@@ -475,8 +475,9 @@ class ParametrizedEvolution(Operation):
     def _flatten(self):
         data = self.data
         odeint_kwargs_tuples = tuple((key, value) for key, value in self.odeint_kwargs.items())
+        t = self.t if self.t is None else tuple(self.t)
         metadata = (
-            tuple(self.t),
+            t,
             self.H,
             self.hyperparameters["return_intermediate"],
             self.hyperparameters["complementary"],

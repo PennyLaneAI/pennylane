@@ -424,6 +424,12 @@ def _evolve_state_vector_under_parametrized_evolution(
             "You can install jax via: pip install jax"
         ) from e
 
+    if operation.data is None or operation.t is None:
+        raise ValueError(
+            "The parameters and the time window are required to execute a ParametrizedEvolution "
+            "You can update these values by calling the ParametrizedEvolution class: EV(params, t)."
+        )
+
     if is_state_batched:
         batch_dim = state.shape[0]
         state = qml.math.moveaxis(state.reshape((batch_dim, 2**num_wires)), 1, 0)

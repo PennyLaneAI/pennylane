@@ -373,7 +373,10 @@ def _equal_hamiltonian(op1: Hamiltonian, op2: Observable, **kwargs):
 @_equal.register
 def _equal_parametrized_evolution(op1: ParametrizedEvolution, op2: ParametrizedEvolution, **kwargs):
     # check times match
-    if not qml.math.allclose(op1.t, op2.t):
+    if op1.t is None or op2.t is None:
+        if op1.t != op2.t:
+            return False
+    elif not qml.math.allclose(op1.t, op2.t):
         return False
 
     # check parameters passed to operator match
