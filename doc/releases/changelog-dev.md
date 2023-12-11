@@ -14,6 +14,10 @@
   approximately decomposing any single-qubit operation to Clifford+T basis.
   [(#4801)](https://github.com/PennyLaneAI/pennylane/pull/4801)
 
+* `default.clifford` device enables efficient simulation of larger-scale Clifford circuits
+  defined in PennyLane using [stim](https://github.com/quantumlib/Stim).
+  [(#4936)](https://github.com/PennyLaneAI/pennylane/pull/4936)
+
 <h4>Transforms (TODO: better title) 🤖</h4>
 
 <h4>Use an iterative approach for quantum phase estimation 🔄</h4>
