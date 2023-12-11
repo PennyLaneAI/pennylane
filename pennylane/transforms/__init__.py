@@ -235,7 +235,7 @@ To make your transform applicable to both :class:`~.QNode` and quantum functions
 
 .. code-block:: python
 
-    aispatched_transform = qml.transform(remove_rx)
+    dispatched_transform = qml.transform(remove_rx)
 
 For a more advanced example, let's consider a transform that sums a circuit with its adjoint. We define the adjoint
 of the tape operations, create a new tape, and return both tapes. The processing function then sums the results.
