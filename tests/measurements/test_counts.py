@@ -232,7 +232,7 @@ class TestProcessSamples:
             qml.QuantumFunctionError,
             match="Only sequences of single MeasurementValues can be passed with the op argument",
         ):
-            _ = qml.sample(op=[m0 + m1, m2])
+            _ = qml.counts(op=[m0 + m1, m2])
 
     def test_counts_all_outcomes_wires(self):
         """Test that the counts output is correct when all_outcomes is passed"""
