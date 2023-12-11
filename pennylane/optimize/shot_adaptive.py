@@ -79,6 +79,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     For VQE/VQE-like problems, the objective function for the optimizer can be realized
     as a :class:`~.QNode` object measuring the expectation of a :class:`~.Hamiltonian`.
 
+    >>> from pennylane import numpy as np
     >>> coeffs = [2, 4, -1, 5, 2]
     >>> obs = [
     ...   qml.PauliX(1),
@@ -101,7 +102,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
     >>> shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
     >>> params = np.random.random(shape)
-    >>> opt = qml.ShotAdaptiveOptimizer(min_shots=10)
+    >>> opt = qml.ShotAdaptiveOptimizer(min_shots=10, term_sampling="weighted_random_sampling")
     >>> for i in range(60):
     ...    params = opt.step(cost, params)
     ...    print(f"Step {i}: cost = {cost(params):.2f}, shots_used = {opt.total_shots_used}")

@@ -599,7 +599,7 @@ class TestQNodeWeightedRandomSampling:
         _ = opt.step(circuit, weights, x)
         spy.assert_called_once()
 
-        grads = opt.qnode_weighted_random_sampling(circuit, 10, [0], weights, x)
+        grads = opt.qnode_weighted_random_sampling(circuit, coeffs, H.ops, 10, [0], weights, x)
         assert len(grads) == 1
         assert grads[0].shape == (10, *weights.shape)
 
@@ -625,7 +625,9 @@ class TestQNodeWeightedRandomSampling:
         _ = opt.step(circuit, weights, x)
         spy.assert_called_once()
 
-        weight_grad, x_grad = opt.qnode_weighted_random_sampling(circuit, 10, [0, 1], weights, x)
+        weight_grad, x_grad = opt.qnode_weighted_random_sampling(
+            circuit, coeffs, H.ops, 10, [0, 1], weights, x
+        )
         assert weight_grad.shape == (10, *weights.shape)
         assert x_grad.shape == (10,)
 
@@ -687,7 +689,7 @@ class TestQNodeWeightedRandomSampling:
         mocker.patch(
             "scipy.stats._multivariate.multinomial_gen.rvs", return_value=np.array([[4, 0, 6]])
         )
-        grads = opt.qnode_weighted_random_sampling(circuit, 10, [0], weights)
+        grads = opt.qnode_weighted_random_sampling(circuit, coeffs, H.ops, 10, [0], weights)
 
         assert len(spy.call_args_list) == 2
         assert len(grads) == 1
@@ -713,7 +715,7 @@ class TestQNodeWeightedRandomSampling:
         mocker.patch(
             "scipy.stats._multivariate.multinomial_gen.rvs", return_value=np.array([[4, 1, 5]])
         )
-        grads = opt.qnode_weighted_random_sampling(circuit, 10, [0], weights)
+        grads = opt.qnode_weighted_random_sampling(circuit, coeffs, H.ops, 10, [0], weights)
 
         assert len(spy.call_args_list) == 3
         assert len(grads) == 1
