@@ -472,6 +472,35 @@ class ParametrizedEvolution(Operation):
             )
         )
 
+    def _flatten(self):
+        data = self.data
+        odeint_kwargs_tuples = tuple((key, value) for key, value in self.odeint_kwargs.items())
+        t = self.t if self.t is None else tuple(self.t)
+        metadata = (
+            t,
+            self.H,
+            self.hyperparameters["return_intermediate"],
+            self.hyperparameters["complementary"],
+            self.dense,
+            odeint_kwargs_tuples,
+        )
+
+        return data, metadata
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        t, H, return_intermediate, complementary, dense, odeint_kwargs = metadata
+
+        return cls(
+            H,
+            None if len(data) == 0 else data,
+            t,
+            return_intermediate=return_intermediate,
+            complementary=complementary,
+            dense=dense,
+            **dict(odeint_kwargs),
+        )
+
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):

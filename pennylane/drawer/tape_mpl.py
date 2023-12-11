@@ -27,7 +27,7 @@ from pennylane import ops
 from pennylane.measurements import MidMeasureMP
 from .mpldrawer import MPLDrawer
 from .drawable_layers import drawable_layers
-from .utils import convert_wire_order, unwrap_controls
+from .utils import convert_wire_order, unwrap_controls, cwire_connections
 from .style import _set_style
 
 has_mpl = True
@@ -37,7 +37,7 @@ except (ModuleNotFoundError, ImportError):  # pragma: no cover
     has_mpl = False
 
 
-_Config = namedtuple("_Config", ("decimals", "active_wire_notches"))
+_Config = namedtuple("_Config", ("decimals", "active_wire_notches", "bit_map", "terminal_layers"))
 
 
 @singledispatch
@@ -163,6 +163,10 @@ def _(op: qml.ops.op_math.Conditional, drawer, layer, config) -> None:
         box_options={"zorder": 4},
         text_options={"zorder": 5},
     )
+    sorted_bits = sorted([config.bit_map[m] for m in op.meas_val.measurements])
+    for b in sorted_bits[:-1]:
+        erase_right = layer < config.terminal_layers[b]
+        drawer.cwire_join(layer, b + drawer.n_wires, erase_right=erase_right)
 
 
 def _get_measured_wires(measurements, wires) -> set:
@@ -177,6 +181,16 @@ def _get_measured_wires(measurements, wires) -> set:
     return measured_wires
 
 
+def _add_classical_wires(drawer, layers, wires):
+    for cwire, (cwire_layers, layer_wires) in enumerate(zip(layers, wires), start=drawer.n_wires):
+        xs, ys = [], []
+        for l, w in zip(cwire_layers, layer_wires):
+            xs.extend([l, l, l])
+            ys.extend([cwire, w, cwire])
+
+        drawer.classical_wire(xs, ys)
+
+
 def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwargs):
     """Private function wrapped with styling."""
     wire_options = kwargs.get("wire_options", None)
@@ -187,7 +201,6 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
     wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
     tape = qml.map_wires(tape, wire_map=wire_map)[0][0]
 
-    config = _Config(decimals, active_wire_notches=active_wire_notches)
     layers = drawable_layers(tape.operations, {i: i for i in tape.wires})
 
     for i, layer in enumerate(layers):
@@ -197,7 +210,18 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
     n_layers = len(layers)
     n_wires = len(wire_map)
 
-    drawer = MPLDrawer(n_layers=n_layers, n_wires=n_wires, wire_options=wire_options)
+    bit_map, cwire_layers, cwire_wires = cwire_connections(layers)
+
+    drawer = MPLDrawer(
+        n_layers=n_layers, n_wires=n_wires, c_wires=len(bit_map), wire_options=wire_options
+    )
+
+    config = _Config(
+        decimals=decimals,
+        active_wire_notches=active_wire_notches,
+        bit_map=bit_map,
+        terminal_layers=[cl[-1] for cl in cwire_layers],
+    )
 
     if n_wires == 0:
         return drawer.fig, drawer.ax
@@ -206,6 +230,8 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
         drawer.fontsize = fontsize
 
     drawer.label(list(wire_map), text_options=label_options)
+
+    _add_classical_wires(drawer, cwire_layers, cwire_wires)
 
     for layer, layer_ops in enumerate(layers):
         for op in layer_ops:
