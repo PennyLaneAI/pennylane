@@ -3,11 +3,13 @@
 ## Full jacobian with expectation values
 
 For a statevector,
+
 $$
 | \Psi \rangle = U_n(x_n) \dots U_i (x_i) \dots U_0(x_0) |0\rangle
 $$
 
 we have the derivative of an expectation value of an observable $M$,
+
 $$
 \frac{\partial}{\partial x_i} \langle \Psi | M | \Psi \rangle
 $$
@@ -18,17 +20,21 @@ $$
 U_i \dots |0\rangle +
 \langle 0 | \dots U_i^{\dagger} \dots M \dots \frac{\partial U_i}{\partial x_i} \dots |0 \rangle
 $$
+
 $$
 = 2 \text{Re} \big( \langle \Psi | M U_n \dots \frac{\partial U_i}{\partial x_i}  \dots U_0 |0\rangle \big)
 $$
 
 We can then make the definitions:
+
 $$
 \langle b_i|  = 2 \langle \Psi | M U_n \dots U_{i+1}
 $$
+
 $$
 |k_i \rangle  = U_{i-1} \dots U_0 |0\rangle
 $$
+
 $$
 | \tilde{k}_i \rangle = \frac{\partial U_i}{\partial x_i} | k_i \rangle
 $$
@@ -44,11 +50,13 @@ We can then also define $|k_i\rangle $ and $|b_i\rangle$ iteratively as:
 $$
 |k_{i-1}\rangle = U^{\dagger}_{i-1} |k_i \rangle
 $$
+
 $$
 |b_{i-1} \rangle = U^{\dagger}_i |b_{i}\rangle
 $$
 
 With the initial conditions:
+
 $$
 | b_n \rangle = 2  M |\Psi \rangle \qquad |k_n\rangle = U_{n-1} \dots |0\rangle
 $$
@@ -60,20 +68,26 @@ For the adjoint differentiation algorithm with expectation values, we iterate in
 ## Full statevector differentiation
 
 If we want to differentiate the entire statevector, we have:
+
 $$
 \frac{\partial}{\partial x_i} | \Psi \rangle = 
 U_n \dots \frac{\partial U_i}{\partial x_i} \dots U_0 |0\rangle
 $$
 
 At each step $i$, we have have the list of "Jacobian" statevectors.
+
 $$
 |J_{i,j}\rangle = U_i \dots \frac{\partial U_j}{\partial x_j} \dots U_0 |0\rangle
 $$
+
 Upon iteration, we update:
+
 $$
 | J_{i+1, j} \rangle = U_{i+1} |J_{i, j} \rangle
 $$
+
 And add a new element to the list
+
 $$
 | J_{i+1, i+1} \rangle = \frac{\partial U_{i+1}}{\partial x_{i+1}} U_{i} \dots U_0 |0\rangle
 =
@@ -89,13 +103,17 @@ Note that this iterates from $0$ to $n$, instead if in reverse like expectation 
 When performing backpropagation across a workflow, we can reduce the computational complexity by calculating the <b>Vector Jacobian Product</b> (VJP) instead of the full jacobian product.
 
 For a full jacobian:
+
 $$
 J_{i, j} = \frac{\partial f_j(x)}{\partial x_i}
 $$
+
 we have the VJP:
+
 $$
 \frac{dy}{d x_i} = \frac{d y}{d f_j}  J_{i,j} 
 $$
+
 where we sum up over all $j$ indices.
 
 Calculating this quantity instead has several benefits over calculating the full jacobian.  
@@ -135,7 +153,9 @@ We can then use the same algorithm as for adjoint differentiation but with the i
 $$
 | b_n \rangle = |dy^{\dagger} \rangle  \qquad |k_n\rangle = U_{n-1} \dots |0\rangle
 $$
+
 instead of:
+
 $$
 | b_n \rangle = 2  M |\Psi \rangle \qquad |k_n\rangle = U_{n-1} \dots |0\rangle
 $$
