@@ -273,16 +273,24 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
             # are made on the same wire. This mapping is determined by the id of the
             # MidMeasureMPs. Thus, we need to manually map wires for each MidMeasureMP.
             if isinstance(mp.mv, MeasurementValue):
-                mp.mv.measurements = [
+                new_ms = [
                     qml.map_wires(m, {m.wires[0]: control_wires[m.id]}) for m in mp.mv.measurements
                 ]
+                new_m = MeasurementValue(new_ms, mp.mv.processing_fn)
             else:
+                new_m = []
                 for val in mp.mv:
-                    val.measurements = [
+                    new_ms = [
                         qml.map_wires(m, {m.wires[0]: control_wires[m.id]})
                         for m in val.measurements
                     ]
-        new_measurements.append(mp)
+                    new_m.append(MeasurementValue(new_ms, val.processing_fn))
+
+            with QueuingManager.stop_recording():
+                new_mp = type(mp)(obs=new_m)
+        else:
+            new_mp = mp
+        new_measurements.append(new_mp)
 
     new_tape = type(tape)(new_operations, new_measurements, shots=tape.shots)
 

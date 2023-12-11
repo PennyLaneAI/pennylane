@@ -195,12 +195,14 @@ class CountsMP(SampleMeasurement):
         return (self.obs or self.mv, self._eigvals), metadata
 
     def __repr__(self):
-        if self.obs is None:
-            if self._eigvals is None:
-                return f"CountsMP(wires={self.wires.tolist()}, all_outcomes={self.all_outcomes})"
+        if self.mv:
+            return f"CountsMP({repr(self.mv)}, all_outcomes={self.all_outcomes})"
+        if self.obs:
+            return f"CountsMP({self.obs}, all_outcomes={self.all_outcomes})"
+        if self._eigvals:
             return f"CountsMP(eigvals={self._eigvals}, wires={self.wires.tolist()}, all_outcomes={self.all_outcomes})"
 
-        return f"CountsMP({self.obs}, all_outcomes={self.all_outcomes})"
+        return f"CountsMP(wires={self.wires.tolist()}, all_outcomes={self.all_outcomes})"
 
     @property
     def hash(self):

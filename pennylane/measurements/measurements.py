@@ -20,7 +20,7 @@ import copy
 import functools
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Sequence, Tuple, Optional
+from typing import Sequence, Tuple, Optional, Union
 
 import pennylane as qml
 from pennylane.operation import Operator, DecompositionUndefinedError, EigvalsUndefinedError
@@ -116,9 +116,9 @@ class MeasurementProcess(ABC):
     quantum variational circuit.
 
     Args:
-        obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured as part of the
-            measurement process. Not all measurement processes require observables (for
-            example ``Probability``); this argument is optional.
+        obs (Union[.Operator, .MeasurementValue, Sequence[.MeasurementValue]]): The observable that
+            is to be measured as part of the measurement process. Not all measurement processes
+            require observables (for example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
@@ -147,7 +147,13 @@ class MeasurementProcess(ABC):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        obs: Optional[Operator] = None,
+        obs: Optional[
+            Union[
+                Operator,
+                "qml.measurements.MeasurementValue",
+                Sequence["qml.measurements.MeasurementValue"],
+            ]
+        ] = None,
         wires: Optional[Wires] = None,
         eigvals: Optional[TensorLike] = None,
         id: Optional[str] = None,
@@ -288,13 +294,15 @@ class MeasurementProcess(ABC):
 
     def __repr__(self):
         """Representation of this class."""
-        if not self.obs and not self.mv:
-            if self._eigvals is None:
-                return f"{self.return_type.value}(wires={self.wires.tolist()})"
+        if self.mv:
+            return f"{self.return_type.value}({repr(self.mv)})"
+        if self.obs:
+            return f"{self.return_type.value}({self.obs})"
+        if self._eigvals:
             return f"{self.return_type.value}(eigvals={self._eigvals}, wires={self.wires.tolist()})"
 
         # Todo: when tape is core the return type will always be taken from the MeasurementProcess
-        return f"{self.return_type.value}({self.obs or repr(self.mv)})"
+        return f"{self.return_type.value}(wires={self.wires.tolist()})"
 
     def __copy__(self):
         cls = self.__class__
@@ -315,7 +323,7 @@ class MeasurementProcess(ABC):
         This is the union of all the Wires objects of the measurement.
         """
         if self.mv is not None:
-            if isinstance(self.mv, Sequence):
+            if isinstance(self.mv, list):
                 return qml.wires.Wires.all_wires([m.wires for m in self.mv])
             return self.mv.wires
 
