@@ -181,7 +181,7 @@ class DefaultClifford(Device):
                 $z_{\left(  2n\right)  1}$ & $\cdots$ & $z_{\left(  2n\right)  n}$ & $r_{2n}$%
             \end{tabular}
 
-        Rows :math:`1` to :math:`n` of the tableau represent the destabilizer generators 
+        Rows :math:`1` to :math:`n` of the tableau represent the destabilizer generators
         :math:`R_{1},\ldots,R_{n}`, and rows :math:`n+1` to :math:`2n` represent the stabilizer
         generators :math:`R_{n+1},\ldots,R_{2n}`. If :math:`R_{i}=\pm P_{1}\cdots P_{n}`,
         then bits :math:`x_{ij},z_{ij}` determine the j:math:`^{th}` Pauli matrix
@@ -661,7 +661,8 @@ class DefaultClifford(Device):
             like=INTERFACE_TO_LIKE[interface],
         ) * qml.matrix(global_phase)
 
-    def _measure_density_matrix(self, tableau_sim, interface):
+    @staticmethod
+    def _measure_density_matrix(tableau_sim, interface):
         """Measure the density matrix from the state of simulator device"""
         state_vector = qml.math.array(
             tableau_sim.state_vector(endian="big"),
@@ -669,13 +670,15 @@ class DefaultClifford(Device):
         )
         return qml.math.einsum("i, j->ij", state_vector, state_vector)
 
-    def _measure_purity(self, tableau_sim, interface, meas_op, circuit):
+    @staticmethod
+    def _measure_purity(tableau_sim, interface, meas_op, circuit):
         """Measure the purity of the state of simulator device"""
         if circuit.op_wires == meas_op.wires:  # // Trivial
             purity = qml.math.array(1.0, like=INTERFACE_TO_LIKE[interface])
         return purity
 
-    def _measure_expectation(self, tableau_sim, interface, meas_op, stim):
+    @staticmethod
+    def _measure_expectation(tableau_sim, interface, meas_op, stim):
         """Measure the expectation value with respect to the state of simulator device"""
 
         # Case for simple Pauli terms
