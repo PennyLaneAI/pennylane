@@ -92,7 +92,7 @@
         m0 = qml.measure(wires=0)
         qml.RY(theta, wires=1)
         m1 = qml.measure(wires=1)
-        return qml.sample(op=[m0, m1])
+        return qml.sample([m0, m1])
 
     print(circuit(1.23, 4.56, shots=5))
     ```

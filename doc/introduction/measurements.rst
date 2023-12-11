@@ -435,7 +435,7 @@ Collecting statistics for mid-circuit measurements manipulated using arithmetic/
 with ``qml.expval``, ``qml.var``, ``qml.sample``, and ``qml.counts``.
 
 Moreover, statistics for multiple mid-circuit measurements can be collected by passing lists of mid-circuit
-measurement values as the ``op`` argument of the measurement process:
+measurement values to the measurement process:
 
 .. code-block:: python3
 
@@ -449,7 +449,7 @@ measurement values as the ``op`` argument of the measurement process:
         m0 = qml.measure(wires=0)
         qml.RY(theta, wires=1)
         m1 = qml.measure(wires=1)
-        return qml.sample(op=[m0, m1])
+        return qml.sample([m0, m1])
 
 Executing this ``QNode``:
 

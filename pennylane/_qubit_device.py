@@ -613,7 +613,12 @@ class QubitDevice(Device):
 
         for m in measurements:
             # TODO: Remove this when all overriden measurements support the `MeasurementProcess` class
-            obs = m.obs or m.mv or m
+            if isinstance(m.mv, list):
+                # MeasurementProcess stores information needed for processing if terminal measurement
+                # uses a list of mid-circuit measurement values
+                obs = m
+            else:
+                obs = m.obs or m.mv or m
             # Check if there is an overriden version of the measurement process
             if method := getattr(self, self.measurement_map[type(m)], False):
                 if isinstance(m, MeasurementTransform):
@@ -629,10 +634,7 @@ class QubitDevice(Device):
                 result = self.var(obs, shot_range=shot_range, bin_size=bin_size)
 
             elif isinstance(m, SampleMP):
-                sample_input = m if m.mv is not None else obs
-                samples = self.sample(
-                    sample_input, shot_range=shot_range, bin_size=bin_size, counts=False
-                )
+                samples = self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=False)
                 result = self._asarray(qml.math.squeeze(samples))
 
             elif isinstance(m, CountsMP):
@@ -1320,7 +1322,7 @@ class QubitDevice(Device):
                     observable.eigvals() if not isinstance(observable, MeasurementValue)
                     # Indexing a MeasurementValue gives the output of the processing function
                     # for that index as a binary number.
-                    else [observable[i] for i in range(2 ** len(observable.wires))],
+                    else [observable[i] for i in range(2 ** len(observable.measurements))],
                     dtype=self.R_DTYPE,
                 )
             except qml.operation.EigvalsUndefinedError as e:
@@ -1356,7 +1358,7 @@ class QubitDevice(Device):
                     observable.eigvals() if not isinstance(observable, MeasurementValue)
                     # Indexing a MeasurementValue gives the output of the processing function
                     # for that index as a binary number.
-                    else [observable[i] for i in range(2 ** len(observable.wires))],
+                    else [observable[i] for i in range(2 ** len(observable.measurements))],
                     dtype=self.R_DTYPE,
                 )
             except qml.operation.EigvalsUndefinedError as e:
@@ -1521,7 +1523,8 @@ class QubitDevice(Device):
             indices = np.array(indices)  # Add np.array here for Jax support.
             if isinstance(observable, MeasurementValue):
                 eigvals = self._asarray(
-                    [observable[i] for i in range(2 ** len(observable.wires))], dtype=self.R_DTYPE
+                    [observable[i] for i in range(2 ** len(observable.measurements))],
+                    dtype=self.R_DTYPE,
                 )
                 samples = eigvals[indices]
             else:

@@ -325,6 +325,6 @@ class CountsMP(SampleMeasurement):
         for result, outcome_dict in zip(results, outcome_dicts):
             states, _counts = result
             for state, count in zip(qml.math.unwrap(states), _counts):
-                outcome_dict[state] = int(count)
+                outcome_dict[state] = count
 
         return outcome_dicts if batched else outcome_dicts[0]
