@@ -31,14 +31,11 @@ class TestAttribute:
     """Test addition and inclusion of operations and subclasses in attributes."""
 
     def test_invalid_input(self):
-        """Test that anything that is not a string or Operation throws an error."""
-        # Test something that is not an object
-        with pytest.raises(TypeError, match="can be checked for attribute inclusion"):
-            assert 3 not in new_attribute
+        """Test that anything that is not a string or Operation returns False."""
+        assert 3 not in new_attribute
 
         # Test a dummy object that is not an Operation.
-        with pytest.raises(TypeError, match="can be checked for attribute inclusion"):
-            assert object() not in new_attribute
+        assert object() not in new_attribute
 
     def test_measurement_process_input(self):
         """Test that MeasurementProcesses are valid objects to check inside Attributes"""

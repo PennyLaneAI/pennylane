@@ -18,7 +18,6 @@ and lists all operators satisfying those criteria.
 from inspect import isclass
 
 from pennylane.operation import Operator, Tensor
-from pennylane.measurements import MeasurementProcess
 
 
 class Attribute(set):
@@ -75,26 +74,20 @@ class Attribute(set):
         if isinstance(obj, str):
             return super().__contains__(obj)
 
-        try:
-            # Hotfix: return False for all tensors.
-            # Can be removed or updated when tensor class is
-            # improved.
-            if isinstance(obj, Tensor):
-                return False
+        # Hotfix: return False for all tensors.
+        # Can be removed or updated when tensor class is
+        # improved.
+        if isinstance(obj, Tensor):
+            return False
 
-            if isinstance(obj, (Operator, MeasurementProcess)):
-                return super().__contains__(obj.name)
+        if isinstance(obj, Operator):
+            return super().__contains__(obj.name)
 
-            if isclass(obj):
-                if issubclass(obj, Operator):
-                    return super().__contains__(obj.__name__)
+        if isclass(obj):
+            if issubclass(obj, Operator):
+                return super().__contains__(obj.__name__)
 
-            raise TypeError
-
-        except TypeError as e:
-            raise TypeError(
-                "Only an Operator or string representing an Operator can be checked for attribute inclusion."
-            ) from e
+        return False
 
 
 composable_rotations = Attribute(
