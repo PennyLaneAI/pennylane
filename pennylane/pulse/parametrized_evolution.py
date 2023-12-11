@@ -489,15 +489,11 @@ class ParametrizedEvolution(Operation):
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        if len(data) == 0:
-            params = None
-        else:
-            params = data
         t, H, return_intermediate, complementary, dense, odeint_kwargs = metadata
 
         return cls(
             H,
-            params,
+            None if len(data) == 0 else data,
             t,
             return_intermediate=return_intermediate,
             complementary=complementary,
