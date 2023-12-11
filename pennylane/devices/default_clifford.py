@@ -527,7 +527,7 @@ class DefaultClifford(Device):
         """Whether or not this device defines a custom vector jacobian product."""
         return False
 
-    # pylint: disable=unidiomatic-typecheck, unused-argument
+    # pylint: disable=unidiomatic-typecheck, unused-argument, too-many-branches
     def simulate(
         self,
         circuit: qml.tape.QuantumScript,
@@ -620,21 +620,19 @@ class DefaultClifford(Device):
             if not circuit.shots:
                 # Computing statevector via tableaus
                 if type(meas) is qml.measurements.StateMP:
-                    res = self._measure_state(circuit, tableau_simulator, interface, global_phase)
+                    res = self._measure_state(tableau_simulator, interface, global_phase)
 
                 # Computing density matrix via tableaus
                 elif type(meas) is qml.measurements.DensityMatrixMP:
-                    res = self._measure_density_matrix(circuit, tableau_simulator, interface)
+                    res = self._measure_density_matrix(tableau_simulator, interface)
 
                 # Computing purity via tableaus
                 elif type(meas) is qml.measurements.PurityMP:
-                    res = self._measure_purity(circuit, tableau_simulator, interface, meas)
+                    res = self._measure_purity(tableau_simulator, interface, meas, circuit)
 
                 # Computing expectation values via measurement
                 elif isinstance(meas, ExpectationMP):
-                    res = self._measure_expectation(
-                        circuit, tableau_simulator, interface, meas, stim
-                    )
+                    res = self._measure_expectation(tableau_simulator, interface, meas, stim)
 
                 # Computing more measurements
                 else:
@@ -646,7 +644,7 @@ class DefaultClifford(Device):
 
         return tuple(results)
 
-    def _measure_state(self, circuit, tableau_sim, interface, global_phase):
+    def _measure_state(self, tableau_sim, interface, global_phase):
         """Measure the state of the simualtor device"""
         if self._state == "tableau":
             tableau = tableau_sim.current_inverse_tableau().inverse()
@@ -663,7 +661,7 @@ class DefaultClifford(Device):
             like=INTERFACE_TO_LIKE[interface],
         ) * qml.matrix(global_phase)
 
-    def _measure_density_matrix(self, circuit, tableau_sim, interface):
+    def _measure_density_matrix(self, tableau_sim, interface):
         """Measure the density matrix from the state of simulator device"""
         state_vector = qml.math.array(
             tableau_sim.state_vector(endian="big"),
@@ -671,27 +669,24 @@ class DefaultClifford(Device):
         )
         return qml.math.einsum("i, j->ij", state_vector, state_vector)
 
-    def _measure_purity(self, circuit, tableau_sim, interface, meas_op):
+    def _measure_purity(self, tableau_sim, interface, meas_op, circuit):
         """Measure the purity of the state of simulator device"""
         if circuit.op_wires == meas_op.wires:  # // Trivial
-            return qml.math.array(1.0, like=INTERFACE_TO_LIKE[interface])
+            purity = qml.math.array(1.0, like=INTERFACE_TO_LIKE[interface])
+        return purity
 
-    def _measure_expectation(self, circuit, tableau_sim, interface, meas_op, stim):
+    def _measure_expectation(self, tableau_sim, interface, meas_op, stim):
         """Measure the expectation value with respect to the state of simulator device"""
 
         # Case for simple Pauli terms
-        if (
-            isinstance(meas_op.obs, qml.PauliZ)
-            or isinstance(meas_op.obs, qml.PauliX)
-            or isinstance(meas_op.obs, qml.PauliY)
-        ):
+        if isinstance(meas_op.obs, (qml.PauliZ, qml.PauliX, qml.PauliY)):
             pauli = stim.PauliString(_GATE_OPERATIONS[meas_op.obs.name])
             return qml.math.array(
                 tableau_sim.peek_observable_expectation(pauli), like=INTERFACE_TO_LIKE[interface]
             )
 
         # Case for simple Pauli tensor
-        elif isinstance(meas_op.obs, qml.operation.Tensor):
+        if isinstance(meas_op.obs, qml.operation.Tensor):
             expec = "".join([_GATE_OPERATIONS[name] for name in meas_op.obs.name])
             pauli = stim.PauliString(expec)
             return qml.math.array(
@@ -699,7 +694,7 @@ class DefaultClifford(Device):
             )
 
         # Case for a Hamiltonian
-        elif isinstance(meas_op.obs, qml.Hamiltonian):
+        if isinstance(meas_op.obs, qml.Hamiltonian):
             coeffs, obs = meas_op.obs.terms()
             expecs = qml.math.zeros_like(coeffs)
             for idx, ob in enumerate(obs):
@@ -709,7 +704,6 @@ class DefaultClifford(Device):
             return qml.math.array(qml.math.sum(coeffs * expecs), like=INTERFACE_TO_LIKE[interface])
 
         # Add support for more case when the time is right
-        else:
-            raise NotImplementedError(
-                f"default.clifford doesn't support expectation value calculation with {type(meas_op.obs)} at the moment."
-            )
+        raise NotImplementedError(
+            f"default.clifford doesn't support expectation value calculation with {type(meas_op.obs)} at the moment."
+        )
