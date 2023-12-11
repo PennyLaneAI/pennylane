@@ -330,7 +330,7 @@
 
 <h3>Documentation 📝</h3>
 
-* Documentation for unitaries and operations decompositions was move from `qml.transforms` to `qml.ops.ops_math`.
+* Documentation for unitaries and operations decompositions was moved from `qml.transforms` to `qml.ops.ops_math`.
   [(#4906)](https://github.com/PennyLaneAI/pennylane/pull/4906)
 
 * Documentation for QCut was move to its own API page `qml.qcut`.
