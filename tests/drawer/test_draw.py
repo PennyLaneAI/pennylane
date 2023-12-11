@@ -576,10 +576,10 @@ class TestMidCircuitMeasurements:
 
         drawing = qml.draw(circ, max_length=25)()
         expected_drawing = (
-            "0: ──┤↗├──RX(0.00)───\n"
+            "0: ──┤↗├─────────────\n"
             "1: ───║───RX(0.12)──X\n"
             "      ╚═══╩═════════╝\n\n"
-            "────────────┤  <Z>\n"
+            "───RX(0.00)─┤  <Z>\n"
             "───RX(0.00)─┤     \n"
             "                  "
         )
@@ -667,6 +667,33 @@ class TestMidCircuitMeasurements:
         )
 
         assert drawing == expected_drawing
+
+    @pytest.mark.parametrize(
+        "mp",
+        [
+            (qml.expval, "<MCM>"),
+            (qml.var, "Var[MCM]"),
+            (qml.probs, "Probs[MCM]"),
+            (qml.sample, "Sample[MCM]"),
+            (qml.counts, "Counts[MCM]"),
+        ],
+    )
+    def test_single_meas_stats(self, mp, mp_label):
+        """Test that collecting statistics on a single mid-circuit measurement works as expected."""
+
+        def circ():
+            qml.Hadamard(0)
+            m0 = qml.measure(0)
+            qml.Hadamard(0)
+            return mp(op=m0)
+
+        drawing = qml.draw(circ)()
+        expected_drawing = f"0: ──H──┤↗├──H─┤       \n         ╚═════╡  {mp_label}"
+
+        assert drawing == expected_drawing
+
+    def test_multi_meas_stats(self, mp, mp_label):
+        """Test that collecting statistics on multiple mid-circuit measurements works as expected"""
 
 
 @pytest.mark.parametrize(

@@ -20,7 +20,15 @@ This module contains logic for the text based circuit drawer through the ``tape_
 from dataclasses import dataclass
 from typing import Optional
 import pennylane as qml
-from pennylane.measurements import Expectation, Probability, Sample, Variance, State, MidMeasureMP
+from pennylane.measurements import (
+    Expectation,
+    Probability,
+    Sample,
+    Variance,
+    State,
+    Counts,
+    MidMeasureMP,
+)
 
 from .drawable_layers import drawable_layers
 from .utils import convert_wire_order, unwrap_controls, cwire_connections
@@ -160,6 +168,7 @@ measurement_label_map = {
     Expectation: lambda label: f"<{label}>",
     Probability: lambda label: f"Probs[{label}]" if label else "Probs",
     Sample: lambda label: f"Sample[{label}]" if label else "Sample",
+    Counts: lambda label: f"Counts[{label}]" if label else "Counts",
     Variance: lambda label: f"Var[{label}]",
     State: lambda label: "State",
 }
@@ -188,7 +197,7 @@ def _add_cwire_measurement(m, layer_str, config):
     mcms = [v.measurements[0] for v in m.mv] if isinstance(m.mv, list) else m.mv.measurements
     layer_str = _add_cwire_measurement_grouping_symbols(mcms, layer_str, config)
 
-    mv_label = f"MCM({m.wires.tolist()})"
+    mv_label = "MCM"
     meas_label = measurement_label_map[m.return_type](mv_label)
 
     n_wires = len(config.wire_map)
