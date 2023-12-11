@@ -275,7 +275,7 @@
 
 <h3>Breaking changes 💔</h3>
 
-* The function `qml.transforms.classical_jacobian` was moved to the gradients module `qml.gradients` and therefore become
+* The function `qml.transforms.classical_jacobian` was moved to the gradients module `qml.gradients` and therefore became
   `qml.gradients.classical_jacobian`.
   [(#4900)](https://github.com/PennyLaneAI/pennylane/pull/4900)
 
