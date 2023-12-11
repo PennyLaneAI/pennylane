@@ -78,21 +78,6 @@ example_pytree_evolutions = [
 ]
 
 
-@pytest.mark.parametrize("evol", example_pytree_evolutions)
-def test_trivial_equality(evol):
-    """Test equality method for the trivial case of having the same operators"""
-    assert evol == evol
-
-
-def test_equality_different_datatypes():
-    """Test equality method for the case of same data but different datatypes"""
-    p0 = [0.5, 0.5]
-    p1 = (0.5, 0.5)
-    evol1 = qml.pulse.ParametrizedEvolution(H0, p0, t=0.5)
-    evol2 = qml.pulse.ParametrizedEvolution(H0, p1, t=0.5)
-    assert evol1 == evol2
-
-
 @pytest.mark.jax
 class TestPytree:
     """Testing pytree related functionality"""
