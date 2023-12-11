@@ -204,6 +204,7 @@ def test_tracker():
 def test_debugger():
     """Test that the debugger works for a simple circuit"""
 
+    # pylint: disable=too-few-public-methods
     class Debugger:
         """A dummy debugger class"""
 
