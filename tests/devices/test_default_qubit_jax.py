@@ -1161,6 +1161,7 @@ class TestOps:
         ):
             dev._apply_parametrized_evolution(state=state, operation=ev)
 
+
 @pytest.mark.jax
 class TestOpsBroadcasted:
     """Unit tests for broadcasted operations supported by the default.qubit.jax device"""

@@ -57,7 +57,7 @@ class TestEvolveConstructor:
         final_op = qml.evolve(H)
         assert isinstance(final_op, ParametrizedEvolution)
         assert final_op.parameters == []
-        assert final_op.t == None
+        assert final_op.t is None
         param_evolution = final_op(params=[[1, 2]], t=1)
         assert isinstance(param_evolution, ParametrizedEvolution)
         assert param_evolution.H is H
