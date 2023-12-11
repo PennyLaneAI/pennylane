@@ -328,8 +328,8 @@
 * A new function called `ops.functions.assert_valid` has been added for checking if an `Operator` class is defined correctly.
   [(#4764)](https://github.com/PennyLaneAI/pennylane/pull/4764)
 
-* Added `__eq__` method for TransformProgram and TransformContainers allowing the comparison of respective objects using `==` and `!=` operators.
-  [(#4858)](https://github.com/PennyLaneAI/pennylane/pull/4858)
+* `Shots` can now be scaled with `*` via the `__mul__` and `__rmul__` dunders.
+  [(#4913)](https://github.com/PennyLaneAI/pennylane/pull/4913)
 
 * `GlobalPhase` now decomposes to nothing in case devices do not support global phases.
   [(#4855)](https://github.com/PennyLaneAI/pennylane/pull/4855)
