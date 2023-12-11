@@ -89,6 +89,10 @@ class TestCounts:
         m3 = CountsMP(eigvals=(-1, 1), all_outcomes=False)
         assert repr(m3) == "CountsMP(eigvals=[-1  1], wires=[], all_outcomes=False)"
 
+        mv = qml.measure(0)
+        m4 = CountsMP(obs=mv, all_outcomes=False)
+        assert repr(m4) == "CountsMP(MeasurementValue(wires=[0]), all_outcomes=False)"
+
 
 class TestProcessSamples:
     """Unit tests for the counts.process_samples method"""
@@ -213,9 +217,22 @@ class TestProcessSamples:
 
         with pytest.raises(
             qml.QuantumFunctionError,
-            match="Only sequences of MeasurementValues can be passed with the op argument",
+            match="Only sequences of single MeasurementValues can be passed with the op argument",
         ):
             _ = qml.counts(op=[m0, qml.PauliZ(0)])
+
+    def test_composed_measurement_value_lists_not_allowed(self):
+        """Test that passing a list containing measurement values composed with arithmetic
+        raises an error."""
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+        m2 = qml.measure(2)
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Only sequences of single MeasurementValues can be passed with the op argument",
+        ):
+            _ = qml.sample(op=[m0 + m1, m2])
 
     def test_counts_all_outcomes_wires(self):
         """Test that the counts output is correct when all_outcomes is passed"""

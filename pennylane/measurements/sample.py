@@ -107,9 +107,11 @@ def sample(op: Optional[Union[Operator, MeasurementValue]] = None, wires=None) -
         return SampleMP(obs=op)
 
     if isinstance(op, Sequence):
-        if not all(isinstance(o, MeasurementValue) for o in op):
+        if not all(isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in op):
             raise qml.QuantumFunctionError(
-                "Only sequences of MeasurementValues can be passed with the op argument."
+                "Only sequences of single MeasurementValues can be passed with the op argument. "
+                "MeasurementValues manipulated using arithmetic operators cannot be used when "
+                "collecting statistics for a sequence of mid-circuit measurements."
             )
 
         return SampleMP(obs=op)
