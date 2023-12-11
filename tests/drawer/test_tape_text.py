@@ -106,7 +106,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments
         )
 
     @pytest.mark.parametrize(
-        "cond_op, args, kwargs, out, bit_map, mv",
+        "cond_op, args, kwargs, out, bit_map, mv, cur_layer",
         [
             (
                 qml.PauliX,
@@ -115,6 +115,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments
                 ["─", "─║", "─║", "─║", "═╩"],
                 cond_bit_map_1,
                 default_measurement_value_1,
+                1,
             ),
             (
                 qml.MultiRZ,
@@ -123,6 +124,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments
                 ["─", "─", "─║", "─║", "═╩"],
                 cond_bit_map_1,
                 default_measurement_value_1,
+                1,
             ),
             (
                 qml.Toffoli,
@@ -131,18 +133,29 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments
                 ["─", "─", "─", "─║", " ║", "═╝"],
                 cond_bit_map_2,
                 default_measurement_value_2,
+                1,
             ),
             (
                 qml.Toffoli,
                 [],
                 {"wires": [0, 1, 2]},
-                ["─", "─", "─", "─║", "═╣", "═╝"],
+                ["─", "─", "─", "─║", "═╬", "═╝"],
                 cond_bit_map_2,
                 default_measurement_value_1 & default_measurement_value_2,
+                1,
+            ),
+            (
+                qml.Toffoli,
+                [],
+                {"wires": [0, 1, 2]},
+                ["─", "─", "─", "─║", "═╣", "═╩"],
+                cond_bit_map_2,
+                default_measurement_value_1 & default_measurement_value_2,
+                0,
             ),
         ],
     )
-    def test_add_cond_grouping_symbols(self, cond_op, bit_map, mv, args, kwargs, out):
+    def test_add_cond_grouping_symbols(self, cond_op, bit_map, mv, cur_layer, args, kwargs, out):
         """Test private _add_grouping_symbols function renders as expected for Conditionals."""
         op = get_conditional_op(mv, cond_op, *args, **kwargs)
         layer_str = ["─", "─", "─", ""] + [" "] * len(bit_map)
@@ -151,7 +164,10 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments
             op,
             layer_str,
             _Config(
-                wire_map=default_wire_map, bit_map=bit_map, cur_layer=1, final_cond_layers=[0, 1]
+                wire_map=default_wire_map,
+                bit_map=bit_map,
+                cur_layer=cur_layer,
+                cwire_layers=[[0], [1]],
             ),
         )
 
@@ -274,7 +290,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments
             op,
             layer_str,
             _Config(
-                wire_map=default_wire_map, bit_map=bit_map, cur_layer=1, final_cond_layers=[0, 1]
+                wire_map=default_wire_map, bit_map=bit_map, cur_layer=1, cwire_layers=[[0], [1]]
             ),
         )
 
