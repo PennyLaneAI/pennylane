@@ -287,7 +287,11 @@ def defer_measurements(tape: QuantumTape, **kwargs) -> (Sequence[QuantumTape], C
                     new_m.append(MeasurementValue(new_ms, val.processing_fn))
 
             with QueuingManager.stop_recording():
-                new_mp = type(mp)(obs=new_m)
+                new_mp = (
+                    type(mp)(obs=new_m)
+                    if not isinstance(mp, CountsMP)
+                    else CountsMP(obs=new_m, all_outcomes=mp.all_outcomes)
+                )
         else:
             new_mp = mp
         new_measurements.append(new_mp)
