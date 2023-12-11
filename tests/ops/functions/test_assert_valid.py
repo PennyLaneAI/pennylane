@@ -351,11 +351,11 @@ def create_op_instance(c):
 
 def test_generated_list_of_ops(class_to_validate):
     """Test every auto-generated operator instance."""
-    if class_to_validate in {
-        qml.Identity,  # empty decomposition, so its matrix differs from the decomp's matrix
-        qml.PhaseShift,  # decomposition still needs GlobalPhase, see #4657
-    }:
-        pytest.xfail(reason="failing for not yet declared reasons")
+    if fail_reason := {
+        qml.Identity: "empty decomposition, matrix differs from decomp's matrix",
+        qml.PhaseShift: "decomposition still needs GlobalPhase, see #4657",
+    }.get(class_to_validate):
+        pytest.xfail(reason=fail_reason)
     if class_to_validate.__module__[14:20] == "qutrit":
         # QutritBasisState actually passes validation... but it shouldn't
         pytest.xfail(reason="qutrit ops fail matrix validation")

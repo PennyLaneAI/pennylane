@@ -47,6 +47,7 @@ _SKIP_OP_TYPES = {
     qml.MultiControlledX,
     qml.Projector,  # both basis-state and state-vector needed
     qml.pulse.ParametrizedEvolution,
+    qml.THermitian,
     qml.resource.FirstQuantization,
     qml.SpecialUnitary,
     qml.IntegerComparator,
