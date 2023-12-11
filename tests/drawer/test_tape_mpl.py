@@ -178,6 +178,8 @@ class TestWires:
 class TestSpecialGates:
     """Tests the gates with special drawing methods."""
 
+    width = 0.75 - 2 * 0.2
+
     def test_SWAP(self):
         """Test SWAP gate special call"""
 
@@ -340,6 +342,23 @@ class TestSpecialGates:
 
         plt.close()
 
+    def test_CCZ(self):
+        """Test that CCZ gets correct special call."""
+
+        tape = QuantumScript([qml.CCZ(wires=(0, 1, 2))])
+        _, ax = tape_mpl(tape)
+        layer = 0
+
+        # three wires and one control line
+        assert len(ax.lines) == 4
+
+        assert ax.lines[3].get_data() == ((layer, layer), (0, 2))
+
+        # three control circles
+        assert len(ax.patches) == 3
+        for i in range(3):
+            assert ax.patches[i].center == (layer, i)
+
     def test_Barrier(self):
         """Test Barrier gets correct special call."""
 
@@ -384,41 +403,61 @@ class TestSpecialGates:
 
     def test_MidMeasureMP(self):
         """Tests MidMeasureMP has correct special handling."""
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.measure(0)
-        tape = QuantumScript.from_queue(q)
+        m = qml.measure(0)
+        tape = QuantumScript(m.measurements)
         _, ax = tape_mpl(tape)
-        assert [l.get_data() for l in ax.lines] == [((-1, 0), (0, 0))]
+        assert [l.get_data() for l in ax.lines] == [((-1, 1), (0, 0))]
+        assert len(ax.patches) == 3
 
-    def test_Conditional(self, mocker):
-        """Tests Conditional has correct special handling."""
-        cond_spy = mocker.spy(qml.drawer.MPLDrawer, "cond")
-        box_gate_spy = mocker.spy(qml.drawer.MPLDrawer, "box_gate")
+        assert ax.patches[0].get_x() == -0.175
+        assert ax.patches[0].get_y() == -0.175
+        plt.close()
 
-        with qml.queuing.AnnotatedQueue() as q:
-            m0 = qml.measure(0)
-            qml.cond(m0, qml.Hadamard)(1)
+    def test_MidMeasure_reset(self):
+        """Test that a reset mid circuit measurement is correct."""
+        m = qml.measure(0, reset=True)
+        tape = QuantumScript(m.measurements)
+        fig, ax = tape_mpl(tape)
 
-        tape = QuantumScript.from_queue(q)
+        assert [l.get_data() for l in ax.lines] == [((-1, 2), (0, 0))]
+        assert len(ax.patches) == 5
+
+        # patches 0-2 are normal measure box
+        assert ax.patches[0].get_x() == -0.175
+        assert ax.patches[0].get_y() == -0.175
+        assert isinstance(ax.patches[1], mpl.patches.Arc)
+        assert isinstance(ax.patches[2], mpl.patches.FancyArrow)
+
+        # patch 3 is wire erasing rectnagle
+        assert ax.patches[3].get_xy() == (0, -0.1)
+        assert ax.patches[3].get_width() == 1
+        assert ax.patches[3].get_facecolor() == fig.get_facecolor()
+        assert ax.patches[3].get_edgecolor() == fig.get_facecolor()
+
+        # patch 4 is state prep box gate
+        assert isinstance(ax.patches[0], mpl.patches.FancyBboxPatch)
+        assert ax.patches[0].get_x() == -self.width / 2.0
+        assert ax.patches[0].get_y() == -self.width / 2.0
+        assert ax.patches[0].get_width() == self.width
+        assert ax.patches[0].get_height() == self.width
+
+        assert len(ax.texts) == 2
+        assert ax.texts[1].get_text() == "|0⟩"
+        plt.close()
+
+    def test_MidMeasure_postselect(self):
+        """Test that a mid circuit measurement with postselection gets a label."""
+        m = qml.measure(0, postselect=True)
+        tape = QuantumScript(m.measurements)
         _, ax = tape_mpl(tape)
-        assert [l.get_data() for l in ax.lines] == [
-            ((-1, 0), (0, 0)),
-            ((-1, 2), (1, 1)),
-            ((0.375, 1.03), (-0.03, -0.03)),
-            ((0.375, 0.97), (0.03, 0.03)),
-            ((1.03, 1.03), (-0.03, 1)),
-            ((0.97, 0.97), (0.03, 1)),
-        ]
 
-        cond_spy.assert_called_with(mocker.ANY, 1, 0, [0], [1])
-        box_gate_spy.assert_called_with(
-            mocker.ANY,
-            1,
-            [1],
-            "H",
-            box_options={"zorder": 4, "linestyle": "dashed"},
-            text_options={"zorder": 5},
-        )
+        assert [l.get_data() for l in ax.lines] == [((-1, 1), (0, 0))]
+        assert len(ax.patches) == 3
+
+        assert len(ax.texts) == 2
+        assert ax.texts[0].get_text() == "0"
+        assert ax.texts[1].get_text() == "1"
+        plt.close()
 
 
 controlled_data = [
@@ -668,7 +707,7 @@ class TestMeasurements:
         for ii, w in enumerate(wires):
             assert ax.patches[3 * ii].get_x() == 1 - self.width / 2.0
             assert ax.patches[3 * ii].get_y() == w - self.width / 2.0
-            assert ax.patches[3 * ii + 1].center == (1, w + 0.75 / 16)  # arc
+            assert ax.patches[3 * ii + 1].center == (1, w + 0.75 * 0.15)  # arc
             assert isinstance(ax.patches[3 * ii + 2], mpl.patches.FancyArrow)  # fancy arrow
 
         plt.close()
@@ -770,3 +809,115 @@ class TestLayering:
         assert ax.texts[4].get_text() == "IsingXX"
         assert ax.texts[5].get_text() == "X"
         plt.close()
+
+
+class TestClassicalControl:
+    """Tests involving mid circuit measurements and classical control."""
+
+    def test_single_measure_multiple_conds(self):
+        """Test a single mid circuit measurement with two conditional operators."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            m0 = qml.measure(0)
+            qml.cond(m0, qml.PauliX)(0)
+            qml.cond(m0, qml.PauliY)(0)
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        _, ax = qml.drawer.tape_mpl(tape)
+
+        assert len(ax.patches) == 5  # three for measure, two for boxes
+
+        [_, cwire] = ax.lines
+
+        assert cwire.get_xdata() == [0, 0, 0, 1, 1, 1, 2, 2, 2]
+        assert cwire.get_ydata() == [0.6, 0, 0.6, 0.6, 0, 0.6, 0.6, 0, 0.6]
+
+        [pe1, pe2] = cwire.get_path_effects()
+
+        # probably not a good way to test this, but the best I can figure out
+        assert pe1._gc == {
+            "linewidth": 5 * plt.rcParams["lines.linewidth"],
+            "foreground": "black",  # lines.color for black white style
+        }
+        assert pe2._gc == {
+            "linewidth": 3 * plt.rcParams["lines.linewidth"],
+            "foreground": "white",  # figure.facecolor for black white sytle
+        }
+
+    def test_combo_measurement(self):
+        """Test a control that depends on two mid circuit measurements."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            m0 = qml.measure(0)
+            m1 = qml.measure(1)
+            qml.cond(m0 & m1, qml.PauliY)(0)
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        _, ax = qml.drawer.tape_mpl(tape)
+
+        assert len(ax.patches) == 7  # three for 2 measurements, one for box
+        [_, _, cwire1, cwire2, eraser] = ax.lines
+
+        assert cwire1.get_xdata() == [0, 0, 0, 2, 2, 2]
+        assert cwire1.get_ydata() == [1.6, 0, 1.6, 1.6, 0, 1.6]
+
+        assert cwire2.get_xdata() == [1, 1, 1, 2, 2, 2]
+        assert cwire2.get_ydata() == [1.85, 1, 1.85, 1.85, 0, 1.85]
+
+        for cwire in [cwire1, cwire2]:
+            [pe1, pe2] = cwire.get_path_effects()
+
+            # probably not a good way to test this, but the best I can figure out
+            assert pe1._gc == {
+                "linewidth": 5 * plt.rcParams["lines.linewidth"],
+                "foreground": "black",  # lines.color for black white style
+            }
+            assert pe2._gc == {
+                "linewidth": 3 * plt.rcParams["lines.linewidth"],
+                "foreground": "white",  # figure.facecolor for black white sytle
+            }
+
+        assert eraser.get_xdata() == (1.8, 2)
+        assert eraser.get_ydata() == (1.6, 1.6)
+        assert eraser.get_color() == plt.rcParams["figure.facecolor"]
+        assert eraser.get_linewidth() == 3 * plt.rcParams["lines.linewidth"]
+
+    def test_combo_measurement_non_terminal(self):
+        """Test a combination measurement where the classical wires continue on.
+        This covers the "erase_right=True" case.
+        """
+        with qml.queuing.AnnotatedQueue() as q:
+            m0 = qml.measure(0)
+            m1 = qml.measure(1)
+            qml.cond(m0 & m1, qml.PauliY)(0)
+            qml.cond(m0, qml.S)(0)
+            qml.cond(m1, qml.T)(1)
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        _, ax = qml.drawer.tape_mpl(tape)
+
+        [_, _, cwire1, cwire2, eraser] = ax.lines
+
+        assert cwire1.get_xdata() == [0, 0, 0, 2, 2, 2, 3, 3, 3]
+        assert cwire1.get_ydata() == [1.6, 0, 1.6, 1.6, 0, 1.6, 1.6, 0, 1.6]
+
+        assert cwire2.get_xdata() == [1, 1, 1, 2, 2, 2, 4, 4, 4]
+        assert cwire2.get_ydata() == [1.85, 1, 1.85, 1.85, 0, 1.85, 1.85, 1, 1.85]
+
+        for cwire in [cwire1, cwire2]:
+            [pe1, pe2] = cwire.get_path_effects()
+
+            # probably not a good way to test this, but the best I can figure out
+            assert pe1._gc == {
+                "linewidth": 5 * plt.rcParams["lines.linewidth"],
+                "foreground": "black",  # lines.color for black white style
+            }
+            assert pe2._gc == {
+                "linewidth": 3 * plt.rcParams["lines.linewidth"],
+                "foreground": "white",  # figure.facecolor for black white sytle
+            }
+
+        assert eraser.get_xdata() == (1.8, 2.2)
+        assert eraser.get_ydata() == (1.6, 1.6)
+        assert eraser.get_color() == plt.rcParams["figure.facecolor"]
+        assert eraser.get_linewidth() == 3 * plt.rcParams["lines.linewidth"]

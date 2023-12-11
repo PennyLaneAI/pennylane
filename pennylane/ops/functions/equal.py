@@ -29,11 +29,12 @@ from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.operation import Observable, Operator, Tensor
 from pennylane.ops import Hamiltonian, Controlled, Pow, Adjoint, Exp, SProd, CompositeOp
 from pennylane.templates.subroutines import ControlledSequence
+from pennylane.tape import QuantumTape
 
 
 def equal(
-    op1: Union[Operator, MeasurementProcess],
-    op2: Union[Operator, MeasurementProcess],
+    op1: Union[Operator, MeasurementProcess, QuantumTape],
+    op2: Union[Operator, MeasurementProcess, QuantumTape],
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,
@@ -62,8 +63,8 @@ def equal(
         comparison.
 
     Args:
-        op1 (.Operator or .MeasurementProcess): First object to compare
-        op2 (.Operator or .MeasurementProcess): Second object to compare
+        op1 (.Operator or .MeasurementProcess or .QuantumTape): First object to compare
+        op2 (.Operator or .MeasurementProcess or .QuantumTape): Second object to compare
         check_interface (bool, optional): Whether to compare interfaces. Default: ``True``. Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
         check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``. Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
         rtol (float, optional): Relative tolerance for parameters. Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
@@ -103,6 +104,12 @@ def equal(
     >>> qml.equal(qml.probs(wires=(0,1)), qml.probs(wires=(1,2)))
     False
     >>> qml.equal(qml.classical_shadow(wires=[0,1]), qml.classical_shadow(wires=[0,1]))
+    True
+    >>> tape1 = qml.tape.QuantumScript([qml.RX(1.2, wires=0)], [qml.expval(qml.PauliZ(0))])
+    >>> tape2 = qml.tape.QuantumScript([qml.RX(1.2 + 1e-6, wires=0)], [qml.expval(qml.PauliZ(0))])
+    >>> qml.equal(tape1, tape2, tol=0, atol=1e-7)
+    False
+    >>> qml.equal(tape1, tape2, tol=0, atol=1e-5)
     True
 
     .. details::
@@ -166,6 +173,49 @@ def _equal(
     atol=1e-9,
 ):  # pylint: disable=unused-argument
     raise NotImplementedError(f"Comparison of {type(op1)} and {type(op2)} not implemented")
+
+
+@_equal.register
+def _equal_circuit(
+    op1: qml.tape.QuantumScript,
+    op2: qml.tape.QuantumScript,
+    check_interface=True,
+    check_trainability=True,
+    rtol=1e-5,
+    atol=1e-9,
+):
+    # operations
+    if len(op1.operations) != len(op2.operations):
+        return False
+    for comparands in zip(op1.operations, op2.operations):
+        if not qml.equal(
+            comparands[0],
+            comparands[1],
+            check_interface=check_interface,
+            check_trainability=check_trainability,
+            rtol=rtol,
+            atol=atol,
+        ):
+            return False
+    # measurements
+    if len(op1.measurements) != len(op2.measurements):
+        return False
+    for comparands in zip(op1.measurements, op2.measurements):
+        if not qml.equal(
+            comparands[0],
+            comparands[1],
+            check_interface=check_interface,
+            check_trainability=check_trainability,
+            rtol=rtol,
+            atol=atol,
+        ):
+            return False
+
+    if op1.shots != op2.shots:
+        return False
+    if op1.trainable_params != op2.trainable_params:
+        return False
+    return True
 
 
 @_equal.register
@@ -323,7 +373,10 @@ def _equal_hamiltonian(op1: Hamiltonian, op2: Observable, **kwargs):
 @_equal.register
 def _equal_parametrized_evolution(op1: ParametrizedEvolution, op2: ParametrizedEvolution, **kwargs):
     # check times match
-    if not qml.math.allclose(op1.t, op2.t):
+    if op1.t is None or op2.t is None:
+        if not (op1.t is None and op2.t is None):
+            return False
+    elif not qml.math.allclose(op1.t, op2.t):
         return False
 
     # check parameters passed to operator match
@@ -384,7 +437,12 @@ def _equal_mid_measure(
     rtol=1e-5,
     atol=1e-9,
 ):
-    return op1.wires == op2.wires and op1.id == op2.id and op1.reset == op2.reset
+    return (
+        op1.wires == op2.wires
+        and op1.id == op2.id
+        and op1.reset == op2.reset
+        and op1.postselect == op2.postselect
+    )
 
 
 @_equal.register
