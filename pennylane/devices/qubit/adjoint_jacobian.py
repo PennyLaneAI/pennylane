@@ -36,6 +36,16 @@ def _dot_product_real(bra, ket, num_wires):
 
 
 def _adjoint_jacobian_state(tape: QuantumTape):
+    """Calculate the full jacobian for a circuit that returns the state.
+
+    Args:
+        tape (QuantumTape): the circuit we wish to differentiate
+
+    Returns:
+        TensorLike: the full jacobian.
+
+    See ``adjoint_jacobian.md`` for details on the algorithm.
+    """
     jacobian = []
 
     has_state_prep = isinstance(tape[0], qml.operation.StatePrep)
@@ -83,6 +93,7 @@ def adjoint_jacobian(tape: QuantumTape, state=None):
     Returns:
         array or tuple[array]: the derivative of the tape with respect to trainable parameters.
         Dimensions are ``(len(observables), len(trainable_params))``.
+
     """
     # Map wires if custom wire labels used
     tape = tape.map_to_standard_wires()
@@ -237,6 +248,8 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
     Returns:
         Tuple[Number]: gradient vector for input parameters
     """
+    # See ``adjoint_jacobian.md`` to more information on the algorithm.
+
     # Map wires if custom wire labels used
     if set(tape.wires) != set(range(tape.num_wires)):
         wire_map = {w: i for i, w in enumerate(tape.wires)}
