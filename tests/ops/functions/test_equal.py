@@ -1849,6 +1849,26 @@ class TestParametrizedEvolutionComparisons:
         assert qml.equal(ev1(params1, t), ev2(params2, t))
         assert not qml.equal(ev1(params1, t), ev3(params3, t))
 
+    def test_different_times(self):
+        """Test that times are compared for two ParametrizedEvolution ops"""
+        coeffs1 = [3, f1, f2]
+        ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
+
+        h1 = qml.dot(coeffs1, ops)
+
+        params1 = [6.0, 7.0]
+        t = 3
+
+        ev1 = qml.pulse.ParametrizedEvolution(h1, params1)
+        ev11 = qml.pulse.ParametrizedEvolution(h1, params1)
+        ev2 = qml.pulse.ParametrizedEvolution(h1, params1, t)
+        ev3 = qml.pulse.ParametrizedEvolution(h1, params1, 0.5)
+
+        assert qml.equal(ev1, ev11)
+        assert not qml.equal(ev1, ev2)
+        assert not qml.equal(ev1, ev3)
+        assert not qml.equal(ev2, ev3)
+
 
 class TestQuantumScriptComparisons:
     tape1 = qml.tape.QuantumScript(
