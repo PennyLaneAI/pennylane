@@ -159,7 +159,7 @@ class JacobianProductCalculator(abc.ABC):
     def compute_jacobian(self, tapes: Batch) -> Tuple:
         """Compute the full Jacobian for a batch of tapes.
 
-        This method is required to compute Jacobians in the ``jax-jit`` interface
+        This method is required to compute Jacobians in the ``tensorflow`` interface
 
         Args:
             tapes (tuple[.QuantumScript]): the batch of tapes to take the derivatives of
@@ -181,8 +181,28 @@ class JacobianProductCalculator(abc.ABC):
 
     @abc.abstractmethod
     def execute_and_compute_jacobian(self, tapes: Batch) -> Tuple:
-        """
-        docstring
+        """Compute the results and the full Jacobian for a batch of tapes.
+
+        This method is required to compute Jacobians in the ``jax-jit`` interface
+
+        Args:
+            tapes (tuple[.QuantumScript]): the batch of tapes to take the derivatives of
+
+        **Examples:**
+
+        For an instance of :class:`~.JacobianProductCalculator` ``jpc``, we have:
+
+        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
+        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))])
+        >>> batch = (tape0, tape1)
+        >>> results, jacs = jpc.execute_and_compute_jacobian(batch)
+        >>> results
+        (0.9950041652780258, (0.9800665778412417, 0.19866933079506116))
+        >>> jacs
+        (array(-0.09983342), (array(-0.19866933), array(0.98006658)))
+
+        While this method could support non-scalar parameters in theory, no implementation currently supports
+        jacobians with non-scalar parameters.
 
         """
 
@@ -279,7 +299,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
 
     def execute_and_compute_jacobian(self, tapes: Batch):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
-            logger.debug("execute_and_compute_jacobian called with (%s, %s)", tapes)
+            logger.debug("execute_and_compute_jacobian called with %s", tapes)
 
         num_result_tapes = len(tapes)
 

@@ -188,6 +188,21 @@ _execute_vjp_jit.defvjp(_vjp_fwd, _vjp_bwd)
 
 
 def jax_jvp_jit_execute(tapes, execute_fn, jpc, device):
+    """Execute a batch of tapes with JAX parameters using VJP derivatives.
+
+    Args:
+        tapes (Sequence[.QuantumTape]): batch of tapes to execute
+        execute_fn (Callable[[Sequence[.QuantumTape]], ResultBatch]): a function that turns a batch of circuits into results
+        jpc (JacobianProductCalculator): a class that can compute the vector Jacobian product (VJP)
+            for the input tapes.
+        device (Device, devices.Device): The device used for execution. Used to determine the shapes of outputs for
+            pure callback calls.
+
+    Returns:
+        TensorLike: A nested tuple of tape results. Each element in
+        the returned tuple corresponds in order to the provided tapes.
+
+    """
 
     if any(
         m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
@@ -211,6 +226,8 @@ def jax_vjp_jit_execute(tapes, execute_fn, jpc, device=None):
         execute_fn (Callable[[Sequence[.QuantumTape]], ResultBatch]): a function that turns a batch of circuits into results
         jpc (JacobianProductCalculator): a class that can compute the vector Jacobian product (VJP)
             for the input tapes.
+        device (Device, devices.Device): The device used for execution. Used to determine the shapes of outputs for
+            pure callback calls.
 
     Returns:
         TensorLike: A nested tuple of tape results. Each element in

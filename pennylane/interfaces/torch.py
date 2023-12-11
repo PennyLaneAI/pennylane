@@ -189,7 +189,7 @@ class ExecuteTapes(torch.autograd.Function):
         return (None,) + vjps
 
 
-def execute(tapes, execute_fn, jpc, _):
+def execute(tapes, execute_fn, jpc, device=None):
     """Execute a batch of tapes with Torch parameters on a device.
 
     Args:
