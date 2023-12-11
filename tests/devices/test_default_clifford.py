@@ -25,6 +25,8 @@ from pennylane.devices.default_clifford import _import_stim
 
 stim = pytest.importorskip("stim")
 
+pytestmark = pytest.mark.external
+
 INVSQ2 = 1 / math.sqrt(2)
 PI = math.pi
 
