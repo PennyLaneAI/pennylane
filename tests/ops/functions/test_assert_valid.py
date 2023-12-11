@@ -321,13 +321,13 @@ def create_op_instance(c):
     """Given an Operator class, create an instance of it."""
     n_wires = c.num_wires
     if n_wires == qml.operation.AllWires:
-        raise ValueError("AllWires unsupported. Op needing whitelisting:", c)
-    if n_wires == qml.operation.AnyWires:
+        n_wires = 0
+    elif n_wires == qml.operation.AnyWires:
         n_wires = 1
 
     wires = qml.wires.Wires(range(n_wires))
     if (num_params := c.num_params) == 0:
-        return c(wires)
+        return c(wires) if wires else c()
     if isinstance(num_params, property):
         num_params = 1
 
@@ -346,13 +346,14 @@ def create_op_instance(c):
     else:
         raise ValueError("unexpected dim:", dim)
 
-    return c(*params, wires=wires)
+    return c(*params, wires=wires) if wires else c(*params)
 
 
 def test_generated_list_of_ops(class_to_validate):
     """Test every auto-generated operator instance."""
     if fail_reason := {
         qml.Identity: "empty decomposition, matrix differs from decomp's matrix",
+        qml.GlobalPhase: "empty decomposition, matrix differs from decomp's matrix",
         qml.PhaseShift: "decomposition still needs GlobalPhase, see #4657",
     }.get(class_to_validate):
         pytest.xfail(reason=fail_reason)
@@ -369,7 +370,19 @@ def test_generated_list_of_ops(class_to_validate):
 
 
 @pytest.mark.parametrize(
-    "op", [qml.sum(qml.PauliX(0), qml.PauliZ(0)), qml.BasisState([1], wires=[0])]
+    "op",
+    [
+        qml.sum(qml.PauliX(0), qml.PauliZ(0)),
+        qml.BasisState([1], wires=[0]),
+        qml.ControlledQubitUnitary(np.eye(2), control_wires=1, wires=0),
+        qml.QubitStateVector([0, 1], wires=0),
+        qml.QubitChannel(
+            [np.array([[1.0, 0.0], [0.0, 0.9486833]]), np.array([[0.0, 0.31622777], [0.0, 0.0]])],
+            wires=0,
+        ),
+        qml.MultiControlledX(wires=[0, 1]),
+        qml.Projector([1], 0),  # the state-vector version is already tested
+    ],
 )
 def test_explicit_list_of_ops(op):
     """Test the validity of operators that could not be auto-generated."""

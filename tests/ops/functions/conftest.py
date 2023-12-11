@@ -39,13 +39,7 @@ _SKIP_OP_TYPES = {
     qml.ops.Evolution,
     qml.ops.Conditional,
     # fails for unknown reason - should be registered in the test parametrization below
-    qml.ops.ControlledQubitUnitary,
-    qml.QubitStateVector,
-    qml.GlobalPhase,
-    qml.QubitChannel,
-    qml.SparseHamiltonian,
-    qml.MultiControlledX,
-    qml.Projector,  # both basis-state and state-vector needed
+    qml.SparseHamiltonian,  # fails because data is not as expected
     qml.pulse.ParametrizedEvolution,
     qml.THermitian,
     qml.resource.FirstQuantization,
@@ -64,6 +58,10 @@ _SKIP_OP_TYPES = {
     # manually validated ops
     qml.ops.Sum,
     qml.BasisState,
+    qml.ControlledQubitUnitary,
+    qml.QubitStateVector,
+    qml.QubitChannel,
+    qml.MultiControlledX,
 }
 
 
