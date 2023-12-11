@@ -585,7 +585,7 @@ class TestQNodeIntegration:
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def circuit():
-            qml.evolve(H)(params=[], t=phi / 2, return_intermediate=True)
+            qml.evolve(H, return_intermediate=True)(params=[], t=phi / 2)
             return qml.expval(qml.PauliZ(0))
 
         @qml.qnode(dev)
@@ -612,7 +612,7 @@ class TestQNodeIntegration:
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def circuit():
-            qml.evolve(H)(params=[], t=phi / 2, return_intermediate=True, complementary=True)
+            qml.evolve(H, return_intermediate=True, complementary=True)(params=[], t=phi / 2)
             return qml.expval(qml.PauliZ(0))
 
         @qml.qnode(dev)
