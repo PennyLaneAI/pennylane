@@ -214,6 +214,13 @@ class Snapshot(Operation):
     def label(self, decimals=None, base_label=None, cache=None):
         return "|Snap|"
 
+    def _flatten(self):
+        return ((), (self.tag, self.hyperparameters["measurement"]))
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(tag=metadata[0], measurement=metadata[1])
+
     # pylint: disable=W0613
     @staticmethod
     def compute_decomposition(*params, wires=None, **hyperparameters):

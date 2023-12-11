@@ -328,17 +328,23 @@ def create_op_instance(c):
     wires = qml.wires.Wires(range(n_wires))
     if (num_params := c.num_params) == 0:
         return c(wires)
+    if isinstance(num_params, property):
+        num_params = 1
 
     # get ndim_params
-    ndim_params = c.ndim_params
-    if isinstance(ndim_params, property):
-        if isinstance(num_params, property):
-            num_params = 1
+    if isinstance((ndim_params := c.ndim_params), property):
         ndim_params = (0,) * num_params
 
     # turn ndim_params into valid params
     [dim] = set(ndim_params)
-    params = [1] * len(ndim_params) if dim == 0 else [np.eye(dim)]
+    if dim == 0:
+        params = [1] * len(ndim_params)
+    elif dim == 1:
+        params = [[1] * 2**n_wires] * len(ndim_params)
+    elif dim == 2:
+        params = [np.eye(2)] * len(ndim_params)
+    else:
+        raise ValueError("unexpected dim:", dim)
 
     return c(*params, wires=wires)
 
@@ -346,13 +352,8 @@ def create_op_instance(c):
 def test_generated_list_of_ops(class_to_validate):
     """Test every auto-generated operator instance."""
     if class_to_validate in {
-        qml.CY,
-        qml.CZ,
-        qml.Identity,
-        qml.Snapshot,
-        qml.PauliY,
-        qml.DiagonalQubitUnitary,
-        qml.PhaseShift,
+        qml.Identity,  # empty decomposition, so its matrix differs from the decomp's matrix
+        qml.PhaseShift,  # decomposition still needs GlobalPhase, see #4657
     }:
         pytest.xfail(reason="failing for not yet declared reasons")
     if class_to_validate.__module__[14:20] == "qutrit":
@@ -367,7 +368,9 @@ def test_generated_list_of_ops(class_to_validate):
     assert_valid(op)
 
 
-@pytest.mark.parametrize("op", [qml.sum(qml.PauliX(0), qml.PauliZ(0))])
+@pytest.mark.parametrize(
+    "op", [qml.sum(qml.PauliX(0), qml.PauliZ(0)), qml.BasisState([1], wires=[0])]
+)
 def test_explicit_list_of_ops(op):
     """Test the validity of operators that could not be auto-generated."""
     assert_valid(op)

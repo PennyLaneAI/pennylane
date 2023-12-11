@@ -45,9 +45,8 @@ _SKIP_OP_TYPES = {
     qml.QubitChannel,
     qml.SparseHamiltonian,
     qml.MultiControlledX,
-    qml.ops.qubit.Projector,  # both basis-state and state-vector needed
+    qml.Projector,  # both basis-state and state-vector needed
     qml.pulse.ParametrizedEvolution,
-    qml.THermitian,
     qml.resource.FirstQuantization,
     qml.SpecialUnitary,
     qml.IntegerComparator,
@@ -63,6 +62,7 @@ _SKIP_OP_TYPES = {
     *[i[1] for i in getmembers(qml.templates) if isclass(i[1]) and issubclass(i[1], Operator)],
     # manually validated ops
     qml.ops.Sum,
+    qml.BasisState,
 }
 
 
