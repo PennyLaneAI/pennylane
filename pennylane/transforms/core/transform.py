@@ -165,16 +165,12 @@ def transform(
         )
 
     signature_transform = get_type_hints(quantum_transform)
-    # Check signature of transform to force the fn style (tape, ...) - > (Sequence(tape), fn)
-    _transform_signature_check(signature_transform)
 
     # 2: Checks for the expand transform
     if expand_transform is not None:
         if not callable(expand_transform):
             raise TransformError("The expand function must be a valid Python function.")
         signature_expand_transform = get_type_hints(expand_transform)
-        # Check the signature of expand_transform to force the fn style tape - > (Sequence(tape), fn)
-        _transform_signature_check(signature_expand_transform)
 
         if signature_expand_transform != signature_transform:
             raise TransformError(
@@ -194,39 +190,3 @@ def transform(
         final_transform=final_transform,
     )
     return dispatcher
-
-
-def _transform_signature_check(signature):
-    """Check the signature of a quantum transform: (tape, ...) - > (Sequence(tape), fn)"""
-    # Check that the arguments of the transforms follows: (tape: qml.tape.QuantumTape, ...)
-    tape = signature.get("tape", None)
-
-    if tape is None:
-        raise TransformError("The first argument of a transform must be tape.")
-
-    if tape != qml.tape.QuantumTape:
-        raise TransformError("The type of the tape argument must be a QuantumTape.")
-
-    # Check return is (qml.tape.QuantumTape, callable):
-    ret = signature.get("return", None)
-
-    if ret is None or not isinstance(ret, tuple):
-        raise TransformError(
-            "The return of a transform must match (collections.abc.Sequence["
-            "pennylane.tape.tape.QuantumTape], <built-in function callable>)"
-        )
-
-    if ret[0] not in (
-        Sequence[qml.tape.QuantumTape],
-        List[qml.tape.QuantumTape],
-        Tuple[qml.tape.QuantumTape],
-    ):  # pylint:disable=unsubscriptable-object
-        raise TransformError(
-            "The first return of a transform must be a sequence of tapes: collections.abc.Sequence["
-            "pennylane.tape.tape.QuantumTape]"
-        )
-
-    if ret[1] != Callable:
-        raise TransformError(
-            "The second return of a transform must be a callable: <built-in function callable>"
-        )
