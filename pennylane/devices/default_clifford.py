@@ -45,10 +45,7 @@ from .preprocess import (
 )
 
 Result_or_ResultBatch = Union[Result, ResultBatch]
-QuantumTapeBatch = Sequence[QuantumTape]
-QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
-# always a function from a resultbatch to either a result or a result batch
-PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
+QuantumTape_or_Batch = Union[QuantumTape, Sequence[QuantumTape]]
 
 # Updated observable list
 _MEAS_OBSERVABLES = {
@@ -103,21 +100,38 @@ def _import_stim():
         import stim
     except ImportError as Error:
         raise ImportError(
-            "This feature requires stim, a fast stabilizer circuit simulator."
-            "It can be installed with: pip install stim."
+            "This feature requires stim, a fast stabilizer circuit simulator. "
+            "It can be installed with:\n\npip install stim"
         ) from Error
     return stim
 
 
+@qml.transform
+def _validate_clifford_ops(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
+    """Validate the tape contains only Clifford operations."""
+    if not all(op.name in _GATE_OPERATIONS for op in tape.operations):
+        raise qml.QuantumFunctionError(
+            "Currently 'default.qubit' device supports Clifford operations only."
+        )
+
+    def null_postprocessing(results):
+        """A postprocessing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``."""
+        return results[0]
+
+    return (tape,), null_postprocessing
+
+
 class DefaultClifford(Device):
-    r"""A PennyLane device written in Python and capable of executing Clifford circuits using `stim (2021) <https://github.com/quantumlib/stim/tree/main>`_  .
+    r"""A PennyLane device written in Python and capable of executing Clifford circuits using
+    `stim (2021) <https://github.com/quantumlib/stim/tree/main>`_.
 
     Args:
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots to use in executions involving
             this device.
         check_clifford (bool): Check if all the gate operations in the circuits to be executed are Clifford. Default is ``True``.
         max_error (float): The maximum permissible operator norm error for decomposing circuits with non-Clifford gate operations
-            into Cliffordt+T basis. The default is ``0.0`` as this device currently supports only Clifford simulations.
+            into Cliffordt+T basis. The default is ``None`` as this device currently supports only Clifford simulations.
         state (str): Describes what should be returned when the device's state is computed with ``qml.state``. Default is
             "tableau", which makes it return the final evolved Tableau. Alternatively, one may use "state_vector" to obtain
             the evolved state vector. Note that the latter might not be computationally feasible for larger qubit numbers.
@@ -140,15 +154,12 @@ class DefaultClifford(Device):
 
         num_qscripts = 5
 
-        rng = qml.numpy.random.default_rng(seed=42)
-
-        qscripts = []
-        for i in range(num_qscripts):
-            qs = qml.tape.QuantumScript(
-                [qml.Hadamard(wires=[0]), qml.CNOT(wires=[0, 1])],
+        qscripts = [
+            qml.tape.QuantumScript(
+                [qml.Hadamard(wires=[0]), qml.CNOT(wires=[0, 1])], 
                 [qml.expval(qml.PauliZ(0))]
             )
-            qscripts.append(qs)
+        ] * num_qscripts
 
     >>> dev = DefaultClifford()
     >>> program, execution_config = dev.preprocess()
@@ -159,9 +170,11 @@ class DefaultClifford(Device):
 
     .. details::
         :title: Clifford Tableau
+        :href: clifford-tableau-theory
 
-        The device represents a state by the inverse of a Tableau consisiting of binary
-        variable :math:`x_{ij},z_{ij}` for all :math:`i\in\left\{1,\ldots,2n\right\}`,
+        The device represents a state by the inverse of a Tableau
+        (`Aaronson & Gottesman (2004) <https://journals.aps.org/pra/abstract/10.1103/PhysRevA.70.052328>`_)
+        consisiting of binary variable :math:`x_{ij},\ z_{ij}` for all :math:`i\in\left\{1,\ldots,2n\right\}`,
         :math:`j\in\left\{1,\ldots,n\right\}`, and :math:`r_{i}` for all
         :math:`i\in\left\{1,\ldots,2n\right\}`.
 
@@ -169,12 +182,12 @@ class DefaultClifford(Device):
 
             \begin{bmatrix}
             x_{11} & \cdots & x_{1n} &        & z_{11} & \cdots & z_{1n} & &r_{1}\\
-            \vdots & \ddots & \vdots & \vline & \vdots & \ddots & \vdots & \vline &\vdots\\
+            \vdots & \ddots & \vdots & & \vdots & \ddots & \vdots & &\vdots\\
             x_{n1} & \cdots & x_{nn} &        & z_{n1} & \cdots & z_{nn} & &r_{n}\\
-            & \rule{.5cm}{.4pt} & &\rule{.2cm}{.4pt} & & \rule{.5cm}{.4pt}& & & \rule{.5cm}{.4pt}\\
+            & & & & & & & & \\
             x_{\left(  n+1\right)  1} & \cdots & x_{\left(  n+1\right)  n} & &
             z_{\left(  n+1\right)  1} & \cdots & z_{\left(  n+1\right)  n} & & r_{n+1}\\
-            \vdots & \ddots & \vdots  & \vline & \vdots & \ddots & \vdots & \vline & \vdots\\
+            \vdots & \ddots & \vdots  & & \vdots & \ddots & \vdots & & \vdots\\
             x_{\left(  2n\right)  1}  & \cdots & x_{\left(  2n\right)  n} & &
             z_{\left(  2n\right)  1}  & \cdots & z_{\left(  2n\right)  n} & & r_{2n}
             \end{bmatrix}
@@ -183,28 +196,32 @@ class DefaultClifford(Device):
         :math:`R_{1},\ldots,R_{n}`, and rows :math:`n+1` to :math:`2n` represent the stabilizer
         generators :math:`R_{n+1},\ldots,R_{2n}`. If :math:`R_{i}=\pm P_{1}\ldots P_{n}`,
         then bits :math:`x_{ij},z_{ij}` determine the j\ :math:`^{th}` Pauli matrix
-        :math:`P_{j}:\ 00` means `I`, :math:`01` means `X`, :math:`11` means `Y`,
-        and :math:`10` means `Z`. Finally, :math:`r_{i}` is :math`1` if :math:`R_{i}`
-        has negative phase and :math:`0` if :math:`r_{i}` has positive phase.
+        :math:`P_{j}:\ 00` means ``I``, :math:`01` means ``X``, :math:`11` means ``Y``,
+        and :math:`10` means ``Z``. Finally, :math:`r_{i}` is one if :math:`R_{i}`
+        has negative phase and zero if :math:`r_{i}` has a positive phase.
 
 
     .. details::
         :title: Tracking
+        :href: clifford-tracking
 
         ``DefaultClifford`` tracks:
 
         * ``executions``: the number of unique circuits that would be required on quantum hardware
         * ``shots``: the number of shots
         * ``resources``: the :class:`~.resource.Resources` for the executed circuit.
-        * ``simulations``: the number of simulations performed. One simulation can cover multiple QPU executions, such as for non-commuting measurements and batched parameters.
+        * ``simulations``: the number of simulations performed. One simulation can cover multiple QPU executions, 
+          such as for non-commuting measurements and batched parameters.
         * ``batches``: The number of times :meth:`~.execute` is called.
         * ``results``: The results of each call of :meth:`~.execute`
         * ``derivative_batches``: How many times :meth:`~.compute_derivatives` is called.
         * ``execute_and_derivative_batches``: How many times :meth:`~.execute_and_compute_derivatives` is called
-        * ``derivatives``: How many circuits are submitted to :meth:`~.compute_derivatives` or :meth:`~.execute_and_compute_derivatives`.
+        * ``derivatives``: How many circuits are submitted to :meth:`~.compute_derivatives` or
+          :meth:`~.execute_and_compute_derivatives`.
 
     .. details::
         :title: Accelerate calculations with multiprocessing
+        :href: clifford-multiprocessing
 
         Suppose one has a processor with 5 cores or more, these scripts can be executed in
         parallel as follows
@@ -223,9 +240,9 @@ class DefaultClifford(Device):
         machine. You can control the number of threads per process with the environment
         variables:
 
-        * OMP_NUM_THREADS
-        * MKL_NUM_THREADS
-        * OPENBLAS_NUM_THREADS
+        * ``OMP_NUM_THREADS``
+        * ``MKL_NUM_THREADS``
+        * ``OPENBLAS_NUM_THREADS``
 
         where the last two are specific to the MKL and OpenBLAS libraries specifically.
 
@@ -265,7 +282,7 @@ class DefaultClifford(Device):
         wires=None,
         shots=None,
         check_clifford=True,
-        max_error=0.0,
+        max_error=None,
         state="tableau",
         seed="global",
         max_workers=None,
@@ -274,7 +291,13 @@ class DefaultClifford(Device):
 
         self._max_workers = max_workers
         self._check_clifford = check_clifford
-        self._max_error = max(max_error, 0.0)
+
+        if max_error is None:
+            self._max_error = 0.0
+        else:
+            raise ValueError(
+                f"Currently this device doesn't support executing non-Clifford operations, got max_error={max_error}."
+            )
 
         if state in ["tableau", "state_vector"]:
             self._state = state
@@ -302,15 +325,12 @@ class DefaultClifford(Device):
             ExecutionConfig: a preprocessed execution config
 
         """
+
         updated_values = {}
-        if execution_config.gradient_method == "best":  # pragma: no cover
-            updated_values["gradient_method"] = None
-        if execution_config.use_device_gradient is None:
-            updated_values["use_device_gradient"] = True
-        if execution_config.use_device_jacobian_product is not None:
-            updated_values["use_device_jacobian_product"] = None
-        if execution_config.grad_on_execution is None:
-            updated_values["grad_on_execution"] = execution_config.gradient_method == "adjoint"
+        updated_values["gradient_method"] = None
+        updated_values["use_device_gradient"] = False
+        updated_values["use_device_jacobian_product"] = False
+        updated_values["grad_on_execution"] = False
         updated_values["device_options"] = dict(execution_config.device_options)  # copy
         if "max_workers" not in updated_values["device_options"]:
             updated_values["device_options"]["max_workers"] = self._max_workers
@@ -349,9 +369,7 @@ class DefaultClifford(Device):
         transform_program.add_transform(qml.defer_measurements, device=self)
 
         if self._check_clifford:
-            transform_program.add_transform(
-                qml.transforms.clifford_t_decomposition, epsilon=self._max_error
-            )
+            transform_program.add_transform(_validate_clifford_ops)
         transform_program.add_transform(
             validate_measurements, sample_measurements=accepted_sample_measurement, name=self.name
         )
@@ -549,14 +567,13 @@ class DefaultClifford(Device):
         Returns:
             tuple(TensorLike): The results of the simulation
 
-        Note that this function can return measurements for non-commuting observables simultaneously.
+        This function assumes that all operations are Clifford.
 
-        This function assumes that all operations provide matrices.
-
-        >>> qs = qml.tape.QuantumScript([qml.RX(1.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.probs(wires=(0,1))])
+        >>> qs = qml.tape.QuantumScript([qml.Hadamard(1.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.state(wires=(0,1))])
         >>> simulate(qs)
-        (0.36235775447667357,
-        tensor([0.68117888, 0.        , 0.31882112, 0.        ], requires_grad=True))
+        (array(0),
+         array([[0, 1, 0],
+                [1, 0, 0]]))
 
         """
 

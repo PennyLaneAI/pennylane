@@ -272,6 +272,15 @@ def test_meas_error():
         circuit_ent()
 
 
+def test_max_error():
+    """Test if an ValueError is raised when max_error is not None"""
+
+    with pytest.raises(
+        ValueError, match="Currently this device doesn't support executing non-Clifford operations"
+    ):
+        qml.device("default.clifford", max_error=1e-4)
+
+
 def test_state_error():
     """Test if an ValueError is raised when state is invalid"""
 

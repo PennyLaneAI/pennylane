@@ -215,7 +215,7 @@
       qml.Hadamard(wires=[0])
       return qml.state()
 
-  (tableau,), _ = circuit()
+  (tableau,) = circuit()
   ```
 
   Given a circuit with the Clifford gates, one can use this device obtaining the Tableau representation
