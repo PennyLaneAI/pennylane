@@ -263,6 +263,9 @@
 * `qml.equal` now supports comparison of `QuantumScript` objects.
   [(#4902)](https://github.com/PennyLaneAI/pennylane/pull/4902)
 
+* The function ``qml.Snapshot`` now supports arbitrary measurements of type ``StateMeasurement``.
+  [(#4876)](https://github.com/PennyLaneAI/pennylane/pull/4908)
+
 <h4>Better support for batching</h4>
 
 * `default.qubit` now can evolve already batched states with `ParametrizedEvolution`
@@ -362,6 +365,11 @@
   to `None` if the operator has not defined it (or has no definition in the pauli basis).
   [(#4915)](https://github.com/PennyLaneAI/pennylane/pull/4915)
 
+* `qml.ShotAdaptiveOptimizer` can now use a multinomial distribution for spreading shots across
+  the terms of a Hamiltonian measured in a QNode. Note that this is equivalent to what can be
+  done with `qml.ExpvalCost`, but this is the preferred method because `ExpvalCost` is deprecated.
+  [(#4896)](https://github.com/PennyLaneAI/pennylane/pull/4896)
+
 <h3>Breaking changes 💔</h3>
 
 * The function `qml.transforms.classical_jacobian` was moved to the gradients module `qml.gradients` and therefore became
@@ -397,6 +405,10 @@
 
 * The `"pennylane"` MPL-drawer style now draws straight lines instead of sketch-style lines.
   [(#4880)](https://github.com/PennyLaneAI/pennylane/pull/4880)
+
+* The default value for the `term_sampling` argument of `ShotAdaptiveOptimizer` is now
+  `None` instead of `"weighted_random_sampling"`.
+  [(#4896)](https://github.com/PennyLaneAI/pennylane/pull/4896)
 
 <h3>Deprecations 👋</h3>
 
@@ -529,6 +541,7 @@ Isaac De Vlugt,
 Amintor Dusko,
 Lillian Frederiksen,
 Josh Izaac,
+Juan Giraldo,
 Emiliano Godinez Ramirez,
 Ankit Khandelwal,
 Christina Lee,
