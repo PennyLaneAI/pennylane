@@ -327,6 +327,7 @@
 
 * `SampleMeasurement` now as an optional method `process_counts` for computing the measurement results from a counts
   dictionary.
+  [(#4941)](https://github.com/PennyLaneAI/pennylane/pull/4941/)
 
 * A new function called `ops.functions.assert_valid` has been added for checking if an `Operator` class is defined correctly.
   [(#4764)](https://github.com/PennyLaneAI/pennylane/pull/4764)
