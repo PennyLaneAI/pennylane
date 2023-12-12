@@ -260,8 +260,9 @@
 * `==` and `!=` operands can now be used with `TransformProgram` and `TransformContainers` instances.
   [(#4858)](https://github.com/PennyLaneAI/pennylane/pull/4858)
 
-* `qml.equal` now supports comparison of `QuantumScript` objects.
+* `qml.equal` now supports comparison of `QuantumScript` and `BasisRotation` objects
   [(#4902)](https://github.com/PennyLaneAI/pennylane/pull/4902)
+  [(#4919)](https://github.com/PennyLaneAI/pennylane/pull/4919)
 
 * The function ``qml.Snapshot`` now supports arbitrary measurements of type ``StateMeasurement``.
   [(#4876)](https://github.com/PennyLaneAI/pennylane/pull/4908)
