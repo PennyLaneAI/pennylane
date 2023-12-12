@@ -23,8 +23,6 @@ from pennylane.math import allclose, arccos, arctan2, cos, get_interface, is_abs
 from pennylane.wires import Wires
 from pennylane.ops.identity import GlobalPhase
 
-from pennylane.ops.identity import GlobalPhase
-
 
 def find_next_gate(wires, op_list):
     """Given a list of operations, finds the next operation that acts on at least one of
