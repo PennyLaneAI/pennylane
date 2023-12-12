@@ -384,7 +384,6 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert transform_container.classical_cotransform is None
         assert not expand_transform_container.is_informative
 
-
     @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_dispatcher_signature_classical_cotransform(self, valid_transform):
         """Test that  valid transforms with non-valid co transform raises a Transform error."""
