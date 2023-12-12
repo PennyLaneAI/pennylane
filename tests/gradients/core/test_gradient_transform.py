@@ -203,7 +203,7 @@ class TestGradientTransformIntegration:
 
     @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 1e-1), ([1000, 500], 3e-1)])
     @pytest.mark.parametrize("slicing", [False, True])
-    @pytest.mark.parametrize("prefactor", [1., 2.])
+    @pytest.mark.parametrize("prefactor", [1.0, 2.0])
     def test_acting_on_qnodes_single_param(self, shots, slicing, prefactor, atol):
         """Test that a gradient transform acts on QNodes with a single parameter correctly"""
         np.random.seed(412)
@@ -233,7 +233,7 @@ class TestGradientTransformIntegration:
             assert np.allclose(res, expected, atol=atol, rtol=0)
 
     @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 1e-1), ([1000, 100], 2e-1)])
-    @pytest.mark.parametrize("prefactor", [1., 2.])
+    @pytest.mark.parametrize("prefactor", [1.0, 2.0])
     def test_acting_on_qnodes_multi_param(self, shots, prefactor, atol):
         """Test that a gradient transform acts on QNodes with multiple parameters correctly"""
         np.random.seed(412)
@@ -253,9 +253,15 @@ class TestGradientTransformIntegration:
         assert circuit.interface == "auto"
         x, y = w
         y *= prefactor
-        expected = np.array([
-            [-np.sin(x), 0],
-            [2 * np.cos(x) * np.sin(x) * np.cos(y)**2, 2 * prefactor * np.cos(y) * np.sin(y) * np.cos(x)**2]])
+        expected = np.array(
+            [
+                [-np.sin(x), 0],
+                [
+                    2 * np.cos(x) * np.sin(x) * np.cos(y) ** 2,
+                    2 * prefactor * np.cos(y) * np.sin(y) * np.cos(x) ** 2,
+                ],
+            ]
+        )
         if isinstance(shots, list):
             assert all(np.allclose(r, expected, atol=atol, rtol=0) for r in res)
         else:

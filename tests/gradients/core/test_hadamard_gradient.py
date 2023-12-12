@@ -27,7 +27,6 @@ def grad_fn(tape, dev, fn=qml.gradients.hadamard_grad, **kwargs):
     return fn(dev.execute(tapes)), tapes
 
 
-
 def cost1(x):
     """Cost function."""
     qml.Rot(x[0], 0.3 * x[1], x[2], wires=0)
@@ -63,6 +62,7 @@ def cost6(x):
     qml.Rot(*x, wires=0)
     return (qml.probs([0, 1]), qml.probs([2, 3]))
 
+
 def cost7(x):
     """Cost function."""
     qml.RX(x, 0)
@@ -79,6 +79,7 @@ def cost9(x):
     """Cost function."""
     qml.RX(x, 0)
     return (qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)))
+
 
 class TestHadamardGrad:
     """Unit tests for the hadamard_grad function"""
@@ -1013,7 +1014,7 @@ class TestHadamardGradEdgeCases:
         assert res_hadamard[1][2].shape == (4,)
         assert np.allclose(res_hadamard[1][2], 0)
 
-    @pytest.mark.parametrize("prefactor", [1., 2.])
+    @pytest.mark.parametrize("prefactor", [1.0, 2.0])
     def test_all_zero_diff_methods(self, prefactor):
         """Test that the transform works correctly when the diff method for every parameter is
         identified to be 0, and that no tapes were generated."""

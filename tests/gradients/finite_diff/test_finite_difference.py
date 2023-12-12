@@ -272,7 +272,7 @@ class TestFiniteDiff:
         with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
             qml.gradients.finite_diff(circuit)(weights)
 
-    @pytest.mark.parametrize("prefactor", [1., 2.])
+    @pytest.mark.parametrize("prefactor", [1.0, 2.0])
     def test_all_zero_diff_methods(self, prefactor):
         """Test that the transform works correctly when the diff method for every parameter is
         identified to be 0, and that no tapes were generated."""
