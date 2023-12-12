@@ -730,7 +730,7 @@ class QubitChannel(Channel):
             raise ValueError("Only trace preserving channels can be applied.")
 
     def _flatten(self):
-        return [self.data], (self.wires, ())
+        return (self.data,), (self.wires, ())
 
     @staticmethod
     def compute_kraus_matrices(*kraus_matrices):  # pylint:disable=arguments-differ

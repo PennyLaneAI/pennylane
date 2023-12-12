@@ -215,7 +215,7 @@ class Snapshot(Operation):
         return "|Snap|"
 
     def _flatten(self):
-        return ((), (self.tag, self.hyperparameters["measurement"]))
+        return (), (self.tag, self.hyperparameters["measurement"])
 
     @classmethod
     def _unflatten(cls, data, metadata):
