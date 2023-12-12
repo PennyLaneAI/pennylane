@@ -15,10 +15,8 @@
 This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
-from importlib import reload
-import types
-import warnings
-import pkg_resources
+from importlib import reload, metadata
+from sys import version_info
 
 
 import numpy as _np
@@ -34,6 +32,7 @@ import pennylane.qnn
 import pennylane.templates
 import pennylane.pauli
 from pennylane.pauli import pauli_decompose
+from pennylane.resource import specs
 import pennylane.resource
 import pennylane.qchem
 from pennylane.fermi import FermiC, FermiA, jordan_wigner
@@ -45,7 +44,7 @@ from pennylane.qchem import (
     import_operator,
 )
 from pennylane._device import Device, DeviceError
-from pennylane._grad import grad, jacobian
+from pennylane._grad import grad, jacobian, vjp, jvp
 from pennylane._qubit_device import QubitDevice
 from pennylane._qutrit_device import QutritDevice
 from pennylane._version import __version__
@@ -71,7 +70,7 @@ from pennylane.measurements import (
     shadow_expval,
 )
 from pennylane.ops import *
-from pennylane.ops import adjoint, ctrl, exp, sum, pow, prod, s_prod
+from pennylane.ops import adjoint, ctrl, cond, exp, sum, pow, prod, s_prod
 from pennylane.templates import broadcast, layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
@@ -83,18 +82,12 @@ from pennylane import qaoa
 from pennylane.qnode import QNode, qnode
 from pennylane.transforms import (
     transform,
-    adjoint_metric_tensor,
     batch_params,
     batch_input,
     batch_transform,
     batch_partial,
-    cut_circuit,
-    cut_circuit_mc,
     compile,
-    cond,
     defer_measurements,
-    metric_tensor,
-    specs,
     qfunc_transform,
     op_transform,
     single_tape_transform,
@@ -103,6 +96,7 @@ from pennylane.transforms import (
     commutation_dag,
     pattern_matching,
     pattern_matching_optimization,
+    clifford_t_decomposition,
 )
 from pennylane.ops.functions import (
     dot,
@@ -116,20 +110,26 @@ from pennylane.ops.functions import (
     map_wires,
     matrix,
     simplify,
+    iterative_qpe,
 )
 from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost
 from pennylane.debugging import snapshots
 from pennylane.shadows import ClassicalShadow
+from pennylane.qcut import cut_circuit, cut_circuit_mc
 import pennylane.pulse
 
 import pennylane.fourier
+from pennylane.gradients import metric_tensor, adjoint_metric_tensor
 import pennylane.gradients  # pylint:disable=wrong-import-order
 import pennylane.qinfo
 
 # pylint:disable=wrong-import-order
 from pennylane.interfaces import execute  # pylint:disable=wrong-import-order
 import pennylane.logging  # pylint:disable=wrong-import-order
+
+from pennylane.compiler import qjit, while_loop, for_loop
+import pennylane.compiler
 
 import pennylane.data
 
@@ -141,10 +141,20 @@ class QuantumFunctionError(Exception):
     """Exception raised when an illegal operation is defined in a quantum function."""
 
 
+class PennyLaneDeprecationWarning(UserWarning):
+    """Warning raised when a PennyLane feature is being deprecated."""
+
+
 def _get_device_entrypoints():
     """Returns a dictionary mapping the device short name to the
     loadable entrypoint"""
-    return {entry.name: entry for entry in pkg_resources.iter_entry_points("pennylane.plugins")}
+    entries = (
+        metadata.entry_points()["pennylane.plugins"]
+        if version_info[:2] == (3, 9)
+        # pylint:disable=unexpected-keyword-arg
+        else metadata.entry_points(group="pennylane.plugins")
+    )
+    return {entry.name: entry for entry in entries}
 
 
 def refresh_devices():
@@ -154,11 +164,11 @@ def refresh_devices():
     # which is to update the global plugin_devices variable.
 
     # We wish to retain the behaviour of a global plugin_devices dictionary,
-    # as re-importing pkg_resources can be a very slow operation on systems
+    # as re-importing metadata can be a very slow operation on systems
     # with a large number of installed packages.
     global plugin_devices  # pylint:disable=global-statement
 
-    reload(pkg_resources)
+    reload(metadata)
     plugin_devices = _get_device_entrypoints()
 
 

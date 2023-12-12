@@ -13,12 +13,13 @@
 # limitations under the License.
 """Simulate a quantum script."""
 # pylint: disable=protected-access
+from typing import Optional
+
 from numpy.random import default_rng
 import numpy as np
 
 import pennylane as qml
 from pennylane.typing import Result
-from pennylane.wires import Wires
 
 from .initialize_state import create_initial_state
 from .apply_operation import apply_operation
@@ -61,43 +62,6 @@ class _FlexShots(qml.measurements.Shots):
         self._frozen = True
 
 
-def expand_state_over_wires(state, state_wires, all_wires, is_state_batched):
-    """
-    Expand and re-order a state given some initial and target wire orders, setting
-    all additional wires to the 0 state.
-
-    Args:
-        state (~pennylane.typing.TensorLike): The state to re-order and expand
-        state_wires (.Wires): The wire order of the inputted state
-        all_wires (.Wires): The desired wire order
-        is_state_batched (bool): Whether the state has a batch dimension or not
-
-    Returns:
-        TensorLike: The state in the new desired size and order
-    """
-    pad_width = 2 ** len(all_wires) - 2 ** len(state_wires)
-    pad = (pad_width, 0) if qml.math.get_interface(state) == "torch" else (0, pad_width)
-    shape = (2,) * len(all_wires)
-    if is_state_batched:
-        pad = ((0, 0), pad)
-        batch_size = qml.math.shape(state)[0]
-        shape = (batch_size,) + shape
-        state = qml.math.reshape(state, (batch_size, -1))
-    else:
-        pad = (pad,)
-        state = qml.math.flatten(state)
-
-    state = qml.math.pad(state, pad, mode="constant")
-    state = qml.math.reshape(state, shape)
-
-    # re-order
-    new_wire_order = Wires.unique_wires([all_wires, state_wires]) + state_wires
-    desired_axes = [new_wire_order.index(w) for w in all_wires]
-    if is_state_batched:
-        desired_axes = [0] + [i + 1 for i in desired_axes]
-    return qml.math.transpose(state, desired_axes)
-
-
 def _postselection_postprocess(state, is_state_batched, shots):
     """Update state after projector is applied."""
     if is_state_batched:
@@ -112,7 +76,10 @@ def _postselection_postprocess(state, is_state_batched, shots):
     # equal to zero so that the state can become invalid. This way, execution can continue, and
     # bad postselection gives results that are invalid rather than results that look valid but
     # are incorrect.
-    norm = qml.math.floor(qml.math.real(qml.math.norm(state)) * 1e15) * 1e-15
+    norm = qml.math.norm(state)
+
+    if not qml.math.is_abstract(state) and qml.math.allclose(norm, 0.0):
+        norm = 0.0
 
     if shots:
         # Clip the number of shots using a binomial distribution using the probability of
@@ -127,7 +94,7 @@ def _postselection_postprocess(state, is_state_batched, shots):
         # valid samples
         shots = _FlexShots(postselected_shots)
 
-    state = state / qml.math.cast_like(norm, state)
+    state = state / norm
     return state, shots
 
 
@@ -169,13 +136,10 @@ def get_final_state(circuit, debugger=None, interface=None):
         # new state is batched if i) the old state is batched, or ii) the new op adds a batch dim
         is_state_batched = is_state_batched or op.batch_size is not None
 
-    if set(circuit.op_wires) < set(circuit.wires):
-        state = expand_state_over_wires(
-            state,
-            Wires(range(len(circuit.op_wires))),
-            Wires(range(circuit.num_wires)),
-            is_state_batched,
-        )
+    for _ in range(len(circuit.wires) - len(circuit.op_wires)):
+        # if any measured wires are not operated on, we pad the state with zeros.
+        # We know they belong at the end because the circuit is in standard wire-order
+        state = qml.math.stack([state, qml.math.zeros_like(state)], axis=-1)
 
     return state, is_state_batched
 
@@ -235,8 +199,14 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
     return results
 
 
+# pylint: disable=too-many-arguments
 def simulate(
-    circuit: qml.tape.QuantumScript, rng=None, prng_key=None, debugger=None, interface=None
+    circuit: qml.tape.QuantumScript,
+    rng=None,
+    prng_key=None,
+    debugger=None,
+    interface=None,
+    state_cache: Optional[dict] = None,
 ) -> Result:
     """Simulate a single quantum script.
 
@@ -252,6 +222,7 @@ def simulate(
             generated. Only for simulation using JAX.
         debugger (_Debugger): The debugger to use
         interface (str): The machine learning interface to create the initial state with
+        state_cache=None (Optional[dict]): A dictionary mapping the hash of a circuit to the pre-rotated state. Used to pass the state between forward passes and vjp calculations.
 
     Returns:
         tuple(TensorLike): The results of the simulation
@@ -267,4 +238,6 @@ def simulate(
 
     """
     state, is_state_batched = get_final_state(circuit, debugger=debugger, interface=interface)
+    if state_cache is not None:
+        state_cache[circuit.hash] = state
     return measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key)

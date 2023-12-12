@@ -298,6 +298,12 @@ class DefaultQubit(Device):
         """The name of the device."""
         return "default.qubit"
 
+    _state_cache: Optional[dict] = None
+    """
+    A cache to store the "pre-rotated state" for reuse between the forward pass call to ``execute`` and
+    subsequent calls to ``compute_vjp``. ``None`` indicates that no caching is required.
+    """
+
     # pylint:disable = too-many-arguments
     def __init__(
         self,
@@ -434,6 +440,10 @@ class DefaultQubit(Device):
                 "adjoint",
                 "backprop",
             }
+        if execution_config.use_device_jacobian_product is None:
+            updated_values["use_device_jacobian_product"] = (
+                execution_config.gradient_method == "adjoint"
+            )
         if execution_config.grad_on_execution is None:
             updated_values["grad_on_execution"] = execution_config.gradient_method == "adjoint"
         updated_values["device_options"] = dict(execution_config.device_options)  # copy
@@ -465,6 +475,7 @@ class DefaultQubit(Device):
             circuits = [circuits]
 
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
+        self._state_cache = {} if execution_config.use_device_jacobian_product else None
         interface = (
             execution_config.interface
             if execution_config.gradient_method in {"backprop", None}
@@ -478,6 +489,7 @@ class DefaultQubit(Device):
                     prng_key=self._prng_key,
                     debugger=self._debugger,
                     interface=interface,
+                    state_cache=self._state_cache,
                 )
                 for c in circuits
             )
@@ -732,7 +744,16 @@ class DefaultQubit(Device):
 
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
-            res = tuple(adjoint_vjp(circuit, cots) for circuit, cots in zip(circuits, cotangents))
+
+            def _state(circuit):
+                return (
+                    None if self._state_cache is None else self._state_cache.get(circuit.hash, None)
+                )
+
+            res = tuple(
+                adjoint_vjp(circuit, cots, state=_state(circuit))
+                for circuit, cots in zip(circuits, cotangents)
+            )
         else:
             vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:

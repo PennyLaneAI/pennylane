@@ -26,7 +26,7 @@ files.
 import pytest
 
 import pennylane as qml
-from pennylane.transforms.condition import ConditionalTransformError
+from pennylane.ops.op_math.condition import ConditionalTransformError
 
 terminal_meas = [
     qml.probs(wires=[1, 0]),
@@ -64,16 +64,16 @@ class TestCond:
         assert len(ops) == 4
         assert ops[0].return_type == qml.measurements.MidMeasure
 
-        assert isinstance(ops[1], qml.transforms.condition.Conditional)
+        assert isinstance(ops[1], qml.ops.Conditional)
         assert isinstance(ops[1].then_op, qml.PauliX)
         assert ops[1].then_op.wires == target_wire
 
-        assert isinstance(ops[2], qml.transforms.condition.Conditional)
+        assert isinstance(ops[2], qml.ops.Conditional)
         assert isinstance(ops[2].then_op, qml.RY)
         assert ops[2].then_op.wires == target_wire
         assert ops[2].then_op.data == (r,)
 
-        assert isinstance(ops[3], qml.transforms.condition.Conditional)
+        assert isinstance(ops[3], qml.ops.Conditional)
         assert isinstance(ops[3].then_op, qml.PauliZ)
         assert ops[3].then_op.wires == target_wire
 
@@ -129,20 +129,20 @@ class TestCond:
 
         assert ops[0].return_type == qml.measurements.MidMeasure
 
-        assert isinstance(ops[1], qml.transforms.condition.Conditional)
+        assert isinstance(ops[1], qml.ops.Conditional)
         assert isinstance(ops[1].then_op, qml.PauliX)
         assert ops[1].then_op.wires == target_wire
 
-        assert isinstance(ops[2], qml.transforms.condition.Conditional)
+        assert isinstance(ops[2], qml.ops.Conditional)
         assert isinstance(ops[2].then_op, qml.RY)
         assert ops[2].then_op.wires == target_wire
         assert ops[2].then_op.data == (r,)
 
-        assert isinstance(ops[3], qml.transforms.condition.Conditional)
+        assert isinstance(ops[3], qml.ops.Conditional)
         assert isinstance(ops[3].then_op, qml.PauliZ)
         assert ops[3].then_op.wires == target_wire
 
-        assert isinstance(ops[4], qml.transforms.condition.Conditional)
+        assert isinstance(ops[4], qml.ops.Conditional)
         assert isinstance(ops[4].then_op, qml.PauliY)
         assert ops[4].then_op.wires == target_wire
 
@@ -190,10 +190,13 @@ class TestCond:
             m_0 = qml.measure(1)
             qml.cond(m_0, g, f)()  # Check that the same error is raised when f and g are swapped
 
+
+class TestAdditionalCond:
+    """Test additional/misc functionality relating to qml.cond"""
+
     @pytest.mark.parametrize("inp", [1, "string", qml.PauliZ(0)])
-    def test_cond_error_unrecognized_input(self, inp, terminal_measurement):
+    def test_cond_error_unrecognized_input(self, inp):
         """Test that an error is raised when the input is not recognized."""
-        # pylint: disable=unused-argument
 
         with pytest.raises(
             ConditionalTransformError,
@@ -201,6 +204,32 @@ class TestCond:
         ):
             m_0 = qml.measure(1)
             qml.cond(m_0, inp)()
+
+    def test_map_wires(self):
+        """Tests the cond.map_wires function."""
+        with qml.queuing.AnnotatedQueue() as q:
+            m_0 = qml.measure(0)
+            qml.cond(m_0, qml.PauliX)(1)
+
+        meas, cond_op = q.queue
+        mapped_cond = cond_op.map_wires({0: "a", 1: "b"})
+        assert mapped_cond.meas_val.measurements == [meas.map_wires({0: "a"})]
+        assert mapped_cond.then_op == qml.PauliX("b")
+
+
+@pytest.mark.parametrize("op_class", [qml.PauliY, qml.Toffoli, qml.Hadamard, qml.CZ])
+def test_conditional_label(op_class):
+    """Test that the label for conditional oeprators is correct."""
+    base_op = op_class(wires=range(op_class.num_wires))
+
+    # Need to use queue because `qml.cond` doesn't return `Conditional` operators
+    with qml.queuing.AnnotatedQueue() as q:
+        m0 = qml.measure(0)
+        qml.cond(m0, op_class)(wires=range(op_class.num_wires))
+
+    cond_op = q.queue[1]
+
+    assert base_op.label() == cond_op.label()
 
 
 @pytest.mark.parametrize("terminal_measurement", terminal_meas)
@@ -224,12 +253,12 @@ class TestOtherTransforms:
         assert len(ops) == 3
         assert ops[0].return_type == qml.measurements.MidMeasure
 
-        assert isinstance(ops[1], qml.transforms.condition.Conditional)
+        assert isinstance(ops[1], qml.ops.Conditional)
         assert isinstance(ops[1].then_op, qml.ops.op_math.Adjoint)
         assert isinstance(ops[1].then_op.base, qml.RX)
         assert ops[1].then_op.wires == target_wire
 
-        assert isinstance(ops[2], qml.transforms.condition.Conditional)
+        assert isinstance(ops[2], qml.ops.Conditional)
         assert isinstance(ops[2].then_op, qml.RX)
         assert ops[2].then_op.data == (r,)
         assert ops[2].then_op.wires == target_wire
@@ -253,11 +282,11 @@ class TestOtherTransforms:
         assert len(ops) == 3
         assert ops[0].return_type == qml.measurements.MidMeasure
 
-        assert isinstance(ops[1], qml.transforms.condition.Conditional)
+        assert isinstance(ops[1], qml.ops.Conditional)
         assert isinstance(ops[1].then_op, qml.ops.op_math.Controlled)
         assert qml.equal(ops[1].then_op.base, qml.RX(r, wires=2))
 
-        assert isinstance(ops[2], qml.transforms.condition.Conditional)
+        assert isinstance(ops[2], qml.ops.Conditional)
         assert isinstance(ops[2].then_op, qml.ops.op_math.Controlled)
         assert qml.equal(ops[2].then_op.base, qml.RY(r, wires=2))
 
@@ -281,11 +310,11 @@ class TestOtherTransforms:
         assert ops[0].return_type == qml.measurements.MidMeasure
 
         assert isinstance(ops[1], qml.ops.op_math.Controlled)
-        assert isinstance(ops[1].base, qml.transforms.condition.Conditional)
+        assert isinstance(ops[1].base, qml.ops.Conditional)
         assert qml.equal(ops[1].base.then_op, qml.RX(1.234, wires=0))
 
         assert isinstance(ops[2], qml.ops.op_math.Controlled)
-        assert isinstance(ops[2].base, qml.transforms.condition.Conditional)
+        assert isinstance(ops[2].base, qml.ops.Conditional)
         assert qml.equal(ops[2].base.then_op, qml.RY(r, wires=0))
 
         assert len(tape.measurements) == 1

@@ -205,6 +205,15 @@ Other
     ~AllWires
     ~AnyWires
 
+.. currentmodule:: pennylane
+
+PennyLane also provides a function for checking the consistency and correctness of an operator instance.
+
+.. autosummary::
+    :toctree: api
+
+    ~ops.functions.assert_valid
+
 Operation attributes
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -258,6 +267,7 @@ from .pytrees import register_pytree
 
 SUPPORTED_INTERFACES = {"numpy", "scipy", "autograd", "torch", "tensorflow", "jax"}
 __use_new_opmath = False
+_UNSET_BATCH_SIZE = -1  # indicates that the (lazy) batch size has not yet been accessed/computed
 
 
 class OperatorPropertyUndefined(Exception):
@@ -653,10 +663,10 @@ class Operator(abc.ABC):
         the ``_check_batching`` method, by comparing the shape of the input data to
         the expected shape. Therefore, it is necessary to call ``_check_batching`` on
         any new input parameters passed to the operator. By default, any class inheriting
-        from :class:`~.operation.Operator` will do so within its ``__init__`` method, and
-        other objects may do so when updating the data of the ``Operator``.
+        from :class:`~.operation.Operator` will do so the first time its
+        ``batch_size`` property is accessed.
 
-        ``_check_batching`` modifies the following class attributes:
+        ``_check_batching`` modifies the following instance attributes:
 
         - ``_ndim_params``: The number of dimensions of the parameters passed to
           ``_check_batching``. For an ``Operator`` that does _not_ set the ``ndim_params``
@@ -669,9 +679,9 @@ class Operator(abc.ABC):
           not support broadcasting will report to not be broadcasted independently of the
           input.
 
-        Both attributes are not defined if ``_check_batching`` is not called. Therefore it
-        *needs to be called* within custom ``__init__`` implementations, either directly
-        or by calling ``Operator.__init__``.
+        These two properties are defined lazily, and accessing the public version of either
+        one of them (in other words, without the leading underscore) for the first time will
+        trigger a call to ``_check_batching``, which validates and sets these properties.
     """
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
 
@@ -750,7 +760,7 @@ class Operator(abc.ABC):
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
-        return cls.compute_matrix != Operator.compute_matrix
+        return cls.compute_matrix != Operator.compute_matrix or cls.matrix != Operator.matrix
 
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
@@ -1067,39 +1077,25 @@ class Operator(abc.ABC):
                 f"{len(self._wires)} wires given, {self.num_wires} expected."
             )
 
-        self._check_batching(params)
+        self._batch_size = _UNSET_BATCH_SIZE
+        self._ndim_params = _UNSET_BATCH_SIZE
 
         self.data = tuple(np.array(p) if isinstance(p, (list, tuple)) else p for p in params)
 
         self.queue()
 
-    def _check_batching(self, params):
+    def _check_batching(self):
         """Check if the expected numbers of dimensions of parameters coincides with the
         ones received and sets the ``_batch_size`` attribute.
-
-        Args:
-            params (tuple): Parameters with which the operator is instantiated
 
         The check always passes and sets the ``_batch_size`` to ``None`` for the default
         ``Operator.ndim_params`` property but subclasses may overwrite it to define fixed
         expected numbers of dimensions, allowing to infer a batch size.
         """
         self._batch_size = None
+        params = self.data
 
-        try:
-            ndims = tuple(qml.math.ndim(p) for p in params)
-        except ValueError as e:
-            # TODO:[dwierichs] When using tf.function with an input_signature that contains
-            # an unknown-shaped input, ndim() will not be able to determine the number of
-            # dimensions because they are not specified yet. Failing example: Let `fun` be
-            # a single-parameter QNode.
-            # `tf.function(fun, input_signature=(tf.TensorSpec(shape=None, dtype=tf.float32),))`
-            # There might be a way to support batching nonetheless, which remains to be
-            # investigated. For now, the batch_size is left to be `None` when instantiating
-            # an operation with abstract parameters that make `qml.math.ndim` fail.
-            if any(qml.math.is_abstract(p) for p in params):
-                return
-            raise e
+        ndims = tuple(qml.math.ndim(p) for p in params)
 
         if any(len(qml.math.shape(p)) >= 1 and qml.math.shape(p)[0] is None for p in params):
             # if the batch dimension is unknown, then skip the validation
@@ -1183,6 +1179,8 @@ class Operator(abc.ABC):
         Returns:
             tuple: Number of dimensions for each trainable parameter.
         """
+        if self._batch_size is _UNSET_BATCH_SIZE:
+            self._check_batching()
         return self._ndim_params
 
     @property
@@ -1197,6 +1195,8 @@ class Operator(abc.ABC):
         Returns:
             int or None: Size of the parameter broadcasting dimension if present, else ``None``.
         """
+        if self._batch_size is _UNSET_BATCH_SIZE:
+            self._check_batching()
         return self._batch_size
 
     @property
@@ -1221,6 +1221,11 @@ class Operator(abc.ABC):
             return self._hyperparameters
         self._hyperparameters = {}
         return self._hyperparameters
+
+    @property
+    def pauli_rep(self):
+        """A :class:`~.PauliSentence` representation of the Operator, or ``None`` if it doesn't have one."""
+        return self._pauli_rep
 
     @property
     def is_hermitian(self):
@@ -1467,7 +1472,7 @@ class Operator(abc.ABC):
         """
         new_op = copy.copy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        if (p_rep := new_op._pauli_rep) is not None:
+        if (p_rep := new_op.pauli_rep) is not None:
             new_op._pauli_rep = p_rep.map_wires(wire_map)
         return new_op
 
@@ -1751,7 +1756,7 @@ class Operation(Operator):
                 warnings.filterwarnings(
                     action="ignore", message=r".+ eigenvalues will be computed numerically\."
                 )
-                eigvals = qml.eigvals(gen)
+                eigvals = qml.eigvals(gen, k=2**self.num_wires)
 
             eigvals = tuple(np.round(eigvals, 8))
             return [qml.gradients.eigvals_to_frequencies(eigvals)]
@@ -1883,9 +1888,19 @@ class Observable(Operator):
         warnings.warn(
             "`Observable.return_type` is deprecated. Instead, you should "
             "inspect the type of the surrounding measurement process.",
-            UserWarning,
+            qml.PennyLaneDeprecationWarning,
         )
         return self._return_type
+
+    @return_type.setter
+    def return_type(self, value):
+        """Change the return type of an Observable. Note that this property is deprecated."""
+        warnings.warn(
+            "`Observable.return_type` is deprecated. Instead, you should "
+            "create a measurement process containing this Observable.",
+            qml.PennyLaneDeprecationWarning,
+        )
+        self._return_type = value
 
     def __matmul__(self, other):
         if active_new_opmath():

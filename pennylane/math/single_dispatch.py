@@ -235,6 +235,7 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "arcsin"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "arccos"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "arctan"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "arctan2"] = "tensorflow.math"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "mod"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "diag"] = "tensorflow.linalg"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "kron"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "moveaxis"] = "tensorflow.experimental.numpy"
@@ -335,13 +336,7 @@ ar.register_function("tensorflow", "round", _round_tf)
 
 
 def _ndim_tf(tensor):
-    try:
-        ndim = _i("tf").experimental.numpy.ndim(tensor)
-        if ndim is None:
-            return len(tensor.shape)
-        return ndim
-    except AttributeError:
-        return len(tensor.shape)
+    return len(tensor.shape)
 
 
 ar.register_function("tensorflow", "ndim", _ndim_tf)
@@ -533,6 +528,7 @@ ar.register_function("torch", "expand_dims", lambda x, axis: _i("torch").unsquee
 ar.register_function("torch", "shape", lambda x: tuple(x.shape))
 ar.register_function("torch", "gather", lambda x, indices: x[indices])
 ar.register_function("torch", "equal", lambda x, y: _i("torch").eq(x, y))
+ar.register_function("torch", "mod", lambda x, y: x % y)
 
 ar.register_function(
     "torch",

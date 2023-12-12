@@ -203,7 +203,7 @@ class op_transform:
             "Use of `op_transform` to create a custom transform is deprecated. Instead "
             "switch to using the new qml.transform function. Follow the instructions here for "
             "further details: https://docs.pennylane.ai/en/stable/code/qml_transforms.html#custom-transforms.",
-            UserWarning,
+            qml.PennyLaneDeprecationWarning,
         )
         self._fn = fn
         self._sig = inspect.signature(fn).parameters

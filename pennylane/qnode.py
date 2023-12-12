@@ -15,6 +15,7 @@
 This module contains the QNode class and qnode decorator.
 """
 # pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access,unnecessary-lambda-assignment, too-many-branches, too-many-statements
+import copy
 import functools
 import inspect
 import warnings
@@ -171,6 +172,8 @@ class QNode:
             the maximum number of derivatives to support. Increasing this value allows
             for higher order derivatives to be extracted, at the cost of additional
             (classical) computational overhead during the backwards pass.
+        device_vjp (bool): Whether or not to use the device-provided Vector Jacobian Product (VJP).
+            A value of ``None`` indicates to use it if the device provides it, but use the full jacobian otherwise.
 
     Keyword Args:
         **kwargs: Any additional keyword arguments provided are passed to the differentiation
@@ -393,6 +396,7 @@ class QNode:
         cache=True,
         cachesize=10000,
         max_diff=1,
+        device_vjp=False,
         **gradient_kwargs,
     ):
         if logger.isEnabledFor(logging.DEBUG):
@@ -463,6 +467,7 @@ class QNode:
             "cachesize": cachesize,
             "max_diff": max_diff,
             "max_expansion": max_expansion,
+            "device_vjp": device_vjp,
         }
 
         if self.expansion_strategy == "device":
@@ -842,6 +847,7 @@ class QNode:
 
     def construct(self, args, kwargs):  # pylint: disable=too-many-branches
         """Call the quantum function with a tape context, ensuring the operations get queued."""
+        kwargs = copy.copy(kwargs)
         old_interface = self.interface
 
         if self._qfunc_uses_shots_arg:
@@ -987,10 +993,16 @@ class QNode:
             else:
                 _gradient_method = "gradient-transform"
             grad_on_execution = self.execute_kwargs.get("grad_on_execution")
+            if self.interface == "jax":
+                grad_on_execution = False
+            elif grad_on_execution == "best":
+                grad_on_execution = None
+
             config = qml.devices.ExecutionConfig(
                 interface=self.interface,
                 gradient_method=_gradient_method,
-                grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
+                grad_on_execution=grad_on_execution,
+                use_device_jacobian_product=self.execute_kwargs["device_vjp"],
             )
             device_transform_program, config = self.device.preprocess(execution_config=config)
             full_transform_program = self.transform_program + device_transform_program

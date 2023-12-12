@@ -164,15 +164,21 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
         .. warning::
 
             All measurements are supported when using postselection. However, postselection on a zero probability
-            state can cause some measurements to break.
+            state can cause some measurements to break:
 
-            With finite shots, one must be careful when measuring ``qml.probs`` or ``qml.counts``, as these
-            measurements will raise errors if there are no valid samples after postselection. This will occur
-            with postselection states that have zero or close to zero probability.
+            * With finite shots, one must be careful when measuring ``qml.probs`` or ``qml.counts``, as these
+              measurements will raise errors if there are no valid samples after postselection. This will occur
+              with postselection states that have zero or close to zero probability.
 
-            With analytic execution, ``qml.mutual_info`` will raise errors when using any interfaces except
-            ``jax``, and ``qml.vn_entropy`` will raise an error with the ``tensorflow`` interface when the
-            postselection state has zero probability.
+            * With analytic execution, ``qml.mutual_info`` will raise errors when using any interfaces except
+              ``jax``, and ``qml.vn_entropy`` will raise an error with the ``tensorflow`` interface when the
+              postselection state has zero probability.
+
+            * When using JIT, ``QNode``'s may have unexpected behaviour when postselection on a zero
+              probability state is performed. Due to floating point precision, the zero probability may not be
+              detected, thus letting execution continue as normal without ``NaN`` or ``Inf`` values or empty
+              samples, leading to unexpected or incorrect results.
+
     """
 
     wire = Wires(wires)
@@ -222,6 +228,28 @@ class MidMeasureMP(MeasurementProcess):
         super().__init__(wires=Wires(wires), id=id)
         self.reset = reset
         self.postselect = postselect
+
+    def label(self, decimals=None, base_label=None, cache=None):  # pylint: disable=unused-argument
+        r"""How the mid-circuit measurement is represented in diagrams and drawings.
+
+        Args:
+            decimals=None (Int): If ``None``, no parameters are included. Else,
+                how to round the parameters.
+            base_label=None (Iterable[str]): overwrite the non-parameter component of the label.
+                Must be same length as ``obs`` attribute.
+            cache=None (dict): dictionary that carries information between label calls
+                in the same drawing
+
+        Returns:
+            str: label to use in drawings
+        """
+        _label = "┤↗"
+        if self.postselect is not None:
+            _label += "₁" if self.postselect == 1 else "₀"
+
+        _label += "├" if not self.reset else "│  │0⟩"
+
+        return _label
 
     @property
     def return_type(self):
@@ -282,6 +310,19 @@ class MeasurementValue(Generic[T]):
             branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurements)))
             ret_dict[branch] = self.processing_fn(*branch)
         return ret_dict
+
+    def map_wires(self, wire_map):
+        """Returns a copy of the current ``MeasurementValue`` with the wires of each measurement changed
+        according to the given wire map.
+
+        Args:
+            wire_map (dict): dictionary containing the old wires as keys and the new wires as values
+
+        Returns:
+            MeasurementValue: new ``MeasurementValue`` instance with measurement wires mapped
+        """
+        mapped_measurements = [m.map_wires(wire_map) for m in self.measurements]
+        return MeasurementValue(mapped_measurements, self.processing_fn)
 
     def _transform_bin_op(self, base_bin, other):
         """Helper function for defining dunder binary operations."""

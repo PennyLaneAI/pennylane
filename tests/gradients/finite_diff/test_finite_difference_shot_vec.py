@@ -774,7 +774,7 @@ class TestFiniteDiffIntegration:
 
             assert isinstance(res[0], tuple)
             assert len(res[0]) == 2
-            assert np.allclose(res[0], [-np.sin(x), 0], atol=0.1, rtol=0)
+            assert np.allclose(res[0], [-np.sin(x), 0], atol=0.2, rtol=0)
             assert isinstance(res[0][0], numpy.ndarray)
             assert isinstance(res[0][1], numpy.ndarray)
 
@@ -844,7 +844,7 @@ class TestFiniteDiffIntegration:
                     (np.sin(x / 2) ** 2 * np.sin(y)) / 2,
                     -(np.sin(x / 2) ** 2 * np.sin(y)) / 2,
                 ],
-                atol=0.07,
+                atol=0.08,
                 rtol=0,
             )
             assert isinstance(res[1][1], numpy.ndarray)

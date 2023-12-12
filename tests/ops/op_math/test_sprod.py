@@ -22,7 +22,7 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 import pennylane.numpy as qnp
-from pennylane import QuantumFunctionError, math
+from pennylane import math
 from pennylane.operation import AnyWires, DecompositionUndefinedError, MatrixUndefinedError
 from pennylane.ops.op_math.sprod import SProd, s_prod
 from pennylane.wires import Wires
@@ -742,13 +742,13 @@ class TestProperties:
     @pytest.mark.parametrize("op, rep", op_pauli_reps)
     def test_pauli_rep(self, op, rep):
         """Test the pauli rep is produced as expected."""
-        assert op._pauli_rep == rep  # pylint: disable=protected-access
+        assert op.pauli_rep == rep
 
     def test_pauli_rep_none_if_base_pauli_rep_none(self):
         """Test that None is produced if the base op does not have a pauli rep"""
         base = qml.RX(1.23, wires=0)
         op = qml.s_prod(2, base)
-        assert op._pauli_rep is None  # pylint: disable=protected-access
+        assert op.pauli_rep is None
 
     def test_batching_properties(self):
         """Test the batching properties and methods."""
@@ -771,10 +771,11 @@ class TestProperties:
     def test_different_batch_sizes_raises_error(self):
         """Test that using different batch sizes for base and scalar raises an error."""
         base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = qml.s_prod(np.array([0.1, 1.2, 2.3, 3.4]), base)
         with pytest.raises(
             ValueError, match="Broadcasting was attempted but the broadcasted dimensions"
         ):
-            _ = qml.s_prod(np.array([0.1, 1.2, 2.3, 3.4]), base)
+            _ = op.batch_size
 
 
 class TestSimplify:
@@ -977,8 +978,8 @@ class TestIntegration:
             return qml.probs(op=sprod_op)
 
         with pytest.raises(
-            QuantumFunctionError,
-            match="Symbolic Operations are not supported for " "rotating probabilities yet.",
+            qml.QuantumFunctionError,
+            match="Symbolic Operations are not supported for rotating probabilities yet.",
         ):
             my_circ()
 
