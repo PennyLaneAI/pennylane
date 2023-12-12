@@ -15,9 +15,6 @@
 
 from typing import Iterable, Union
 import pennylane as qml
-from pennylane import (
-    QutritBasisState,
-)
 from pennylane.operation import (
     StatePrepBase,
     Operation,
