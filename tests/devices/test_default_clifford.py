@@ -18,8 +18,8 @@ import os
 import sys
 import math
 import pytest
+import numpy as np
 import pennylane as qml
-from pennylane import numpy as np
 
 from pennylane.devices.default_clifford import _import_stim
 

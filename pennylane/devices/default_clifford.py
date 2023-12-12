@@ -110,14 +110,14 @@ def _import_stim():
 
 
 class DefaultClifford(Device):
-    r"""A PennyLane device written in Python and capable of executing Clifford circuit using `stim (2021) <https://github.com/quantumlib/stim/tree/main>`_  .
+    r"""A PennyLane device written in Python and capable of executing Clifford circuits using `stim (2021) <https://github.com/quantumlib/stim/tree/main>`_  .
 
     Args:
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots to use in executions involving
             this device.
         check_clifford (bool): Check if all the gate operations in the circuits to be executed are Clifford. Default is ``True``.
-        max_error (float): The maximum permissible decomposition error for the circuits with non-Clifford gate operaitons.
-            Default is ``0.0``.
+        max_error (float): The maximum permissible operator norm error for decomposing circuits with non-Clifford gate operations
+            into Cliffordt+T basis. The default is ``0.0`` as this device currently supports only Clifford simulations. 
         state (str): Describes what should be returned when the device's state is computed with ``qml.state``. Default is
             "tableau", which makes it return the final evolved Tableau. Alternatively, one may use "state_vector" to obtain
             the evolved state vector. Note that the latter might not be computationally feasible for larger qubit numbers.
@@ -155,7 +155,7 @@ class DefaultClifford(Device):
     >>> new_batch, post_processing_fn = program(qscripts)
     >>> results = dev.execute(new_batch, execution_config=execution_config)
     >>> post_processing_fn(results)
-    [0.0, 1.0, 1.0, 0.0, 1.0]
+    [0.0, 0.0, 0.0, 0.0, 0.0]
 
     .. details::
         :title: Clifford Tableau
@@ -167,24 +167,22 @@ class DefaultClifford(Device):
 
         .. math::
 
-            \begin{tabular}
-                [c]{ccc|ccc|c}%
-                $x_{11}$ & $\cdots$ & $x_{1n}$ & $z_{11}$ & $\cdots$ & $z_{1n}$ & $r_{1}$\\
-                $\vdots$ & $\ddots$ & $\vdots$ & $\vdots$ & $\ddots$ & $\vdots$ & $\vdots$\\
-                $x_{n1}$ & $\cdots$ & $x_{nn}$ & $z_{n1}$ & $\cdots$ & $z_{nn}$ & $r_{n}%
-                $\\\hline
-                $x_{\left(  n+1\right)  1}$ & $\cdots$ & $x_{\left(  n+1\right)  n}$ &
-                $z_{\left(  n+1\right)  1}$ & $\cdots$ & $z_{\left(  n+1\right)  n}$ &
-                $r_{n+1}$\\
-                $\vdots$ & $\ddots$ & $\vdots$ & $\vdots$ & $\ddots$ & $\vdots$ & $\vdots$\\
-                $x_{\left(  2n\right)  1}$ & $\cdots$ & $x_{\left(  2n\right)  n}$ &
-                $z_{\left(  2n\right)  1}$ & $\cdots$ & $z_{\left(  2n\right)  n}$ & $r_{2n}$%
-            \end{tabular}
+            \begin{bmatrix}
+            x_{11} & \cdots & x_{1n} &        & z_{11} & \cdots & z_{1n} & &r_{1}\\
+            \vdots & \ddots & \vdots & \vline & \vdots & \ddots & \vdots & \vline &\vdots\\
+            x_{n1} & \cdots & x_{nn} &        & z_{n1} & \cdots & z_{nn} & &r_{n}\\
+            & \rule{.5cm}{.4pt} & &\rule{.2cm}{.4pt} & & \rule{.5cm}{.4pt}& & & \rule{.5cm}{.4pt}\\
+            x_{\left(  n+1\right)  1} & \cdots & x_{\left(  n+1\right)  n} & &
+            z_{\left(  n+1\right)  1} & \cdots & z_{\left(  n+1\right)  n} & & r_{n+1}\\
+            \vdots & \ddots & \vdots  & \vline & \vdots & \ddots & \vdots & \vline & \vdots\\
+            x_{\left(  2n\right)  1}  & \cdots & x_{\left(  2n\right)  n} & &
+            z_{\left(  2n\right)  1}  & \cdots & z_{\left(  2n\right)  n} & & r_{2n}
+            \end{bmatrix}
 
         Rows :math:`1` to :math:`n` of the tableau represent the destabilizer generators
         :math:`R_{1},\ldots,R_{n}`, and rows :math:`n+1` to :math:`2n` represent the stabilizer
-        generators :math:`R_{n+1},\ldots,R_{2n}`. If :math:`R_{i}=\pm P_{1}\cdots P_{n}`,
-        then bits :math:`x_{ij},z_{ij}` determine the j:math:`^{th}` Pauli matrix
+        generators :math:`R_{n+1},\ldots,R_{2n}`. If :math:`R_{i}=\pm P_{1}\ldots P_{n}`,
+        then bits :math:`x_{ij},z_{ij}` determine the j\ :math:`^{th}` Pauli matrix
         :math:`P_{j}:\ 00` means `I`, :math:`01` means `X`, :math:`11` means `Y`,
         and :math:`10` means `Z`. Finally, :math:`r_{i}` is :math`1` if :math:`R_{i}`
         has negative phase and :math:`0` if :math:`r_{i}` has positive phase.
@@ -350,7 +348,6 @@ class DefaultClifford(Device):
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(qml.defer_measurements, device=self)
 
-        # TODO: Add the Clifford+T decomposition transform here instead.
         if self._check_clifford:
             transform_program.add_transform(
                 qml.transforms.clifford_t_decomposition, epsilon=self._max_error
@@ -597,7 +594,7 @@ class DefaultClifford(Device):
             else:
                 if op.name == "GlobalPhase":
                     global_phase_ops.append(op)
-                elif op.name == "Snapshot":
+                if op.name == "Snapshot":
                     state = stim.Tableau.from_circuit(stim_ct).to_state_vector()
                     if state.shape == (1,):
                         state = qml.math.array([1.0, 0.0], dtype=complex)
@@ -607,8 +604,6 @@ class DefaultClifford(Device):
                             debugger.snapshots[op.tag] = flat_state
                         else:
                             debugger.snapshots[len(debugger.snapshots)] = flat_state
-                else:
-                    pass
 
         tableau_simulator.do_circuit(stim_ct)
 
@@ -704,7 +699,7 @@ class DefaultClifford(Device):
                 expec = "".join([_GATE_OPERATIONS[name] for name in ob.name])
                 pauli = stim.PauliString(expec)
                 expecs[idx] = tableau_sim.peek_observable_expectation(pauli)
-            return qml.math.array(qml.math.sum(coeffs * expecs), like=INTERFACE_TO_LIKE[interface])
+            return qml.math.dot(coeffs, expecs, like=INTERFACE_TO_LIKE[interface])
 
         # Add support for more case when the time is right
         raise NotImplementedError(
