@@ -376,6 +376,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The function `qml.transforms.classical_jacobian` has been moved to the gradients module
+  and is now accessible as `qml.gradients.classical_jacobian`.
+  [(#4900)](https://github.com/PennyLaneAI/pennylane/pull/4900)
+
 * The transforms submodule `qml.transforms.qcut` is now its own module: `qml.qcut`.
   [(#4819)](https://github.com/PennyLaneAI/pennylane/pull/4819)
 
@@ -429,6 +433,10 @@
   [(#4773)](https://github.com/PennyLaneAI/pennylane/pull/4773)
 
 <h3>Documentation 📝</h3>
+
+* Documentation for `qml.metric_tensor` and `qml.adjoint_metric_tensor` and `qml.transforms.classical_jacobian`
+  are now accessible via the gradients API page `qml.gradients` in the documentation.
+  [(#4900)](https://github.com/PennyLaneAI/pennylane/pull/4900)
 
 * Documentation for `qml.specs` was moved to the resource module.
   [(#4904)](https://github.com/PennyLaneAI/pennylane/pull/4904)
