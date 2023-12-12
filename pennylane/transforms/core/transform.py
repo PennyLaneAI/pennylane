@@ -15,8 +15,7 @@
 This module contains the transform function/decorator to make your custom transforms compatible with tapes, quantum
 functions and QNodes.
 """
-from typing import get_type_hints, Sequence, List, Tuple, Callable
-import pennylane as qml
+from typing import get_type_hints
 from .transform_dispatcher import TransformDispatcher, TransformError
 
 
