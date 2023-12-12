@@ -328,6 +328,9 @@
 * A new function called `ops.functions.assert_valid` has been added for checking if an `Operator` class is defined correctly.
   [(#4764)](https://github.com/PennyLaneAI/pennylane/pull/4764)
 
+* `Shots` can now be scaled with `*` via the `__mul__` and `__rmul__` dunders.
+  [(#4913)](https://github.com/PennyLaneAI/pennylane/pull/4913)
+
 * `GlobalPhase` now decomposes to nothing in case devices do not support global phases.
   [(#4855)](https://github.com/PennyLaneAI/pennylane/pull/4855)
 
@@ -429,6 +432,9 @@
   [(#4773)](https://github.com/PennyLaneAI/pennylane/pull/4773)
 
 <h3>Documentation 📝</h3>
+
+* Documentation for `qml.specs` was moved to the resource module.
+  [(#4904)](https://github.com/PennyLaneAI/pennylane/pull/4904)
 
 * Documentation for QCut has moved to its own API page `qml.qcut`.
   [(#4819)](https://github.com/PennyLaneAI/pennylane/pull/4819)

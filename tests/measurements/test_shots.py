@@ -250,3 +250,36 @@ class TestProperties:
     def test_num_copies(self, shots, expected):
         """Tests the num_copies property."""
         assert Shots(shots).num_copies == expected
+
+    def test_shot_mul(self):
+        """Test the __mul__ method for multiplying a number by a shot object."""
+        sh1, sh2, sh3 = Shots(100), Shots((100, 100)), Shots(5)
+        sh5 = Shots()
+        scaled_sh1 = sh1 * 2
+        scaled_sh2 = sh2 * 2
+        scaled_sh3 = sh3 * 0.5
+        scaled_sh4 = 2 * sh2
+        scaled_sh5 = sh5 * 8
+
+        assert scaled_sh1.total_shots == 200
+        assert scaled_sh2.total_shots == 400
+        assert scaled_sh2.shot_vector[0].shots == 200
+        assert scaled_sh2.shot_vector[0].copies == 2
+        assert scaled_sh3.total_shots == 2
+        assert scaled_sh4.total_shots == 400
+        assert scaled_sh4.shot_vector[0].shots == 200
+        assert scaled_sh4.shot_vector[0].copies == 2
+        assert scaled_sh5 == sh5
+
+    def test_invalid_scalar_type(self):
+        """Test that __mul__ raises a TypeError for an invalid scalar type."""
+        shots = Shots(100)
+        with pytest.raises(TypeError, match="Can't multiply Shots with non-integer or float type."):
+            _ = shots * "invalid scalar type"
+
+    def test_shots_rmul(self):
+        """Test the __rmul__ method for multiplying a number by a shot object."""
+        sh1 = Shots(200)
+        scaled_sh1 = 2 * sh1
+        rev_scaled_sh1 = sh1 * 2
+        assert scaled_sh1.total_shots == rev_scaled_sh1.total_shots
