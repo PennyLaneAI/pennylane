@@ -48,7 +48,7 @@ def _adjoint_jacobian_state(tape: QuantumTape):
     """
     jacobian = []
 
-    has_state_prep = isinstance(tape[0], qml.operation.StatePrep)
+    has_state_prep = isinstance(tape[0], qml.operation.StatePrepBase)
     state = create_initial_state(tape.wires, tape[0] if has_state_prep else None)
 
     param_idx = has_state_prep

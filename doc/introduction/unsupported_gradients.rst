@@ -117,7 +117,7 @@ In particular, the following code works as expected:
 >>> print_grad()
 [-0.09983342]
 
-PennyLane can now use adjoint differentation for any state based measurement on `default.qubit`. `lightning.qubit`
+PennyLane can now use adjoint differentation for any state based measurement on ``default.qubit``. ``lightning.qubit``
 still only supports expectation values.
 
 .. code-block:: python 

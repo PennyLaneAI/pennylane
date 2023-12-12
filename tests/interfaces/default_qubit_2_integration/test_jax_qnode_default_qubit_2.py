@@ -1894,7 +1894,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
         if diff_method == "adjoint" and jacobian == jax.jacfwd:
-            pytest.skip("jacfwd doesnt like complex numbers")
+            pytest.skip("jacfwd doesn't like complex numbers")
 
         @qnode(
             dev,
@@ -1934,7 +1934,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
         if diff_method == "adjoint" and jacobian == jax.jacfwd:
-            pytest.skip("jacfwd doesnt like complex numbers")
+            pytest.skip("jacfwd doesn't like complex numbers")
 
         @qnode(
             dev,
@@ -1983,7 +1983,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
         if diff_method == "adjoint" and jacobian == jax.jacfwd:
-            pytest.skip("jacfwd doesnt like complex numbers")
+            pytest.skip("jacfwd doesn't like complex numbers")
 
         @qnode(
             dev,
