@@ -411,14 +411,14 @@ def _contract_qjac_with_cjac(qjac, cjac, tape):
         cjac = cjac[0]
 
     cjac_is_tuple = isinstance(cjac, tuple)
+    skip_cjac = False
     if not cjac_is_tuple:
         is_square = cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1]
 
         if not qml.math.is_abstract(cjac) and (
             is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0]))
         ):
-            # Classical Jacobian is the identity. No classical processing is present in the QNode
-            return qjac
+            skip_cjac = True
 
     multi_meas = num_measurements > 1
 
@@ -440,24 +440,35 @@ def _contract_qjac_with_cjac(qjac, cjac, tape):
             return qml.math.reshape(x, (1,) if x.shape == () else (1, -1))
 
         if not (multi_meas or has_partitioned_shots):
-            # Single parameter, single measurements
+            # Single parameter, single measurements, no shot vector
+            if skip_cjac:
+                return qml.math.moveaxis(_reshape(qjac), 0, -1)
             return tdot(_reshape(qjac), cjac)
 
         if not (multi_meas and has_partitioned_shots):
+            # Single parameter, multiple measurements or shot vector, but not both
+            if skip_cjac:
+                return tuple(qml.math.moveaxis(_reshape(q), 0, -1) for q in qjac)
             return tuple(tdot(_reshape(q), cjac) for q in qjac)
 
-        # Single parameter, multiple measurements
+        # Single parameter, multiple measurements, and shot vector
+        if skip_cjac:
+            return tuple(tuple(qml.math.moveaxis(_reshape(_q), 0, -1) for _q in q) for q in qjac)
         return tuple(tuple(tdot(_reshape(_q), cjac) for _q in q) for q in qjac)
 
     if not multi_meas:
         # Multiple parameters, single measurement
         qjac = qml.math.stack(qjac)
         if not cjac_is_tuple:
+            if skip_cjac:
+                return qml.math.moveaxis(qjac, 0, -1)
             return tdot(qjac, qml.math.stack(cjac))
         return tuple(tdot(qjac, c) for c in cjac if c is not None)
 
     # Multiple parameters, multiple measurements
     if not cjac_is_tuple:
+        if skip_cjac:
+            return tuple(qml.math.moveaxis(qml.math.stack(q), 0, -1) for q in qjac)
         return tuple(tdot(qml.math.stack(q), qml.math.stack(cjac)) for q in qjac)
     return tuple(tuple(tdot(qml.math.stack(q), c) for c in cjac if c is not None) for q in qjac)
 
