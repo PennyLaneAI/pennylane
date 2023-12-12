@@ -69,7 +69,8 @@ def _apply_state_vector(state, num_wires):  # function is easy to abstract for q
 
     Returns:
         array[complex]: complex array of shape ``[qudit_dim] * (2 * num_wires)``
-        representing the density matrix of this state.
+        representing the density matrix of this state, where ``qudit_dim`` is
+        the dimension of the system.
     """
 
     # Initialize the entire set of wires with the state
@@ -87,7 +88,8 @@ def _apply_basis_state(state, num_wires):  # function is easy to abstract for qu
 
     Returns:
         array[complex]: complex array of shape ``[qudit_dim] * (2 * num_wires)``
-        representing the density matrix of this basis state.
+        representing the density matrix of this basis state, where ``qudit_dim`` is
+        the dimension of the system.
     """
     # get computational basis state number
     num = int("".join([str(x) for x in state]), qudit_dim)
@@ -104,7 +106,8 @@ def _create_basis_state(num_wires, index):  # function is easy to abstract for q
 
     Returns:
         array[complex]: complex array of shape ``[qudit_dim] * (2 * num_wires)``
-        representing the density matrix of the basis state.
+        representing the density matrix of the basis state, where ``qudit_dim`` is
+        the dimension of the system.
     """
     rho = qml.math.zeros((qudit_dim**num_wires, qudit_dim**num_wires))
     rho[index, index] = 1
