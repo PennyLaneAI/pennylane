@@ -72,7 +72,7 @@ def _apply_state_vector(state, num_wires):  # function is easy to abstract for q
         representing the density matrix of this state.
     """
 
-    # Initialize the entire wires with the state
+    # Initialize the entire set of wires with the state
     rho = qml.math.outer(state, qml.math.conj(state))
     return qml.math.reshape(rho, [qudit_dim] * 2 * num_wires)
 
