@@ -22,7 +22,7 @@ import numpy as np
 import pennylane as qml
 
 # pylint: disable=too-many-statements,unused-argument
-from pennylane.transforms.metric_tensor import _contract_metric_tensor_with_cjac
+from pennylane.gradients.metric_tensor import _contract_metric_tensor_with_cjac
 from pennylane.transforms import transform
 
 
