@@ -50,7 +50,6 @@ Gradient transforms
     hadamard_grad
     stoch_pulse_grad
     pulse_odegen
-    classical_jacobian
 
 Metric tensors
 ^^^^^^^^^^^^^^
@@ -85,6 +84,7 @@ Utility functions
     compute_jvp_multi
     batch_jvp
     jvp
+    classical_jacobian
 
 
 Registering autodifferentiation gradients
