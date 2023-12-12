@@ -15,15 +15,13 @@
 This module contains unit tests for ``qml.ops.functions.assert_valid``.
 """
 # pylint: disable=too-few-public-methods, unused-argument
-from inspect import getmembers, isclass
 import pytest
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Operator, Operation, Observable, Tensor, Channel
+from pennylane.operation import Operator
 from pennylane.ops.functions import assert_valid
-from pennylane.ops.op_math.adjoint import Adjoint, AdjointObs, AdjointOperation, AdjointOpObs
 
 
 class TestDecompositionErrors:
@@ -319,82 +317,6 @@ def test_data_is_tuple():
         assert_valid(BadData(2.0, wires=0))
 
 
-# if you would like to validate one of these operators, add an instance to the parametrization
-# of `test_explicit_list_of_ops` in `test_assert_valid.py`, and kindly move it below the
-# "manually validated ops" comment in this dict for easy inspection in the future.
-_SKIP_OP_TYPES = {
-    # ops composed of more than one thing
-    Adjoint,
-    Tensor,
-    qml.Hamiltonian,
-    qml.ops.Pow,
-    qml.ops.SProd,
-    qml.ops.Prod,
-    qml.ops.Controlled,
-    qml.ops.Exp,
-    qml.ops.Evolution,
-    qml.ops.Conditional,
-    # fails for unknown reason - should be registered in the test parametrization below
-    qml.SparseHamiltonian,  # fails because data is not as expected
-    qml.pulse.ParametrizedEvolution,
-    qml.THermitian,
-    qml.resource.FirstQuantization,
-    qml.SpecialUnitary,
-    qml.IntegerComparator,
-    qml.PauliRot,
-    qml.PauliError,
-    qml.ops.qubit.special_unitary.TmpPauliRot,  # private object
-    qml.StatePrep,
-    qml.PCPhase,
-    qml.BlockEncode,
-    qml.resource.DoubleFactorization,
-    qml.resource.ResourcesOperation,
-    # templates
-    *[i[1] for i in getmembers(qml.templates) if isclass(i[1]) and issubclass(i[1], Operator)],
-    # manually validated ops
-    qml.ops.Sum,
-    qml.BasisState,
-    qml.ControlledQubitUnitary,
-    qml.QubitStateVector,
-    qml.QubitChannel,
-    qml.MultiControlledX,
-}
-
-
-# types that should not have actual instances created
-_ABSTRACT_OR_META_TYPES = {
-    Operator,
-    Operation,
-    Observable,
-    Channel,
-    qml.ops.SymbolicOp,
-    qml.ops.ScalarSymbolicOp,
-    qml.ops.CompositeOp,
-    qml.ops.ControlledOp,
-    qml.ops.qubit.BasisStateProjector,
-    qml.ops.qubit.StateVectorProjector,
-    qml.ops.qubit.StatePrepBase,
-    AdjointOpObs,
-    AdjointOperation,
-    AdjointObs,
-}
-
-
-def get_all_classes(c):
-    """Recursive function to generate a flat list of all child classes of ``c``.
-    (first called with ``Operator``)."""
-    if c.__module__[:10] != "pennylane.":
-        return []
-    subs = c.__subclasses__()
-    classes = [] if c in _ABSTRACT_OR_META_TYPES else [c]
-    for sub in subs:
-        classes.extend(get_all_classes(sub))
-    return classes
-
-
-_CLASSES_TO_TEST = set(get_all_classes(Operator)) - _SKIP_OP_TYPES
-
-
 def create_op_instance(c):
     """Given an Operator class, create an instance of it."""
     n_wires = c.num_wires
@@ -427,7 +349,6 @@ def create_op_instance(c):
     return c(*params, wires=wires) if wires else c(*params)
 
 
-@pytest.mark.parametrize("class_to_validate", _CLASSES_TO_TEST)
 def test_generated_list_of_ops(class_to_validate):
     """Test every auto-generated operator instance."""
     if fail_reason := {
