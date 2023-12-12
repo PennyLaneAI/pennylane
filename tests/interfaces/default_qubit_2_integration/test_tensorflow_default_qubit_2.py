@@ -244,18 +244,18 @@ class TestTensorflowExecuteIntegration:
         params = tf.Variable([0.1, 0.2])
         x, y = params
 
+        with tf.GradientTape() as tape:
+            res = cost(params)
+        expected = 2 + tf.cos(0.5) + tf.cos(x) * tf.cos(y)
+        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+
         if (
             execute_kwargs.get("interface", "") == "tf-autograph"
             and execute_kwargs.get("gradient_fn", "") == "adjoint"
         ):
             with pytest.raises(NotImplementedError):
-                with tf.GradientTape() as tape:
-                    res = cost(params)
+                tape.gradient(res, params)
             return
-        with tf.GradientTape() as tape:
-            res = cost(params)
-        expected = 2 + tf.cos(0.5) + tf.cos(x) * tf.cos(y)
-        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
         grad = tape.gradient(res, params)
         expected = [-tf.cos(y) * tf.sin(x), -tf.cos(x) * tf.sin(y)]
@@ -513,15 +513,6 @@ class TestTensorflowExecuteIntegration:
         x = tf.Variable(0.543)
         y = tf.Variable(-0.654)
 
-        if (
-            execute_kwargs.get("interface", "") == "tf-autograph"
-            and execute_kwargs.get("gradient_fn", "") == "adjoint"
-        ):
-            with pytest.raises(NotImplementedError):
-                with tf.GradientTape() as tape:
-                    cost_res = cost(x, y)
-            return
-
         with tf.GradientTape() as tape:
             cost_res = cost(x, y)
 
@@ -537,6 +528,13 @@ class TestTensorflowExecuteIntegration:
         )
         assert np.allclose(cost_res, expected, atol=atol_for_shots(shots), rtol=0)
 
+        if (
+            execute_kwargs.get("interface", "") == "tf-autograph"
+            and execute_kwargs.get("gradient_fn", "") == "adjoint"
+        ):
+            with pytest.raises(NotImplementedError):
+                tape.jacobian(cost_res, [x, y])
+            return
         res = tape.jacobian(cost_res, [x, y])
         assert isinstance(res, list) and len(res) == 2
         assert res[0].shape == (4,)
@@ -576,15 +574,6 @@ class TestTensorflowExecuteIntegration:
         x = tf.Variable(0.543)
         y = tf.Variable(-0.654)
 
-        if (
-            execute_kwargs.get("interface", "") == "tf-autograph"
-            and execute_kwargs.get("gradient_fn", "") == "adjoint"
-        ):
-            with pytest.raises(NotImplementedError):
-                with tf.GradientTape() as tape:
-                    cost_res = cost(x, y)
-            return
-
         with tf.GradientTape() as tape:
             cost_res = cost(x, y)
 
@@ -593,6 +582,13 @@ class TestTensorflowExecuteIntegration:
         )
         assert np.allclose(cost_res, expected, atol=atol_for_shots(shots), rtol=0)
 
+        if (
+            execute_kwargs.get("interface", "") == "tf-autograph"
+            and execute_kwargs.get("gradient_fn", "") == "adjoint"
+        ):
+            with pytest.raises(NotImplementedError):
+                tape.jacobian(cost_res, [x, y])
+            return
         res = tape.jacobian(cost_res, [x, y])
         assert isinstance(res, list) and len(res) == 2
         assert res[0].shape == (3,)

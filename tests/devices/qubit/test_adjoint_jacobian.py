@@ -320,7 +320,7 @@ class TestAdjointJacobianState:
         tape = qml.tape.QuantumScript([qml.RX(x, wires=0)], [qml.state()])
         jac = adjoint_jacobian(tape)
         expected = [-0.5 * np.sin(x / 2), -0.5j * np.cos(x / 2)]
-        assert qml.math.alcllose(jac, expected)
+        assert qml.math.allclose(jac, expected)
 
     def test_two_wires_two_parameters(self):
         """Test a more complicated circuit with two parameters and two wires."""

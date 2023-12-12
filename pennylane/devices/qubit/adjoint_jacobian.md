@@ -45,7 +45,7 @@ $$
 \text{Re}\big( \langle b_i | \tilde{k}_i \rangle \big)
 $$
 
-We can then also define $|k_i\rangle $ and $|b_i\rangle$ iteratively as:
+We can then also define $|k_i\rangle$ and $|b_i\rangle$ iteratively as:
 
 $$
 |k_{i-1}\rangle = U^{\dagger}_{i-1} |k_i \rangle
@@ -89,9 +89,7 @@ $$
 And add a new element to the list
 
 $$
-| J_{i+1, i+1} \rangle = \frac{\partial U_{i+1}}{\partial x_{i+1}} U_{i} \dots U_0 |0\rangle
-=
-\frac{\partial U_{i+1}}{\partial x_{i+1}} | k_i \rangle
+| J_{i+1, i+1} \rangle = \frac{\partial U_{i+1}}{\partial x_{i+1}} U_{i} \dots U_0 |0\rangle = \frac{\partial U_{i+1}}{\partial x_{i+1}} | k_i \rangle
 $$
 
 We are able to make some improvements over performing one simulation per trainable parameter by iteratively calculating $|k_i\rangle$ and reusing it between each jacobian calculation.
@@ -118,19 +116,17 @@ where we sum up over all $j$ indices.
 
 Calculating this quantity instead has several benefits over calculating the full jacobian.  
 
-1. We only need to calculate components for the full jacobian that actually influence final output.  If a component $j$  has $ dy/df_j = 0$, we do not need to calculate derivatives for that output.
+1. We only need to calculate components for the full jacobian that actually influence final output.  If a component $j$  has $dy/df_j = 0$, we do not need to calculate derivatives for that output.
 
 2. Reduction in memory, which leads to a reduction in overall computational cost. The full jacobian scales with the size of the output *product* the size of the input.  But the VJP accepts something that is the size of the output and returns something that is the size of the input.
 
 For the VJP of expectation values, this looks like:
 
 $$
-\frac{\partial y}{\partial f_j}  \frac{\partial \langle M_j \rangle}{\partial x_i} 
-= 
-\frac{\partial \langle \Psi | \frac{\partial y}{\partial f_j} M_j |\Psi\rangle}{d x_j}
+\frac{\partial y}{\partial f_j}  \frac{\partial \langle M_j \rangle}{\partial x_i} = \frac{\partial \langle \Psi | \frac{\partial y}{\partial f_j} M_j |\Psi\rangle}{d x_j}
 $$
 
-So this is equivalent to performing a single jacobian calculation with a single "effective" observable of $ \Sigma_j \frac{\partial y}{\partial f_j} M_j$.
+So this is equivalent to performing a single jacobian calculation with a single "effective" observable of $\Sigma_j \frac{\partial y}{\partial f_j} M_j$.
 
 For the VJP calculation where the output is the state , we have:
 
