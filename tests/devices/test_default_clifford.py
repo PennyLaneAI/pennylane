@@ -272,6 +272,25 @@ def test_meas_error():
         circuit_ent()
 
 
+def test_clifford_error():
+    """Test if an QuantumFunctionError is raised when one of the operations is not Clifford."""
+
+    dev = qml.device("default.clifford", state="tableau")
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.Hadamard(wires=[0])
+        qml.PauliX(wires=[0])
+        qml.RX(1.0, wires=[0])
+        return qml.state()
+
+    with pytest.raises(
+        qml.QuantumFunctionError,
+        match="Currently 'default.clifford' device supports Clifford operations only",
+    ):
+        circuit()
+
+
 def test_max_error():
     """Test if an ValueError is raised when max_error is not None"""
 
