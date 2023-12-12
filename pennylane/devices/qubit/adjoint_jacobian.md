@@ -15,8 +15,7 @@ $$
 $$
 
 $$
-=
-\langle 0| \dots \frac{\partial U_i^{\dagger}}{\partial x_i} \dots M \dots
+= \langle 0| \dots \frac{\partial U_i^{\dagger}}{\partial x_i} \dots M \dots
 U_i \dots |0\rangle +
 \langle 0 | \dots U_i^{\dagger} \dots M \dots \frac{\partial U_i}{\partial x_i} \dots |0 \rangle
 $$
@@ -48,11 +47,7 @@ $$
 We can then also define $|k_i\rangle$ and $|b_i\rangle$ iteratively as:
 
 $$
-|k_{i-1}\rangle = U^{\dagger}_{i-1} |k_i \rangle
-$$
-
-$$
-|b_{i-1} \rangle = U^{\dagger}_i |b_{i}\rangle
+|k_{i-1}\rangle = U^{\dagger}_{i-1} |k_i \rangle \qquad |b_{i-1} \rangle = U^{\dagger}_i |b_i\rangle
 $$
 
 With the initial conditions:
