@@ -24,8 +24,9 @@ from by the :class:`SampleMeasurement`, :class:`StateMeasurement` and :class:`Me
 classes. These classes are subclassed to implement measurements in PennyLane.
 
 * Each :class:`SampleMeasurement` subclass represents a sample-based measurement, which contains a
-  :meth:`SampleMeasurement.process_samples` method that processes the sequence of samples generated
-  by the device. This method should always have the same arguments:
+  :meth:`SampleMeasurement.process_samples` method and a :meth:`SampleMeasurement.process_counts` method
+  that process the sequence of samples generated
+  by the device. ``process_samples`` method should always have the same arguments:
 
   * samples (Sequence[complex]): computational basis samples generated for all wires
   * wire_order (Wires): wires determining the subspace that ``samples`` acts on
@@ -34,6 +35,9 @@ classes. These classes are subclassed to implement measurements in PennyLane.
   * bin_size (int): Divides the shot range into bins of size ``bin_size``, and returns the
     measurement statistic separately over each bin. If not provided, the entire shot range is treated
     as a single bin.
+
+  :meth:`SampleMeasurement.process_counts` is currently optional. It accepts a dictionary mapping a string
+  representation of a basis state to an integer and a wire order.
 
   See :class:`CountsMP` for an example.
 
@@ -144,6 +148,9 @@ obtained of a given state:
         def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
             counts_mp = qml.counts(wires=self._wires)
             counts = counts_mp.process_samples(samples, wire_order, shot_range, bin_size)
+            return float(counts.get(self.state, 0))
+
+        def process_counts(self, counts, wire_order):
             return float(counts.get(self.state, 0))
 
         def __copy__(self):
