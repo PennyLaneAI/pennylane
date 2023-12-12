@@ -429,6 +429,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Documentation for `qml.specs` was moved to the resource module.
+  [(#4904)](https://github.com/PennyLaneAI/pennylane/pull/4904)
+
 * Documentation for QCut has moved to its own API page `qml.qcut`.
   [(#4819)](https://github.com/PennyLaneAI/pennylane/pull/4819)
 
