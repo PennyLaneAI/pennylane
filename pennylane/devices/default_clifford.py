@@ -117,7 +117,7 @@ class DefaultClifford(Device):
             this device.
         check_clifford (bool): Check if all the gate operations in the circuits to be executed are Clifford. Default is ``True``.
         max_error (float): The maximum permissible operator norm error for decomposing circuits with non-Clifford gate operations
-            into Cliffordt+T basis. The default is ``0.0`` as this device currently supports only Clifford simulations. 
+            into Cliffordt+T basis. The default is ``0.0`` as this device currently supports only Clifford simulations.
         state (str): Describes what should be returned when the device's state is computed with ``qml.state``. Default is
             "tableau", which makes it return the final evolved Tableau. Alternatively, one may use "state_vector" to obtain
             the evolved state vector. Note that the latter might not be computationally feasible for larger qubit numbers.
