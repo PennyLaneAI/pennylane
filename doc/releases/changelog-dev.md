@@ -381,6 +381,10 @@
 * Decomposition of `qml.PhaseShift` now uses `qml.GlobalPhase` for retaining the global phase information. 
   [(#4657)](https://github.com/PennyLaneAI/pennylane/pull/4657)
 
+* All PennyLane `Operator` subclasses are automatically tested by `ops.functions.assert_valid` to ensure
+  that they follow PennyLane `Operator` standards.
+  [(#4922)](https://github.com/PennyLaneAI/pennylane/pull/4922)
+
 <h3>Breaking changes 💔</h3>
 
 * The function `qml.transforms.classical_jacobian` has been moved to the gradients module
