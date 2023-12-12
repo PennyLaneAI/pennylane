@@ -350,8 +350,8 @@ class TestJVP:
         tangent = np.array([1.0])
         tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
 
-        assert tapes == []
-        assert fn(tapes) is None
+        assert tapes == tuple()
+        assert qml.math.allclose(fn(tapes), np.array(0.0))
 
     def test_zero_tangent_single_measurement_single_param(self, batch_dim):
         """A zero tangent vector will return no tapes and a zero matrix"""
@@ -831,7 +831,7 @@ class TestBatchJVP:
         # to the JVP, so only 2*2=4 quantum evals
         res = fn(dev.execute(v_tapes))
 
-        assert res[0] is None
+        assert qml.math.allclose(res[0], np.array(0.0))
         assert res[1] is not None
 
     def test_all_tapes_no_trainable_parameters(self):
@@ -859,7 +859,8 @@ class TestBatchJVP:
         v_tapes, fn = qml.gradients.batch_jvp(tapes, tangents, param_shift)
 
         assert v_tapes == []
-        assert fn([]) == (None, None)
+        assert qml.math.allclose(fn([])[0], np.array(0.0))
+        assert qml.math.allclose(fn([])[1], np.array(0.0))
 
     def test_zero_tangent(self):
         """A zero dy vector will return no tapes and a zero matrix"""

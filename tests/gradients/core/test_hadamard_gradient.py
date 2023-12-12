@@ -15,7 +15,6 @@
 Tests for the gradients.hadamard_gradient module.
 """
 
-import warnings
 import pytest
 
 import pennylane as qml
@@ -72,6 +71,16 @@ class TestHadamardGrad:
         tape = qml.tape.QuantumScript([qml.RX([0.4, 0.2], 0)], [qml.expval(qml.PauliZ(0))])
         _match = "Computing the gradient of broadcasted tapes with the Hadamard test gradient"
         with pytest.raises(NotImplementedError, match=_match):
+            qml.gradients.hadamard_grad(tape)
+
+    def test_tape_with_partitioned_shots_multiple_measurements_raises(self):
+        """Test that an error is raised with multiple measurements and partitioned shots."""
+        tape = qml.tape.QuantumScript(
+            [qml.RX(0.1, wires=0)],
+            [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(0))],
+            shots=(1000, 10000),
+        )
+        with pytest.raises(NotImplementedError):
             qml.gradients.hadamard_grad(tape)
 
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
@@ -464,7 +473,10 @@ class TestHadamardGrad:
         circuit = qml.QNode(cost, dev)
 
         res_hadamard = qml.gradients.hadamard_grad(circuit)(x)
-        assert isinstance(res_hadamard, tuple)
+
+        assert isinstance(res_hadamard, (tuple, list))
+        if len(res_hadamard) == 1:
+            res_hadamard = res_hadamard[0]
         assert len(res_hadamard) == expected_shape[0]
 
         if len(expected_shape) > 1:
@@ -487,7 +499,9 @@ class TestHadamardGrad:
         circuit = qml.QNode(cost, dev)
 
         res_hadamard = qml.gradients.hadamard_grad(circuit)(x)
-        assert isinstance(res_hadamard, tuple)
+        assert isinstance(res_hadamard, (tuple, list))
+        if len(res_hadamard) == 1:
+            res_hadamard = res_hadamard[0]
         assert len(res_hadamard) == expected_shape[0]
 
         if len(expected_shape) > 2:
@@ -503,28 +517,6 @@ class TestHadamardGrad:
             for r in res_hadamard:
                 assert isinstance(r, qml.numpy.ndarray)
                 assert len(r) == expected_shape[1]
-
-    def test_multi_measure_no_warning(self):
-        """Test computing the gradient of a tape that contains multiple
-        measurements omits no warnings."""
-
-        dev = qml.device("default.qubit", wires=4)
-
-        par1 = qml.numpy.array(0.3)
-        par2 = qml.numpy.array(0.1)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RY(par1, wires=0)
-            qml.RX(par2, wires=1)
-            qml.probs(wires=[1, 2])
-            qml.expval(qml.PauliZ(0))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-
-        with warnings.catch_warnings(record=True) as record:
-            grad_fn(tape, dev=dev)
-
-        assert len(record) == 0
 
     @pytest.mark.parametrize("shots", [None, 100])
     def test_shots_attribute(self, shots):
@@ -723,11 +715,10 @@ class TestHadamardGradEdgeCases:
         assert spy.call_args[0][0:2] == (tape, [0])
 
     @pytest.mark.autograd
-    def test_no_trainable_params_qnode_autograd(self, mocker):
+    def test_no_trainable_params_qnode_autograd(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit", wires=2)
-        spy = mocker.spy(qml.devices.qubit, "measure")
 
         @qml.qnode(dev, interface="autograd")
         def circuit(weights):
@@ -736,18 +727,14 @@ class TestHadamardGradEdgeCases:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res_hadamard = qml.gradients.hadamard_grad(circuit)(weights)
-
-        assert res_hadamard == ()
-        spy.assert_not_called()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.hadamard_grad(circuit)(weights)
 
     @pytest.mark.torch
-    def test_no_trainable_params_qnode_torch(self, mocker):
+    def test_no_trainable_params_qnode_torch(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit", wires=2)
-        spy = mocker.spy(qml.devices.qubit, "measure")
 
         @qml.qnode(dev, interface="torch")
         def circuit(weights):
@@ -756,18 +743,14 @@ class TestHadamardGradEdgeCases:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res_hadamard = qml.gradients.hadamard_grad(circuit)(weights)
-
-        assert res_hadamard == ()
-        spy.assert_not_called()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.hadamard_grad(circuit)(weights)
 
     @pytest.mark.tf
-    def test_no_trainable_params_qnode_tf(self, mocker):
+    def test_no_trainable_params_qnode_tf(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit", wires=2)
-        spy = mocker.spy(qml.devices.qubit, "measure")
 
         @qml.qnode(dev, interface="tf")
         def circuit(weights):
@@ -776,18 +759,14 @@ class TestHadamardGradEdgeCases:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res_hadamard = qml.gradients.hadamard_grad(circuit)(weights)
-
-        assert res_hadamard == ()
-        spy.assert_not_called()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.hadamard_grad(circuit)(weights)
 
     @pytest.mark.jax
-    def test_no_trainable_params_qnode_jax(self, mocker):
+    def test_no_trainable_params_qnode_jax(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit", wires=2)
-        spy = mocker.spy(qml.devices.qubit, "measure")
 
         @qml.qnode(dev, interface="jax")
         def circuit(weights):
@@ -796,18 +775,14 @@ class TestHadamardGradEdgeCases:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res_hadamard = qml.gradients.hadamard_grad(circuit)(weights)
-
-        assert res_hadamard == ()
-        spy.assert_not_called()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.hadamard_grad(circuit)(weights)
 
     @pytest.mark.autograd
-    def test_no_trainable_params_qnode_autograd_legacy(self, mocker):
+    def test_no_trainable_params_qnode_autograd_legacy(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit.autograd", wires=2)
-        spy = mocker.spy(dev, "expval")
 
         @qml.qnode(dev, interface="autograd")
         def circuit(weights):
@@ -816,18 +791,14 @@ class TestHadamardGradEdgeCases:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res_hadamard = qml.gradients.hadamard_grad(circuit)(weights)
-
-        assert res_hadamard == ()
-        spy.assert_not_called()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.hadamard_grad(circuit)(weights)
 
     @pytest.mark.torch
-    def test_no_trainable_params_qnode_torch_legacy(self, mocker):
+    def test_no_trainable_params_qnode_torch_legacy(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit.torch", wires=2)
-        spy = mocker.spy(dev, "expval")
 
         @qml.qnode(dev, interface="torch")
         def circuit(weights):
@@ -836,18 +807,14 @@ class TestHadamardGradEdgeCases:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res_hadamard = qml.gradients.hadamard_grad(circuit)(weights)
-
-        assert res_hadamard == ()
-        spy.assert_not_called()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.hadamard_grad(circuit)(weights)
 
     @pytest.mark.tf
-    def test_no_trainable_params_qnode_tf_legacy(self, mocker):
+    def test_no_trainable_params_qnode_tf_legacy(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit.tf", wires=2)
-        spy = mocker.spy(dev, "expval")
 
         @qml.qnode(dev, interface="tf")
         def circuit(weights):
@@ -856,18 +823,14 @@ class TestHadamardGradEdgeCases:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res_hadamard = qml.gradients.hadamard_grad(circuit)(weights)
-
-        assert res_hadamard == ()
-        spy.assert_not_called()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.hadamard_grad(circuit)(weights)
 
     @pytest.mark.jax
-    def test_no_trainable_params_qnode_jax_legacy(self, mocker):
+    def test_no_trainable_params_qnode_jax_legacy(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit.jax", wires=2)
-        spy = mocker.spy(dev, "expval")
 
         @qml.qnode(dev, interface="jax")
         def circuit(weights):
@@ -876,11 +839,8 @@ class TestHadamardGradEdgeCases:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res_hadamard = qml.gradients.hadamard_grad(circuit)(weights)
-
-        assert res_hadamard == ()
-        spy.assert_not_called()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.hadamard_grad(circuit)(weights)
 
     def test_no_trainable_params_tape(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
@@ -1018,7 +978,7 @@ class TestHadamardGradEdgeCases:
     def test_all_zero_diff_methods(self):
         """Test that the transform works correctly when the diff method for every parameter is
         identified to be 0, and that no tapes were generated."""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev)
         def circuit(params):
@@ -1044,9 +1004,6 @@ class TestHadamardGradEdgeCases:
         assert isinstance(result[2], np.ndarray)
         assert result[2].shape == (4,)
         assert np.allclose(result[2], 0)
-
-        tapes, _ = qml.gradients.hadamard_grad(circuit.tape)
-        assert tapes == []
 
 
 class TestHadamardTestGradDiff:
@@ -1333,7 +1290,9 @@ class TestJaxArgnums:
         x = jax.numpy.array([0.543, -0.654])
         y = jax.numpy.array(-0.123)
 
-        res = jax.jacobian(qml.gradients.hadamard_grad(circuit), argnums=argnums)(x, y)
+        res = jax.jacobian(qml.gradients.hadamard_grad(circuit, argnums=argnums), argnums=argnums)(
+            x, y
+        )
         res_expected = jax.hessian(circuit, argnums=argnums)(x, y)
 
         if argnums == [0]:

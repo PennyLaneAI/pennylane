@@ -99,7 +99,7 @@ class TestDecimals:
     def test_decimals_multiparameters(self):
         """Test decimals also displays parameters when the operation has multiple parameters."""
 
-        @qml.qnode(qml.device("default.qubit", wires=(0)))
+        @qml.qnode(qml.device("default.qubit", wires=[0]))
         def circ(x):
             qml.Rot(*x, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -173,9 +173,9 @@ class TestMatrixParameters:
         expected2 = (
             "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n"
             "1: ─╰|Ψ⟩────────┤         \n"
+            "\n"
             "M0 = \n[[1. 0.]\n [0. 1.]]"
         )
-
         assert draw(matrices_circuit)() == expected2
 
     def test_matrix_parameters_batch_transform(self):
@@ -279,6 +279,394 @@ class TestLayering:
             "2: ────╰IsingXX(1.23)────┤     "
         )
         assert draw(circ)() == expected
+
+
+class TestMidCircuitMeasurements:
+    """Tests for drawing mid-circuit measurements and classical conditions."""
+
+    @pytest.mark.parametrize("device_name", ["default.qubit"])
+    def test_qnode_mid_circuit_measurement_not_deferred(self, device_name, mocker):
+        """Test that a circuit containing mid-circuit measurements is transformed by the drawer
+        to use deferred measurements if the device uses the new device API."""
+        dev = qml.device(device_name)
+
+        @qml.qnode(dev)
+        def circ():
+            qml.PauliX(0)
+            qml.measure(0)
+            return qml.probs(wires=0)
+
+        draw_qnode = qml.draw(circ)
+        spy = mocker.spy(qml.defer_measurements, "_transform")
+
+        drawing = draw_qnode()
+        spy.assert_not_called()
+
+        assert drawing == "0: ──X──┤↗├─┤  Probs"
+
+    @pytest.mark.parametrize(
+        "postselect, reset, mid_measure_label",
+        [
+            (None, False, "┤↗├"),
+            (None, True, "┤↗│  │0⟩"),
+            (0, False, "┤↗₀├"),
+            (0, True, "┤↗₀│  │0⟩"),
+            (1, False, "┤↗₁├"),
+            (1, True, "┤↗₁│  │0⟩"),
+        ],
+    )
+    def test_draw_mid_circuit_measurement(self, postselect, reset, mid_measure_label):
+        """Test that mid-circuit measurements are drawn correctly."""
+
+        def func():
+            qml.Hadamard(0)
+            qml.measure(0, reset=reset, postselect=postselect)
+            qml.PauliX(0)
+            return qml.expval(qml.PauliZ(0))
+
+        drawing = qml.draw(func)()
+        expected_drawing = "0: ──H──" + mid_measure_label + "──X─┤  <Z>"
+
+        assert drawing == expected_drawing
+
+    def test_draw_mid_circuit_measurement_multiple_wires(self):
+        """Test that mid-circuit measurements are correctly drawn in circuits
+        with multiple wires."""
+
+        def circ(weights):
+            qml.RX(weights[0], 0)
+            qml.measure(0, reset=True)
+            qml.RX(weights[1], 1)
+            qml.measure(1)
+            qml.CNOT([0, 3])
+            qml.measure(3, postselect=0, reset=True)
+            qml.RY(weights[2], 2)
+            qml.CNOT([1, 2])
+            qml.measure(2, postselect=1)
+            qml.MultiRZ(0.5, [0, 2])
+            return qml.expval(qml.PauliZ(2))
+
+        drawing = qml.draw(circ)(np.array([np.pi, 3.124, 0.456]))
+        expected_drawing = (
+            "0: ──RX(3.14)──┤↗│  │0⟩─╭●─────────────────────╭MultiRZ(0.50)─┤     \n"
+            "1: ──RX(3.12)──┤↗├──────│─────────────╭●───────│──────────────┤     \n"
+            "3: ─────────────────────╰X──┤↗₀│  │0⟩─│────────│──────────────┤     \n"
+            "2: ──RY(0.46)─────────────────────────╰X──┤↗₁├─╰MultiRZ(0.50)─┤  <Z>"
+        )
+
+        assert drawing == expected_drawing
+
+    def test_single_meas_single_cond(self):
+        """Test that a circuit with a single classical condition and a single measurement
+        is drawn correctly."""
+
+        def circ(phi):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            qml.cond(m0, qml.PauliX)(wires=1)
+
+        drawing = qml.draw(circ)(np.pi)
+        expected_drawing = (
+            "0: ──RX(3.14)──┤↗├────┤  \n1: ─────────────║───X─┤  \n                ╚═══╝    "
+        )
+
+        assert drawing == expected_drawing
+
+    def test_single_meas_single_cond_multi_wire(self):
+        """Test that a multi-wire conditional operator relying on a single
+        mid-circuit measurement is drawn correctly."""
+
+        def circ(phi, theta):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            qml.RY(theta, 2)
+            qml.cond(m0, qml.CNOT)(wires=[1, 0])
+
+        drawing = qml.draw(circ)(np.pi, np.pi / 2)
+        expected_drawing = (
+            "0: ──RX(3.14)──┤↗├───────────╭X─┤  \n"
+            "2: ─────────────║───RY(1.57)─│──┤  \n"
+            "1: ─────────────║────────────╰●─┤  \n"
+            "                ╚═════════════╝    "
+        )
+
+        assert drawing == expected_drawing
+
+    def test_single_meas_multi_cond_with_reset(self):
+        """Test that a circuit where a single mid-circuit measurement is used for multiple
+        conditions is drawn correctly"""
+
+        def circ():
+            qml.RX(0.5, 0)
+            qml.RX(0.5, 1)
+            m0 = qml.measure(1, reset=True)
+            qml.cond(m0, qml.MultiControlledX)(wires=[1, 2, 0], control_values="10")
+            qml.CNOT([3, 2])
+            qml.cond(m0, qml.ctrl(qml.MultiRZ, control=[1, 2], control_values=[True, False]))(
+                0.5, wires=[0, 3]
+            )
+            qml.cond(m0, qml.PauliX)(0)
+            return qml.expval(qml.PauliZ(0))
+
+        drawing = qml.draw(circ)()
+        expected_drawing = (
+            "0: ──RX(0.50)───────────╭X────╭MultiRZ(0.50)──X─┤  <Z>\n"
+            "1: ──RX(0.50)──┤↗│  │0⟩─├●────├●──────────────║─┤     \n"
+            "2: ─────────────║───────╰○─╭X─├○──────────────║─┤     \n"
+            "3: ─────────────║────────║─╰●─╰MultiRZ(0.50)──║─┤     \n"
+            "                ╚════════╩═════╩══════════════╝       "
+        )
+
+        assert drawing == expected_drawing
+
+    def test_single_meas_multi_cond_with_postselection(self):
+        """Test that a circuit where a single mid-circuit measurement is used for multiple
+        conditions is drawn correctly"""
+
+        def circ():
+            qml.RX(0.5, 0)
+            qml.RX(0.5, 1)
+            m0 = qml.measure(1, postselect=1)
+            qml.cond(m0, qml.MultiControlledX)(wires=[1, 2, 0], control_values="10")
+            qml.CNOT([3, 2])
+            qml.cond(m0, qml.ctrl(qml.MultiRZ, control=[1, 2], control_values=[True, False]))(
+                0.5, wires=[0, 3]
+            )
+            qml.cond(m0, qml.PauliX)(0)
+            return qml.expval(qml.PauliZ(0))
+
+        drawing = qml.draw(circ)()
+        expected_drawing = (
+            "0: ──RX(0.50)───────╭X────╭MultiRZ(0.50)──X─┤  <Z>\n"
+            "1: ──RX(0.50)──┤↗₁├─├●────├●──────────────║─┤     \n"
+            "2: ─────────────║───╰○─╭X─├○──────────────║─┤     \n"
+            "3: ─────────────║────║─╰●─╰MultiRZ(0.50)──║─┤     \n"
+            "                ╚════╩═════╩══════════════╝       "
+        )
+
+        assert drawing == expected_drawing
+
+    def test_multi_meas_single_cond(self):
+        """Test that a circuit is drawn correctly when a single conditioned operation relies on
+        multiple mid-circuit measurements."""
+
+        def circ():
+            qml.RX(0.5, 0)
+            qml.RX(0.5, 1)
+            m0 = qml.measure(0)
+            m1 = qml.measure(1)
+            qml.CNOT([1, 2])
+            m2 = qml.measure(2)
+            qml.cond(m0 & m1 & m2, qml.RZ)(1.23, 1)
+            return qml.expval(qml.PauliZ(0))
+
+        drawing = qml.draw(circ)()
+        expected_drawing = (
+            "0: ──RX(0.50)──┤↗├────────────────────────┤  <Z>\n"
+            "1: ──RX(0.50)───║───┤↗├─╭●───────RZ(1.23)─┤     \n"
+            "2: ─────────────║────║──╰X──┤↗├──║────────┤     \n"
+            "                ╚════║═══════║═══╣              \n"
+            "                     ╚═══════║═══╣              \n"
+            "                             ╚═══╝              "
+        )
+
+        assert drawing == expected_drawing
+
+    def test_multi_meas_multi_cond(self):
+        """Test that a circuit is drawn correctly when there are multiple conditional operations
+        that rely on single or multiple mid-circuit measurements."""
+
+        def circ():
+            qml.RX(0.5, 0)
+            qml.RX(0.5, 1)
+
+            m0 = qml.measure(0, reset=True, postselect=1)
+            m1 = qml.measure(1)
+            qml.cond(m0 & m1, qml.MultiControlledX)(wires=[1, 2, 3, 0], control_values="110")
+            qml.cond(m1, qml.PauliZ)(2)
+
+            m2 = qml.measure(1)
+            qml.CNOT([3, 2])
+            qml.cond(m0, qml.ctrl(qml.SWAP, control=[1, 2], control_values=[True, False]))(
+                wires=[0, 3]
+            )
+            qml.cond(m2 & m1, qml.PauliY)(0)
+
+            qml.Toffoli([3, 1, 0])
+
+            m3 = qml.measure(3, postselect=0)
+            qml.cond(m3, qml.RX)(1.23, 3)
+            qml.cond(m3 & m1, qml.Hadamard)(2)
+
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(2))
+
+        drawing = qml.draw(circ)()
+        expected_drawing = (
+            "0: ──RX(0.50)──┤↗₁│  │0⟩──────╭X────────────╭SWAP──Y─╭X────────────────────┤ ╭<Z@Z>\n"
+            "1: ──RX(0.50)───║─────────┤↗├─├●─────┤↗├────├●─────║─├●────────────────────┤ │     \n"
+            "2: ─────────────║──────────║──├●──Z───║──╭X─├○─────║─│───────────────────H─┤ ╰<Z@Z>\n"
+            "3: ─────────────║──────────║──╰○──║───║──╰●─╰SWAP──║─╰●──┤↗₀├──RX(1.23)──║─┤       \n"
+            "                ╚══════════║═══╬══║═══║══════╝     ║      ║    ║         ║         \n"
+            "                           ╚═══╩══╩═══║════════════╬══════║════║═════════╣         \n"
+            "                                      ╚════════════╝      ║    ║         ║         \n"
+            "                                                          ╚════╩═════════╝         "
+        )
+
+        assert drawing == expected_drawing
+
+    def test_single_meas_multi_cond_split_lines(self):
+        """Test that a circuit is when multiple lines are needed and the measurement
+        and condition are on different lines."""
+
+        def circ():
+            m0 = qml.measure(0)
+            qml.RX(0.0, 0)
+            qml.cond(m0, qml.RX)(0.123, 1)
+            qml.RX(0.0, 0)
+            qml.cond(m0, qml.RX)(0.123, 1)
+            return qml.expval(qml.PauliZ(0))
+
+        drawing = qml.draw(circ, max_length=25)()
+        expected_drawing = (
+            "0: ──┤↗├──RX(0.00)\n"
+            "1: ───║───RX(0.12)\n"
+            "      ╚═══╩═══════\n\n"
+            "───RX(0.00)─┤  <Z>\n"
+            "───RX(0.12)─┤     \n"
+            "═══╝              "
+        )
+
+        assert drawing == expected_drawing
+
+    def test_single_meas_multi_cond_new_line(self):
+        """Test that a circuit is when multiple lines are needed and the measurement
+        and condition are on the same lines after the first line."""
+
+        def circ():
+            qml.RX(0.0, 0)
+            qml.RX(0.0, 0)
+            m0 = qml.measure(0)
+            qml.cond(m0, qml.PauliX)(1)
+            qml.cond(m0, qml.PauliX)(1)
+            return qml.expval(qml.PauliZ(0))
+
+        drawing = qml.draw(circ, max_length=25)()
+        expected_drawing = (
+            "0: ──RX(0.00)──RX(0.00)\n"
+            "1: ────────────────────\n"
+            "                       \n\n"
+            "───┤↗├───────┤  <Z>\n"
+            "────║───X──X─┤     \n"
+            "    ╚═══╩══╝       "
+        )
+
+        assert drawing == expected_drawing
+
+    def test_single_meas_multi_cond_first_line(self):
+        """Test that a circuit is drawn correctly when multiple lines are needed and the
+        measurement and condition are on the same lines in the first line."""
+
+        def circ():
+            m0 = qml.measure(0)
+            qml.cond(m0, qml.RX)(0.123, 1)
+            qml.cond(m0, qml.PauliX)(1)
+            qml.RX(0.0, 0)
+            qml.RX(0.0, 1)
+            return qml.expval(qml.PauliZ(0))
+
+        drawing = qml.draw(circ, max_length=25)()
+        expected_drawing = (
+            "0: ──┤↗├─────────────\n"
+            "1: ───║───RX(0.12)──X\n"
+            "      ╚═══╩═════════╝\n\n"
+            "───RX(0.00)─┤  <Z>\n"
+            "───RX(0.00)─┤     \n"
+            "                  "
+        )
+
+        assert drawing == expected_drawing
+
+    def test_multi_meas_single_cond_split_lines(self):
+        """Test that a circuit is drawn correctly when multiple lines are needed and the
+        measurements and condition are split between the lines."""
+
+        def circ():
+            qml.RX(0.5, 0)
+            qml.RX(0.5, 1)
+            m0 = qml.measure(0)
+            m1 = qml.measure(1)
+            qml.CNOT([1, 2])
+            m2 = qml.measure(2)
+            qml.cond(m0 & m1 & m2, qml.RZ)(1.23, 1)
+            return qml.expval(qml.PauliZ(0))
+
+        drawing = qml.draw(circ, max_length=30)()
+        expected_drawing = (
+            "0: ──RX(0.50)──┤↗├────────\n"
+            "1: ──RX(0.50)───║───┤↗├─╭●\n"
+            "2: ─────────────║────║──╰X\n"
+            "                ╚════║════\n"
+            "                     ╚════\n"
+            "                          \n\n"
+            "─────────────────┤  <Z>\n"
+            "────────RZ(1.23)─┤     \n"
+            "───┤↗├──║────────┤     \n"
+            "════║═══╣              \n"
+            "════║═══╣              \n"
+            "    ╚═══╝              "
+        )
+
+        assert drawing == expected_drawing
+
+    def test_multi_meas_multi_cond_split_lines(self):
+        """Test that a circuit is drawn correctly when multiple lines are needed and the
+        measurements and conditions are split between the lines."""
+
+        def circ():
+            qml.RX(0.5, 0)
+            qml.RX(0.5, 1)
+
+            m0 = qml.measure(0, reset=True, postselect=1)
+            m1 = qml.measure(1)
+            qml.cond(m0 & m1, qml.MultiControlledX)(wires=[1, 2, 3, 0], control_values="110")
+            qml.cond(m1, qml.PauliZ)(2)
+
+            m2 = qml.measure(1)
+            qml.CNOT([3, 2])
+            qml.cond(m0, qml.ctrl(qml.SWAP, control=[1, 2], control_values=[True, False]))(
+                wires=[0, 3]
+            )
+            qml.cond(m2 & m1, qml.PauliY)(0)
+
+            qml.Toffoli([3, 1, 0])
+
+            m3 = qml.measure(3, postselect=0)
+            qml.cond(m3, qml.RX)(1.23, 3)
+            qml.cond(m3 & m1, qml.Hadamard)(2)
+
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(2))
+
+        drawing = qml.draw(circ, max_length=60)()
+        expected_drawing = (
+            "0: ──RX(0.50)──┤↗₁│  │0⟩──────╭X────────────╭SWAP──Y─╭X\n"
+            "1: ──RX(0.50)───║─────────┤↗├─├●─────┤↗├────├●─────║─├●\n"
+            "2: ─────────────║──────────║──├●──Z───║──╭X─├○─────║─│─\n"
+            "3: ─────────────║──────────║──╰○──║───║──╰●─╰SWAP──║─╰●\n"
+            "                ╚══════════║═══╬══║═══║══════╝     ║   \n"
+            "                           ╚═══╩══╩═══║════════════╬═══\n"
+            "                                      ╚════════════╝   \n"
+            "                                                       \n\n"
+            "─────────────────────┤ ╭<Z@Z>\n"
+            "─────────────────────┤ │     \n"
+            "───────────────────H─┤ ╰<Z@Z>\n"
+            "───┤↗₀├──RX(1.23)──║─┤       \n"
+            "    ║    ║         ║         \n"
+            "════║════║═════════╣         \n"
+            "    ║    ║         ║         \n"
+            "    ╚════╩═════════╝         "
+        )
+
+        assert drawing == expected_drawing
 
 
 @pytest.mark.parametrize(

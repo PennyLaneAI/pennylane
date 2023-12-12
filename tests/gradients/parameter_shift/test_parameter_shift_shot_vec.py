@@ -34,7 +34,7 @@ many_shots_shot_vector = tuple([1000000] * 3)
 fallback_shot_vec = tuple([1000000] * 4)
 
 # Pick 4 angles in the [-2 * np.pi, np.pi] interval
-angles = [-6.28318531, -3.92699082, 0.78539816, 3.14159265]
+angles = (-6.28318531, -3.92699082, 0.78539816, 3.14159265)
 
 
 def grad_fn(tape, dev, fn=qml.gradients.param_shift, **kwargs):
@@ -99,87 +99,6 @@ class TestParamShift:
 
         # only called for parameter 0
         assert spy.call_args[0][0:2] == (tape, [0])
-
-    # TODO: uncomment and port to shot-vectors when QNode decorator uses new qml.execute pipeline
-    # @pytest.mark.autograd
-    # def test_no_trainable_params_qnode_autograd(self, mocker):
-    #     """Test that the correct ouput and warning is generated in the absence of any trainable
-    #     parameters"""
-    #     dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
-    #     spy = mocker.spy(dev, "expval")
-
-    #     @qml.qnode(dev, interface="autograd")
-    #     def circuit(weights):
-    #         qml.RX(weights[0], wires=0)
-    #         qml.RY(weights[1], wires=0)
-    #         return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-    #     weights = [0.1, 0.2]
-    #     with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-    #         res = qml.gradients.param_shift(circuit)(weights)
-
-    #     assert res == ()
-    #     spy.assert_not_called()
-
-    # @pytest.mark.torch
-    # def test_no_trainable_params_qnode_torch(self, mocker):
-    #     """Test that the correct ouput and warning is generated in the absence of any trainable
-    #     parameters"""
-    #     dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
-    #     spy = mocker.spy(dev, "expval")
-
-    #     @qml.qnode(dev, interface="torch")
-    #     def circuit(weights):
-    #         qml.RX(weights[0], wires=0)
-    #         qml.RY(weights[1], wires=0)
-    #         return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-    #     weights = [0.1, 0.2]
-    #     with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-    #         res = qml.gradients.param_shift(circuit)(weights)
-
-    #     assert res == ()
-    #     spy.assert_not_called()
-
-    # @pytest.mark.tf
-    # def test_no_trainable_params_qnode_tf(self, mocker):
-    #     """Test that the correct ouput and warning is generated in the absence of any trainable
-    #     parameters"""
-    #     dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
-    #     spy = mocker.spy(dev, "expval")
-
-    #     @qml.qnode(dev, interface="tf")
-    #     def circuit(weights):
-    #         qml.RX(weights[0], wires=0)
-    #         qml.RY(weights[1], wires=0)
-    #         return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-    #     weights = [0.1, 0.2]
-    #     with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-    #         res = qml.gradients.param_shift(circuit)(weights)
-
-    #     assert res == ()
-    #     spy.assert_not_called()
-
-    # @pytest.mark.jax
-    # def test_no_trainable_params_qnode_jax(self, mocker):
-    #     """Test that the correct ouput and warning is generated in the absence of any trainable
-    #     parameters"""
-    #     dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
-    #     spy = mocker.spy(dev, "expval")
-
-    #     @qml.qnode(dev, interface="jax")
-    #     def circuit(weights):
-    #         qml.RX(weights[0], wires=0)
-    #         qml.RY(weights[1], wires=0)
-    #         return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-    #     weights = [0.1, 0.2]
-    #     with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-    #         res = qml.gradients.param_shift(circuit)(weights)
-
-    #     assert res == ()
-    #     spy.assert_not_called()
 
     @pytest.mark.parametrize("broadcast", [True, False])
     def test_no_trainable_params_tape(self, broadcast):
@@ -1786,7 +1705,7 @@ class TestParameterShiftRule:
         """Test an expectation value and the variance of involutory and non-involutory observables work well with
         multiple trainable parameters"""
         shot_vec = many_shots_shot_vector
-        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
+        dev = qml.device("default.qubit", wires=3, shots=shot_vec, seed=12393)
 
         a = 0.54
         b = -0.423

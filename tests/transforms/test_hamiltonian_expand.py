@@ -292,6 +292,25 @@ class TestHamiltonianExpand:
             g = gtape.gradient(res, var)
             assert np.allclose(list(g[0]) + list(g[1]), output2)
 
+    def test_processing_function_conditional_clause(self):
+        """Test the conditional logic for `len(c_group) == 1` and `len(r_group) != 1`
+        in the processing function returned by hamiltonian_expand, accessed when
+        using a shot vector and grouping if the terms don't commute with each other."""
+
+        dev_with_shot_vector = qml.device("default.qubit", shots=(10, 10, 10))
+
+        H = qml.Hamiltonian([1, 2.0], [qml.PauliZ(0), qml.PauliX(0)])
+        H.compute_grouping()
+
+        @qml.transforms.hamiltonian_expand
+        @qml.qnode(dev_with_shot_vector)
+        def circuit():
+            return qml.expval(H)
+
+        res = circuit()
+
+        assert res.shape == (3,)
+
 
 with AnnotatedQueue() as s_tape1:
     qml.PauliX(0)

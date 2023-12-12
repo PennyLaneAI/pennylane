@@ -284,7 +284,7 @@ def test_gradient_expvalH():
 
     mol = qchem.Molecule(symbols, geometry, alpha=alpha)
     args = [alpha]
-    dev = qml.device("default.qubit.legacy", wires=4)
+    dev = qml.device("default.qubit", wires=4)
 
     def energy(mol):
         @qml.qnode(dev)
@@ -336,7 +336,7 @@ class TestJax:
 
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [jax.numpy.array(alpha)]
-        dev = qml.device("default.qubit.legacy", wires=4)
+        dev = qml.device("default.qubit", wires=4)
 
         def energy(mol):
             @qml.qnode(dev, interface="jax")

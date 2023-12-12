@@ -120,7 +120,9 @@ class TestIntegration:
             qml.CRX(x, wires=[0, 1])
             return qml.mutual_info(wires0=[0], wires1=[1])
 
-        with pytest.raises(qml.DeviceError, match="Circuits with finite shots must only contain"):
+        with pytest.raises(
+            qml.DeviceError, match="not accepted with finite shots on default.qubit"
+        ):
             circuit(0.5)
 
     diff_methods = ["backprop", "finite-diff"]

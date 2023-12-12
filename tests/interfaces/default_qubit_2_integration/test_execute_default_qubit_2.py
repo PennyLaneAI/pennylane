@@ -64,7 +64,10 @@ class TestBatchTransformHelper:
         qs = qml.tape.QuantumScript([CustomOp(0)], [qml.expval(qml.PauliZ(0))])
 
         with pytest.warns(UserWarning, match="device batch transforms cannot be turned off"):
-            qml.execute((qs, qs), device=dev, device_batch_transform=False)
+            program, _ = dev.preprocess()
+            qml.execute(
+                (qs, qs), device=dev, device_batch_transform=False, transform_program=program
+            )
 
     def test_split_and_expand_performed(self):
         """Test that preprocess returns the correct tapes when splitting and expanding
@@ -134,7 +137,8 @@ def test_warning_if_not_device_batch_transform():
     qs = qml.tape.QuantumScript([CustomOp(0)], [qml.expval(qml.PauliZ(0))])
 
     with pytest.warns(UserWarning, match="device batch transforms cannot be turned off"):
-        results = qml.execute([qs], dev, device_batch_transform=False)
+        program, _ = dev.preprocess()
+        results = qml.execute([qs], dev, device_batch_transform=False, transform_program=program)
 
     assert len(results) == 1
     assert qml.math.allclose(results[0], -1)
@@ -157,8 +161,8 @@ def test_caching(gradient_fn):
     assert len(cache) == 1
     assert cache[qs.hash] == -1.0
 
-    assert results == (-1.0, -1.0)
-    assert results2 == (-1.0, -1.0)
+    assert results == [-1.0, -1.0]
+    assert results2 == [-1.0, -1.0]
 
     assert tracker.totals["batches"] == 1
     assert tracker.totals["executions"] == 1

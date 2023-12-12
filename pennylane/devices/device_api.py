@@ -236,7 +236,7 @@ class Device(abc.ABC):
         **Example**
 
         All the transforms that are part of the preprocessing need to respect the transform contract defined in
-        :func:`pennylane.transforms.core.transform`.
+        :func:`pennylane.transform`.
 
         .. code-block:: python
 
@@ -567,7 +567,7 @@ class Device(abc.ABC):
         Returns:
             Tuple, Tuple: A numeric result of execution and of computing the jacobian vector product
 
-        .. seealso:: :meth:`~.Device.execute` and :meth:`~.Device.compute_jvp`
+        .. seealso:: :meth:`~pennylane.devices.Device.execute` and :meth:`~.Device.compute_jvp`
         """
         return self.execute(circuits, execution_config), self.compute_jvp(
             circuits, tangents, execution_config
@@ -599,8 +599,9 @@ class Device(abc.ABC):
 
         Args:
             circuits (Union[QuantumTape, Sequence[QuantumTape]]): the circuit or batch of circuits
-            cotangents (Tuple[Number]): Gradient-output vector. Must have shape matching the output shape of the
-                corresponding circuit
+            cotangents (Tuple[Number, Tuple[Number]]): Gradient-output vector. Must have shape matching the output shape of the
+                corresponding circuit. If the circuit has a single output, `cotangents` may be a single number, not an iterable
+                of numbers.
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
 
         Returns:
@@ -638,14 +639,15 @@ class Device(abc.ABC):
 
         Args:
             circuits (Union[QuantumTape, Sequence[QuantumTape]]): the circuit or batch of circuits to be executed
-            cotangents Tuple[Number]: Gradient-output vector. Must have shape matching the output shape of the
-                corresponding circuit
+            cotangents (Tuple[Number, Tuple[Number]]): Gradient-output vector. Must have shape matching the output shape of the
+                corresponding circuit. If the circuit has a single output, `cotangents` may be a single number, not an iterable
+                of numbers.
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
 
         Returns:
             Tuple, Tuple: the result of executing the scripts and the numeric result of computing the vector jacobian product
 
-        .. seealso:: :meth:`~.Device.execute` and :meth:`~.Device.compute_vjp`
+        .. seealso:: :meth:`~pennylane.devices.Device.execute` and :meth:`~.Device.compute_vjp`
         """
         return self.execute(circuits, execution_config), self.compute_vjp(
             circuits, cotangents, execution_config

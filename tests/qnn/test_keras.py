@@ -843,6 +843,7 @@ def test_draw():
     expected = (
         f"0: ─╭AngleEmbedding(M0)──RX({w1})─╭StronglyEntanglingLayers(M1)─┤  <Z>\n"
         f"1: ─╰AngleEmbedding(M0)───────────╰StronglyEntanglingLayers(M1)─┤  <Z>\n"
+        f"\n"
         f"M0 = \n{x}\n"
         f"M1 = \n{m1}"
     )

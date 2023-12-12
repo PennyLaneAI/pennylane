@@ -55,6 +55,7 @@ class TestTracking:
             "batches": [1, 1],
             "executions": [1, 1, 1],
             "simulations": [1, 1, 1],
+            "results": [1.0, 1.0, 1.0],
             "resources": [Resources(num_wires=1), Resources(num_wires=1), Resources(num_wires=1)],
             "derivative_batches": [1],
             "derivatives": [1],
@@ -69,6 +70,7 @@ class TestTracking:
         assert tracker.latest == {
             "executions": 1,
             "simulations": 1,
+            "results": 1,
             "resources": Resources(num_wires=1),
         }
 

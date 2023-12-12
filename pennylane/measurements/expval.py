@@ -105,16 +105,18 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         if isinstance(self.obs, BasisStateProjector):
             # branch specifically to handle the basis state projector observable
             idx = int("".join(str(i) for i in self.obs.parameters[0]), 2)
-            probs = qml.probs(wires=self.wires).process_samples(
-                samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
-            )
+            with qml.queuing.QueuingManager.stop_recording():
+                probs = qml.probs(wires=self.wires).process_samples(
+                    samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
+                )
             return probs[idx]
 
         # estimate the ev
         op = self.mv if self.mv is not None else self.obs
-        samples = qml.sample(op=op).process_samples(
-            samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
-        )
+        with qml.queuing.QueuingManager.stop_recording():
+            samples = qml.sample(op=op).process_samples(
+                samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
+            )
 
         # With broadcasting, we want to take the mean over axis 1, which is the -1st/-2nd with/
         # without bin_size. Without broadcasting, axis 0 is the -1st/-2nd with/without bin_size
@@ -126,11 +128,15 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         if isinstance(self.obs, BasisStateProjector):
             # branch specifically to handle the basis state projector observable
             idx = int("".join(str(i) for i in self.obs.parameters[0]), 2)
-            probs = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
+            with qml.queuing.QueuingManager.stop_recording():
+                probs = qml.probs(wires=self.wires).process_state(
+                    state=state, wire_order=wire_order
+                )
             return probs[idx]
         eigvals = qml.math.asarray(self.eigvals(), dtype="float64")
         # we use ``self.wires`` instead of ``self.obs`` because the observable was
         # already applied to the state
-        prob = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
+        with qml.queuing.QueuingManager.stop_recording():
+            prob = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
         # In case of broadcasting, `prob` has two axes and this is a matrix-vector product
         return qml.math.dot(prob, eigvals)

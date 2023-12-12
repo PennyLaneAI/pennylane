@@ -577,9 +577,25 @@ class TestSampleMeasurement:
 
         with pytest.raises(
             qml.DeviceError,
-            match="Analytic circuits must only contain StateMeasurements; got sample",
+            match="not accepted for analytic simulation on default.qubit",
         ):
             circuit()
+
+    def test_process_counts_not_implemented(self):
+        """Test that process_counts is not implemented by default."""
+
+        class MyMeasurement(SampleMeasurement):
+            # pylint: disable=signature-differs
+            def process_samples(self, samples, wire_order, shot_range, bin_size):
+                return qml.math.sum(samples[..., self.wires])
+
+            @property
+            def return_type(self):
+                return Sample
+
+        m = MyMeasurement(wires=[0])
+        with pytest.raises(NotImplementedError):
+            m.process_counts({"0": 10}, wire_order=qml.wires.Wires(0))
 
 
 class TestStateMeasurement:
@@ -617,7 +633,9 @@ class TestStateMeasurement:
         def circuit():
             return MyMeasurement()
 
-        with pytest.raises(qml.DeviceError, match="Circuits with finite shots must only contain"):
+        with pytest.raises(
+            qml.DeviceError, match="not accepted with finite shots on default.qubit"
+        ):
             circuit()
 
 

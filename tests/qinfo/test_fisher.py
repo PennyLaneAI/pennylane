@@ -157,7 +157,7 @@ class TestIntegration:
             qml.RX(params[0], wires=0)
             qml.RX(params[1], wires=0)
             qml.CNOT(wires=(0, 1))
-            return qml.probs()
+            return qml.probs(wires=[0, 1])
 
         params = pnp.random.random(2)
 

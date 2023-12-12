@@ -127,6 +127,8 @@ class MeasurementProcess(ABC):
             where the instance has to be identified
     """
 
+    # pylint:disable=too-many-instance-attributes
+
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
 
@@ -291,10 +293,7 @@ class MeasurementProcess(ABC):
             return f"{self.return_type.value}(eigvals={self._eigvals}, wires={self.wires.tolist()})"
 
         # Todo: when tape is core the return type will always be taken from the MeasurementProcess
-        if getattr(self.obs, "return_type", None) is None:
-            return f"{self.return_type.value}({self.obs})"
-
-        return f"{self.obs}"
+        return f"{self.return_type.value}({self.obs})"
 
     def __copy__(self):
         cls = self.__class__
@@ -472,10 +471,8 @@ class MeasurementProcess(ABC):
         """
         new_measurement = copy.copy(self)
         if self.mv is not None:
-            mv = copy.copy(self.mv)
-            mv.measurements = [m.map_wires(wire_map=wire_map) for m in mv.measurements]
-            new_measurement.mv = mv
-        if self.obs is not None:
+            new_measurement.mv = self.mv.map_wires(wire_map=wire_map)
+        elif self.obs is not None:
             new_measurement.obs = self.obs.map_wires(wire_map=wire_map)
         elif self._wires is not None:
             new_measurement._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
@@ -512,7 +509,7 @@ class SampleMeasurement(MeasurementProcess):
     ...     qml.PauliX(0)
     ...     return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
     >>> circuit()
-    tensor([1000,    0], requires_grad=True)
+    (tensor(1000, requires_grad=True), tensor(0, requires_grad=True))
     """
 
     @abstractmethod
@@ -534,6 +531,17 @@ class SampleMeasurement(MeasurementProcess):
                 returns the measurement statistic separately over each bin. If not
                 provided, the entire shot range is treated as a single bin.
         """
+
+    def process_counts(self, counts: dict, wire_order: Wires):
+        """Calculate the measurement given a counts histogram dictionary.
+
+        Args:
+            counts (dict): a dictionary matching the format returned by :class:`~.CountsMP`
+            wire_order (Wires): the wire order used in producing the counts
+
+        Note that the input dictionary may only contain states with non-zero entries (``all_outcomes=False``).
+        """
+        raise NotImplementedError
 
 
 class StateMeasurement(MeasurementProcess):

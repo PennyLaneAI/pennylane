@@ -346,7 +346,7 @@ class TestClassicalShadow:
         to obtain classical shadows"""
         circuit = get_circuit(wires, None, seed)
 
-        msg = "Analytic circuits must only contain StateMeasurements"
+        msg = "not accepted for analytic simulation on default.qubit"
         with pytest.raises(qml.DeviceError, match=msg):
             circuit()
 
@@ -462,7 +462,7 @@ class TestExpvalMeasurement:
         circuit = hadamard_circuit(2, None)
         H = qml.PauliZ(0)
 
-        msg = "Analytic circuits must only contain StateMeasurements"
+        msg = "not accepted for analytic simulation on default.qubit"
         with pytest.raises(qml.DeviceError, match=msg):
             _ = circuit(H, k=10)
 

@@ -123,7 +123,7 @@ class TestFiniteDiff:
         with pytest.raises(
             ValueError, match=r"Cannot differentiate with respect to parameter\(s\) {0}"
         ):
-            finite_diff(tape, _expand=False)
+            finite_diff(tape)
 
         # setting trainable parameters avoids this
         tape.trainable_params = {1, 2}
@@ -221,10 +221,8 @@ class TestFiniteDiff:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = qml.gradients.finite_diff(circuit)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.finite_diff(circuit)(weights)
 
     @pytest.mark.torch
     def test_no_trainable_params_qnode_torch(self):
@@ -239,10 +237,8 @@ class TestFiniteDiff:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = qml.gradients.finite_diff(circuit)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.finite_diff(circuit)(weights)
 
     @pytest.mark.tf
     def test_no_trainable_params_qnode_tf(self):
@@ -257,10 +253,8 @@ class TestFiniteDiff:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = qml.gradients.finite_diff(circuit)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.finite_diff(circuit)(weights)
 
     @pytest.mark.jax
     def test_no_trainable_params_qnode_jax(self):
@@ -275,10 +269,8 @@ class TestFiniteDiff:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = qml.gradients.finite_diff(circuit)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.finite_diff(circuit)(weights)
 
     def test_all_zero_diff_methods(self):
         """Test that the transform works correctly when the diff method for every parameter is
@@ -309,9 +301,6 @@ class TestFiniteDiff:
         assert isinstance(result[2], numpy.ndarray)
         assert result[2].shape == (4,)
         assert np.allclose(result[2], 0)
-
-        tapes, _ = qml.gradients.finite_diff(circuit.tape)
-        assert tapes == []
 
     def test_all_zero_diff_methods_multiple_returns(self):
         """Test that the transform works correctly when the diff method for every parameter is
@@ -361,9 +350,6 @@ class TestFiniteDiff:
         assert isinstance(result[1][2], numpy.ndarray)
         assert result[1][2].shape == (4,)
         assert np.allclose(result[1][2], 0)
-
-        tapes, _ = qml.gradients.finite_diff(circuit.tape)
-        assert tapes == []
 
     def test_y0(self):
         """Test that if first order finite differences is used, then
@@ -460,8 +446,17 @@ class TestFiniteDiff:
 
         transform = [qml.math.shape(qml.gradients.finite_diff(c)(x)) for c in circuits]
 
-        expected = [(3,), (3,), (2, 3), (3, 4), (3, 4), (2, 3, 4)]
-
+        expected = [
+            (3,),
+            (
+                1,
+                3,
+            ),
+            (2, 3),
+            (3, 4),
+            (1, 3, 4),
+            (2, 3, 4),
+        ]
         assert all(t == q for t, q in zip(transform, expected))
 
     def test_special_observable_qnode_differentiation(self):
@@ -481,6 +476,15 @@ class TestFiniteDiff:
 
             def __mul__(self, other):
                 return SpecialObject(self.val * other)
+
+            def __rmul__(self, other):
+                return SpecialObject(other * self.val)
+
+            def __matmul__(self, other):
+                return SpecialObject(self.val @ other)
+
+            def __rmatmul__(self, other):
+                return SpecialObject(other @ self.val)
 
             def __add__(self, other):
                 new = self.val + (other.val if isinstance(other, self.__class__) else other)
@@ -1061,6 +1065,46 @@ class TestFiniteDiffGradients:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.jax
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
+    def test_jax_probs(
+        self, dev_name, approx_order, strategy, tol
+    ):  # pylint: disable=unused-argument
+        """Tests that the output of the finite-difference transform is similar using or not diff method on the QNode."""
+        import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
+
+        dev = qml.device(dev_name, wires=2)
+        x = jax.numpy.array(0.543)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=[0])
+            qml.RY(x, wires=[0])
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=0), qml.probs(wires=1)
+
+        @qml.qnode(dev, diff_method="finite-diff")
+        def circuit_fd(x):
+            qml.RX(x, wires=[0])
+            qml.RY(x, wires=[0])
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=0), qml.probs(wires=1)
+
+        transform_output = qml.gradients.finite_diff(circuit)(x)
+        framework_output = jax.jacobian(circuit)(x)
+        assert jax.numpy.allclose(
+            jax.numpy.stack(transform_output), jax.numpy.stack(framework_output)
+        )
+
+        transform_output = qml.gradients.finite_diff(circuit_fd)(x)
+        framework_output = jax.jacobian(circuit_fd)(x)
+        assert jax.numpy.allclose(
+            jax.numpy.stack(transform_output), jax.numpy.stack(framework_output)
+        )
+
 
 @pytest.mark.parametrize("argnums", [[0], [1], [0, 1]])
 @pytest.mark.parametrize("interface", ["jax"])
@@ -1166,7 +1210,7 @@ class TestJaxArgnums:
 
         res = jax.jacobian(
             qml.gradients.finite_diff(
-                circuit, approx_order=approx_order, strategy=strategy, h=1e-5
+                circuit, approx_order=approx_order, strategy=strategy, h=1e-5, argnums=argnums
             ),
             argnums=argnums,
         )(x, y)

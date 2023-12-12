@@ -128,6 +128,26 @@ class TestProcessSamples:
             np.logical_and(samples[:, 0] == 1, samples[:, 1] == 1)
         )
 
+    def test_counts_with_nan_samples(self):
+        """Test that the counts function disregards failed measurements (samples including
+        NaN values) when totalling counts"""
+        shots = 1000
+        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.float64)
+
+        samples[0][0] = np.NaN
+        samples[17][1] = np.NaN
+        samples[850][0] = np.NaN
+
+        result = qml.counts(wires=[0, 1]).process_samples(samples, wire_order=[0, 1])
+
+        # no keys with NaNs
+        assert len(result) == 4
+        assert set(result.keys()) == {"00", "01", "10", "11"}
+
+        # NaNs were not converted into "0", but were excluded from the counts
+        total_counts = sum(count for count in result.values())
+        assert total_counts == 997
+
     def test_counts_obs(self):
         """Test that the counts function outputs counts of the right size for observables"""
         shots = 1000
@@ -678,7 +698,8 @@ def test_batched_counts_no_op_finite_shots(interface, wires, basis_states):
         qml.pow(qml.PauliX(1), z=[1, 2])
         return qml.counts(wires=wires)
 
-    assert circuit() == [{basis_state: n_shots} for basis_state in basis_states]
+    res = circuit()
+    assert res == type(res)([{basis_state: n_shots} for basis_state in basis_states])
 
 
 @pytest.mark.all_interfaces
@@ -716,7 +737,8 @@ def test_batched_counts_operator_finite_shots(interface):
         qml.pow(qml.PauliX(0), z=[1, 2])
         return qml.counts(qml.PauliZ(0))
 
-    assert circuit() == [{-1: n_shots}, {1: n_shots}]
+    res = circuit()
+    assert res == type(res)([{-1: n_shots}, {1: n_shots}])
 
 
 @pytest.mark.all_interfaces
@@ -733,5 +755,5 @@ def test_batched_counts_and_expval_operator_finite_shots(interface):
 
     res = circuit()
     assert isinstance(res, tuple) and len(res) == 2
-    assert res[0] == [{-1: n_shots}, {1: n_shots}]
+    assert res[0] == type(res[0])([{-1: n_shots}, {1: n_shots}])
     assert len(res[1]) == 2 and qml.math.allequal(res[1], [-1, 1])

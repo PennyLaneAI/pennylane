@@ -2070,6 +2070,6 @@ class TestHamiltonianDifferentiation:
         grad_fn = qml.grad(circuit)
         with pytest.raises(
             qml.DeviceError,
-            match="Adjoint differentiation method does not support observable Hamiltonian",
+            match="not supported on adjoint",
         ):
             grad_fn(coeffs, param)

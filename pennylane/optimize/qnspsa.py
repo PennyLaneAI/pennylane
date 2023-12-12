@@ -218,7 +218,20 @@ class QNSPSAOptimizer:
             all_grad_dirs.append(grad_dirs)
             all_tensor_dirs.append(tensor_dirs)
 
-        raw_results = qml.execute(all_grad_tapes + all_metric_tapes, cost.device, None)
+        if isinstance(cost.device, qml.devices.Device):
+            program, config = cost.device.preprocess()
+
+            raw_results = qml.execute(
+                all_grad_tapes + all_metric_tapes,
+                cost.device,
+                None,
+                transform_program=program,
+                config=config,
+            )
+        else:
+            raw_results = qml.execute(
+                all_grad_tapes + all_metric_tapes, cost.device, None
+            )  # pragma: no cover
         grads = [
             self._post_process_grad(raw_results[2 * i : 2 * i + 2], all_grad_dirs[i])
             for i in range(self.resamplings)
@@ -425,8 +438,10 @@ class QNSPSAOptimizer:
 
         cost.construct(params_next, kwargs)
         tape_loss_next = cost.tape.copy(copy_operations=True)
-
-        loss_curr, loss_next = qml.execute([tape_loss_curr, tape_loss_next], cost.device, None)
+        program, _ = cost.device.preprocess()
+        loss_curr, loss_next = qml.execute(
+            [tape_loss_curr, tape_loss_next], cost.device, None, transform_program=program
+        )
 
         # self.k has been updated earlier
         ind = (self.k - 2) % self.last_n_steps.size

@@ -314,12 +314,13 @@ class TestVQE:
     # pylint: disable=protected-access
     @pytest.mark.torch
     @pytest.mark.slow
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
-    def test_optimize_torch(self, shots):
+    def test_optimize_torch(self, dev_name, shots):
         """Test that an ExpvalCost with observable optimization gives the same result as another
         ExpvalCost without observable optimization."""
 
-        dev = qml.device("default.qubit", wires=4, shots=shots)
+        dev = qml.device(dev_name, wires=4, shots=shots)
 
         hamiltonian1 = copy.copy(big_hamiltonian)
         hamiltonian2 = copy.copy(big_hamiltonian)
@@ -745,25 +746,6 @@ class TestVQE:
         dc = tape.gradient(res, w).numpy()
 
         assert np.allclose(dc, big_hamiltonian_grad)
-
-    @pytest.mark.parametrize("approx", [None, "block-diag", "diag"])
-    def test_metric_tensor(self, approx):
-        """Test that the metric tensor can be calculated."""
-
-        dev = qml.device("default.qubit", wires=3)
-        p = pnp.array([1.0, 1.0, 1.0], requires_grad=True)
-
-        def ansatz(params, **kwargs):
-            qml.RX(params[0], wires=0)
-            qml.RY(params[1], wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.PhaseShift(params[2], wires=1)
-
-        h = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
-        qnodes = catch_warn_ExpvalCost(ansatz, h, dev)
-        mt = qml.metric_tensor(qnodes, approx=approx)(p)  # pylint:disable=not-callable
-        assert mt.shape == (3, 3)
-        assert isinstance(mt, pnp.ndarray)
 
     def test_multiple_devices_opt_true(self):
         """Test if a ValueError is raised when multiple devices are passed when optimize=True."""

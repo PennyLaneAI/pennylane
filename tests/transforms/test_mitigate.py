@@ -114,7 +114,7 @@ class TestMitigateWithZNE:
         noise_strength = 0.05
 
         dev_noise_free = qml.device("default.mixed", wires=2)
-        dev = qml.transforms.insert(qml.AmplitudeDamping, noise_strength)(dev_noise_free)
+        dev = qml.transforms.insert(dev_noise_free, qml.AmplitudeDamping, noise_strength)
 
         n_wires = 2
         n_layers = 2
@@ -443,7 +443,7 @@ noise_gate = qml.PhaseDamping
 
 # Load devices
 dev_ideal = qml.device("default.mixed", wires=2)
-dev_noisy = qml.transforms.insert(noise_gate, 0.05)(dev_ideal)
+dev_noisy = qml.transforms.insert(dev_ideal, noise_gate, 0.05)
 
 out_ideal = np.sqrt(2) / 2 + np.sqrt(2)
 grad_ideal_0 = [-np.sqrt(2) / 2, -np.sqrt(2)]
