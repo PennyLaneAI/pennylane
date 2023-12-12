@@ -378,6 +378,9 @@
   done with `qml.ExpvalCost`, but this is the preferred method because `ExpvalCost` is deprecated.
   [(#4896)](https://github.com/PennyLaneAI/pennylane/pull/4896)
 
+* Decomposition of `qml.PhaseShift` now uses `qml.GlobalPhase` for retaining the global phase information. 
+  [(#4657)](https://github.com/PennyLaneAI/pennylane/pull/4657)
+
 <h3>Breaking changes 💔</h3>
 
 * The function `qml.transforms.classical_jacobian` has been moved to the gradients module
