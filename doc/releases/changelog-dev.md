@@ -370,6 +370,10 @@
   done with `qml.ExpvalCost`, but this is the preferred method because `ExpvalCost` is deprecated.
   [(#4896)](https://github.com/PennyLaneAI/pennylane/pull/4896)
 
+* All `Operator` subclasses are automatically tested by `ops.functions.assert_valid` to ensure
+  that they follow PennyLane `Operator` standards.
+  [(#4922)](https://github.com/PennyLaneAI/pennylane/pull/4922)
+
 <h3>Breaking changes 💔</h3>
 
 * The transforms submodule `qml.transforms.qcut` is now its own module: `qml.qcut`.

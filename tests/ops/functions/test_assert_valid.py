@@ -361,11 +361,18 @@ def test_generated_list_of_ops(class_to_validate):
         # QutritBasisState actually passes validation... but it shouldn't
         pytest.xfail(reason="qutrit ops fail matrix validation")
 
-    try:
-        op = create_op_instance(class_to_validate)
-    except Exception as e:  # pylint:disable=broad-exception-raised
-        raise Exception(f"failed to create {class_to_validate} instance: {e}") from e
-
+    # If you defined a new Operator and this call to `create_op_instance` failed, it might
+    # be the fault of the test and not your Operator. Please do one of the following things:
+    #   1. Update your Operator to meet PL standards so it passes
+    #   2. Improve `create_op_instance` so it can create an instance of your op (it is quite hacky)
+    #   3. Add your class to the "manually validated ops" section of `_SKIP_OP_TYPES`
+    #      in ./conftest.py, and add an instance of it to "test_explicit_list_of_ops" below
+    op = create_op_instance(class_to_validate)
+    # If you defined a new Operator and this call to `assert_valid` failed, the Operator doesn't
+    # follow PL standards. Please do one of the following things:
+    #   1. Preferred action: Update your Operator to meet PL standards so it passes
+    #   2. Add your Operator to the `fail_reason` dict above, with an explanation for why it needs
+    #      to go against PL standards
     assert_valid(op)
 
 
