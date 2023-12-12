@@ -7,12 +7,12 @@ from pennylane import numpy as np
 from pennylane.operation import Channel
 
 alphabet_array = np.array(list(alphabet))
-qutrit_diagonal_in_z_basis = qml.Attribute(["TClock", "TRZ"])
 
 EINSUM_OP_WIRECOUNT_PERF_THRESHOLD = 3
 EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD = 13
 
 qudit_dim = 3  # specifies qudit dimension
+
 
 def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: bool = False):
     r"""Apply a quantum channel specified by a list of Kraus operators to subsystems of the
@@ -27,9 +27,10 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
         array[complex]: output_state
     """
     num_ch_wires = len(op.wires)
-    num_wires = int((qml.math.shape(state) - is_state_batched)/2)
+    num_wires = int(len(qml.math.shape(state)) / 2 - is_state_batched)
     rho_dim = 2 * num_wires
 
+    kraus = _get_kraus(op)
     # Computes K^\dagger, needed for the transformation K \rho K^\dagger
     kraus_dagger = [math.conj(math.transpose(k)) for k in kraus]
 
@@ -38,6 +39,18 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
 
     # Shape kraus operators
     kraus_shape = [len(kraus)] + [qudit_dim] * num_ch_wires * 2
+
+    if not isinstance(op, Channel):  # TODO Channels broadcasting is causing issues currently
+        # TODO need to talk to PennyLane team to find out more
+        mat = op.matrix()
+        dim = qudit_dim**num_ch_wires
+        batch_size = qml.math.get_batch_size(mat, (dim, dim), dim**2)
+        if batch_size is not None:
+            # Add broadcasting dimension to shape
+            kraus_shape = [batch_size] + kraus_shape
+            if op.batch_size is None:
+                op._batch_size = batch_size  # pylint:disable=protected-access
+
     kraus = math.cast(math.reshape(kraus, kraus_shape), complex)
     kraus_dagger = math.cast(math.reshape(kraus_dagger, kraus_shape), complex)
 
@@ -53,11 +66,11 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
     col_indices = "".join(alphabet_array[col_wires_list].tolist())
 
     # indices in einsum must be replaced with new ones
-    new_row_indices = alphabet[rho_dim: rho_dim + num_ch_wires]
-    new_col_indices = alphabet[rho_dim + num_ch_wires: rho_dim + 2 * num_ch_wires]
+    new_row_indices = alphabet[rho_dim : rho_dim + num_ch_wires]
+    new_col_indices = alphabet[rho_dim + num_ch_wires : rho_dim + 2 * num_ch_wires]
 
     # index for summation over Kraus operators
-    kraus_index = alphabet[rho_dim + 2 * num_ch_wires: rho_dim + 2 * num_ch_wires + 1]
+    kraus_index = alphabet[rho_dim + 2 * num_ch_wires : rho_dim + 2 * num_ch_wires + 1]
 
     # new state indices replace row and column indices with new ones
     new_state_indices = functools.reduce(
@@ -82,29 +95,30 @@ def apply_operation_tensordot(op: qml.operation.Operator, state, is_state_batche
     Args:
         op (Operator): Operator to apply to the quantum state
         state (array[complex]): Input quantum state
-        is_state_batched (bool): Boolean representing whether the state is batched or not # TODO
+        is_state_batched (bool): Boolean representing whether the state is batched or not
 
     Returns:
         array[complex]: output_state
     """
     num_ch_wires = len(op.wires)
-    num_wires = (qml.math.shape(state) - is_state_batched)/2
+    num_wires = int(len(qml.math.shape(state)) / 2 - is_state_batched)
 
     # Shape kraus operators and cast them to complex data type
     kraus_shape = [qudit_dim] * (num_ch_wires * 2)
 
-    #TODO deal with batching
-    dim = 2
-    if is_mat_batched := batch_size is not None:
-        # Add broadcasting dimension to shape
-        new_mat_shape = [batch_size] + new_mat_shape
-        if op.batch_size is None:
-            op._batch_size = batch_size  # pylint:disable=protected-access
-
-    kraus = [math.cast(math.reshape(k, kraus_shape), complex) for k in kraus]
+    if not isinstance(op, Channel):  # TODO Channels broadcasting is causing issues currently,
+        # TODO need to talk to PennyLane team to find out more
+        mat = op.matrix()
+        dim = qudit_dim**num_ch_wires
+        batch_size = qml.math.get_batch_size(mat, (dim, dim), dim**2)
+        if is_mat_batched := batch_size is not None:
+            # Add broadcasting dimension to shape
+            kraus_shape = [batch_size] + kraus_shape
+            if op.batch_size is None:
+                op._batch_size = batch_size  # pylint:disable=protected-access
 
     # row indices of the quantum state affected by this operation
-    row_wires_list = op.wires.tolist()
+    row_wires_list = op.wires.toarray() + int(is_state_batched)
     # column indices are shifted by the number of wires
     col_wires_list = [w + num_wires for w in row_wires_list]
 
@@ -119,12 +133,14 @@ def apply_operation_tensordot(op: qml.operation.Operator, state, is_state_batche
         The `axes_left` and `axes_right` arguments are taken from the ambient variable space
         and `axes_right` is assumed to incorporate the tensor product and the transposition
         of k.conj() simultaneously."""
+        k = math.cast(math.reshape(k, kraus_shape), complex)
         return math.tensordot(math.tensordot(k, state, axes_left), math.conj(k), axes_right)
 
-    if len(kraus) == 1:
-        _state = _conjugate_state_with(kraus[0])
-    else:
+    if isinstance(op, Channel):
+        kraus = op.kraus_matrices()
         _state = math.sum(math.stack([_conjugate_state_with(k) for k in kraus]), axis=0)
+    else:
+        _state = _conjugate_state_with(op.matrix())
 
     # Permute the affected axes to their destination places.
     # The row indices of the kraus operators are moved from the beginning to the original
@@ -133,12 +149,18 @@ def apply_operation_tensordot(op: qml.operation.Operator, state, is_state_batche
     dest_left = row_wires_list
     source_right = list(range(-num_ch_wires, 0))
     dest_right = col_wires_list
+
+    if is_mat_batched:
+        pass  # TODO  #perm = [0] + [i + 1 for i in perm]
+    if is_state_batched:
+        pass  # TODO  #perm.insert(num_indices, -1)
+
     return math.moveaxis(_state, source_left + source_right, dest_left + dest_right)
 
 
 @singledispatch
 def apply_operation(
-        op: qml.operation.Operator, state, is_state_batched: bool = False, debugger=None
+    op: qml.operation.Operator, state, is_state_batched: bool = False, debugger=None
 ):
     """Apply and operator to a given state.
 
@@ -193,8 +215,6 @@ def _apply_operation_default(op, state, is_state_batched, debugger):
     """The default behaviour of apply_operation, accessed through the standard dispatch
     of apply_operation, as well as conditionally in other dispatches.
     """
-    if op in qutrit_diagonal_in_z_basis:
-        return _apply_diagonal_unitary(op, state, is_state_batched)
     if (
         len(op.wires) < EINSUM_OP_WIRECOUNT_PERF_THRESHOLD
         and math.ndim(state) < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD
@@ -203,39 +223,7 @@ def _apply_operation_default(op, state, is_state_batched, debugger):
     return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
 
-def _apply_diagonal_unitary(op: qml.operation.Operator, state, is_state_batched):
-    r"""Apply a diagonal unitary gate specified by a list of eigenvalues. This method uses
-    the fact that the unitary is diagonal for a more efficient implementation.
-
-    Args:
-        op (Operator): The operation to apply to ``state``
-        state (TensorLike): The starting state.
-        is_state_batched (bool): Boolean representing whether the state is batched or not
-
-    Returns:
-        ndarray: output state
-    """
-
-    num_wires = (qml.math.shape(state) - is_state_batched)/2
-
-    eigvals = math.stack(eigvals)
-
-    # reshape vectors
-    eigvals = math.cast(math.reshape(eigvals, [qudit_dim] * len(wires)), complex)
-
-    # Tensor indices of the state. For each qubit, need an index for rows *and* columns
-    state_indices = alphabet[: 2 * num_wires]
-
-    # row indices of the quantum state affected by this operation
-    row_indices = "".join(alphabet_array[op.wires].tolist())
-
-    # column indices are shifted by the number of wires
-    col_wires_list = [w + num_wires for w in op.wires]
-    col_indices = "".join(alphabet_array[col_wires_list].tolist())
-
-    einsum_indices = f"{row_indices},{state_indices},{col_indices}->{state_indices}"
-
-    return math.einsum(einsum_indices, eigvals, state, math.conj(eigvals))
+# TODO add diagonal for speed up.
 
 
 @apply_operation.register
@@ -256,10 +244,7 @@ def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debu
     return state
 
 
-@apply_operation.register
-def apply_(op: qml.TAdd, state, is_state_batched: bool = False, debugger=None):
-    """Apply TAdd gate to state."""
-    pass
+# TODO add TAdd speedup
 
 
 def _get_kraus(operation):  # pylint: disable=no-self-use
@@ -273,11 +258,6 @@ def _get_kraus(operation):  # pylint: disable=no-self-use
         the operation is unitary, returns a single Kraus operator. In the case of a diagonal
         unitary, returns a 1D array representing the matrix diagonal.
     """
-    if operation in qutrit_diagonal_in_z_basis:
-        return operation.eigvals()
-
     if isinstance(operation, Channel):
         return operation.kraus_matrices()
     return [operation.matrix()]
-
-
