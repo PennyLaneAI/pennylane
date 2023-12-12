@@ -374,7 +374,7 @@
   done with `qml.ExpvalCost`, but this is the preferred method because `ExpvalCost` is deprecated.
   [(#4896)](https://github.com/PennyLaneAI/pennylane/pull/4896)
 
-* All `Operator` subclasses are automatically tested by `ops.functions.assert_valid` to ensure
+* All PennyLane `Operator` subclasses are automatically tested by `ops.functions.assert_valid` to ensure
   that they follow PennyLane `Operator` standards.
   [(#4922)](https://github.com/PennyLaneAI/pennylane/pull/4922)
 
