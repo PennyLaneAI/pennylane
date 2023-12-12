@@ -70,7 +70,7 @@ class RandomLayers(Operation):
         .. code-block:: python
 
             import pennylane as qml
-            import numpy as np
+            from pennylane import numpy as np
 
             dev = qml.device("default.qubit", wires=2)
             weights = np.array([[0.1, -2.1, 1.4]])

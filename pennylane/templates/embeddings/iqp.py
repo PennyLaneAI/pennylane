@@ -132,7 +132,7 @@ class IQPEmbedding(Operation):
 
         .. code-block:: python
 
-            import numpy as np
+            from pennylane import numpy as np
 
             pattern1 = [[1, 2], [0, 2], [1, 0]]
             pattern2 = [[1, 0], [0, 2], [1, 2]]  # a reshuffling of pattern1

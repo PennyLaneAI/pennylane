@@ -74,7 +74,7 @@ class QuantumPhaseEstimation(Operation):
 
             import pennylane as qml
             from pennylane.templates import QuantumPhaseEstimation
-            import numpy as np
+            from pennylane import numpy as np
 
             phase = 5
             target_wires = [0]
