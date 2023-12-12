@@ -325,7 +325,7 @@
 
 <h4>Other improvements</h4>
 
-* `SampleMeasurement` now as an optional method `process_counts` for computing the measurement results from a counts
+* `SampleMeasurement` now has an optional method `process_counts` for computing the measurement results from a counts
   dictionary.
   [(#4941)](https://github.com/PennyLaneAI/pennylane/pull/4941/)
 

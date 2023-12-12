@@ -581,8 +581,8 @@ class TestSampleMeasurement:
         ):
             circuit()
 
-    def test_process_samples_not_implemented(self):
-        """Test taht process_samples is not implemented by default."""
+    def test_process_counts_not_implemented(self):
+        """Test that process_counts is not implemented by default."""
 
         class MyMeasurement(SampleMeasurement):
             # pylint: disable=signature-differs

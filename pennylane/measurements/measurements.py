@@ -533,7 +533,7 @@ class SampleMeasurement(MeasurementProcess):
         """
 
     def process_counts(self, counts: dict, wire_order: Wires):
-        """Calculate the measurement given a counts histogram dictioanry.
+        """Calculate the measurement given a counts histogram dictionary.
 
         Args:
             counts (dict): a dictionary matching the format returned by :class:`~.CountsMP`

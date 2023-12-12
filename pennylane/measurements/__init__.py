@@ -24,8 +24,8 @@ from by the :class:`SampleMeasurement`, :class:`StateMeasurement` and :class:`Me
 classes. These classes are subclassed to implement measurements in PennyLane.
 
 * Each :class:`SampleMeasurement` subclass represents a sample-based measurement, which contains a
-  :meth:`SampleMeasurement.process_samples` and :meth:`SampleMeasurement.process_counts` methods
-  that processes the sequence of samples generated
+  :meth:`SampleMeasurement.process_samples` method and a :meth:`SampleMeasurement.process_counts` method
+  that process the sequence of samples generated
   by the device. ``process_samples`` method should always have the same arguments:
 
   * samples (Sequence[complex]): computational basis samples generated for all wires
