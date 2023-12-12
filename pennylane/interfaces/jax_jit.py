@@ -15,14 +15,11 @@
 This module contains functions for adding the JAX interface
 to a PennyLane Device class.
 """
-# pylint: disable=too-many-arguments, no-member
-from functools import partial
-from typing import Union, Tuple
+# pylint: disable=unused-argument
 import jax
 import jax.numpy as jnp
 
 import pennylane as qml
-from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.typing import ResultBatch
 
 from .jacobian_products import _compute_jvps
@@ -47,15 +44,9 @@ def _to_jax(result: qml.typing.ResultBatch) -> qml.typing.ResultBatch:
     return jnp.array(result)
 
 
-def _set_copy_and_unwrap_tape(t, a, unwrap=True):
-    """Copy a given tape with operations and set parameters"""
-    tc = t.bind_new_parameters(a, list(range(len(a))))
-    return convert_to_numpy_parameters(tc) if unwrap else tc
-
-
-def set_parameters_on_copy_and_unwrap(tapes, params, unwrap=True):
+def set_parameters_on_copy(tapes, params):
     """Copy a set of tapes with operations and set parameters"""
-    return tuple(_set_copy_and_unwrap_tape(t, a, unwrap=unwrap) for t, a in zip(tapes, params))
+    return tuple(t.bind_new_parameters(a, list(range(len(a)))) for t, a in zip(tapes, params))
 
 
 def _numeric_type_to_dtype(numeric_type):
@@ -119,7 +110,7 @@ def _execute_wrapper(params, tapes, execute_fn, _, device) -> ResultBatch:
     shape_dtype_structs = tuple(_create_shape_dtype_struct(t, device) for t in tapes.vals)
 
     def pure_callback_wrapper(p):
-        new_tapes = set_parameters_on_copy_and_unwrap(tapes.vals, p, unwrap=False)
+        new_tapes = set_parameters_on_copy(tapes.vals, p)
         res = execute_fn(new_tapes)
         res = tuple(res)
 
@@ -151,7 +142,7 @@ def _execute_and_compute_jvp(tapes, execute_fn, jpc, device, primals, tangents):
     )
 
     def wrapper(inner_params):
-        new_tapes = set_parameters_on_copy_and_unwrap(tapes.vals, inner_params, unwrap=False)
+        new_tapes = set_parameters_on_copy(tapes.vals, inner_params)
         return _to_jax(jpc.execute_and_compute_jacobian(new_tapes))
 
     res_struct = tuple(_create_shape_dtype_struct(t, device) for t in tapes.vals)
@@ -163,21 +154,28 @@ def _execute_and_compute_jvp(tapes, execute_fn, jpc, device, primals, tangents):
     return _to_jax(results), _to_jax(jvps)
 
 
-def _vjp_fwd(params, tapes, execute_fn, jpc):
+def _vjp_fwd(params, tapes, execute_fn, jpc, device):
     """Perform the forward pass execution, return results and empty residuals."""
-    return _execute_wrapper(params, tapes, execute_fn, jpc), params
+    return _execute_wrapper(params, tapes, execute_fn, jpc, device), params
 
 
-def _vjp_bwd(tapes, execute_fn, jpc, params, dy):
+def _vjp_bwd(tapes, execute_fn, jpc, device, params, dy):
     """Perform the backward pass of a vjp calculation, returning the vjp."""
 
-    def wrapper(inner_params):
-        new_tapes = set_parameters_on_copy_and_unwrap(tapes.vals, inner_params, unwrap=False)
-        return _to_jax(jpc.compute_vjp(new_tapes, dy))
+    def wrapper(inner_params, inner_dy):
+        new_tapes = set_parameters_on_copy(tapes.vals, inner_params)
+        return jpc.compute_vjp(new_tapes, inner_dy)
 
-    vjp_shape = None  # TODO
-    vjp = jax.pure_callback(wrapper, vjp_shape, params)
-    return (_to_jax(vjp),)
+    param_leaves, param_struct = jax.tree_util.tree_flatten(params)
+
+    def dtypestruct(p):
+        return jax.ShapeDtypeStruct(jnp.shape(p), p.dtype)
+
+    new_leaves = [dtypestruct(l) for l in param_leaves]
+    vjp_shape = jax.tree_util.tree_unflatten(param_struct, new_leaves)
+
+    vjp = jax.pure_callback(wrapper, vjp_shape, params, dy)
+    return vjp
 
 
 _execute_jvp_jit = jax.custom_jvp(_execute_wrapper, nondiff_argnums=[1, 2, 3, 4])
