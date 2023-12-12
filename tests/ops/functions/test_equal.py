@@ -1799,6 +1799,26 @@ class TestParametrizedEvolutionComparisons:
         assert qml.equal(ev1(params1, t), ev2(params2, t))
         assert not qml.equal(ev1(params1, t), ev3(params3, t))
 
+    def test_different_times(self):
+        """Test that times are compared for two ParametrizedEvolution ops"""
+        coeffs1 = [3, f1, f2]
+        ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
+
+        h1 = qml.dot(coeffs1, ops)
+
+        params1 = [6.0, 7.0]
+        t = 3
+
+        ev1 = qml.pulse.ParametrizedEvolution(h1, params1)
+        ev11 = qml.pulse.ParametrizedEvolution(h1, params1)
+        ev2 = qml.pulse.ParametrizedEvolution(h1, params1, t)
+        ev3 = qml.pulse.ParametrizedEvolution(h1, params1, 0.5)
+
+        assert qml.equal(ev1, ev11)
+        assert not qml.equal(ev1, ev2)
+        assert not qml.equal(ev1, ev3)
+        assert not qml.equal(ev2, ev3)
+
 
 class TestQuantumScriptComparisons:
     tape1 = qml.tape.QuantumScript(
@@ -1846,3 +1866,44 @@ class TestQuantumScriptComparisons:
     @pytest.mark.parametrize("tape, other_tape", [(tape2, tape5)])
     def test_non_equal_training_params_comparison(self, tape, other_tape):
         assert qml.equal(tape, other_tape) is False
+
+
+class TestBasisRotation:
+    rotation_mat = np.array(
+        [
+            [-0.618452, -0.68369054 - 0.38740723j],
+            [-0.78582258, 0.53807284 + 0.30489424j],
+        ]
+    )
+    op1 = qml.BasisRotation(wires=range(2), unitary_matrix=rotation_mat)
+    op2 = qml.BasisRotation(wires=range(2), unitary_matrix=np.array(rotation_mat))
+    op3 = qml.BasisRotation(wires=range(2), unitary_matrix=rotation_mat + 1e-7)
+    op4 = qml.BasisRotation(wires=range(2, 4), unitary_matrix=rotation_mat)
+
+    @pytest.mark.parametrize("op, other_op", [(op1, op3)])
+    def test_different_tolerances_comparison(self, op, other_op):
+        assert qml.equal(op, other_op, atol=1e-5)
+        assert qml.equal(op, other_op, rtol=0, atol=1e-9) is False
+
+    @pytest.mark.parametrize("op, other_op", [(op1, op2)])
+    def test_non_equal_training_params_comparison(self, op, other_op):
+        assert qml.equal(op, other_op)
+
+    @pytest.mark.parametrize("op, other_op", [(op1, op4)])
+    def test_non_equal_training_wires(self, op, other_op):
+        assert qml.equal(op, other_op) is False
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("op", [op1])
+    def test_non_equal_interfaces(self, op):
+        import jax
+
+        rotation_mat_jax = jax.numpy.array(
+            [
+                [-0.618452, -0.68369054 - 0.38740723j],
+                [-0.78582258, 0.53807284 + 0.30489424j],
+            ]
+        )
+        other_op = qml.BasisRotation(wires=range(2), unitary_matrix=rotation_mat_jax)
+        assert qml.equal(op, other_op, check_interface=False)
+        assert qml.equal(op, other_op) is False

@@ -18,6 +18,7 @@ This module contains the qml.equal function.
 from collections.abc import Iterable
 from functools import singledispatch
 from typing import Union
+
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
@@ -373,7 +374,10 @@ def _equal_hamiltonian(op1: Hamiltonian, op2: Observable, **kwargs):
 @_equal.register
 def _equal_parametrized_evolution(op1: ParametrizedEvolution, op2: ParametrizedEvolution, **kwargs):
     # check times match
-    if not qml.math.allclose(op1.t, op2.t):
+    if op1.t is None or op2.t is None:
+        if not (op1.t is None and op2.t is None):
+            return False
+    elif not qml.math.allclose(op1.t, op2.t):
         return False
 
     # check parameters passed to operator match
@@ -482,3 +486,30 @@ def _equal_shadow_measurements(op1: ShadowExpvalMP, op2: ShadowExpvalMP, **_):
 @_equal.register
 def _equal_counts(op1: CountsMP, op2: CountsMP, **kwargs):
     return _equal_measurements(op1, op2, **kwargs) and op1.all_outcomes == op2.all_outcomes
+
+
+@_equal.register
+# pylint: disable=unused-argument
+def _equal_basis_rotation(
+    op1: qml.BasisRotation,
+    op2: qml.BasisRotation,
+    check_interface=True,
+    check_trainability=True,
+    rtol=1e-5,
+    atol=1e-9,
+):
+    if not qml.math.allclose(
+        op1.hyperparameters["unitary_matrix"],
+        op2.hyperparameters["unitary_matrix"],
+        atol=atol,
+        rtol=rtol,
+    ):
+        return False
+    if op1.wires != op2.wires:
+        return False
+    if check_interface:
+        if qml.math.get_interface(op1.hyperparameters["unitary_matrix"]) != qml.math.get_interface(
+            op2.hyperparameters["unitary_matrix"]
+        ):
+            return False
+    return True
