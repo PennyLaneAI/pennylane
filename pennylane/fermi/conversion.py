@@ -233,7 +233,7 @@ def _(fermi_operator: FermiWord, n_qubits, ps=False, wire_map=None, tol=None):
             (_, wire), sign = item
             if wire >= n_qubits:
                 raise ValueError(
-                    f"Creating/annihilating a particle  on qubit number {wire} for a {n_qubits} qubit system"
+                    f"Can't create or annihilate a particle on qubit number {wire} for a system with only {n_qubits} qubits"
                 )
 
             if wire == 0:
