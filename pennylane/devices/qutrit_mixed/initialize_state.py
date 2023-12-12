@@ -82,7 +82,7 @@ def _apply_basis_state(state, num_wires):  # function is easy to abstract for qu
     """Returns initial state for a specified computational basis state.
 
     Args:
-        state (array[int]): computational basis state of shape ``(wires,)``
+        state (array[int]): computational basis state of shape ``(num_wires,)``
             consisting of 0s, 1s and 2s.
         num_wires (int): number of wires that get initialized in the state
 
