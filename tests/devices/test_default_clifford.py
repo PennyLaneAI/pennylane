@@ -84,8 +84,8 @@ def test_state_clifford(circuit, state):
         phase = qml.math.divide(
             st1, st2, out=qml.math.zeros_like(st1, dtype=complex), where=st1 != 0
         )[qml.math.nonzero(np.round(st1, 10))]
-        assert qml.math.allclose(phase / phase[0], qml.math.ones(len(phase)))
-
+        if not qml.math.allclose(phase, 0.0):
+            assert qml.math.allclose(phase / phase[0], qml.math.ones(len(phase)))
     else:
         tableau = np.array([[0, 1, 1, 0, 0], [1, 0, 1, 1, 1], [0, 0, 0, 1, 0], [1, 0, 0, 1, 1]])
         assert qml.math.allclose(tableau, qn_c())

@@ -111,7 +111,7 @@ def _validate_clifford_ops(tape: QuantumTape) -> (Sequence[QuantumTape], Callabl
     """Validate the tape contains only Clifford operations."""
     if not all(op.name in _GATE_OPERATIONS for op in tape.operations):
         raise qml.QuantumFunctionError(
-            "Currently 'default.qubit' device supports Clifford operations only."
+            "Currently 'default.clifford' device supports Clifford operations only."
         )
 
     def null_postprocessing(results):
@@ -156,7 +156,7 @@ class DefaultClifford(Device):
 
         qscripts = [
             qml.tape.QuantumScript(
-                [qml.Hadamard(wires=[0]), qml.CNOT(wires=[0, 1])], 
+                [qml.Hadamard(wires=[0]), qml.CNOT(wires=[0, 1])],
                 [qml.expval(qml.PauliZ(0))]
             )
         ] * num_qscripts
@@ -210,7 +210,7 @@ class DefaultClifford(Device):
         * ``executions``: the number of unique circuits that would be required on quantum hardware
         * ``shots``: the number of shots
         * ``resources``: the :class:`~.resource.Resources` for the executed circuit.
-        * ``simulations``: the number of simulations performed. One simulation can cover multiple QPU executions, 
+        * ``simulations``: the number of simulations performed. One simulation can cover multiple QPU executions,
           such as for non-commuting measurements and batched parameters.
         * ``batches``: The number of times :meth:`~.execute` is called.
         * ``results``: The results of each call of :meth:`~.execute`
@@ -327,10 +327,12 @@ class DefaultClifford(Device):
         """
 
         updated_values = {}
-        updated_values["gradient_method"] = None
-        updated_values["use_device_gradient"] = False
+        if execution_config.gradient_method == "best":  # pragma: no cover
+            updated_values["gradient_method"] = None
+        updated_values["use_device_gradient"] = True
         updated_values["use_device_jacobian_product"] = False
-        updated_values["grad_on_execution"] = False
+        if execution_config.grad_on_execution is None:
+            updated_values["grad_on_execution"] = False
         updated_values["device_options"] = dict(execution_config.device_options)  # copy
         if "max_workers" not in updated_values["device_options"]:
             updated_values["device_options"]["max_workers"] = self._max_workers
