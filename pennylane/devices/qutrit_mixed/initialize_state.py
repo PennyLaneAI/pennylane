@@ -48,9 +48,6 @@ def create_initial_state(
     if not prep_operation:
         rho = _create_basis_state(num_wires, 0)
 
-    elif isinstance(prep_operation, QutritBasisState):
-        rho = _apply_basis_state(prep_operation.parameters[0], num_wires)
-
     elif isinstance(prep_operation, StatePrepBase):
         rho = _apply_state_vector(prep_operation.state_vector(wire_order=wires), num_wires)
 
@@ -76,25 +73,6 @@ def _apply_state_vector(state, num_wires):  # function is easy to abstract for q
     # Initialize the entire set of wires with the state
     rho = qml.math.outer(state, qml.math.conj(state))
     return qml.math.reshape(rho, [qudit_dim] * 2 * num_wires)
-
-
-def _apply_basis_state(state, num_wires):  # function is easy to abstract for qudit
-    """Returns initial state for a specified computational basis state.
-
-    Args:
-        state (array[int]): computational basis state of shape ``(num_wires,)``
-            consisting of 0s, 1s and 2s.
-        num_wires (int): number of wires that get initialized in the state
-
-    Returns:
-        array[complex]: complex array of shape ``[qudit_dim] * (2 * num_wires)``
-        representing the density matrix of this basis state, where ``qudit_dim`` is
-        the dimension of the system.
-    """
-    # get computational basis state number
-    num = int("".join([str(x) for x in state]), qudit_dim)
-
-    return _create_basis_state(num_wires, num)
 
 
 def _create_basis_state(num_wires, index):  # function is easy to abstract for qudit
