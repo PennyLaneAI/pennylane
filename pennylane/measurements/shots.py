@@ -222,6 +222,21 @@ class Shots:
     def __bool__(self):
         return self.total_shots is not None
 
+    def __mul__(self, scalar):
+        if not isinstance(scalar, (int, float)):
+            raise TypeError("Can't multiply Shots with non-integer or float type.")
+        if self.total_shots is None:
+            return self
+
+        scaled_shot_vector = tuple(
+            ShotCopies(int(i.shots * scalar), i.copies) for i in self.shot_vector
+        )
+
+        return self.__class__(scaled_shot_vector)
+
+    def __rmul__(self, scalar):
+        return self.__mul__(scalar)
+
     @property
     def has_partitioned_shots(self):
         """
