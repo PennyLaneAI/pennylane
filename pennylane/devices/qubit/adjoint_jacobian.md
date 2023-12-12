@@ -47,7 +47,7 @@ $$
 We can then also define $|k_i\rangle$ and $|b_i\rangle$ iteratively as:
 
 $$
-|k_{i-1}\rangle = U^{\dagger}_{i-1} |k_i \rangle \qquad |b_{i-1} \rangle = U^{\dagger}_i |b_i\rangle
+|b_{i-1} \rangle = U^{\dagger}_i |b_i\rangle \qquad |k_{i-1}\rangle = U^{\dagger}_{i-1} |k_i \rangle
 $$
 
 With the initial conditions:
@@ -101,10 +101,16 @@ $$
 J_{i, j} = \frac{\partial f_j(x)}{\partial x_i}
 $$
 
+And a workflow that depends on the output of $f$:
+
+$$
+y = h(f(x))
+$$
+
 we have the VJP:
 
 $$
-\frac{dy}{d x_i} = \frac{d y}{d f_j}  J_{i,j} 
+\frac{\partial y}{\partial x_i} = \frac{\partial y}{\partial f_j}  J_{i,j} 
 $$
 
 where we sum up over all $j$ indices.
@@ -118,7 +124,7 @@ Calculating this quantity instead has several benefits over calculating the full
 For the VJP of expectation values, this looks like:
 
 $$
-\frac{\partial y}{\partial f_j}  \frac{\partial \langle M_j \rangle}{\partial x_i} = \frac{\partial \langle \Psi | \frac{\partial y}{\partial f_j} M_j |\Psi\rangle}{d x_j}
+\frac{\partial y}{\partial f_j}  \frac{\partial \langle M_j \rangle}{\partial x_i} = \frac{\partial \langle \Psi | \frac{\partial y}{\partial f_j} M_j |\Psi\rangle}{\partial x_i}
 $$
 
 So this is equivalent to performing a single jacobian calculation with a single "effective" observable of $\Sigma_j \frac{\partial y}{\partial f_j} M_j$.

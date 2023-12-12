@@ -261,6 +261,10 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
             bra = np.conj(cotangents.reshape(ket.shape))
         except ValueError as e:
             raise NotImplementedError("adjoint_vjp does not yet support JAX Jacobians") from e
+
+        def real_if_expval(val):
+            return val
+
     else:
         cotangents = (cotangents,) if qml.math.shape(cotangents) == tuple() else cotangents
         new_cotangents, new_observables = [], []
@@ -281,10 +285,13 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
         else:
             bra = 2 * apply_operation(obs, ket)
 
+        def real_if_expval(val):
+            return np.real(val)
+
     param_number = len(tape.get_parameters(trainable_only=False, operations_only=True)) - 1
     trainable_param_number = len(tape.trainable_params) - 1
 
-    cotangents_in = np.empty(len(tape.trainable_params))
+    cotangents_in = np.empty(len(tape.trainable_params), dtype=tape.measurements[0].numeric_type)
 
     for op in reversed(tape.operations[tape.num_preps :]):
         adj_op = qml.adjoint(op)
@@ -295,7 +302,9 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
                 d_op_matrix = operation_derivative(op)
                 ket_temp = apply_operation(qml.QubitUnitary(d_op_matrix, wires=op.wires), ket)
 
-                cotangents_in[trainable_param_number] = np.real(np.sum(np.conj(bra) * ket_temp))
+                cotangents_in[trainable_param_number] = real_if_expval(
+                    np.sum(np.conj(bra) * ket_temp)
+                )
 
                 trainable_param_number -= 1
             param_number -= 1

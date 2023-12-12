@@ -532,7 +532,7 @@ class TestTensorflowExecuteIntegration:
             execute_kwargs.get("interface", "") == "tf-autograph"
             and execute_kwargs.get("gradient_fn", "") == "adjoint"
         ):
-            with pytest.raises(NotImplementedError):
+            with pytest.raises(tf.errors.UnimplementedError):
                 tape.jacobian(cost_res, [x, y])
             return
         res = tape.jacobian(cost_res, [x, y])
@@ -586,7 +586,7 @@ class TestTensorflowExecuteIntegration:
             execute_kwargs.get("interface", "") == "tf-autograph"
             and execute_kwargs.get("gradient_fn", "") == "adjoint"
         ):
-            with pytest.raises(NotImplementedError):
+            with pytest.raises(tf.errors.UnimplementedError):
                 tape.jacobian(cost_res, [x, y])
             return
         res = tape.jacobian(cost_res, [x, y])

@@ -322,6 +322,11 @@ class TestAdjointJacobianState:
         expected = [-0.5 * np.sin(x / 2), -0.5j * np.cos(x / 2)]
         assert qml.math.allclose(jac, expected)
 
+        dy = np.array([0.5, 2.0])
+        vjp = adjoint_vjp(tape, dy)
+        expected_vjp = dy[0] * expected[0] + dy[1] * expected[1]
+        assert qml.math.allclose(expected_vjp, vjp)
+
     def test_two_wires_two_parameters(self):
         """Test a more complicated circuit with two parameters and two wires."""
 
@@ -332,11 +337,22 @@ class TestAdjointJacobianState:
 
         c_x, s_x = np.cos(x / 2), np.sin(x / 2)
         c_y, s_y = np.cos(y / 2), np.sin(y / 2)
-        x_jac_expected = [-0.5 * c_y * s_x, -0.5 * s_y * s_x, -0.5j * s_y * c_x, -0.5j * c_x * c_y]
+        x_jac_expected = np.array(
+            [-0.5 * c_y * s_x, -0.5 * s_y * s_x, -0.5j * s_y * c_x, -0.5j * c_x * c_y]
+        )
         assert qml.math.allclose(x_jac, x_jac_expected)
 
-        y_jac_expected = [-0.5 * c_x * s_y, 0.5 * c_x * c_y, -0.5j * s_x * c_y, 0.5j * s_x * s_y]
+        y_jac_expected = np.array(
+            [-0.5 * c_x * s_y, 0.5 * c_x * c_y, -0.5j * s_x * c_y, 0.5j * s_x * s_y]
+        )
         assert qml.math.allclose(y_jac, y_jac_expected)
+
+        dy = np.array([0.5, 1.0, 2.0, 2.5])
+        x_vjp, y_vjp = adjoint_vjp(tape, dy)
+        x_vjp_expected = np.dot(x_jac_expected, dy)
+        assert qml.math.allclose(x_vjp, x_vjp_expected)
+        y_vjp_expected = np.dot(y_jac_expected, dy)
+        assert qml.math.allclose(y_vjp, y_vjp_expected)
 
 
 class TestAdjointJVP:
