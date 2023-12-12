@@ -186,7 +186,7 @@ def _add_cwire_measurement_grouping_symbols(mcms, layer_str, config):
         layer_str[max_b] = "╰"
 
         for b in range(min_b + 1, max_b):
-            layer_str[b] = "├" if b in mapped_bits else "│"
+            layer_str[b] = "├" if b - n_wires in mapped_bits else "│"
 
     return layer_str
 

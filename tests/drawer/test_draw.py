@@ -767,6 +767,32 @@ class TestMidCircuitMeasurements:
         """Test that combining multiple conditionals and multiple mid-circuit
         measurement statistics is drawn correctly."""
 
+        def circ():
+            qml.Hadamard(0)
+            m0 = qml.measure(0)
+            qml.Hadamard(1)
+            m1 = qml.measure(1)
+            qml.Hadamard(2)
+            m2 = qml.measure(2)
+            qml.Hadamard(3)
+            qml.measure(3)
+            qml.cond(m0, qml.PauliX)(0)
+            qml.cond(m0 & m1, qml.PauliY)(1)
+            return qml.expval(m2), qml.sample([m1, m2])
+
+        drawing = qml.draw(circ)()
+        expected_drawing = (
+            "0: ──H──┤↗├──────────────────────────X────┤                    \n"
+            "1: ──────║───H──┤↗├──────────────────║──Y─┤                    \n"
+            "2: ──────║───────║───H──┤↗├──────────║──║─┤                    \n"
+            "3: ──────║───────║───────║───H──┤↗├──║──║─┤                    \n"
+            "         ╚═══════║═══════║═══════════╩══╣                      \n"
+            "                 ╚═══════║══════════════╩═╡        ╭Sample[MCM]\n"
+            "                         ╚════════════════╡  <MCM> ╰Sample[MCM]"
+        )
+
+        assert drawing == expected_drawing
+
 
 @pytest.mark.parametrize(
     "transform",
