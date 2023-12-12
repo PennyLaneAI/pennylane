@@ -106,7 +106,7 @@ def adjoint_jacobian(tape: QuantumTape, state=None):
     n_obs = len(tape.observables)
     bras = np.empty([n_obs] + [2] * len(tape.wires), dtype=np.complex128)
     for kk, obs in enumerate(tape.observables):
-        bras[kk, ...] = apply_operation(obs, ket)
+        bras[kk, ...] = 2 * apply_operation(obs, ket)
 
     jac = np.zeros((len(tape.observables), len(tape.trainable_params)))
 
@@ -122,9 +122,7 @@ def adjoint_jacobian(tape: QuantumTape, state=None):
             if param_number in tape.trainable_params:
                 d_op_matrix = operation_derivative(op)
                 ket_temp = apply_operation(qml.QubitUnitary(d_op_matrix, wires=op.wires), ket)
-                jac[:, trainable_param_number] = 2 * _dot_product_real(
-                    bras, ket_temp, len(tape.wires)
-                )
+                jac[:, trainable_param_number] = _dot_product_real(bras, ket_temp, len(tape.wires))
 
                 trainable_param_number -= 1
             param_number -= 1

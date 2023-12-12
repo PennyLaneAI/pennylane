@@ -311,6 +311,34 @@ class TestAdjointJacobian:
         assert np.allclose(grad_adjoint, expected)
 
 
+class TestAdjointJacobianState:
+    """Tests for differentiating a state vector."""
+
+    def test_simple_state_derivative(self):
+        """Test state differentiation for a single parameter."""
+        x = 1.2
+        tape = qml.tape.QuantumScript([qml.RX(x, wires=0)], [qml.state()])
+        jac = adjoint_jacobian(tape)
+        expected = [-0.5 * np.sin(x / 2), -0.5j * np.cos(x / 2)]
+        assert qml.math.alcllose(jac, expected)
+
+    def test_two_wires_two_parameters(self):
+        """Test a more complicated circuit with two parameters and two wires."""
+
+        x = 0.5
+        y = 0.6
+        tape = qml.tape.QuantumScript([qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))], [qml.state()])
+        x_jac, y_jac = adjoint_jacobian(tape)
+
+        c_x, s_x = np.cos(x / 2), np.sin(x / 2)
+        c_y, s_y = np.cos(y / 2), np.sin(y / 2)
+        x_jac_expected = [-0.5 * c_y * s_x, -0.5 * s_y * s_x, -0.5j * s_y * c_x, -0.5j * c_x * c_y]
+        assert qml.math.allclose(x_jac, x_jac_expected)
+
+        y_jac_expected = [-0.5 * c_x * s_y, 0.5 * c_x * c_y, -0.5j * s_x * c_y, 0.5j * s_x * s_y]
+        assert qml.math.allclose(y_jac, y_jac_expected)
+
+
 class TestAdjointJVP:
     """Test for adjoint_jvp"""
 
