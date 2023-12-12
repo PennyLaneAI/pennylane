@@ -177,7 +177,7 @@ def _openfermion_to_pennylane(qubit_operator, wires=None):
         # example term: ((0,'X'), (2,'Z'), (3,'Y'))
     )
 
-    return np.real(np.array(coeffs)), list(ops)
+    return np.array(coeffs).real, list(ops)
 
 
 def _ps_to_coeff_term(ps, wire_order):
