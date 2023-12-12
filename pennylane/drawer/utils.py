@@ -33,6 +33,36 @@ def default_wire_map(tape):
     return {wire: ind for ind, wire in enumerate(used_wires)}
 
 
+def default_bit_map(tape):
+    """Create a dictionary mapping ``MidMeasureMP``'s to ``None``. We only add
+    mid-circuit measurements that are used for classical conditions to this
+    dictionary. If ``check_measurements`` is ``True``, then we also add mid
+    mid-circuit measurements that are used for collecting statistics. The values
+    of the bit map should be populated before being used.
+
+    Args:
+        tape [~.tape.QuantumTape]: the QuantumTape containing operations and measurements
+
+    Returns:
+        dict: map from mid-circuit measurements to ``None``."""
+    bit_map = {}
+
+    for op in tape:
+        if isinstance(op, Conditional):
+            for m in op.meas_val.measurements:
+                bit_map[m] = None
+
+        if isinstance(op, MeasurementProcess) and op.mv is not None:
+            if isinstance(op.mv, MeasurementValue):
+                for m in op.mv.measurements:
+                    bit_map[m] = None
+            else:
+                for m in op.mv:
+                    bit_map[m.measurements[0]] = None
+
+    return bit_map
+
+
 def convert_wire_order(tape, wire_order=None, show_all_wires=False):
     """Creates the mapping between wire labels and place in order.
 
@@ -103,12 +133,14 @@ def unwrap_controls(op):
     return control_wires, control_values
 
 
-def cwire_connections(layers):  # pylint: disable=too-many-branches
+def cwire_connections(layers, bit_map):
     """Extract the information required for classical control wires.
 
     Args:
         layers (List[List[.Operator, .MeasurementProcess]]): the operations and measurements sorted
             into layers via ``drawable_layers``. Measurement layers may be appended to operation layers.
+        bit_map (Dict): Uninitialized dictionary containing mid-circuit measurements that are used for
+            classical conditions or measurement statistics as keys.
 
     Returns:
         dict, list, list: map from mid circuit measurement to classical wire, list of list of accessed layers
@@ -134,20 +166,8 @@ def cwire_connections(layers):  # pylint: disable=too-many-branches
     layer will always be the one with the mid circuit measurement.
 
     """
-    bit_map = {}
-    for layer in layers:
-        for op in layer:
-            # Add placeholders to bit_map until next pass
-            if isinstance(op, Conditional):
-                for m in op.meas_val.measurements:
-                    bit_map[m] = None
-            elif isinstance(op, MeasurementProcess) and op.mv is not None:
-                if isinstance(op.mv, MeasurementValue):
-                    for m in op.mv.measurements:
-                        bit_map[m] = None
-                else:
-                    for m in op.mv:
-                        bit_map[m.measurements[0]] = None
+    if len(bit_map) == 0:
+        return bit_map, [], []
 
     connected_layers = [[] for _ in bit_map]
     connected_wires = [[] for _ in bit_map]

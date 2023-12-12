@@ -16,7 +16,7 @@ This module contains a helper function to sort operations into layers.
 """
 
 from pennylane.ops import Conditional
-from pennylane.measurements import MeasurementProcess, MidMeasureMP
+from pennylane.measurements import MidMeasureMP
 from .utils import default_wire_map
 
 
@@ -75,12 +75,12 @@ def _recursive_find_mcm_stats_layer(layer_to_check, stat_mcms, used_mcms_per_lay
     return _recursive_find_layer(layer_to_check - 1, stat_mcms, used_mcms_per_layer)
 
 
-def _get_op_occupied_wires(op, wire_map, used_mid_measures):
+def _get_op_occupied_wires(op, wire_map, bit_map):
     """Helper function to find wires that would be used by an operator in a drawable layer."""
     if isinstance(op, MidMeasureMP):
         mapped_wire = wire_map[op.wires[0]]
 
-        if op in used_mid_measures:
+        if op in bit_map:
             min_wire = mapped_wire
             max_wire = max(wire_map.values())
             return set(range(min_wire, max_wire + 1))
@@ -107,18 +107,21 @@ def _get_op_occupied_wires(op, wire_map, used_mid_measures):
     return set(range(min_wire, max_wire + 1))
 
 
-def drawable_layers(ops, wire_map=None):
+def drawable_layers(operations, wire_map=None, bit_map=None):
     """Determine non-overlapping yet dense placement of operations into layers for drawing.
 
     Args:
-        ops Iterable[~.Operator]: a list of operations
+        operations (Iterable[~.Operator]): A list of operations.
 
     Keyword Args:
-        wire_map=None (dict): a map from wire label to non-negative integers
+        wire_map (dict): A map from wire label to non-negative integers. Defaults to None.
+        bit_map (dict): A map containing mid-circuit measurements used for classical conditions
+            or collecting statistics as keys. Defaults to None.
 
     Returns:
-        list[set[~.Operator]] : Each index is a set of operations
-        for the corresponding layer
+        (list[set[~.Operator]], list[set[~.MeasurementProcess]]) : Each index is a set of operations
+        for the corresponding layer in both lists. The first list corresponds to the operation layers,
+        and the second corresponds to the measurement layers.
 
     **Details**
 
@@ -140,29 +143,18 @@ def drawable_layers(ops, wire_map=None):
     transformation.
 
     """
-    # pylint:disable=too-many-nested-blocks,too-many-branches,too-many-statements
 
-    if not wire_map:
-        wire_map = default_wire_map(ops)
-    # initialize
+    wire_map = wire_map or default_wire_map(operations)
+    bit_map = bit_map or {}
+
+    # initialize for operation layers
     max_layer = 0
     occupied_wires_per_layer = [set()]
     ops_in_layer = [[]]
     used_mcms_per_layer = [set()]
 
-    # Collect all mid-circuit measurements used for classical conditioning
-    used_mid_measures = set()
-    for op in ops:
-        if isinstance(op, Conditional):
-            used_mid_measures.update(op.meas_val.measurements)
-        elif isinstance(op, MeasurementProcess) and op.mv is not None:
-            if isinstance(op, list):
-                used_mid_measures.union(set(m.measurements[0] for m in op.mv))
-            else:
-                used_mid_measures.union(set(op.mv.measurements))
-
     # loop over operations
-    for op in ops:
+    for op in operations:
         if isinstance(op, MidMeasureMP):
             if len(op.wires) > 1:
                 raise ValueError("Cannot draw mid-circuit measurements with more than one wire.")
@@ -170,7 +162,7 @@ def drawable_layers(ops, wire_map=None):
         if not getattr(op, "mv", None):
             # Only terminal measurements that collect mid-circuit measurement statistics have
             # op.mv != None
-            op_occupied_wires = _get_op_occupied_wires(op, wire_map, used_mid_measures)
+            op_occupied_wires = _get_op_occupied_wires(op, wire_map, bit_map)
             op_layer = _recursive_find_layer(max_layer, op_occupied_wires, occupied_wires_per_layer)
             stat_mcms = set()
 

@@ -31,7 +31,7 @@ from pennylane.measurements import (
 )
 
 from .drawable_layers import drawable_layers
-from .utils import convert_wire_order, unwrap_controls, cwire_connections
+from .utils import convert_wire_order, unwrap_controls, cwire_connections, default_bit_map
 
 
 @dataclass
@@ -429,19 +429,22 @@ def tape_text(
     tape_cache = []
 
     wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
+    bit_map = default_bit_map(tape)
     n_wires = len(wire_map)
+    n_bits = len(bit_map)
     if n_wires == 0:
         return ""
 
     # Used to store lines that are hitting the maximum length
     finished_lines = []
 
-    layers = drawable_layers(tape.operations, wire_map=wire_map)
+    layers = drawable_layers(tape.operations, wire_map=wire_map, bit_map=bit_map)
     final_operations_layer = len(layers) - 1
-    layers += drawable_layers(tape.measurements, wire_map=wire_map)
+    layers += drawable_layers(tape.measurements, wire_map=wire_map, bit_map=bit_map)
 
-    bit_map, cwire_layers, _ = cwire_connections(layers)
-    n_bits = len(bit_map)
+    # Update bit map and collect information about connections between mid-circuit measurements,
+    # classical conditions, and terminal measurements for processing mid-circuit measurements.
+    bit_map, cwire_layers, _ = cwire_connections(layers, bit_map)
 
     wire_totals = [f"{wire}: " for wire in wire_map]
     bit_totals = ["" for _ in range(n_bits)]
