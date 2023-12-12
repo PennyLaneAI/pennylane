@@ -82,14 +82,12 @@ from pennylane import qaoa
 from pennylane.qnode import QNode, qnode
 from pennylane.transforms import (
     transform,
-    adjoint_metric_tensor,
     batch_params,
     batch_input,
     batch_transform,
     batch_partial,
     compile,
     defer_measurements,
-    metric_tensor,
     qfunc_transform,
     op_transform,
     single_tape_transform,
@@ -122,6 +120,7 @@ from pennylane.qcut import cut_circuit, cut_circuit_mc
 import pennylane.pulse
 
 import pennylane.fourier
+from pennylane.gradients import metric_tensor, adjoint_metric_tensor
 import pennylane.gradients  # pylint:disable=wrong-import-order
 import pennylane.qinfo
 
