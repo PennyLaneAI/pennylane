@@ -219,8 +219,7 @@ class TestGradientTransformIntegration:
 
         grad_fn = qml.gradients.param_shift(circuit)
 
-        scalar_param = 0.543
-        w = np.array([scalar_param] if slicing else scalar_param, requires_grad=True)
+        w = np.array([0.543] if slicing else 0.543, requires_grad=True)
         res = grad_fn(w)
         assert circuit.interface == "auto"
 
