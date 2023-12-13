@@ -17,9 +17,9 @@ import warnings
 from functools import reduce, partial
 from itertools import product
 from typing import Sequence, Callable
+import numpy as np
 
 import pennylane as qml
-import pennylane.numpy as np
 from pennylane.measurements import ClassicalShadowMP
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane import transform

@@ -554,6 +554,17 @@ class SampleMeasurement(MeasurementProcess):
                 provided, the entire shot range is treated as a single bin.
         """
 
+    def process_counts(self, counts: dict, wire_order: Wires):
+        """Calculate the measurement given a counts histogram dictionary.
+
+        Args:
+            counts (dict): a dictionary matching the format returned by :class:`~.CountsMP`
+            wire_order (Wires): the wire order used in producing the counts
+
+        Note that the input dictionary may only contain states with non-zero entries (``all_outcomes=False``).
+        """
+        raise NotImplementedError
+
 
 class StateMeasurement(MeasurementProcess):
     """State-based measurement process.
