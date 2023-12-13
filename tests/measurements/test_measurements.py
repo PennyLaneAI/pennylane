@@ -581,6 +581,22 @@ class TestSampleMeasurement:
         ):
             circuit()
 
+    def test_process_counts_not_implemented(self):
+        """Test that process_counts is not implemented by default."""
+
+        class MyMeasurement(SampleMeasurement):
+            # pylint: disable=signature-differs
+            def process_samples(self, samples, wire_order, shot_range, bin_size):
+                return qml.math.sum(samples[..., self.wires])
+
+            @property
+            def return_type(self):
+                return Sample
+
+        m = MyMeasurement(wires=[0])
+        with pytest.raises(NotImplementedError):
+            m.process_counts({"0": 10}, wire_order=qml.wires.Wires(0))
+
 
 class TestStateMeasurement:
     """Tests for the SampleMeasurement class."""
