@@ -555,6 +555,7 @@ This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
 Ali Asadi,
+Utkarsh Azad,
 Gabriel Bottrill,
 Thomas Bromley,
 Astral Cai,
