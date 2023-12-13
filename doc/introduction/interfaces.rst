@@ -8,7 +8,17 @@ Gradients and training
 
 PennyLane offers seamless integration between classical and quantum computations. Code up quantum
 circuits in PennyLane, compute :doc:`gradients of quantum circuits <glossary/quantum_gradient>`, and
-connect them easily to the top scientific computing and machine learning libraries.
+connect them easily to the top scientific computing and machine learning libraries. To see more
+advanced usage details for a particular interface, please select it below:
+
+.. toctree::
+    :titlesonly:
+
+    interfaces/numpy
+    interfaces/torch
+    interfaces/tf
+    interfaces/jax
+    unsupported_gradients
 
 Training and interfaces
 -----------------------
@@ -494,11 +504,3 @@ At the moment, it takes into account the following parameters:
 
 :html:`</div>`
 
-.. toctree::
-    :hidden:
-
-    interfaces/numpy
-    interfaces/torch
-    interfaces/tf
-    interfaces/jax
-    unsupported_gradients
