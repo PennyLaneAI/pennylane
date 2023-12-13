@@ -20,7 +20,7 @@ from scipy.linalg import block_diag
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.transforms.metric_tensor import _get_aux_wire
+from pennylane.gradients.metric_tensor import _get_aux_wire
 
 
 class TestMetricTensor:
@@ -1696,7 +1696,7 @@ def test_raises_circuit_that_uses_missing_wire():
 
     x = np.array([1.3, 0.2])
     with pytest.raises(qml.wires.WireError, match=r"contain wires not found on the device: \{1\}"):
-        qml.transforms.metric_tensor(circuit)(x)
+        qml.metric_tensor(circuit)(x)
 
 
 def aux_wire_ansatz_0(x, y):
