@@ -326,6 +326,10 @@
 
 <h4>Other improvements</h4>
 
+* `SampleMeasurement` now has an optional method `process_counts` for computing the measurement results from a counts
+  dictionary.
+  [(#4941)](https://github.com/PennyLaneAI/pennylane/pull/4941/)
+
 * A new function called `ops.functions.assert_valid` has been added for checking if an `Operator` class is defined correctly.
   [(#4764)](https://github.com/PennyLaneAI/pennylane/pull/4764)
 
@@ -373,6 +377,10 @@
   the terms of a Hamiltonian measured in a QNode. Note that this is equivalent to what can be
   done with `qml.ExpvalCost`, but this is the preferred method because `ExpvalCost` is deprecated.
   [(#4896)](https://github.com/PennyLaneAI/pennylane/pull/4896)
+
+* All PennyLane `Operator` subclasses are automatically tested by `ops.functions.assert_valid` to ensure
+  that they follow PennyLane `Operator` standards.
+  [(#4922)](https://github.com/PennyLaneAI/pennylane/pull/4922)
 
 <h3>Breaking changes 💔</h3>
 
