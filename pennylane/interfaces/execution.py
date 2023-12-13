@@ -790,7 +790,7 @@ def execute(
 
     # trainable parameters can only be set on the first pass for jax
     # not higher order passes for higher order derivatives
-    if interface in {"jax", "jax-python"}:
+    if interface in {"jax", "jax-python", "jax-jit"}:
         for tape in tapes:
             params = tape.get_parameters(trainable_only=False)
             tape.trainable_params = qml.math.get_trainable_indices(params)

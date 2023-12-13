@@ -21,7 +21,6 @@ using ``jax.pure_callback``.
 
 For example:
 
-```
 >>> def f(x):
 ...     return qml.math.unwrap(x)
 >>> x = jax.numpy.array(1.0)
@@ -32,7 +31,6 @@ ValueError: Converting a JAX array to a NumPy array not supported when using the
 ...     return jax.pure_callback(f, expected_output_shape, x)
 >>> jax.jit(g)(x)
 Array(1., dtype=float64)
-```
 
 Note that we must provide the expected output shape for the function to use pure callbacks.
 
@@ -59,14 +57,15 @@ def _to_jax(result: qml.typing.ResultBatch) -> qml.typing.ResultBatch:
     Returns:
         ResultBatch: a nested structure of tuples, dicts, and jax arrays
     """
-    if isinstance(result, dict):
-        return result
+    # jax-jit not compatible with counts
+    # if isinstance(result, dict):
+    #     return result
     if isinstance(result, (list, tuple)):
         return tuple(_to_jax(r) for r in result)
     return jnp.array(result)
 
 
-def set_parameters_on_copy(tapes, params):
+def _set_parameters_on_copy(tapes, params):
     """Copy a set of tapes with operations and set parameters"""
     return tuple(t.bind_new_parameters(a, list(range(len(a)))) for t, a in zip(tapes, params))
 
@@ -128,10 +127,8 @@ def _execute_wrapper(params, tapes, execute_fn, _, device) -> ResultBatch:
     shape_dtype_structs = tuple(_result_shape_dtype_struct(t, device) for t in tapes.vals)
 
     def pure_callback_wrapper(p):
-        new_tapes = set_parameters_on_copy(tapes.vals, p)
-        res = execute_fn(new_tapes)
-        res = tuple(res)
-
+        new_tapes = _set_parameters_on_copy(tapes.vals, p)
+        res = tuple(execute_fn(new_tapes))
         # When executed under `jax.vmap` the `result_shapes_dtypes` will contain
         # the shape without the vmap dimensions, while the function here will be
         # executed with objects containing the vmap dimensions. So res[i].ndim
@@ -166,7 +163,7 @@ def _execute_and_compute_jvp(tapes, execute_fn, jpc, device, primals, tangents):
     )
 
     def wrapper(inner_params):
-        new_tapes = set_parameters_on_copy(tapes.vals, inner_params)
+        new_tapes = _set_parameters_on_copy(tapes.vals, inner_params)
         return jpc.execute_and_compute_jacobian(new_tapes)
 
     res_struct = tuple(_result_shape_dtype_struct(t, device) for t in tapes.vals)
@@ -187,8 +184,10 @@ def _vjp_bwd(tapes, execute_fn, jpc, device, params, dy):
     """Perform the backward pass of a vjp calculation, returning the vjp."""
 
     def wrapper(inner_params, inner_dy):
-        new_tapes = set_parameters_on_copy(tapes.vals, inner_params)
-        return jpc.compute_vjp(new_tapes, inner_dy)
+        new_tapes = _set_parameters_on_copy(tapes.vals, inner_params)
+        out = tuple(jpc.compute_vjp(new_tapes, inner_dy))
+        print("out: ", out)
+        return out
 
     vjp_shape = _pytree_shape_dtype_struct(params)
     return (jax.pure_callback(wrapper, vjp_shape, params, dy),)
@@ -207,9 +206,8 @@ def jax_jvp_jit_execute(tapes, execute_fn, jpc, device):
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
         execute_fn (Callable[[Sequence[.QuantumTape]], ResultBatch]): a function that turns a batch of circuits into results
-        jpc (JacobianProductCalculator): a class that can compute the vector Jacobian product (VJP)
-            for the input tapes.
-        device (Device, devices.Device): The device used for execution. Used to determine the shapes of outputs for
+        jpc (JacobianProductCalculator): a class that can compute the Jacobian for the input tapes.
+        device (pennylane.Device, pennylane.devices.Device): The device used for execution. Used to determine the shapes of outputs for
             pure callback calls.
 
     Returns:
@@ -240,7 +238,7 @@ def jax_vjp_jit_execute(tapes, execute_fn, jpc, device=None):
         execute_fn (Callable[[Sequence[.QuantumTape]], ResultBatch]): a function that turns a batch of circuits into results
         jpc (JacobianProductCalculator): a class that can compute the vector Jacobian product (VJP)
             for the input tapes.
-        device (Device, devices.Device): The device used for execution. Used to determine the shapes of outputs for
+        device (pennylane.Device, pennylane.devices.Device): The device used for execution. Used to determine the shapes of outputs for
             pure callback calls.
 
     Returns:

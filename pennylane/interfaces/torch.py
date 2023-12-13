@@ -60,7 +60,7 @@ result object.
 
 
 """
-# pylint: disable=too-many-arguments,protected-access,abstract-method
+# pylint: disable=too-many-arguments,protected-access,abstract-method,unused-argument
 import inspect
 import logging
 
@@ -189,6 +189,7 @@ class ExecuteTapes(torch.autograd.Function):
         return (None,) + vjps
 
 
+# pylint: disable=unused-argument
 def execute(tapes, execute_fn, jpc, device=None):
     """Execute a batch of tapes with Torch parameters on a device.
 
@@ -211,7 +212,6 @@ def execute(tapes, execute_fn, jpc, device=None):
             jpc,
         )
 
-    # pylint: disable=unused-argument
     parameters = []
     for tape in tapes:
         # set the trainable parameters

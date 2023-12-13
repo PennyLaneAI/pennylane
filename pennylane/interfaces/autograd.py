@@ -97,6 +97,7 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
+# pylint: disable=unused-argument
 def autograd_execute(
     tapes: Batch,
     execute_fn: ExecuteFn,

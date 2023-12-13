@@ -146,7 +146,7 @@ class JacobianProductCalculator(abc.ABC):
         >>> expected_vjp0 = 0.5 * -np.sin(0.1)
         >>> qml.math.allclose(vjps[0], expected_vjp0)
         True
-        >>> expected_jvp1 = 2.0 * -np.sin(0.2) + 3.0 * np.cos(0.2)
+        >>> expected_vjp1 = 2.0 * -np.sin(0.2) + 3.0 * np.cos(0.2)
         >>> qml.math.allclose(vjps[1], expected_vjp1)
         True
 

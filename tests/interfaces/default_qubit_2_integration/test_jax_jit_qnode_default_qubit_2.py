@@ -16,10 +16,13 @@
 from functools import partial
 import pytest
 
+from param_shift_dev import ParamShiftDerivativesDevice
+
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
+
 
 qubit_device_and_diff_method = [
     [DefaultQubit(), "backprop", True, False],
@@ -27,6 +30,7 @@ qubit_device_and_diff_method = [
     [DefaultQubit(), "parameter-shift", False, False],
     [DefaultQubit(), "adjoint", True, False],
     [DefaultQubit(), "adjoint", True, True],
+    [ParamShiftDerivativesDevice(), "device", False, True],
     [DefaultQubit(), "adjoint", False, False],
     [DefaultQubit(), "spsa", False, False],
     [DefaultQubit(), "hadamard", False, False],
@@ -141,6 +145,9 @@ class TestQNode:
         b = jax.numpy.array(0.2)
         c = jax.numpy.array(0.3)
 
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transforms have a different vjp shape convention.")
+
         @qnode(
             dev,
             diff_method=diff_method,
@@ -166,6 +173,10 @@ class TestQNode:
     ):
         """Test that the jax interface works correctly
         with a matrix parameter"""
+
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transforms have a different vjp shape convention.")
+
         U = jax.numpy.array([[0, 1], [1, 0]])
         a = jax.numpy.array(0.1)
 
@@ -192,6 +203,9 @@ class TestQNode:
     ):
         """Test that operation and nested tape expansion
         is differentiable"""
+
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transforms have a different vjp shape convention.")
 
         gradient_kwargs = {}
         if diff_method == "spsa":
@@ -282,7 +296,8 @@ class TestVectorValuedQNode:
         self, dev, diff_method, grad_on_execution, device_vjp, interface, tol
     ):
         """Test jacobian calculation"""
-
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transforms have a different vjp shape convention.")
         gradient_kwargs = {}
 
         if diff_method == "spsa":
@@ -344,7 +359,8 @@ class TestVectorValuedQNode:
         self, dev, diff_method, grad_on_execution, device_vjp, interface, tol
     ):
         """Test jacobian calculation when no prior circuit evaluation has been performed"""
-
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transforms have a different vjp shape convention.")
         gradient_kwargs = {}
 
         if diff_method == "spsa":
@@ -406,6 +422,8 @@ class TestVectorValuedQNode:
     ):
         """Tests correct output shape and evaluation for a tape
         with a single prob output"""
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transforms have a different vjp shape convention.")
         gradient_kwargs = {}
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support probs")
@@ -457,6 +475,8 @@ class TestVectorValuedQNode:
     ):
         """Tests correct output shape and evaluation for a tape
         with multiple prob outputs"""
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transforms have a different vjp shape convention.")
         gradient_kwargs = {}
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support probs")
@@ -541,6 +561,8 @@ class TestVectorValuedQNode:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transforms have a different vjp shape convention.")
         gradient_kwargs = {}
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support probs")
@@ -615,6 +637,8 @@ class TestVectorValuedQNode:
     ):
         """Tests correct output shape and evaluation for a tape with prob and expval outputs with less
         trainable parameters (argnums) than parameters."""
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transforms have a different vjp shape convention.")
         kwargs = {}
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support probs")
@@ -666,6 +690,8 @@ class TestVectorValuedQNode:
     def test_diff_var_probs(self, dev, diff_method, grad_on_execution, device_vjp, interface, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and variance outputs"""
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transforms have a different vjp shape convention.")
         gradient_kwargs = {}
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support probs")
@@ -934,6 +960,8 @@ class TestQubitIntegration:
 
     def test_chained_qnodes(self, dev, diff_method, grad_on_execution, device_vjp, interface):
         """Test that the gradient of chained QNodes works without error"""
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transforms have a different vjp shape convention.")
 
         class Template(qml.templates.StronglyEntanglingLayers):
             def decomposition(self):
@@ -1032,9 +1060,8 @@ class TestQubitIntegrationHigherOrder:
         self, dev, diff_method, grad_on_execution, device_vjp, interface, tol
     ):
         """Test second derivative calculation of a scalar-valued QNode"""
-
         gradient_kwargs = {}
-        if diff_method == "adjoint":
+        if diff_method in {"adjoint", "device"}:
             pytest.skip("Adjoint does not second derivative.")
         elif diff_method == "spsa":
             gradient_kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
@@ -1081,7 +1108,7 @@ class TestQubitIntegrationHigherOrder:
     def test_hessian(self, dev, diff_method, grad_on_execution, device_vjp, interface, tol):
         """Test hessian calculation of a scalar-valued QNode"""
         gradient_kwargs = {}
-        if diff_method == "adjoint":
+        if diff_method in {"adjoint", "device"}:
             pytest.skip("Adjoint does not support second derivative.")
         elif diff_method == "spsa":
             gradient_kwargs = {
@@ -1135,7 +1162,7 @@ class TestQubitIntegrationHigherOrder:
     ):
         """Test hessian calculation of a vector-valued QNode"""
         gradient_kwargs = {}
-        if diff_method == "adjoint":
+        if diff_method in {"adjoint", "device"}:
             pytest.skip("Adjoint does not support second derivative.")
         elif diff_method == "spsa":
             gradient_kwargs = {
@@ -1198,7 +1225,7 @@ class TestQubitIntegrationHigherOrder:
     ):
         """Test hessian calculation of a vector valued QNode with post-processing"""
         gradient_kwargs = {}
-        if diff_method == "adjoint":
+        if diff_method in {"adjoint", "device"}:
             pytest.skip("Adjoint does not support second derivative.")
         elif diff_method == "spsa":
             gradient_kwargs = {
@@ -1264,7 +1291,7 @@ class TestQubitIntegrationHigherOrder:
     ):
         """Test hessian calculation of a vector valued QNode that has separate input arguments"""
         gradient_kwargs = {}
-        if diff_method == "adjoint":
+        if diff_method in {"adjoint", "device"}:
             pytest.skip("Adjoint does not support second derivative.")
         elif diff_method == "spsa":
             gradient_kwargs = {
@@ -1369,6 +1396,8 @@ class TestQubitIntegrationHigherOrder:
     ):
         """Test that the variance of a projector is correctly returned"""
         gradient_kwargs = {}
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transforms have a different vjp shape convention.")
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support projectors")
         elif diff_method == "hadamard":
@@ -1459,6 +1488,8 @@ class TestTapeExpansion:
         are non-commuting groups and the number of shots is None
         and the first and second order gradients are correctly evaluated"""
         gradient_kwargs = {}
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradients transforms have a different vjp shape convention.")
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not yet support Hamiltonians")
         elif diff_method == "hadamard":
@@ -1532,6 +1563,8 @@ class TestTapeExpansion:
         and the first and second order gradients are correctly evaluated"""
         gradient_kwargs = {}
         tol = 0.3
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transforms have a different vjp shape convention.")
         if diff_method in ("adjoint", "backprop", "finite-diff"):
             pytest.skip("The adjoint and backprop methods do not yet support sampling")
         elif diff_method == "hadamard":
@@ -1698,8 +1731,10 @@ class TestJIT:
     ):
         """Test derivative calculation of a scalar valued QNode"""
         gradient_kwargs = {}
-        if diff_method == "adjoint":
-            pytest.xfail(reason="The adjoint method is not using host-callback currently")
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transforms have a different vjp shape convention.")
+        if device_vjp and jacobian == jax.jacfwd:
+            pytest.skip("device vjps not compatible with forward diff.")
         elif diff_method == "spsa":
             gradient_kwargs = {"h": H_FOR_SPSA, "sampler_rng": np.random.default_rng(SEED_FOR_SPSA)}
             tol = TOL_FOR_SPSA
@@ -1828,7 +1863,9 @@ class TestJIT:
         uses the output of a vector-valued QNode"""
         gradient_kwargs = {}
         if diff_method == "adjoint":
-            pytest.xfail(reason="The adjoint method is not using host-callback currently")
+            pytest.xfail(reason="The adjoint method does not support probs")
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transforms have a different vjp shape convention.")
         elif diff_method == "spsa":
             gradient_kwargs = {"h": H_FOR_SPSA, "sampler_rng": np.random.default_rng(SEED_FOR_SPSA)}
             tol = TOL_FOR_SPSA
@@ -1871,11 +1908,14 @@ class TestJIT:
         assert np.allclose(g0, expected_g[0][idx], atol=tol, rtol=0)
         assert np.allclose(g1, expected_g[1][idx], atol=tol, rtol=0)
 
+    # pylint: disable=unused-argument
     def test_matrix_parameter(
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, tol, interface
     ):
         """Test that the JAX-JIT interface works correctly with a matrix
         parameter"""
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transforms have a different vjp shape convention.")
 
         # pylint: disable=unused-argument
         @qml.qnode(
@@ -1941,6 +1981,8 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
         """For one measurement and multiple param, the gradient is a tuple of arrays."""
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transforms have a different vjp shape convention.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
         if jacobian == jax.jacfwd and device_vjp:
@@ -1974,6 +2016,8 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
         """For one measurement and multiple param as a single array params, the gradient is an array."""
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transforms have a different vjp shape convention.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
         if jacobian == jax.jacfwd and device_vjp:
@@ -2003,6 +2047,8 @@ class TestReturn:
     ):
         """For a multi dimensional measurement (probs), check that a single array is returned with the correct
         dimension"""
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transforms have a different vjp shape convention.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
@@ -2033,6 +2079,8 @@ class TestReturn:
     ):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transforms have a different vjp shape convention.")
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because of probabilities.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
@@ -2068,6 +2116,8 @@ class TestReturn:
     ):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transforms have a different vjp shape convention.")
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because of probabilities.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
@@ -2095,6 +2145,8 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
         """The jacobian of multiple measurements with multiple params return a tuple of arrays."""
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transforms have a different vjp shape convention.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
         if jacobian == jax.jacfwd and device_vjp:
@@ -2140,6 +2192,8 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transforms have a different vjp shape convention.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
         if jacobian == jax.jacfwd and device_vjp:
@@ -2174,6 +2228,8 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
         """The jacobian of multiple measurements with multiple params return a tuple of arrays."""
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transforms have a different vjp shape convention.")
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because of var.")
         elif diff_method == "hadamard":
@@ -2222,6 +2278,8 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transforms have a different vjp shape convention.")
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because of var.")
         elif diff_method == "hadamard":
@@ -2258,6 +2316,8 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
         """The jacobian of multiple measurements with a single params return an array."""
+        if device_vjp and jacobian == jax.jacfwd:
+            pytest.skip("device vjp not compatible with forward differentiation.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
@@ -2293,6 +2353,8 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
         """The jacobian of multiple measurements with a multiple params return a tuple of arrays."""
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transforms have a different vjp shape convention.")
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because of probabilities.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
@@ -2336,6 +2398,8 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transforms have a different vjp shape convention.")
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because of probabilities.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
@@ -2386,7 +2450,7 @@ class TestReturnHessian:
         self, dev, diff_method, hessian, device_vjp, grad_on_execution, interface
     ):
         """The hessian of single a measurement with multiple params return a tuple of arrays."""
-        if diff_method == "adjoint":
+        if diff_method in {"adjoint", "device"}:
             pytest.skip("Test does not supports adjoint because second order diff.")
 
         par_0 = jax.numpy.array(0.1)
@@ -2430,7 +2494,7 @@ class TestReturnHessian:
     ):
         """The hessian of single measurement with a multiple params array return a single array."""
 
-        if diff_method == "adjoint":
+        if diff_method in {"adjoint", "device"}:
             pytest.skip("Test does not supports adjoint because second order diff.")
 
         params = jax.numpy.array([0.1, 0.2], dtype=jax.numpy.float64)
@@ -2458,7 +2522,7 @@ class TestReturnHessian:
         self, dev, diff_method, hessian, device_vjp, grad_on_execution, interface
     ):
         """The hessian of single a measurement with multiple params return a tuple of arrays."""
-        if diff_method == "adjoint":
+        if diff_method in {"adjoint", "device"}:
             pytest.skip("Test does not supports adjoint because second order diff.")
         elif diff_method == "hadamard":
             pytest.skip("Test does not supports hadamard because of var.")
@@ -2503,7 +2567,7 @@ class TestReturnHessian:
         self, dev, diff_method, hessian, grad_on_execution, device_vjp, interface
     ):
         """The hessian of single measurement with a multiple params array return a single array."""
-        if diff_method == "adjoint":
+        if diff_method in {"adjoint", "device"}:
             pytest.skip("Test does not supports adjoint because second order diff.")
         elif diff_method == "hadamard":
             pytest.skip("Test does not supports hadamard because of var.")
@@ -2533,7 +2597,7 @@ class TestReturnHessian:
         self, dev, diff_method, hessian, grad_on_execution, device_vjp, interface
     ):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
-        if diff_method == "adjoint":
+        if diff_method in {"adjoint", "device"}:
             pytest.skip("Test does not supports adjoint because second order diff.")
         elif diff_method == "hadamard":
             pytest.skip("Test does not supports hadamard because of non commuting obs.")
@@ -2578,7 +2642,7 @@ class TestReturnHessian:
     ):
         """The hessian of multiple measurements with a multiple param array return a single array."""
 
-        if diff_method == "adjoint":
+        if diff_method in {"adjoint", "device"}:
             pytest.skip("Test does not supports adjoint because second order diff.")
         elif diff_method == "hadamard":
             pytest.skip("Test does not supports hadamard because of non commuting obs.")
@@ -2613,7 +2677,7 @@ class TestReturnHessian:
         self, dev, diff_method, hessian, grad_on_execution, device_vjp, interface
     ):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
-        if diff_method == "adjoint":
+        if diff_method in {"adjoint", "device"}:
             pytest.skip("Test does not supports adjoint because second order diff.")
         elif diff_method == "hadamard":
             pytest.skip("Test does not supports hadamard because of var.")
@@ -2657,7 +2721,7 @@ class TestReturnHessian:
         self, dev, diff_method, hessian, grad_on_execution, device_vjp, interface
     ):
         """The hessian of multiple measurements with a multiple param array return a single array."""
-        if diff_method == "adjoint":
+        if diff_method in {"adjoint", "device"}:
             pytest.skip("Test does not supports adjoint because second order diff.")
         elif diff_method == "hadamard":
             pytest.skip("Test does not supports hadamard because of var.")
@@ -2738,6 +2802,8 @@ class TestSubsetArgnums:
         kwargs = {}
         if jacobian == jax.jacfwd and device_vjp:
             pytest.skip("jacfwd is not compatible with device_vjp=True.")
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transform have a different vjp shape convention.")
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
@@ -2790,6 +2856,9 @@ class TestSubsetArgnums:
         """Test multiple measurements with different diff methods with argnums."""
         if jacobian == jax.jacfwd and device_vjp:
             pytest.skip("jacfwd is not compatible with device_vjp=True.")
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transform have a different vjp shape convention.")
+
         kwargs = {}
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)

@@ -132,7 +132,14 @@ class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
 
         batch, fn = qml.gradients.batch_vjp(circuits, cotangents, qml.gradients.param_shift)
         results = self.execute(batch)
-        return fn(results)[0] if is_single_circuit else fn(results)
+        vjp = fn(results)[0] if is_single_circuit else fn(results)
+
+        def recursive_squeeze(r):
+            if isinstance(r, (tuple, list)):
+                return type(r)(recursive_squeeze(ri) for ri in r)
+            return qml.math.squeeze(r)
+
+        return recursive_squeeze(vjp)
 
     def execute_and_compute_vjp(
         self, circuits, cotangents, execution_config=qml.devices.DefaultExecutionConfig
