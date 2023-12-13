@@ -919,7 +919,7 @@ class TestStochPulseGrad:
 
         dev = qml.device(dev_name, wires=1)
         # Effective rotation parameter
-        p = params[0] * (delta_t := (T[-1] - T[0]))
+        p = params[0] * (delta_t := T[-1] - T[0])
         r = qml.execute([tape], dev, None)
         assert qml.math.isclose(r, jnp.cos(2 * p), atol=1e-4)
         tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times)
@@ -950,7 +950,7 @@ class TestStochPulseGrad:
         # Prefactor due to the generator being a Pauli sentence
         prefactor = np.sqrt(0.85)
         # Effective rotation parameter
-        p = params[0] * (delta_t := (T[-1] - T[0])) * prefactor
+        p = params[0] * (delta_t := T[-1] - T[0]) * prefactor
         r = qml.execute([tape], dev, None)
         assert qml.math.isclose(r, jnp.cos(2 * p), atol=1e-4)
         tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times)

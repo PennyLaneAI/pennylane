@@ -280,7 +280,7 @@ class TestFiniteDiff:
 
         @qml.qnode(dev)
         def circuit(params):
-            qml.Rot(*params, wires=0)
+            qml.Rot(*(prefactor * params), wires=0)
             return qml.probs([2, 3])
 
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
