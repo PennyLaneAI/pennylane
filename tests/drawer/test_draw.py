@@ -727,6 +727,31 @@ class TestMidCircuitMeasurements:
 
         assert drawing == expected_drawing
 
+    def test_multi_meas_stats_multi_meas(self):
+        """Test that collecting statistics on multiple mid-circuit measurements with
+        multiple terminal measurement processes works as expected."""
+
+        def circ():
+            qml.Hadamard(0)
+            m0 = qml.measure(0)
+            qml.Hadamard(1)
+            m1 = qml.measure(1)
+            qml.Hadamard(2)
+            m2 = qml.measure(2)
+            return qml.expval(m0 * m2), qml.sample(m1)
+
+        drawing = qml.draw(circ)()
+        expected_drawing = (
+            "0: ──H──┤↗├─────────────────┤                    \n"
+            "1: ──────║───H──┤↗├─────────┤                    \n"
+            "2: ──────║───────║───H──┤↗├─┤                    \n"
+            "         ╚═══════║═══════║══╡ ╭<MCM>             \n"
+            "                 ╚═══════║══╡ │       Sample[MCM]\n"
+            "                         ╚══╡ ╰<MCM>             "
+        )
+
+        assert drawing == expected_drawing
+
     def test_multi_meas_stats_same_cwire(self):
         """Test that colecting statistics on multiple mid-circuit measurements
         with multiple terminal measurements is drawn correctly"""

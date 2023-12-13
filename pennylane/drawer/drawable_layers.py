@@ -50,7 +50,7 @@ def _recursive_find_layer(layer_to_check, op_occupied_wires, occupied_wires_per_
     return _recursive_find_layer(layer_to_check - 1, op_occupied_wires, occupied_wires_per_layer)
 
 
-def _recursive_find_mcm_stats_layer(layer_to_check, stat_mcms, used_mcms_per_layer):
+def _recursive_find_mcm_stats_layer(layer_to_check, stat_mcms, used_mcms_per_layer, bit_map):
     """Determine correct layer for a terminal measurement that is collectings statistics
     for mid-circuit measurement values.
 
@@ -65,14 +65,22 @@ def _recursive_find_mcm_stats_layer(layer_to_check, stat_mcms, used_mcms_per_lay
         int: layer to place measurement process in
     """
 
-    if used_mcms_per_layer[layer_to_check] & stat_mcms:
-        # this layer is occupied, use higher one
-        return layer_to_check + 1
+    if used_mcms_per_layer[layer_to_check]:
+        stat_cwires = set(bit_map[m] for m in stat_mcms)
+        layer_occupied_cwires = [bit_map[m] for m in used_mcms_per_layer[layer_to_check]]
+        min_cwire, max_cwire = min(layer_occupied_cwires), max(layer_occupied_cwires)
+
+        if stat_cwires & set(range(min_cwire, max_cwire + 1)):
+            # this layer is occupied, use higher one
+            return layer_to_check + 1
+
     if layer_to_check == 0:
         # reached first layer, so stop
         return 0
     # keep pushing the operation to lower layers
-    return _recursive_find_layer(layer_to_check - 1, stat_mcms, used_mcms_per_layer)
+    return _recursive_find_mcm_stats_layer(
+        layer_to_check - 1, stat_mcms, used_mcms_per_layer, bit_map
+    )
 
 
 def _get_op_occupied_wires(op, wire_map, bit_map):
@@ -173,7 +181,9 @@ def drawable_layers(operations, wire_map=None, bit_map=None):
                 if isinstance(op.mv, list)
                 else set(op.mv.measurements)
             )
-            op_layer = _recursive_find_mcm_stats_layer(max_layer, stat_mcms, used_mcms_per_layer)
+            op_layer = _recursive_find_mcm_stats_layer(
+                max_layer, stat_mcms, used_mcms_per_layer, bit_map
+            )
 
         # see if need to add new layer
         if op_layer > max_layer:

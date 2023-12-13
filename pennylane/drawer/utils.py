@@ -34,17 +34,15 @@ def default_wire_map(tape):
 
 
 def default_bit_map(tape):
-    """Create a dictionary mapping ``MidMeasureMP``'s to ``None``. We only add
-    mid-circuit measurements that are used for classical conditions to this
-    dictionary. If ``check_measurements`` is ``True``, then we also add mid
-    mid-circuit measurements that are used for collecting statistics. The values
-    of the bit map should be populated before being used.
+    """Create a dictionary mapping ``MidMeasureMP``'s to indices corresponding to classical
+    wires. We only add mid-circuit measurements that are used for classical conditions and for
+    collecting statistics to this dictionary.
 
     Args:
         tape [~.tape.QuantumTape]: the QuantumTape containing operations and measurements
 
     Returns:
-        dict: map from mid-circuit measurements to ``None``."""
+        dict: map from mid-circuit measurements to classical wires."""
     bit_map = {}
 
     for op in tape:
@@ -59,6 +57,12 @@ def default_bit_map(tape):
             else:
                 for m in op.mv:
                     bit_map[m.measurements[0]] = None
+
+    cur_cwire = 0
+    for op in tape:
+        if isinstance(op, MidMeasureMP) and op in bit_map:
+            bit_map[op] = cur_cwire
+            cur_cwire += 1
 
     return bit_map
 
@@ -139,12 +143,12 @@ def cwire_connections(layers, bit_map):
     Args:
         layers (List[List[.Operator, .MeasurementProcess]]): the operations and measurements sorted
             into layers via ``drawable_layers``. Measurement layers may be appended to operation layers.
-        bit_map (Dict): Uninitialized dictionary containing mid-circuit measurements that are used for
+        bit_map (Dict): Dictionary containing mid-circuit measurements that are used for
             classical conditions or measurement statistics as keys.
 
     Returns:
-        dict, list, list: map from mid circuit measurement to classical wire, list of list of accessed layers
-            for each classical wire, and largest wire corresponding to the accessed layers in the list above.
+        list, list: list of list of accessed layers for each classical wire, and largest wire
+        corresponding to the accessed layers in the list above.
 
     >>> with qml.queuing.AnnotatedQueue() as q:
     ...     m0 = qml.measure(0)
@@ -167,18 +171,16 @@ def cwire_connections(layers, bit_map):
 
     """
     if len(bit_map) == 0:
-        return bit_map, [], []
+        return [], []
 
     connected_layers = [[] for _ in bit_map]
     connected_wires = [[] for _ in bit_map]
-    num_cwires = 0
+
     for layer_idx, layer in enumerate(layers):
         for op in layer:
             if isinstance(op, MidMeasureMP) and op in bit_map:
-                bit_map[op] = num_cwires
-                connected_layers[num_cwires].append(layer_idx)
-                connected_wires[num_cwires].append(op.wires[0])
-                num_cwires += 1
+                connected_layers[bit_map[op]].append(layer_idx)
+                connected_wires[bit_map[op]].append(op.wires[0])
 
             elif isinstance(op, Conditional):
                 for m in op.meas_val.measurements:
@@ -196,4 +198,4 @@ def cwire_connections(layers, bit_map):
                         cwire = bit_map[m.measurements[0]]
                         connected_layers[cwire].append(layer_idx)
 
-    return bit_map, connected_layers, connected_wires
+    return connected_layers, connected_wires

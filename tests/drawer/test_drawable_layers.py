@@ -60,18 +60,22 @@ class TestRecursiveFindLayer:
 
     def test_first_mcm_stats_layer(self):
         """Test operation remains in 0th layer if not blocked"""
+        mp0 = qml.measurements.MidMeasureMP(0, id="foo")
+        mp1 = qml.measurements.MidMeasureMP(1, id="bar")
+        bit_map = {mp0: 0, mp1: 1}
+
         out = _recursive_find_mcm_stats_layer(
-            layer_to_check=0,
-            stat_mcms={qml.measurements.MidMeasureMP(0)},
-            used_mcms_per_layer=[{qml.measurements.MidMeasureMP(1)}],
+            layer_to_check=0, stat_mcms={mp0}, used_mcms_per_layer=[{mp1}], bit_map=bit_map
         )
         assert out == 0
 
     def test_blocked_mcm_stats_layer(self):
         """Test operation moved to higher layer if blocked on 0th layer."""
         mp = qml.measurements.MidMeasureMP(0)
+        bit_map = {mp: 0}
+
         out = _recursive_find_mcm_stats_layer(
-            layer_to_check=0, stat_mcms={mp}, used_mcms_per_layer=[{mp}]
+            layer_to_check=0, stat_mcms={mp}, used_mcms_per_layer=[{mp}], bit_map=bit_map
         )
         assert out == 1
 
@@ -79,8 +83,13 @@ class TestRecursiveFindLayer:
         """Test recursion to zero if start in higher layer and not blocked"""
         mp0 = qml.measurements.MidMeasureMP(0)
         mp1 = qml.measurements.MidMeasureMP(1)
+        bit_map = {mp0: 0, mp1: 1}
+
         out = _recursive_find_mcm_stats_layer(
-            layer_to_check=2, stat_mcms={mp0}, used_mcms_per_layer=[{mp1}, {mp1}, {mp1}]
+            layer_to_check=2,
+            stat_mcms={mp0},
+            used_mcms_per_layer=[{mp1}, {mp1}, {mp1}],
+            bit_map=bit_map,
         )
         assert out == 0
 
@@ -88,8 +97,13 @@ class TestRecursiveFindLayer:
         """Test blocked on layer 1 gives placement on layer 2"""
         mp0 = qml.measurements.MidMeasureMP(0)
         mp1 = qml.measurements.MidMeasureMP(1)
+        bit_map = {mp0: 0, mp1: 1}
+
         out = _recursive_find_mcm_stats_layer(
-            layer_to_check=3, stat_mcms={mp0}, used_mcms_per_layer=[{mp1}, {mp0}, {mp1}, {mp1}]
+            layer_to_check=3,
+            stat_mcms={mp0},
+            used_mcms_per_layer=[{mp1}, {mp0}, {mp1}, {mp1}],
+            bit_map=bit_map,
         )
         assert out == 2
 

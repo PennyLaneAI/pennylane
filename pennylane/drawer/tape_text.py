@@ -444,7 +444,7 @@ def tape_text(
 
     # Update bit map and collect information about connections between mid-circuit measurements,
     # classical conditions, and terminal measurements for processing mid-circuit measurements.
-    bit_map, cwire_layers, _ = cwire_connections(layers, bit_map)
+    cwire_layers, _ = cwire_connections(layers, bit_map)
 
     wire_totals = [f"{wire}: " for wire in wire_map]
     bit_totals = ["" for _ in range(n_bits)]

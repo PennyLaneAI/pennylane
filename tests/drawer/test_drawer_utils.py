@@ -76,7 +76,7 @@ class TestDefaultBitMap:
 
         queue = [m0.measurements[0], m1.measurements[0], m2.measurements[0], cond0, mp0]
         bit_map = default_bit_map(queue)
-        assert bit_map == {m0.measurements[0]: None, m1.measurements[0]: None}
+        assert bit_map == {m0.measurements[0]: 0, m1.measurements[0]: 1}
 
 
 class TestConvertWireOrder:
@@ -197,15 +197,13 @@ class TestCwireConnections:
 
     def test_null_circuit(self):
         """Test null behavior with an empty circuit."""
-        cmap, layers, wires = cwire_connections([[]], {})
-        assert cmap == {}
+        layers, wires = cwire_connections([[]], {})
         assert layers == []
         assert wires == []
 
     def test_single_measure(self):
         """Test a single meassurment that does not have a conditional."""
-        cmap, layers, wires = cwire_connections([qml.measure(0).measurements], {})
-        assert cmap == {}
+        layers, wires = cwire_connections([qml.measure(0).measurements], {})
         assert layers == []
         assert wires == []
 
@@ -214,10 +212,9 @@ class TestCwireConnections:
         m = qml.measure(0)
         cond = qml.ops.Conditional(m, qml.PauliX(0))
         layers = [m.measurements, [cond]]
-        bit_map = {m.measurements[0]: None}
+        bit_map = {m.measurements[0]: 0}
 
-        cmap, clayers, wires = cwire_connections(layers, bit_map)
-        assert cmap == {m.measurements[0]: 0}
+        clayers, wires = cwire_connections(layers, bit_map)
         assert clayers == [[0, 1]]
         assert wires == [[0, 0]]
 
@@ -229,11 +226,10 @@ class TestCwireConnections:
 
         cond0 = qml.ops.Conditional(m0 + m1, qml.PauliX(1))
         cond1 = qml.ops.Conditional(m1, qml.PauliY(2))
-        bit_map = {m0.measurements[0]: None, m1.measurements[0]: None}
+        bit_map = {m0.measurements[0]: 0, m1.measurements[0]: 1}
 
         layers = [m0.measurements, m1.measurements, [cond0], m2_nonused.measurements, [cond1]]
-        cmap, clayers, wires = cwire_connections(layers, bit_map)
-        assert cmap == {m0.measurements[0]: 0, m1.measurements[0]: 1}
+        clayers, wires = cwire_connections(layers, bit_map)
         assert clayers == [[0, 2], [1, 2, 4]]
         assert wires == [[0, 1], [1, 1, 2]]
 
@@ -243,9 +239,8 @@ class TestCwireConnections:
         m0 = qml.measure(0)
         cond0 = qml.ops.Conditional(m0, qml.S(0))
         layers = [m0.measurements, [cond0], [qml.expval(qml.PauliX(0))]]
-        bit_map = {m0.measurements[0]: None}
-        cmap, clayers, wires = cwire_connections(layers, bit_map)
-        assert cmap == {m0.measurements[0]: 0}
+        bit_map = {m0.measurements[0]: 0}
+        clayers, wires = cwire_connections(layers, bit_map)
         assert clayers == [[0, 1]]
         assert wires == [[0, 0]]
 
@@ -255,8 +250,7 @@ class TestCwireConnections:
 
         m0 = qml.measure(0)
         layers = [m0.measurements, [qml.expval(m0)]]
-        bit_map = {m0.measurements[0]: None}
-        cmap, clayers, wires = cwire_connections(layers, bit_map)
-        assert cmap == {m0.measurements[0]: 0}
+        bit_map = {m0.measurements[0]: 0}
+        clayers, wires = cwire_connections(layers, bit_map)
         assert clayers == [[0, 1]]
         assert wires == [[0]]

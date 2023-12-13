@@ -211,7 +211,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
     n_layers = len(layers)
     n_wires = len(wire_map)
 
-    bit_map, cwire_layers, cwire_wires = cwire_connections(layers, bit_map)
+    cwire_layers, cwire_wires = cwire_connections(layers, bit_map)
 
     drawer = MPLDrawer(
         n_layers=n_layers, n_wires=n_wires, c_wires=len(bit_map), wire_options=wire_options
