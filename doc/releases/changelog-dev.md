@@ -528,6 +528,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `Attribute` objects now return `False` instead of raising a `TypeError` when checking if an object is inside
+  the set.
+  [(#4933)](https://github.com/PennyLaneAI/pennylane/pull/4933)
+
 * Fixed a bug where the parameter-shift rule of `qml.ctrl(op)` was wrong if `op` had a generator
   that has two or more eigenvalues and is stored as a `SparseHamiltonian`.
   [(#4899)](https://github.com/PennyLaneAI/pennylane/pull/4899)
