@@ -316,8 +316,9 @@
 * `==` and `!=` operands can now be used with `TransformProgram` and `TransformContainers` instances.
   [(#4858)](https://github.com/PennyLaneAI/pennylane/pull/4858)
 
-* `qml.equal` now supports comparison of `QuantumScript` objects.
+* `qml.equal` now supports comparison of `QuantumScript` and `BasisRotation` objects
   [(#4902)](https://github.com/PennyLaneAI/pennylane/pull/4902)
+  [(#4919)](https://github.com/PennyLaneAI/pennylane/pull/4919)
 
 * The function ``qml.Snapshot`` now supports arbitrary measurements of type ``StateMeasurement``.
   [(#4876)](https://github.com/PennyLaneAI/pennylane/pull/4908)
@@ -381,8 +382,15 @@
 
 <h4>Other improvements</h4>
 
+* `SampleMeasurement` now has an optional method `process_counts` for computing the measurement results from a counts
+  dictionary.
+  [(#4941)](https://github.com/PennyLaneAI/pennylane/pull/4941/)
+
 * A new function called `ops.functions.assert_valid` has been added for checking if an `Operator` class is defined correctly.
   [(#4764)](https://github.com/PennyLaneAI/pennylane/pull/4764)
+
+* `Shots` can now be scaled with `*` via the `__mul__` and `__rmul__` dunders.
+  [(#4913)](https://github.com/PennyLaneAI/pennylane/pull/4913)
 
 * `GlobalPhase` now decomposes to nothing in case devices do not support global phases.
   [(#4855)](https://github.com/PennyLaneAI/pennylane/pull/4855)
@@ -426,7 +434,19 @@
   done with `qml.ExpvalCost`, but this is the preferred method because `ExpvalCost` is deprecated.
   [(#4896)](https://github.com/PennyLaneAI/pennylane/pull/4896)
 
+* `qml.equal` for `Controlled` operators no longer returns `False` when equivalent but 
+  differently-ordered sets of control wires and control values are compared.
+  [(#4944)](https://github.com/PennyLaneAI/pennylane/pull/4944)
+
+* All PennyLane `Operator` subclasses are automatically tested by `ops.functions.assert_valid` to ensure
+  that they follow PennyLane `Operator` standards.
+  [(#4922)](https://github.com/PennyLaneAI/pennylane/pull/4922)
+
 <h3>Breaking changes 💔</h3>
+
+* The function `qml.transforms.classical_jacobian` has been moved to the gradients module
+  and is now accessible as `qml.gradients.classical_jacobian`.
+  [(#4900)](https://github.com/PennyLaneAI/pennylane/pull/4900)
 
 * The transforms submodule `qml.transforms.qcut` is now its own module: `qml.qcut`.
   [(#4819)](https://github.com/PennyLaneAI/pennylane/pull/4819)
@@ -481,6 +501,13 @@
   [(#4773)](https://github.com/PennyLaneAI/pennylane/pull/4773)
 
 <h3>Documentation 📝</h3>
+
+* Documentation for `qml.metric_tensor` and `qml.adjoint_metric_tensor` and `qml.transforms.classical_jacobian`
+  are now accessible via the gradients API page `qml.gradients` in the documentation.
+  [(#4900)](https://github.com/PennyLaneAI/pennylane/pull/4900)
+
+* Documentation for `qml.specs` was moved to the resource module.
+  [(#4904)](https://github.com/PennyLaneAI/pennylane/pull/4904)
 
 * Documentation for QCut has moved to its own API page `qml.qcut`.
   [(#4819)](https://github.com/PennyLaneAI/pennylane/pull/4819)
