@@ -326,6 +326,9 @@
 
 <h4>Other improvements</h4>
 
+* The type hinting check in the `qml.transform` decorator is removed.
+  [(#4942)](https://github.com/PennyLaneAI/pennylane/pull/4942/)
+
 * `SampleMeasurement` now has an optional method `process_counts` for computing the measurement results from a counts
   dictionary.
   [(#4941)](https://github.com/PennyLaneAI/pennylane/pull/4941/)
