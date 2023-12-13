@@ -43,7 +43,7 @@ def jordan_wigner(
 
     .. math::
 
-        a_0 =  \left (\frac{X_0 + iY_0}{2}  \right ), \:\: \text{...,} \:\:
+        a_0 =  \left (\frac{X_0 + iY_0}{2}  \right ), \:\: \text{...,} \:\: 
         a_n = Z_0 \otimes Z_1 \otimes ... \otimes Z_{n-1} \otimes \left (\frac{X_n + iY_n}{2}  \right ),
 
     where :math:`X`, :math:`Y`, and :math:`Z` are the Pauli operators.
