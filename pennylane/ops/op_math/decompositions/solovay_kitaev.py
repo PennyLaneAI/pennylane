@@ -275,7 +275,9 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
         kd_tree = KDTree(qml.math.array(approx_set_qat))
 
         # Obtain the SU(2) and quaternion for the operation
-        gate_mat, gate_gph = _SU2_transform(op.matrix())
+        op_matrix = op.matrix()
+        interface = qml.math.get_deep_interface(op_matrix)
+        gate_mat, gate_gph = _SU2_transform(qml.math.unwrap(op_matrix))
         gate_qat = _quaternion_transform(gate_mat)
 
         def _solovay_kitaev(umat, n, u_n1_ids, u_n1_mat):
@@ -339,9 +341,8 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("T", "T*", "H"), ba
     [map_tape], _ = qml.map_wires(new_tape, wire_map={0: op.wires[0]}, queue=True)
 
     # Get phase information based on the decomposition effort
-    global_phase = qml.GlobalPhase(
-        approx_set_gph[index] - gate_gph if depth or qml.math.isclose(gate_gph, 0.0) else 0.0
-    )
+    phase = approx_set_gph[index] - gate_gph if depth or qml.math.allclose(gate_gph, 0.0) else 0.0
+    global_phase = qml.GlobalPhase(qml.math.array(phase, like=interface))
 
     # Return the gates from the mapped tape and global phase
     return map_tape.operations + [global_phase]
