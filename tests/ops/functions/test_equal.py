@@ -15,7 +15,7 @@
 Unit tests for the equal function.
 Tests are divided by number of parameters and wires different operators take.
 """
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-public-methods
 import itertools
 
 from copy import deepcopy
@@ -1450,6 +1450,36 @@ class TestSymbolicOpComparison:
         base2 = qml.Hadamard(0)
         op1 = Controlled(base1, control_wires=wire1)
         op2 = Controlled(base2, control_wires=wire2)
+        assert qml.equal(op1, op2) == res
+
+    @pytest.mark.parametrize(("controls1", "controls2"), [([0, 1], [0, 1]), ([1, 1], [1, 0])])
+    def test_control_values_comparison(self, controls1, controls2):
+        """Test that equal compares control values for Controlled operators"""
+        base1 = qml.PauliX(wires=0)
+        base2 = qml.PauliX(wires=0)
+
+        op1 = qml.ops.op_math.Controlled(base1, control_wires=[1, 2], control_values=controls1)
+        op2 = qml.ops.op_math.Controlled(base2, control_wires=[1, 2], control_values=controls2)
+
+        assert qml.equal(op1, op2) == np.allclose(controls1, controls2)
+
+    @pytest.mark.parametrize(
+        ("wires1", "controls1", "wires2", "controls2", "res"),
+        [
+            ([1, 2], [0, 1], [1, 2], [0, 1], True),
+            ([1, 2], [0, 1], [2, 1], [0, 1], False),
+            ([1, 2], [0, 1], [2, 1], [1, 0], True),
+        ],
+    )
+    def test_differing_control_wire_order(self, wires1, controls1, wires2, controls2, res):
+        """Test that equal compares control wires and their respective control values
+        without regard for wire order"""
+        base1 = qml.PauliX(wires=0)
+        base2 = qml.PauliX(wires=0)
+
+        op1 = qml.ops.op_math.Controlled(base1, control_wires=wires1, control_values=controls1)
+        op2 = qml.ops.op_math.Controlled(base2, control_wires=wires2, control_values=controls2)
+
         assert qml.equal(op1, op2) == res
 
     @pytest.mark.parametrize(("wires1", "wires2", "res"), CONTROL_WIRES_SEQUENCE)
