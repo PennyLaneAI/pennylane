@@ -23,6 +23,7 @@ import numpy as _np
 from semantic_version import SimpleSpec, Version
 
 from pennylane.boolean_fn import BooleanFn
+import pennylane.numpy
 from pennylane.queuing import QueuingManager, apply
 
 import pennylane.kernels
