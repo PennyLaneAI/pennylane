@@ -42,7 +42,7 @@ def transform(
             * Accepts a :class:`~.QuantumTape` as its first input and
               returns a sequence of :class:`~.QuantumTape` and a processing function.
 
-            * The transform must have type hinting of the following form: ``my_quantum_transform(tape:
+            * The transform must have the following structure (type hinting is optional): ``my_quantum_transform(tape:
               qml.tape.QuantumTape, ...) -> ( Sequence[qml.tape.QuantumTape], Callable)``
 
         expand_transform (Callable): An optional expand transform is applied directly before the input
@@ -62,7 +62,7 @@ def transform(
 
     **Example**
 
-    First define an input quantum transform with the necessary type hinting defined above. In this example we copy the
+    First define an input quantum transform with the necessary structure defined above. In this example we copy the
     tape and sum the results of the execution of the two tapes.
 
     .. code-block:: python
