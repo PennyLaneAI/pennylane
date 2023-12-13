@@ -185,9 +185,7 @@ def _vjp_bwd(tapes, execute_fn, jpc, device, params, dy):
 
     def wrapper(inner_params, inner_dy):
         new_tapes = _set_parameters_on_copy(tapes.vals, inner_params)
-        out = tuple(jpc.compute_vjp(new_tapes, inner_dy))
-        print("out: ", out)
-        return out
+        return tuple(jpc.compute_vjp(new_tapes, inner_dy))
 
     vjp_shape = _pytree_shape_dtype_struct(params)
     return (jax.pure_callback(wrapper, vjp_shape, params, dy),)

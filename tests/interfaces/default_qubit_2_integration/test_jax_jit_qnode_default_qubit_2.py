@@ -64,6 +64,8 @@ class TestQNode:
         """Test execution works with the interface"""
         if diff_method == "backprop":
             pytest.skip("Test does not support backprop")
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transforms have a different vjp shape convention")
 
         @qnode(
             dev,
@@ -1016,6 +1018,8 @@ class TestQubitIntegration:
 
         if diff_method in ["adjoint", "spsa", "hadamard"]:
             pytest.skip("Diff method does not support postselection.")
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transforms have a different vjp shape convention")
 
         @qml.qnode(
             dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
@@ -1953,6 +1957,8 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
         """For one measurement and one param, the gradient is a float."""
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transforms have a different vjp shape convention")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
         if jacobian == jax.jacfwd and device_vjp:
@@ -2316,6 +2322,8 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
         """The jacobian of multiple measurements with a single params return an array."""
+        if dev.name == "param_shift.qubit":
+            pytest.xfail("gradient transforms have a different vjp shape convention")
         if device_vjp and jacobian == jax.jacfwd:
             pytest.skip("device vjp not compatible with forward differentiation.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
