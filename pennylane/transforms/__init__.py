@@ -296,7 +296,11 @@ from .convert_to_numpy_parameters import convert_to_numpy_parameters
 from .compile import compile
 
 
-from .decompositions import clifford_t_decomposition
+from .decompositions import (
+    clifford_t_decomposition,
+    one_qubit_decomposition,
+    two_qubit_decomposition,
+)
 from .defer_measurements import defer_measurements
 from .sign_expand import sign_expand
 from .hamiltonian_expand import hamiltonian_expand, sum_expand

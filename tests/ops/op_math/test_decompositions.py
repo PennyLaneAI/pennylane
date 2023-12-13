@@ -1294,3 +1294,25 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
         # Restore config
         config.update("jax_enable_x64", remember)
+
+
+class TestTransformsDeprecations:
+    def test_one_qubit_decomposition_deprecation(self):
+        """Test the deprecation of one qubit decomposition from the transforms module."""
+        U = np.array(
+            [
+                [-0.28829348 - 0.78829734j, 0.30364367 + 0.45085995j],
+                [0.53396245 - 0.10177564j, 0.76279558 - 0.35024096j],
+            ]
+        )
+
+        with pytest.warns(qml.PennyLaneDeprecationWarning):
+            qml.transforms.one_qubit_decomposition(U, 0, "ZYZ")
+
+    @pytest.mark.parametrize("U", samples_3_cnots)
+    def test_two_qubit_decomposition_deprecation(self, U):
+        """Test the deprecation of two qubit decomposition from the transforms module."""
+        U = _convert_to_su4(np.array(U))
+
+        with pytest.warns(qml.PennyLaneDeprecationWarning):
+            qml.transforms.two_qubit_decomposition(U, wires=[0, 1])
