@@ -784,7 +784,8 @@ def execute(
             jpc = TransformJacobianProducts(execute_fn, gradient_fn, gradient_kwargs)
 
             if interface == "jax-jit":
-                # no need to use pure callbacks aroudn execute_fn and compute_jacobian
+                # no need to use pure callbacks around execute_fn or the jpc when taking
+                # higher order derivatives
                 interface = "jax"
 
     # trainable parameters can only be set on the first pass for jax

@@ -1915,6 +1915,8 @@ class TestReturn:
         """For one measurement and one param, the gradient is a float."""
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
+        if jacobian == jax.jacfwd and device_vjp:
+            pytest.skip("jacfwd is not compatible with device_vjp=True.")
 
         @qnode(
             dev,
@@ -1941,6 +1943,8 @@ class TestReturn:
         """For one measurement and multiple param, the gradient is a tuple of arrays."""
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
+        if jacobian == jax.jacfwd and device_vjp:
+            pytest.skip("jacfwd is not compatible with device_vjp=True.")
 
         @qnode(
             dev,
@@ -1972,6 +1976,8 @@ class TestReturn:
         """For one measurement and multiple param as a single array params, the gradient is an array."""
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
+        if jacobian == jax.jacfwd and device_vjp:
+            pytest.skip("jacfwd is not compatible with device_vjp=True.")
 
         @qnode(
             dev,
@@ -2091,6 +2097,8 @@ class TestReturn:
         """The jacobian of multiple measurements with multiple params return a tuple of arrays."""
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
+        if jacobian == jax.jacfwd and device_vjp:
+            pytest.skip("jacfwd is not compatible with device_vjp=True.")
 
         par_0 = jax.numpy.array(0.1)
         par_1 = jax.numpy.array(0.2)
@@ -2134,6 +2142,8 @@ class TestReturn:
         """The jacobian of multiple measurements with a multiple params array return a single array."""
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
+        if jacobian == jax.jacfwd and device_vjp:
+            pytest.skip("jacfwd is not compatible with device_vjp=True.")
 
         @qnode(
             dev,
@@ -2726,6 +2736,8 @@ class TestSubsetArgnums:
     ):
         """Test single measurement with different diff methods with argnums."""
         kwargs = {}
+        if jacobian == jax.jacfwd and device_vjp:
+            pytest.skip("jacfwd is not compatible with device_vjp=True.")
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
@@ -2776,6 +2788,8 @@ class TestSubsetArgnums:
         tol,
     ):
         """Test multiple measurements with different diff methods with argnums."""
+        if jacobian == jax.jacfwd and device_vjp:
+            pytest.skip("jacfwd is not compatible with device_vjp=True.")
         kwargs = {}
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)

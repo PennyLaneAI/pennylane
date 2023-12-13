@@ -611,25 +611,26 @@ class DeviceDerivatives(JacobianProductCalculator):
             results, jacs = self._dev_execute_and_compute_derivatives(tapes)
             self._results_cache[tapes] = results
             self._jacs_cache[tapes] = jacs
-        else:
-            if tapes in self._results_cache:
-                if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
-                    logger.debug("%s : Retrieving results from cache.", self)
-                results = self._results_cache[tapes]
-            else:
-                results = self._dev_execute(tapes)
-                self._results_cache[tapes] = results
+            return results, jacs
 
-            if tapes in self._jacs_cache:
-                if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
-                    logger.debug("%s : Retrieving jacobian from cache.", self)
-                jacs = self._jacs_cache[tapes]
-            else:
-                # Here the jac was not cached but the results were. This can not happen because results are never
-                # cached alone (note that in the else clause above computing only results, jac must already be present)
-                raise NotImplementedError(
-                    "No path to cache results without caching jac. This branch should not occur."
-                )
+        if tapes not in self._jacs_cache:
+            # Here the jac was not cached but the results were. This can not happen because results are never
+            # cached alone (note that in the else clause above computing only results, jac must already be present)
+            raise NotImplementedError(
+                "No path to cache results without caching jac. This branch should not occur."
+            )
+        if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
+            logger.debug("%s : Retrieving jacobian from cache.", self)
+        jacs = self._jacs_cache[tapes]
+
+        if tapes in self._results_cache:
+            if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
+                logger.debug("%s : Retrieving results from cache.", self)
+            results = self._results_cache[tapes]
+        else:
+            results = self._dev_execute(tapes)
+            self._results_cache[tapes] = results
+
         return results, jacs
 
 

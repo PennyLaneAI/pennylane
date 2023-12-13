@@ -12,10 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains functions for adding the JAX interface
-to a PennyLane Device class.
+This module contains functions for binding JVPs or VJPs to JAX when using JIT.
+
+For information on registering VJPs and JVPs, please see the module documentation for ``jax.py``.
+
+When using JAX-JIT, we cannot convert arrays to numpy or act on their concrete values without
+using ``jax.pure_callback``.
+
+For example:
+
+```
+>>> def f(x):
+...     return qml.math.unwrap(x)
+>>> x = jax.numpy.array(1.0)
+>>> jax.jit(f)(x)
+ValueError: Converting a JAX array to a NumPy array not supported when using the JAX JIT.
+>>> def g(x):
+...     expected_output_shape = jax.ShapeDtypeStruct((), jnp.float64)
+...     return jax.pure_callback(f, expected_output_shape, x)
+>>> jax.jit(g)(x)
+Array(1., dtype=float64)
+```
+
+Note that we must provide the expected output shape for the function to use pure callbacks.
+
 """
-# pylint: disable=unused-argument
+# pylint: disable=unused-argument, too-many-arguments
 import jax
 import jax.numpy as jnp
 
@@ -49,32 +71,18 @@ def set_parameters_on_copy(tapes, params):
     return tuple(t.bind_new_parameters(a, list(range(len(a)))) for t, a in zip(tapes, params))
 
 
-def _numeric_type_to_dtype(numeric_type):
-    """Auxiliary function for converting from Python numeric types to JAX
-    dtypes based on the precision defined for the interface."""
-
-    if numeric_type is int:
-        return jnp.int64
-
-    if numeric_type is float:
-        return jnp.float64
-
-    # numeric_type is complex
-    return jnp.complex128
-
-
-def _create_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.Device"):
+def _result_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.Device"):
     """Auxiliary function for creating the shape and dtype object structure
     given a tape."""
 
     shape = tape.shape(device)
     if len(tape.measurements) == 1:
-        tape_dtype = _numeric_type_to_dtype(tape.numeric_type)
+        tape_dtype = jnp.dtype(tape.numeric_type)
         if tape.shots.has_partitioned_shots:
             return tuple(jax.ShapeDtypeStruct(s, tape_dtype) for s in shape)
         return jax.ShapeDtypeStruct(tuple(shape), tape_dtype)
 
-    tape_dtype = tuple(_numeric_type_to_dtype(elem) for elem in tape.numeric_type)
+    tape_dtype = tuple(jnp.dtype(elem) for elem in tape.numeric_type)
     if tape.shots.has_partitioned_shots:
         return tuple(
             tuple(jax.ShapeDtypeStruct(tuple(s), d) for s, d in zip(si, tape_dtype)) for si in shape
@@ -98,7 +106,7 @@ def _jac_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.Device"
     >>> fn(dev.execute(tapes))
     (array(0.), array([-0.42073549,  0.42073549]))
     """
-    shape_and_dtype = _create_shape_dtype_struct(tape, device)
+    shape_and_dtype = _result_shape_dtype_struct(tape, device)
     if len(tape.trainable_params) == 1:
         return shape_and_dtype
     if len(tape.measurements) == 1:
@@ -106,8 +114,18 @@ def _jac_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.Device"
     return tuple(tuple(_s for _ in tape.trainable_params) for _s in shape_and_dtype)
 
 
+def _pytree_shape_dtype_struct(pytree):
+    """Creates a shape structure that matches the types and shapes for the provided pytree."""
+    leaves, struct = jax.tree_util.tree_flatten(pytree)
+    new_leaves = [jax.ShapeDtypeStruct(jnp.shape(l), l.dtype) for l in leaves]
+    return jax.tree_util.tree_unflatten(struct, new_leaves)
+
+
 def _execute_wrapper(params, tapes, execute_fn, _, device) -> ResultBatch:
-    shape_dtype_structs = tuple(_create_shape_dtype_struct(t, device) for t in tapes.vals)
+    """
+    Execute tapes using a pure-callback.
+    """
+    shape_dtype_structs = tuple(_result_shape_dtype_struct(t, device) for t in tapes.vals)
 
     def pure_callback_wrapper(p):
         new_tapes = set_parameters_on_copy(tapes.vals, p)
@@ -131,7 +149,13 @@ def _execute_wrapper(params, tapes, execute_fn, _, device) -> ResultBatch:
 
 
 def _execute_and_compute_jvp(tapes, execute_fn, jpc, device, primals, tangents):
+    """
+    Compute the results and jvps using a pure callback around
+    :meth:`~.JacobianProductCalculator.execute_and_compute_jacobian`.
 
+    Note that we must query the full jacobian inside the pure-callback so that jax can trace the JVP
+    calculation.
+    """
     # Select the trainable params. Non-trainable params contribute a 0 gradient.
     for tangent, tape in zip(tangents[0], tapes.vals):
         tape.trainable_params = tuple(
@@ -143,9 +167,9 @@ def _execute_and_compute_jvp(tapes, execute_fn, jpc, device, primals, tangents):
 
     def wrapper(inner_params):
         new_tapes = set_parameters_on_copy(tapes.vals, inner_params)
-        return _to_jax(jpc.execute_and_compute_jacobian(new_tapes))
+        return jpc.execute_and_compute_jacobian(new_tapes)
 
-    res_struct = tuple(_create_shape_dtype_struct(t, device) for t in tapes.vals)
+    res_struct = tuple(_result_shape_dtype_struct(t, device) for t in tapes.vals)
     jac_struct = tuple(_jac_shape_dtype_struct(t, device) for t in tapes.vals)
     results, jacobians = jax.pure_callback(wrapper, (res_struct, jac_struct), primals[0])
 
@@ -155,7 +179,7 @@ def _execute_and_compute_jvp(tapes, execute_fn, jpc, device, primals, tangents):
 
 
 def _vjp_fwd(params, tapes, execute_fn, jpc, device):
-    """Perform the forward pass execution, return results and empty residuals."""
+    """Perform the forward pass execution, return results and the parameters as residuals."""
     return _execute_wrapper(params, tapes, execute_fn, jpc, device), params
 
 
@@ -166,16 +190,8 @@ def _vjp_bwd(tapes, execute_fn, jpc, device, params, dy):
         new_tapes = set_parameters_on_copy(tapes.vals, inner_params)
         return jpc.compute_vjp(new_tapes, inner_dy)
 
-    param_leaves, param_struct = jax.tree_util.tree_flatten(params)
-
-    def dtypestruct(p):
-        return jax.ShapeDtypeStruct(jnp.shape(p), p.dtype)
-
-    new_leaves = [dtypestruct(l) for l in param_leaves]
-    vjp_shape = jax.tree_util.tree_unflatten(param_struct, new_leaves)
-
-    vjp = jax.pure_callback(wrapper, vjp_shape, params, dy)
-    return vjp
+    vjp_shape = _pytree_shape_dtype_struct(params)
+    return (jax.pure_callback(wrapper, vjp_shape, params, dy),)
 
 
 _execute_jvp_jit = jax.custom_jvp(_execute_wrapper, nondiff_argnums=[1, 2, 3, 4])
