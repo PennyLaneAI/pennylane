@@ -434,6 +434,9 @@
   done with `qml.ExpvalCost`, but this is the preferred method because `ExpvalCost` is deprecated.
   [(#4896)](https://github.com/PennyLaneAI/pennylane/pull/4896)
 
+* Decomposition of `qml.PhaseShift` now uses `qml.GlobalPhase` for retaining the global phase information. 
+  [(#4657)](https://github.com/PennyLaneAI/pennylane/pull/4657)
+
 * `qml.equal` for `Controlled` operators no longer returns `False` when equivalent but 
   differently-ordered sets of control wires and control values are compared.
   [(#4944)](https://github.com/PennyLaneAI/pennylane/pull/4944)
@@ -608,6 +611,7 @@ This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
 Ali Asadi,
+Utkarsh Azad,
 Gabriel Bottrill,
 Thomas Bromley,
 Astral Cai,
