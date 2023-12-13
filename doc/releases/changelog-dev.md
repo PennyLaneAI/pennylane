@@ -378,6 +378,10 @@
   done with `qml.ExpvalCost`, but this is the preferred method because `ExpvalCost` is deprecated.
   [(#4896)](https://github.com/PennyLaneAI/pennylane/pull/4896)
 
+* `qml.equal` for `Controlled` operators no longer returns `False` when equivalent but 
+  differently-ordered sets of control wires and control values are compared.
+  [(#4944)](https://github.com/PennyLaneAI/pennylane/pull/4944)
+
 * All PennyLane `Operator` subclasses are automatically tested by `ops.functions.assert_valid` to ensure
   that they follow PennyLane `Operator` standards.
   [(#4922)](https://github.com/PennyLaneAI/pennylane/pull/4922)
