@@ -326,8 +326,7 @@
 
 <h4>Other improvements</h4>
 
-* `default.qubit` now supports adjoint differentiation for any state-based measurement.  Please note that
-  improved perfromance is not guaranteed for non-expectation values.
+* `default.qubit` now supports adjoint differentiation for arbitrary diagonal state-based measurements.
   [(#4865)](https://github.com/PennyLaneAI/pennylane/pull/4865)
 
 * `SampleMeasurement` now has an optional method `process_counts` for computing the measurement results from a counts

@@ -96,8 +96,7 @@ Adjoint differentiation
 
 PennyLane implements the adjoint differentiation method from
 `2009.02823 <https://arxiv.org/pdf/2009.02823.pdf>`__, which only discusses
-the gradient of expectation of observables. The implementation is specific to the paper, hence the best performance
-will occur when only using expectation values of observables.
+the gradient of expectation values of observables.
 
 In particular, the following code works as expected:
 
@@ -117,12 +116,13 @@ In particular, the following code works as expected:
 >>> print_grad()
 [-0.09983342]
 
-PennyLane can now use adjoint differentation for any state based measurement on ``default.qubit``. ``lightning.qubit``
-still only supports expectation values.
+``default.qubit`` can differentiate any other measurement process as long as it
+is in the Z measurement basis. In this case, we recommend using the device provided vjp
+``device_vjp=True`` for improved performance scaling. ``lightning.qubit`` only supports expectation values.
 
 .. code-block:: python 
 
-    @qml.qnode(qml.device('default.qubit'), diff_method="adjoint")
+    @qml.qnode(qml.device('default.qubit'), diff_method="adjoint", device_vjp=True)
     def circuit(x):
         qml.IsingXX(x, wires=(0,1))
         return qml.vn_entropy(wires=0)
@@ -130,9 +130,8 @@ still only supports expectation values.
 >>> qml.grad(circuit)(qml.numpy.array(0.1)
 (0.2989909451499196+0j)
 
-
-Furthermore, the adjoint differentiation algorithm is analytic by nature. If the user creates a device
-with ``shots>0``, an error is raised:
+Furthermore, the adjoint differentiation algorithm is analytic by nature. If the an execution
+has ``shots>0``, an error is raised:
 
 .. code-block:: python
 
