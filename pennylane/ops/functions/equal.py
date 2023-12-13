@@ -22,7 +22,7 @@ from typing import Union
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
-from pennylane.measurements.mid_measure import MidMeasureMP
+from pennylane.measurements.mid_measure import MidMeasureMP, MeasurementValue
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.measurements.counts import CountsMP
@@ -418,6 +418,17 @@ def _equal_measurements(
             atol=atol,
         )
 
+    if op1.mv is not None and op2.mv is not None:
+        # qml.equal doesn't check if the MeasurementValues have the same processing functions
+        if isinstance(op1.mv, MeasurementValue) and isinstance(op2.mv, MeasurementValue):
+            return op1.mv.measurements == op2.mv.measurements
+
+        if isinstance(op1.mv, Iterable) and isinstance(op2.mv, Iterable):
+            if len(op1.mv) == len(op2.mv):
+                return all(mv1.measurements == mv2.measurements for mv1, mv2 in zip(op1.mv, op2.mv))
+
+        return False
+
     if op1.wires != op2.wires:
         return False
 
@@ -433,15 +444,7 @@ def _equal_measurements(
 
 
 @_equal.register
-# pylint: disable=unused-argument
-def _equal_mid_measure(
-    op1: MidMeasureMP,
-    op2: MidMeasureMP,
-    check_interface=True,
-    check_trainability=True,
-    rtol=1e-5,
-    atol=1e-9,
-):
+def _equal_mid_measure(op1: MidMeasureMP, op2: MidMeasureMP, **_):
     return (
         op1.wires == op2.wires
         and op1.id == op2.id
