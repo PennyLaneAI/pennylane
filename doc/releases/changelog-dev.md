@@ -49,6 +49,62 @@
   
   <img src="https://docs.pennylane.ai/en/latest/_images/mid-circuit-measurement.png" width=70%/>
 
+* Users can now return statistics for multiple mid-circuit measurements.
+  [(#4888)](https://github.com/PennyLaneAI/pennylane/pull/4888)
+
+  There are two ways in which mid-circuit measurement statistics can be collected:
+
+  * By using arithmetic/binary operators. This can be through unary or binary operators as such:
+
+    ```python
+    import pennylane as qml
+
+    dev = qml.device("default.qubit")
+
+    @qml.qnode(dev)
+    def circuit(phi, theta):
+        qml.RX(phi, wires=0)
+        m0 = qml.measure(wires=0)
+        qml.RY(theta, wires=1)
+        m1 = qml.measure(wires=1)
+        return qml.expval(~m0 + m1)
+
+    print(circuit(1.23, 4.56))
+    ```
+    ```
+    1.2430187928114291
+    ```
+
+  * By using a list of mid-circuit measurement values:
+
+    ```python
+    import pennylane as qml
+
+    dev = qml.device("default.qubit")
+
+    @qml.qnode(dev)
+    def circuit(phi, theta):
+        qml.RX(phi, wires=0)
+        m0 = qml.measure(wires=0)
+        qml.RY(theta, wires=1)
+        m1 = qml.measure(wires=1)
+        return qml.sample([m0, m1])
+
+    print(circuit(1.23, 4.56, shots=5))
+    ```
+    ```
+    [[0 1]
+     [0 1]
+     [0 0]
+     [1 0]
+     [0 1]]
+    ```
+
+  This feature is supported on `default.qubit`, `default.qubit.legacy`, and `default.mixed`. To
+  learn more about which measurements and arithmetic operators are supported, refer to the
+  [Measurements](https://docs.pennylane.ai/en/stable/introduction/measurements.html) page and the
+  documentation for [`qml.measure`](https://docs.pennylane.ai/en/stable/code/api/pennylane.measure.html).
+
 <h4>Catalyst is seamlessly integrated with PennyLane ⚗️</h4>
 
 * Catalyst, our next-generation compilation framework, is now accessible within PennyLane,
@@ -378,6 +434,9 @@
   done with `qml.ExpvalCost`, but this is the preferred method because `ExpvalCost` is deprecated.
   [(#4896)](https://github.com/PennyLaneAI/pennylane/pull/4896)
 
+* Decomposition of `qml.PhaseShift` now uses `qml.GlobalPhase` for retaining the global phase information. 
+  [(#4657)](https://github.com/PennyLaneAI/pennylane/pull/4657)
+
 * `qml.equal` for `Controlled` operators no longer returns `False` when equivalent but 
   differently-ordered sets of control wires and control values are compared.
   [(#4944)](https://github.com/PennyLaneAI/pennylane/pull/4944)
@@ -556,6 +615,7 @@ This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
 Ali Asadi,
+Utkarsh Azad,
 Gabriel Bottrill,
 Thomas Bromley,
 Astral Cai,

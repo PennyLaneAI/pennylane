@@ -21,10 +21,10 @@ from itertools import compress
 from pathlib import Path
 from typing import Any, List, Sequence, Tuple, Union
 
+import numpy as np
 from networkx import MultiDiGraph
 
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.operation import Operation
 
 

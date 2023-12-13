@@ -13,7 +13,7 @@
 # limitations under the License.
 """SPSA optimizer"""
 
-from pennylane import numpy as np
+import numpy as np
 from pennylane.measurements import Shots
 
 

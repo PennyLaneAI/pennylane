@@ -15,8 +15,8 @@
 Contains the classical Jacobian transform.
 """
 # pylint: disable=import-outside-toplevel
+import numpy as np
 import pennylane as qml
-from pennylane import numpy as np
 
 
 def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
