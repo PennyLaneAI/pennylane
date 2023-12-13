@@ -17,8 +17,8 @@ This module contains the functions needed for computing matrices.
 # pylint: disable= too-many-branches
 import itertools as it
 
+import numpy as np
 import pennylane as qml
-from pennylane import numpy as np
 
 from .integrals import (
     attraction_integral,

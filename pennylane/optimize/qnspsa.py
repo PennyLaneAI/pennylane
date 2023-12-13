@@ -14,8 +14,8 @@
 """Quantum natural SPSA optimizer"""
 import warnings
 from scipy.linalg import sqrtm
+import numpy as np
 import pennylane as qml
-from pennylane import numpy as np
 
 
 class QNSPSAOptimizer:
