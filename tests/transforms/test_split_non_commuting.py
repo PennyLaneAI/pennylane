@@ -20,7 +20,7 @@ import pennylane.numpy as pnp
 
 from pennylane.transforms import split_non_commuting
 
-### example tape with 3 commuting groups [[0,3],[1,4],[2,5]]
+# example tape with 3 commuting groups [[0,3],[1,4],[2,5]]
 with qml.queuing.AnnotatedQueue() as q3:
     qml.PauliZ(0)
     qml.Hadamard(0)
@@ -33,7 +33,7 @@ with qml.queuing.AnnotatedQueue() as q3:
     qml.expval(qml.PauliY(0))
 
 non_commuting_tape3 = qml.tape.QuantumScript.from_queue(q3)
-### example tape with 2 -commuting groups [[0,2],[1,3]]
+# example tape with 2 -commuting groups [[0,2],[1,3]]
 with qml.queuing.AnnotatedQueue() as q2:
     qml.PauliZ(0)
     qml.Hadamard(0)
@@ -154,16 +154,6 @@ class TestUnittestSplitNonCommuting:
         assert qml.equal(split[0].measurements[0], qml.expval(qml.PauliX(0)))
         assert qml.equal(split[0].measurements[1], qml.expval(qml.PauliZ(1)))
         assert qml.equal(split[1].measurements[0], qml.var(qml.PauliZ(0)))
-
-    def test_raise_not_supported(self):
-        """Test that NotImplementedError is raised when probabilities or samples are called"""
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.expval(qml.PauliZ(0))
-            qml.probs(wires=0)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        with pytest.raises(NotImplementedError, match="non-commuting observables are used"):
-            split_non_commuting(tape)
 
 
 class TestIntegration:
