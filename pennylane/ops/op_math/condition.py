@@ -17,7 +17,8 @@ Contains the condition transform.
 from functools import wraps
 from typing import Type
 
-from pennylane.operation import AnyWires, Operation
+from pennylane.queuing import QueuingManager
+from pennylane.operation import AnyWires, Operation, Operator
 from pennylane.tape import make_qscript
 from pennylane.compiler import compiler
 
@@ -332,6 +333,14 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
         @wraps(true_fn)
         def wrapper(*args, **kwargs):
             # We assume that the callable is a quantum function
+
+            recorded_ops = [a for a in args if isinstance(a, Operator)] + [
+                k for k in kwargs.values() if isinstance(k, Operator)
+            ]
+
+            if recorded_ops and QueuingManager.recording():
+                for op in recorded_ops:
+                    QueuingManager.remove(op)
 
             # 1. Apply true_fn conditionally
             qscript = make_qscript(true_fn)(*args, **kwargs)
