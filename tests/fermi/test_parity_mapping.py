@@ -19,7 +19,7 @@ def test_error_is_raised_for_dimension_mismatch():
     """Test that an error is raised if the number of qubits are not compatible with the FermiWord or FermiSentence"""
 
     with pytest.raises(
-        ValueError, match="Creating/annihilating a particle  on qubit number 6 for a 6 qubit system"
+        ValueError, match="Can't create or annihilate a particle on qubit number 6 for a system with only 6 qubits"
     ):
         parity_transform(FermiWord({(0, 1): "-", (1, 0): "+", (2, 6): "-"}), 6)
 
@@ -435,9 +435,6 @@ FERMI_OPS_COMPLEX = [
     ),
 ]
 
-# print(test_error_is_raised_for_dimension_mismatch())
-# print(test_error_is_raised_for_incompatible_type())
-
 
 @pytest.mark.parametrize("fermionic_op, n_qubits, result", FERMI_WORDS_AND_OPS + FERMI_OPS_COMPLEX)
 def test_parity_transform_fermi_word_ps(fermionic_op, n_qubits, result):
@@ -589,13 +586,6 @@ def test_parity_transform_for_fermi_sentence_operation(fermionic_op, n_qubits, r
     result = result.operation(wires)
 
     assert qml.equal(qubit_op.simplify(), result.simplify())
-
-
-def test_error_is_raised_for_incompatible_type_parity_transform():
-    """Test that an error is raised in the input is not a FermiWord or FermiSentence for parity transform"""
-
-    with pytest.raises(ValueError, match="fermi_operator must be a FermiWord or FermiSentence"):
-        parity_transform(qml.PauliX(0), 2)
 
 
 WIRE_MAP_FOR_FERMI_SENTENCE = [
@@ -757,9 +747,11 @@ fs1 = FermiSentence({fw1: 1})
         (fw1, (-0.25j, (0.25 + 0j), (0.25 + 0j), 0.25j), None),
         (fw1, (-0.25j, 0.25, 0.25, 0.25j), 0.0),
         (fw1, (-0.25j, 0.25, 0.25, 0.25j), 1.0e-12),
+        (fw1, (0, -0.25, 0.25, 0), 0.3),
         (fs1, (-0.25j, (0.25 + 0j), (0.25 + 0j), 0.25j), None),
         (fs1, (-0.25j, 0.25, 0.25, 0.25j), 0.0),
         (fs1, (-0.25j, 0.25, 0.25, 0.25j), 1.0e-12),
+        (fs1, (0, -0.25, 0.25, 0), 0.3),
     ),
 )
 def test_parity_transform_tolerance(fermi_op, qubit_op_data, tol):
