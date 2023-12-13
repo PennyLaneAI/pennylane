@@ -68,14 +68,23 @@ Controlled Operator Classes
 Decompositions
 ~~~~~~~~~~~~~~
 
+.. currentmodule:: pennylane.ops
+
+.. autosummary::
+    :toctree: api
+
+    ~one_qubit_decomposition
+    ~two_qubit_decomposition
+    ~sk_decomposition
+
+Control Decompositions
+~~~~~~~~~~~~~~~~~~~~~~
+
 .. currentmodule:: pennylane.ops.op_math
 
 .. autosummary::
     :toctree: api
 
-    ~decompositions.one_qubit_decomposition
-    ~decompositions.two_qubit_decomposition
-    ~decompositions.sk_decomposition
     ~ctrl_decomp_zyz
     ~ctrl_decomp_bisect
 
