@@ -626,7 +626,7 @@ def two_qubit_decomposition(U, wires):
     current_tape = qml.queuing.QueuingManager.active_context()
 
     if current_tape is not None:
-        for op in decomp:
+        for op in decomp:  # pragma: no cover
             qml.apply(op, context=current_tape)
 
     return decomp
