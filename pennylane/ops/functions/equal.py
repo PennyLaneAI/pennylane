@@ -283,11 +283,15 @@ def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
 @_equal.register
 def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
     """Determine whether two Controlled or ControlledOp objects are equal"""
-    # wires are ordered [control wires, operator wires, work wires]
-    # comparing op.wires and op.base.wires (in return) is sufficient to compare all wires
-    if [op1.wires, op1.control_values, op1.arithmetic_depth] != [
-        op2.wires,
-        op2.control_values,
+    # work wires and control_wire/control_value combinations compared here
+    # op.base.wires compared in return
+    if [
+        dict(zip(op1.control_wires, op1.control_values)),
+        op1.work_wires,
+        op1.arithmetic_depth,
+    ] != [
+        dict(zip(op2.control_wires, op2.control_values)),
+        op2.work_wires,
         op2.arithmetic_depth,
     ]:
         return False
