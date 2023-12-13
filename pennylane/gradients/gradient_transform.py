@@ -466,6 +466,7 @@ def _contract_qjac_with_cjac(qjac, cjac, tape):
                 return tuple(tdot(qml.math.stack(q), qml.math.stack(cjac)) for q in qjac)
             return tdot(qjac, qml.math.stack(cjac))
         if has_partitioned_shots:
+            print("this")
             return tuple(tuple(tdot(q, c) for c in cjac if c is not None) for q in qjac)
         return tuple(tdot(qjac, c) for c in cjac if c is not None)
 

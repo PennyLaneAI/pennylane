@@ -363,6 +363,30 @@ class TestFiniteDiff:
         expected = [(3, 3), (1, 3, 3), (3, 2, 3), (3, 4, 3), (1, 3, 4, 3), (3, 2, 4, 3)]
         assert all(t == q for t, q in zip(transform, expected))
 
+    def test_output_shape_matches_qnode_two_args(self):
+        """Test that the transform output shape matches that of a QNode with multiple args."""
+        dev = qml.device("default.qubit", wires=4, shots=many_shots_shot_vector)
+
+        def cost1(x, y, z):
+            qml.Rot(x[0], 2 * y[1], -0.1 * z[0], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        def cost2(x, y, z):
+            qml.Rot(x[0], 2 * y[1], -0.1 * z[0], wires=0)
+            return qml.probs([0, 1]), qml.probs([2, 3])
+
+        x, y, z = np.random.rand(3, 2)
+        circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2)]
+
+        transform = [
+            qml.math.shape(qml.gradients.finite_diff(c, h=h_val)(x, y, z)) for c in circuits
+        ]
+        expected = [
+            (3, 3, 2),  # shot vector, params, param shape
+            (3, 2, 3, 4, 2),  # shot vector, measurements, params, measurement shape, param shape
+        ]
+        assert all(t == q for t, q in zip(transform, expected))
+
     def test_special_observable_qnode_differentiation(self):
         """Test differentiation of a QNode on a device supporting a
         special observable that returns an object rather than a number."""
