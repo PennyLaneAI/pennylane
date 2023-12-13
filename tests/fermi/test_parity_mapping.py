@@ -19,7 +19,8 @@ def test_error_is_raised_for_dimension_mismatch():
     """Test that an error is raised if the number of qubits are not compatible with the FermiWord or FermiSentence"""
 
     with pytest.raises(
-        ValueError, match="Can't create or annihilate a particle on qubit number 6 for a system with only 6 qubits"
+        ValueError,
+        match="Can't create or annihilate a particle on qubit number 6 for a system with only 6 qubits",
     ):
         parity_transform(FermiWord({(0, 1): "-", (1, 0): "+", (2, 6): "-"}), 6)
 
