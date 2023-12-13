@@ -384,6 +384,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Applying a `gradient_transform` to a QNode directly now gives the same shape and type independent
+  of whether there is classical processing in the node.
+  [(#4945)](https://github.com/PennyLaneAI/pennylane/pull/4945)
+  
 * The function `qml.transforms.classical_jacobian` has been moved to the gradients module
   and is now accessible as `qml.gradients.classical_jacobian`.
   [(#4900)](https://github.com/PennyLaneAI/pennylane/pull/4900)
@@ -461,6 +465,10 @@
   [(#4874)](https://github.com/PennyLaneAI/pennylane/pull/4874)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug where the shape and type of derivatives obtained by applying a gradient transform to
+  a QNode differed, based on whether the QNode uses classical coprocessing.
+  [(#4945)](https://github.com/PennyLaneAI/pennylane/pull/4945)
 
 * Fixed a bug where the parameter-shift rule of `qml.ctrl(op)` was wrong if `op` had a generator
   that has two or more eigenvalues and is stored as a `SparseHamiltonian`.
