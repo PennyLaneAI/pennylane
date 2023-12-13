@@ -382,6 +382,10 @@
   differently-ordered sets of control wires and control values are compared.
   [(#4944)](https://github.com/PennyLaneAI/pennylane/pull/4944)
 
+* All PennyLane `Operator` subclasses are automatically tested by `ops.functions.assert_valid` to ensure
+  that they follow PennyLane `Operator` standards.
+  [(#4922)](https://github.com/PennyLaneAI/pennylane/pull/4922)
+
 <h3>Breaking changes 💔</h3>
 
 * The function `qml.transforms.classical_jacobian` has been moved to the gradients module
