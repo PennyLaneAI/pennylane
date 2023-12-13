@@ -66,11 +66,12 @@ def _recursive_find_mcm_stats_layer(layer_to_check, stat_mcms, used_mcms_per_lay
     """
 
     if used_mcms_per_layer[layer_to_check]:
-        stat_cwires = set(bit_map[m] for m in stat_mcms)
-        layer_occupied_cwires = [bit_map[m] for m in used_mcms_per_layer[layer_to_check]]
-        min_cwire, max_cwire = min(layer_occupied_cwires), max(layer_occupied_cwires)
+        stat_cwires = [bit_map[m] for m in stat_mcms]
+        op_occupied_cwires = set(range(min(stat_cwires), max(stat_cwires) + 1))
+        layer_cwires = [bit_map[m] for m in used_mcms_per_layer[layer_to_check]]
+        layer_occupied_cwires = set(range(min(layer_cwires), max(layer_cwires) + 1))
 
-        if stat_cwires & set(range(min_cwire, max_cwire + 1)):
+        if op_occupied_cwires & layer_occupied_cwires:
             # this layer is occupied, use higher one
             return layer_to_check + 1
 
