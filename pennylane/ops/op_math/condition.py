@@ -17,7 +17,7 @@ Contains the condition transform.
 from functools import wraps
 from typing import Type
 
-from pennylane.queuing import QueuingManager
+from pennylane import QueuingManager
 from pennylane.operation import AnyWires, Operation, Operator
 from pennylane.tape import make_qscript
 from pennylane.compiler import compiler
@@ -92,9 +92,9 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
     Args:
         condition (.MeasurementValue): a conditional expression involving a mid-circuit
            measurement value (see :func:`.pennylane.measure`)
-        true_fn (callable): The quantum function of PennyLane operation to
+        true_fn (callable): The quantum function or PennyLane operation to
             apply if ``condition`` is ``True``
-        false_fn (callable): The quantum function of PennyLane operation to
+        false_fn (callable): The quantum function or PennyLane operation to
             apply if ``condition`` is ``False``
         elifs (List(Tuple(bool, callable))): A list of (bool, elif_fn) clauses. Can only
             be used when is decorated by :func:`~.qjit`.
@@ -338,12 +338,20 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
                 k for k in kwargs.values() if isinstance(k, Operator)
             ]
 
+            # This will dequeue all operators passed in as arguments to the qfunc that is
+            # being conditioned. These are queued incorrectly due to be fully constructed
+            # before the wrapper function is called.
             if recorded_ops and QueuingManager.recording():
                 for op in recorded_ops:
                     QueuingManager.remove(op)
 
             # 1. Apply true_fn conditionally
             qscript = make_qscript(true_fn)(*args, **kwargs)
+
+            if QueuingManager.recording():
+                for op in qscript:
+                    QueuingManager.remove(op)
+                    QueuingManager.remove(getattr(op, "base", None))
 
             if qscript.measurements:
                 raise ConditionalTransformError(with_meas_err)
