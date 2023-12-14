@@ -97,10 +97,11 @@ class TestSample:
 
     @pytest.mark.parametrize("shots", [5, [5, 5]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 2))
-    def test_observable_is_measurement_value(self, shots, phi, mocker):
+    @pytest.mark.parametrize("device_name", ["default.qubit.legacy", "default.mixed"])
+    def test_observable_is_measurement_value(self, shots, phi, mocker, device_name):
         """Test that samples for mid-circuit measurement values
         are correct for a single measurement value."""
-        dev = qml.device("default.qubit.legacy", wires=2, shots=shots)
+        dev = qml.device(device_name, wires=2, shots=shots)
 
         @qml.qnode(dev)
         def circuit(phi):
@@ -118,7 +119,68 @@ class TestSample:
             assert all(r.shape == (s,) for r, s in zip(res, shots))
         else:
             assert res.shape == (shots,)
-        custom_measurement_process(new_dev, spy)
+
+        if device_name != "default.mixed":
+            custom_measurement_process(new_dev, spy)
+
+    @pytest.mark.parametrize("shots", [5, [5, 5]])
+    @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 2))
+    @pytest.mark.parametrize("device_name", ["default.qubit.legacy", "default.mixed"])
+    def test_observable_is_composite_measurement_value(self, shots, phi, mocker, device_name):
+        """Test that samples for mid-circuit measurement values
+        are correct for a composite measurement value."""
+        dev = qml.device(device_name, wires=4, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            qml.RX(phi, 1)
+            m1 = qml.measure(1)
+            return qml.sample(op=m0 + m1)
+
+        new_dev = circuit.device
+        spy = mocker.spy(qml.QubitDevice, "sample")
+
+        res = circuit(phi)
+
+        if isinstance(shots, list):
+            assert len(res) == len(shots)
+            assert all(r.shape == (s,) for r, s in zip(res, shots))
+        else:
+            assert res.shape == (shots,)
+
+        if device_name != "default.mixed":
+            custom_measurement_process(new_dev, spy)
+
+    @pytest.mark.parametrize("shots", [5, [5, 5]])
+    @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 2))
+    @pytest.mark.parametrize("device_name", ["default.qubit.legacy", "default.mixed"])
+    def test_observable_is_measurement_value_list(self, shots, phi, mocker, device_name):
+        """Test that samples for mid-circuit measurement values
+        are correct for a measurement value list."""
+        dev = qml.device(device_name, wires=4, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            m1 = qml.measure(1)
+            return qml.sample(op=[m0, m1])
+
+        new_dev = circuit.device
+        spy = mocker.spy(qml.QubitDevice, "sample")
+
+        res = circuit(phi)
+
+        if isinstance(shots, list):
+            assert len(res) == len(shots)
+            assert all(r.shape == (s, 2) for r, s in zip(res, shots))
+        else:
+            assert res.shape == (shots, 2)
+
+        if device_name != "default.mixed":
+            custom_measurement_process(new_dev, spy)
 
     def test_single_wire_sample(self, mocker):
         """Test the return type and shape of sampling a single wire"""

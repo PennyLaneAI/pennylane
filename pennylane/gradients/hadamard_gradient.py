@@ -18,9 +18,9 @@ of a qubit-based quantum tape.
 # pylint: disable=unused-argument
 from typing import Sequence, Callable
 from functools import partial
+import numpy as np
 import pennylane as qml
-import pennylane.numpy as np
-from pennylane.transforms.metric_tensor import _get_aux_wire
+from pennylane.gradients.metric_tensor import _get_aux_wire
 from pennylane import transform
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 from pennylane.transforms.tape_expand import expand_invalid_trainable_hadamard_gradient

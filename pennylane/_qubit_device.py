@@ -613,7 +613,12 @@ class QubitDevice(Device):
 
         for m in measurements:
             # TODO: Remove this when all overriden measurements support the `MeasurementProcess` class
-            obs = m.obs or m.mv or m
+            if isinstance(m.mv, list):
+                # MeasurementProcess stores information needed for processing if terminal measurement
+                # uses a list of mid-circuit measurement values
+                obs = m
+            else:
+                obs = m.obs or m.mv or m
             # Check if there is an overriden version of the measurement process
             if method := getattr(self, self.measurement_map[type(m)], False):
                 if isinstance(m, MeasurementTransform):
@@ -636,7 +641,7 @@ class QubitDevice(Device):
                 result = self.sample(m, shot_range=shot_range, bin_size=bin_size, counts=True)
 
             elif isinstance(m, ProbabilityMP):
-                result = self.probability(wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
+                result = self.probability(wires=m.wires, shot_range=shot_range, bin_size=bin_size)
 
             elif isinstance(m, StateMP):
                 if len(measurements) > 1:
@@ -1314,9 +1319,10 @@ class QubitDevice(Device):
         if self.shots is None:
             try:
                 eigvals = self._asarray(
-                    observable.eigvals()
-                    if not isinstance(observable, MeasurementValue)
-                    else np.arange(2 ** len(observable.wires)),
+                    observable.eigvals() if not isinstance(observable, MeasurementValue)
+                    # Indexing a MeasurementValue gives the output of the processing function
+                    # for that index as a binary number.
+                    else [observable[i] for i in range(2 ** len(observable.measurements))],
                     dtype=self.R_DTYPE,
                 )
             except qml.operation.EigvalsUndefinedError as e:
@@ -1349,9 +1355,10 @@ class QubitDevice(Device):
         if self.shots is None:
             try:
                 eigvals = self._asarray(
-                    observable.eigvals()
-                    if not isinstance(observable, MeasurementValue)
-                    else np.arange(2 ** len(observable.wires)),
+                    observable.eigvals() if not isinstance(observable, MeasurementValue)
+                    # Indexing a MeasurementValue gives the output of the processing function
+                    # for that index as a binary number.
+                    else [observable[i] for i in range(2 ** len(observable.measurements))],
                     dtype=self.R_DTYPE,
                 )
             except qml.operation.EigvalsUndefinedError as e:
@@ -1425,7 +1432,7 @@ class QubitDevice(Device):
         batched_ndims = 2
         shape = samples.shape
 
-        if mp.obs is None and mp.mv is None:
+        if mp.obs is None and not isinstance(mp.mv, MeasurementValue):
             # convert samples and outcomes (if using) from arrays to str for dict keys
             samples = np.array([sample for sample in samples if not np.any(np.isnan(sample))])
             samples = qml.math.cast_like(samples, qml.math.int8(0))
@@ -1434,11 +1441,7 @@ class QubitDevice(Device):
             if mp.all_outcomes:
                 outcomes = list(map(_sample_to_str, self.generate_basis_states(num_wires)))
         elif mp.all_outcomes:
-            outcomes = (
-                qml.eigvals(mp.obs)
-                if mp.obs is not None
-                else np.arange(0, 2 ** len(mp.mv.wires), 1)
-            )
+            outcomes = mp.eigvals()
 
         batched = len(shape) == batched_ndims
         if not batched:
@@ -1481,12 +1484,13 @@ class QubitDevice(Device):
         if isinstance(mp, MeasurementProcess):
             if mp.obs is not None:
                 observable = mp.obs
-            elif mp.mv is not None:
+            elif mp.mv is not None and isinstance(mp.mv, MeasurementValue):
                 observable = mp.mv
             else:
                 no_observable_provided = True
 
-        # translate to wire labels used by device
+        # translate to wire labels used by device. observable is list when measuring sequence
+        # of multiple MeasurementValues
         device_wires = self.map_wires(observable.wires)
         name = observable.name
         # Select the samples from self._samples that correspond to ``shot_range`` if provided
@@ -1518,7 +1522,11 @@ class QubitDevice(Device):
             indices = samples @ powers_of_two
             indices = np.array(indices)  # Add np.array here for Jax support.
             if isinstance(observable, MeasurementValue):
-                samples = np.arange(0, 2 ** len(observable.wires), 1)[indices]
+                eigvals = self._asarray(
+                    [observable[i] for i in range(2 ** len(observable.measurements))],
+                    dtype=self.R_DTYPE,
+                )
+                samples = eigvals[indices]
             else:
                 try:
                     samples = observable.eigvals()[indices]
