@@ -383,6 +383,13 @@
 
 <h4>Other improvements</h4>
 
+* The formal requirement that type hinting be providing when using
+  the `qml.transform` decorator has been removed. Type hinting can still
+  be used, but is now optional. Please use a type checker such as
+  [mypy](https://github.com/python/mypy) if you wish to ensure types are
+  being passed correctly.
+  [(#4942)](https://github.com/PennyLaneAI/pennylane/pull/4942/)
+
 * `SampleMeasurement` now has an optional method `process_counts` for computing the measurement results from a counts
   dictionary.
   [(#4941)](https://github.com/PennyLaneAI/pennylane/pull/4941/)
@@ -437,6 +444,7 @@
 
 * Decomposition of `qml.PhaseShift` now uses `qml.GlobalPhase` for retaining the global phase information. 
   [(#4657)](https://github.com/PennyLaneAI/pennylane/pull/4657)
+  [(#4947)](https://github.com/PennyLaneAI/pennylane/pull/4947)
 
 * `qml.equal` for `Controlled` operators no longer returns `False` when equivalent but 
   differently-ordered sets of control wires and control values are compared.
@@ -525,6 +533,10 @@
   [(#4874)](https://github.com/PennyLaneAI/pennylane/pull/4874)
 
 <h3>Bug fixes 🐛</h3>
+
+* `Attribute` objects now return `False` instead of raising a `TypeError` when checking if an object is inside
+  the set.
+  [(#4933)](https://github.com/PennyLaneAI/pennylane/pull/4933)
 
 * Fixed a bug where the parameter-shift rule of `qml.ctrl(op)` was wrong if `op` had a generator
   that has two or more eigenvalues and is stored as a `SparseHamiltonian`.
