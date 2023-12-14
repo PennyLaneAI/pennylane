@@ -476,9 +476,6 @@ def tape_text(
             layer_str[b + n_wires] = cur_b_filler
 
         config.cur_layer = i
-        # Keep track of mid-circuit measurements in each layer that are used
-        # for conditions, if any
-        cur_layer_mid_measure = None
 
         ##########################################
         # Update current layer strings with labels
@@ -493,9 +490,6 @@ def tape_text(
             else:
                 layer_str = add_fn(op, layer_str, config)
 
-                if isinstance(op, MidMeasureMP) and op in bit_map:
-                    cur_layer_mid_measure = op
-
         #################################################
         # Left justify layer strings and pad on the right
         #################################################
@@ -506,16 +500,7 @@ def tape_text(
 
         # Adjust width for bit filler on unused bits
         for b in range(n_bits):
-            if cur_layer_mid_measure is not None:
-                # This condition is needed to pad the filler on the bits under MidMeasureMPs
-                # that are used for conditions correctly
-                cur_b_filler = (
-                    b_filler
-                    if b <= bit_map[cur_layer_mid_measure] and i < cwire_layers[b][-1]
-                    else " "
-                )
-            else:
-                cur_b_filler = b_filler if cwire_layers[b][0] < i < cwire_layers[b][-1] else " "
+            cur_b_filler = b_filler if cwire_layers[b][0] <= i < cwire_layers[b][-1] else " "
             layer_str[b + n_wires] = layer_str[b + n_wires].ljust(max_label_len, cur_b_filler)
 
         line_length += max_label_len + 1  # one for the filler character
