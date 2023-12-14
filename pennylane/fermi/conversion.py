@@ -35,14 +35,12 @@ def jordan_wigner(
     The fermionic creation and annihilation operators are mapped to the Pauli operators as
 
     .. math::
-
         a^{\dagger}_0 =  \left (\frac{X_0 - iY_0}{2}  \right ), \:\: \text{...,} \:\:
         a^{\dagger}_n = Z_0 \otimes Z_1 \otimes ... \otimes Z_{n-1} \otimes \left (\frac{X_n - iY_n}{2} \right ),
 
     and
 
     .. math::
-
         a_0 =  \left (\frac{X_0 + iY_0}{2}  \right ), \:\: \text{...,} \:\:
         a_n = Z_0 \otimes Z_1 \otimes ... \otimes Z_{n-1} \otimes \left (\frac{X_n + iY_n}{2}  \right ),
 
@@ -163,17 +161,17 @@ def parity_transform(
     The fermionic creation and annihilation operators are mapped to the Pauli operators as
 
     .. math::
-        \begin{align}
-             a^{\dagger}_0 &= \left (\frac{X_0 - iY_0}{2}  \right )\otimes X_1 \otimes X_2 \otimes ... X_N, \\
-             a^{\dagger}_n &= \left (\frac{Z_{n-1} \otimes X_n - iY_n}{2} \right ) \otimes X_{n+1} \otimes X_{n+2} \otimes ... \otimes X_N
-    \end{align}
-
+      \begin{align}
+           a^{\dagger}_0 &= \left (\frac{X_0 - iY_0}{2}  \right )\otimes X_1 \otimes X_2 \otimes ... X_N,\\
+           a^{\dagger}_n &= \left (\frac{Z_{n-1} \otimes X_n - iY_n}{2} \right ) \otimes X_{n+1} \otimes X_{n+2} \otimes ... \otimes X_N
+      \end{align}
     and
+
     .. math::
-        \begin{align}
-             a_0 &= \left (\frac{X_0 + iY_0}{2}  \right )\otimes X_1 \otimes X_2 \otimes ... X_N, \\
-             a_n &= \left (\frac{Z_{n-1} \otimes X_n + iY_n}{2} \right ) \otimes X_{n+1} \otimes X_{n+2} \otimes ... \otimes X_N
-        \end{align}
+      \begin{align}
+           a_0 &= \left (\frac{_0 + iY_0}{2}  \right )\otimes X_1 \otimes X_2 \otimes ... X_N, \\
+           a_n &= \left (\frac{Z_{n-1} \otimes X_n + iY_n}{2} \right ) \otimes X_{n+1} \otimes X_{n+2} \otimes ... \otimes X_N
+      \end{align}
     where :math:`X`, :math:`Y`, and :math:`Z` are the Pauli operators and :math:`N` is the number of qubits/spin orbitals.
 
     Args:
@@ -222,9 +220,9 @@ def _(fermi_operator: FermiWord, n_qubits, ps=False, wire_map=None, tol=None):
     wires = list(fermi_operator.wires) or [0]
     identity_wire = wires[0]
 
-    qubit_operator = PauliSentence({PauliWord({}): 1.0})
-
     coeffs = {"+": -0.5j, "-": 0.5j}
+    qubit_operator = PauliSentence({PauliWord({}): 1.0})  # Identity PS to multiply PSs with
+
     for item in fermi_operator.items():
         (_, wire), sign = item
         if wire >= n_qubits:

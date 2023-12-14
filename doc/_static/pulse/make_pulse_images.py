@@ -34,7 +34,7 @@ def parametrized_coefficients_example(savefile="parametrized_coefficients_exampl
 
     H = 2 * qml.PauliX(0) + f1 * qml.PauliY(0) + f2 * qml.PauliZ(0)
 
-    times = jnp.linspace(0., 5., 1000)
+    times = jnp.linspace(0.0, 5.0, 1000)
     fs = H.coeffs_parametrized
     ops = H.ops_parametrized
     params = [[4.6, 2.3], 1.2]
@@ -88,4 +88,3 @@ if __name__ == "__main__":
     parametrized_coefficients_example()
     pwc_example()
     rect_example()
-

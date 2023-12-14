@@ -28,7 +28,6 @@ folder = pathlib.Path(__file__).parent
 
 
 def main_example(circuit):
-
     fig, ax = draw_mpl(circuit)(1.2345, 1.2345)
 
     plt.savefig(folder / "main_example.png")
@@ -101,8 +100,7 @@ def rcparams(circuit):
 
 
 def use_style(circuit):
-
-    fig, ax = qml.draw_mpl(circuit, style='sketch')(1.2345, 1.2345)
+    fig, ax = qml.draw_mpl(circuit, style="sketch")(1.2345, 1.2345)
 
     plt.savefig(folder / "sketch_style.png")
     plt.close()
@@ -129,7 +127,6 @@ def mid_measure():
 
 
 if __name__ == "__main__":
-
     dev = qml.device("lightning.qubit", wires=(0, 1, 2, 3))
 
     @qml.qnode(dev)
