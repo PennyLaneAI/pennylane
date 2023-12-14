@@ -130,18 +130,15 @@ class DefaultClifford(Device):
         tableau (bool): Determines what should be returned when the device's state is computed with ``qml.state``. Default is
             ``True``, which makes it return the final evolved Tableau. Alternatively, one may make it ``False`` to obtain
             the evolved state vector. Note that the latter might not be computationally feasible for larger qubit numbers.
-        seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator, jax.random.PRNGKey]): A
+        seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``, or
             a request to seed from numpy's global random number generator.
             The default, ``seed="global"`` pulls a seed from NumPy's global generator. ``seed=None``
             will pull a seed from the OS entropy.
-            If a ``jax.random.PRNGKey`` is passed as the seed, a JAX-specific sampling function using
-            ``jax.random.choice`` and the ``PRNGKey`` will be used for sampling rather than
-            ``numpy.random.default_rng``.
         max_workers (int): A ``ProcessPoolExecutor`` executes tapes asynchronously
             using a pool of at most ``max_workers`` processes. If ``max_workers`` is ``None``,
             only the current process executes tapes. If you experience any
-            issue, say using JAX, TensorFlow, Torch, try setting ``max_workers`` to ``None``.
+            issue, try setting ``max_workers`` to ``None``.
 
     **Example:**
 
@@ -297,12 +294,7 @@ class DefaultClifford(Device):
         self._tableau = tableau
 
         seed = np.random.randint(0, high=10000000) if seed == "global" else seed
-        if qml.math.get_interface(seed) == "jax":  # pragma: no cover
-            self._prng_key = seed
-            self._rng = np.random.default_rng(None)
-        else:
-            self._prng_key = None
-            self._rng = np.random.default_rng(seed)
+        self._rng = np.random.default_rng(seed)
         self._debugger = None
 
     def _setup_execution_config(self, execution_config: ExecutionConfig) -> ExecutionConfig:
@@ -328,8 +320,6 @@ class DefaultClifford(Device):
             updated_values["device_options"]["max_workers"] = self._max_workers
         if "rng" not in updated_values["device_options"]:
             updated_values["device_options"]["rng"] = self._rng
-        if "prng_key" not in updated_values["device_options"]:
-            updated_values["device_options"]["prng_key"] = self._prng_key
         return replace(execution_config, **updated_values)
 
     def preprocess(
@@ -401,7 +391,6 @@ class DefaultClifford(Device):
                 self.simulate(
                     c,
                     rng=self._rng,
-                    prng_key=self._prng_key,
                     debugger=self._debugger,
                     interface=interface,
                 )
@@ -416,7 +405,6 @@ class DefaultClifford(Device):
                     _wrap_simulate,
                     vanilla_circuits,
                     seeds,
-                    [self._prng_key] * len(vanilla_circuits),
                 )
                 results = tuple(exec_map)
 
@@ -482,7 +470,7 @@ class DefaultClifford(Device):
             self.tracker.update(derivative_batches=1, derivatives=len(circuits))
             self.tracker.record()
 
-        res = tuple((0.0,) for circuit in circuits)
+        res = tuple(tuple(np.zeros(s) for s in circuit.shape(self)) for circuit in circuits)
 
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is not None:
@@ -490,32 +478,6 @@ class DefaultClifford(Device):
             self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
         return res[0] if is_single_circuit else res
-
-    def execute_and_compute_derivatives(
-        self,
-        circuits: QuantumTape_or_Batch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ):
-        is_single_circuit = False
-        if isinstance(circuits, QuantumScript):
-            is_single_circuit = True
-            circuits = [circuits]
-
-        if self.tracker.active:
-            for c in circuits:
-                self.tracker.update(resources=c.specs["resources"])
-            self.tracker.update(
-                execute_and_derivative_batches=1,
-                executions=len(circuits),
-                derivatives=len(circuits),
-            )
-            self.tracker.record()
-
-        meas = self.execute(circuits, execution_config=execution_config)
-        grad = self.compute_derivatives(circuits, execution_config=execution_config)
-        (results, jacs) = tuple(zip(meas, grad))[0]
-
-        return (results[0], jacs[0]) if is_single_circuit else (results, jacs)
 
     def supports_jvp(
         self,
@@ -538,7 +500,6 @@ class DefaultClifford(Device):
         self,
         circuit: qml.tape.QuantumScript,
         rng=None,
-        prng_key=None,
         debugger=None,
         interface=None,
     ) -> Result:
@@ -549,9 +510,6 @@ class DefaultClifford(Device):
             rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
                 seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
                 If no value is provided, a default RNG will be used.
-            prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-                the key to the JAX pseudo random number generator. If None, a random key will be
-                generated. Only for simulation using JAX.
             debugger (_Debugger): The debugger to use
             interface (str): The machine learning interface to create the initial state with
 
@@ -650,7 +608,7 @@ class DefaultClifford(Device):
         return tuple(results)
 
     def _measure_state(self, tableau_simulator, interface, global_phase):
-        """Measure the state of the simualtor device"""
+        """Measure the state of the simualtor device."""
         if self._tableau:
             tableau = tableau_simulator.current_inverse_tableau().inverse()
             x2x, x2z, z2x, z2z, x_signs, z_signs = tableau.to_numpy()
@@ -668,7 +626,7 @@ class DefaultClifford(Device):
 
     @staticmethod
     def _measure_density_matrix(tableau_simulator, interface):
-        """Measure the density matrix from the state of simulator device"""
+        """Measure the density matrix from the state of simulator device."""
         state_vector = qml.math.array(
             tableau_simulator.state_vector(endian="big"),
             like=INTERFACE_TO_LIKE[interface],
@@ -684,7 +642,7 @@ class DefaultClifford(Device):
 
     @staticmethod
     def _measure_expectation(tableau_simulator, interface, meas_op, stim):
-        """Measure the expectation value with respect to the state of simulator device"""
+        """Measure the expectation value with respect to the state of simulator device."""
 
         # Case for simple Pauli terms
         if isinstance(meas_op.obs, (qml.PauliZ, qml.PauliX, qml.PauliY)):

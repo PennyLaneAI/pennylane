@@ -227,10 +227,9 @@ def test_tracker():
     assert tracker.totals == {
         "batches": 3,
         "simulations": 3,
-        "executions": 4,
+        "executions": 3,
         "derivative_batches": 2,
-        "derivatives": 3,
-        "execute_and_derivative_batches": 1,
+        "derivatives": 2,
     }
     assert np.allclose(tracker.history.pop("results")[0], 0.0)
     assert tracker.history.pop("resources")[0] == qml.resource.Resources(
@@ -243,10 +242,9 @@ def test_tracker():
     assert tracker.history == {
         "batches": [1, 1, 1],
         "simulations": [1, 1, 1],
-        "executions": [1, 1, 1, 1],
+        "executions": [1, 1, 1],
         "derivative_batches": [1, 1],
-        "derivatives": [1, 1, 1],
-        "execute_and_derivative_batches": [1],
+        "derivatives": [1, 1],
     }
 
 
