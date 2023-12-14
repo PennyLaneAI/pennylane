@@ -798,7 +798,7 @@ class TestSumOfTermsDifferentiability:
         t2 = 6.2 * qml.prod(*(qml.PauliY(i) for i in range(n_wires)))
         H = t1 + t2
         if style == "hamiltonian":
-            H = H._pauli_rep.hamiltonian()  # pylint: disable=protected-access
+            H = H.pauli_rep.hamiltonian()
         elif style == "hermitian":
             H = qml.Hermitian(H.matrix(), wires=H.wires)
         qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
@@ -813,7 +813,7 @@ class TestSumOfTermsDifferentiability:
         t2 = 6.2 * qml.prod(*(qml.PauliY(i) for i in range(n_wires)))
         H = t1 + t2
         if style == "hamiltonian":
-            H = H._pauli_rep.hamiltonian()  # pylint: disable=protected-access
+            H = H.pauli_rep.hamiltonian()
         elif style == "hermitian":
             H = qml.Hermitian(H.matrix(), wires=H.wires)
         qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
@@ -1830,8 +1830,8 @@ class TestPostselection:
         ):
             pytest.skip("Unsupported measurements and interfaces.")
 
-        if use_jit and interface != "jax":
-            pytest.skip("Can't jit with non-jax interfaces.")
+        if use_jit:
+            pytest.skip("Jitting tested in different test.")
 
         # Wires are specified so that the shape for measurements can be determined correctly
         dev = qml.device("default.qubit", wires=2)
@@ -1843,21 +1843,54 @@ class TestPostselection:
             qml.measure(0, postselect=0)
             return qml.apply(mp)
 
-        if use_jit:
-            import jax
-
-            circ = jax.jit(circ)
-
         res = circ()
         if interface == "autograd":
             assert qml.math.get_interface(res) == autograd_interface
         else:
             assert qml.math.get_interface(res) == interface
+
         assert qml.math.shape(res) == mp.shape(dev, qml.measurements.Shots(None))
         if is_nan:
             assert qml.math.all(qml.math.isnan(res))
         else:
             assert qml.math.allclose(res, 0.0)
+
+    @pytest.mark.parametrize(
+        "mp, expected",
+        [
+            (qml.expval(qml.PauliZ(0)), 1.0),
+            (qml.var(qml.PauliZ(0)), 0.0),
+            (qml.probs(wires=[0, 1]), [1.0, 0.0, 0.0, 0.0]),
+            (qml.density_matrix(wires=0), [[1.0, 0.0], [0.0, 0.0]]),
+            (qml.purity(0), 1.0),
+            (qml.vn_entropy(0), 0.0),
+            (qml.mutual_info(0, 1), 0.0),
+        ],
+    )
+    def test_postselection_invalid_analytic_jit(self, mp, expected, interface, use_jit):
+        """Test that the results of a qnode give the postselected results even when the
+        probability of the postselected state is zero when jitting."""
+        if interface != "jax" or not use_jit:
+            pytest.skip("Test is only for jitting.")
+
+        import jax
+
+        # Wires are specified so that the shape for measurements can be determined correctly
+        dev = qml.device("default.qubit", wires=2)
+
+        @jax.jit
+        @qml.qnode(dev, interface=interface)
+        def circ():
+            qml.RX(np.pi, 0)
+            qml.CNOT([0, 1])
+            qml.measure(0, postselect=0)
+            return qml.apply(mp)
+
+        res = circ()
+
+        assert qml.math.get_interface(res) == "jax"
+        assert qml.math.shape(res) == mp.shape(dev, qml.measurements.Shots(None))
+        assert qml.math.allclose(res, expected)
 
     @pytest.mark.parametrize(
         "mp, expected_shape",

@@ -21,6 +21,7 @@ has_mpl = True
 try:
     import matplotlib.pyplot as plt
     from matplotlib import patches
+    import matplotlib.patheffects as path_effects
 except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
     has_mpl = False
 
@@ -65,6 +66,7 @@ class MPLDrawer:
         n_wires (int): the number of wires
 
     Keyword Args:
+        c_wires=0 (int): the number of classical wires to leave space for.
         wire_options=None (dict): matplotlib configuration options for drawing the wire lines
         figsize=None (Iterable): Allows users to specify the size of the figure manually. Defaults
             to scale with the size of the circuit via ``n_layers`` and ``n_wires``.
@@ -249,7 +251,10 @@ class MPLDrawer:
     _cond_shift = 0.03
     """The shift value from the centre axis for classical double-lines."""
 
-    def __init__(self, n_layers, n_wires, wire_options=None, figsize=None):
+    _cwire_scaling = 0.25
+    """The distance between successive control wires."""
+
+    def __init__(self, n_layers, n_wires, c_wires=0, wire_options=None, figsize=None):
         if not has_mpl:  # pragma: no cover
             raise ImportError(
                 "Module matplotlib is required for ``MPLDrawer`` class. "
@@ -262,13 +267,13 @@ class MPLDrawer:
         ## Creating figure and ax
 
         if figsize is None:
-            figsize = (self.n_layers + 3, self.n_wires + 1)
+            figsize = (self.n_layers + 3, self.n_wires + self._cwire_scaling * c_wires + 1)
 
         self._fig = plt.figure(figsize=figsize)
         self._ax = self._fig.add_axes(
             [0, 0, 1, 1],
             xlim=(-2, self.n_layers + 1),
-            ylim=(-1, self.n_wires),
+            ylim=(-1, self.n_wires + self._cwire_scaling * c_wires),
             xticks=[],
             yticks=[],
         )
@@ -883,6 +888,60 @@ class MPLDrawer:
             self._ax.text(
                 layer + 0.05 * self._box_length, wires + 0.225, text, fontsize=(self.fontsize - 2)
             )
+
+    def _y(self, wire):
+        """Used for determining the correct y coordinate for classical wires.
+        Classical wires should be enumerated starting at the number of quantum wires the drawer has.
+        For example, if the drawer has ``3`` quantum wires, the first classical wire should be located at ``3``
+        which corresponds to a ``y`` coordinate of ``2.6``.
+        """
+        if wire < self.n_wires:
+            return wire
+        return self.n_wires + self._cwire_scaling * (wire - self.n_wires) - 0.4
+
+    def classical_wire(self, layers, wires) -> None:
+        """Draw a classical control line.
+
+        Args:
+            layers: a list of x coordinates for the classical wire
+            wires: a list of y coordinates for the classical wire. Wire numbers
+                greater than the number of quantum wires will be scaled as classical wires.
+
+        """
+        outer_stroke = path_effects.Stroke(
+            linewidth=5 * plt.rcParams["lines.linewidth"], foreground=plt.rcParams["lines.color"]
+        )
+
+        inner_stroke = path_effects.Stroke(
+            linewidth=3 * plt.rcParams["lines.linewidth"],
+            foreground=plt.rcParams["figure.facecolor"],
+        )
+
+        line = plt.Line2D(
+            layers, [self._y(w) for w in wires], path_effects=[outer_stroke, inner_stroke], zorder=1
+        )
+        self.ax.add_line(line)
+
+    def cwire_join(self, layer, wire, erase_right=False):
+        """Erase the horizontal edges of an intersection between classical wires. By default, erases
+        only the left edge.
+
+        Args:
+            layer: the x-coordinate for the classical wire intersection
+            wire: the classical wire y-coordinate for the intersection
+            erase_right=False(bool):  whether or not to erase the right side of the intersection
+                in addition to the left.
+
+        """
+        xs = (layer - 0.2, layer + 0.2) if erase_right else (layer - 0.2, layer)
+        line = plt.Line2D(
+            xs,
+            (self._y(wire), self._y(wire)),
+            zorder=2,
+            color=plt.rcParams["figure.facecolor"],
+            linewidth=3 * plt.rcParams["lines.linewidth"],  # match inner_stroke from classical_wire
+        )
+        self.ax.add_line(line)
 
     def cond(self, layer, measured_layer, wires, wires_target, options=None):
         """Add classical communication double-lines for conditional operations

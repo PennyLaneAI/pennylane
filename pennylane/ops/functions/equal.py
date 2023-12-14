@@ -18,10 +18,11 @@ This module contains the qml.equal function.
 from collections.abc import Iterable
 from functools import singledispatch
 from typing import Union
+
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
-from pennylane.measurements.mid_measure import MidMeasureMP
+from pennylane.measurements.mid_measure import MidMeasureMP, MeasurementValue
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.measurements.counts import CountsMP
@@ -29,11 +30,12 @@ from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.operation import Observable, Operator, Tensor
 from pennylane.ops import Hamiltonian, Controlled, Pow, Adjoint, Exp, SProd, CompositeOp
 from pennylane.templates.subroutines import ControlledSequence
+from pennylane.tape import QuantumTape
 
 
 def equal(
-    op1: Union[Operator, MeasurementProcess],
-    op2: Union[Operator, MeasurementProcess],
+    op1: Union[Operator, MeasurementProcess, QuantumTape],
+    op2: Union[Operator, MeasurementProcess, QuantumTape],
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,
@@ -62,8 +64,8 @@ def equal(
         comparison.
 
     Args:
-        op1 (.Operator or .MeasurementProcess): First object to compare
-        op2 (.Operator or .MeasurementProcess): Second object to compare
+        op1 (.Operator or .MeasurementProcess or .QuantumTape): First object to compare
+        op2 (.Operator or .MeasurementProcess or .QuantumTape): Second object to compare
         check_interface (bool, optional): Whether to compare interfaces. Default: ``True``. Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
         check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``. Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
         rtol (float, optional): Relative tolerance for parameters. Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
@@ -103,6 +105,12 @@ def equal(
     >>> qml.equal(qml.probs(wires=(0,1)), qml.probs(wires=(1,2)))
     False
     >>> qml.equal(qml.classical_shadow(wires=[0,1]), qml.classical_shadow(wires=[0,1]))
+    True
+    >>> tape1 = qml.tape.QuantumScript([qml.RX(1.2, wires=0)], [qml.expval(qml.PauliZ(0))])
+    >>> tape2 = qml.tape.QuantumScript([qml.RX(1.2 + 1e-6, wires=0)], [qml.expval(qml.PauliZ(0))])
+    >>> qml.equal(tape1, tape2, tol=0, atol=1e-7)
+    False
+    >>> qml.equal(tape1, tape2, tol=0, atol=1e-5)
     True
 
     .. details::
@@ -169,6 +177,49 @@ def _equal(
 
 
 @_equal.register
+def _equal_circuit(
+    op1: qml.tape.QuantumScript,
+    op2: qml.tape.QuantumScript,
+    check_interface=True,
+    check_trainability=True,
+    rtol=1e-5,
+    atol=1e-9,
+):
+    # operations
+    if len(op1.operations) != len(op2.operations):
+        return False
+    for comparands in zip(op1.operations, op2.operations):
+        if not qml.equal(
+            comparands[0],
+            comparands[1],
+            check_interface=check_interface,
+            check_trainability=check_trainability,
+            rtol=rtol,
+            atol=atol,
+        ):
+            return False
+    # measurements
+    if len(op1.measurements) != len(op2.measurements):
+        return False
+    for comparands in zip(op1.measurements, op2.measurements):
+        if not qml.equal(
+            comparands[0],
+            comparands[1],
+            check_interface=check_interface,
+            check_trainability=check_trainability,
+            rtol=rtol,
+            atol=atol,
+        ):
+            return False
+
+    if op1.shots != op2.shots:
+        return False
+    if op1.trainable_params != op2.trainable_params:
+        return False
+    return True
+
+
+@_equal.register
 def _equal_operators(
     op1: Operator,
     op2: Operator,
@@ -232,11 +283,15 @@ def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
 @_equal.register
 def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
     """Determine whether two Controlled or ControlledOp objects are equal"""
-    # wires are ordered [control wires, operator wires, work wires]
-    # comparing op.wires and op.base.wires (in return) is sufficient to compare all wires
-    if [op1.wires, op1.control_values, op1.arithmetic_depth] != [
-        op2.wires,
-        op2.control_values,
+    # work wires and control_wire/control_value combinations compared here
+    # op.base.wires compared in return
+    if [
+        dict(zip(op1.control_wires, op1.control_values)),
+        op1.work_wires,
+        op1.arithmetic_depth,
+    ] != [
+        dict(zip(op2.control_wires, op2.control_values)),
+        op2.work_wires,
         op2.arithmetic_depth,
     ]:
         return False
@@ -323,7 +378,10 @@ def _equal_hamiltonian(op1: Hamiltonian, op2: Observable, **kwargs):
 @_equal.register
 def _equal_parametrized_evolution(op1: ParametrizedEvolution, op2: ParametrizedEvolution, **kwargs):
     # check times match
-    if not qml.math.allclose(op1.t, op2.t):
+    if op1.t is None or op2.t is None:
+        if not (op1.t is None and op2.t is None):
+            return False
+    elif not qml.math.allclose(op1.t, op2.t):
         return False
 
     # check parameters passed to operator match
@@ -360,6 +418,17 @@ def _equal_measurements(
             atol=atol,
         )
 
+    if op1.mv is not None and op2.mv is not None:
+        # qml.equal doesn't check if the MeasurementValues have the same processing functions
+        if isinstance(op1.mv, MeasurementValue) and isinstance(op2.mv, MeasurementValue):
+            return op1.mv.measurements == op2.mv.measurements
+
+        if isinstance(op1.mv, Iterable) and isinstance(op2.mv, Iterable):
+            if len(op1.mv) == len(op2.mv):
+                return all(mv1.measurements == mv2.measurements for mv1, mv2 in zip(op1.mv, op2.mv))
+
+        return False
+
     if op1.wires != op2.wires:
         return False
 
@@ -375,16 +444,13 @@ def _equal_measurements(
 
 
 @_equal.register
-# pylint: disable=unused-argument
-def _equal_mid_measure(
-    op1: MidMeasureMP,
-    op2: MidMeasureMP,
-    check_interface=True,
-    check_trainability=True,
-    rtol=1e-5,
-    atol=1e-9,
-):
-    return op1.wires == op2.wires and op1.id == op2.id and op1.reset == op2.reset
+def _equal_mid_measure(op1: MidMeasureMP, op2: MidMeasureMP, **_):
+    return (
+        op1.wires == op2.wires
+        and op1.id == op2.id
+        and op1.reset == op2.reset
+        and op1.postselect == op2.postselect
+    )
 
 
 @_equal.register
@@ -427,3 +493,30 @@ def _equal_shadow_measurements(op1: ShadowExpvalMP, op2: ShadowExpvalMP, **_):
 @_equal.register
 def _equal_counts(op1: CountsMP, op2: CountsMP, **kwargs):
     return _equal_measurements(op1, op2, **kwargs) and op1.all_outcomes == op2.all_outcomes
+
+
+@_equal.register
+# pylint: disable=unused-argument
+def _equal_basis_rotation(
+    op1: qml.BasisRotation,
+    op2: qml.BasisRotation,
+    check_interface=True,
+    check_trainability=True,
+    rtol=1e-5,
+    atol=1e-9,
+):
+    if not qml.math.allclose(
+        op1.hyperparameters["unitary_matrix"],
+        op2.hyperparameters["unitary_matrix"],
+        atol=atol,
+        rtol=rtol,
+    ):
+        return False
+    if op1.wires != op2.wires:
+        return False
+    if check_interface:
+        if qml.math.get_interface(op1.hyperparameters["unitary_matrix"]) != qml.math.get_interface(
+            op2.hyperparameters["unitary_matrix"]
+        ):
+            return False
+    return True

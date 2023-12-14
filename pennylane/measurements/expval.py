@@ -58,6 +58,11 @@ def expval(op: Union[Operator, MeasurementValue]):
     if isinstance(op, MeasurementValue):
         return ExpectationMP(obs=op)
 
+    if isinstance(op, Sequence):
+        raise ValueError(
+            "qml.expval does not support measuring sequences of measurements or observables"
+        )
+
     if not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
 
@@ -133,7 +138,11 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
                     state=state, wire_order=wire_order
                 )
             return probs[idx]
+
+        # This also covers statistics for mid-circuit measurements manipulated using
+        # arithmetic operators
         eigvals = qml.math.asarray(self.eigvals(), dtype="float64")
+
         # we use ``self.wires`` instead of ``self.obs`` because the observable was
         # already applied to the state
         with qml.queuing.QueuingManager.stop_recording():

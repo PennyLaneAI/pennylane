@@ -218,10 +218,24 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
 
     ket = state if state is not None else get_final_state(tape)[0]
 
-    if np.shape(cotangents) == tuple():
-        cotangents = (cotangents,)
-    obs = qml.dot(cotangents, tape.observables)
-    bra = apply_operation(obs, ket)
+    cotangents = (cotangents,) if qml.math.shape(cotangents) == tuple() else cotangents
+    new_cotangents, new_observables = [], []
+    for c, o in zip(cotangents, tape.observables):
+        if qml.math.size(c) > 1:
+            raise NotImplementedError(
+                "adjoint_vjp does not yet support JAX Jacobians, as they use a broadcast dimension on the cotangent dy."
+            )
+        if not np.allclose(c, 0.0):
+            new_cotangents.append(c)
+            new_observables.append(o)
+    if len(new_cotangents) == 0:
+        return tuple(0.0 for _ in tape.trainable_params)
+    obs = qml.dot(new_cotangents, new_observables)
+    if obs.pauli_rep is not None:
+        flat_bra = obs.pauli_rep.dot(ket.flatten(), wire_order=list(range(tape.num_wires)))
+        bra = flat_bra.reshape(ket.shape)
+    else:
+        bra = apply_operation(obs, ket)
 
     param_number = len(tape.get_parameters(trainable_only=False, operations_only=True)) - 1
     trainable_param_number = len(tape.trainable_params) - 1

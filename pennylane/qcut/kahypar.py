@@ -21,10 +21,10 @@ from itertools import compress
 from pathlib import Path
 from typing import Any, List, Sequence, Tuple, Union
 
+import numpy as np
 from networkx import MultiDiGraph
 
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.operation import Operation
 
 
@@ -90,8 +90,8 @@ def kahypar_cut(
 
     We can let KaHyPar automatically find the optimal edges to place cuts:
 
-    >>> graph = qml.transforms.qcut.tape_to_graph(tape)
-    >>> cut_edges = qml.transforms.qcut.kahypar_cut(
+    >>> graph = qml.qcut.tape_to_graph(tape)
+    >>> cut_edges = qml.qcut.kahypar_cut(
             graph=graph,
             num_fragments=2,
         )

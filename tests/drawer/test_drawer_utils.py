@@ -17,7 +17,12 @@ Unit tests for the pennylane.drawer.utils` module.
 
 import pytest
 import pennylane as qml
-from pennylane.drawer.utils import default_wire_map, convert_wire_order, unwrap_controls
+from pennylane.drawer.utils import (
+    default_wire_map,
+    convert_wire_order,
+    unwrap_controls,
+    cwire_connections,
+)
 from pennylane.wires import Wires
 
 
@@ -157,3 +162,58 @@ class TestUnwrapControls:
 
         assert control_wires == expected_control_wires
         assert control_values == expected_control_values
+
+
+# pylint: disable=use-implicit-booleaness-not-comparison
+class TestCwireConnections:
+    """Tests for the cwire_connections helper method."""
+
+    def test_null_circuit(self):
+        """Test null behavior with an empty circuit."""
+        cmap, layers, wires = cwire_connections([[]])
+        assert cmap == {}
+        assert layers == []
+        assert wires == []
+
+    def test_single_measure(self):
+        """Test a single meassurment that does not have a conditional."""
+        cmap, layers, wires = cwire_connections([qml.measure(0).measurements])
+        assert cmap == {}
+        assert layers == []
+        assert wires == []
+
+    def test_single_measure_single_cond(self):
+        """Test a case with a single measurement and a single conditional."""
+        m = qml.measure(0)
+        cond = qml.ops.Conditional(m, qml.PauliX(0))
+        layers = [m.measurements, [cond]]
+        cmap, clayers, wires = cwire_connections(layers)
+        assert cmap == {m.measurements[0]: 0}
+        assert clayers == [[0, 1]]
+        assert wires == [[0, 0]]
+
+    def test_multiple_measure_multiple_cond(self):
+        """Test a case with multiple measurments and multiple conditionals."""
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+        m2_nonused = qml.measure(2)
+
+        cond0 = qml.ops.Conditional(m0 + m1, qml.PauliX(1))
+        cond1 = qml.ops.Conditional(m1, qml.PauliY(2))
+
+        layers = [m0.measurements, m1.measurements, [cond0], m2_nonused.measurements, [cond1]]
+        cmap, clayers, wires = cwire_connections(layers)
+        assert cmap == {m0.measurements[0]: 0, m1.measurements[0]: 1}
+        assert clayers == [[0, 2], [1, 2, 4]]
+        assert wires == [[0, 1], [1, 1, 2]]
+
+    def test_measurements_layer(self):
+        """Test cwire_connections works if measurement layers are appended at the end."""
+
+        m0 = qml.measure(0)
+        cond0 = qml.ops.Conditional(m0, qml.S(0))
+        layers = [m0.measurements, [cond0], [qml.expval(qml.PauliX(0))]]
+        cmap, clayers, wires = cwire_connections(layers)
+        assert cmap == {m0.measurements[0]: 0}
+        assert clayers == [[0, 1]]
+        assert wires == [[0, 0]]

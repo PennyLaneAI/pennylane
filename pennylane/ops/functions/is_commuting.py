@@ -15,8 +15,8 @@
 Defines `is_commuting`, an function for determining if two functions commute.
 """
 
+import numpy as np
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.pauli.utils import is_pauli_word, pauli_to_binary, _wire_map_from_pauli_pair
 
 
