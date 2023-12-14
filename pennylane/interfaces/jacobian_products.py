@@ -304,7 +304,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
         num_result_tapes = len(tapes)
 
         partial_gradient_fn = partial(self._gradient_transform, **self._gradient_kwargs)
-        jac_tapes, batch_postprocessing = qml.transforms.map_batch_transform(
+        jac_tapes, jac_postprocessing = qml.transforms.map_batch_transform(
             partial_gradient_fn, tapes
         )
 
@@ -312,7 +312,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
         full_results = self._inner_execute(full_batch)
         results = full_results[:num_result_tapes]
         jac_results = full_results[num_result_tapes:]
-        jacs = batch_postprocessing(jac_results)
+        jacs = jac_postprocessing(jac_results)
         return tuple(results), tuple(jacs)
 
     def compute_jacobian(self, tapes: Batch):

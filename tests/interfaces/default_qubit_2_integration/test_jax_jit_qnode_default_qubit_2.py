@@ -51,7 +51,7 @@ H_FOR_SPSA = 0.05
 
 
 @pytest.mark.parametrize(
-    "interface,dev,diff_method,grad_on_execution, device_vjp",
+    "interface,dev,diff_method,grad_on_execution,device_vjp",
     interface_and_qubit_device_and_diff_method,
 )
 class TestQNode:
@@ -1066,7 +1066,7 @@ class TestQubitIntegrationHigherOrder:
         """Test second derivative calculation of a scalar-valued QNode"""
         gradient_kwargs = {}
         if diff_method in {"adjoint", "device"}:
-            pytest.skip("Adjoint does not second derivative.")
+            pytest.skip("Adjoint does not support second derivatives.")
         elif diff_method == "spsa":
             gradient_kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             gradient_kwargs["num_directions"] = 20

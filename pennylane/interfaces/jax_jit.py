@@ -53,9 +53,10 @@ Zero = jax.custom_derivatives.SymbolicZero
 def _to_jax(result: qml.typing.ResultBatch) -> qml.typing.ResultBatch:
     """Converts an arbitrary result batch to one with jax arrays.
     Args:
-        result (ResultBatch): a nested structure of lists, tuples, dicts, and numpy arrays
+        result (ResultBatch): a nested structure of lists, tuples, and numpy arrays
     Returns:
-        ResultBatch: a nested structure of tuples, dicts, and jax arrays
+        ResultBatch: a nested structure of tuples, and jax arrays
+
     """
     # jax-jit not compatible with counts
     # if isinstance(result, dict):

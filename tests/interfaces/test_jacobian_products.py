@@ -362,7 +362,7 @@ class TestJacobianProductResults:
             )
 
     def test_batch_execute_jacobian(self, jpc, shots):
-        """Test compute_jacobian on a batch with ragged observables and parameters."""
+        """Test execute_and_compute_jacobian on a batch with ragged observables and parameters."""
 
         if shots and not _accepts_finite_shots(jpc):
             pytest.skip("jpc does not work with finite shots.")
@@ -397,7 +397,6 @@ class TestJacobianProductResults:
                 )
                 assert qml.math.allclose(res[0][i], np.cos(phi), atol=_tol_for_shots(shots))
 
-                assert qml.math.allclose(jacs[0][i], -np.sin(phi), atol=_tol_for_shots(shots))
                 assert qml.math.allclose(jacs[1][i][0][0], 0, atol=_tol_for_shots(shots))
                 assert qml.math.allclose(jacs[1][i][0][1], np.cos(y), atol=_tol_for_shots(shots))
                 assert qml.math.allclose(
@@ -406,6 +405,7 @@ class TestJacobianProductResults:
                 assert qml.math.allclose(
                     jacs[1][i][1][1], -np.sin(x) * np.cos(y), atol=_tol_for_shots(shots)
                 )
+                assert qml.math.allclose(jacs[0][i], -np.sin(phi), atol=_tol_for_shots(shots))
         else:
             assert qml.math.allclose(res[1][0], np.sin(y), atol=_tol_for_shots(shots))
             assert qml.math.allclose(res[1][1], -np.sin(x) * np.sin(y), atol=_tol_for_shots(shots))
@@ -618,7 +618,7 @@ class TestProbsTransformJacobians:
         assert qml.math.allclose(jvp[1][1], -0.6 * np.sin(phi))
 
     def test_execute_jacobian_multi_params_multi_out(self, jpc):
-        """Test execute_and_compute_jvp with multiple parameters and multiple outputs"""
+        """Test execute_and_compute_jacobian with multiple parameters and multiple outputs"""
         x = 0.93
         y = -0.83
         ops = [qml.RY(y, 0), qml.RX(x, 0)]
