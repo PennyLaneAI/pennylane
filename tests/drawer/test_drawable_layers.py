@@ -65,7 +65,7 @@ class TestRecursiveFindLayer:
         bit_map = {mp0: 0, mp1: 1}
 
         out = _recursive_find_mcm_stats_layer(
-            layer_to_check=0, stat_mcms={mp0}, used_mcms_per_layer=[{mp1}], bit_map=bit_map
+            layer_to_check=0, op_occupied_cwires={0}, used_cwires_per_layer=[{1}], bit_map=bit_map
         )
         assert out == 0
 
@@ -75,7 +75,7 @@ class TestRecursiveFindLayer:
         bit_map = {mp: 0}
 
         out = _recursive_find_mcm_stats_layer(
-            layer_to_check=0, stat_mcms={mp}, used_mcms_per_layer=[{mp}], bit_map=bit_map
+            layer_to_check=0, op_occupied_cwires={0}, used_cwires_per_layer=[{0}], bit_map=bit_map
         )
         assert out == 1
 
@@ -87,8 +87,8 @@ class TestRecursiveFindLayer:
 
         out = _recursive_find_mcm_stats_layer(
             layer_to_check=2,
-            stat_mcms={mp0},
-            used_mcms_per_layer=[{mp1}, {mp1}, {mp1}],
+            op_occupied_cwires={0},
+            used_cwires_per_layer=[{1}, {1}, {1}],
             bit_map=bit_map,
         )
         assert out == 0
@@ -101,8 +101,8 @@ class TestRecursiveFindLayer:
 
         out = _recursive_find_mcm_stats_layer(
             layer_to_check=3,
-            stat_mcms={mp0},
-            used_mcms_per_layer=[{mp1}, {mp0}, {mp1}, {mp1}],
+            op_occupied_cwires={0},
+            used_cwires_per_layer=[{1}, {0}, {1}, {1}],
             bit_map=bit_map,
         )
         assert out == 2

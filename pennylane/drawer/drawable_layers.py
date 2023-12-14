@@ -50,37 +50,32 @@ def _recursive_find_layer(layer_to_check, op_occupied_wires, occupied_wires_per_
     return _recursive_find_layer(layer_to_check - 1, op_occupied_wires, occupied_wires_per_layer)
 
 
-def _recursive_find_mcm_stats_layer(layer_to_check, stat_mcms, used_mcms_per_layer, bit_map):
+def _recursive_find_mcm_stats_layer(
+    layer_to_check, op_occupied_cwires, used_cwires_per_layer, bit_map
+):
     """Determine correct layer for a terminal measurement that is collectings statistics
     for mid-circuit measurement values.
 
     Args:
         layer_to_check (int): the function determines if the operation fits on this layer
-        stat_mcms (set(.MidMeasureMP)): Mid-circuit measurements used by current measurement
-            process.
-        occupied_wires_per_layer (list[set[int]]): which mid-circuit measurements are already
+        op_occupied_cwires (set(int)): classical wires occupied by measurement
+        occupied_cwires_per_layer (list[set[int]]): which classical wires are already
             in use for collecting statistics. Each set is a different layer.
 
     Returns:
         int: layer to place measurement process in
     """
 
-    if used_mcms_per_layer[layer_to_check]:
-        stat_cwires = [bit_map[m] for m in stat_mcms]
-        op_occupied_cwires = set(range(min(stat_cwires), max(stat_cwires) + 1))
-        layer_cwires = [bit_map[m] for m in used_mcms_per_layer[layer_to_check]]
-        layer_occupied_cwires = set(range(min(layer_cwires), max(layer_cwires) + 1))
-
-        if op_occupied_cwires & layer_occupied_cwires:
-            # this layer is occupied, use higher one
-            return layer_to_check + 1
+    if op_occupied_cwires & used_cwires_per_layer[layer_to_check]:
+        # this layer is occupied, use higher one
+        return layer_to_check + 1
 
     if layer_to_check == 0:
         # reached first layer, so stop
         return 0
     # keep pushing the operation to lower layers
     return _recursive_find_mcm_stats_layer(
-        layer_to_check - 1, stat_mcms, used_mcms_per_layer, bit_map
+        layer_to_check - 1, op_occupied_cwires, used_cwires_per_layer, bit_map
     )
 
 
@@ -160,7 +155,7 @@ def drawable_layers(operations, wire_map=None, bit_map=None):
     max_layer = 0
     occupied_wires_per_layer = [set()]
     ops_in_layer = [[]]
-    used_mcms_per_layer = [set()]
+    used_cwires_per_layer = [set()]
 
     # loop over operations
     for op in operations:
@@ -168,22 +163,23 @@ def drawable_layers(operations, wire_map=None, bit_map=None):
             if len(op.wires) > 1:
                 raise ValueError("Cannot draw mid-circuit measurements with more than one wire.")
 
-        if not getattr(op, "mv", None):
+        if not (mv := getattr(op, "mv", None)):
             # Only terminal measurements that collect mid-circuit measurement statistics have
             # op.mv != None
             op_occupied_wires = _get_op_occupied_wires(op, wire_map, bit_map)
             op_layer = _recursive_find_layer(max_layer, op_occupied_wires, occupied_wires_per_layer)
-            stat_mcms = set()
+            op_occupied_cwires = set()
 
         else:
             op_occupied_wires = set()
-            stat_mcms = (
-                set(m.measurements[0] for m in op.mv)
-                if isinstance(op.mv, list)
-                else set(op.mv.measurements)
+            mapped_cwires = (
+                [bit_map[m.measurements[0]] for m in mv]
+                if isinstance(mv, list)
+                else [bit_map[m] for m in mv.measurements]
             )
+            op_occupied_cwires = set(range(min(mapped_cwires), max(mapped_cwires) + 1))
             op_layer = _recursive_find_mcm_stats_layer(
-                max_layer, stat_mcms, used_mcms_per_layer, bit_map
+                max_layer, op_occupied_cwires, used_cwires_per_layer, bit_map
             )
 
         # see if need to add new layer
@@ -191,11 +187,11 @@ def drawable_layers(operations, wire_map=None, bit_map=None):
             max_layer += 1
             occupied_wires_per_layer.append(set())
             ops_in_layer.append([])
-            used_mcms_per_layer.append(set())
+            used_cwires_per_layer.append(set())
 
         # add to op_layer
         ops_in_layer[op_layer].append(op)
         occupied_wires_per_layer[op_layer].update(op_occupied_wires)
-        used_mcms_per_layer[op_layer].update(stat_mcms)
+        used_cwires_per_layer[op_layer].update(op_occupied_cwires)
 
     return list(filter(None, ops_in_layer[:-1])) + ops_in_layer[-1:]
