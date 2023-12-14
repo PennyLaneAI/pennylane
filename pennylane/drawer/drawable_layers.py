@@ -16,7 +16,7 @@ This module contains a helper function to sort operations into layers.
 """
 
 from pennylane.ops import Conditional
-from pennylane.measurements import MidMeasureMP
+from pennylane.measurements import MidMeasureMP, MeasurementProcess
 from .utils import default_wire_map
 
 
@@ -165,24 +165,28 @@ def drawable_layers(operations, wire_map=None, bit_map=None):
             if len(op.wires) > 1:
                 raise ValueError("Cannot draw mid-circuit measurements with more than one wire.")
 
-        if not (mv := getattr(op, "mv", None)):
+        if isinstance(op, MeasurementProcess) and op.mv is not None:
             # Only terminal measurements that collect mid-circuit measurement statistics have
-            # op.mv != None
-            op_occupied_wires = _get_op_occupied_wires(op, wire_map, bit_map)
-            op_layer = _recursive_find_layer(max_layer, op_occupied_wires, occupied_wires_per_layer)
-            op_occupied_cwires = set()
-
-        else:
+            # op.mv != None.
+            # Get the occupied classical wires of the measurement process and find which layer
+            # to put it in.
             op_occupied_wires = set()
             mapped_cwires = (
-                [bit_map[m.measurements[0]] for m in mv]
-                if isinstance(mv, list)
-                else [bit_map[m] for m in mv.measurements]
+                [bit_map[m.measurements[0]] for m in op.mv]
+                if isinstance(op.mv, list)
+                else [bit_map[m] for m in op.mv.measurements]
             )
             op_occupied_cwires = set(range(min(mapped_cwires), max(mapped_cwires) + 1))
             op_layer = _recursive_find_mcm_stats_layer(
                 max_layer, op_occupied_cwires, used_cwires_per_layer, bit_map
             )
+
+        else:
+            # Find occupied wires of the operator/measurement process and find which layer to
+            # put it in.
+            op_occupied_wires = _get_op_occupied_wires(op, wire_map, bit_map)
+            op_layer = _recursive_find_layer(max_layer, op_occupied_wires, occupied_wires_per_layer)
+            op_occupied_cwires = set()
 
         # see if need to add new layer
         if op_layer > max_layer:
