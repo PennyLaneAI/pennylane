@@ -30,6 +30,7 @@ folder = pathlib.Path(__file__).parent
 
 
 def default(tape):
+
     fig, ax = tape_mpl(tape)
 
     plt.savefig(folder / "default.png")
@@ -37,6 +38,7 @@ def default(tape):
 
 
 def decimals():
+
     with qml.tape.QuantumTape() as tape2:
         qml.RX(1.23456, wires=0)
         qml.Rot(1.2345, 2.3456, 3.456, wires=0)
@@ -48,6 +50,7 @@ def decimals():
 
 
 def wire_order(tape):
+
     fig, ax = tape_mpl(tape, wire_order=[3, 2, 1, 0])
 
     plt.savefig(folder / "wire_order.png")
@@ -55,12 +58,14 @@ def wire_order(tape):
 
 
 def show_all_wires(tape):
+
     fig, ax = tape_mpl(tape, wire_order=["aux"], show_all_wires=show_all_wires)
     plt.savefig(folder / "show_all_wires.png")
     plt.close()
 
 
 def rcparams(tape):
+
     plt.rcParams["patch.facecolor"] = "mistyrose"
     plt.rcParams["patch.edgecolor"] = "maroon"
     plt.rcParams["text.color"] = "maroon"
@@ -79,7 +84,8 @@ def rcparams(tape):
 
 
 def use_style(tape):
-    fig, ax = tape_mpl(tape, style="sketch")
+
+    fig, ax = tape_mpl(tape, style='sketch')
 
     plt.savefig(folder / "sketch_style.png")
     plt.close()
@@ -87,6 +93,7 @@ def use_style(tape):
 
 
 def wires_and_labels(tape):
+
     fig, ax = tape_mpl(
         tape, wire_options={"color": "teal", "linewidth": 5}, label_options={"size": 20}
     )
@@ -96,6 +103,7 @@ def wires_and_labels(tape):
 
 
 def postprocessing(tape):
+
     fig, ax = tape_mpl(tape)
     fig.suptitle("My Circuit", fontsize="xx-large")
 
@@ -130,6 +138,7 @@ def mid_measure():
 
 
 if __name__ == "__main__":
+
     with qml.tape.QuantumTape() as tape:
         qml.QFT(wires=(0, 1, 2, 3))
         qml.IsingXX(1.234, wires=(0, 2))

@@ -78,7 +78,7 @@ copybutton_prompt_is_regexp = True
 
 intersphinx_mapping = {
     "demo": ("https://pennylane.ai/qml/", None),
-    "catalyst": ("https://docs.pennylane.ai/projects/catalyst/en/stable", None),
+    "catalyst": ("https://docs.pennylane.ai/projects/catalyst/en/stable", None)
 }
 
 mathjax_path = (
