@@ -16,7 +16,6 @@ This module contains the tests for the clifford simulator based on stim
 """
 import os
 import sys
-import math
 import pytest
 import numpy as np
 import pennylane as qml
@@ -27,18 +26,15 @@ stim = pytest.importorskip("stim")
 
 pytestmark = pytest.mark.external
 
-INVSQ2 = 1 / math.sqrt(2)
-PI = math.pi
-
 
 def circuit_1():
-    """Circuit 1 with Clifford gates"""
-    qml.GlobalPhase(PI)
+    """Circuit 1 with Clifford gates."""
+    qml.GlobalPhase(np.pi)
     qml.CNOT(wires=[0, 1])
     qml.PauliX(wires=[1])
+    qml.Barrier()
     qml.ISWAP(wires=[0, 1])
     qml.Hadamard(wires=[0])
-    qml.WireCut(wires=[1])
 
 
 @pytest.mark.parametrize("circuit", [circuit_1])
@@ -51,44 +47,81 @@ def circuit_1():
     ],
 )
 def test_expectation_clifford(circuit, expec_op):
-    """Test that the execution of default.clifford is possible and agrees with default.qubit"""
+    """Test that execution of default.clifford is possible and agrees with default.qubit."""
     dev_c = qml.device("default.clifford")
-    dev_d = qml.device("default.qubit")
+    dev_q = qml.device("default.qubit")
 
     def circuit_fn():
         circuit()
         return qml.expval(expec_op)
 
-    qn_c = qml.QNode(circuit_fn, dev_c)
-    qn_d = qml.QNode(circuit_fn, dev_d)
-
-    assert np.allclose(qn_c(), qn_d())
+    qnode_clfrd = qml.QNode(circuit_fn, dev_c)
+    qnode_qubit = qml.QNode(circuit_fn, dev_q)
+    assert np.allclose(qnode_clfrd(), qnode_qubit())
 
 
 @pytest.mark.parametrize("circuit", [circuit_1])
-@pytest.mark.parametrize("state", ["tableau", "state_vector"])
-def test_state_clifford(circuit, state):
-    """Test that the execution of default.clifford is possible and agrees with default.qubit"""
-    dev_c = qml.device("default.clifford", state=state)
-    dev_d = qml.device("default.qubit")
+def test_grad_clifford(circuit):
+    """Test that gradients of default.clifford agrees with default.qubit."""
+    dev_c = qml.device("default.clifford")
+    dev_q = qml.device("default.qubit")
+    assert dev_c.supports_derivatives()
+    assert not dev_c.supports_jvp()
+    assert not dev_c.supports_vjp()
+
+    def circuit_fn():
+        circuit()
+        return qml.expval(qml.PauliZ(0))
+
+    qnode_clfrd = qml.QNode(circuit_fn, dev_c)
+    qnode_qubit = qml.QNode(circuit_fn, dev_q)
+    res_q, grad_q = qnode_qubit(), qml.grad(qnode_qubit)()
+    assert np.allclose(qml.grad(qnode_clfrd)(), grad_q)
+
+    conf_c = dev_c.preprocess()[1]
+    tape_c, tape_q = qnode_clfrd.tape, qnode_qubit.tape
+    assert tape_c.operations == tape_q.operations
+
+    grad_c = dev_c.compute_derivatives(tape_c, conf_c)
+    assert qml.math.allclose(grad_c, grad_q)
+
+    (res_c, grad_c) = dev_c.execute_and_compute_derivatives(tape_c, conf_c)
+    assert qml.math.allclose(res_q, res_c) and qml.math.allclose(grad_q, grad_c)
+
+
+@pytest.mark.parametrize("circuit", [circuit_1])
+@pytest.mark.parametrize("tableau", [True, False])
+def test_state_clifford(circuit, tableau):
+    """Test that state computation with default.clifford is possible and agrees with default.qubit."""
+    dev_c = qml.device("default.clifford", tableau=tableau)
+    dev_q = qml.device("default.qubit")
 
     def circuit_fn():
         circuit()
         return qml.state()
 
-    qn_c = qml.QNode(circuit_fn, dev_c)
-    qn_d = qml.QNode(circuit_fn, dev_d)
+    # Tableau for the circuit define above
+    circuit_tableau = np.array(
+        [
+            [0, 1, 1, 0, 0],
+            [1, 0, 1, 1, 1],
+            [0, 0, 0, 1, 0],
+            [1, 0, 0, 1, 1],
+        ]
+    )
 
-    if state == "state_vector":
-        st1, st2 = qn_c(), qn_d()
+    qnode_clfrd = qml.QNode(circuit_fn, dev_c)
+    qnode_qubit = qml.QNode(circuit_fn, dev_q)
+
+    if not tableau:
+        st1, st2 = qnode_clfrd(), qnode_qubit()
         phase = qml.math.divide(
             st1, st2, out=qml.math.zeros_like(st1, dtype=complex), where=st1 != 0
         )[qml.math.nonzero(np.round(st1, 10))]
         if not qml.math.allclose(phase, 0.0):
             assert qml.math.allclose(phase / phase[0], qml.math.ones(len(phase)))
     else:
-        tableau = np.array([[0, 1, 1, 0, 0], [1, 0, 1, 1, 1], [0, 0, 0, 1, 0], [1, 0, 0, 1, 1]])
-        assert qml.math.allclose(tableau, qn_c())
+        assert qml.math.allclose(circuit_tableau, qnode_clfrd())
 
 
 @pytest.mark.parametrize("circuit", [circuit_1])
@@ -97,25 +130,25 @@ def test_state_clifford(circuit, state):
     ["dm", "purity"],
 )
 def test_meas_clifford(circuit, meas_type):
-    """Test that the execution of default.clifford is possible and agrees with default.qubit"""
+    """Test that measurements with default.clifford is possible and agrees with default.qubit."""
     dev_c = qml.device("default.clifford")
-    dev_d = qml.device("default.qubit")
+    dev_q = qml.device("default.qubit")
 
     def circuit_fn():
         circuit()
         return qml.density_matrix([0, 1]) if meas_type == "dm" else qml.purity([0, 1])
 
-    qn_c = qml.QNode(circuit_fn, dev_c)
-    qn_d = qml.QNode(circuit_fn, dev_d)
+    qnode_clfrd = qml.QNode(circuit_fn, dev_c)
+    qnode_qubit = qml.QNode(circuit_fn, dev_q)
 
-    assert np.allclose(qn_c(), qn_d())
+    assert np.allclose(qnode_clfrd(), qnode_qubit())
 
 
 @pytest.mark.parametrize("circuit", [circuit_1])
 def test_prep_snap_clifford(circuit):
-    """Test that the execution of default.clifford is possible and agrees with default.qubit"""
+    """Test that state preparation with default.clifford is possible and agrees with default.qubit."""
     dev_c = qml.device("default.clifford", check_clifford=False)
-    dev_d = qml.device("default.qubit")
+    dev_q = qml.device("default.qubit")
 
     def circuit_fn():
         qml.BasisState(np.array([1, 1]), wires=range(2))
@@ -123,56 +156,48 @@ def test_prep_snap_clifford(circuit):
         qml.Snapshot(tag="cliffy")
         return qml.expval(qml.PauliZ(0))
 
-    qn_c = qml.QNode(circuit_fn, dev_c)
-    qn_d = qml.QNode(circuit_fn, dev_d)
+    qnode_clfrd = qml.QNode(circuit_fn, dev_c)
+    qnode_qubit = qml.QNode(circuit_fn, dev_q)
 
-    assert np.allclose(qn_c(), qn_d())
-    assert np.allclose(qml.grad(qn_c)(), qml.grad(qn_d)())
+    assert np.allclose(qnode_clfrd(), qnode_qubit())
+    assert np.allclose(qml.grad(qnode_clfrd)(), qml.grad(qnode_qubit)())
 
 
 def test_max_worker_clifford():
-    """Test that the execution of default.clifford is possible and agrees with default.qubit"""
+    """Test that the execution of multiple tapes is possible with multiprocessing on this device."""
 
     os.environ["OMP_NUM_THREADS"] = "4"
 
     dev_c = qml.device("default.clifford", max_workers=2)
-    dev_d = qml.device("default.qubit", max_workers=2)
+    dev_q = qml.device("default.qubit", max_workers=2)
 
     qscript = qml.tape.QuantumScript(
-        [qml.Hadamard(wires=[0]), qml.CNOT([0, 1])],
-        [qml.expval(qml.PauliZ(0))],
+        [qml.Hadamard(wires=[0]), qml.CNOT(wires=[0, 1])],
+        [qml.expval(qml.PauliX(0))],
     )
-    tapes = tuple([qscript])
+    tapes = (qscript, qscript)
 
-    program, config = dev_d.preprocess()
-    tapes, _ = program(tapes)
-    res_d = dev_d.execute(tapes, config)
-    program, config = dev_c.preprocess()
-    tapes, _ = program(tapes)
-    res_c = dev_c.execute(tapes, config)
-    assert np.allclose(res_d, res_c)
+    program, conf_d = dev_c.preprocess()
+    tapes_clrfd, _ = program(tapes)
+    res_c = dev_c.execute(tapes, conf_d)
+    program, conf_q = dev_q.preprocess()
+    tapes_qubit, _ = program(tapes)
+    res_q = dev_q.execute(tapes, conf_q)
+    assert np.allclose(res_q, res_c)
 
-    res_q = dev_c.execute(qscript, config)
-    assert np.allclose(res_q, res_c[0])
+    grad_c = dev_c.compute_derivatives(tapes_clrfd, conf_q)
+    grad_q = dev_q.compute_derivatives(tapes_qubit, conf_d)
+    assert qml.math.allclose(grad_q, grad_c)
 
-    grad_t = dev_c.compute_derivatives(tapes, config)
-    grad_q = dev_c.compute_derivatives(qscript, config)
-    assert qml.math.allclose(grad_q, grad_t[0])
-
-    (res_t, grad_t) = dev_c.execute_and_compute_derivatives(tapes, config)
-    (res_q, grad_q) = dev_c.execute_and_compute_derivatives(qscript, config)
-    assert qml.math.allclose(res_q, res_t[0]) and qml.math.allclose(grad_q, grad_t[0])
+    (res_c, grad_c) = dev_c.execute_and_compute_derivatives(tapes_clrfd, conf_q)
+    assert qml.math.allclose(res_q, res_c) and qml.math.allclose(grad_q, grad_c)
 
 
 def test_tracker():
-    """Test that the tracker works for this device"""
+    """Test that the tracker works for this device."""
 
     dev_c = qml.device("default.clifford")
-    dev_d = qml.device("default.qubit")
-
-    assert dev_c.supports_derivatives()
-    assert not dev_c.supports_jvp()
-    assert not dev_c.supports_vjp()
+    dev_q = qml.device("default.qubit")
 
     qscript = qml.tape.QuantumScript(
         [qml.Hadamard(wires=[0]), qml.CNOT([0, 1])],
@@ -181,30 +206,49 @@ def test_tracker():
     tapes = tuple([qscript])
 
     with qml.Tracker(dev_c) as tracker:
-        program, config = dev_d.preprocess()
-        tapes, _ = program(tapes)
-        res_d = dev_d.execute(tapes, config)
-        program, config = dev_c.preprocess()
-        tapes, _ = program(tapes)
-        res_c = dev_c.execute(tapes, config)
-        assert np.allclose(res_d, res_c)
+        program, conf_d = dev_c.preprocess()
+        tapes_clrfd, _ = program(tapes)
+        res_c = dev_c.execute(tapes, conf_d)
+        program, conf_q = dev_q.preprocess()
+        tapes_qubit, _ = program(tapes)
+        res_q = dev_q.execute(tapes, conf_q)
+        assert np.allclose(res_q, res_c)
 
-        res_q = dev_c.execute(qscript, config)
-        assert np.allclose(res_q, res_c[0])
+        grad_c = dev_c.compute_derivatives(tapes_clrfd, conf_q)
+        grad_q = dev_q.compute_derivatives(tapes_qubit, conf_d)
+        assert qml.math.allclose(grad_q, grad_c)
 
-        grad_t = dev_c.compute_derivatives(tapes, config)
-        grad_q = dev_c.compute_derivatives(qscript, config)
-        assert qml.math.allclose(grad_q, grad_t[0])
+        (res_c, grad_c) = dev_c.execute_and_compute_derivatives(tapes_clrfd, conf_q)
+        assert qml.math.allclose(res_q, res_c) and qml.math.allclose(grad_q, grad_c)
 
-        (res_t, grad_t) = dev_c.execute_and_compute_derivatives(tapes, config)
-        (res_q, grad_q) = dev_c.execute_and_compute_derivatives(qscript, config)
-        assert qml.math.allclose(res_q, res_t[0]) and qml.math.allclose(grad_q, grad_t[0])
-
-    assert tracker.totals
+    assert tracker.totals == {
+        "batches": 2,
+        "simulations": 2,
+        "executions": 3,
+        "derivative_batches": 2,
+        "derivatives": 3,
+        "execute_and_derivative_batches": 1,
+    }
+    assert np.allclose(tracker.history.pop("results")[0], 0.0)
+    assert tracker.history.pop("resources")[0] == qml.resource.Resources(
+        num_wires=2,
+        num_gates=2,
+        gate_types={"Hadamard": 1, "CNOT": 1},
+        gate_sizes={1: 1, 2: 1},
+        depth=2,
+    )
+    assert tracker.history == {
+        "batches": [1, 1],
+        "simulations": [1, 1],
+        "executions": [1, 1, 1],
+        "derivative_batches": [1, 1],
+        "derivatives": [1, 1, 1],
+        "execute_and_derivative_batches": [1],
+    }
 
 
 def test_debugger():
-    """Test that the debugger works for a simple circuit"""
+    """Test that the debugger works for a simple circuit."""
 
     # pylint: disable=too-few-public-methods
     class Debugger:
@@ -215,7 +259,7 @@ def test_debugger():
             self.snapshots = {}
 
     dev = qml.device("default.clifford")
-    ops = [qml.Snapshot(), qml.Hadamard(wires=0), qml.Snapshot("final_state"), qml.WireCut(0)]
+    ops = [qml.Snapshot(), qml.Hadamard(wires=0), qml.Snapshot("final_state")]
     qs = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))])
 
     debugger = Debugger()
@@ -235,7 +279,7 @@ def test_debugger():
 
 
 def test_shot_error():
-    """Test if an NotImplementedError is raised when shots are requested"""
+    """Test if an NotImplementedError is raised when shots are requested."""
 
     @qml.qnode(qml.device("default.clifford", shots=1024))
     def circuit_fn():
@@ -250,7 +294,7 @@ def test_shot_error():
 
 
 def test_meas_error():
-    """Test if an NotImplementedError is raised when taking expectation value of op_math objects"""
+    """Test if an NotImplementedError is raised when taking expectation value of op_math objects."""
 
     @qml.qnode(qml.device("default.clifford"))
     def circuit_exp():
@@ -275,7 +319,7 @@ def test_meas_error():
 def test_clifford_error():
     """Test if an QuantumFunctionError is raised when one of the operations is not Clifford."""
 
-    dev = qml.device("default.clifford", state="tableau")
+    dev = qml.device("default.clifford", tableau="tableau")
 
     @qml.qnode(dev)
     def circuit():
@@ -292,7 +336,7 @@ def test_clifford_error():
 
 
 def test_max_error():
-    """Test if an ValueError is raised when max_error is not None"""
+    """Test if an ValueError is raised when max_error is not None."""
 
     with pytest.raises(
         ValueError, match="Currently this device doesn't support executing non-Clifford operations"
@@ -300,17 +344,8 @@ def test_max_error():
         qml.device("default.clifford", max_error=1e-4)
 
 
-def test_state_error():
-    """Test if an ValueError is raised when state is invalid"""
-
-    with pytest.raises(
-        ValueError, match="Keyword state only accepts two options: 'tableau' and 'state_vector'"
-    ):
-        qml.device("default.clifford", state="dm")
-
-
 def test_fail_import_stim(monkeypatch):
-    """Test if an ImportError is raised when stim is requested but not installed"""
+    """Test if an ImportError is raised when stim is requested but not installed."""
 
     with monkeypatch.context() as m:
         m.setitem(sys.modules, "stim", None)

@@ -37,6 +37,7 @@ from .execution_config import ExecutionConfig, DefaultExecutionConfig
 from .default_qubit import accepted_sample_measurement
 
 from .preprocess import (
+    null_postprocessing,
     validate_observables,
     validate_measurements,
     validate_multiprocessing_workers,
@@ -66,9 +67,6 @@ _MEAS_OBSERVABLES = {
 # Clifford gates
 _GATE_OPERATIONS = {
     "Identity": "I",
-    "Snapshot": None,
-    "BasisState": None,
-    "StatePrep": None,
     "PauliX": "X",
     "PauliY": "Y",
     "PauliZ": "Z",
@@ -84,7 +82,10 @@ _GATE_OPERATIONS = {
     "CY": "CY",
     "CZ": "CZ",
     "GlobalPhase": None,
-    "WireCut": None,
+    "BasisState": None,
+    "StatePrep": None,
+    "Snapshot": None,
+    "Barrier": None,
 }
 
 
@@ -113,12 +114,6 @@ def _validate_clifford_ops(tape: QuantumTape) -> (Sequence[QuantumTape], Callabl
         raise qml.QuantumFunctionError(
             "Currently 'default.clifford' device supports Clifford operations only."
         )
-
-    def null_postprocessing(results):
-        """A postprocessing function returned by a transform that only converts the batch of results
-        into a result for a single ``QuantumTape``."""
-        return results[0]
-
     return (tape,), null_postprocessing
 
 
@@ -132,8 +127,8 @@ class DefaultClifford(Device):
         check_clifford (bool): Check if all the gate operations in the circuits to be executed are Clifford. Default is ``True``.
         max_error (float): The maximum permissible operator norm error for decomposing circuits with non-Clifford gate operations
             into Cliffordt+T basis. The default is ``None`` as this device currently supports only Clifford simulations.
-        state (str): Describes what should be returned when the device's state is computed with ``qml.state``. Default is
-            "tableau", which makes it return the final evolved Tableau. Alternatively, one may use "state_vector" to obtain
+        tableau (bool): Determines what should be returned when the device's state is computed with ``qml.state``. Default is
+            ``True``, which makes it return the final evolved Tableau. Alternatively, one may make it ``False`` to obtain
             the evolved state vector. Note that the latter might not be computationally feasible for larger qubit numbers.
         seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator, jax.random.PRNGKey]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``, or
@@ -283,7 +278,7 @@ class DefaultClifford(Device):
         shots=None,
         check_clifford=True,
         max_error=None,
-        state="tableau",
+        tableau=True,
         seed="global",
         max_workers=None,
     ) -> None:
@@ -299,12 +294,7 @@ class DefaultClifford(Device):
                 f"Currently this device doesn't support executing non-Clifford operations, got max_error={max_error}."
             )
 
-        if state in ["tableau", "state_vector"]:
-            self._state = state
-        else:
-            raise ValueError(
-                f"Keyword state only accepts two options: 'tableau' and 'state_vector', got {state}."
-            )
+        self._tableau = tableau
 
         seed = np.random.randint(0, high=10000000) if seed == "global" else seed
         if qml.math.get_interface(seed) == "jax":  # pragma: no cover
@@ -359,7 +349,6 @@ class DefaultClifford(Device):
 
         This device:
 
-        * Supports any qubit operations that provide a matrix
         * Currently does not support finite shots
         * Currently does not intrinsically support parameter broadcasting
 
@@ -616,7 +605,9 @@ class DefaultClifford(Device):
                 if op.name == "Snapshot":
                     state = stim.Tableau.from_circuit(stim_ct).to_state_vector()
                     if state.shape == (1,):
-                        state = qml.math.array([1.0, 0.0], dtype=complex)
+                        # following is faster than using np.eye(length=1, size, index)
+                        state = qml.math.zeros(2**circuit.num_wires, dtype=complex)
+                        state[0] = 1.0 + 0.0j
                     if debugger is not None and debugger.active:
                         flat_state = qml.math.flatten(state)
                         if op.tag:
@@ -642,7 +633,7 @@ class DefaultClifford(Device):
 
                 # Computing purity via tableaus
                 elif type(meas) is qml.measurements.PurityMP:
-                    res = self._measure_purity(tableau_simulator, interface, meas, circuit)
+                    res = self._measure_purity(interface, meas, circuit)
 
                 # Computing expectation values via measurement
                 elif isinstance(meas, ExpectationMP):
@@ -658,10 +649,10 @@ class DefaultClifford(Device):
 
         return tuple(results)
 
-    def _measure_state(self, tableau_sim, interface, global_phase):
+    def _measure_state(self, tableau_simulator, interface, global_phase):
         """Measure the state of the simualtor device"""
-        if self._state == "tableau":
-            tableau = tableau_sim.current_inverse_tableau().inverse()
+        if self._tableau:
+            tableau = tableau_simulator.current_inverse_tableau().inverse()
             x2x, x2z, z2x, z2z, x_signs, z_signs = tableau.to_numpy()
             return np.vstack(
                 (
@@ -671,35 +662,36 @@ class DefaultClifford(Device):
             ).astype(int)
 
         return qml.math.array(
-            tableau_sim.state_vector(endian="big"),
+            tableau_simulator.state_vector(endian="big"),
             like=INTERFACE_TO_LIKE[interface],
         ) * qml.matrix(global_phase)
 
     @staticmethod
-    def _measure_density_matrix(tableau_sim, interface):
+    def _measure_density_matrix(tableau_simulator, interface):
         """Measure the density matrix from the state of simulator device"""
         state_vector = qml.math.array(
-            tableau_sim.state_vector(endian="big"),
+            tableau_simulator.state_vector(endian="big"),
             like=INTERFACE_TO_LIKE[interface],
         )
         return qml.math.einsum("i, j->ij", state_vector, state_vector)
 
     @staticmethod
-    def _measure_purity(tableau_sim, interface, meas_op, circuit):
+    def _measure_purity(interface, meas_op, circuit):
         """Measure the purity of the state of simulator device"""
         if circuit.op_wires == meas_op.wires:  # // Trivial
             purity = qml.math.array(1.0, like=INTERFACE_TO_LIKE[interface])
         return purity
 
     @staticmethod
-    def _measure_expectation(tableau_sim, interface, meas_op, stim):
+    def _measure_expectation(tableau_simulator, interface, meas_op, stim):
         """Measure the expectation value with respect to the state of simulator device"""
 
         # Case for simple Pauli terms
         if isinstance(meas_op.obs, (qml.PauliZ, qml.PauliX, qml.PauliY)):
             pauli = stim.PauliString(_GATE_OPERATIONS[meas_op.obs.name])
             return qml.math.array(
-                tableau_sim.peek_observable_expectation(pauli), like=INTERFACE_TO_LIKE[interface]
+                tableau_simulator.peek_observable_expectation(pauli),
+                like=INTERFACE_TO_LIKE[interface],
             )
 
         # Case for simple Pauli tensor
@@ -707,7 +699,8 @@ class DefaultClifford(Device):
             expec = "".join([_GATE_OPERATIONS[name] for name in meas_op.obs.name])
             pauli = stim.PauliString(expec)
             return qml.math.array(
-                tableau_sim.peek_observable_expectation(pauli), like=INTERFACE_TO_LIKE[interface]
+                tableau_simulator.peek_observable_expectation(pauli),
+                like=INTERFACE_TO_LIKE[interface],
             )
 
         # Case for a Hamiltonian
@@ -717,7 +710,7 @@ class DefaultClifford(Device):
             for idx, ob in enumerate(obs):
                 expec = "".join([_GATE_OPERATIONS[name] for name in ob.name])
                 pauli = stim.PauliString(expec)
-                expecs[idx] = tableau_sim.peek_observable_expectation(pauli)
+                expecs[idx] = tableau_simulator.peek_observable_expectation(pauli)
             return qml.math.dot(coeffs, expecs, like=INTERFACE_TO_LIKE[interface])
 
         # Add support for more case when the time is right
