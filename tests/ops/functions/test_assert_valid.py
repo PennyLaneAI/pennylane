@@ -354,7 +354,6 @@ def test_generated_list_of_ops(class_to_validate):
     if fail_reason := {
         qml.Identity: "empty decomposition, matrix differs from decomp's matrix",
         qml.GlobalPhase: "empty decomposition, matrix differs from decomp's matrix",
-        qml.PhaseShift: "decomposition still needs GlobalPhase, see #4657",
     }.get(class_to_validate):
         pytest.xfail(reason=fail_reason)
     if class_to_validate.__module__[14:20] == "qutrit":
