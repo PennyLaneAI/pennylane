@@ -15,15 +15,14 @@
 This module contains the qml.simplify function.
 """
 from copy import copy
-from functools import wraps
-from typing import Callable, Union
+from typing import Callable, Union, Sequence
 
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.qnode import QNode
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumScript, make_qscript, QuantumTape
+from pennylane.tape import QuantumScript, QuantumTape
 
 
 def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Callable]):
@@ -89,33 +88,21 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
             return qml.apply(new_op)
         return input.simplify()
 
-    if isinstance(input, QuantumScript):
-        return input.__class__(
-            [op.simplify() for op in input.operations],
-            [m.simplify() for m in input.measurements],
-            shots=input.shots,
-        )
-
-    if callable(input):
-        old_qfunc = input.func if isinstance(input, QNode) else input
-
-        @wraps(old_qfunc)
-        def qfunc(*args, **kwargs):
-            qs = make_qscript(old_qfunc)(*args, **kwargs)
-            _ = [qml.simplify(op) for op in qs.operations]
-            m = tuple(qml.simplify(m) for m in qs.measurements)
-            return m[0] if len(m) == 1 else m
-
-        if isinstance(input, QNode):
-            return QNode(
-                func=qfunc,
-                device=input.device,
-                interface=input.interface,
-                diff_method=input.diff_method,
-                expansion_strategy=input.expansion_strategy,
-                **input.execute_kwargs,
-                **input.gradient_kwargs,
-            )
-        return qfunc
+    if isinstance(input, (QuantumScript, Callable)):
+        return _simplify_transform(input)
 
     raise ValueError(f"Cannot simplify the object {input} of type {type(input)}.")
+
+
+@qml.transform
+def _simplify_transform(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
+    with qml.QueuingManager.stop_recording():
+        new_operations = [op.simplify() for op in tape.operations]
+        new_measurements = [m.simplify() for m in tape.measurements]
+
+    new_tape = type(tape)(new_operations, new_measurements, shots=tape.shots)
+
+    def null_processing_fn(res):
+        return res[0]
+
+    return [new_tape], null_processing_fn
