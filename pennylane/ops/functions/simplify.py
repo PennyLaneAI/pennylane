@@ -88,7 +88,7 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
             return qml.apply(new_op)
         return input.simplify()
 
-    if isinstance(input, (QuantumScript, Callable)):
+    if isinstance(input, QuantumScript) or callable(input):
         return _simplify_transform(input)
 
     raise ValueError(f"Cannot simplify the object {input} of type {type(input)}.")
