@@ -43,7 +43,7 @@ def jordan_wigner(
 
     .. math::
 
-        a_0 =  \left (\frac{X_0 + iY_0}{2}  \right ), \:\: \text{...,} \:\: 
+        a_0 =  \left (\frac{X_0 + iY_0}{2}  \right ), \:\: \text{...,} \:\:
         a_n = Z_0 \otimes Z_1 \otimes ... \otimes Z_{n-1} \otimes \left (\frac{X_n + iY_n}{2}  \right ),
 
     where :math:`X`, :math:`Y`, and :math:`Z` are the Pauli operators.
@@ -235,7 +235,11 @@ def _(fermi_operator: FermiWord, n_qubits, ps=False, wire_map=None, tol=None):
 
         x_string = dict(zip(range(wire + 1, n_qubits), ["X"] * (n_qubits - wire)))
 
-        pw1 = PauliWord({**{wire: "X"}, **x_string}) if wire == 0 else PauliWord({**{wire - 1: "Z"}, **{wire: "X"}, **x_string})
+        pw1 = (
+            PauliWord({**{wire: "X"}, **x_string})
+            if wire == 0
+            else PauliWord({**{wire - 1: "Z"}, **{wire: "X"}, **x_string})
+        )
         pw2 = PauliWord({**{wire: "Y"}, **x_string})
 
         qubit_operator *= PauliSentence({pw1: 0.5, pw2: coeffs[sign]})
