@@ -47,7 +47,7 @@ $$
 We can then also define $|k_i\rangle$ and $|b_i\rangle$ iteratively as:
 
 $$
-|b_{i-1} \rangle = U^{\dagger}_i |b_i\rangle \qquad |k_{i-1}\rangle = U^{\dagger}_{i-1} |k_i \rangle
+|b_{i-1} \rangle = U^{\dagger}_i |b_i\rangle \qquad |k\_{i-1}\rangle = U^{\dagger}\_{i-1} |k_i \rangle
 $$
 
 With the initial conditions:
