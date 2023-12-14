@@ -314,8 +314,10 @@ class MeasurementValue(Generic[T]):
     def map_wires(self, wire_map):
         """Returns a copy of the current ``MeasurementValue`` with the wires of each measurement changed
         according to the given wire map.
+
         Args:
             wire_map (dict): dictionary containing the old wires as keys and the new wires as values
+
         Returns:
             MeasurementValue: new ``MeasurementValue`` instance with measurement wires mapped
         """
