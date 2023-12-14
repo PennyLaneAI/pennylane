@@ -49,6 +49,62 @@
   
   <img src="https://docs.pennylane.ai/en/latest/_images/mid-circuit-measurement.png" width=70%/>
 
+* Users can now return statistics for multiple mid-circuit measurements.
+  [(#4888)](https://github.com/PennyLaneAI/pennylane/pull/4888)
+
+  There are two ways in which mid-circuit measurement statistics can be collected:
+
+  * By using arithmetic/binary operators. This can be through unary or binary operators as such:
+
+    ```python
+    import pennylane as qml
+
+    dev = qml.device("default.qubit")
+
+    @qml.qnode(dev)
+    def circuit(phi, theta):
+        qml.RX(phi, wires=0)
+        m0 = qml.measure(wires=0)
+        qml.RY(theta, wires=1)
+        m1 = qml.measure(wires=1)
+        return qml.expval(~m0 + m1)
+
+    print(circuit(1.23, 4.56))
+    ```
+    ```
+    1.2430187928114291
+    ```
+
+  * By using a list of mid-circuit measurement values:
+
+    ```python
+    import pennylane as qml
+
+    dev = qml.device("default.qubit")
+
+    @qml.qnode(dev)
+    def circuit(phi, theta):
+        qml.RX(phi, wires=0)
+        m0 = qml.measure(wires=0)
+        qml.RY(theta, wires=1)
+        m1 = qml.measure(wires=1)
+        return qml.sample([m0, m1])
+
+    print(circuit(1.23, 4.56, shots=5))
+    ```
+    ```
+    [[0 1]
+     [0 1]
+     [0 0]
+     [1 0]
+     [0 1]]
+    ```
+
+  This feature is supported on `default.qubit`, `default.qubit.legacy`, and `default.mixed`. To
+  learn more about which measurements and arithmetic operators are supported, refer to the
+  [Measurements](https://docs.pennylane.ai/en/stable/introduction/measurements.html) page and the
+  documentation for [`qml.measure`](https://docs.pennylane.ai/en/stable/code/api/pennylane.measure.html).
+
 <h4>Catalyst is seamlessly integrated with PennyLane ⚗️</h4>
 
 * Catalyst, our next-generation compilation framework, is now accessible within PennyLane,
@@ -291,8 +347,12 @@
 * `==` and `!=` operands can now be used with `TransformProgram` and `TransformContainers` instances.
   [(#4858)](https://github.com/PennyLaneAI/pennylane/pull/4858)
 
-* `qml.equal` now supports comparison of `QuantumScript` objects.
+* `qml.equal` now supports comparison of `QuantumScript` and `BasisRotation` objects
   [(#4902)](https://github.com/PennyLaneAI/pennylane/pull/4902)
+  [(#4919)](https://github.com/PennyLaneAI/pennylane/pull/4919)
+
+* The function ``qml.Snapshot`` now supports arbitrary measurements of type ``StateMeasurement``.
+  [(#4876)](https://github.com/PennyLaneAI/pennylane/pull/4908)
 
 <h4>Better support for batching</h4>
 
@@ -353,8 +413,22 @@
 
 <h4>Other improvements</h4>
 
+* The formal requirement that type hinting be providing when using
+  the `qml.transform` decorator has been removed. Type hinting can still
+  be used, but is now optional. Please use a type checker such as
+  [mypy](https://github.com/python/mypy) if you wish to ensure types are
+  being passed correctly.
+  [(#4942)](https://github.com/PennyLaneAI/pennylane/pull/4942/)
+
+* `SampleMeasurement` now has an optional method `process_counts` for computing the measurement results from a counts
+  dictionary.
+  [(#4941)](https://github.com/PennyLaneAI/pennylane/pull/4941/)
+
 * A new function called `ops.functions.assert_valid` has been added for checking if an `Operator` class is defined correctly.
   [(#4764)](https://github.com/PennyLaneAI/pennylane/pull/4764)
+
+* `Shots` can now be scaled with `*` via the `__mul__` and `__rmul__` dunders.
+  [(#4913)](https://github.com/PennyLaneAI/pennylane/pull/4913)
 
 * `GlobalPhase` now decomposes to nothing in case devices do not support global phases.
   [(#4855)](https://github.com/PennyLaneAI/pennylane/pull/4855)
@@ -393,7 +467,28 @@
   to `None` if the operator has not defined it (or has no definition in the pauli basis).
   [(#4915)](https://github.com/PennyLaneAI/pennylane/pull/4915)
 
+* `qml.ShotAdaptiveOptimizer` can now use a multinomial distribution for spreading shots across
+  the terms of a Hamiltonian measured in a QNode. Note that this is equivalent to what can be
+  done with `qml.ExpvalCost`, but this is the preferred method because `ExpvalCost` is deprecated.
+  [(#4896)](https://github.com/PennyLaneAI/pennylane/pull/4896)
+
+* Decomposition of `qml.PhaseShift` now uses `qml.GlobalPhase` for retaining the global phase information. 
+  [(#4657)](https://github.com/PennyLaneAI/pennylane/pull/4657)
+  [(#4947)](https://github.com/PennyLaneAI/pennylane/pull/4947)
+
+* `qml.equal` for `Controlled` operators no longer returns `False` when equivalent but 
+  differently-ordered sets of control wires and control values are compared.
+  [(#4944)](https://github.com/PennyLaneAI/pennylane/pull/4944)
+
+* All PennyLane `Operator` subclasses are automatically tested by `ops.functions.assert_valid` to ensure
+  that they follow PennyLane `Operator` standards.
+  [(#4922)](https://github.com/PennyLaneAI/pennylane/pull/4922)
+
 <h3>Breaking changes 💔</h3>
+
+* The function `qml.transforms.classical_jacobian` has been moved to the gradients module
+  and is now accessible as `qml.gradients.classical_jacobian`.
+  [(#4900)](https://github.com/PennyLaneAI/pennylane/pull/4900)
 
 * The transforms submodule `qml.transforms.qcut` is now its own module: `qml.qcut`.
   [(#4819)](https://github.com/PennyLaneAI/pennylane/pull/4819)
@@ -425,6 +520,10 @@
 * The `"pennylane"` MPL-drawer style now draws straight lines instead of sketch-style lines.
   [(#4880)](https://github.com/PennyLaneAI/pennylane/pull/4880)
 
+* The default value for the `term_sampling` argument of `ShotAdaptiveOptimizer` is now
+  `None` instead of `"weighted_random_sampling"`.
+  [(#4896)](https://github.com/PennyLaneAI/pennylane/pull/4896)
+
 <h3>Deprecations 👋</h3>
 
 * `single_tape_transform`, `batch_transform`, `qfunc_transform`, and `op_transform` are deprecated.
@@ -445,6 +544,13 @@
 
 <h3>Documentation 📝</h3>
 
+* Documentation for `qml.metric_tensor` and `qml.adjoint_metric_tensor` and `qml.transforms.classical_jacobian`
+  are now accessible via the gradients API page `qml.gradients` in the documentation.
+  [(#4900)](https://github.com/PennyLaneAI/pennylane/pull/4900)
+
+* Documentation for `qml.specs` was moved to the resource module.
+  [(#4904)](https://github.com/PennyLaneAI/pennylane/pull/4904)
+
 * Documentation for QCut has moved to its own API page `qml.qcut`.
   [(#4819)](https://github.com/PennyLaneAI/pennylane/pull/4819)
 
@@ -457,6 +563,10 @@
   [(#4874)](https://github.com/PennyLaneAI/pennylane/pull/4874)
 
 <h3>Bug fixes 🐛</h3>
+
+* `Attribute` objects now return `False` instead of raising a `TypeError` when checking if an object is inside
+  the set.
+  [(#4933)](https://github.com/PennyLaneAI/pennylane/pull/4933)
 
 * Fixed a bug where the parameter-shift rule of `qml.ctrl(op)` was wrong if `op` had a generator
   that has two or more eigenvalues and is stored as a `SparseHamiltonian`.
@@ -544,6 +654,7 @@ This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
 Ali Asadi,
+Utkarsh Azad,
 Gabriel Bottrill,
 Thomas Bromley,
 Astral Cai,
@@ -552,6 +663,7 @@ Isaac De Vlugt,
 Amintor Dusko,
 Lillian Frederiksen,
 Josh Izaac,
+Juan Giraldo,
 Emiliano Godinez Ramirez,
 Ankit Khandelwal,
 Christina Lee,

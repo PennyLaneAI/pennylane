@@ -92,6 +92,55 @@ class TestVar:
         expected = np.sin(phi / 2) ** 2 - np.sin(phi / 2) ** 4
         assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
 
+    @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
+    @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
+    def test_observable_is_composite_measurement_value(
+        self, shots, phi, tol, tol_stochastic
+    ):  # pylint: disable=too-many-arguments
+        """Test that expectation values for mid-circuit measurement values
+        are correct for a composite measurement value."""
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            qml.RX(0.5 * phi, 1)
+            m1 = qml.measure(1)
+            qml.RX(2 * phi, 2)
+            m2 = qml.measure(2)
+            return qml.var(m0 - 2 * m1 + m2)
+
+        res = circuit(phi, shots=shots)
+
+        @qml.qnode(dev)
+        def expected_circuit(phi):
+            qml.RX(phi, 0)
+            qml.RX(0.5 * phi, 1)
+            qml.RX(2 * phi, 2)
+            return qml.probs()
+
+        probs = expected_circuit(phi)
+        # List of possible outcomes by applying the formula to the binary repr of the indices
+        outcomes = np.array([0.0, 1.0, -2.0, -1.0, 1.0, 2.0, -1.0, 0.0])
+        expected = (
+            sum(probs[i] * outcomes[i] ** 2 for i in range(len(probs)))
+            - sum(probs[i] * outcomes[i] for i in range(len(probs))) ** 2
+        )
+
+        atol = tol if shots is None else tol_stochastic
+        assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
+
+    def test_measurement_value_list_not_allowed(self):
+        """Test that measuring a list of measurement values raises an error."""
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+
+        with pytest.raises(
+            ValueError, match="qml.var does not support measuring sequences of measurements"
+        ):
+            _ = qml.var([m0, m1])
+
     @pytest.mark.parametrize(
         "obs",
         [qml.PauliZ(0), qml.Hermitian(np.diag([1, 2]), 0), qml.Hermitian(np.diag([1.0, 2.0]), 0)],

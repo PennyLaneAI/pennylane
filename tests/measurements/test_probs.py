@@ -273,6 +273,76 @@ class TestProbs:
             for r in res:  # pylint: disable=not-an-iterable
                 assert np.allclose(r, expected, atol=atol, rtol=0)
 
+    @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
+    @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
+    def test_observable_is_measurement_value_list(
+        self, shots, phi, tol, tol_stochastic
+    ):  # pylint: disable=too-many-arguments
+        """Test that probs for mid-circuit measurement values
+        are correct for a measurement value list."""
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.RX(phi, 0)
+            m0 = qml.measure(0)
+            qml.RX(0.5 * phi, 1)
+            m1 = qml.measure(1)
+            qml.RX(2.0 * phi, 2)
+            m2 = qml.measure(2)
+            return qml.probs(op=[m0, m1, m2])
+
+        res = circuit(phi, shots=shots)
+
+        @qml.qnode(dev)
+        def expected_circuit(phi):
+            qml.RX(phi, 0)
+            qml.RX(0.5 * phi, 1)
+            qml.RX(2.0 * phi, 2)
+            return qml.probs(wires=[0, 1, 2])
+
+        expected = expected_circuit(phi)
+
+        atol = tol if shots is None else tol_stochastic
+
+        if not isinstance(shots, list):
+            assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
+        else:
+            for r in res:  # pylint: disable=not-an-iterable
+                assert np.allclose(r, expected, atol=atol, rtol=0)
+
+    def test_composite_measurement_value_not_allowed(self):
+        """Test that measuring composite mid-circuit measurement values raises
+        an error."""
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+
+        with pytest.raises(ValueError, match=r"Cannot use qml.probs\(\) when measuring multiple"):
+            _ = qml.probs(op=m0 + m1)
+
+    def test_mixed_lists_as_op_not_allowed(self):
+        """Test that passing a list not containing only measurement values raises an error."""
+        m0 = qml.measure(0)
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Only sequences of single MeasurementValues can be passed with the op argument",
+        ):
+            _ = qml.probs(op=[m0, qml.PauliZ(0)])
+
+    def test_composed_measurement_value_lists_not_allowed(self):
+        """Test that passing a list containing measurement values composed with arithmetic
+        raises an error."""
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+        m2 = qml.measure(2)
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Only sequences of single MeasurementValues can be passed with the op argument",
+        ):
+            _ = qml.probs(op=[m0 + m1, m2])
+
     @pytest.mark.parametrize("shots", [None, 100])
     def test_batch_size(self, shots):
         """Test the probability is correct for a batched input."""
