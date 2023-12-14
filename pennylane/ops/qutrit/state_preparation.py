@@ -16,7 +16,7 @@ This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the qutrit device.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access,no-member
-from pennylane import numpy as np
+import numpy as np
 from pennylane import math
 from pennylane.operation import AnyWires, StatePrepBase
 from pennylane.templates.state_preparations import QutritBasisStatePreparation

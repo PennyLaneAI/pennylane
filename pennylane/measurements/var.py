@@ -59,6 +59,11 @@ def var(op: Union[Operator, MeasurementValue]) -> "VarianceMP":
     if isinstance(op, MeasurementValue):
         return VarianceMP(obs=op)
 
+    if isinstance(op, Sequence):
+        raise ValueError(
+            "qml.var does not support measuring sequences of measurements or observables"
+        )
+
     if not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
     return VarianceMP(obs=op)
@@ -137,6 +142,8 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
                 )
             return probs[idx] - probs[idx] ** 2
 
+        # This also covers statistics for mid-circuit measurements manipulated using
+        # arithmetic operators
         eigvals = qml.math.asarray(self.eigvals(), dtype="float64")
 
         # we use ``wires`` instead of ``op`` because the observable was
