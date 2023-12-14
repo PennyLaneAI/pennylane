@@ -233,16 +233,16 @@ def _(fermi_operator: FermiWord, n_qubits, ps=False, wire_map=None, tol=None):
             raise ValueError(
                 f"Can't create or annihilate a particle on qubit number {wire} for a system with only {n_qubits} qubits"
             )
-        
+
         x_string = dict(zip(range(wire + 1, n_qubits), ["X"] * (n_qubits - wire)))
-        
+
         pw1 = (
             PauliWord({**{wire: "X"}, **x_string})
             if wire == 0
             else PauliWord({**{wire - 1: "Z"}, **{wire: "X"}, **x_string})
         )
         pw2 = PauliWord({**{wire: "Y"}, **x_string})
-        
+
         qubit_operator *= PauliSentence({pw1: 0.5, pw2: coeffs[sign]})
 
     for pw in qubit_operator:
