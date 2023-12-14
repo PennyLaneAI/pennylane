@@ -117,8 +117,8 @@ In particular, the following code works as expected:
 [-0.09983342]
 
 ``default.qubit`` can differentiate any other measurement process as long as it
-is in the Z measurement basis. In this case, we recommend using the device provided vjp
-``device_vjp=True`` for improved performance scaling. ``lightning.qubit`` only supports expectation values.
+is in the Z measurement basis. In this case, we recommend using the device-provided vjp
+(``device_vjp=True``) for improved performance scaling. ``lightning.qubit`` only supports expectation values.
 
 .. code-block:: python 
 
@@ -127,7 +127,7 @@ is in the Z measurement basis. In this case, we recommend using the device provi
         qml.IsingXX(x, wires=(0,1))
         return qml.vn_entropy(wires=0)
 
->>> qml.grad(circuit)(qml.numpy.array(0.1)
+>>> qml.grad(circuit)(qml.numpy.array(0.1))
 (0.2989909451499196+0j)
 
 Furthermore, the adjoint differentiation algorithm is analytic by nature. If the an execution
