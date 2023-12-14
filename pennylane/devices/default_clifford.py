@@ -18,7 +18,7 @@ This module contains the clifford simulator based on stim
 from dataclasses import replace
 from functools import partial
 from numbers import Number
-from typing import Union, Callable, Tuple, Optional, Sequence
+from typing import Union, Tuple, Optional, Sequence
 import concurrent.futures
 import numpy as np
 
@@ -37,7 +37,7 @@ from .execution_config import ExecutionConfig, DefaultExecutionConfig
 from .default_qubit import accepted_sample_measurement
 
 from .preprocess import (
-    null_postprocessing,
+    decompose,
     validate_observables,
     validate_measurements,
     validate_multiprocessing_workers,
@@ -89,6 +89,11 @@ _GATE_OPERATIONS = {
 }
 
 
+def operation_stopping_condition(op: qml.operation.Operator) -> bool:
+    """Specifies whether or not an operation is accepted by DefaultClifford."""
+    return op.name in _GATE_OPERATIONS
+
+
 def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
     """Specifies whether or not an observable is accepted by DefaultClifford."""
     return obs.name in _MEAS_OBSERVABLES
@@ -105,16 +110,6 @@ def _import_stim():
             "It can be installed with:\n\npip install stim"
         ) from Error
     return stim
-
-
-@qml.transform
-def _validate_clifford_ops(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
-    """Validate the tape contains only Clifford operations."""
-    if not all(op.name in _GATE_OPERATIONS for op in tape.operations):
-        raise qml.QuantumFunctionError(
-            "Currently 'default.clifford' device supports Clifford operations only."
-        )
-    return (tape,), null_postprocessing
 
 
 class DefaultClifford(Device):
@@ -360,7 +355,9 @@ class DefaultClifford(Device):
         transform_program.add_transform(qml.defer_measurements, device=self)
 
         if self._check_clifford:
-            transform_program.add_transform(_validate_clifford_ops)
+            transform_program.add_transform(
+                decompose, stopping_condition=operation_stopping_condition, name="default.clifford"
+            )
         transform_program.add_transform(
             validate_measurements, sample_measurements=accepted_sample_measurement, name=self.name
         )
@@ -533,7 +530,7 @@ class DefaultClifford(Device):
         """Whether or not this device defines a custom vector jacobian product."""
         return False
 
-    # pylint: disable=unidiomatic-typecheck, unused-argument, too-many-branches
+    # pylint: disable=unidiomatic-typecheck, unused-argument, too-many-branches, no-member
     def simulate(
         self,
         circuit: qml.tape.QuantumScript,

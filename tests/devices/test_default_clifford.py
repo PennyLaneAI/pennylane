@@ -332,8 +332,8 @@ def test_clifford_error():
         return qml.state()
 
     with pytest.raises(
-        qml.QuantumFunctionError,
-        match="Currently 'default.clifford' device supports Clifford operations only",
+        qml.DeviceError,
+        match=r"Operator RX\(1.0, wires=\[0\]\) not supported on default.clifford and does not provide a decomposition",
     ):
         circuit()
 
