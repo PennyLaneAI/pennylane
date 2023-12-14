@@ -436,6 +436,7 @@
 
 * Decomposition of `qml.PhaseShift` now uses `qml.GlobalPhase` for retaining the global phase information. 
   [(#4657)](https://github.com/PennyLaneAI/pennylane/pull/4657)
+  [(#4947)](https://github.com/PennyLaneAI/pennylane/pull/4947)
 
 * `qml.equal` for `Controlled` operators no longer returns `False` when equivalent but 
   differently-ordered sets of control wires and control values are compared.
