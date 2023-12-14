@@ -214,6 +214,9 @@ def test_tracker():
         res_q = dev_q.execute(tapes, conf_q)
         assert np.allclose(res_q, res_c)
 
+        res_s = dev_c.execute(qscript, conf_d)
+        assert np.allclose(res_c, res_s)
+
         grad_c = dev_c.compute_derivatives(tapes_clrfd, conf_q)
         grad_q = dev_q.compute_derivatives(tapes_qubit, conf_d)
         assert qml.math.allclose(grad_q, grad_c)
@@ -222,9 +225,9 @@ def test_tracker():
         assert qml.math.allclose(res_q, res_c) and qml.math.allclose(grad_q, grad_c)
 
     assert tracker.totals == {
-        "batches": 2,
-        "simulations": 2,
-        "executions": 3,
+        "batches": 3,
+        "simulations": 3,
+        "executions": 4,
         "derivative_batches": 2,
         "derivatives": 3,
         "execute_and_derivative_batches": 1,
@@ -238,9 +241,9 @@ def test_tracker():
         depth=2,
     )
     assert tracker.history == {
-        "batches": [1, 1],
-        "simulations": [1, 1],
-        "executions": [1, 1, 1],
+        "batches": [1, 1, 1],
+        "simulations": [1, 1, 1],
+        "executions": [1, 1, 1, 1],
         "derivative_batches": [1, 1],
         "derivatives": [1, 1, 1],
         "execute_and_derivative_batches": [1],
