@@ -61,6 +61,8 @@ def _recursive_find_mcm_stats_layer(
         op_occupied_cwires (set(int)): classical wires occupied by measurement
         occupied_cwires_per_layer (list[set[int]]): which classical wires are already
             in use for collecting statistics. Each set is a different layer.
+        bit_map (dict): A map containing mid-circuit measurements used for classical conditions
+            or collecting statistics as keys
 
     Returns:
         int: layer to place measurement process in
