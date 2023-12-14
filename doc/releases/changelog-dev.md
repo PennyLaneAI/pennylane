@@ -609,6 +609,7 @@
 * `qml.map_wires` no longer fails when mapping nested quantum tapes.
   [(#4901)](https://github.com/PennyLaneAI/pennylane/pull/4901)
 
+* parity_transform: Mapping scheme to convert fermionic operators to qubit operators
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -636,4 +637,5 @@ Mudit Pandey,
 Matthew Silverman,
 Jay Soni,
 David Wierichs,
-Justin Woodring.
+Justin Woodring
+Diksha Dhawan.
