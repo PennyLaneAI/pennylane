@@ -17,7 +17,7 @@
   [(#4930)](https://github.com/PennyLaneAI/pennylane/pull/4930)
 
   Drawing of mid-circuit measurement capabilities including qubit reuse and reset,
-  postselection, conditioning, and collecting statistics are supported.
+  postselection, conditioning, and collecting statistics is supported.
 
   ```python
   import pennylane as qml

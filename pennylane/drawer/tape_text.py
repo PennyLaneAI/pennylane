@@ -192,7 +192,7 @@ def _add_cwire_measurement_grouping_symbols(mcms, layer_str, config):
 
 
 def _add_cwire_measurement(m, layer_str, config):
-    """Updates ``layer_str`` with the ``m`` measurement when it it used
+    """Updates ``layer_str`` with the ``m`` measurement when it is used
     for collecting mid-circuit measurement statistics."""
     mcms = [v.measurements[0] for v in m.mv] if isinstance(m.mv, list) else m.mv.measurements
     layer_str = _add_cwire_measurement_grouping_symbols(mcms, layer_str, config)
