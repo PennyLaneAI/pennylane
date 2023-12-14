@@ -16,8 +16,8 @@ This module contains the qml.probs measurement.
 """
 from typing import Sequence, Tuple
 
+import numpy as np
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.wires import Wires
 
 from .measurements import Probability, SampleMeasurement, StateMeasurement
@@ -93,6 +93,22 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
     the device simulates qubit or continuous variable quantum systems.
     """
     if isinstance(op, MeasurementValue):
+        if len(op.measurements) > 1:
+            raise ValueError(
+                "Cannot use qml.probs() when measuring multiple mid-circuit measurements collected "
+                "using arithmetic operators. To collect probabilities for multiple mid-circuit "
+                "measurements, use a list of mid-circuit measurements with qml.probs()."
+            )
+        return ProbabilityMP(obs=op)
+
+    if isinstance(op, Sequence):
+        if not all(isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in op):
+            raise qml.QuantumFunctionError(
+                "Only sequences of single MeasurementValues can be passed with the op argument. "
+                "MeasurementValues manipulated using arithmetic operators cannot be used when "
+                "collecting statistics for a sequence of mid-circuit measurements."
+            )
+
         return ProbabilityMP(obs=op)
 
     if isinstance(op, qml.Hamiltonian):

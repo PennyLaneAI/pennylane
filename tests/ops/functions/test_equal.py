@@ -15,7 +15,7 @@
 Unit tests for the equal function.
 Tests are divided by number of parameters and wires different operators take.
 """
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-public-methods
 import itertools
 
 from copy import deepcopy
@@ -1259,6 +1259,56 @@ class TestMeasurementsEqual:
             qml.measurements.MidMeasureMP(wires=qml.wires.Wires([0, 1]), reset=True, id="test_id"),
         )
 
+    @pytest.mark.parametrize("mp_fn", [qml.probs, qml.sample, qml.counts])
+    def test_mv_list_as_op(self, mp_fn):
+        """Test that MeasurementProcesses that measure a list of MeasurementValues check for equality
+        correctly."""
+        mv1 = qml.measure(0)
+        mv2 = qml.measure(1)
+        mv3 = qml.measure(1)
+        mv4 = qml.measure(0)
+        mv4.measurements[0].id = mv1.measurements[0].id
+
+        mp1 = mp_fn(op=[mv1, mv2])
+        mp2 = mp_fn(op=[mv4, mv2])
+        mp3 = mp_fn(op=[mv1, mv3])
+        mp4 = mp_fn(op=[mv2, mv1])
+
+        assert qml.equal(mp1, mp1)
+        assert qml.equal(mp1, mp2)
+        assert not qml.equal(mp1, mp3)
+        assert not qml.equal(mp1, mp4)
+
+    def test_mv_list_and_arithmetic_as_op(self):
+        """Test that comparing measurements using composite measurement values and
+        a list of measurement values fails."""
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+        mp1 = qml.sample(op=m0 * m1)
+        mp2 = qml.sample(op=[m0, m1])
+
+        assert not qml.equal(mp1, mp2)
+
+    @pytest.mark.parametrize("mp_fn", [qml.expval, qml.var, qml.sample, qml.counts])
+    def test_mv_arithmetic_as_op(self, mp_fn):
+        """Test that MeasurementProcesses that measure a list of MeasurementValues check for equality
+        correctly."""
+        mv1 = qml.measure(0)
+        mv2 = qml.measure(1)
+        mv3 = qml.measure(1)
+        mv4 = qml.measure(0)
+        mv4.measurements[0].id = mv1.measurements[0].id
+
+        mp1 = mp_fn(op=mv1 * mv2)
+        mp2 = mp_fn(op=mv4 * mv2)
+        mp3 = mp_fn(op=mv2 * mv1)
+        mp4 = mp_fn(op=mv1 * mv3)
+
+        assert qml.equal(mp1, mp1)
+        assert qml.equal(mp1, mp2)
+        assert qml.equal(mp1, mp3)
+        assert not qml.equal(mp1, mp4)
+
 
 class TestObservablesComparisons:
     """Tests comparisons between Hamiltonians, Tensors and PauliX/Y/Z operators"""
@@ -1450,6 +1500,36 @@ class TestSymbolicOpComparison:
         base2 = qml.Hadamard(0)
         op1 = Controlled(base1, control_wires=wire1)
         op2 = Controlled(base2, control_wires=wire2)
+        assert qml.equal(op1, op2) == res
+
+    @pytest.mark.parametrize(("controls1", "controls2"), [([0, 1], [0, 1]), ([1, 1], [1, 0])])
+    def test_control_values_comparison(self, controls1, controls2):
+        """Test that equal compares control values for Controlled operators"""
+        base1 = qml.PauliX(wires=0)
+        base2 = qml.PauliX(wires=0)
+
+        op1 = qml.ops.op_math.Controlled(base1, control_wires=[1, 2], control_values=controls1)
+        op2 = qml.ops.op_math.Controlled(base2, control_wires=[1, 2], control_values=controls2)
+
+        assert qml.equal(op1, op2) == np.allclose(controls1, controls2)
+
+    @pytest.mark.parametrize(
+        ("wires1", "controls1", "wires2", "controls2", "res"),
+        [
+            ([1, 2], [0, 1], [1, 2], [0, 1], True),
+            ([1, 2], [0, 1], [2, 1], [0, 1], False),
+            ([1, 2], [0, 1], [2, 1], [1, 0], True),
+        ],
+    )
+    def test_differing_control_wire_order(self, wires1, controls1, wires2, controls2, res):
+        """Test that equal compares control wires and their respective control values
+        without regard for wire order"""
+        base1 = qml.PauliX(wires=0)
+        base2 = qml.PauliX(wires=0)
+
+        op1 = qml.ops.op_math.Controlled(base1, control_wires=wires1, control_values=controls1)
+        op2 = qml.ops.op_math.Controlled(base2, control_wires=wires2, control_values=controls2)
+
         assert qml.equal(op1, op2) == res
 
     @pytest.mark.parametrize(("wires1", "wires2", "res"), CONTROL_WIRES_SEQUENCE)
