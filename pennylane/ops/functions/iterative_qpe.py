@@ -61,7 +61,7 @@ def iterative_qpe(base, ancilla, iters):
          [1 1 1]
          [0 0 1]]
 
-    The output is an array of size ``(number of iterations, number of shots)``.
+    The output is an array of size ``(number of shots, number of iterations)``.
 
     .. code-block:: pycon
 
