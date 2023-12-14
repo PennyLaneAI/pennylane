@@ -163,18 +163,19 @@ def parity_transform(
     The fermionic creation and annihilation operators are mapped to the Pauli operators as
 
     .. math::
-        a^{\dagger}_0 = \left (\frac{X_0 - iY_0}{2}  \right )\otimes X_1 \otimes X_2 \otimes ... X_N, \:\:\:\:\:\:\:\:\:\:\:\:\:\:\:\:\:\:\:\:\:\:\:\:
 
-        a^{\dagger}_n = \left (\frac{Z_{n-1} \otimes X_n - iY_n}{2} \right ) \otimes X_{n+1} \otimes X_{n+2} \otimes ... \otimes X_N
-
+       \begin{align}
+           a^{\dagger}_0 &= \left (\frac{X_0 - iY_0}{2}  \right )\otimes X_1 \otimes X_2 \otimes ... X_N, \\\\\\\\
+           a^{\dagger}_n &= \left (\frac{Z_{n-1} \otimes X_n - iY_n}{2} \right ) \otimes X_{n+1} \otimes X_{n+2} \otimes ... \otimes X_N
+       \end{align}
     and
 
     .. math::
 
-        a_0 = \left (\frac{X_0 + iY_0}{2}  \right )\otimes X_1 \otimes X_2 \otimes ... X_N, \: \:\:\:\:\:\:\:\:\:\:\:\:\:\:\:\:\:\:\:\:\:\:\:
-
-        a_n = \left (\frac{Z_{n-1} \otimes X_n - iY_n}{2} \right ) \otimes X_{n+1} \otimes X_{n+2} \otimes ... \otimes X_N
-
+        \begin{align}
+            a_0 &= \left (\frac{X_0 + iY_0}{2}  \right )\otimes X_1 \otimes X_2 \otimes ... X_N,\\\\\\\\
+            a_n &= \left (\frac{Z_{n-1} \otimes X_n + iY_n}{2} \right ) \otimes X_{n+1} \otimes X_{n+2} \otimes ... \otimes X_N
+        \end{align}
     where :math:`X`, :math:`Y`, and :math:`Z` are the Pauli operators and :math:`N` is the number of qubits/spin orbitals.
 
     Args:
