@@ -62,8 +62,6 @@ class TestQNode:
         self, dev, diff_method, grad_on_execution, interface, device_vjp
     ):
         """Test execution works with the interface"""
-        if diff_method == "backprop":
-            pytest.skip("Test does not support backprop")
         if dev.name == "param_shift.qubit":
             pytest.xfail("gradient transforms have a different vjp shape convention")
 

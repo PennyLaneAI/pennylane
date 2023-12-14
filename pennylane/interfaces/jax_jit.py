@@ -199,7 +199,7 @@ _execute_vjp_jit = jax.custom_vjp(_execute_wrapper, nondiff_argnums=[1, 2, 3, 4]
 _execute_vjp_jit.defvjp(_vjp_fwd, _vjp_bwd)
 
 
-def jax_jvp_jit_execute(tapes, execute_fn, jpc, device):
+def jax_jit_jvp_execute(tapes, execute_fn, jpc, device):
     """Execute a batch of tapes with JAX parameters using VJP derivatives.
 
     Args:
@@ -229,7 +229,7 @@ def jax_jvp_jit_execute(tapes, execute_fn, jpc, device):
     return _execute_jvp_jit(parameters, _NonPytreeWrapper(tuple(tapes)), execute_fn, jpc, device)
 
 
-def jax_vjp_jit_execute(tapes, execute_fn, jpc, device=None):
+def jax_jit_vjp_execute(tapes, execute_fn, jpc, device=None):
     """Execute a batch of tapes with JAX parameters using VJP derivatives.
 
     Args:
