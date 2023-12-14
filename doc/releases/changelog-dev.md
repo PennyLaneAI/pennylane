@@ -326,7 +326,11 @@
 
 <h4>Other improvements</h4>
 
-* The type hinting check in the `qml.transform` decorator is removed.
+* The formal requirement that type hinting be providing when using
+  the `qml.transform` decorator has been removed. Type hinting can still
+  be used, but is now optional. Please use a type checker such as
+  [mypy](https://github.com/python/mypy) if you wish to ensure types are
+  being passed correctly.
   [(#4942)](https://github.com/PennyLaneAI/pennylane/pull/4942/)
 
 * `SampleMeasurement` now has an optional method `process_counts` for computing the measurement results from a counts
