@@ -414,6 +414,9 @@
 
 <h4>Other improvements</h4>
 
+* `qml.simplify` now uses the new transforms API.
+  [(#4949)](https://github.com/PennyLaneAI/pennylane/pull/4949)
+
 * The formal requirement that type hinting be providing when using
   the `qml.transform` decorator has been removed. Type hinting can still
   be used, but is now optional. Please use a type checker such as
