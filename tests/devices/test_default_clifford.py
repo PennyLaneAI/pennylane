@@ -93,8 +93,8 @@ def test_grad_clifford(circuit):
 @pytest.mark.parametrize("tableau", [True, False])
 def test_state_clifford(circuit, tableau):
     """Test that state computation with default.clifford is possible and agrees with default.qubit."""
-    dev_c = qml.device("default.clifford", tableau=tableau)
-    dev_q = qml.device("default.qubit")
+    dev_c = qml.device("default.clifford", tableau=tableau, wires=2)
+    dev_q = qml.device("default.qubit", wires=2)
 
     def circuit_fn():
         circuit()
@@ -122,6 +122,17 @@ def test_state_clifford(circuit, tableau):
             assert qml.math.allclose(phase / phase[0], qml.math.ones(len(phase)))
     else:
         assert qml.math.allclose(circuit_tableau, qnode_clfrd())
+
+    @qml.qnode(dev_c)
+    def circuit_empty():
+        return qml.state()
+
+    # Tableau for the circuit define above
+    circuit_tableau = np.array([[1, 0, 0], [0, 1, 0]])
+    if not tableau:
+        assert qml.math.allclose(circuit_empty(), qml.math.array([1.0, 0.0, 0.0, 0.0]))
+    else:
+        assert qml.math.allclose(circuit_empty(), circuit_tableau)
 
 
 @pytest.mark.parametrize("circuit", [circuit_1])
@@ -278,6 +289,24 @@ def test_debugger():
     assert qml.math.allclose(result[0], 1.0)
     assert qml.math.allclose(result[1], 0.0)
 
+    @qml.qnode(dev)
+    def circuit():
+        for op in ops:
+            qml.apply(op)
+        return [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
+
+    assert getattr(dev, "_debugger") is None
+
+    result = qml.snapshots(circuit)()
+    expected = {
+        0: qml.math.array([1, 0]),
+        "final_state": qml.math.array([1, 1]) / qml.math.sqrt(2),
+        "execution_results": [qml.math.array(1.0), qml.math.array(0.0)],
+    }
+
+    assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys()))
+    assert all(np.allclose(v1, v2) for v1, v2 in zip(result.values(), expected.values()))
+
 
 def test_shot_error():
     """Test if an NotImplementedError is raised when shots are requested."""
@@ -315,6 +344,17 @@ def test_meas_error():
 
     with pytest.raises(NotImplementedError, match="default.clifford doesn't support the"):
         circuit_ent()
+
+    @qml.qnode(qml.device("default.clifford"))
+    def circuit_snap():
+        qml.Snapshot(measurement=qml.expval(qml.PauliZ(0)))
+        return qml.state()
+
+    with pytest.raises(
+        ValueError,
+        match="default.clifford does not support arbitrary measurements of a state with snapshots.",
+    ):
+        qml.snapshots(circuit_snap)()
 
 
 def test_clifford_error():

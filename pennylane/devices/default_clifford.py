@@ -315,6 +315,10 @@ class DefaultClifford(Device):
             updated_values["device_options"]["max_workers"] = self._max_workers
         if "rng" not in updated_values["device_options"]:
             updated_values["device_options"]["rng"] = self._rng
+        if "tableau" not in updated_values["device_options"]:
+            updated_values["device_options"]["tableau"] = self._tableau
+        if "max_error" not in updated_values["device_options"]:
+            updated_values["device_options"]["max_error"] = self._max_error
         return replace(execution_config, **updated_values)
 
     def preprocess(
@@ -476,22 +480,6 @@ class DefaultClifford(Device):
 
         return res[0] if is_single_circuit else res
 
-    def supports_jvp(
-        self,
-        execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[QuantumTape] = None,
-    ) -> bool:
-        """Whether or not this device defines a custom jacobian vector product."""
-        return False
-
-    def supports_vjp(
-        self,
-        execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[QuantumTape] = None,
-    ) -> bool:
-        """Whether or not this device defines a custom vector jacobian product."""
-        return False
-
     # pylint: disable=unidiomatic-typecheck, unused-argument, too-many-branches, no-member
     def simulate(
         self,
@@ -558,12 +546,17 @@ class DefaultClifford(Device):
                 if op.name == "GlobalPhase":
                     global_phase_ops.append(op)
                 if op.name == "Snapshot":
-                    state = stim.Tableau.from_circuit(stim_ct).to_state_vector()
-                    if state.shape == (1,):
-                        # following is faster than using np.eye(length=1, size, index)
-                        state = qml.math.zeros(2**circuit.num_wires, dtype=complex)
-                        state[0] = 1.0 + 0.0j
                     if debugger is not None and debugger.active:
+                        meas = op.hyperparameters["measurement"]
+                        if meas is not None and not isinstance(meas, qml.measurements.StateMP):
+                            raise ValueError(
+                                f"{self.name} does not support arbitrary measurements of a state with snapshots."
+                            )
+                        state = stim.Tableau.from_circuit(stim_ct).to_state_vector()
+                        if state.shape == (1,):
+                            # following is faster than using np.eye(length=1, size, index)
+                            state = qml.math.zeros(2**circuit.num_wires, dtype=complex)
+                            state[0] = 1.0 + 0.0j
                         flat_state = qml.math.flatten(state)
                         if op.tag:
                             debugger.snapshots[op.tag] = flat_state
@@ -580,7 +573,7 @@ class DefaultClifford(Device):
             if not circuit.shots:
                 # Computing statevector via tableaus
                 if type(meas) is qml.measurements.StateMP:
-                    res = self._measure_state(tableau_simulator, interface, global_phase)
+                    res = self._measure_state(tableau_simulator, interface, circuit, global_phase)
 
                 # Computing density matrix via tableaus
                 elif type(meas) is qml.measurements.DensityMatrixMP:
@@ -604,22 +597,30 @@ class DefaultClifford(Device):
 
         return tuple(results)
 
-    def _measure_state(self, tableau_simulator, interface, global_phase):
+    def _measure_state(self, tableau_simulator, interface, circuit, global_phase):
         """Measure the state of the simualtor device."""
         if self._tableau:
             tableau = tableau_simulator.current_inverse_tableau().inverse()
             x2x, x2z, z2x, z2z, x_signs, z_signs = tableau.to_numpy()
-            return np.vstack(
+            pl_tableau = np.vstack(
                 (
                     np.hstack((x2x, x2z, x_signs.reshape(-1, 1))),
                     np.hstack((z2x, z2z, z_signs.reshape(-1, 1))),
                 )
             ).astype(int)
+            if pl_tableau.shape == (0, 1):
+                return np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])
+            return pl_tableau
 
-        return qml.math.array(
+        state = qml.math.array(
             tableau_simulator.state_vector(endian="big"),
             like=INTERFACE_TO_LIKE[interface],
-        ) * qml.matrix(global_phase)
+        )
+        if state.shape == (1,):
+            # following is faster than using np.eye(length=1, size, index)
+            state = qml.math.zeros(2**circuit.num_wires, dtype=complex)
+            state[0] = 1.0 + 0.0j
+        return state * qml.matrix(global_phase)
 
     @staticmethod
     def _measure_density_matrix(tableau_simulator, interface):
