@@ -26,7 +26,7 @@ from scipy.special import factorial
 
 import pennylane as qml
 from pennylane.measurements import ProbabilityMP
-from pennylane.transforms.core import transform
+from pennylane import transform
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 
@@ -210,10 +210,10 @@ def finite_diff(
     f0=None,
     validate_params=True,
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
-    r"""Transform a QNode to compute the finite-difference gradient of all gate parameters with respect to its inputs.
+    r"""Transform a circuit to compute the finite-difference gradient of all gate parameters with respect to its inputs.
 
     Args:
-        tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
+        tape (QNode or QuantumTape): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
@@ -237,17 +237,11 @@ def finite_diff(
             If ``False``, the finite-difference method will be applied to all parameters.
 
     Returns:
-        function or tuple[list[QuantumTape], function]:
+        qnode (QNode) or tuple[List[QuantumTape], function]:
 
-        - If the input is a QNode, an object representing the Jacobian (function) of the QNode
-          that can be executed to obtain the Jacobian.
-          The type of the Jacobian returned is either a tensor, a tuple or a
-          nested tuple depending on the nesting structure of the original QNode output.
-
-        - If the input is a tape, a tuple containing a
-          list of generated tapes, together with a post-processing
-          function to be applied to the results of the evaluated tapes
-          in order to obtain the Jacobian.
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple depending upon the nesting
+        structure of measurements in the original circuit.
 
     **Example**
 
@@ -287,7 +281,9 @@ def finite_diff(
     .. details::
         :title: Usage Details
 
-        This gradient transform can also be applied directly to :class:`QNode <pennylane.QNode>` objects:
+        This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects.
+        However, for performance reasons, we recommend providing the gradient transform as the ``diff_method`` argument
+        of the QNode decorator, and differentiating with your preferred machine learning framework.
 
         >>> @qml.qnode(dev)
         ... def circuit(params):
@@ -327,8 +323,12 @@ def finite_diff(
 
         >>> dev = qml.device("default.qubit", wires=2)
         >>> fn(qml.execute(gradient_tapes, dev, None))
-        ((array(-0.38751724), array(-0.18884792), array(-0.38355709)),
-         (array(0.69916868), array(0.34072432), array(0.69202366)))
+        ((tensor(-0.56464251, requires_grad=True),
+         tensor(-0.56464251, requires_grad=True),
+         tensor(-0.56464251, requires_grad=True)),
+        (tensor(0.93203912, requires_grad=True),
+         tensor(0.93203912, requires_grad=True),
+         tensor(0.93203912, requires_grad=True)))
 
         This gradient transform is compatible with devices that use shot vectors for execution.
 
@@ -359,7 +359,8 @@ def finite_diff(
             "Finite differences with float32 detected. Answers may be inaccurate. float64 is recommended.",
             UserWarning,
         )
-
+    number_parameters = len(tape.trainable_params)
+    number_measurements = len(tape.measurements)
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
 
@@ -408,7 +409,6 @@ def finite_diff(
     def _single_shot_batch_result(results):
         """Auxiliary function for post-processing one batch of results corresponding to finite shots or a single
         component of a shot vector"""
-
         grads = []
         start = 1 if c0 is not None and f0 is None else 0
         r0 = f0 or results[0]
@@ -443,13 +443,13 @@ def finite_diff(
 
             pre_grads = []
 
-            if len(tape.measurements) == 1:
+            if number_measurements == 1:
                 res = qml.math.stack(res)
                 c = qml.math.convert_like(coeffs, res)
                 lin_comb = qml.math.tensordot(res, c, [[0], [0]])
                 pre_grads.append(lin_comb)
             else:
-                for i in range(len(tape.measurements)):
+                for i in range(number_measurements):
                     r = qml.math.stack([r[i] for r in res])
                     c = qml.math.convert_like(coeffs, r)
                     lin_comb = qml.math.tensordot(r, c, [[0], [0]])
@@ -457,11 +457,11 @@ def finite_diff(
 
             # Add on the unshifted term
             if c0 is not None:
-                if len(tape.measurements) == 1:
+                if number_measurements == 1:
                     c = qml.math.convert_like(c0, r0)
                     pre_grads = [pre_grads[0] + r0 * c]
                 else:
-                    for i in range(len(tape.measurements)):
+                    for i in range(number_measurements):
                         r_i = r0[i]
                         c = qml.math.convert_like(c0, r_i)
                         pre_grads[i] = pre_grads[i] + r_i * c
@@ -479,19 +479,19 @@ def finite_diff(
 
             grads.append(pre_grads)
         # Single measurement
-        if len(tape.measurements) == 1:
-            if len(tape.trainable_params) == 1:
+        if number_measurements == 1:
+            if number_parameters == 1:
                 return grads[0]
             return tuple(grads)
 
         # Reordering to match the right shape for multiple measurements
-        grads_reorder = [[0] * len(tape.trainable_params) for _ in range(len(tape.measurements))]
-        for i in range(len(tape.measurements)):
-            for j in range(len(tape.trainable_params)):
+        grads_reorder = [[0] * number_parameters for _ in range(len(tape.measurements))]
+        for i in range(number_measurements):
+            for j in range(number_parameters):
                 grads_reorder[i][j] = grads[j][i]
 
         # To tuple
-        if len(tape.trainable_params) == 1:
+        if number_parameters == 1:
             return tuple(elem[0] for elem in grads_reorder)
         return tuple(tuple(elem) for elem in grads_reorder)
 

@@ -24,8 +24,14 @@ import warnings
 import numpy as np
 
 import pennylane as qml
-from pennylane.measurements import ExpectationMP, ProbabilityMP, StateMP, VarianceMP
-from pennylane.transforms.core import transform
+from pennylane.measurements import (
+    ExpectationMP,
+    ProbabilityMP,
+    StateMP,
+    VarianceMP,
+    MeasurementProcess,
+)
+from pennylane import transform
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 
@@ -54,7 +60,8 @@ def _grad_method(tape, idx):
             or ``"0"`` (constant parameter).
     """
 
-    op = tape._par_info[idx]["op"]
+    par_info = tape._par_info[idx]
+    op = par_info["op"]
 
     if op.grad_method in (None, "F"):
         return op.grad_method
@@ -74,7 +81,8 @@ def _grad_method(tape, idx):
             continue
 
         # get the set of operations betweens the operation and the observable
-        ops_between = tape.graph.nodes_between(op, m.obs)
+        op_or_mp = tape[par_info["op_idx"]]
+        ops_between = tape.graph.nodes_between(op_or_mp, m)
 
         if not ops_between:
             # if there is no path between the operation and the observable,
@@ -86,6 +94,7 @@ def _grad_method(tape, idx):
         # intervening gates, and the type of the observable.
         best_method = "A"
 
+        ops_between = [o.obs if isinstance(o, MeasurementProcess) else o for o in ops_between]
         if any(not k.supports_heisenberg for k in ops_between):
             # non-Gaussian operators present in-between the operation
             # and the observable. Must fallback to numeric differentiation.
@@ -392,7 +401,8 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
         # transform the descendant observables into their derivatives using Z
         transformed_obs_idx = []
 
-        for obs in observable_descendents:
+        for mp in observable_descendents:
+            obs = mp if mp.obs is None else mp.obs
             # get the index of the descendent observable
             # pylint:disable=undefined-loop-variable
             for obs_idx, tape_obs in enumerate(tape.observables):
@@ -524,7 +534,7 @@ def param_shift_cv(
     parameters with respect to its inputs.
 
     Args:
-        tape (.QuantumTape): quantum tape to differentiate
+        tape (QNode or QuantumTape): quantum circuit to differentiate
         dev (pennylane.Device): device the parameter-shift method is to be computed on
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivative with respect to all
@@ -556,16 +566,11 @@ def param_shift_cv(
         force_order2 (bool): if True, use the order-2 method even if not necessary
 
     Returns:
-        function or tuple[list[QuantumTape], function]:
+        qnode (QNode) or tuple[List[QuantumTape], function]:
 
-        - If the input is a QNode, an object representing the Jacobian (function) of the QNode
-          that can be executed to obtain the Jacobian matrix.
-          The returned matrix is a tensor of size ``(number_outputs, number_gate_parameters)``
-
-        - If the input is a tape, a tuple containing a
-          list of generated tapes, together with a post-processing
-          function to be applied to the results of the evaluated tapes
-          in order to obtain the Jacobian matrix.
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple depending upon the nesting
+        structure of measurements in the original circuit.
 
     This transform supports analytic gradients of Gaussian CV operations using
     the parameter-shift rule. This gradient method returns *exact* gradients,
@@ -646,7 +651,9 @@ def param_shift_cv(
     .. details::
         :title: Usage Details
 
-        This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects:
+        This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects.
+        However, for performance reasons, we recommend providing the gradient transform as the ``diff_method`` argument
+        of the QNode decorator, and differentiating with your preferred machine learning framework.
 
         >>> @qml.qnode(dev)
         ... def circuit(params):

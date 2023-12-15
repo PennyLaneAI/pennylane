@@ -14,7 +14,8 @@
 
 """This module contains functions for preprocessing `QuantumTape` objects to ensure
 that they are supported for execution by a device."""
-# pylint: disable=protected-access
+# pylint: disable=protected-access, too-many-arguments
+
 import os
 from typing import Generator, Callable, Union, Sequence, Optional
 from copy import copy
@@ -24,12 +25,13 @@ import pennylane as qml
 from pennylane import Snapshot
 from pennylane.operation import Tensor, StatePrepBase
 from pennylane.measurements import (
+    MeasurementProcess,
     StateMeasurement,
     SampleMeasurement,
 )
 from pennylane.typing import ResultBatch, Result
 from pennylane import DeviceError
-from pennylane.transforms.core import transform
+from pennylane import transform
 from pennylane.wires import WireError
 
 PostprocessingFn = Callable[[ResultBatch], Union[Result, ResultBatch]]
@@ -45,21 +47,35 @@ def null_postprocessing(results):
 def _operator_decomposition_gen(
     op: qml.operation.Operator,
     acceptance_function: Callable[[qml.operation.Operator], bool],
+    decomposer: Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]],
+    max_expansion: Optional[int] = None,
+    current_depth=0,
     name: str = "device",
 ) -> Generator[qml.operation.Operator, None, None]:
     """A generator that yields the next operation that is accepted."""
-    if acceptance_function(op):
+    max_depth_reached = False
+    if max_expansion is not None and max_expansion <= current_depth:
+        max_depth_reached = True
+    if acceptance_function(op) or max_depth_reached:
         yield op
     else:
         try:
-            decomp = op.decomposition()
+            decomp = decomposer(op)
+            current_depth += 1
         except qml.operation.DecompositionUndefinedError as e:
             raise DeviceError(
                 f"Operator {op} not supported on {name} and does not provide a decomposition."
             ) from e
 
         for sub_op in decomp:
-            yield from _operator_decomposition_gen(sub_op, acceptance_function, name)
+            yield from _operator_decomposition_gen(
+                sub_op,
+                acceptance_function,
+                decomposer=decomposer,
+                max_expansion=max_expansion,
+                current_depth=current_depth,
+                name=name,
+            )
 
 
 #######################
@@ -72,8 +88,14 @@ def no_sampling(
     """Raises an error if the tape has finite shots.
 
     Args:
-        tape (QuantumTape): a quantum circuit
-        name="device" (str): name to use in error message.
+        tape (QuantumTape or .QNode or Callable): a quantum circuit
+        name (str): name to use in error message.
+
+    Returns:
+        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]:
+
+        The unaltered input circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
+
 
     This transform can be added to forbid finite shots. For example, ``default.qubit`` uses it for
     adjoint and backprop validation.
@@ -92,17 +114,15 @@ def validate_device_wires(
     across all available wires.
 
     Args:
-        tape (QuantumTape): a quantum circuit.
+        tape (QuantumTape or QNode or Callable): a quantum circuit.
         wires=None (Optional[Wires]): the allowed wires. Wires of ``None`` allows any wires
             to be present in the tape.
         name="device" (str): the name of the device to use in error messages.
 
     Returns:
-        pennylane.QNode or qfunc or Tuple[List[.QuantumTape], Callable]: If a QNode is passed,
-        it returns a QNode with the transform added to its transform program.
-        If a tape is passed, returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+
+        The unaltered input circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
         WireError: if the tape has a wire not present in the provided wires.
@@ -138,16 +158,15 @@ def validate_multiprocessing_workers(
     threads per worker.
 
     Args:
-        tape (QuantumTape): a quantum circuit.
+        tape (QuantumTape or .QNode or Callable): a quantum circuit.
         max_workers (int): Maximal number of multiprocessing workers
         device (pennylane.devices.Device): The device to be checked.
 
     Returns:
-        pennylane.QNode or qfunc or Tuple[List[.QuantumTape], Callable]: If a QNode is passed,
-        it returns a QNode with the transform added to its transform program.
-        If a tape is passed, returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]:
+
+        The unaltered input circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
+
     """
     if max_workers is not None:
         threads_per_proc = os.cpu_count()  # all threads by default
@@ -196,10 +215,11 @@ def warn_about_trainable_observables(
     """
 
     for k in tape.trainable_params:
-        if hasattr(tape._par_info[k]["op"], "return_type"):
+        mp_or_op = tape[tape._par_info[k]["op_idx"]]
+        if isinstance(mp_or_op, MeasurementProcess):
             warnings.warn(
                 "Differentiating with respect to the input parameters of "
-                f"{tape._par_info[k]['op'].name} is not supported with the "
+                f"{mp_or_op.obs.name} is not supported with the "
                 "adjoint differentiation method. Gradients are computed "
                 "only with regards to the trainable parameters of the circuit.\n\n Mark "
                 "the parameters of the measured observables as non-trainable "
@@ -214,23 +234,29 @@ def decompose(
     tape: qml.tape.QuantumTape,
     stopping_condition: Callable[[qml.operation.Operator], bool],
     skip_initial_state_prep: bool = True,
+    decomposer: Optional[
+        Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]]
+    ] = None,
+    max_expansion: Union[int, None] = None,
     name: str = "device",
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     """Decompose operations until the stopping condition is met.
 
     Args:
-        tape (QuantumTape): a quantum circuit.
+        tape (QuantumTape or QNode or Callable): a quantum circuit.
         stopping_condition (Callable): a function from an operator to a boolean. If ``False``, the operator
             should be decomposed. If an operator cannot be decomposed and is not accepted by ``stopping_condition``,
             a ``DecompositionUndefinedError`` will be raised.
         skip_initial_state_prep=True (bool): If ``True``, the first operator will not be decomposed if it inherits from :class:`~.StatePrepBase`.
+        decomposer (Callable): an optional callable that takes an operator and implements the relevant decomposition.
+            If None, defaults to using a callable returning ``op.decomposition()`` for any :class:`~.Operator` .
+        max_expansion (int): The maximum depth of the expansion.
+
 
     Returns:
-        pennylane.QNode or qfunc or Tuple[List[.QuantumTape], Callable]: If a QNode is passed,
-        it returns a QNode with the transform added to its transform program.
-        If a tape is passed, returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+
+        The decomposed circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
         DecompositionUndefinedError: if an operator is not accepted and does not define a decomposition
@@ -274,6 +300,10 @@ def decompose(
     RZ(1.5707963267948966, wires=[1])]
 
     """
+    if decomposer is None:
+
+        def decomposer(op):
+            return op.decomposition()
 
     if not all(stopping_condition(op) for op in tape.operations):
         try:
@@ -285,7 +315,13 @@ def decompose(
             new_ops = [
                 final_op
                 for op in tape.operations[bool(prep_op) :]
-                for final_op in _operator_decomposition_gen(op, stopping_condition, name)
+                for final_op in _operator_decomposition_gen(
+                    op,
+                    stopping_condition,
+                    decomposer=decomposer,
+                    max_expansion=max_expansion,
+                    name=name,
+                )
             ]
         except RecursionError as e:
             raise DeviceError(
@@ -306,16 +342,14 @@ def validate_observables(
     """Validates the observables and measurements for a circuit.
 
     Args:
-        tape (QuantumTape): a quantum circuit.
+        tape (QuantumTape or QNode or Callable): a quantum circuit.
         stopping_condition (callable): a function that specifies whether or not an observable is accepted.
         name (str): the name of the device to use in error messages.
 
     Returns:
-        pennylane.QNode or qfunc or Tuple[List[.QuantumTape], Callable]: If a QNode is passed,
-        it returns a QNode with the transform added to its transform program.
-        If a tape is passed, returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions.
+        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]:
+
+        The unaltered input circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
         DeviceError: if an observable is not supported
@@ -350,7 +384,7 @@ def validate_measurements(
     """Validates the supported state and sample based measurement processes.
 
     Args:
-        tape (QuantumTape): a quantum circuit.
+        tape (QuantumTape, .QNode, Callable): a quantum circuit.
         analytic_measurements (Callable[[MeasurementProcess], bool]): a function from a measurement process
             to whether or not it is accepted in analytic simulations.
         sample_measurements (Callable[[MeasurementProcess], bool]): a function from a measurement process
@@ -358,11 +392,9 @@ def validate_measurements(
         name (str): the name to use in error messages.
 
     Returns:
-        pennylane.QNode or qfunc or Tuple[List[.QuantumTape], Callable]: If a QNode is passed,
-        it returns a QNode with the transform added to its transform program.
-        If a tape is passed, returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions.
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]:
+
+        The unaltered input circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
         DeviceError: if a measurement process is not supported.

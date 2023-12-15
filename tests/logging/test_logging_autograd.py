@@ -78,7 +78,7 @@ class TestLogging:
 
             circuit(params)
 
-        assert len(caplog.records) == 3
+        assert len(caplog.records) == 4
 
         log_records_expected = [
             (
@@ -99,7 +99,7 @@ class TestLogging:
             assert all(msg in actual.getMessage() for msg in expected[1])
 
     @pytest.mark.parametrize(
-        "diff_method,num_records", [("parameter-shift", 7), ("backprop", 3), ("adjoint", 7)]
+        "diff_method,num_records", [("parameter-shift", 9), ("backprop", 4), ("adjoint", 7)]
     )
     def test_dq_qnode_execution_grad(self, caplog, diff_method, num_records):
         "Test logging of QNode with parameterised gradients"

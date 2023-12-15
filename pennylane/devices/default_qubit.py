@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the next generation successor to default qubit
+The default.qubit device is PennyLane's standard qubit-based device.
 """
 
 from dataclasses import replace
@@ -20,6 +20,8 @@ from functools import partial
 from numbers import Number
 from typing import Union, Callable, Tuple, Optional, Sequence
 import concurrent.futures
+import inspect
+import logging
 import numpy as np
 
 import pennylane as qml
@@ -42,6 +44,9 @@ from .execution_config import ExecutionConfig, DefaultExecutionConfig
 from .qubit.simulate import simulate, get_final_state, measure_final_state
 from .qubit.sampling import get_num_shots_and_executions
 from .qubit.adjoint_jacobian import adjoint_jacobian, adjoint_vjp, adjoint_jvp
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 Result_or_ResultBatch = Union[Result, ResultBatch]
 QuantumTapeBatch = Sequence[QuantumTape]
@@ -143,8 +148,11 @@ class DefaultQubit(Device):
     """A PennyLane device written in Python and capable of backpropagation derivatives.
 
     Args:
-        shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots to use in executions involving
-            this device.
+        wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
+            contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
+            (``['ancilla', 'q1', 'q2']``). Default ``None`` if not specified.
+        shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
+            to use in executions involving this device.
         seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator, jax.random.PRNGKey]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``, or
             a request to seed from numpy's global random number generator.
@@ -290,6 +298,12 @@ class DefaultQubit(Device):
         """The name of the device."""
         return "default.qubit"
 
+    _state_cache: Optional[dict] = None
+    """
+    A cache to store the "pre-rotated state" for reuse between the forward pass call to ``execute`` and
+    subsequent calls to ``compute_vjp``. ``None`` indicates that no caching is required.
+    """
+
     # pylint:disable = too-many-arguments
     def __init__(
         self,
@@ -382,8 +396,8 @@ class DefaultQubit(Device):
         config = self._setup_execution_config(execution_config)
         transform_program = TransformProgram()
 
-        transform_program.add_transform(qml.defer_measurements)
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
+        transform_program.add_transform(qml.defer_measurements, device=self)
         transform_program.add_transform(
             decompose, stopping_condition=stopping_condition, name=self.name
         )
@@ -426,6 +440,10 @@ class DefaultQubit(Device):
                 "adjoint",
                 "backprop",
             }
+        if execution_config.use_device_jacobian_product is None:
+            updated_values["use_device_jacobian_product"] = (
+                execution_config.gradient_method == "adjoint"
+            )
         if execution_config.grad_on_execution is None:
             updated_values["grad_on_execution"] = execution_config.gradient_method == "adjoint"
         updated_values["device_options"] = dict(execution_config.device_options)  # copy
@@ -442,12 +460,22 @@ class DefaultQubit(Device):
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Result_or_ResultBatch:
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                """Entry with args=(circuits=%s) called by=%s""",
+                circuits,
+                "::L".join(
+                    str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
+                ),
+            )
+
         is_single_circuit = False
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True
             circuits = [circuits]
 
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
+        self._state_cache = {} if execution_config.use_device_jacobian_product else None
         interface = (
             execution_config.interface
             if execution_config.gradient_method in {"backprop", None}
@@ -461,6 +489,7 @@ class DefaultQubit(Device):
                     prng_key=self._prng_key,
                     debugger=self._debugger,
                     interface=interface,
+                    state_cache=self._state_cache,
                 )
                 for c in circuits
             )
@@ -715,7 +744,16 @@ class DefaultQubit(Device):
 
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
-            res = tuple(adjoint_vjp(circuit, cots) for circuit, cots in zip(circuits, cotangents))
+
+            def _state(circuit):
+                return (
+                    None if self._state_cache is None else self._state_cache.get(circuit.hash, None)
+                )
+
+            res = tuple(
+                adjoint_vjp(circuit, cots, state=_state(circuit))
+                for circuit, cots in zip(circuits, cotangents)
+            )
         else:
             vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:

@@ -14,11 +14,17 @@
 """Contains a transform that computes the simple frequency spectrum
 of a quantum circuit, that is the frequencies without considering
 preprocessing in the QNode."""
-from functools import wraps
+from typing import Sequence, Callable
+from functools import partial
+from pennylane import transform
+from pennylane.tape import QuantumTape
 from .utils import get_spectrum, join_spectra
 
 
-def circuit_spectrum(qnode, encoding_gates=None, decimals=8):
+@partial(transform, is_informative=True)
+def circuit_spectrum(
+    tape: QuantumTape, encoding_gates=None, decimals=8
+) -> (Sequence[QuantumTape], Callable):
     r"""Compute the frequency spectrum of the Fourier representation of
     simple quantum circuits ignoring classical preprocessing.
 
@@ -42,15 +48,17 @@ def circuit_spectrum(qnode, encoding_gates=None, decimals=8):
         If no input-encoding gates are found, an empty dictionary is returned.
 
     Args:
-        qnode (pennylane.QNode): a quantum node representing a circuit in which
+        tape (QNode or QuantumTape or Callable): a quantum circuit in which
             input-encoding gates are marked by their ``id`` attribute
         encoding_gates (list[str]): list of input-encoding gate ``id`` strings
             for which to compute the frequency spectra
         decimals (int): number of decimals to which to round frequencies.
 
     Returns:
-        (dict[str, list[float]]): Dictionary with the input-encoding gate ``id`` as keys and
-        their frequency spectra as values.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will return a dictionary with the input-encoding gate ``id`` as keys and their frequency spectra as values.
 
 
     **Details**
@@ -178,10 +186,9 @@ def circuit_spectrum(qnode, encoding_gates=None, decimals=8):
 
     """
 
-    @wraps(qnode)
-    def wrapper(*args, **kwargs):
-        qnode.construct(args, kwargs)
-        tape = qnode.qtape
+    def processing_fn(tapes):
+        """Process the tapes extract the spectrum of the circuit."""
+        tape = tapes[0]
         freqs = {}
         for op in tape.operations:
             id = op.id
@@ -221,4 +228,4 @@ def circuit_spectrum(qnode, encoding_gates=None, decimals=8):
 
         return freqs
 
-    return wrapper
+    return [tape], processing_fn

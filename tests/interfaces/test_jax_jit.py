@@ -168,7 +168,7 @@ class TestJaxExecuteUnitTests:
         spy_execute.assert_called()
         spy_gradients.assert_not_called()
 
-        jax.grad(cost)(a)
+        jax.grad(jax.jit(cost))(a)
         spy_gradients.assert_called()
 
 
@@ -600,7 +600,7 @@ class TestJaxExecuteIntegration:
         res = jax.jit(cost, static_argnums=2)(a, U, device=dev)
         assert np.allclose(res, -np.cos(a), atol=tol, rtol=0)
 
-        jac_fn = jax.grad(cost, argnums=(0))
+        jac_fn = jax.grad(cost, argnums=0)
         res = jac_fn(a, U, device=dev)
         assert np.allclose(res, np.sin(a), atol=tol, rtol=0)
 
@@ -634,7 +634,7 @@ class TestJaxExecuteIntegration:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        jac_fn = jax.jit(jax.grad(cost_fn, argnums=(1)), static_argnums=2)
+        jac_fn = jax.jit(jax.grad(cost_fn, argnums=1), static_argnums=2)
         res = jac_fn(a, p, device=dev)
         expected = jax.numpy.array(
             [
@@ -679,6 +679,7 @@ class TestVectorValuedJIT:
         [
             ([qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))], (), tuple),
             ([qml.probs(wires=[0, 1])], (4,), jax.numpy.ndarray),
+            ([qml.probs()], (4,), jax.numpy.ndarray),
         ],
     )
     def test_shapes(self, execute_kwargs, ret_type, shape, expected_type):

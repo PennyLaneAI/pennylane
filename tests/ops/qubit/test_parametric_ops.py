@@ -264,7 +264,7 @@ class TestDecompositions:
         op = qml.PhaseShift(phi, wires=0)
         res = op.decomposition()
 
-        assert len(res) == 1
+        assert len(res) == 2
 
         assert res[0].name == "RZ"
 
@@ -273,25 +273,13 @@ class TestDecompositions:
 
         decomposed_matrix = res[0].matrix()
         global_phase = np.exp(-1j * phi / 2)[..., np.newaxis, np.newaxis]
-        assert np.allclose(decomposed_matrix, global_phase * op.matrix(), atol=tol, rtol=0)
 
-    def test_phase_decomposition_broadcasted(self, tol):
-        """Tests that the decomposition of the broadcasted Phase gate is correct"""
-        phi = np.array([0.3, 2.1, 0.2])
-        op = qml.PhaseShift(phi, wires=0)
-        res = op.decomposition()
-
-        assert len(res) == 1
-
-        assert res[0].name == "RZ"
-
-        assert res[0].wires == Wires([0])
-        assert qml.math.allclose(res[0].data[0], np.array([0.3, 2.1, 0.2]))
-
-        decomposed_matrix = res[0].matrix()
-        global_phase = np.exp(-1j * phi / 2)[..., np.newaxis, np.newaxis]
+        assert res[1].name == "GlobalPhase"
+        assert np.allclose(qml.matrix(res[1]), np.exp(1j * phi / 2))
 
         assert np.allclose(decomposed_matrix, global_phase * op.matrix(), atol=tol, rtol=0)
+        if qml.math.shape(phi) == ():  # GlobalPhase matrix doesn't support batching
+            assert np.allclose(op.matrix(), qml.prod(*res[::-1]).matrix())
 
     def test_Rot_decomposition(self):
         """Test the decomposition of Rot."""
@@ -4520,6 +4508,13 @@ def test_global_phase_compute_sparse_matrix(phi, n_wires):
     expected = np.exp(-1j * phi) * sparse.eye(int(2**n_wires), format="csr")
 
     assert np.allclose(sparse_matrix.todense(), expected.todense())
+
+
+def test_decomposition():
+    """Test the decomposition of the GlobalPhase operation."""
+
+    assert qml.GlobalPhase.compute_decomposition(1.23) == []
+    assert qml.GlobalPhase(1.23).decomposition() == []
 
 
 control_data = [

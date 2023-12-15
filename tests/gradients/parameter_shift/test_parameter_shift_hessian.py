@@ -987,9 +987,9 @@ class TestParameterShiftHessianQNode:
             return qml.probs(wires=[0, 1])
 
         x = np.array([0.1, 0.2, 0.3], requires_grad=True)
-        shape = (6, 6, 4)  # (num_gate_args, num_gate_args, num_output_vals)
+        shape = (3, 3, 4)  # (num_args, num_args, num_output_vals)
 
-        hessian = qml.gradients.param_shift_hessian(circuit, hybrid=False)(x)
+        hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
         assert qml.math.shape(hessian) == shape
 
@@ -1436,10 +1436,8 @@ class TestParameterShiftHessianQNode:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="Hessian of a QNode with no trainable parameters"):
-            res = qml.gradients.param_shift_hessian(circuit)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.param_shift_hessian(circuit)(weights)
 
     @pytest.mark.torch
     def test_no_trainable_params_qnode_torch(self):
@@ -1455,10 +1453,8 @@ class TestParameterShiftHessianQNode:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="Hessian of a QNode with no trainable parameters"):
-            res = qml.gradients.param_shift_hessian(circuit)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.param_shift_hessian(circuit)(weights)
 
     @pytest.mark.tf
     def test_no_trainable_params_qnode_tf(self):
@@ -1474,10 +1470,8 @@ class TestParameterShiftHessianQNode:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="Hessian of a QNode with no trainable parameters"):
-            res = qml.gradients.param_shift_hessian(circuit)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.param_shift_hessian(circuit)(weights)
 
     @pytest.mark.jax
     def test_no_trainable_params_qnode_jax(self):
@@ -1493,10 +1487,8 @@ class TestParameterShiftHessianQNode:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         weights = [0.1, 0.2]
-        with pytest.warns(UserWarning, match="Hessian of a QNode with no trainable parameters"):
-            res = qml.gradients.param_shift_hessian(circuit)(weights)
-
-        assert res == ()
+        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.param_shift_hessian(circuit)(weights)
 
     def test_all_zero_diff_methods(self):
         """Test that the transform works correctly when the diff method for every parameter is
@@ -1509,11 +1501,12 @@ class TestParameterShiftHessianQNode:
             return qml.probs([2, 3])
 
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
+        circuit(params)
 
         result = qml.gradients.param_shift_hessian(circuit)(params)
         assert np.allclose(result, np.zeros((3, 3, 4)), atol=0, rtol=0)
 
-        tapes, _ = qml.gradients.param_shift_hessian(circuit.tape)
+        tapes, _ = qml.gradients.param_shift_hessian(circuit.qtape)
         assert tapes == []
 
     @pytest.mark.xfail(reason="Update tracker for new return types")
@@ -1573,7 +1566,7 @@ class TestParameterShiftHessianQNode:
         circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
 
         transform = [qml.math.shape(qml.gradients.param_shift_hessian(c)(x)) for c in circuits]
-        expected = [(3, 3), (3, 3), (2, 3, 3), (3, 3, 4), (3, 3, 4), (2, 3, 3, 4)]
+        expected = [(3, 3), (1, 3, 3), (2, 3, 3), (3, 3, 4), (1, 3, 3, 4), (2, 3, 3, 4)]
 
         assert all(t == e for t, e in zip(transform, expected))
 

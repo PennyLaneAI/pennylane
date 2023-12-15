@@ -30,6 +30,7 @@ from pennylane.transforms.optimization import (
     merge_rotations,
     single_qubit_fusion,
 )
+from pennylane.transforms.optimization.optimization_utils import _fuse_global_phases
 
 
 def build_qfunc(wires):
@@ -168,6 +169,13 @@ class TestCompileIntegration:
 
         assert np.allclose(qfun_res, qnode_res)
 
+    def test_compile_default_pipeline_removes_barrier(self):
+        """Test that the default pipeline removes Barriers."""
+
+        tape = qml.tape.QuantumScript([qml.PauliX(0), qml.Barrier([0, 1]), qml.CNOT([0, 1])])
+        [compiled_tape], _ = qml.compile(tape)
+        assert compiled_tape.operations == [qml.PauliX(0), qml.CNOT([0, 1])]
+
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
     def test_compile_pipeline_with_non_default_arguments(self, wires):
         """Test that using non-default arguments returns the correct results."""
@@ -243,7 +251,7 @@ class TestCompileIntegration:
 
         pipeline = [partial(commute_controlled, direction="left"), cancel_inverses, merge_rotations]
 
-        basis_set = ["CNOT", "RX", "RY", "RZ"]
+        basis_set = ["CNOT", "RX", "RY", "RZ", "GlobalPhase"]
 
         transformed_qfunc = compile(qfunc, pipeline=pipeline, basis_set=basis_set)
         transformed_qnode = qml.QNode(transformed_qfunc, dev)
@@ -266,6 +274,7 @@ class TestCompileIntegration:
             "CNOT",
             "RY",
             "CNOT",
+            "GlobalPhase",
         ]
 
         wires_expected = [
@@ -282,9 +291,11 @@ class TestCompileIntegration:
             Wires([wires[1], wires[2]]),
             Wires(wires[2]),
             Wires([wires[1], wires[2]]),
+            Wires([]),
         ]
 
-        compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
+        tansformed_ops = _fuse_global_phases(transformed_qnode.qtape.operations)
+        compare_operation_lists(tansformed_ops, names_expected, wires_expected)
 
     def test_compile_template(self):
         """Test that functions with templates are correctly expanded and compiled."""

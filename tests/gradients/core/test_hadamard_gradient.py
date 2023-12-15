@@ -15,7 +15,6 @@
 Tests for the gradients.hadamard_gradient module.
 """
 
-import warnings
 import pytest
 
 import pennylane as qml
@@ -72,6 +71,16 @@ class TestHadamardGrad:
         tape = qml.tape.QuantumScript([qml.RX([0.4, 0.2], 0)], [qml.expval(qml.PauliZ(0))])
         _match = "Computing the gradient of broadcasted tapes with the Hadamard test gradient"
         with pytest.raises(NotImplementedError, match=_match):
+            qml.gradients.hadamard_grad(tape)
+
+    def test_tape_with_partitioned_shots_multiple_measurements_raises(self):
+        """Test that an error is raised with multiple measurements and partitioned shots."""
+        tape = qml.tape.QuantumScript(
+            [qml.RX(0.1, wires=0)],
+            [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(0))],
+            shots=(1000, 10000),
+        )
+        with pytest.raises(NotImplementedError):
             qml.gradients.hadamard_grad(tape)
 
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
@@ -508,28 +517,6 @@ class TestHadamardGrad:
             for r in res_hadamard:
                 assert isinstance(r, qml.numpy.ndarray)
                 assert len(r) == expected_shape[1]
-
-    def test_multi_measure_no_warning(self):
-        """Test computing the gradient of a tape that contains multiple
-        measurements omits no warnings."""
-
-        dev = qml.device("default.qubit", wires=4)
-
-        par1 = qml.numpy.array(0.3)
-        par2 = qml.numpy.array(0.1)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RY(par1, wires=0)
-            qml.RX(par2, wires=1)
-            qml.probs(wires=[1, 2])
-            qml.expval(qml.PauliZ(0))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-
-        with warnings.catch_warnings(record=True) as record:
-            grad_fn(tape, dev=dev)
-
-        assert len(record) == 0
 
     @pytest.mark.parametrize("shots", [None, 100])
     def test_shots_attribute(self, shots):

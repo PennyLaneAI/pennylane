@@ -775,6 +775,48 @@ class TestShotsIntegration:
         # if we set the shots to None, backprop can now be used
         assert spy.call_args[1]["gradient_fn"] == "backprop"
 
+    @pytest.mark.parametrize("shots", [(10000, 10000), (10000, 10005)])
+    def test_shot_vectors_single_measurements(self, interface, shots):
+        """Test jax-jit can work with shot vectors."""
+
+        dev = qml.device("default.qubit", shots=shots, seed=4747)
+
+        @jax.jit
+        @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.var(qml.PauliZ(0))
+
+        res = circuit(0.5)
+        expected = 1 - np.cos(0.5) ** 2
+        assert qml.math.allclose(res[0], expected, atol=1e-2)
+        assert qml.math.allclose(res[1], expected, atol=3e-2)
+
+        g = jax.jacobian(circuit)(0.5)
+
+        expected_g = 2 * np.cos(0.5) * np.sin(0.5)
+        assert qml.math.allclose(g[0], expected_g, atol=2e-2)
+        assert qml.math.allclose(g[1], expected_g, atol=2e-2)
+
+    @pytest.mark.parametrize("shots", [(10000, 10000), (10000, 10005)])
+    def test_shot_vectors_multiple_measurements(self, interface, shots):
+        """Test jax-jit can work with shot vectors."""
+
+        dev = qml.device("default.qubit", shots=shots, seed=987548)
+
+        @jax.jit
+        @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=0)
+
+        res = circuit(0.5)
+        assert qml.math.allclose(res[0][0], np.cos(0.5), atol=5e-3)
+        assert qml.math.allclose(res[1][0], np.cos(0.5), atol=5e-3)
+        expected_probs = np.array([np.cos(0.25) ** 2, np.sin(0.25) ** 2])
+        assert qml.math.allclose(res[0][1], expected_probs, atol=5e-3)
+        assert qml.math.allclose(res[1][1], expected_probs, atol=5e-3)
+
 
 @pytest.mark.parametrize(
     "interface,dev,diff_method,grad_on_execution", interface_and_qubit_device_and_diff_method
@@ -878,6 +920,39 @@ class TestQubitIntegration:
         res = grad_fn(weights)
 
         assert len(res) == 2
+
+    def test_postselection_differentiation(self, dev, diff_method, grad_on_execution, interface):
+        """Test that when postselecting with default.qubit, differentiation works correctly."""
+
+        if diff_method in ["adjoint", "spsa", "hadamard"]:
+            pytest.skip("Diff method does not support postselection.")
+
+        @qml.qnode(
+            dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
+        )
+        def circuit(phi, theta):
+            qml.RX(phi, wires=0)
+            qml.CNOT([0, 1])
+            qml.measure(wires=0, postselect=1)
+            qml.RX(theta, wires=1)
+            return qml.expval(qml.PauliZ(1))
+
+        @qml.qnode(
+            dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
+        )
+        def expected_circuit(theta):
+            qml.PauliX(1)
+            qml.RX(theta, wires=1)
+            return qml.expval(qml.PauliZ(1))
+
+        phi = jax.numpy.array(1.23)
+        theta = jax.numpy.array(4.56)
+
+        assert np.allclose(jax.jit(circuit)(phi, theta), jax.jit(expected_circuit)(theta))
+
+        gradient = jax.jit(jax.grad(circuit, argnums=[0, 1]))(phi, theta)
+        exp_theta_grad = jax.jit(jax.grad(expected_circuit))(theta)
+        assert np.allclose(gradient, [0.0, exp_theta_grad])
 
 
 @pytest.mark.parametrize(

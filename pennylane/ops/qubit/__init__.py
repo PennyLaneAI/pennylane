@@ -42,7 +42,7 @@ from .state_preparation import *
 from .special_unitary import SpecialUnitary
 from .hamiltonian import Hamiltonian
 from ..identity import Identity, GlobalPhase
-from ..snapshot import Snapshot
+from ..meta import Snapshot, Barrier, WireCut
 
 ops = {
     "Identity",

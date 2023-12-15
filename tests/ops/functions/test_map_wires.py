@@ -108,7 +108,8 @@ class TestMapWiresTapes:
         tape.trainable_params = [0, 2]
         # TODO: Use qml.equal when supported
 
-        s_tape = qml.map_wires(tape, wire_map=wire_map)
+        s_tapes, _ = qml.map_wires(tape, wire_map=wire_map)
+        s_tape = s_tapes[0]
         assert len(s_tape) == 1
         assert s_tape.trainable_params == [0, 2]
         s_op = s_tape[0]
@@ -129,13 +130,38 @@ class TestMapWiresTapes:
         tape = QuantumScript.from_queue(q_tape, shots=shots)
         # TODO: Use qml.equal when supported
 
-        m_tape = qml.map_wires(tape, wire_map=wire_map)
+        m_tapes, _ = qml.map_wires(tape, wire_map=wire_map)
+        m_tape = m_tapes[0]
         m_op = m_tape.operations[0]
         m_obs = m_tape.observables[0]
         assert qml.equal(m_op, mapped_op)
         assert tape.shots == m_tape.shots
         assert m_obs.wires == Wires(wire_map[1])
         assert qml.math.allclose(dev.execute(tape), dev.execute(m_tape), atol=0.05)
+
+    def test_map_wires_nested_tape(self):
+        """Tes that the tape wires are correct when it has nested tapes."""
+
+        tape = QuantumScript(
+            [
+                qml.PauliX(0),
+                qml.PauliZ(1),
+                qml.PauliX(3),
+                QuantumScript([qml.PauliY(0), qml.Hadamard(1), qml.PauliY(3)]),
+            ]
+        )
+
+        [m_tape], _ = qml.map_wires(tape, wire_map=wire_map)
+
+        m_ops = m_tape.operations
+        assert len(m_ops) == 4
+        assert len(m_tape.measurements) == 0
+        assert m_ops[:3] == [qml.PauliX(4), qml.PauliZ(3), qml.PauliX(1)]
+
+        nested_m_tape = m_ops[3]
+        assert isinstance(nested_m_tape, QuantumScript)
+        assert nested_m_tape.operations == [qml.PauliY(4), qml.Hadamard(3), qml.PauliY(1)]
+        assert len(nested_m_tape.measurements) == 0
 
 
 class TestMapWiresQNodes:
@@ -156,10 +182,12 @@ class TestMapWiresQNodes:
         m_qnode = qml.map_wires(qnode, wire_map=wire_map)
         assert m_qnode() == qnode()
         assert len(m_qnode.tape) == 2
-        m_op = m_qnode.tape.operations[0]
-        m_obs = m_qnode.tape.observables[0]
-        assert qml.equal(m_op, mapped_op)
-        assert qml.equal(m_obs, mapped_obs)
+        tapes, _ = m_qnode.transform_program((m_qnode.tape,))
+
+        m_op = tapes[0].operations
+        m_obs = tapes[0].observables
+        assert qml.equal(m_op[0], mapped_op)
+        assert qml.equal(m_obs[0], mapped_obs)
 
 
 class TestMapWiresCallables:

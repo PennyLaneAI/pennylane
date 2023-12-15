@@ -156,14 +156,6 @@ class TestInitialization:
         op = Controlled(self.temp_op, (0, 1), control_values=[0, 1])
         assert op.control_values == [False, True]
 
-    def test_string_control_values(self):
-        """Test warning and conversion of string control_values."""
-
-        with pytest.warns(UserWarning, match="Specifying control values as a string"):
-            op = Controlled(self.temp_op, (0, 1), "01")
-
-        assert op.control_values == [False, True]
-
     def test_non_boolean_control_values(self):
         """Test control values are converted to booleans."""
         op = Controlled(self.temp_op, (0, 1, 2), control_values=["", None, 5])
@@ -262,6 +254,12 @@ class TestProperties:
 
         op = Controlled(qml.PauliX(3), [0, 4])
         assert op.has_decomposition is True
+
+    def test_has_decomposition_multicontrolled_special_unitary(self):
+        """Test that a one qubit special unitary with any number of control
+        wires has a decomposition."""
+        op = Controlled(qml.RX(1.234, wires=0), (1, 2, 3, 4, 5))
+        assert op.has_decomposition
 
     def test_has_decomposition_true_via_base_has_decomp(self):
         """Test that Controlled claims `has_decomposition` to be true if
@@ -546,12 +544,13 @@ class TestOperationProperties:
             (qml.RX(1.23, wires=0), [(0.5, 1.0)]),
             (qml.PhaseShift(-2.4, wires=0), [(1,)]),
             (qml.IsingZZ(-9.87, (0, 1)), [(0.5, 1.0)]),
+            (qml.DoubleExcitationMinus(0.7, [0, 1, 2, 3]), [(0.5, 1.0)]),
         ],
     )
     def test_parameter_frequencies(self, base, expected):
         """Test parameter-frequencies against expected values."""
 
-        op = Controlled(base, (3, 4))
+        op = Controlled(base, (4, 5))
         assert op.parameter_frequencies == expected
 
     def test_parameter_frequencies_no_generator_error(self):
@@ -812,6 +811,46 @@ class TestHelperMethod:
         """Test that helper returns None if no special decomposition."""
         op = Controlled(TempOperator(0), (1, 2))
         assert _decompose_no_control_values(op) is None
+
+    def test_non_differentiable_one_qubit_special_unitary(self):
+        """Assert that a non differentiable on qubit special unitary uses the bisect decomposition."""
+        op = qml.ctrl(qml.RZ(1.2, wires=0), (1, 2, 3, 4))
+        decomp = op.decomposition()
+
+        assert qml.equal(decomp[0], qml.MultiControlledX(wires=(1, 2, 0), work_wires=(3, 4)))
+        assert isinstance(decomp[1], qml.QubitUnitary)
+        assert qml.equal(decomp[2], qml.MultiControlledX(wires=(3, 4, 0), work_wires=(1, 2)))
+        assert isinstance(decomp[3].base, qml.QubitUnitary)
+        assert qml.equal(decomp[4], qml.MultiControlledX(wires=(1, 2, 0), work_wires=(3, 4)))
+        assert isinstance(decomp[5], qml.QubitUnitary)
+        assert qml.equal(decomp[6], qml.MultiControlledX(wires=(3, 4, 0), work_wires=(1, 2)))
+        assert isinstance(decomp[7].base, qml.QubitUnitary)
+
+        decomp_mat = qml.matrix(op.decomposition, wire_order=op.wires)()
+        assert qml.math.allclose(op.matrix(), decomp_mat)
+
+    def test_differentiable_one_qubit_special_unitary(self):
+        """Assert that a differentiable qubit speical unitary uses the zyz decomposition."""
+
+        op = qml.ctrl(qml.RZ(qml.numpy.array(1.2), 0), (1, 2, 3, 4))
+        decomp = op.decomposition()
+
+        assert qml.equal(decomp[0], qml.RZ(qml.numpy.array(1.2), 0))
+        assert qml.equal(decomp[1], qml.MultiControlledX(wires=(1, 2, 3, 4, 0)))
+        assert qml.equal(decomp[2], qml.RZ(qml.numpy.array(-0.6), wires=0))
+        assert qml.equal(decomp[3], qml.MultiControlledX(wires=(1, 2, 3, 4, 0)))
+        assert qml.equal(decomp[4], qml.RZ(qml.numpy.array(-0.6), wires=0))
+
+        decomp_mat = qml.matrix(op.decomposition, wire_order=op.wires)()
+        assert qml.math.allclose(op.matrix(), decomp_mat)
+
+    def test_global_phase_decomp_raises_warning(self):
+        """Test that ctrl(GlobalPhase).decomposition() raises a warning."""
+        op = qml.ctrl(qml.GlobalPhase(1.23), control=[0])
+        with pytest.warns(
+            UserWarning, match="Controlled-GlobalPhase currently decomposes to nothing"
+        ):
+            assert op.decomposition() == []
 
 
 @pytest.mark.parametrize("test_expand", (False, True))
