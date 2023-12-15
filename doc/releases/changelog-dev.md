@@ -548,6 +548,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.cond` no longer incorrectly queues operators used as qfunc arguments.
+  [(#4948)](https://github.com/PennyLaneAI/pennylane/pull/4948)
+
 * `Attribute` objects now return `False` instead of raising a `TypeError` when checking if an object is inside
   the set.
   [(#4933)](https://github.com/PennyLaneAI/pennylane/pull/4933)
