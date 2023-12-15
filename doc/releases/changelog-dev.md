@@ -454,6 +454,10 @@
   that they follow PennyLane `Operator` standards.
   [(#4922)](https://github.com/PennyLaneAI/pennylane/pull/4922)
 
+* The `ControlledSequence.compute_decomposition` default now decomposes the `Power` operators, 
+  improving compatability with machine learning interfaces. 
+  [(#4955)](https://github.com/PennyLaneAI/pennylane/pull/4955)
+
 <h3>Breaking changes 💔</h3>
 
 * The functions `qml.transforms.one_qubit_decomposition`, `qml.transforms.two_qubit_decomposition`, 
