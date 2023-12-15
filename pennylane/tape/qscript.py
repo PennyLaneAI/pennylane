@@ -1120,7 +1120,7 @@ class QuantumScript:
         # pylint: disable=no-member
         just_ops = QuantumScript(operations)
         operations = just_ops.expand(
-            depth=2, stop_at=lambda obj: obj.name in OPENQASM_GATES
+            depth=3, stop_at=lambda obj: obj.name in OPENQASM_GATES
         ).operations
 
         # create the QASM code representing the operations

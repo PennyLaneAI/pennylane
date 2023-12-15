@@ -98,6 +98,38 @@ class TestToQasmUnitTests:
 
         assert res == expected
 
+    def test_to_ApproxTimeEvolution(self):
+        """Regression test for case where a MutliRZ was not converted"""
+        H = qml.Hamiltonian(
+            [
+                1,
+            ],
+            [
+                qml.PauliZ(0) @ qml.PauliZ(1),
+            ],
+        )
+        with qml.queuing.AnnotatedQueue() as q_circuit:
+            qml.ApproxTimeEvolution(H, 1, n=1)
+
+        circuit = qml.tape.QuantumScript.from_queue(q_circuit)
+        res = circuit.to_openqasm(wires=Wires([0, 1]))
+
+        expected = dedent(
+            """\
+            OPENQASM 2.0;
+            include "qelib1.inc";
+            qreg q[2];
+            creg c[2];
+            cx q[1],q[0];
+            rz(2.0) q[0];
+            cx q[1],q[0];
+            measure q[0] -> c[0];
+            measure q[1] -> c[1];
+            """
+        )
+
+        assert res == expected
+
     def test_rotation_gate_decomposition(self):
         """Test that gates not natively supported by QASM, such as the
         rotation gate, are correctly decomposed and serialized."""
