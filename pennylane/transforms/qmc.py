@@ -31,7 +31,7 @@ def _apply_controlled_z(wires, control_wire, work_wires):
     The multi-qubit gate :math:`Z = I - 2|0\rangle \langle 0|` can be performed using the
     conventional multi-controlled-Z gate with an additional bit flip on each qubit before and after.
 
-    This function performs the multi-controlled-Z gate via a multi-controlled-X gate by picking an
+    This function returns the multi-controlled-Z gate via a multi-controlled-X gate by picking an
     arbitrary target wire to perform the X and adding a Hadamard on that wire either side of the
     transformation.
 
@@ -83,10 +83,10 @@ def _apply_controlled_v(target_wire, control_wire):
 def apply_controlled_Q(
     tape: qml.tape.QuantumTape, wires, target_wire, control_wire, work_wires
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
-    r"""Provides the circuit to apply a controlled version of the :math:`\mathcal{Q}` unitary
+    r"""Applies the transform that performs a controlled version of the :math:`\mathcal{Q}` unitary
     defined in `this <https://arxiv.org/abs/1805.00109>`__ paper.
 
-    The input ``fn`` should be the quantum circuit corresponding to the :math:`\mathcal{F}` unitary
+    The input ``tape`` should be the quantum circuit corresponding to the :math:`\mathcal{F}` unitary
     in the paper above. This function transforms this circuit into a controlled version of the
     :math:`\mathcal{Q}` unitary, which forms part of the quantum Monte Carlo algorithm. The
     :math:`\mathcal{Q}` unitary encodes the target expectation value as a phase in one of its
@@ -117,7 +117,7 @@ def apply_controlled_Q(
     updated_operations = []
 
     with qml.queuing.QueuingManager.stop_recording():
-        fn_inv = [adjoint(copy(op)) for op in reversed(operations)]
+        op_inv = [adjoint(copy(op)) for op in reversed(operations)]
 
         wires = Wires(wires)
         target_wire = Wires(target_wire)
@@ -130,7 +130,7 @@ def apply_controlled_Q(
         updated_operations.extend(
             _apply_controlled_v(target_wire=target_wire, control_wire=control_wire)
         )
-        updated_operations.extend(fn_inv)
+        updated_operations.extend(op_inv)
         updated_operations.extend(
             _apply_controlled_z(wires=wires, control_wire=control_wire, work_wires=work_wires)
         )
@@ -138,13 +138,13 @@ def apply_controlled_Q(
         updated_operations.extend(
             _apply_controlled_v(target_wire=target_wire, control_wire=control_wire)
         )
-        updated_operations.extend(fn_inv)
+        updated_operations.extend(op_inv)
         updated_operations.extend(
             _apply_controlled_z(wires=wires, control_wire=control_wire, work_wires=work_wires)
         )
         updated_operations.extend(operations)
 
-    tape = qml.tape.QuantumTape(ops=updated_operations)
+    tape = type(tape)(updated_operations, tape.measurements, shots=tape.shots)
     return [tape], lambda x: x[0]
 
 
@@ -152,7 +152,7 @@ def apply_controlled_Q(
 def quantum_monte_carlo(
     tape: qml.tape.QuantumTape, wires, target_wire, estimation_wires
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
-    r"""Provides the circuit to perform the
+    r"""Applies the transform
     `quantum Monte Carlo estimation <https://arxiv.org/abs/1805.00109>`__ algorithm.
 
     The input `tape`` should be the quantum circuit corresponding to the :math:`\mathcal{F}` unitary
@@ -372,14 +372,14 @@ def quantum_monte_carlo(
             work_wires = estimation_wires.toset() - {control_wire}
             n_reps = 2 ** (len(estimation_wires) - (i + 1))
 
-            tapes_q, fn = apply_controlled_Q(
+            tapes_q, _ = apply_controlled_Q(
                 tape,
                 wires=wires,
                 target_wire=target_wire,
                 control_wire=control_wire,
                 work_wires=work_wires,
             )
-            tape_q = fn(tapes_q)
+            tape_q = tapes_q[0]
             for _ in range(n_reps):
                 updated_operations.extend(tape_q.operations)
 
