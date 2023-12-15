@@ -14,6 +14,7 @@
 """
 Contains the quantum_monte_carlo transform.
 """
+from copy import copy
 from typing import Sequence, Callable
 
 import pennylane as qml
@@ -113,7 +114,7 @@ def apply_controlled_Q(
     updated_operations = []
 
     with qml.queuing.QueuingManager.stop_recording():
-        fn_inv = [adjoint(op, lazy=False) for op in reversed(operations)]
+        fn_inv = [adjoint(copy(op)) for op in reversed(operations)]
 
         wires = Wires(wires)
         target_wire = Wires(target_wire)
