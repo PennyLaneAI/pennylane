@@ -94,8 +94,8 @@ def apply_controlled_Q(
     :class:`~.QuantumPhaseEstimation` for more details).
 
     Args:
-        fn (Callable): a quantum function that applies quantum operations according to the
-            :math:`\mathcal{F}` unitary used as part of quantum Monte Carlo estimation
+        tape (QNode or QuantumTape or Callable): the quantum circuit that applies quantum operations
+            according to the :math:`\mathcal{F}` unitary used as part of quantum Monte Carlo estimation
         wires (Union[Wires or Sequence[int]]): the wires acted upon by the ``fn`` circuit
         target_wire (Union[Wires, int]): The wire in which the expectation value is encoded. Must be
             contained within ``wires``.
@@ -105,7 +105,10 @@ def apply_controlled_Q(
             decomposing :math:`\mathcal{Q}`
 
     Returns:
-        function: The input function transformed to the :math:`\mathcal{Q}` unitary
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will perform control on :math:`\mathcal{Q}` unitary.
 
     Raises:
         ValueError: if ``target_wire`` is not in ``wires``
