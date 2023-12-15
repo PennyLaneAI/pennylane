@@ -22,12 +22,13 @@ from pennylane.measurements import MidMeasureMP
 from pennylane.queuing import AnnotatedQueue
 from pennylane.drawer.drawable_layers import (
     _recursive_find_layer,
+    _recursive_find_mcm_stats_layer,
     drawable_layers,
 )
 
 
 class TestRecursiveFindLayer:
-    """Tests for `_recursive_find_layer`"""
+    """Tests for ``_recursive_find_layer`` and ``_recursive_find_mcm_stats_layer``"""
 
     def test_first_layer(self):
         """Test operation remains in 0th layer if not blocked"""
@@ -54,6 +55,55 @@ class TestRecursiveFindLayer:
         """Test blocked on layer 1 gives placement on layer 2"""
         out = _recursive_find_layer(
             layer_to_check=3, op_occupied_wires={0}, occupied_wires_per_layer=[{1}, {0}, {1}, {1}]
+        )
+        assert out == 2
+
+    def test_first_mcm_stats_layer(self):
+        """Test operation remains in 0th layer if not blocked"""
+        mp0 = qml.measurements.MidMeasureMP(0, id="foo")
+        mp1 = qml.measurements.MidMeasureMP(1, id="bar")
+        bit_map = {mp0: 0, mp1: 1}
+
+        out = _recursive_find_mcm_stats_layer(
+            layer_to_check=0, op_occupied_cwires={0}, used_cwires_per_layer=[{1}], bit_map=bit_map
+        )
+        assert out == 0
+
+    def test_blocked_mcm_stats_layer(self):
+        """Test operation moved to higher layer if blocked on 0th layer."""
+        mp = qml.measurements.MidMeasureMP(0)
+        bit_map = {mp: 0}
+
+        out = _recursive_find_mcm_stats_layer(
+            layer_to_check=0, op_occupied_cwires={0}, used_cwires_per_layer=[{0}], bit_map=bit_map
+        )
+        assert out == 1
+
+    def test_recursion_no_block_mcm_stats(self):
+        """Test recursion to zero if start in higher layer and not blocked"""
+        mp0 = qml.measurements.MidMeasureMP(0)
+        mp1 = qml.measurements.MidMeasureMP(1)
+        bit_map = {mp0: 0, mp1: 1}
+
+        out = _recursive_find_mcm_stats_layer(
+            layer_to_check=2,
+            op_occupied_cwires={0},
+            used_cwires_per_layer=[{1}, {1}, {1}],
+            bit_map=bit_map,
+        )
+        assert out == 0
+
+    def test_recursion_block_mcm_stats(self):
+        """Test blocked on layer 1 gives placement on layer 2"""
+        mp0 = qml.measurements.MidMeasureMP(0)
+        mp1 = qml.measurements.MidMeasureMP(1)
+        bit_map = {mp0: 0, mp1: 1}
+
+        out = _recursive_find_mcm_stats_layer(
+            layer_to_check=3,
+            op_occupied_cwires={0},
+            used_cwires_per_layer=[{1}, {0}, {1}, {1}],
+            bit_map=bit_map,
         )
         assert out == 2
 
@@ -140,6 +190,10 @@ class TestDrawableLayers:
 
     def test_mid_measure_custom_wires(self):
         """Test that custom wires do not break the drawing of mid-circuit measurements."""
+        mp0 = MidMeasureMP("A", id="foo")
+        mp1 = MidMeasureMP("a", id="bar")
+        m0 = qml.measurements.MeasurementValue([mp0], lambda v: v)
+        m1 = qml.measurements.MeasurementValue([mp1], lambda v: v)
 
         def teleport(state):
             qml.QubitStateVector(state, wires=["A"])
@@ -147,15 +201,16 @@ class TestDrawableLayers:
             qml.CNOT(wires=["a", "B"])
             qml.CNOT(wires=["A", "a"])
             qml.Hadamard(wires="A")
-            m0 = qml.measure("A")
-            m1 = qml.measure("a")
+            qml.apply(mp0)
+            qml.apply(mp1)
             qml.cond(m1, qml.PauliX)("B")
             qml.cond(m0, qml.PauliZ)("B")
 
         tape_custom = qml.tape.make_qscript(teleport)([0, 1])
         [tape_standard], _ = qml.map_wires(tape_custom, {"A": 0, "a": 1, "B": 2})
         ops = tape_standard.operations
-        layers = drawable_layers(ops)
+        bit_map = {MidMeasureMP(0, id="foo"): None, MidMeasureMP(1, id="bar"): None}
+        layers = drawable_layers(ops, bit_map=bit_map)
         assert layers == [ops[:2]] + [[op] for op in ops[2:]]
 
 
@@ -168,7 +223,9 @@ class TestMidMeasure:
             m0 = qml.measure(0)
             qml.cond(m0, qml.PauliX)(1)
 
-        assert drawable_layers(q.queue) == [[q.queue[0]], [q.queue[1]]]
+        bit_map = {q.queue[0]: None}
+
+        assert drawable_layers(q.queue, bit_map=bit_map) == [[q.queue[0]], [q.queue[1]]]
 
     def test_cannot_draw_multi_wire_MidMeasureMP(self):
         """Tests that MidMeasureMP is only supported with one wire."""

@@ -208,7 +208,7 @@ def _rot_decompose(op):
     elif isinstance(op, qml.PhaseShift):
         ops_ = _simplify_param(theta, qml.PauliZ(wires=wires))
         if ops_ is None:
-            ops_ = [qml.RZ(theta, wires=wires), qml.GlobalPhase(theta / 2)]
+            ops_ = [qml.RZ(theta, wires=wires), qml.GlobalPhase(-theta / 2)]
         else:
             ops_.append(qml.GlobalPhase(-theta / 2))
 

@@ -17,10 +17,10 @@ This module contains the functions needed for computing integrals over basis fun
 # pylint: disable= unbalanced-tuple-unpacking, too-many-arguments
 import itertools as it
 
+import numpy as np
 from scipy.special import factorial2 as fac2
 
 import pennylane as qml
-from pennylane import numpy as np
 
 
 def primitive_norm(l, alpha):
