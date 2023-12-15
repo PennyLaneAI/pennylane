@@ -1918,6 +1918,8 @@ class TestJIT:
         parameter"""
         if dev.name == "param_shift.qubit":
             pytest.xfail("gradient transforms have a different vjp shape convention.")
+        if jacobian == jax.jacfwd and device_vjp:
+            pytest.skip("device vjps are not compatible with forward differentiation.")
 
         # pylint: disable=unused-argument
         @qml.qnode(
@@ -1937,7 +1939,7 @@ class TestJIT:
         res = jax.jit(circ)(p, U)
         assert np.allclose(res, -np.cos(p), atol=tol, rtol=0)
 
-        jac_fn = jax.jit(jax.grad(circ, argnums=0))
+        jac_fn = jax.jit(jacobian(circ, argnums=0))
         res = jac_fn(p, U)
         assert np.allclose(res, np.sin(p), atol=tol, rtol=0)
 
