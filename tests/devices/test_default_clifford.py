@@ -357,6 +357,22 @@ def test_meas_error():
         qml.snapshots(circuit_snap)()
 
 
+def test_purity_error_not_all_wires():
+    """Test that a NotImplementedError is raised when purity of not all wires is measured."""
+
+    @qml.qnode(qml.device("default.clifford"))
+    def circuit():
+        qml.PauliX(0)
+        qml.CNOT([0, 1])
+        return qml.purity([0])
+
+    with pytest.raises(
+        NotImplementedError,
+        match="default.clifford doesn't support measuring the purity of a subset of wires at the moment",
+    ):
+        circuit()
+
+
 def test_clifford_error():
     """Test if an QuantumFunctionError is raised when one of the operations is not Clifford."""
 

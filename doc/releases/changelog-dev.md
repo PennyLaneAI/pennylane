@@ -262,7 +262,7 @@
   ```python
   import pennylane as qml
 
-  dev = qml.device("default.clifford", state="tableau")
+  dev = qml.device("default.clifford", tableau=True)
 
   @qml.qnode(dev)
   def circuit():
@@ -272,7 +272,7 @@
       qml.Hadamard(wires=[0])
       return qml.state()
 
-  (tableau,) = circuit()
+  tableau = circuit()
   ```
 
   Given a circuit with the Clifford gates, one can use this device obtaining the Tableau representation

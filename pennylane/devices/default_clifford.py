@@ -152,7 +152,7 @@ class DefaultClifford(Device):
     >>> new_batch, post_processing_fn = program(qscripts)
     >>> results = dev.execute(new_batch, execution_config=execution_config)
     >>> post_processing_fn(results)
-    [0.0, 0.0, 0.0, 0.0, 0.0]
+    (array(0), array(0), array(0), array(0), array(0))
 
     .. details::
         :title: Clifford Tableau
@@ -600,7 +600,9 @@ class DefaultClifford(Device):
     def _measure_purity(meas_op, circuit):
         """Measure the purity of the state of simulator device"""
         if circuit.op_wires != meas_op.wires:
-            raise NotImplementedError
+            raise NotImplementedError(
+                "default.clifford doesn't support measuring the purity of a subset of wires at the moment."
+            )
         return qml.math.array(1.0)  # // Trivial
 
     @staticmethod
