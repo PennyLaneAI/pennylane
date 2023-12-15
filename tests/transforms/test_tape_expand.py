@@ -230,7 +230,7 @@ class TestExpandNonunitaryGen:
         assert tape.operations[:2] == new_tape.operations[:2]
         exp_op, gph_op = new_tape.operations[2:4]
         assert exp_op.name == "RZ" and exp_op.data == (2.1,) and exp_op.wires == qml.wires.Wires(1)
-        assert gph_op.name == "GlobalPhase" and gph_op.data == (2.1 * 0.5,)
+        assert gph_op.name == "GlobalPhase" and gph_op.data == (-2.1 * 0.5,)
         assert tape.operations[3:] == new_tape.operations[4:]
 
     def test_expand_nonunitary_generator(self):
@@ -249,7 +249,7 @@ class TestExpandNonunitaryGen:
         assert tape.operations[:2] == new_tape.operations[:2]
         exp_op, gph_op = new_tape.operations[2:4]
         assert exp_op.name == "RZ" and exp_op.data == (2.1,) and exp_op.wires == qml.wires.Wires(1)
-        assert gph_op.name == "GlobalPhase" and gph_op.data == (2.1 * 0.5,)
+        assert gph_op.name == "GlobalPhase" and gph_op.data == (-2.1 * 0.5,)
         assert tape.operations[3:] == new_tape.operations[4:]
 
     def test_decompose_all_nonunitary_generator(self):

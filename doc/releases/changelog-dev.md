@@ -14,9 +14,10 @@
   [(#4901)](https://github.com/PennyLaneAI/pennylane/pull/4901)
   [(#4850)](https://github.com/PennyLaneAI/pennylane/pull/4850)
   [(#4917)](https://github.com/PennyLaneAI/pennylane/pull/4917)
+  [(#4930)](https://github.com/PennyLaneAI/pennylane/pull/4930)
 
   Drawing of mid-circuit measurement capabilities including qubit reuse and reset,
-  postselection, and conditioning are supported.
+  postselection, conditioning, and collecting statistics is supported.
 
   ```python
   import pennylane as qml
@@ -383,6 +384,19 @@
 
 <h4>Other improvements</h4>
 
+* `qml.quantum_monte_carlo` now uses the new transform system.
+  [(#4708)](https://github.com/PennyLaneAI/pennylane/pull/4708/)
+
+* `qml.simplify` now uses the new transforms API.
+  [(#4949)](https://github.com/PennyLaneAI/pennylane/pull/4949)
+
+* The formal requirement that type hinting be providing when using
+  the `qml.transform` decorator has been removed. Type hinting can still
+  be used, but is now optional. Please use a type checker such as
+  [mypy](https://github.com/python/mypy) if you wish to ensure types are
+  being passed correctly.
+  [(#4942)](https://github.com/PennyLaneAI/pennylane/pull/4942/)
+
 * `SampleMeasurement` now has an optional method `process_counts` for computing the measurement results from a counts
   dictionary.
   [(#4941)](https://github.com/PennyLaneAI/pennylane/pull/4941/)
@@ -437,6 +451,7 @@
 
 * Decomposition of `qml.PhaseShift` now uses `qml.GlobalPhase` for retaining the global phase information. 
   [(#4657)](https://github.com/PennyLaneAI/pennylane/pull/4657)
+  [(#4947)](https://github.com/PennyLaneAI/pennylane/pull/4947)
 
 * `qml.equal` for `Controlled` operators no longer returns `False` when equivalent but 
   differently-ordered sets of control wires and control values are compared.
@@ -447,6 +462,11 @@
   [(#4922)](https://github.com/PennyLaneAI/pennylane/pull/4922)
 
 <h3>Breaking changes 💔</h3>
+
+* The functions `qml.transforms.one_qubit_decomposition`, `qml.transforms.two_qubit_decomposition`, 
+  `qml.transforms.sk_decomposition` were moved to respectively, `qml.ops.one_qubit_decomposition`, `qml.ops.two_qubit_decomposition`, 
+  `qml.ops.sk_decomposition`.
+  [(#4906)](https://github.com/PennyLaneAI/pennylane/pull/4906)
 
 * The function `qml.transforms.classical_jacobian` has been moved to the gradients module
   and is now accessible as `qml.gradients.classical_jacobian`.
@@ -506,6 +526,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Documentation for unitaries and operations decompositions was moved from `qml.transforms` to `qml.ops.ops_math`.
+  [(#4906)](https://github.com/PennyLaneAI/pennylane/pull/4906)
+
 * Documentation for `qml.metric_tensor` and `qml.adjoint_metric_tensor` and `qml.transforms.classical_jacobian`
   are now accessible via the gradients API page `qml.gradients` in the documentation.
   [(#4900)](https://github.com/PennyLaneAI/pennylane/pull/4900)
@@ -525,6 +548,9 @@
   [(#4874)](https://github.com/PennyLaneAI/pennylane/pull/4874)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qml.cond` no longer incorrectly queues operators used as qfunc arguments.
+  [(#4948)](https://github.com/PennyLaneAI/pennylane/pull/4948)
 
 * `Attribute` objects now return `False` instead of raising a `TypeError` when checking if an object is inside
   the set.
@@ -629,10 +655,9 @@ Juan Giraldo,
 Emiliano Godinez Ramirez,
 Ankit Khandelwal,
 Christina Lee,
-Romain Moyard,
 Vincent Michaud-Rioux,
-Romain Moyard,
 Anurav Modak,
+Romain Moyard,
 Mudit Pandey,
 Matthew Silverman,
 Jay Soni,
