@@ -542,6 +542,9 @@ class BlockEncode(Operation):
         self.hyperparameters["norm"] = normalization
         self.hyperparameters["subspace"] = subspace
 
+    def _flatten(self):
+        return self.data, (self.wires, ())
+
     @staticmethod
     def compute_matrix(*params, **hyperparams):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
