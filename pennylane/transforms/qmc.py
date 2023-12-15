@@ -152,7 +152,7 @@ def quantum_monte_carlo(
     r"""Provides the circuit to perform the
     `quantum Monte Carlo estimation <https://arxiv.org/abs/1805.00109>`__ algorithm.
 
-    The input ``fn`` should be the quantum circuit corresponding to the :math:`\mathcal{F}` unitary
+    The input `tape`` should be the quantum circuit corresponding to the :math:`\mathcal{F}` unitary
     in the paper above. This unitary encodes the probability distribution and random variable onto
     ``wires`` so that measurement of the ``target_wire`` provides the expectation value to be
     estimated. The quantum Monte Carlo algorithm then estimates the expectation value using quantum
@@ -171,7 +171,7 @@ def quantum_monte_carlo(
         simulators, but may perform faster and is suited to quick prototyping.
 
     Args:
-        fn (Callable): a quantum function that applies quantum operations according to the
+        tape (QNode or QuantumTape or Callable): the quantum circuit that applies quantum operations according to the
             :math:`\mathcal{F}` unitary used as part of quantum Monte Carlo estimation
         wires (Union[Wires or Sequence[int]]): the wires acted upon by the ``fn`` circuit
         target_wire (Union[Wires, int]): The wire in which the expectation value is encoded. Must be
@@ -179,7 +179,11 @@ def quantum_monte_carlo(
         estimation_wires (Union[Wires, Sequence[int], or int]): the wires used for phase estimation
 
     Returns:
-        function: The circuit for quantum Monte Carlo estimation
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will perform the quantum Monte Carlo estimation.
+
 
     Raises:
         ValueError: if ``wires`` and ``estimation_wires`` share a common wire
