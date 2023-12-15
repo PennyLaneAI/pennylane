@@ -41,7 +41,7 @@
     <img src="./doc/_static/header-dark-mode.png#gh-dark-mode-only" width="700px" onerror="this.style.display='none'" alt=""/>
 </p>
 
-## Key Features 
+## Key Features
 
 <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/code.png" width="400px" align="right">
 
