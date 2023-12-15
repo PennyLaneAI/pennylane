@@ -126,7 +126,7 @@ class ControlledSequence(SymbolicOp, Operation):
 
     # pylint:disable=arguments-differ
     @staticmethod
-    def compute_decomposition(*_, base=None, control_wires=None, **__):
+    def compute_decomposition(*_, base=None, control_wires=None, lazy=False, **__):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -165,6 +165,6 @@ class ControlledSequence(SymbolicOp, Operation):
         ops = []
 
         for z, ctrl_wire in zip(powers_of_two[::-1], control_wires):
-            ops.append(qml.pow(qml.ctrl(base, control=ctrl_wire), z=z))
+            ops.append(qml.pow(qml.ctrl(base, control=ctrl_wire), z=z, lazy=lazy))
 
         return ops
