@@ -383,6 +383,9 @@
 
 <h4>Other improvements</h4>
 
+* `qml.quantum_monte_carlo` now uses the new transform system.
+  [(#4708)](https://github.com/PennyLaneAI/pennylane/pull/4708/)
+
 * `qml.simplify` now uses the new transforms API.
   [(#4949)](https://github.com/PennyLaneAI/pennylane/pull/4949)
 
@@ -648,10 +651,9 @@ Juan Giraldo,
 Emiliano Godinez Ramirez,
 Ankit Khandelwal,
 Christina Lee,
-Romain Moyard,
 Vincent Michaud-Rioux,
-Romain Moyard,
 Anurav Modak,
+Romain Moyard,
 Mudit Pandey,
 Matthew Silverman,
 Jay Soni,
