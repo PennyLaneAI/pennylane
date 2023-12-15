@@ -615,7 +615,7 @@ class DeviceDerivatives(JacobianProductCalculator):
 
         if tapes not in self._jacs_cache:
             # Here the jac was not cached but the results were. This can not happen because results are never
-            # cached alone (note that in the else clause above computing only results, jac must already be present)
+            # cached alone (note that in the else clause below computing only results, jac must already be present)
             raise NotImplementedError(
                 "No path to cache results without caching jac. This branch should not occur."
             )
