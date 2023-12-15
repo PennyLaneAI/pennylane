@@ -255,6 +255,37 @@
   {1: 49768, 2: 1, 0: 1}
   ```
 
+* `default.clifford` device enables efficient simulation of larger-scale Clifford circuits
+  defined in PennyLane using [stim](https://github.com/quantumlib/Stim).
+  [(#4936)](https://github.com/PennyLaneAI/pennylane/pull/4936)
+
+  ```python
+  import pennylane as qml
+
+  dev = qml.device("default.clifford", state="tableau")
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.CNOT(wires=[0, 1])
+      qml.PauliX(wires=[1])
+      qml.ISWAP(wires=[0, 1])
+      qml.Hadamard(wires=[0])
+      return qml.state()
+
+  (tableau,) = circuit()
+  ```
+
+  Given a circuit with the Clifford gates, one can use this device obtaining the Tableau representation
+  as given in [Aaronson & Gottesman (2004)](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.70.052328)
+
+  ```pycon
+  >>> tableau
+  array([[0, 1, 1, 0, 0],
+         [1, 0, 1, 1, 1],
+         [0, 0, 0, 1, 0],
+         [1, 0, 0, 1, 1]])
+  ```
+
 <h4>Use an iterative approach for quantum phase estimation 🔄</h4>
 
 * Iterative Quantum Phase Estimation is now available from `qml.iterative_qpe`.
