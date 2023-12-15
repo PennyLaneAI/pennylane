@@ -80,7 +80,7 @@ def _apply_controlled_v(target_wire, control_wire):
 
 @transform
 def apply_controlled_Q(
-        tape: qml.tape.QuantumTape, wires, target_wire, control_wire, work_wires
+    tape: qml.tape.QuantumTape, wires, target_wire, control_wire, work_wires
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Provides the circuit to apply a controlled version of the :math:`\mathcal{Q}` unitary
     defined in `this <https://arxiv.org/abs/1805.00109>`__ paper.
@@ -146,7 +146,7 @@ def apply_controlled_Q(
 
 @transform
 def quantum_monte_carlo(
-        tape: qml.tape.QuantumTape, wires, target_wire, estimation_wires
+    tape: qml.tape.QuantumTape, wires, target_wire, estimation_wires
 ) -> (Sequence[qml.tape.QuantumTape], Callable):
     r"""Provides the circuit to perform the
     `quantum Monte Carlo estimation <https://arxiv.org/abs/1805.00109>`__ algorithm.
