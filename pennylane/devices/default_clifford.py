@@ -305,7 +305,8 @@ class DefaultClifford(Device):
         updated_values = {}
         if execution_config.gradient_method == "best":  # pragma: no cover
             updated_values["gradient_method"] = None
-        updated_values["use_device_gradient"] = True
+        if execution_config.gradient_method == "device":
+            updated_values["use_device_gradient"] = True
         updated_values["use_device_jacobian_product"] = False
         if execution_config.grad_on_execution is None:
             updated_values["grad_on_execution"] = False
@@ -466,11 +467,6 @@ class DefaultClifford(Device):
 
         res = tuple(tuple(np.zeros(s) for s in circuit.shape(self)) for circuit in circuits)
 
-        max_workers = execution_config.device_options.get("max_workers", self._max_workers)
-        if max_workers is not None:
-            # reset _rng to mimic serial behavior
-            self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
-
         return res[0] if is_single_circuit else res
 
     # pylint: disable=unidiomatic-typecheck, unused-argument, too-many-branches, no-member, too-many-statements
@@ -619,9 +615,9 @@ class DefaultClifford(Device):
     @staticmethod
     def _measure_purity(meas_op, circuit):
         """Measure the purity of the state of simulator device"""
-        if circuit.op_wires == meas_op.wires:  # // Trivial
-            purity = qml.math.array(1.0)
-        return purity
+        if circuit.op_wires != meas_op.wires:
+            raise NotImplementedError
+        return qml.math.array(1.0)  # // Trivial
 
     @staticmethod
     def _measure_expectation(tableau_simulator, meas_op, stim):
