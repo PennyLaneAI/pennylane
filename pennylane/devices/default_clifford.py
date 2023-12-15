@@ -480,7 +480,7 @@ class DefaultClifford(Device):
 
         return res[0] if is_single_circuit else res
 
-    # pylint: disable=unidiomatic-typecheck, unused-argument, too-many-branches, no-member
+    # pylint: disable=unidiomatic-typecheck, unused-argument, too-many-branches, no-member, too-many-statements
     def simulate(
         self,
         circuit: qml.tape.QuantumScript,
