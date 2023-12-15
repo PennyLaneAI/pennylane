@@ -105,6 +105,11 @@ class ControlledSequence(SymbolicOp, Operation):
         return self.hyperparameters["control_wires"]
 
     @property
+    def control_wires(self):
+        """The control wires for the sequence"""
+        return self.hyperparameters["control_wires"]
+
+    @property
     def wires(self):
         return self.control + self.base.wires
 
