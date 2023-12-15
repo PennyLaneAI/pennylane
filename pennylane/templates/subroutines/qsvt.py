@@ -16,12 +16,12 @@ Contains the QSVT template and qsvt wrapper function.
 """
 # pylint: disable=too-many-arguments
 import copy
+import numpy as np
 import pennylane as qml
 from pennylane.queuing import QueuingManager
 from pennylane.ops import BlockEncode, PCPhase
 from pennylane.ops.op_math import adjoint
 from pennylane.operation import AnyWires, Operation
-from pennylane import numpy as np
 
 
 def qsvt(A, angles, wires, convention=None):

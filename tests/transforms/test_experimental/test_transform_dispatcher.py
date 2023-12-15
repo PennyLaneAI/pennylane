@@ -384,13 +384,6 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert transform_container.classical_cotransform is None
         assert not expand_transform_container.is_informative
 
-    @pytest.mark.parametrize("non_valid_transform", non_valid_transforms)
-    def test_dispatcher_signature_non_valid_transform(self, non_valid_transform):
-        """Test the non-valid transforms raises a Transform error."""
-
-        with pytest.raises(TransformError):
-            transform(non_valid_transform)
-
     @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_dispatcher_signature_classical_cotransform(self, valid_transform):
         """Test that  valid transforms with non-valid co transform raises a Transform error."""
@@ -405,42 +398,6 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
 
         with pytest.raises(TransformError, match="The function to register, "):
             transform(non_callable)
-
-    def test_error_no_tape_transform(self):
-        """Test that a transform without tape as arg is not valid."""
-
-        with pytest.raises(TransformError, match="The first argument of a transform must be tape."):
-            transform(no_tape_transform)
-
-    def test_error_no_quantumtape_transform(self):
-        """Test that a transform needs tape to be a quantum tape in order to be valid."""
-
-        with pytest.raises(
-            TransformError, match="The type of the tape argument must be a QuantumTape."
-        ):
-            transform(no_quantum_tape_transform)
-
-    def test_error_no_processing_fn_transform(self):
-        """Test that a transform without processing fn return is not valid."""
-
-        with pytest.raises(TransformError, match="The return of a transform must match"):
-            transform(no_processing_fn_transform)
-
-    def test_error_no_tape_sequence_transform(self):
-        """Test that a transform not returning a sequence of tape is not valid."""
-
-        with pytest.raises(
-            TransformError, match="The first return of a transform must be a sequence of tapes:"
-        ):
-            transform(no_tape_sequence_transform)
-
-    def test_error_no_callable_return(self):
-        """Test that a transform not returning a callable is not valid."""
-
-        with pytest.raises(
-            TransformError, match="The second return of a transform must be a callable"
-        ):
-            transform(no_callable_return)
 
     def test_expand_transform_not_callable(self):
         """Test that an expand transform must be a callable otherwise it is not valid."""

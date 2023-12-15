@@ -576,10 +576,10 @@ class TestMidCircuitMeasurements:
 
         drawing = qml.draw(circ, max_length=25)()
         expected_drawing = (
-            "0: ──┤↗├─────────────\n"
+            "0: ──┤↗├──RX(0.00)───\n"
             "1: ───║───RX(0.12)──X\n"
             "      ╚═══╩═════════╝\n\n"
-            "───RX(0.00)─┤  <Z>\n"
+            "────────────┤  <Z>\n"
             "───RX(0.00)─┤     \n"
             "                  "
         )
@@ -664,6 +664,156 @@ class TestMidCircuitMeasurements:
             "════║════║═════════╣         \n"
             "    ║    ║         ║         \n"
             "    ╚════╩═════════╝         "
+        )
+
+        assert drawing == expected_drawing
+
+    @pytest.mark.parametrize(
+        "mp, mp_label",
+        [
+            (qml.expval, "<MCM>"),
+            (qml.var, "Var[MCM]"),
+            (qml.probs, "Probs[MCM]"),
+            (qml.sample, "Sample[MCM]"),
+            (qml.counts, "Counts[MCM]"),
+        ],
+    )
+    def test_single_meas_stats(self, mp, mp_label):
+        """Test that collecting statistics on a single mid-circuit measurement
+        works as expected."""
+
+        def circ():
+            qml.Hadamard(0)
+            m0 = qml.measure(0)
+            qml.Hadamard(0)
+            return mp(op=m0)
+
+        drawing = qml.draw(circ)()
+        expected_drawing = (
+            "0: ──H──┤↗├──H─┤  " + " " * len(mp_label) + f"\n         ╚═════╡  {mp_label}"
+        )
+
+        assert drawing == expected_drawing
+
+    @pytest.mark.parametrize(
+        "mp, mp_label",
+        [
+            (qml.expval, "<MCM>"),
+            (qml.var, "Var[MCM]"),
+            (qml.sample, "Sample[MCM]"),
+            (qml.counts, "Counts[MCM]"),
+        ],
+    )
+    def test_multi_meas_stats(self, mp, mp_label):
+        """Test that collecting statistics on multiple mid-circuit measurements
+        works as expected"""
+
+        def circ():
+            qml.Hadamard(0)
+            qml.Hadamard(1)
+            m0 = qml.measure(0)
+            m1 = qml.measure(1)
+            return mp(op=m0 + m1)
+
+        drawing = qml.draw(circ)()
+        expected_drawing = (
+            "0: ──H──┤↗├──────┤  "
+            + " " * len(mp_label)
+            + "\n1: ──H───║───┤↗├─┤  "
+            + " " * len(mp_label)
+            + f"\n         ╚════║══╡ ╭{mp_label}"
+            + f"\n              ╚══╡ ╰{mp_label}"
+        )
+
+        assert drawing == expected_drawing
+
+    def test_multi_meas_stats_multi_meas(self):
+        """Test that collecting statistics on multiple mid-circuit measurements with
+        multiple terminal measurement processes works as expected."""
+
+        def circ():
+            qml.Hadamard(0)
+            m0 = qml.measure(0)
+            qml.Hadamard(1)
+            m1 = qml.measure(1)
+            qml.Hadamard(2)
+            m2 = qml.measure(2)
+            return qml.expval(m0 * m2), qml.sample(m1)
+
+        drawing = qml.draw(circ)()
+        expected_drawing = (
+            "0: ──H──┤↗├─────────────────┤                    \n"
+            "1: ──────║───H──┤↗├─────────┤                    \n"
+            "2: ──────║───────║───H──┤↗├─┤                    \n"
+            "         ╚═══════║═══════║══╡ ╭<MCM>             \n"
+            "                 ╚═══════║══╡ │       Sample[MCM]\n"
+            "                         ╚══╡ ╰<MCM>             "
+        )
+
+        assert drawing == expected_drawing
+
+    def test_multi_meas_stats_same_cwire(self):
+        """Test that colecting statistics on multiple mid-circuit measurements
+        with multiple terminal measurements is drawn correctly"""
+
+        def circ():
+            qml.Hadamard(0)
+            qml.Hadamard(1)
+            m0 = qml.measure(0)
+            m1 = qml.measure(1)
+            return qml.expval(m0 + m1), qml.sample(m0)
+
+        drawing = qml.draw(circ)()
+        expected_drawing = (
+            "0: ──H──┤↗├──────┤                    \n"
+            "1: ──H───║───┤↗├─┤                    \n"
+            "         ╚════║══╡ ╭<MCM>  Sample[MCM]\n"
+            "              ╚══╡ ╰<MCM>             "
+        )
+
+        assert drawing == expected_drawing
+
+    def test_single_cond_single_meas_stats(self):
+        """Test that collecting statistics and using classical conditions together
+        on the same measurement works as expected."""
+
+        def circ():
+            qml.Hadamard(0)
+            m0 = qml.measure(0)
+            qml.cond(m0, qml.PauliZ)(0)
+            return qml.expval(m0)
+
+        drawing = qml.draw(circ)()
+        expected_drawing = "0: ──H──┤↗├──Z─┤       \n         ╚═══╩═╡  <MCM>"
+
+        assert drawing == expected_drawing
+
+    def test_multi_cond_multi_meas_stats(self):
+        """Test that combining multiple conditionals and multiple mid-circuit
+        measurement statistics is drawn correctly."""
+
+        def circ():
+            qml.Hadamard(0)
+            m0 = qml.measure(0)
+            qml.Hadamard(1)
+            m1 = qml.measure(1)
+            qml.Hadamard(2)
+            m2 = qml.measure(2)
+            qml.Hadamard(3)
+            qml.measure(3)
+            qml.cond(m0, qml.PauliX)(0)
+            qml.cond(m0 & m1, qml.PauliY)(1)
+            return qml.expval(m2), qml.sample([m1, m2])
+
+        drawing = qml.draw(circ)()
+        expected_drawing = (
+            "0: ──H──┤↗├──────────────────────────X────┤                    \n"
+            "1: ──────║───H──┤↗├──────────────────║──Y─┤                    \n"
+            "2: ──────║───────║───H──┤↗├──────────║──║─┤                    \n"
+            "3: ──────║───────║───────║───H──┤↗├──║──║─┤                    \n"
+            "         ╚═══════║═══════║═══════════╩══╣                      \n"
+            "                 ╚═══════║══════════════╩═╡        ╭Sample[MCM]\n"
+            "                         ╚════════════════╡  <MCM> ╰Sample[MCM]"
         )
 
         assert drawing == expected_drawing
