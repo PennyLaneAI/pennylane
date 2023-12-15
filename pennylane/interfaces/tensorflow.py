@@ -152,11 +152,10 @@ def execute(tapes, execute_fn, jpc, differentiable=False):
     def _execute(*parameters):  # pylint:disable=unused-argument
         def grad_fn(*dy, **tfkwargs):
             # reconstruct the nested structure of dy
-            if differentiable:
-                inner_tapes = tuple(tapes)
-            else:
+            if not differentiable or not context.executing_eagerly():
                 inner_tapes = set_parameters_on_copy(tapes, params_unwrapped)
-
+            else:
+                inner_tapes = tuple(tapes)
             dy = _res_restructured(dy, tapes)
 
             if tf.executing_eagerly():
@@ -172,7 +171,6 @@ def execute(tapes, execute_fn, jpc, differentiable=False):
                     if vjp is not None and 0 not in qml.math.shape(vjp):
                         extended_vjps.extend(qml.math.unstack(vjp))
                 vjps = tuple(extended_vjps)
-
 
             variables = tfkwargs.get("variables")
             return (vjps, variables) if variables is not None else vjps
