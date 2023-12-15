@@ -348,11 +348,6 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
             # 1. Apply true_fn conditionally
             qscript = make_qscript(true_fn)(*args, **kwargs)
 
-            if QueuingManager.recording():
-                for op in qscript:
-                    QueuingManager.remove(op)
-                    QueuingManager.remove(getattr(op, "base", None))
-
             if qscript.measurements:
                 raise ConditionalTransformError(with_meas_err)
 
