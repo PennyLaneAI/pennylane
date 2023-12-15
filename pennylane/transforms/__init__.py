@@ -58,8 +58,6 @@ both transforms, and decompositions within the larger PennyLane codebase.
 .. autosummary::
     :toctree: api
 
-    ~transforms.one_qubit_decomposition
-    ~transforms.two_qubit_decomposition
     ~transforms.set_decomposition
     ~transforms.pattern_matching
     ~transforms.to_zx
@@ -84,12 +82,6 @@ This transform accepts quantum circuits and decomposes them to the Clifford+T ba
 
     ~clifford_t_decomposition
 
-The following function assists in decomposing operations to the Clifford+T basis.
-
-.. autosummary::
-    :toctree: api
-
-    ~transforms.sk_decomposition
 
 Transforms for error mitigation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -302,11 +294,12 @@ from .batch_input import batch_input
 from .batch_partial import batch_partial
 from .convert_to_numpy_parameters import convert_to_numpy_parameters
 from .compile import compile
+
+
 from .decompositions import (
+    clifford_t_decomposition,
     one_qubit_decomposition,
     two_qubit_decomposition,
-    sk_decomposition,
-    clifford_t_decomposition,
 )
 from .defer_measurements import defer_measurements
 from .sign_expand import sign_expand
