@@ -386,6 +386,9 @@
 * `qml.quantum_monte_carlo` now uses the new transform system.
   [(#4708)](https://github.com/PennyLaneAI/pennylane/pull/4708/)
 
+* `qml.simplify` now uses the new transforms API.
+  [(#4949)](https://github.com/PennyLaneAI/pennylane/pull/4949)
+
 * The formal requirement that type hinting be providing when using
   the `qml.transform` decorator has been removed. Type hinting can still
   be used, but is now optional. Please use a type checker such as
