@@ -456,6 +456,11 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The functions `qml.transforms.one_qubit_decomposition`, `qml.transforms.two_qubit_decomposition`, 
+  `qml.transforms.sk_decomposition` were moved to respectively, `qml.ops.one_qubit_decomposition`, `qml.ops.two_qubit_decomposition`, 
+  `qml.ops.sk_decomposition`.
+  [(#4906)](https://github.com/PennyLaneAI/pennylane/pull/4906)
+
 * The function `qml.transforms.classical_jacobian` has been moved to the gradients module
   and is now accessible as `qml.gradients.classical_jacobian`.
   [(#4900)](https://github.com/PennyLaneAI/pennylane/pull/4900)
@@ -513,6 +518,9 @@
   [(#4773)](https://github.com/PennyLaneAI/pennylane/pull/4773)
 
 <h3>Documentation 📝</h3>
+
+* Documentation for unitaries and operations decompositions was moved from `qml.transforms` to `qml.ops.ops_math`.
+  [(#4906)](https://github.com/PennyLaneAI/pennylane/pull/4906)
 
 * Documentation for `qml.metric_tensor` and `qml.adjoint_metric_tensor` and `qml.transforms.classical_jacobian`
   are now accessible via the gradients API page `qml.gradients` in the documentation.
