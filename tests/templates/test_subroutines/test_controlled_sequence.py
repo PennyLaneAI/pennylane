@@ -140,13 +140,13 @@ class TestMethods:
         assert new_op.base.wires == Wires(["a", "b"])
         assert new_op.control == Wires(["c", "d"])
 
-    def test_compute_decomposition(self):
-        """Test that the decomposition is as expected"""
+    def test_compute_decomposition_lazy(self):
+        """Test compute_decomposition with lazy=True"""
         base = qml.RZ(4.3, 1)
         control_wires = [0, 2, 3]
 
         decomp = qml.ControlledSequence.compute_decomposition(
-            base=base, control_wires=control_wires
+            base=base, control_wires=control_wires, lazy=True
         )
 
         assert len(decomp) == len(control_wires)
@@ -158,14 +158,28 @@ class TestMethods:
         for op, w in zip(decomp, control_wires):
             assert op.base.control_wires == Wires(w)
 
+    def test_compute_decomposition_not_lazy(self):
+        """Test compute_decomposition with lazy=False"""
+        op = qml.ControlledSequence(qml.RX(0.25, wires=3), control=["a", 1, "blue"])
+
+        decomp = op.compute_decomposition(base=op.base, control_wires=op.control, lazy=False)
+        expected_decomp = [
+            qml.ops.op_math.Controlled(qml.RX(0.25 * 4, wires=3), control_wires="a"),
+            qml.ops.op_math.Controlled(qml.RX(0.25 * 2, wires=3), control_wires=1),
+            qml.ops.op_math.Controlled(qml.RX(0.25 * 1, wires=3), control_wires="blue"),
+        ]
+
+        for op1, op2 in zip(decomp, expected_decomp):
+            assert op1 == op2
+
     def test_decomposition(self):
         op = qml.ControlledSequence(qml.RX(0.25, wires=3), control=["a", 1, "blue"])
 
         decomp = op.decomposition()
         expected_decomp = [
-            qml.ops.op_math.Controlled(qml.RX(0.25, wires=3), control_wires="a") ** 4,
-            qml.ops.op_math.Controlled(qml.RX(0.25, wires=3), control_wires=1) ** 2,
-            qml.ops.op_math.Controlled(qml.RX(0.25, wires=3), control_wires="blue") ** 1,
+            qml.ops.op_math.Controlled(qml.RX(0.25 * 4, wires=3), control_wires="a"),
+            qml.ops.op_math.Controlled(qml.RX(0.25 * 2, wires=3), control_wires=1),
+            qml.ops.op_math.Controlled(qml.RX(0.25 * 1, wires=3), control_wires="blue"),
         ]
 
         for op1, op2 in zip(decomp, expected_decomp):
