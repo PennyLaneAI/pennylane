@@ -27,7 +27,7 @@ from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.typing import Result, ResultBatch
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
-from pennylane.measurements.expval import ExpectationMP
+from pennylane.measurements import ExpectationMP, StateMP, DensityMatrixMP, PurityMP
 from pennylane.devices.qubit.sampling import get_num_shots_and_executions
 
 from . import Device
@@ -383,28 +383,16 @@ class DefaultClifford(Device):
 
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
-            results = tuple(
-                self.simulate(
-                    c,
-                    rng=self._rng,
-                    debugger=self._debugger,
-                )
-                for c in circuits
-            )
+            results = tuple(self.simulate(c, debugger=self._debugger) for c in circuits)
         else:
             vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
-            seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
             _wrap_simulate = partial(self.simulate, debugger=None)
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-                exec_map = executor.map(
-                    _wrap_simulate,
-                    vanilla_circuits,
-                    seeds,
-                )
+                exec_map = executor.map(_wrap_simulate, vanilla_circuits)
                 results = tuple(exec_map)
 
-            # reset _rng to mimic serial behavior
-            self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
+            # reset _rng to mimic serial behavior - TODO: uncomment when using RNG
+            # self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
         if self.tracker.active:
             self.tracker.update(batches=1)
@@ -469,20 +457,16 @@ class DefaultClifford(Device):
 
         return res[0] if is_single_circuit else res
 
-    # pylint: disable=unidiomatic-typecheck, unused-argument, too-many-branches, no-member, too-many-statements
+    # pylint:disable=no-member
     def simulate(
         self,
         circuit: qml.tape.QuantumScript,
-        rng=None,
         debugger=None,
     ) -> Result:
         """Simulate a single quantum script.
 
         Args:
             circuit (QuantumTape): The single circuit to simulate
-            rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
-                seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
-                If no value is provided, a default RNG will be used.
             debugger (_Debugger): The debugger to use
 
         Returns:
@@ -545,29 +529,29 @@ class DefaultClifford(Device):
                             state = qml.math.zeros(2**circuit.num_wires, dtype=complex)
                             state[0] = 1.0 + 0.0j
                         flat_state = qml.math.flatten(state)
-                        if op.tag:
-                            debugger.snapshots[op.tag] = flat_state
-                        else:
-                            debugger.snapshots[len(debugger.snapshots)] = flat_state
+                        debugger.snapshots[op.tag or len(debugger.snapshots)] = flat_state
 
         tableau_simulator.do_circuit(stim_ct)
 
         global_phase = qml.GlobalPhase(qml.math.sum(op.data[0] for op in global_phase_ops))
+        return self.measure(circuit, tableau_simulator, global_phase, stim)
 
+    def measure(self, circuit, tableau_simulator, global_phase, stim):
+        """Given a circuit, compute and return the measurement results."""
         results = []
         for meas in circuit.measurements:
             # Analytic case
             if not circuit.shots:
-                # Computing statevector via tableaus
-                if type(meas) is qml.measurements.StateMP:
-                    res = self._measure_state(tableau_simulator, circuit, global_phase)
-
                 # Computing density matrix via tableaus
-                elif type(meas) is qml.measurements.DensityMatrixMP:
+                if isinstance(meas, DensityMatrixMP):  # do first because it is a child of StateMP
                     res = self._measure_density_matrix(tableau_simulator)
 
+                # Computing statevector via tableaus
+                elif isinstance(meas, StateMP):
+                    res = self._measure_state(tableau_simulator, circuit, global_phase)
+
                 # Computing purity via tableaus
-                elif type(meas) is qml.measurements.PurityMP:
+                elif isinstance(meas, PurityMP):
                     res = self._measure_purity(meas, circuit)
 
                 # Computing expectation values via measurement
