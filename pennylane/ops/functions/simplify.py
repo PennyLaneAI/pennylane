@@ -30,11 +30,14 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
     or number of rotation parameters.
 
     Args:
-        input (.Operator, pennylane.QNode, .QuantumTape, or Callable): an operator, quantum node,
-            tape or function that applies quantum operations
+        input (.Operator, .MeasurementProcess, pennylane.QNode, .QuantumTape, or Callable): an
+            operator, quantum node, tape or function that applies quantum operations
 
     Returns:
-        (.Operator, pennylane.QNode, .QuantumTape, or Callable): Simplified input.
+        (Operator or MeasurementProcess or qnode (QNode) or quantum function (Callable)
+        or tuple[List[QuantumTape], function]): Simplified input. If an operator or measurement
+        process is provided as input, the simplified input is returned directly. Otherwise, the
+        transformed circuit is returned as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
 
@@ -69,11 +72,11 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
     Moreover, ``qml.simplify`` can be used to simplify QNodes or quantum functions:
 
     >>> dev = qml.device("default.qubit", wires=2)
-    >>> @qml.simplify
-        @qml.qnode(dev)
-        def circuit():
-            qml.adjoint(qml.prod(qml.RX(1, 0) ** 1, qml.RY(1, 0), qml.RZ(1, 0)))
-            return qml.probs(wires=0)
+    >>> @qml.qnode(dev)
+    ... @qml.simplify
+    ... def circuit():
+    ...     qml.adjoint(qml.prod(qml.RX(1, 0) ** 1, qml.RY(1, 0), qml.RZ(1, 0)))
+    ...     return qml.probs(wires=0)
     >>> circuit()
     tensor([0.64596329, 0.35403671], requires_grad=True)
     >>> list(circuit.tape)
