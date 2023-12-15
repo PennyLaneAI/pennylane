@@ -462,6 +462,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+`qml.cond` no longer incorrectly queues operators used as qfunc arguments.
+  [(#4948)](https://github.com/PennyLaneAI/pennylane/pull/4948)
+
 * Fixed a bug where the parameter-shift rule of `qml.ctrl(op)` was wrong if `op` had a generator
   that has two or more eigenvalues and is stored as a `SparseHamiltonian`.
   [(#4899)](https://github.com/PennyLaneAI/pennylane/pull/4899)
