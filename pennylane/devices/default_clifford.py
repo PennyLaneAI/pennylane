@@ -608,7 +608,7 @@ class DefaultClifford(Device):
                     np.hstack((z2x, z2z, z_signs.reshape(-1, 1))),
                 )
             ).astype(int)
-            if pl_tableau.shape == (0, 1):
+            if pl_tableau.shape == (0, 1) and circuit.num_wires:
                 return np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])
             return pl_tableau
 
@@ -616,7 +616,7 @@ class DefaultClifford(Device):
             tableau_simulator.state_vector(endian="big"),
             like=INTERFACE_TO_LIKE[interface],
         )
-        if state.shape == (1,):
+        if state.shape == (1,) and circuit.num_wires:
             # following is faster than using np.eye(length=1, size, index)
             state = qml.math.zeros(2**circuit.num_wires, dtype=complex)
             state[0] = 1.0 + 0.0j
