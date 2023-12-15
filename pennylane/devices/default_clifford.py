@@ -27,7 +27,6 @@ from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.typing import Result, ResultBatch
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
-from pennylane.measurements.expval import ExpectationMP
 from pennylane.devices.qubit.sampling import get_num_shots_and_executions
 from pennylane.devices.qubit.simulate import INTERFACE_TO_LIKE
 
@@ -288,8 +287,8 @@ class DefaultClifford(Device):
 
         self._tableau = tableau
 
-        seed = np.random.randint(0, high=10000000) if seed == "global" else seed
-        self._rng = np.random.default_rng(seed)
+        self._seed = np.random.randint(0, high=10000000) if seed == "global" else seed
+        self._rng = np.random.default_rng(self._seed)
         self._debugger = None
 
     def _setup_execution_config(self, execution_config: ExecutionConfig) -> ExecutionConfig:
@@ -391,7 +390,7 @@ class DefaultClifford(Device):
             results = tuple(
                 self.simulate(
                     c,
-                    rng=self._rng,
+                    rng=self._seed,
                     debugger=self._debugger,
                     interface=interface,
                 )
@@ -481,6 +480,7 @@ class DefaultClifford(Device):
         return res[0] if is_single_circuit else res
 
     # pylint: disable=unidiomatic-typecheck, unused-argument, too-many-branches, no-member
+    # pylint: disable=too-many-statements, protected-access
     def simulate(
         self,
         circuit: qml.tape.QuantumScript,
@@ -514,11 +514,6 @@ class DefaultClifford(Device):
         stim = _import_stim()
 
         circuit = circuit.map_to_standard_wires()
-
-        if circuit.shots:
-            raise NotImplementedError(
-                "default.clifford currently doesn't support computation with shots."
-            )
 
         prep = None
         if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
@@ -579,13 +574,26 @@ class DefaultClifford(Device):
                 elif type(meas) is qml.measurements.DensityMatrixMP:
                     res = self._measure_density_matrix(tableau_simulator, interface)
 
+                # Computing expectation values via measurement
+                elif type(meas) is qml.measurements.ExpectationMP:
+                    res = self._measure_expectation(tableau_simulator, interface, meas, stim)
+
+                # Computing entropy via tableaus
+                elif type(meas) is qml.measurements.VnEntropyMP:
+                    tableau = tableau_simulator.current_inverse_tableau() ** -1
+                    zs = qml.math.array([tableau.z_output(k) for k in range(len(circuit.wires))])
+                    res = self._stabilizer_vn_entropy(zs, list(meas.wires))
+
                 # Computing purity via tableaus
                 elif type(meas) is qml.measurements.PurityMP:
                     res = self._measure_purity(interface, meas, circuit)
 
-                # Computing expectation values via measurement
-                elif isinstance(meas, ExpectationMP):
-                    res = self._measure_expectation(tableau_simulator, interface, meas, stim)
+                # Computing mutual-info via tableaus
+                elif type(meas) is qml.measurements.MutualInfoMP:
+                    tableau = tableau_simulator.current_inverse_tableau() ** -1
+                    zs = qml.math.array([tableau.z_output(k) for k in range(len(circuit.wires))])
+                    indices0, indices1 = list(meas._wires[0]), list(meas._wires[1])
+                    res = self._stabilizer_vn_entropy(zs, indices0) + self._stabilizer_vn_entropy(zs, indices1)
 
                 # Computing more measurements
                 else:
@@ -593,7 +601,17 @@ class DefaultClifford(Device):
                         f"default.clifford doesn't support the {type(meas)} measurement at the moment."
                     )
 
-                results.append(res)
+
+            else:
+
+                sample_seed = rng if isinstance(rng, int) else self._seed
+                sample_circuit = initial_tableau.to_circuit() + stim_ct
+                sample_circuit.append("M", circuit.wires)
+                sampler = sample_circuit.compile_sampler(seed=sample_seed)
+                samples = qml.math.array(sampler.sample(shots=circuit.shots.total_shots), dtype=int)
+                res = meas.process_samples(samples=samples, wire_order=circuit.wires)
+
+            results.append(res)
 
         return tuple(results)
 
@@ -673,3 +691,57 @@ class DefaultClifford(Device):
         raise NotImplementedError(
             f"default.clifford doesn't support expectation value calculation with {type(meas_op.obs)} at the moment."
         )
+
+    # pylint: disable=protected-access
+    @staticmethod
+    def _measure_stabilizer_vn_entropy(stabilizer, wires, log_base=None):
+        r"""Computes the entanglement entropy using stabilizer information.
+
+        Computes the entanglement entropy :math:`S_A` for a subsytem described by :math:`A`, 
+        :math:`S_A = \text{rank}(\text{projection}_A {\mathcal{S}}) - |\mathcal{S}|`, where
+        :math:`\mathcal{S}` is the stabilizer group for the system using the theory described
+        in `arXiv:1901.08092 <https://arxiv.org/abs/1901.08092>`_.
+        
+        Args:
+            stabilizer (TensorLike): stabilizer set for the system
+            wires (Iterable): wires describing the subsystem
+            log_base (int): base for the logarithm.
+
+        Returns:
+            (float): entanglement entropy of the subsystem
+
+        """
+        # Get the number of qubits for the system
+        num_qubits = qml.math.shape(stabilizer)[0]
+
+        # Von Neumann entropy of a stabilizer state is zero
+        if len(wires) == num_qubits:
+            return 0.0
+
+        # Build a binary matrix desribing the stabilizers using the Pauli words
+        pauli_dict = {0: "I", 1: "X", 2: "Y", 3: "Z"}
+        terms = [
+            qml.pauli.PauliWord({idx: pauli_dict[ele] for idx, ele in enumerate(row)})
+            for row in stabilizer
+        ]
+        binary_mat = qml.pauli.utils._binary_matrix_from_pws(terms, num_qubits)
+
+        # Partition the binary matrix to represent the subsystem
+        partition_mat = qml.math.hstack(
+            (
+                binary_mat[:, num_qubits:][:, wires],
+                binary_mat[:, :num_qubits][:, wires],
+            )
+        )
+
+        # Use the reduced row echelon form for finding rank efficiently (tapering always come handy)
+        rank = qml.math.sum(qml.math.any(qml.qchem.tapering._reduced_row_echelon(partition_mat), axis=1))
+
+        # Use the Eq. A17 in arXiv:1901.08092 for entropy calculation
+        entropy = qml.math.log(2) * (rank - len(wires))
+
+        # Determine wether to use any log base
+        if log_base is None:
+            return entropy
+
+        return entropy / qml.math.log(log_base)
