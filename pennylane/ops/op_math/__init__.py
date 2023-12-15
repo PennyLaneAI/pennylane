@@ -68,6 +68,18 @@ Controlled Operator Classes
 Decompositions
 ~~~~~~~~~~~~~~
 
+.. currentmodule:: pennylane.ops
+
+.. autosummary::
+    :toctree: api
+
+    ~one_qubit_decomposition
+    ~two_qubit_decomposition
+    ~sk_decomposition
+
+Control Decompositions
+~~~~~~~~~~~~~~~~~~~~~~
+
 .. currentmodule:: pennylane.ops.op_math
 
 .. autosummary::
@@ -83,6 +95,7 @@ from .composite import CompositeOp
 from .condition import cond, Conditional
 from .controlled import Controlled, ControlledOp, ctrl
 from .controlled_ops import ControlledQubitUnitary, CY, CZ
+from .decompositions import one_qubit_decomposition, two_qubit_decomposition, sk_decomposition
 from .evolution import Evolution
 from .exp import Exp, exp
 from .pow import Pow, pow
