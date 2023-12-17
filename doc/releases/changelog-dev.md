@@ -324,6 +324,9 @@
 * The function ``qml.Snapshot`` now supports arbitrary measurements of type ``StateMeasurement``.
   [(#4876)](https://github.com/PennyLaneAI/pennylane/pull/4908)
 
+* Implemented the method `process_counts` in the `ProbabilityMP` class (internal assignment).
+  [(#4952)](https://github.com/PennyLaneAI/pennylane/pull/4952)
+
 <h4>Better support for batching</h4>
 
 * `default.qubit` now can evolve already batched states with `ParametrizedEvolution`
