@@ -242,23 +242,34 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         return qml.math.reshape(prob, flat_shape)
 
     def process_counts(self, counts: dict, wire_order: Wires):
-        # TODO Should I add asserts and checks (specifically on counts)?
+        # QUESTION
+        # Should I add asserts and checks (specifically on counts)?
 
         wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]
 
-        # TODO: when reducing wires, it can happen that two keys become equal. How to deal with such a case?
+        # QUESTION
+        # When reducing wires, two keys may become equal
+        # The following structure was chosen to maintain compatibility with 'process_samples'
+        # Please tell me if you want something different
         if mapped_wires:
-            # if wires are provided, then we only select those wires in each key
-            counts = {"".join(key[w] for w in mapped_wires): v for key, v in counts.items()}
+            mapped_counts = {}
+            for outcome, occurrence in counts.items():
+                mapped_outcome = "".join(outcome[i] for i in mapped_wires)
+                mapped_counts[mapped_outcome] = mapped_counts.get(mapped_outcome, 0) + occurrence
+            counts = mapped_counts
 
-        num_shots = qml.math.sum(counts.items())
+        num_shots = sum(counts.values())
         num_wires = len(next(iter(counts)))
         dim = 2**num_wires
 
-        counts_decimal = {int(k, base=2): v for k, v in counts.items()}
+        basis_states = {int(outcome, base=2): occurrence for outcome, occurrence in counts.items()}
 
-        # TODO Continue from here tomorrow
+        prob = qml.math.zeros((dim), dtype="float64")
+        for basis_state, occurrence in basis_states.items():
+            prob[basis_state] = occurrence / num_shots
+
+        return prob
 
     @staticmethod
     def _count_samples(indices, batch_size, dim):
