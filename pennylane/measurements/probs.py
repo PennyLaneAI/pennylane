@@ -242,16 +242,21 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         return qml.math.reshape(prob, flat_shape)
 
     def process_counts(self, counts: dict, wire_order: Wires):
-        # QUESTION
-        # Should I add asserts and checks (specifically on counts)?
+        # Checks that counts is a dictionary matching the format returned by ~.CountsMP
+        assert isinstance(counts, dict), "sampling information should be a dictionary"
+        assert counts, "sampling information should not be empty"
+
+        for outcome, occurrence in counts.items():
+            assert isinstance(outcome, str), f"key {outcome} should be a string"
+            assert all(bit in "01" for bit in outcome), f"key {outcome} should be binary"
+            assert isinstance(occurrence, int), f"value {occurrence} should be an integer"
+            assert occurrence > 0, f"value {occurrence} should be positive"
 
         wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]
 
-        # QUESTION
         # When reducing wires, two keys may become equal
         # The following structure was chosen to maintain compatibility with 'process_samples'
-        # Please tell me if you want something different
         if mapped_wires:
             mapped_counts = {}
             for outcome, occurrence in counts.items():
