@@ -191,7 +191,7 @@ def _add_classical_wires(drawer, layers, wires):
         drawer.classical_wire(xs, ys)
 
 
-def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwargs):
+def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, *, fig=None, **kwargs):
     """Private function wrapped with styling."""
     wire_options = kwargs.get("wire_options", None)
     label_options = kwargs.get("label_options", None)
@@ -213,7 +213,11 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
     bit_map, cwire_layers, cwire_wires = cwire_connections(layers)
 
     drawer = MPLDrawer(
-        n_layers=n_layers, n_wires=n_wires, c_wires=len(bit_map), wire_options=wire_options
+        n_layers=n_layers,
+        n_wires=n_wires,
+        c_wires=len(bit_map),
+        wire_options=wire_options,
+        fig=fig,
     )
 
     config = _Config(
@@ -243,7 +247,9 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
     return drawer.fig, drawer.ax
 
 
-def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, style=None, **kwargs):
+def tape_mpl(
+    tape, wire_order=None, show_all_wires=False, decimals=None, style=None, *, fig=None, **kwargs
+):
     """Produces a matplotlib graphic from a tape.
 
     Args:
@@ -266,6 +272,7 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, style=N
         label_options (dict): matplotlib formatting options for the wire labels
         active_wire_notches (bool): whether or not to add notches indicating active wires.
             Defaults to ``True``.
+        fig (None or matplotlib Figure): Matplotlib figure to plot onto. If None, then create a new figure.
 
     Returns:
         matplotlib.figure.Figure, matplotlib.axes._axes.Axes: The key elements for matplotlib's object oriented interface.
@@ -423,7 +430,12 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, style=N
         _set_style(style)
     try:
         return _tape_mpl(
-            tape, wire_order=wire_order, show_all_wires=show_all_wires, decimals=decimals, **kwargs
+            tape,
+            wire_order=wire_order,
+            show_all_wires=show_all_wires,
+            decimals=decimals,
+            fig=fig,
+            **kwargs,
         )
     finally:
         if update_style:
