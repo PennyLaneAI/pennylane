@@ -519,7 +519,8 @@
 * `qml.map_wires` no longer fails when mapping nested quantum tapes.
   [(#4901)](https://github.com/PennyLaneAI/pennylane/pull/4901)
 
-* Conversion of circuits to openqasm now supports the `ApproxTimeEvolution` gate.
+* Conversion of circuits to openqasm now decomposes to a depth of 3, allowing support 
+  for operators requiring 3 iterations of decomposition, such as the `ApproxTimeEvolution` gate.
   [(#4951)](https://github.com/PennyLaneAI/pennylane/pull/4951)
   
 <h3>Contributors ✍️</h3>

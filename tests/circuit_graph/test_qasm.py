@@ -99,7 +99,7 @@ class TestToQasmUnitTests:
         assert res == expected
 
     def test_to_ApproxTimeEvolution(self):
-        """Regression test for case where a MutliRZ was not converted"""
+        """Test for case that requires a decomposition depth of 3 to successfully convert to a MutliRZ"""
         H = qml.Hamiltonian(
             [
                 1,
