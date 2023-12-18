@@ -92,6 +92,12 @@ def _to_tensors(x):
     return tf.convert_to_tensor(x)
 
 
+def _recursive_conj(dy):
+    if isinstance(dy, (tf.Variable, tf.Tensor)):
+        return tf.math.conj(dy)
+    return tuple(_recursive_conj(d) for d in dy)
+
+
 def _res_restructured(res, tapes):
     """
     Reconstruct the nested tuple structure of the output of a list of tapes
