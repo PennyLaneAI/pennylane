@@ -409,7 +409,7 @@ class ClassicalShadow:
 
         """
 
-        global_snapshots = self.global_snapshots(wires=wires, snapshots=snapshots, atol=atol)
+        global_snapshots = self.global_snapshots(wires=wires, snapshots=snapshots)
         rdm = median_of_means(global_snapshots, k, axis=0)
 
         # Allow for different log base
@@ -422,7 +422,6 @@ class ClassicalShadow:
                 UserWarning,
             )
         evs = qml.math.where(evs > 0, evs, 1.0)
-
         if alpha == 1:
             # Special case of von Neumann entropy
             return qml.math.entr(evs) / div
