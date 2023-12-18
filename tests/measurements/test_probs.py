@@ -738,7 +738,7 @@ class TestProbs:
         ],
     )
     def test_estimate_probability_with_counts(self, wires, expected):
-        """Tests the estimate_probability method with samples provided using a dict"""
+        """Tests the estimate_probability method with sampling information in the form of a counts dictionary"""
         counts = {"101": 2, "100": 2, "111": 3, "000": 1, "011": 1, "110": 1}
 
         wire_order = qml.wires.Wires((2, 1, 0))
