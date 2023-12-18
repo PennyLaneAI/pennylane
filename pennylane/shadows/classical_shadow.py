@@ -417,6 +417,11 @@ class ClassicalShadow:
 
         evs = qml.math.eigvalsh(rdm)
         evs = qml.math.where(evs > 0, evs, 1.0)
+        if len(qml.math.where(evs < 0)[0]):
+            warnings.warn(
+                f"Trying to compute entropies of a non-semi-positive-definite density matrix with negative eigenvalues: {evs}. This may lead to unexpected behavior",
+                UserWarning,
+            )
 
         if alpha == 1:
             # Special case of von Neumann entropy
