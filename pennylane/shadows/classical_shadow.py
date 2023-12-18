@@ -421,13 +421,19 @@ class ClassicalShadow:
                 f"Trying to compute entropies of a non-semi-positive-definite density matrix with negative eigenvalues: {evs}. This may lead to unexpected behavior",
                 UserWarning,
             )
-        evs = qml.math.where(evs > 0, evs, 1.0)
+
+        mask0 = qml.math.logical_not(qml.math.isclose(evs, 0, atol=atol))
+        mask1 = qml.math.where(evs > 0, True, False)
+        mask = qml.math.logical_and(mask0, mask1)
+        # Renormalize because of cropped evs
+        evs_nonzero = qml.math.gather(evs, mask)
+        evs_nonzero = evs_nonzero / qml.math.sum(evs_nonzero)
         if alpha == 1:
             # Special case of von Neumann entropy
-            return qml.math.entr(evs) / div
+            return qml.math.entr(evs_nonzero) / div
 
         # General Renyi-alpha entropy
-        return qml.math.log(qml.math.sum(evs**alpha)) / (1.0 - alpha) / div
+        return qml.math.log(qml.math.sum(evs_nonzero**alpha)) / (1.0 - alpha) / div
 
 
 # Util functions
