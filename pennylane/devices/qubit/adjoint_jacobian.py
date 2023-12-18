@@ -254,11 +254,12 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
         tapes, fn = qml.map_wires(tape, wire_map)
         tape = fn(tapes)
 
+    batched_cotangents = qml.math.ndim(cotangents) == qml.math.ndim() + 1
     ket = state if state is not None else get_final_state(tape)[0]
 
     if isinstance(tape.measurements[0], qml.measurements.StateMP):
         try:
-            bra = np.conj(cotangents.reshape(ket.shape))
+            bra = np.conj(cotangents.reshape(-1, *ket.shape))
         except ValueError as e:
             raise NotImplementedError("adjoint_vjp does not yet support JAX Jacobians") from e
 
@@ -266,28 +267,66 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
             return val
 
     else:
-        cotangents = (cotangents,) if qml.math.shape(cotangents) == tuple() else cotangents
-        new_cotangents, new_observables = [], []
-        for c, o in zip(cotangents, tape.observables):
-            if qml.math.size(c) > 1:
-                raise NotImplementedError(
-                    "adjoint_vjp does not yet support JAX Jacobians, as they use a broadcast dimension on the cotangent dy."
-                )
-            if not np.allclose(c, 0.0):
-                new_cotangents.append(c)
-                new_observables.append(o)
-        if len(new_cotangents) == 0:
-            return tuple(0.0 for _ in tape.trainable_params)
-        obs = qml.dot(new_cotangents, new_observables)
-        if obs.pauli_rep is not None:
-            flat_bra = obs.pauli_rep.dot(ket.flatten(), wire_order=list(range(tape.num_wires)))
-            bra = 2 * flat_bra.reshape(ket.shape)
+        new_obs = []
+
+        if batched_cotangents:
+            cotangents = np.array(cotangents).T
+            for cots in cotangents:
+                new_cs, new_os = [], []
+                for c, o in zip(cots, tape.observables):
+                    if not np.allclose(c, 0.0):
+                        new_cs.append(c)
+                        new_os.append(o)
+                if len(new_cs) != 0:
+                    new_obs.append(qml.dot(new_cs, new_os))
+
         else:
-            bra = 2 * apply_operation(obs, ket)
+            cotangents = (cotangents,) if qml.math.shape(cotangents) == tuple() else cotangents
+            new_cs, new_os = [], []
+            for c, o in zip(cotangents, tape.observables):
+                if not np.allclose(c, 0.0):
+                    new_cs.append(c)
+                    new_os.append(o)
+
+            if len(new_cs) == 0:
+                return tuple(0.0 for _ in tape.trainable_params)
+
+            new_obs.append(qml.dot(new_cs, new_os))
+
+        bras = np.empty((len(new_obs), *ket.shape), dtype=ket.dtype)
+
+        for kk, obs in enumerate(new_obs):
+            if obs.pauli_rep is not None:
+                flat_bra = obs.pauli_rep.dot(ket.flatten(), wire_order=list(range(tape.num_wires)))
+                bras[kk] = 2 * flat_bra.reshape(ket.shape)
+            else:
+                bras[kk] = 2 * apply_operation(obs, ket)
+
+        bras = np.squeeze(bras)
+        # obss = []
+        # new_cotangents, new_obs = [], []
+        # for cot, ob in zip(cotangents, tape.observables):
+        #     if batched_cotangents:
+        #         for c in cot:
+        #             if not np.allclose(c, 0.0):
+        #                 new_cotangents.append(c)
+
+        #     # if not np.allclose(c, 0.0):
+        #     #     new_cotangents.append(c)
+        #     #     new_observables.append(o)
+        # if len(new_cotangents) == 0:
+        #     return tuple(0.0 for _ in tape.trainable_params)
+        # obs = qml.dot(new_cotangents, new_observables)
+        # if obs.pauli_rep is not None:
+        #     flat_bra = obs.pauli_rep.dot(ket.flatten(), wire_order=list(range(tape.num_wires)))
+        #     bra = 2 * flat_bra.reshape(ket.shape)
+        # else:
+        #     bra = 2 * apply_operation(obs, ket)
 
         def real_if_expval(val):
             return np.real(val)
 
+    ### EVERYTHING BELOW THIS NEEDS TO BE UPDATED ###
     param_number = len(tape.get_parameters(trainable_only=False, operations_only=True)) - 1
     trainable_param_number = len(tape.trainable_params) - 1
 
@@ -302,13 +341,14 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
                 d_op_matrix = operation_derivative(op)
                 ket_temp = apply_operation(qml.QubitUnitary(d_op_matrix, wires=op.wires), ket)
 
+                axis = -1 if batched_cotangents else None
                 cotangents_in[trainable_param_number] = real_if_expval(
-                    np.sum(np.conj(bra) * ket_temp)
+                    np.sum(np.conj(bra) * ket_temp, axis=axis)
                 )
 
                 trainable_param_number -= 1
             param_number -= 1
 
-        bra = apply_operation(adj_op, bra)
+        bra = apply_operation(adj_op, bra, is_state_batched=batched_cotangents)
 
     return tuple(cotangents_in)
