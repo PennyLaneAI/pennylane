@@ -26,6 +26,13 @@ torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")
 
 
+def test_entropy_warns_negative_eigenvalues():
+    """Test that vn_entropy warns when a denisty matrix with negative eigenvalues is passed"""
+    state = np.array([-1, 2])
+    with pytest.warns(UserWarning, match="Cached execution with finite shots detected"):
+        qml.math.vn_entropy(state, [0])
+
+
 class TestPurity:
     """Tests for computing the purity of a given state"""
 

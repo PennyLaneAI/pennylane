@@ -409,19 +409,19 @@ class ClassicalShadow:
 
         """
 
-        global_snapshots = self.global_snapshots(wires=wires, snapshots=snapshots)
+        global_snapshots = self.global_snapshots(wires=wires, snapshots=snapshots, atol=atol)
         rdm = median_of_means(global_snapshots, k, axis=0)
 
         # Allow for different log base
         div = np.log(base) if base else 1
 
         evs = qml.math.eigvalsh(rdm)
-        evs = qml.math.where(evs > 0, evs, 1.0)
         if len(qml.math.where(evs < 0)[0]):
             warnings.warn(
                 f"Trying to compute entropies of a non-semi-positive-definite density matrix with negative eigenvalues: {evs}. This may lead to unexpected behavior",
                 UserWarning,
             )
+        evs = qml.math.where(evs > 0, evs, 1.0)
 
         if alpha == 1:
             # Special case of von Neumann entropy
