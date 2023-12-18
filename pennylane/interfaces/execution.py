@@ -552,7 +552,6 @@ def execute(
         )
 
     ### Specifying and preprocessing variables ####
-    transform_program = transform_program or qml.transforms.core.TransformProgram()
 
     if interface == "auto":
         params = []
@@ -582,6 +581,12 @@ def execute(
     config = config or _get_execution_config(
         gradient_fn, grad_on_execution, interface, device, device_vjp
     )
+
+    if transform_program is None:
+        if isinstance(device, qml.devices.Device):
+            transform_program = device.preprocess(config)[0]
+        else:
+            transform_program = qml.transforms.core.TransformProgram()
 
     if isinstance(cache, bool) and cache:
         # cache=True: create a LRUCache object

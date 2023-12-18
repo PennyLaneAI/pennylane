@@ -387,6 +387,9 @@
 
 <h4>Other improvements</h4>
 
+* `default.qubit` now supports adjoint differentiation for arbitrary diagonal state-based measurements.
+  [(#4865)](https://github.com/PennyLaneAI/pennylane/pull/4865)
+
 * `qml.quantum_monte_carlo` now uses the new transform system.
   [(#4708)](https://github.com/PennyLaneAI/pennylane/pull/4708/)
 
