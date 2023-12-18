@@ -340,9 +340,10 @@
 
 <h4>Performance improvements and benchmarking</h4>
 
-* Autograd, PyTorch, and JAX (non-jit) can now use VJPs provided by the device from the new device API. If a device provides
+* Autograd, PyTorch, and JAX can now use VJPs provided by the device from the new device API. If a device provides
   a vector-Jacobian product, this can be selected by providing `device_vjp=True` to
   `qml.QNode` or `qml.execute`.
+  [(#4935)](https://github.com/PennyLaneAI/pennylane/pull/4935)
   [(#4557)](https://github.com/PennyLaneAI/pennylane/pull/4557)
   [(#4654)](https://github.com/PennyLaneAI/pennylane/pull/4654)
   [(#4878)](https://github.com/PennyLaneAI/pennylane/pull/4878)
@@ -382,6 +383,9 @@
   [(#4873)](https://github.com/PennyLaneAI/pennylane/pull/4873)
 
 <h4>Other improvements</h4>
+
+* `default.qubit` now supports adjoint differentiation for arbitrary diagonal state-based measurements.
+  [(#4865)](https://github.com/PennyLaneAI/pennylane/pull/4865)
 
 * `qml.quantum_monte_carlo` now uses the new transform system.
   [(#4708)](https://github.com/PennyLaneAI/pennylane/pull/4708/)
