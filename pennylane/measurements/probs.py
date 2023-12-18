@@ -273,8 +273,8 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         # constructs the probability vector
         # converts outcomes from binary strings to integers (base 10 representation)
         prob_vector = qml.math.zeros((dim), dtype="float64")
-        for basis_state, occurrence in counts.items():
-            prob_vector[int(basis_state, base=2)] = occurrence / num_shots
+        for outcome, occurrence in counts.items():
+            prob_vector[int(outcome, base=2)] = occurrence / num_shots
 
         return prob_vector
 
