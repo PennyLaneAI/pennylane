@@ -520,7 +520,7 @@
   [(#4901)](https://github.com/PennyLaneAI/pennylane/pull/4901)
 
 * Conversion of circuits to openqasm now decomposes to a depth of 10, allowing support 
-  for operators requiring 3 iterations of decomposition, such as the `ApproxTimeEvolution` gate.
+  for operators requiring more than 2 iterations of decomposition, such as the `ApproxTimeEvolution` gate.
   [(#4951)](https://github.com/PennyLaneAI/pennylane/pull/4951)
   
 <h3>Contributors ✍️</h3>
