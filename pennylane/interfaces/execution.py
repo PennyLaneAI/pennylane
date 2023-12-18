@@ -44,7 +44,7 @@ logger.addHandler(logging.NullHandler())
 
 device_type = Union[qml.Device, "qml.devices.Device"]
 
-jpc_interfaces = {"autograd", "numpy", "torch", "pytorch", "jax", "jax-python"}
+jpc_interfaces = {"autograd", "numpy", "torch", "pytorch", "jax", "jax-python", "jax-jit"}
 
 INTERFACE_MAP = {
     None: "Numpy",
@@ -131,7 +131,10 @@ def _get_ml_boundary_execute(
             from .torch import execute as ml_boundary
 
         elif interface == "jax-jit":
-            from .jax_jit import execute as ml_boundary
+            if device_vjp:
+                from .jax_jit import jax_jit_vjp_execute as ml_boundary
+            else:
+                from .jax_jit import jax_jit_jvp_execute as ml_boundary
         else:  # interface in {"jax", "jax-python", "JAX"}:
             if device_vjp:
                 from .jax import jax_vjp_execute as ml_boundary
@@ -567,7 +570,7 @@ def execute(
 
         interface = get_jax_interface_name(tapes)
         # Only need to calculate derivatives with jax when we know it will be executed later.
-        if interface == "jax":
+        if interface in {"jax", "jax-jit"}:
             grad_on_execution = grad_on_execution if isinstance(gradient_fn, Callable) else False
 
     if device_vjp and isinstance(device, qml.Device):
@@ -758,13 +761,6 @@ def execute(
 
             gradient_fn = device_gradient_fn
 
-            # Adjoint Jacobian with backward pass and jitting needs the original circuit output state which
-            # can not be reused from the device if `grad_on_execution is False`.
-            if interface == "jax-jit":
-                use_device_state = gradient_kwargs.get("use_device_state", None)
-                if use_device_state:
-                    gradient_kwargs["use_device_state"] = False
-
     elif grad_on_execution is True:
         # In "forward" mode, gradients are automatically handled
         # within execute_and_gradients, so providing a gradient_fn
@@ -784,12 +780,17 @@ def execute(
         )
         for _ in range(1, max_diff):
             ml_boundary_execute = _get_ml_boundary_execute(interface, _grad_on_execution)
-            execute_fn = partial(ml_boundary_execute, execute_fn=execute_fn, jpc=jpc)
+            execute_fn = partial(ml_boundary_execute, execute_fn=execute_fn, jpc=jpc, device=device)
             jpc = TransformJacobianProducts(execute_fn, gradient_fn, gradient_kwargs)
+
+            if interface == "jax-jit":
+                # no need to use pure callbacks around execute_fn or the jpc when taking
+                # higher order derivatives
+                interface = "jax"
 
     # trainable parameters can only be set on the first pass for jax
     # not higher order passes for higher order derivatives
-    if interface in {"jax", "jax-python"}:
+    if interface in {"jax", "jax-python", "jax-jit"}:
         for tape in tapes:
             params = tape.get_parameters(trainable_only=False)
             tape.trainable_params = qml.math.get_trainable_indices(params)
@@ -799,7 +800,7 @@ def execute(
     )
 
     if interface in jpc_interfaces:
-        results = ml_boundary_execute(tapes, execute_fn, jpc)
+        results = ml_boundary_execute(tapes, execute_fn, jpc, device=device)
     else:
         results = ml_boundary_execute(
             tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff

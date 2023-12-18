@@ -146,7 +146,7 @@ class JacobianProductCalculator(abc.ABC):
         >>> expected_vjp0 = 0.5 * -np.sin(0.1)
         >>> qml.math.allclose(vjps[0], expected_vjp0)
         True
-        >>> expected_jvp1 = 2.0 * -np.sin(0.2) + 3.0 * np.cos(0.2)
+        >>> expected_vjp1 = 2.0 * -np.sin(0.2) + 3.0 * np.cos(0.2)
         >>> qml.math.allclose(vjps[1], expected_vjp1)
         True
 
@@ -158,6 +158,30 @@ class JacobianProductCalculator(abc.ABC):
     @abc.abstractmethod
     def compute_jacobian(self, tapes: Batch) -> Tuple:
         """Compute the full Jacobian for a batch of tapes.
+
+        This method is required to compute Jacobians in the ``tensorflow`` interface
+
+        Args:
+            tapes (tuple[.QuantumScript]): the batch of tapes to take the derivatives of
+
+        **Examples:**
+
+        For an instance of :class:`~.JacobianProductCalculator` ``jpc``, we have:
+
+        >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
+        >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))])
+        >>> batch = (tape0, tape1)
+        >>> jpc.compute_jacobian(batch)
+        (array(-0.09983342), (array(-0.19866933), array(0.98006658)))
+
+        While this method could support non-scalar parameters in theory, no implementation currently supports
+        jacobians with non-scalar parameters.
+
+        """
+
+    @abc.abstractmethod
+    def execute_and_compute_jacobian(self, tapes: Batch) -> Tuple:
+        """Compute the results and the full Jacobian for a batch of tapes.
 
         This method is required to compute Jacobians in the ``jax-jit`` interface
 
@@ -171,7 +195,10 @@ class JacobianProductCalculator(abc.ABC):
         >>> tape0 = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
         >>> tape1 = qml.tape.QuantumScript([qml.RY(0.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(0))])
         >>> batch = (tape0, tape1)
-        >>> jpc.compute_jacobian(batch)
+        >>> results, jacs = jpc.execute_and_compute_jacobian(batch)
+        >>> results
+        (0.9950041652780258, (0.9800665778412417, 0.19866933079506116))
+        >>> jacs
         (array(-0.09983342), (array(-0.19866933), array(0.98006658)))
 
         While this method could support non-scalar parameters in theory, no implementation currently supports
@@ -269,6 +296,24 @@ class TransformJacobianProducts(JacobianProductCalculator):
 
         vjp_results = self._inner_execute(tuple(vjp_tapes))
         return tuple(processing_fn(vjp_results))
+
+    def execute_and_compute_jacobian(self, tapes: Batch):
+        if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
+            logger.debug("execute_and_compute_jacobian called with %s", tapes)
+
+        num_result_tapes = len(tapes)
+
+        partial_gradient_fn = partial(self._gradient_transform, **self._gradient_kwargs)
+        jac_tapes, jac_postprocessing = qml.transforms.map_batch_transform(
+            partial_gradient_fn, tapes
+        )
+
+        full_batch = tapes + tuple(jac_tapes)
+        full_results = self._inner_execute(full_batch)
+        results = full_results[:num_result_tapes]
+        jac_results = full_results[num_result_tapes:]
+        jacs = jac_postprocessing(jac_results)
+        return tuple(results), tuple(jacs)
 
     def compute_jacobian(self, tapes: Batch):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
@@ -469,30 +514,7 @@ class DeviceDerivatives(JacobianProductCalculator):
         jacobians with non-scalar parameters.
 
         """
-        if tapes not in self._results_cache and tapes not in self._jacs_cache:
-            results, jacs = self._dev_execute_and_compute_derivatives(tapes)
-            self._results_cache[tapes] = results
-            self._jacs_cache[tapes] = jacs
-        else:
-            if tapes in self._results_cache:
-                if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
-                    logger.debug("%s : Retrieving results from cache.", self)
-                results = self._results_cache[tapes]
-            else:
-                results = self._dev_execute(tapes)
-                self._results_cache[tapes] = results
-
-            if tapes in self._jacs_cache:
-                if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
-                    logger.debug("%s : Retrieving jacobian from cache.", self)
-                jacs = self._jacs_cache[tapes]
-            else:
-                # Here the jac was not cached but the results were. This can not happen because results are never
-                # cached alone (note that in the else clause above computing only results, jac must already be present)
-                raise NotImplementedError(
-                    "No path to cache results without caching jac. This branch should not occur."
-                )
-
+        results, jacs = self.execute_and_compute_jacobian(tapes)
         jvps = _compute_jvps(jacs, tangents, tapes)
         return results, jvps
 
@@ -584,6 +606,33 @@ class DeviceDerivatives(JacobianProductCalculator):
         self._jacs_cache[tapes] = jacs
         return jacs
 
+    def execute_and_compute_jacobian(self, tapes):
+        if tapes not in self._results_cache and tapes not in self._jacs_cache:
+            results, jacs = self._dev_execute_and_compute_derivatives(tapes)
+            self._results_cache[tapes] = results
+            self._jacs_cache[tapes] = jacs
+            return results, jacs
+
+        if tapes not in self._jacs_cache:
+            # Here the jac was not cached but the results were. This can not happen because results are never
+            # cached alone (note that in the else clause below computing only results, jac must already be present)
+            raise NotImplementedError(
+                "No path to cache results without caching jac. This branch should not occur."
+            )
+        if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
+            logger.debug("%s : Retrieving jacobian from cache.", self)
+        jacs = self._jacs_cache[tapes]
+
+        if tapes in self._results_cache:
+            if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
+                logger.debug("%s : Retrieving results from cache.", self)
+            results = self._results_cache[tapes]
+        else:
+            results = self._dev_execute(tapes)
+            self._results_cache[tapes] = results
+
+        return results, jacs
+
 
 class DeviceJacobianProducts(JacobianProductCalculator):
     """Compute jacobian products using the native device methods.
@@ -636,3 +685,9 @@ class DeviceJacobianProducts(JacobianProductCalculator):
             logger.debug("compute_jacobian called with %s", tapes)
         numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
         return self._device.compute_derivatives(numpy_tapes, self._execution_config)
+
+    def execute_and_compute_jacobian(self, tapes: Batch) -> Tuple:
+        if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
+            logger.debug("execute_and_compute_jacobian called with %s", tapes)
+        numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        return self._device.execute_and_compute_derivatives(numpy_tapes, self._execution_config)
