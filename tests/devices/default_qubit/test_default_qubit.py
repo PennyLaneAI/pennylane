@@ -132,7 +132,7 @@ class TestSupportsDerivatives:
         """Tests that DefaultQubit does not support adjoint differentiation with invalid circuits."""
         dev = DefaultQubit()
         config = ExecutionConfig(gradient_method="adjoint")
-        circuit = qml.tape.QuantumScript([], [qml.probs()])
+        circuit = qml.tape.QuantumScript([], [qml.sample()], shots=10)
         assert dev.supports_derivatives(config, circuit=circuit) is False
         assert dev.supports_jvp(config, circuit=circuit) is False
         assert dev.supports_vjp(config, circuit=circuit) is False
