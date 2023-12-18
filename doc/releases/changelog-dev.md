@@ -15,6 +15,7 @@
   [(#4850)](https://github.com/PennyLaneAI/pennylane/pull/4850)
   [(#4917)](https://github.com/PennyLaneAI/pennylane/pull/4917)
   [(#4930)](https://github.com/PennyLaneAI/pennylane/pull/4930)
+  [(#4957)](https://github.com/PennyLaneAI/pennylane/pull/4957)
 
   Drawing of mid-circuit measurement capabilities including qubit reuse and reset,
   postselection, conditioning, and collecting statistics is supported.

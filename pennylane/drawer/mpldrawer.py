@@ -896,14 +896,17 @@ class MPLDrawer:
         )
         if text:
             self._ax.text(
-                layer + 0.05 * self._box_length, wires + 0.225, text, fontsize=(self.fontsize - 2)
+                layer + 0.05 * self._box_length,
+                box_center + 0.225,
+                text,
+                fontsize=(self.fontsize - 2),
             )
 
     def _y(self, wire):
         """Used for determining the correct y coordinate for classical wires.
         Classical wires should be enumerated starting at the number of quantum wires the drawer has.
         For example, if the drawer has ``3`` quantum wires, the first classical wire should be located at ``3``
-        which corresponds to a ``y`` coordinate of ``2.6``.
+        which corresponds to a ``y`` coordinate of ``2.9``.
         """
         if wire < self.n_wires:
             return wire

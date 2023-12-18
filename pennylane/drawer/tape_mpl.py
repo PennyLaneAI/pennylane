@@ -196,6 +196,17 @@ def _add_classical_wires(drawer, layers, wires):
         drawer.classical_wire(xs, ys)
 
 
+def _get_measured_bits(measurements, bit_map, offset):
+    measured_bits = []
+    for m in measurements:
+        if isinstance(m.mv, list):
+            for mv in m.mv:
+                measured_bits += [bit_map[mcm] + offset for mcm in mv.measurements]
+        elif m.mv:
+            measured_bits += [bit_map[mcm] + offset for mcm in m.mv.measurements]
+    return measured_bits
+
+
 def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwargs):
     """Private function wrapped with styling."""
     wire_options = kwargs.get("wire_options", None)
@@ -246,13 +257,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
     for wire in _get_measured_wires(tape.measurements, list(range(n_wires))):
         drawer.measure(n_layers, wire)
 
-    measured_bits = []
-    for m in tape.measurements:
-        if isinstance(m.mv, list):
-            for mv in m.mv:
-                measured_bits += [bit_map[mcm] + drawer.n_wires for mcm in mv.measurements]
-        elif m.mv:
-            measured_bits += [bit_map[mcm] + drawer.n_wires for mcm in m.mv.measurements]
+    measured_bits = _get_measured_bits(tape.measurements, bit_map, drawer.n_wires)
     if measured_bits:
         drawer.measure(n_layers, measured_bits)
 
