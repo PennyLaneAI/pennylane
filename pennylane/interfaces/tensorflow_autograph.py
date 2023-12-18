@@ -203,6 +203,13 @@ def execute(
                 # No additional quantum evaluations needed; simply compute the VJPs directly.
 
                 def _backward(*args):
+                    for tape in tapes:
+                        for m in tape.measurements:
+                            if m.numeric_type == complex:
+                                raise NotImplementedError(
+                                    f"Tensorflow autograph only supports real valued measurements. Got {m}"
+                                )
+
                     dy = args[: total_measurements * num_shot_copies]
                     jacs = args[total_measurements * num_shot_copies : -len(tapes)]
                     multi_measurements = args[-len(tapes) :]

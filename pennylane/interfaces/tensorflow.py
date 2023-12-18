@@ -115,7 +115,7 @@ def _res_restructured(res, tapes):
     return tuple(res_nested)
 
 
-def execute(tapes, execute_fn, jpc, differentiable=False):
+def execute(tapes, execute_fn, jpc, device=None, differentiable=False):
     """Execute a batch of tapes with TensorFlow parameters on a device.
 
     Args:
@@ -151,6 +151,9 @@ def execute(tapes, execute_fn, jpc, differentiable=False):
     @tf.custom_gradient
     def _execute(*parameters):  # pylint:disable=unused-argument
         def grad_fn(*dy, **tfkwargs):
+            # TF obeys the dL/dz_conj convention instead of the
+            # dL/dz convention of PennyLane, autograd and jax. This converts between the formats
+            dy = _recursive_conj(dy)
             # reconstruct the nested structure of dy
             if not differentiable or not context.executing_eagerly():
                 inner_tapes = set_parameters_on_copy(tapes, params_unwrapped)
