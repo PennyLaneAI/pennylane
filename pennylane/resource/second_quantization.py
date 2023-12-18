@@ -16,8 +16,7 @@ This module contains the functions needed for resource estimation with the doubl
 method.
 """
 # pylint: disable=no-self-use disable=too-many-arguments disable=too-many-instance-attributes
-import numpy
-from pennylane import numpy as np
+import numpy as np
 from pennylane.operation import AnyWires, Operation
 from pennylane.qchem import factorize
 
@@ -265,7 +264,7 @@ class DoubleFactorization(Operation):
         >>> unitary_cost(n, rank_r, rank_m, rank_max, br, alpha, beta)
         2007
         """
-        if n <= 0 or not isinstance(n, (int, numpy.integer)) or n % 2 != 0:
+        if n <= 0 or not isinstance(n, (int, np.integer)) or n % 2 != 0:
             raise ValueError("The number of spin-orbitals must be a positive even integer.")
 
         if rank_r <= 0 or not isinstance(rank_r, int):
@@ -351,7 +350,7 @@ class DoubleFactorization(Operation):
         >>> gate_cost(n, lamb, error, rank_r, rank_m, rank_max, br, alpha, beta)
         167048631
         """
-        if n <= 0 or not isinstance(n, (int, numpy.integer)) or n % 2 != 0:
+        if n <= 0 or not isinstance(n, (int, np.integer)) or n % 2 != 0:
             raise ValueError("The number of spin-orbitals must be a positive even integer.")
 
         if error <= 0.0:
@@ -420,7 +419,7 @@ class DoubleFactorization(Operation):
         >>> qubit_cost(n, lamb, error, rank_r, rank_m, rank_max, br, alpha, beta)
         292
         """
-        if n <= 0 or not isinstance(n, (int, numpy.integer)) or n % 2 != 0:
+        if n <= 0 or not isinstance(n, (int, np.integer)) or n % 2 != 0:
             raise ValueError("The number of spin-orbitals must be a positive even integer.")
 
         if error <= 0.0:

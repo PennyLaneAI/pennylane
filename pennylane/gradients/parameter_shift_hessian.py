@@ -20,8 +20,8 @@ import warnings
 from functools import partial
 from typing import Sequence, Callable
 
+import numpy as np
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.measurements import ProbabilityMP, StateMP, VarianceMP
 from pennylane.transforms import transform
 

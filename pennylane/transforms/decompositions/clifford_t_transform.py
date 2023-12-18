@@ -29,7 +29,7 @@ from pennylane.transforms.optimization import (
     remove_barrier,
 )
 from pennylane.transforms.optimization.optimization_utils import find_next_gate, _fuse_global_phases
-from .solovay_kitaev import sk_decomposition
+from pennylane.ops.op_math.decompositions.solovay_kitaev import sk_decomposition
 
 # Single qubits Clifford+T gates in PL
 _CLIFFORD_T_ONE_GATES = [
@@ -208,7 +208,7 @@ def _rot_decompose(op):
     elif isinstance(op, qml.PhaseShift):
         ops_ = _simplify_param(theta, qml.PauliZ(wires=wires))
         if ops_ is None:
-            ops_ = [qml.RZ(theta, wires=wires), qml.GlobalPhase(theta / 2)]
+            ops_ = [qml.RZ(theta, wires=wires), qml.GlobalPhase(-theta / 2)]
         else:
             ops_.append(qml.GlobalPhase(-theta / 2))
 
@@ -227,7 +227,7 @@ def _one_qubit_decompose(op):
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)
-        sd_ops = qml.transforms.one_qubit_decomposition(
+        sd_ops = qml.ops.one_qubit_decomposition(
             qml.matrix(op), op.wires, "ZXZ", return_global_phase=True
         )
     # Get the global phase
@@ -247,7 +247,7 @@ def _two_qubit_decompose(op):
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)
-        td_ops = qml.transforms.two_qubit_decomposition(qml.matrix(op), op.wires)
+        td_ops = qml.ops.two_qubit_decomposition(qml.matrix(op), op.wires)
 
     d_ops = []
     for td_op in td_ops:
