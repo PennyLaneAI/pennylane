@@ -676,12 +676,12 @@ class TestMeasure:
 
         box = drawer.ax.patches[0]
         assert box.get_x() == -drawer._box_length / 2.0 + drawer._pad
-        assert box.get_y() == 1.9 - drawer._box_length / 2.0 + drawer._pad
+        assert box.get_y() == 2 - drawer._box_length / 2.0 + drawer._pad
         assert box.get_width() == drawer._box_length - 2 * drawer._pad
         assert box.get_height() == drawer._box_length - 2 * drawer._pad + drawer._cwire_scaling
 
         arc = drawer.ax.patches[1]
-        assert arc.center == (0, 1.9 + drawer._cwire_scaling / 2 + 0.15 * drawer._box_length)
+        assert arc.center == (0, 2 + drawer._cwire_scaling / 2 + 0.15 * drawer._box_length)
         assert arc.theta1 == 180
         assert arc.theta2 == 0
         assert allclose(arc.height, 0.55 * drawer._box_length)
@@ -847,7 +847,7 @@ class TestClassicalWires:
 
         [_, cwire] = drawer.ax.lines
         assert cwire.get_xdata() == layers
-        assert cwire.get_ydata() == [0, 0.9, 0.9, 0]  # cwires are scaledc
+        assert cwire.get_ydata() == [0, 1, 1, 0]  # cwires are scaledc
 
         [pe1, pe2] = cwire.get_path_effects()
 
@@ -872,7 +872,7 @@ class TestClassicalWires:
         [_, eraser] = drawer.ax.lines
 
         assert eraser.get_xdata() == (0.8, 1)
-        assert eraser.get_ydata() == (1.15, 1.15)
+        assert eraser.get_ydata() == (1.25, 1.25)
         assert eraser.get_color() == plt.rcParams["figure.facecolor"]
         assert eraser.get_linewidth() == 3 * plt.rcParams["lines.linewidth"]
         plt.close()
@@ -886,7 +886,7 @@ class TestClassicalWires:
         [_, eraser] = drawer.ax.lines
 
         assert eraser.get_xdata() == (0.8, 1.2)
-        assert eraser.get_ydata() == (0.9, 0.9)
+        assert eraser.get_ydata() == (1, 1)
         assert eraser.get_color() == plt.rcParams["figure.facecolor"]
         assert eraser.get_linewidth() == 3 * plt.rcParams["lines.linewidth"]
         plt.close()

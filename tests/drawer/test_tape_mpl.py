@@ -830,7 +830,7 @@ class TestClassicalControl:
         [_, cwire] = ax.lines
 
         assert cwire.get_xdata() == [0, 0, 0, 1, 1, 1, 2, 2, 2]
-        assert cwire.get_ydata() == [0.9, 0, 0.9, 0.9, 0, 0.9, 0.9, 0, 0.9]
+        assert cwire.get_ydata() == [1, 0, 1, 1, 0, 1, 1, 0, 1]
 
         [pe1, pe2] = cwire.get_path_effects()
 
@@ -859,10 +859,10 @@ class TestClassicalControl:
         [_, _, cwire1, cwire2, eraser] = ax.lines
 
         assert cwire1.get_xdata() == [0, 0, 0, 2, 2, 2]
-        assert cwire1.get_ydata() == [1.9, 0, 1.9, 1.9, 0, 1.9]
+        assert cwire1.get_ydata() == [2, 0, 2, 2, 0, 2]
 
         assert cwire2.get_xdata() == [1, 1, 1, 2, 2, 2]
-        assert cwire2.get_ydata() == [2.15, 1, 2.15, 2.15, 0, 2.15]
+        assert cwire2.get_ydata() == [2.25, 1, 2.25, 2.25, 0, 2.25]
 
         for cwire in [cwire1, cwire2]:
             [pe1, pe2] = cwire.get_path_effects()
@@ -878,7 +878,7 @@ class TestClassicalControl:
             }
 
         assert eraser.get_xdata() == (1.8, 2)
-        assert eraser.get_ydata() == (1.9, 1.9)
+        assert eraser.get_ydata() == (2, 2)
         assert eraser.get_color() == plt.rcParams["figure.facecolor"]
         assert eraser.get_linewidth() == 3 * plt.rcParams["lines.linewidth"]
 
@@ -899,10 +899,10 @@ class TestClassicalControl:
         [_, _, cwire1, cwire2, eraser] = ax.lines
 
         assert cwire1.get_xdata() == [0, 0, 0, 2, 2, 2, 3, 3, 3]
-        assert cwire1.get_ydata() == [1.9, 0, 1.9, 1.9, 0, 1.9, 1.9, 0, 1.9]
+        assert cwire1.get_ydata() == [2, 0, 2, 2, 0, 2, 2, 0, 2]
 
         assert cwire2.get_xdata() == [1, 1, 1, 2, 2, 2, 4, 4, 4]
-        assert cwire2.get_ydata() == [2.15, 1, 2.15, 2.15, 0, 2.15, 2.15, 1, 2.15]
+        assert cwire2.get_ydata() == [2.25, 1, 2.25, 2.25, 0, 2.25, 2.25, 1, 2.25]
 
         for cwire in [cwire1, cwire2]:
             [pe1, pe2] = cwire.get_path_effects()
@@ -918,7 +918,7 @@ class TestClassicalControl:
             }
 
         assert eraser.get_xdata() == (1.8, 2.2)
-        assert eraser.get_ydata() == (1.9, 1.9)
+        assert eraser.get_ydata() == (2, 2)
         assert eraser.get_color() == plt.rcParams["figure.facecolor"]
         assert eraser.get_linewidth() == 3 * plt.rcParams["lines.linewidth"]
 
@@ -932,19 +932,17 @@ class TestClassicalControl:
 
         assert len(ax.patches) == 6  # two measurement boxes
         assert ax.patches[3].get_x() == 1 - 0.75 / 2 + 0.2  # 1 - box_length/2 + pad
-        assert qml.math.allclose(
-            ax.patches[3].get_y(), 1 - 0.75 / 2 + 0.2 - 0.1
-        )  # 1- box_length/2 + pad - cwire offset
+        assert qml.math.allclose(ax.patches[3].get_y(), 1 - 0.75 / 2 + 0.2)  # 1- box_length/2 + pad
 
         assert ax.patches[4].center == (
             1,
-            1 - 0.1 + 0.15 * 0.75,
-        )  # 1 - cwire_offset +0.15 *box_length
+            1 + 0.15 * 0.75,
+        )  # 1 +0.15 *box_length
         assert isinstance(ax.patches[5], mpl.patches.FancyArrow)
 
         [_, cwire] = ax.lines
         assert cwire.get_xdata() == [0, 0, 0, 1, 1, 1]
-        assert cwire.get_ydata() == [0.9, 0, 0.9, 0.9, 0.9, 0.9]
+        assert cwire.get_ydata() == [1, 0, 1, 1, 1, 1]
 
         [pe1, pe2] = cwire.get_path_effects()
 
@@ -972,19 +970,19 @@ class TestClassicalControl:
 
         [_, cwire0, cwire1, cwire2] = ax.lines
         assert cwire0.get_xdata() == [0, 0, 0, 5, 5, 5]
-        assert cwire0.get_ydata() == [0.9, 0, 0.9, 0.9, 0.9, 0.9]
+        assert cwire0.get_ydata() == [1, 0, 1, 1, 1, 1]
         assert cwire1.get_xdata() == [1, 1, 1, 5, 5, 5]
-        assert cwire1.get_ydata() == [1.15, 0, 1.15, 1.15, 1.15, 1.15]
+        assert cwire1.get_ydata() == [1.25, 0, 1.25, 1.25, 1.25, 1.25]
         assert cwire2.get_xdata() == [3, 3, 3, 5, 5, 5]
-        assert cwire2.get_ydata() == [1.4, 0, 1.4, 1.4, 1.4, 1.4]
+        assert cwire2.get_ydata() == [1.5, 0, 1.5, 1.5, 1.5, 1.5]
 
         assert len(ax.patches) == 18  # 6 * 3
 
         final_measure_box = ax.patches[15]
         assert final_measure_box.get_x() == 5 - 0.75 / 2 + 0.2  # 5 - box_length/2 + pad
         assert qml.math.allclose(
-            final_measure_box.get_y(), 1 - 0.75 / 2 + 0.2 - 0.1
-        )  # 1- box_length/2 + pad - cwire offset
+            final_measure_box.get_y(), 1 - 0.75 / 2 + 0.2
+        )  # 1- box_length/2 + pad
 
         assert (
             final_measure_box.get_height() == 0.75 - 2 * 0.2 + 2 * 0.25

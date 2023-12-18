@@ -910,7 +910,7 @@ class MPLDrawer:
         """
         if wire < self.n_wires:
             return wire
-        return self.n_wires + self._cwire_scaling * (wire - self.n_wires) - 0.1
+        return self.n_wires + self._cwire_scaling * (wire - self.n_wires)
 
     def classical_wire(self, layers, wires) -> None:
         """Draw a classical control line.
