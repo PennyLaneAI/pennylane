@@ -27,7 +27,7 @@ from pennylane import ops
 from pennylane.measurements import MidMeasureMP
 from .mpldrawer import MPLDrawer
 from .drawable_layers import drawable_layers
-from .utils import convert_wire_order, unwrap_controls, cwire_connections
+from .utils import convert_wire_order, unwrap_controls, cwire_connections, default_bit_map
 from .style import _set_style
 
 has_mpl = True
@@ -200,8 +200,9 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
 
     wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
     tape = qml.map_wires(tape, wire_map=wire_map)[0][0]
+    bit_map = default_bit_map(tape)
 
-    layers = drawable_layers(tape.operations, {i: i for i in tape.wires})
+    layers = drawable_layers(tape.operations, wire_map={i: i for i in tape.wires}, bit_map=bit_map)
 
     for i, layer in enumerate(layers):
         if any(isinstance(o, qml.measurements.MidMeasureMP) and o.reset for o in layer):
@@ -210,7 +211,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
     n_layers = len(layers)
     n_wires = len(wire_map)
 
-    bit_map, cwire_layers, cwire_wires = cwire_connections(layers)
+    cwire_layers, cwire_wires = cwire_connections(layers, bit_map)
 
     drawer = MPLDrawer(
         n_layers=n_layers, n_wires=n_wires, c_wires=len(bit_map), wire_options=wire_options
