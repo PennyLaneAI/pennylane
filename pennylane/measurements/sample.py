@@ -14,8 +14,8 @@
 """
 This module contains the qml.sample measurement.
 """
-import functools
 import warnings
+from functools import singledispatch, lru_cache
 from typing import Sequence, Tuple, Optional, Union
 
 import pennylane as qml
@@ -26,7 +26,7 @@ from .measurements import MeasurementShapeError, Sample, SampleMeasurement
 from .mid_measure import MeasurementValue
 
 
-@functools.singledispatch
+@singledispatch
 def sample(wires: Optional[Wires] = None) -> "SampleMP":
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device,
@@ -157,7 +157,7 @@ class SampleMP(SampleMeasurement):
         return Sample
 
     @property
-    @functools.lru_cache()
+    @lru_cache()
     def numeric_type(self):
         # Note: we only assume an integer numeric type if the observable is a
         # built-in observable with integer eigenvalues or a tensor product thereof
