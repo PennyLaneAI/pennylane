@@ -172,18 +172,23 @@ def _(op: qml.ops.op_math.Conditional, drawer, layer, config) -> None:
 def _get_measured_wires(measurements, wires) -> set:
     measured_wires = set()
     for m in measurements:
-        # state and probs
-        if len(m.wires) == 0:
-            return wires
+        if not m.mv:
+            # state and probs
+            if len(m.wires) == 0:
+                return wires
 
-        for wire in m.wires:
-            measured_wires.add(wire)
+            for wire in m.wires:
+                measured_wires.add(wire)
     return measured_wires
 
 
 def _add_classical_wires(drawer, layers, wires):
     for cwire, (cwire_layers, layer_wires) in enumerate(zip(layers, wires), start=drawer.n_wires):
         xs, ys = [], []
+
+        len_diff = len(cwire_layers) - len(layer_wires)
+        if len_diff > 0:
+            layer_wires += [cwire] * len_diff
         for l, w in zip(cwire_layers, layer_wires):
             xs.extend([l, l, l])
             ys.extend([cwire, w, cwire])
@@ -211,7 +216,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
     n_layers = len(layers)
     n_wires = len(wire_map)
 
-    cwire_layers, cwire_wires = cwire_connections(layers, bit_map)
+    cwire_layers, cwire_wires = cwire_connections(layers + [tape.measurements], bit_map)
 
     drawer = MPLDrawer(
         n_layers=n_layers, n_wires=n_wires, c_wires=len(bit_map), wire_options=wire_options
@@ -240,6 +245,16 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
 
     for wire in _get_measured_wires(tape.measurements, list(range(n_wires))):
         drawer.measure(n_layers, wire)
+
+    measured_bits = []
+    for m in tape.measurements:
+        if isinstance(m.mv, list):
+            for mv in m.mv:
+                measured_bits += [bit_map[mcm] + drawer.n_wires for mcm in mv.measurements]
+        elif m.mv:
+            measured_bits += [bit_map[mcm] + drawer.n_wires for mcm in m.mv.measurements]
+    if measured_bits:
+        drawer.measure(n_layers, measured_bits)
 
     return drawer.fig, drawer.ax
 

@@ -16,6 +16,7 @@ This module contains the MPLDrawer class for creating circuit diagrams with matp
 """
 from collections.abc import Iterable
 import warnings
+from typing import Sequence
 
 has_mpl = True
 try:
@@ -267,13 +268,13 @@ class MPLDrawer:
         ## Creating figure and ax
 
         if figsize is None:
-            figsize = (self.n_layers + 3, self.n_wires + self._cwire_scaling * c_wires + 1)
+            figsize = (self.n_layers + 3, self.n_wires + self._cwire_scaling * c_wires + 1.5)
 
         self._fig = plt.figure(figsize=figsize)
         self._ax = self._fig.add_axes(
             [0, 0, 1, 1],
             xlim=(-2, self.n_layers + 1),
-            ylim=(-1, self.n_wires + self._cwire_scaling * c_wires),
+            ylim=(-1, self.n_wires + self._cwire_scaling * c_wires + 0.5),
             xticks=[],
             yticks=[],
         )
@@ -847,20 +848,29 @@ class MPLDrawer:
         if "zorder" not in lines_options:
             lines_options["zorder"] = 3
 
+        if not isinstance(wires, Sequence):
+            wires = (wires,)
+
+        wires = tuple(self._y(w) for w in wires)
+
+        box_min = min(wires)
+        box_max = max(wires)
+        box_center = (box_max + box_min) / 2.0
+
         x_loc = layer - self._box_length / 2.0 + self._pad
-        y_loc = wires - self._box_length / 2.0 + self._pad
+        y_loc = box_min - self._box_length / 2.0 + self._pad
 
         box = patches.FancyBboxPatch(
             (x_loc, y_loc),
             self._box_length - 2 * self._pad,
-            self._box_length - 2 * self._pad,
+            box_max - box_min + self._box_length - 2 * self._pad,
             boxstyle=self._boxstyle,
             **box_options,
         )
         self._ax.add_patch(box)
 
         arc = patches.Arc(
-            (layer, wires + 0.15 * self._box_length),
+            (layer, box_center + 0.15 * self._box_length),
             0.6 * self._box_length,
             0.55 * self._box_length,
             theta1=180,
@@ -871,7 +881,7 @@ class MPLDrawer:
 
         # can experiment with the specific numbers to make it look decent
         arrow_start_x = layer - 0.15 * self._box_length
-        arrow_start_y = wires + 0.3 * self._box_length
+        arrow_start_y = box_center + 0.3 * self._box_length
         arrow_width = 0.3 * self._box_length
         arrow_height = -0.5 * self._box_length
 
@@ -897,7 +907,7 @@ class MPLDrawer:
         """
         if wire < self.n_wires:
             return wire
-        return self.n_wires + self._cwire_scaling * (wire - self.n_wires) - 0.4
+        return self.n_wires + self._cwire_scaling * (wire - self.n_wires) - 0.1
 
     def classical_wire(self, layers, wires) -> None:
         """Draw a classical control line.
