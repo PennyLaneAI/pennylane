@@ -16,7 +16,8 @@
 This module contains the qml.var measurement.
 """
 import warnings
-from typing import Sequence, Tuple, Union
+from typing import Sequence, Tuple
+from functools import singledispatch
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -27,13 +28,15 @@ from .measurements import SampleMeasurement, StateMeasurement, Variance
 from .mid_measure import MeasurementValue
 
 
-def var(op: Union[Operator, MeasurementValue]) -> "VarianceMP":
+@singledispatch
+def var(op: Operator) -> "VarianceMP":
     r"""Variance of the supplied observable.
 
     Args:
-        op (Union[Operator, MeasurementValue]): a quantum observable object.
-            To get variances for mid-circuit measurements, ``op`` should be a
-            ``MeasurementValue``.
+        op (Operator): a quantum observable object.
+        mv (MeasurementValue): ``MeasurementValue`` corresponding to mid-circuit
+            measurements. To get the variance for more than one ``MeasurementValue``,
+            they can be composed using arithmetic operators.
 
     Returns:
         VarianceMP: Measurement process instance
@@ -56,17 +59,14 @@ def var(op: Union[Operator, MeasurementValue]) -> "VarianceMP":
     >>> circuit(0.5)
     0.7701511529340698
     """
-    if isinstance(op, MeasurementValue):
-        return VarianceMP(obs=op)
-
-    if isinstance(op, Sequence):
-        raise ValueError(
-            "qml.var does not support measuring sequences of measurements or observables"
-        )
-
     if not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
     return VarianceMP(obs=op)
+
+
+@var.register
+def _var_mv(mv: MeasurementValue) -> "VarianceMP":
+    return VarianceMP(mv=mv)
 
 
 class VarianceMP(SampleMeasurement, StateMeasurement):

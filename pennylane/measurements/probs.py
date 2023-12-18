@@ -14,17 +14,20 @@
 """
 This module contains the qml.probs measurement.
 """
-from typing import Sequence, Tuple
+from typing import Sequence, Tuple, Optional, Union
+from functools import singledispatch
 
 import numpy as np
 import pennylane as qml
+from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 from .measurements import Probability, SampleMeasurement, StateMeasurement
 from .mid_measure import MeasurementValue
 
 
-def probs(wires=None, op=None) -> "ProbabilityMP":
+@singledispatch
+def probs(wires: Optional[Wires] = None) -> "ProbabilityMP":
     r"""Probability of each computational basis state.
 
     This measurement function accepts either a wire specification or
@@ -43,9 +46,12 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
-        op (Observable or MeasurementValue]): Observable (with a ``diagonalizing_gates``
-            attribute) that rotates the computational basis, or a  ``MeasurementValue``
-            corresponding to mid-circuit measurements.
+        op (Observable): Observable (with a ``diagonalizing_gates``
+            attribute) that rotates the computational basis
+        mv (Union[MeasurementValue, Sequence[MeasurementValue]]): One or more
+            ``MeasurementValue``'s corresponding to mid-circuit measurements. To get
+            probabilities for more than one ``MeasurementValue``, they must be passed
+            in a list or tuple and not composed using arithmetic operators.
 
     Returns:
         ProbabilityMP: Measurement process instance
@@ -92,25 +98,14 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
     Note that the output shape of this measurement process depends on whether
     the device simulates qubit or continuous variable quantum systems.
     """
-    if isinstance(op, MeasurementValue):
-        if len(op.measurements) > 1:
-            raise ValueError(
-                "Cannot use qml.probs() when measuring multiple mid-circuit measurements collected "
-                "using arithmetic operators. To collect probabilities for multiple mid-circuit "
-                "measurements, use a list of mid-circuit measurements with qml.probs()."
-            )
-        return ProbabilityMP(obs=op)
+    if wires is not None:
+        wires = Wires(wires)
 
-    if isinstance(op, Sequence):
-        if not all(isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in op):
-            raise qml.QuantumFunctionError(
-                "Only sequences of single MeasurementValues can be passed with the op argument. "
-                "MeasurementValues manipulated using arithmetic operators cannot be used when "
-                "collecting statistics for a sequence of mid-circuit measurements."
-            )
+    return ProbabilityMP(wires=wires)
 
-        return ProbabilityMP(obs=op)
 
+@probs.register
+def _probs_op(op: Operator) -> "ProbabilityMP":
     if isinstance(op, qml.Hamiltonian):
         raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
 
@@ -119,19 +114,32 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
             "Symbolic Operations are not supported for rotating probabilities yet."
         )
 
-    if op is not None and not qml.operation.defines_diagonalizing_gates(op):
+    if not qml.operation.defines_diagonalizing_gates(op):
         raise qml.QuantumFunctionError(
             f"{op} does not define diagonalizing gates : cannot be used to rotate the probability"
         )
 
-    if wires is not None:
-        if op is not None:
+    return ProbabilityMP(obs=op)
+
+
+@probs.register
+def _probs_mv(mv: Union[MeasurementValue, Sequence[MeasurementValue]]) -> "ProbabilityMP":
+    if isinstance(mv, MeasurementValue) and len(mv.measurements) > 1:
+        raise ValueError(
+            "Cannot use qml.probs() when measuring multiple mid-circuit measurements collected "
+            "using arithmetic operators. To collect probabilities for multiple mid-circuit "
+            "measurements, use a list of mid-circuit measurements with qml.probs()."
+        )
+
+    if isinstance(mv, Sequence):
+        if not all(isinstance(m, MeasurementValue) and len(m.measurements) == 1 for m in mv):
             raise qml.QuantumFunctionError(
-                "Cannot specify the wires to probs if an observable is "
-                "provided. The wires for probs will be determined directly from the observable."
+                "Only sequences of single MeasurementValues can be passed with the op argument. "
+                "MeasurementValues manipulated using arithmetic operators cannot be used when "
+                "collecting statistics for a sequence of mid-circuit measurements."
             )
-        wires = Wires(wires)
-    return ProbabilityMP(obs=op, wires=wires)
+
+    return ProbabilityMP(mv=mv)
 
 
 class ProbabilityMP(SampleMeasurement, StateMeasurement):

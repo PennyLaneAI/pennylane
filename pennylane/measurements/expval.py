@@ -15,7 +15,8 @@
 This module contains the qml.expval measurement.
 """
 import warnings
-from typing import Sequence, Tuple, Union
+from typing import Sequence, Tuple
+from functools import singledispatch
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -26,7 +27,8 @@ from .measurements import Expectation, SampleMeasurement, StateMeasurement
 from .mid_measure import MeasurementValue
 
 
-def expval(op: Union[Operator, MeasurementValue]):
+@singledispatch
+def expval(op: Operator):
     r"""Expectation value of the supplied observable.
 
     **Example:**
@@ -48,25 +50,23 @@ def expval(op: Union[Operator, MeasurementValue]):
     -0.4794255386042029
 
     Args:
-        op (Union[Observable, MeasurementValue]): a quantum observable object. To
-            get expectation values for mid-circuit measurements, ``op`` should be
-            a ``MeasurementValue``.
+        op (Observable): a quantum observable object
+        mv (MeasurementValue): ``MeasurementValue`` corresponding to mid-circuit
+            measurements. To get the variance for more than one ``MeasurementValue``,
+            they can be composed using arithmetic operators.
 
     Returns:
         ExpectationMP: measurement process instance
     """
-    if isinstance(op, MeasurementValue):
-        return ExpectationMP(obs=op)
-
-    if isinstance(op, Sequence):
-        raise ValueError(
-            "qml.expval does not support measuring sequences of measurements or observables"
-        )
-
     if not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
 
     return ExpectationMP(obs=op)
+
+
+@expval.register
+def _expval_mv(mv: MeasurementValue) -> "ExpectationMP":
+    return ExpectationMP(mv=mv)
 
 
 class ExpectationMP(SampleMeasurement, StateMeasurement):

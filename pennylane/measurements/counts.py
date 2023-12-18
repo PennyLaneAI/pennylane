@@ -15,7 +15,8 @@
 This module contains the qml.counts measurement.
 """
 import warnings
-from typing import Sequence, Tuple, Optional
+from typing import Sequence, Tuple, Optional, Union
+from functools import singledispatch
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -30,7 +31,8 @@ def _sample_to_str(sample):
     return "".join(map(str, sample))
 
 
-def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
+@singledispatch
+def counts(wires: Optional[Wires] = None, all_outcomes: Optional[bool] = False) -> "CountsMP":
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device,
     returning the number of counts for each sample. If no observable is provided then basis state
@@ -40,10 +42,14 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
     specified on the device.
 
     Args:
-        op (Observable or MeasurementValue or None): a quantum observable object. To get counts
+        op (Observable or None): a quantum observable object. To get counts
             for mid-circuit measurements, ``op`` should be a ``MeasurementValue``.
         wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if
             op is None
+        mv (Union[MeasurementValue, Sequence[MeasurementValue]]): One or more
+            ``MeasurementValue``'s corresponding to mid-circuit measurements. To get
+            probabilities for more than one ``MeasurementValue``, they can be passed
+            in a list or tuple or composed using arithmetic operators.
         all_outcomes(bool): determines whether the returned dict will contain only the observed
             outcomes (default), or whether it will display all possible outcomes for the system
 
@@ -133,31 +139,33 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
     {'00': 0, '01': 0, '10': 4, '11': 0}
 
     """
-    if isinstance(op, MeasurementValue):
-        return CountsMP(obs=op, all_outcomes=all_outcomes)
+    if wires is not None:
+        wires = Wires(wires)
 
-    if isinstance(op, Sequence):
-        if not all(isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in op):
+    return CountsMP(wires=wires, all_outcomes=all_outcomes)
+
+
+@counts.register
+def _counts_op(op: Operator, all_outcomes: Optional[bool] = False) -> "CountsMP":
+    if not op.is_hermitian:
+        warnings.warn(f"{op.name} might not be hermitian.")
+
+    return CountsMP(obs=op, all_outcomes=all_outcomes)
+
+
+@counts.register
+def _counts_mv(
+    mv: Union[MeasurementValue, Sequence[MeasurementValue]], all_outcomes: Optional[bool] = False
+) -> "CountsMP":
+    if isinstance(mv, Sequence):
+        if not all(isinstance(m, MeasurementValue) and len(m.measurements) == 1 for m in mv):
             raise qml.QuantumFunctionError(
                 "Only sequences of single MeasurementValues can be passed with the op argument. "
                 "MeasurementValues manipulated using arithmetic operators cannot be used when "
                 "collecting statistics for a sequence of mid-circuit measurements."
             )
 
-        return CountsMP(obs=op, all_outcomes=all_outcomes)
-
-    if op is not None and not op.is_hermitian:  # None type is also allowed for op
-        warnings.warn(f"{op.name} might not be hermitian.")
-
-    if wires is not None:
-        if op is not None:
-            raise ValueError(
-                "Cannot specify the wires to sample if an observable is "
-                "provided. The wires to sample will be determined directly from the observable."
-            )
-        wires = Wires(wires)
-
-    return CountsMP(obs=op, wires=wires, all_outcomes=all_outcomes)
+    return CountsMP(mv=mv, all_outcomes=all_outcomes)
 
 
 class CountsMP(SampleMeasurement):
@@ -184,13 +192,14 @@ class CountsMP(SampleMeasurement):
     def __init__(
         self,
         obs: Optional[Operator] = None,
-        wires=None,
+        wires: Optional[Wires] = None,
+        mv: Optional[Union[MeasurementValue, Sequence[MeasurementValue]]] = None,
         eigvals=None,
         id: Optional[str] = None,
         all_outcomes: bool = False,
     ):
         self.all_outcomes = all_outcomes
-        super().__init__(obs, wires, eigvals, id)
+        super().__init__(obs, wires, mv, eigvals, id)
 
     def _flatten(self):
         metadata = (("wires", self.raw_wires), ("all_outcomes", self.all_outcomes))

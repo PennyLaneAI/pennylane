@@ -116,11 +116,15 @@ class MeasurementProcess(ABC):
     quantum variational circuit.
 
     Args:
-        obs (Union[.Operator, .MeasurementValue, Sequence[.MeasurementValue]]): The observable that
-            is to be measured as part of the measurement process. Not all measurement processes
-            require observables (for example ``Probability``); this argument is optional.
+        obs (.Operator): The observable that is to be measured as part of the measurement process.
+            Not all measurement processes require observables (for example ``Probability``); this
+            argument is optional.
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
+        mv (Union[.MeasurementValue, Sequence[.MeasurementValue]]): One or more ``MeasurementValue``'s
+            corresponding to mid-circuit measurements. To get statistics for more than one
+            ``MeasurementValue``, they can be passed in a list or tuple or composed using arithmetic
+            operators.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
             This can only be specified if an observable was not provided.
         id (str): custom label given to a measurement instance, can be useful for some applications
@@ -134,45 +138,47 @@ class MeasurementProcess(ABC):
 
     def _flatten(self):
         metadata = (("wires", self.raw_wires),)
-        return (self.obs or self.mv, self._eigvals), metadata
+        return (self.obs, self.mv, self._eigvals), metadata
 
     @classmethod
     def _unflatten(cls, data, metadata):
         if data[0] is not None:
             return cls(obs=data[0], **dict(metadata))
         if data[1] is not None:
-            return cls(eigvals=data[1], **dict(metadata))
+            return cls(mv=data[1], **dict(metadata))
+        if data[2] is not None:
+            return cls(eigvals=data[2], **dict(metadata))
         return cls(**dict(metadata))
 
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        obs: Optional[
+        obs: Optional[Operator] = None,
+        wires: Optional[Wires] = None,
+        mv: Optional[
             Union[
-                Operator,
-                "qml.measurements.MeasurementValue",
-                Sequence["qml.measurements.MeasurementValue"],
+                "qml.measurements.MeasurementValue", Sequence["qml.measurements.MeasurementValue"]
             ]
         ] = None,
-        wires: Optional[Wires] = None,
         eigvals: Optional[TensorLike] = None,
         id: Optional[str] = None,
     ):
-        if getattr(obs, "name", None) == "MeasurementValue" or isinstance(obs, Sequence):
-            # Cast sequence of measurement values to list
-            self.mv = obs if getattr(obs, "name", None) == "MeasurementValue" else list(obs)
-            self.obs = None
-        else:
-            self.obs = obs
-            self.mv = None
+        if obs is not None and mv is not None:
+            raise ValueError("Cannot set measurement value if an observable or wires are provided.")
+
+        self.obs = obs
+        # Cast sequence of measurement values to list
+        self.mv = list(mv) if isinstance(mv, Sequence) else mv
 
         self.id = id
 
         if wires is not None:
             if len(wires) == 0:
                 raise ValueError("Cannot set an empty list of wires.")
-            if obs is not None:
-                raise ValueError("Cannot set the wires if an observable is provided.")
+            if obs is not None or mv is not None:
+                raise ValueError(
+                    "Cannot set the wires if an observable or measurement value is provided."
+                )
 
         # _wires = None indicates broadcasting across all available wires.
         # It translates to the public property wires = Wires([])
