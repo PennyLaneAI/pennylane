@@ -415,29 +415,15 @@ class ClassicalShadow:
         # Allow for different log base
         div = np.log(base) if base else 1
 
-        # This was returning negative values in most cases, so commenting it out
-        # until we figure out the issue.
-        # if alpha == 2:
-        #     # special case of purity
-        #     res = -qml.math.log(qml.math.trace(rdm @ rdm))
-        #     return res / div
-
-        # Else
-        # Compute Eigenvalues and choose only those >>0
         evs = qml.math.eigvalsh(rdm)
-        mask0 = qml.math.logical_not(qml.math.isclose(evs, 0, atol=atol))
-        mask1 = qml.math.where(evs > 0, True, False)
-        mask = qml.math.logical_and(mask0, mask1)
-        # Renormalize because of cropped evs
-        evs_nonzero = qml.math.gather(evs, mask)
-        evs_nonzero = evs_nonzero / qml.math.sum(evs_nonzero)
+        evs = qml.math.where(evs > 0, evs, 1.0)
 
         if alpha == 1:
             # Special case of von Neumann entropy
-            return -qml.math.sum(evs_nonzero * qml.math.log(evs_nonzero)) / div
+            return qml.math.entr(evs) / div
 
         # General Renyi-alpha entropy
-        return qml.math.log(qml.math.sum(evs_nonzero**alpha)) / (1.0 - alpha) / div
+        return qml.math.log(qml.math.sum(evs**alpha)) / (1.0 - alpha) / div
 
 
 # Util functions
