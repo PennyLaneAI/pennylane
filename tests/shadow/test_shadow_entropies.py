@@ -172,9 +172,10 @@ class TestShadowEntropies:
                 qml.CNOT((i, i + 1))
 
             return qml.state()
+
         x = np.linspace(0.5, 1.5, num=wires)
         state = qnode(x)
         rho = qml.math.dm_from_state_vector(state)
         lambdas = _project_density_matrix_spectrum(rho)
-        assert np.isclose(np.sum(lambdas), 1.)
-        assert all(lambdas>0)
+        assert np.isclose(np.sum(lambdas), 1.0)
+        assert all(lambdas > 0)

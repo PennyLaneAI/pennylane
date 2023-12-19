@@ -423,23 +423,23 @@ class ClassicalShadow:
         # General Renyi-alpha entropy
         return qml.math.log(qml.math.sum(evs_nonzero**alpha)) / (1.0 - alpha) / div
 
+
 def _project_density_matrix_spectrum(rdm):
     """Project the estimator density matrix rdm with possibly negative eigenvalues onto the closest true density matrix in L2 norm"""
     # algorithm below eq. (16) in https://arxiv.org/pdf/1106.5458.pdf
-    evs = qml.math.eigvalsh(rdm)[::-1] # order from largest to smallest
+    evs = qml.math.eigvalsh(rdm)[::-1]  # order from largest to smallest
     d = len(rdm)
-    i=d
-    a=0.
-    for i in range(d-1, -1, -1):
-        if evs[i] + a/i>0:
-            ii = i+1
+    i = d
+    a = 0.0
+    for i in range(d - 1, -1, -1):
+        if evs[i] + a / i > 0:
+            ii = i + 1
             break
         else:
             a += evs[i]
-    lambdas = qml.math.zeros_like(evs)[:ii] # only keep non-zero ones
-    lambdas = evs[:ii] + a/ii
+    lambdas = qml.math.zeros_like(evs)[:ii]  # only keep non-zero ones
+    lambdas = evs[:ii] + a / ii
     return lambdas[::-1]
-
 
 
 # Util functions
