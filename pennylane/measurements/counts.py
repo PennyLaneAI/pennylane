@@ -136,6 +136,16 @@ def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
     if isinstance(op, MeasurementValue):
         return CountsMP(obs=op, all_outcomes=all_outcomes)
 
+    if isinstance(op, Sequence):
+        if not all(isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in op):
+            raise qml.QuantumFunctionError(
+                "Only sequences of single MeasurementValues can be passed with the op argument. "
+                "MeasurementValues manipulated using arithmetic operators cannot be used when "
+                "collecting statistics for a sequence of mid-circuit measurements."
+            )
+
+        return CountsMP(obs=op, all_outcomes=all_outcomes)
+
     if op is not None and not op.is_hermitian:  # None type is also allowed for op
         warnings.warn(f"{op.name} might not be hermitian.")
 
@@ -187,12 +197,14 @@ class CountsMP(SampleMeasurement):
         return (self.obs or self.mv, self._eigvals), metadata
 
     def __repr__(self):
-        if self.obs is None:
-            if self._eigvals is None:
-                return f"CountsMP(wires={self.wires.tolist()}, all_outcomes={self.all_outcomes})"
+        if self.mv:
+            return f"CountsMP({repr(self.mv)}, all_outcomes={self.all_outcomes})"
+        if self.obs:
+            return f"CountsMP({self.obs}, all_outcomes={self.all_outcomes})"
+        if self._eigvals is not None:
             return f"CountsMP(eigvals={self._eigvals}, wires={self.wires.tolist()}, all_outcomes={self.all_outcomes})"
 
-        return f"CountsMP({self.obs}, all_outcomes={self.all_outcomes})"
+        return f"CountsMP(wires={self.wires.tolist()}, all_outcomes={self.all_outcomes})"
 
     @property
     def hash(self):
@@ -219,14 +231,9 @@ class CountsMP(SampleMeasurement):
         bin_size: int = None,
     ):
         with qml.queuing.QueuingManager.stop_recording():
-            if self.mv is not None:
-                samples = qml.sample(wires=self.mv.wires).process_samples(
-                    samples, wire_order, shot_range, bin_size
-                )
-            else:
-                samples = qml.sample(op=self.obs, wires=self._wires).process_samples(
-                    samples, wire_order, shot_range, bin_size
-                )
+            samples = qml.sample(op=self.obs or self.mv, wires=self._wires).process_samples(
+                samples, wire_order, shot_range, bin_size
+            )
 
         if bin_size is None:
             return self._samples_to_counts(samples)
@@ -234,7 +241,7 @@ class CountsMP(SampleMeasurement):
         num_wires = len(self.wires) if self.wires else len(wire_order)
         samples = (
             samples.reshape((num_wires, -1)).T.reshape(-1, bin_size, num_wires)
-            if self.obs is None
+            if self.obs is None and not isinstance(self.mv, MeasurementValue)
             else samples.reshape((-1, bin_size))
         )
 
@@ -292,7 +299,7 @@ class CountsMP(SampleMeasurement):
         batched_ndims = 2
         shape = qml.math.shape(samples)
 
-        if self.obs is None:
+        if self.obs is None and not isinstance(self.mv, MeasurementValue):
             # convert samples and outcomes (if using) from arrays to str for dict keys
             samples = qml.math.array(
                 [sample for sample in samples if not qml.math.any(qml.math.isnan(sample))]
@@ -306,7 +313,9 @@ class CountsMP(SampleMeasurement):
                     map(_sample_to_str, qml.QubitDevice.generate_basis_states(num_wires))
                 )
         elif self.all_outcomes:
-            outcomes = qml.eigvals(self.obs)
+            # This also covers statistics for mid-circuit measurements manipulated using
+            # arithmetic operators
+            outcomes = self.eigvals()
 
         batched = len(shape) == batched_ndims
         if not batched:

@@ -17,7 +17,7 @@ import warnings
 from collections.abc import Iterable
 from string import ascii_letters as ABC
 
-import pennylane.numpy as np
+import numpy as np
 import pennylane as qml
 
 

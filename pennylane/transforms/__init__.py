@@ -58,8 +58,6 @@ both transforms, and decompositions within the larger PennyLane codebase.
 .. autosummary::
     :toctree: api
 
-    ~transforms.one_qubit_decomposition
-    ~transforms.two_qubit_decomposition
     ~transforms.set_decomposition
     ~transforms.pattern_matching
     ~transforms.to_zx
@@ -84,12 +82,6 @@ This transform accepts quantum circuits and decomposes them to the Clifford+T ba
 
     ~clifford_t_decomposition
 
-The following function assists in decomposing operations to the Clifford+T basis.
-
-.. autosummary::
-    :toctree: api
-
-    ~transforms.sk_decomposition
 
 Transforms for error mitigation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -112,8 +104,6 @@ preprocessing, get information from a circuit and more.
 .. autosummary::
     :toctree: api
 
-    ~metric_tensor
-    ~adjoint_metric_tensor
     ~batch_params
     ~batch_input
     ~transforms.insert
@@ -136,9 +126,7 @@ that compute the desired quantity.
 .. autosummary::
     :toctree: api
 
-    ~transforms.classical_jacobian
     ~batch_partial
-    ~specs
     ~draw
     ~draw_mpl
 
@@ -304,21 +292,19 @@ from .op_transforms import op_transform
 from .batch_params import batch_params
 from .batch_input import batch_input
 from .batch_partial import batch_partial
-from .classical_jacobian import classical_jacobian
 from .convert_to_numpy_parameters import convert_to_numpy_parameters
 from .compile import compile
+
+
 from .decompositions import (
+    clifford_t_decomposition,
     one_qubit_decomposition,
     two_qubit_decomposition,
-    sk_decomposition,
-    clifford_t_decomposition,
 )
 from .defer_measurements import defer_measurements
 from .sign_expand import sign_expand
 from .hamiltonian_expand import hamiltonian_expand, sum_expand
 from .split_non_commuting import split_non_commuting
-from .metric_tensor import metric_tensor
-from .adjoint_metric_tensor import adjoint_metric_tensor
 from .insert_ops import insert
 
 from .mitigate import mitigate_with_zne, fold_global, poly_extrapolate, richardson_extrapolate
@@ -333,7 +319,6 @@ from .optimization import (
     pattern_matching,
     pattern_matching_optimization,
 )
-from .specs import specs
 from .qmc import apply_controlled_Q, quantum_monte_carlo
 from .unitary_to_rot import unitary_to_rot
 from .commutation_dag import (

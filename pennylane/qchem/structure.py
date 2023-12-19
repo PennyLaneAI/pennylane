@@ -19,7 +19,7 @@ import os
 import re
 from shutil import copyfile
 
-from pennylane import numpy as np
+import numpy as np
 
 # Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
 bohr_angs = 0.529177210903
