@@ -23,6 +23,7 @@ import numpy as _np
 from semantic_version import SimpleSpec, Version
 
 from pennylane.boolean_fn import BooleanFn
+import pennylane.numpy
 from pennylane.queuing import QueuingManager, apply
 
 import pennylane.kernels
@@ -32,6 +33,7 @@ import pennylane.qnn
 import pennylane.templates
 import pennylane.pauli
 from pennylane.pauli import pauli_decompose
+from pennylane.resource import specs
 import pennylane.resource
 import pennylane.qchem
 from pennylane.fermi import FermiC, FermiA, jordan_wigner
@@ -81,15 +83,12 @@ from pennylane import qaoa
 from pennylane.qnode import QNode, qnode
 from pennylane.transforms import (
     transform,
-    adjoint_metric_tensor,
     batch_params,
     batch_input,
     batch_transform,
     batch_partial,
     compile,
     defer_measurements,
-    metric_tensor,
-    specs,
     qfunc_transform,
     op_transform,
     single_tape_transform,
@@ -98,6 +97,7 @@ from pennylane.transforms import (
     commutation_dag,
     pattern_matching,
     pattern_matching_optimization,
+    clifford_t_decomposition,
 )
 from pennylane.ops.functions import (
     dot,
@@ -121,6 +121,7 @@ from pennylane.qcut import cut_circuit, cut_circuit_mc
 import pennylane.pulse
 
 import pennylane.fourier
+from pennylane.gradients import metric_tensor, adjoint_metric_tensor
 import pennylane.gradients  # pylint:disable=wrong-import-order
 import pennylane.qinfo
 
