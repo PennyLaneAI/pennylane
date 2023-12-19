@@ -411,7 +411,7 @@ class ClassicalShadow:
         if atol is not None:
             warnings.warn(
                 "Trying to use atol in ClassicalShadow.entropy. This feature is deprecated and has been replaced by a more accurate version that projects the density matrix estimator to the closest valid density matrix in L2 norm. You can simply remove the atol keyword in your code.",
-                DeprecationWarning,
+                qml.PennyLaneDeprecationWarning,
             )
 
         global_snapshots = self.global_snapshots(wires=wires, snapshots=snapshots)
