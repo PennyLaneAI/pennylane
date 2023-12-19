@@ -17,7 +17,6 @@ This module contains the qml.var measurement.
 """
 import warnings
 from typing import Sequence, Tuple
-from functools import singledispatch
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -28,8 +27,7 @@ from .measurements import SampleMeasurement, StateMeasurement, Variance
 from .mid_measure import MeasurementValue
 
 
-@singledispatch
-def var(op: Operator) -> "VarianceMP":
+def var(*args, **kwargs) -> "VarianceMP":
     r"""Variance of the supplied observable.
 
     Args:
@@ -59,14 +57,26 @@ def var(op: Operator) -> "VarianceMP":
     >>> circuit(0.5)
     0.7701511529340698
     """
-    if not op.is_hermitian:
-        warnings.warn(f"{op.name} might not be hermitian.")
-    return VarianceMP(obs=op)
+    if (n_args := len(args) + len(kwargs)) != 1:
+        raise TypeError(f"qml.var() takes 1 argument, but {n_args} were given.")
 
+    if args:
+        arg_name = None
+        obj = args[0]
+    else:
+        arg_name, obj = list(kwargs.items)[0]
 
-@var.register
-def _var_mv(mv: MeasurementValue) -> "VarianceMP":
-    return VarianceMP(mv=mv)
+    if isinstance(obj, Operator) and arg_name in [None, "op"]:
+        if not obj.is_hermitian:
+            warnings.warn(f"{obj.name} might not be hermitian.")
+
+        return VarianceMP(obs=obj)
+
+    if arg_name in [None, "mv"]:
+        if isinstance(obj, MeasurementValue):
+            return VarianceMP(mv=obj)
+
+    raise ValueError("Invalid argument provided to qml.var().")
 
 
 class VarianceMP(SampleMeasurement, StateMeasurement):
@@ -75,11 +85,15 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
     Please refer to :func:`var` for detailed documentation.
 
     Args:
-        obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
+        obs (.Operator): The observable that is to be measured
             as part of the measurement process. Not all measurement processes require observables
             (for example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
+        mv (Union[.MeasurementValue, Sequence[.MeasurementValue]]): One or more ``MeasurementValue``'s
+            corresponding to mid-circuit measurements. To get statistics for more than one
+            ``MeasurementValue``, they can be passed in a list or tuple or composed using arithmetic
+            operators.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
             This can only be specified if an observable was not provided.
         id (str): custom label given to a measurement instance, can be useful for some applications

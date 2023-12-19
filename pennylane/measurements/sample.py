@@ -14,9 +14,9 @@
 """
 This module contains the qml.sample measurement.
 """
+import functools
 import warnings
-from functools import singledispatch, lru_cache
-from typing import Sequence, Tuple, Optional, Union
+from typing import Sequence, Tuple
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -26,8 +26,7 @@ from .measurements import MeasurementShapeError, Sample, SampleMeasurement
 from .mid_measure import MeasurementValue
 
 
-@singledispatch
-def sample(wires: Optional[Wires] = None) -> "SampleMP":
+def sample(*args, **kwargs) -> "SampleMP":
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device,
     returning raw samples. If no observable is provided then basis state samples are returned
@@ -107,31 +106,38 @@ def sample(wires: Optional[Wires] = None) -> "SampleMP":
            [0, 0]])
 
     """
-    if wires is not None:
-        wires = Wires(wires)
+    if (n_args := len(args) + len(kwargs)) > 1:
+        raise TypeError(f"qml.sample() only takes 1 argument, but {n_args} were given.")
 
-    return SampleMP(wires=wires)
+    if n_args == 0:
+        return SampleMP(wires=None)
 
+    if args:
+        arg_name = None
+        obj = args[0]
+    else:
+        arg_name, obj = list(kwargs.items)[0]
 
-@sample.register
-def _sample_op(op: Operator) -> "SampleMP":
-    if not op.is_hermitian:
-        warnings.warn(f"{op.name} might not be hermitian.")
+    if isinstance(obj, Operator) and arg_name in [None, "op"]:
+        if not obj.is_hermitian:
+            warnings.warn(f"{obj.name} might not be hermitian.")
 
-    return SampleMP(obs=op)
+        return SampleMP(obs=obj)
 
+    if arg_name in [None, "mv"]:
+        if isinstance(obj, MeasurementValue) or (
+            isinstance(obj, Sequence) and all(isinstance(m, MeasurementValue) for m in obj)
+        ):
+            return SampleMP(mv=obj)
 
-@sample.register
-def _sample_mv(mv: Union[MeasurementValue, Sequence[MeasurementValue]]) -> "SampleMP":
-    if isinstance(mv, Sequence):
-        if not all(isinstance(m, MeasurementValue) and len(m.measurements) == 1 for m in mv):
-            raise qml.QuantumFunctionError(
-                "Only sequences of single MeasurementValues can be passed with the op argument. "
-                "MeasurementValues manipulated using arithmetic operators cannot be used when "
-                "collecting statistics for a sequence of mid-circuit measurements."
-            )
+    if arg_name in [None, "wires"]:
+        wires = obj
+        if wires is not None:
+            wires = Wires(wires)
 
-    return SampleMP(mv=mv)
+        return SampleMP(wires=wires)
+
+    raise ValueError("Invalid argument provided to qml.sample().")
 
 
 class SampleMP(SampleMeasurement):
@@ -141,11 +147,15 @@ class SampleMP(SampleMeasurement):
     Please refer to :func:`sample` for detailed documentation.
 
     Args:
-        obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
+        obs (.Operator): The observable that is to be measured
             as part of the measurement process. Not all measurement processes require observables
             (for example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
+        mv (Union[.MeasurementValue, Sequence[.MeasurementValue]]): One or more ``MeasurementValue``'s
+            corresponding to mid-circuit measurements. To get statistics for more than one
+            ``MeasurementValue``, they can be passed in a list or tuple or composed using arithmetic
+            operators.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
             This can only be specified if an observable was not provided.
         id (str): custom label given to a measurement instance, can be useful for some applications
@@ -157,7 +167,7 @@ class SampleMP(SampleMeasurement):
         return Sample
 
     @property
-    @lru_cache()
+    @functools.lru_cache()
     def numeric_type(self):
         # Note: we only assume an integer numeric type if the observable is a
         # built-in observable with integer eigenvalues or a tensor product thereof

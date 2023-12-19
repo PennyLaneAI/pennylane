@@ -16,7 +16,6 @@ This module contains the qml.counts measurement.
 """
 import warnings
 from typing import Sequence, Tuple, Optional, Union
-from functools import singledispatch
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -31,8 +30,7 @@ def _sample_to_str(sample):
     return "".join(map(str, sample))
 
 
-@singledispatch
-def counts(wires: Optional[Wires] = None, all_outcomes: Optional[bool] = False) -> "CountsMP":
+def counts(*args, all_outcomes=False, **kwargs) -> "CountsMP":
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device,
     returning the number of counts for each sample. If no observable is provided then basis state
@@ -139,33 +137,42 @@ def counts(wires: Optional[Wires] = None, all_outcomes: Optional[bool] = False) 
     {'00': 0, '01': 0, '10': 4, '11': 0}
 
     """
-    if wires is not None:
-        wires = Wires(wires)
+    if len(args) == 2:
+        all_outcomes = args[1]
+        args = (args[0],)
 
-    return CountsMP(wires=wires, all_outcomes=all_outcomes)
+    if (n_args := len(args) + len(kwargs)) > 1:
+        raise TypeError(f"qml.counts() takes from 1 to 2 arguments, but {n_args} were given.")
 
+    if n_args == 0:
+        return CountsMP(wires=None, all_outcomes=all_outcomes)
 
-@counts.register
-def _counts_op(op: Operator, all_outcomes: Optional[bool] = False) -> "CountsMP":
-    if not op.is_hermitian:
-        warnings.warn(f"{op.name} might not be hermitian.")
+    if args:
+        arg_name = None
+        obj = args[0]
+    else:
+        arg_name, obj = list(kwargs.items)[0]
 
-    return CountsMP(obs=op, all_outcomes=all_outcomes)
+    if isinstance(obj, Operator) and arg_name in [None, "op"]:
+        if not obj.is_hermitian:
+            warnings.warn(f"{obj.name} might not be hermitian.")
 
+        return CountsMP(obs=obj, all_outcomes=all_outcomes)
 
-@counts.register
-def _counts_mv(
-    mv: Union[MeasurementValue, Sequence[MeasurementValue]], all_outcomes: Optional[bool] = False
-) -> "CountsMP":
-    if isinstance(mv, Sequence):
-        if not all(isinstance(m, MeasurementValue) and len(m.measurements) == 1 for m in mv):
-            raise qml.QuantumFunctionError(
-                "Only sequences of single MeasurementValues can be passed with the op argument. "
-                "MeasurementValues manipulated using arithmetic operators cannot be used when "
-                "collecting statistics for a sequence of mid-circuit measurements."
-            )
+    if arg_name in [None, "mv"]:
+        if isinstance(obj, MeasurementValue) or (
+            isinstance(obj, Sequence) and all(isinstance(m, MeasurementValue) for m in obj)
+        ):
+            return CountsMP(mv=obj)
 
-    return CountsMP(mv=mv, all_outcomes=all_outcomes)
+    if arg_name in [None, "wires"]:
+        wires = obj
+        if wires is not None:
+            wires = Wires(wires)
+
+        return CountsMP(wires=wires)
+
+    raise ValueError("Invalid argument provided to qml.counts().")
 
 
 class CountsMP(SampleMeasurement):
@@ -175,11 +182,15 @@ class CountsMP(SampleMeasurement):
     Please refer to :func:`counts` for detailed documentation.
 
     Args:
-        obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
+        obs (Operator): The observable that is to be measured
             as part of the measurement process. Not all measurement processes require observables
             (for example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
+        mv (Union[.MeasurementValue, Sequence[.MeasurementValue]]): One or more ``MeasurementValue``'s
+            corresponding to mid-circuit measurements. To get statistics for more than one
+            ``MeasurementValue``, they can be passed in a list or tuple or composed using arithmetic
+            operators.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
             This can only be specified if an observable was not provided.
         id (str): custom label given to a measurement instance, can be useful for some applications

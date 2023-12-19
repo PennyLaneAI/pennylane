@@ -16,7 +16,6 @@ This module contains the qml.expval measurement.
 """
 import warnings
 from typing import Sequence, Tuple
-from functools import singledispatch
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -27,8 +26,7 @@ from .measurements import Expectation, SampleMeasurement, StateMeasurement
 from .mid_measure import MeasurementValue
 
 
-@singledispatch
-def expval(op: Operator):
+def expval(*args, **kwargs) -> "ExpectationMP":
     r"""Expectation value of the supplied observable.
 
     **Example:**
@@ -58,15 +56,26 @@ def expval(op: Operator):
     Returns:
         ExpectationMP: measurement process instance
     """
-    if not op.is_hermitian:
-        warnings.warn(f"{op.name} might not be hermitian.")
+    if (n_args := len(args) + len(kwargs)) != 1:
+        raise TypeError(f"qml.expval() takes 1 argument, but {n_args} were given.")
 
-    return ExpectationMP(obs=op)
+    if args:
+        arg_name = None
+        obj = args[0]
+    else:
+        arg_name, obj = list(kwargs.items)[0]
 
+    if isinstance(obj, Operator) and arg_name in [None, "op"]:
+        if not obj.is_hermitian:
+            warnings.warn(f"{obj.name} might not be hermitian.")
 
-@expval.register
-def _expval_mv(mv: MeasurementValue) -> "ExpectationMP":
-    return ExpectationMP(mv=mv)
+        return ExpectationMP(obs=obj)
+
+    if arg_name in [None, "mv"]:
+        if isinstance(obj, MeasurementValue):
+            return ExpectationMP(mv=obj)
+
+    raise ValueError("Invalid argument provided to qml.expval().")
 
 
 class ExpectationMP(SampleMeasurement, StateMeasurement):
@@ -75,11 +84,15 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
     Please refer to :func:`expval` for detailed documentation.
 
     Args:
-        obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
+        obs (.Operator): The observable that is to be measured
             as part of the measurement process. Not all measurement processes require observables
             (for example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
             This can only be specified if an observable was not provided.
+        mv (Union[.MeasurementValue, Sequence[.MeasurementValue]]): One or more ``MeasurementValue``'s
+            corresponding to mid-circuit measurements. To get statistics for more than one
+            ``MeasurementValue``, they can be passed in a list or tuple or composed using arithmetic
+            operators.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
             This can only be specified if an observable was not provided.
         id (str): custom label given to a measurement instance, can be useful for some applications
