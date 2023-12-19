@@ -18,6 +18,7 @@ to a PennyLane Device class.
 # pylint: disable=too-many-arguments,too-many-branches
 import inspect
 import logging
+import warnings
 
 import tensorflow as tf
 from tensorflow.python.eager import context
@@ -31,8 +32,7 @@ logger.addHandler(logging.NullHandler())
 
 def _set_copy_tape(t, a):
     """Copy a given tape with operations and set parameters"""
-    tc = t.bind_new_parameters(a, list(range(len(a))))
-    return tc
+    return t.bind_new_parameters(a, list(range(len(a))))
 
 
 def set_parameters_on_copy(tapes, params):
@@ -40,53 +40,16 @@ def set_parameters_on_copy(tapes, params):
     return tuple(_set_copy_tape(t, a) for t, a in zip(tapes, params))
 
 
-def _compute_vjp(dy, jacs, multi_measurements, has_partitioned_shots):
-    # compute the vector-Jacobian product dy @ jac
-    # for a list of dy's and Jacobian matrices.
-
-    if logger.isEnabledFor(logging.DEBUG):
-        logger.debug(
-            "Entry with args=(dy=%s, jacs=%s, multi_measurements=%s, shots=%s) called by=%s",
-            dy,
-            jacs,
-            multi_measurements,
-            has_partitioned_shots,
-            "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
-        )
-
-    vjps = []
-
-    for dy_, jac_, multi in zip(dy, jacs, multi_measurements):
-        dy_ = dy_ if has_partitioned_shots else (dy_,)
-        jac_ = jac_ if has_partitioned_shots else (jac_,)
-
-        shot_vjps = []
-        for d, j in zip(dy_, jac_):
-            if multi:
-                shot_vjps.append(qml.gradients.compute_vjp_multi(d, j))
-            else:
-                shot_vjps.append(qml.gradients.compute_vjp_single(d, j))
-
-        vjp = qml.math.sum(qml.math.stack(shot_vjps), 0)
-
-        if not context.executing_eagerly():
-            vjp = qml.math.unstack(vjp)
-
-        vjps.extend(vjp)
-
-    return vjps
-
-
 def _to_tensors(x):
     """
     Convert a nested tuple structure of arrays into a nested tuple
     structure of TF tensors
     """
-    if isinstance(x, dict) or isinstance(x, list) and all(isinstance(i, dict) for i in x):
+    if isinstance(x, dict):
         # qml.counts returns a dict (list of dicts when broadcasted), can't form a valid tensor
         return x
 
-    if isinstance(x, tuple):
+    if isinstance(x, (tuple, list)):
         return tuple(_to_tensors(x_) for x_ in x)
 
     return tf.convert_to_tensor(x)
@@ -136,9 +99,6 @@ def execute(tapes, execute_fn, jpc, device=None, differentiable=False):
     parameters = []
     params_unwrapped = []
 
-    # assumes all tapes have the same shot vector
-    has_partitioned_shots = tapes[0].shots.has_partitioned_shots
-
     for tape in tapes:
         # store the trainable parameters
         params = tape.get_parameters(trainable_only=False)
@@ -151,8 +111,8 @@ def execute(tapes, execute_fn, jpc, device=None, differentiable=False):
             [i.numpy() if isinstance(i, (tf.Variable, tf.Tensor)) else i for i in params]
         )
 
-    res = execute_fn(tuple(tapes))
-    res = tuple(_to_tensors(r) for r in res)  # convert output to TensorFlow tensors
+    tapes = tuple(tapes)
+    res = _to_tensors(execute_fn(tapes))
 
     @tf.custom_gradient
     def _execute(*parameters):  # pylint:disable=unused-argument
@@ -160,19 +120,20 @@ def execute(tapes, execute_fn, jpc, device=None, differentiable=False):
             # TF obeys the dL/dz_conj convention instead of the
             # dL/dz convention of PennyLane, autograd and jax. This converts between the formats
             dy = _recursive_conj(dy)
-            # reconstruct the nested structure of dy
+
             if not differentiable or not context.executing_eagerly():
+                if differentiable:
+                    warnings.warn(
+                        "PennyLane cannot provide the higher order derivatives of jacobians."
+                    )
                 inner_tapes = set_parameters_on_copy(tapes, params_unwrapped)
             else:
-                inner_tapes = tuple(tapes)
+                inner_tapes = tapes
+
+            # reconstruct the nested structure of dy
             dy = _res_restructured(dy, tapes)
 
-            if tf.executing_eagerly():
-                vjps = jpc.compute_vjp(inner_tapes, dy)
-            else:
-                jacs = jpc.compute_jacobian(inner_tapes)
-                multi_measurements = [len(t.measurements) > 1 for t in tapes]
-                vjps = _compute_vjp(dy, jacs, multi_measurements, has_partitioned_shots)
+            vjps = jpc.compute_vjp(inner_tapes, dy, original_tapes=tapes)
 
             if isinstance(vjps, tuple):
                 extended_vjps = []

@@ -653,7 +653,7 @@ class TestAdjoint:
         assert circ.device.num_executions == 1
         spy.assert_called_with(mocker.ANY, use_device_state=mocker.ANY)
 
-    def test_resuse_state_multiple_evals(self, mocker, tol, interface):
+    def test_reuse_state_multiple_evals(self, mocker, tol, interface):
         """Tests that the TF interface reuses the device state for adjoint differentiation,
         even where there are intermediate evaluations."""
         dev = qml.device("default.qubit.legacy", wires=2)
