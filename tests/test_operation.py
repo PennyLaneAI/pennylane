@@ -1028,9 +1028,7 @@ class TestObservableConstruction:
         op = DummyObserv(1.0, wires=0, id="test")
         assert op.id == "test"
 
-    def test_raises_if_no_wire_is_given(self):
-        """Test that an error is raised if no wire is passed at initialization."""
-
+    def test_wire_is_given_in_argument(self):
         class DummyObservable(qml.operation.Observable):
             num_wires = 1
 
@@ -1219,8 +1217,11 @@ class TestOperatorIntegration:
         """Test that the division of an operator with an unknown object is not supported."""
         obs = qml.PauliX(0)
 
+        class UnknownObject:
+            pass
+
         with pytest.raises(TypeError, match="unsupported operand type"):
-            _ = obs / object()
+            _ = obs / UnknownObject()
 
     def test_dunder_method_with_new_class(self):
         """Test that when calling any Operator dunder method with a non-supported class that

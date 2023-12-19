@@ -364,6 +364,7 @@ def metric_tensor(  # pylint:disable=too-many-arguments
             "as trainable."
         )
 
+    # pylint: disable=too-many-arguments
     if approx in {"diag", "block-diag"}:
         # Only require covariance matrix based transform
         diag_approx = approx == "diag"
