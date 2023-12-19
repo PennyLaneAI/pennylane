@@ -532,8 +532,8 @@
   Users should now validate these properties manually.
   [(#4773)](https://github.com/PennyLaneAI/pennylane/pull/4773)
 
-* With the aformentioned improvement to `ClassicalShadow.entropy` the keyword `atol`
-  becomes obsolete and will be removed in the next release.
+* With an algorithmic improvement to `ClassicalShadow.entropy`, the keyword `atol`
+  becomes obsolete and will be removed in v0.35.
   [(#4959)](https://github.com/PennyLaneAI/pennylane/pull/4959)
 
 <h3>Documentation 📝</h3>
