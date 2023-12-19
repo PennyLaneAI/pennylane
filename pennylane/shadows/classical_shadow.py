@@ -434,12 +434,13 @@ def _project_density_matrix_spectrum(rdm):
     # algorithm below eq. (16) in https://arxiv.org/pdf/1106.5458.pdf
     evs = qml.math.eigvalsh(rdm)[::-1]  # order from largest to smallest
     d = len(rdm)
-    i = d
     a = 0.0
     for i in range(d - 1, 0, -1):
-        if evs[i] + a / i > 0:
+        if evs[i] + a / (i + 1) > 0:
             break
         a += evs[i]
+    if i == 1:
+        return qml.math.ones_like(evs)[:1]
     lambdas = qml.math.zeros_like(evs)[: i + 1]  # only keep non-zero ones
     lambdas = evs[: i + 1] + a / (i + 1)
     return lambdas[::-1]
