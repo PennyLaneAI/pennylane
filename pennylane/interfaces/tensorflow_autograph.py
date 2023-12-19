@@ -20,16 +20,42 @@ from functools import reduce
 
 import numpy as np
 import tensorflow as tf
+from tensorflow.python.eager import context
 
 import pennylane as qml
 from pennylane.measurements import SampleMP, StateMP
 
 from .tensorflow import (
-    _compute_vjp,
     _res_restructured,
     _to_tensors,
     set_parameters_on_copy,
 )
+
+
+def _compute_vjp(dy, jacs, multi_measurements, has_partitioned_shots):
+    # compute the vector-Jacobian product dy @ jac
+    # for a list of dy's and Jacobian matrices.
+    vjps = []
+
+    for dy_, jac_, multi in zip(dy, jacs, multi_measurements):
+        dy_ = dy_ if has_partitioned_shots else (dy_,)
+        jac_ = jac_ if has_partitioned_shots else (jac_,)
+
+        shot_vjps = []
+        for d, j in zip(dy_, jac_):
+            if multi:
+                shot_vjps.append(qml.gradients.compute_vjp_multi(d, j))
+            else:
+                shot_vjps.append(qml.gradients.compute_vjp_single(d, j))
+
+        vjp = qml.math.sum(qml.math.stack(shot_vjps), 0)
+
+        if not context.executing_eagerly():
+            vjp = qml.math.unstack(vjp)
+
+        vjps.extend(vjp)
+
+    return vjps
 
 
 def _flatten_nested_list(x):

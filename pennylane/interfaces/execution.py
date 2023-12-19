@@ -112,7 +112,7 @@ def _use_tensorflow_autograph():
 
 
 def _get_ml_boundary_execute(
-    interface: str, grad_on_execution: bool, device_vjp: bool = False
+    interface: str, grad_on_execution: bool, device_vjp: bool = False, differentiable=False
 ) -> Callable:
     """Imports and returns the function that binds derivatives of the required ml framework.
 
@@ -140,7 +140,9 @@ def _get_ml_boundary_execute(
                 ml_boundary = partial(ml_boundary, grad_on_execution=grad_on_execution)
 
             else:
-                from .tensorflow import execute as ml_boundary
+                from .tensorflow import tf_execute as full_ml_boundary
+
+                ml_boundary = partial(full_ml_boundary, differentiable=differentiable)
 
         elif mapped_interface == "torch":
             from .torch import execute as ml_boundary
@@ -573,9 +575,8 @@ def execute(
         for tape in tapes:
             params.extend(tape.get_parameters(trainable_only=False))
         interface = qml.math.get_interface(*params)
-    if INTERFACE_MAP.get(interface, "") == "tf":
-        if _use_tensorflow_autograph():
-            interface = "tf-autograph"
+    if INTERFACE_MAP.get(interface, "") == "tf" and _use_tensorflow_autograph():
+        interface = "tf-autograph"
     if interface == "jax":
         try:  # pragma: no-cover
             from .jax import get_jax_interface_name
@@ -808,13 +809,14 @@ def execute(
             execute_fn, gradient_fn, gradient_kwargs, cache_full_jacobian
         )
         for i in range(1, max_diff):
-            ml_boundary_execute = _get_ml_boundary_execute(interface, _grad_on_execution)
+            ml_boundary_execute = _get_ml_boundary_execute(
+                interface, _grad_on_execution, differentiable=i > 1
+            )
             execute_fn = partial(
                 ml_boundary_execute,
                 execute_fn=execute_fn,
                 jpc=jpc,
                 device=device,
-                differentiable=(i > 1),
             )
             jpc = TransformJacobianProducts(execute_fn, gradient_fn, gradient_kwargs)
 
@@ -831,13 +833,14 @@ def execute(
             tape.trainable_params = qml.math.get_trainable_indices(params)
 
     ml_boundary_execute = _get_ml_boundary_execute(
-        interface, _grad_on_execution, config.use_device_jacobian_product
+        interface,
+        _grad_on_execution,
+        config.use_device_jacobian_product,
+        differentiable=max_diff > 1,
     )
 
     if interface in jpc_interfaces:
-        results = ml_boundary_execute(
-            tapes, execute_fn, jpc, device=device, differentiable=max_diff > 1
-        )
+        results = ml_boundary_execute(tapes, execute_fn, jpc, device=device)
     else:
         results = ml_boundary_execute(
             tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff

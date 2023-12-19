@@ -16,7 +16,6 @@ This module contains functions for adding the TensorFlow interface
 to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments,too-many-branches
-import inspect
 import logging
 import warnings
 
@@ -84,14 +83,14 @@ def _res_restructured(res, tapes):
     return tuple(res_nested)
 
 
-def execute(tapes, execute_fn, jpc, device=None, differentiable=False):
+def tf_execute(tapes, execute_fn, jpc, device=None, differentiable=False):
     """Execute a batch of tapes with TensorFlow parameters on a device.
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
 
     Returns:
-        list[list[tf.Tensor]]: A nested list of tape results. Each element in
+        tuple[tuple[tf.Tensor]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
     # pylint: disable=unused-argument
@@ -115,8 +114,8 @@ def execute(tapes, execute_fn, jpc, device=None, differentiable=False):
     res = _to_tensors(execute_fn(tapes))
 
     @tf.custom_gradient
-    def _execute(*parameters):  # pylint:disable=unused-argument
-        def grad_fn(*dy, **tfkwargs):
+    def custom_gradient_execute(*parameters):  # pylint:disable=unused-argument
+        def vjp_fn(*dy, **tfkwargs):
             # TF obeys the dL/dz_conj convention instead of the
             # dL/dz convention of PennyLane, autograd and jax. This converts between the formats
             dy = _recursive_conj(dy)
@@ -145,6 +144,6 @@ def execute(tapes, execute_fn, jpc, device=None, differentiable=False):
             variables = tfkwargs.get("variables")
             return (vjps, variables) if variables is not None else vjps
 
-        return res, grad_fn
+        return res, vjp_fn
 
-    return _execute(*parameters)
+    return custom_gradient_execute(*parameters)

@@ -196,7 +196,7 @@ class ExecuteTapes(torch.autograd.Function):
 
 
 # pylint: disable=unused-argument
-def execute(tapes, execute_fn, jpc, device=None, differentiable=None):
+def execute(tapes, execute_fn, jpc, device=None):
     """Execute a batch of tapes with Torch parameters on a device.
 
     Args:
