@@ -183,3 +183,11 @@ class TestShadowEntropies:
         lambdas = _project_density_matrix_spectrum(rho)
         assert np.isclose(np.sum(lambdas), 1.0)
         assert all(lambdas > 0)
+
+    @pytest.mark.parametrize("n_wires", [2, 3])
+    def test_project_density_matrix_spectrum(self, n_wires):
+        """Test the function _project_density_matrix_spectrum behaves as expected"""
+        rdm = np.zeros((2**n_wires, 2**n_wires))
+        rdm[0, 0] = 1.0
+        new_lambdas = _project_density_matrix_spectrum(rdm)
+        assert qml.math.allclose(new_lambdas, [1.0, 0])

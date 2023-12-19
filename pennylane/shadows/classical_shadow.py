@@ -436,7 +436,7 @@ def _project_density_matrix_spectrum(rdm):
     d = len(rdm)
     i = d
     a = 0.0
-    for i in range(d - 1, -1, -1):
+    for i in range(d - 1, 0, -1):
         if evs[i] + a / i > 0:
             break
         a += evs[i]
