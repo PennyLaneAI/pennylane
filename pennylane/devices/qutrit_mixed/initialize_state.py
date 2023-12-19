@@ -15,17 +15,14 @@
 
 from typing import Iterable, Union
 import pennylane as qml
-from pennylane.operation import (
-    StatePrepBase,
-    Operation,
-)
+from pennylane.operation import StatePrepBase
 
 qudit_dim = 3  # specifies qudit dimension
 
 
 def create_initial_state(
     wires: Union[qml.wires.Wires, Iterable],
-    prep_operation: Operation = None,
+    prep_operation: StatePrepBase = None,
     like: str = None,
 ):
     r"""
@@ -45,7 +42,7 @@ def create_initial_state(
     if not prep_operation:
         rho = _create_basis_state(num_wires, 0)
 
-    else:  # prep_operation should be instance of StatePrepBase
+    else:
         rho = _apply_state_vector(prep_operation.state_vector(wire_order=wires), num_wires)
 
     # TODO: add instance for prep_operations as added
