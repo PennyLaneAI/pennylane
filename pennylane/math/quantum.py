@@ -15,7 +15,6 @@
 # pylint: disable=import-outside-toplevel
 import itertools
 import functools
-import warnings
 
 from string import ascii_letters as ABC
 from autoray import numpy as np
@@ -634,11 +633,6 @@ def _compute_vn_entropy(density_matrix, base=None):
         div_base = 1
 
     evs = qml.math.eigvalsh(density_matrix)
-    if len(qml.math.where(evs < 0)[0]):
-        warnings.warn(
-            f"Trying to compute entropies of a non-semi-positive-definite density matrix with negative eigenvalues: {evs}. This may lead to unexpected behavior",
-            UserWarning,
-        )
     evs = qml.math.where(evs > 0, evs, 1.0)
     entropy = qml.math.entr(evs) / div_base
 
