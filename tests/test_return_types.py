@@ -200,11 +200,12 @@ class TestSingleReturnExecute:
     def test_probs(self, op, wires, device, interface, shots):
         """Return a single prob."""
         dev = qml.device(device, wires=3, shots=shots)
+        args = op if op is not None else wires
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
-            return qml.probs(op=op, wires=wires)
+            return qml.probs(args)
 
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
@@ -335,11 +336,13 @@ class TestMultipleReturns:
     def test_multiple_prob(self, op1, op2, wires1, wires2, device, shots):
         """Return multiple probs."""
         dev = qml.device(device, wires=2, shots=shots)
+        args1 = op1 if op1 is not None else wires1
+        args2 = op2 if op2 is not None else wires2
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
-            return qml.probs(op=op1, wires=wires1), qml.probs(op=op2, wires=wires2)
+            return qml.probs(args1), qml.probs(args2)
 
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
@@ -369,14 +372,16 @@ class TestMultipleReturns:
         """Return multiple different measurements."""
 
         dev = qml.device(device, wires=2, shots=shots)
+        args1 = op1 if op1 is not None else wires1
+        args2 = op2 if op2 is not None else wires2
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return (
-                qml.probs(op=op1, wires=wires1),
+                qml.probs(args1),
                 qml.vn_entropy(wires=wires3),
-                qml.probs(op=op2, wires=wires2),
+                qml.probs(args2),
                 qml.expval(qml.PauliZ(wires=wires4)),
             )
 
@@ -547,11 +552,12 @@ class TestShotVector:
     def test_probs(self, shot_vector, op, wires, device):
         """Test a single probability measurement."""
         dev = qml.device(device, wires=2, shots=shot_vector)
+        args = op if op is not None else wires
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
-            return qml.probs(op=op, wires=wires)
+            return qml.probs(args)
 
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
@@ -682,11 +688,13 @@ class TestSameMeasurementShotVector:
     def test_probs(self, shot_vector, op1, wires1, op2, wires2, device):
         """Test multiple probability measurements."""
         dev = qml.device(device, wires=4, shots=shot_vector)
+        args1 = op1 if op1 is not None else wires1
+        args2 = op2 if op2 is not None else wires2
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
-            return qml.probs(op=op1, wires=wires1), qml.probs(op=op2, wires=wires2)
+            return qml.probs(args1), qml.probs(args2)
 
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})

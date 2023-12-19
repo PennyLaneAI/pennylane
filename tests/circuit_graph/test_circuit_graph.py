@@ -304,20 +304,20 @@ class TestCircuitGraph:
         `CircuitGraph`s grid when none are explicitly provided."""
 
         ops = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1])]
-        obs_no_wires = [qml.sample(op=None, wires=None)]
-        obs_w_wires = [qml.sample(op=None, wires=[0, 1, 2])]
+        obs_no_wires = [qml.sample()]
+        obs_w_wires = [qml.sample(wires=[0, 1, 2])]
 
         circuit_no_wires = CircuitGraph(ops, obs_no_wires, wires=Wires([0, 1, 2]))
         circuit_w_wires = CircuitGraph(ops, obs_w_wires, wires=Wires([0, 1, 2]))
 
-        sample_w_wires_op = qml.sample(op=None, wires=[0, 1, 2])
+        sample_w_wires_op = qml.sample(wires=[0, 1, 2])
         expected_grid_w_wires = {
             0: [ops[0], ops[1], sample_w_wires_op],
             1: [ops[1], sample_w_wires_op],
             2: [sample_w_wires_op],
         }
 
-        sample_no_wires_op = qml.sample(op=None, wires=None)
+        sample_no_wires_op = qml.sample()
         expected_grid_no_wires = {
             0: [ops[0], ops[1], sample_no_wires_op],
             1: [ops[1], sample_no_wires_op],
@@ -339,7 +339,7 @@ class TestCircuitGraph:
     def test_print_contents(self):
         """Tests if the circuit prints correct."""
         ops = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1])]
-        obs_w_wires = [qml.measurements.sample(op=None, wires=[0, 1, 2])]
+        obs_w_wires = [qml.measurements.sample(wires=[0, 1, 2])]
 
         circuit_w_wires = CircuitGraph(ops, obs_w_wires, wires=Wires([0, 1, 2]))
 

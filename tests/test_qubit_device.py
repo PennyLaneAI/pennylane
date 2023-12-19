@@ -725,7 +725,7 @@ class TestSample:
     ):
         """Test that when we sample a device without providing an observable or wires then it
         will return the raw samples"""
-        obs = qml.measurements.sample(op=None, wires=None)
+        obs = qml.measurements.sample()
         dev = mock_qubit_device_with_original_statistics(wires=2)
         generated_samples = np.array([[1, 0], [1, 1]])
         dev._samples = generated_samples
@@ -738,7 +738,7 @@ class TestSample:
     ):
         """Test that when we sample a device without providing an observable but we specify
         wires then it returns the generated samples for only those wires"""
-        obs = qml.measurements.sample(op=None, wires=[1])
+        obs = qml.measurements.sample(wires=[1])
         dev = mock_qubit_device_with_original_statistics(wires=2)
         generated_samples = np.array([[1, 0], [1, 1]])
         dev._samples = generated_samples

@@ -409,7 +409,7 @@ class TestSample:
     ):
         """Test that when we sample a device without providing an observable or wires then it
         will return the raw samples"""
-        obs = qml.measurements.sample(op=None, wires=None)
+        obs = qml.measurements.sample()
         dev = mock_qutrit_device_with_original_statistics(wires=2)
         generated_samples = np.array([[1, 2], [0, 1]])
         dev._samples = generated_samples
@@ -422,7 +422,7 @@ class TestSample:
     ):
         """Test that when we sample a device without providing an observable but we specify
         wires then it returns the generated samples for only those wires"""
-        obs = qml.measurements.sample(op=None, wires=[1])
+        obs = qml.measurements.sample(wires=[1])
         dev = mock_qutrit_device_with_original_statistics(wires=2)
         generated_samples = np.array([[1, 0], [2, 1]])
         dev._samples = generated_samples
@@ -451,7 +451,7 @@ class TestSample:
         dev = mock_qutrit_device_with_original_statistics(wires=2)
         samples = np.array([[0, 1], [2, 0], [2, 1], [1, 1], [2, 2], [1, 2]])
         dev._samples = samples
-        obs = qml.measurements.sample(op=None, wires=[0, 1])
+        obs = qml.measurements.sample(wires=[0, 1])
 
         shot_range = [0, 6]
         bin_size = 3
@@ -467,7 +467,7 @@ class TestSample:
         dev = mock_qutrit_device_with_original_statistics(wires=2)
         samples = np.array([[0, 1], [2, 0], [2, 0], [0, 1], [2, 2], [1, 2]])
         dev._samples = samples
-        obs = qml.measurements.sample(op=None, wires=[0, 1])
+        obs = qml.measurements.sample(wires=[0, 1])
 
         out = dev.sample(obs, counts=True)
         expected_counts = {
@@ -501,7 +501,7 @@ class TestSample:
             ]
         )
         dev._samples = samples
-        obs = qml.measurements.sample(op=None, wires=[0, 1])
+        obs = qml.measurements.sample(wires=[0, 1])
 
         shot_range = [0, 12]
         bin_size = 4

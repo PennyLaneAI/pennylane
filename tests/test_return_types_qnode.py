@@ -206,10 +206,11 @@ class TestIntegrationSingleReturn:
                 "Skip Lightning (wire reordering unsupported) and Qutrit (unsuported observables)."
             )
         dev = qml.device(device, wires=3)
+        args = op if op is not None else wires
 
         def circuit(x):
             qubit_ansatz(x)
-            return qml.probs(op=op, wires=wires)
+            return qml.probs(args)
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
@@ -463,11 +464,12 @@ class TestIntegrationSingleReturnTensorFlow:
         import tensorflow as tf
 
         dev = qml.device(device, wires=3)
+        args = op if op is not None else wires
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
-            return qml.probs(op=op, wires=wires)
+            return qml.probs(args)
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(tf.Variable(0.5))
@@ -677,11 +679,12 @@ class TestIntegrationSingleReturnTorch:
         import torch
 
         dev = qml.device(device, wires=3)
+        args = op if op is not None else wires
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
-            return qml.probs(op=op, wires=wires)
+            return qml.probs(args)
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(torch.tensor(0.5, requires_grad=True))
@@ -916,11 +919,12 @@ class TestIntegrationSingleReturnJax:
         import jax
 
         dev = qml.device(device, wires=3)
+        args = op if op is not None else wires
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
-            return qml.probs(op=op, wires=wires)
+            return qml.probs(args)
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(jax.numpy.array(0.5))
@@ -1076,10 +1080,12 @@ class TestIntegrationMultipleReturns:
             pytest.skip("Separate test for DefaultQutrit.")
 
         dev = qml.device(device, wires=2)
+        args1 = op1 if op1 is not None else wires1
+        args2 = op2 if op2 is not None else wires2
 
         def circuit(x):
             qubit_ansatz(x)
-            return qml.probs(op=op1, wires=wires1), qml.probs(op=op2, wires=wires2)
+            return qml.probs(args1), qml.probs(args2)
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
@@ -1147,13 +1153,15 @@ class TestIntegrationMultipleReturns:
             pytest.skip("Different test for DefaultQutrit.")
 
         dev = qml.device(device, wires=2)
+        args1 = op1 if op1 is not None else wires1
+        args2 = op2 if op2 is not None else wires2
 
         def circuit(x):
             qubit_ansatz(x)
             return (
-                qml.probs(op=op1, wires=wires1),
+                qml.probs(args1),
                 qml.vn_entropy(wires=wires3),
-                qml.probs(op=op2, wires=wires2),
+                qml.probs(args2),
                 qml.expval(qml.PauliZ(wires=wires4)),
             )
 
@@ -1457,11 +1465,13 @@ class TestIntegrationMultipleReturnsTensorflow:
         import tensorflow as tf
 
         dev = qml.device(device, wires=2)
+        args1 = op1 if op1 is not None else wires1
+        args2 = op2 if op2 is not None else wires2
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
-            return qml.probs(op=op1, wires=wires1), qml.probs(op=op2, wires=wires2)
+            return qml.probs(args1), qml.probs(args2)
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(tf.Variable(0.5))
@@ -1490,14 +1500,16 @@ class TestIntegrationMultipleReturnsTensorflow:
         import tensorflow as tf
 
         dev = qml.device(device, wires=2)
+        args1 = op1 if op1 is not None else wires1
+        args2 = op2 if op2 is not None else wires2
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return (
-                qml.probs(op=op1, wires=wires1),
+                qml.probs(args1),
                 qml.vn_entropy(wires=wires3),
-                qml.probs(op=op2, wires=wires2),
+                qml.probs(args2),
                 qml.expval(qml.PauliZ(wires=wires4)),
             )
 
@@ -1721,11 +1733,13 @@ class TestIntegrationMultipleReturnsTorch:
         import torch
 
         dev = qml.device(device, wires=2)
+        args1 = op1 if op1 is not None else wires1
+        args2 = op2 if op2 is not None else wires2
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
-            return qml.probs(op=op1, wires=wires1), qml.probs(op=op2, wires=wires2)
+            return qml.probs(args1), qml.probs(args2)
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(torch.tensor(0.5, requires_grad=True))
@@ -1754,14 +1768,16 @@ class TestIntegrationMultipleReturnsTorch:
         import torch
 
         dev = qml.device(device, wires=2)
+        args1 = op1 if op1 is not None else wires1
+        args2 = op2 if op2 is not None else wires2
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return (
-                qml.probs(op=op1, wires=wires1),
+                qml.probs(args1),
                 qml.vn_entropy(wires=wires3),
-                qml.probs(op=op2, wires=wires2),
+                qml.probs(args2),
                 qml.expval(qml.PauliZ(wires=wires4)),
             )
 
@@ -1992,11 +2008,13 @@ class TestIntegrationMultipleReturnJax:
         import jax
 
         dev = qml.device(device, wires=2)
+        args1 = op1 if op1 is not None else wires1
+        args2 = op2 if op2 is not None else wires2
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
-            return qml.probs(op=op1, wires=wires1), qml.probs(op=op2, wires=wires2)
+            return qml.probs(args1), qml.probs(args2)
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(jax.numpy.array(0.5))
@@ -2028,14 +2046,16 @@ class TestIntegrationMultipleReturnJax:
         import jax
 
         dev = qml.device(device, wires=2)
+        args1 = op1 if op1 is not None else wires1
+        args2 = op2 if op2 is not None else wires2
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return (
-                qml.probs(op=op1, wires=wires1),
+                qml.probs(args1),
                 qml.vn_entropy(wires=wires3),
-                qml.probs(op=op2, wires=wires2),
+                qml.probs(args2),
                 qml.expval(qml.PauliZ(wires=wires4)),
             )
 
@@ -2255,11 +2275,12 @@ class TestIntegrationShotVectors:
     def test_probs(self, shot_vector, op, wires, device):
         """Test a single probability measurement."""
         dev = qml.device("default.qubit", wires=2, shots=shot_vector)
+        args = op if op is not None else wires
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
-            return qml.probs(op=op, wires=wires)
+            return qml.probs(args)
 
         # Diff method is to be set to None otherwise use Interface execute
         qnode = qml.QNode(circuit, dev, diff_method=None)
@@ -2414,11 +2435,13 @@ class TestIntegrationSameMeasurementShotVector:
     def test_probs(self, shot_vector, op1, wires1, op2, wires2, device):
         """Test multiple probability measurements."""
         dev = qml.device(device, wires=4, shots=shot_vector)
+        args1 = op1 if op1 is not None else wires1
+        args2 = op2 if op2 is not None else wires2
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
-            return qml.probs(op=op1, wires=wires1), qml.probs(op=op2, wires=wires2)
+            return qml.probs(args1), qml.probs(args2)
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
