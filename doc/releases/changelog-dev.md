@@ -639,6 +639,9 @@
 * `qml.map_wires` no longer fails when mapping nested quantum tapes.
   [(#4901)](https://github.com/PennyLaneAI/pennylane/pull/4901)
 
+* `devices.qutrit_mixed.initialize_state` module added with functionality to initialize qutrit mixed states.
+  [(#4861)](https://github.com/PennyLaneAI/pennylane/pull/4861)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
