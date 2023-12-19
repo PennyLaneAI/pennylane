@@ -23,6 +23,7 @@ from warnings import warn
 
 import numpy as np
 from scipy.special import factorial
+from scipy.linalg import solve as linalg_solve
 
 import pennylane as qml
 from pennylane.measurements import ProbabilityMP
@@ -146,7 +147,11 @@ def finite_diff_coeffs(n, approx_order, strategy):
     A = shifts ** np.arange(len(shifts)).reshape(-1, 1)
     b = np.zeros_like(shifts)
     b[n] = factorial(n)
-    coeffs = np.linalg.solve(A, b)
+
+    # Note: using np.linalg.solve instead of scipy.linalg.solve can cause a bus error when this
+    # is inside a tf.py_function inside a tf.function, as occurs with the tensorflow-autograph interface
+    # Bus errors were potentially specific to the M1 Mac. Change with caution.
+    coeffs = linalg_solve(A, b)
 
     coeffs_and_shifts = np.stack([coeffs, shifts])
 
