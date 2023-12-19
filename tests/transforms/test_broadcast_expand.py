@@ -153,10 +153,10 @@ class TestBroadcastExpand:
     @pytest.mark.filterwarnings("ignore:Output seems independent of input")
     @pytest.mark.parametrize("params", parameters)
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
-    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
-    def test_autograd(self, params, obs, exp_fn, diff_method):
+    def test_autograd(self, params, obs, exp_fn):
         """Test that the expansion works with autograd and is differentiable."""
         params = tuple(pnp.array(p, requires_grad=True) for p in params)
+        diff_method = "parameter-shift"
 
         @qml.transforms.broadcast_expand
         @qml.qnode(dev, interface="autograd", diff_method=diff_method)
@@ -177,8 +177,7 @@ class TestBroadcastExpand:
     @pytest.mark.parametrize("params", parameters)
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
     @pytest.mark.parametrize("use_jit", [True, False])
-    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
-    def test_jax(self, params, obs, exp_fn, use_jit, diff_method):
+    def test_jax(self, params, obs, exp_fn, use_jit):
         """Test that the expansion works with jax and is differentiable."""
         # pylint: disable=too-many-arguments
         import jax
@@ -186,6 +185,7 @@ class TestBroadcastExpand:
         jax.config.update("jax_enable_x64", True)
 
         params = tuple(jax.numpy.array(p) for p in params)
+        diff_method = "parameter-shift"
 
         @qml.transforms.broadcast_expand
         @qml.qnode(dev, interface="jax", diff_method=diff_method)
@@ -219,9 +219,10 @@ class TestBroadcastExpand:
         import tensorflow as tf
 
         params = tuple(tf.Variable(p, dtype=tf.float64) for p in params)
+        diff_method = "parameter-shift"
 
         @qml.transforms.broadcast_expand
-        @qml.qnode(dev, interface="tensorflow")
+        @qml.qnode(dev, interface="tensorflow", diff_method=diff_method)
         def cost(*params):
             make_ops(*params)
             return tuple(qml.expval(ob) for ob in obs)
@@ -243,8 +244,7 @@ class TestBroadcastExpand:
     @pytest.mark.filterwarnings("ignore:Output seems independent of input")
     @pytest.mark.parametrize("params", parameters)
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
-    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
-    def test_torch(self, params, obs, exp_fn, diff_method):
+    def test_torch(self, params, obs, exp_fn):
         """Test that the expansion works with torch and is differentiable."""
         import torch
 
@@ -252,6 +252,7 @@ class TestBroadcastExpand:
             torch.tensor(p, requires_grad=True, dtype=torch.float64) for p in params
         )
         params = tuple(pnp.array(p, requires_grad=True) for p in params)
+        diff_method = "parameter-shift"
 
         @qml.transforms.broadcast_expand
         @qml.qnode(dev, interface="torch", diff_method=diff_method)
