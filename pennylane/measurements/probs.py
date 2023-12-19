@@ -134,11 +134,6 @@ def probs(*args, **kwargs) -> "ProbabilityMP":
         ):
             return ProbabilityMP(mv=obj)
 
-        raise qml.QuantumFunctionError(
-            "Only single MeasurementValues can be passed as the mv argument. "
-            "MeasurementValues manipulated using arithmetic operators are not allowed."
-        )
-
     if arg_name in [None, "wires"]:
         wires = obj
         if wires is not None:
