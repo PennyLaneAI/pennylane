@@ -290,6 +290,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* `ClassicalShadow.entropy` now uses the algorithm outlined in 
+  [1106.5458](https://arxiv.org/abs/1106.5458) to project the approximate density matrix
+  (with potentially negative eigenvalues) onto the closest valid density matrix.
+  [(#4959)](https://github.com/PennyLaneAI/pennylane/pull/4959)
+
 <h4>Community contributions 🥳</h4>
 
 * The `+=` operand can now be used with a `PauliSentence`, which has also provided
@@ -528,6 +533,10 @@
   Users should now validate these properties manually.
   [(#4773)](https://github.com/PennyLaneAI/pennylane/pull/4773)
 
+* With an algorithmic improvement to `ClassicalShadow.entropy`, the keyword `atol`
+  becomes obsolete and will be removed in v0.35.
+  [(#4959)](https://github.com/PennyLaneAI/pennylane/pull/4959)
+
 <h3>Documentation 📝</h3>
 
 * Documentation for unitaries and operations decompositions was moved from `qml.transforms` to `qml.ops.ops_math`.
@@ -661,6 +670,7 @@ Josh Izaac,
 Juan Giraldo,
 Emiliano Godinez Ramirez,
 Ankit Khandelwal,
+Korbinian Kottmann,
 Christina Lee,
 Vincent Michaud-Rioux,
 Anurav Modak,
