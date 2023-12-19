@@ -38,7 +38,7 @@ class TestIQPE:
             # Iterative QPE
             measurements = qml.iterative_qpe(qml.RZ(phi, wires=[0]), ancilla=[1], iters=3)
 
-            return [qml.sample(op=meas) for meas in measurements]
+            return [qml.sample(mv=meas) for meas in measurements]
 
         sample_list = np.array(circuit_iterative())
         sample_list = sample_list.T
@@ -171,7 +171,7 @@ class TestIQPE:
         @qml.qnode(dev)
         def circuit():
             m = qml.iterative_qpe(qml.RZ(1.0, wires=[0]), [1], iters=iters)
-            return [qml.sample(op=meas) for meas in m]
+            return [qml.sample(mv=meas) for meas in m]
 
         assert len(circuit()) == iters
 
@@ -208,7 +208,7 @@ class TestIQPE:
             # Iterative QPE
             measurements = qml.iterative_qpe(qml.RZ(phi, wires=[0]), ancilla=[1], iters=3)
 
-            return [qml.probs(op=i) for i in measurements]
+            return [qml.probs(mv=i) for i in measurements]
 
         assert np.allclose(circuit_qpe(), circuit_iterative())
 
@@ -237,6 +237,6 @@ class TestIQPE:
             # Iterative QPE
             measurements = qml.iterative_qpe(qml.RZ(phi, wires=[0]), ancilla=[1], iters=3)
 
-            return [qml.expval(op=i) for i in measurements]
+            return [qml.expval(mv=i) for i in measurements]
 
         assert np.allclose(circuit_qpe(), circuit_iterative())

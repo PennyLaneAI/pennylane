@@ -116,7 +116,7 @@ def sample(*args, **kwargs) -> "SampleMP":
         arg_name = None
         obj = args[0]
     else:
-        arg_name, obj = list(kwargs.items)[0]
+        arg_name, obj = list(kwargs.items())[0]
 
     if isinstance(obj, Operator) and arg_name in [None, "op"]:
         if not obj.is_hermitian:

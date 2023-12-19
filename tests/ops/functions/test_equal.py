@@ -1269,10 +1269,10 @@ class TestMeasurementsEqual:
         mv4 = qml.measure(0)
         mv4.measurements[0].id = mv1.measurements[0].id
 
-        mp1 = mp_fn(op=[mv1, mv2])
-        mp2 = mp_fn(op=[mv4, mv2])
-        mp3 = mp_fn(op=[mv1, mv3])
-        mp4 = mp_fn(op=[mv2, mv1])
+        mp1 = mp_fn(mv=[mv1, mv2])
+        mp2 = mp_fn(mv=[mv4, mv2])
+        mp3 = mp_fn(mv=[mv1, mv3])
+        mp4 = mp_fn(mv=[mv2, mv1])
 
         assert qml.equal(mp1, mp1)
         assert qml.equal(mp1, mp2)
@@ -1284,8 +1284,8 @@ class TestMeasurementsEqual:
         a list of measurement values fails."""
         m0 = qml.measure(0)
         m1 = qml.measure(1)
-        mp1 = qml.sample(op=m0 * m1)
-        mp2 = qml.sample(op=[m0, m1])
+        mp1 = qml.sample(mv=m0 * m1)
+        mp2 = qml.sample(mv=[m0, m1])
 
         assert not qml.equal(mp1, mp2)
 
@@ -1299,10 +1299,10 @@ class TestMeasurementsEqual:
         mv4 = qml.measure(0)
         mv4.measurements[0].id = mv1.measurements[0].id
 
-        mp1 = mp_fn(op=mv1 * mv2)
-        mp2 = mp_fn(op=mv4 * mv2)
-        mp3 = mp_fn(op=mv2 * mv1)
-        mp4 = mp_fn(op=mv1 * mv3)
+        mp1 = mp_fn(mv=mv1 * mv2)
+        mp2 = mp_fn(mv=mv4 * mv2)
+        mp3 = mp_fn(mv=mv2 * mv1)
+        mp4 = mp_fn(mv=mv1 * mv3)
 
         assert qml.equal(mp1, mp1)
         assert qml.equal(mp1, mp2)

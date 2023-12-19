@@ -188,7 +188,7 @@ class TestProbs:
         def circuit(phi):
             qml.RX(phi, 0)
             m0 = qml.measure(0)
-            return qml.probs(op=m0)
+            return qml.probs(mv=m0)
 
         new_dev = circuit.device
         spy = mocker.spy(qml.QubitDevice, "probability")
@@ -226,7 +226,7 @@ class TestProbs:
             m1 = qml.measure(1)
             qml.RX(2.0 * phi, 2)
             m2 = qml.measure(2)
-            return qml.probs(op=[m0, m1, m2])
+            return qml.probs(mv=[m0, m1, m2])
 
         new_dev = circuit.device
         spy = mocker.spy(qml.QubitDevice, "probability")
