@@ -439,7 +439,6 @@ def _project_density_matrix_spectrum(rdm):
     for i in range(d - 1, 0, -1):
         if evs[i] + a / (i + 1) > 0:
             break_happened = True
-            print(f"break happened: {break_happened}")
             break
         a += evs[i]
 
