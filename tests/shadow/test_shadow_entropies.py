@@ -65,9 +65,7 @@ class TestShadowEntropies:
         bits, recipes = max_entangled_circuit(wires=n_wires)()
         shadow = ClassicalShadow(bits, recipes)
 
-        entropies = [
-            shadow.entropy(wires=[0], alpha=alpha, atol=1e-2, base=base) for alpha in [1, 2, 3]
-        ]
+        entropies = [shadow.entropy(wires=[0], alpha=alpha, base=base) for alpha in [1, 2, 3]]
         assert np.allclose(entropies, entropies[0], atol=1e-2)
         expected = np.log(2) / np.log(base)
         assert np.allclose(entropies, expected, atol=2e-2)
@@ -126,9 +124,7 @@ class TestShadowEntropies:
             exact = [exact_vn, exact_alpha, exact_2]
 
             # shadow estimate
-            entropies = [
-                shadow.entropy(wires=rdm_wires, alpha=alpha, atol=1e-10) for alpha in [1, 1.5, 2]
-            ]
+            entropies = [shadow.entropy(wires=rdm_wires, alpha=alpha) for alpha in [1, 1.5, 2]]
 
             assert np.allclose(entropies, exact, atol=1e-1)
 

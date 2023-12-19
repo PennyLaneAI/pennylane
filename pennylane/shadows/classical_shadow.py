@@ -324,7 +324,7 @@ class ClassicalShadow:
 
         return qml.math.squeeze(results)
 
-    def entropy(self, wires, snapshots=None, alpha=2, k=1, base=None, atol=1e-5):
+    def entropy(self, wires, snapshots=None, alpha=2, k=1, base=None):
         r"""Compute entropies from classical shadow measurements.
 
         Compute general Renyi entropies of order :math:`\alpha` for a reduced density matrix :math:`\rho` in terms of
@@ -356,7 +356,6 @@ class ClassicalShadow:
             k (int): Allow to split the snapshots into ``k`` equal parts and estimate the snapshots in a median of means fashion. There is no known advantage to do this for entropies.
                 Thus, ``k=1`` is default and advised.
             base (float): Base to the logarithm used for the entropies.
-            atol (float): Absolute tolerance for eigenvalues close to 0 that are taken into account.
 
         Returns:
             float: Entropy of the chosen subsystem.
@@ -381,9 +380,9 @@ class ClassicalShadow:
             bits, recipes = max_entangled_circuit()
             shadow = qml.ClassicalShadow(bits, recipes)
 
-            entropies = [shadow.entropy(wires=[0], alpha=alpha, atol=1e-2) for alpha in [1., 2., 3.]]
+            entropies = [shadow.entropy(wires=[0], alpha=alpha) for alpha in [1., 2., 3.]]
 
-        >>> np.isclose(entropies, entropies[0], atol=1e-2)
+        >>> np.isclose(entropies, entropies[0])
         [ True,  True,  True]
 
         For non-uniform reduced states that is not the case anymore and the entropy differs for each order ``alpha``:
@@ -404,7 +403,7 @@ class ClassicalShadow:
             bitstrings, recipes = qnode(x)
             shadow = qml.ClassicalShadow(bitstrings, recipes)
 
-        >>> [shadow.entropy(wires=wires, alpha=alpha, atol=1e-10) for alpha in [1., 2., 3.]]
+        >>> [shadow.entropy(wires=wires, alpha=alpha) for alpha in [1., 2., 3.]]
         [1.5419292874423107, 1.1537924276625828, 0.9593638767763727]
 
         """
@@ -435,8 +434,7 @@ def _project_density_matrix_spectrum(rdm):
         if evs[i] + a / i > 0:
             ii = i + 1
             break
-        else:
-            a += evs[i]
+        a += evs[i]
     lambdas = qml.math.zeros_like(evs)[:ii]  # only keep non-zero ones
     lambdas = evs[:ii] + a / ii
     return lambdas[::-1]
