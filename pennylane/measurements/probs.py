@@ -129,7 +129,8 @@ def probs(*args, **kwargs) -> "ProbabilityMP":
 
     if arg_name in [None, "mv"]:
         if (isinstance(obj, MeasurementValue) and len(obj.measurements) == 1) or (
-            isinstance(obj, Sequence) and all(isinstance(m, MeasurementValue) for m in obj)
+            isinstance(obj, Sequence)
+            and all(isinstance(m, MeasurementValue) and len(m.measurements) == 1 for m in obj)
         ):
             return ProbabilityMP(mv=obj)
 
@@ -145,7 +146,12 @@ def probs(*args, **kwargs) -> "ProbabilityMP":
 
         return ProbabilityMP(wires=wires)
 
-    raise ValueError("Invalid argument provided to qml.probs().")
+    raise ValueError(
+        "Invalid argument provided to qml.probs(). Valid 'op' must be of type "
+        "qml.operation.Operator. Valid 'mv' must be a MeasurementValue or sequence of only "
+        "MeasurementValues. None of the MeasurementValues can be collected using arithmetic "
+        "operators. Valid 'wires' must be None or sequences or hashable objects."
+    )
 
 
 class ProbabilityMP(SampleMeasurement, StateMeasurement):

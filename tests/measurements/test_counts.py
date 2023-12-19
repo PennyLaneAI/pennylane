@@ -186,7 +186,7 @@ class TestProcessSamples:
         m0 = qml.measure(0)
         m1 = qml.measure(1)
 
-        result = qml.counts(op=m0 | m1).process_samples(samples, wire_order=[0, 1])
+        result = qml.counts(mv=m0 | m1).process_samples(samples, wire_order=[0, 1])
 
         assert len(result) == 2
         assert set(result.keys()) == {0, 1}
@@ -202,7 +202,7 @@ class TestProcessSamples:
         m0 = qml.measure(0)
         m1 = qml.measure(1)
 
-        result = qml.counts(op=[m0, m1]).process_samples(samples, wire_order=[0, 1])
+        result = qml.counts(mv=[m0, m1]).process_samples(samples, wire_order=[0, 1])
 
         assert len(result) == 4
         assert set(result.keys()) == {"00", "01", "10", "11"}
@@ -216,10 +216,10 @@ class TestProcessSamples:
         m0 = qml.measure(0)
 
         with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Only sequences of single MeasurementValues can be passed with the op argument",
+            ValueError,
+            match="Invalid argument provided to qml.counts",
         ):
-            _ = qml.counts(op=[m0, qml.PauliZ(0)])
+            _ = qml.counts(mv=[m0, qml.PauliZ(0)])
 
     def test_composed_measurement_value_lists_not_allowed(self):
         """Test that passing a list containing measurement values composed with arithmetic
@@ -229,10 +229,10 @@ class TestProcessSamples:
         m2 = qml.measure(2)
 
         with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Only sequences of single MeasurementValues can be passed with the op argument",
+            ValueError,
+            match="Invalid argument provided to qml.counts",
         ):
-            _ = qml.counts(op=[m0 + m1, m2])
+            _ = qml.counts(mv=[m0 + m1, m2])
 
     def test_counts_all_outcomes_wires(self):
         """Test that the counts output is correct when all_outcomes is passed"""

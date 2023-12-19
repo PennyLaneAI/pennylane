@@ -186,7 +186,7 @@ class TestSample:
             m0 = qml.measure(0)
             qml.RX(phi, 1)
             m1 = qml.measure(1)
-            return qml.sample(op=m0 + m1)
+            return qml.sample(mv=m0 + m1)
 
         res = circuit(phi)
 
@@ -208,7 +208,7 @@ class TestSample:
             qml.RX(phi, 0)
             m0 = qml.measure(0)
             m1 = qml.measure(1)
-            return qml.sample(op=[m0, m1])
+            return qml.sample(mv=[m0, m1])
 
         res = circuit(phi)
 
@@ -222,11 +222,8 @@ class TestSample:
         """Test that passing a list not containing only measurement values raises an error."""
         m0 = qml.measure(0)
 
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Only sequences of single MeasurementValues can be passed with the op argument",
-        ):
-            _ = qml.sample(op=[m0, qml.PauliZ(0)])
+        with pytest.raises(ValueError, match="Invalid argument provided to qml.sample"):
+            _ = qml.sample(mv=[m0, qml.PauliZ(0)])
 
     def test_composed_measurement_value_lists_not_allowed(self):
         """Test that passing a list containing measurement values composed with arithmetic
@@ -235,11 +232,8 @@ class TestSample:
         m1 = qml.measure(1)
         m2 = qml.measure(2)
 
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Only sequences of single MeasurementValues can be passed with the op argument",
-        ):
-            _ = qml.sample(op=[m0 + m1, m2])
+        with pytest.raises(ValueError, match="Invalid argument provided to qml.sample"):
+            _ = qml.sample(mv=[m0 + m1, m2])
 
     def test_providing_observable_and_wires(self):
         """Test that a ValueError is raised if both an observable is provided and wires are specified"""

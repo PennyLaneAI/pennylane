@@ -260,7 +260,7 @@ class TestProbs:
         def circuit(phi):
             qml.RX(phi, 0)
             m0 = qml.measure(0)
-            return qml.probs(op=m0)
+            return qml.probs(mv=m0)
 
         res = circuit(phi)
 
@@ -290,7 +290,7 @@ class TestProbs:
             m1 = qml.measure(1)
             qml.RX(2.0 * phi, 2)
             m2 = qml.measure(2)
-            return qml.probs(op=[m0, m1, m2])
+            return qml.probs(mv=[m0, m1, m2])
 
         res = circuit(phi, shots=shots)
 
@@ -317,18 +317,15 @@ class TestProbs:
         m0 = qml.measure(0)
         m1 = qml.measure(1)
 
-        with pytest.raises(ValueError, match=r"Cannot use qml.probs\(\) when measuring multiple"):
-            _ = qml.probs(op=m0 + m1)
+        with pytest.raises(ValueError, match="Invalid argument provided to qml.probs"):
+            _ = qml.probs(mv=m0 + m1)
 
     def test_mixed_lists_as_op_not_allowed(self):
         """Test that passing a list not containing only measurement values raises an error."""
         m0 = qml.measure(0)
 
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Only sequences of single MeasurementValues can be passed with the op argument",
-        ):
-            _ = qml.probs(op=[m0, qml.PauliZ(0)])
+        with pytest.raises(ValueError, match="Invalid argument provided to qml.probs"):
+            _ = qml.probs(mv=[m0, qml.PauliZ(0)])
 
     def test_composed_measurement_value_lists_not_allowed(self):
         """Test that passing a list containing measurement values composed with arithmetic
@@ -337,11 +334,8 @@ class TestProbs:
         m1 = qml.measure(1)
         m2 = qml.measure(2)
 
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Only sequences of single MeasurementValues can be passed with the op argument",
-        ):
-            _ = qml.probs(op=[m0 + m1, m2])
+        with pytest.raises(ValueError, match="Invalid argument provided to qml.probs"):
+            _ = qml.probs(mv=[m0 + m1, m2])
 
     @pytest.mark.parametrize("shots", [None, 100])
     def test_batch_size(self, shots):

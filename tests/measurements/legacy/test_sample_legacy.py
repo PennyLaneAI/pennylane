@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import MeasurementShapeError, Sample, Shots, MeasurementValue
+from pennylane.measurements import MeasurementShapeError, Sample, Shots
 from pennylane.operation import Operator
 
 # pylint: disable=protected-access, no-member
@@ -31,8 +31,7 @@ def custom_measurement_process(device, spy):
     for call_args in call_args_list:
         meas = call_args.args[1]
         shot_range, bin_size = (call_args.kwargs["shot_range"], call_args.kwargs["bin_size"])
-        if isinstance(meas, (Operator, MeasurementValue)):
-            meas = qml.sample(op=meas)
+        meas = qml.sample(op=meas) if isinstance(meas, Operator) else qml.sample(mv=meas)
         assert qml.math.allequal(
             device.sample(call_args.args[1], **call_args.kwargs),
             meas.process_samples(
@@ -137,7 +136,7 @@ class TestSample:
             m0 = qml.measure(0)
             qml.RX(phi, 1)
             m1 = qml.measure(1)
-            return qml.sample(op=m0 + m1)
+            return qml.sample(mv=m0 + m1)
 
         new_dev = circuit.device
         spy = mocker.spy(qml.QubitDevice, "sample")
@@ -166,7 +165,7 @@ class TestSample:
             qml.RX(phi, 0)
             m0 = qml.measure(0)
             m1 = qml.measure(1)
-            return qml.sample(op=[m0, m1])
+            return qml.sample(mv=[m0, m1])
 
         new_dev = circuit.device
         spy = mocker.spy(qml.QubitDevice, "sample")

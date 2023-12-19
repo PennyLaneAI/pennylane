@@ -161,7 +161,8 @@ def counts(*args, all_outcomes=False, **kwargs) -> "CountsMP":
 
     if arg_name in [None, "mv"]:
         if isinstance(obj, MeasurementValue) or (
-            isinstance(obj, Sequence) and all(isinstance(m, MeasurementValue) for m in obj)
+            isinstance(obj, Sequence)
+            and all(isinstance(m, MeasurementValue) and len(m.measurements) == 1 for m in obj)
         ):
             return CountsMP(mv=obj)
 
@@ -172,7 +173,13 @@ def counts(*args, all_outcomes=False, **kwargs) -> "CountsMP":
 
         return CountsMP(wires=wires)
 
-    raise ValueError("Invalid argument provided to qml.counts().")
+    raise ValueError(
+        "Invalid argument provided to qml.counts(). Valid 'op' must be of type "
+        "qml.operation.Operator. Valid 'mv' must be a MeasurementValue or sequence "
+        "of only MeasurementValues. If a sequence is provided, none of the items can "
+        "be MeasurementValues that are collected using arithmetic operators. Valid "
+        "'wires' must be None or sequences or hashable objects."
+    )
 
 
 class CountsMP(SampleMeasurement):
@@ -251,7 +258,7 @@ class CountsMP(SampleMeasurement):
         bin_size: int = None,
     ):
         with qml.queuing.QueuingManager.stop_recording():
-            samples = qml.sample(op=self.obs or self.mv, wires=self._wires).process_samples(
+            samples = qml.sample(op=self.obs, mv=self.mv, wires=self._wires).process_samples(
                 samples, wire_order, shot_range, bin_size
             )
 

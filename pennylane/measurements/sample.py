@@ -126,7 +126,8 @@ def sample(*args, **kwargs) -> "SampleMP":
 
     if arg_name in [None, "mv"]:
         if isinstance(obj, MeasurementValue) or (
-            isinstance(obj, Sequence) and all(isinstance(m, MeasurementValue) for m in obj)
+            isinstance(obj, Sequence)
+            and all(isinstance(m, MeasurementValue) and len(m.measurements) == 1 for m in obj)
         ):
             return SampleMP(mv=obj)
 
@@ -137,7 +138,13 @@ def sample(*args, **kwargs) -> "SampleMP":
 
         return SampleMP(wires=wires)
 
-    raise ValueError("Invalid argument provided to qml.sample().")
+    raise ValueError(
+        "Invalid argument provided to qml.sample(). Valid 'op' must be of type "
+        "qml.operation.Operator. Valid 'mv' must be a MeasurementValue or sequence "
+        "of only MeasurementValues. If a sequence is provided, none of the items can "
+        "be MeasurementValues that are collected using arithmetic operators. Valid "
+        "'wires' must be None or sequences or hashable objects."
+    )
 
 
 class SampleMP(SampleMeasurement):

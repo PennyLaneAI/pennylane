@@ -76,7 +76,11 @@ def var(*args, **kwargs) -> "VarianceMP":
         if isinstance(obj, MeasurementValue):
             return VarianceMP(mv=obj)
 
-    raise ValueError("Invalid argument provided to qml.var().")
+    raise ValueError(
+        "Invalid argument provided to qml.var(). Valid 'op' must be of type "
+        "qml.operation.Operator. Valid 'mv' must be a MeasurementValue or a collection "
+        "of multiple MeasurementValues using arithmetic operators."
+    )
 
 
 class VarianceMP(SampleMeasurement, StateMeasurement):
@@ -132,9 +136,8 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
             return probs[idx] - probs[idx] ** 2
 
         # estimate the variance
-        op = self.mv if self.mv is not None else self.obs
         with qml.queuing.QueuingManager.stop_recording():
-            samples = qml.sample(op=op).process_samples(
+            samples = qml.sample(op=self.obs, mv=self.mv).process_samples(
                 samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
             )
 
