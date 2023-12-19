@@ -467,6 +467,11 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The function signature of `qml.expval`, `qml.var`, `qml.sample`, `qml.probs`, and `qml.counts` has been updated.
+  The type of the argument is used to initialize the measurement processes correctly. This change also includes
+  stronger validation.
+  [(#4960)](https://github.com/PennyLaneAI/pennylane/pull/4960)
+
 * The functions `qml.transforms.one_qubit_decomposition`, `qml.transforms.two_qubit_decomposition`, 
   `qml.transforms.sk_decomposition` were moved to respectively, `qml.ops.one_qubit_decomposition`, `qml.ops.two_qubit_decomposition`, 
   `qml.ops.sk_decomposition`.
