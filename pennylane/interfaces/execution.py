@@ -133,7 +133,6 @@ def _get_ml_boundary_execute(
             from .autograd import autograd_execute as ml_boundary
 
         elif mapped_interface == "tf":
-
             if "autograph" in interface:
                 from .tensorflow_autograph import execute as ml_boundary
 

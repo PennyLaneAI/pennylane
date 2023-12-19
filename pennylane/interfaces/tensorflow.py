@@ -115,6 +115,9 @@ def tf_execute(tapes, execute_fn, jpc, device=None, differentiable=False):
 
     @tf.custom_gradient
     def custom_gradient_execute(*parameters):  # pylint:disable=unused-argument
+
+        out_dtypes = [p.dtype for p in parameters]
+
         def vjp_fn(*dy, **tfkwargs):
             # TF obeys the dL/dz_conj convention instead of the
             # dL/dz convention of PennyLane, autograd and jax. This converts between the formats
@@ -142,7 +145,12 @@ def tf_execute(tapes, execute_fn, jpc, device=None, differentiable=False):
                 vjps = tuple(extended_vjps)
 
             variables = tfkwargs.get("variables")
+            vjps = tuple(tf.cast(p, dt) for p, dt in zip(vjps, out_dtypes))
+
             return (vjps, variables) if variables is not None else vjps
+
+        if not differentiable:
+            vjp_fn = tf.py_function(Tout=out_dtypes)(vjp_fn)
 
         return res, vjp_fn
 

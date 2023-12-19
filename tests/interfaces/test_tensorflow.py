@@ -856,7 +856,7 @@ class TestHigherOrderDerivatives:
         """Since the adjoint hessian is not a differentiable transform,
         higher-order derivatives are not supported."""
         dev = qml.device("default.qubit.legacy", wires=2)
-        params = tf.Variable([0.543, -0.654])
+        params = tf.Variable([0.543, -0.654], dtype=tf.float64)
 
         with tf.GradientTape() as t2:
             with tf.GradientTape() as t1:

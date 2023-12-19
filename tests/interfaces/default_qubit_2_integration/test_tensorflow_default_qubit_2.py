@@ -117,6 +117,7 @@ test_matrix = [
     ({"gradient_fn": param_shift, "interface": "tf-autograph"}, None, DefaultQubit()),  # 5
     ({"gradient_fn": "backprop", "interface": "tf-autograph"}, None, DefaultQubit()),  # 6
     ({"gradient_fn": "adjoint", "interface": "tf-autograph"}, None, DefaultQubit()),  # 7
+    ({"gradient_fn": "adjoint", "interface": "tf", "device_vjp": True}, None, DefaultQubit()),  # 8
 ]
 
 
@@ -147,7 +148,9 @@ class TestTensorflowExecuteIntegration:
         with device.tracker:
             res = cost(a, b)
 
-        if execute_kwargs.get("gradient_fn", None) == "adjoint":
+        if execute_kwargs.get("gradient_fn", None) == "adjoint" and not execute_kwargs.get(
+            "device_vjp", False
+        ):
             assert device.tracker.totals["execute_and_derivative_batches"] == 1
         else:
             assert device.tracker.totals["batches"] == 1
