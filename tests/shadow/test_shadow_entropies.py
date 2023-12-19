@@ -188,12 +188,12 @@ class TestShadowEntropies:
 rho0 = np.zeros((2**3, 2**3))
 rho0[0, 0] = 1.0
 
-rho1 = np.diag([-0.1, -0.1, -0.1, 0.7])
-rho2 = np.diag([-0.1, -0.2, 0.2, 0.9])
+rho1 = np.diag([-0.1, -0.1, -0.1, 1.3])
+rho2 = np.diag([-0.1, -0.1, 0.1, 1.1])
 
 
 @pytest.mark.parametrize("rho", [rho0, rho1, rho2])
-def test_project_density_matrix_spectrum(self, rho):
+def test_project_density_matrix_spectrum(rho):
     """Test the function _project_density_matrix_spectrum behaves as expected for trivial case"""
     new_lambdas = _project_density_matrix_spectrum(rho)
     assert qml.math.allclose(new_lambdas, [1.0])

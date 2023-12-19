@@ -435,11 +435,14 @@ def _project_density_matrix_spectrum(rdm):
     evs = qml.math.eigvalsh(rdm)[::-1]  # order from largest to smallest
     d = len(rdm)
     a = 0.0
+    break_happened = False
     for i in range(d - 1, 0, -1):
         if evs[i] + a / (i + 1) > 0:
+            break_happened = True
+            print(f"break happened: {break_happened}")
             break
         a += evs[i]
-    if i == 1:
+    if not break_happened:
         return qml.math.ones_like(evs)[:1]
     lambdas = qml.math.zeros_like(evs)[: i + 1]  # only keep non-zero ones
     lambdas = evs[: i + 1] + a / (i + 1)
