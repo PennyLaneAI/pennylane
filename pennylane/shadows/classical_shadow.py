@@ -337,7 +337,10 @@ class ClassicalShadow:
 
         In the case of :math:`\alpha = 2`, the Renyi entropy becomes the logarithm of the purity of the reduced state
 
-        .. math:: S_{\alpha=2}(\rho) = - \log\left(\text{tr}(\rho^2) \right)
+        .. math:: S_{\alpha=2}(\rho) = - \log\left(\text{tr}(\rho^2) \right).
+
+        Since density matrices reconstructed from classical shadows can have negative eigenvalues, we use the algorithm described in
+        `1106.5458 <https://arxiv.org/abs/1106.5458>`_ to project the estimator to the closest valid state.
 
         .. warning::
 
