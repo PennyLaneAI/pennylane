@@ -66,11 +66,14 @@ def exp_fn_Y1(x, y, z):
 def exp_fn_Z0Y1(x, y, z):
     return exp_fn_Z0(x, y, z) * exp_fn_Y1(x, y, z)
 
+
 def exp_fn_Z0_and_Y1(x, y, z):
     return qml.math.stack([exp_fn_Z0(x, y, z), exp_fn_Y1(x, y, z)])
 
+
 def exp_fn_H0(x, y, z):
     return exp_fn_Z0(x, y, z) * coeffs0[0] + exp_fn_Y1(x, y, z) * coeffs0[1]
+
 
 observables_and_exp_fns = [
     ([qml.PauliZ(0)], exp_fn_Z0),
