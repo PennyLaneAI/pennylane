@@ -138,12 +138,14 @@ def counts(*args, all_outcomes=False, **kwargs) -> "CountsMP":
     {'00': 0, '01': 0, '10': 4, '11': 0}
 
     """
-    if len(args) == 2:
+    if len(args) == 2 and isinstance(args[1], bool):
         all_outcomes = args[1]
         args = (args[0],)
 
     if (n_args := len(args) + len(kwargs)) > 1:
-        raise TypeError(f"qml.counts() takes from 1 to 2 arguments, but {n_args} were given.")
+        raise TypeError(
+            f"qml.counts() takes 1 argument other than 'all_outcomes', but {n_args} were given."
+        )
 
     if n_args == 0:
         return CountsMP(wires=None, all_outcomes=all_outcomes)

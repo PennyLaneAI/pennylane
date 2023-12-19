@@ -59,6 +59,14 @@ class TestVar:
         with pytest.warns(UserWarning, match="Prod might not be hermitian."):
             _ = circuit()
 
+    def test_incorrect_num_args(self):
+        """Test that giving more than one argument raises an error."""
+        m = qml.measure(0)
+        obs = qml.PauliZ(0)
+
+        with pytest.raises(TypeError, match=r"qml.var\(\) takes 1 argument, but 2 were given."):
+            _ = qml.var(obs, m)
+
     def test_observable_return_type_is_variance(self):
         """Test that the return type of the observable is :attr:`ObservableReturnTypes.Variance`"""
         dev = qml.device("default.qubit", wires=2)

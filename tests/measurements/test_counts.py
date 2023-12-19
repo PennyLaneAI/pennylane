@@ -54,8 +54,32 @@ class TestCounts:
         """Test that a ValueError is raised if both an observable is provided and wires are
         specified"""
 
-        with pytest.raises(TypeError, match=r"qml.counts\(\) takes from 1 to 2 arguments"):
+        with pytest.raises(TypeError, match=r"qml.counts\(\) takes 1 argument other than"):
+            # One arg, one kwarg
             qml.counts(qml.PauliZ(0), wires=[0, 1])
+
+        with pytest.raises(TypeError, match=r"qml.counts\(\) takes 1 argument other than"):
+            # Two args
+            qml.counts(qml.PauliZ(0), [0, 1])
+
+        with pytest.raises(TypeError, match=r"qml.counts\(\) takes 1 argument other than"):
+            # Two kwargs
+            qml.counts(op=qml.PauliZ(0), wires=[0, 1])
+
+    def test_infer_all_outcomes_from_positional_args(self):
+        """Test that all_outcomes is set correctly if given as a positional argument."""
+        mp = qml.counts(qml.PauliZ(0), True)
+        assert mp.obs == qml.PauliZ(0)
+        assert mp.all_outcomes is True
+
+        mp = qml.counts([1, 2], True)
+        assert mp.wires == Wires([1, 2])
+        assert mp.all_outcomes is True
+
+        m0 = qml.measure(0)
+        mp = qml.counts(m0, True)
+        assert mp.mv is m0
+        assert mp.all_outcomes is True
 
     def test_observable_might_not_be_hermitian(self):
         """Test that a UserWarning is raised if the provided

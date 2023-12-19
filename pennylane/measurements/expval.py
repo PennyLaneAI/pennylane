@@ -58,7 +58,7 @@ def expval(*args, **kwargs) -> "ExpectationMP":
         ExpectationMP: measurement process instance
     """
     if (n_args := len(args) + len(kwargs)) != 1:
-        raise TypeError(f"qml.expval() 1 argument, but {n_args} were given.")
+        raise TypeError(f"qml.expval() takes 1 argument, but {n_args} were given.")
 
     if args:
         arg_name = None

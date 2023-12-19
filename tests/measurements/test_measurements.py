@@ -364,6 +364,15 @@ class TestProperties:
         with pytest.raises(ValueError, match="Cannot set the wires"):
             ExpectationMP(obs=obs, wires=qml.wires.Wires([0, 1]))
 
+    def test_error_obs_and_mv(self):
+        """Test that providing both a measurement value and an observable
+        results in an error"""
+        obs = qml.Hermitian(np.diag([1, 2, 3, 4]), wires=[0, 1])
+        m = qml.measure(0)
+
+        with pytest.raises(ValueError, match="Cannot set measurement value"):
+            ExpectationMP(obs=obs, mv=m)
+
     def test_observable_with_no_eigvals(self):
         """An observable with no eigenvalues defined should cause
         the eigvals method to return a NotImplementedError"""
