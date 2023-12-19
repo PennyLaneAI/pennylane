@@ -553,6 +553,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Finite differences and SPSA can now be used with tensorflow-autograph on setups that were seeing a bus error.
+  [(#4961)](https://github.com/PennyLaneAI/pennylane/pull/4961)
+
 * `qml.cond` no longer incorrectly queues operators used as qfunc arguments.
   [(#4948)](https://github.com/PennyLaneAI/pennylane/pull/4948)
 
