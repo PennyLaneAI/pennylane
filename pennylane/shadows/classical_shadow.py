@@ -442,8 +442,11 @@ def _project_density_matrix_spectrum(rdm):
             print(f"break happened: {break_happened}")
             break
         a += evs[i]
+
     if not break_happened:
+        # Edge case: when no break happened the closest spectrum is trivially just [1.,]
         return qml.math.ones_like(evs)[:1]
+
     lambdas = qml.math.zeros_like(evs)[: i + 1]  # only keep non-zero ones
     lambdas = evs[: i + 1] + a / (i + 1)
     return lambdas[::-1]
