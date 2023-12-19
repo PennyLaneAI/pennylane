@@ -440,8 +440,8 @@ def _project_density_matrix_spectrum(rdm):
         if evs[i] + a / i > 0:
             break
         a += evs[i]
-    lambdas = qml.math.zeros_like(evs)[:i+1]  # only keep non-zero ones
-    lambdas = evs[:i+1] + a / (i+1)
+    lambdas = qml.math.zeros_like(evs)[: i + 1]  # only keep non-zero ones
+    lambdas = evs[: i + 1] + a / (i + 1)
     return lambdas[::-1]
 
 
