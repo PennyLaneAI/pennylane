@@ -232,10 +232,11 @@ class TestIntegrationSingleReturn:
     def test_probs_qutrit(self, op, wires):
         """Return a single prob."""
         dev = qml.device("default.qutrit", wires=3)
+        args = op if op is not None else wires
 
         def circuit(x):
             qutrit_ansatz(x)
-            return qml.probs(op=op, wires=wires)
+            return qml.probs(args)
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
@@ -1120,10 +1121,12 @@ class TestIntegrationMultipleReturns:
     def test_multiple_prob_qutrit(self, op1, op2, wires1, wires2):
         """Return multiple probs."""
         dev = qml.device("default.qutrit", wires=2)
+        args1 = op1 if op1 is not None else wires1
+        args2 = op2 if op2 is not None else wires2
 
         def circuit(x):
             qutrit_ansatz(x)
-            return qml.probs(op=op1, wires=wires1), qml.probs(op=op2, wires=wires2)
+            return qml.probs(args1), qml.probs(args2)
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
