@@ -58,7 +58,7 @@ def test_deprecation_warning_atol():
     """Test that a depceration warning is raised when trying to use atol"""
     bits, recipes = max_entangled_circuit(wires=2)()
     shadow = ClassicalShadow(bits, recipes)
-    with pytest.warns(DeprecationWarning):
+    with pytest.warns(qml.PennyLaneDeprecationWarning):
         shadow.entropy([0, 1], atol=1e-3)
 
 
