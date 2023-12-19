@@ -23,6 +23,7 @@ from pennylane.wires import Wires
 
 from .measurements import AllCounts, Counts, SampleMeasurement
 from .mid_measure import MeasurementValue
+from .sample import SampleMP
 
 
 def _sample_to_str(sample):
@@ -164,14 +165,14 @@ def counts(*args, all_outcomes=False, **kwargs) -> "CountsMP":
             isinstance(obj, Sequence)
             and all(isinstance(m, MeasurementValue) and len(m.measurements) == 1 for m in obj)
         ):
-            return CountsMP(mv=obj)
+            return CountsMP(mv=obj, all_outcomes=all_outcomes)
 
     if arg_name in [None, "wires"]:
         wires = obj
         if wires is not None:
             wires = Wires(wires)
 
-        return CountsMP(wires=wires)
+        return CountsMP(wires=wires, all_outcomes=all_outcomes)
 
     raise ValueError(
         "Invalid argument provided to qml.counts(). Valid 'op' must be of type "
@@ -221,7 +222,7 @@ class CountsMP(SampleMeasurement):
 
     def _flatten(self):
         metadata = (("wires", self.raw_wires), ("all_outcomes", self.all_outcomes))
-        return (self.obs or self.mv, self._eigvals), metadata
+        return (self.obs, self.mv, self._eigvals), metadata
 
     def __repr__(self):
         if self.mv:
@@ -258,7 +259,7 @@ class CountsMP(SampleMeasurement):
         bin_size: int = None,
     ):
         with qml.queuing.QueuingManager.stop_recording():
-            samples = qml.sample(op=self.obs, mv=self.mv, wires=self._wires).process_samples(
+            samples = SampleMP(obs=self.obs, mv=self.mv, wires=self._wires).process_samples(
                 samples, wire_order, shot_range, bin_size
             )
 

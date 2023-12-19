@@ -101,7 +101,7 @@ class MutualInfoMP(StateMeasurement):
 
     def _flatten(self):
         metadata = (("wires", tuple(self.raw_wires)), ("log_base", self.log_base))
-        return (None, None), metadata
+        return (None, None, None), metadata
 
     # pylint: disable=too-many-arguments
     def __init__(

@@ -136,9 +136,7 @@ class TestVar:
         m0 = qml.measure(0)
         m1 = qml.measure(1)
 
-        with pytest.raises(
-            ValueError, match="qml.var does not support measuring sequences of measurements"
-        ):
+        with pytest.raises(ValueError, match="Invalid argument provided to qml.var"):
             _ = qml.var([m0, m1])
 
     @pytest.mark.parametrize(

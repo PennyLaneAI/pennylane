@@ -107,7 +107,7 @@ def sample(*args, **kwargs) -> "SampleMP":
 
     """
     if (n_args := len(args) + len(kwargs)) > 1:
-        raise TypeError(f"qml.sample() only takes 1 argument, but {n_args} were given.")
+        raise TypeError(f"qml.sample() takes 1 argument, but {n_args} were given.")
 
     if n_args == 0:
         return SampleMP(wires=None)

@@ -31,7 +31,8 @@ def custom_measurement_process(device, spy):
     for call_args in call_args_list:
         meas = call_args.args[1]
         shot_range, bin_size = (call_args.kwargs["shot_range"], call_args.kwargs["bin_size"])
-        meas = qml.sample(op=meas) if isinstance(meas, Operator) else qml.sample(mv=meas)
+        if not isinstance(meas, qml.measurements.MeasurementProcess):
+            meas = qml.sample(op=meas) if isinstance(meas, Operator) else qml.sample(mv=meas)
         assert qml.math.allequal(
             device.sample(call_args.args[1], **call_args.kwargs),
             meas.process_samples(
@@ -291,11 +292,7 @@ class TestSample:
             qml.Hadamard(wires=0)
             return qml.sample(qml.PauliZ(0), wires=[0, 1])
 
-        with pytest.raises(
-            ValueError,
-            match="Cannot specify the wires to sample if an observable is provided."
-            " The wires to sample will be determined directly from the observable.",
-        ):
+        with pytest.raises(TypeError, match=r"qml.sample\(\) takes 1 argument, but 2 were given."):
             _ = circuit()
 
     def test_providing_no_observable_and_no_wires(self, mocker):

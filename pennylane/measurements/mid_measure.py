@@ -216,7 +216,7 @@ class MidMeasureMP(MeasurementProcess):
 
     def _flatten(self):
         metadata = (("wires", self.raw_wires), ("reset", self.reset), ("id", self.id))
-        return (None, None), metadata
+        return (None, None, None), metadata
 
     def __init__(
         self,

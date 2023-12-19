@@ -97,7 +97,7 @@ def probs(*args, **kwargs) -> "ProbabilityMP":
     the device simulates qubit or continuous variable quantum systems.
     """
     if (n_args := len(args) + len(kwargs)) > 1:
-        raise TypeError(f"qml.probs() only takes 1 argument, but {n_args} were given.")
+        raise TypeError(f"qml.probs() takes 1 argument, but {n_args} were given.")
 
     if n_args == 0:
         return ProbabilityMP(wires=None)

@@ -234,7 +234,7 @@ class ClassicalShadowMP(MeasurementTransform):
 
     def _flatten(self):
         metadata = (("wires", self.wires), ("seed", self.seed))
-        return (None, None), metadata
+        return (None, None, None), metadata
 
     @property
     def hash(self):

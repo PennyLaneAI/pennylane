@@ -674,11 +674,7 @@ class TestProbs:
             qml.PauliX(wires=0)
             return qml.probs(op=qml.Hermitian(hermitian, wires=0), wires=1)
 
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Cannot specify the wires to probs if an observable is "
-            "provided. The wires for probs will be determined directly from the observable.",
-        ):
+        with pytest.raises(TypeError, match=r"qml.probs\(\) takes 1 argument, but 2 were given."):
             circuit()
 
     @pytest.mark.parametrize(

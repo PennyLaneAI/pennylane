@@ -165,24 +165,24 @@ valid_meausurements = [
     ShadowExpvalMP([qml.PauliZ(0), 4.0 * qml.PauliX(0)], seed=86, k=4),
     CountsMP(obs=2.0 * qml.PauliX(0), all_outcomes=True),
     CountsMP(eigvals=[0.5, 0.6], wires=Wires(0), all_outcomes=False),
-    CountsMP(obs=mv, all_outcomes=True),
+    CountsMP(mv=mv, all_outcomes=True),
     ExpectationMP(obs=qml.s_prod(2.0, qml.PauliX(0))),
     ExpectationMP(eigvals=[0.5, 0.6], wires=Wires("a")),
-    ExpectationMP(obs=mv),
+    ExpectationMP(mv=mv),
     MidMeasureMP(wires=Wires("a"), reset=True, id="abcd"),
     MutualInfoMP(wires=(Wires("a"), Wires("b")), log_base=3),
     ProbabilityMP(wires=Wires("a"), eigvals=[0.5, 0.6]),
     ProbabilityMP(obs=3.0 * qml.PauliX(0)),
-    ProbabilityMP(obs=mv),
+    ProbabilityMP(mv=mv),
     PurityMP(wires=Wires("a")),
     SampleMP(obs=3.0 * qml.PauliY(0)),
     SampleMP(wires=Wires("a"), eigvals=[0.5, 0.6]),
-    SampleMP(obs=mv),
+    SampleMP(mv=mv),
     StateMP(),
     StateMP(wires=("a", "b")),
     VarianceMP(obs=qml.s_prod(0.5, qml.PauliX(0))),
     VarianceMP(eigvals=[0.6, 0.7], wires=Wires(0)),
-    VarianceMP(obs=mv),
+    VarianceMP(mv=mv),
     VnEntropyMP(wires=Wires("a"), log_base=3),
 ]
 
@@ -387,11 +387,11 @@ class TestProperties:
 
         m0 = MeasurementValue([MidMeasureMP(Wires(0), id="0")], lambda v: v)
         m1 = MeasurementValue([MidMeasureMP(Wires(1), id="1")], lambda v: v)
-        m = ProbabilityMP(obs=[m0, m1])
+        m = ProbabilityMP(mv=[m0, m1])
         expected = "probs([MeasurementValue(wires=[0]), MeasurementValue(wires=[1])])"
         assert repr(m) == expected
 
-        m = ProbabilityMP(obs=m0 * m1)
+        m = ProbabilityMP(mv=m0 * m1)
         expected = "probs(MeasurementValue(wires=[0, 1]))"
 
     def test_measurement_value_map_wires(self):

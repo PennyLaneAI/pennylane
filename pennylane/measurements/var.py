@@ -25,6 +25,7 @@ from pennylane.wires import Wires
 
 from .measurements import SampleMeasurement, StateMeasurement, Variance
 from .mid_measure import MeasurementValue
+from .sample import SampleMP
 
 
 def var(*args, **kwargs) -> "VarianceMP":
@@ -137,7 +138,7 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
 
         # estimate the variance
         with qml.queuing.QueuingManager.stop_recording():
-            samples = qml.sample(op=self.obs, mv=self.mv).process_samples(
+            samples = SampleMP(obs=self.obs, mv=self.mv).process_samples(
                 samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
             )
 

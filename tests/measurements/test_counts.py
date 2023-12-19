@@ -54,11 +54,7 @@ class TestCounts:
         """Test that a ValueError is raised if both an observable is provided and wires are
         specified"""
 
-        with pytest.raises(
-            ValueError,
-            match="Cannot specify the wires to sample if an observable is provided."
-            " The wires to sample will be determined directly from the observable.",
-        ):
+        with pytest.raises(TypeError, match=r"qml.counts\(\) takes from 1 to 2 arguments"):
             qml.counts(qml.PauliZ(0), wires=[0, 1])
 
     def test_observable_might_not_be_hermitian(self):
@@ -90,7 +86,7 @@ class TestCounts:
         assert repr(m3) == "CountsMP(eigvals=[-1  1], wires=[], all_outcomes=False)"
 
         mv = qml.measure(0)
-        m4 = CountsMP(obs=mv, all_outcomes=False)
+        m4 = CountsMP(mv=mv, all_outcomes=False)
         assert repr(m4) == "CountsMP(MeasurementValue(wires=[0]), all_outcomes=False)"
 
 
