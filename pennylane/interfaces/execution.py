@@ -44,7 +44,17 @@ logger.addHandler(logging.NullHandler())
 
 device_type = Union[qml.Device, "qml.devices.Device"]
 
-jpc_interfaces = {"autograd", "numpy", "torch", "pytorch", "jax", "jax-python", "jax-jit", "tf", "tensorflow"}
+jpc_interfaces = {
+    "autograd",
+    "numpy",
+    "torch",
+    "pytorch",
+    "jax",
+    "jax-python",
+    "jax-jit",
+    "tf",
+    "tensorflow",
+}
 
 INTERFACE_MAP = {
     None: "Numpy",
@@ -563,7 +573,7 @@ def execute(
         for tape in tapes:
             params.extend(tape.get_parameters(trainable_only=False))
         interface = qml.math.get_interface(*params)
-    if INTERFACE_MAP[interface] == "tf":
+    if INTERFACE_MAP.get(interface, "") == "tf":
         if _use_tensorflow_autograph():
             interface = "tf-autograph"
     if interface == "jax":
@@ -800,7 +810,11 @@ def execute(
         for i in range(1, max_diff):
             ml_boundary_execute = _get_ml_boundary_execute(interface, _grad_on_execution)
             execute_fn = partial(
-                ml_boundary_execute, execute_fn=execute_fn, jpc=jpc, device=device, differentiable=(i > 1)
+                ml_boundary_execute,
+                execute_fn=execute_fn,
+                jpc=jpc,
+                device=device,
+                differentiable=(i > 1),
             )
             jpc = TransformJacobianProducts(execute_fn, gradient_fn, gradient_kwargs)
 
@@ -821,7 +835,9 @@ def execute(
     )
 
     if interface in jpc_interfaces:
-        results = ml_boundary_execute(tapes, execute_fn, jpc, device=device, differentiable=max_diff > 1)
+        results = ml_boundary_execute(
+            tapes, execute_fn, jpc, device=device, differentiable=max_diff > 1
+        )
     else:
         results = ml_boundary_execute(
             tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
