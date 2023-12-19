@@ -415,25 +415,31 @@ class ClassicalShadow:
         # Allow for different log base
         div = np.log(base) if base else 1
 
-        evs = qml.math.eigvalsh(rdm)
-        if len(qml.math.where(evs < 0)[0]):
-            warnings.warn(
-                f"Trying to compute entropies of a non-semi-positive-definite density matrix with negative eigenvalues: {evs}. This may lead to unexpected behavior",
-                UserWarning,
-            )
-
-        mask0 = qml.math.logical_not(qml.math.isclose(evs, 0, atol=atol))
-        mask1 = qml.math.where(evs > 0, True, False)
-        mask = qml.math.logical_and(mask0, mask1)
-        # Renormalize because of cropped evs
-        evs_nonzero = qml.math.gather(evs, mask)
-        evs_nonzero = evs_nonzero / qml.math.sum(evs_nonzero)
+        evs_nonzero = _project_density_matrix_spectrum(rdm)
         if alpha == 1:
             # Special case of von Neumann entropy
             return qml.math.entr(evs_nonzero) / div
 
         # General Renyi-alpha entropy
         return qml.math.log(qml.math.sum(evs_nonzero**alpha)) / (1.0 - alpha) / div
+
+def _project_density_matrix_spectrum(rdm):
+    """Project the estimator density matrix rdm with possibly negative eigenvalues onto the closest true density matrix in L2 norm"""
+    # algorithm below eq. (16) in https://arxiv.org/pdf/1106.5458.pdf
+    evs = qml.math.eigvalsh(rdm)[::-1] # order from largest to smallest
+    d = len(rdm)
+    i=d
+    a=0.
+    for i in range(d-1, -1, -1):
+        if evs[i] + a/i>0:
+            ii = i+1
+            break
+        else:
+            a += evs[i]
+    lambdas = qml.math.zeros_like(evs)[:ii] # only keep non-zero ones
+    lambdas = evs[:ii] + a/ii
+    return lambdas[::-1]
+
 
 
 # Util functions

@@ -20,6 +20,7 @@ import pytest
 import pennylane as qml
 import pennylane.numpy as np
 from pennylane.shadows import ClassicalShadow
+from pennylane.shadows.classical_shadow import _project_density_matrix_spectrum
 
 np.random.seed(777)
 
@@ -155,3 +156,25 @@ class TestShadowEntropies:
                     expected_entropy = expected_entropy_ising_xx(param, alpha) / np.log(base)
 
                     assert qml.math.allclose(entropy, expected_entropy, atol=1e-1)
+
+    def test_closest_density_matrix(self):
+        """Test that the closest density matrix from the estimator is valid"""
+        wires = 3
+        dev = qml.device("default.qubit", wires=range(wires))
+
+        # Just a simple circuit
+        @qml.qnode(dev)
+        def qnode(x):
+            for i in range(wires):
+                qml.RY(x[i], wires=i)
+
+            for i in range(wires - 1):
+                qml.CNOT((i, i + 1))
+
+            return qml.state()
+        x = np.linspace(0.5, 1.5, num=wires)
+        state = qnode(x)
+        rho = qml.math.dm_from_state_vector(state)
+        lambdas = _project_density_matrix_spectrum(rho)
+        assert np.isclose(np.sum(lambdas), 1.)
+        assert all(lambdas>0)
