@@ -290,7 +290,7 @@
 <h3>Improvements 🛠</h3>
 
 * `ClassicalShadow.entropy` now uses the algorithm outlined in 
-  [1106.5458](https://arxiv.org/abs/1106.5458) project the approximate density matrix
+  [1106.5458](https://arxiv.org/abs/1106.5458) to project the approximate density matrix
   (with potentially negative eigenvalues) onto the closest valid density matrix.
   [(#4959)](https://github.com/PennyLaneAI/pennylane/pull/4959)
 
