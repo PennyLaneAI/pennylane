@@ -1,5 +1,6 @@
 """Unit testing of conversion functions for parity transform"""
 import pytest
+import warnings
 
 import pennylane as qml
 from pennylane.ops import SProd, Identity
@@ -24,6 +25,14 @@ def test_error_is_raised_for_dimension_mismatch():
     ):
         parity_transform(FermiWord({(0, 1): "-", (1, 0): "+", (2, 6): "-"}), 6)
 
+
+def test_warning_is_raised_with_use():
+    """Test that a UserWarning is raised when this mapping is used"""
+
+    with pytest.warns(
+            UserWarning, match=""
+    ):
+        parity_transform(FermiWord({(0, 1): "-", (1, 0): "+", (2, 2): "-"}), 4)
 
 FERMI_WORDS_AND_OPS = [
     (
