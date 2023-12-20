@@ -1,5 +1,4 @@
 """Unit testing of conversion functions for parity transform"""
-import warnings
 import pytest
 
 import pennylane as qml
@@ -29,7 +28,9 @@ def test_error_is_raised_for_dimension_mismatch():
 def test_warning_is_raised_with_use():
     """Test that a UserWarning is raised when this mapping is used"""
 
-    with pytest.warns(UserWarning, match=""):
+    with pytest.warns(
+        UserWarning, match="This mapping is not compatible with other functions in PennyLane"
+    ):
         parity_transform(FermiWord({(0, 1): "-", (1, 0): "+", (2, 2): "-"}), 4)
 
 
