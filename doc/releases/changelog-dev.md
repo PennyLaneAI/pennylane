@@ -290,7 +290,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* Implemented the method `process_counts` in the `ProbabilityMP` class (internal assignment).
+* Implemented the method `process_counts` in the `ProbabilityMP` class.
   [(#4952)](https://github.com/PennyLaneAI/pennylane/pull/4952)
 
 * `ClassicalShadow.entropy` now uses the algorithm outlined in 
