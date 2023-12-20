@@ -17,6 +17,11 @@ import pytest
 import pennylane as qml
 import numpy as np
 from pennylane import math
+from pennylane.devices.qutrit_mixed.apply_operation import (
+    apply_operation_einsum,
+    apply_operation_tensordot,
+    apply_operation,
+)
 
 density_matrix = np.array(
     [
@@ -98,21 +103,121 @@ class TestTwoQubitStateSpecialCases:
     """Test the special cases on a two qubit state.  Also tests the special cases for einsum and tensor application methods
     for additional testing of these generic matrix application methods."""
 
-    def test_identity(self, method, wire, ml_framework):
-        """Test the application of an Identity gate on a two qutrit state."""
-        initial_state = qml.math.asarray(density_matrix, like=ml_framework)
-        new_state = method(qml.Identity(wire), initial_state)
-        assert qml.math.allclose(initial_state, new_state)
+    def test_TAdd(self, method, wire, ml_framework):
+        """Test the application of a TAdd gate on a two qutrit state."""
+        initial_state = math.asarray(density_matrix, like=ml_framework)
+
+        control = wire
+        target = int(not control)
+        new_state = method(qml.TAdd((control, target)), initial_state)
+        print(new_state)
+
+        initial0 = math.take(initial_state, 0, axis=control)#TODO Fix for mixed!
+        new0 = math.take(new_state, 0, axis=control)
+        assert math.allclose(initial0, new0)
+
+        initial1 = math.take(initial_state, 1, axis=control)
+        new1 = math.take(new_state, 1, axis=control)
+        assert math.allclose(initial1[2], new1[0])
+        assert math.allclose(initial1[0], new1[1])
+        assert math.allclose(initial1[1], new1[2])
+
+        initial1 = math.take(initial_state, 2, axis=control)
+        new1 = math.take(new_state, 2, axis=control)
+        assert math.allclose(initial1[1], new1[0])
+        assert math.allclose(initial1[2], new1[1])
+        assert math.allclose(initial1[0], new1[2])
+
+    def test_TShift(self, method, wire, ml_framework):
+        """Test the application of a TShift gate on a two qutrit state."""
+        initial_state = math.asarray(density_matrix, like=ml_framework)
+        new_state = method(qml.TShift(wire), initial_state)
+
+        initial0dim = math.take(initial_state, 0, axis=wire)#TODO Fix for mixed!
+        new1dim = math.take(new_state, 1, axis=wire)
+
+        assert math.allclose(initial0dim, new1dim)
+
+        initial1dim = math.take(initial_state, 1, axis=wire)
+        new2dim = math.take(new_state, 2, axis=wire)
+        assert math.allclose(initial1dim, new2dim)
+
+        initial2dim = math.take(initial_state, 2, axis=wire)
+        new0dim = math.take(new_state, 0, axis=wire)
+        assert math.allclose(initial2dim, new0dim)
+
+    def test_TClock(self, method, wire, ml_framework):
+        """Test the application of a TClock gate on a two qutrit state."""
+        initial_state = math.asarray(density_matrix, like=ml_framework)
+        new_state = method(qml.TShift(wire), initial_state)
+        w = math.exp(2j*math.pi/3)
+
+        new0 = math.take(new_state, 0, axis=wire)
+        initial0 = math.take(initial_state, 0, axis=wire)
+        assert math.allclose(new0, initial0)
+
+        initial1 = math.take(initial_state, 1, axis=wire)
+        new1 = math.take(new_state, 1, axis=wire)
+        assert math.allclose(w * initial1, new1)
+
+        initial2 = math.take(initial_state, 2, axis=wire)
+        new2 = math.take(new_state, 2, axis=wire)
+        assert math.allclose(w**2 * initial2, new2)
 
     # TODO: Add more tests as Special cases are added
 
-#TODO add normal test
+
+# TODO add normal test
+
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 class TestSnapshot:
     """Test that apply_operation works for Snapshot ops"""
 
-    pass  # TODO add snapshot tests
+    class Debugger:  # pylint: disable=too-few-public-methods
+        """A dummy debugger class"""
+
+        def __init__(self):
+            self.active = True
+            self.snapshots = {}
+
+    def test_no_debugger(self, ml_framework):
+        """Test nothing happens when there is no debugger"""
+        initial_state = math.asarray(density_matrix, like=ml_framework)
+        new_state = apply_operation(qml.Snapshot(), initial_state)
+
+        assert new_state.shape == initial_state.shape
+        assert math.allclose(new_state, initial_state)
+
+    def test_empty_tag(self, ml_framework):
+        """Test a snapshot is recorded properly when there is no tag"""
+        initial_state = math.asarray(density_matrix, like=ml_framework)
+
+        debugger = self.Debugger()
+        new_state = apply_operation(qml.Snapshot(), initial_state, debugger=debugger)
+
+        assert new_state.shape == initial_state.shape
+        assert math.allclose(new_state, initial_state)
+
+        assert list(debugger.snapshots.keys()) == [0]
+        assert debugger.snapshots[0].shape == (9, 9)
+        assert math.allclose(debugger.snapshots[0], math.reshape(initial_state, (9, 9)))
+
+    def test_provided_tag(self, ml_framework):
+        """Test a snapshot is recorded property when provided a tag"""
+        initial_state = math.asarray(density_matrix, like=ml_framework)
+
+        debugger = self.Debugger()
+        tag = "dense"
+        new_state = apply_operation(qml.Snapshot(tag), initial_state, debugger=debugger)
+
+        assert new_state.shape == initial_state.shape
+        assert math.allclose(new_state, initial_state)
+
+        assert list(debugger.snapshots.keys()) == [tag]
+        assert debugger.snapshots[tag].shape == (9, 9)
+        assert math.allclose(debugger.snapshots[tag], math.reshape(initial_state, (9, 9)))
+
 
 
 @pytest.mark.parametrize("method", methods, "subspace")
@@ -126,18 +231,18 @@ class TestTRXCalcGrad:
         expected0 = np.cos(phi / 2) * state[0, :, :] + -1j * np.sin(phi / 2) * state[1, :, :]
         expected1 = -1j * np.sin(phi / 2) * state[0, :, :] + np.cos(phi / 2) * state[1, :, :]
 
-        assert qml.math.allclose(new_state[0, :, :], expected0)
-        assert qml.math.allclose(new_state[1, :, :], expected1)
+        assert math.allclose(new_state[0, :, :], expected0)
+        assert math.allclose(new_state[1, :, :], expected1)
 
         g_expected0 = (
-                -0.5 * np.sin(phi / 2) * state[0, :, :] - 0.5j * np.cos(phi / 2) * state[1, :, :]
+            -0.5 * np.sin(phi / 2) * state[0, :, :] - 0.5j * np.cos(phi / 2) * state[1, :, :]
         )
         g_expected1 = (
-                -0.5j * np.cos(phi / 2) * state[0, :, :] - 0.5 * np.sin(phi / 2) * state[1, :, :]
+            -0.5j * np.cos(phi / 2) * state[0, :, :] - 0.5 * np.sin(phi / 2) * state[1, :, :]
         )
 
-        assert qml.math.allclose(g[0], g_expected0)
-        assert qml.math.allclose(g[1], g_expected1)
+        assert math.allclose(g[0], g_expected0)
+        assert math.allclose(g[1], g_expected1)
 
     @pytest.mark.autograd
     def test_rx_grad_autograd(self, method):
@@ -151,7 +256,7 @@ class TestTRXCalcGrad:
         phi = qml.numpy.array(0.325 + 0j, requires_grad=True)
 
         new_state = f(phi)
-        g = qml.jacobian(lambda x: qml.math.real(f(x)))(phi)
+        g = qml.jacobian(lambda x: math.real(f(x)))(phi)
         self.compare_expected_result(phi, state, new_state, g)
 
     @pytest.mark.jax
@@ -223,7 +328,9 @@ class TestTRXCalcGrad:
 @pytest.mark.parametrize("method", methods)
 class TestBroadcasting:  # pylint: disable=too-few-public-methods
     """Tests that broadcasted operations are applied correctly."""
+
     broadcasted_ops = []
+    unbroadcasted_ops = []
 
     @pytest.mark.parametrize("op", broadcasted_ops)
     def test_broadcasted_op(self, op, method, ml_framework):
@@ -243,4 +350,14 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
     def test_batch_size_set_if_missing(self, method, ml_framework):
         """Tests that the batch_size is set on an operator if it was missing before.
         Mostly useful for TF-autograph since it may have batch size set to None."""
+        pass
+
+
+@pytest.mark.parametrize("ml_framework", ml_frameworks_list)
+@pytest.mark.parametrize("method", methods)
+class TestBroadcasting:  # pylint: disable=too-few-public-methods
+    """Tests that Arbritary Channel operation applied correctly."""
+
+    def test_channel(self, method, ml_framework):
+        """Tests that channels are applied correctly to an unbatched state."""
         pass
