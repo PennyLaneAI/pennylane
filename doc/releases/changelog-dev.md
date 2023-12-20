@@ -293,6 +293,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Implemented the method `process_counts` in the `ProbabilityMP` class.
+  [(#4952)](https://github.com/PennyLaneAI/pennylane/pull/4952)
+
 * `ClassicalShadow.entropy` now uses the algorithm outlined in 
   [1106.5458](https://arxiv.org/abs/1106.5458) to project the approximate density matrix
   (with potentially negative eigenvalues) onto the closest valid density matrix.
@@ -669,6 +672,7 @@ Minh Chau,
 Isaac De Vlugt,
 Amintor Dusko,
 Lillian Frederiksen,
+Pietropaolo Frisoni,
 Josh Izaac,
 Juan Giraldo,
 Emiliano Godinez Ramirez,
