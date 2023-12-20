@@ -242,18 +242,6 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         return qml.math.reshape(prob, flat_shape)
 
     def process_counts(self, counts: dict, wire_order: Wires) -> np.ndarray:
-        # checks that 'counts' is a dictionary matching the format returned by 'CountsMP'
-        assert isinstance(counts, dict), "Sampling information should be a dictionary"
-        assert counts, "Sampling information should not be empty"
-
-        for outcome, occurrence in counts.items():
-            assert isinstance(outcome, str), f"Key {outcome} should be a string"
-            assert all(bit in "01" for bit in outcome), f"Key {outcome} should be binary"
-            assert isinstance(occurrence, int), f"Value {occurrence} should be an integer"
-            assert occurrence > 0, f"Value {occurrence} should be positive"
-
-        assert len(set(len(key) for key in counts.keys())) == 1, "Keys should have the same length"
-
         wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]
 
