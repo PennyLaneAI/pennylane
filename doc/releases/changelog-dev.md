@@ -15,6 +15,7 @@
   [(#4850)](https://github.com/PennyLaneAI/pennylane/pull/4850)
   [(#4917)](https://github.com/PennyLaneAI/pennylane/pull/4917)
   [(#4930)](https://github.com/PennyLaneAI/pennylane/pull/4930)
+  [(#4957)](https://github.com/PennyLaneAI/pennylane/pull/4957)
 
   Drawing of mid-circuit measurement capabilities including qubit reuse and reset,
   postselection, conditioning, and collecting statistics is supported.
@@ -289,6 +290,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* `ClassicalShadow.entropy` now uses the algorithm outlined in 
+  [1106.5458](https://arxiv.org/abs/1106.5458) to project the approximate density matrix
+  (with potentially negative eigenvalues) onto the closest valid density matrix.
+  [(#4959)](https://github.com/PennyLaneAI/pennylane/pull/4959)
+
 <h4>Community contributions 🥳</h4>
 
 * The `+=` operand can now be used with a `PauliSentence`, which has also provided
@@ -340,9 +346,10 @@
 
 <h4>Performance improvements and benchmarking</h4>
 
-* Autograd, PyTorch, and JAX (non-jit) can now use VJPs provided by the device from the new device API. If a device provides
+* Autograd, PyTorch, and JAX can now use VJPs provided by the device from the new device API. If a device provides
   a vector-Jacobian product, this can be selected by providing `device_vjp=True` to
   `qml.QNode` or `qml.execute`.
+  [(#4935)](https://github.com/PennyLaneAI/pennylane/pull/4935)
   [(#4557)](https://github.com/PennyLaneAI/pennylane/pull/4557)
   [(#4654)](https://github.com/PennyLaneAI/pennylane/pull/4654)
   [(#4878)](https://github.com/PennyLaneAI/pennylane/pull/4878)
@@ -385,6 +392,19 @@
 
 * `default.qubit` now supports adjoint differentiation for arbitrary diagonal state-based measurements.
   [(#4865)](https://github.com/PennyLaneAI/pennylane/pull/4865)
+
+* `qml.quantum_monte_carlo` now uses the new transform system.
+  [(#4708)](https://github.com/PennyLaneAI/pennylane/pull/4708/)
+
+* `qml.simplify` now uses the new transforms API.
+  [(#4949)](https://github.com/PennyLaneAI/pennylane/pull/4949)
+
+* The formal requirement that type hinting be providing when using
+  the `qml.transform` decorator has been removed. Type hinting can still
+  be used, but is now optional. Please use a type checker such as
+  [mypy](https://github.com/python/mypy) if you wish to ensure types are
+  being passed correctly.
+  [(#4942)](https://github.com/PennyLaneAI/pennylane/pull/4942/)
 
 * `SampleMeasurement` now has an optional method `process_counts` for computing the measurement results from a counts
   dictionary.
@@ -513,6 +533,10 @@
   Users should now validate these properties manually.
   [(#4773)](https://github.com/PennyLaneAI/pennylane/pull/4773)
 
+* With an algorithmic improvement to `ClassicalShadow.entropy`, the keyword `atol`
+  becomes obsolete and will be removed in v0.35.
+  [(#4959)](https://github.com/PennyLaneAI/pennylane/pull/4959)
+
 <h3>Documentation 📝</h3>
 
 * Documentation for unitaries and operations decompositions was moved from `qml.transforms` to `qml.ops.ops_math`.
@@ -537,6 +561,12 @@
   [(#4874)](https://github.com/PennyLaneAI/pennylane/pull/4874)
 
 <h3>Bug fixes 🐛</h3>
+
+* Finite differences and SPSA can now be used with tensorflow-autograph on setups that were seeing a bus error.
+  [(#4961)](https://github.com/PennyLaneAI/pennylane/pull/4961)
+
+* `qml.cond` no longer incorrectly queues operators used as qfunc arguments.
+  [(#4948)](https://github.com/PennyLaneAI/pennylane/pull/4948)
 
 * `Attribute` objects now return `False` instead of raising a `TypeError` when checking if an object is inside
   the set.
@@ -640,11 +670,11 @@ Josh Izaac,
 Juan Giraldo,
 Emiliano Godinez Ramirez,
 Ankit Khandelwal,
+Korbinian Kottmann,
 Christina Lee,
-Romain Moyard,
 Vincent Michaud-Rioux,
-Romain Moyard,
 Anurav Modak,
+Romain Moyard,
 Mudit Pandey,
 Matthew Silverman,
 Jay Soni,
