@@ -1,6 +1,6 @@
 """Unit testing of conversion functions for parity transform"""
-import pytest
 import warnings
+import pytest
 
 import pennylane as qml
 from pennylane.ops import SProd, Identity
