@@ -55,7 +55,7 @@ def _apply_state_vector(state, num_wires):  # function is easy to abstract for q
 
     Args:
         state (array[complex]): normalized input state of length
-            ``qudit_dim**len(wires)``, where ``qudit_dim`` is the dimension of the system.
+            ``qudit_dim**num_wires``, where ``qudit_dim`` is the dimension of the system.
         num_wires (int): number of wires that get initialized in the state
 
     Returns:
