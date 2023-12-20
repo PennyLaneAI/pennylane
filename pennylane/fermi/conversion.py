@@ -31,7 +31,6 @@ def jordan_wigner(
     wire_map: dict = None,
     tol: float = None,
 ) -> Union[Operator, PauliSentence]:
-
     r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
 
     The fermionic creation and annihilation operators are mapped to the Pauli operators as
@@ -92,7 +91,6 @@ def _jordan_wigner_dispatch(fermi_operator, ps, wire_map, tol):
 
 @_jordan_wigner_dispatch.register
 def _(fermi_operator: FermiWord, ps=False, wire_map=None, tol=None):
-
     wires = list(fermi_operator.wires) or [0]
     identity_wire = wires[0]
 
@@ -130,7 +128,6 @@ def _(fermi_operator: FermiWord, ps=False, wire_map=None, tol=None):
 
 @_jordan_wigner_dispatch.register
 def _(fermi_operator: FermiSentence, ps=False, wire_map=None, tol=None):
-
     wires = list(fermi_operator.wires) or [0]
     identity_wire = wires[0]
 
@@ -161,7 +158,6 @@ def parity_transform(
     wire_map: dict = None,
     tol: float = None,
 ) -> Union[Operator, PauliSentence]:
-
     r"""Convert a fermionic operator to a qubit operator using the parity mapping.
     In parity mapping, qubit :math:`j` stores the parity of all :math:`j-1` qubits before it
     whereas in Jordan-Wigner, qubit :math:`j` stores the occupation number of qubit :math:`j`.
@@ -215,10 +211,8 @@ def parity_transform(
     + (0.25+0j) * X(2)
     + 0.25j * Y(2) @ Z(3)
     """
-    warnings.warn(
-        "This mapping is not compatible with other functions in PennyLane",
-        UserWarning)
-    
+    warnings.warn("This mapping is not compatible with other functions in PennyLane", UserWarning)
+
     return _parity_transform_dispatch(fermi_operator, n, ps, wire_map, tol)
 
 
@@ -230,7 +224,6 @@ def _parity_transform_dispatch(fermi_operator, n, ps, wire_map, tol):
 
 @_parity_transform_dispatch.register
 def _(fermi_operator: FermiWord, n, ps=False, wire_map=None, tol=None):
-
     wires = list(fermi_operator.wires) or [0]
     identity_wire = wires[0]
 
@@ -271,7 +264,6 @@ def _(fermi_operator: FermiWord, n, ps=False, wire_map=None, tol=None):
 
 @_parity_transform_dispatch.register
 def _(fermi_operator: FermiSentence, n, ps=False, wire_map=None, tol=None):
-
     wires = list(fermi_operator.wires) or [0]
     identity_wire = wires[0]
 
