@@ -158,6 +158,7 @@ def parity_transform(
     wire_map: dict = None,
     tol: float = None,
 ) -> Union[Operator, PauliSentence]:
+
     r"""Convert a fermionic operator to a qubit operator using the parity mapping.
     In parity mapping, qubit :math:`j` stores the parity of all :math:`j-1` qubits before it
     whereas in Jordan-Wigner, qubit :math:`j` stores the occupation number of qubit :math:`j`.
