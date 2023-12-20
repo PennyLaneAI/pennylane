@@ -246,7 +246,6 @@ def _vjp_fwd(params, tapes, execute_fn, jpc):
 
 def _vjp_bwd(tapes, execute_fn, jpc, _, dy):
     """Perform the backward pass of a vjp calculation, returning the vjp."""
-    print(qml.math.unwrap(dy))
     vjp = jpc.compute_vjp(tapes.vals, dy)
     return (_to_jax(vjp),)
 
