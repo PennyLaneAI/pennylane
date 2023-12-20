@@ -729,7 +729,7 @@ def scatter_element_add(tensor, index, value, like=None):
     return np.scatter_element_add(tensor, index, value, like=like)
 
 
-def unwrap(values, max_depth=None):
+def unwrap(values, max_depth=None, keep_type=False):
     """Unwrap a sequence of objects to NumPy arrays.
 
     Note that tensors on GPUs will automatically be copied
@@ -766,15 +766,18 @@ def unwrap(values, max_depth=None):
         new_val = (
             np.to_numpy(val, max_depth=max_depth) if isinstance(val, ArrayBox) else np.to_numpy(val)
         )
+        if keep_type:
+            return cast_like(np.array(new_val), val)
         return new_val.tolist() if isinstance(new_val, ndarray) and not new_val.shape else new_val
 
     if isinstance(values, (tuple, list)):
         return type(values)(convert(val) for val in values)
-    return (
+    val = (
         np.to_numpy(values, max_depth=max_depth)
         if isinstance(values, ArrayBox)
         else np.to_numpy(values)
     )
+    return cast_like(np.array(val), values) if keep_type else val
 
 
 @multi_dispatch(argnum=[0, 1])
