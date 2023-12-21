@@ -257,6 +257,7 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
     ket = state if state is not None else get_final_state(tape)[0]
 
     if isinstance(tape.measurements[0], qml.measurements.StateMP):
+        dtype = getattr(cotangents, "dtype", tape.measurements[0].numeric_type)
         try:
             bra = np.conj(cotangents.reshape(ket.shape))
         except ValueError as e:
@@ -267,6 +268,7 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
 
     else:
         cotangents = (cotangents,) if qml.math.shape(cotangents) == tuple() else cotangents
+        dtype = getattr(cotangents[0], "dtype", tape.measurements[0].numeric_type)
         new_cotangents, new_observables = [], []
         for c, o in zip(cotangents, tape.observables):
             if qml.math.size(c) > 1:
@@ -277,7 +279,7 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
                 new_cotangents.append(c)
                 new_observables.append(o)
         if len(new_cotangents) == 0:
-            return tuple(0.0 for _ in tape.trainable_params)
+            return tuple(np.array(0.0, dtype=dtype) for _ in tape.trainable_params)
         obs = qml.dot(new_cotangents, new_observables)
         if obs.pauli_rep is not None:
             flat_bra = obs.pauli_rep.dot(ket.flatten(), wire_order=list(range(tape.num_wires)))
@@ -291,7 +293,7 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
     param_number = len(tape.get_parameters(trainable_only=False, operations_only=True)) - 1
     trainable_param_number = len(tape.trainable_params) - 1
 
-    cotangents_in = np.empty(len(tape.trainable_params), dtype=tape.measurements[0].numeric_type)
+    cotangents_in = np.empty(len(tape.trainable_params), dtype=dtype)
 
     for op in reversed(tape.operations[tape.num_preps :]):
         adj_op = qml.adjoint(op)

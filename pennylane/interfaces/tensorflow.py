@@ -248,7 +248,7 @@ def tf_execute(tapes, execute_fn, jpc, device=None, differentiable=False):
             nested_dy = _res_restructured(dy, tapes)
 
             try:
-                vjps = _to_tensors(jpc.compute_vjp(inner_tapes, nested_dy))
+                vjps = jpc.compute_vjp(inner_tapes, nested_dy)
             except AttributeError as e:
                 message = (
                     "device VJPs cannot be vectorized with tensorflow. "
@@ -257,6 +257,7 @@ def tf_execute(tapes, execute_fn, jpc, device=None, differentiable=False):
                 )
                 raise ValueError(message) from e
 
+            vjps = _to_tensors(vjps)
             if isinstance(vjps, tuple):
                 extended_vjps = []
                 for vjp in vjps:

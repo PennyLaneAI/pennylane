@@ -1738,7 +1738,7 @@ class TestReturn:
             qml.RX(0.2, wires=0)
             return qml.probs(wires=[0, 1])
 
-        a = tf.Variable(0.1)
+        a = tf.Variable(0.1, dtype=tf.float64)
 
         with tf.GradientTape(persistent=device_vjp) as tape:
             res = circuit(a)
@@ -1766,8 +1766,8 @@ class TestReturn:
             qml.RX(b, wires=0)
             return qml.probs(wires=[0, 1])
 
-        a = tf.Variable(0.1)
-        b = tf.Variable(0.2)
+        a = tf.Variable(0.1, dtype=tf.float64)
+        b = tf.Variable(0.2, dtype=tf.float64)
 
         with tf.GradientTape(persistent=device_vjp) as tape:
             res = circuit(a, b)
@@ -1799,7 +1799,7 @@ class TestReturn:
             qml.RX(a[1], wires=0)
             return qml.probs(wires=[0, 1])
 
-        a = tf.Variable([0.1, 0.2])
+        a = tf.Variable([0.1, 0.2], dtype=tf.float64)
 
         with tf.GradientTape(persistent=device_vjp) as tape:
             res = circuit(a)
@@ -1826,7 +1826,7 @@ class TestReturn:
             qml.RX(0.2, wires=0)
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
-        a = tf.Variable(0.1)
+        a = tf.Variable(0.1, dtype=tf.float64)
 
         with tf.GradientTape(persistent=device_vjp) as tape:
             res = circuit(a)
@@ -1854,8 +1854,8 @@ class TestReturn:
             qml.RX(b, wires=0)
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
-        a = tf.Variable(0.1)
-        b = tf.Variable(0.2)
+        a = tf.Variable(0.1, dtype=tf.float64)
+        b = tf.Variable(0.2, dtype=tf.float64)
 
         with tf.GradientTape(persistent=device_vjp) as tape:
             res = circuit(a, b)
@@ -1889,7 +1889,7 @@ class TestReturn:
             qml.RX(a[1], wires=0)
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
-        a = tf.Variable([0.1, 0.2])
+        a = tf.Variable([0.1, 0.2], dtype=tf.float64)
 
         with tf.GradientTape(persistent=device_vjp) as tape:
             res = circuit(a)

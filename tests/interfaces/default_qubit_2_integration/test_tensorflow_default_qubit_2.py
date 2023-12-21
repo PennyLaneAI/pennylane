@@ -529,8 +529,8 @@ class TestTensorflowExecuteIntegration:
 
         device_vjp = execute_kwargs.get("device_vjp", False)
 
-        x = tf.Variable(0.543)
-        y = tf.Variable(-0.654)
+        x = tf.Variable(0.543, dtype=tf.float64)
+        y = tf.Variable(-0.654, dtype=tf.float64)
 
         with tf.GradientTape(persistent=device_vjp) as tape:
             cost_res = cost(x, y)
@@ -592,8 +592,8 @@ class TestTensorflowExecuteIntegration:
             tape = qml.tape.QuantumScript(ops, m)
             return qml.math.hstack(execute([tape], device, **execute_kwargs)[0], like="tensorflow")
 
-        x = tf.Variable(0.543)
-        y = tf.Variable(-0.654)
+        x = tf.Variable(0.543, dtype=tf.float64)
+        y = tf.Variable(-0.654, dtype=tf.float64)
 
         with tf.GradientTape(persistent=device_vjp) as tape:
             cost_res = cost(x, y)
