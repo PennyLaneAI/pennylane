@@ -1229,9 +1229,6 @@ class TestParamShiftInterfaces:
         can be differentiated using JAX, yielding second derivatives."""
         import jax
         from jax import numpy as jnp
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
 
         dev = qml.device("default.gaussian", wires=1)
         params = jnp.array([0.543, -0.654])
