@@ -1,8 +1,18 @@
 name: Benchmarks
 on:
-  schedule:
-    - cron: "0 0 * * 0-6"  # Run daily at 0am
   pull_request:
+  workflow_call:
+    inputs:
+      ref_branch:
+        description: The PennyLane reference branch for benchmarks
+        required: false
+        type: string
+        default: 'add-pytest-benchmarks'
+      branch:
+        description: The PennyLane branch to run benchmarks with
+        required: false
+        type: string
+        default: 'master'
 
 concurrency:
   group: benchmarks-${{ github.ref }}
@@ -16,8 +26,8 @@ jobs:
 
       uses: ./.github/workflows/interface-unit-tests.yml
       with:
-        # TODO: Update this in the future to a stable release or master branch
-        branch: add-pytest-benchmarks
+        # If running by workflow call, will check by provided ref_branch, if not will default to 'add-pytest-benchmarks'.
+        branch: ${{ inputs.ref_branch || 'add-pytest-benchmarks' }}
 
         pipeline_mode: 'reference-benchmarks'
 
@@ -39,9 +49,9 @@ jobs:
       uses: ./.github/workflows/interface-unit-tests.yml
       needs: reference-benchmarks
       with:
-        # If runnning on schedule will compare master with the reference data.
-        # If not, will compare the branch defined by github.ref (PRs, for example)
-        branch: ${{ github.ref }}
+        # If running by workflow call, will check by provided branch, if not will default to github.ref.
+        branch: ${{ inputs.branch || github.ref }}
+
 
         pipeline_mode: 'benchmarks'
 

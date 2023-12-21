@@ -341,8 +341,8 @@ def test_draw_mpl_with_qfunc_warns_with_expansion_strategy():
         _ = qml.draw_mpl(qfunc, expansion_strategy="gradient")
 
 
-def test_mid_circuit_measurement_device_api(mocker):
-    """Test that a circuit containing mid-circuit measurements is transformed by the drawer
+def test_qnode_mid_circuit_measurement_not_deferred_device_api(mocker):
+    """Test that a circuit containing mid-circuit measurements is not transformed by the drawer
     to use deferred measurements if the device uses the new device API."""
 
     @qml.qnode(qml.device("default.qubit"))
@@ -355,7 +355,7 @@ def test_mid_circuit_measurement_device_api(mocker):
     spy = mocker.spy(qml.defer_measurements, "_transform")
 
     _ = draw_qnode()
-    spy.assert_called_once()
+    spy.assert_not_called()
 
 
 def test_qnode_transform_program(mocker):

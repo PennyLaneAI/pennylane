@@ -993,10 +993,15 @@ class QNode:
             else:
                 _gradient_method = "gradient-transform"
             grad_on_execution = self.execute_kwargs.get("grad_on_execution")
+            if self.interface == "jax":
+                grad_on_execution = False
+            elif grad_on_execution == "best":
+                grad_on_execution = None
+
             config = qml.devices.ExecutionConfig(
                 interface=self.interface,
                 gradient_method=_gradient_method,
-                grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
+                grad_on_execution=grad_on_execution,
                 use_device_jacobian_product=self.execute_kwargs["device_vjp"],
             )
             device_transform_program, config = self.device.preprocess(execution_config=config)

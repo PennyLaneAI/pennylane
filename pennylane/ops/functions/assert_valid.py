@@ -146,7 +146,7 @@ def _check_eigendecomposition(op):
         assert qml.math.allclose(eg, compute_eg), "eigvals and compute_eigvals must match"
 
     if has_eigvals and op.has_diagonalizing_gates:
-        dg = qml.prod(*dg) if len(dg) > 0 else qml.Identity(op.wires)
+        dg = qml.prod(*dg[::-1]) if len(dg) > 0 else qml.Identity(op.wires)
         eg = qml.QubitUnitary(np.diag(eg), wires=op.wires)
         decomp = qml.prod(qml.adjoint(dg), eg, dg)
         decomp_mat = qml.matrix(decomp)
