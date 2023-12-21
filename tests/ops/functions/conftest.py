@@ -22,6 +22,7 @@ import pytest
 import pennylane as qml
 from pennylane.operation import Operator, Operation, Observable, Tensor, Channel
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointObs, AdjointOperation, AdjointOpObs
+from pennylane.ops.op_math.pow import PowObs, PowOperation, PowOpObs
 
 # if you would like to validate one of these operators, add an instance to the parametrization
 # of `test_explicit_list_of_ops` in `test_assert_valid.py`, and kindly move it below the
@@ -81,6 +82,9 @@ _ABSTRACT_OR_META_TYPES = {
     AdjointOpObs,
     AdjointOperation,
     AdjointObs,
+    PowOpObs,
+    PowOperation,
+    PowObs,
 }
 
 
