@@ -39,7 +39,6 @@ def pow_using_dunder_method(base, z, id=None):
     return base**z
 
 
-@pytest.mark.xfail  # TODO: remove xfail as part of story 49618
 def test_basic_validity():
     """Run basic operator validity checks."""
     op = qml.pow(qml.RX(1.2, wires=0), 3)

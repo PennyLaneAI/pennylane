@@ -568,6 +568,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `Pow` operators are now picklable.
+
 * Finite differences and SPSA can now be used with tensorflow-autograph on setups that were seeing a bus error.
   [(#4961)](https://github.com/PennyLaneAI/pennylane/pull/4961)
 
