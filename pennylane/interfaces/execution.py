@@ -633,7 +633,9 @@ def execute(
 
     _grad_on_execution = False
 
-    if device_vjp and getattr(device, "short_name", "") == "lightning.qubit":
+    if device_vjp and "lightning" in getattr(device, "short_name", ""):
+        tapes = [expand_fn(t) for t in tapes]
+        tapes = _adjoint_jacobian_expansion(tapes, grad_on_execution, interface, max_expansion)
         jpc = LightningVJPs(device)
 
     elif config.use_device_jacobian_product and interface in jpc_interfaces:
