@@ -322,7 +322,7 @@ class TestAdjointJacobianState:
         expected = [-0.5 * np.sin(x / 2), -0.5j * np.cos(x / 2)]
         assert qml.math.allclose(jac, expected)
 
-        dy = np.array([0.5, 2.0])
+        dy = np.array([0.5, 2.0], dtype=np.complex128)
         vjp = adjoint_vjp(tape, dy)
         expected_vjp = dy[0] * expected[0] + dy[1] * expected[1]
         assert qml.math.allclose(expected_vjp, vjp)
@@ -347,7 +347,7 @@ class TestAdjointJacobianState:
         )
         assert qml.math.allclose(y_jac, y_jac_expected)
 
-        dy = np.array([0.5, 1.0, 2.0, 2.5])
+        dy = np.array([0.5, 1.0, 2.0, 2.5], dtype=np.complex128)
         x_vjp, y_vjp = adjoint_vjp(tape, dy)
         x_vjp_expected = np.dot(x_jac_expected, dy)
         assert qml.math.allclose(x_vjp, x_vjp_expected)

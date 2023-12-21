@@ -304,8 +304,8 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
                 d_op_matrix = operation_derivative(op)
                 ket_temp = apply_operation(qml.QubitUnitary(d_op_matrix, wires=op.wires), ket)
 
-                cotangents_in[trainable_param_number] = real_if_expval(
-                    np.sum(np.conj(bra) * ket_temp)
+                cotangents_in[trainable_param_number] = np.array(
+                    real_if_expval(np.sum(np.conj(bra) * ket_temp)), dtype=dtype
                 )
 
                 trainable_param_number -= 1
