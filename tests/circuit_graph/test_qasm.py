@@ -108,10 +108,7 @@ class TestToQasmUnitTests:
                 qml.PauliZ(0) @ qml.PauliZ(1),
             ],
         )
-        with qml.queuing.AnnotatedQueue() as q_circuit:
-            qml.ApproxTimeEvolution(H, 1, n=1)
-
-        circuit = qml.tape.QuantumScript.from_queue(q_circuit)
+        circuit = qml.tape.QuantumScript([qml.ApproxTimeEvolution(H, 1, n=1)])
         res = circuit.to_openqasm(wires=Wires([0, 1]))
 
         expected = dedent(
