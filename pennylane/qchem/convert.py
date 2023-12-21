@@ -472,7 +472,6 @@ def _excited_configurations(electrons, orbitals, excitation):
 
     return states_int, signs
 
-
 def _ucisd_state(cisd_solver, tol=1e-15):
     r"""Construct a wavefunction from PySCF's ``UCISD`` solver object.
 
@@ -523,10 +522,11 @@ def _ucisd_state(cisd_solver, tol=1e-15):
     size_bb = int(nelec_b * (nelec_b - 1) / 2) * int(nvir_b * (nvir_b - 1) / 2)
     size_ab = nelec_a * nelec_b * nvir_a * nvir_b
 
-    sizes = [1, size_a, size_b, size_aa, size_ab, size_bb]
+    sizes = [1, size_a, size_b, size_ab, size_aa, size_bb]
     cumul = np.cumsum(sizes)
     idxs = [0] + [slice(cumul[ii], cumul[ii + 1]) for ii in range(len(cumul) - 1)]
-    c0, c1a, c1b, c2aa, c2ab, c2bb = [cisdvec[idx] for idx in idxs]
+    c0, c1a, c1b, c2ab, c2aa, c2bb = [cisdvec[idx] for idx in idxs]
+    c2ab = c2ab.reshape(nelec_a,nelec_b,nvir_a,nvir_b).transpose(0,2,1,3).reshape(nelec_a*nvir_a,-1)
 
     # numbers representing the Hartree-Fock vector, e.g., bin(ref_a)[::-1] = 1111...10...0
     ref_a = int(2**nelec_a - 1)
@@ -536,28 +536,38 @@ def _ucisd_state(cisd_solver, tol=1e-15):
 
     # alpha -> alpha excitations
     c1a_configs, c1a_signs = _excited_configurations(nelec_a, norb, 1)
+    # a, c1a_signs = tn_strs(norb, nelec_a, 1)
     dict_fcimatr.update(dict(zip(list(zip(c1a_configs, [ref_b] * size_a)), c1a * c1a_signs)))
 
     # beta -> beta excitations
     c1b_configs, c1b_signs = _excited_configurations(nelec_b, norb, 1)
+    # a, c1b_signs = tn_strs(norb, nelec_b, 1)
     dict_fcimatr.update(dict(zip(list(zip([ref_a] * size_b, c1b_configs)), c1b * c1b_signs)))
 
     # alpha, alpha -> alpha, alpha excitations
     c2aa_configs, c2aa_signs = _excited_configurations(nelec_a, norb, 2)
+    # a, c2aa_signs = tn_strs(norb, nelec_a, 2)
     dict_fcimatr.update(dict(zip(list(zip(c2aa_configs, [ref_b] * size_aa)), c2aa * c2aa_signs)))
 
     # alpha, beta -> alpha, beta excitations
     rowvals, colvals = np.array(list(product(c1a_configs, c1b_configs)), dtype=int).T.numpy()
     dict_fcimatr.update(
-        dict(zip(list(zip(rowvals, colvals)), c2ab * np.kron(c1a_signs, c1b_signs).numpy()))
+        dict(zip(list(zip(rowvals, colvals)), \
+            np.einsum('i,j,ij->ij', c1a_signs, c1b_signs, c2ab).numpy().ravel()))
     )
+    # print(c2ab.round(decimals=2) * np.kron(c1a_signs, c1b_signs).numpy())
 
     # beta, beta -> beta, beta excitations
     c2bb_configs, c2bb_signs = _excited_configurations(nelec_b, norb, 2)
+    # a, c2bb_signs = tn_strs(norb, nelec_b, 2)
     dict_fcimatr.update(dict(zip(list(zip([ref_a] * size_bb, c2bb_configs)), c2bb * c2bb_signs)))
 
     # filter based on tolerance cutoff
     dict_fcimatr = {key: value for key, value in dict_fcimatr.items() if abs(value) > tol}
+    print(dict_fcimatr)
+    # convert sign parity from chemist to physicist convention (interleaving spin operators)
+    dict_fcimatr = _sign_chem_to_phys(dict_fcimatr, norb)
+    print(dict_fcimatr)
 
     return dict_fcimatr
 
@@ -717,6 +727,7 @@ def _rcisd_state(cisd_solver, tol=1e-15):
 
     # alpha -> alpha excitations
     c1a_configs, c1a_signs = _excited_configurations(nocc, norb, 1)
+    # a, c1a_signs = tn_strs(norb, nocc, 1)
     dict_fcimatr.update(
         dict(zip(list(zip(c1a_configs, [ref_b] * len(c1a_configs))), c1 * c1a_signs))
     )
@@ -735,6 +746,7 @@ def _rcisd_state(cisd_solver, tol=1e-15):
 
         # alpha, alpha -> alpha, alpha excitations
         c2aa_configs, c2aa_signs = _excited_configurations(nocc, norb, 2)
+        # a, c2aa_signs = tn_strs(norb, nocc, 2)
         dict_fcimatr.update(
             dict(zip(list(zip(c2aa_configs, [ref_b] * len(c2aa_configs))), c2aa * c2aa_signs))
         )
@@ -746,13 +758,20 @@ def _rcisd_state(cisd_solver, tol=1e-15):
     # alpha, beta -> alpha, beta excitations
     # generate all possible pairwise combinations of _single_ excitations of alpha and beta sectors
     rowvals, colvals = np.array(list(product(c1a_configs, c1a_configs)), dtype=int).T.numpy()
-    c2ab = (c2.transpose(0, 2, 1, 3).reshape(nocc * nvir, -1)).ravel()
+    c2ab = c2.transpose(0, 2, 1, 3).reshape(nocc * nvir, -1)
     dict_fcimatr.update(
-        dict(zip(list(zip(rowvals, colvals)), c2ab * np.kron(c1a_signs, c1a_signs).numpy()))
+        dict(zip(list(zip(rowvals, colvals)), \
+            np.einsum('i,j,ij->ij', c1a_signs, c1a_signs, c2ab).numpy().ravel()))
     )
+    # dict_fcimatr.update(
+    #     dict(zip(list(zip(rowvals, colvals)), c2ab * np.kron(c1a_signs, c1a_signs).numpy()))
+    # )
 
     # filter based on tolerance cutoff
     dict_fcimatr = {key: value for key, value in dict_fcimatr.items() if abs(value) > tol}
+
+    # convert sign parity from chemist to physicist convention (interleaving spin operators)
+    dict_fcimatr = _sign_chem_to_phys(dict_fcimatr, norb)
 
     return dict_fcimatr
 
@@ -843,12 +862,14 @@ def _rccsd_state(ccsd_solver, tol=1e-15):
 
     # alpha -> alpha excitations
     t1a_configs, t1a_signs = _excited_configurations(nelec_a, norb, 1)
+    # a, t1a_signs = tn_strs(norb, nelec_a, 1)
     dict_fcimatr.update(
         dict(zip(list(zip(t1a_configs, [ref_b] * len(t1a_configs))), t1a.ravel() * t1a_signs))
     )
 
     # beta -> beta excitations
     t1b_configs, t1b_signs = _excited_configurations(nelec_b, norb, 1)
+    # a, t1b_signs = tn_strs(norb, nelec_b, 1)
     dict_fcimatr.update(
         dict(zip(list(zip([ref_a] * len(t1b_configs), t1b_configs)), t1b.ravel() * t1b_signs))
     )
@@ -856,6 +877,7 @@ def _rccsd_state(ccsd_solver, tol=1e-15):
     # alpha, alpha -> alpha, alpha excitations
     if nelec_a > 1 and nvir_a > 1:
         t2aa_configs, t2aa_signs = _excited_configurations(nelec_a, norb, 2)
+        # a, t2aa_signs = tn_strs(norb, nelec_a, 2)
         # select only unique excitations, via lower triangle of matrix
         ooidx = np.tril_indices(nelec_a, -1)
         vvidx = np.tril_indices(nvir_a, -1)
@@ -868,6 +890,7 @@ def _rccsd_state(ccsd_solver, tol=1e-15):
 
     if nelec_b > 1 and nvir_b > 1:
         t2bb_configs, t2bb_signs = _excited_configurations(nelec_b, norb, 2)
+        # a, t2bb_signs = tn_strs(norb, nelec_b, 2)
         # select only unique excitations, via lower triangle of matrix
         ooidx = np.tril_indices(nelec_b, -1)
         vvidx = np.tril_indices(nvir_b, -1)
@@ -881,8 +904,12 @@ def _rccsd_state(ccsd_solver, tol=1e-15):
     # alpha, beta -> alpha, beta excitations
     rowvals, colvals = np.array(list(product(t1a_configs, t1b_configs)), dtype=int).T.numpy()
     dict_fcimatr.update(
-        dict(zip(list(zip(rowvals, colvals)), t2ab.ravel() * np.kron(t1a_signs, t1b_signs).numpy()))
+        dict(zip(list(zip(rowvals, colvals)), \
+            np.einsum('i,j,ij->ij', t1a_signs, t1b_signs, t2ab.reshape(nelec_a*nvir_a,-1)).numpy().ravel()))
     )
+    # dict_fcimatr.update(
+    #     dict(zip(list(zip(rowvals, colvals)), t2ab.ravel() * np.kron(t1a_signs, t1b_signs).numpy()))
+    # )
 
     # renormalize, to get the HF coefficient (CC wavefunction not normalized)
     norm = np.sqrt(np.sum(np.array(list(dict_fcimatr.values())) ** 2)).numpy()
@@ -890,6 +917,9 @@ def _rccsd_state(ccsd_solver, tol=1e-15):
 
     # filter based on tolerance cutoff
     dict_fcimatr = {key: value for key, value in dict_fcimatr.items() if abs(value) > tol}
+
+    # convert sign parity from chemist to physicist convention (interleaving spin operators)
+    dict_fcimatr = _sign_chem_to_phys(dict_fcimatr, norb)
 
     return dict_fcimatr
 
@@ -978,12 +1008,14 @@ def _uccsd_state(ccsd_solver, tol=1e-15):
 
     # alpha -> alpha excitations
     t1a_configs, t1a_signs = _excited_configurations(nelec_a, norb, 1)
+    # a, t1a_signs = tn_strs(norb, nelec_a, 1)
     dict_fcimatr.update(
         dict(zip(list(zip(t1a_configs, [ref_b] * len(t1a_configs))), t1a.ravel() * t1a_signs))
     )
 
     # beta -> beta excitations
     t1b_configs, t1b_signs = _excited_configurations(nelec_b, norb, 1)
+    # a, t1b_signs = tn_strs(norb, nelec_b, 1)
     dict_fcimatr.update(
         dict(zip(list(zip([ref_a] * len(t1b_configs), t1b_configs)), t1b.ravel() * t1b_signs))
     )
@@ -991,6 +1023,7 @@ def _uccsd_state(ccsd_solver, tol=1e-15):
     # alpha, alpha -> alpha, alpha excitations
     if nelec_a > 1 and nvir_a > 1:
         t2aa_configs, t2aa_signs = _excited_configurations(nelec_a, norb, 2)
+        # a, t2aa_signs = tn_strs(norb, nelec_a, 2)
         # select only unique excitations, via lower triangle of matrix
         ooidx = np.tril_indices(nelec_a, -1)
         vvidx = np.tril_indices(nvir_a, -1)
@@ -1001,8 +1034,10 @@ def _uccsd_state(ccsd_solver, tol=1e-15):
             )
         )
 
+    # beta, beta -> beta, beta excitations
     if nelec_b > 1 and nvir_b > 1:
         t2bb_configs, t2bb_signs = _excited_configurations(nelec_b, norb, 2)
+        # a, t2bb_signs = tn_strs(norb, nelec_b, 2)
         # select only unique excitations, via lower triangle of matrix
         ooidx = np.tril_indices(nelec_b, -1)
         vvidx = np.tril_indices(nvir_b, -1)
@@ -1016,8 +1051,12 @@ def _uccsd_state(ccsd_solver, tol=1e-15):
     # alpha, beta -> alpha, beta excitations
     rowvals, colvals = np.array(list(product(t1a_configs, t1b_configs)), dtype=int).T.numpy()
     dict_fcimatr.update(
-        dict(zip(list(zip(rowvals, colvals)), t2ab.ravel() * np.kron(t1a_signs, t1b_signs).numpy()))
+        dict(zip(list(zip(rowvals, colvals)), \
+            np.einsum('i,j,ij->ij', t1a_signs, t1b_signs, t2ab.reshape(nelec_a*nvir_a,-1)).numpy().ravel()))
     )
+    # dict_fcimatr.update(
+    #     dict(zip(list(zip(rowvals, colvals)), t2ab.ravel() * np.kron(t1a_signs, t1b_signs).numpy()))
+    # )
 
     # renormalize, to get the HF coefficient (CC wavefunction not normalized)
     norm = np.sqrt(np.sum(np.array(list(dict_fcimatr.values())) ** 2)).numpy()
@@ -1026,8 +1065,10 @@ def _uccsd_state(ccsd_solver, tol=1e-15):
     # filter based on tolerance cutoff
     dict_fcimatr = {key: value for key, value in dict_fcimatr.items() if abs(value) > tol}
 
-    return dict_fcimatr
+    # convert sign parity from chemist to physicist convention (interleaving spin operators)
+    dict_fcimatr = _sign_chem_to_phys(dict_fcimatr, norb)
 
+    return dict_fcimatr
 
 def _dmrg_state(wavefunction, tol=1e-15):
     r"""Construct a wavefunction from the DMRG wavefunction obtained from the Block2 library.
@@ -1059,21 +1100,11 @@ def _dmrg_state(wavefunction, tol=1e-15):
 
     **Example**
 
-    >>> from pyscf import gto, scf, mcscf
-    >>> from pyblock2.driver.core import DMRGDriver, SymmetryTypes
-    >>> from pyblock2._pyscf.ao2mo import integrals as itg
-    >>> mol = gto.M(atom=[['H', (0, 0, 0)], ['H', (0,0,0.71)]], basis='sto3g')
-    >>> mf = scf.RHF(mol).run()
-    >>> mc = mcscf.CASCI(mf, 2, 2)
-    >>> ncas, n_elec, spin, ecore, h1e, g2e, orb_sym = itg.get_rhf_integrals(mf, mc.ncore, mc.ncas, g2e_symm=8)
-    >>> driver = DMRGDriver(scratch="./tmp", symm_type=SymmetryTypes.SU2)
-    >>> driver.initialize_system(n_sites=ncas, n_elec=n_elec, spin=spin, orb_sym=orb_sym)
-    >>> mpo = driver.get_qc_mpo(h1e=h1e, g2e=g2e, ecore=ecore)
-    >>> ket = driver.get_random_mps(tag="GS")
-    >>> wavefunction = driver.get_csf_coefficients(ket)
+    >>> import numpy as np
+    >>> wavefunction = ( [[0, 3], [3, 0]], np.array([-0.10660077,  0.9943019 ]))
     >>> wf_dmrg = _dmrg_state(wavefunction, tol=1e-1)
     >>> print(wf_dmrg)
-    {(2, 2): 0.6995876453534665, (1, 2): 0.7021101425511932, (1, 1): 0.13273460059658818}
+    {(2, 2): -0.10660077, (1, 1): 0.9943019}
     """
     dets, coeffs = wavefunction
 
@@ -1084,25 +1115,15 @@ def _dmrg_state(wavefunction, tol=1e-15):
         row.append(stra)
         col.append(strb)
 
-        # compute and fix parity to stick to pyscf notation
-        lsta = np.array(list(map(int, bin(stra)[2:])))[::-1]
-        lstb = np.array(list(map(int, bin(strb)[2:])))[::-1]
+        # slater determinant sign convention of block2 (physicist, 
+        # interleave spin-up/down operators) is consistent with pennylane
+        dat.append(coeffs[ii])
 
-        # pad the relevant list
-        maxlen = max([len(lsta), len(lstb)])
-        lsta = np.pad(lsta, (0, maxlen - len(lsta)))
-        lstb = np.pad(lstb, (0, maxlen - len(lstb)))
-
-        which_occ = np.where(lsta == 1)[0]
-        parity = (-1) ** np.sum([np.sum(lstb[: int(ind)]) for ind in which_occ])
-        dat.append(parity * coeffs[ii])
-
-    ## create the FCI matrix as a dict
+     ## create the FCI matrix as a dict
     dict_fcimatr = dict(zip(list(zip(row, col)), dat))
 
     # filter based on tolerance cutoff
     dict_fcimatr = {key: value for key, value in dict_fcimatr.items() if abs(value) > tol}
-
     return dict_fcimatr
 
 
@@ -1192,6 +1213,7 @@ def _shci_state(wavefunction, tol=1e-15):
     """
 
     dets, coefs = wavefunction
+    norb = len(dets[0])
 
     xa = []
     xb = []
@@ -1211,4 +1233,21 @@ def _shci_state(wavefunction, tol=1e-15):
     # filter based on tolerance cutoff
     dict_fcimatr = {key: value for key, value in dict_fcimatr.items() if abs(value) > tol}
 
+    # convert sign parity from chemist to physicist convention (interleaving spin operators)
+    dict_fcimatr = _sign_chem_to_phys(dict_fcimatr, norb)
+
     return dict_fcimatr
+
+def _sign_chem_to_phys(dict_fcimatr, norb):
+    # need to compute the permutation sign in passing from 
+    # chemist to physicist convention of storing spin operators as interleaved
+    signed_dict = {}
+    for key, elem in dict_fcimatr.items():
+        lsta, lstb = bin(key[0])[2:][::-1], bin(key[1])[2:][::-1]
+        # highest energy state is on the right -- pad to the right
+        lsta = np.array([int(elem) for elem in lsta] + [0] * (norb - len(lsta)) ).numpy()
+        lstb = np.array([int(elem) for elem in lstb] + [0] * (norb - len(lstb)) ).numpy()
+        which_occ = np.where(lsta == 1)[0]
+        parity = (-1) ** np.sum([np.sum(lstb[: int(ind)]) for ind in which_occ])
+        signed_dict[key] = parity*elem
+    return signed_dict
