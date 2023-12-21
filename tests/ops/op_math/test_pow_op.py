@@ -44,6 +44,12 @@ def test_basic_validity():
     op = qml.pow(qml.RX(1.2, wires=0), 3)
     qml.ops.functions.assert_valid(op)
 
+    op = qml.pow(qml.PauliX(0), 2.5)
+    qml.ops.functions.assert_valid(op)
+
+    op = qml.pow(qml.Hermitian(np.eye(2), 0), 2)
+    qml.ops.functions.assert_valid(op)
+
 
 class TestConstructor:
     def test_lazy_mode(self):
