@@ -20,6 +20,7 @@ import pytest
 import numpy as np
 from scipy.stats import unitary_group
 import pennylane as qml
+from pennylane.operation import _UNSET_BATCH_SIZE, Operation
 
 
 from pennylane.devices.qubit.apply_operation import (
@@ -51,7 +52,7 @@ def test_custom_operator_with_matrix():
     )
 
     # pylint: disable=too-few-public-methods
-    class CustomOp(qml.operation.Operation):
+    class CustomOp(Operation):
         num_wires = 1
 
         def matrix(self):
@@ -600,6 +601,29 @@ class TestSnapshot:
         assert debugger.snapshots[tag].shape == (4,)
         assert qml.math.allclose(debugger.snapshots[tag], qml.math.flatten(initial_state))
 
+    def test_measurement(self, ml_framework):
+        """Test that an arbitrary measurement is recorded properly when a snapshot is created"""
+        initial_state = np.array(
+            [
+                [0.04624539 + 0.3895457j, 0.22399401 + 0.53870339j],
+                [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
+            ]
+        )
+        initial_state = qml.math.asarray(initial_state, like=ml_framework)
+        measurement = qml.expval(qml.PauliZ(0))
+
+        debugger = self.Debugger()
+        new_state = apply_operation(
+            qml.Snapshot(measurement=measurement), initial_state, debugger=debugger
+        )
+
+        assert new_state.shape == initial_state.shape
+        assert qml.math.allclose(new_state, initial_state)
+
+        assert list(debugger.snapshots.keys()) == [0]
+        assert debugger.snapshots[0].shape == ()
+        assert debugger.snapshots[0] == qml.devices.qubit.measure(measurement, initial_state)
+
 
 @pytest.mark.parametrize("method", methods)
 class TestRXCalcGrad:
@@ -800,7 +824,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         param = qml.math.asarray([0.1, 0.2, 0.3], like=ml_framework)
         state = np.ones((2, 2)) / 2
         op = qml.RX(param, 0)
-        op._batch_size = None  # pylint:disable=protected-access
+        assert op._batch_size is _UNSET_BATCH_SIZE  # pylint:disable=protected-access
         state = method(op, state)
         assert state.shape == (3, 2, 2)
         assert op.batch_size == 3

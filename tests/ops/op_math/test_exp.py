@@ -99,6 +99,12 @@ class TestInitialization:
         op = constructor(DummyOp(1), 2.312)
         assert op.has_diagonalizing_gates is value
 
+    def test_base_is_not_operator_error(self, constructor):
+        """Test that Exp raises an error if a base is provided that is not an Operator"""
+
+        with pytest.raises(TypeError, match="base is expected to be of type Operator"):
+            constructor(2, qml.PauliX(0))
+
 
 class TestProperties:
     """Test of the properties of the Exp class."""
@@ -160,10 +166,11 @@ class TestProperties:
     def test_different_batch_sizes_raises_error(self):
         """Test that using different batch sizes for base and scalar raises an error."""
         base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = Exp(base, np.array([0.1, 1.2, 2.3, 3.4]))
         with pytest.raises(
             ValueError, match="Broadcasting was attempted but the broadcasted dimensions"
         ):
-            _ = Exp(base, np.array([0.1, 1.2, 2.3, 3.4]))
+            _ = op.batch_size
 
 
 class TestMatrix:
