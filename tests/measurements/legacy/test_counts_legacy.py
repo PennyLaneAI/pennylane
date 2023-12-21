@@ -179,7 +179,7 @@ class TestCountsIntegration:
         dev = qml.device(device_name, wires=2, shots=shots)
 
         @qml.qnode(dev)
-        def circuit(phi):
+        def circuit():
             qml.Hadamard(0)
             m0 = qml.measure(0)
             return qml.counts(m0)
