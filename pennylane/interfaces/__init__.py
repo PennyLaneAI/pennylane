@@ -50,6 +50,7 @@ Jacobian Product Calculation
     ~interfaces.jacobian_products.TransformJacobianProducts
     ~interfaces.jacobian_products.DeviceDerivatives
     ~interfaces.jacobian_products.DeviceJacobianProducts
+    ~interfaces.jacobian_products.LightningVJPs
 
 """
 from .execution import cache_execute, execute, INTERFACE_MAP, SUPPORTED_INTERFACES

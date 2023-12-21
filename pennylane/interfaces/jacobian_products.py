@@ -695,33 +695,46 @@ class DeviceJacobianProducts(JacobianProductCalculator):
         numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
         return self._device.execute_and_compute_derivatives(numpy_tapes, self._execution_config)
 
-class LightningVJPs(JacobianProductCalculator):
-    """Binds lightning vjps."""
 
-    def __init__(self, device):
-        self._device = device
+class LightningVJPs(DeviceDerivatives):
+    """Calculates VJPs natively using lightning.qubit.
 
-    def execute_and_compute_jvp(self, tapes, tangents):
-        raise NotImplementedError
+    Args:
+        device (LightningBase): a device in the lightning ecosystem (``lightning.qubit``, ``lightning.gpu``, ``lightning.kokkos``.)
+        gradient_kwargs (Optional[dict]):  Any gradient options.
+
+    >>> dev = qml.device('lightning.qubit', wires=5)
+    >>> jpc = LightningVJPs(dev, gradient_kwargs={"use_device_state": True})
+    >>> tape = qml.tape.QuantumScript([qml.RX(1.2, wires=0)], [qml.expval(qml.PauliZ(0))])
+    >>> dev.batch_execute((tape,))
+    [array(0.36235775)]
+    >>> jpc.compute_vjp((tape,), (0.5,) )
+    ((array(-0.46601954),),)
+    >>> -0.5 * np.sin(1.2)
+    -0.46601954298361314
+
+    """
+
+    def __repr__(self):
+        return f"<LightningVJPs: {self._device.name}, {self._gradient_kwargs}>"
+
+    def __init__(self, device, gradient_kwargs=None):
+        super().__init__(device, gradient_kwargs=gradient_kwargs)
 
     def compute_vjp(self, tapes, dy):
         if len(tapes) > 1:
-            raise NotImplementedError
+            raise NotImplementedError("lightning device VJPs are only supported for a single tape.")
         results = []
         for tape in tapes:
             numpy_tape = qml.transforms.convert_to_numpy_parameters(tape)
             dy = qml.math.hstack(qml.math.unwrap(dy))
-            vjp_f = self._device.vjp(numpy_tape.measurements, dy)
+            if qml.math.ndim(dy) > 1:
+                raise NotImplementedError(
+                    "Lightning device VJPs are not supported with jax jacobians."
+                )
+            vjp_f = self._device.vjp(numpy_tape.measurements, dy, **self._gradient_kwargs)
             out = vjp_f(numpy_tape)
             if len(tape.trainable_params) == 1:
                 out = (out,)
             results.append(out)
         return tuple(results)
-
-    def compute_jacobian(self, tapes):
-        raise NotImplementedError
-
-    def execute_and_compute_jacobian(self, tapes: Batch) -> Tuple:
-        raise NotImplementedError
-   
-    
