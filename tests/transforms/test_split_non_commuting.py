@@ -33,7 +33,8 @@ with qml.queuing.AnnotatedQueue() as q3:
     qml.expval(qml.PauliY(0))
 
 non_commuting_tape3 = qml.tape.QuantumScript.from_queue(q3)
-# example tape with 2 -commuting groups [[0,2],[1,3]]
+
+# example tape with 2 commuting groups [[0,2],[1,3]]
 with qml.queuing.AnnotatedQueue() as q2:
     qml.PauliZ(0)
     qml.Hadamard(0)
@@ -44,43 +45,124 @@ with qml.queuing.AnnotatedQueue() as q2:
     qml.expval(qml.PauliX(0))
 
 non_commuting_tape2 = qml.tape.QuantumScript.from_queue(q2)
-# For testing different observable types
+
+# list of observables with 2 commuting groups [[1, 3], [0, 2, 4]]
+obs_list_2 = [
+    qml.PauliZ(0) @ qml.PauliZ(1),
+    qml.PauliX(0) @ qml.PauliX(1),
+    qml.PauliZ(0),
+    qml.PauliX(0),
+    qml.PauliZ(1),
+]
+
+# list of observables with 3 commuting groups [[0,3], [1,4], [2,5]]
+obs_list_3 = [
+    qml.PauliZ(0) @ qml.PauliZ(1),
+    qml.PauliX(0) @ qml.PauliX(1),
+    qml.PauliY(0) @ qml.PauliY(1),
+    qml.PauliZ(0),
+    qml.PauliX(0),
+    qml.PauliY(0),
+]
+
 obs_fn = [qml.expval, qml.var]
+# measurements that accept observables as arguments
+obs_meas_fn = [qml.expval, qml.var, qml.probs, qml.counts, qml.sample]
+
+# measurements that accept wires as arguments
+wire_meas_fn = [qml.probs, qml.counts, qml.sample]
 
 
 class TestUnittestSplitNonCommuting:
     """Unit tests on ``qml.transforms.split_non_commuting()``"""
 
-    def test_commuting_group_no_split(self, mocker):
-        """Testing that commuting groups are not split"""
+    @pytest.mark.parametrize("meas_type", obs_meas_fn)
+    def test_commuting_group_no_split(self, mocker, meas_type):
+        """Testing that commuting groups are not split for all supported measurement types"""
         with qml.queuing.AnnotatedQueue() as q:
             qml.PauliZ(0)
             qml.Hadamard(0)
             qml.CNOT((0, 1))
-            qml.expval(qml.PauliZ(0))
-            qml.expval(qml.PauliZ(0))
-            qml.expval(qml.PauliX(1))
-            qml.expval(qml.PauliZ(2))
-            qml.expval(qml.PauliZ(0) @ qml.PauliZ(3))
+            meas_type(op=qml.PauliZ(0))
+            meas_type(op=qml.PauliZ(0))
+            meas_type(op=qml.PauliX(1))
+            meas_type(op=qml.PauliZ(2))
+            meas_type(op=qml.PauliZ(0) @ qml.PauliZ(3))
 
+        # test transform on tape
         tape = qml.tape.QuantumScript.from_queue(q)
         split, fn = split_non_commuting(tape)
 
         spy = mocker.spy(qml.math, "concatenate")
 
+        assert len(split) == 1
         assert all(isinstance(t, qml.tape.QuantumScript) for t in split)
         assert fn([0.5]) == 0.5
 
+        # test transform on qscript
         qs = qml.tape.QuantumScript(tape.operations, tape.measurements)
         split, fn = split_non_commuting(qs)
+
+        assert len(split) == 1
         assert all(isinstance(i_qs, qml.tape.QuantumScript) for i_qs in split)
         assert fn([0.5]) == 0.5
 
         spy.assert_not_called()
 
-    @pytest.mark.parametrize("tape,expected", [(non_commuting_tape2, 2), (non_commuting_tape3, 3)])
-    def test_non_commuting_group_right_number(self, tape, expected):
-        """Test that the output is of the correct size"""
+    @pytest.mark.parametrize("meas_type", wire_meas_fn)
+    def test_wire_commuting_group_no_split(self, mocker, meas_type):
+        """Testing that commuting MPs initialized using wires or observables are not split"""
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.PauliZ(0)
+            qml.Hadamard(0)
+            qml.CNOT((0, 1))
+            meas_type(wires=[0])
+            meas_type(wires=[1])
+            meas_type(wires=[0, 1])
+            meas_type(op=qml.PauliZ(0))
+            meas_type(op=qml.PauliZ(0) @ qml.PauliZ(2))
+
+        # test transform on tape
+        tape = qml.tape.QuantumScript.from_queue(q)
+        split, fn = split_non_commuting(tape)
+
+        spy = mocker.spy(qml.math, "concatenate")
+
+        assert len(split) == 1
+        assert all(isinstance(t, qml.tape.QuantumScript) for t in split)
+        assert fn([0.5]) == 0.5
+
+        # test transform on qscript
+        qs = qml.tape.QuantumScript(tape.operations, tape.measurements)
+        split, fn = split_non_commuting(qs)
+
+        assert len(split) == 1
+        assert all(isinstance(i_qs, qml.tape.QuantumScript) for i_qs in split)
+        assert fn([0.5]) == 0.5
+
+        spy.assert_not_called()
+
+    @pytest.mark.parametrize("meas_type", obs_meas_fn)
+    @pytest.mark.parametrize("obs_list, expected", [(obs_list_2, 2), (obs_list_3, 3)])
+    def test_non_commuting_group_right_number(self, meas_type, obs_list, expected):
+        """Test that the no. of tapes after splitting into commuting groups is of the right size"""
+
+        # create a queue with several measurements of same type but with differnent non-commuting
+        # observables
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.PauliZ(0)
+            qml.Hadamard(0)
+            qml.CNOT((0, 1))
+            for obs in obs_list:
+                meas_type(op=obs)
+
+            # if MP type can accept wires, then add two extra measurements using wires and test no.
+            # of tapes after splitting commuting groups
+            if meas_type in wire_meas_fn:
+                meas_type(wires=[0])
+                meas_type(wires=[0, 1])
+
+        tape = qml.tape.QuantumScript.from_queue(q)
         split, _ = split_non_commuting(tape)
         assert len(split) == expected
 
@@ -88,18 +170,57 @@ class TestUnittestSplitNonCommuting:
         split, _ = split_non_commuting(qs)
         assert len(split) == expected
 
+    @pytest.mark.parametrize("meas_type", obs_meas_fn)
     @pytest.mark.parametrize(
-        "tape,group_coeffs",
-        [(non_commuting_tape2, [[0, 2], [1, 3]]), (non_commuting_tape3, [[0, 3], [1, 4], [2, 5]])],
+        "obs_list, group_coeffs",
+        [(obs_list_2, [[1, 3], [0, 2, 4]]), (obs_list_3, [[0, 3], [1, 4], [2, 5]])],
     )
-    def test_non_commuting_group_right_reorder(self, tape, group_coeffs):
+    def test_non_commuting_group_right_reorder(self, meas_type, obs_list, group_coeffs):
         """Test that the output is of the correct order"""
-        split, fn = split_non_commuting(tape)
-        assert all(np.array(fn(group_coeffs)) == np.arange(len(split) * 2))
+        # create a queue with several measurements of same type but with differnent non-commuting
+        # observables
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.PauliZ(0)
+            qml.Hadamard(0)
+            qml.CNOT((0, 1))
+            for obs in obs_list:
+                meas_type(op=obs)
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        _, fn = split_non_commuting(tape)
+        assert all(np.array(fn(group_coeffs)) == np.arange(len(tape.measurements)))
 
         qs = qml.tape.QuantumScript(tape.operations, tape.measurements)
-        split, fn = split_non_commuting(qs)
-        assert all(np.array(fn(group_coeffs)) == np.arange(len(split) * 2))
+        _, fn = split_non_commuting(qs)
+        assert all(np.array(fn(group_coeffs)) == np.arange(len(tape.measurements)))
+
+    @pytest.mark.parametrize("meas_type", wire_meas_fn)
+    @pytest.mark.parametrize(
+        "obs_list, group_coeffs",
+        [(obs_list_2, [[1, 3], [0, 2, 4, 5]]), (obs_list_3, [[1, 4], [2, 5], [0, 3, 6]])],
+    )
+    def test_wire_non_commuting_group_right_reorder(self, meas_type, obs_list, group_coeffs):
+        """Test that the output is of the correct order with wire MPs initialized using a
+        combination of wires and observables"""
+        # create a queue with several measurements of same type but with differnent non-commuting
+        # observables
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.PauliZ(0)
+            qml.Hadamard(0)
+            qml.CNOT((0, 1))
+            for obs in obs_list:
+                meas_type(op=obs)
+
+            # initialize measurements using wires
+            meas_type(wires=[0])
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        _, fn = split_non_commuting(tape)
+        assert all(np.array(fn(group_coeffs)) == np.arange(len(tape.measurements)))
+
+        qs = qml.tape.QuantumScript(tape.operations, tape.measurements)
+        _, fn = split_non_commuting(qs)
+        assert all(np.array(fn(group_coeffs)) == np.arange(len(tape.measurements)))
 
     @pytest.mark.parametrize("meas_type", obs_fn)
     def test_different_measurement_types(self, meas_type):
