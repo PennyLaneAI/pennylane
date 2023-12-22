@@ -308,7 +308,7 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
             else:
                 bras[kk] = 2 * apply_operation(obs, ket)
 
-        bras = np.squeeze(bras)
+        bras = bras if batched_cotangents else np.squeeze(bras)
 
         def real_if_expval(val):
             return np.real(val)
