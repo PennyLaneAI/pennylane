@@ -13,38 +13,13 @@
 # limitations under the License.
 """ Tests for the transform ``qml.transform.split_non_commuting()`` """
 # pylint: disable=no-self-use, import-outside-toplevel, no-member, import-error
+import itertools
 import pytest
 import numpy as np
 import pennylane as qml
 import pennylane.numpy as pnp
 
 from pennylane.transforms import split_non_commuting
-
-# example tape with 3 commuting groups [[0,3],[1,4],[2,5]]
-with qml.queuing.AnnotatedQueue() as q3:
-    qml.PauliZ(0)
-    qml.Hadamard(0)
-    qml.CNOT((0, 1))
-    qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-    qml.expval(qml.PauliX(0) @ qml.PauliX(1))
-    qml.expval(qml.PauliY(0) @ qml.PauliY(1))
-    qml.expval(qml.PauliZ(0))
-    qml.expval(qml.PauliX(0))
-    qml.expval(qml.PauliY(0))
-
-non_commuting_tape3 = qml.tape.QuantumScript.from_queue(q3)
-
-# example tape with 2 commuting groups [[0,2],[1,3]]
-with qml.queuing.AnnotatedQueue() as q2:
-    qml.PauliZ(0)
-    qml.Hadamard(0)
-    qml.CNOT((0, 1))
-    qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-    qml.expval(qml.PauliX(0) @ qml.PauliX(1))
-    qml.expval(qml.PauliZ(0))
-    qml.expval(qml.PauliX(0))
-
-non_commuting_tape2 = qml.tape.QuantumScript.from_queue(q2)
 
 # list of observables with 2 commuting groups [[1, 3], [0, 2, 4]]
 obs_list_2 = [
@@ -65,7 +40,6 @@ obs_list_3 = [
     qml.PauliY(0),
 ]
 
-obs_fn = [qml.expval, qml.var]
 # measurements that accept observables as arguments
 obs_meas_fn = [qml.expval, qml.var, qml.probs, qml.counts, qml.sample]
 
@@ -222,17 +196,23 @@ class TestUnittestSplitNonCommuting:
         _, fn = split_non_commuting(qs)
         assert all(np.array(fn(group_coeffs)) == np.arange(len(tape.measurements)))
 
-    @pytest.mark.parametrize("meas_type", obs_fn)
+    @pytest.mark.parametrize("meas_type", obs_meas_fn)
     def test_different_measurement_types(self, meas_type):
-        """Test that expval, var and sample are correctly reproduced"""
+        """Test that the measurements types of the split tapes are correct"""
         with qml.queuing.AnnotatedQueue() as q:
             qml.PauliZ(0)
             qml.Hadamard(0)
             qml.CNOT((0, 1))
-            meas_type(qml.PauliZ(0) @ qml.PauliZ(1))
-            meas_type(qml.PauliX(0) @ qml.PauliX(1))
-            meas_type(qml.PauliZ(0))
-            meas_type(qml.PauliX(0))
+            meas_type(op=qml.PauliZ(0) @ qml.PauliZ(1))
+            meas_type(op=qml.PauliX(0) @ qml.PauliX(1))
+            meas_type(op=qml.PauliZ(0))
+            meas_type(op=qml.PauliX(0))
+
+            # if the MP can also accept wires as arguments, add extra measurements to test
+            if meas_type in wire_meas_fn:
+                meas_type(wires=[0])
+                meas_type(wires=[0, 1])
+
         tape = qml.tape.QuantumScript.from_queue(q)
         the_return_type = tape.measurements[0].return_type
         split, _ = split_non_commuting(tape)
@@ -246,35 +226,72 @@ class TestUnittestSplitNonCommuting:
             for meas in new_tape.measurements:
                 assert meas.return_type == the_return_type
 
-    def test_mixed_measurement_types(self):
-        """Test that mixing expval and var works correctly."""
+    @pytest.mark.parametrize("meas_type_1, meas_type_2", itertools.combinations(obs_meas_fn, 2))
+    def test_mixed_measurement_types(self, meas_type_1, meas_type_2):
+        """Test that mixing different combintations of MPs initialized using obs works correctly."""
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(0)
             qml.Hadamard(1)
-            qml.expval(qml.PauliX(0))
-            qml.expval(qml.PauliZ(1))
-            qml.var(qml.PauliZ(0))
+            meas_type_1(op=qml.PauliX(0))
+            meas_type_1(op=qml.PauliZ(1))
+            meas_type_2(op=qml.PauliZ(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
         split, _ = split_non_commuting(tape)
 
         assert len(split) == 2
+        assert qml.equal(split[0].measurements[0], meas_type_1(op=qml.PauliX(0)))
+        assert qml.equal(split[0].measurements[1], meas_type_1(op=qml.PauliZ(1)))
+        assert qml.equal(split[1].measurements[0], meas_type_2(op=qml.PauliZ(0)))
+
+    @pytest.mark.parametrize("meas_type_1, meas_type_2", itertools.combinations(wire_meas_fn, 2))
+    def test_mixed_wires_measurement_types(self, meas_type_1, meas_type_2):
+        """Test that mixing different combinations of MPs initialized using wires works correctly"""
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(0)
             qml.Hadamard(1)
-            qml.expval(qml.PauliX(0))
-            qml.var(qml.PauliZ(0))
-            qml.expval(qml.PauliZ(1))
+            meas_type_1(op=qml.PauliX(0))
+            meas_type_1(wires=[1])
+            meas_type_2(wires=[0])
 
         tape = qml.tape.QuantumScript.from_queue(q)
         split, _ = split_non_commuting(tape)
 
         assert len(split) == 2
-        assert qml.equal(split[0].measurements[0], qml.expval(qml.PauliX(0)))
-        assert qml.equal(split[0].measurements[1], qml.expval(qml.PauliZ(1)))
-        assert qml.equal(split[1].measurements[0], qml.var(qml.PauliZ(0)))
+        assert qml.equal(split[0].measurements[0], meas_type_1(op=qml.PauliX(0)))
+        assert qml.equal(split[0].measurements[1], meas_type_1(wires=[1]))
+        assert qml.equal(split[1].measurements[0], meas_type_2(wires=[0]))
+
+    @pytest.mark.parametrize(
+        "meas_type_1, meas_type_2", itertools.product(obs_meas_fn, wire_meas_fn)
+    )
+    def test_mixed_wires_obs_measurement_types(self, meas_type_1, meas_type_2):
+        """Test that mixing different combinations of MPs initialized using wires and obs works
+        correctly"""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.Hadamard(0)
+            qml.Hadamard(1)
+            meas_type_1(op=qml.PauliX(0))
+            meas_type_2(wires=[1])
+            meas_type_2(wires=[0, 1])
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        split, _ = split_non_commuting(tape)
+
+        assert len(split) == 2
+        assert qml.equal(split[0].measurements[0], meas_type_1(op=qml.PauliX(0)))
+        assert qml.equal(split[0].measurements[1], meas_type_2(wires=[1]))
+        assert qml.equal(split[1].measurements[0], meas_type_2(wires=[0, 1]))
+
+
+# measurements that require shots=True
+required_shot_meas_fn = [qml.sample, qml.counts]
+
+# measurements that can optionally have shots=True
+optional_shot_meas_fn = [qml.probs, qml.expval, qml.var]
 
 
 class TestIntegration:

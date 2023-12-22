@@ -39,9 +39,8 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
     # TODO: add examples for the newly supported MPs (qml.probs, etc.)
     **Example**
 
-    This transform allows us to transform a QNode that measures
-    non-commuting observables to *multiple* circuit executions
-    with qubit-wise commuting groups:
+    This transform allows us to transform a QNode that measures non-commuting observables to
+    *multiple* circuit executions with qubit-wise commuting groups:
 
     .. code-block:: python3
 
@@ -150,6 +149,26 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
         expval(PauliZ(wires=[0])),
         expval(PauliX(wires=[0])))
 
+        Measurements that accept both observables and ``wires`` for e.g. ``qml.counts``,
+        ``qml.probs`` and ``qml.sample`` can also be used. When initialized using only ``wires``,
+        these measurements are interpreted as measuring with respect to the observable
+        ``qml.PauliZ(wires[0])@qml.PauliZ(wires[1])@...@qml.PauliZ(wires[len(wires)-1])``
+
+        .. code-block:: python3
+
+            measurements = [
+                qml.expval(qml.PauliX(0)),
+                qml.probs(wires=[1]),
+                qml.probs(wires=[0, 1])
+            ]
+            tape = qml.tape.QuantumTape(measurements=measurements)
+
+            tapes, processing_fn = qml.transforms.split_non_commuting(tape)
+
+        This results in two tapes, each with commuting measurements:
+
+        >>> [t.measurements for t in tapes]
+        [[expval(PauliX(wires=[0])), probs(wires=[1])], [probs(wires=[0, 1])]]
     """
 
     # Construct a list of observables to group based on the measurements in the tape
