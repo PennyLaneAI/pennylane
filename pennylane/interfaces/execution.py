@@ -577,6 +577,15 @@ def execute(
         if interface in {"jax", "jax-jit"}:
             grad_on_execution = grad_on_execution if isinstance(gradient_fn, Callable) else False
 
+    if (
+        device_vjp
+        and isinstance(device, qml.Device)
+        and "lightning" not in getattr(device, "short_name", "")
+    ):
+        raise qml.QuantumFunctionError(
+            "device provided jacobian products are not compatible with the old device interface."
+        )
+
     gradient_kwargs = gradient_kwargs or {}
     config = config or _get_execution_config(
         gradient_fn, grad_on_execution, interface, device, device_vjp

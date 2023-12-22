@@ -722,8 +722,10 @@ class LightningVJPs(DeviceDerivatives):
         super().__init__(device, gradient_kwargs=gradient_kwargs)
 
     def compute_vjp(self, tapes, dy):
-        if len(tapes) > 1:
-            raise NotImplementedError("lightning device VJPs are only supported for a single tape.")
+        if not all(
+            isinstance(m, qml.measurements.ExpectationMP) for t in tapes for m in t.measurements
+        ):
+            raise NotImplementedError("Lightning device VJPs only support expectation values.")
         results = []
         for tape in tapes:
             numpy_tape = qml.transforms.convert_to_numpy_parameters(tape)
