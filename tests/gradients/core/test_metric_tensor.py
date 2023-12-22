@@ -1146,7 +1146,6 @@ class TestFullMetricTensor:
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     def test_correct_output_jax(self, ansatz, params, interface):
-
         from jax import numpy as jnp
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
@@ -1175,7 +1174,6 @@ class TestFullMetricTensor:
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     def test_jax_argnum_error(self, ansatz, params, interface):
-
         from jax import numpy as jnp
 
         dev = qml.device("default.qubit.jax", wires=self.num_wires + 1)
