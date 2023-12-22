@@ -175,12 +175,6 @@ class StatePrep(StatePrepBase):
         if state.shape[1] != 2 ** len(self.wires):
             raise ValueError("State vector must have shape (2**wires,) or (batch_size, 2**wires).")
 
-        param = math.cast(state, np.complex128)
-        if not math.is_abstract(param):
-            norm = math.linalg.norm(param, axis=-1, ord=2)
-            if not math.allclose(norm, 1.0, atol=1e-10):
-                raise ValueError("Sum of amplitudes-squared does not equal one.")
-
     @staticmethod
     def compute_decomposition(state, wires):
         r"""Representation of the operator as a product of other operators (static method). :
@@ -203,9 +197,18 @@ class StatePrep(StatePrepBase):
         [MottonenStatePreparation(tensor([1, 0, 0, 0], requires_grad=True), wires=[0, 1])]
 
         """
+        if not math.is_abstract(state):
+            norm = math.linalg.norm(state, axis=-1, ord=2)
+            if not math.allclose(norm, 1.0, atol=1e-10):
+                raise ValueError("Sum of amplitudes-squared does not equal one.")
         return [MottonenStatePreparation(state, wires)]
 
     def state_vector(self, wire_order=None):
+        if not math.is_abstract(self.data[0]):
+            norm = math.linalg.norm(self.data[0], axis=-1, ord=2)
+            if not math.allclose(norm, 1.0, atol=1e-10):
+                raise ValueError("Sum of amplitudes-squared does not equal one.")
+
         num_op_wires = len(self.wires)
         op_vector_shape = (-1,) + (2,) * num_op_wires if self.batch_size else (2,) * num_op_wires
         op_vector = math.reshape(self.parameters[0], op_vector_shape)

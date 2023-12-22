@@ -93,7 +93,7 @@ We would be able to calculate the gradient without error.
 Since the VJP calculation offers access to ``jax.grad`` and ``jax.jacobian``, we register the VJP when we have to choose
 between either the VJP or the JVP.
 
-**Pytrees and Non-diff argnums:**
+**Pytrees:**
 
 The trainable arguments for the registered functions can be any valid pytree.
 
@@ -118,22 +118,17 @@ in custom jvp function:  {'a': Array(2., dtype=float64, weak_type=True)} {'a': T
 
 As we can see here, the tangents are packed into the same pytree structure as the trainable arguments.
 
-Currently, :class:`~.QuantumScript` is a valid pytree *most* of the time. Once it is a valid pytree *all* of the
-time and can store tangents in place of the variables, we can use a batch of tapes as our trainable argument. Until then, the tapes
-must be a non-pytree non-differenatible argument that accompanies the tree leaves.
+We use the fact that ``QuantumTape``, ``Opereator``, and `MeasurementProcess`` are all valid pytrees 
 
 """
 # pylint: disable=unused-argument
 import logging
 from typing import Tuple, Callable
 
-import dataclasses
-
 import jax
 import jax.numpy as jnp
 
 import pennylane as qml
-from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.typing import ResultBatch
 
 dtype = jnp.float64
@@ -144,35 +139,6 @@ logger.addHandler(logging.NullHandler())
 
 Batch = Tuple[qml.tape.QuantumTape]
 ExecuteFn = Callable[[Batch], qml.typing.ResultBatch]
-
-
-@dataclasses.dataclass
-class _NonPytreeWrapper:
-    """We aren't quite ready to switch to having tapes as pytrees as our
-    differentiable argument due to:
-
-    * Operators that aren't valid pytrees: ex. ParametrizedEvolution, ParametrizedHamiltonian, HardwareHamiltonian
-    * Validation checks on initialization: see BasisStateProjector, StatePrep that does not allow the operator to store the cotangents
-    * Jitting non-jax parametrized circuits.  Numpy parameters turn into abstract parameters during the pytree process.
-
-    ``jax.custom_vjp`` forbids any non-differentiable argument to be a pytree, so we need to wrap it in a non-pytree type.
-
-    When the above issues are fixed, we can treat ``tapes`` as the differentiable argument.
-
-    """
-
-    vals: Batch = None
-
-
-def _set_copy_and_unwrap_tape(t, a, unwrap=True):
-    """Copy a given tape with operations and set parameters"""
-    tc = t.bind_new_parameters(a, t.trainable_params)
-    return convert_to_numpy_parameters(tc) if unwrap else tc
-
-
-def set_parameters_on_copy_and_unwrap(tapes, params, unwrap=True):
-    """Copy a set of tapes with operations and set parameters"""
-    return tuple(_set_copy_and_unwrap_tape(t, a, unwrap=unwrap) for t, a in zip(tapes, params))
 
 
 def get_jax_interface_name(tapes):
@@ -223,79 +189,36 @@ def _to_jax(result: qml.typing.ResultBatch) -> qml.typing.ResultBatch:
     return jnp.array(result)
 
 
-def _execute_wrapper(params, tapes, execute_fn, jpc) -> ResultBatch:
+def _execute_wrapper(tapes, execute_fn, jpc, device) -> ResultBatch:
     """Executes ``tapes`` with ``params`` via ``execute_fn``"""
-    new_tapes = set_parameters_on_copy_and_unwrap(tapes.vals, params, unwrap=False)
-    return _to_jax(execute_fn(new_tapes))
+    return _to_jax(execute_fn(tapes))
 
 
-def _execute_and_compute_jvp(tapes, execute_fn, jpc, primals, tangents):
+def _execute_and_compute_jvp(execute_fn, jpc, device, primals, tangents):
     """Compute the results and jvps for ``tapes`` with ``primals[0]`` parameters via
     ``jpc``.
     """
-    new_tapes = set_parameters_on_copy_and_unwrap(tapes.vals, primals[0], unwrap=False)
-    res, jvps = jpc.execute_and_compute_jvp(new_tapes, tangents[0])
+    tangents = tuple(t.get_parameters() for t in tangents[0])
+    res, jvps = jpc.execute_and_compute_jvp(primals[0], tangents)
     return _to_jax(res), _to_jax(jvps)
 
 
-def _vjp_fwd(params, tapes, execute_fn, jpc):
+def _vjp_fwd(tapes, execute_fn, jpc, device):
     """Perform the forward pass execution, return results and empty residuals."""
-    new_tapes = set_parameters_on_copy_and_unwrap(tapes.vals, params, unwrap=False)
-    return _to_jax(execute_fn(new_tapes)), None
+    return _to_jax(execute_fn(tapes)), tapes
 
 
-def _vjp_bwd(tapes, execute_fn, jpc, _, dy):
+def _vjp_bwd(execute_fn, jpc, device, tapes, dy):
     """Perform the backward pass of a vjp calculation, returning the vjp."""
-    vjp = jpc.compute_vjp(tapes.vals, dy)
-    return (_to_jax(vjp),)
+    vjps = _to_jax(jpc.compute_vjp(tapes, dy))
+    bound_vjps = tuple(
+        t.bind_new_parameters(vjp, t.trainable_params) for vjp, t in zip(vjps, tapes)
+    )
+    return (tuple(bound_vjps),)
 
 
-_execute_jvp = jax.custom_jvp(_execute_wrapper, nondiff_argnums=[1, 2, 3])
-_execute_jvp.defjvp(_execute_and_compute_jvp)
+jax_jvp_execute = jax.custom_jvp(_execute_wrapper, nondiff_argnums=[1, 2, 3])
+jax_jvp_execute.defjvp(_execute_and_compute_jvp)
 
-_execute_vjp = jax.custom_vjp(_execute_wrapper, nondiff_argnums=[1, 2, 3])
-_execute_vjp.defvjp(_vjp_fwd, _vjp_bwd)
-
-
-def jax_jvp_execute(tapes: Batch, execute_fn: ExecuteFn, jpc, device=None):
-    """Execute a batch of tapes with JAX parameters using JVP derivatives.
-
-    Args:
-        tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        execute_fn (Callable[[Sequence[.QuantumTape]], ResultBatch]): a function that turns a batch of circuits into results
-        jpc (JacobianProductCalculator): a class that can compute the Jacobian vector product (JVP)
-            for the input tapes.
-
-    Returns:
-        TensorLike: A nested tuple of tape results. Each element in
-        the returned tuple corresponds in order to the provided tapes.
-
-    """
-    if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
-        logger.debug("Entry with (tapes=%s, execute_fn=%s, jpc=%s)", tapes, execute_fn, jpc)
-
-    parameters = tuple(tuple(t.get_parameters()) for t in tapes)
-
-    return _execute_jvp(parameters, _NonPytreeWrapper(tuple(tapes)), execute_fn, jpc)
-
-
-def jax_vjp_execute(tapes: Batch, execute_fn: ExecuteFn, jpc, device=None):
-    """Execute a batch of tapes with JAX parameters using VJP derivatives.
-
-    Args:
-        tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        execute_fn (Callable[[Sequence[.QuantumTape]], ResultBatch]): a function that turns a batch of circuits into results
-        jpc (JacobianProductCalculator): a class that can compute the vector Jacobian product (VJP)
-            for the input tapes.
-
-    Returns:
-        TensorLike: A nested tuple of tape results. Each element in
-        the returned tuple corresponds in order to the provided tapes.
-
-    """
-    if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
-        logger.debug("Entry with (tapes=%s, execute_fn=%s, jpc=%s)", tapes, execute_fn, jpc)
-
-    parameters = tuple(tuple(t.get_parameters()) for t in tapes)
-
-    return _execute_vjp(parameters, _NonPytreeWrapper(tuple(tapes)), execute_fn, jpc)
+jax_vjp_execute = jax.custom_vjp(_execute_wrapper, nondiff_argnums=[1, 2, 3])
+jax_vjp_execute.defvjp(_vjp_fwd, _vjp_bwd)

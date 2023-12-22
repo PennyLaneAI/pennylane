@@ -44,8 +44,6 @@ from pennylane.typing import ResultBatch
 
 from .jacobian_products import _compute_jvps
 
-from .jax import _NonPytreeWrapper
-
 dtype = jnp.float64
 Zero = jax.custom_derivatives.SymbolicZero
 
@@ -64,11 +62,6 @@ def _to_jax(result: qml.typing.ResultBatch) -> qml.typing.ResultBatch:
     if isinstance(result, (list, tuple)):
         return tuple(_to_jax(r) for r in result)
     return jnp.array(result)
-
-
-def _set_parameters_on_copy(tapes, params):
-    """Copy a set of tapes with operations and set parameters"""
-    return tuple(t.bind_new_parameters(a, list(range(len(a)))) for t, a in zip(tapes, params))
 
 
 def _result_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.Device"):
@@ -117,19 +110,21 @@ def _jac_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.Device"
 def _pytree_shape_dtype_struct(pytree):
     """Creates a shape structure that matches the types and shapes for the provided pytree."""
     leaves, struct = jax.tree_util.tree_flatten(pytree)
-    new_leaves = [jax.ShapeDtypeStruct(jnp.shape(l), l.dtype) for l in leaves]
+    new_leaves = [
+        jax.ShapeDtypeStruct(jnp.shape(l), getattr(l, "dtype", jnp.float64)) for l in leaves
+    ]
     return jax.tree_util.tree_unflatten(struct, new_leaves)
 
 
-def _execute_wrapper(params, tapes, execute_fn, _, device) -> ResultBatch:
+def _execute_wrapper(tapes, execute_fn, _, device) -> ResultBatch:
     """
     Execute tapes using a pure-callback.
     """
-    shape_dtype_structs = tuple(_result_shape_dtype_struct(t, device) for t in tapes.vals)
+    shape_dtype_structs = tuple(_result_shape_dtype_struct(t, device) for t in tapes)
 
-    def pure_callback_wrapper(p):
-        new_tapes = _set_parameters_on_copy(tapes.vals, p)
-        res = tuple(execute_fn(new_tapes))
+    def pure_callback_wrapper(inner_tapes):
+        res = tuple(execute_fn(inner_tapes))
+
         # When executed under `jax.vmap` the `result_shapes_dtypes` will contain
         # the shape without the vmap dimensions, while the function here will be
         # executed with objects containing the vmap dimensions. So res[i].ndim
@@ -142,11 +137,11 @@ def _execute_wrapper(params, tapes, execute_fn, _, device) -> ResultBatch:
         # swap the order in that case.
         return jax.tree_map(lambda r, s: r.T if r.ndim > s.ndim else r, res, shape_dtype_structs)
 
-    out = jax.pure_callback(pure_callback_wrapper, shape_dtype_structs, params, vectorized=True)
+    out = jax.pure_callback(pure_callback_wrapper, shape_dtype_structs, tapes, vectorized=True)
     return _to_jax(out)
 
 
-def _execute_and_compute_jvp(tapes, execute_fn, jpc, device, primals, tangents):
+def _execute_and_compute_jvp(execute_fn, jpc, device, primals, tangents):
     """
     Compute the results and jvps using a pure callback around
     :meth:`~.JacobianProductCalculator.execute_and_compute_jacobian`.
@@ -154,48 +149,51 @@ def _execute_and_compute_jvp(tapes, execute_fn, jpc, device, primals, tangents):
     Note that we must query the full jacobian inside the pure-callback so that jax can trace the JVP
     calculation.
     """
+    tapes = primals[0]
+    tangents = tuple(t.get_parameters(trainable_only=False) for t in tangents[0])
+
     # Select the trainable params. Non-trainable params contribute a 0 gradient.
-    for tangent, tape in zip(tangents[0], tapes.vals):
+    for tangent, tape in zip(tangents, tapes):
         tape.trainable_params = tuple(
             idx for idx, t in enumerate(tangent) if not isinstance(t, Zero)
         )
     tangents_trainable = tuple(
-        tuple(t for t in tangent if not isinstance(t, Zero)) for tangent in tangents[0]
+        tuple(t for t in tangent if not isinstance(t, Zero)) for tangent in tangents
     )
 
-    def wrapper(inner_params):
-        new_tapes = _set_parameters_on_copy(tapes.vals, inner_params)
-        return jpc.execute_and_compute_jacobian(new_tapes)
+    res_struct = tuple(_result_shape_dtype_struct(t, device) for t in tapes)
+    jac_struct = tuple(_jac_shape_dtype_struct(t, device) for t in tapes)
+    results, jacobians = jax.pure_callback(
+        jpc.execute_and_compute_jacobian, (res_struct, jac_struct), tapes
+    )
 
-    res_struct = tuple(_result_shape_dtype_struct(t, device) for t in tapes.vals)
-    jac_struct = tuple(_jac_shape_dtype_struct(t, device) for t in tapes.vals)
-    results, jacobians = jax.pure_callback(wrapper, (res_struct, jac_struct), primals[0])
-
-    jvps = _compute_jvps(jacobians, tangents_trainable, tapes.vals)
+    jvps = _compute_jvps(jacobians, tangents_trainable, tapes)
 
     return _to_jax(results), _to_jax(jvps)
 
 
-def _vjp_fwd(params, tapes, execute_fn, jpc, device):
+def _vjp_fwd(tapes, execute_fn, jpc, device):
     """Perform the forward pass execution, return results and the parameters as residuals."""
-    return _execute_wrapper(params, tapes, execute_fn, jpc, device), params
+    return _execute_wrapper(tapes, execute_fn, jpc, device), tapes
 
 
-def _vjp_bwd(tapes, execute_fn, jpc, device, params, dy):
+def _vjp_bwd(execute_fn, jpc, device, tapes, dy):
     """Perform the backward pass of a vjp calculation, returning the vjp."""
+    vjp_shape = _pytree_shape_dtype_struct(tapes)
 
-    def wrapper(inner_params, inner_dy):
-        new_tapes = _set_parameters_on_copy(tapes.vals, inner_params)
-        return tuple(jpc.compute_vjp(new_tapes, inner_dy))
+    def bound_vjps(tapes, dy):
+        vjps = jpc.compute_vjp(tapes, dy)
+        return tuple(
+            t.bind_new_parameters(vjp, list(range(len(vjp)))) for t, vjp in zip(tapes, vjps)
+        )
 
-    vjp_shape = _pytree_shape_dtype_struct(params)
-    return (jax.pure_callback(wrapper, vjp_shape, params, dy),)
+    return (jax.pure_callback(bound_vjps, vjp_shape, tapes, dy),)
 
 
-_execute_jvp_jit = jax.custom_jvp(_execute_wrapper, nondiff_argnums=[1, 2, 3, 4])
+_execute_jvp_jit = jax.custom_jvp(_execute_wrapper, nondiff_argnums=[1, 2, 3])
 _execute_jvp_jit.defjvp(_execute_and_compute_jvp, symbolic_zeros=True)
 
-_execute_vjp_jit = jax.custom_vjp(_execute_wrapper, nondiff_argnums=[1, 2, 3, 4])
+_execute_vjp_jit = jax.custom_vjp(_execute_wrapper, nondiff_argnums=[1, 2, 3])
 _execute_vjp_jit.defvjp(_vjp_fwd, _vjp_bwd)
 
 
@@ -224,9 +222,7 @@ def jax_jit_jvp_execute(tapes, execute_fn, jpc, device):
         # not implemented and is required for the callback logic
         raise NotImplementedError("The JAX-JIT interface doesn't support qml.counts.")
 
-    parameters = tuple(tuple(t.get_parameters(trainable_only=False)) for t in tapes)
-
-    return _execute_jvp_jit(parameters, _NonPytreeWrapper(tuple(tapes)), execute_fn, jpc, device)
+    return _execute_jvp_jit(tuple(tapes), execute_fn, jpc, device)
 
 
 def jax_jit_vjp_execute(tapes, execute_fn, jpc, device=None):
@@ -254,6 +250,4 @@ def jax_jit_vjp_execute(tapes, execute_fn, jpc, device=None):
         # not implemented and is required for the callback logic
         raise NotImplementedError("The JAX-JIT interface doesn't support qml.counts.")
 
-    parameters = tuple(tuple(t.get_parameters()) for t in tapes)
-
-    return _execute_vjp_jit(parameters, _NonPytreeWrapper(tuple(tapes)), execute_fn, jpc, device)
+    return _execute_vjp_jit(tuple(tapes), execute_fn, jpc, device)

@@ -18,6 +18,7 @@ It implements the necessary :class:`~pennylane._device.Device` methods as well a
 :mod:`qubit operations <pennylane.ops.qubit>`, and provides a very simple pure state
 simulation of a qubit-based quantum circuit architecture.
 """
+# pylint: disable=too-many-arguments
 import functools
 import itertools
 from string import ascii_letters as ABC
@@ -732,6 +733,10 @@ class DefaultQubitLegacy(QubitDevice):
                 or broadcasted state of shape ``(batch_size, 2**len(wires))``
             device_wires (Wires): wires that get initialized in the state
         """
+        if not qml.math.is_abstract(state):
+            norm = qml.math.linalg.norm(state, axis=-1, ord=2)
+            if not qml.math.is_abstract(norm) and not qml.math.allclose(norm, 1.0, atol=1e-10):
+                raise ValueError("Sum of amplitudes-squared does not equal one.")
 
         # translate to wire labels used by device
         device_wires = self.map_wires(device_wires)
