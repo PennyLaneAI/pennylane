@@ -248,12 +248,10 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
     """
     # See ``adjoint_jacobian.md`` to more information on the algorithm.
 
-    # Map wires if custom wire labels used
     print(cotangents)
-    print(qml.math.shape(cotangents))
     cotangents = np.array(cotangents)
-    print(cotangents.T)
 
+    # Map wires if custom wire labels used
     if set(tape.wires) != set(range(tape.num_wires)):
         wire_map = {w: i for i, w in enumerate(tape.wires)}
         tapes, fn = qml.map_wires(tape, wire_map)
@@ -318,12 +316,12 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
     param_number = len(tape.get_parameters(trainable_only=False, operations_only=True)) - 1
     trainable_param_number = len(tape.trainable_params) - 1
 
-    cots_in_shape = (
+    res_shape = (
         (len(tape.trainable_params),)
         if batch_size is None
         else (len(tape.trainable_params), batch_size)
     )
-    cotangents_in = np.zeros(cots_in_shape, dtype=tape.measurements[0].numeric_type)
+    cotangents_in = np.zeros(res_shape, dtype=tape.measurements[0].numeric_type)
     summing_axis = tuple(range(1, qml.math.ndim(bras))) if batched_cotangents else None
 
     for op in reversed(tape.operations[tape.num_preps :]):
@@ -343,5 +341,7 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
             param_number -= 1
 
         bras = apply_operation(adj_op, bras, is_state_batched=batched_cotangents)
+
+    print(f"adj vjp output:\n{cotangents_in}")
 
     return tuple(cotangents_in)

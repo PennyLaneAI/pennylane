@@ -189,7 +189,7 @@ def _vjp_bwd(tapes, execute_fn, jpc, device, params, dy):
         return tuple(jpc.compute_vjp(new_tapes, inner_dy))
 
     vjp_shape = _pytree_shape_dtype_struct(params)
-    return (jax.pure_callback(wrapper, vjp_shape, params, dy),)
+    return (jax.pure_callback(wrapper, vjp_shape, params, dy, vectorized=True),)
 
 
 _execute_jvp_jit = jax.custom_jvp(_execute_wrapper, nondiff_argnums=[1, 2, 3, 4])
