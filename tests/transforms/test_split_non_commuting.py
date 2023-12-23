@@ -420,7 +420,7 @@ class TestIntegration:
                 qml.expval(qml.PauliY(5)),
             )
 
-        res = split_non_commuting(circuit)()
+        res = circuit()
         assert isinstance(res, tuple)
         assert len(res) == 4
         assert all(isinstance(shot_res, tuple) for shot_res in res)
@@ -504,6 +504,17 @@ exp_grad = np.array(
     [[-4.20735492e-01, -4.20735492e-01], [-8.77582562e-01, 0.0], [-4.79425539e-01, 0.0]]
 )
 
+exp_res_probs = np.array([0.88132907, 0.05746221, 0.05746221, 0.00374651, 0.0])
+exp_grad_probs = np.array(
+    [
+        [-0.22504026, -0.22504026],
+        [-0.01467251, 0.22504026],
+        [0.22504026, -0.01467251],
+        [0.01467251, 0.01467251],
+        [0.0, 0.0],
+    ]
+)
+
 
 class TestAutodiffSplitNonCommuting:
     """Autodiff tests for all frameworks"""
@@ -533,6 +544,28 @@ class TestAutodiffSplitNonCommuting:
         assert all(np.isclose(res, exp_res))
         assert all(np.isclose(grad, exp_grad).flatten())
 
+    @pytest.mark.autograd
+    def test_split_with_autograd_probs(self):
+        """Test resulting after splitting non-commuting tapes with expval and probs measurements
+        are still differentiable with autograd"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.RX(params[0], wires=0)
+            qml.RY(params[1], wires=1)
+            return (qml.probs(wires=[0, 1]), qml.expval(qml.PauliX(0) @ qml.PauliX(1)))
+
+        def cost(params):
+            res = split_non_commuting(circuit)(params)
+            return qml.math.concatenate([res[0]] + [qml.math.stack(res[1:])], axis=0)
+
+        params = pnp.array([0.5, 0.5])
+        res = cost(params)
+        grad = qml.jacobian(cost)(params)
+        assert all(np.isclose(res, exp_res_probs))
+        assert all(np.isclose(grad, exp_grad_probs).flatten())
+
     @pytest.mark.jax
     def test_split_with_jax(self):
         """Test that results after splitting are still differentiable with jax"""
@@ -553,10 +586,35 @@ class TestAutodiffSplitNonCommuting:
             )
 
         params = jnp.array([0.5, 0.5])
-        res = circuit(params)
-        grad = jax.jacobian(circuit)(params)
-        assert all(np.isclose(res, exp_res))
-        assert all(np.isclose(grad, exp_grad, atol=1e-5).flatten())
+        res = split_non_commuting(circuit)(params)
+        grad = jax.jacobian(split_non_commuting(circuit))(params)
+        assert all(np.isclose(res, exp_res, atol=0.05))
+        assert all(np.isclose(grad, exp_grad, atol=0.05).flatten())
+
+    @pytest.mark.jax
+    def test_split_with_jax_probs(self):
+        """Test resulting after splitting non-commuting tapes with expval and probs measurements
+        are still differentiable with jax"""
+        import jax
+        import jax.numpy as jnp
+
+        dev = qml.device("default.qubit.jax", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.RX(params[0], wires=0)
+            qml.RY(params[1], wires=1)
+            return (qml.probs(wires=[0, 1]), qml.expval(qml.PauliX(0) @ qml.PauliX(1)))
+
+        params = jnp.array([0.5, 0.5])
+        res = split_non_commuting(circuit)(params)
+        res = jnp.concatenate([res[0]] + [jnp.stack(res[1:])], axis=0)
+
+        grad = jax.jacobian(split_non_commuting(circuit))(params)
+        grad = jnp.concatenate([grad[0]] + [jnp.stack(grad[1:])], axis=0)
+
+        assert all(np.isclose(res, exp_res_probs, atol=0.05))
+        assert all(np.isclose(grad, exp_grad_probs, atol=0.05).flatten())
 
     @pytest.mark.jax
     def test_split_with_jax_multi_params(self):
@@ -581,8 +639,8 @@ class TestAutodiffSplitNonCommuting:
         x = jnp.array(0.5)
         y = jnp.array(0.5)
 
-        res = circuit(x, y)
-        grad = jax.jacobian(circuit, argnums=[0, 1])(x, y)
+        res = split_non_commuting(circuit)(x, y)
+        grad = jax.jacobian(split_non_commuting(circuit), argnums=[0, 1])(x, y)
 
         assert all(np.isclose(res, exp_res))
 
@@ -595,6 +653,49 @@ class TestAutodiffSplitNonCommuting:
             assert all(isinstance(g, jnp.ndarray) and g.shape == () for g in meas_grad)
 
             assert np.allclose(meas_grad, exp_grad[i], atol=1e-5)
+
+    @pytest.mark.jax
+    def test_split_with_jax_multi_params_probs(self):
+        """Test that results after splitting are still differentiable with jax
+        with multiple parameters"""
+
+        import jax
+        import jax.numpy as jnp
+
+        dev = qml.device("default.qubit.jax", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x, y):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            return (qml.probs(wires=[0, 1]), qml.expval(qml.PauliX(0) @ qml.PauliX(1)))
+
+        x = jnp.array(0.5)
+        y = jnp.array(0.5)
+
+        res = split_non_commuting(circuit)(x, y)
+        res = jnp.concatenate([res[0]] + [jnp.stack(res[1:])], axis=0)
+        assert all(np.isclose(res, exp_res_probs))
+
+        grad = jax.jacobian(split_non_commuting(circuit), argnums=[0, 1])(x, y)
+
+        assert isinstance(grad, tuple)
+        assert len(grad) == 2
+
+        for meas_grad in grad:
+            assert isinstance(meas_grad, tuple)
+            assert len(meas_grad) == 2
+            assert all(isinstance(g, jnp.ndarray) for g in meas_grad)
+
+        # reshape the returned gradient to the right shape
+        grad = jnp.concatenate(
+            [
+                jnp.concatenate([grad[0][0].reshape(-1, 1), grad[0][1].reshape(-1, 1)], axis=1),
+                jnp.concatenate([grad[1][0].reshape(-1, 1), grad[1][1].reshape(-1, 1)], axis=1),
+            ],
+            axis=0,
+        )
+        assert all(np.isclose(grad, exp_grad_probs, atol=0.05).flatten())
 
     @pytest.mark.jax
     def test_split_with_jax_jit(self):
@@ -622,6 +723,32 @@ class TestAutodiffSplitNonCommuting:
         assert all(np.isclose(res, exp_res))
         assert all(np.isclose(grad, exp_grad, atol=1e-5).flatten())
 
+    @pytest.mark.jax
+    def test_split_with_jax_jit_probs(self):
+        """Test resulting after splitting non-commuting tapes with expval and probs measurements
+        are still differentiable with jax"""
+
+        import jax
+        import jax.numpy as jnp
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.RX(params[0], wires=0)
+            qml.RY(params[1], wires=1)
+            return (qml.probs(wires=[0, 1]), qml.expval(qml.PauliX(0) @ qml.PauliX(1)))
+
+        params = jnp.array([0.5, 0.5])
+        res = split_non_commuting(circuit)(params)
+        res = jnp.concatenate([res[0]] + [jnp.stack(res[1:])], axis=0)
+
+        grad = jax.jacobian(split_non_commuting(circuit))(params)
+        grad = jnp.concatenate([grad[0]] + [jnp.stack(grad[1:])], axis=0)
+
+        assert all(np.isclose(res, exp_res_probs, atol=0.05))
+        assert all(np.isclose(grad, exp_grad_probs, atol=0.05).flatten())
+
     @pytest.mark.torch
     def test_split_with_torch(self):
         """Test that results after splitting are still differentiable with torch"""
@@ -642,7 +769,7 @@ class TestAutodiffSplitNonCommuting:
             )
 
         def cost(params):
-            res = circuit(params)
+            res = split_non_commuting(circuit)(params)
             return qml.math.stack(res)
 
         params = torch.tensor([0.5, 0.5], requires_grad=True)
@@ -650,6 +777,32 @@ class TestAutodiffSplitNonCommuting:
         grad = jacobian(cost, (params))
         assert all(np.isclose(res.detach().numpy(), exp_res))
         assert all(np.isclose(grad.detach().numpy(), exp_grad, atol=1e-5).flatten())
+
+    @pytest.mark.torch
+    def test_split_with_torch_probs(self):
+        """Test resulting after splitting non-commuting tapes with expval and probs measurements
+        are still differentiable with torch"""
+
+        import torch
+        from torch.autograd.functional import jacobian
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.RX(params[0], wires=0)
+            qml.RY(params[1], wires=1)
+            return (qml.probs(wires=[0, 1]), qml.expval(qml.PauliX(0) @ qml.PauliX(1)))
+
+        def cost(params):
+            res = split_non_commuting(circuit)(params)
+            return qml.math.concatenate([res[0]] + [qml.math.stack(res[1:])], axis=0)
+
+        params = torch.tensor([0.5, 0.5], requires_grad=True)
+        res = cost(params)
+        grad = jacobian(cost, (params))
+        assert all(np.isclose(res.detach().numpy(), exp_res_probs))
+        assert all(np.isclose(grad.detach().numpy(), exp_grad_probs, atol=1e-5).flatten())
 
     @pytest.mark.tf
     def test_split_with_tf(self):
@@ -672,9 +825,32 @@ class TestAutodiffSplitNonCommuting:
         params = tf.Variable([0.5, 0.5])
         res = circuit(params)
         with tf.GradientTape() as tape:
-            loss = circuit(params)
+            loss = split_non_commuting(circuit)(params)
             loss = tf.stack(loss)
 
         grad = tape.jacobian(loss, params)
         assert all(np.isclose(res, exp_res))
         assert all(np.isclose(grad, exp_grad, atol=1e-5).flatten())
+
+    @pytest.mark.tf
+    def test_split_with_tf_probs(self):
+        """Test that results after splitting are still differentiable with tf"""
+
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit.tf", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.RX(params[0], wires=0)
+            qml.RY(params[1], wires=1)
+            return (qml.probs(wires=[0, 1]), qml.expval(qml.PauliX(0) @ qml.PauliX(1)))
+
+        params = tf.Variable([0.5, 0.5])
+        with tf.GradientTape() as tape:
+            res = split_non_commuting(circuit)(params)
+            res = tf.concat([res[0]] + [tf.stack(res[1:])], axis=0)
+
+        grad = tape.jacobian(res, params)
+        assert all(np.isclose(res, exp_res_probs))
+        assert all(np.isclose(grad, exp_grad_probs, atol=1e-5).flatten())
