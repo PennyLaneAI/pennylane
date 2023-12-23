@@ -661,7 +661,12 @@
 * Conversion of circuits to openqasm now decomposes to a depth of 10, allowing support 
   for operators requiring more than 2 iterations of decomposition, such as the `ApproxTimeEvolution` gate.
   [(#4951)](https://github.com/PennyLaneAI/pennylane/pull/4951)
-  
+
+* In default.qubit, the adjustment of expval indexing when used with batches and the BasisStateProjector 
+  operator ensures accurate retrieval of probabilities for the desired state across all entries in the batch.
+  [(#4971)](https://github.com/PennyLaneAI/pennylane/pull/4971)
+
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -678,6 +683,7 @@ Amintor Dusko,
 Pieter Eendebak,
 Lillian Frederiksen,
 Pietropaolo Frisoni,
+Jérémie Gince,
 Josh Izaac,
 Juan Giraldo,
 Emiliano Godinez Ramirez,
