@@ -336,6 +336,8 @@
 * The function ``qml.Snapshot`` now supports arbitrary measurements of type ``StateMeasurement``.
   [(#4876)](https://github.com/PennyLaneAI/pennylane/pull/4908)
 
+* The transform ``split_non_commuting`` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables.
+
 <h4>Better support for batching</h4>
 
 * `default.qubit` now can evolve already batched states with `ParametrizedEvolution`
@@ -666,6 +668,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Abhishek Abhishek,
 Guillermo Alonso,
 Ali Asadi,
 Utkarsh Azad,
