@@ -36,7 +36,7 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
     Returns:
         qnode (QNode) or tuple[List[QuantumTape], function]: The transformed circuit as described in
         :func:`qml.transform <pennylane.transform>`.
-    # TODO: add examples for the newly supported MPs (qml.probs, etc.)
+
     **Example**
 
     This transform allows us to transform a QNode that measures non-commuting observables to
