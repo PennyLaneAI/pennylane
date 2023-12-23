@@ -329,7 +329,7 @@ class TestIntegration:
         assert all(np.isclose(res, np.array([0.0, -1.0, 0.0, 0.0, 1.0, 1 / np.sqrt(2)])))
 
     def test_expval_non_commuting_observables_qnode(self):
-        """Test expval with multiple non-commuting operators as a tranform program on the qnode."""
+        """Test expval with multiple non-commuting operators as a transform program on the qnode."""
         dev = qml.device("default.qubit", wires=6)
 
         @qml.qnode(dev)
@@ -360,6 +360,41 @@ class TestIntegration:
 
         assert all(np.isclose(res, np.array([0.0, -1.0, 0.0, 0.0, 1.0, 1 / np.sqrt(2)])))
 
+    def test_expval_probs_non_commuting_observables_qnode(self):
+        """Test expval with multiple non-commuting operators and probs with non-commuting wires as a
+        transform program on the qnode."""
+        dev = qml.device("default.qubit", wires=6)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(1)
+            qml.Hadamard(0)
+            qml.PauliZ(0)
+            qml.Hadamard(3)
+            qml.Hadamard(5)
+            qml.T(5)
+            return (
+                qml.probs(wires=[0, 1]),
+                qml.probs(wires=[1]),
+                qml.expval(qml.PauliZ(0)),
+                qml.expval(qml.PauliX(1) @ qml.PauliX(4)),
+                qml.expval(qml.PauliX(3)),
+                qml.expval(qml.PauliY(5)),
+            )
+
+        res = split_non_commuting(circuit)()
+
+        assert isinstance(res, tuple)
+        assert len(res) == 6
+        assert all(isinstance(r, np.ndarray) for r in res)
+
+        res_probs = qml.math.concatenate(res[:2], axis=0)
+        res_expval = qml.math.stack(res[2:])
+
+        assert all(np.isclose(res_probs, np.array([0.25, 0.25, 0.25, 0.25, 0.5, 0.5])))
+
+        assert all(np.isclose(res_expval, np.array([0.0, 0.0, 1.0, 1 / np.sqrt(2)])))
+
     def test_shot_vector_support(self):
         """Test output is correct when using shot vectors"""
 
@@ -385,7 +420,7 @@ class TestIntegration:
                 qml.expval(qml.PauliY(5)),
             )
 
-        res = circuit()
+        res = split_non_commuting(circuit)()
         assert isinstance(res, tuple)
         assert len(res) == 4
         assert all(isinstance(shot_res, tuple) for shot_res in res)
@@ -401,6 +436,66 @@ class TestIntegration:
         assert np.allclose(
             res, np.array([0.0, -1.0, 0.0, 0.0, 0.0, 1.0, 1 / np.sqrt(2)]), atol=0.05
         )
+
+    def test_shot_vector_support_sample(self):
+        """Test output is correct when using shots and sample and expval measurements"""
+
+        dev = qml.device("default.qubit", wires=2, shots=(10, 20))
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliZ(0)
+            return (qml.sample(wires=[0, 1]), qml.expval(qml.PauliZ(0)))
+
+        res = split_non_commuting(circuit)()
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        assert all(isinstance(shot_res, tuple) for shot_res in res)
+        assert all(len(shot_res) == 2 for shot_res in res)
+        # pylint:disable=not-an-iterable
+        assert all(all(list(isinstance(r, np.ndarray) for r in shot_res)) for shot_res in res)
+
+        assert all(
+            shot_res[0].shape in [(10, 2), (20, 2)] and shot_res[1].shape == () for shot_res in res
+        )
+
+        # check all the wire samples are as expected
+        sample_res = qml.math.concatenate(
+            [qml.math.concatenate(shot_res[0], axis=0) for shot_res in res], axis=0
+        )
+        assert np.allclose(sample_res, 0.0, atol=0.05)
+
+        expval_res = qml.math.stack([shot_res[1] for shot_res in res])
+        assert np.allclose(expval_res, np.array([1.0, 1.0]), atol=0.05)
+
+    def test_shot_vector_support_counts(self):
+        """Test output is correct when using shots, counts and expval measurements"""
+
+        dev = qml.device("default.qubit", wires=2, shots=(10, 20))
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliZ(0)
+            return (qml.counts(wires=[0, 1]), qml.expval(qml.PauliZ(0)))
+
+        res = split_non_commuting(circuit)()
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        assert all(isinstance(shot_res, tuple) for shot_res in res)
+        assert all(len(shot_res) == 2 for shot_res in res)
+        # pylint:disable=not-an-iterable
+        assert all(
+            isinstance(shot_res[0], dict) and isinstance(shot_res[1], np.ndarray)
+            for shot_res in res
+        )
+
+        assert all(shot_res[1].shape == () for shot_res in res)
+
+        # check all the wire counts are as expected
+        assert all(shot_res[0]["00"] in [10, 20] for shot_res in res)
+
+        expval_res = qml.math.stack([shot_res[1] for shot_res in res])
+        assert np.allclose(expval_res, np.array([1.0, 1.0]), atol=0.05)
 
 
 # Autodiff tests
