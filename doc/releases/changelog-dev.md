@@ -336,7 +336,7 @@
 * The function ``qml.Snapshot`` now supports arbitrary measurements of type ``StateMeasurement``.
   [(#4876)](https://github.com/PennyLaneAI/pennylane/pull/4908)
 
-* The transform ``split_non_commuting`` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables.
+* The transform ``split_non_commuting`` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables. [(#4972)](https://github.com/PennyLaneAI/pennylane/pull/4972)
 
 <h4>Better support for batching</h4>
 
