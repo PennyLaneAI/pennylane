@@ -186,10 +186,6 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
                 pauliz_obs = pauliz_obs @ qml.PauliZ(wire)
 
             obs_list.append(pauliz_obs)
-        else:
-            raise NotImplementedError(
-                f"Measurement of type {type(obs)} is currently not supported by this transform."
-            )
 
     # If there is more than one group of commuting observables, split tapes
     _, group_coeffs = qml.pauli.group_observables(obs_list, range(len(obs_list)))
