@@ -436,6 +436,11 @@ class BasisStateProjector(Projector, Operation):
     # arguments, but with free key word arguments.
     def __init__(self, state, wires, id=None):
         wires = Wires(wires)
+        if qml.math.get_deep_interface(state) != "jax":
+            state = list(qml.math.toarray(state).astype(int))
+            if not set(state).issubset({0, 1}):
+                raise ValueError(f"Basis state must only consist of 0s and 1s; got {state}")
+
         super().__init__(state, wires=wires, id=id)
 
     def __new__(cls, *_, **__):  # pylint: disable=arguments-differ
@@ -489,9 +494,6 @@ class BasisStateProjector(Projector, Operation):
          [0. 0. 0. 0.]
          [0. 0. 0. 0.]]
         """
-        basis_state = list(qml.math.toarray(basis_state).astype(int))
-        if not set(basis_state).issubset({0, 1}):
-            raise ValueError(f"Basis state must only consist of 0s and 1s; got {basis_state}")
         m = np.zeros((2 ** len(basis_state), 2 ** len(basis_state)))
         idx = int("".join(str(i) for i in basis_state), 2)
         m[idx, idx] = 1
@@ -523,11 +525,14 @@ class BasisStateProjector(Projector, Operation):
         >>> BasisStateProjector.compute_eigvals([0, 1])
         [0. 1. 0. 0.]
         """
-        basis_state = list(qml.math.toarray(basis_state).astype(int))
-        if not set(basis_state).issubset({0, 1}):
-            raise ValueError(f"Basis state must only consist of 0s and 1s; got {basis_state}")
         w = np.zeros(2 ** len(basis_state))
+        if qml.math.get_deep_interface(basis_state) == "jax":
+            idx = sum(2**i * si for i, si in enumerate(reversed(basis_state)))
+            w = qml.math.asarray(w, like="jax")
+            # assuming just jax at this point
+            return w.at[idx].set(1)
         idx = int("".join(str(i) for i in basis_state), 2)
+
         w[idx] = 1
         return w
 
@@ -567,6 +572,9 @@ class StateVectorProjector(Projector):
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
     def __init__(self, state, wires, id=None):
+        wires = Wires(wires)
+        if qml.math.get_deep_interface(state) != "jax":
+            state = list(qml.math.toarray(state))
         super().__init__(state, wires=wires, id=id)
 
     def __new__(cls, *_, **__):  # pylint: disable=arguments-differ
@@ -647,7 +655,6 @@ class StateVectorProjector(Projector):
          [0. 0.5 0.5 0.]
          [0. 0.  0.  0.]]
         """
-        state_vector = list(qml.math.toarray(state_vector))
         return qml.math.outer(state_vector, qml.math.conj(state_vector))
 
     @staticmethod
@@ -676,8 +683,9 @@ class StateVectorProjector(Projector):
         >>> StateVectorProjector.compute_eigvals([0, 0, 1, 0])
         array([1, 0, 0, 0])
         """
-        state_vector = list(qml.math.toarray(state_vector))
         w = qml.math.zeros_like(state_vector)
+        if qml.math.get_deep_interface(state_vector) == "jax":
+            return w.at[0].set(1)
         w[0] = 1
         return w
 
@@ -712,7 +720,6 @@ class StateVectorProjector(Projector):
         # Adapting the approach discussed in the link below to work with arbitrary complex-valued state vectors.
         # Alternatively, we could take the adjoint of the Mottonen decomposition for the state vector.
         # https://quantumcomputing.stackexchange.com/questions/10239/how-can-i-fill-a-unitary-knowing-only-its-first-column
-        state_vector = qml.math.toarray(state_vector)
         phase = qml.math.exp(-1j * qml.math.angle(state_vector[0]))
         psi = phase * state_vector
         denominator = qml.math.sqrt(2 + 2 * psi[0])
