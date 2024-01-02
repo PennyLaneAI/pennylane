@@ -89,8 +89,8 @@ _INSTANCES_TO_FAIL = [
         MatrixUndefinedError,  # empty decomposition, matrix differs from decomp's matrix
     ),
     (
-        qml.pulse.ParametrizedEvolution(qml.PauliX(0) + (lambda p, t: p * t) * qml.PauliZ(0)),
-        PickleError,  # Can't pickle, binding parameters fails, and more
+        qml.pulse.ParametrizedEvolution(qml.PauliX(0) + sum * qml.PauliZ(0)),
+        ValueError,  # binding parameters fail, and more
     ),
     (
         qml.pow(qml.IsingXX(1.1, [0, 1]), 2.5),
