@@ -249,9 +249,9 @@ def adjoint_vjp(
         Tuple[Number]: gradient vector for input parameters
     """
     # See ``adjoint_jacobian.md`` to more information on the algorithm.
-    cotangents = np.array(cotangents)
 
     # Map wires if custom wire labels used
+    print(cotangents)
     if set(tape.wires) != set(range(tape.num_wires)):
         wire_map = {w: i for i, w in enumerate(tape.wires)}
         tapes, fn = qml.map_wires(tape, wire_map)

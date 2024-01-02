@@ -613,10 +613,6 @@ class TestJaxExecuteIntegration:
             assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
         jac_fn = jax.jacobian(cost, argnums=[0, 1])
-        if execute_kwargs.get("device_vjp", False):
-            with pytest.raises(NotImplementedError):
-                jac_fn(x, y)
-            return
         res = jac_fn(x, y)
         assert isinstance(res, tuple) and len(res) == 2
         assert res[0].shape == (3 * shots.num_copies,) if shots.has_partitioned_shots else (3,)
