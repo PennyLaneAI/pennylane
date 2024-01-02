@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-<h4>Statistics and drawings for mid-circuit measurements 🎨</h4>
+<h4>Drawing and statistics for mid-circuit measurements 🎨</h4>
 
 * Mid-circuit measurements can now be visualized with the text-based `qml.draw()` and the 
   graphical `qml.draw_mpl()`.
@@ -49,7 +49,7 @@
   >>> print(qml.draw_mpl(circuit)())
   ```
   
-  <img src="https://docs.pennylane.ai/en/latest/_images/mid-circuit-measurement.png" width=70%/>
+  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/mid-circuit-measurement.png" width=70%/>
 
 * Users can now return statistics for multiple mid-circuit measurements.
   [(#4888)](https://github.com/PennyLaneAI/pennylane/pull/4888)
