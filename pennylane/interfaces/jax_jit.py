@@ -133,7 +133,7 @@ def _execute_wrapper(params, tapes, execute_fn, _, device) -> ResultBatch:
     shape_dtype_structs = tuple(_result_shape_dtype_struct(t, device) for t in tapes.vals)
 
     def pure_callback_wrapper(p):
-        new_tapes = _set_trainable_parameters_on_copy(tapes.vals, p)
+        new_tapes = _set_all_parameters_on_copy(tapes.vals, p)
         res = tuple(execute_fn(new_tapes))
         # When executed under `jax.vmap` the `result_shapes_dtypes` will contain
         # the shape without the vmap dimensions, while the function here will be
