@@ -71,7 +71,7 @@ class MPLDrawer:
         wire_options=None (dict): matplotlib configuration options for drawing the wire lines
         figsize=None (Iterable): Allows users to specify the size of the figure manually. Defaults
             to scale with the size of the circuit via ``n_layers`` and ``n_wires``.
-        figsize=None (matplotlib Figure): Allows users to specify the figure window to plot to.
+        fig=None (matplotlib Figure): Allows users to specify the figure window to plot to.
 
     **Example**
 
