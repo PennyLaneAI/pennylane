@@ -50,6 +50,7 @@ _INSTANCES_TO_TEST = [
     qml.exp(qml.PauliX(0), 1.1),
     qml.ops.Evolution(qml.PauliX(0), 5.2),
     qml.QutritBasisState([1, 2, 0], wires=[0, 1, 2]),
+    qml.resource.FirstQuantization(1, 2, 1),
 ]
 """Valid operator instances that could not be auto-generated."""
 
@@ -96,12 +97,8 @@ _INSTANCES_TO_FAIL = [
         PickleError,  # Can't pickle, binding parameters fails, and more
     ),
     (
-        qml.resource.FirstQuantization(1, 2, 1),
-        IndexError,  # too many qubits for validation function
-    ),
-    (
-        qml.resource.DoubleFactorization(np.eye(2), np.ones((2, 2, 2, 2))),
-        IndexError,  # too many qubits for validation function
+        qml.resource.DoubleFactorization(np.eye(2), np.arange(16).reshape((2,) * 4)),
+        TypeError,  # op.eigvals is a list (overwritten in the init)
     ),
 ]
 """
