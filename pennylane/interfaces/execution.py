@@ -805,7 +805,7 @@ def execute(
     )
 
     if interface in jpc_interfaces:
-        results = ml_boundary_execute(tapes, execute_fn, jpc, device=device)
+        results = ml_boundary_execute(tuple(tapes), execute_fn, jpc, device=device)
     else:
         results = ml_boundary_execute(
             tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff

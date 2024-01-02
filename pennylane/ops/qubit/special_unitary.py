@@ -402,6 +402,9 @@ class SpecialUnitary(Operation):
     grad_method = None
     """Gradient computation method."""
 
+    def _flatten(self):
+        return self.data, (self.wires, tuple())
+
     def __init__(self, theta, wires, id=None):
         num_wires = 1 if isinstance(wires, int) else len(wires)
         self.hyperparameters["num_wires"] = num_wires
