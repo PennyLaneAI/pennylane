@@ -260,9 +260,9 @@ def adjoint_vjp(
     ket = state if state is not None else get_final_state(tape)[0]
 
     # One dimension for number of expectation values, one dimension for batch size.
-    batched_cotangents = qml.math.ndim(cotangents) == 2
 
     if isinstance(tape.measurements[0], qml.measurements.StateMP):
+        batched_cotangents = qml.math.ndim(cotangents) == 2
         batch_size = qml.math.shape(cotangents)[0] if batched_cotangents else None
         bras = np.squeeze(np.conj(cotangents.reshape(-1, *ket.shape)))
 
@@ -270,6 +270,12 @@ def adjoint_vjp(
             return val
 
     else:
+        single_cotangent = len(tape.measurements) == 1
+        cotangents = np.array(cotangents)
+        if single_cotangent:
+            cotangents = np.expand_dims(cotangents, 0)
+        batched_cotangents = qml.math.ndim(cotangents) == 2
+
         batch_size = qml.math.shape(cotangents)[1] if batched_cotangents else None
         new_obs = []
         zero_inds = []
