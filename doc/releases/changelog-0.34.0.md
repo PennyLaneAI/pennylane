@@ -386,13 +386,13 @@
 * A new pipeline to run benchmarks and plot graphs comparing with a fixed reference has been added. This pipeline will run on a schedule and can be activated on a PR with the label `ci:run_benchmarks`.
   [(#4741)](https://github.com/PennyLaneAI/pennylane/pull/4741)
 
+* `default.qubit` now supports adjoint differentiation for arbitrary diagonal state-based measurements.
+  [(#4865)](https://github.com/PennyLaneAI/pennylane/pull/4865)
+
 * The benchmarks pipeline has been expanded to export all benchmark data to a single JSON file and a CSV file with runtimes. This includes all references and local benchmarks.
   [(#4873)](https://github.com/PennyLaneAI/pennylane/pull/4873)
 
-<h4>Other improvements</h4>
-
-* `default.qubit` now supports adjoint differentiation for arbitrary diagonal state-based measurements.
-  [(#4865)](https://github.com/PennyLaneAI/pennylane/pull/4865)
+<h4>Final phase of updates to transforms</h4>
 
 * `qml.quantum_monte_carlo` now uses the new transform system.
   [(#4708)](https://github.com/PennyLaneAI/pennylane/pull/4708/)
@@ -406,6 +406,8 @@
   [mypy](https://github.com/python/mypy) if you wish to ensure types are
   being passed correctly.
   [(#4942)](https://github.com/PennyLaneAI/pennylane/pull/4942/)
+
+<h4>Other improvements</h4>
 
 * `SampleMeasurement` now has an optional method `process_counts` for computing the measurement results from a counts
   dictionary.
