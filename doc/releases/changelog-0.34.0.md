@@ -51,59 +51,61 @@
   
   <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/mid-circuit-measurement.png" width=70%/>
 
-* Users can now return statistics for multiple mid-circuit measurements.
+* It is now possible to return statistics of composite mid-circuit measurements.
   [(#4888)](https://github.com/PennyLaneAI/pennylane/pull/4888)
 
-  There are two ways in which mid-circuit measurement statistics can be collected:
+  Mid-circuit measurement results can be composed using basic arithmetic operations and then
+  statistics can be calculated by putting the result within a PennyLane
+  [measurement](https://docs.pennylane.ai/en/stable/introduction/measurements.html) like
+  `qml.expval()`. For example:
 
-  * By using arithmetic/binary operators. This can be through unary or binary operators as such:
+  ```python
+  import pennylane as qml
 
-    ```python
-    import pennylane as qml
+  dev = qml.device("default.qubit")
 
-    dev = qml.device("default.qubit")
+  @qml.qnode(dev)
+  def circuit(phi, theta):
+      qml.RX(phi, wires=0)
+      m0 = qml.measure(wires=0)
+      qml.RY(theta, wires=1)
+      m1 = qml.measure(wires=1)
+      return qml.expval(~m0 + m1)
 
-    @qml.qnode(dev)
-    def circuit(phi, theta):
-        qml.RX(phi, wires=0)
-        m0 = qml.measure(wires=0)
-        qml.RY(theta, wires=1)
-        m1 = qml.measure(wires=1)
-        return qml.expval(~m0 + m1)
+  print(circuit(1.23, 4.56))
+  ```
+  ```
+  1.2430187928114291
+  ```
 
-    print(circuit(1.23, 4.56))
-    ```
-    ```
-    1.2430187928114291
-    ```
+  Another option, for ease-of-use when using `qml.sample()`, `qml.probs()`, or `qml.counts()`, is to
+  provide a simple list of mid-circuit measurement results:
 
-  * By using a list of mid-circuit measurement values:
+  ```python
+  import pennylane as qml
 
-    ```python
-    import pennylane as qml
+  dev = qml.device("default.qubit")
 
-    dev = qml.device("default.qubit")
+  @qml.qnode(dev)
+  def circuit(phi, theta):
+      qml.RX(phi, wires=0)
+      m0 = qml.measure(wires=0)
+      qml.RY(theta, wires=1)
+      m1 = qml.measure(wires=1)
+      return qml.sample([m0, m1])
 
-    @qml.qnode(dev)
-    def circuit(phi, theta):
-        qml.RX(phi, wires=0)
-        m0 = qml.measure(wires=0)
-        qml.RY(theta, wires=1)
-        m1 = qml.measure(wires=1)
-        return qml.sample([m0, m1])
+  print(circuit(1.23, 4.56, shots=5))
+  ```
+  ```
+  [[0 1]
+   [0 1]
+   [0 0]
+   [1 0]
+   [0 1]]
+  ```
 
-    print(circuit(1.23, 4.56, shots=5))
-    ```
-    ```
-    [[0 1]
-     [0 1]
-     [0 0]
-     [1 0]
-     [0 1]]
-    ```
-
-  This feature is supported on `default.qubit`, `default.qubit.legacy`, and `default.mixed`. To
-  learn more about which measurements and arithmetic operators are supported, refer to the
+  Composite mid-circuit measurement statistics are supported on `default.qubit` and `default.mixed`.
+  To learn more about which measurements and arithmetic operators are supported, refer to the
   [Measurements](https://docs.pennylane.ai/en/stable/introduction/measurements.html) page and the
   documentation for [`qml.measure`](https://docs.pennylane.ai/en/stable/code/api/pennylane.measure.html).
 
