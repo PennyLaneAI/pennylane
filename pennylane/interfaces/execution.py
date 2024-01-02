@@ -725,8 +725,6 @@ def execute(
                 return device.compute_derivatives(numpy_tapes, config)
 
     elif gradient_fn == "device":
-        # if max_diff > 1:
-        #    raise NotImplementedError("no higher order derivatives with device derivatives")
         # gradient function is a device method
 
         # Expand all tapes as per the device's expand function here.
