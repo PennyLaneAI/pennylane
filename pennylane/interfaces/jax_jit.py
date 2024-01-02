@@ -66,9 +66,14 @@ def _to_jax(result: qml.typing.ResultBatch) -> qml.typing.ResultBatch:
     return jnp.array(result)
 
 
-def _set_parameters_on_copy(tapes, params):
-    """Copy a set of tapes with operations and set parameters"""
+def _set_all_parameters_on_copy(tapes, params):
+    """Copy a set of tapes with operations and set all parameters"""
     return tuple(t.bind_new_parameters(a, list(range(len(a)))) for t, a in zip(tapes, params))
+
+
+def _set_trainable_parameters_on_copy(tapes, params):
+    """Copy a set of tapes with operations and set all trainable parameters"""
+    return tuple(t.bind_new_parameters(a, t.trainable_params) for t, a in zip(tapes, params))
 
 
 def _result_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.Device"):
@@ -128,7 +133,7 @@ def _execute_wrapper(params, tapes, execute_fn, _, device) -> ResultBatch:
     shape_dtype_structs = tuple(_result_shape_dtype_struct(t, device) for t in tapes.vals)
 
     def pure_callback_wrapper(p):
-        new_tapes = _set_parameters_on_copy(tapes.vals, p)
+        new_tapes = _set_trainable_parameters_on_copy(tapes.vals, p)
         res = tuple(execute_fn(new_tapes))
         # When executed under `jax.vmap` the `result_shapes_dtypes` will contain
         # the shape without the vmap dimensions, while the function here will be
@@ -164,7 +169,7 @@ def _execute_and_compute_jvp(tapes, execute_fn, jpc, device, primals, tangents):
     )
 
     def wrapper(inner_params):
-        new_tapes = _set_parameters_on_copy(tapes.vals, inner_params)
+        new_tapes = _set_all_parameters_on_copy(tapes.vals, inner_params)
         return jpc.execute_and_compute_jacobian(new_tapes)
 
     res_struct = tuple(_result_shape_dtype_struct(t, device) for t in tapes.vals)
@@ -185,7 +190,7 @@ def _vjp_bwd(tapes, execute_fn, jpc, device, params, dy):
     """Perform the backward pass of a vjp calculation, returning the vjp."""
 
     def wrapper(inner_params, inner_dy):
-        new_tapes = _set_parameters_on_copy(tapes.vals, inner_params)
+        new_tapes = _set_trainable_parameters_on_copy(tapes.vals, inner_params)
         return tuple(jpc.compute_vjp(new_tapes, inner_dy))
 
     vjp_shape = _pytree_shape_dtype_struct(params)

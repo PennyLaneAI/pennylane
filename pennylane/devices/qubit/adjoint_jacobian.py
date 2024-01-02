@@ -218,7 +218,9 @@ def adjoint_jvp(tape: QuantumTape, tangents: Tuple[Number], state=None):
     return tuple(np.array(t) for t in tangents_out)
 
 
-def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
+def adjoint_vjp(
+    tape: QuantumTape, cotangents: Tuple[Number], state=None
+):  # pylint: disable=too-many-statements
     """The vector jacobian product used in reverse-mode differentiation.
 
     Implements the adjoint method outlined in
@@ -247,8 +249,6 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
         Tuple[Number]: gradient vector for input parameters
     """
     # See ``adjoint_jacobian.md`` to more information on the algorithm.
-
-    print(cotangents)
     cotangents = np.array(cotangents)
 
     # Map wires if custom wire labels used
@@ -341,7 +341,5 @@ def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
             param_number -= 1
 
         bras = apply_operation(adj_op, bras, is_state_batched=batched_cotangents)
-
-    print(f"adj vjp output:\n{cotangents_in}")
 
     return tuple(cotangents_in)
