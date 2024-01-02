@@ -211,7 +211,7 @@ def parity_transform(
     + (0.25+0j) * X(2)
     + 0.25j * Y(2) @ Z(3)
     """
-    warnings.warn("This mapping is not compatible with other functions in PennyLane", UserWarning)
+    warnings.warn("This mapping is not, yet, fully compatible with other parts of PennyLane", UserWarning)
 
     return _parity_transform_dispatch(fermi_operator, n, ps, wire_map, tol)
 
