@@ -1,6 +1,6 @@
 :orphan:
 
-# Release 0.34.0-dev (development release)
+# Release 0.34.0 (current release)
 
 <h3>New features since last release</h3>
 
@@ -661,6 +661,10 @@
 * `qml.map_wires` no longer fails when mapping nested quantum tapes.
   [(#4901)](https://github.com/PennyLaneAI/pennylane/pull/4901)
 
+* Conversion of circuits to openqasm now decomposes to a depth of 10, allowing support 
+  for operators requiring more than 2 iterations of decomposition, such as the `ApproxTimeEvolution` gate.
+  [(#4951)](https://github.com/PennyLaneAI/pennylane/pull/4951)
+  
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -674,6 +678,7 @@ Astral Cai,
 Minh Chau,
 Isaac De Vlugt,
 Amintor Dusko,
+Pieter Eendebak,
 Lillian Frederiksen,
 Pietropaolo Frisoni,
 Josh Izaac,
