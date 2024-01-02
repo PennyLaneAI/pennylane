@@ -60,7 +60,7 @@ is enabled will effect what we can and cannot do inside the VJP function. Non-ea
 
 For example, when eager mode is disabled, we cannot cast the relevant parameters to numpy.
 To circumvent this, we convert the parameters to numpy outside the VJP function, and then
-use those numbers instead. 
+use those numbers instead.
 
 Due to the fact that the ``dy`` must be converted to numpy
 for it to be used with a device-provided VJP, we are restricting the use of device VJP's to
