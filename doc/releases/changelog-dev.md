@@ -266,6 +266,9 @@
 * The function ``qml.Snapshot`` now supports arbitrary measurements of type ``StateMeasurement``.
   [(#4876)](https://github.com/PennyLaneAI/pennylane/pull/4908)
 
+* The function ``qml.draw_mpl`` now accept a keyword argument ``fig`` to specify the output figure window.
+  [(#4956)](https://github.com/PennyLaneAI/pennylane/pull/4956)
+
 <h4>Better support for batching</h4>
 
 * `default.qubit` now can evolve already batched states with `ParametrizedEvolution`
@@ -531,6 +534,7 @@ Astral Cai,
 Minh Chau,
 Isaac De Vlugt,
 Amintor Dusko,
+Pieter Thijs Eendebak,
 Lillian Frederiksen,
 Josh Izaac,
 Juan Giraldo,
