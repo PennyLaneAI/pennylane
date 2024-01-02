@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,9 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
-Version number (major.minor.patch[-label])
+Submodule for performing mixed state simulations of qutrit-based quantum circuits.
+
+This submodule is internal and subject to change without a deprecation cycle. Use
+at your own discretion.
+
+.. currentmodule:: pennylane.devices.qutrit_mixed
+.. autosummary::
+    :toctree: api
+
+    create_initial_state
 """
 
-__version__ = "0.35.0-dev"
+from .initialize_state import create_initial_state
