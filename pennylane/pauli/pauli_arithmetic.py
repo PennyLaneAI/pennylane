@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """The Pauli arithmetic abstract reduced representation classes"""
+import warnings
 from copy import copy
 from functools import reduce, lru_cache
 from typing import Iterable
@@ -172,7 +173,7 @@ class PauliWord(dict):
     def __hash__(self):
         return hash(frozenset(self.items()))
 
-    def __mul__(self, other):
+    def __matmul__(self, other):
         """Multiply two Pauli words together using the matrix product if wires overlap
         and the tensor product otherwise.
 
@@ -201,6 +202,13 @@ class PauliWord(dict):
                 result[wire] = term
 
         return PauliWord(result), coeff
+
+    def __mul__(self, other):
+        warnings.warn(
+            "Matrix/Tensor multiplication using the * operator on PauliWords and PauliSentences is deprecated, use @ instead.",
+            qml.PennyLaneDeprecationWarning,
+        )
+        return self @ other
 
     def __str__(self):
         """String representation of a PauliWord."""
@@ -394,7 +402,7 @@ class PauliSentence(dict):
         memo[id(self)] = res
         return res
 
-    def __mul__(self, other):
+    def __matmul__(self, other):
         """Multiply two Pauli sentences by iterating over each sentence and multiplying
         the Pauli words pair-wise"""
         final_ps = PauliSentence()
@@ -404,10 +412,17 @@ class PauliSentence(dict):
 
         for pw1 in self:
             for pw2 in other:
-                prod_pw, coeff = pw1 * pw2
+                prod_pw, coeff = pw1 @ pw2
                 final_ps[prod_pw] = final_ps[prod_pw] + coeff * self[pw1] * other[pw2]
 
         return final_ps
+
+    def __mul__(self, other):
+        warnings.warn(
+            "Matrix/Tensor multiplication using the * operator on PauliWords and PauliSentences is deprecated, use @ instead.",
+            qml.PennyLaneDeprecationWarning,
+        )
+        return self @ other
 
     def __str__(self):
         """String representation of the PauliSentence."""

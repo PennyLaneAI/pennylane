@@ -546,6 +546,10 @@
   becomes obsolete and will be removed in v0.35.
   [(#4959)](https://github.com/PennyLaneAI/pennylane/pull/4959)
 
+* The star operator `*` for matrix and tensor products of `PauliWord` and `PauliSentence` instances
+  will be removed. Use `@` instead.
+  [(#)]()
+
 <h3>Documentation 📝</h3>
 
 * Documentation for unitaries and operations decompositions was moved from `qml.transforms` to `qml.ops.ops_math`.

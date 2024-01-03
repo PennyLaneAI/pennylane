@@ -100,6 +100,12 @@ Pending deprecations
   - Deprecated in v0.34
   - Will be removed in v0.35
 
+* ``PauliWord`` and ``PauliSentence`` no longer use ``*`` for matrix and tensor products,
+  but instead use ``@`` to conform with the PennyLane standard.
+
+  - Deprecated in v0.34
+  - Will be removed in v0.35
+
 Completed deprecation cycles
 ----------------------------
 

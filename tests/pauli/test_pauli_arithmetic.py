@@ -48,6 +48,32 @@ ps4 = PauliSentence({pw4: 1})
 ps5 = PauliSentence({})
 
 
+class TestDeprecations:
+    def test_deprecation_warning_PauliWord(
+        self,
+    ):
+        """Test that a PennyLaneDeprecationWarning is raised when using * for matrix multiplication of two PauliWords"""
+        pw1 = PauliWord({0: "X"})
+        pw2 = PauliWord({0: "Y"})
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="Matrix/Tensor multiplication using"
+        ):
+            pw1 * pw2
+
+    def test_deprecation_warning_PauliSentence(
+        self,
+    ):
+        """Test that a PennyLaneDeprecationWarning is raised when using * for matrix multiplication of two PauliSentences"""
+        ps1 = PauliSentence({PauliWord({0: "X"}): 1})
+        ps2 = PauliSentence({PauliWord({0: "Y"}): 1})
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="Matrix/Tensor multiplication using"
+        ):
+            ps1 * ps2
+
+
 class TestPauliWord:
     def test_identity_removed_on_init(self):
         """Test that identities are removed on init."""
