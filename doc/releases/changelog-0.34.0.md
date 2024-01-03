@@ -276,7 +276,7 @@
 
 <h4>Use an iterative approach for quantum phase estimation 🔄</h4>
 
-* Iterative Quantum Phase Estimation is now available from `qml.iterative_qpe`.
+* Iterative Quantum Phase Estimation is now available with `qml.iterative_qpe`.
   [(#4804)](https://github.com/PennyLaneAI/pennylane/pull/4804)
 
   The subroutine can be used similarly to mid-circuit measurements:
@@ -284,18 +284,18 @@
   ```python
   import pennylane as qml
 
-  dev = qml.device("default.qubit", shots = 5)
+  dev = qml.device("default.qubit", shots=5)
 
   @qml.qnode(dev)
   def circuit():
 
     # Initial state
-    qml.PauliX(wires = [0])
+    qml.PauliX(wires=[0])
 
     # Iterative QPE
-    measurements = qml.iterative_qpe(qml.RZ(2., wires = [0]), ancilla = [1], iters = 3)
+    measurements = qml.iterative_qpe(qml.RZ(2., wires=[0]), ancilla=[1], iters=3)
 
-    return [qml.sample(op = meas) for meas in measurements]
+    return [qml.sample(op=meas) for meas in measurements]
   ```
 
   ```pycon
