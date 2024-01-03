@@ -325,6 +325,15 @@
 * `qml.draw` and `qml.draw_mpl` now render operator IDs.
   [(#4749)](https://github.com/PennyLaneAI/pennylane/pull/4749)
 
+  The ID can be specified as a keyword argument when instantiating an operator:
+
+  ```pycon
+  >>> def circuit():
+  ...     qml.RX(0.123, id="data", wires=0)
+  >>> print(qml.draw(circuit)())
+  0: ──RX(0.12,"data")─┤  
+  ```
+
 * Non-parametric operators such as `Barrier`, `Snapshot`, and `Wirecut` have been grouped together and moved to `pennylane/ops/meta.py`.
   Additionally, the relevant tests have been organized and placed in a new file, `tests/ops/test_meta.py`.
   [(#4789)](https://github.com/PennyLaneAI/pennylane/pull/4789)
