@@ -335,9 +335,6 @@
 * `==` and `!=` operands can now be used with `TransformProgram` and `TransformContainers` instances.
   [(#4858)](https://github.com/PennyLaneAI/pennylane/pull/4858)
 
-Added qutrit_mixed module to qml.devices to store helper functions for future qutrit mixed state device
-Added create_initial_state function which creates initial states for future qutrit mixed device
-
 * A `qutrit_mixed` module has been added to `qml.devices` to store helper functions for a future qutrit 
   mixed-state device. A function called `create_initial_state` has been added to this module that creates 
   device-compatible initial states.
