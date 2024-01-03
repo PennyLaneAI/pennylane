@@ -245,7 +245,7 @@
   gateset. To account for this, a desired total circuit decomposition error, `epsilon`, must be 
   specified when using `qml.clifford_t_decomposition`:
 
-  ```pycon
+  ```python
   dev = qml.device("default.qubit")
 
   @qml.qnode(dev)
