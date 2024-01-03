@@ -37,8 +37,6 @@
   provide a simple list of mid-circuit measurement results:
 
   ```python
-  import pennylane as qml
-
   dev = qml.device("default.qubit")
 
   @qml.qnode(dev)
@@ -81,8 +79,6 @@
   is an all-encompassing example:
 
   ```python
-  import pennylane as qml
-
   def circuit():
       m0 = qml.measure(0, reset=True)
       m1 = qml.measure(1, postselect=1)
