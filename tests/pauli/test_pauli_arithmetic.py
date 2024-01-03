@@ -59,7 +59,7 @@ class TestDeprecations:
         with pytest.warns(
             qml.PennyLaneDeprecationWarning, match="Matrix/Tensor multiplication using"
         ):
-            pauli1 * pauli2
+            _ = pauli1 * pauli2
 
     def test_deprecation_warning_PauliSentence(
         self,
@@ -71,7 +71,7 @@ class TestDeprecations:
         with pytest.warns(
             qml.PennyLaneDeprecationWarning, match="Matrix/Tensor multiplication using"
         ):
-            pauli1 * pauli2
+            _ = pauli1 * pauli2
 
 
 class TestPauliWord:
