@@ -116,7 +116,6 @@ def all_state_postprocessing(results, measurements, wire_order):
 
 
 @qml.transform
-@qml.QueuingManager.stop_recording()
 def adjoint_state_measurements(tape: QuantumTape) -> (Tuple[QuantumTape], Callable):
     """Perform adjoint measurement preprocessing.
 

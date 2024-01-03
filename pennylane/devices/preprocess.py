@@ -230,7 +230,6 @@ def warn_about_trainable_observables(
 
 
 @transform
-@qml.QueuingManager.stop_recording()
 def decompose(
     tape: qml.tape.QuantumTape,
     stopping_condition: Callable[[qml.operation.Operator], bool],
