@@ -45,7 +45,7 @@ def transform(
             * The transform must have the following structure (type hinting is optional): ``my_quantum_transform(tape:
               qml.tape.QuantumTape, ...) -> ( Sequence[qml.tape.QuantumTape], Callable)``
 
-            * The transform must not queue any operations as side effects. See :meth:`~.QueuingManager.stop_recording`.
+            * The transform must not queue any operations as side effects. See :meth:`pennylane.QueuingManager.stop_recording`.
 
         expand_transform (Callable): An optional expand transform is applied directly before the input
             quantum transform. It must be a function that satisfies the same requirements as
