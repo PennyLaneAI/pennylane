@@ -25,6 +25,7 @@ import pennylane as qml
 from pennylane.operation import Operator, Operation, Observable, Tensor, Channel
 from pennylane.operation import DiagGatesUndefinedError, MatrixUndefinedError
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointObs, AdjointOperation, AdjointOpObs
+from pennylane.ops.op_math.pow import PowObs, PowOperation, PowOpObs
 
 _INSTANCES_TO_TEST = [
     qml.sum(qml.PauliX(0), qml.PauliZ(0)),
@@ -128,6 +129,9 @@ _ABSTRACT_OR_META_TYPES = {
     qml.ops.qubit.StateVectorProjector,
     qml.ops.qubit.StatePrepBase,
     qml.resource.ResourcesOperation,
+    PowOpObs,
+    PowOperation,
+    PowObs,
 }
 """Types that should not have actual instances created."""
 

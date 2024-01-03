@@ -336,6 +336,9 @@
 * The function ``qml.Snapshot`` now supports arbitrary measurements of type ``StateMeasurement``.
   [(#4876)](https://github.com/PennyLaneAI/pennylane/pull/4908)
 
+* The function ``qml.draw_mpl`` now accept a keyword argument ``fig`` to specify the output figure window.
+  [(#4956)](https://github.com/PennyLaneAI/pennylane/pull/4956)
+
 <h4>Better support for batching</h4>
 
 * `default.qubit` now can evolve already batched states with `ParametrizedEvolution`
@@ -567,6 +570,9 @@
   [(#4874)](https://github.com/PennyLaneAI/pennylane/pull/4874)
 
 <h3>Bug fixes 🐛</h3>
+
+* `Pow` operators are now picklable.
+  [(#4966)](https://github.com/PennyLaneAI/pennylane/pull/4966)
 
 * Finite differences and SPSA can now be used with tensorflow-autograph on setups that were seeing a bus error.
   [(#4961)](https://github.com/PennyLaneAI/pennylane/pull/4961)
