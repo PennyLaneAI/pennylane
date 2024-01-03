@@ -245,29 +245,38 @@
   gateset. To account for this, a desired total circuit decomposition error, `epsilon`, must be 
   specified when using `qml.clifford_t_decomposition`:
 
-  ```python
-  import pennylane as qml
+  ```pycon
+  dev = qml.device("default.qubit")
 
-  with qml.tape.QuantumTape() as circuit:
+  @qml.qnode(dev)
+  def circuit():
       qml.RX(1.1, 0)
-      qml.CNOT([0, 1])
-      qml.RY(2.2, 0)
+      return qml.state()
 
-  (circuit,), _ = qml.clifford_t_decomposition(circuit, 0.001)
+  circuit = qml.clifford_t_decomposition(circuit, epsilon=0.1)
+  ```
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ──T†──H──T†──H──T──H──T──H──T──H──T──H──T†──H──T†──T†──H──T†──H──T──H──T──H──T──H──T──H──T†──H
+
+  ───T†──H──T──H──GlobalPhase(0.39)─┤
   ```
 
   The resource requirements of this circuit can also be evaluated:
 
   ```pycon
-  >>> circuit.specs["resources"]
-  wires: 2
-  gates: 49770
-  depth: 49770
+  >>> with qml.Tracker(dev) as tracker:
+  ...     circuit()
+  >>> resources_lst = tracker.history["resources"]
+  >>> resources_lst[0]
+  wires: 1
+  gates: 34
+  depth: 34
   shots: Shots(total=None)
   gate_types:
-  {'Adjoint(T)': 13647, 'Hadamard': 22468, 'T': 13651, 'CNOT': 1, 'Adjoint(S)': 1, 'S': 1, 'GlobalPhase': 1}
+  {'Adjoint(T)': 8, 'Hadamard': 16, 'T': 9, 'GlobalPhase': 1}
   gate_sizes:
-  {1: 49768, 2: 1, 0: 1}
+  {1: 33, 0: 1}
   ```
 
 <h4>Use an iterative approach for quantum phase estimation 🔄</h4>
