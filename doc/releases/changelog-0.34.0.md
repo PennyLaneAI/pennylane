@@ -701,6 +701,7 @@
   [(#4951)](https://github.com/PennyLaneAI/pennylane/pull/4951)
 
 * `MPLDrawer` does not add the bonus space for classical wires when no classical wires are present.
+  [(#5987)](https://github.com/PennyLaneAI/pennylane/pull/4987)
   
 <h3>Contributors ✍️</h3>
 
