@@ -281,7 +281,8 @@
 
 <h4>Use an iterative approach for quantum phase estimation 🔄</h4>
 
-* Iterative Quantum Phase Estimation is now available with `qml.iterative_qpe`.
+* [Iterative Quantum Phase Estimation](https://arxiv.org/pdf/quant-ph/0610214.pdf)
+  is now available with `qml.iterative_qpe`.
   [(#4804)](https://github.com/PennyLaneAI/pennylane/pull/4804)
 
   The subroutine can be used similarly to mid-circuit measurements:
