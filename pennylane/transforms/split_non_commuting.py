@@ -153,6 +153,7 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
 
     # If there is more than one group of commuting observables, split tapes
     groups, group_coeffs = qml.pauli.group_observables(obs_list, range(len(obs_list)))
+    print(groups, group_coeffs)
     if len(groups) > 1:
         # make one tape per commuting group
         tapes = []
@@ -167,10 +168,7 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
         def reorder_fn(res):
             """re-order the output to the original shape and order"""
             # determine if shot vector is used
-            if len(tapes[0].measurements) == 1:
-                shot_vector_defined = isinstance(res[0], tuple)
-            else:
-                shot_vector_defined = isinstance(res[0][0], tuple)
+            shot_vector_defined = tape.shots.has_partitioned_shots
 
             res = list(zip(*res)) if shot_vector_defined else [res]
 
