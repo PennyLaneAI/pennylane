@@ -148,7 +148,7 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
         expval(PauliZ(wires=[0])),
         expval(PauliX(wires=[0])))
 
-        Measurements that accept both observables and ``wires`` for e.g. ``qml.counts``,
+        Measurements that accept both observables and ``wires`` so that e.g. ``qml.counts``,
         ``qml.probs`` and ``qml.sample`` can also be used. When initialized using only ``wires``,
         these measurements are interpreted as measuring with respect to the observable
         ``qml.PauliZ(wires[0])@qml.PauliZ(wires[1])@...@qml.PauliZ(wires[len(wires)-1])``
