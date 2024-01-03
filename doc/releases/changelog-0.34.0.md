@@ -441,6 +441,8 @@
 
 <h4>Other improvements</h4>
 
+* PennyLane now supports Python 3.12.
+
 * `SampleMeasurement` now has an optional method `process_counts` for computing the measurement results from a counts
   dictionary.
   [(#4941)](https://github.com/PennyLaneAI/pennylane/pull/4941/)
