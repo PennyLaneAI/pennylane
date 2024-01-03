@@ -370,7 +370,7 @@
 * `qml.AmplitudeEmbedding` now supports batching when used with Tensorflow.
   [(#4818)](https://github.com/PennyLaneAI/pennylane/pull/4818)
 
-* `default.qubit` now can evolve already batched states with `qml.pulse.ParametrizedEvolution`.
+* `default.qubit` can now evolve already batched states with `qml.pulse.ParametrizedEvolution`.
   [(#4863)](https://github.com/PennyLaneAI/pennylane/pull/4863)
 
 * `qml.ArbitraryUnitary` now supports batching.
