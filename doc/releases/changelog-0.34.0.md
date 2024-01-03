@@ -548,7 +548,7 @@
 
 * The star operator `*` for matrix and tensor products of `PauliWord` and `PauliSentence` instances
   will be removed. Use `@` instead.
-  [(#)]()
+  [(#4982)](https://github.com/PennyLaneAI/pennylane/pull/4982)
 
 <h3>Documentation 📝</h3>
 
