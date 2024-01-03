@@ -19,7 +19,6 @@ from typing import Sequence, Callable
 from functools import reduce
 
 import pennylane as qml
-from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
 
 from pennylane.transforms import transform
 
@@ -177,10 +176,11 @@ def split_non_commuting(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.Quantu
         # observable provided for a measurement
         if isinstance(obs, qml.operation.Observable):
             obs_list.append(obs)
-        # measurements using wires
-        elif any(isinstance(obs, mp) for mp in [CountsMP, ProbabilityMP, SampleMP]):
+        # measurements using wires instead of observables
+        else:
             # create the PauliZ tensor product observable when only wires are provided for the
             # measurements
+            # TODO: Revisit when qml.prod is compatible with qml.pauli.group_observables
             pauliz_obs = qml.PauliZ(obs.wires[0])
             for wire in obs.wires[1:]:
                 pauliz_obs = pauliz_obs @ qml.PauliZ(wire)
