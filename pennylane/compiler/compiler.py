@@ -18,6 +18,12 @@ from sys import version_info
 from importlib import reload, metadata
 from collections import defaultdict
 import dataclasses
+import os
+import re
+
+from semantic_version import Version
+
+PL_CATALYST_MIN_VERSION = Version(os.environ.get("PL_CATALYST_MIN_VERSION", "0.4.0"))
 
 
 class CompileError(Exception):
@@ -64,6 +70,14 @@ def _refresh_compilers():
         # Only need name of the parent module
         module_name = entry.module.split(".")[0]
         AvailableCompilers.names_entrypoints[module_name][entry.name] = entry
+
+    # Check the minimum version of Catalyst if installed
+    if "catalyst" in AvailableCompilers.names_entrypoints:
+        catalyst_version = metadata.version("pennylane-catalyst")
+        if Version(re.sub(r"\.dev\d+", "", catalyst_version)) < PL_CATALYST_MIN_VERSION:
+            raise CompileError(
+                f"PennyLane-Catalyst {PL_CATALYST_MIN_VERSION} or greater is required, but installed {catalyst_version}"
+            )
 
     # Check whether available compilers follow the entry_point interface
     # by validating that all entry points (qjit, context, and ops) are defined.
