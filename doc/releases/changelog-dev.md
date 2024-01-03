@@ -25,4 +25,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Abhishek Abhishek, Matthew Silverman
+Abhishek Abhishek,
+Matthew Silverman.
