@@ -53,25 +53,25 @@ class TestDeprecations:
         self,
     ):
         """Test that a PennyLaneDeprecationWarning is raised when using * for matrix multiplication of two PauliWords"""
-        pw1 = PauliWord({0: "X"})
-        pw2 = PauliWord({0: "Y"})
+        pauli1 = PauliWord({0: "X"})
+        pauli2 = PauliWord({0: "Y"})
 
         with pytest.warns(
             qml.PennyLaneDeprecationWarning, match="Matrix/Tensor multiplication using"
         ):
-            pw1 * pw2
+            pauli1 * pauli2
 
     def test_deprecation_warning_PauliSentence(
         self,
     ):
         """Test that a PennyLaneDeprecationWarning is raised when using * for matrix multiplication of two PauliSentences"""
-        ps1 = PauliSentence({PauliWord({0: "X"}): 1})
-        ps2 = PauliSentence({PauliWord({0: "Y"}): 1})
+        pauli1 = PauliSentence({PauliWord({0: "X"}): 1})
+        pauli2 = PauliSentence({PauliWord({0: "Y"}): 1})
 
         with pytest.warns(
             qml.PennyLaneDeprecationWarning, match="Matrix/Tensor multiplication using"
         ):
-            ps1 * ps2
+            pauli1 * pauli2
 
 
 class TestPauliWord:
