@@ -6,52 +6,6 @@
 
 <h4>Statistics and drawing for mid-circuit measurements 🎨</h4>
 
-* Mid-circuit measurements can now be visualized with the text-based `qml.draw()` and the 
-  graphical `qml.draw_mpl()` methods.
-  [(#4775)](https://github.com/PennyLaneAI/pennylane/pull/4775)
-  [(#4803)](https://github.com/PennyLaneAI/pennylane/pull/4803)
-  [(#4832)](https://github.com/PennyLaneAI/pennylane/pull/4832)
-  [(#4901)](https://github.com/PennyLaneAI/pennylane/pull/4901)
-  [(#4850)](https://github.com/PennyLaneAI/pennylane/pull/4850)
-  [(#4917)](https://github.com/PennyLaneAI/pennylane/pull/4917)
-  [(#4930)](https://github.com/PennyLaneAI/pennylane/pull/4930)
-  [(#4957)](https://github.com/PennyLaneAI/pennylane/pull/4957)
-
-  Drawing of mid-circuit measurement capabilities including qubit reuse and reset,
-  postselection, conditioning, and collecting statistics is now supported. Here 
-  is an all-encompassing example:
-
-  ```python
-  import pennylane as qml
-
-  def circuit():
-      m0 = qml.measure(0, reset=True)
-      m1 = qml.measure(1, postselect=1)
-      qml.cond(m0 - m1 == 0, qml.S)(0)
-      m2 = qml.measure(1)
-      qml.cond(m0 + m1 == 2, qml.T)(0)
-      qml.cond(m2, qml.PauliX)(1)
-  ```
-  
-  The text-based drawer outputs:
-
-  ```pycon
-  >>> print(qml.draw(circuit)())
-  0: ──┤↗│  │0⟩────────S───────T────┤  
-  1: ───║────────┤↗₁├──║──┤↗├──║──X─┤  
-        ╚═════════║════╬═══║═══╣  ║    
-                  ╚════╩═══║═══╝  ║    
-                           ╚══════╝    
-  ```
-  
-  The graphical drawer outputs:
-
-  ```pycon
-  >>> print(qml.draw_mpl(circuit)())
-  ```
-  
-  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/mid-circuit-measurement.png" width=70%/>
-
 * It is now possible to return statistics of composite mid-circuit measurements.
   [(#4888)](https://github.com/PennyLaneAI/pennylane/pull/4888)
 
@@ -110,6 +64,52 @@
   To learn more about which measurements and arithmetic operators are supported, refer to the
   [measurements page](https://docs.pennylane.ai/en/stable/introduction/measurements.html) and the
   documentation for [`qml.measure`](https://docs.pennylane.ai/en/stable/code/api/pennylane.measure.html).
+
+* Mid-circuit measurements can now be visualized with the text-based `qml.draw()` and the 
+  graphical `qml.draw_mpl()` methods.
+  [(#4775)](https://github.com/PennyLaneAI/pennylane/pull/4775)
+  [(#4803)](https://github.com/PennyLaneAI/pennylane/pull/4803)
+  [(#4832)](https://github.com/PennyLaneAI/pennylane/pull/4832)
+  [(#4901)](https://github.com/PennyLaneAI/pennylane/pull/4901)
+  [(#4850)](https://github.com/PennyLaneAI/pennylane/pull/4850)
+  [(#4917)](https://github.com/PennyLaneAI/pennylane/pull/4917)
+  [(#4930)](https://github.com/PennyLaneAI/pennylane/pull/4930)
+  [(#4957)](https://github.com/PennyLaneAI/pennylane/pull/4957)
+
+  Drawing of mid-circuit measurement capabilities including qubit reuse and reset,
+  postselection, conditioning, and collecting statistics is now supported. Here 
+  is an all-encompassing example:
+
+  ```python
+  import pennylane as qml
+
+  def circuit():
+      m0 = qml.measure(0, reset=True)
+      m1 = qml.measure(1, postselect=1)
+      qml.cond(m0 - m1 == 0, qml.S)(0)
+      m2 = qml.measure(1)
+      qml.cond(m0 + m1 == 2, qml.T)(0)
+      qml.cond(m2, qml.PauliX)(1)
+  ```
+  
+  The text-based drawer outputs:
+
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ──┤↗│  │0⟩────────S───────T────┤  
+  1: ───║────────┤↗₁├──║──┤↗├──║──X─┤  
+        ╚═════════║════╬═══║═══╣  ║    
+                  ╚════╩═══║═══╝  ║    
+                           ╚══════╝    
+  ```
+  
+  The graphical drawer outputs:
+
+  ```pycon
+  >>> print(qml.draw_mpl(circuit)())
+  ```
+  
+  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/mid-circuit-measurement.png" width=70%/>
 
 <h4>Catalyst is seamlessly integrated with PennyLane ⚗️</h4>
 
