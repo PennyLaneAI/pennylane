@@ -17,7 +17,6 @@ Pytest configuration file for ops.functions submodule.
 Generates parametrizations of operators to test in test_assert_valid.py.
 """
 from inspect import getmembers, isclass
-from pickle import PickleError
 import pytest
 import numpy as np
 
@@ -49,6 +48,7 @@ _INSTANCES_TO_TEST = [
     qml.prod(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(0)),
     qml.ctrl(qml.RX(1.1, 0), 1),
     qml.exp(qml.PauliX(0), 1.1),
+    qml.pow(qml.IsingXX(1.1, [0, 1]), 2.5),
     qml.ops.Evolution(qml.PauliX(0), 5.2),
     qml.QutritBasisState([1, 2, 0], wires=[0, 1, 2]),
     qml.resource.FirstQuantization(1, 2, 1),
@@ -92,10 +92,6 @@ _INSTANCES_TO_FAIL = [
     (
         qml.pulse.ParametrizedEvolution(qml.PauliX(0) + sum * qml.PauliZ(0)),
         ValueError,  # binding parameters fail, and more
-    ),
-    (
-        qml.pow(qml.IsingXX(1.1, [0, 1]), 2.5),
-        PickleError,  # Can't pickle, binding parameters fails, and more
     ),
     (
         qml.resource.DoubleFactorization(np.eye(2), np.arange(16).reshape((2,) * 4)),
