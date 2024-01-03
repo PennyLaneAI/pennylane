@@ -260,9 +260,14 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
             # find index of this pauli word in remaining original observables,
             for ind, observable in enumerate(observables):
                 if are_identical_pauli_words(pauli_word, observable):
-                    indices.append(coeff_indices[ind])
-                    observables.pop(ind)
-                    coeff_indices.pop(ind)
+                    for ind, obs in enumerate(observables):
+                        # getting index of observable
+                        if obs is not observable:
+                            continue
+                        indices.append(coeff_indices[ind])
+                        observables.pop(ind)
+                        coeff_indices.pop(ind)
+                        break
                     break
 
         # add a tensor of coefficients to the grouped coefficients

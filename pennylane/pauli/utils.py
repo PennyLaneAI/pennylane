@@ -93,7 +93,7 @@ def is_pauli_word(observable):
     >>> is_pauli_word(4 * qml.PauliX(0) @ qml.PauliZ(0))
     True
     """
-    return _is_pauli_word(observable) or (len(observable.pauli_rep or []) == 1)
+    return observable.pauli_rep is not None or _is_pauli_word(observable)
 
 
 @singledispatch
@@ -162,6 +162,9 @@ def are_identical_pauli_words(pauli_1, pauli_2):
     >>> are_identical_pauli_words(qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliX(3))
     False
     """
+    if pauli_1.pauli_rep is not None and pauli_2.pauli_rep is not None:
+        return next(iter(pauli_1.pauli_rep)) == next(iter(pauli_2.pauli_rep))
+
     if not (is_pauli_word(pauli_1) and is_pauli_word(pauli_2)):
         raise TypeError(f"Expected Pauli word observables, instead got {pauli_1} and {pauli_2}.")
 
@@ -169,6 +172,36 @@ def are_identical_pauli_words(pauli_1, pauli_2):
         return next(iter(pauli_1.pauli_rep)) == next(iter(pauli_2.pauli_rep))
 
     return False
+
+
+def _pauli_to_binary_pauli_rep(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_word=True):
+    if check_is_pauli_word and len(pauli_word.pauli_rep) != 1:
+        raise ValueError(f"pauli_to_binary requires a pauli word. Got {pauli_word}")
+
+    pw = next(iter(pauli_word.pauli_rep))
+
+    wire_map = wire_map or {w: i for i, w in enumerate(pw)}
+
+    n_qubits_min = max(wire_map.values()) + 1
+    if n_qubits is None:
+        n_qubits = n_qubits_min
+    elif n_qubits < n_qubits_min:
+        raise ValueError(
+            f"n_qubits must support the highest mapped wire index {n_qubits_min},"
+            f" instead got n_qubits={n_qubits}."
+        )
+
+    binary_pauli = np.zeros(2 * n_qubits)
+
+    for wire, pauli_type in pw.items():
+        if pauli_type == "X":
+            binary_pauli[wire_map[wire]] = 1
+        elif pauli_type == "Y":
+            binary_pauli[wire_map[wire]] = 1
+            binary_pauli[n_qubits + wire_map[wire]] = 1
+        elif pauli_type == "Z":
+            binary_pauli[n_qubits + wire_map[wire]] = 1
+    return binary_pauli
 
 
 def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_word=True):
@@ -253,12 +286,13 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_wor
     >>> pauli_to_binary(qml.PauliX(0) @ qml.PauliX(5),  wire_map=wire_map)
     array([1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 0., 0.])
     """
-    wire_map = wire_map or {w: i for i, w in enumerate(pauli_word.wires)}
+    if pauli_word.pauli_rep:
+        return _pauli_to_binary_pauli_rep(pauli_word, n_qubits, wire_map, check_is_pauli_word)
 
     if check_is_pauli_word and not is_pauli_word(pauli_word):
         raise TypeError(f"Expected a Pauli word Observable instance, instead got {pauli_word}.")
 
-    pw = next(iter(pauli_word.pauli_rep))
+    wire_map = wire_map or {w: i for i, w in enumerate(pauli_word.wires)}
 
     n_qubits_min = max(wire_map.values()) + 1
     if n_qubits is None:
@@ -667,7 +701,24 @@ def is_qwc(pauli_vec_1, pauli_vec_2):
     return True
 
 
-def _are_pauli_words_qwc_pauli_rep(lst_pauli_words):
+def _are_pauli_words_qwc_pw(lst_pauli_words):
+    for op in lst_pauli_words:
+        if len(op.pauli_rep) != 1:
+            raise ValueError(f"are_pauli_words_qwc only works for pauli words. Got {op}")
+
+    basis = {}
+    for op in lst_pauli_words:
+        pw = next(iter(op.pauli_rep))
+        for wire, pauli_type in pw.items():
+            if wire in basis:
+                if pauli_type != basis[wire]:
+                    return False
+            else:
+                basis[wire] = pauli_type
+    return True
+
+
+def are_pauli_words_qwc(lst_pauli_words):
     """Given a list of observables assumed to be valid Pauli words, determine if they are pairwise
     qubit-wise commuting. This private method is used for operators that have a valid pauli
     representation"""
@@ -705,7 +756,7 @@ def are_pauli_words_qwc(lst_pauli_words):
         observables are not valid Pauli words, false is returned.
     """
     if all(op.pauli_rep is not None for op in lst_pauli_words):
-        return _are_pauli_words_qwc_pauli_rep(lst_pauli_words)
+        return _are_pauli_words_qwc_pw(lst_pauli_words)
 
     latest_op_name_per_wire = {}
 
