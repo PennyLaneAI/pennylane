@@ -368,8 +368,7 @@
 <h4>Performance improvements and benchmarking</h4>
 
 * Autograd, PyTorch, and JAX can now use vector-Jacobian products (VJPs) provided by the device from the new device API. If a device provides
-  a VJP, this can be selected by providing `device_vjp=True` to
-  `qml.QNode` or `qml.execute`.
+  a VJP, this can be selected by providing `device_vjp=True` to a QNode or `qml.execute`.
   [(#4935)](https://github.com/PennyLaneAI/pennylane/pull/4935)
   [(#4557)](https://github.com/PennyLaneAI/pennylane/pull/4557)
   [(#4654)](https://github.com/PennyLaneAI/pennylane/pull/4654)
