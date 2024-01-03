@@ -63,7 +63,7 @@
   Composite mid-circuit measurement statistics are supported on `default.qubit` and `default.mixed`.
   To learn more about which measurements and arithmetic operators are supported, refer to the
   [measurements page](https://docs.pennylane.ai/en/stable/introduction/measurements.html) and the
-  documentation for [`qml.measure`](https://docs.pennylane.ai/en/stable/code/api/pennylane.measure.html).
+  [documentation for qml.measure](https://docs.pennylane.ai/en/stable/code/api/pennylane.measure.html).
 
 * Mid-circuit measurements can now be visualized with the text-based `qml.draw()` and the 
   graphical `qml.draw_mpl()` methods.
@@ -122,7 +122,7 @@
   pip install pennylane-catalyst
   ```
 
-  The [`qml.compiler`](https://docs.pennylane.ai/en/latest/code/qml_compiler.html) 
+  The [qml.compiler](https://docs.pennylane.ai/en/latest/code/qml_compiler.html) 
   module provides support for hybrid quantum-classical compilation. 
   [(#4692)](https://github.com/PennyLaneAI/pennylane/pull/4692)
 
