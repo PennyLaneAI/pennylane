@@ -456,7 +456,7 @@ Added create_initial_state function which creates initial states for future qutr
   `SparseHamiltonian`.
   [(#4828)](https://github.com/PennyLaneAI/pennylane/pull/4828)
 
-* `trainable_params` can now be set on initialization of `QuantumScript` instead of having to set the
+* `trainable_params` can now be set upon initialization of a `QuantumScript` instead of having to set the
   parameter after initialization.
   [(#4877)](https://github.com/PennyLaneAI/pennylane/pull/4877)
 
@@ -470,11 +470,8 @@ Added create_initial_state function which creates initial states for future qutr
   style, but with sketch-style lines.
   [(#4880)](https://github.com/PennyLaneAI/pennylane/pull/4880)
 
-* `Conditional` and `MeasurementValue` objects now implement `map_wires`.
-  [(#4884)](https://github.com/PennyLaneAI/pennylane/pull/4884)
-
 * Operators now define a `pauli_rep` property, an instance of `PauliSentence`, defaulting
-  to `None` if the operator has not defined it (or has no definition in the pauli basis).
+  to `None` if the operator has not defined it (or has no definition in the Pauli basis).
   [(#4915)](https://github.com/PennyLaneAI/pennylane/pull/4915)
 
 * `qml.ShotAdaptiveOptimizer` can now use a multinomial distribution for spreading shots across
@@ -494,7 +491,8 @@ Added create_initial_state function which creates initial states for future qutr
   that they follow PennyLane `Operator` standards.
   [(#4922)](https://github.com/PennyLaneAI/pennylane/pull/4922)
 
-* Implemented the method `process_counts` in the `ProbabilityMP` class.
+* Probability measurements can now be calculated from a `counts` dictionary with the addition of a 
+  `process_counts` method in the `ProbabilityMP` class.
   [(#4952)](https://github.com/PennyLaneAI/pennylane/pull/4952)
 
 * `ClassicalShadow.entropy` now uses the algorithm outlined in 
@@ -504,9 +502,9 @@ Added create_initial_state function which creates initial states for future qutr
 
 <h3>Breaking changes 💔</h3>
 
-* The functions `qml.transforms.one_qubit_decomposition`, `qml.transforms.two_qubit_decomposition`, 
-  `qml.transforms.sk_decomposition` were moved to respectively, `qml.ops.one_qubit_decomposition`, `qml.ops.two_qubit_decomposition`, 
-  `qml.ops.sk_decomposition`.
+* The functions `qml.transforms.one_qubit_decomposition`, `qml.transforms.two_qubit_decomposition`, and
+  `qml.transforms.sk_decomposition` were moved to `qml.ops.one_qubit_decomposition`, `qml.ops.two_qubit_decomposition`, and
+  `qml.ops.sk_decomposition`, respectively.
   [(#4906)](https://github.com/PennyLaneAI/pennylane/pull/4906)
 
 * The function `qml.transforms.classical_jacobian` has been moved to the gradients module
@@ -571,28 +569,31 @@ Added create_initial_state function which creates initial states for future qutr
 
 <h3>Documentation 📝</h3>
 
-* Documentation for unitaries and operations decompositions was moved from `qml.transforms` to `qml.ops.ops_math`.
+* Documentation for unitaries and operations' decompositions has been moved from `qml.transforms` to `qml.ops.ops_math`.
   [(#4906)](https://github.com/PennyLaneAI/pennylane/pull/4906)
 
 * Documentation for `qml.metric_tensor` and `qml.adjoint_metric_tensor` and `qml.transforms.classical_jacobian`
-  are now accessible via the gradients API page `qml.gradients` in the documentation.
+  is now accessible via the gradients API page `qml.gradients` in the documentation.
   [(#4900)](https://github.com/PennyLaneAI/pennylane/pull/4900)
 
-* Documentation for `qml.specs` was moved to the resource module.
+* Documentation for `qml.specs` has been moved to the `resource` module.
   [(#4904)](https://github.com/PennyLaneAI/pennylane/pull/4904)
 
-* Documentation for QCut has moved to its own API page `qml.qcut`.
+* Documentation for QCut has been moved to its own API page: `qml.qcut`.
   [(#4819)](https://github.com/PennyLaneAI/pennylane/pull/4819)
 
 * The documentation page for `qml.measurements` now links top-level accessible functions (e.g., `qml.expval`) 
   to their top-level pages rather than their module-level pages (e.g., `qml.measurements.expval`).
   [(#4750)](https://github.com/PennyLaneAI/pennylane/pull/4750)
 
-* Information to the documentation for `qml.matrix` about wire ordering has been added for using `qml.matrix` on a
-  `QNode` which uses a device with `device.wires=None`.
+* Information for the documentation of `qml.matrix` about wire ordering has been added for using `qml.matrix` on a
+  QNode which uses a device with `device.wires=None`.
   [(#4874)](https://github.com/PennyLaneAI/pennylane/pull/4874)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qml.map_wires` now works properly with `qml.cond` and `qml.measure`.
+  [(#4884)](https://github.com/PennyLaneAI/pennylane/pull/4884)
 
 * `Pow` operators are now picklable.
   [(#4966)](https://github.com/PennyLaneAI/pennylane/pull/4966)
@@ -600,7 +601,7 @@ Added create_initial_state function which creates initial states for future qutr
 * Finite differences and SPSA can now be used with tensorflow-autograph on setups that were seeing a bus error.
   [(#4961)](https://github.com/PennyLaneAI/pennylane/pull/4961)
 
-* `qml.cond` no longer incorrectly queues operators used as qfunc arguments.
+* `qml.cond` no longer incorrectly queues operators used arguments.
   [(#4948)](https://github.com/PennyLaneAI/pennylane/pull/4948)
 
 * `Attribute` objects now return `False` instead of raising a `TypeError` when checking if an object is inside
@@ -639,13 +640,10 @@ Added create_initial_state function which creates initial states for future qutr
   an operation that has a parameter with `grad_method=None` is present.
   [(#4820)](https://github.com/PennyLaneAI/pennylane/pull/4820)
 
-* `MottonenStatePreparation` now raises an error if decomposing a broadcasted state vector.
+* `MottonenStatePreparation` and `BasisStatePreparation` now raise an error when decomposing a broadcasted state vector.
   [(#4767)](https://github.com/PennyLaneAI/pennylane/pull/4767)
 
-* `BasisStatePreparation` now raises an error if decomposing a broadcasted state vector.
-  [(#4767)](https://github.com/PennyLaneAI/pennylane/pull/4767)
-
-* Gradient transforms now work with overridden shot vectors and default qubit.
+* Gradient transforms now work with overridden shot vectors and `default.qubit`.
   [(#4795)](https://github.com/PennyLaneAI/pennylane/pull/4795)
 
 * Any `ScalarSymbolicOp`, like `Evolution`, now states that it has a matrix if the target
@@ -656,7 +654,7 @@ Added create_initial_state function which creates initial states for future qutr
   wire order.
   [(#4781)](https://github.com/PennyLaneAI/pennylane/pull/4781)
 
-* `transpile` can now handle measurements that are broadcasted onto all wires.
+* `qml.transforms.transpile` can now handle measurements that are broadcasted onto all wires.
   [(#4793)](https://github.com/PennyLaneAI/pennylane/pull/4793)
 
 * Parametrized circuits whose operators do not act on all wires return PennyLane tensors instead of NumPy arrays, as
@@ -664,7 +662,7 @@ Added create_initial_state function which creates initial states for future qutr
   [(#4811)](https://github.com/PennyLaneAI/pennylane/pull/4811)
   [(#4817)](https://github.com/PennyLaneAI/pennylane/pull/4817)
 
-* `merge_amplitude_embeddings` no longer depends on queuing, allowing it to work as expected
+* `qml.transforms.merge_amplitude_embedding` no longer depends on queuing, allowing it to work as expected
   with QNodes.
   [(#4831)](https://github.com/PennyLaneAI/pennylane/pull/4831)
 
@@ -672,7 +670,7 @@ Added create_initial_state function which creates initial states for future qutr
   integer power.
   [(#4827)](https://github.com/PennyLaneAI/pennylane/pull/4827)
 
-* The text drawer has been fixed to correctly label `qinfo` measurements, as well as `qml.classical_shadow`
+* The text drawer has been fixed to correctly label `qml.qinfo` measurements, as well as `qml.classical_shadow`
   `qml.shadow_expval`.
   [(#4803)](https://github.com/PennyLaneAI/pennylane/pull/4803)
 
