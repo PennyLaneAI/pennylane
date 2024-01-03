@@ -64,6 +64,15 @@ class TestInitialization:
         assert drawer.fig.get_figheight() == 5
         plt.close()
 
+    def test_customfigure(self):
+        """Tests a custom figure is used"""
+
+        fig = plt.figure()
+        drawer = MPLDrawer(1, 1, fig=fig)
+
+        assert drawer.fig == fig
+        plt.close()
+
     def test_config_params_set(self):
         """Tests sizing hidden variables are set."""
 
