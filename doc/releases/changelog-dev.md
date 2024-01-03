@@ -8,6 +8,10 @@
 
 * Update `tests/ops/functions/conftest.py` to ensure all operator types are tested for validity.
   [(#4978)](https://github.com/PennyLaneAI/pennylane/pull/4978)
+  
+<h4>Community contributions 🥳</h4>
+
+* The transform ``split_non_commuting`` now accepts measurements of type `probs`, `sample` and `counts` which accept both wires and observables. [(#4972)](https://github.com/PennyLaneAI/pennylane/pull/4972)
 
 <h3>Breaking changes 💔</h3>
 
@@ -21,4 +25,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Matthew Silverman
+Abhishek Abhishek,
+Matthew Silverman.
