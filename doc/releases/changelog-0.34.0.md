@@ -572,6 +572,7 @@
 <h3>Bug fixes 🐛</h3>
 
 * `qml.devices.preprocess.decompose` no longer queues any operators.
+  [(#4983)](https://github.com/PennyLaneAI/pennylane/pull/4983)
 
 * `Pow` operators are now picklable.
   [(#4966)](https://github.com/PennyLaneAI/pennylane/pull/4966)
