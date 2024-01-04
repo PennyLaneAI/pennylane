@@ -52,7 +52,6 @@ from pennylane.measurements import (
     VnEntropyMP,
     Shots,
 )
-from pennylane.ops.qubit.observables import BasisStateProjector
 from pennylane.resource import Resources
 from pennylane.operation import operation_derivative, Operation
 from pennylane.tape import QuantumTape
@@ -1307,13 +1306,6 @@ class QubitDevice(Device):
         return self._reshape(prob, flat_shape)
 
     def expval(self, observable, shot_range=None, bin_size=None):
-        if isinstance(observable, BasisStateProjector):
-            # branch specifically to handle the basis state projector observable
-            idx = int("".join(str(i) for i in observable.parameters[0]), 2)
-            probs = self.probability(
-                wires=observable.wires, shot_range=shot_range, bin_size=bin_size
-            )
-            return probs[idx]
 
         # exact expectation value
         if self.shots is None:
@@ -1343,13 +1335,6 @@ class QubitDevice(Device):
         return np.squeeze(np.mean(samples, axis=axis))
 
     def var(self, observable, shot_range=None, bin_size=None):
-        if isinstance(observable, BasisStateProjector):
-            # branch specifically to handle the basis state projector observable
-            idx = int("".join(str(i) for i in observable.parameters[0]), 2)
-            probs = self.probability(
-                wires=observable.wires, shot_range=shot_range, bin_size=bin_size
-            )
-            return probs[idx] - probs[idx] ** 2
 
         # exact variance value
         if self.shots is None:

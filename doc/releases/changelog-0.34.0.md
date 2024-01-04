@@ -709,6 +709,8 @@
 
 * `MPLDrawer` does not add the bonus space for classical wires when no classical wires are present.
   [(#5987)](https://github.com/PennyLaneAI/pennylane/pull/4987)
+
+* `Projector` now works with parameter-broadcasting.
   
 <h3>Contributors ✍️</h3>
 
