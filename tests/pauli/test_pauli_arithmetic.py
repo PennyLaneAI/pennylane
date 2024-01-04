@@ -835,7 +835,6 @@ class TestPauliArithmeticWithADInterfaces:
         assert all(isinstance(val, jnp.ndarray) for val in res1.values())
         assert all(isinstance(val, jnp.ndarray) for val in res2.values())
 
-    @pytest.mark.xfail
     @pytest.mark.tf
     @pytest.mark.parametrize("ps", sentences)
     @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
@@ -843,8 +842,8 @@ class TestPauliArithmeticWithADInterfaces:
         """Test that multiplying with a tf tensor works and results in the correct types"""
         import tensorflow as tf
 
-        res1 = tf.constant(scalar) * ps
-        res2 = ps * tf.constant(scalar)
+        res1 = tf.constant(scalar, dtype=tf.complex64) * ps
+        res2 = ps * tf.constant(scalar, dtype=tf.complex64)
         assert isinstance(res1, PauliSentence)
         assert isinstance(res2, PauliSentence)
         assert list(res1.values()) == [scalar * coeff for coeff in ps.values()]
