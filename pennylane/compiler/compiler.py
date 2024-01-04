@@ -48,17 +48,17 @@ class AvailableCompilers:
     # and their entry point loaders.
     names_entrypoints = {}
 
-    # The map of supported compiler names (string) and their version compatibility (boolean).
-    # This boolean represents whether the installed version of a compiler package is greater
+    # The map consists of supported compiler names (str) and their version compatibility (bool).
+    # This boolean indicates whether the installed version of a compiler package is greater
     # than or equal to the minimum version.
-    # This value is updated in `_check_compiler_version` and it will reduce the required
+    # This value will be updated in `_check_compiler_version` to reduce the required
     # version checks of installed compiler packages at runtime.
     names_versions = {"catalyst": False}
 
 
 def _check_compiler_version(name):
-    """Check whether the installed version of the given compiler is greater than or equal
-    to the required minimum version.
+    """Check if the installed version of the given compiler is greater than
+    or equal to the required minimum version.
     """
     if AvailableCompilers.names_versions[name]:
         return  # Used the cached value!
@@ -69,10 +69,9 @@ def _check_compiler_version(name):
             raise CompileError(
                 f"PennyLane-Catalyst {PL_CATALYST_MIN_VERSION} or greater is required, but installed {installed_catalyst_version}"
             )
-        # else (installed_catalyst_version >= PL_CATALYST_MIN_VERSION):
-        AvailableCompilers.names_versions[name] = True
 
-    raise CompileError(f"The compiler package {name} is not supported in PennyLane.")
+    # else
+    AvailableCompilers.names_versions[name] = True
 
 
 def _refresh_compilers():
