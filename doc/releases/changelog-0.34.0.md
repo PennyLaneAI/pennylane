@@ -665,6 +665,9 @@
   wire order.
   [(#4781)](https://github.com/PennyLaneAI/pennylane/pull/4781)
 
+* `qml.compile` will now always decompose to `expand_depth`, even if a target basis set is not specified.
+  [(#4800)](https://github.com/PennyLaneAI/pennylane/pull/4800)
+
 * `qml.transforms.transpile` can now handle measurements that are broadcasted onto all wires.
   [(#4793)](https://github.com/PennyLaneAI/pennylane/pull/4793)
 
