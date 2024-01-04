@@ -70,6 +70,7 @@ class MPLDrawer:
         wire_options=None (dict): matplotlib configuration options for drawing the wire lines
         figsize=None (Iterable): Allows users to specify the size of the figure manually. Defaults
             to scale with the size of the circuit via ``n_layers`` and ``n_wires``.
+        fig=None (matplotlib Figure): Allows users to specify the figure window to plot to.
 
     **Example**
 
@@ -254,7 +255,7 @@ class MPLDrawer:
     _cwire_scaling = 0.25
     """The distance between successive control wires."""
 
-    def __init__(self, n_layers, n_wires, c_wires=0, wire_options=None, figsize=None):
+    def __init__(self, n_layers, n_wires, c_wires=0, wire_options=None, figsize=None, fig=None):
         if not has_mpl:  # pragma: no cover
             raise ImportError(
                 "Module matplotlib is required for ``MPLDrawer`` class. "
@@ -267,16 +268,25 @@ class MPLDrawer:
         ## Creating figure and ax
 
         if figsize is None:
-            figsize = (self.n_layers + 3, self.n_wires + self._cwire_scaling * c_wires + 1)
+            figheight = self.n_wires + self._cwire_scaling * c_wires + 1 + 0.5 * (c_wires > 0)
+            figsize = (self.n_layers + 3, figheight)
 
-        self._fig = plt.figure(figsize=figsize)
+        if fig is None:
+            self._fig = plt.figure(figsize=figsize)
+        else:
+            fig.clear()
+            fig.set_figwidth(figsize[0])
+            fig.set_figheight(figsize[1])
+            self._fig = fig
+
         self._ax = self._fig.add_axes(
             [0, 0, 1, 1],
             xlim=(-2, self.n_layers + 1),
-            ylim=(-1, self.n_wires + self._cwire_scaling * c_wires),
+            ylim=(-1, self.n_wires + self._cwire_scaling * c_wires + 0.5 * (c_wires > 0)),
             xticks=[],
             yticks=[],
         )
+
         self._ax.axis("off")
 
         self._ax.invert_yaxis()

@@ -9,13 +9,13 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* `qml.transforms.one_qubit_decomposition` and `qml.transforms.two_qubit_decomposition` are deprecated. Instead,
-  you should use `qml.ops.one_qubit_decomposition` and `qml.ops.two_qubit_decomposition` .
+* ``qml.transforms.one_qubit_decomposition`` and ``qml.transforms.two_qubit_decomposition`` are deprecated. Instead,
+  you should use ``qml.ops.one_qubit_decomposition`` and ``qml.ops.two_qubit_decomposition`` .
 
   - Deprecated in v0.34
   - Will be removed in v0.35
 
-* `Observable.return_type` is deprecated. Instead, you should inspect the type
+* ``Observable.return_type`` is deprecated. Instead, you should inspect the type
   of the surrounding measurement process.
 
   - Deprecated in v0.34
