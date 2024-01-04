@@ -27,8 +27,8 @@ from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.typing import Result, ResultBatch
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
+from pennylane.measurements import ExpectationMP, StateMP, DensityMatrixMP, PurityMP
 from pennylane.devices.qubit.sampling import get_num_shots_and_executions
-from pennylane.devices.qubit.simulate import INTERFACE_TO_LIKE
 
 from . import Device
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
@@ -60,7 +60,6 @@ _MEAS_OBSERVABLES = {
     "Sum",
     "SProd",
     "Prod",
-    "Exp",
 }
 
 # Clifford gates
@@ -152,7 +151,7 @@ class DefaultClifford(Device):
     >>> new_batch, post_processing_fn = program(qscripts)
     >>> results = dev.execute(new_batch, execution_config=execution_config)
     >>> post_processing_fn(results)
-    [0.0, 0.0, 0.0, 0.0, 0.0]
+    (array(0), array(0), array(0), array(0), array(0))
 
     .. details::
         :title: Clifford Tableau
@@ -287,8 +286,8 @@ class DefaultClifford(Device):
 
         self._tableau = tableau
 
-        self._seed = np.random.randint(0, high=10000000) if seed == "global" else seed
-        self._rng = np.random.default_rng(self._seed)
+        seed = np.random.randint(0, high=10000000) if seed == "global" else seed
+        self._rng = np.random.default_rng(seed)
         self._debugger = None
 
     def _setup_execution_config(self, execution_config: ExecutionConfig) -> ExecutionConfig:
@@ -305,7 +304,8 @@ class DefaultClifford(Device):
         updated_values = {}
         if execution_config.gradient_method == "best":  # pragma: no cover
             updated_values["gradient_method"] = None
-        updated_values["use_device_gradient"] = True
+        if execution_config.gradient_method == "device":
+            updated_values["use_device_gradient"] = True
         updated_values["use_device_jacobian_product"] = False
         if execution_config.grad_on_execution is None:
             updated_values["grad_on_execution"] = False
@@ -381,35 +381,17 @@ class DefaultClifford(Device):
             circuits = [circuits]
 
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
-        interface = (
-            execution_config.interface
-            if execution_config.gradient_method in {"backprop", None}
-            else None
-        )
         if max_workers is None:
-            results = tuple(
-                self.simulate(
-                    c,
-                    rng=self._seed,
-                    debugger=self._debugger,
-                    interface=interface,
-                )
-                for c in circuits
-            )
+            results = tuple(self.simulate(c, debugger=self._debugger) for c in circuits)
         else:
             vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
-            seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
-            _wrap_simulate = partial(self.simulate, debugger=None, interface=interface)
+            _wrap_simulate = partial(self.simulate, debugger=None)
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-                exec_map = executor.map(
-                    _wrap_simulate,
-                    vanilla_circuits,
-                    seeds,
-                )
+                exec_map = executor.map(_wrap_simulate, vanilla_circuits)
                 results = tuple(exec_map)
 
-            # reset _rng to mimic serial behavior
-            self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
+            # reset _rng to mimic serial behavior - TODO: uncomment when using RNG
+            # self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
 
         if self.tracker.active:
             self.tracker.update(batches=1)
@@ -472,31 +454,19 @@ class DefaultClifford(Device):
 
         res = tuple(tuple(np.zeros(s) for s in circuit.shape(self)) for circuit in circuits)
 
-        max_workers = execution_config.device_options.get("max_workers", self._max_workers)
-        if max_workers is not None:
-            # reset _rng to mimic serial behavior
-            self._rng = np.random.default_rng(self._rng.integers(2**31 - 1))
-
         return res[0] if is_single_circuit else res
 
-    # pylint: disable=unidiomatic-typecheck, unused-argument, too-many-branches, no-member
-    # pylint: disable=too-many-statements, protected-access
+    # pylint:disable=no-member
     def simulate(
         self,
         circuit: qml.tape.QuantumScript,
-        rng=None,
         debugger=None,
-        interface=None,
     ) -> Result:
         """Simulate a single quantum script.
 
         Args:
             circuit (QuantumTape): The single circuit to simulate
-            rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
-                seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
-                If no value is provided, a default RNG will be used.
             debugger (_Debugger): The debugger to use
-            interface (str): The machine learning interface to create the initial state with
 
         Returns:
             tuple(TensorLike): The results of the simulation
@@ -513,18 +483,26 @@ class DefaultClifford(Device):
 
         stim = _import_stim()
 
+        # Account for custom labelled wires
+        # TODO: Fix custom integer ordering :)
         circuit = circuit.map_to_standard_wires()
 
+        if circuit.shots:
+            raise NotImplementedError(
+                "default.clifford currently doesn't support computation with shots."
+            )
+
+        # Build a stim circuit, tableau and simulator
+        stim_ct = stim.Circuit()
+        initial_tableau = stim.Tableau.from_circuit(stim_ct)
+        tableau_simulator = stim.TableauSimulator()
+
+        # Account for state preparation operation
         prep = None
         if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
             prep = circuit[0]
-
-        stim_ct = stim.Circuit()
-        initial_tableau = stim.Tableau.from_circuit(stim_ct)
-
-        tableau_simulator = stim.TableauSimulator()
-
         use_prep_ops = bool(prep)
+
         if use_prep_ops:
             initial_tableau = stim.Tableau.from_state_vector(
                 qml.math.reshape(prep.state_vector(wire_order=list(circuit.op_wires)), (1, -1))[0],
@@ -534,7 +512,7 @@ class DefaultClifford(Device):
 
         global_phase_ops = []
         for op in circuit.operations[use_prep_ops:]:
-            gate, wires = _GATE_OPERATIONS[op.name], op.wires
+            gate, wires = self.pl_to_stim(op)
             if gate is not None:
                 stim_ct.append(gate, wires)
             else:
@@ -553,47 +531,39 @@ class DefaultClifford(Device):
                             state = qml.math.zeros(2**circuit.num_wires, dtype=complex)
                             state[0] = 1.0 + 0.0j
                         flat_state = qml.math.flatten(state)
-                        if op.tag:
-                            debugger.snapshots[op.tag] = flat_state
-                        else:
-                            debugger.snapshots[len(debugger.snapshots)] = flat_state
+                        debugger.snapshots[op.tag or len(debugger.snapshots)] = flat_state
 
         tableau_simulator.do_circuit(stim_ct)
 
         global_phase = qml.GlobalPhase(qml.math.sum(op.data[0] for op in global_phase_ops))
+        return self.measure(circuit, tableau_simulator, global_phase, stim)
 
+    @staticmethod
+    def pl_to_stim(op):
+        """Convert PennyLane operation to a Stim operation"""
+        return _GATE_OPERATIONS[op.name], op.wires
+
+    def measure(self, circuit, tableau_simulator, global_phase, stim):
+        """Given a circuit, compute and return the measurement results."""
         results = []
         for meas in circuit.measurements:
             # Analytic case
             if not circuit.shots:
-                # Computing statevector via tableaus
-                if type(meas) is qml.measurements.StateMP:
-                    res = self._measure_state(tableau_simulator, interface, circuit, global_phase)
-
                 # Computing density matrix via tableaus
-                elif type(meas) is qml.measurements.DensityMatrixMP:
-                    res = self._measure_density_matrix(tableau_simulator, interface)
+                if isinstance(meas, DensityMatrixMP):  # do first because it is a child of StateMP
+                    res = self._measure_density_matrix(tableau_simulator)
 
-                # Computing expectation values via measurement
-                elif type(meas) is qml.measurements.ExpectationMP:
-                    res = self._measure_expectation(tableau_simulator, interface, meas, stim)
-
-                # Computing entropy via tableaus
-                elif type(meas) is qml.measurements.VnEntropyMP:
-                    tableau = tableau_simulator.current_inverse_tableau() ** -1
-                    zs = qml.math.array([tableau.z_output(k) for k in range(len(circuit.wires))])
-                    res = self._stabilizer_vn_entropy(zs, list(meas.wires))
+                # Computing statevector via tableaus
+                elif isinstance(meas, StateMP):
+                    res = self._measure_state(tableau_simulator, circuit, global_phase)
 
                 # Computing purity via tableaus
-                elif type(meas) is qml.measurements.PurityMP:
-                    res = self._measure_purity(interface, meas, circuit)
+                elif isinstance(meas, PurityMP):
+                    res = self._measure_purity(meas, circuit)
 
-                # Computing mutual-info via tableaus
-                elif type(meas) is qml.measurements.MutualInfoMP:
-                    tableau = tableau_simulator.current_inverse_tableau() ** -1
-                    zs = qml.math.array([tableau.z_output(k) for k in range(len(circuit.wires))])
-                    indices0, indices1 = list(meas._wires[0]), list(meas._wires[1])
-                    res = self._stabilizer_vn_entropy(zs, indices0) + self._stabilizer_vn_entropy(zs, indices1)
+                # Computing expectation values via measurement
+                elif isinstance(meas, ExpectationMP):
+                    res = self._measure_expectation(tableau_simulator, meas, stim)
 
                 # Computing more measurements
                 else:
@@ -601,21 +571,11 @@ class DefaultClifford(Device):
                         f"default.clifford doesn't support the {type(meas)} measurement at the moment."
                     )
 
+                results.append(res)
 
-            else:
+        return results[0] if len(results) == 1 else tuple(results)
 
-                sample_seed = rng if isinstance(rng, int) else self._seed
-                sample_circuit = initial_tableau.to_circuit() + stim_ct
-                sample_circuit.append("M", circuit.wires)
-                sampler = sample_circuit.compile_sampler(seed=sample_seed)
-                samples = qml.math.array(sampler.sample(shots=circuit.shots.total_shots), dtype=int)
-                res = meas.process_samples(samples=samples, wire_order=circuit.wires)
-
-            results.append(res)
-
-        return tuple(results)
-
-    def _measure_state(self, tableau_simulator, interface, circuit, global_phase):
+    def _measure_state(self, tableau_simulator, circuit, global_phase):
         """Measure the state of the simualtor device."""
         if self._tableau:
             tableau = tableau_simulator.current_inverse_tableau().inverse()
@@ -630,10 +590,7 @@ class DefaultClifford(Device):
                 return np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])
             return pl_tableau
 
-        state = qml.math.array(
-            tableau_simulator.state_vector(endian="big"),
-            like=INTERFACE_TO_LIKE[interface],
-        )
+        state = qml.math.array(tableau_simulator.state_vector(endian="big"))
         if state.shape == (1,) and circuit.num_wires:
             # following is faster than using np.eye(length=1, size, index)
             state = qml.math.zeros(2**circuit.num_wires, dtype=complex)
@@ -641,41 +598,33 @@ class DefaultClifford(Device):
         return state * qml.matrix(global_phase)
 
     @staticmethod
-    def _measure_density_matrix(tableau_simulator, interface):
+    def _measure_density_matrix(tableau_simulator):
         """Measure the density matrix from the state of simulator device."""
-        state_vector = qml.math.array(
-            tableau_simulator.state_vector(endian="big"),
-            like=INTERFACE_TO_LIKE[interface],
-        )
+        state_vector = qml.math.array(tableau_simulator.state_vector(endian="big"))
         return qml.math.einsum("i, j->ij", state_vector, state_vector)
 
     @staticmethod
-    def _measure_purity(interface, meas_op, circuit):
+    def _measure_purity(meas_op, circuit):
         """Measure the purity of the state of simulator device"""
-        if circuit.op_wires == meas_op.wires:  # // Trivial
-            purity = qml.math.array(1.0, like=INTERFACE_TO_LIKE[interface])
-        return purity
+        if circuit.op_wires != meas_op.wires:
+            raise NotImplementedError(
+                "default.clifford doesn't support measuring the purity of a subset of wires at the moment."
+            )
+        return qml.math.array(1.0)  # // Trivial
 
-    @staticmethod
-    def _measure_expectation(tableau_simulator, interface, meas_op, stim):
+    def _measure_expectation(self, tableau_simulator, meas_op, stim):
         """Measure the expectation value with respect to the state of simulator device."""
 
         # Case for simple Pauli terms
         if isinstance(meas_op.obs, (qml.PauliZ, qml.PauliX, qml.PauliY)):
             pauli = stim.PauliString(_GATE_OPERATIONS[meas_op.obs.name])
-            return qml.math.array(
-                tableau_simulator.peek_observable_expectation(pauli),
-                like=INTERFACE_TO_LIKE[interface],
-            )
+            return qml.math.array(tableau_simulator.peek_observable_expectation(pauli))
 
         # Case for simple Pauli tensor
         if isinstance(meas_op.obs, qml.operation.Tensor):
             expec = "".join([_GATE_OPERATIONS[name] for name in meas_op.obs.name])
             pauli = stim.PauliString(expec)
-            return qml.math.array(
-                tableau_simulator.peek_observable_expectation(pauli),
-                like=INTERFACE_TO_LIKE[interface],
-            )
+            return qml.math.array(tableau_simulator.peek_observable_expectation(pauli))
 
         # Case for a Hamiltonian
         if isinstance(meas_op.obs, qml.Hamiltonian):
@@ -685,7 +634,54 @@ class DefaultClifford(Device):
                 expec = "".join([_GATE_OPERATIONS[name] for name in ob.name])
                 pauli = stim.PauliString(expec)
                 expecs[idx] = tableau_simulator.peek_observable_expectation(pauli)
-            return qml.math.dot(coeffs, expecs, like=INTERFACE_TO_LIKE[interface])
+            return qml.math.dot(coeffs, expecs)
+
+        # Case for Prod
+        if isinstance(meas_op.obs, qml.ops.op_math.Prod):
+            if meas_op.obs.arithmetic_depth == 1:
+                expec = "".join([_GATE_OPERATIONS[op.name] for op in meas_op.obs.terms()[1][0]])
+                pauli = stim.PauliString(expec)
+                return qml.math.array(tableau_simulator.peek_observable_expectation(pauli))
+            else:
+                if qml.operation.active_new_opmath():
+                    return self._measure_expectation(
+                        tableau_simulator, ExpectationMP(meas_op.obs.simplify()), stim
+                    )
+                qml.operation.enable_new_opmath()
+                expec_res = self._measure_expectation(
+                    tableau_simulator, ExpectationMP(meas_op.obs.simplify()), stim
+                )
+                qml.operation.disable_new_opmath()
+                return expec_res
+
+        # Case for SProd
+        if isinstance(meas_op.obs, qml.ops.op_math.SProd):
+            if meas_op.obs.arithmetic_depth == 1:
+                coeffs, ops = meas_op.obs.terms()
+                expec = "".join([_GATE_OPERATIONS[name] for name in ops])
+                pauli = stim.PauliString(expec)
+                expecs = qml.math.array(tableau_simulator.peek_observable_expectation(pauli))
+                return qml.math.dot(coeffs, expecs)
+            else:
+                if qml.operation.active_new_opmath():
+                    return self._measure_expectation(
+                        tableau_simulator, ExpectationMP(meas_op.obs.simplify()), stim
+                    )
+                qml.operation.enable_new_opmath()
+                expec_res = self._measure_expectation(
+                    tableau_simulator, ExpectationMP(meas_op.obs.simplify()), stim
+                )
+                qml.operation.disable_new_opmath()
+                return expec_res
+
+        # Case for Sum
+        if isinstance(meas_op.obs, qml.ops.op_math.Sum):
+            return qml.math.sum(
+                [
+                    self._measure_expectation(tableau_simulator, ExpectationMP(op), stim)
+                    for op in meas_op.obs
+                ]
+            )
 
         # Add support for more case when the time is right
         raise NotImplementedError(
@@ -697,11 +693,11 @@ class DefaultClifford(Device):
     def _measure_stabilizer_vn_entropy(stabilizer, wires, log_base=None):
         r"""Computes the entanglement entropy using stabilizer information.
 
-        Computes the entanglement entropy :math:`S_A` for a subsytem described by :math:`A`, 
+        Computes the entanglement entropy :math:`S_A` for a subsytem described by :math:`A`,
         :math:`S_A = \text{rank}(\text{projection}_A {\mathcal{S}}) - |\mathcal{S}|`, where
         :math:`\mathcal{S}` is the stabilizer group for the system using the theory described
         in `arXiv:1901.08092 <https://arxiv.org/abs/1901.08092>`_.
-        
+
         Args:
             stabilizer (TensorLike): stabilizer set for the system
             wires (Iterable): wires describing the subsystem
@@ -735,7 +731,9 @@ class DefaultClifford(Device):
         )
 
         # Use the reduced row echelon form for finding rank efficiently (tapering always come handy)
-        rank = qml.math.sum(qml.math.any(qml.qchem.tapering._reduced_row_echelon(partition_mat), axis=1))
+        rank = qml.math.sum(
+            qml.math.any(qml.qchem.tapering._reduced_row_echelon(partition_mat), axis=1)
+        )
 
         # Use the Eq. A17 in arXiv:1901.08092 for entropy calculation
         entropy = qml.math.log(2) * (rank - len(wires))
