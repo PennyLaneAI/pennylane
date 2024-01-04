@@ -711,8 +711,14 @@
   [(#4951)](https://github.com/PennyLaneAI/pennylane/pull/4951)
 
 * `MPLDrawer` does not add the bonus space for classical wires when no classical wires are present.
-  [(#5987)](https://github.com/PennyLaneAI/pennylane/pull/4987)
+  [(#4987)](https://github.com/PennyLaneAI/pennylane/pull/4987)
+
+* `Projector` now works with parameter-broadcasting.
+  [(#4993)](https://github.com/PennyLaneAI/pennylane/pull/4993)
   
+* The jax-jit interface can now be used with float32 mode.
+  [(#4990)](https://github.com/PennyLaneAI/pennylane/pull/4990)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
