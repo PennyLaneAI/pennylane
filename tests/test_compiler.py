@@ -56,6 +56,7 @@ def test_catalyst_incompatible():
 # TODO: Remove after Catalyst 0.4.0 release
 qml.compiler.compiler.AvailableCompilers.names_versions["catalyst"] = True
 
+
 class TestCatalyst:
     """Test ``qml.qjit`` with Catalyst"""
 
