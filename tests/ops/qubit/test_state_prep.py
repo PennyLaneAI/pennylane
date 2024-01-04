@@ -157,7 +157,7 @@ class TestStateVector:
         assert np.array_equal(ket, expected)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])
     def test_StatePrep_state_vector_preserves_parameter_type(self, interface):
         """Tests that given an array of some type, the resulting state vector is also that type."""
         qsv_op = qml.StatePrep(qml.math.array([0, 0, 0, 1], like=interface), wires=[1, 2])
@@ -165,7 +165,7 @@ class TestStateVector:
         assert qml.math.get_interface(qsv_op.state_vector(wire_order=[0, 1, 2])) == interface
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])
     def test_StatePrep_state_vector_preserves_parameter_type_broadcasted(self, interface):
         """Tests that given an array of some type, the resulting state vector is also that type."""
         qsv_op = qml.StatePrep(
@@ -190,6 +190,38 @@ class TestStateVector:
         """Tests that the parameter must be of shape (2**num_wires,)."""
         with pytest.raises(ValueError, match="State vector must have shape"):
             _ = qml.StatePrep([0, 1], wires=[0, 1])
+
+    @pytest.mark.torch
+    def test_StatePrep_torch_differentiable(self):
+        """Test that StatePrep works with torch."""
+        import torch
+
+        def QuantumLayer():
+            @qml.qnode(qml.device("default.qubit"), interface="torch")
+            def qlayer(inputs, weights):
+                qml.StatePrep(inputs, wires=[1, 2, 3])
+                qml.RY(phi=weights, wires=[0])
+                return qml.expval(qml.PauliZ(wires=0))
+
+            weight_shapes = {"weights": (1)}
+            return qml.qnn.TorchLayer(qlayer, weight_shapes)
+
+        class SimpleQuantumModel(torch.nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.quantum_layer = QuantumLayer()
+
+            def forward(self, x):
+                return self.quantum_layer(x)
+
+        model = SimpleQuantumModel()
+        features = torch.tensor(
+            [[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]],
+            requires_grad=True,
+        )
+        result = model(features)
+        assert qml.math.get_interface(result) == "torch"
+        assert qml.math.shape(result) == (2,)
 
     @pytest.mark.parametrize(
         "num_wires,wire_order,one_position",
@@ -239,7 +271,7 @@ class TestStateVector:
         assert not np.any(basis_state)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])
     @pytest.mark.parametrize("dtype_like", [0, 0.0])
     def test_BasisState_state_vector_preserves_parameter_type(self, interface, dtype_like):
         """Tests that given an array of some type, the resulting state_vector is also that type."""

@@ -719,6 +719,8 @@
 * The jax-jit interface can now be used with float32 mode.
   [(#4990)](https://github.com/PennyLaneAI/pennylane/pull/4990)
 
+* `StatePrep` no longer raises unexpected errors during forward calls with `torch.nn`.
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):

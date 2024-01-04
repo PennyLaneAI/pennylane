@@ -227,7 +227,7 @@ class StatePrep(StatePrepBase):
             ket_shape = [self.batch_size] + ket_shape
 
         ket = np.zeros(ket_shape, dtype=np.complex128)
-        ket[indices] = op_vector
+        ket[indices] = math.unwrap(op_vector)
 
         # unless wire_order is [*self.wires, *rest_of_wire_order], need to rearrange
         if self.wires != wire_order[:num_op_wires]:
