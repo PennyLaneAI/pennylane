@@ -241,6 +241,31 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         # flatten and return probabilities
         return qml.math.reshape(prob, flat_shape)
 
+    def process_counts(self, counts: dict, wire_order: Wires) -> np.ndarray:
+        wire_map = dict(zip(wire_order, range(len(wire_order))))
+        mapped_wires = [wire_map[w] for w in self.wires]
+
+        # when reducing wires, two keys may become equal
+        # the following structure was chosen to maintain compatibility with 'process_samples'
+        if mapped_wires:
+            mapped_counts = {}
+            for outcome, occurrence in counts.items():
+                mapped_outcome = "".join(outcome[i] for i in mapped_wires)
+                mapped_counts[mapped_outcome] = mapped_counts.get(mapped_outcome, 0) + occurrence
+            counts = mapped_counts
+
+        num_shots = sum(counts.values())
+        num_wires = len(next(iter(counts)))
+        dim = 2**num_wires
+
+        # constructs the probability vector
+        # converts outcomes from binary strings to integers (base 10 representation)
+        prob_vector = qml.math.zeros((dim), dtype="float64")
+        for outcome, occurrence in counts.items():
+            prob_vector[int(outcome, base=2)] = occurrence / num_shots
+
+        return prob_vector
+
     @staticmethod
     def _count_samples(indices, batch_size, dim):
         """Count the occurrences of sampled indices and convert them to relative

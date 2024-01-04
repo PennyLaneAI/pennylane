@@ -140,6 +140,12 @@ def _jac_restructured(jacs, tapes):
     return tuple(jacs_nested)
 
 
+def _recursive_conj(dy):
+    if isinstance(dy, (tf.Variable, tf.Tensor)):
+        return tf.math.conj(dy)
+    return tuple(_recursive_conj(d) for d in dy)
+
+
 def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
     """Execute a batch of tapes with TensorFlow parameters on a device.
 
@@ -231,6 +237,10 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
             # whether the tapes contain multiple measurements
             multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
+
+            # TF obeys the dL/dz_conj convention instead of the
+            # dL/dz convention of PennyLane, autograd and jax. This converts between the formats
+            dy = _recursive_conj(dy)
 
             # reconstruct the nested structure of dy
             dy = _res_restructured(dy, tapes)
