@@ -752,8 +752,8 @@ class TestPauliArithmeticWithADInterfaces:
         """Test initializing PauliSentence from torch tensor"""
         import torch
 
-        torch_tensor = scalar * torch.ones(4)
-        res = PauliSentence({pw: coeff for pw, coeff in zip(words, torch_tensor)})
+        tensor = scalar * torch.ones(4)
+        res = PauliSentence({pw: coeff for pw, coeff in zip(words, tensor)})
         assert all(isinstance(val, torch.Tensor) for val in res.values())
     
     @pytest.mark.autograd
@@ -762,8 +762,8 @@ class TestPauliArithmeticWithADInterfaces:
         """Test initializing PauliSentence from autograd array"""
         import pennylane.numpy as pnp
 
-        torch_tensor = scalar * pnp.ones(4)
-        res = PauliSentence({pw: coeff for pw, coeff in zip(words, torch_tensor)})
+        tensor = scalar * pnp.ones(4)
+        res = PauliSentence({pw: coeff for pw, coeff in zip(words, tensor)})
         assert all(isinstance(val, pnp.ndarray) for val in res.values())
     
     @pytest.mark.jax
@@ -772,9 +772,19 @@ class TestPauliArithmeticWithADInterfaces:
         """Test initializing PauliSentence from jax array"""
         import jax.numpy as jnp
 
-        torch_tensor = scalar * jnp.ones(4)
-        res = PauliSentence({pw: coeff for pw, coeff in zip(words, torch_tensor)})
+        tensor = scalar * jnp.ones(4)
+        res = PauliSentence({pw: coeff for pw, coeff in zip(words, tensor)})
         assert all(isinstance(val, jnp.ndarray) for val in res.values())
+    
+    @pytest.mark.tf
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
+    def test_tf_initialization(self, scalar):
+        """Test initializing PauliSentence from tf tensor"""
+        import tensorflow as tf
+
+        tensor = scalar * tf.ones(4, dtype=tf.complex64)
+        res = PauliSentence({pw: coeff for pw, coeff in zip(words, tensor)})
+        assert all(isinstance(val, tf.Tensor) for val in res.values())
 
     @pytest.mark.torch
     @pytest.mark.parametrize("ps", sentences)
