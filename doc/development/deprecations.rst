@@ -93,6 +93,13 @@ Pending deprecations
         some_qfunc(params)
         return qml.expval(Hamiltonian)
 
+* ``ClassicalShadow.entropy()`` no longer needs an ``atol`` keyword as a better 
+  method to estimate entropies from approximate density matrix reconstructions
+  (with potentially negative eigenvalues) has been implemented.
+
+  - Deprecated in v0.34
+  - Will be removed in v0.35
+
 Completed deprecation cycles
 ----------------------------
 

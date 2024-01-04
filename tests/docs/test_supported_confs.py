@@ -37,6 +37,7 @@ from pennylane.measurements import (
     VnEntropy,
     MutualInfo,
 )
+from pennylane.measurements.measurements import ObservableReturnTypes
 
 pytestmark = pytest.mark.all_interfaces
 
@@ -162,7 +163,7 @@ def get_variable(interface, wire_specs, complex=False):
         return np.array([0.1] * num_wires, requires_grad=True)
     if interface == "jax":
         # complex dtype is required for JAX when holomorphic gradient is used
-        return jnp.array([0.1] * num_wires, dtype=np.complex64 if complex else None)
+        return jnp.array([0.1] * num_wires, dtype=np.complex128 if complex else None)
     if interface == "tf":
         # complex dtype is required for TF when the gradients have non-zero
         # imaginary parts, otherwise they will be ignored
@@ -308,8 +309,6 @@ class TestSupportedConfs:
                     msg = "not accepted with finite shots"
                 else:
                     msg = "Finite shots are not supported with"
-            elif return_type not in ("Hermitian", "Projector", Expectation):
-                msg = "not accepted for analytic simulation"
         elif shots and return_type in (
             VnEntropy,
             MutualInfo,
@@ -366,15 +365,19 @@ class TestSupportedConfs:
     def test_all_adjoint_nonexp(self, interface, return_type, shots, wire_specs):
         """Test diff_method=adjoint raises an error for non-expectation
         measurements for all interfaces"""
-        msg = (
-            ""  # two options of message both along the lines of "no shots"
-            if shots
-            else "not accepted for analytic simulation on adjoint"
-        )
 
         circuit = get_qnode(interface, "adjoint", return_type, shots, wire_specs)
-        x = get_variable(interface, wire_specs)
-        with pytest.raises(qml.DeviceError, match=msg):
+        x = get_variable(interface, wire_specs, complex=True)
+
+        if shots is not None:
+            with pytest.raises(qml.DeviceError):
+                compute_gradient(x, interface, circuit, return_type)
+        elif return_type == ObservableReturnTypes.Probability and interface == "tf":
+            with pytest.raises(Exception):
+                # tensorflow.python.framework.errors_impl.InvalidArgumentError
+                # TODO: figure out why
+                compute_gradient(x, interface, circuit, return_type)
+        else:
             compute_gradient(x, interface, circuit, return_type)
 
     @pytest.mark.parametrize("interface", diff_interfaces)

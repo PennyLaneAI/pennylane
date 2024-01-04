@@ -724,6 +724,29 @@ class TestProbs:
 
         assert np.allclose(res, expected)
 
+    @pytest.mark.parametrize(
+        "wires, expected",
+        [
+            (
+                (0, 1, 2),
+                [0.1, 0.2, 0.0, 0.1, 0.0, 0.2, 0.1, 0.3],
+            ),
+            (
+                (0, 1),
+                [0.3, 0.1, 0.2, 0.4],
+            ),
+        ],
+    )
+    def test_estimate_probability_with_counts(self, wires, expected):
+        """Tests the estimate_probability method with sampling information in the form of a counts dictionary"""
+        counts = {"101": 2, "100": 2, "111": 3, "000": 1, "011": 1, "110": 1}
+
+        wire_order = qml.wires.Wires((2, 1, 0))
+
+        res = qml.probs(wires=wires).process_counts(counts=counts, wire_order=wire_order)
+
+        assert np.allclose(res, expected)
+
     def test_non_commuting_probs_does_not_raises_error(self):
         """Tests that non-commuting probs with expval does not raise an error."""
         dev = qml.device("default.qubit", wires=5)

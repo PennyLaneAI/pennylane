@@ -468,8 +468,8 @@ class TestPreprocessingIntegration:
         [
             (
                 [qml.RX(0.1, wires=0)],
-                [qml.probs(wires=[0, 1, 2])],
-                "not accepted for analytic simulation on adjoint",
+                [qml.probs(op=qml.PauliX(0))],
+                "adjoint diff supports either all expectation values or",
             ),
             (
                 [qml.RX(0.1, wires=0)],
@@ -642,7 +642,7 @@ class TestAdjointDiffTapeValidation:
         with pytest.raises(qml.DeviceError, match=msg):
             program((tape,))
 
-    def test_not_expval(self):
+    def test_non_diagonal_non_expval(self):
         """Test if a QuantumFunctionError is raised for a tape with measurements that are not
         expectation values"""
 
@@ -655,7 +655,7 @@ class TestAdjointDiffTapeValidation:
 
         with pytest.raises(
             qml.DeviceError,
-            match=r"not accepted for analytic simulation on adjoint",
+            match=r"adjoint diff supports either all expectation values or only measurements without observables",
         ):
             program((qs,))
 
