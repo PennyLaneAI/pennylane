@@ -201,13 +201,13 @@ class PauliWord(dict):
                 result[wire] = term
 
         return PauliWord(result), coeff
-    
+
     def __mul__(self, other):
         """Multiply a PauliWord by a scalar
-        
+
         Args:
             other (Scalar): The scalar to multiply the PauliWord with
-        
+
         Returns:
             PauliSentence
         """
@@ -216,10 +216,12 @@ class PauliWord(dict):
             return self @ other
 
         if not qml.math.ndim(other) == 0:
-            raise ValueError(f"Attempting to multiply a PauliWord with an array of dimension {qml.math.ndim(other)}")
+            raise ValueError(
+                f"Attempting to multiply a PauliWord with an array of dimension {qml.math.ndim(other)}"
+            )
 
-        return PauliSentence({self:other})
-    
+        return PauliSentence({self: other})
+
     __rmul__ = __mul__
 
     def __str__(self):
@@ -434,12 +436,14 @@ class PauliSentence(dict):
         if isinstance(other, PauliSentence):
             # this is legacy support and will be removed after a deprecation cycle
             return self @ other
-        
+
         if not qml.math.ndim(other) == 0:
-            raise ValueError(f"Attempting to multiply a PauliSentence with an array of dimension {qml.math.ndim(other)}")
-        
-        return PauliSentence({key: other*value for key, value in self.items()})
-    
+            raise ValueError(
+                f"Attempting to multiply a PauliSentence with an array of dimension {qml.math.ndim(other)}"
+            )
+
+        return PauliSentence({key: other * value for key, value in self.items()})
+
     __rmul__ = __mul__
 
     def __str__(self):

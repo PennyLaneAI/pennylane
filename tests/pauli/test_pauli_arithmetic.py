@@ -133,9 +133,9 @@ class TestPauliWord:
         assert word1 @ word2 == (result_pw, coeff)
         assert copy_pw1 == word1  # check for mutation of the pw themselves
         assert copy_pw2 == word2
-    
+
     @pytest.mark.parametrize("pw", words)
-    @pytest.mark.parametrize("scalar", [0., 0.5, 1, 1j, 0.5j+1.])
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
     def test_mul(self, pw, scalar):
         """Test scalar multiplication"""
         res1 = scalar * pw
@@ -405,9 +405,9 @@ class TestPauliSentence:
         assert simplified_product == res
         assert pauli1 == copy_ps1
         assert pauli2 == copy_ps2
-    
+
     @pytest.mark.parametrize("ps", sentences)
-    @pytest.mark.parametrize("scalar", [0., 0.5, 1, 1j, 0.5j+1.])
+    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
     def test_mul(self, ps, scalar):
         """Test scalar multiplication"""
         res1 = scalar * ps
@@ -420,7 +420,6 @@ class TestPauliSentence:
         """Test that the correct error is raised when attempting to multiply a PauliSentence by a sclar"""
         with pytest.raises(ValueError, match="Attempting to multiply"):
             [0.5] * ps
-
 
     tup_ps_add = (  # computed by hand
         (ps1, ps1, PauliSentence({pw1: 2.46, pw2: 8j, pw3: -1})),
@@ -725,7 +724,10 @@ class TestPauliSentence:
             }
         )
 
+
 @pytest.mark.all_interfaces
 class TestPauliADInterfaces:
-    def test_interfaces(self,):
+    def test_interfaces(
+        self,
+    ):
         assert True
