@@ -16,6 +16,8 @@ Unit tests for the ControlledSequence subroutine.
 """
 import pytest
 import numpy as np
+
+from pennylane import numpy as pnp
 import pennylane as qml
 
 from pennylane.wires import Wires
@@ -23,7 +25,6 @@ from pennylane.wires import Wires
 # pylint: disable=unidiomatic-typecheck, cell-var-from-loop
 
 
-@pytest.mark.xfail  # to be fixed by shortcut #49175
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
     op = qml.ControlledSequence(qml.RX(0.25, wires=3), control=[0, 1, 2])
@@ -325,7 +326,6 @@ class TestIntegration:
 
         _ = circuit()
 
-    @pytest.mark.xfail(reason="not working yet")
     def test_gradient_with_composite_op_base(self):
         """Test executing and getting the gradient of a circuit with a
         ControlledSequence based on a CompositeOp"""
@@ -340,9 +340,9 @@ class TestIntegration:
         @qml.qnode(dev)
         def circuit(thetas):
             qml.ControlledSequence(U(thetas, wires=[0, 1]), control=[2, 3])
-            return qml.state()
+            return qml.expval(qml.PauliZ(0))
 
-        thetas = np.array([1.0, 1.0], requires_grad=True)
+        thetas = pnp.array([1.0, 1.0], requires_grad=True)
         _ = circuit(thetas)
         _ = qml.grad(circuit)(thetas)
 
