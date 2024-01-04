@@ -81,7 +81,7 @@ by the ``cache_full_jacobian`` keyword argument to :class:`~.TransformJacobianPr
 Other interfaces are capable of calculating the full jacobian in one call, so this patch is only present for autograd.
 
 """
-# pylint: disable=too-many-arguments, unused-argument
+# pylint: disable=too-many-arguments
 import logging
 from typing import Tuple, Callable
 
@@ -97,12 +97,10 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-# pylint: disable=unused-argument
 def autograd_execute(
     tapes: Batch,
     execute_fn: ExecuteFn,
     jpc: qml.interfaces.jacobian_products.JacobianProductCalculator,
-    device=None,
 ):
     """Execute a batch of tapes with Autograd parameters on a device.
 
@@ -134,6 +132,7 @@ def autograd_execute(
     tapes = tuple(tapes)
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug("Entry with (tapes=%s, execute_fn=%s, jpc=%s)", tapes, execute_fn, jpc)
+    # pylint: disable=unused-argument
     for tape in tapes:
         # set the trainable parameters
         params = tape.get_parameters(trainable_only=False)

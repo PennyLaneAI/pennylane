@@ -221,19 +221,7 @@ class TestJacobianProductResults:
         x = 1.62
         tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], shots=shots)
         jac = jpc.compute_jacobian((tape,))
-
         assert qml.math.allclose(jac, -np.sin(x), atol=_tol_for_shots(shots))
-
-    def test_execute_jacobian_basic(self, jpc, shots):
-        """Test execute_and_compute_jacobian for a simple single input single output."""
-        if shots and not _accepts_finite_shots(jpc):
-            pytest.skip("jpc does not work with finite shots.")
-
-        x = 1.62
-        tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))], shots=shots)
-        results, jacs = jpc.execute_and_compute_jacobian((tape,))
-        assert qml.math.allclose(results[0], np.cos(x), atol=_tol_for_shots(shots))
-        assert qml.math.allclose(jacs, -np.sin(x), atol=_tol_for_shots(shots))
 
     def test_batch_execute_jvp(self, jpc, shots):
         """Test execute_and_compute_jvp on a batch with ragged observables and parameters.."""
@@ -361,66 +349,6 @@ class TestJacobianProductResults:
                 jacs[1][1][1], -np.sin(x) * np.cos(y), atol=_tol_for_shots(shots)
             )
 
-    def test_batch_execute_jacobian(self, jpc, shots):
-        """Test execute_and_compute_jacobian on a batch with ragged observables and parameters."""
-
-        if shots and not _accepts_finite_shots(jpc):
-            pytest.skip("jpc does not work with finite shots.")
-        if jpc is hadamard_grad_jpc and qml.measurements.Shots(shots).has_partitioned_shots:
-            pytest.skip(
-                "hadamard gradient does not work with partitioned shots and multiple measurements."
-            )
-
-        x = np.array(0.28)
-        y = np.array(1.62)
-        phi = np.array(0.6293)
-
-        tape1 = qml.tape.QuantumScript(
-            [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))],
-            [qml.expval(qml.PauliX(1)), qml.expval(qml.PauliY(0))],
-            shots=shots,
-        )
-        tape2 = qml.tape.QuantumScript(
-            [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))],
-            [qml.expval(qml.PauliZ(1))],
-            shots=shots,
-        )
-
-        # note reversed order of tapes in this test
-        res, jacs = jpc.execute_and_compute_jacobian((tape2, tape1))
-
-        if tape1.shots.has_partitioned_shots:
-            for i in [0, 1]:
-                assert qml.math.allclose(res[1][i][0], np.sin(y), atol=_tol_for_shots(shots))
-                assert qml.math.allclose(
-                    res[1][i][1], -np.sin(x) * np.sin(y), atol=_tol_for_shots(shots)
-                )
-                assert qml.math.allclose(res[0][i], np.cos(phi), atol=_tol_for_shots(shots))
-
-                assert qml.math.allclose(jacs[1][i][0][0], 0, atol=_tol_for_shots(shots))
-                assert qml.math.allclose(jacs[1][i][0][1], np.cos(y), atol=_tol_for_shots(shots))
-                assert qml.math.allclose(
-                    jacs[1][i][1][0], -np.cos(x) * np.sin(y), atol=_tol_for_shots(shots)
-                )
-                assert qml.math.allclose(
-                    jacs[1][i][1][1], -np.sin(x) * np.cos(y), atol=_tol_for_shots(shots)
-                )
-                assert qml.math.allclose(jacs[0][i], -np.sin(phi), atol=_tol_for_shots(shots))
-        else:
-            assert qml.math.allclose(res[1][0], np.sin(y), atol=_tol_for_shots(shots))
-            assert qml.math.allclose(res[1][1], -np.sin(x) * np.sin(y), atol=_tol_for_shots(shots))
-            assert qml.math.allclose(res[0], np.cos(phi), atol=_tol_for_shots(shots))
-
-            assert qml.math.allclose(jacs[0], -np.sin(phi), atol=_tol_for_shots(shots))
-            assert qml.math.allclose(jacs[1][0][0], 0, atol=_tol_for_shots(shots))
-            assert qml.math.allclose(jacs[1][0][1], np.cos(y), atol=_tol_for_shots(shots))
-            assert qml.math.allclose(
-                jacs[1][1][0], -np.cos(x) * np.sin(y), atol=_tol_for_shots(shots)
-            )
-            assert qml.math.allclose(
-                jacs[1][1][1], -np.sin(x) * np.cos(y), atol=_tol_for_shots(shots)
-            )
-
 
 @pytest.mark.parametrize("jpc", dev_jpc_matrix)
 class TestCachingDeviceDerivatives:
@@ -510,31 +438,6 @@ class TestCachingDeviceDerivatives:
         assert jpc._device.tracker.totals.get("derivatives", 0) == 0
         assert jpc._device.tracker.totals.get("executions", 0) == 0
 
-    def test_cached_on_execute_and_compute_jacobian(self, jpc):
-        """Test that execute_and_compute_jacobians caches results and Jacobians if they are not precalculated."""
-        x = 1.5
-        tape1 = qml.tape.QuantumScript(
-            [qml.Hadamard(0), qml.IsingXX(x, wires=(0, 1))], [qml.expval(qml.PauliZ(1))]
-        )
-        batch = (tape1,)
-
-        with jpc._device.tracker:
-            res, jacs = jpc.execute_and_compute_jacobian(batch)
-
-        assert jpc._device.tracker.totals["execute_and_derivative_batches"] == 1
-
-        assert qml.math.allclose(res, np.cos(x))
-        assert qml.math.allclose(jacs, -np.sin(x))
-
-        assert jpc._results_cache[batch] is res
-        assert qml.math.allclose(jpc._jacs_cache[batch], (-np.sin(x)))
-
-        with jpc._device.tracker:
-            jpc.execute_and_compute_jacobian(batch)
-
-        assert jpc._device.tracker.totals.get("derivatives", 0) == 0
-        assert jpc._device.tracker.totals.get("executions", 0) == 0
-
     def test_cached_on_vjps(self, jpc):
         """test that only jacs are cached on calls to compute_vjp."""
 
@@ -573,7 +476,7 @@ class TestCachingDeviceDerivatives:
         jpc._results_cache[batch] = "value"
 
         with pytest.raises(NotImplementedError):
-            jpc.execute_and_compute_jacobian(batch)
+            jpc.execute_and_compute_jvp(batch, tuple())
 
 
 @pytest.mark.parametrize("jpc", transform_jpc_matrix + [device_ps_jacs])
@@ -616,50 +519,6 @@ class TestProbsTransformJacobians:
 
         assert qml.math.allclose(jvp[1][0], 0)
         assert qml.math.allclose(jvp[1][1], -0.6 * np.sin(phi))
-
-    def test_execute_jacobian_multi_params_multi_out(self, jpc):
-        """Test execute_and_compute_jacobian with multiple parameters and multiple outputs"""
-        x = 0.93
-        y = -0.83
-        ops = [qml.RY(y, 0), qml.RX(x, 0)]
-        measurements = [qml.probs(wires=0), qml.expval(qml.PauliZ(0))]
-        tape1 = qml.tape.QuantumScript(ops, measurements)
-
-        phi = 0.545
-        ops2 = [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))]
-        measurements2 = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
-        tape2 = qml.tape.QuantumScript(ops2, measurements2)
-
-        res, jac = jpc.execute_and_compute_jacobian((tape1, tape2))
-
-        expected_res00 = 0.5 * np.array([1 + np.cos(x) * np.cos(y), 1 - np.cos(x) * np.cos(y)])
-        assert qml.math.allclose(res[0][0], expected_res00)
-
-        expected_res01 = np.cos(x) * np.cos(y)
-        assert qml.math.allclose(res[0][1], expected_res01)
-
-        assert qml.math.allclose(res[1][0], 0)
-        assert qml.math.allclose(res[1][1], np.cos(phi))
-
-        # first tape, first measurement, first parameters (y)
-        expected = 0.5 * np.array([-np.cos(x) * np.sin(y), np.cos(x) * np.sin(y)])
-        assert qml.math.allclose(jac[0][0][0], expected)
-
-        # first tape, first measurement, second parameter (x)
-        expected = 0.5 * np.array([-np.sin(x) * np.cos(y), np.sin(x) * np.cos(y)])
-        assert qml.math.allclose(jac[0][0][1], expected)
-
-        # first tape, second measurement, first parameter(y)
-        expected = -np.cos(x) * np.sin(y)
-        assert qml.math.allclose(jac[0][1][0], expected)
-        # first tape, second measurement, second parameter (x)
-        expected = -np.sin(x) * np.cos(y)
-        assert qml.math.allclose(jac[0][1][1], expected)
-
-        # second tape, first measurement, only parameter
-        assert qml.math.allclose(jac[1][0], 0)
-        # second tape, second measurement, only parameter
-        assert qml.math.allclose(jac[1][1], -np.sin(phi))
 
     def test_vjp_multi_params_multi_out(self, jpc):
         """Test compute_vjp with multiple parameters and multiple outputs."""

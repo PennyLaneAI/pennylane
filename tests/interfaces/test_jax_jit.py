@@ -135,20 +135,15 @@ class TestJaxExecuteUnitTests:
         a = jax.numpy.array([0.1, 0.2])
         jax.jit(cost)(a)
 
-        # adjoint method only performs a single device execution
-        # gradients are not requested when we only want the results
+        # adjoint method only performs a single device execution, but gets both result and gradient
         assert dev.num_executions == 1
-        spy.assert_not_called()
-
-        # when the jacobian is requested, we always calculate it at the same time as the results
-        jax.grad(jax.jit(cost))(a)
         spy.assert_called()
 
     def test_no_gradients_on_execution(self, mocker):
         """Test that no grad on execution uses the `device.batch_execute` and `device.gradients` pathway"""
         dev = qml.device("default.qubit.legacy", wires=1)
         spy_execute = mocker.spy(qml.devices.DefaultQubitLegacy, "batch_execute")
-        spy_gradients = mocker.spy(qml.devices.DefaultQubitLegacy, "execute_and_gradients")
+        spy_gradients = mocker.spy(qml.devices.DefaultQubitLegacy, "gradients")
 
         def cost(a):
             with qml.queuing.AnnotatedQueue() as q:

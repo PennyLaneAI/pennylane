@@ -512,7 +512,9 @@ class TestQubitIntegration:
         kwargs = dict(
             diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
         )
-        if diff_method == "spsa":
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not currently support returning probabilities")
+        elif diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
@@ -560,7 +562,9 @@ class TestQubitIntegration:
         kwargs = dict(
             diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
         )
-        if diff_method == "spsa":
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not currently support returning probabilities")
+        elif diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
@@ -842,6 +846,8 @@ class TestQubitIntegration:
 
     def test_state(self, dev, diff_method, grad_on_execution, tol, interface):
         """Test that the state can be returned and differentiated"""
+        if diff_method == "adjoint":
+            pytest.skip("Adjoint does not support states")
 
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
@@ -877,8 +883,8 @@ class TestQubitIntegration:
             diff_method=diff_method, grad_on_execution=grad_on_execution, interface=interface
         )
         if diff_method == "adjoint":
-            pytest.skip("adjoint supports either all expvals or all diagonal measurements.")
-        if diff_method == "hadamard":
+            pytest.skip("Adjoint does not support projectors")
+        elif diff_method == "hadamard":
             pytest.skip("Variance not implemented yet.")
         elif diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
@@ -1622,6 +1628,8 @@ class TestReturn:
     ):
         """For a multi dimensional measurement (probs), check that a single array is returned with the correct
         dimension"""
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of probabilities.")
 
         @qnode(
             dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
@@ -1646,6 +1654,8 @@ class TestReturn:
     ):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of probabilities.")
 
         @qnode(
             dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
@@ -1675,6 +1685,8 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, interface
     ):
         """For a multi dimensional measurement (probs), check that a single array is returned."""
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of probabilities.")
 
         @qnode(
             dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
@@ -1698,6 +1710,8 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, interface
     ):
         """The jacobian of multiple measurements with a single params return an array."""
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of probabilities.")
 
         @qnode(
             dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
@@ -1722,6 +1736,9 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, interface
     ):
         """The jacobian of multiple measurements with a multiple params return a tuple of arrays."""
+
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of probabilities.")
 
         @qnode(
             dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
@@ -1753,6 +1770,9 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, interface
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
+
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of probabilities.")
 
         @qnode(
             dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution

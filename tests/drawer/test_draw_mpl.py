@@ -70,15 +70,6 @@ def test_standard_use():
     plt.close()
 
 
-def test_fig_argument():
-    """Tests figure argument is used correcly"""
-
-    fig = plt.figure()
-    output_fig, ax = qml.draw_mpl(circuit1, fig=fig)(1.23, 2.34)
-    assert ax.get_figure() == fig
-    assert output_fig == fig
-
-
 @pytest.mark.parametrize(
     "device",
     [qml.device("default.qubit.legacy", wires=3), qml.devices.DefaultQubit(wires=3)],

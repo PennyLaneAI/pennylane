@@ -155,8 +155,17 @@ class TestQubitUnitaryZYZDecomposition:
 
         import jax
 
+        # Enable float64 support
+        from jax.config import config
+
+        remember = config.read("jax_enable_x64")
+        config.update("jax_enable_x64", True)
+
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
         _test_decomposition(U, "ZYZ", typeof_gates_zyz, expected_params)
+
+        # Reset the configuration
+        config.update("jax_enable_x64", remember)
 
 
 typeof_gates_xyx = (qml.RX, qml.RY, qml.RX, qml.GlobalPhase)
@@ -230,8 +239,17 @@ class TestQubitUnitaryXYXDecomposition:
 
         import jax
 
+        # Enable float64 support
+        from jax.config import config
+
+        remember = config.read("jax_enable_x64")
+        config.update("jax_enable_x64", True)
+
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
         _test_decomposition(U, "XYX", typeof_gates_xyx, expected_params)
+
+        # Reset the configuration
+        config.update("jax_enable_x64", remember)
 
 
 typeof_gates_xzx = (qml.RX, qml.RZ, qml.RX, qml.GlobalPhase)
@@ -302,8 +320,17 @@ class TestQubitUnitaryXZXDecomposition:
 
         import jax
 
+        # Enable float64 support
+        from jax.config import config
+
+        remember = config.read("jax_enable_x64")
+        config.update("jax_enable_x64", True)
+
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
         _test_decomposition(U, "XZX", typeof_gates_xzx, expected_params)
+
+        # Reset the configuration
+        config.update("jax_enable_x64", remember)
 
 
 typeof_gates_zxz = (qml.RZ, qml.RX, qml.RZ, qml.GlobalPhase)
@@ -388,8 +415,17 @@ class TestQubitUnitaryZXZDecomposition:
 
         import jax
 
+        # Enable float64 support
+        from jax.config import config
+
+        remember = config.read("jax_enable_x64")
+        config.update("jax_enable_x64", True)
+
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
         _test_decomposition(U, "ZXZ", typeof_gates_zxz, expected_params)
+
+        # Restore the configuration
+        config.update("jax_enable_x64", remember)
 
 
 test_cases_rot = [
@@ -452,8 +488,17 @@ class TestOneQubitRotDecomposition:
 
         import jax
 
+        # Enable float64 support
+        from jax.config import config
+
+        remember = config.read("jax_enable_x64")
+        config.update("jax_enable_x64", True)
+
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
         _test_decomposition(U, "rot", expected_gates, expected_params)
+
+        # Restore the configuration
+        config.update("jax_enable_x64", remember)
 
 
 # Randomly generated set (scipy.unitary_group) of five U(4) operations.
@@ -1127,6 +1172,10 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
         """Test that a two-qubit operation in JAX is correctly decomposed."""
 
         import jax
+        from jax.config import config
+
+        remember = config.read("jax_enable_x64")
+        config.update("jax_enable_x64", True)
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
 
@@ -1140,6 +1189,9 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
         obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
+
+        # Restore config
+        config.update("jax_enable_x64", remember)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
@@ -1148,6 +1200,10 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
         """Test that a two-qubit tensor product in JAX is correctly decomposed."""
 
         import jax
+        from jax.config import config
+
+        remember = config.read("jax_enable_x64")
+        config.update("jax_enable_x64", True)
 
         U1 = jax.numpy.array(U_pair[0], dtype=jax.numpy.complex128)
         U2 = jax.numpy.array(U_pair[1], dtype=jax.numpy.complex128)
@@ -1164,6 +1220,9 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
+        # Restore config
+        config.update("jax_enable_x64", remember)
+
     @pytest.mark.jax
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
     @pytest.mark.parametrize("U", samples_3_cnots + samples_2_cnots + samples_1_cnot)
@@ -1171,6 +1230,10 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
         """Test that a two-qubit operation is correctly decomposed with JAX-JIT ."""
 
         import jax
+        from jax.config import config
+
+        remember = config.read("jax_enable_x64")
+        config.update("jax_enable_x64", True)
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
 
@@ -1192,6 +1255,9 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
         assert check_matrix_equivalence(U, jitted_matrix, atol=1e-7)
 
+        # Restore config
+        config.update("jax_enable_x64", remember)
+
     @pytest.mark.jax
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
     @pytest.mark.parametrize("U_pair", samples_su2_su2)
@@ -1199,6 +1265,10 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
         """Test that a two-qubit tensor product is correctly decomposed with JAX-JIT."""
 
         import jax
+        from jax.config import config
+
+        remember = config.read("jax_enable_x64")
+        config.update("jax_enable_x64", True)
 
         U1 = jax.numpy.array(U_pair[0], dtype=jax.numpy.complex128)
         U2 = jax.numpy.array(U_pair[1], dtype=jax.numpy.complex128)
@@ -1221,6 +1291,9 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
         jitted_matrix = jax.jit(wrapped_decomposition)(U)
 
         assert check_matrix_equivalence(U, jitted_matrix, atol=1e-7)
+
+        # Restore config
+        config.update("jax_enable_x64", remember)
 
 
 class TestTransformsDeprecations:

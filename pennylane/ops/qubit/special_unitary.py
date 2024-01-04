@@ -422,9 +422,6 @@ class SpecialUnitary(Operation):
 
         super().__init__(theta, wires=wires, id=id)
 
-    def _flatten(self):
-        return self.data, (self.wires, ())
-
     @staticmethod
     def compute_matrix(theta, num_wires):
         r"""Representation of the operator as a canonical matrix in the computational basis

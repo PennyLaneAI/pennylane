@@ -384,6 +384,9 @@ class TestMergeRotationsInterfaces:
         """Test QNode and gradient in JAX interface."""
         import jax
         from jax import numpy as jnp
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
 
         original_qnode = qml.QNode(qfunc_all_ops, dev)
         transformed_qnode = qml.QNode(transformed_qfunc_all_ops, dev)
@@ -408,6 +411,11 @@ class TestMergeRotationsInterfaces:
         0 rotation angles does not break things."""
 
         import jax
+
+        # Enable float64 support
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
 
         @jax.jit
         @qml.qnode(qml.device("default.qubit", wires=["w1", "w2"]), interface="jax")

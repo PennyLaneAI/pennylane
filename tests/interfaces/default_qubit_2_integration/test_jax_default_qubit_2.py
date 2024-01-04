@@ -245,6 +245,9 @@ class TestJaxExecuteIntegration:
         """Test that a tape with no parameters is correctly
         ignored during the gradient computation"""
 
+        if execute_kwargs["gradient_fn"] == "adjoint":
+            pytest.skip("Adjoint differentiation does not yet support probabilities")
+
         def cost(params):
             tape1 = qml.tape.QuantumScript(
                 [qml.Hadamard(0)], [qml.expval(qml.PauliX(0))], shots=shots
@@ -273,7 +276,6 @@ class TestJaxExecuteIntegration:
             return out
 
         params = jnp.array([0.1, 0.2])
-
         x, y = params
 
         res = cost(params)
@@ -537,6 +539,9 @@ class TestJaxExecuteIntegration:
         """Tests correct output shape and evaluation for a tape
         with prob outputs"""
 
+        if execute_kwargs["gradient_fn"] == "adjoint":
+            pytest.skip("adjoint differentiation does not support probabilities")
+
         def cost(x, y):
             ops = [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))]
             m = [qml.probs(wires=0), qml.probs(wires=1)]
@@ -564,10 +569,6 @@ class TestJaxExecuteIntegration:
             assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
         jac_fn = jax.jacobian(cost, argnums=[0, 1])
-        if execute_kwargs.get("device_vjp", False):
-            with pytest.raises(NotImplementedError):
-                jac_fn(x, y)
-            return
         res = jac_fn(x, y)
         assert isinstance(res, tuple) and len(res) == 2
         assert res[0].shape == (2, 4) if shots.has_partitioned_shots else (4,)
@@ -603,6 +604,8 @@ class TestJaxExecuteIntegration:
     def test_ragged_differentiation(self, execute_kwargs, device, shots):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
+        if execute_kwargs["gradient_fn"] == "adjoint":
+            pytest.skip("Adjoint differentiation does not yet support probabilities")
 
         def cost(x, y):
             ops = [qml.RX(x, wires=0), qml.RY(y, 1), qml.CNOT((0, 1))]
@@ -625,10 +628,6 @@ class TestJaxExecuteIntegration:
             assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
         jac_fn = jax.jacobian(cost, argnums=[0, 1])
-        if execute_kwargs.get("device_vjp", False):
-            with pytest.raises(NotImplementedError):
-                jac_fn(x, y)
-            return
         res = jac_fn(x, y)
         assert isinstance(res, tuple) and len(res) == 2
         assert res[0].shape == (3 * shots.num_copies,) if shots.has_partitioned_shots else (3,)

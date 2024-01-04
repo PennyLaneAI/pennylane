@@ -560,7 +560,9 @@ class TestQubitIntegration:
             device_vjp=device_vjp,
         )
 
-        if diff_method == "spsa":
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not currently support returning probabilities")
+        elif diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
@@ -595,7 +597,9 @@ class TestQubitIntegration:
             device_vjp=device_vjp,
         )
 
-        if diff_method == "spsa":
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not currently support returning probabilities")
+        elif diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
@@ -659,7 +663,9 @@ class TestQubitIntegration:
             device_vjp=device_vjp,
         )
 
-        if diff_method == "spsa":
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not currently support returning probabilities")
+        elif diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
@@ -708,7 +714,9 @@ class TestQubitIntegration:
             device_vjp=device_vjp,
         )
 
-        if diff_method == "spsa":
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not currently support returning probabilities")
+        elif diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
         elif diff_method == "hadamard":
@@ -1298,6 +1306,8 @@ class TestQubitIntegration:
 
     def test_state(self, interface, dev, diff_method, grad_on_execution, device_vjp, tol):
         """Test that the state can be returned and differentiated"""
+        if diff_method == "adjoint":
+            pytest.skip("Adjoint does not support states")
 
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)
@@ -1342,8 +1352,6 @@ class TestQubitIntegration:
         self, state, interface, dev, diff_method, grad_on_execution, device_vjp, tol
     ):
         """Test that the variance of a projector is correctly returned"""
-        if diff_method == "adjoint":
-            pytest.skip("adjoint supports either expvals or diagonal measurements.")
         kwargs = dict(
             diff_method=diff_method,
             interface=interface,
@@ -1351,7 +1359,9 @@ class TestQubitIntegration:
             device_vjp=device_vjp,
         )
 
-        if diff_method == "spsa":
+        if diff_method == "adjoint":
+            pytest.skip("Adjoint does not support projectors")
+        elif diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
         elif diff_method == "hadamard":
@@ -1814,6 +1824,8 @@ class TestReturn:
     ):
         """For a multi dimensional measurement (probs), check that a single array is returned with the correct
         dimension"""
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not currently support returning probabilities")
 
         @qnode(
             dev,
@@ -1839,6 +1851,8 @@ class TestReturn:
     ):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not currently support returning probabilities")
 
         @qnode(
             dev,
@@ -1869,6 +1883,8 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, device_vjp
     ):
         """For a multi dimensional measurement (probs), check that a single array is returned."""
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not currently support returning probabilities")
 
         @qnode(
             dev,
@@ -1892,6 +1908,9 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, device_vjp
     ):
         """The jacobian of multiple measurements with a single params return an array."""
+
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not currently support returning probabilities")
 
         @qnode(
             dev,
@@ -1919,6 +1938,9 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, device_vjp
     ):
         """The jacobian of multiple measurements with a multiple params return a tuple of arrays."""
+
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not currently support returning probabilities")
 
         @qnode(
             dev,
@@ -1953,6 +1975,9 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, device_vjp
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
+
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not currently support returning probabilities")
 
         @qnode(
             dev,

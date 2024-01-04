@@ -315,8 +315,6 @@ def draw_mpl(
     decimals=None,
     expansion_strategy=None,
     style=None,
-    *,
-    fig=None,
     **kwargs,
 ):
     """Draw a qnode with matplotlib
@@ -350,7 +348,7 @@ def draw_mpl(
 
             - ``device``: The QNode will attempt to decompose the internal circuit
               such that all circuit operations are natively supported by the device.
-        fig (None or matplotlib.Figure): Matplotlib figure to plot onto. If None, then create a new figure
+
 
     Returns:
         A function that has the same argument signature as ``qnode``. When called,
@@ -525,7 +523,6 @@ def draw_mpl(
             decimals=decimals,
             expansion_strategy=expansion_strategy,
             style=style,
-            fig=fig,
             **kwargs,
         )
 
@@ -546,7 +543,6 @@ def draw_mpl(
             show_all_wires=show_all_wires,
             decimals=decimals,
             style=style,
-            fig=fig,
             **kwargs,
         )
 
@@ -560,8 +556,6 @@ def _draw_mpl_qnode(
     decimals=None,
     expansion_strategy=None,
     style="black_white",
-    *,
-    fig=None,
     **kwargs,
 ):
     @wraps(qnode)
@@ -593,7 +587,6 @@ def _draw_mpl_qnode(
             show_all_wires=show_all_wires,
             decimals=decimals,
             style=style,
-            fig=fig,
             **kwargs,
         )
 

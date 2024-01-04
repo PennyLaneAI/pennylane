@@ -465,6 +465,10 @@ class TestCompileInterfaces:
         import jax
         from jax import numpy as jnp
 
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
+
         original_qnode = qml.QNode(qfunc_emb, dev_3wires, diff_method=diff_method)
         transformed_qnode = qml.QNode(transformed_qfunc_emb, dev_3wires, diff_method=diff_method)
 
@@ -491,6 +495,9 @@ class TestCompileInterfaces:
         """Test that compilation pipelines work with jax.jit, unitary_to_rot, and fusion."""
         import jax
         from jax import numpy as jnp
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
 
         dev = qml.device("default.qubit", wires=2)
 

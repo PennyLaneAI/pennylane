@@ -158,24 +158,6 @@ class DoubleFactorization(Operation):
 
         super().__init__(wires=range(self.qubits))
 
-    def _flatten(self):
-        return (self.one_electron, self.two_electron), (
-            ("error", self.error),
-            ("rank_r", self.rank_r),
-            ("rank_m", self.rank_m),
-            ("rank_max", self.rank_max),
-            ("tol_factor", self.tol_factor),
-            ("tol_eigval", self.tol_eigval),
-            ("br", self.br),
-            ("alpha", self.alpha),
-            ("beta", self.beta),
-            ("chemist_notation", True),
-        )
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        return cls(*data, **dict(metadata))
-
     @staticmethod
     def estimation_cost(lamb, error):
         r"""Return the number of calls to the unitary needed to achieve the desired error in quantum

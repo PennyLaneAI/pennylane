@@ -418,6 +418,9 @@ class TestSumOfTermsDifferentiability:
     def test_jax_backprop(self, convert_to_hamiltonian, use_jit):
         """Test that backpropagation derivatives work with jax with hamiltonians and large sums."""
         import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)  # otherwise output is too noisy
 
         x = jax.numpy.array(0.52, dtype=jax.numpy.float64)
         coeffs = (5.2, 6.7)

@@ -196,6 +196,11 @@ class TestDecomposeSingleQubitUnitaryTransform:
         """Test that the transform works in the JAX interface."""
         import jax
 
+        # Enable float64 support
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
+
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
 
         transformed_qfunc = unitary_to_rot(qfunc)
@@ -223,6 +228,11 @@ class TestDecomposeSingleQubitUnitaryTransform:
         """Test that the transform works in the JAX interface with JIT."""
         # pylint: disable=unused-argument
         import jax
+
+        # Enable float64 support
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
 
@@ -401,6 +411,11 @@ class TestQubitUnitaryDifferentiability:
         """Tests differentiability in jax interface."""
         import jax
         from jax import numpy as jnp
+
+        # Enable float64 support
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
 
         def qfunc_with_qubit_unitary(angles):
             z = angles[0]
@@ -672,6 +687,10 @@ class TestTwoQubitUnitaryDifferentiability:
         """Tests differentiability in jax interface."""
         import jax
         from jax import numpy as jnp
+
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
 
         U0 = jnp.array(test_two_qubit_unitaries[0], dtype=jnp.complex128)
         U1 = jnp.array(test_two_qubit_unitaries[1], dtype=jnp.complex128)

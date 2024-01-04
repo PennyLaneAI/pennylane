@@ -324,7 +324,7 @@ class ClassicalShadow:
 
         return qml.math.squeeze(results)
 
-    def entropy(self, wires, snapshots=None, alpha=2, k=1, base=None, atol=None):
+    def entropy(self, wires, snapshots=None, alpha=2, k=1, base=None, atol=1e-5):
         r"""Compute entropies from classical shadow measurements.
 
         Compute general Renyi entropies of order :math:`\alpha` for a reduced density matrix :math:`\rho` in terms of
@@ -337,10 +337,7 @@ class ClassicalShadow:
 
         In the case of :math:`\alpha = 2`, the Renyi entropy becomes the logarithm of the purity of the reduced state
 
-        .. math:: S_{\alpha=2}(\rho) = - \log\left(\text{tr}(\rho^2) \right).
-
-        Since density matrices reconstructed from classical shadows can have negative eigenvalues, we use the algorithm described in
-        `1106.5458 <https://arxiv.org/abs/1106.5458>`_ to project the estimator to the closest valid state.
+        .. math:: S_{\alpha=2}(\rho) = - \log\left(\text{tr}(\rho^2) \right)
 
         .. warning::
 
@@ -359,6 +356,7 @@ class ClassicalShadow:
             k (int): Allow to split the snapshots into ``k`` equal parts and estimate the snapshots in a median of means fashion. There is no known advantage to do this for entropies.
                 Thus, ``k=1`` is default and advised.
             base (float): Base to the logarithm used for the entropies.
+            atol (float): Absolute tolerance for eigenvalues close to 0 that are taken into account.
 
         Returns:
             float: Entropy of the chosen subsystem.
@@ -383,7 +381,7 @@ class ClassicalShadow:
             bits, recipes = max_entangled_circuit()
             shadow = qml.ClassicalShadow(bits, recipes)
 
-            entropies = [shadow.entropy(wires=[0], alpha=alpha) for alpha in [1., 2., 3.]]
+            entropies = [shadow.entropy(wires=[0], alpha=alpha, atol=1e-2) for alpha in [1., 2., 3.]]
 
         >>> np.isclose(entropies, entropies[0], atol=1e-2)
         [ True,  True,  True]
@@ -406,16 +404,10 @@ class ClassicalShadow:
             bitstrings, recipes = qnode(x)
             shadow = qml.ClassicalShadow(bitstrings, recipes)
 
-        >>> [shadow.entropy(wires=wires, alpha=alpha) for alpha in [1., 2., 3.]]
+        >>> [shadow.entropy(wires=wires, alpha=alpha, atol=1e-10) for alpha in [1., 2., 3.]]
         [1.5419292874423107, 1.1537924276625828, 0.9593638767763727]
 
         """
-
-        if atol is not None:
-            warnings.warn(
-                "Trying to use atol in ClassicalShadow.entropy. This feature is deprecated and has been replaced by a more accurate version that projects the density matrix estimator to the closest valid density matrix in L2 norm. You can simply remove the atol keyword in your code.",
-                qml.PennyLaneDeprecationWarning,
-            )
 
         global_snapshots = self.global_snapshots(wires=wires, snapshots=snapshots)
         rdm = median_of_means(global_snapshots, k, axis=0)
@@ -423,28 +415,29 @@ class ClassicalShadow:
         # Allow for different log base
         div = np.log(base) if base else 1
 
-        evs_nonzero = _project_density_matrix_spectrum(rdm)
+        # This was returning negative values in most cases, so commenting it out
+        # until we figure out the issue.
+        # if alpha == 2:
+        #     # special case of purity
+        #     res = -qml.math.log(qml.math.trace(rdm @ rdm))
+        #     return res / div
+
+        # Else
+        # Compute Eigenvalues and choose only those >>0
+        evs = qml.math.eigvalsh(rdm)
+        mask0 = qml.math.logical_not(qml.math.isclose(evs, 0, atol=atol))
+        mask1 = qml.math.where(evs > 0, True, False)
+        mask = qml.math.logical_and(mask0, mask1)
+        # Renormalize because of cropped evs
+        evs_nonzero = qml.math.gather(evs, mask)
+        evs_nonzero = evs_nonzero / qml.math.sum(evs_nonzero)
+
         if alpha == 1:
             # Special case of von Neumann entropy
-            return qml.math.entr(evs_nonzero) / div
+            return -qml.math.sum(evs_nonzero * qml.math.log(evs_nonzero)) / div
 
         # General Renyi-alpha entropy
         return qml.math.log(qml.math.sum(evs_nonzero**alpha)) / (1.0 - alpha) / div
-
-
-def _project_density_matrix_spectrum(rdm):
-    """Project the estimator density matrix rdm with possibly negative eigenvalues onto the closest true density matrix in L2 norm"""
-    # algorithm below eq. (16) in https://arxiv.org/pdf/1106.5458.pdf
-    evs = qml.math.eigvalsh(rdm)[::-1]  # order from largest to smallest
-    d = len(rdm)
-    a = 0.0
-    for i in range(d - 1, -1, -1):
-        if evs[i] + a / (i + 1) > 0:
-            break
-        a += evs[i]
-
-    lambdas = evs[: i + 1] + a / (i + 1)
-    return lambdas[::-1]
 
 
 # Util functions

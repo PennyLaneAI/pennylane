@@ -86,7 +86,7 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
         return False
     if op.name == "Snapshot":
         return True
-    if op.__class__.__name__[:3] == "Pow" and qml.operation.is_trainable(op):
+    if op.__class__.__name__ == "Pow" and qml.operation.is_trainable(op):
         return False
 
     return op.has_matrix
@@ -101,48 +101,6 @@ def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
             qml.measurements.ClassicalShadowMP,
             qml.measurements.ShadowExpvalMP,
         ),
-    )
-
-
-def null_postprocessing(results):
-    """An empty post-processing function."""
-    return results[0]
-
-
-def all_state_postprocessing(results, measurements, wire_order):
-    """Process a state measurement back into the original measurements."""
-    result = tuple(m.process_state(results[0], wire_order=wire_order) for m in measurements)
-    return result[0] if len(measurements) == 1 else result
-
-
-@qml.transform
-def adjoint_state_measurements(tape: QuantumTape) -> (Tuple[QuantumTape], Callable):
-    """Perform adjoint measurement preprocessing.
-
-    * Allows a tape with only expectation values through unmodified
-    * Raises an error if non-expectation value measurements exist and any have diagonalizing gates
-    * Turns the circuit into a state measurement + classical postprocesssing for arbitrary measurements
-
-    Args:
-        tape (QuantumTape): the input circuit
-
-    """
-    if all(isinstance(m, qml.measurements.ExpectationMP) for m in tape.measurements):
-        return (tape,), null_postprocessing
-
-    if any(len(m.diagonalizing_gates()) > 0 for m in tape.measurements):
-        raise qml.DeviceError(
-            "adjoint diff supports either all expectation values or only measurements without observables."
-        )
-
-    params = tape.get_parameters()
-    complex_data = [qml.math.cast(p, complex) for p in params]
-    tape = tape.bind_new_parameters(complex_data, list(range(len(params))))
-    state_tape = qml.tape.QuantumScript(
-        tape.operations, [qml.measurements.StateMP(wires=tape.wires)]
-    )
-    return (state_tape,), partial(
-        all_state_postprocessing, measurements=tape.measurements, wire_order=tape.wires
     )
 
 
@@ -166,6 +124,9 @@ def _add_adjoint_transforms(program: TransformProgram) -> None:
         """Specifies whether or not an observable is compatible with adjoint differentiation on DefaultQubit."""
         return obs.has_matrix
 
+    def accepted_adjoint_measurement(m: qml.measurements.MeasurementProcess) -> bool:
+        return isinstance(m, qml.measurements.ExpectationMP)
+
     name = "adjoint + default.qubit"
     program.add_transform(no_sampling, name=name)
     program.add_transform(
@@ -176,9 +137,9 @@ def _add_adjoint_transforms(program: TransformProgram) -> None:
     program.add_transform(validate_observables, adjoint_observables, name=name)
     program.add_transform(
         validate_measurements,
+        analytic_measurements=accepted_adjoint_measurement,
         name=name,
     )
-    program.add_transform(adjoint_state_measurements)
     program.add_transform(qml.transforms.broadcast_expand)
     program.add_transform(warn_about_trainable_observables)
 

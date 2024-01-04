@@ -288,6 +288,9 @@ class TestAdjointMetricTensorTape:
         calling the adjoint metric tensor directly on a tape."""
 
         import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         j_params = tuple(jax.numpy.array(p) for p in params)
@@ -407,6 +410,9 @@ class TestAdjointMetricTensorQNode:
         calling the adjoint metric tensor on a QNode."""
 
         import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         j_params = tuple(jax.numpy.array(p) for p in params)
@@ -532,6 +538,9 @@ class TestAdjointMetricTensorDifferentiability:
         calling the adjoint metric tensor on a QNode."""
 
         import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
 
         expected = qml.jacobian(autodiff_metric_tensor(ansatz, self.num_wires))(*params)
         j_params = tuple(jax.numpy.array(p) for p in params)
