@@ -130,7 +130,7 @@ class PauliWord(dict):
 
     .. note::
 
-        An empty ~.PauliWord will be treated as the multiplicative
+        An empty :class:`~.PauliWord` will be treated as the multiplicative
         identity (i.e identity on all wires).
 
     >>> w = PauliWord({"a": 'X', 2: 'Y', 3: 'Z'})
@@ -357,7 +357,7 @@ class PauliSentence(dict):
 
     .. note::
 
-        An empty ~.PauliSentence will be treated as the additive
+        An empty :class:`~.PauliSentence` will be treated as the additive
         identity (i.e 0 * Identity on all wires).
 
     >>> ps = qml.pauli.PauliSentence({
@@ -378,8 +378,8 @@ class PauliSentence(dict):
         """Add two Pauli sentence together by iterating over the smaller
         one and adding its terms to the larger one.
 
-        Empty Pauli sentences are treated as 0. The non-empty Pauli sentence
-        is returned.
+        Empty Pauli sentences are treated as the additive identity
+        (i.e 0 * Identity on all wires). The non-empty Pauli sentence is returned.
         """
         smaller_ps, larger_ps = (
             (self, copy(other)) if len(self) < len(other) else (other, copy(self))
