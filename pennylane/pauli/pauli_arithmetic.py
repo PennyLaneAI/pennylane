@@ -130,8 +130,8 @@ class PauliWord(dict):
 
     .. note::
 
-        An empty ~.PauliWord will be treated as the multiplicative 
-        identity (i.e identity on all wires). 
+        An empty ~.PauliWord will be treated as the multiplicative
+        identity (i.e identity on all wires).
 
     >>> w = PauliWord({"a": 'X', 2: 'Y', 3: 'Z'})
     >>> w
@@ -179,9 +179,9 @@ class PauliWord(dict):
 
     def __mul__(self, other):
         """Multiply two Pauli words together using the matrix product if wires overlap
-        and the tensor product otherwise. 
+        and the tensor product otherwise.
 
-        Empty Pauli words are treated as the Identity operator on all wires. 
+        Empty Pauli words are treated as the Identity operator on all wires.
 
         Args:
             other (PauliWord): The Pauli word to multiply with
@@ -357,7 +357,7 @@ class PauliSentence(dict):
 
     .. note::
 
-        An empty ~.PauliSentence will be treated as the additive 
+        An empty ~.PauliSentence will be treated as the additive
         identity (i.e 0 * Identity on all wires).
 
     >>> ps = qml.pauli.PauliSentence({
@@ -377,9 +377,9 @@ class PauliSentence(dict):
     def __add__(self, other):
         """Add two Pauli sentence together by iterating over the smaller
         one and adding its terms to the larger one.
-        
+
         Empty Pauli sentences are treated as 0. The non-empty Pauli sentence
-        is returned. 
+        is returned.
         """
         smaller_ps, larger_ps = (
             (self, copy(other)) if len(self) < len(other) else (other, copy(self))
@@ -413,8 +413,8 @@ class PauliSentence(dict):
     def __mul__(self, other):
         """Multiply two Pauli sentences by iterating over each sentence and multiplying
         the Pauli words pair-wise.
-        
-        Empty Pauli sentences are treated as 0. The product returns another 
+
+        Empty Pauli sentences are treated as 0. The product returns another
         empty Pauli sentence (i.e 0).
         """
         final_ps = PauliSentence()
