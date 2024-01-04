@@ -51,6 +51,18 @@ ps5 = PauliSentence({})
 
 sentences = [ps1, ps2, ps3, ps4, ps5, ps1_hamiltonian, ps2_hamiltonian]
 
+@pytest.mark.parametrize("pw1", words)
+@pytest.mark.parametrize("pw2", words)
+def test_legacy_multiplication_pwords(pw1, pw2):
+    """Test the legacy behavior for using the star operator for matrix multiplication of pauli words"""
+    assert pw1 * pw1 == pw1 @ pw2
+
+@pytest.mark.parametrize("ps1", sentences)
+@pytest.mark.parametrize("ps2", sentences)
+def test_legacy_multiplication_psentences(ps1, ps2):
+    """Test the legacy behavior for using the star operator for matrix multiplication of pauli sentences"""
+    assert ps1 * ps1 == ps1 @ ps2
+
 
 class TestPauliWord:
     def test_identity_removed_on_init(self):
