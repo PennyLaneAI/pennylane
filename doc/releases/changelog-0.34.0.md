@@ -606,6 +606,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `TransformDispatcher` now stops queuing when performing the transform when applying it to a qfunc.
+  Only the output of the transform will be queued.
+  [(#4983)](https://github.com/PennyLaneAI/pennylane/pull/4983)
+
 * `qml.map_wires` now works properly with `qml.cond` and `qml.measure`.
   [(#4884)](https://github.com/PennyLaneAI/pennylane/pull/4884)
 
