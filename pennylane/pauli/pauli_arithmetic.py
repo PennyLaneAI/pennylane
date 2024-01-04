@@ -218,12 +218,14 @@ class PauliWord(dict):
             # this is legacy support and will be removed after a deprecation cycle
             return self @ other
 
-        if not qml.math.ndim(other) == 0:
-            raise ValueError(
-                f"Attempting to multiply a PauliWord with an array of dimension {qml.math.ndim(other)}"
-            )
+        if isinstance(other, TensorLike):
+            if not qml.math.ndim(other) == 0:
+                raise ValueError(
+                    f"Attempting to multiply a PauliWord with an array of dimension {qml.math.ndim(other)}"
+                )
 
-        return PauliSentence({self: other})
+            return PauliSentence({self: other})
+        raise TypeError(f"PauliWord can only be multiplied by numerical data. Attempting to multiply by {other} of type {type(other)}")
 
     __rmul__ = __mul__
 
@@ -231,7 +233,7 @@ class PauliWord(dict):
         """Divide a PauliWord by a scalar"""
         if isinstance(other, TensorLike):
             return self * (1 / other)
-        return NotImplemented
+        raise TypeError(f"PauliWord can only be divided by numerical data. Attempting to divide by {other} of type {type(other)}")
 
     def __str__(self):
         """String representation of a PauliWord."""
@@ -456,7 +458,7 @@ class PauliSentence(dict):
 
             return PauliSentence({key: other * value for key, value in self.items()})
 
-        return NotImplemented
+        raise TypeError(f"PauliSentence can only be multiplied by numerical data. Attempting to multiply by {other} of type {type(other)}")
 
     __rmul__ = __mul__
 
@@ -464,7 +466,7 @@ class PauliSentence(dict):
         """Divide a PauliSentence by a scalar"""
         if isinstance(other, TensorLike):
             return self * (1 / other)
-        return NotImplemented
+        raise TypeError(f"PauliSentence can only be divided by numerical data. Attempting to divide by {other} of type {type(other)}")
 
     def __str__(self):
         """String representation of the PauliSentence."""
